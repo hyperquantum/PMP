@@ -1,4 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
-PROJECT(PMP)
-FIND_PACKAGE(Qt4 REQUIRED)
+project(PMP)
+find_package(Qt4 REQUIRED)
+include(${QT_USE_FILE})
 
+set(PMP_SOURCES main.cpp)
+
+add_executable(PMP ${PMP_SOURCES})
+
+target_link_libraries(PMP ${QT_LIBRARIES})
