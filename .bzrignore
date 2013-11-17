@@ -3,3 +3,5 @@ bin/CMakeFiles
 bin/cmake_install.cmake
 bin/Makefile
 bin/PMP
+bin/*.exe
+bin/HashTool
