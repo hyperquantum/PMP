@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 2.8)
 project(PMP)
+
+include(FindPkgConfig)
+
 find_package(Qt4 REQUIRED)
+
+pkg_check_modules(TAGLIB REQUIRED taglib>=1.6)
+
+include_directories(${TAGLIB_INCLUDE_DIRS})
+link_directories(${TAGLIB_LIBRARY_DIRS})
+
 include(${QT_USE_FILE})
 
 set(PMP_SOURCES main.cpp)
