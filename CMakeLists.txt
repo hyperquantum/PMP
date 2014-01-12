@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
+set(CMAKE_LEGACY_CYGWIN_WIN32 0)
 project(PMP)
 
 include(FindPkgConfig)
@@ -17,5 +18,5 @@ set(PMP_SOURCES main.cpp)
 add_executable(HashTool hash-main.cpp)
 add_executable(PMP ${PMP_SOURCES})
 
-target_link_libraries(HashTool ${QT_LIBRARIES})
-target_link_libraries(PMP ${QT_LIBRARIES})
+target_link_libraries(HashTool ${QT_LIBRARIES} ${TAGLIB_LIBRARIES})
+target_link_libraries(PMP ${QT_LIBRARIES} ${TAGLIB_LIBRARIES})

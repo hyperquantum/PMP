@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 2011-2012, Kevin Andre <hyperquantum@gmail.com>
+   Copyright (C) 2011-2014, Kevin Andre <hyperquantum@gmail.com>
    
    This file is part of PMP (Party Music Player).
    
@@ -22,6 +22,9 @@
 
 #include <QCryptographicHash>
 
+#include <taglib/fileref.h>
+#include <taglib/tag.h>
+
 
 int main(int argc, char *argv[]) {
 	
@@ -42,24 +45,32 @@ int main(int argc, char *argv[]) {
 	QString fileName = QCoreApplication::arguments()[1];
 	QFile file(fileName);
 	
-	if (file.open(QIODevice::ReadOnly)) {
-		QByteArray fileContents = file.readAll();
-		
-		QCryptographicHash md5_hasher(QCryptographicHash::Md5);
-		md5_hasher.addData(fileContents);
-		
-		QCryptographicHash sha1_hasher(QCryptographicHash::Sha1);
-		sha1_hasher.addData(fileContents);
-		
-		out << "File name: " << fileName << "\n";
-		out << "File size: " << fileContents.length() << "\n";
-		out << "MD5 Hash:  " << md5_hasher.result().toHex() << "\n";
-		out << "SHA1 Hash: " << sha1_hasher.result().toHex() << "\n";
-		
-	}
-	else {
+	if (!file.open(QIODevice::ReadOnly)) {
 		out << "Could not open a file with that name." << "\n";
 		return 1;
+	}
+	
+	QByteArray fileContents = file.readAll();
+	
+	QCryptographicHash md5_hasher(QCryptographicHash::Md5);
+	md5_hasher.addData(fileContents);
+	
+	QCryptographicHash sha1_hasher(QCryptographicHash::Sha1);
+	sha1_hasher.addData(fileContents);
+	
+	out << "File name: " << fileName << "\n";
+	out << "File size: " << fileContents.length() << "\n";
+	out << "MD5 Hash:  " << md5_hasher.result().toHex() << "\n";
+	out << "SHA1 Hash: " << sha1_hasher.result().toHex() << "\n";
+	
+	TagLib::FileRef tagFile(fileName.toUtf8());
+	TagLib::Tag* tag = tagFile.tag();
+	if (tag == 0) {
+		out << "no tags found" << "\n";
+	}
+	else {
+		out << "artist: " << TStringToQString(tag->artist()) << "\n";
+		out << "title: " << TStringToQString(tag->title()) << "\n";
 	}
 	
 	return 0;
