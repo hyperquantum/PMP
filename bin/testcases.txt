@@ -1,0 +1,10 @@
+
+--Kiss Me:
+stripped file size: 6352464
+stripped MD5 Hash:  6f18d0134c4b04ffbf8246cb4f92d3e8
+stripped SHA1 Hash: 757bd1db7285ec2196dfb5d0583bdb418703074e
+
+--It feels like home:
+stripped file size: 6753112
+stripped MD5 Hash:  67c75bd0d6cde2ef5409db1d9346ac21
+stripped SHA1 Hash: 1febaed0a7ae8767b4510fbff5d95f23b464e2d2

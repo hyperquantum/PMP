@@ -23,7 +23,11 @@
 #include <QCryptographicHash>
 
 #include <taglib/fileref.h>
+#include <taglib/id3v2framefactory.h>
+#include <taglib/mpegfile.h>
 #include <taglib/tag.h>
+#include <taglib/tbytevector.h>
+#include <taglib/tbytevectorstream.h>
 
 
 int main(int argc, char *argv[]) {
@@ -63,7 +67,13 @@ int main(int argc, char *argv[]) {
 	out << "MD5 Hash:  " << md5_hasher.result().toHex() << "\n";
 	out << "SHA1 Hash: " << sha1_hasher.result().toHex() << "\n";
 	
-	TagLib::FileRef tagFile(fileName.toUtf8());
+	//TagLib::FileRef tagFile(fileName.toUtf8());
+	
+	TagLib::ByteVector fileContentsScratch(fileContents.data(), fileContents.length());
+	TagLib::ByteVectorStream fileScratchStream(fileContentsScratch);
+	
+	TagLib::MPEG::File tagFile(&fileScratchStream, TagLib::ID3v2::FrameFactory::instance());
+	
 	TagLib::Tag* tag = tagFile.tag();
 	if (tag == 0) {
 		out << "no tags found" << "\n";
@@ -72,6 +82,20 @@ int main(int argc, char *argv[]) {
 		out << "artist: " << TStringToQString(tag->artist()) << "\n";
 		out << "title: " << TStringToQString(tag->title()) << "\n";
 	}
+	
+	tagFile.strip(); // strip all tag headers
+	
+	TagLib::ByteVector* stripped_data = fileScratchStream.data();
+	
+	QCryptographicHash md5_hasher_stripped(QCryptographicHash::Md5);
+	md5_hasher_stripped.addData(stripped_data->data(), stripped_data->size());
+	
+	QCryptographicHash sha1_hasher_stripped(QCryptographicHash::Sha1);
+	sha1_hasher_stripped.addData(stripped_data->data(), stripped_data->size());
+	
+	out << "stripped file size: " << stripped_data->size() << "\n";
+	out << "stripped MD5 Hash:  " << md5_hasher_stripped.result().toHex() << "\n";
+	out << "stripped SHA1 Hash: " << sha1_hasher_stripped.result().toHex() << "\n";
 	
 	return 0;
 }
