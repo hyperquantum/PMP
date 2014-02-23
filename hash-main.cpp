@@ -47,8 +47,12 @@ int main(int argc, char *argv[]) {
 	}
 	
 	QString fileName = QCoreApplication::arguments()[1];
-	QFile file(fileName);
+	if (!fileName.endsWith(".mp3", Qt::CaseInsensitive)) {
+		out << "File does not have type MP3." << "\n";
+		return 1;
+	}
 	
+	QFile file(fileName);
 	if (!file.open(QIODevice::ReadOnly)) {
 		out << "Could not open a file with that name." << "\n";
 		return 1;
@@ -73,6 +77,10 @@ int main(int argc, char *argv[]) {
 	TagLib::ByteVectorStream fileScratchStream(fileContentsScratch);
 	
 	TagLib::MPEG::File tagFile(&fileScratchStream, TagLib::ID3v2::FrameFactory::instance());
+	if (!tagFile.isValid()) {
+		out << "This is not an MP3 file. Cannot continue." << "\n";
+		return 1;
+	}
 	
 	TagLib::Tag* tag = tagFile.tag();
 	if (tag == 0) {
