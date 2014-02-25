@@ -1,7 +1,7 @@
 Party Music Player
 ==================
 
-Copyright (C) 2011-2012  Kevin Andre
+Copyright (C) 2011-2014  Kevin Andre
 
 
 This is the start of a project that will provide a client-server

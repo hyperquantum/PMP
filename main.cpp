@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 2011-2012, Kevin Andre <hyperquantum@gmail.com>
+   Copyright (C) 2011-2014, Kevin Andre <hyperquantum@gmail.com>
    
    This file is part of PMP (Party Music Player).
    
