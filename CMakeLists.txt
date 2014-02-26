@@ -13,7 +13,7 @@ link_directories(${TAGLIB_LIBRARY_DIRS})
 
 include(${QT_USE_FILE})
 
-set(PMP_SOURCES main.cpp)
+set(PMP_SOURCES main.cpp hashid.cpp)
 
 add_executable(HashTool hash-main.cpp)
 add_executable(PMP ${PMP_SOURCES})
