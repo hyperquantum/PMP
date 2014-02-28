@@ -20,6 +20,8 @@
 
 #include <QtCore>
 
+#include <QDirIterator>
+#include <QFileInfo>
 
 int main(int argc, char *argv[]) {
 	
@@ -32,7 +34,16 @@ int main(int argc, char *argv[]) {
 	
 	QTextStream out(stdout);
 	
-	out << "Hello.  This program does not do anything yet :-)" << "\n";
+	out << endl << "PMP --- Party Music Player" << endl << endl;
+	
+	QDirIterator it(".", QDirIterator::Subdirectories);
+	while (it.hasNext()) {
+		QFileInfo entry(it.next());
+		if (!entry.isFile()) continue;
+		if (entry.suffix().toLower() == "mp3") {
+			out << "  " << entry.filePath() << endl;
+		}
+	}
 	
 	return 0;
 }

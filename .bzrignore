@@ -5,3 +5,4 @@ bin/Makefile
 bin/PMP
 bin/*.exe
 bin/HashTool
+bin/*.mp3
