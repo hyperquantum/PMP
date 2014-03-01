@@ -13,7 +13,12 @@ link_directories(${TAGLIB_LIBRARY_DIRS})
 
 include(${QT_USE_FILE})
 
-set(PMP_SOURCES main.cpp hashid.cpp)
+# enable compiler warnings for GCC
+if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
+endif()
+
+set(PMP_SOURCES main.cpp hashid.cpp filedata.cpp)
 
 add_executable(HashTool hash-main.cpp)
 add_executable(PMP ${PMP_SOURCES})

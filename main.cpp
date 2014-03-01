@@ -17,11 +17,14 @@
    with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "filedata.h"
 
 #include <QtCore>
 
 #include <QDirIterator>
 #include <QFileInfo>
+
+using namespace PMP;
 
 int main(int argc, char *argv[]) {
 	
@@ -41,7 +44,19 @@ int main(int argc, char *argv[]) {
 		QFileInfo entry(it.next());
 		if (!entry.isFile()) continue;
 		if (entry.suffix().toLower() == "mp3") {
-			out << "  " << entry.filePath() << endl;
+			QString path = entry.filePath();
+			out << "  " << path << endl;
+			
+			FileData* data = FileData::analyzeFile(path);
+			if (data == 0) {
+				out << "     failed to analyze file!" << endl;
+			}
+			else {
+				out << "     " << data->artist() << endl
+					<< "     " << data->title() << endl
+					<< "     " << data->hash().dumpToString() << endl;
+				delete data;
+			}
 		}
 	}
 	

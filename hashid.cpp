@@ -1,5 +1,5 @@
 /* 
-   Copyright (C) 2011-2014, Kevin Andre <hyperquantum@gmail.com>
+   Copyright (C) 2014, Kevin Andre <hyperquantum@gmail.com>
    
    This file is part of PMP (Party Music Player).
    
@@ -20,12 +20,16 @@
 #include "hashid.h"
 
 namespace PMP {
-	
-	HashID::HashID(unsigned int length, const QByteArray& sha1,
+
+   HashID::HashID(unsigned int length, const QByteArray& sha1,
       const QByteArray& md5)
     : _length(length), _sha1(sha1), _md5(md5)
    {
       //
-	}
+   }
     
+   QString HashID::dumpToString() const {
+      return "(" + QString::number(_length) + "; "
+         + _sha1.toHex() + "; " + _md5.toHex() + ")";
+   }
 }

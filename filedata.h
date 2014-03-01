@@ -17,40 +17,29 @@
    with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_HASHID_H
-#define PMP_HASHID_H
+#ifndef PMP_FILEDATA_H
+#define PMP_FILEDATA_H
 
-#include <QByteArray>
-#include <QString>
+#include "hashid.h"
 
 namespace PMP {
 	
-	class HashID {
+	class FileData {
 	public:
-		HashID(unsigned int length, const QByteArray& sha1,
-			const QByteArray& md5);
 		
-		unsigned int length() const { return _length; }
-		const QByteArray& SHA1() const { return _sha1; }
-		const QByteArray& MD5() const { return _md5; }
+		static FileData* analyzeFile(QString fileName);
 		
-		QString dumpToString() const;
+		const HashID& hash() { return _hash; }
+		QString artist() const { return _artist; }
+		QString title() const { return _title; }
 		
 	private:
-		unsigned int _length;
-		QByteArray _sha1;
-		QByteArray _md5;
+		FileData(const HashID& hash, const QString& artist, const QString& title);
+		
+		HashID _hash;
+		QString _artist;
+		QString _title;
+		
 	};
-	
-	inline bool operator==(const HashID& me, const HashID& other) {
-		return me.length() == other.length()
-			&& me.SHA1() == other.SHA1()
-			&& me.MD5() == other.MD5();
-	}
-	
-	inline bool operator!=(const HashID& me, const HashID& other) {
-		return !(me == other);
-	}
-	
 }
 #endif
