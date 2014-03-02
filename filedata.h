@@ -27,23 +27,26 @@ namespace PMP {
 	class FileData {
 	public:
 		
-		static FileData* analyzeFile(QString fileName);
+		static FileData* analyzeFile(const QString& fileName);
 		
 		const HashID& hash() { return _hash; }
 		QString artist() const { return _artist; }
 		QString title() const { return _title; }
 		QString album() const { return _album; }
 		QString comment() const { return _comment; }
+		int lengthInSeconds() const { return _lengthSeconds; }
 		
 	private:
 		FileData(const HashID& hash, const QString& artist, const QString& title,
-			const QString& album, const QString& comment);
+			const QString& album, const QString& comment,
+			int lengthInSeconds);
 		
 		HashID _hash;
 		QString _artist;
 		QString _title;
 		QString _album;
 		QString _comment;
+		int _lengthSeconds;
 		
 	};
 }

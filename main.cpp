@@ -52,7 +52,11 @@ int main(int argc, char *argv[]) {
 				out << "     failed to analyze file!" << endl;
 			}
 			else {
-				out << "     " << data->artist() << endl
+				// FIXME: durations of 24 hours and longer will not work with this code
+				QTime length = QTime(0, 0).addSecs(data->lengthInSeconds());
+				
+				out << "     " << length.toString() << endl
+					<< "     " << data->artist() << endl
 					<< "     " << data->title() << endl
 					<< "     " << data->album() << endl
 					<< "     " << data->comment() << endl

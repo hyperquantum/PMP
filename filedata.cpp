@@ -31,13 +31,14 @@
 namespace PMP {
 	
 	FileData::FileData(const HashID& hash, const QString& artist, const QString& title,
-      const QString& album, const QString& comment)
-	 : _hash(hash), _artist(artist), _title(title), _album(album), _comment(comment)
+      const QString& album, const QString& comment, int lengthInSeconds)
+	 : _hash(hash), _artist(artist), _title(title), _album(album), _comment(comment),
+      _lengthSeconds(lengthInSeconds)
 	{
 		//
 	}
 
-   FileData* FileData::analyzeFile(QString fileName) {
+   FileData* FileData::analyzeFile(const QString& fileName) {
       QFile file(fileName);
       if (!file.open(QIODevice::ReadOnly)) return 0;
        
@@ -59,6 +60,13 @@ namespace PMP {
          comment = TStringToQString(tag->comment());
       }
       
+      int lengthInSeconds = -1;
+      
+      TagLib::AudioProperties* audioProperties = tagFile.audioProperties();
+      if (audioProperties !=0) {
+         lengthInSeconds = audioProperties->length();
+      }
+      
       tagFile.strip(); // strip all tag headers
       
       TagLib::ByteVector* stripped_data = fileScratchStream.data();
@@ -71,7 +79,7 @@ namespace PMP {
       
       return new FileData(
          HashID(stripped_data->size(), sha1_hasher.result(), md5_hasher.result()),
-         artist, title, album, comment
+         artist, title, album, comment, lengthInSeconds
       );
     }
     
