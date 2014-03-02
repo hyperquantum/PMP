@@ -21,23 +21,24 @@
 #define PMP_HASHID_H
 
 #include <QByteArray>
+#include <QHash>
 #include <QString>
 
 namespace PMP {
 	
 	class HashID {
 	public:
-		HashID(unsigned int length, const QByteArray& sha1,
+		HashID(uint length, const QByteArray& sha1,
 			const QByteArray& md5);
 		
-		unsigned int length() const { return _length; }
+		uint length() const { return _length; }
 		const QByteArray& SHA1() const { return _sha1; }
 		const QByteArray& MD5() const { return _md5; }
 		
 		QString dumpToString() const;
 		
 	private:
-		unsigned int _length;
+		uint _length;
 		QByteArray _sha1;
 		QByteArray _md5;
 	};
@@ -50,6 +51,12 @@ namespace PMP {
 	
 	inline bool operator!=(const HashID& me, const HashID& other) {
 		return !(me == other);
+	}
+	
+	inline uint qHash(const HashID& hashID) {
+		return hashID.length()
+			^ qHash(hashID.SHA1())
+			^ qHash(hashID.MD5());
 	}
 	
 }

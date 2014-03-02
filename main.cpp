@@ -40,6 +40,8 @@ int main(int argc, char *argv[]) {
 	out << endl << "PMP --- Party Music Player" << endl << endl;
 	
 	QDirIterator it(".", QDirIterator::Subdirectories);
+	uint fileCount = 0;
+	QSet<HashID> uniqueFiles;
 	while (it.hasNext()) {
 		QFileInfo entry(it.next());
 		if (!entry.isFile()) continue;
@@ -52,6 +54,9 @@ int main(int argc, char *argv[]) {
 				out << "     failed to analyze file!" << endl;
 			}
 			else {
+				++fileCount;
+				uniqueFiles.insert(data->hash());
+				
 				// FIXME: durations of 24 hours and longer will not work with this code
 				QTime length = QTime(0, 0).addSecs(data->lengthInSeconds());
 				
@@ -65,6 +70,9 @@ int main(int argc, char *argv[]) {
 			}
 		}
 	}
+	
+	out << endl
+		<< fileCount << " files, " << uniqueFiles.size() << " unique hashes" << endl;
 	
 	return 0;
 }
