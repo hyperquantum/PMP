@@ -30,8 +30,9 @@
 
 namespace PMP {
 	
-	FileData::FileData(const HashID& hash, const QString& artist, const QString& title)
-	 : _hash(hash), _artist(artist), _title(title)
+	FileData::FileData(const HashID& hash, const QString& artist, const QString& title,
+      const QString& album, const QString& comment)
+	 : _hash(hash), _artist(artist), _title(title), _album(album), _comment(comment)
 	{
 		//
 	}
@@ -48,12 +49,14 @@ namespace PMP {
       TagLib::MPEG::File tagFile(&fileScratchStream, TagLib::ID3v2::FrameFactory::instance());
       if (!tagFile.isValid()) { return 0; }
       
-      QString artist, title;
+      QString artist, title, album, comment;
       
       TagLib::Tag* tag = tagFile.tag();
       if (tag != 0) {
          artist = TStringToQString(tag->artist());
          title = TStringToQString(tag->title());
+         album = TStringToQString(tag->album());
+         comment = TStringToQString(tag->comment());
       }
       
       tagFile.strip(); // strip all tag headers
@@ -68,7 +71,7 @@ namespace PMP {
       
       return new FileData(
          HashID(stripped_data->size(), sha1_hasher.result(), md5_hasher.result()),
-         artist, title
+         artist, title, album, comment
       );
     }
     

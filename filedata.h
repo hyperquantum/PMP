@@ -32,13 +32,18 @@ namespace PMP {
 		const HashID& hash() { return _hash; }
 		QString artist() const { return _artist; }
 		QString title() const { return _title; }
+		QString album() const { return _album; }
+		QString comment() const { return _comment; }
 		
 	private:
-		FileData(const HashID& hash, const QString& artist, const QString& title);
+		FileData(const HashID& hash, const QString& artist, const QString& title,
+			const QString& album, const QString& comment);
 		
 		HashID _hash;
 		QString _artist;
 		QString _title;
+		QString _album;
+		QString _comment;
 		
 	};
 }

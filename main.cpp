@@ -54,6 +54,8 @@ int main(int argc, char *argv[]) {
 			else {
 				out << "     " << data->artist() << endl
 					<< "     " << data->title() << endl
+					<< "     " << data->album() << endl
+					<< "     " << data->comment() << endl
 					<< "     " << data->hash().dumpToString() << endl;
 				delete data;
 			}
