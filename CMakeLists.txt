@@ -4,14 +4,13 @@ project(PMP)
 
 include(FindPkgConfig)
 
-find_package(Qt4 REQUIRED)
+find_package(Qt5Core REQUIRED)
+find_package(Qt5Multimedia REQUIRED)
 
 pkg_check_modules(TAGLIB REQUIRED taglib>=1.6)
 
 include_directories(${TAGLIB_INCLUDE_DIRS})
 link_directories(${TAGLIB_LIBRARY_DIRS})
-
-include(${QT_USE_FILE})
 
 # enable compiler warnings for GCC
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
@@ -23,5 +22,9 @@ set(PMP_SOURCES main.cpp hashid.cpp filedata.cpp)
 add_executable(HashTool hash-main.cpp)
 add_executable(PMP ${PMP_SOURCES})
 
-target_link_libraries(HashTool ${QT_LIBRARIES} ${TAGLIB_LIBRARIES})
-target_link_libraries(PMP ${QT_LIBRARIES} ${TAGLIB_LIBRARIES})
+qt5_use_modules(HashTool Core)
+qt5_use_modules(PMP Core)
+qt5_use_modules(PMP Multimedia)
+
+target_link_libraries(HashTool ${TAGLIB_LIBRARIES})
+target_link_libraries(PMP ${TAGLIB_LIBRARIES})

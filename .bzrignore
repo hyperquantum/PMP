@@ -6,3 +6,6 @@ bin/PMP
 bin/*.exe
 bin/HashTool
 bin/*.mp3
+bin/*.dll
+bin/PMP.cbp
+bin/PMP.layout

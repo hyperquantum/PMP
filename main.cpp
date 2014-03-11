@@ -19,6 +19,9 @@
 
 #include "filedata.h"
 
+//~ #include <Phonon/MediaObject>
+//~ #include <Phonon/MediaSource>
+
 #include <QtCore>
 
 #include <QDirIterator>
@@ -42,6 +45,7 @@ int main(int argc, char *argv[]) {
 	QDirIterator it(".", QDirIterator::Subdirectories);
 	uint fileCount = 0;
 	QSet<HashID> uniqueFiles;
+	QList<QString> pathsToPlay;
 	while (it.hasNext()) {
 		QFileInfo entry(it.next());
 		if (!entry.isFile()) continue;
@@ -55,7 +59,10 @@ int main(int argc, char *argv[]) {
 			}
 			else {
 				++fileCount;
-				uniqueFiles.insert(data->hash());
+				if(!uniqueFiles.contains(data->hash())) {
+					uniqueFiles.insert(data->hash());
+					pathsToPlay.append(path);
+				}
 				
 				// FIXME: durations of 24 hours and longer will not work with this code
 				QTime length = QTime(0, 0).addSecs(data->lengthInSeconds());
@@ -73,6 +80,8 @@ int main(int argc, char *argv[]) {
 	
 	out << endl
 		<< fileCount << " files, " << uniqueFiles.size() << " unique hashes" << endl;
+	
+	//Phonon::MediaObject media;
 	
 	return 0;
 }
