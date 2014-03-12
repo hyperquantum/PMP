@@ -32,6 +32,8 @@ COMPILING ON WINDOWS
    add MinGW to Windows User PATH  (see MinGW FAQ)
 * Download and install Qt 5
    --> http://qt-project.org/downloads  --> Qt Online Installer for Windows
+   add the Qt MinGW bin directory to the Windows User PATH  (e.g. C:\Qt\5.2.1\mingw48_32\bin)
+      make sure to put this directory TO THE LEFT of the MinGW path that is already there
 * Download and build taglib
    --> http://taglib.github.io/  --> download sourcecode
     unpack sourcecode
@@ -67,8 +69,6 @@ COMPILING ON WINDOWS
     'where is the sourcecode': select PMP sourcecode folder
     'where to build the binaries': "bin" subdirectory of sourcecode folder
     add variable CMAKE_PREFIX_PATH and set it to the Qt install dir (e.g. C:/Qt/5.2.1/mingw48_32)
-    copy the following files from C:\Qt\5.2.1\mingw48_32\bin  to the PMP bin directory
-       QtCore.dll, icudt51.dll, icuin51.dll, icuuc51.dll, libstdc++-6.dll, libwinpthread-1.dll
     press 'Configure', select a generator with "MinGW Makefiles"
     press 'Generate'
 
