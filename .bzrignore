@@ -9,3 +9,4 @@ bin/*.mp3
 bin/*.dll
 bin/PMP.cbp
 bin/PMP.layout
+*.mp3
