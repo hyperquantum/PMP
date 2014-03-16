@@ -10,3 +10,4 @@ bin/*.dll
 bin/PMP.cbp
 bin/PMP.layout
 *.mp3
+bin/*.cpp

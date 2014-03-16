@@ -18,6 +18,7 @@
 */
 
 #include "filedata.h"
+#include "player.h"
 
 #include <QtCore>
 
@@ -83,16 +84,21 @@ int main(int argc, char *argv[]) {
         return 0; // nothing to play
     }
 
-    QString file = pathsToPlay[0];
-    out << "Will try to play " << file << endl;
+    Player player;
 
-    QEventLoop loop;
+    out << endl
+        << "Will try to play:" << endl;
 
-    QMediaPlayer player;
-    player.setMedia(QUrl::fromLocalFile(file));
+    for (int i = 0; i < 2 && i < pathsToPlay.count(); ++i) {
+        QString file = pathsToPlay[i];
+        out << " - " << file << endl;
+        player.queue(file);
+    }
 
-    player.setVolume(75);
-    out << "volume=" << player.volume() << endl;
+    out << " volume = " << player.volume() << endl;
+
+    // quit when queue is finished
+    QObject::connect(&player, SIGNAL(finished()), &a, SLOT(quit()));
 
     player.play();
 
