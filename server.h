@@ -17,47 +17,43 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_PLAYER_H
-#define PMP_PLAYER_H
+#ifndef PMP_SERVER_H
+#define PMP_SERVER_H
 
-#include <QMediaPlayer>
-#include <QObject>
-#include <QQueue>
+#include <QByteArray>
+#include <QTcpServer>
 
 namespace PMP {
 
-    class Player : public QObject {
+    class Player;
+
+    class Server : public QObject {
         Q_OBJECT
     public:
-        explicit Player(QObject* parent = 0);
+        explicit Server(QObject* parent = 0);
 
-        int volume() const;
+        bool listen(Player* player);
+        QString errorString() const;
 
-        bool playing() const;
+        quint16 port() const;
 
     public slots:
 
-        void playPause();
-        void play();
-        void pause();
-
-        void setVolume(int volume);
-
-        void clearQueue();
-        void queue(QString filename);
+        void shutdown();
 
     Q_SIGNALS:
 
-        /*! Emitted when the queue is empty and the current track is finished. */
-        void finished();
+        void shuttingDown();
 
     private slots:
 
-        void internalStateChanged(QMediaPlayer::State state);
+        void newConnectionReceived();
+
 
     private:
-        QMediaPlayer* _player;
-        QQueue<QString> _queue;
+        Player* _player;
+        QTcpServer* _server;
+        QByteArray _greeting;
     };
 }
 #endif

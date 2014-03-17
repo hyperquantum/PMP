@@ -19,6 +19,7 @@
 
 #include "filedata.h"
 #include "player.h"
+#include "server.h"
 
 #include <QtCore>
 
@@ -30,9 +31,9 @@ using namespace PMP;
 
 int main(int argc, char *argv[]) {
 
-    QCoreApplication a(argc, argv);
+    QCoreApplication app(argc, argv);
 
-    QCoreApplication::setApplicationName("Party Music Player");
+    QCoreApplication::setApplicationName("Party Music Player - Server");
     QCoreApplication::setApplicationVersion("0.0.0.1");
     QCoreApplication::setOrganizationName("Party Music Player");
     QCoreApplication::setOrganizationDomain("hyperquantum.be");
@@ -87,7 +88,7 @@ int main(int argc, char *argv[]) {
     Player player;
 
     out << endl
-        << "Will try to play:" << endl;
+        << "Adding to queue:" << endl;
 
     for (int i = 0; i < 2 && i < pathsToPlay.count(); ++i) {
         QString file = pathsToPlay[i];
@@ -95,12 +96,22 @@ int main(int argc, char *argv[]) {
         player.queue(file);
     }
 
-    out << " volume = " << player.volume() << endl;
+    out << endl
+        << "Volume = " << player.volume() << endl;
 
-    // quit when queue is finished
-    QObject::connect(&player, SIGNAL(finished()), &a, SLOT(quit()));
+    out << endl;
 
-    player.play();
+    Server server;
+    if (!server.listen(&player)) {
+        out << "Could not start TCP listener: " << server.errorString() << endl;
+        out << "Exiting." << endl;
+        return 1;
+    }
 
-    return a.exec();
+    out << "Now listening on port " << server.port() << endl;
+
+    // exit when the server instance signals it
+    QObject::connect(&server, SIGNAL(shuttingDown()), &app, SLOT(quit()));
+
+    return app.exec();
 }

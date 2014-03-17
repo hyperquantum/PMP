@@ -41,7 +41,7 @@ int main(int argc, char *argv[]) {
 
     QTextStream out(stdout);
 
-    if (QCoreApplication::arguments().size() <= 1) {
+    if (QCoreApplication::arguments().size() < 2) {
         out << "No arguments given." <<  "\n";
         return 0;
     }

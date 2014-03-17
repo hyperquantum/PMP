@@ -29,10 +29,6 @@ namespace PMP {
         connect(_player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(internalStateChanged(QMediaPlayer::State)));
     }
 
-    Player::~Player() {
-        delete _player;
-    }
-
     int Player::volume() const {
         return _player->volume();
     }
