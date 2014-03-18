@@ -17,6 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <QByteArray>
 #include <QtCore>
 #include <QTcpSocket>
 
@@ -69,10 +70,42 @@ int main(int argc, char *argv[]) {
     QTcpSocket socket;
     socket.connectToHost(server, (quint16)portNumber);
 
-    if (!socket.waitForConnected(1000)) {
+    if (!socket.waitForConnected(2000)) {
         out << "Failed to connect to the server: code " << socket.error() << endl;
         return 2;
     }
+
+    while (socket.bytesAvailable() < 3) {
+        if (!socket.waitForReadyRead(2000)) {
+            out << "No timely response from the server!" << endl;
+            return 2;
+        }
+    }
+
+    QByteArray dataReceived;
+    dataReceived.append(socket.readAll());
+
+    if (dataReceived.at(0) != 'P'
+        || dataReceived.at(1) != 'M'
+        || dataReceived.at(2) != 'P')
+    {
+        out << "This is not a PMP server!" << endl;
+        return 2;
+    }
+
+    int semicolonIndex = -1;
+    while ((semicolonIndex = dataReceived.indexOf(';')) < 0) {
+        if (!socket.waitForReadyRead(2000)) {
+            out << "Server handshake not complete!" << endl;
+            return 2;
+        }
+
+        dataReceived.append(socket.readAll());
+    }
+
+    QString serverHelloString = QString::fromUtf8(dataReceived.data(), semicolonIndex);
+    out << " server greeting: " << serverHelloString << endl;
+    out << " sending command: " << command << endl;
 
     socket.write((command + ";").toUtf8());
 
