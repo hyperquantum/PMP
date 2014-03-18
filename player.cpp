@@ -73,6 +73,22 @@ namespace PMP {
         }
     }
 
+    void Player::skip() {
+        if (_player->state() != QMediaPlayer::PlayingState) {
+            return; // not playing
+        }
+
+        if (_queue.empty()) {
+            // no next track
+            _player->stop(); // further handling in internalStateChanged
+            return;
+        }
+
+        QString file = _queue.dequeue();
+        _player->setMedia(QUrl::fromLocalFile(file));
+        _player->play();
+    }
+
     void Player::setVolume(int volume) {
         _player->setVolume(volume);
     }

@@ -41,6 +41,9 @@ namespace PMP {
         void play();
         void pause();
 
+        /** Skip the currently playing track. Does nothing when not currently playing. */
+        void skip();
+
         void setVolume(int volume);
 
         void clearQueue();

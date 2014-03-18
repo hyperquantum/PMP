@@ -77,6 +77,9 @@ namespace PMP {
         else if (command == "pause") {
             _player->pause();
         }
+        else if (command == "skip") {
+            _player->skip();
+        }
         else if (command == "shutdown") {
             _server->shutdown();
         }

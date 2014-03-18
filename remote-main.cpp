@@ -20,6 +20,12 @@
 #include <QtCore>
 #include <QTcpSocket>
 
+void printUsage(QTextStream& out) {
+    out << "usage: Remote <servername> <server-port> <command>" << endl
+        << endl
+        << "  commands: play,pause,skip,shutdown" << endl;
+}
+
 int main(int argc, char *argv[]) {
 
     QCoreApplication app(argc, argv);
@@ -34,8 +40,8 @@ int main(int argc, char *argv[]) {
     QStringList args = QCoreApplication::arguments();
 
     if (args.size() < 4) {
-        out << "Not enough arguments specified!" << endl
-            << "usage: Remote <servername> <server-port> <command>" << endl;
+        out << "Not enough arguments specified!" << endl;
+        printUsage(out);
         return 1;
     }
 
@@ -50,7 +56,9 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    if (command == "pause" || command == "play" || command == "shutdown") {
+    if (command == "pause" || command == "play" || command == "skip"
+        || command == "shutdown")
+    {
         // OK
     }
     else {
