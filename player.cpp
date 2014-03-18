@@ -74,7 +74,10 @@ namespace PMP {
     }
 
     void Player::skip() {
-        if (_player->state() != QMediaPlayer::PlayingState) {
+        QMediaPlayer::State playerState = _player->state();
+        if (playerState != QMediaPlayer::PlayingState
+            && playerState != QMediaPlayer::PausedState)
+        {
             return; // not playing
         }
 
