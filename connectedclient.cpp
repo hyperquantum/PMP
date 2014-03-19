@@ -70,21 +70,44 @@ namespace PMP {
         }
     }
 
-    void ConnectedClient::executeTextCommand(QString const& command) {
-        if (command == "play") {
-            _player->play();
+    void ConnectedClient::executeTextCommand(QString const& commandText) {
+        int spaceIndex = commandText.indexOf(' ');
+        QString command = commandText;
+
+        if (spaceIndex < 0) {
+            if (command == "play") {
+                _player->play();
+            }
+            else if (command == "pause") {
+                _player->pause();
+            }
+            else if (command == "skip") {
+                _player->skip();
+            }
+            else if (command == "shutdown") {
+                _server->shutdown();
+            }
+            else {
+                /* unknown command ???? */
+
+            }
+
+            return;
         }
-        else if (command == "pause") {
-            _player->pause();
-        }
-        else if (command == "skip") {
-            _player->skip();
-        }
-        else if (command == "shutdown") {
-            _server->shutdown();
+
+        /* split command at the space; don't include the space in the parts */
+        QString rest = command.mid(spaceIndex + 1);
+        command = command.left(spaceIndex);
+
+        if (command == "volume") {
+            bool ok;
+            uint volume = rest.toUInt(&ok);
+            if (ok && volume >= 0 && volume <= 100) {
+                _player->setVolume(volume);
+            }
         }
         else {
-            // unknown command ????
+            /* unknown command ???? */
 
         }
     }

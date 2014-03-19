@@ -21,10 +21,17 @@
 #include <QtCore>
 #include <QTcpSocket>
 
-void printUsage(QTextStream& out) {
-    out << "usage: Remote <servername> <server-port> <command>" << endl
+void printUsage(QTextStream& out, QString const& programName) {
+    out << "usage: " << programName << " <server-name-or-ip> <server-port> <command> [<command args>]" << endl
         << endl
-        << "  commands: play,pause,skip,shutdown" << endl;
+        << "  commands:" << endl
+        << endl
+        << "    play: start/resume playback" << endl
+        << "    pause: pause playback" << endl
+        << "    skip: jump to next track in the queue" << endl
+        << "    volume <number>: set volume percentage (0-100)" << endl
+        << "    shutdown: shutdown the server program" << endl
+        << endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -42,14 +49,18 @@ int main(int argc, char *argv[]) {
 
     if (args.size() < 4) {
         out << "Not enough arguments specified!" << endl;
-        printUsage(out);
+        printUsage(out, QFileInfo(QCoreApplication::applicationFilePath()).fileName());
         return 1;
     }
+
+    const uint commandArgOffset = 4;
+    uint commandArgs = args.size() - commandArgOffset;
 
     QString server = args[1];
     QString port = args[2];
     QString command = args[3];
 
+    /* Validate port number */
     bool ok = true;
     uint portNumber = port.toUInt(&ok);
     if (!ok)  {
@@ -57,10 +68,34 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    /* Validate command */
+    QString commandToSend;
     if (command == "pause" || command == "play" || command == "skip"
         || command == "shutdown")
     {
-        // OK
+        if (commandArgs > 0) {
+            out << "Command '" << command << "' does not accept arguments!" << endl;
+            return 1;
+        }
+
+        /* OK */
+        commandToSend = command;
+    }
+    else if (command == "volume") {
+        if (commandArgs != 1) {
+            out << "Command 'volume' requires exactly ONE argument!" << endl;
+            return 1;
+        }
+
+        bool ok;
+        uint volume = args[commandArgOffset].toUInt(&ok);
+        if (!ok || volume > 100) {
+            out << "Command 'volume' requires a volume argument in the range 0-100!" << endl;
+            return 1;
+        }
+
+        /* OK */
+        commandToSend = command + " " + args[commandArgOffset];
     }
     else {
         out << "Command not recognized: " << command << endl;
@@ -107,7 +142,7 @@ int main(int argc, char *argv[]) {
     out << " server greeting: " << serverHelloString << endl;
     out << " sending command: " << command << endl;
 
-    socket.write((command + ";").toUtf8());
+    socket.write((commandToSend + ";").toUtf8());
 
     if (!socket.waitForBytesWritten(5000)) {
         out << "Failed to send data to the server." << endl;

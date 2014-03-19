@@ -41,7 +41,7 @@ namespace PMP {
         void dataArrived();
         void socketError(QAbstractSocket::SocketError error);
 
-        void executeTextCommand(QString const& command);
+        void executeTextCommand(QString const& commandText);
 
     private:
         QTcpSocket* _socket;
