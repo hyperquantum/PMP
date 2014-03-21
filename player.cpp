@@ -27,6 +27,7 @@ namespace PMP {
     {
         setVolume(75);
         connect(_player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(internalStateChanged(QMediaPlayer::State)));
+        connect(_player, SIGNAL(volumeChanged(int)), this, SIGNAL(volumeChanged(int)));
     }
 
     int Player::volume() const {

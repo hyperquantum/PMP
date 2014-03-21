@@ -51,6 +51,8 @@ namespace PMP {
 
     Q_SIGNALS:
 
+        void volumeChanged(int volume);
+
         /*! Emitted when the queue is empty and the current track is finished. */
         void finished();
 

@@ -31,6 +31,7 @@ namespace PMP {
         connect(socket, SIGNAL(disconnected()), this, SLOT(terminateConnection()));
         connect(socket, SIGNAL(readyRead()), this, SLOT(dataArrived()));
         connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(socketError(QAbstractSocket::SocketError)));
+        connect(player, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
     }
 
 
@@ -52,7 +53,7 @@ namespace PMP {
 
             QString commandString = QString::fromUtf8(_readBuffer.data(), semicolonIndex);
 
-            _readBuffer.remove(0, semicolonIndex + 1); // +1 to remove the semicolon too
+            _readBuffer.remove(0, semicolonIndex + 1); /* +1 to remove the semicolon too */
 
             executeTextCommand(commandString);
         } while (true);
@@ -84,6 +85,10 @@ namespace PMP {
             else if (command == "skip") {
                 _player->skip();
             }
+            else if (command == "volume") {
+                // 'volume' without arguments sends current volume
+                _socket->write((QString("volume ") + QString::number(_player->volume()) + ";").toUtf8());
+            }
             else if (command == "shutdown") {
                 _server->shutdown();
             }
@@ -98,18 +103,28 @@ namespace PMP {
         /* split command at the space; don't include the space in the parts */
         QString rest = command.mid(spaceIndex + 1);
         command = command.left(spaceIndex);
+        spaceIndex = rest.indexOf(' ');
 
-        if (command == "volume") {
-            bool ok;
-            uint volume = rest.toUInt(&ok);
-            if (ok && volume >= 0 && volume <= 100) {
-                _player->setVolume(volume);
+        // one argument?
+        if (spaceIndex < 0) {
+            // 'volume' with one argument changes current volume
+            if (command == "volume") {
+                bool ok;
+                uint volume = rest.toUInt(&ok);
+                if (ok && volume >= 0 && volume <= 100) {
+                    _player->setVolume(volume);
+                }
+            }
+            else {
+                /* unknown command ???? */
+
             }
         }
-        else {
-            /* unknown command ???? */
 
-        }
+    }
+
+    void ConnectedClient::volumeChanged(int volume) {
+        _socket->write((QString("volume ") + QString::number(_player->volume()) + ";").toUtf8());
     }
 
 }

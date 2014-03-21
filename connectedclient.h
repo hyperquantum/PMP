@@ -43,6 +43,8 @@ namespace PMP {
 
         void executeTextCommand(QString const& commandText);
 
+        void volumeChanged(int volume);
+
     private:
         QTcpSocket* _socket;
         Server* _server;

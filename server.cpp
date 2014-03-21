@@ -35,13 +35,8 @@ namespace PMP {
     bool Server::listen(Player* player) {
         _player = player;
 
-        // prepare greeting, is fixed for the player, so we create now
-        _greeting.clear();
-        QTextStream stream(&_greeting, QIODevice::WriteOnly);
-        stream.setGenerateByteOrderMark(false);
-        stream.setCodec("UTF-8");
-        stream << "PMP 0.1 Welcome!;"; // TODO: get player version from Player instance
-        stream.flush();
+        // prepare greeting, is fixed for the player, so we create it now
+        _greeting = QString("PMP 0.1 Welcome!;").toUtf8();
 
         if (!_server->listen()) {
             return false;

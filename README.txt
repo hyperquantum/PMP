@@ -24,6 +24,8 @@ DEPENDENCIES FOR BUILDING
 COMPILING ON WINDOWS
 --------------------
 
+How to compile from source on Windows, using MinGW 32-bit:
+
 * Download and install CMake
    --> http://www.cmake.org/cmake/resources/software.html  --> Win32 Installer
 * Download and install MinGW
@@ -72,5 +74,12 @@ COMPILING ON WINDOWS
     press 'Configure', select a generator with "MinGW Makefiles"
     press 'Generate'
 
+
+PLANNED FEATURES
+----------------
+
+ * Remote with GUI interface
+ * Last.fm scrobbling
+ * Syncronization of music databases across different machines (?)
 
 

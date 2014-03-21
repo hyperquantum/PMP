@@ -68,6 +68,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    bool waitForResponse = false;
+
     /* Validate command */
     QString commandToSend;
     if (command == "pause" || command == "play" || command == "skip"
@@ -82,20 +84,27 @@ int main(int argc, char *argv[]) {
         commandToSend = command;
     }
     else if (command == "volume") {
-        if (commandArgs != 1) {
-            out << "Command 'volume' requires exactly ONE argument!" << endl;
+        if (commandArgs > 1) {
+            out << "Command 'volume' requires one or two arguments!" << endl;
             return 1;
         }
+        else if (commandArgs == 1) {
+            bool ok;
+            uint volume = args[commandArgOffset].toUInt(&ok);
+            if (!ok || volume > 100) {
+                out << "Command 'volume' requires a volume argument in the range 0-100!" << endl;
+                return 1;
+            }
 
-        bool ok;
-        uint volume = args[commandArgOffset].toUInt(&ok);
-        if (!ok || volume > 100) {
-            out << "Command 'volume' requires a volume argument in the range 0-100!" << endl;
-            return 1;
+            /* OK */
+            commandToSend = command + " " + args[commandArgOffset];
+            waitForResponse = true;
         }
-
-        /* OK */
-        commandToSend = command + " " + args[commandArgOffset];
+        else { /* zero args */
+            /* OK */
+            commandToSend = command;
+            waitForResponse = true;
+        }
     }
     else {
         out << "Command not recognized: " << command << endl;
@@ -139,6 +148,8 @@ int main(int argc, char *argv[]) {
     }
 
     QString serverHelloString = QString::fromUtf8(dataReceived.data(), semicolonIndex);
+    dataReceived.remove(0, semicolonIndex + 1); /* +1 to remove the semicolon too */
+
     out << " server greeting: " << serverHelloString << endl;
     out << " sending command: " << command << endl;
 
@@ -149,7 +160,20 @@ int main(int argc, char *argv[]) {
         return 2;
     }
 
+    if (waitForResponse) {
+        semicolonIndex = -1;
+        while ((semicolonIndex = dataReceived.indexOf(';')) < 0) {
+            if (!socket.waitForReadyRead(2000)) {
+                out << "Server sent incomplete response!" << endl;
+                return 2;
+            }
 
+            dataReceived.append(socket.readAll());
+        }
+
+        QString response = QString::fromUtf8(dataReceived.data(), semicolonIndex);
+        out << " server response: " << response << endl;
+    }
 
 
     return 0;
