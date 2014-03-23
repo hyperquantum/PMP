@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
     QDirIterator it(".", QDirIterator::Subdirectories);
     uint fileCount = 0;
     QSet<HashID> uniqueFiles;
-    QList<QString> pathsToPlay;
+    QList<FileData*> filesToPlay;
     while (it.hasNext()) {
         QFileInfo entry(it.next());
         if (!entry.isFile()) continue;
@@ -56,32 +56,32 @@ int main(int argc, char *argv[]) {
             FileData* data = FileData::analyzeFile(path);
             if (data == 0) {
                 out << "     failed to analyze file!" << endl;
+                continue;
             }
-            else {
-                ++fileCount;
-                if(!uniqueFiles.contains(data->hash())) {
-                    uniqueFiles.insert(data->hash());
-                    pathsToPlay.append(path);
-                }
 
-                // FIXME: durations of 24 hours and longer will not work with this code
-                QTime length = QTime(0, 0).addSecs(data->lengthInSeconds());
-
-                out << "     " << length.toString() << endl
-                    << "     " << data->artist() << endl
-                    << "     " << data->title() << endl
-                    << "     " << data->album() << endl
-                    << "     " << data->comment() << endl
-                    << "     " << data->hash().dumpToString() << endl;
-                delete data;
+            ++fileCount;
+            if(!uniqueFiles.contains(data->hash())) {
+                uniqueFiles.insert(data->hash());
+                filesToPlay.append(data);
             }
+
+            // FIXME: durations of 24 hours and longer will not work with this code
+            QTime length = QTime(0, 0).addSecs(data->lengthInSeconds());
+
+            out << "     " << length.toString() << endl
+                << "     " << data->artist() << endl
+                << "     " << data->title() << endl
+                << "     " << data->album() << endl
+                << "     " << data->comment() << endl
+                << "     " << data->hash().dumpToString() << endl;
+
         }
     }
 
     out << endl
         << fileCount << " files, " << uniqueFiles.size() << " unique hashes" << endl;
 
-    if (pathsToPlay.empty()) {
+    if (filesToPlay.empty()) {
         return 0; // nothing to play
     }
 
@@ -90,10 +90,10 @@ int main(int argc, char *argv[]) {
     out << endl
         << "Adding to queue:" << endl;
 
-    for (int i = 0; i < 2 && i < pathsToPlay.count(); ++i) {
-        QString file = pathsToPlay[i];
-        out << " - " << file << endl;
-        player.queue(file);
+    for (int i = 0; i < 2 && i < filesToPlay.count(); ++i) {
+        FileData* file = filesToPlay[i];
+        out << " - " << file->filename() << endl;
+        player.queue(*file);
     }
 
     out << endl

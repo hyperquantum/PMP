@@ -26,6 +26,9 @@
 
 namespace PMP {
 
+    class FileData;
+    class QueueEntry;
+
     class Player : public QObject {
         Q_OBJECT
     public:
@@ -47,10 +50,12 @@ namespace PMP {
         void setVolume(int volume);
 
         void clearQueue();
-        void queue(QString filename);
+        void queue(QString const& filename);
+        void queue(FileData const& filedata);
 
     Q_SIGNALS:
 
+        void currentTrackChanged();
         void volumeChanged(int volume);
 
         /*! Emitted when the queue is empty and the current track is finished. */
@@ -59,10 +64,12 @@ namespace PMP {
     private slots:
 
         void internalStateChanged(QMediaPlayer::State state);
+        bool startNext();
 
     private:
         QMediaPlayer* _player;
-        QQueue<QString> _queue;
+        QQueue<QueueEntry*> _queue;
+        QueueEntry* _nowPlaying;
     };
 }
 #endif

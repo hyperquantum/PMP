@@ -19,11 +19,14 @@
 
 #include "player.h"
 
+#include "queueentry.h"
+
 namespace PMP {
 
     Player::Player(QObject* parent)
      : QObject(parent),
-        _player(new QMediaPlayer(this))
+        _player(new QMediaPlayer(this)),
+        _nowPlaying(0)
     {
         setVolume(75);
         connect(_player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(internalStateChanged(QMediaPlayer::State)));
@@ -49,23 +52,16 @@ namespace PMP {
 
     void Player::play() {
         if (_player->state() == QMediaPlayer::PlayingState) {
-            return; // already playing
+            return; /* already playing */
         }
 
         if (_player->state() == QMediaPlayer::PausedState) {
-            _player->play();
+            _player->play(); /* resume paused track */
             return;
         }
 
-        // stopped
-
-        if (_queue.empty()) {
-            return; // nothing to play
-        }
-
-        QString file = _queue.dequeue();
-        _player->setMedia(QUrl::fromLocalFile(file));
-        _player->play();
+        /* we're not playing yet */
+        startNext();
     }
 
     void Player::pause() {
@@ -79,18 +75,16 @@ namespace PMP {
         if (playerState != QMediaPlayer::PlayingState
             && playerState != QMediaPlayer::PausedState)
         {
-            return; // not playing
+            return; /* skipping not possible in this state */
         }
 
-        if (_queue.empty()) {
-            // no next track
-            _player->stop(); // further handling in internalStateChanged
-            return;
+        if (startNext()) {
+            return; /* OK */
         }
 
-        QString file = _queue.dequeue();
-        _player->setMedia(QUrl::fromLocalFile(file));
-        _player->play();
+        /* could not start the next track, so just stop */
+
+        _player->stop(); /* further handling in internalStateChanged */
     }
 
     void Player::setVolume(int volume) {
@@ -101,22 +95,49 @@ namespace PMP {
         _queue.clear();
     }
 
-    void Player::queue(QString filename) {
-        _queue.enqueue(filename);
+    void Player::queue(QString const& filename) {
+        QueueEntry* entry = new QueueEntry(filename);
+
+        _queue.enqueue(entry);
+    }
+
+    void Player::queue(FileData const& filedata) {
+        QueueEntry* entry = new QueueEntry(filedata);
+
+        _queue.enqueue(entry);
     }
 
     void Player::internalStateChanged(QMediaPlayer::State state) {
         if (state == QMediaPlayer::StoppedState) {
-            if (_queue.empty()) {
-                // stopped
+            if (!startNext()) {
+                /* stopped */
+                _nowPlaying = 0;
                 emit finished();
             }
-            else {
-                QString file = _queue.dequeue();
-                _player->setMedia(QUrl::fromLocalFile(file));
+        }
+    }
+
+    bool Player::startNext() {
+        while (!_queue.empty()) {
+            QueueEntry* entry = _queue.dequeue();
+            if (!entry->checkValidFilename()) {
+                /* error */
+                /* TODO: keep in history with failure note */
+                delete entry;
+                continue;
+            }
+
+            QString filename;
+            if (entry->checkValidFilename(&filename)) {
+                _player->setMedia(QUrl::fromLocalFile(filename));
                 _player->play();
+                _nowPlaying = entry;
+                emit currentTrackChanged();
+                return true;
             }
         }
+
+        return false;
     }
 
 }

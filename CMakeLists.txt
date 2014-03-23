@@ -22,7 +22,7 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
 endif()
 
-set(PMP_SOURCES main.cpp hashid.cpp filedata.cpp player.cpp server.cpp connectedclient.cpp)
+set(PMP_SOURCES server-main.cpp hashid.cpp filedata.cpp player.cpp server.cpp connectedclient.cpp queueentry.cpp)
 
 add_executable(HashTool hash-main.cpp)
 add_executable(PMP ${PMP_SOURCES})

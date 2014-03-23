@@ -80,6 +80,7 @@ PLANNED FEATURES
 
  * Remote with GUI interface
  * Last.fm scrobbling
- * Syncronization of music databases across different machines (?)
+ * Syncronization of music databases across different machines
+ * Bridging of PMP server instances, to access music from another machine
 
 
