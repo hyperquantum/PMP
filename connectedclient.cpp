@@ -19,7 +19,9 @@
 
 #include "connectedclient.h"
 
+#include "hashid.h"
 #include "player.h"
+#include "queueentry.h"
 #include "server.h"
 
 namespace PMP {
@@ -75,7 +77,7 @@ namespace PMP {
         int spaceIndex = commandText.indexOf(' ');
         QString command = commandText;
 
-        if (spaceIndex < 0) {
+        if (spaceIndex < 0) { /* command without arguments */
             if (command == "play") {
                 _player->play();
             }
@@ -86,8 +88,29 @@ namespace PMP {
                 _player->skip();
             }
             else if (command == "volume") {
-                // 'volume' without arguments sends current volume
+                /* 'volume' without arguments sends current volume */
                 _socket->write((QString("volume ") + QString::number(_player->volume()) + ";").toUtf8());
+            }
+            else if (command == "nowplaying") {
+                QueueEntry const* now = _player->nowPlaying();
+                if (now == 0) {
+                    _socket->write(QString("nowplaying nothing;").toUtf8());
+                }
+                else {
+                    int seconds = now->lengthInSeconds();
+                    HashID const* hash = now->hash();
+
+                    _socket->write(
+                        (QString("nowplaying track \n title: ") + now->title()
+                         + "\n artist: " + now->artist()
+                         + "\n length: " + (seconds < 0 ? "?" : QString::number(seconds))
+                         + " sec\n hash length: " + (hash == 0 ? "?" : QString::number(hash->length()))
+                         + "\n hash SHA-1: " + (hash == 0 ? "?" : hash->SHA1().toHex())
+                         + "\n hash MD5: " + (hash == 0 ? "?" : hash->MD5().toHex())
+                         + ";"
+                        ).toUtf8()
+                    );
+                }
             }
             else if (command == "shutdown") {
                 _server->shutdown();

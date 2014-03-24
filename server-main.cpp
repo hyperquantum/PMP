@@ -90,7 +90,7 @@ int main(int argc, char *argv[]) {
     out << endl
         << "Adding to queue:" << endl;
 
-    for (int i = 0; i < 2 && i < filesToPlay.count(); ++i) {
+    for (int i = 0; i < 5 && i < filesToPlay.count(); ++i) {
         FileData* file = filesToPlay[i];
         out << " - " << file->filename() << endl;
         player.queue(*file);

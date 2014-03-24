@@ -38,13 +38,15 @@ namespace PMP {
 
         bool playing() const;
 
+        QueueEntry const* nowPlaying() const;
+
     public slots:
 
         void playPause();
         void play();
         void pause();
 
-        /** Skip the currently playing track. Does nothing when not currently playing. */
+        /** Skip the currently playing/paused track. Does nothing when not currently playing. */
         void skip();
 
         void setVolume(int volume);
@@ -70,6 +72,7 @@ namespace PMP {
         QMediaPlayer* _player;
         QQueue<QueueEntry*> _queue;
         QueueEntry* _nowPlaying;
+        bool _ignoreNextStopEvent;
     };
 }
 #endif

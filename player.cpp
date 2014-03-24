@@ -21,12 +21,15 @@
 
 #include "queueentry.h"
 
+#include <QtDebug>
+
 namespace PMP {
 
     Player::Player(QObject* parent)
      : QObject(parent),
         _player(new QMediaPlayer(this)),
-        _nowPlaying(0)
+        _nowPlaying(0),
+        _ignoreNextStopEvent(false)
     {
         setVolume(75);
         connect(_player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(internalStateChanged(QMediaPlayer::State)));
@@ -39,6 +42,10 @@ namespace PMP {
 
     bool Player::playing() const {
         return _player->state() == QMediaPlayer::PlayingState;
+    }
+
+    QueueEntry const* Player::nowPlaying() const {
+        return _nowPlaying;
     }
 
     void Player::playPause() {
@@ -108,16 +115,28 @@ namespace PMP {
     }
 
     void Player::internalStateChanged(QMediaPlayer::State state) {
+        qDebug() << "Player::internalStateChanged state:" << state;
         if (state == QMediaPlayer::StoppedState) {
-            if (!startNext()) {
+            if (_ignoreNextStopEvent) {
+                _ignoreNextStopEvent = false;
+            }
+            else if (!startNext()) {
                 /* stopped */
                 _nowPlaying = 0;
-                emit finished();
+                qDebug() << "stopped playing";
+                if (_queue.empty()) {
+                    qDebug() << "finished queue";
+                    emit finished();
+                }
             }
+        }
+        else if (state == QMediaPlayer::PlayingState) {
+            _ignoreNextStopEvent = false;
         }
     }
 
     bool Player::startNext() {
+        qDebug() << "Player::startNext";
         while (!_queue.empty()) {
             QueueEntry* entry = _queue.dequeue();
             if (!entry->checkValidFilename()) {
@@ -129,6 +148,8 @@ namespace PMP {
 
             QString filename;
             if (entry->checkValidFilename(&filename)) {
+                qDebug() << "loading media " << filename;
+                _ignoreNextStopEvent = true; /* ignore the next stop event until we are playing again */
                 _player->setMedia(QUrl::fromLocalFile(filename));
                 _player->play();
                 _nowPlaying = entry;
