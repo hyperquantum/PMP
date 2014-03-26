@@ -32,6 +32,7 @@ namespace PMP {
         _ignoreNextStopEvent(false)
     {
         setVolume(75);
+        connect(_player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(internalMediaStatusChanged(QMediaPlayer::MediaStatus)));
         connect(_player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(internalStateChanged(QMediaPlayer::State)));
         connect(_player, SIGNAL(volumeChanged(int)), this, SIGNAL(volumeChanged(int)));
     }
@@ -112,6 +113,10 @@ namespace PMP {
         QueueEntry* entry = new QueueEntry(filedata);
 
         _queue.enqueue(entry);
+    }
+
+    void Player::internalMediaStatusChanged(QMediaPlayer::MediaStatus state) {
+        qDebug() << "Player::internalMediaStateChanged state:" << state;
     }
 
     void Player::internalStateChanged(QMediaPlayer::State state) {

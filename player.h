@@ -66,6 +66,7 @@ namespace PMP {
     private slots:
 
         void internalStateChanged(QMediaPlayer::State state);
+        void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
         bool startNext();
 
     private:

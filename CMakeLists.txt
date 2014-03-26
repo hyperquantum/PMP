@@ -22,18 +22,21 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
 endif()
 
-set(PMP_SOURCES server-main.cpp hashid.cpp filedata.cpp player.cpp server.cpp connectedclient.cpp queueentry.cpp)
+set(PMP_SERVER_SOURCES
+    server-main.cpp hashid.cpp filedata.cpp player.cpp server.cpp
+    connectedclient.cpp queueentry.cpp
+)
 
-add_executable(HashTool hash-main.cpp)
-add_executable(PMP ${PMP_SOURCES})
-add_executable(Remote remote-main.cpp)
+add_executable(PMP-HashTool hash-main.cpp)
+add_executable(PMP-Server ${PMP_SERVER_SOURCES})
+add_executable(PMP-Remote remote-main.cpp)
 
-qt5_use_modules(HashTool Core)
-qt5_use_modules(PMP Core)
-qt5_use_modules(PMP Multimedia)
-qt5_use_modules(PMP Network)
-qt5_use_modules(Remote Core)
-qt5_use_modules(Remote Network)
+qt5_use_modules(PMP-HashTool Core)
+qt5_use_modules(PMP-Server Core)
+qt5_use_modules(PMP-Server Multimedia)
+qt5_use_modules(PMP-Server Network)
+qt5_use_modules(PMP-Remote Core)
+qt5_use_modules(PMP-Remote Network)
 
-target_link_libraries(HashTool ${TAGLIB_LIBRARIES})
-target_link_libraries(PMP ${TAGLIB_LIBRARIES})
+target_link_libraries(PMP-HashTool ${TAGLIB_LIBRARIES})
+target_link_libraries(PMP-Server ${TAGLIB_LIBRARIES})
