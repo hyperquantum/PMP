@@ -17,7 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "filedata.h"
+#include "common/filedata.h"
+
 #include "player.h"
 #include "server.h"
 
@@ -90,9 +91,13 @@ int main(int argc, char *argv[]) {
     out << endl
         << "Adding to queue:" << endl;
 
-    for (int i = 0; i < 5 && i < filesToPlay.count(); ++i) {
+    QSet<HashID> queuedHashes;
+    for (int i = 0; queuedHashes.count() < 10 && i < filesToPlay.count(); ++i) {
         FileData* file = filesToPlay[i];
+        if (queuedHashes.contains(file->hash())) { /* avoid duplicates */ continue; }
+
         out << " - " << file->filename() << endl;
+        queuedHashes.insert(file->hash());
         player.queue(*file);
     }
 

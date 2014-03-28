@@ -19,7 +19,7 @@
 
 #include "queueentry.h"
 
-#include "filedata.h"
+#include "common/filedata.h"
 
 #include <QFileInfo>
 

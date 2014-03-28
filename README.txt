@@ -79,6 +79,7 @@ PLANNED FEATURES
 ----------------
 
  * Remote with GUI interface
+ * Differentiate between different users by having them authenticate themselves
  * Last.fm scrobbling
  * Syncronization of music databases across different machines
  * Bridging of PMP server instances, to access music from another machine

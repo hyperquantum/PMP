@@ -19,7 +19,8 @@
 
 #include "connectedclient.h"
 
-#include "hashid.h"
+#include "common/hashid.h"
+
 #include "player.h"
 #include "queueentry.h"
 #include "server.h"
