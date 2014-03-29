@@ -13,3 +13,4 @@ bin/PMP.layout
 bin/*.cpp
 bin/server
 bin/common
+bin/remote
