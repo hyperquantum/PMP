@@ -12,3 +12,4 @@ bin/PMP.layout
 *.mp3
 bin/*.cpp
 bin/server
+bin/common
