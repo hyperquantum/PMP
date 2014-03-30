@@ -107,7 +107,7 @@ int main(int argc, char *argv[]) {
     out << endl;
 
     Server server;
-    if (!server.listen(&player)) {
+    if (!server.listen(&player, QHostAddress::Any, 23432)) {
         out << "Could not start TCP listener: " << server.errorString() << endl;
         out << "Exiting." << endl;
         return 1;

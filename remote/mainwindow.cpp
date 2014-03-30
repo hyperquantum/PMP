@@ -19,11 +19,19 @@
 
 #include "mainwindow.h"
 
+#include "connectionwidget.h"
+
 namespace PMP {
-    
-    MainWindow::MainWindow()
+
+    MainWindow::MainWindow(QWidget* parent)
+     : QMainWindow(parent),
+       _connectionWidget(new ConnectionWidget(this))
     {
+        setCentralWidget(_connectionWidget);
+    }
+
+    MainWindow::~MainWindow() {
         //
     }
-    
+
 }

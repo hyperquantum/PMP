@@ -32,13 +32,13 @@ namespace PMP {
         connect(_server, SIGNAL(newConnection()), this, SLOT(newConnectionReceived()));
     }
 
-    bool Server::listen(Player* player) {
+    bool Server::listen(Player* player, const QHostAddress& address, quint16 port) {
         _player = player;
 
-        // prepare greeting, is fixed for the player, so we create it now
+        /* prepare greeting, is fixed for the player, so we create it now */
         _greeting = QString("PMP 0.1 Welcome!;").toUtf8();
 
-        if (!_server->listen()) {
+        if (!_server->listen(QHostAddress::Any, port)) {
             return false;
         }
 

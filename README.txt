@@ -78,10 +78,12 @@ How to compile from source on Windows, using MinGW 32-bit:
 PLANNED FEATURES
 ----------------
 
+(no guarantees)
+
  * Remote with GUI interface
  * Differentiate between different users by having them authenticate themselves
  * Last.fm scrobbling
  * Syncronization of music databases across different machines
  * Bridging of PMP server instances, to access music from another machine
-
+ * Naming a PMP Server instance; e.g. "living room"
 

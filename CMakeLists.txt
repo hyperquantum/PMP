@@ -29,10 +29,12 @@ FILE(GLOB PMP_SERVER_SOURCES server/*.cpp)
 FILE(GLOB PMP_SERVER_HEADERS server/*.h)
 FILE(GLOB PMP_GUI_REMOTE_SOURCES remote/*.cpp)
 FILE(GLOB PMP_GUI_REMOTE_HEADERS remote/*.h)
+FILE(GLOB PMP_GUI_REMOTE_UIS remote/*.ui)
 
 qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
 qt5_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
 qt5_wrap_cpp(PMP_GUI_REMOTE_MOCS ${PMP_GUI_REMOTE_HEADERS})
+qt5_wrap_ui(PMP_GUI_REMOTE_UICS ${PMP_GUI_REMOTE_UIS})
 
 add_executable(PMP-HashTool tools/hash-main.cpp)
 add_executable(PMP-Cmd-Remote tools/cmd-remote-main.cpp)
@@ -43,6 +45,7 @@ add_executable(PMP-Server
 )
 add_executable(PMP-GUI-Remote
     ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
+    ${PMP_GUI_REMOTE_UICS}
     ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 

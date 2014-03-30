@@ -17,24 +17,23 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_MAINWINDOW_H
-#define PMP_MAINWINDOW_H
+#include "connectionwidget.h"
 
-#include <QMainWindow>
+#include "ui_ConnectionWidget.h"
 
 namespace PMP {
 
-    class ConnectionWidget;
+    ConnectionWidget::ConnectionWidget(QWidget* parent)
+     : QWidget(parent), _ui(new Ui::ConnectionWidget())
+    {
+        _ui->setupUi(this);
 
-    class MainWindow : public QMainWindow {
-        Q_OBJECT
+        _ui->serverLineEdit->setText("localhost");
+        _ui->portLineEdit->setText("23432");
+    }
 
-    public:
-        MainWindow(QWidget* parent = 0);
-        ~MainWindow();
+    ConnectionWidget::~ConnectionWidget(){
+        delete _ui;
+    }
 
-    private:
-        ConnectionWidget* _connectionWidget;
-    };
 }
-#endif

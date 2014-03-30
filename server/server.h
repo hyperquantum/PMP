@@ -32,7 +32,7 @@ namespace PMP {
     public:
         explicit Server(QObject* parent = 0);
 
-        bool listen(Player* player);
+        bool listen(Player* player, const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
         QString errorString() const;
 
         quint16 port() const;
