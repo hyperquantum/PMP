@@ -25,6 +25,7 @@
 namespace PMP {
 
     class ConnectionWidget;
+    class MainWidget;
 
     class MainWindow : public QMainWindow {
         Q_OBJECT
@@ -33,8 +34,12 @@ namespace PMP {
         MainWindow(QWidget* parent = 0);
         ~MainWindow();
 
+    private slots:
+        void connectClicked();
+
     private:
         ConnectionWidget* _connectionWidget;
+        MainWidget* _mainWidget;
     };
 }
 #endif

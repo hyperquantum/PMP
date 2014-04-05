@@ -17,24 +17,21 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "mainwindow.h"
+#include "mainwidget.h"
 
-#include <QApplication>
-#include <QMainWindow>
+#include "ui_mainwidget.h"
 
-using namespace PMP;
+namespace PMP {
 
-int main(int argc, char *argv[]) {
+    MainWidget::MainWidget(QWidget *parent) :
+        QWidget(parent),
+        _ui(new Ui::MainWidget)
+    {
+        _ui->setupUi(this);
+    }
 
-    QApplication app(argc, argv);
-
-    QCoreApplication::setApplicationName("Party Music Player - Remote");
-    QCoreApplication::setApplicationVersion("0.0.0.1");
-    QCoreApplication::setOrganizationName("Party Music Player");
-    QCoreApplication::setOrganizationDomain("hyperquantum.be");
-
-    MainWindow window;
-    window.show();
-
-    return app.exec();
+    MainWidget::~MainWidget()
+    {
+        delete _ui;
+    }
 }

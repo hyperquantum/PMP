@@ -20,6 +20,7 @@
 #include "mainwindow.h"
 
 #include "connectionwidget.h"
+#include "mainwidget.h"
 
 namespace PMP {
 
@@ -28,10 +29,18 @@ namespace PMP {
        _connectionWidget(new ConnectionWidget(this))
     {
         setCentralWidget(_connectionWidget);
+        connect(_connectionWidget, SIGNAL(connectClicked()), this, SLOT(connectClicked()));
     }
 
     MainWindow::~MainWindow() {
         //
+    }
+
+    void MainWindow::connectClicked() {
+        _mainWidget = new MainWidget(this);
+        setCentralWidget(_mainWidget);
+        _connectionWidget->close();
+
     }
 
 }

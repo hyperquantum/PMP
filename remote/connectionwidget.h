@@ -32,8 +32,11 @@ namespace PMP {
         Q_OBJECT
 
     public:
-        ConnectionWidget(QWidget* parent = 0);
+        explicit ConnectionWidget(QWidget* parent = 0);
         ~ConnectionWidget();
+
+    Q_SIGNALS:
+        void connectClicked();
 
     private:
         Ui::ConnectionWidget* _ui;

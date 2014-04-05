@@ -20,13 +20,14 @@
 #include "common/filedata.h"
 
 #include "player.h"
+#include "resolver.h"
 #include "server.h"
 
-#include <QtCore>
-
+#include <QCoreApplication>
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QMediaPlayer>
+#include <QTime>
 
 using namespace PMP;
 
@@ -43,40 +44,49 @@ int main(int argc, char *argv[]) {
 
     out << endl << "PMP --- Party Music Player" << endl << endl;
 
+    Resolver resolver;
+
     QDirIterator it(".", QDirIterator::Subdirectories);
     uint fileCount = 0;
     QSet<HashID> uniqueFiles;
-    QList<FileData*> filesToPlay;
+    QList<FileData const*> filesToPlay;
     while (it.hasNext()) {
         QFileInfo entry(it.next());
         if (!entry.isFile()) continue;
-        if (entry.suffix().toLower() == "mp3") {
-            QString path = entry.absoluteFilePath();
-            out << "  " << path << endl;
 
-            FileData* data = FileData::analyzeFile(path);
-            if (data == 0) {
-                out << "     failed to analyze file!" << endl;
-                continue;
-            }
+        if (!FileData::supportsExtension(entry.suffix())) continue;
 
-            ++fileCount;
-            if(!uniqueFiles.contains(data->hash())) {
-                uniqueFiles.insert(data->hash());
-                filesToPlay.append(data);
-            }
+        QString path = entry.absoluteFilePath();
+        out << "  " << path << endl;
 
-            // FIXME: durations of 24 hours and longer will not work with this code
-            QTime length = QTime(0, 0).addSecs(data->lengthInSeconds());
-
-            out << "     " << length.toString() << endl
-                << "     " << data->artist() << endl
-                << "     " << data->title() << endl
-                << "     " << data->album() << endl
-                << "     " << data->comment() << endl
-                << "     " << data->hash().dumpToString() << endl;
-
+        FileData const* data = FileData::analyzeFile(path);
+        if (data == 0) {
+            out << "     failed to analyze file!" << endl;
+            continue;
         }
+
+        resolver.registerFile(data);
+
+        if (data->lengthInSeconds() <= 10) {
+            out << "     skipping file because length (" << data->lengthInSeconds() << ") unknown or not larger than 10 seconds" << endl;
+            continue;
+        }
+
+        ++fileCount;
+        if(!uniqueFiles.contains(data->hash())) {
+            uniqueFiles.insert(data->hash());
+            filesToPlay.append(data);
+        }
+
+        // FIXME: durations of 24 hours and longer will not work with this code
+        QTime length = QTime(0, 0).addSecs(data->lengthInSeconds());
+
+        out << "     " << length.toString() << endl
+            << "     " << data->artist() << endl
+            << "     " << data->title() << endl
+            << "     " << data->album() << endl
+            << "     " << data->comment() << endl
+            << "     " << data->hash().dumpToString() << endl;
     }
 
     out << endl
@@ -86,14 +96,14 @@ int main(int argc, char *argv[]) {
         return 0; // nothing to play
     }
 
-    Player player;
+    Player player(0, &resolver);
 
     out << endl
         << "Adding to queue:" << endl;
 
     QSet<HashID> queuedHashes;
     for (int i = 0; queuedHashes.count() < 10 && i < filesToPlay.count(); ++i) {
-        FileData* file = filesToPlay[i];
+        FileData const* file = filesToPlay[i];
         if (queuedHashes.contains(file->hash())) { /* avoid duplicates */ continue; }
 
         out << " - " << file->filename() << endl;

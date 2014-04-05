@@ -17,24 +17,28 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "mainwindow.h"
+#ifndef PMP_RESOLVER_H
+#define PMP_RESOLVER_H
 
-#include <QApplication>
-#include <QMainWindow>
+#include "common/hashid.h"
 
-using namespace PMP;
+#include <QMultiHash>
+#include <QObject>
 
-int main(int argc, char *argv[]) {
+namespace PMP {
 
-    QApplication app(argc, argv);
+    class FileData;
 
-    QCoreApplication::setApplicationName("Party Music Player - Remote");
-    QCoreApplication::setApplicationVersion("0.0.0.1");
-    QCoreApplication::setOrganizationName("Party Music Player");
-    QCoreApplication::setOrganizationDomain("hyperquantum.be");
+    class Resolver : public QObject {
+        Q_OBJECT
+    public:
+        Resolver();
 
-    MainWindow window;
-    window.show();
+        void registerFile(const FileData* file);
 
-    return app.exec();
+    private:
+        QMultiHash<HashID, const FileData*> _cache;
+
+    };
 }
+#endif

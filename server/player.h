@@ -28,11 +28,12 @@ namespace PMP {
 
     class FileData;
     class QueueEntry;
+    class Resolver;
 
     class Player : public QObject {
         Q_OBJECT
     public:
-        explicit Player(QObject* parent = 0);
+        Player(QObject* parent, Resolver* resolver);
 
         int volume() const;
 
@@ -57,7 +58,7 @@ namespace PMP {
 
     Q_SIGNALS:
 
-        void currentTrackChanged();
+        void currentTrackChanged(QueueEntry const* newTrack);
         void volumeChanged(int volume);
 
         /*! Emitted when the queue is empty and the current track is finished. */
@@ -70,6 +71,7 @@ namespace PMP {
         bool startNext();
 
     private:
+        Resolver* _resolver;
         QMediaPlayer* _player;
         QQueue<QueueEntry*> _queue;
         QueueEntry* _nowPlaying;

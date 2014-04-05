@@ -20,13 +20,14 @@
 #include "player.h"
 
 #include "queueentry.h"
+#include "resolver.h"
 
 #include <QtDebug>
 
 namespace PMP {
 
-    Player::Player(QObject* parent)
-     : QObject(parent),
+    Player::Player(QObject* parent, Resolver* resolver)
+     : QObject(parent), _resolver(resolver),
         _player(new QMediaPlayer(this)),
         _nowPlaying(0),
         _ignoreNextStopEvent(false)
@@ -129,6 +130,7 @@ namespace PMP {
                 /* stopped */
                 _nowPlaying = 0;
                 qDebug() << "stopped playing";
+                emit currentTrackChanged(0);
                 if (_queue.empty()) {
                     qDebug() << "finished queue";
                     emit finished();
@@ -142,6 +144,9 @@ namespace PMP {
 
     bool Player::startNext() {
         qDebug() << "Player::startNext";
+
+        /* TODO: save current track in history */
+
         while (!_queue.empty()) {
             QueueEntry* entry = _queue.dequeue();
             if (!entry->checkValidFilename()) {
@@ -158,7 +163,7 @@ namespace PMP {
                 _player->setMedia(QUrl::fromLocalFile(filename));
                 _player->play();
                 _nowPlaying = entry;
-                emit currentTrackChanged();
+                emit currentTrackChanged(entry);
                 return true;
             }
         }

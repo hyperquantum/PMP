@@ -39,7 +39,12 @@ namespace PMP {
         //
     }
 
-    FileData* FileData::analyzeFile(const QString& filename) {
+    bool FileData::supportsExtension(QString const& extension) {
+        /* TODO: support other file types as well */
+        return extension.toLower() == "mp3";
+    }
+
+    FileData const* FileData::analyzeFile(const QString& filename) {
         QFile file(filename);
         if (!file.open(QIODevice::ReadOnly)) return 0;
 

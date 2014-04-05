@@ -17,24 +17,18 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "mainwindow.h"
+#include "resolver.h"
 
-#include <QApplication>
-#include <QMainWindow>
+#include "common/filedata.h"
 
-using namespace PMP;
+namespace PMP {
 
-int main(int argc, char *argv[]) {
+    Resolver::Resolver() {
+        //
+    }
 
-    QApplication app(argc, argv);
+    void Resolver::registerFile(const FileData* file) {
+        _cache.insert(file->hash(), file);
+    }
 
-    QCoreApplication::setApplicationName("Party Music Player - Remote");
-    QCoreApplication::setApplicationVersion("0.0.0.1");
-    QCoreApplication::setOrganizationName("Party Music Player");
-    QCoreApplication::setOrganizationDomain("hyperquantum.be");
-
-    MainWindow window;
-    window.show();
-
-    return app.exec();
 }

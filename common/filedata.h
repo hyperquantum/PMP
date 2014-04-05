@@ -27,7 +27,8 @@ namespace PMP {
     class FileData {
     public:
 
-        static FileData* analyzeFile(const QString& filename);
+        static bool supportsExtension(QString const& extension);
+        static FileData const* analyzeFile(const QString& filename);
 
         QString filename() const { return _filename; }
 

@@ -30,10 +30,16 @@ namespace PMP {
 
         _ui->serverLineEdit->setText("localhost");
         _ui->portLineEdit->setText("23432");
+
+        connect(_ui->connectButton, SIGNAL(clicked()), this, SIGNAL(connectClicked()));
     }
 
-    ConnectionWidget::~ConnectionWidget(){
+    ConnectionWidget::~ConnectionWidget() {
         delete _ui;
     }
+
+//    void ConnectionWidget::connectClicked() {
+//
+//    }
 
 }
