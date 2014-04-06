@@ -35,7 +35,7 @@ namespace PMP {
         ~MainWindow();
 
     private slots:
-        void connectClicked();
+        void onDoConnect(QString server, uint port);
 
     private:
         ConnectionWidget* _connectionWidget;

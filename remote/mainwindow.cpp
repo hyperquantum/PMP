@@ -29,14 +29,14 @@ namespace PMP {
        _connectionWidget(new ConnectionWidget(this))
     {
         setCentralWidget(_connectionWidget);
-        connect(_connectionWidget, SIGNAL(connectClicked()), this, SLOT(connectClicked()));
+        connect(_connectionWidget, SIGNAL(doConnect(QString, uint)), this, SLOT(onDoConnect(QString, uint)));
     }
 
     MainWindow::~MainWindow() {
         //
     }
 
-    void MainWindow::connectClicked() {
+    void MainWindow::onDoConnect(QString server, uint port) {
         _mainWidget = new MainWidget(this);
         setCentralWidget(_mainWidget);
         _connectionWidget->close();

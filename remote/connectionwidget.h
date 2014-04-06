@@ -36,6 +36,9 @@ namespace PMP {
         ~ConnectionWidget();
 
     Q_SIGNALS:
+        void doConnect(QString server, uint port);
+
+    private slots:
         void connectClicked();
 
     private:
