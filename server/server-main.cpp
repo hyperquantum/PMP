@@ -43,7 +43,10 @@ int main(int argc, char *argv[]) {
     QTextStream out(stdout);
 
     out << endl << "PMP --- Party Music Player" << endl << endl;
-
+    
+    //foreach (const QString &path, app.libraryPaths())
+    //    out << " LIB PATH : " << path << endl;
+    
     Resolver resolver;
 
     QDirIterator it(".", QDirIterator::Subdirectories);
