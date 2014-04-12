@@ -17,32 +17,40 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_MAINWINDOW_H
-#define PMP_MAINWINDOW_H
+#ifndef PMP_SERVERCONNECTION_H
+#define PMP_SERVERCONNECTION_H
 
-#include <QMainWindow>
+#include <QByteArray>
+#include <QObject>
+#include <QTcpSocket>
 
 namespace PMP {
 
-    class ConnectionWidget;
-    class MainWidget;
-    class ServerConnection;
-
-    class MainWindow : public QMainWindow {
+    class ServerConnection : public QObject {
         Q_OBJECT
 
+        enum State {
+            NotConnected, Connecting, Handshake, InOperation,
+            HandshakeFailure
+        };
     public:
-        MainWindow(QWidget* parent = 0);
-        ~MainWindow();
+        ServerConnection(QObject* parent = 0);
+
+        void connectToHost(QString const& host, quint16 port);
+
+    Q_SIGNALS:
+
+        void connected();
 
     private slots:
-        void onDoConnect(QString server, uint port);
         void onConnected();
+        void onReadyRead();
+        void onSocketError(QAbstractSocket::SocketError error);
 
     private:
-        ConnectionWidget* _connectionWidget;
-        ServerConnection* _connection;
-        MainWidget* _mainWidget;
+        State _state;
+        QTcpSocket _socket;
+        QByteArray _readBuffer;
     };
 }
 #endif

@@ -1,14 +1,18 @@
-Party Music Player
-==================
+                 ======================
+                 = Party Music Player =
+                 ======================
 
 Copyright (C) 2011-2014  Kevin Andre
 
 
-This is the start of a project that will implement a client-server music
-system.
+Party Music Player, abbreviated as PMP, is a client-server music system.
+The server is responsible for playing music, and a separate program,
+a 'remote', is used to connect to the server and instruct it what to do.
 
-License is GPLv3.
+The software is licenced under GPLv3. Sourcecode is available upon
+request, but not published on a website yet.
 
+You can contact the developer at:   hyperquantum@gmail.com
 
 
 DEPENDENCIES FOR BUILDING
@@ -17,12 +21,14 @@ DEPENDENCIES FOR BUILDING
 * CMake
 * pkg-config
 * TagLib
-* Qt 5
+* Qt 5     (developed with Qt 5.2)
 
 
 
 COMPILING ON WINDOWS
 --------------------
+
+Compilation on Linux is trivial, but on Windows it takes some effort.
 
 How to compile from source on Windows, using MinGW 32-bit:
 
@@ -78,7 +84,7 @@ How to compile from source on Windows, using MinGW 32-bit:
 PLANNED FEATURES
 ----------------
 
-(no guarantees)
+No guarantees here!  This is more like a TO-DO list.
 
  * Remote with GUI interface
  * Differentiate between different users by having them authenticate themselves

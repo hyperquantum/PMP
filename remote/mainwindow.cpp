@@ -21,12 +21,14 @@
 
 #include "connectionwidget.h"
 #include "mainwidget.h"
+#include "serverconnection.h"
 
 namespace PMP {
 
     MainWindow::MainWindow(QWidget* parent)
      : QMainWindow(parent),
-       _connectionWidget(new ConnectionWidget(this))
+       _connectionWidget(new ConnectionWidget(this)),
+       _connection(0), _mainWidget(0)
     {
         setCentralWidget(_connectionWidget);
         connect(_connectionWidget, SIGNAL(doConnect(QString, uint)), this, SLOT(onDoConnect(QString, uint)));
@@ -37,10 +39,15 @@ namespace PMP {
     }
 
     void MainWindow::onDoConnect(QString server, uint port) {
+        _connection = new ServerConnection();
+        connect(_connection, SIGNAL(connected()), this, SLOT(onConnected()));
+        _connection->connectToHost(server, port);
+    }
+
+    void MainWindow::onConnected() {
         _mainWidget = new MainWidget(this);
         setCentralWidget(_mainWidget);
         _connectionWidget->close();
-
     }
 
 }

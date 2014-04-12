@@ -1,5 +1,6 @@
 cd `dirname $0`
 
+SRC_DIR="."
 BIN_DIR="bin"
 DIST_DIR="PMP_win32"
 ZIP_FILE="PMP_win32.zip"
@@ -11,6 +12,9 @@ QT_PLUGINS_DIR="/cygdrive/C/Qt/5.2.1/mingw48_32/plugins"
 rm -rf "$DIST_DIR"
 mkdir "$DIST_DIR"
 rm -rf "$ZIP_FILE"
+
+cp "$SRC_DIR"/README* "$DIST_DIR"/
+cp "$SRC_DIR"/*LICENSE* "$DIST_DIR"/
 
 cp "$BIN_DIR"/PMP-Server.exe "$DIST_DIR"/
 cp "$BIN_DIR"/PMP-GUI-Remote.exe "$DIST_DIR"/
@@ -43,4 +47,4 @@ cp -r "$QT_PLUGINS_DIR"/sqldrivers "$DIST_DIR"
 
 chmod -R +r "$DIST_DIR"
 
-zip -r "$ZIP_FILE" "$DIST_DIR"/* && rm -rf "$DIST_DIR"
+zip -r -q "$ZIP_FILE" "$DIST_DIR"/* && rm -rf "$DIST_DIR"
