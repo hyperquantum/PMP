@@ -72,12 +72,24 @@ namespace PMP {
 
                     _readBuffer.remove(0, semicolonIndex + 1); /* +1 to remove the semicolon too */
                     _state = InOperation;
+
+                    requestInitialInfo();
+
                     emit connected();
                 }
             }
             break;
         case InOperation:
+            do {
+                int semicolonIndex = _readBuffer.indexOf(';');
+                if (semicolonIndex < 0) { break; }
 
+                QString commandString = QString::fromUtf8(_readBuffer.data(), semicolonIndex);
+
+                _readBuffer.remove(0, semicolonIndex + 1); /* +1 to remove the semicolon too */
+
+                executeTextCommand(commandString);
+            } while (true);
             break;
         case HandshakeFailure:
             /* do nothing */
@@ -97,6 +109,70 @@ namespace PMP {
 
             break;
         }
+    }
+
+    void ServerConnection::executeTextCommand(QString const& commandText) {
+        if (commandText == "playing") {
+            emit playing();
+        }
+        else if (commandText == "paused") {
+            emit paused();
+        }
+        else if (commandText == "stopped") {
+            emit stopped();
+        }
+        else if (commandText.startsWith("volume ")) {
+
+        }
+        else if (commandText.startsWith("nowplaying ")) {
+            QString rest = commandText.mid(11);
+
+            if (rest == "nothing") {
+                emit noCurrentTrack();
+            }
+            else if (rest.startsWith("track")) {
+                QStringList list = rest.split('\n');
+
+                QString title = "";
+                QString artist = "";
+                int length = -1;
+
+                for (int i = 1; i < list.count(); ++i) {
+                    QString line = list[i];
+                    if (line.startsWith(" title: ")) {
+                        title = line.mid(8);
+                    }
+                    else if (line.startsWith(" artist: ")) {
+                        artist = line.mid(9);
+                    }
+                    else if (line.startsWith(" length: ")) {
+                        QString lengthText = line.mid(9);
+                        int spaceIndex = lengthText.indexOf(" sec");
+                        if (spaceIndex > 0) {
+                            lengthText = lengthText.mid(0, spaceIndex);
+
+                            bool ok = false;
+                            uint lengthUnsigned = lengthText.toUInt(&ok);
+                            if (ok) { length = lengthUnsigned; }
+                        }
+                    }
+                }
+
+                emit nowPlayingTrack(title, artist, length);
+            }
+            else {
+                qDebug() << "command not correctly formed:" << commandText;
+            }
+        }
+        else {
+            qDebug() << "command not handled:" << commandText;
+        }
+    }
+
+    void ServerConnection::requestInitialInfo() {
+        sendTextCommand("state"); /* request player state */
+        sendTextCommand("nowplaying"); /* request track now playing */
+        sendTextCommand("volume"); /* request current volume */
     }
 
     void ServerConnection::sendTextCommand(QString const& command) {

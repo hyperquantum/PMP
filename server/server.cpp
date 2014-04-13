@@ -35,9 +35,6 @@ namespace PMP {
     bool Server::listen(Player* player, const QHostAddress& address, quint16 port) {
         _player = player;
 
-        /* prepare greeting, is fixed for the player, so we create it now */
-        _greeting = QString("PMP 0.1 Welcome!;").toUtf8();
-
         if (!_server->listen(QHostAddress::Any, port)) {
             return false;
         }
@@ -61,11 +58,5 @@ namespace PMP {
         QTcpSocket *connection = _server->nextPendingConnection();
 
         new ConnectedClient(connection, this, _player);
-
-        // send greeting with PMP version
-        connection->write(_greeting);
     }
-
-
-
 }

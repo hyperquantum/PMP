@@ -20,12 +20,14 @@
 #ifndef PMP_CONNECTEDCLIENT_H
 #define PMP_CONNECTEDCLIENT_H
 
+#include "player.h" /* for the State enum :( */
+
 #include <QByteArray>
 #include <QTcpSocket>
 
 namespace PMP {
 
-    class Player;
+    class QueueEntry;
     class Server;
 
     class ConnectedClient : public QObject {
@@ -41,11 +43,14 @@ namespace PMP {
         void dataArrived();
         void socketError(QAbstractSocket::SocketError error);
 
-        void executeTextCommand(QString const& commandText);
-
         void volumeChanged(int volume);
+        void playerStateChanged(Player::State state);
+        void currentTrackChanged(QueueEntry const* entry);
 
     private:
+        void executeTextCommand(QString const& commandText);
+        void sendTextCommand(QString const& command);
+
         QTcpSocket* _socket;
         Server* _server;
         Player* _player;

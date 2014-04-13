@@ -44,8 +44,14 @@ namespace PMP {
         void skip();
 
     Q_SIGNALS:
-
         void connected();
+
+        void playing();
+        void paused();
+        void stopped();
+
+        void noCurrentTrack();
+        void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
 
     private slots:
         void onConnected();
@@ -53,6 +59,8 @@ namespace PMP {
         void onSocketError(QAbstractSocket::SocketError error);
 
     private:
+        void executeTextCommand(QString const& commandText);
+        void requestInitialInfo();
         void sendTextCommand(QString const& command);
 
         State _state;

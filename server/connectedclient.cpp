@@ -21,7 +21,6 @@
 
 #include "common/hashid.h"
 
-#include "player.h"
 #include "queueentry.h"
 #include "server.h"
 
@@ -35,6 +34,11 @@ namespace PMP {
         connect(socket, SIGNAL(readyRead()), this, SLOT(dataArrived()));
         connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(socketError(QAbstractSocket::SocketError)));
         connect(player, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
+        connect(player, SIGNAL(stateChanged(Player::State)), this, SLOT(playerStateChanged(Player::State)));
+        connect(player, SIGNAL(currentTrackChanged(QueueEntry const*)), this, SLOT(currentTrackChanged(QueueEntry const*)));
+
+        /* send greeting */
+        sendTextCommand("PMP 0.1 Welcome!");
     }
 
 
@@ -51,7 +55,7 @@ namespace PMP {
         do {
             int semicolonIndex = _readBuffer.indexOf(';');
             if (semicolonIndex < 0) {
-                break; // no complete text command in received data
+                break; /* no complete text command in received data */
             }
 
             QString commandString = QString::fromUtf8(_readBuffer.data(), semicolonIndex);
@@ -92,26 +96,13 @@ namespace PMP {
                 /* 'volume' without arguments sends current volume */
                 _socket->write((QString("volume ") + QString::number(_player->volume()) + ";").toUtf8());
             }
+            else if (command == "state") {
+                /* pretend state has changed, in order to send state info */
+                playerStateChanged(_player->state());
+            }
             else if (command == "nowplaying") {
-                QueueEntry const* now = _player->nowPlaying();
-                if (now == 0) {
-                    _socket->write(QString("nowplaying nothing;").toUtf8());
-                }
-                else {
-                    int seconds = now->lengthInSeconds();
-                    HashID const* hash = now->hash();
-
-                    _socket->write(
-                        (QString("nowplaying track \n title: ") + now->title()
-                         + "\n artist: " + now->artist()
-                         + "\n length: " + (seconds < 0 ? "?" : QString::number(seconds))
-                         + " sec\n hash length: " + (hash == 0 ? "?" : QString::number(hash->length()))
-                         + "\n hash SHA-1: " + (hash == 0 ? "?" : hash->SHA1().toHex())
-                         + "\n hash MD5: " + (hash == 0 ? "?" : hash->MD5().toHex())
-                         + ";"
-                        ).toUtf8()
-                    );
-                }
+                /* pretend current track has changed, in order to send current track info */
+                currentTrackChanged(_player->nowPlaying());
             }
             else if (command == "shutdown") {
                 _server->shutdown();
@@ -147,8 +138,45 @@ namespace PMP {
 
     }
 
+    void ConnectedClient::sendTextCommand(QString const& command) {
+        _socket->write((command + ";").toUtf8());
+    }
+
     void ConnectedClient::volumeChanged(int volume) {
-        _socket->write((QString("volume ") + QString::number(_player->volume()) + ";").toUtf8());
+        sendTextCommand("volume " + QString::number(_player->volume()));
+    }
+
+    void ConnectedClient::playerStateChanged(Player::State state) {
+        switch (state) {
+        case Player::Playing:
+            sendTextCommand("playing");
+            break;
+        case Player::Paused:
+            sendTextCommand("paused");
+            break;
+        case Player::Stopped:
+            sendTextCommand("stopped");
+            break;
+        }
+    }
+
+    void ConnectedClient::currentTrackChanged(QueueEntry const* entry) {
+        if (entry == 0) {
+            sendTextCommand("nowplaying nothing");
+            return;
+        }
+
+        int seconds = entry->lengthInSeconds();
+        HashID const* hash = entry->hash();
+
+        sendTextCommand(
+            "nowplaying track \n title: " + entry->title()
+             + "\n artist: " + entry->artist()
+             + "\n length: " + (seconds < 0 ? "?" : QString::number(seconds))
+             + " sec\n hash length: " + (hash == 0 ? "?" : QString::number(hash->length()))
+             + "\n hash SHA-1: " + (hash == 0 ? "?" : hash->SHA1().toHex())
+             + "\n hash MD5: " + (hash == 0 ? "?" : hash->MD5().toHex())
+        );
     }
 
 }

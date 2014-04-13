@@ -30,7 +30,7 @@ namespace PMP {
      : QObject(parent), _resolver(resolver),
         _player(new QMediaPlayer(this)),
         _nowPlaying(0),
-        _ignoreNextStopEvent(false)
+        _state(Stopped), _ignoreNextStopEvent(false)
     {
         setVolume(75);
         connect(_player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(internalMediaStatusChanged(QMediaPlayer::MediaStatus)));
@@ -43,7 +43,19 @@ namespace PMP {
     }
 
     bool Player::playing() const {
-        return _player->state() == QMediaPlayer::PlayingState;
+        return _state == Playing;
+    }
+
+    Player::State Player::state() const {
+        return _state;
+    }
+
+    void Player::changeState(State state) {
+        if (_state == state) return;
+
+        qDebug() << "state changed from" << _state << "to" << state;
+        _state = state;
+        emit stateChanged(state);
     }
 
     QueueEntry const* Player::nowPlaying() const {
@@ -51,7 +63,7 @@ namespace PMP {
     }
 
     void Player::playPause() {
-        if (playing()) {
+        if (_state == Playing) {
             pause();
         }
         else {
@@ -60,40 +72,50 @@ namespace PMP {
     }
 
     void Player::play() {
-        if (_player->state() == QMediaPlayer::PlayingState) {
-            return; /* already playing */
+        switch (_state) {
+            case Stopped:
+                startNext(true); /* we're not playing yet */
+                break;
+            case Paused:
+                _player->play(); /* resume paused track */
+                changeState(Playing);
+                break;
+            case Playing:
+                break; /* already playing */
         }
-
-        if (_player->state() == QMediaPlayer::PausedState) {
-            _player->play(); /* resume paused track */
-            return;
-        }
-
-        /* we're not playing yet */
-        startNext();
     }
 
     void Player::pause() {
-        if (_player->state() == QMediaPlayer::PlayingState) {
-            _player->pause();
+        switch (_state) {
+            case Stopped:
+            case Paused:
+                break; /* no effect */
+            case Playing:
+                _player->pause();
+                changeState(Paused);
+                break;
         }
     }
 
     void Player::skip() {
-        QMediaPlayer::State playerState = _player->state();
-        if (playerState != QMediaPlayer::PlayingState
-            && playerState != QMediaPlayer::PausedState)
-        {
-            return; /* skipping not possible in this state */
+        switch (_state) {
+            case Stopped:
+                break; /* no effect */
+            case Paused:
+                if (!startNext(false)) {
+                    /* could not start the next track, so just stop */
+                    _player->stop(); /* further handling in internalStateChanged */
+                    changeState(Stopped);
+                }
+                break;
+            case Playing:
+                if (!startNext(true)) {
+                    /* could not start the next track, so just stop */
+                    _player->stop(); /* further handling in internalStateChanged */
+                    changeState(Stopped);
+                }
+                break;
         }
-
-        if (startNext()) {
-            return; /* OK */
-        }
-
-        /* could not start the next track, so just stop */
-
-        _player->stop(); /* further handling in internalStateChanged */
     }
 
     void Player::setVolume(int volume) {
@@ -122,50 +144,63 @@ namespace PMP {
 
     void Player::internalStateChanged(QMediaPlayer::State state) {
         qDebug() << "Player::internalStateChanged state:" << state;
-        if (state == QMediaPlayer::StoppedState) {
-            if (_ignoreNextStopEvent) {
-                _ignoreNextStopEvent = false;
-            }
-            else if (!startNext()) {
-                /* stopped */
-                _nowPlaying = 0;
-                qDebug() << "stopped playing";
-                emit currentTrackChanged(0);
-                if (_queue.empty()) {
-                    qDebug() << "finished queue";
-                    emit finished();
+
+        switch (state) {
+            case QMediaPlayer::StoppedState:
+                if (_ignoreNextStopEvent) {
+                    _ignoreNextStopEvent = false;
+                    break;
                 }
-            }
-        }
-        else if (state == QMediaPlayer::PlayingState) {
-            _ignoreNextStopEvent = false;
+
+                /* try to start the next track */
+                if (!startNext(true)) {
+                    /* stopped */
+                    _nowPlaying = 0;
+                    qDebug() << "stopped playing";
+                    emit currentTrackChanged(0);
+                    if (_queue.empty()) {
+                        qDebug() << "finished queue";
+                        emit finished();
+                    }
+                }
+
+                break;
+            case QMediaPlayer::PausedState:
+                break; /* do nothing */
+            case QMediaPlayer::PlayingState:
+                _ignoreNextStopEvent = false;
+                break;
         }
     }
 
-    bool Player::startNext() {
+    bool Player::startNext(bool play) {
         qDebug() << "Player::startNext";
 
         /* TODO: save current track in history */
 
         while (!_queue.empty()) {
             QueueEntry* entry = _queue.dequeue();
-            if (!entry->checkValidFilename()) {
+            QString filename;
+            if (!entry->checkValidFilename(&filename)) {
                 /* error */
+                qDebug() << " skipping unplayable track (could not get filename)";
                 /* TODO: keep in history with failure note */
                 delete entry;
                 continue;
             }
 
-            QString filename;
-            if (entry->checkValidFilename(&filename)) {
-                qDebug() << "loading media " << filename;
-                _ignoreNextStopEvent = true; /* ignore the next stop event until we are playing again */
-                _player->setMedia(QUrl::fromLocalFile(filename));
+            qDebug() << " loading media " << filename;
+            _ignoreNextStopEvent = true; /* ignore the next stop event until we are playing again */
+            _player->setMedia(QUrl::fromLocalFile(filename));
+            _nowPlaying = entry;
+            emit currentTrackChanged(entry);
+
+            if (play) {
                 _player->play();
-                _nowPlaying = entry;
-                emit currentTrackChanged(entry);
-                return true;
+                changeState(Playing);
             }
+
+            return true;
         }
 
         return false;

@@ -39,6 +39,10 @@ namespace PMP {
 
         void setConnection(ServerConnection* connection);
 
+    private slots:
+        void noCurrentTrack();
+        void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
+
     private:
         Ui::MainWidget* _ui;
         ServerConnection* _connection;

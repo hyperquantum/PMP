@@ -42,5 +42,35 @@ namespace PMP {
         connect(_ui->playButton, SIGNAL(clicked()), _connection, SLOT(play()));
         connect(_ui->pauseButton, SIGNAL(clicked()), _connection, SLOT(pause()));
         connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
+
+        connect(_connection, SIGNAL(noCurrentTrack()), this, SLOT(noCurrentTrack()));
+        connect(_connection, SIGNAL(nowPlayingTrack(QString, QString, int)), this, SLOT(nowPlayingTrack(QString, QString, int)));
     }
+
+    void MainWidget::noCurrentTrack() {
+        _ui->titleValueLabel->setText("");
+        _ui->artistValueLabel->setText("");
+        _ui->lengthValueLabel->setText("");
+    }
+
+    void MainWidget::nowPlayingTrack(QString title, QString artist, int lengthInSeconds) {
+        _ui->titleValueLabel->setText(title);
+        _ui->artistValueLabel->setText(artist);
+
+        if (lengthInSeconds < 0) {
+            _ui->lengthValueLabel->setText("?");
+        }
+        else {
+            int sec = lengthInSeconds % 60;
+            int min = (lengthInSeconds / 60) % 60;
+            int hrs = lengthInSeconds / 3600;
+
+            _ui->lengthValueLabel->setText(
+                QString::number(hrs).rightJustified(2, '0')
+                 + ":" + QString::number(min).rightJustified(2, '0')
+                 + ":" + QString::number(sec).rightJustified(2, '0')
+            );
+        }
+    }
+
 }

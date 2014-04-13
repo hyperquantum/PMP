@@ -33,11 +33,14 @@ namespace PMP {
     class Player : public QObject {
         Q_OBJECT
     public:
+        enum State { Stopped, Playing, Paused };
+
         Player(QObject* parent, Resolver* resolver);
 
         int volume() const;
 
         bool playing() const;
+        State state() const;
 
         QueueEntry const* nowPlaying() const;
 
@@ -58,6 +61,7 @@ namespace PMP {
 
     Q_SIGNALS:
 
+        void stateChanged(Player::State state);
         void currentTrackChanged(QueueEntry const* newTrack);
         void volumeChanged(int volume);
 
@@ -65,16 +69,17 @@ namespace PMP {
         void finished();
 
     private slots:
-
+        void changeState(State state);
         void internalStateChanged(QMediaPlayer::State state);
         void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
-        bool startNext();
+        bool startNext(bool play);
 
     private:
         Resolver* _resolver;
         QMediaPlayer* _player;
         QQueue<QueueEntry*> _queue;
         QueueEntry* _nowPlaying;
+        State _state;
         bool _ignoreNextStopEvent;
     };
 }

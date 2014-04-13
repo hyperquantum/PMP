@@ -20,7 +20,6 @@
 #ifndef PMP_SERVER_H
 #define PMP_SERVER_H
 
-#include <QByteArray>
 #include <QTcpServer>
 
 namespace PMP {
@@ -38,22 +37,17 @@ namespace PMP {
         quint16 port() const;
 
     public slots:
-
         void shutdown();
 
     Q_SIGNALS:
-
         void shuttingDown();
 
     private slots:
-
         void newConnectionReceived();
-
 
     private:
         Player* _player;
         QTcpServer* _server;
-        QByteArray _greeting;
     };
 }
 #endif
