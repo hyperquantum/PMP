@@ -18,14 +18,15 @@
 */
 
 #include "mainwidget.h"
-
 #include "ui_mainwidget.h"
+
+#include "serverconnection.h"
 
 namespace PMP {
 
     MainWidget::MainWidget(QWidget *parent) :
         QWidget(parent),
-        _ui(new Ui::MainWidget)
+        _ui(new Ui::MainWidget), _connection(0)
     {
         _ui->setupUi(this);
     }
@@ -33,5 +34,13 @@ namespace PMP {
     MainWidget::~MainWidget()
     {
         delete _ui;
+    }
+
+    void MainWidget::setConnection(ServerConnection* connection) {
+        _connection = connection;
+
+        connect(_ui->playButton, SIGNAL(clicked()), _connection, SLOT(play()));
+        connect(_ui->pauseButton, SIGNAL(clicked()), _connection, SLOT(pause()));
+        connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
     }
 }

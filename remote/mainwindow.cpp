@@ -46,6 +46,7 @@ namespace PMP {
 
     void MainWindow::onConnected() {
         _mainWidget = new MainWidget(this);
+        _mainWidget->setConnection(_connection);
         setCentralWidget(_mainWidget);
         _connectionWidget->close();
     }

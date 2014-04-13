@@ -38,6 +38,11 @@ namespace PMP {
 
         void connectToHost(QString const& host, quint16 port);
 
+    public slots:
+        void play();
+        void pause();
+        void skip();
+
     Q_SIGNALS:
 
         void connected();
@@ -48,6 +53,8 @@ namespace PMP {
         void onSocketError(QAbstractSocket::SocketError error);
 
     private:
+        void sendTextCommand(QString const& command);
+
         State _state;
         QTcpSocket _socket;
         QByteArray _readBuffer;

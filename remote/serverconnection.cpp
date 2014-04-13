@@ -99,4 +99,21 @@ namespace PMP {
         }
     }
 
+    void ServerConnection::sendTextCommand(QString const& command) {
+        qDebug() << "sending command" << command;
+        _socket.write((command + ";").toUtf8());
+    }
+
+    void ServerConnection::play() {
+        sendTextCommand("play");
+    }
+
+    void ServerConnection::pause() {
+        sendTextCommand("pause");
+    }
+
+    void ServerConnection::skip() {
+        sendTextCommand("skip");
+    }
+
 }

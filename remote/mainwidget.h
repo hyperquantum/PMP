@@ -28,6 +28,8 @@ namespace Ui {
 
 namespace PMP {
 
+    class ServerConnection;
+
     class MainWidget : public QWidget {
         Q_OBJECT
 
@@ -35,8 +37,11 @@ namespace PMP {
         explicit MainWidget(QWidget *parent = 0);
         ~MainWidget();
 
+        void setConnection(ServerConnection* connection);
+
     private:
         Ui::MainWidget* _ui;
+        ServerConnection* _connection;
     };
 }
 #endif
