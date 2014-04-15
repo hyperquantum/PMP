@@ -20,7 +20,7 @@
 #include "mainwidget.h"
 #include "ui_mainwidget.h"
 
-#include "serverconnection.h"
+#include "common/serverconnection.h"
 
 namespace PMP {
 

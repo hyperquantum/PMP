@@ -19,9 +19,10 @@
 
 #include "mainwindow.h"
 
+#include "common/serverconnection.h"
+
 #include "connectionwidget.h"
 #include "mainwidget.h"
-#include "serverconnection.h"
 
 #include <QMessageBox>
 
