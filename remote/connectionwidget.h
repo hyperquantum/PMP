@@ -35,6 +35,9 @@ namespace PMP {
         explicit ConnectionWidget(QWidget* parent = 0);
         ~ConnectionWidget();
 
+    public slots:
+        void reenableFields();
+
     Q_SIGNALS:
         void doConnect(QString server, uint port);
 

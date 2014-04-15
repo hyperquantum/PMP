@@ -23,6 +23,8 @@
 #include "mainwidget.h"
 #include "serverconnection.h"
 
+#include <QMessageBox>
+
 namespace PMP {
 
     MainWindow::MainWindow(QWidget* parent)
@@ -40,7 +42,12 @@ namespace PMP {
 
     void MainWindow::onDoConnect(QString server, uint port) {
         _connection = new ServerConnection();
+
         connect(_connection, SIGNAL(connected()), this, SLOT(onConnected()));
+        connect(_connection, SIGNAL(cannotConnect(QAbstractSocket::SocketError)), this, SLOT(onCannotConnect(QAbstractSocket::SocketError)));
+        connect(_connection, SIGNAL(invalidServer()), this, SLOT(onInvalidServer()));
+        connect(_connection, SIGNAL(connectionBroken(QAbstractSocket::SocketError)), this, SLOT(onConnectionBroken(QAbstractSocket::SocketError)));
+
         _connection->connectToHost(server, port);
     }
 
@@ -49,6 +56,21 @@ namespace PMP {
         _mainWidget->setConnection(_connection);
         setCentralWidget(_mainWidget);
         _connectionWidget->close();
+    }
+
+    void MainWindow::onCannotConnect(QAbstractSocket::SocketError error) {
+        QMessageBox::warning(this, "Connection failure", "Failed to connect to that server.");
+        _connectionWidget->reenableFields(); /* let the user try to correct any possible mistake */
+    }
+
+    void MainWindow::onInvalidServer() {
+        QMessageBox::warning(this, "Connection failure", "This is not a valid PMP server!");
+        _connectionWidget->reenableFields(); /* let the user try to correct any possible mistake */
+    }
+
+    void MainWindow::onConnectionBroken(QAbstractSocket::SocketError error) {
+        QMessageBox::warning(this, "Connection failure", "Connection to the server was lost!");
+        this->close();
     }
 
 }

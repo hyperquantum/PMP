@@ -31,9 +31,16 @@ namespace PMP {
         connect(&_socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(onSocketError(QAbstractSocket::SocketError)));
     }
 
+    void ServerConnection::reset() {
+        _state = NotConnected;
+        _socket.abort();
+        _readBuffer.clear();
+    }
+
     void ServerConnection::connectToHost(QString const& host, quint16 port) {
         qDebug() << "connecting to" << host << "on port" << port;
         _state = Connecting;
+        _readBuffer.clear();
         _socket.connectToHost(host, port);
     }
 
@@ -56,7 +63,9 @@ namespace PMP {
                 || (bufLen >= 3 && _readBuffer[2] != 'P'))
             {
                 _state = HandshakeFailure;
-                break;
+                emit invalidServer();
+                reset();
+                return;
             }
 
             {
@@ -100,10 +109,36 @@ namespace PMP {
     void ServerConnection::onSocketError(QAbstractSocket::SocketError error) {
         qDebug() << "socket error" << error;
 
+        switch (_state) {
+        case NotConnected:
+            break; /* ignore error */
+        case Connecting:
+        case Handshake:
+        case HandshakeFailure: /* just in case this one here too */
+            emit cannotConnect(error);
+            reset();
+            break;
+        case InOperation:
+            _state = NotConnected;
+            emit connectionBroken(error);
+            reset();
+            break;
+        }
+
         switch (error) {
+        case QAbstractSocket::ConnectionRefusedError:
+
+        case QAbstractSocket::HostNotFoundError:
+
+        case QAbstractSocket::SocketAccessError:
+
+
         case QAbstractSocket::RemoteHostClosedError:
 
             break;
+
+        case QAbstractSocket::UnknownSocketError:
+
 
         default:
 

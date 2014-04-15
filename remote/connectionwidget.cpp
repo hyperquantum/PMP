@@ -46,6 +46,14 @@ namespace PMP {
         delete _ui;
     }
 
+    void ConnectionWidget::reenableFields() {
+        _ui->serverLineEdit->setEnabled(true);
+        _ui->portLineEdit->setEnabled(true);
+        //_ui->usernameLineEdit->setEnabled(true);
+        //_ui->passwordLineEdit->setEnabled(true);
+        _ui->connectButton->setEnabled(true);
+    }
+
     void ConnectionWidget::connectClicked() {
         QString server = _ui->serverLineEdit->text().trimmed();
         QString portString = _ui->portLineEdit->text().trimmed();
@@ -68,6 +76,12 @@ namespace PMP {
             return;
         }
         uint portNumber = portString.toUInt();
+
+        _ui->serverLineEdit->setEnabled(false);
+        _ui->portLineEdit->setEnabled(false);
+        _ui->usernameLineEdit->setEnabled(false);
+        _ui->passwordLineEdit->setEnabled(false);
+        _ui->connectButton->setEnabled(false);
 
         emit doConnect(server, portNumber);
     }

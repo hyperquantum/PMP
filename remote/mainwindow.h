@@ -20,6 +20,7 @@
 #ifndef PMP_MAINWINDOW_H
 #define PMP_MAINWINDOW_H
 
+#include <QAbstractSocket>
 #include <QMainWindow>
 
 namespace PMP {
@@ -38,6 +39,9 @@ namespace PMP {
     private slots:
         void onDoConnect(QString server, uint port);
         void onConnected();
+        void onCannotConnect(QAbstractSocket::SocketError error);
+        void onInvalidServer();
+        void onConnectionBroken(QAbstractSocket::SocketError error);
 
     private:
         ConnectionWidget* _connectionWidget;

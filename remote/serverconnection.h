@@ -36,6 +36,7 @@ namespace PMP {
     public:
         ServerConnection(QObject* parent = 0);
 
+        void reset();
         void connectToHost(QString const& host, quint16 port);
 
     public slots:
@@ -45,6 +46,9 @@ namespace PMP {
 
     Q_SIGNALS:
         void connected();
+        void cannotConnect(QAbstractSocket::SocketError error);
+        void invalidServer();
+        void connectionBroken(QAbstractSocket::SocketError error);
 
         void playing();
         void paused();
