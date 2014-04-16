@@ -124,26 +124,6 @@ namespace PMP {
             reset();
             break;
         }
-
-        switch (error) {
-        case QAbstractSocket::ConnectionRefusedError:
-
-        case QAbstractSocket::HostNotFoundError:
-
-        case QAbstractSocket::SocketAccessError:
-
-
-        case QAbstractSocket::RemoteHostClosedError:
-
-            break;
-
-        case QAbstractSocket::UnknownSocketError:
-
-
-        default:
-
-            break;
-        }
     }
 
     void ServerConnection::executeTextCommand(QString const& commandText) {
