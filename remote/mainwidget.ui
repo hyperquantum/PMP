@@ -52,7 +52,7 @@
     <string>Skip</string>
    </property>
   </widget>
-  <widget class="QWidget" name="">
+  <widget class="QWidget" name="layoutWidget">
    <property name="geometry">
     <rect>
      <x>40</x>
@@ -101,6 +101,20 @@
      <widget class="QLabel" name="lengthValueLabel">
       <property name="text">
        <string>none</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="0">
+     <widget class="QLabel" name="stateLabel">
+      <property name="text">
+       <string>State:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="1">
+     <widget class="QLabel" name="stateValueLabel">
+      <property name="text">
+       <string>unknown</string>
       </property>
      </widget>
     </item>

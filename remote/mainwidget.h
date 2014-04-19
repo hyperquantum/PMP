@@ -40,6 +40,10 @@ namespace PMP {
         void setConnection(ServerConnection* connection);
 
     private slots:
+        void playing();
+        void paused();
+        void stopped();
+
         void noCurrentTrack();
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
 

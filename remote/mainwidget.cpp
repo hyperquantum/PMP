@@ -43,8 +43,23 @@ namespace PMP {
         connect(_ui->pauseButton, SIGNAL(clicked()), _connection, SLOT(pause()));
         connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
 
+        connect(_connection, SIGNAL(playing()), this, SLOT(playing()));
+        connect(_connection, SIGNAL(paused()), this, SLOT(paused()));
+        connect(_connection, SIGNAL(stopped()), this, SLOT(stopped()));
         connect(_connection, SIGNAL(noCurrentTrack()), this, SLOT(noCurrentTrack()));
         connect(_connection, SIGNAL(nowPlayingTrack(QString, QString, int)), this, SLOT(nowPlayingTrack(QString, QString, int)));
+    }
+
+    void MainWidget::playing() {
+        _ui->stateValueLabel->setText("playing");
+    }
+
+    void MainWidget::paused() {
+        _ui->stateValueLabel->setText("paused");
+    }
+
+    void MainWidget::stopped() {
+        _ui->stateValueLabel->setText("stopped");
     }
 
     void MainWidget::noCurrentTrack() {
