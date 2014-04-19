@@ -15,6 +15,6 @@ bin/*.h
 bin/*.cpp
 bin/server
 bin/common
-bin/remote
+bin/gui-remote
 *.mp3
 PMP_win32.zip
