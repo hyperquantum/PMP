@@ -63,6 +63,7 @@ namespace PMP {
 
         void stateChanged(Player::State state);
         void currentTrackChanged(QueueEntry const* newTrack);
+        void positionChanged(qint64 position);
         void volumeChanged(int volume);
 
         /*! Emitted when the queue is empty and the current track is finished. */

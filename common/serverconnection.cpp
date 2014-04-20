@@ -127,7 +127,15 @@ namespace PMP {
     }
 
     void ServerConnection::executeTextCommand(QString const& commandText) {
-        if (commandText == "playing") {
+        if (commandText.startsWith("position ")) {
+            QString positionText = commandText.mid(9);
+            bool ok = false;
+            qulonglong position = positionText.toULongLong(&ok);
+            if (ok) {
+                emit trackPositionChanged(position);
+            }
+        }
+        else if (commandText == "playing") {
             emit playing();
         }
         else if (commandText == "paused") {
@@ -193,6 +201,10 @@ namespace PMP {
     void ServerConnection::sendTextCommand(QString const& command) {
         qDebug() << "sending command" << command;
         _socket.write((command + ";").toUtf8());
+    }
+
+    void ServerConnection::shutdownServer() {
+        sendTextCommand("shutdown");
     }
 
     void ServerConnection::play() {

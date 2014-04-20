@@ -40,6 +40,8 @@ namespace PMP {
         void connectToHost(QString const& host, quint16 port);
 
     public slots:
+        void shutdownServer();
+
         void play();
         void pause();
         void skip();
@@ -56,6 +58,7 @@ namespace PMP {
 
         void noCurrentTrack();
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
+        void trackPositionChanged(quint64);
 
     private slots:
         void onConnected();

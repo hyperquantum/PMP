@@ -36,6 +36,7 @@ namespace PMP {
         connect(player, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
         connect(player, SIGNAL(stateChanged(Player::State)), this, SLOT(playerStateChanged(Player::State)));
         connect(player, SIGNAL(currentTrackChanged(QueueEntry const*)), this, SLOT(currentTrackChanged(QueueEntry const*)));
+        connect(player, SIGNAL(positionChanged(qint64)), this, SLOT(trackPositionChanged(qint64)));
 
         /* send greeting */
         sendTextCommand("PMP 0.1 Welcome!");
@@ -177,6 +178,10 @@ namespace PMP {
              + "\n hash SHA-1: " + (hash == 0 ? "?" : hash->SHA1().toHex())
              + "\n hash MD5: " + (hash == 0 ? "?" : hash->MD5().toHex())
         );
+    }
+
+    void ConnectedClient::trackPositionChanged(qint64 position) {
+        sendTextCommand("position " + QString::number(position));
     }
 
 }

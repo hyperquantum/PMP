@@ -48,6 +48,7 @@ namespace PMP {
         connect(_connection, SIGNAL(stopped()), this, SLOT(stopped()));
         connect(_connection, SIGNAL(noCurrentTrack()), this, SLOT(noCurrentTrack()));
         connect(_connection, SIGNAL(nowPlayingTrack(QString, QString, int)), this, SLOT(nowPlayingTrack(QString, QString, int)));
+        connect(_connection, SIGNAL(trackPositionChanged(quint64)), this, SLOT(trackPositionChanged(quint64)));
     }
 
     void MainWidget::playing() {
@@ -66,6 +67,7 @@ namespace PMP {
         _ui->titleValueLabel->setText("");
         _ui->artistValueLabel->setText("");
         _ui->lengthValueLabel->setText("");
+        _ui->positionValueLabel->setText("");
     }
 
     void MainWidget::nowPlayingTrack(QString title, QString artist, int lengthInSeconds) {
@@ -86,6 +88,22 @@ namespace PMP {
                  + ":" + QString::number(sec).rightJustified(2, '0')
             );
         }
+    }
+
+    void MainWidget::trackPositionChanged(quint64 position) {
+        int positionInSeconds = position / 1000;
+
+        int partialSec = position % 1000;
+        int sec = positionInSeconds % 60;
+        int min = (positionInSeconds / 60) % 60;
+        int hrs = positionInSeconds / 3600;
+
+        _ui->positionValueLabel->setText(
+            QString::number(hrs).rightJustified(2, '0')
+             + ":" + QString::number(min).rightJustified(2, '0')
+             + ":" + QString::number(sec).rightJustified(2, '0')
+             + "." + QString::number(partialSec).rightJustified(3, '0')
+        );
     }
 
 }

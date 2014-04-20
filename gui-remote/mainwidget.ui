@@ -58,7 +58,7 @@
      <x>40</x>
      <y>40</y>
      <width>311</width>
-     <height>91</height>
+     <height>101</height>
     </rect>
    </property>
    <layout class="QFormLayout" name="formLayout">
@@ -113,6 +113,20 @@
     </item>
     <item row="3" column="1">
      <widget class="QLabel" name="stateValueLabel">
+      <property name="text">
+       <string>unknown</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="0">
+     <widget class="QLabel" name="positionLabel">
+      <property name="text">
+       <string>Position:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="4" column="1">
+     <widget class="QLabel" name="positionValueLabel">
       <property name="text">
        <string>unknown</string>
       </property>

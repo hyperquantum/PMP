@@ -46,6 +46,7 @@ namespace PMP {
 
         void noCurrentTrack();
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
+        void trackPositionChanged(quint64 position);
 
     private:
         Ui::MainWidget* _ui;
