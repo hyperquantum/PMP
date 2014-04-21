@@ -8,6 +8,7 @@ find_package(Qt5Core REQUIRED)
 find_package(Qt5Gui REQUIRED)
 find_package(Qt5Multimedia REQUIRED)
 find_package(Qt5Network REQUIRED)
+find_package(Qt5Sql REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 
 pkg_check_modules(TAGLIB REQUIRED taglib>=1.6)
@@ -49,11 +50,13 @@ add_executable(PMP-GUI-Remote
     ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 
+# Qt dependencies for each executable
 qt5_use_modules(PMP-HashTool Core)
-qt5_use_modules(PMP-Server Core Multimedia Network)
+qt5_use_modules(PMP-Server Core Multimedia Network Sql)
 qt5_use_modules(PMP-Cmd-Remote Core Network)
 qt5_use_modules(PMP-GUI-Remote Core Gui Network Widgets)
 
+# Link executables to TagLib
 target_link_libraries(PMP-HashTool ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-Server ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-GUI-Remote ${TAGLIB_LIBRARIES})
