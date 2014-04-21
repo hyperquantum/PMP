@@ -19,7 +19,7 @@
 
 #include "connectionwidget.h"
 
-#include "ui_ConnectionWidget.h"
+#include "ui_connectionwidget.h"
 
 #include <QMessageBox>
 
