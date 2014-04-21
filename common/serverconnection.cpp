@@ -145,7 +145,12 @@ namespace PMP {
             emit stopped();
         }
         else if (commandText.startsWith("volume ")) {
-
+            QString volumeText = commandText.mid(7);
+            bool ok = false;
+            quint8 volume = volumeText.toUInt(&ok);
+            if (ok) {
+                emit volumeChanged(volume);
+            }
         }
         else if (commandText.startsWith("nowplaying ")) {
             QString rest = commandText.mid(11);
@@ -217,6 +222,10 @@ namespace PMP {
 
     void ServerConnection::skip() {
         sendTextCommand("skip");
+    }
+
+    void ServerConnection::setVolume(int percentage) {
+        sendTextCommand("volume " + QString::number(percentage));
     }
 
 }

@@ -46,6 +46,8 @@ namespace PMP {
         void pause();
         void skip();
 
+        void setVolume(int percentage);
+
     Q_SIGNALS:
         void connected();
         void cannotConnect(QAbstractSocket::SocketError error);
@@ -56,6 +58,7 @@ namespace PMP {
         void paused();
         void stopped();
 
+        void volumeChanged(int percentage);
         void noCurrentTrack();
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
         void trackPositionChanged(quint64);

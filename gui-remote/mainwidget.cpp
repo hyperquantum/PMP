@@ -26,7 +26,7 @@ namespace PMP {
 
     MainWidget::MainWidget(QWidget *parent) :
         QWidget(parent),
-        _ui(new Ui::MainWidget), _connection(0)
+        _ui(new Ui::MainWidget), _connection(0), _volume(-1)
     {
         _ui->setupUi(this);
     }
@@ -43,9 +43,14 @@ namespace PMP {
         connect(_ui->pauseButton, SIGNAL(clicked()), _connection, SLOT(pause()));
         connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
 
+        connect(_connection, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
+        connect(_ui->volumeIncreaseButton, SIGNAL(clicked()), this, SLOT(increaseVolume()));
+        connect(_ui->volumeDecreaseButton, SIGNAL(clicked()), this, SLOT(decreaseVolume()));
+
         connect(_connection, SIGNAL(playing()), this, SLOT(playing()));
         connect(_connection, SIGNAL(paused()), this, SLOT(paused()));
         connect(_connection, SIGNAL(stopped()), this, SLOT(stopped()));
+
         connect(_connection, SIGNAL(noCurrentTrack()), this, SLOT(noCurrentTrack()));
         connect(_connection, SIGNAL(nowPlayingTrack(QString, QString, int)), this, SLOT(nowPlayingTrack(QString, QString, int)));
         connect(_connection, SIGNAL(trackPositionChanged(quint64)), this, SLOT(trackPositionChanged(quint64)));
@@ -61,6 +66,23 @@ namespace PMP {
 
     void MainWidget::stopped() {
         _ui->stateValueLabel->setText("stopped");
+    }
+
+    void MainWidget::volumeChanged(int percentage) {
+        _volume = percentage;
+        _ui->volumeValueLabel->setText(QString::number(percentage));
+    }
+
+    void MainWidget::decreaseVolume() {
+        if (_volume > 0) {
+            _connection->setVolume(_volume > 5 ? _volume - 5 : 0);
+        }
+    }
+
+    void MainWidget::increaseVolume() {
+        if (_volume >= 0) {
+            _connection->setVolume(_volume < 95 ? _volume + 5 : 100);
+        }
     }
 
     void MainWidget::noCurrentTrack() {

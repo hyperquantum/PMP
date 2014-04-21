@@ -44,6 +44,10 @@ namespace PMP {
         void paused();
         void stopped();
 
+        void volumeChanged(int percentage);
+        void decreaseVolume();
+        void increaseVolume();
+
         void noCurrentTrack();
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
         void trackPositionChanged(quint64 position);
@@ -51,6 +55,7 @@ namespace PMP {
     private:
         Ui::MainWidget* _ui;
         ServerConnection* _connection;
+        int _volume;
     };
 }
 #endif
