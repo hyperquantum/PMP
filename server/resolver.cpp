@@ -21,14 +21,65 @@
 
 #include "common/filedata.h"
 
+#include <QFileInfo>
+#include <QtDebug>
+
 namespace PMP {
 
     Resolver::Resolver() {
         //
     }
 
-    void Resolver::registerFile(const FileData* file) {
-        _cache.insert(file->hash(), file);
+    void Resolver::registerFile(const FileData* file, const QString& filename) {
+        if (file != 0) {
+            _tagCache.insert(file->hash(), file);
+        }
+
+        if (filename.length() > 0) {
+            QFileInfo info(filename);
+
+            if (!info.isRelative() || info.makeAbsolute()) {
+                _pathCache.insert(file->hash(), info.filePath());
+            }
+        }
+    }
+
+    QString Resolver::findPath(const HashID& hash) {
+        QList<QString> paths = _pathCache.values(hash);
+        qDebug() << "Resolver::findPath for hash " << hash.dumpToString();
+        qDebug() << " candidates for hash: " << paths.count();
+
+        QString path;
+        foreach(path, paths) {
+            qDebug() << " candidate: " << path;
+            QFileInfo info(path);
+
+            if (info.isFile() && info.isReadable()) {
+                return path;
+            }
+        }
+
+        return ""; /* not found */
+    }
+
+    const FileData* Resolver::findData(const HashID& hash) {
+        QList<const FileData*> tags = _tagCache.values(hash);
+
+        /* try to return a match with complete tags */
+        const FileData* result = 0;
+        int resultScore = -1;
+        const FileData* tag;
+        foreach (tag, tags) {
+            int score = (tag->title().length() > 0) ? 3 : 0;
+            score += (tag->artist().length() > 0) ? 2 : 0;
+
+            if (score <= resultScore) { continue; }
+
+            result = tag;
+            resultScore = score;
+        }
+
+        return result;
     }
 
 }

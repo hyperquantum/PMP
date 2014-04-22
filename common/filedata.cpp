@@ -21,6 +21,7 @@
 
 #include <QCryptographicHash>
 #include <QFile>
+#include <QFileInfo>
 
 #include <taglib/id3v2framefactory.h>
 #include <taglib/mpegfile.h>
@@ -30,10 +31,10 @@
 
 namespace PMP {
 
-    FileData::FileData(const QString& filename, const HashID& hash,
+    FileData::FileData(const HashID& hash,
         const QString& artist, const QString& title,
         const QString& album, const QString& comment, int lengthInSeconds)
-     : _filename(filename), _hash(hash), _artist(artist), _title(title),
+     : _hash(hash), _artist(artist), _title(title),
         _album(album), _comment(comment), _lengthSeconds(lengthInSeconds)
     {
         //
@@ -44,21 +45,19 @@ namespace PMP {
         return extension.toLower() == "mp3";
     }
 
-    FileData const* FileData::analyzeFile(const QString& filename) {
-        QFile file(filename);
-        if (!file.open(QIODevice::ReadOnly)) return 0;
-
-        QByteArray fileContents = file.readAll();
-
+    FileData const* FileData::analyzeFile(const QByteArray& fileContents, const QString& fileExtension) {
         TagLib::ByteVector fileContentsScratch(fileContents.data(), fileContents.length());
         TagLib::ByteVectorStream fileScratchStream(fileContentsScratch);
+
+        TagLib::Tag* tag = 0;
 
         TagLib::MPEG::File tagFile(&fileScratchStream, TagLib::ID3v2::FrameFactory::instance());
         if (!tagFile.isValid()) { return 0; }
 
+        tag = tagFile.tag();
+
         QString artist, title, album, comment;
 
-        TagLib::Tag* tag = tagFile.tag();
         if (tag != 0) {
             artist = TStringToQString(tag->artist());
             title = TStringToQString(tag->title());
@@ -75,19 +74,32 @@ namespace PMP {
 
         tagFile.strip(); // strip all tag headers
 
-        TagLib::ByteVector* stripped_data = fileScratchStream.data();
-
-        QCryptographicHash md5_hasher(QCryptographicHash::Md5);
-        md5_hasher.addData(stripped_data->data(), stripped_data->size());
-
-        QCryptographicHash sha1_hasher(QCryptographicHash::Sha1);
-        sha1_hasher.addData(stripped_data->data(), stripped_data->size());
+        TagLib::ByteVector* strippedData = fileScratchStream.data();
 
         return new FileData(
-            filename,
-            HashID(stripped_data->size(), sha1_hasher.result(), md5_hasher.result()),
+            getHashFrom(strippedData),
             artist, title, album, comment, lengthInSeconds
         );
+    }
+
+    FileData const* FileData::analyzeFile(const QString& filename) {
+        QFileInfo fileInfo(filename);
+
+        QFile file(filename);
+        if (!file.open(QIODevice::ReadOnly)) return 0;
+
+        QByteArray fileContents = file.readAll();
+        return analyzeFile(fileContents, fileInfo.suffix());
+    }
+
+    HashID FileData::getHashFrom(TagLib::ByteVector* data) {
+        QCryptographicHash md5Hasher(QCryptographicHash::Md5);
+        md5Hasher.addData(data->data(), data->size());
+
+        QCryptographicHash sha1Hasher(QCryptographicHash::Sha1);
+        sha1Hasher.addData(data->data(), data->size());
+
+        return HashID(data->size(), sha1Hasher.result(), md5Hasher.result());
     }
 
 }

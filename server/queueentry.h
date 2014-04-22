@@ -27,20 +27,23 @@ namespace PMP {
 
     class FileData;
     class HashID;
+    class Resolver;
 
     class QueueEntry : public QObject {
         Q_OBJECT
     public:
-
         QueueEntry(QString const& filename);
         QueueEntry(FileData const& filedata);
+        QueueEntry(HashID const& hash);
         ~QueueEntry();
 
         HashID const* hash() const;
 
         void setFilename(QString const& filename);
         QString const* filename() const;
-        bool checkValidFilename(QString* outFilename = 0);
+        bool checkValidFilename(Resolver& resolver, QString* outFilename = 0);
+
+        void checkTrackData(Resolver& resolver);
 
         /** Length in seconds. Is negative when unknown. */
         int lengthInSeconds() const;
@@ -53,7 +56,8 @@ namespace PMP {
     private:
         QString _filename;
         bool _haveFilename;
-        FileData* _fileData;
+        const FileData* _fileData;
+        const HashID* _hash;
     };
 }
 #endif

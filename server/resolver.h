@@ -24,6 +24,7 @@
 
 #include <QMultiHash>
 #include <QObject>
+#include <QString>
 
 namespace PMP {
 
@@ -34,10 +35,14 @@ namespace PMP {
     public:
         Resolver();
 
-        void registerFile(const FileData* file);
+        void registerFile(const FileData* file, const QString& filename);
+
+        QString findPath(const HashID& hash);
+        const FileData* findData(const HashID& hash);
 
     private:
-        QMultiHash<HashID, const FileData*> _cache;
+        QMultiHash<HashID, const FileData*> _tagCache;
+        QMultiHash<HashID, QString> _pathCache;
 
     };
 }

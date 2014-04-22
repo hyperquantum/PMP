@@ -43,16 +43,15 @@ int main(int argc, char *argv[]) {
     QTextStream out(stdout);
 
     out << endl << "PMP --- Party Music Player" << endl << endl;
-    
+
     //foreach (const QString &path, app.libraryPaths())
     //    out << " LIB PATH : " << path << endl;
-    
+
     Resolver resolver;
 
     QDirIterator it(".", QDirIterator::Subdirectories);
     uint fileCount = 0;
     QSet<HashID> uniqueFiles;
-    QList<FileData const*> filesToPlay;
     while (it.hasNext()) {
         QFileInfo entry(it.next());
         if (!entry.isFile()) continue;
@@ -68,7 +67,7 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        resolver.registerFile(data);
+        resolver.registerFile(data, path);
 
         if (data->lengthInSeconds() <= 10) {
             out << "     skipping file because length (" << data->lengthInSeconds() << ") unknown or not larger than 10 seconds" << endl;
@@ -76,10 +75,7 @@ int main(int argc, char *argv[]) {
         }
 
         ++fileCount;
-        if(!uniqueFiles.contains(data->hash())) {
-            uniqueFiles.insert(data->hash());
-            filesToPlay.append(data);
-        }
+        uniqueFiles.insert(data->hash());
 
         // FIXME: durations of 24 hours and longer will not work with this code
         QTime length = QTime(0, 0).addSecs(data->lengthInSeconds());
@@ -95,7 +91,7 @@ int main(int argc, char *argv[]) {
     out << endl
         << fileCount << " files, " << uniqueFiles.size() << " unique hashes" << endl;
 
-    if (filesToPlay.empty()) {
+    if (uniqueFiles.empty()) {
         return 0; // nothing to play
     }
 
@@ -105,13 +101,10 @@ int main(int argc, char *argv[]) {
         << "Adding to queue:" << endl;
 
     QSet<HashID> queuedHashes;
-    for (int i = 0; queuedHashes.count() < 10 && i < filesToPlay.count(); ++i) {
-        FileData const* file = filesToPlay[i];
-        if (queuedHashes.contains(file->hash())) { /* avoid duplicates */ continue; }
-
-        out << " - " << file->filename() << endl;
-        queuedHashes.insert(file->hash());
-        player.queue(*file);
+    for (QSet<HashID>::const_iterator it = uniqueFiles.begin(); queuedHashes.count() < 10 && it != uniqueFiles.end(); ++it) {
+        out << " - " << it->dumpToString() << endl;
+        queuedHashes.insert(*it);
+        player.queue(*it);
     }
 
     out << endl

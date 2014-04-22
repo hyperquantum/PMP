@@ -21,32 +21,45 @@
 
 #include "common/filedata.h"
 
+#include "resolver.h"
+
 #include <QFileInfo>
+#include <QtDebug>
 
 namespace PMP {
 
     QueueEntry::QueueEntry(QString const& filename)
-     : _filename(filename), _haveFilename(true), _fileData(0)
+     : _filename(filename), _haveFilename(true), _fileData(0), _hash(0)
     {
         //
     }
 
     QueueEntry::QueueEntry(FileData const& filedata)
-     : _filename(filedata.filename()), _haveFilename(true),
-        _fileData(new FileData(filedata))
+     : _haveFilename(false),
+        _fileData(new FileData(filedata)), _hash(0)
+    {
+        //
+    }
+
+    QueueEntry::QueueEntry(HashID const& hash)
+     : _haveFilename(false), _fileData(0), _hash(new HashID(hash))
     {
         //
     }
 
     QueueEntry::~QueueEntry() {
         delete _fileData;
+        delete _hash;
     }
 
     HashID const* QueueEntry::hash() const {
         FileData const* data = _fileData;
         if (data) { return &data->hash(); }
 
-        return 0;
+        HashID const* hash = _hash;
+        //if (hash) { return hash; }
+
+        return hash;
     }
 
     void QueueEntry::setFilename(QString const& filename) {
@@ -62,8 +75,31 @@ namespace PMP {
         return 0;
     }
 
-    bool QueueEntry::checkValidFilename(QString* outFilename) {
-        if (!_haveFilename) { return false; }
+    bool QueueEntry::checkValidFilename(Resolver& resolver, QString* outFilename) {
+        qDebug() << "QueueEntry::checkValidFilename";
+
+        if (!_haveFilename) {
+            HashID const* fileHash = this->hash();
+            if (fileHash == 0) {
+                qDebug() << " no hash, cannot get filename";
+                return false;
+            }
+
+            QString path = resolver.findPath(*fileHash);
+
+            if (path.length() > 0) {
+                _filename = path;
+                _haveFilename = true;
+                if (outFilename) { (*outFilename) = _filename; }
+                qDebug() << " found filename: " << path;
+                return true;
+            }
+
+            qDebug() << " no known filename";
+            return false;
+        }
+
+        qDebug() << " have filename, need to verify it: " << _filename;
 
         QString name = _filename;
         QFileInfo file(name);
@@ -79,6 +115,19 @@ namespace PMP {
         }
 
         return false;
+    }
+
+    void QueueEntry::checkTrackData(Resolver& resolver) {
+        const FileData* data = _fileData;
+        if (data) return;
+
+        const HashID* hash = _hash;
+        if (!hash) return;
+
+        data = resolver.findData(*hash);
+        //if (data) {
+            _fileData = data;
+        //}
     }
 
     int QueueEntry::lengthInSeconds() const {

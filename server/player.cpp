@@ -135,7 +135,12 @@ namespace PMP {
 
     void Player::queue(FileData const& filedata) {
         QueueEntry* entry = new QueueEntry(filedata);
+        _queue.enqueue(entry);
+    }
 
+    void Player::queue(HashID const& hash) {
+        QueueEntry* entry = new QueueEntry(hash);
+        entry->checkTrackData(*_resolver);
         _queue.enqueue(entry);
     }
 
@@ -182,7 +187,7 @@ namespace PMP {
         while (!_queue.empty()) {
             QueueEntry* entry = _queue.dequeue();
             QString filename;
-            if (!entry->checkValidFilename(&filename)) {
+            if (!entry->checkValidFilename(*_resolver, &filename)) {
                 /* error */
                 qDebug() << " skipping unplayable track (could not get filename)";
                 /* TODO: keep in history with failure note */

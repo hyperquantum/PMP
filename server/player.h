@@ -27,6 +27,7 @@
 namespace PMP {
 
     class FileData;
+    class HashID;
     class QueueEntry;
     class Resolver;
 
@@ -58,6 +59,7 @@ namespace PMP {
         void clearQueue();
         void queue(QString const& filename);
         void queue(FileData const& filedata);
+        void queue(HashID const& hash);
 
     Q_SIGNALS:
 

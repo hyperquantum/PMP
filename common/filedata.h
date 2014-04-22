@@ -22,15 +22,18 @@
 
 #include "hashid.h"
 
+namespace TagLib {
+    class ByteVector;
+}
+
 namespace PMP {
 
     class FileData {
     public:
 
         static bool supportsExtension(QString const& extension);
+        static FileData const* analyzeFile(const QByteArray& fileContents, const QString& fileExtension);
         static FileData const* analyzeFile(const QString& filename);
-
-        QString filename() const { return _filename; }
 
         const HashID& hash() const { return _hash; }
 
@@ -41,12 +44,13 @@ namespace PMP {
         int lengthInSeconds() const { return _lengthSeconds; }
 
     private:
-        FileData(const QString& filename, const HashID& hash,
+        FileData(const HashID& hash,
             const QString& artist, const QString& title,
             const QString& album, const QString& comment,
             int lengthInSeconds);
 
-        QString _filename;
+        static HashID getHashFrom(TagLib::ByteVector* data);
+
         HashID _hash;
         QString _artist;
         QString _title;
