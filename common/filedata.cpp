@@ -41,45 +41,26 @@ namespace PMP {
     }
 
     bool FileData::supportsExtension(QString const& extension) {
+        QString lowercaseExtension = extension.toLower();
+
         /* TODO: support other file types as well */
-        return extension.toLower() == "mp3";
+        return lowercaseExtension == "mp3";
+            //|| lowercaseExtension == "wma" || lowercaseExtension == "asf";
     }
 
     FileData const* FileData::analyzeFile(const QByteArray& fileContents, const QString& fileExtension) {
         TagLib::ByteVector fileContentsScratch(fileContents.data(), fileContents.length());
         TagLib::ByteVectorStream fileScratchStream(fileContentsScratch);
 
-        TagLib::Tag* tag = 0;
+        QString lowercaseExtension = fileExtension.toLower();
 
-        TagLib::MPEG::File tagFile(&fileScratchStream, TagLib::ID3v2::FrameFactory::instance());
-        if (!tagFile.isValid()) { return 0; }
-
-        tag = tagFile.tag();
-
-        QString artist, title, album, comment;
-
-        if (tag != 0) {
-            artist = TStringToQString(tag->artist());
-            title = TStringToQString(tag->title());
-            album = TStringToQString(tag->album());
-            comment = TStringToQString(tag->comment());
+        if (lowercaseExtension == "mp3") {
+            return analyzeMp3(fileScratchStream);
         }
-
-        int lengthInSeconds = -1;
-
-        TagLib::AudioProperties* audioProperties = tagFile.audioProperties();
-        if (audioProperties !=0) {
-           lengthInSeconds = audioProperties->length();
+        else {
+            /* file type not (yet) supported */
+            return 0;
         }
-
-        tagFile.strip(); // strip all tag headers
-
-        TagLib::ByteVector* strippedData = fileScratchStream.data();
-
-        return new FileData(
-            getHashFrom(strippedData),
-            artist, title, album, comment, lengthInSeconds
-        );
     }
 
     FileData const* FileData::analyzeFile(const QString& filename) {
@@ -93,13 +74,53 @@ namespace PMP {
     }
 
     HashID FileData::getHashFrom(TagLib::ByteVector* data) {
+        uint size = data->size();
+
         QCryptographicHash md5Hasher(QCryptographicHash::Md5);
-        md5Hasher.addData(data->data(), data->size());
+        md5Hasher.addData(data->data(), size);
 
         QCryptographicHash sha1Hasher(QCryptographicHash::Sha1);
-        sha1Hasher.addData(data->data(), data->size());
+        sha1Hasher.addData(data->data(), size);
 
-        return HashID(data->size(), sha1Hasher.result(), md5Hasher.result());
+        return HashID(size, sha1Hasher.result(), md5Hasher.result());
     }
+
+    void FileData::getDataFromTag(const TagLib::Tag* tag,
+                                  QString& artist, QString& title,
+                                  QString& album, QString& comment)
+    {
+        if (!tag) { return; }
+
+        artist = TStringToQString(tag->artist());
+        title = TStringToQString(tag->title());
+        album = TStringToQString(tag->album());
+        comment = TStringToQString(tag->comment());
+    }
+
+    FileData const* FileData::analyzeMp3(TagLib::ByteVectorStream& fileContents)
+    {
+        TagLib::MPEG::File tagFile(&fileContents, TagLib::ID3v2::FrameFactory::instance());
+        if (!tagFile.isValid()) { return 0; }
+
+        QString artist, title, album, comment;
+        getDataFromTag(tagFile.tag(), artist, title, album, comment);
+
+        int lengthInSeconds = -1;
+        TagLib::AudioProperties* audioProperties = tagFile.audioProperties();
+        if (audioProperties != 0) {
+           lengthInSeconds = audioProperties->length();
+        }
+
+        tagFile.strip(); /* strip all tag headers */
+
+        TagLib::ByteVector* strippedData = fileContents.data();
+
+        return new FileData(
+            getHashFrom(strippedData),
+            artist, title, album, comment, lengthInSeconds
+        );
+    }
+
+    //FileData const* FileData::analyzeWma(TagLib::ByteVectorStream& fileContents) { }
 
 }

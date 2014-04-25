@@ -24,6 +24,8 @@
 
 namespace TagLib {
     class ByteVector;
+    class ByteVectorStream;
+    class Tag;
 }
 
 namespace PMP {
@@ -48,6 +50,13 @@ namespace PMP {
             const QString& artist, const QString& title,
             const QString& album, const QString& comment,
             int lengthInSeconds);
+
+        static FileData const* analyzeMp3(TagLib::ByteVectorStream& fileContents);
+        //static FileData const* analyzeWma(TagLib::ByteVectorStream& fileContents);
+
+        static void getDataFromTag(const TagLib::Tag* tag,
+                                   QString& artist, QString& title,
+                                   QString& album, QString& comment);
 
         static HashID getHashFrom(TagLib::ByteVector* data);
 
