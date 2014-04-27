@@ -17,10 +17,13 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "common/filedata.h"
 
-#include <QtCore>
-
+#include <QCoreApplication>
 #include <QCryptographicHash>
+#include <QFile>
+#include <QFileInfo>
+#include <QTextStream>
 
 #include <taglib/fileref.h>
 #include <taglib/id3v2framefactory.h>
@@ -29,6 +32,7 @@
 #include <taglib/tbytevector.h>
 #include <taglib/tbytevectorstream.h>
 
+using namespace PMP;
 
 int main(int argc, char *argv[]) {
 
@@ -42,13 +46,15 @@ int main(int argc, char *argv[]) {
     QTextStream out(stdout);
 
     if (QCoreApplication::arguments().size() < 2) {
-        out << "No arguments given." <<  "\n";
+        out << "No arguments given." << endl;
         return 0;
     }
 
     QString fileName = QCoreApplication::arguments()[1];
-    if (!fileName.endsWith(".mp3", Qt::CaseInsensitive)) {
-        out << "File does not have type MP3." << "\n";
+    QFileInfo fileInfo(fileName);
+
+    if (!FileData::supportsExtension(fileInfo.suffix())) {
+        out << "Files with extension \"" << fileInfo.suffix() << "\" are not supported." << endl;
         return 1;
     }
 
@@ -66,44 +72,23 @@ int main(int argc, char *argv[]) {
     QCryptographicHash sha1_hasher(QCryptographicHash::Sha1);
     sha1_hasher.addData(fileContents);
 
-    out << "File name: " << fileName << "\n";
-    out << "File size: " << fileContents.length() << "\n";
-    out << "MD5 Hash:  " << md5_hasher.result().toHex() << "\n";
-    out << "SHA1 Hash: " << sha1_hasher.result().toHex() << "\n";
+    out << "File name: " << fileName << endl;
+    out << "File size: " << fileContents.length() << endl;
+    out << "MD5 Hash:  " << md5_hasher.result().toHex() << endl;
+    out << "SHA1 Hash: " << sha1_hasher.result().toHex() << endl;
 
-    //TagLib::FileRef tagFile(fileName.toUtf8());
+    FileData const* filedata = FileData::analyzeFile(fileContents, fileInfo.suffix());
 
-    TagLib::ByteVector fileContentsScratch(fileContents.data(), fileContents.length());
-    TagLib::ByteVectorStream fileScratchStream(fileContentsScratch);
-
-    TagLib::MPEG::File tagFile(&fileScratchStream, TagLib::ID3v2::FrameFactory::instance());
-    if (!tagFile.isValid()) {
-        out << "This is not an MP3 file. Cannot continue." << "\n";
+    if (!filedata) {
+        out << "Something went wrong when analyzing the file!" << endl;
         return 1;
     }
 
-    TagLib::Tag* tag = tagFile.tag();
-    if (tag == 0) {
-        out << "no tags found" << "\n";
-    }
-    else {
-        out << "artist: " << TStringToQString(tag->artist()) << "\n";
-        out << "title: " << TStringToQString(tag->title()) << "\n";
-    }
-
-    tagFile.strip(); // strip all tag headers
-
-    TagLib::ByteVector* stripped_data = fileScratchStream.data();
-
-    QCryptographicHash md5_hasher_stripped(QCryptographicHash::Md5);
-    md5_hasher_stripped.addData(stripped_data->data(), stripped_data->size());
-
-    QCryptographicHash sha1_hasher_stripped(QCryptographicHash::Sha1);
-    sha1_hasher_stripped.addData(stripped_data->data(), stripped_data->size());
-
-    out << "stripped file size: " << stripped_data->size() << "\n";
-    out << "stripped MD5 Hash:  " << md5_hasher_stripped.result().toHex() << "\n";
-    out << "stripped SHA1 Hash: " << sha1_hasher_stripped.result().toHex() << "\n";
+    out << "title : " << filedata->title() << endl;
+    out << "artist: " << filedata->artist() << endl;
+    out << "stripped file size: " << filedata->hash().length() << endl;
+    out << "stripped MD5 Hash:  " << filedata->hash().MD5().toHex() << endl;
+    out << "stripped SHA1 Hash: " << filedata->hash().SHA1().toHex() << endl;
 
     return 0;
 }
