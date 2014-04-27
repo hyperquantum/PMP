@@ -26,7 +26,6 @@
 #include <QCoreApplication>
 #include <QDirIterator>
 #include <QFileInfo>
-#include <QMediaPlayer>
 #include <QTime>
 
 using namespace PMP;
