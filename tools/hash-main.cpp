@@ -25,13 +25,6 @@
 #include <QFileInfo>
 #include <QTextStream>
 
-#include <taglib/fileref.h>
-#include <taglib/id3v2framefactory.h>
-#include <taglib/mpegfile.h>
-#include <taglib/tag.h>
-#include <taglib/tbytevector.h>
-#include <taglib/tbytevectorstream.h>
-
 using namespace PMP;
 
 int main(int argc, char *argv[]) {
