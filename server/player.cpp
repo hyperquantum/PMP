@@ -29,7 +29,7 @@ namespace PMP {
     Player::Player(QObject* parent, Resolver* resolver)
      : QObject(parent), _resolver(resolver),
         _player(new QMediaPlayer(this)),
-        _nowPlaying(0),
+        _nextQueueID(1), _nowPlaying(0),
         _state(Stopped), _ignoreNextStopEvent(false)
     {
         setVolume(75);
@@ -128,18 +128,21 @@ namespace PMP {
     }
 
     void Player::queue(QString const& filename) {
-        QueueEntry* entry = new QueueEntry(filename);
+        uint queueID = _nextQueueID++;
+        QueueEntry* entry = new QueueEntry(queueID, filename);
 
         _queue.enqueue(entry);
     }
 
     void Player::queue(FileData const& filedata) {
-        QueueEntry* entry = new QueueEntry(filedata);
+        uint queueID = _nextQueueID++;
+        QueueEntry* entry = new QueueEntry(queueID, filedata);
         _queue.enqueue(entry);
     }
 
     void Player::queue(HashID const& hash) {
-        QueueEntry* entry = new QueueEntry(hash);
+        uint queueID = _nextQueueID++;
+        QueueEntry* entry = new QueueEntry(queueID, hash);
         entry->checkTrackData(*_resolver);
         _queue.enqueue(entry);
     }

@@ -80,6 +80,7 @@ namespace PMP {
     private:
         Resolver* _resolver;
         QMediaPlayer* _player;
+        uint _nextQueueID;
         QQueue<QueueEntry*> _queue;
         QueueEntry* _nowPlaying;
         State _state;

@@ -171,7 +171,8 @@ namespace PMP {
         HashID const* hash = entry->hash();
 
         sendTextCommand(
-            "nowplaying track \n title: " + entry->title()
+            "nowplaying track\n QID: " + QString::number(entry->queueID())
+             + "\n title: " + entry->title()
              + "\n artist: " + entry->artist()
              + "\n length: " + (seconds < 0 ? "?" : QString::number(seconds))
              + " sec\n hash length: " + (hash == 0 ? "?" : QString::number(hash->length()))

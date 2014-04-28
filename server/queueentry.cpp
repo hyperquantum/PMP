@@ -28,21 +28,23 @@
 
 namespace PMP {
 
-    QueueEntry::QueueEntry(QString const& filename)
-     : _filename(filename), _haveFilename(true), _fileData(0), _hash(0)
+    QueueEntry::QueueEntry(uint queueID, QString const& filename)
+     : _queueID(queueID), _filename(filename), _haveFilename(true),
+       _fileData(0), _hash(0)
     {
         //
     }
 
-    QueueEntry::QueueEntry(FileData const& filedata)
-     : _haveFilename(false),
-        _fileData(new FileData(filedata)), _hash(0)
+    QueueEntry::QueueEntry(uint queueID, FileData const& filedata)
+     : _queueID(queueID), _haveFilename(false),
+       _fileData(new FileData(filedata)), _hash(0)
     {
         //
     }
 
-    QueueEntry::QueueEntry(HashID const& hash)
-     : _haveFilename(false), _fileData(0), _hash(new HashID(hash))
+    QueueEntry::QueueEntry(uint queueID, HashID const& hash)
+     : _queueID(queueID), _haveFilename(false),
+       _fileData(0), _hash(new HashID(hash))
     {
         //
     }

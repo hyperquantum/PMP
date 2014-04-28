@@ -32,10 +32,12 @@ namespace PMP {
     class QueueEntry : public QObject {
         Q_OBJECT
     public:
-        QueueEntry(QString const& filename);
-        QueueEntry(FileData const& filedata);
-        QueueEntry(HashID const& hash);
+        QueueEntry(uint queueID, QString const& filename);
+        QueueEntry(uint queueID, FileData const& filedata);
+        QueueEntry(uint queueID, HashID const& hash);
         ~QueueEntry();
+
+        uint queueID() const { return _queueID; }
 
         HashID const* hash() const;
 
@@ -54,6 +56,7 @@ namespace PMP {
 
 
     private:
+        uint _queueID;
         QString _filename;
         bool _haveFilename;
         const FileData* _fileData;
