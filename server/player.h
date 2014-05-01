@@ -20,15 +20,12 @@
 #ifndef PMP_PLAYER_H
 #define PMP_PLAYER_H
 
+#include "queue.h"
+
 #include <QMediaPlayer>
-#include <QObject>
-#include <QQueue>
 
 namespace PMP {
 
-    class FileData;
-    class HashID;
-    class QueueEntry;
     class Resolver;
 
     class Player : public QObject {
@@ -80,8 +77,7 @@ namespace PMP {
     private:
         Resolver* _resolver;
         QMediaPlayer* _player;
-        uint _nextQueueID;
-        QQueue<QueueEntry*> _queue;
+        Queue _queue;
         QueueEntry* _nowPlaying;
         State _state;
         bool _ignoreNextStopEvent;
