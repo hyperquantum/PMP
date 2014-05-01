@@ -41,6 +41,9 @@ namespace PMP {
         State state() const;
 
         QueueEntry const* nowPlaying() const;
+        Queue& queue();
+
+        //Resolver& resolver();
 
     public slots:
 
@@ -52,11 +55,6 @@ namespace PMP {
         void skip();
 
         void setVolume(int volume);
-
-        void clearQueue();
-        void queue(QString const& filename);
-        void queue(FileData const& filedata);
-        void queue(HashID const& hash);
 
     Q_SIGNALS:
 

@@ -35,7 +35,8 @@ namespace PMP {
     public:
         Resolver();
 
-        void registerFile(const FileData* file, const QString& filename);
+        void registerData(const FileData& data);
+        void registerFile(const FileData& file, const QString& filename);
 
         QString findPath(const HashID& hash);
         const FileData* findData(const HashID& hash);

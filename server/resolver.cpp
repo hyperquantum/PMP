@@ -30,16 +30,18 @@ namespace PMP {
         //
     }
 
-    void Resolver::registerFile(const FileData* file, const QString& filename) {
-        if (file != 0) {
-            _tagCache.insert(file->hash(), file);
-        }
+    void Resolver::registerData(const FileData& data) {
+        _tagCache.insert(data.hash(), new FileData(data));
+    }
+
+    void Resolver::registerFile(const FileData& file, const QString& filename) {
+        registerData(file);
 
         if (filename.length() > 0) {
             QFileInfo info(filename);
 
             if (!info.isRelative() || info.makeAbsolute()) {
-                _pathCache.insert(file->hash(), info.filePath());
+                _pathCache.insert(file.hash(), info.filePath());
             }
         }
     }
@@ -70,8 +72,20 @@ namespace PMP {
         int resultScore = -1;
         const FileData* tag;
         foreach (tag, tags) {
-            int score = (tag->title().length() > 0) ? 3 : 0;
-            score += (tag->artist().length() > 0) ? 2 : 0;
+            int score = 0;
+
+            QString title = tag->title();
+            QString artist = tag->artist();
+
+            if (title.length() > 0) {
+                score += 100000;
+                score += 8 * title.length();
+            }
+
+            if (artist.length() > 0) {
+                score += 80000;
+                score += artist.length();
+            }
 
             if (score <= resultScore) { continue; }
 

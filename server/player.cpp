@@ -63,6 +63,10 @@ namespace PMP {
         return _nowPlaying;
     }
 
+    Queue& Player::queue() {
+        return _queue;
+    }
+
     void Player::playPause() {
         if (_state == Playing) {
             pause();
@@ -123,23 +127,6 @@ namespace PMP {
         _player->setVolume(volume);
     }
 
-    void Player::clearQueue() {
-        _queue.clear();
-    }
-
-    void Player::queue(QString const& filename) {
-        _queue.enqueue(filename);
-    }
-
-    void Player::queue(FileData const& filedata) {
-        _queue.enqueue(filedata);
-    }
-
-    void Player::queue(HashID const& hash) {
-        QueueEntry* entry = _queue.enqueue(hash);
-        entry->checkTrackData(*_resolver);
-    }
-
     void Player::internalMediaStatusChanged(QMediaPlayer::MediaStatus state) {
         qDebug() << "Player::internalMediaStateChanged state:" << state;
     }
@@ -195,6 +182,7 @@ namespace PMP {
             _ignoreNextStopEvent = true; /* ignore the next stop event until we are playing again */
             _player->setMedia(QUrl::fromLocalFile(filename));
             _nowPlaying = entry;
+            entry->checkTrackData(*_resolver);
             emit currentTrackChanged(entry);
 
             if (play) {

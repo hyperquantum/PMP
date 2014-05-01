@@ -73,6 +73,10 @@ namespace PMP {
         return analyzeFile(fileContents, fileInfo.suffix());
     }
 
+    FileData const* FileData::create(const HashID& hash, const QString& artist, const QString& title, int length) {
+        return new FileData(hash, artist, title, "", "", length);
+    }
+
     HashID FileData::getHashFrom(TagLib::ByteVector* data) {
         uint size = data->size();
 

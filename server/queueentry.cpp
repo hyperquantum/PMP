@@ -78,7 +78,7 @@ namespace PMP {
     }
 
     bool QueueEntry::checkValidFilename(Resolver& resolver, QString* outFilename) {
-        qDebug() << "QueueEntry::checkValidFilename";
+        qDebug() << "QueueEntry::checkValidFilename QID" << _queueID;
 
         if (!_haveFilename) {
             HashID const* fileHash = this->hash();

@@ -20,6 +20,7 @@
 #include "common/filedata.h"
 
 #include "player.h"
+#include "queue.h"
 #include "resolver.h"
 #include "server.h"
 
@@ -46,7 +47,14 @@ int main(int argc, char *argv[]) {
     //foreach (const QString &path, app.libraryPaths())
     //    out << " LIB PATH : " << path << endl;
 
+    FileData const* song =
+        FileData::create(
+            HashID(4018772, QByteArray::fromHex("b27e235c22f43a25a76a4b4916f7298359b7ed25"), QByteArray::fromHex("b72e952ef61b3d69c649791b6ed583d4")),
+            "Gladys Knight", "License To Kill"
+        );
+
     Resolver resolver;
+    resolver.registerData(*song);
 
     QDirIterator it(".", QDirIterator::Subdirectories);
     uint fileCount = 0;
@@ -66,7 +74,7 @@ int main(int argc, char *argv[]) {
             continue;
         }
 
-        resolver.registerFile(data, path);
+        resolver.registerFile(*data, path);
 
         if (data->lengthInSeconds() <= 10) {
             out << "     skipping file because length (" << data->lengthInSeconds() << ") unknown or not larger than 10 seconds" << endl;
@@ -95,6 +103,7 @@ int main(int argc, char *argv[]) {
     }
 
     Player player(0, &resolver);
+    Queue& queue = player.queue();
 
     out << endl
         << "Adding to queue:" << endl;
@@ -103,7 +112,7 @@ int main(int argc, char *argv[]) {
     for (QSet<HashID>::const_iterator it = uniqueFiles.begin(); queuedHashes.count() < 10 && it != uniqueFiles.end(); ++it) {
         out << " - " << it->dumpToString() << endl;
         queuedHashes.insert(*it);
-        player.queue(*it);
+        queue.enqueue(*it);
     }
 
     out << endl
@@ -118,7 +127,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    out << "Now listening on port " << server.port() << endl;
+    out << "Now listening on port " << server.port() << endl
+        << endl;
 
     // exit when the server instance signals it
     QObject::connect(&server, SIGNAL(shuttingDown()), &app, SLOT(quit()));

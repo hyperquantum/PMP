@@ -36,6 +36,7 @@ namespace PMP {
         static bool supportsExtension(QString const& extension);
         static FileData const* analyzeFile(const QByteArray& fileContents, const QString& fileExtension);
         static FileData const* analyzeFile(const QString& filename);
+        static FileData const* create(const HashID& hash, const QString& artist, const QString& title, int length = -1);
 
         const HashID& hash() const { return _hash; }
 
