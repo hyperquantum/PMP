@@ -24,13 +24,49 @@ if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
 endif()
 
-FILE(GLOB PMP_COMMON_SOURCES common/*.cpp)
-FILE(GLOB PMP_COMMON_HEADERS common/*.h)
-FILE(GLOB PMP_SERVER_SOURCES server/*.cpp)
-FILE(GLOB PMP_SERVER_HEADERS server/*.h)
-FILE(GLOB PMP_GUI_REMOTE_SOURCES gui-remote/*.cpp)
-FILE(GLOB PMP_GUI_REMOTE_HEADERS gui-remote/*.h)
-FILE(GLOB PMP_GUI_REMOTE_UIS gui-remote/*.ui)
+set(PMP_COMMON_SOURCES
+    common/audiodata.cpp
+    common/filedata.cpp
+    common/hashid.cpp
+    common/serverconnection.cpp
+)
+set(PMP_COMMON_HEADERS
+    common/serverconnection.h
+)
+
+set(PMP_SERVER_SOURCES
+    server/connectedclient.cpp
+    server/player.cpp
+    server/queue.cpp
+    server/queueentry.cpp
+    server/resolver.cpp
+    server/server.cpp
+    server/server-main.cpp
+)
+set(PMP_SERVER_HEADERS
+    server/connectedclient.h
+    server/player.h
+    server/queue.h
+    server/queueentry.h
+    server/resolver.h
+    server/server.h
+)
+
+set(PMP_GUI_REMOTE_SOURCES
+    gui-remote/connectionwidget.cpp
+    gui-remote/gui-remote-main.cpp
+    gui-remote/mainwidget.cpp
+    gui-remote/mainwindow.cpp
+)
+set(PMP_GUI_REMOTE_HEADERS
+    gui-remote/connectionwidget.h
+    gui-remote/mainwidget.h
+    gui-remote/mainwindow.h
+)
+set(PMP_GUI_REMOTE_UIS
+    gui-remote/connectionwidget.ui
+    gui-remote/mainwidget.ui
+)
 
 qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
 qt5_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
