@@ -36,8 +36,8 @@ namespace PMP {
         const QString& album, const QString& comment,
         FileFormat format, int trackLength)
      : AudioData(format, trackLength),
-       _hash(hash), _artist(artist), _title(title),
-       _album(album), _comment(comment)
+       TagData(artist, title, album, comment),
+       _hash(hash)
     {
         //
     }

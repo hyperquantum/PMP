@@ -22,6 +22,7 @@
 
 #include "audiodata.h"
 #include "hashid.h"
+#include "tagdata.h"
 
 namespace TagLib {
     class ByteVector;
@@ -31,7 +32,7 @@ namespace TagLib {
 
 namespace PMP {
 
-    class FileData : public AudioData {
+    class FileData : public AudioData, public TagData {
     public:
 
         static bool supportsExtension(QString const& extension);
@@ -44,11 +45,6 @@ namespace PMP {
                                       FileFormat format = UnknownFormat, int trackLength = -1);
 
         const HashID& hash() const { return _hash; }
-
-        QString artist() const { return _artist; }
-        QString title() const { return _title; }
-        QString album() const { return _album; }
-        QString comment() const { return _comment; }
 
     private:
         FileData(const HashID& hash,
@@ -66,10 +62,6 @@ namespace PMP {
         static HashID getHashFrom(TagLib::ByteVector* data);
 
         HashID _hash;
-        QString _artist;
-        QString _title;
-        QString _album;
-        QString _comment;
     };
 }
 #endif
