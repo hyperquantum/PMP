@@ -76,8 +76,8 @@ int main(int argc, char *argv[]) {
 
         resolver.registerFile(*data, path);
 
-        if (data->lengthInSeconds() <= 10) {
-            out << "     skipping file because length (" << data->lengthInSeconds() << ") unknown or not larger than 10 seconds" << endl;
+        if (data->trackLength() <= 10) {
+            out << "     skipping file because length (" << data->trackLength() << ") unknown or not larger than 10 seconds" << endl;
             continue;
         }
 
@@ -85,7 +85,7 @@ int main(int argc, char *argv[]) {
         uniqueFiles.insert(data->hash());
 
         // FIXME: durations of 24 hours and longer will not work with this code
-        QTime length = QTime(0, 0).addSecs(data->lengthInSeconds());
+        QTime length = QTime(0, 0).addSecs(data->trackLength());
 
         out << "     " << length.toString() << endl
             << "     " << data->artist() << endl

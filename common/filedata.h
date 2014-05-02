@@ -20,6 +20,7 @@
 #ifndef PMP_FILEDATA_H
 #define PMP_FILEDATA_H
 
+#include "audiodata.h"
 #include "hashid.h"
 
 namespace TagLib {
@@ -30,13 +31,17 @@ namespace TagLib {
 
 namespace PMP {
 
-    class FileData {
+    class FileData : public AudioData {
     public:
 
         static bool supportsExtension(QString const& extension);
+
         static FileData const* analyzeFile(const QByteArray& fileContents, const QString& fileExtension);
         static FileData const* analyzeFile(const QString& filename);
-        static FileData const* create(const HashID& hash, const QString& artist, const QString& title, int length = -1);
+
+        static FileData const* create(const HashID& hash,
+                                      const QString& artist, const QString& title,
+                                      FileFormat format = UnknownFormat, int trackLength = -1);
 
         const HashID& hash() const { return _hash; }
 
@@ -44,13 +49,12 @@ namespace PMP {
         QString title() const { return _title; }
         QString album() const { return _album; }
         QString comment() const { return _comment; }
-        int lengthInSeconds() const { return _lengthSeconds; }
 
     private:
         FileData(const HashID& hash,
             const QString& artist, const QString& title,
             const QString& album, const QString& comment,
-            int lengthInSeconds);
+            FileFormat format, int trackLength);
 
         static FileData const* analyzeMp3(TagLib::ByteVectorStream& fileContents);
         //static FileData const* analyzeWma(TagLib::ByteVectorStream& fileContents);
@@ -66,8 +70,6 @@ namespace PMP {
         QString _title;
         QString _album;
         QString _comment;
-        int _lengthSeconds;
-
     };
 }
 #endif

@@ -37,7 +37,7 @@ qt5_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
 qt5_wrap_cpp(PMP_GUI_REMOTE_MOCS ${PMP_GUI_REMOTE_HEADERS})
 qt5_wrap_ui(PMP_GUI_REMOTE_UICS ${PMP_GUI_REMOTE_UIS})
 
-add_executable(PMP-HashTool tools/hash-main.cpp common/filedata.cpp common/hashid.cpp)
+add_executable(PMP-HashTool tools/hash-main.cpp common/filedata.cpp common/audiodata.cpp common/hashid.cpp)
 add_executable(PMP-Cmd-Remote tools/cmd-remote-main.cpp)
 
 add_executable(PMP-Server

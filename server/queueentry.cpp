@@ -134,7 +134,7 @@ namespace PMP {
 
     int QueueEntry::lengthInSeconds() const {
         FileData const* data = _fileData;
-        if (data) { return data->lengthInSeconds(); }
+        if (data) { return data->trackLength(); }
 
         return -1;
     }

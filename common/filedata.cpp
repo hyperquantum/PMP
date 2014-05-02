@@ -33,9 +33,11 @@ namespace PMP {
 
     FileData::FileData(const HashID& hash,
         const QString& artist, const QString& title,
-        const QString& album, const QString& comment, int lengthInSeconds)
-     : _hash(hash), _artist(artist), _title(title),
-        _album(album), _comment(comment), _lengthSeconds(lengthInSeconds)
+        const QString& album, const QString& comment,
+        FileFormat format, int trackLength)
+     : AudioData(format, trackLength),
+       _hash(hash), _artist(artist), _title(title),
+       _album(album), _comment(comment)
     {
         //
     }
@@ -73,8 +75,11 @@ namespace PMP {
         return analyzeFile(fileContents, fileInfo.suffix());
     }
 
-    FileData const* FileData::create(const HashID& hash, const QString& artist, const QString& title, int length) {
-        return new FileData(hash, artist, title, "", "", length);
+    FileData const* FileData::create(const HashID& hash,
+        const QString& artist, const QString& title,
+        FileFormat format, int length)
+    {
+        return new FileData(hash, artist, title, "", "", format, length);
     }
 
     HashID FileData::getHashFrom(TagLib::ByteVector* data) {
@@ -121,7 +126,8 @@ namespace PMP {
 
         return new FileData(
             getHashFrom(strippedData),
-            artist, title, album, comment, lengthInSeconds
+            artist, title, album, comment,
+            MP3, lengthInSeconds
         );
     }
 
