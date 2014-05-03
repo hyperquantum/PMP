@@ -18,3 +18,4 @@ bin/common
 bin/gui-remote
 *.mp3
 PMP_win32.zip
+PMP_win32_incremental.zip
