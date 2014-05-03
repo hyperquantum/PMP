@@ -3,15 +3,17 @@ cd `dirname $0`
 SRC_DIR="."
 BIN_DIR="bin"
 DIST_DIR="PMP_win32"
+INCR_TMPDIR="PMP_win32_incremental"
 ZIP_FILE="PMP_win32.zip"
+INCR_ZIP="PMP_win32_incremental.zip"
 
 MINGW_BIN_DIR="/cygdrive/C/MinGW/bin"
 QT_BIN_DIR="/cygdrive/C/Qt/5.2.1/mingw48_32/bin"
 QT_PLUGINS_DIR="/cygdrive/C/Qt/5.2.1/mingw48_32/plugins"
 
-rm -rf "$DIST_DIR"
-mkdir "$DIST_DIR"
-rm -rf "$ZIP_FILE"
+rm -rf "$DIST_DIR" "$INCR_TMPDIR"
+mkdir  "$DIST_DIR" "$INCR_TMPDIR"
+rm -rf "$ZIP_FILE" "$INCR_ZIP"
 
 cp "$SRC_DIR"/README* "$DIST_DIR"/
 cp "$SRC_DIR"/*LICENSE* "$DIST_DIR"/
@@ -47,4 +49,12 @@ cp -r "$QT_PLUGINS_DIR"/sqldrivers "$DIST_DIR"
 
 chmod -R +r "$DIST_DIR"
 
-zip -r -q "$ZIP_FILE" "$DIST_DIR"/* && rm -rf "$DIST_DIR"
+cp "$DIST_DIR"/*.exe "$INCR_TMPDIR"/
+cp "$DIST_DIR"/*LICENSE* "$INCR_TMPDIR"/
+cp "$DIST_DIR"/README* "$INCR_TMPDIR"/
+
+zip -r -q "$ZIP_FILE" "$DIST_DIR"/* \
+  && rm -rf "$DIST_DIR" \
+  && mv "$INCR_TMPDIR" "$DIST_DIR" \
+  && zip -r -q "$INCR_ZIP" "$DIST_DIR"/* \
+  && rm -rf "$DIST_DIR"
