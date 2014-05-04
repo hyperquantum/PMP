@@ -21,6 +21,12 @@
 
 namespace PMP {
 
+    AudioData::AudioData()
+     : _format(UnknownFormat), _trackLength(-1)
+    {
+        //
+    }
+
     AudioData::AudioData(FileFormat format, int trackLength)
      : _format(format), _trackLength(trackLength)
     {

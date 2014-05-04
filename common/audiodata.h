@@ -30,10 +30,16 @@ namespace PMP {
             WMA = 2
         };
 
+        AudioData();
         AudioData(FileFormat format, int trackLength);
 
+        bool isComplete() const { return _format != UnknownFormat && _trackLength >= 0; }
+
         FileFormat format() const { return _format; }
+        void setFormat(FileFormat format) { _format = format; }
+
         int trackLength() const { return _trackLength; }
+        void setTrackLength(int length) { _trackLength = length; }
 
     private:
         FileFormat _format;

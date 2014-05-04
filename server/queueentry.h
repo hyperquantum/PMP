@@ -20,14 +20,16 @@
 #ifndef PMP_QUEUEENTRY_H
 #define PMP_QUEUEENTRY_H
 
+#include "common/audiodata.h"
+#include "common/hashid.h"
+
 #include <QObject>
-#include <QString>
 
 namespace PMP {
 
     class FileData;
-    class HashID;
     class Resolver;
+    class TagData;
 
     class QueueEntry : public QObject {
         Q_OBJECT
@@ -57,10 +59,13 @@ namespace PMP {
 
     private:
         uint _queueID;
+        HashID _hash;
+        //bool _fetchedAudioInfo;
+        AudioData _audioInfo;
         QString _filename;
         bool _haveFilename;
-        const FileData* _fileData;
-        const HashID* _hash;
+        const TagData* _tagData;
+
     };
 }
 #endif

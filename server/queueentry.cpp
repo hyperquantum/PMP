@@ -30,38 +30,33 @@ namespace PMP {
 
     QueueEntry::QueueEntry(uint queueID, QString const& filename)
      : _queueID(queueID), _filename(filename), _haveFilename(true),
-       _fileData(0), _hash(0)
+       _tagData(0)
     {
         //
     }
 
     QueueEntry::QueueEntry(uint queueID, FileData const& filedata)
-     : _queueID(queueID), _haveFilename(false),
-       _fileData(new FileData(filedata)), _hash(0)
+     : _queueID(queueID), _hash(filedata.hash()), _haveFilename(false),
+       _tagData(new TagData(filedata))
     {
         //
     }
 
     QueueEntry::QueueEntry(uint queueID, HashID const& hash)
-     : _queueID(queueID), _haveFilename(false),
-       _fileData(0), _hash(new HashID(hash))
+     : _queueID(queueID), _hash(hash), _haveFilename(false),
+       _tagData(0)
     {
         //
     }
 
     QueueEntry::~QueueEntry() {
-        delete _fileData;
-        delete _hash;
+        delete _tagData;
     }
 
     HashID const* QueueEntry::hash() const {
-        FileData const* data = _fileData;
-        if (data) { return &data->hash(); }
+        if (_hash.empty()) { return 0; }
 
-        HashID const* hash = _hash;
-        //if (hash) { return hash; }
-
-        return hash;
+        return &_hash;
     }
 
     void QueueEntry::setFilename(QString const& filename) {
@@ -120,35 +115,35 @@ namespace PMP {
     }
 
     void QueueEntry::checkTrackData(Resolver& resolver) {
-        const FileData* data = _fileData;
-        if (data) return;
+        if (_hash.empty()) return;
 
-        const HashID* hash = _hash;
-        if (!hash) return;
+        if (!_audioInfo.isComplete()) {
+            _audioInfo = resolver.findAudioData(_hash);
+        }
 
-        data = resolver.findData(*hash);
-        //if (data) {
-            _fileData = data;
+        const TagData* tag = _tagData;
+        if (tag) return;
+
+        tag = resolver.findTagData(_hash);
+        //if (tag) {
+            _tagData = tag;
         //}
     }
 
     int QueueEntry::lengthInSeconds() const {
-        FileData const* data = _fileData;
-        if (data) { return data->trackLength(); }
-
-        return -1;
+        return _audioInfo.trackLength();
     }
 
     QString QueueEntry::artist() const {
-        FileData const* data = _fileData;
-        if (data) { return data->artist(); }
+        TagData const* tag = _tagData;
+        if (tag) { return tag->artist(); }
 
         return "";
     }
 
     QString QueueEntry::title() const {
-        FileData const* data = _fileData;
-        if (data) { return data->title(); }
+        TagData const* tag = _tagData;
+        if (tag) { return tag->title(); }
 
         return "";
     }

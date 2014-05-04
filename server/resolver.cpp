@@ -30,19 +30,41 @@ namespace PMP {
         //
     }
 
+    void Resolver::registerData(const HashID& hash, const AudioData& data) {
+        if (hash.empty()) { return; }
+
+        AudioData& cached = _audioCache[hash];
+
+        if (data.format() != AudioData::UnknownFormat) {
+            cached.setFormat(data.format());
+        }
+
+        if (data.trackLength() >= 0) {
+            cached.setTrackLength(data.trackLength());
+        }
+    }
+
     void Resolver::registerData(const FileData& data) {
-        _tagCache.insert(data.hash(), new FileData(data));
+        if (data.hash().empty()) { return; }
+
+        registerData(data.hash(), data);
+        _tagCache.insert(data.hash(), new TagData(data));
     }
 
     void Resolver::registerFile(const FileData& file, const QString& filename) {
+        if (file.hash().empty()) { return; }
+
         registerData(file);
+        registerFile(file.hash(), filename);
+    }
 
-        if (filename.length() > 0) {
-            QFileInfo info(filename);
+    void Resolver::registerFile(const HashID& hash, const QString& filename) {
+        if (hash.empty() || filename.length() <= 0) { return; }
 
-            if (!info.isRelative() || info.makeAbsolute()) {
-                _pathCache.insert(file.hash(), info.filePath());
-            }
+        QFileInfo info(filename);
+
+        if (info.isAbsolute() || info.makeAbsolute()) {
+            _pathCache.insert(hash, info.filePath());
         }
     }
 
@@ -64,13 +86,17 @@ namespace PMP {
         return ""; /* not found */
     }
 
-    const FileData* Resolver::findData(const HashID& hash) {
-        QList<const FileData*> tags = _tagCache.values(hash);
+    const AudioData& Resolver::findAudioData(const HashID& hash) {
+        return _audioCache[hash];
+    }
+
+    const TagData* Resolver::findTagData(const HashID& hash) {
+        QList<const TagData*> tags = _tagCache.values(hash);
 
         /* try to return a match with complete tags */
-        const FileData* result = 0;
+        const TagData* result = 0;
         int resultScore = -1;
-        const FileData* tag;
+        const TagData* tag;
         foreach (tag, tags) {
             int score = 0;
 

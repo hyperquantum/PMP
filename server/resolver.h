@@ -20,8 +20,10 @@
 #ifndef PMP_RESOLVER_H
 #define PMP_RESOLVER_H
 
+#include "common/audiodata.h"
 #include "common/hashid.h"
 
+#include <QHash>
 #include <QMultiHash>
 #include <QObject>
 #include <QString>
@@ -29,20 +31,25 @@
 namespace PMP {
 
     class FileData;
+    class TagData;
 
     class Resolver : public QObject {
         Q_OBJECT
     public:
         Resolver();
 
+        void registerData(const HashID& hash, const AudioData& data);
         void registerData(const FileData& data);
         void registerFile(const FileData& file, const QString& filename);
+        void registerFile(const HashID& hash, const QString& filename);
 
         QString findPath(const HashID& hash);
-        const FileData* findData(const HashID& hash);
+        const AudioData& findAudioData(const HashID& hash);
+        const TagData* findTagData(const HashID& hash);
 
     private:
-        QMultiHash<HashID, const FileData*> _tagCache;
+        QHash<HashID, AudioData> _audioCache;
+        QMultiHash<HashID, const TagData*> _tagCache;
         QMultiHash<HashID, QString> _pathCache;
 
     };
