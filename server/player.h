@@ -39,8 +39,9 @@ namespace PMP {
 
         bool playing() const;
         State state() const;
-
         QueueEntry const* nowPlaying() const;
+        qint64 playPosition() const;
+
         Queue& queue();
 
         //Resolver& resolver();
@@ -70,6 +71,7 @@ namespace PMP {
         void changeState(State state);
         void internalStateChanged(QMediaPlayer::State state);
         void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
+        void internalPositionChanged(qint64 position);
         bool startNext(bool play);
 
     private:
@@ -77,6 +79,7 @@ namespace PMP {
         QMediaPlayer* _player;
         Queue _queue;
         QueueEntry* _nowPlaying;
+        qint64 _playPosition;
         State _state;
         bool _ignoreNextStopEvent;
     };

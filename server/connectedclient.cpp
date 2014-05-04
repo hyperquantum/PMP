@@ -172,6 +172,7 @@ namespace PMP {
 
         sendTextCommand(
             "nowplaying track\n QID: " + QString::number(entry->queueID())
+             + "\n position: " + QString::number(_player->playPosition())
              + "\n title: " + entry->title()
              + "\n artist: " + entry->artist()
              + "\n length: " + (seconds < 0 ? "?" : QString::number(seconds))

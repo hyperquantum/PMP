@@ -164,6 +164,7 @@ namespace PMP {
                 QString title = "";
                 QString artist = "";
                 int length = -1;
+                qint64 position = -1;
 
                 for (int i = 1; i < list.count(); ++i) {
                     QString line = list[i];
@@ -184,9 +185,19 @@ namespace PMP {
                             if (ok) { length = lengthUnsigned; }
                         }
                     }
+                    else if (line.startsWith(" position: ")) {
+                        QString positionText = line.mid(11);
+                        bool ok = false;
+                        qulonglong value = positionText.toULongLong(&ok);
+                        if (ok) {
+                            qDebug() << "valid position in nowplaying:" << value;
+                            position = value;
+                        }
+                    }
                 }
 
                 emit nowPlayingTrack(title, artist, length);
+                if (position >= 0) emit trackPositionChanged(position);
             }
             else {
                 qDebug() << "command not correctly formed:" << commandText;

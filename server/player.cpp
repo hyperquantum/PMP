@@ -29,13 +29,13 @@ namespace PMP {
     Player::Player(QObject* parent, Resolver* resolver)
      : QObject(parent), _resolver(resolver),
         _player(new QMediaPlayer(this)),
-        _nowPlaying(0),
+        _nowPlaying(0), _playPosition(0),
         _state(Stopped), _ignoreNextStopEvent(false)
     {
         setVolume(75);
         connect(_player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(internalMediaStatusChanged(QMediaPlayer::MediaStatus)));
         connect(_player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(internalStateChanged(QMediaPlayer::State)));
-        connect(_player, SIGNAL(positionChanged(qint64)), this, SIGNAL(positionChanged(qint64)));
+        connect(_player, SIGNAL(positionChanged(qint64)), this, SLOT(internalPositionChanged(qint64)));
         connect(_player, SIGNAL(volumeChanged(int)), this, SIGNAL(volumeChanged(int)));
     }
 
@@ -61,6 +61,10 @@ namespace PMP {
 
     QueueEntry const* Player::nowPlaying() const {
         return _nowPlaying;
+    }
+
+    qint64 Player::playPosition() const {
+        return _playPosition;
     }
 
     Queue& Player::queue() {
@@ -107,18 +111,10 @@ namespace PMP {
             case Stopped:
                 break; /* no effect */
             case Paused:
-                if (!startNext(false)) {
-                    /* could not start the next track, so just stop */
-                    _player->stop(); /* further handling in internalStateChanged */
-                    changeState(Stopped);
-                }
+                startNext(false);
                 break;
             case Playing:
-                if (!startNext(true)) {
-                    /* could not start the next track, so just stop */
-                    _player->stop(); /* further handling in internalStateChanged */
-                    changeState(Stopped);
-                }
+                startNext(true);
                 break;
         }
     }
@@ -141,16 +137,15 @@ namespace PMP {
                     break;
                 }
 
-                /* try to start the next track */
-                if (!startNext(true)) {
-                    /* stopped */
-                    _nowPlaying = 0;
-                    qDebug() << "stopped playing";
-                    emit currentTrackChanged(0);
-                    if (_queue.empty()) {
-                        qDebug() << "finished queue";
-                        emit finished();
-                    }
+                switch (_state) {
+                    case Playing:
+                        startNext(true);
+                        break;
+                    case Paused:
+                        startNext(false);
+                        break;
+                    case Stopped:
+                        break;
                 }
 
                 break;
@@ -162,8 +157,19 @@ namespace PMP {
         }
     }
 
+    void Player::internalPositionChanged(qint64 position) {
+        if (_state == Stopped) { _playPosition = 0; return; }
+
+        _playPosition = position;
+        emit positionChanged(position);
+    }
+
     bool Player::startNext(bool play) {
         qDebug() << "Player::startNext";
+
+        //State initialState = _state;
+        QueueEntry* oldNowPlaying = _nowPlaying;
+        uint oldQueueLength = _queue.length();
 
         /* TODO: save current track in history */
 
@@ -182,15 +188,32 @@ namespace PMP {
             _ignoreNextStopEvent = true; /* ignore the next stop event until we are playing again */
             _player->setMedia(QUrl::fromLocalFile(filename));
             _nowPlaying = entry;
+            _playPosition = 0;
             entry->checkTrackData(*_resolver);
             emit currentTrackChanged(entry);
 
             if (play) {
-                _player->play();
                 changeState(Playing);
+                _player->play();
             }
 
             return true;
+        }
+
+        /* stopped */
+
+        changeState(Stopped);
+        _player->stop();
+
+        if (oldNowPlaying != 0 ) {
+            _nowPlaying = 0;
+            _playPosition = 0;
+            emit currentTrackChanged(0);
+        }
+
+        if (_queue.empty() && oldQueueLength > 0) {
+            qDebug() << "finished queue";
+            emit finished();
         }
 
         return false;
