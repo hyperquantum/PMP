@@ -47,6 +47,7 @@ namespace PMP {
         void playerStateChanged(Player::State state);
         void currentTrackChanged(QueueEntry const* entry);
         void trackPositionChanged(qint64 position);
+        void sendQueueInfo();
 
     private:
         void executeTextCommand(QString const& commandText);

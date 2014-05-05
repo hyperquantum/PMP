@@ -67,4 +67,17 @@ namespace PMP {
         return _queue.dequeue();
     }
 
+    QList<QueueEntry*> Queue::frontEntries(uint maxCount) {
+        QList<QueueEntry*> result;
+        result.reserve(maxCount);
+
+        QueueEntry* entry;
+        foreach(entry, _queue) {
+            if ((uint)result.size() >= maxCount) break;
+            result.append(entry);
+        }
+
+        return result;
+    }
+
 }

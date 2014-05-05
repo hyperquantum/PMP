@@ -45,6 +45,8 @@ namespace PMP {
 
         QueueEntry* dequeue();
 
+        QList<QueueEntry*> frontEntries(uint maxCount);
+
     private:
         uint _nextQueueID;
         QQueue<QueueEntry*> _queue;

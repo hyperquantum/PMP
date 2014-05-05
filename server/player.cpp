@@ -71,6 +71,10 @@ namespace PMP {
         return _queue;
     }
 
+    Resolver& Player::resolver() {
+        return *_resolver;
+    }
+
     void Player::playPause() {
         if (_state == Playing) {
             pause();

@@ -44,7 +44,7 @@ namespace PMP {
 
         Queue& queue();
 
-        //Resolver& resolver();
+        Resolver& resolver();
 
     public slots:
 

@@ -29,9 +29,10 @@ void printUsage(QTextStream& out, QString const& programName) {
         << "    play: start/resume playback" << endl
         << "    pause: pause playback" << endl
         << "    skip: jump to next track in the queue" << endl
-        << "    volume: get current volume percentage (0-100)"
+        << "    volume: get current volume percentage (0-100)" << endl
         << "    volume <number>: set volume percentage (0-100)" << endl
         << "    nowplaying: get info about the track currently playing" << endl
+        << "    queue: get queue length and the first tracks waiting in the queue" << endl
         << "    shutdown: shutdown the server program" << endl
         << endl;
 }
@@ -75,7 +76,7 @@ int main(int argc, char *argv[]) {
     /* Validate command */
     QString commandToSend;
     if (command == "pause" || command == "play" || command == "skip"
-        || command == "nowplaying" || command == "shutdown")
+        || command == "nowplaying" || command == "queue" || command == "shutdown")
     {
         if (commandArgs > 0) {
             out << "Command '" << command << "' does not accept arguments!" << endl;
@@ -84,7 +85,7 @@ int main(int argc, char *argv[]) {
 
         /* OK */
         commandToSend = command;
-        waitForResponse = (command == "nowplaying");
+        waitForResponse = (command == "nowplaying" || command == "queue");
     }
     else if (command == "volume") {
         if (commandArgs > 1) {
@@ -177,7 +178,6 @@ int main(int argc, char *argv[]) {
         QString response = QString::fromUtf8(dataReceived.data(), semicolonIndex);
         out << " server response: " << response << endl;
     }
-
 
     return 0;
 }

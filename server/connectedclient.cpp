@@ -21,6 +21,8 @@
 
 #include "common/hashid.h"
 
+//#include "player.h"
+#include "queue.h"
 #include "queueentry.h"
 #include "server.h"
 
@@ -105,6 +107,9 @@ namespace PMP {
                 /* pretend current track has changed, in order to send current track info */
                 currentTrackChanged(_player->nowPlaying());
             }
+            else if (command == "queue") {
+                sendQueueInfo();
+            }
             else if (command == "shutdown") {
                 _server->shutdown();
             }
@@ -184,6 +189,55 @@ namespace PMP {
 
     void ConnectedClient::trackPositionChanged(qint64 position) {
         sendTextCommand("position " + QString::number(position));
+    }
+
+    void ConnectedClient::sendQueueInfo() {
+        Queue& queue = _player->queue();
+        QList<QueueEntry*> queueContent = queue.frontEntries(10);
+
+        QString command =
+            "queue length " + QString::number(queue.length())
+            + "\nIndex|  QID  | Length | Title                          | Artist";
+
+        command.reserve(command.size() + 100 * queueContent.size());
+
+        Resolver& resolver = _player->resolver();
+        QueueEntry* entry;
+        uint index = 0;
+        foreach(entry, queueContent) {
+            ++index;
+            entry->checkTrackData(resolver);
+
+            int lengthInSeconds = entry->lengthInSeconds();
+
+            command += "\n";
+            command += QString::number(index).rightJustified(5);
+            command += "|";
+            command += QString::number(entry->queueID()).rightJustified(7);
+            command += "|";
+
+            if (lengthInSeconds < 0) {
+                command += "        |";
+            }
+            else {
+                int sec = lengthInSeconds % 60;
+                int min = (lengthInSeconds / 60) % 60;
+                int hrs = lengthInSeconds / 3600;
+
+                command += QString::number(hrs).rightJustified(2, '0');
+                command += ":";
+                command += QString::number(min).rightJustified(2, '0');
+                command += ":";
+                command += QString::number(sec).rightJustified(2, '0');
+                command += "|";
+            }
+
+            command += entry->title().leftJustified(32);
+            command += "|";
+            command += entry->artist();
+        }
+
+        sendTextCommand(command);
     }
 
 }
