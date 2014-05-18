@@ -47,16 +47,24 @@ namespace PMP {
         void playerStateChanged(Player::State state);
         void currentTrackChanged(QueueEntry const* entry);
         void trackPositionChanged(qint64 position);
+        void sendStateInfo();
+        void sendVolumeMessage();
         void sendQueueInfo();
 
     private:
+        void readTextCommands();
+        void readBinaryCommands();
         void executeTextCommand(QString const& commandText);
         void sendTextCommand(QString const& command);
+        void sendBinaryMessage(QByteArray const& message);
+        void handleBinaryMessage(QByteArray const& message);
 
         QTcpSocket* _socket;
         Server* _server;
         Player* _player;
-        QByteArray _readBuffer;
+        QByteArray _textReadBuffer;
+        bool _binaryMode;
+        int _clientProtocolNo;
     };
 }
 #endif

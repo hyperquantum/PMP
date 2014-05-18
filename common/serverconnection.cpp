@@ -24,7 +24,10 @@
 namespace PMP {
 
     ServerConnection::ServerConnection(QObject* parent)
-     : QObject(parent), _state(ServerConnection::NotConnected)
+     : QObject(parent),
+      _state(ServerConnection::NotConnected),
+      _binarySendingMode(false),
+      _serverProtocolNo(-1)
     {
         connect(&_socket, SIGNAL(connected()), this, SLOT(onConnected()));
         connect(&_socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
@@ -50,60 +53,111 @@ namespace PMP {
     }
 
     void ServerConnection::onReadyRead() {
-        _readBuffer.append(_socket.readAll());
-        int bufLen = _readBuffer.length();
+        const bool START_IN_BINARY_MODE = true;
 
-        switch (_state) {
-        case NotConnected:
-            break; /* problem */
-        case Connecting: /* fall-through */
-        case Handshake:
-            if ((bufLen >= 1 && _readBuffer[0] != 'P')
-                || (bufLen >= 2 && _readBuffer[1] != 'M')
-                || (bufLen >= 3 && _readBuffer[2] != 'P'))
-            {
-                _state = HandshakeFailure;
-                emit invalidServer();
-                reset();
-                return;
-            }
+        State state;
+        do {
+            state = _state;
 
+            switch (state) {
+            case NotConnected:
+                break; /* problem */
+            case Connecting: /* fall-through */
+            case Handshake:
             {
-                int semicolonIndex = _readBuffer.indexOf(';');
+                char heading[3];
+
+                if (_socket.peek(heading, 3) < 3) {
+                    /* not enough data */
+                    break;
+                }
+
+                if (heading[0] != 'P'
+                    || heading[1] != 'M'
+                    || heading[2] != 'P')
+                {
+                    _state = HandshakeFailure;
+                    emit invalidServer();
+                    reset();
+                    return;
+                }
+
+                bool hadSemicolon = false;
+                char c;
+                while (_socket.getChar(&c)) {
+                    if (c == ';') {
+                        hadSemicolon = true;
+                        break;
+                    }
+                    _readBuffer.append(c);
+                }
+
+                if (!hadSemicolon) break; /* not enough data yet */
+
+                QString serverHelloString = QString::fromUtf8(_readBuffer);
+                _readBuffer.clear(); /* text consumed */
+
+                qDebug() << "server hello:" << serverHelloString;
 
                 /* TODO: other checks */
 
-                if (semicolonIndex >= 0) {
-                    QString serverHelloString = QString::fromUtf8(_readBuffer.data(), semicolonIndex);
-                    qDebug() << "server hello:" << serverHelloString;
+                /* TODO: maybe extract server version */
 
-                    /* TODO: extract server version */
+                _state = TextMode;
 
-                    _readBuffer.remove(0, semicolonIndex + 1); /* +1 to remove the semicolon too */
-                    _state = InOperation;
-
+                if (START_IN_BINARY_MODE) {
+                    switchToBinaryMode(); // EXPERIMENTAL
+                }
+                else {
                     requestInitialInfo();
-
                     emit connected();
                 }
             }
-            break;
-        case InOperation:
-            do {
-                int semicolonIndex = _readBuffer.indexOf(';');
-                if (semicolonIndex < 0) { break; }
+                break;
+            case TextMode:
+                readTextCommands();
+                break;
+            case BinaryHandshake:
+            {
+                if (_socket.bytesAvailable() < 5) {
+                    /* not enough data */
+                    break;
+                }
 
-                QString commandString = QString::fromUtf8(_readBuffer.data(), semicolonIndex);
+                char heading[5];
+                _socket.read(heading, 5);
 
-                _readBuffer.remove(0, semicolonIndex + 1); /* +1 to remove the semicolon too */
+                if (heading[0] != 'P'
+                    || heading[1] != 'M'
+                    || heading[2] != 'P')
+                {
+                    _state = HandshakeFailure;
+                    emit invalidServer();
+                    reset();
+                    return;
+                }
 
-                executeTextCommand(commandString);
-            } while (true);
-            break;
-        case HandshakeFailure:
-            /* do nothing */
-            break;
-        }
+                _serverProtocolNo = (heading[3] << 8) + heading[4];
+                qDebug() << "server supports protocol " << QString::number(_serverProtocolNo);
+
+                _state = BinaryMode;
+
+                if (START_IN_BINARY_MODE) {
+                    emit connected();
+                    sendSingleByteAction(10); /* request player state */
+                }
+            }
+                break;
+            case BinaryMode:
+                readBinaryCommands();
+                break;
+            case HandshakeFailure:
+                /* do nothing */
+                break;
+            }
+
+            /* maybe a new state will consume the available bytes... */
+        } while (_state != state && _socket.bytesAvailable() > 0);
     }
 
     void ServerConnection::onSocketError(QAbstractSocket::SocketError error) {
@@ -118,12 +172,35 @@ namespace PMP {
             emit cannotConnect(error);
             reset();
             break;
-        case InOperation:
+        case TextMode:
+        case BinaryHandshake:
+        case BinaryMode:
             _state = NotConnected;
             emit connectionBroken(error);
             reset();
             break;
         }
+    }
+
+    void ServerConnection::readTextCommands() {
+        do {
+            bool hadSemicolon = false;
+            char c;
+            while (_socket.getChar(&c)) {
+                if (c == ';') {
+                    hadSemicolon = true;
+                    break;
+                }
+                _readBuffer.append(c);
+            }
+
+            if (!hadSemicolon) break; /* not enough data yet */
+
+            QString commandString = QString::fromUtf8(_readBuffer);
+            _readBuffer.clear();
+
+            executeTextCommand(commandString);
+        } while (_state == TextMode);
     }
 
     void ServerConnection::executeTextCommand(QString const& commandText) {
@@ -203,6 +280,10 @@ namespace PMP {
                 qDebug() << "command not correctly formed:" << commandText;
             }
         }
+        else if (commandText == "binary") {
+            /* switch to binary communication mode */
+            _state = BinaryHandshake;
+        }
         else {
             qDebug() << "command not handled:" << commandText;
         }
@@ -214,29 +295,198 @@ namespace PMP {
         sendTextCommand("volume"); /* request current volume */
     }
 
+    void ServerConnection::switchToBinaryMode() {
+        if (_state != TextMode) return;
+
+        sendTextCommand("binary");
+
+        char binaryHeader[5];
+        binaryHeader[0] = 'P';
+        binaryHeader[1] = 'M';
+        binaryHeader[2] = 'P';
+        binaryHeader[3] = 0; /* protocol number; high byte */
+        binaryHeader[4] = 1; /* protocol number; low byte */
+        _socket.write(binaryHeader, sizeof(binaryHeader));
+
+        _binarySendingMode = true;
+    }
+
     void ServerConnection::sendTextCommand(QString const& command) {
         qDebug() << "sending command" << command;
         _socket.write((command + ";").toUtf8());
     }
 
+    void ServerConnection::sendBinaryMessage(QByteArray const& message) {
+        quint32 length = message.length();
+
+        char lengthArr[4];
+        lengthArr[0] = (length >> 24) & 255;
+        lengthArr[1] = (length >> 16) & 255;
+        lengthArr[2] = (length >> 8) & 255;
+        lengthArr[3] = length & 255;
+
+        _socket.write(lengthArr, sizeof(lengthArr));
+        _socket.write(message.data(), length);
+    }
+
+    void ServerConnection::sendSingleByteAction(quint8 action) {
+        qDebug() << "sending single byte action" << (int)action;
+
+        QByteArray message;
+        message.reserve(3);
+        message.append((char)0); /* message type, high byte */
+        message.append((char)1); /* message type, low byte */
+        message.append((char)action); /* single byte action type */
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::shutdownServer() {
-        sendTextCommand("shutdown");
+        if (!_binarySendingMode) {
+            sendTextCommand("shutdown");
+            return;
+        }
+
+        sendSingleByteAction(99); /* 99 = shutdown server */
     }
 
     void ServerConnection::play() {
-        sendTextCommand("play");
+        if (!_binarySendingMode) {
+            sendTextCommand("play");
+            return;
+        }
+
+        sendSingleByteAction(1); /* 1 = play */
     }
 
     void ServerConnection::pause() {
-        sendTextCommand("pause");
+        if (!_binarySendingMode) {
+            sendTextCommand("pause");
+            return;
+        }
+
+        sendSingleByteAction(2); /* 2 = pause */
     }
 
     void ServerConnection::skip() {
-        sendTextCommand("skip");
+        if (!_binarySendingMode) {
+            sendTextCommand("skip");
+            return;
+        }
+
+        sendSingleByteAction(3); /* 3 = skip */
     }
 
     void ServerConnection::setVolume(int percentage) {
-        sendTextCommand("volume " + QString::number(percentage));
+        if (!_binarySendingMode) {
+            sendTextCommand("volume " + QString::number(percentage));
+            return;
+        }
+
+        sendSingleByteAction(100 + percentage); /* 100 to 200 = set volume */
+    }
+
+    void ServerConnection::readBinaryCommands() {
+        char lengthBytes[4];
+
+        while (_socket.peek(lengthBytes, sizeof(lengthBytes)) == sizeof(lengthBytes)) {
+            quint32 messageLength =
+                (lengthBytes[0] << 24)
+                + (lengthBytes[1] << 16)
+                + (lengthBytes[2] << 8)
+                + lengthBytes[3];
+
+            qDebug() << "binary message length:" << messageLength;
+
+            if (_socket.bytesAvailable() - sizeof(lengthBytes) < messageLength) {
+                break; /* message not complete yet */
+            }
+
+            _socket.read(lengthBytes, sizeof(lengthBytes)); /* consume the length */
+            QByteArray message = _socket.read(messageLength);
+
+            handleBinaryMessage(message);
+        }
+    }
+
+    void ServerConnection::handleBinaryMessage(QByteArray const& message) {
+        qint32 messageLength = message.length();
+
+        if (messageLength < 2) {
+            qDebug() << "received invalid binary message (less than 2 bytes)";
+            return; /* invalid message */
+        }
+
+        int messageType = (message[0] << 8) + message[1];
+        qDebug() << "received binary message with type" << messageType;
+
+        switch (messageType) {
+        case 1:
+        {
+            if (messageLength != 20) {
+                return; /* invalid message */
+            }
+
+            quint8 playerState = message[2];
+            quint8 volume = message[3];
+
+//            quint32 queueLength =
+//                (message[4] << 24)
+//                + (message[5] << 16)
+//                + (message[6] << 8)
+//                + message[7];
+//
+//            quint32 queueID =
+//                (message[8] << 24)
+//                + (message[9] << 16)
+//                + (message[10] << 8)
+//                + message[11];
+
+            quint64 position = message[12];
+            position = (position << 8) + message[13];
+            position = (position << 8) + message[14];
+            position = (position << 8) + message[15];
+            position = (position << 8) + message[16];
+            position = (position << 8) + message[17];
+            position = (position << 8) + message[18];
+            position = (position << 8) + message[19];
+
+            /* FIXME: events too simplistic */
+
+            if (volume <= 100) { emit volumeChanged(volume); }
+
+            switch (playerState) {
+            case 1:
+                emit stopped();
+                break;
+            case 2:
+                emit playing();
+                break;
+            case 3:
+                emit paused();
+                break;
+            }
+
+            emit trackPositionChanged(position);
+
+
+        }
+            break;
+        case 2:
+        {
+            if (messageLength != 3) {
+                return; /* invalid message */
+            }
+
+            quint8 volume = message[2];
+
+            if (volume <= 100) { emit volumeChanged(volume); }
+        }
+            break;
+        default:
+            qDebug() << "unknown binary message type" << messageType;
+            break; /* unknown message type */
+        }
     }
 
 }

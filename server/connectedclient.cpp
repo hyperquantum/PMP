@@ -29,7 +29,8 @@
 namespace PMP {
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player)
-     : QObject(server), _socket(socket), _server(server), _player(player)
+     : QObject(server), _socket(socket), _server(server), _player(player),
+        _binaryMode(false), _clientProtocolNo(-1)
     {
         connect(server, SIGNAL(shuttingDown()), this, SLOT(terminateConnection()));
         connect(socket, SIGNAL(disconnected()), this, SLOT(terminateConnection()));
@@ -47,26 +48,48 @@ namespace PMP {
 
     void ConnectedClient::terminateConnection() {
         _socket->close();
-        _readBuffer.clear();
+        _textReadBuffer.clear();
         _socket->deleteLater();
         this->deleteLater();
     }
 
     void ConnectedClient::dataArrived() {
-        _readBuffer.append(_socket->readAll());
+        if (_binaryMode && _clientProtocolNo >= 0) {
+            readBinaryCommands();
+            return;
+        }
 
-        do {
-            int semicolonIndex = _readBuffer.indexOf(';');
-            if (semicolonIndex < 0) {
-                break; /* no complete text command in received data */
+        if (!_binaryMode) {
+            /* textual command mode */
+            readTextCommands();
+        }
+
+        /* not changed to binary mode? */
+        if (!_binaryMode) { return; }
+
+        /* do we still need to read the binary header? */
+        if (_clientProtocolNo < 0) {
+            if (_socket->bytesAvailable() < 5) {
+                /* not enough data */
+                return;
             }
 
-            QString commandString = QString::fromUtf8(_readBuffer.data(), semicolonIndex);
+            char heading[5];
+            _socket->read(heading, 5);
 
-            _readBuffer.remove(0, semicolonIndex + 1); /* +1 to remove the semicolon too */
+            if (heading[0] != 'P'
+                || heading[1] != 'M'
+                || heading[2] != 'P')
+            {
+                terminateConnection();
+                return;
+            }
 
-            executeTextCommand(commandString);
-        } while (true);
+            _clientProtocolNo = (heading[3] << 8) + heading[4];
+            qDebug() << "client supports protocol " << QString::number(_clientProtocolNo);
+        }
+
+        readBinaryCommands();
     }
 
     void ConnectedClient::socketError(QAbstractSocket::SocketError error) {
@@ -78,6 +101,34 @@ namespace PMP {
                 // problem ??
 
                 break;
+        }
+    }
+
+    void ConnectedClient::readTextCommands() {
+        while (!_binaryMode) {
+            bool hadSemicolon = false;
+            char c;
+            while (_socket->getChar(&c)) {
+                if (c == ';') {
+                    hadSemicolon = true;
+                    /* skip an optional newline after the semicolon */
+                    if (_socket->peek(&c, 1) > 0 && c == '\r') _socket->read(&c, 1);
+                    if (_socket->peek(&c, 1) > 0 && c == '\n') _socket->read(&c, 1);
+                    break;
+                }
+
+                _textReadBuffer.append(c); /* not for semicolons */
+            }
+
+            if (!hadSemicolon) {
+                break; /* no complete text command in received data */
+            }
+
+            QString commandString = QString::fromUtf8(_textReadBuffer);
+
+            _textReadBuffer.clear(); /* text was consumed completely */
+
+            executeTextCommand(commandString);
         }
     }
 
@@ -97,7 +148,7 @@ namespace PMP {
             }
             else if (command == "volume") {
                 /* 'volume' without arguments sends current volume */
-                _socket->write((QString("volume ") + QString::number(_player->volume()) + ";").toUtf8());
+                sendVolumeMessage();
             }
             else if (command == "state") {
                 /* pretend state has changed, in order to send state info */
@@ -112,6 +163,20 @@ namespace PMP {
             }
             else if (command == "shutdown") {
                 _server->shutdown();
+            }
+            else if (command == "binary") {
+                /* switch to binary mode */
+                _binaryMode = true;
+                /* tell the client that all further communication will be in binary mode */
+                sendTextCommand("binary");
+
+                char binaryHeader[5];
+                binaryHeader[0] = 'P';
+                binaryHeader[1] = 'M';
+                binaryHeader[2] = 'P';
+                binaryHeader[3] = 0; /* protocol number; high byte */
+                binaryHeader[4] = 1; /* protocol number; low byte */
+                _socket->write(binaryHeader, sizeof(binaryHeader));
             }
             else {
                 /* unknown command ???? */
@@ -148,11 +213,100 @@ namespace PMP {
         _socket->write((command + ";").toUtf8());
     }
 
+    void ConnectedClient::sendBinaryMessage(QByteArray const& message) {
+        quint32 length = message.length();
+
+        char lengthArr[4];
+        lengthArr[0] = (length >> 24) & 255;
+        lengthArr[1] = (length >> 16) & 255;
+        lengthArr[2] = (length >> 8) & 255;
+        lengthArr[3] = length & 255;
+
+        _socket->write(lengthArr, sizeof(lengthArr));
+        _socket->write(message.data(), length);
+    }
+
+    void ConnectedClient::sendStateInfo() {
+        qDebug() << "sending state info";
+
+        Player::State state = _player->state();
+        quint8 stateNum = 0;
+        switch (state) {
+        case Player::Stopped:
+            stateNum = 1;
+            break;
+        case Player::Playing:
+            stateNum = 2;
+            break;
+        case Player::Paused:
+            stateNum = 3;
+            break;
+        }
+
+        quint64 position = _player->playPosition();
+        quint8 volume = _player->volume();
+
+        quint32 queueLength = _player->queue().length();
+
+        QueueEntry const* nowPlaying = _player->nowPlaying();
+        //nowPlaying->checkTrackData(_player->resolver());
+        quint32 queueID = nowPlaying ? nowPlaying->queueID() : 0;
+        //QString artist = nowPlaying->artist();
+        //QString title = nowPlaying->title();
+
+        QByteArray message;
+        message.reserve(20);
+        message.append((char)0); /* message type, high byte */
+        message.append((char)1); /* message type, low byte */
+        message.append((char)stateNum);
+        message.append((char)volume);
+        message.append((char)((queueLength >> 24) & 255));
+        message.append((char)((queueLength >> 16) & 255));
+        message.append((char)((queueLength >> 8) & 255));
+        message.append((char)(queueLength & 255));
+        message.append((char)((queueID >> 24) & 255));
+        message.append((char)((queueID >> 16) & 255));
+        message.append((char)((queueID >> 8) & 255));
+        message.append((char)(queueID & 255));
+        message.append((char)((position >> 56) & 255));
+        message.append((char)((position >> 48) & 255));
+        message.append((char)((position >> 40) & 255));
+        message.append((char)((position >> 32) & 255));
+        message.append((char)((position >> 24) & 255));
+        message.append((char)((position >> 16) & 255));
+        message.append((char)((position >> 8) & 255));
+        message.append((char)(position & 255));
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendVolumeMessage() {
+        quint8 volume = _player->volume();
+
+        if (!_binaryMode) {
+            sendTextCommand("volume " + QString::number(volume));
+            return;
+        }
+
+        QByteArray message;
+        message.reserve(3);
+        message.append((char)0); /* message type, high byte */
+        message.append((char)2); /* message type, low byte */
+        message.append((char)volume);
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::volumeChanged(int volume) {
-        sendTextCommand("volume " + QString::number(_player->volume()));
+        sendVolumeMessage();
     }
 
     void ConnectedClient::playerStateChanged(Player::State state) {
+        if (_binaryMode) {
+
+            return;
+        }
+
         switch (state) {
         case Player::Playing:
             sendTextCommand("playing");
@@ -167,6 +321,11 @@ namespace PMP {
     }
 
     void ConnectedClient::currentTrackChanged(QueueEntry const* entry) {
+        if (_binaryMode) {
+
+            return;
+        }
+
         if (entry == 0) {
             sendTextCommand("nowplaying nothing");
             return;
@@ -188,10 +347,20 @@ namespace PMP {
     }
 
     void ConnectedClient::trackPositionChanged(qint64 position) {
+        if (_binaryMode) {
+
+            return;
+        }
+
         sendTextCommand("position " + QString::number(position));
     }
 
     void ConnectedClient::sendQueueInfo() {
+        if (_binaryMode) {
+
+            return;
+        }
+
         Queue& queue = _player->queue();
         QList<QueueEntry*> queueContent = queue.frontEntries(10);
 
@@ -238,6 +407,81 @@ namespace PMP {
         }
 
         sendTextCommand(command);
+    }
+
+    void ConnectedClient::readBinaryCommands() {
+        char lengthBytes[4];
+
+        while (_socket->peek(lengthBytes, sizeof(lengthBytes)) == sizeof(lengthBytes)) {
+            quint32 messageLength =
+                (lengthBytes[0] << 24)
+                + (lengthBytes[1] << 16)
+                + (lengthBytes[2] << 8)
+                + lengthBytes[3];
+
+            qDebug() << "binary message length:" << messageLength;
+
+            if (_socket->bytesAvailable() - sizeof(lengthBytes) < messageLength) {
+                break; /* message not complete yet */
+            }
+
+            _socket->read(lengthBytes, sizeof(lengthBytes)); /* consume the length */
+            QByteArray message = _socket->read(messageLength);
+
+            handleBinaryMessage(message);
+        }
+    }
+
+    void ConnectedClient::handleBinaryMessage(QByteArray const& message) {
+        qint32 messageLength = message.length();
+
+        if (messageLength < 2) {
+            qDebug() << "received invalid binary message (less than 2 bytes)";
+            return; /* invalid message */
+        }
+
+        int messageType = (message[0] << 8) + message[1];
+        qDebug() << "received binary message with type" << messageType;
+
+        switch (messageType) {
+        case 1:
+        {
+            if (messageLength != 3) {
+                return; /* invalid message */
+            }
+
+            quint8 actionType = message[2];
+            qDebug() << " single byte action with type" << actionType;
+
+            if (actionType >= 100 && actionType <= 200) {
+                _player->setVolume(actionType - 100);
+            }
+
+            switch(actionType) {
+            case 1:
+                _player->play();
+                break;
+            case 2:
+                _player->pause();
+                break;
+            case 3:
+                _player->skip();
+                break;
+            case 10:
+                sendStateInfo();
+                break;
+            case 99:
+                _server->shutdown();
+                break;
+            default:
+                break; /* unknown action type */
+            }
+        }
+            break;
+        default:
+            qDebug() << "unknown binary message type" << messageType;
+            break; /* unknown message type */
+        }
     }
 
 }

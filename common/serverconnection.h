@@ -30,8 +30,8 @@ namespace PMP {
         Q_OBJECT
 
         enum State {
-            NotConnected, Connecting, Handshake, InOperation,
-            HandshakeFailure
+            NotConnected, Connecting, Handshake, TextMode,
+            HandshakeFailure, BinaryHandshake, BinaryMode
         };
     public:
         ServerConnection(QObject* parent = 0);
@@ -67,15 +67,23 @@ namespace PMP {
         void onConnected();
         void onReadyRead();
         void onSocketError(QAbstractSocket::SocketError error);
+        void switchToBinaryMode();
 
     private:
+        void readTextCommands();
+        void readBinaryCommands();
         void executeTextCommand(QString const& commandText);
         void requestInitialInfo();
         void sendTextCommand(QString const& command);
+        void sendBinaryMessage(QByteArray const& message);
+        void sendSingleByteAction(quint8 action);
+        void handleBinaryMessage(QByteArray const& message);
 
         State _state;
         QTcpSocket _socket;
         QByteArray _readBuffer;
+        bool _binarySendingMode;
+        int _serverProtocolNo;
     };
 }
 #endif
