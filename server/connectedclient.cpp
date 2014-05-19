@@ -159,7 +159,7 @@ namespace PMP {
                 currentTrackChanged(_player->nowPlaying());
             }
             else if (command == "queue") {
-                sendQueueInfo();
+                sendTextualQueueInfo();
             }
             else if (command == "shutdown") {
                 _server->shutdown();
@@ -303,7 +303,7 @@ namespace PMP {
 
     void ConnectedClient::playerStateChanged(Player::State state) {
         if (_binaryMode) {
-
+            sendStateInfo();
             return;
         }
 
@@ -322,7 +322,7 @@ namespace PMP {
 
     void ConnectedClient::currentTrackChanged(QueueEntry const* entry) {
         if (_binaryMode) {
-
+            sendStateInfo();
             return;
         }
 
@@ -348,19 +348,14 @@ namespace PMP {
 
     void ConnectedClient::trackPositionChanged(qint64 position) {
         if (_binaryMode) {
-
+            sendStateInfo();
             return;
         }
 
         sendTextCommand("position " + QString::number(position));
     }
 
-    void ConnectedClient::sendQueueInfo() {
-        if (_binaryMode) {
-
-            return;
-        }
-
+    void ConnectedClient::sendTextualQueueInfo() {
         Queue& queue = _player->queue();
         QList<QueueEntry*> queueContent = queue.frontEntries(10);
 

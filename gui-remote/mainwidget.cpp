@@ -54,6 +54,7 @@ namespace PMP {
         connect(_connection, SIGNAL(noCurrentTrack()), this, SLOT(noCurrentTrack()));
         connect(_connection, SIGNAL(nowPlayingTrack(QString, QString, int)), this, SLOT(nowPlayingTrack(QString, QString, int)));
         connect(_connection, SIGNAL(trackPositionChanged(quint64)), this, SLOT(trackPositionChanged(quint64)));
+        connect(_connection, SIGNAL(queueLengthChanged(int)), this, SLOT(queueLengthChanged(int)));
     }
 
     void MainWidget::playing() {
@@ -126,6 +127,10 @@ namespace PMP {
              + ":" + QString::number(sec).rightJustified(2, '0')
              + "." + QString::number(partialSec).rightJustified(3, '0')
         );
+    }
+
+    void MainWidget::queueLengthChanged(int length) {
+        _ui->queueLengthValueLabel->setText(QString::number(length));
     }
 
 }

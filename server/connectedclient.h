@@ -49,7 +49,7 @@ namespace PMP {
         void trackPositionChanged(qint64 position);
         void sendStateInfo();
         void sendVolumeMessage();
-        void sendQueueInfo();
+        void sendTextualQueueInfo();
 
     private:
         void readTextCommands();

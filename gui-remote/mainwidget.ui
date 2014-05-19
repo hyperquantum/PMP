@@ -17,7 +17,7 @@
    <property name="geometry">
     <rect>
      <x>60</x>
-     <y>230</y>
+     <y>250</y>
      <width>75</width>
      <height>23</height>
     </rect>
@@ -30,7 +30,7 @@
    <property name="geometry">
     <rect>
      <x>160</x>
-     <y>230</y>
+     <y>250</y>
      <width>75</width>
      <height>23</height>
     </rect>
@@ -43,7 +43,7 @@
    <property name="geometry">
     <rect>
      <x>260</x>
-     <y>230</y>
+     <y>250</y>
      <width>75</width>
      <height>23</height>
     </rect>
@@ -58,7 +58,7 @@
      <x>40</x>
      <y>40</y>
      <width>311</width>
-     <height>101</height>
+     <height>110</height>
     </rect>
    </property>
    <layout class="QFormLayout" name="formLayout">
@@ -72,7 +72,7 @@
     <item row="0" column="1">
      <widget class="QLabel" name="titleValueLabel">
       <property name="text">
-       <string>none</string>
+       <string>unknown</string>
       </property>
      </widget>
     </item>
@@ -86,7 +86,7 @@
     <item row="1" column="1">
      <widget class="QLabel" name="artistValueLabel">
       <property name="text">
-       <string>none</string>
+       <string>unknown</string>
       </property>
      </widget>
     </item>
@@ -100,7 +100,7 @@
     <item row="2" column="1">
      <widget class="QLabel" name="lengthValueLabel">
       <property name="text">
-       <string>none</string>
+       <string>unknown</string>
       </property>
      </widget>
     </item>
@@ -132,13 +132,27 @@
       </property>
      </widget>
     </item>
+    <item row="5" column="0">
+     <widget class="QLabel" name="queueLengthLabel">
+      <property name="text">
+       <string>Queue length:</string>
+      </property>
+     </widget>
+    </item>
+    <item row="5" column="1">
+     <widget class="QLabel" name="queueLengthValueLabel">
+      <property name="text">
+       <string>unknown</string>
+      </property>
+     </widget>
+    </item>
    </layout>
   </widget>
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
      <x>39</x>
-     <y>170</y>
+     <y>180</y>
      <width>311</width>
      <height>31</height>
     </rect>

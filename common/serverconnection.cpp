@@ -430,17 +430,17 @@ namespace PMP {
             quint8 playerState = message[2];
             quint8 volume = message[3];
 
-//            quint32 queueLength =
-//                (message[4] << 24)
-//                + (message[5] << 16)
-//                + (message[6] << 8)
-//                + message[7];
-//
-//            quint32 queueID =
-//                (message[8] << 24)
-//                + (message[9] << 16)
-//                + (message[10] << 8)
-//                + message[11];
+            quint32 queueLength =
+                (message[4] << 24)
+                + (message[5] << 16)
+                + (message[6] << 8)
+                + message[7];
+
+            quint32 queueID =
+                (message[8] << 24)
+                + (message[9] << 16)
+                + (message[10] << 8)
+                + message[11];
 
             quint64 position = message[12];
             position = (position << 8) + message[13];
@@ -451,9 +451,18 @@ namespace PMP {
             position = (position << 8) + message[18];
             position = (position << 8) + message[19];
 
+            qDebug() << "track position:" << position;
+
             /* FIXME: events too simplistic */
 
             if (volume <= 100) { emit volumeChanged(volume); }
+
+            if (queueID > 0) {
+                emit nowPlayingTrack("?", "?", -1);
+            }
+            else {
+                emit noCurrentTrack();
+            }
 
             switch (playerState) {
             case 1:
@@ -468,7 +477,7 @@ namespace PMP {
             }
 
             emit trackPositionChanged(position);
-
+            emit queueLengthChanged(queueLength);
 
         }
             break;

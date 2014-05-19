@@ -61,7 +61,8 @@ namespace PMP {
         void volumeChanged(int percentage);
         void noCurrentTrack();
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
-        void trackPositionChanged(quint64);
+        void trackPositionChanged(quint64 position);
+        void queueLengthChanged(int length);
 
     private slots:
         void onConnected();

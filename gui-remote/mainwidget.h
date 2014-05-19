@@ -51,6 +51,7 @@ namespace PMP {
         void noCurrentTrack();
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
         void trackPositionChanged(quint64 position);
+        void queueLengthChanged(int length);
 
     private:
         Ui::MainWidget* _ui;
