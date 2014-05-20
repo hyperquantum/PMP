@@ -20,6 +20,7 @@
 #include "connectedclient.h"
 
 #include "common/hashid.h"
+#include "common/networkutil.h"
 
 //#include "player.h"
 #include "queue.h"
@@ -249,33 +250,18 @@ namespace PMP {
         quint32 queueLength = _player->queue().length();
 
         QueueEntry const* nowPlaying = _player->nowPlaying();
-        //nowPlaying->checkTrackData(_player->resolver());
         quint32 queueID = nowPlaying ? nowPlaying->queueID() : 0;
-        //QString artist = nowPlaying->artist();
-        //QString title = nowPlaying->title();
 
         QByteArray message;
         message.reserve(20);
-        message.append((char)0); /* message type, high byte */
-        message.append((char)1); /* message type, low byte */
-        message.append((char)stateNum);
-        message.append((char)volume);
-        message.append((char)((queueLength >> 24) & 255));
-        message.append((char)((queueLength >> 16) & 255));
-        message.append((char)((queueLength >> 8) & 255));
-        message.append((char)(queueLength & 255));
-        message.append((char)((queueID >> 24) & 255));
-        message.append((char)((queueID >> 16) & 255));
-        message.append((char)((queueID >> 8) & 255));
-        message.append((char)(queueID & 255));
-        message.append((char)((position >> 56) & 255));
-        message.append((char)((position >> 48) & 255));
-        message.append((char)((position >> 40) & 255));
-        message.append((char)((position >> 32) & 255));
-        message.append((char)((position >> 24) & 255));
-        message.append((char)((position >> 16) & 255));
-        message.append((char)((position >> 8) & 255));
-        message.append((char)(position & 255));
+        NetworkUtil::append2Bytes(message, 1); /* message type */
+        NetworkUtil::appendByte(message, stateNum);
+        NetworkUtil::appendByte(message, volume);
+        NetworkUtil::append4Bytes(message, queueLength);
+        NetworkUtil::append4Bytes(message, queueID);
+        NetworkUtil::append8Bytes(message, position);
+
+        //qDebug() << "sending position bytes" << (quint8)message[12] << (quint8)message[13] << (quint8)message[14] << (quint8)message[15] << (quint8)message[16] << (quint8)message[17] << (quint8)message[18] << (quint8)message[19];
 
         sendBinaryMessage(message);
     }
@@ -290,9 +276,8 @@ namespace PMP {
 
         QByteArray message;
         message.reserve(3);
-        message.append((char)0); /* message type, high byte */
-        message.append((char)2); /* message type, low byte */
-        message.append((char)volume);
+        NetworkUtil::append2Bytes(message, 2); /* message type */
+        NetworkUtil::appendByte(message, volume);
 
         sendBinaryMessage(message);
     }
@@ -435,7 +420,7 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        int messageType = (message[0] << 8) + message[1];
+        int messageType = NetworkUtil::get2Bytes(message, 0);
         qDebug() << "received binary message with type" << messageType;
 
         switch (messageType) {
@@ -445,7 +430,7 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            quint8 actionType = message[2];
+            quint8 actionType = NetworkUtil::getByte(message, 2);
             qDebug() << " single byte action with type" << actionType;
 
             if (actionType >= 100 && actionType <= 200) {

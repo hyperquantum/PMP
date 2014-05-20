@@ -28,6 +28,7 @@ set(PMP_COMMON_SOURCES
     common/audiodata.cpp
     common/filedata.cpp
     common/hashid.cpp
+    common/networkutil.cpp
     common/serverconnection.cpp
     common/tagdata.cpp
 )
