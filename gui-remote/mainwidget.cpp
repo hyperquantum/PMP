@@ -26,7 +26,9 @@ namespace PMP {
 
     MainWidget::MainWidget(QWidget *parent) :
         QWidget(parent),
-        _ui(new Ui::MainWidget), _connection(0), _volume(-1)
+        _ui(new Ui::MainWidget),
+        _connection(0),
+        _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1)
     {
         _ui->setupUi(this);
     }
@@ -52,9 +54,11 @@ namespace PMP {
         connect(_connection, SIGNAL(stopped()), this, SLOT(stopped()));
 
         connect(_connection, SIGNAL(noCurrentTrack()), this, SLOT(noCurrentTrack()));
+        connect(_connection, SIGNAL(nowPlayingTrack(quint32)), this, SLOT(nowPlayingTrack(quint32)));
         connect(_connection, SIGNAL(nowPlayingTrack(QString, QString, int)), this, SLOT(nowPlayingTrack(QString, QString, int)));
         connect(_connection, SIGNAL(trackPositionChanged(quint64)), this, SLOT(trackPositionChanged(quint64)));
         connect(_connection, SIGNAL(queueLengthChanged(int)), this, SLOT(queueLengthChanged(int)));
+        connect(_connection, SIGNAL(receivedTrackInfo(quint32, int, QString, QString)), this, SLOT(receivedTrackInfo(quint32, int, QString, QString)));
     }
 
     void MainWidget::playing() {
@@ -87,10 +91,27 @@ namespace PMP {
     }
 
     void MainWidget::noCurrentTrack() {
+        _nowPlayingQID = 0;
+        _nowPlayingArtist = "";
+        _nowPlayingTitle = "";
+        _nowPlayingLength = -1;
         _ui->titleValueLabel->setText("");
         _ui->artistValueLabel->setText("");
         _ui->lengthValueLabel->setText("");
         _ui->positionValueLabel->setText("");
+    }
+
+    void MainWidget::nowPlayingTrack(quint32 queueID) {
+        if (queueID != _nowPlayingQID) {
+            _nowPlayingQID = queueID;
+            _nowPlayingArtist = "";
+            _nowPlayingTitle = "";
+            _nowPlayingLength = -1;
+
+            _connection->sendTrackInfoRequest(queueID);
+        }
+
+        nowPlayingTrack(_nowPlayingTitle, _nowPlayingArtist, _nowPlayingLength);
     }
 
     void MainWidget::nowPlayingTrack(QString title, QString artist, int lengthInSeconds) {
@@ -131,6 +152,16 @@ namespace PMP {
 
     void MainWidget::queueLengthChanged(int length) {
         _ui->queueLengthValueLabel->setText(QString::number(length));
+    }
+
+    void MainWidget::receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist) {
+        if (_nowPlayingQID != queueID) { return; }
+
+        _nowPlayingArtist = artist;
+        _nowPlayingTitle = title;
+        _nowPlayingLength = lengthInSeconds;
+
+        nowPlayingTrack(title, artist, lengthInSeconds);
     }
 
 }

@@ -31,7 +31,7 @@ namespace PMP {
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player)
      : QObject(server), _socket(socket), _server(server), _player(player),
-        _binaryMode(false), _clientProtocolNo(-1)
+        _binaryMode(false), _clientProtocolNo(-1), _lastSentNowPlayingID(0)
     {
         connect(server, SIGNAL(shuttingDown()), this, SLOT(terminateConnection()));
         connect(socket, SIGNAL(disconnected()), this, SLOT(terminateConnection()));
@@ -264,6 +264,8 @@ namespace PMP {
         //qDebug() << "sending position bytes" << (quint8)message[12] << (quint8)message[13] << (quint8)message[14] << (quint8)message[15] << (quint8)message[16] << (quint8)message[17] << (quint8)message[18] << (quint8)message[19];
 
         sendBinaryMessage(message);
+
+        _lastSentNowPlayingID = queueID;
     }
 
     void ConnectedClient::sendVolumeMessage() {
@@ -278,6 +280,36 @@ namespace PMP {
         message.reserve(3);
         NetworkUtil::append2Bytes(message, 2); /* message type */
         NetworkUtil::appendByte(message, volume);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendTrackInfoMessage(quint32 queueID) {
+        QueueEntry* track = _player->queue().lookup(queueID);
+        if (track == 0) { return; /* sorry, cannot send */ }
+
+        track->checkTrackData(_player->resolver());
+
+        QString title = track->title();
+        QString artist = track->artist();
+        qint32 length = track->lengthInSeconds(); /* SIGNED NUMBER!! */
+
+        //qDebug() << "sending track length" << length;
+
+        QByteArray titleData = title.toUtf8();
+        QByteArray artistData = artist.toUtf8();
+
+        QByteArray message;
+        message.reserve((2 + 4 + 4 + 4 + 4) + titleData.size() + artistData.size());
+        NetworkUtil::append2Bytes(message, 3); /* message type */
+        NetworkUtil::append4Bytes(message, queueID);
+        NetworkUtil::append4Bytes(message, length); /* length in seconds, SIGNED */
+        NetworkUtil::append4Bytes(message, titleData.size());
+        NetworkUtil::append4Bytes(message, artistData.size());
+        message += titleData;
+        message += artistData;
+
+        //qDebug() << " sending track length bytes:" << (uint)(quint8)message[6] << (uint)(quint8)message[7] << (uint)(quint8)message[8] << (uint)(quint8)message[9];
 
         sendBinaryMessage(message);
     }
@@ -424,7 +456,7 @@ namespace PMP {
         qDebug() << "received binary message with type" << messageType;
 
         switch (messageType) {
-        case 1:
+        case 1: /* single-byte action message */
         {
             if (messageLength != 3) {
                 return; /* invalid message */
@@ -454,8 +486,24 @@ namespace PMP {
                 _server->shutdown();
                 break;
             default:
+                qDebug() << "unrecognized single-byte action type:" << (int)actionType;
                 break; /* unknown action type */
             }
+        }
+            break;
+        case 2: /* request for track info by QID */
+        {
+            if (messageLength != 6) {
+                return; /* invalid message */
+            }
+
+            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+
+            if (queueID <= 0) {
+                return; /* invalid queue ID */
+            }
+
+            sendTrackInfoMessage(queueID);
         }
             break;
         default:

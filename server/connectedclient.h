@@ -57,6 +57,7 @@ namespace PMP {
         void executeTextCommand(QString const& commandText);
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
+        void sendTrackInfoMessage(quint32 queueID);
         void handleBinaryMessage(QByteArray const& message);
 
         QTcpSocket* _socket;
@@ -65,6 +66,7 @@ namespace PMP {
         QByteArray _textReadBuffer;
         bool _binaryMode;
         int _clientProtocolNo;
+        quint32 _lastSentNowPlayingID;
     };
 }
 #endif

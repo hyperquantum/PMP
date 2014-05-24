@@ -19,6 +19,8 @@
 
 #include "serverconnection.h"
 
+#include "common/networkutil.h"
+
 #include <QtDebug>
 
 namespace PMP {
@@ -109,7 +111,9 @@ namespace PMP {
                     switchToBinaryMode(); // EXPERIMENTAL
                 }
                 else {
-                    requestInitialInfo();
+                    sendTextCommand("state"); /* request player state */
+                    sendTextCommand("nowplaying"); /* request track now playing */
+                    sendTextCommand("volume"); /* request current volume */
                     emit connected();
                 }
             }
@@ -289,12 +293,6 @@ namespace PMP {
         }
     }
 
-    void ServerConnection::requestInitialInfo() {
-        sendTextCommand("state"); /* request player state */
-        sendTextCommand("nowplaying"); /* request track now playing */
-        sendTextCommand("volume"); /* request current volume */
-    }
-
     void ServerConnection::switchToBinaryMode() {
         if (_state != TextMode) return;
 
@@ -334,9 +332,19 @@ namespace PMP {
 
         QByteArray message;
         message.reserve(3);
-        message.append((char)0); /* message type, high byte */
-        message.append((char)1); /* message type, low byte */
-        message.append((char)action); /* single byte action type */
+        NetworkUtil::append2Bytes(message, 1); /* message type */
+        NetworkUtil::appendByte(message, action); /* single byte action type */
+
+        sendBinaryMessage(message);
+    }
+
+    void ServerConnection::sendTrackInfoRequest(uint queueID) {
+        qDebug() << "sending request for track info of QID" << queueID;
+
+        QByteArray message;
+        message.reserve(6);
+        NetworkUtil::append2Bytes(message, 2); /* message type */
+        NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
     }
@@ -417,42 +425,23 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        int messageType = (message[0] << 8) + message[1];
+        int messageType = NetworkUtil::get2Bytes(message, 0);
         qDebug() << "received binary message with type" << messageType;
 
         switch (messageType) {
-        case 1:
+        case 1: /* player state message */
         {
             if (messageLength != 20) {
                 return; /* invalid message */
             }
 
-            quint8 playerState = message[2];
-            quint8 volume = message[3];
-
-            quint32 queueLength =
-                ((quint8)message[4] << 24)
-                + ((quint8)message[5] << 16)
-                + ((quint8)message[6] << 8)
-                + (quint8)message[7];
-
-            quint32 queueID =
-                ((quint8)message[8] << 24)
-                + ((quint8)message[9] << 16)
-                + ((quint8)message[10] << 8)
-                + (quint8)message[11];
+            quint8 playerState = NetworkUtil::getByte(message, 2);
+            quint8 volume = NetworkUtil::getByte(message, 3);
+            quint32 queueLength = NetworkUtil::get4Bytes(message, 4);
+            quint32 queueID = NetworkUtil::get4Bytes(message, 8);
+            quint64 position = NetworkUtil::get8Bytes(message, 12);
 
             //qDebug() << "received position bytes" << (quint8)message[12] << (quint8)message[13] << (quint8)message[14] << (quint8)message[15] << (quint8)message[16] << (quint8)message[17] << (quint8)message[18] << (quint8)message[19];
-
-            quint64 position = (quint8)message[12];
-            position = (position << 8) + (quint8)message[13];
-            position = (position << 8) + (quint8)message[14];
-            position = (position << 8) + (quint8)message[15];
-            position = (position << 8) + (quint8)message[16];
-            position = (position << 8) + (quint8)message[17];
-            position = (position << 8) + (quint8)message[18];
-            position = (position << 8) + (quint8)message[19];
-
             qDebug() << "track position:" << position;
 
             /* FIXME: events too simplistic */
@@ -460,7 +449,7 @@ namespace PMP {
             if (volume <= 100) { emit volumeChanged(volume); }
 
             if (queueID > 0) {
-                emit nowPlayingTrack("?", "?", -1);
+                emit nowPlayingTrack(queueID);
             }
             else {
                 emit noCurrentTrack();
@@ -483,15 +472,39 @@ namespace PMP {
 
         }
             break;
-        case 2:
+        case 2: /* volume change message */
         {
             if (messageLength != 3) {
                 return; /* invalid message */
             }
 
-            quint8 volume = message[2];
+            quint8 volume = NetworkUtil::getByte(message, 2);
 
             if (volume <= 100) { emit volumeChanged(volume); }
+        }
+            break;
+        case 3:
+        {
+            if (messageLength < 18) {
+                return; /* invalid message */
+            }
+
+            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+            qint32 lengthSeconds = NetworkUtil::get4Bytes(message, 6);
+            quint32 titleSize = NetworkUtil::get4Bytes(message, 10);
+            quint32 artistSize = NetworkUtil::get4Bytes(message, 14);
+
+            //qDebug() << " received track length bytes:" << (uint)(quint8)message[6] << (uint)(quint8)message[7] << (uint)(quint8)message[8] << (uint)(quint8)message[9];
+            //qDebug() << "received track length" << lengthSeconds;
+
+            if ((quint32)messageLength != 18 + titleSize + artistSize) {
+                return; /* invalid message */
+            }
+
+            QString title = NetworkUtil::getUtf8String(message, 18, titleSize);
+            QString artist = NetworkUtil::getUtf8String(message, 18 + titleSize, artistSize);
+
+            receivedTrackInfo(queueID, lengthSeconds, title, artist);
         }
             break;
         default:

@@ -20,6 +20,7 @@
 #ifndef PMP_QUEUE_H
 #define PMP_QUEUE_H
 
+#include <QHash>
 #include <QObject>
 #include <QQueue>
 
@@ -47,8 +48,11 @@ namespace PMP {
 
         QList<QueueEntry*> frontEntries(uint maxCount);
 
+        QueueEntry* lookup(quint32 queueID);
+
     private:
         uint _nextQueueID;
+        QHash<quint32, QueueEntry*> _index;
         QQueue<QueueEntry*> _queue;
     };
 }

@@ -49,14 +49,20 @@ namespace PMP {
         void increaseVolume();
 
         void noCurrentTrack();
+        void nowPlayingTrack(quint32 queueID);
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
         void trackPositionChanged(quint64 position);
         void queueLengthChanged(int length);
+        void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist);
 
     private:
         Ui::MainWidget* _ui;
         ServerConnection* _connection;
         int _volume;
+        quint32 _nowPlayingQID;
+        QString _nowPlayingTitle;
+        QString _nowPlayingArtist;
+        int _nowPlayingLength;
     };
 }
 #endif

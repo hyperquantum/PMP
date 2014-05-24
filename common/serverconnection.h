@@ -48,6 +48,8 @@ namespace PMP {
 
         void setVolume(int percentage);
 
+        void sendTrackInfoRequest(uint queueID);
+
     Q_SIGNALS:
         void connected();
         void cannotConnect(QAbstractSocket::SocketError error);
@@ -60,9 +62,11 @@ namespace PMP {
 
         void volumeChanged(int percentage);
         void noCurrentTrack();
+        void nowPlayingTrack(quint32 queueID);
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
         void trackPositionChanged(quint64 position);
         void queueLengthChanged(int length);
+        void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist);
 
     private slots:
         void onConnected();
@@ -71,13 +75,13 @@ namespace PMP {
         void switchToBinaryMode();
 
     private:
-        void readTextCommands();
-        void readBinaryCommands();
-        void executeTextCommand(QString const& commandText);
-        void requestInitialInfo();
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
         void sendSingleByteAction(quint8 action);
+
+        void readTextCommands();
+        void readBinaryCommands();
+        void executeTextCommand(QString const& commandText);
         void handleBinaryMessage(QByteArray const& message);
 
         State _state;

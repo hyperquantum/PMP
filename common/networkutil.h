@@ -21,6 +21,7 @@
 #define PMP_NETWORKUTIL_H
 
 #include <QByteArray>
+#include <QString>
 
 namespace PMP {
 
@@ -36,6 +37,7 @@ namespace PMP {
         static quint16 get2Bytes(QByteArray const& buffer, uint position);
         static quint32 get4Bytes(QByteArray const& buffer, uint position);
         static quint64 get8Bytes(QByteArray const& buffer, uint position);
+        static QString getUtf8String(QByteArray const& buffer, uint position, uint length);
 
     };
 }

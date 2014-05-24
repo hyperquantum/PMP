@@ -19,6 +19,8 @@
 
 #include "networkutil.h"
 
+#include <QDebug>
+
 namespace PMP {
 
     int NetworkUtil::appendByte(QByteArray& buffer, quint8 b) {
@@ -57,26 +59,35 @@ namespace PMP {
     }
 
     quint16 NetworkUtil::get2Bytes(QByteArray const& buffer, uint position) {
-        return ((quint16)buffer[position] << 8)
-            + (quint16)buffer[position + 1];
+        return ((quint16)(quint8)buffer[position] << 8)
+            + (quint16)(quint8)buffer[position + 1];
     }
 
     quint32 NetworkUtil::get4Bytes(QByteArray const& buffer, uint position) {
-        return ((quint32)buffer[position] << 24)
-            + ((quint32)buffer[position + 1] << 16)
-            + ((quint32)buffer[position + 2] << 8)
-            + (quint32)buffer[position + 3];
+        return ((quint32)(quint8)buffer[position] << 24)
+            + ((quint32)(quint8)buffer[position + 1] << 16)
+            + ((quint32)(quint8)buffer[position + 2] << 8)
+            + (quint32)(quint8)buffer[position + 3];
     }
 
     quint64 NetworkUtil::get8Bytes(QByteArray const& buffer, uint position) {
-        return ((quint64)buffer[position] << 56)
-            + ((quint64)buffer[position + 1] << 48)
-            + ((quint64)buffer[position + 2] << 40)
-            + ((quint64)buffer[position + 3] << 32)
-            + ((quint64)buffer[position + 4] << 24)
-            + ((quint64)buffer[position + 5] << 16)
-            + ((quint64)buffer[position + 6] << 8)
-            + (quint64)buffer[position + 7];
+        return ((quint64)(quint8)buffer[position] << 56)
+            + ((quint64)(quint8)buffer[position + 1] << 48)
+            + ((quint64)(quint8)buffer[position + 2] << 40)
+            + ((quint64)(quint8)buffer[position + 3] << 32)
+            + ((quint64)(quint8)buffer[position + 4] << 24)
+            + ((quint64)(quint8)buffer[position + 5] << 16)
+            + ((quint64)(quint8)buffer[position + 6] << 8)
+            + (quint64)(quint8)buffer[position + 7];
+    }
+
+    QString NetworkUtil::getUtf8String(QByteArray const& buffer, uint position, uint length) {
+        if (length > (uint)buffer.size() || position > (uint)buffer.size() - length) {
+            qDebug() << "OVERFLOW in NetworkUtil::getUtf8String; position" << position << " length" << length << " buffer size" << buffer.size();
+            return "";
+        }
+
+        return QString::fromUtf8(&buffer.data()[position], length);
     }
 
 }
