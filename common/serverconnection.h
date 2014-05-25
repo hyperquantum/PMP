@@ -72,7 +72,6 @@ namespace PMP {
         void onConnected();
         void onReadyRead();
         void onSocketError(QAbstractSocket::SocketError error);
-        void switchToBinaryMode();
 
     private:
         void sendTextCommand(QString const& command);

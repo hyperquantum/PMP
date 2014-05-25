@@ -40,6 +40,8 @@ namespace PMP {
         _state = NotConnected;
         _socket.abort();
         _readBuffer.clear();
+        _binarySendingMode = false;
+        _serverProtocolNo = -1;
     }
 
     void ServerConnection::connectToHost(QString const& host, quint16 port) {
@@ -55,8 +57,6 @@ namespace PMP {
     }
 
     void ServerConnection::onReadyRead() {
-        const bool START_IN_BINARY_MODE = true;
-
         State state;
         do {
             state = _state;
@@ -107,15 +107,19 @@ namespace PMP {
 
                 _state = TextMode;
 
-                if (START_IN_BINARY_MODE) {
-                    switchToBinaryMode(); // EXPERIMENTAL
-                }
-                else {
-                    sendTextCommand("state"); /* request player state */
-                    sendTextCommand("nowplaying"); /* request track now playing */
-                    sendTextCommand("volume"); /* request current volume */
-                    emit connected();
-                }
+                /* immediately switch to binary mode */
+                sendTextCommand("binary");
+
+                /* send binary hello */
+                char binaryHeader[5];
+                binaryHeader[0] = 'P';
+                binaryHeader[1] = 'M';
+                binaryHeader[2] = 'P';
+                binaryHeader[3] = 0; /* protocol number; high byte */
+                binaryHeader[4] = 1; /* protocol number; low byte */
+                _socket.write(binaryHeader, sizeof(binaryHeader));
+
+                _binarySendingMode = true;
             }
                 break;
             case TextMode:
@@ -146,10 +150,8 @@ namespace PMP {
 
                 _state = BinaryMode;
 
-                if (START_IN_BINARY_MODE) {
-                    emit connected();
-                    sendSingleByteAction(10); /* request player state */
-                }
+                emit connected();
+                sendSingleByteAction(10); /* request player state */
             }
                 break;
             case BinaryMode:
@@ -208,105 +210,13 @@ namespace PMP {
     }
 
     void ServerConnection::executeTextCommand(QString const& commandText) {
-        if (commandText.startsWith("position ")) {
-            QString positionText = commandText.mid(9);
-            bool ok = false;
-            qulonglong position = positionText.toULongLong(&ok);
-            if (ok) {
-                emit trackPositionChanged(position);
-            }
-        }
-        else if (commandText == "playing") {
-            emit playing();
-        }
-        else if (commandText == "paused") {
-            emit paused();
-        }
-        else if (commandText == "stopped") {
-            emit stopped();
-        }
-        else if (commandText.startsWith("volume ")) {
-            QString volumeText = commandText.mid(7);
-            bool ok = false;
-            quint8 volume = volumeText.toUInt(&ok);
-            if (ok) {
-                emit volumeChanged(volume);
-            }
-        }
-        else if (commandText.startsWith("nowplaying ")) {
-            QString rest = commandText.mid(11);
-
-            if (rest == "nothing") {
-                emit noCurrentTrack();
-            }
-            else if (rest.startsWith("track")) {
-                QStringList list = rest.split('\n');
-
-                QString title = "";
-                QString artist = "";
-                int length = -1;
-                qint64 position = -1;
-
-                for (int i = 1; i < list.count(); ++i) {
-                    QString line = list[i];
-                    if (line.startsWith(" title: ")) {
-                        title = line.mid(8);
-                    }
-                    else if (line.startsWith(" artist: ")) {
-                        artist = line.mid(9);
-                    }
-                    else if (line.startsWith(" length: ")) {
-                        QString lengthText = line.mid(9);
-                        int spaceIndex = lengthText.indexOf(" sec");
-                        if (spaceIndex > 0) {
-                            lengthText = lengthText.mid(0, spaceIndex);
-
-                            bool ok = false;
-                            uint lengthUnsigned = lengthText.toUInt(&ok);
-                            if (ok) { length = lengthUnsigned; }
-                        }
-                    }
-                    else if (line.startsWith(" position: ")) {
-                        QString positionText = line.mid(11);
-                        bool ok = false;
-                        qulonglong value = positionText.toULongLong(&ok);
-                        if (ok) {
-                            qDebug() << "valid position in nowplaying:" << value;
-                            position = value;
-                        }
-                    }
-                }
-
-                emit nowPlayingTrack(title, artist, length);
-                if (position >= 0) emit trackPositionChanged(position);
-            }
-            else {
-                qDebug() << "command not correctly formed:" << commandText;
-            }
-        }
-        else if (commandText == "binary") {
+        if (commandText == "binary") {
             /* switch to binary communication mode */
             _state = BinaryHandshake;
         }
         else {
-            qDebug() << "command not handled:" << commandText;
+            qDebug() << "ignoring text command:" << commandText;
         }
-    }
-
-    void ServerConnection::switchToBinaryMode() {
-        if (_state != TextMode) return;
-
-        sendTextCommand("binary");
-
-        char binaryHeader[5];
-        binaryHeader[0] = 'P';
-        binaryHeader[1] = 'M';
-        binaryHeader[2] = 'P';
-        binaryHeader[3] = 0; /* protocol number; high byte */
-        binaryHeader[4] = 1; /* protocol number; low byte */
-        _socket.write(binaryHeader, sizeof(binaryHeader));
-
-        _binarySendingMode = true;
     }
 
     void ServerConnection::sendTextCommand(QString const& command) {
@@ -351,8 +261,7 @@ namespace PMP {
 
     void ServerConnection::shutdownServer() {
         if (!_binarySendingMode) {
-            sendTextCommand("shutdown");
-            return;
+            return; /* too early for that */
         }
 
         sendSingleByteAction(99); /* 99 = shutdown server */
@@ -360,8 +269,7 @@ namespace PMP {
 
     void ServerConnection::play() {
         if (!_binarySendingMode) {
-            sendTextCommand("play");
-            return;
+            return; /* too early for that */
         }
 
         sendSingleByteAction(1); /* 1 = play */
@@ -369,8 +277,7 @@ namespace PMP {
 
     void ServerConnection::pause() {
         if (!_binarySendingMode) {
-            sendTextCommand("pause");
-            return;
+            return; /* too early for that */
         }
 
         sendSingleByteAction(2); /* 2 = pause */
@@ -378,8 +285,7 @@ namespace PMP {
 
     void ServerConnection::skip() {
         if (!_binarySendingMode) {
-            sendTextCommand("skip");
-            return;
+            return; /* too early for that */
         }
 
         sendSingleByteAction(3); /* 3 = skip */
@@ -387,8 +293,7 @@ namespace PMP {
 
     void ServerConnection::setVolume(int percentage) {
         if (!_binarySendingMode) {
-            sendTextCommand("volume " + QString::number(percentage));
-            return;
+            return; /* too early for that */
         }
 
         sendSingleByteAction(100 + percentage); /* 100 to 200 = set volume */
@@ -442,7 +347,7 @@ namespace PMP {
             quint64 position = NetworkUtil::get8Bytes(message, 12);
 
             //qDebug() << "received position bytes" << (quint8)message[12] << (quint8)message[13] << (quint8)message[14] << (quint8)message[15] << (quint8)message[16] << (quint8)message[17] << (quint8)message[18] << (quint8)message[19];
-            qDebug() << "track position:" << position;
+            //qDebug() << "track position:" << position;
 
             /* FIXME: events too simplistic */
 
@@ -483,7 +388,7 @@ namespace PMP {
             if (volume <= 100) { emit volumeChanged(volume); }
         }
             break;
-        case 3:
+        case 3: /* track info reply message */
         {
             if (messageLength < 18) {
                 return; /* invalid message */

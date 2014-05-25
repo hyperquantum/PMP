@@ -369,7 +369,7 @@ namespace PMP {
             return;
         }
 
-        sendTextCommand("position " + QString::number(position));
+        //sendTextCommand("position " + QString::number(position));
     }
 
     void ConnectedClient::sendTextualQueueInfo() {
