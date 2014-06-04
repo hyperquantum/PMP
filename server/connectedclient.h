@@ -23,6 +23,7 @@
 #include "player.h" /* for the State enum :( */
 
 #include <QByteArray>
+#include <QList>
 #include <QTcpSocket>
 
 namespace PMP {
@@ -57,7 +58,9 @@ namespace PMP {
         void executeTextCommand(QString const& commandText);
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
+        void sendQueueContentMessage(quint32 startOffset, quint8 length);
         void sendTrackInfoMessage(quint32 queueID);
+        void sendTrackInfoMessage(QList<quint32> const& queueIDs);
         void handleBinaryMessage(QByteArray const& message);
 
         QTcpSocket* _socket;

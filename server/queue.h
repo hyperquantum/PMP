@@ -46,7 +46,7 @@ namespace PMP {
 
         QueueEntry* dequeue();
 
-        QList<QueueEntry*> frontEntries(uint maxCount);
+        QList<QueueEntry*> entries(int startoffset, int maxCount);
 
         QueueEntry* lookup(quint32 queueID);
 

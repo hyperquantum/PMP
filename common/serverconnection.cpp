@@ -248,6 +248,18 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ServerConnection::sendQueueFetchRequest(uint startOffset, quint8 length) {
+        qDebug() << "sending queue fetch request, startOffset=" << startOffset << " length=" << (int)length;
+
+        QByteArray message;
+        message.reserve(7);
+        NetworkUtil::append2Bytes(message, 4); /* message type */
+        NetworkUtil::append4Bytes(message, startOffset);
+        NetworkUtil::appendByte(message, length);
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::sendTrackInfoRequest(uint queueID) {
         qDebug() << "sending request for track info of QID" << queueID;
 
@@ -255,6 +267,21 @@ namespace PMP {
         message.reserve(6);
         NetworkUtil::append2Bytes(message, 2); /* message type */
         NetworkUtil::append4Bytes(message, queueID);
+
+        sendBinaryMessage(message);
+    }
+
+    void ServerConnection::sendTrackInfoRequest(QList<uint> const& queueIDs) {
+        qDebug() << "sending bulk request for track info of" << queueIDs.size() << "QIDs";
+
+        QByteArray message;
+        message.reserve(2 + 4 * queueIDs.size());
+        NetworkUtil::append2Bytes(message, 3); /* message type */
+
+        uint QID;
+        foreach(QID, queueIDs) {
+            NetworkUtil::append4Bytes(message, QID);
+        }
 
         sendBinaryMessage(message);
     }
@@ -402,6 +429,10 @@ namespace PMP {
             //qDebug() << " received track length bytes:" << (uint)(quint8)message[6] << (uint)(quint8)message[7] << (uint)(quint8)message[8] << (uint)(quint8)message[9];
             //qDebug() << "received track length" << lengthSeconds;
 
+            if (queueID == 0) {
+                return; /* invalid message */
+            }
+
             if ((quint32)messageLength != 18 + titleSize + artistSize) {
                 return; /* invalid message */
             }
@@ -410,6 +441,81 @@ namespace PMP {
             QString artist = NetworkUtil::getUtf8String(message, 18 + titleSize, artistSize);
 
             receivedTrackInfo(queueID, lengthSeconds, title, artist);
+        }
+            break;
+        case 4: /* bulk track info reply message */
+        {
+            if (messageLength < 18) {
+                return; /* invalid message */
+            }
+
+            QList<int> offsets;
+            offsets.append(2);
+            int offset = 2;
+
+            while (true) {
+                quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+                //qint32 lengthSeconds = NetworkUtil::get4Bytes(message, offset + 4);
+                quint32 titleSize = NetworkUtil::get4Bytes(message, offset + 8);
+                quint32 artistSize = NetworkUtil::get4Bytes(message, offset + 12);
+                int titleArtistOffset = offset + 16;
+
+                if (queueID == 0) {
+                    return; /* invalid message */
+                }
+
+                if (titleSize > (uint)messageLength - (uint)titleArtistOffset
+                    || artistSize > (uint)messageLength - (uint)titleArtistOffset
+                    || (titleSize + artistSize) > (uint)messageLength - (uint)titleArtistOffset)
+                {
+                    return; /* invalid message */
+                }
+
+                if (titleArtistOffset + titleSize + artistSize == (uint)messageLength) {
+                    break; /* end of message */
+                }
+
+                /* at least one more track info follows */
+
+                offset = offset + 16 + titleSize + artistSize;
+                if (offset + 16 > messageLength) {
+                    return;  /* invalid message */
+                }
+
+                offsets.append(offset);
+            }
+
+            /* now read all track info's */
+            foreach(offset, offsets) {
+                quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+                qint32 lengthSeconds = NetworkUtil::get4Bytes(message, offset + 4);
+                quint32 titleSize = NetworkUtil::get4Bytes(message, offset + 8);
+                quint32 artistSize = NetworkUtil::get4Bytes(message, offset + 12);
+
+                QString title = NetworkUtil::getUtf8String(message, offset + 16, titleSize);
+                QString artist = NetworkUtil::getUtf8String(message, offset + 16 + titleSize, artistSize);
+
+                emit receivedTrackInfo(queueID, lengthSeconds, title, artist);
+            }
+        }
+            break;
+        case 5: /* queue info reply message */
+        {
+            if (messageLength < 14) {
+                return; /* invalid message */
+            }
+
+            quint32 queueLength = NetworkUtil::get4Bytes(message, 2);
+            quint32 startOffset = NetworkUtil::get4Bytes(message, 6);
+
+            QList<quint32> queueIDs;
+            queueIDs.reserve((messageLength - 10) / 4);
+
+            for (int offset = 10; offset < messageLength; offset += 4) {
+                queueIDs.append(NetworkUtil::get4Bytes(message, offset));
+            }
+
+            emit receivedQueueContents(queueLength, startOffset, queueIDs);
         }
             break;
         default:

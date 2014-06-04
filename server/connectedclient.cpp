@@ -261,8 +261,6 @@ namespace PMP {
         NetworkUtil::append4Bytes(message, queueID);
         NetworkUtil::append8Bytes(message, position);
 
-        //qDebug() << "sending position bytes" << (quint8)message[12] << (quint8)message[13] << (quint8)message[14] << (quint8)message[15] << (quint8)message[16] << (quint8)message[17] << (quint8)message[18] << (quint8)message[19];
-
         sendBinaryMessage(message);
 
         _lastSentNowPlayingID = queueID;
@@ -284,6 +282,35 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendQueueContentMessage(quint32 startOffset, quint8 length) {
+        Queue& queue = _player->queue();
+        uint queueLength = queue.length();
+
+        if (startOffset >= queueLength) {
+            length = 0;
+        }
+        else if (startOffset > queueLength - length) {
+            length = queueLength - startOffset;
+        }
+
+        if (length > 255) { length = 255; }
+
+        QList<QueueEntry*> entries = queue.entries(startOffset, (length == 0) ? -1 : length);
+
+        QByteArray message;
+        message.reserve(10 + entries.length() * 4);
+        NetworkUtil::append2Bytes(message, 5); /* message type */
+        NetworkUtil::append4Bytes(message, queueLength);
+        NetworkUtil::append4Bytes(message, startOffset);
+
+        QueueEntry* entry;
+        foreach(entry, entries) {
+            NetworkUtil::append4Bytes(message, entry->queueID());
+        }
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendTrackInfoMessage(quint32 queueID) {
         QueueEntry* track = _player->queue().lookup(queueID);
         if (track == 0) { return; /* sorry, cannot send */ }
@@ -293,8 +320,6 @@ namespace PMP {
         QString title = track->title();
         QString artist = track->artist();
         qint32 length = track->lengthInSeconds(); /* SIGNED NUMBER!! */
-
-        //qDebug() << "sending track length" << length;
 
         QByteArray titleData = title.toUtf8();
         QByteArray artistData = artist.toUtf8();
@@ -309,7 +334,39 @@ namespace PMP {
         message += titleData;
         message += artistData;
 
-        //qDebug() << " sending track length bytes:" << (uint)(quint8)message[6] << (uint)(quint8)message[7] << (uint)(quint8)message[8] << (uint)(quint8)message[9];
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendTrackInfoMessage(QList<quint32> const& queueIDs) {
+        if (queueIDs.empty()) {
+            return;
+        }
+
+        QByteArray message;
+        message.reserve(2 + queueIDs.size() * (16 + /*title*/20 + /*artist*/15)); /* a guess at how much space we will need */
+        NetworkUtil::append2Bytes(message, 4);
+
+        quint32 queueID;
+        foreach(queueID, queueIDs) {
+            QueueEntry* track = _player->queue().lookup(queueID);
+            if (track == 0) { continue; /* ID not found */ }
+
+            track->checkTrackData(_player->resolver());
+
+            QString title = track->title();
+            QString artist = track->artist();
+            qint32 length = track->lengthInSeconds(); /* SIGNED NUMBER!! */
+
+            QByteArray titleData = title.toUtf8();
+            QByteArray artistData = artist.toUtf8();
+
+            NetworkUtil::append4Bytes(message, queueID);
+            NetworkUtil::append4Bytes(message, length); /* length in seconds, SIGNED */
+            NetworkUtil::append4Bytes(message, titleData.size());
+            NetworkUtil::append4Bytes(message, artistData.size());
+            message += titleData;
+            message += artistData;
+        }
 
         sendBinaryMessage(message);
     }
@@ -374,7 +431,7 @@ namespace PMP {
 
     void ConnectedClient::sendTextualQueueInfo() {
         Queue& queue = _player->queue();
-        QList<QueueEntry*> queueContent = queue.frontEntries(10);
+        QList<QueueEntry*> queueContent = queue.entries(0, 10);
 
         QString command =
             "queue length " + QString::number(queue.length())
@@ -504,6 +561,41 @@ namespace PMP {
             }
 
             sendTrackInfoMessage(queueID);
+        }
+            break;
+        case 3: /* bulk request for track info by QID */
+        {
+            if (messageLength < 6 || (messageLength - 2) % 4 != 0) {
+                return; /* invalid message */
+            }
+
+            QList<quint32> QIDs;
+            QIDs.reserve((messageLength - 2) / 4);
+
+            qint32 offset = 2;
+            while (offset <= messageLength - 4) {
+                quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+
+                if (queueID > 0) {
+                    QIDs.append(queueID);
+                }
+
+                offset++;
+            }
+
+            sendTrackInfoMessage(QIDs);
+        }
+            break;
+        case 4: /* queue fetch request */
+        {
+            if (messageLength != 7) {
+                return; /* invalid message */
+            }
+
+            quint32 startOffset = NetworkUtil::get4Bytes(message, 2);
+            quint8 length = NetworkUtil::getByte(message, 6);
+
+            sendQueueContentMessage(startOffset, length);
         }
             break;
         default:

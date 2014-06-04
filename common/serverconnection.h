@@ -21,6 +21,7 @@
 #define PMP_SERVERCONNECTION_H
 
 #include <QByteArray>
+#include <QList>
 #include <QObject>
 #include <QTcpSocket>
 
@@ -48,7 +49,10 @@ namespace PMP {
 
         void setVolume(int percentage);
 
+        void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
+
         void sendTrackInfoRequest(uint queueID);
+        void sendTrackInfoRequest(QList<uint> const& queueIDs);
 
     Q_SIGNALS:
         void connected();
@@ -66,6 +70,7 @@ namespace PMP {
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
         void trackPositionChanged(quint64 position);
         void queueLengthChanged(int length);
+        void receivedQueueContents(int queueLength, int startOffset, QList<quint32> queueIDs);
         void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist);
 
     private slots:

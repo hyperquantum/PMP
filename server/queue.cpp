@@ -70,17 +70,8 @@ namespace PMP {
         return _queue.dequeue();
     }
 
-    QList<QueueEntry*> Queue::frontEntries(uint maxCount) {
-        QList<QueueEntry*> result;
-        result.reserve(maxCount);
-
-        QueueEntry* entry;
-        foreach(entry, _queue) {
-            if ((uint)result.size() >= maxCount) break;
-            result.append(entry);
-        }
-
-        return result;
+    QList<QueueEntry*> Queue::entries(int startoffset, int maxCount) {
+        return _queue.mid(startoffset, maxCount);
     }
 
     QueueEntry* Queue::lookup(quint32 queueID) {
