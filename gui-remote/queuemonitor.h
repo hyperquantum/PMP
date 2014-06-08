@@ -17,47 +17,39 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_QUEUE_H
-#define PMP_QUEUE_H
+#ifndef PMP_QUEUEMONITOR_H
+#define PMP_QUEUEMONITOR_H
 
-#include <QHash>
+#include <QList>
 #include <QObject>
-#include <QQueue>
 
 namespace PMP {
 
-    class FileData;
-    class HashID;
-    class QueueEntry;
+    class ServerConnection;
 
-    class Queue : public QObject {
+    class QueueMonitor : public QObject {
         Q_OBJECT
+
     public:
-        Queue();
+        QueueMonitor(QObject* parent, ServerConnection* connection);
 
-    public slots:
-        void clear();
-        bool empty() const;
-        uint length() const;
-
-        QueueEntry* enqueue(QString const& filename);
-        QueueEntry* enqueue(FileData const& filedata);
-        QueueEntry* enqueue(HashID const& hash);
-
-        QueueEntry* dequeue();
-
-        QList<QueueEntry*> entries(int startoffset, int maxCount);
-
-        QueueEntry* lookup(quint32 queueID);
+        uint queueLength() const { return _queueLength; }
 
     Q_SIGNALS:
-        //void entryAdded(quint32 offset, quint32 queueID);
-        void entryRemoved(quint32 offset, quint32 queueID);
+        //void queueLengthChanged(int newLength);
+        void tracksInserted(int firstIndex, int lastIndex);
+        void tracksRemoved(int firstIndex, int lastIndex);
+
+    private slots:
+        void connected();
+        void receivedQueueContents(int queueLength, int startOffset, QList<quint32> queueIDs);
+        void queueEntryRemoved(quint32 offset, quint32 queueID);
 
     private:
-        uint _nextQueueID;
-        QHash<quint32, QueueEntry*> _index;
-        QQueue<QueueEntry*> _queue;
+        ServerConnection* _connection;
+        int _queueLength;
+        int _queueLengthSent;
+        QList<quint32> _queue; // no need for a QQueue, a QList will suffice
     };
 }
 #endif

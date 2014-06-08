@@ -28,6 +28,8 @@ namespace Ui {
 
 namespace PMP {
 
+    class QueueModel;
+    class QueueMonitor;
     class ServerConnection;
 
     class MainWidget : public QWidget {
@@ -58,6 +60,8 @@ namespace PMP {
     private:
         Ui::MainWidget* _ui;
         ServerConnection* _connection;
+        QueueMonitor* _queueMonitor;
+        QueueModel* _queueModel;
         int _volume;
         quint32 _nowPlayingQID;
         QString _nowPlayingTitle;

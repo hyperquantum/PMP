@@ -51,6 +51,7 @@ namespace PMP {
         void sendStateInfo();
         void sendVolumeMessage();
         void sendTextualQueueInfo();
+        void queueEntryRemoved(quint32 offset, quint32 queueID);
 
     private:
         void readTextCommands();
@@ -59,6 +60,7 @@ namespace PMP {
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
         void sendQueueContentMessage(quint32 startOffset, quint8 length);
+        void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
         void sendTrackInfoMessage(quint32 queueID);
         void sendTrackInfoMessage(QList<quint32> const& queueIDs);
         void handleBinaryMessage(QByteArray const& message);

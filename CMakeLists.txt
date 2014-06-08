@@ -59,11 +59,15 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/gui-remote-main.cpp
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp
+    gui-remote/queuemodel.cpp
+    gui-remote/queuemonitor.cpp
 )
 set(PMP_GUI_REMOTE_HEADERS
     gui-remote/connectionwidget.h
     gui-remote/mainwidget.h
     gui-remote/mainwindow.h
+    gui-remote/queuemodel.h
+    gui-remote/queuemonitor.h
 )
 set(PMP_GUI_REMOTE_UIS
     gui-remote/connectionwidget.ui

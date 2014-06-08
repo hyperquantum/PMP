@@ -22,12 +22,15 @@
 
 #include "common/serverconnection.h"
 
+#include "queuemodel.h"
+#include "queuemonitor.h"
+
 namespace PMP {
 
     MainWidget::MainWidget(QWidget *parent) :
         QWidget(parent),
         _ui(new Ui::MainWidget),
-        _connection(0),
+        _connection(0), _queueMonitor(0), _queueModel(0),
         _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1)
     {
         _ui->setupUi(this);
@@ -40,6 +43,10 @@ namespace PMP {
 
     void MainWidget::setConnection(ServerConnection* connection) {
         _connection = connection;
+        _queueMonitor = new QueueMonitor(_connection, _connection);
+        _queueModel = new QueueModel(_connection, _queueMonitor);
+
+        _ui->queueTableView->setModel(_queueModel);
 
         connect(_ui->playButton, SIGNAL(clicked()), _connection, SLOT(play()));
         connect(_ui->pauseButton, SIGNAL(clicked()), _connection, SLOT(pause()));

@@ -40,6 +40,8 @@ namespace PMP {
         void reset();
         void connectToHost(QString const& host, quint16 port);
 
+        bool isConnected() const { return _state == BinaryMode; }
+
     public slots:
         void shutdownServer();
 
@@ -71,6 +73,7 @@ namespace PMP {
         void trackPositionChanged(quint64 position);
         void queueLengthChanged(int length);
         void receivedQueueContents(int queueLength, int startOffset, QList<quint32> queueIDs);
+        void queueEntryRemoved(quint32 offset, quint32 queueID);
         void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist);
 
     private slots:

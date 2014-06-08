@@ -67,7 +67,11 @@ namespace PMP {
 
     QueueEntry* Queue::dequeue() {
         if (_queue.empty()) { return 0; }
-        return _queue.dequeue();
+        QueueEntry* entry = _queue.dequeue();
+
+        emit entryRemoved(0, entry->queueID());
+
+        return entry;
     }
 
     QList<QueueEntry*> Queue::entries(int startoffset, int maxCount) {

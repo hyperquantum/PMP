@@ -515,7 +515,23 @@ namespace PMP {
                 queueIDs.append(NetworkUtil::get4Bytes(message, offset));
             }
 
+            if (queueLength - queueIDs.size() < startOffset) {
+                return; /* invalid message */
+            }
+
             emit receivedQueueContents(queueLength, startOffset, queueIDs);
+        }
+            break;
+        case 6: /* queue entry removed */
+        {
+            if (messageLength != 10) {
+                return; /* invalid message */
+            }
+
+            quint32 offset = NetworkUtil::get4Bytes(message, 2);
+            quint32 queueID = NetworkUtil::get4Bytes(message, 6);
+
+            emit queueEntryRemoved(offset, queueID);
         }
             break;
         default:
