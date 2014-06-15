@@ -40,6 +40,7 @@ namespace PMP {
     private slots:
         void tracksInserted(int firstIndex, int lastIndex);
         void tracksRemoved(int firstIndex, int lastIndex);
+        void tracksChanged(int firstIndex, int lastIndex);
 
     private:
         struct Track {

@@ -32,6 +32,7 @@ namespace PMP {
 
         connect(_source, SIGNAL(tracksInserted(int, int)), this, SLOT(tracksInserted(int, int)));
         connect(_source, SIGNAL(tracksRemoved(int, int)), this, SLOT(tracksRemoved(int, int)));
+        connect(_source, SIGNAL(tracksChanged(int, int)), this, SLOT(tracksChanged(int, int)));
     }
 
     int QueueModel::rowCount(const QModelIndex& parent) const {
@@ -64,8 +65,31 @@ namespace PMP {
     QVariant QueueModel::data(const QModelIndex& index, int role) const {
         if (role == Qt::DisplayRole) {
             int row = index.row();
-            int col = index.column();
+            quint32 queueID = _source->queueEntry(row);
+            if (queueID == 0) { return QString("?"); }
 
+            TrackMonitor* track = _source->trackFromID(queueID);
+            if (track == 0) { return QString("?"); }
+
+            int col = index.column();
+            switch (col) {
+                case 0: return track->title();
+                case 1: return track->artist();
+                case 2:
+                {
+                    int lengthInSeconds = track->lengthInSeconds();
+
+                    if (lengthInSeconds < 0) { return "?"; }
+
+                    int sec = lengthInSeconds % 60;
+                    int min = (lengthInSeconds / 60) % 60;
+                    int hrs = lengthInSeconds / 3600;
+
+                    return QString::number(hrs).rightJustified(2, '0')
+                        + ":" + QString::number(min).rightJustified(2, '0')
+                        + ":" + QString::number(sec).rightJustified(2, '0');
+                }
+            }
 
             return QString("Foobar");
         }
@@ -74,6 +98,8 @@ namespace PMP {
     }
 
     void QueueModel::tracksInserted(int firstIndex, int lastIndex) {
+        qDebug() << "QueueModel::tracksInserted " << firstIndex << lastIndex;
+
         beginInsertRows(QModelIndex(), firstIndex, lastIndex);
 
         _modelRows += (lastIndex - firstIndex + 1);
@@ -90,6 +116,12 @@ namespace PMP {
         _modelRows -= (lastIndex - firstIndex + 1);
 
         endRemoveRows();
+    }
+
+    void QueueModel::tracksChanged(int firstIndex, int lastIndex) {
+        qDebug() << "QueueModel::tracksChanged " << firstIndex << lastIndex;
+
+        emit dataChanged(createIndex(firstIndex, 0), createIndex(lastIndex, 2));
     }
 
 }
