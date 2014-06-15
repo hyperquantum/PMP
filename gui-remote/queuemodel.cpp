@@ -93,6 +93,10 @@ namespace PMP {
 
             return QString("Foobar");
         }
+        else if (role == Qt::TextAlignmentRole) {
+            return (index.column() == 2 ? Qt::AlignRight : Qt::AlignLeft)
+                + Qt::AlignVCenter;
+        }
 
         return QVariant();
     }
