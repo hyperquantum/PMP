@@ -46,6 +46,9 @@ namespace PMP {
         _queueMonitor = new QueueMonitor(_connection, _connection);
         _queueModel = new QueueModel(_connection, _queueMonitor);
 
+        _ui->playButton->setEnabled(false);
+        _ui->pauseButton->setEnabled(false);
+        _ui->skipButton->setEnabled(false);
         _ui->queueTableView->setModel(_queueModel);
 
         connect(_ui->playButton, SIGNAL(clicked()), _connection, SLOT(play()));
@@ -69,14 +72,20 @@ namespace PMP {
     }
 
     void MainWidget::playing() {
+        _ui->playButton->setEnabled(false);
+        _ui->pauseButton->setEnabled(true);
         _ui->stateValueLabel->setText("playing");
     }
 
     void MainWidget::paused() {
+        _ui->playButton->setEnabled(true);
+        _ui->pauseButton->setEnabled(false);
         _ui->stateValueLabel->setText("paused");
     }
 
     void MainWidget::stopped() {
+        _ui->playButton->setEnabled(true);
+        _ui->pauseButton->setEnabled(false);
         _ui->stateValueLabel->setText("stopped");
     }
 
@@ -106,9 +115,12 @@ namespace PMP {
         _ui->artistValueLabel->setText("");
         _ui->lengthValueLabel->setText("");
         _ui->positionValueLabel->setText("");
+        _ui->skipButton->setEnabled(false);
     }
 
     void MainWidget::nowPlayingTrack(quint32 queueID) {
+        _ui->skipButton->setEnabled(true);
+
         if (queueID != _nowPlayingQID) {
             _nowPlayingQID = queueID;
             _nowPlayingArtist = "";
