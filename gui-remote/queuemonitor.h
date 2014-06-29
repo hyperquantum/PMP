@@ -64,7 +64,7 @@ namespace PMP {
         QueueMonitor(QObject* parent, ServerConnection* connection);
 
         uint queueLength() const { return _queueLength; }
-        quint32 queueEntry(int index) const;
+        quint32 queueEntry(int index);
         TrackMonitor* trackAtPosition(int index);
         TrackMonitor* trackFromID(quint32 queueID);
 
@@ -81,11 +81,13 @@ namespace PMP {
         //void trackIsAtPosition(quint32 queueID, int index);
         void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist);
         void emitTracksChangedSignal();
+        void sendNextSlotBatchRequest(int size);
 
     private:
         ServerConnection* _connection;
         int _queueLength;
         int _queueLengthSent;
+        int _requestQueueUpTo;
         int _queueRequestedUpTo;
         QList<quint32> _queue; // no need for a QQueue, a QList will suffice
         QHash<quint32, TrackMonitor*> _tracks;

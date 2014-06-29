@@ -83,9 +83,12 @@ namespace PMP {
         return true;
     }
 
+    /* QueueMonitor */
+
     QueueMonitor::QueueMonitor(QObject* parent, ServerConnection* connection)
      : QObject(parent), _connection(connection),
-       _queueLength(0), _queueLengthSent(0), _queueRequestedUpTo(0),
+       _queueLength(0), _queueLengthSent(0),
+       _requestQueueUpTo(5), _queueRequestedUpTo(0),
        _trackChangeEventPending(false)
     {
         connect(_connection, SIGNAL(connected()), this, SLOT(connected()));
@@ -108,17 +111,35 @@ namespace PMP {
         _connection->sendQueueFetchRequest(0, 3); // only 3 for testing purposes
     }
 
-    quint32 QueueMonitor::queueEntry(int index) const {
+    quint32 QueueMonitor::queueEntry(int index) {
+        /* see if we need to fetch more of the queue */
+        if (index < _queueLength && (index + 3) >= _requestQueueUpTo) {
+            qDebug() << "QueueMonitor::queueEntry: will raise up-to, is now" << _requestQueueUpTo;
+            _requestQueueUpTo = (index + 3) + 1 + 4; /* we need more of the queue */
+            sendNextSlotBatchRequest(4);
+        }
+
         if (index < _queue.size()) {
             quint32 queueID = _queue[index];
-
 
             return queueID;
         }
 
-
-
         return 0;
+    }
+
+    void QueueMonitor::sendNextSlotBatchRequest(int size) {
+        if (size <= 0) { return; }
+
+        int requestCount = size;
+        if (_queueLength - requestCount < _queueRequestedUpTo) {
+            requestCount = _queueLength - _queueRequestedUpTo;
+        }
+
+        if (requestCount <= 0) { return; }
+
+        _connection->sendQueueFetchRequest(_queueRequestedUpTo, requestCount);
+        _queueRequestedUpTo += requestCount;
     }
 
     void QueueMonitor::receivedQueueContents(int queueLength, int startOffset, QList<quint32> queueIDs) {
@@ -130,14 +151,11 @@ namespace PMP {
         if (_queueRequestedUpTo > _queueLength) {
             _queueRequestedUpTo = _queueLength;
         }
-        else if (_queueRequestedUpTo < _queueLength && _queueRequestedUpTo < 6) {
-            int requestCount = 5;
-            if (_queueLength - requestCount < _queueRequestedUpTo) {
-                requestCount = _queueLength - _queueRequestedUpTo;
-            }
-
-            _connection->sendQueueFetchRequest(_queueRequestedUpTo, requestCount);
-            _queueRequestedUpTo += requestCount;
+        else if (_queueRequestedUpTo < _queueLength
+            && _queueRequestedUpTo < _requestQueueUpTo)
+        {
+            qDebug() << " sending next auto queue fetch request -- will request up to" << _requestQueueUpTo;
+            sendNextSlotBatchRequest(3);
         }
 
         if (_queueLengthSent < queueLength) {
@@ -202,6 +220,11 @@ namespace PMP {
 
         if ((int)offset < _queue.size()) {
             _queue.removeAt(offset);
+        }
+
+        if ((int)offset < _queueRequestedUpTo) {
+            _queueRequestedUpTo--;
+            sendNextSlotBatchRequest(3);
         }
 
         if (_queueLengthSent > 0) {
