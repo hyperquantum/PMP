@@ -43,6 +43,7 @@ namespace PMP {
         QueueEntry* enqueue(QString const& filename);
         QueueEntry* enqueue(FileData const& filedata);
         QueueEntry* enqueue(HashID const& hash);
+        QueueEntry* enqueue(QueueEntry* entry);
 
         QueueEntry* dequeue();
 
@@ -51,7 +52,7 @@ namespace PMP {
         QueueEntry* lookup(quint32 queueID);
 
     Q_SIGNALS:
-        //void entryAdded(quint32 offset, quint32 queueID);
+        void entryAdded(quint32 offset, quint32 queueID);
         void entryRemoved(quint32 offset, quint32 queueID);
 
     private:

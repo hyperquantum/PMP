@@ -107,7 +107,6 @@ namespace PMP {
         beginInsertRows(QModelIndex(), firstIndex, lastIndex);
 
         _modelRows += (lastIndex - firstIndex + 1);
-        //_trac
 
         endInsertRows();
     }

@@ -534,6 +534,18 @@ namespace PMP {
             emit queueEntryRemoved(offset, queueID);
         }
             break;
+        case 7: /* queue entry added */
+        {
+            if (messageLength != 10) {
+                return; /* invalid message */
+            }
+
+            quint32 offset = NetworkUtil::get4Bytes(message, 2);
+            quint32 queueID = NetworkUtil::get4Bytes(message, 6);
+
+            emit queueEntryAdded(offset, queueID);
+        }
+            break;
         default:
             qDebug() << "unknown binary message type" << messageType;
             break; /* unknown message type */

@@ -58,7 +58,7 @@ namespace PMP {
 
 
     private:
-        uint _queueID;
+        uint const _queueID;
         HashID _hash;
         //bool _fetchedAudioInfo;
         AudioData _audioInfo;

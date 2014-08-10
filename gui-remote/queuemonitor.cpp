@@ -210,6 +210,31 @@ namespace PMP {
 //        if (lengthChanged) { emit queueLengthChanged(_queueLength); }
     }
 
+    void QueueMonitor::queueEntryAdded(quint32 offset, quint32 queueID) {
+        if ((int)offset > _queueLength) {
+            /* problem */
+            return;
+        }
+
+        _queueLength++;
+
+        if ((int)offset <= _queue.size()) {
+            _queue.insert(offset, queueID);
+        }
+
+        if ((int)offset < _queueRequestedUpTo) {
+            _queueRequestedUpTo++;
+        }
+
+        if (_queueLengthSent == _queueLength - 1) {
+            _queueLengthSent++;
+            emit tracksInserted(offset, offset);
+        }
+        else {
+            /* TODO: error correction */
+        }
+    }
+
     void QueueMonitor::queueEntryRemoved(quint32 offset, quint32 queueID) {
         if (_queueLength == 0) {
             /* problem */
@@ -219,7 +244,12 @@ namespace PMP {
         _queueLength--;
 
         if ((int)offset < _queue.size()) {
-            _queue.removeAt(offset);
+            if (_queue[offset] == queueID) {
+                _queue.removeAt(offset);
+            }
+            else {
+                /* TODO: error recovery */
+            }
         }
 
         if ((int)offset < _queueRequestedUpTo) {
@@ -227,35 +257,13 @@ namespace PMP {
             sendNextSlotBatchRequest(3);
         }
 
-        if (_queueLengthSent > 0) {
+        if (_queueLengthSent + 1 == _queueLength) {
             _queueLengthSent--;
             emit tracksRemoved(offset, offset);
         }
-
-
-//        if (_queueLength > 0) {
-//            _queueLength--;
-//        }
-//        else {
-//            /* problem... */
-//            /* TODO */
-//        }
-//
-//        if ((int)offset < _queue.size()) {
-//            quint32 entry = _queue[offset];
-//
-//            if (entry == 0 || entry == queueID) {
-//                /* OK */
-//                _queue.removeAt(offset);
-//                /* TODO: raise event */
-//            }
-//            else {
-//                /* problem... */
-//                /* TODO */
-//            }
-//        }
-//
-//        emit queueLengthChanged(_queueLength);
+        else {
+            /* TODO: error correction */
+        }
     }
 
 //    void TrackMonitor::trackIsAtPosition(quint32 queueID, int index) {

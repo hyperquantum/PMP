@@ -42,26 +42,23 @@ namespace PMP {
     }
 
     QueueEntry* Queue::enqueue(QString const& filename) {
-        uint queueID = _nextQueueID++;
-        QueueEntry* entry = new QueueEntry(queueID, filename);
-        _index.insert(queueID, entry);
-        _queue.enqueue(entry);
-        return entry;
+        return enqueue(new QueueEntry(_nextQueueID++, filename));
     }
 
     QueueEntry* Queue::enqueue(FileData const& filedata) {
-        uint queueID = _nextQueueID++;
-        QueueEntry* entry = new QueueEntry(queueID, filedata);
-        _index.insert(queueID, entry);
-        _queue.enqueue(entry);
-        return entry;
+        return enqueue(new QueueEntry(_nextQueueID++, filedata));
     }
 
     QueueEntry* Queue::enqueue(HashID const& hash) {
-        uint queueID = _nextQueueID++;
-        QueueEntry* entry = new QueueEntry(queueID, hash);
-        _index.insert(queueID, entry);
+        return enqueue(new QueueEntry(_nextQueueID++, hash));
+    }
+
+    QueueEntry* Queue::enqueue(QueueEntry* entry) {
+        _index.insert(entry->queueID(), entry);
         _queue.enqueue(entry);
+
+        emit entryAdded(_queue.size() - 1, entry->queueID());
+
         return entry;
     }
 

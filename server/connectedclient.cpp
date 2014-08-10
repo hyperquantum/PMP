@@ -42,6 +42,7 @@ namespace PMP {
         connect(player, SIGNAL(currentTrackChanged(QueueEntry const*)), this, SLOT(currentTrackChanged(QueueEntry const*)));
         connect(player, SIGNAL(positionChanged(qint64)), this, SLOT(trackPositionChanged(qint64)));
         connect(&player->queue(), SIGNAL(entryRemoved(quint32, quint32)), this, SLOT(queueEntryRemoved(quint32, quint32)));
+        connect(&player->queue(), SIGNAL(entryAdded(quint32, quint32)), this, SLOT(queueEntryAdded(quint32, quint32)));
 
         /* send greeting */
         sendTextCommand("PMP 0.1 Welcome!");
@@ -321,6 +322,16 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendQueueEntryAddedMessage(quint32 offset, quint32 queueID) {
+        QByteArray message;
+        message.reserve(10);
+        NetworkUtil::append2Bytes(message, 7); /* message type */
+        NetworkUtil::append4Bytes(message, offset);
+        NetworkUtil::append4Bytes(message, queueID);
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendTrackInfoMessage(quint32 queueID) {
         QueueEntry* track = _player->queue().lookup(queueID);
         if (track == 0) { return; /* sorry, cannot send */ }
@@ -490,6 +501,10 @@ namespace PMP {
 
     void ConnectedClient::queueEntryRemoved(quint32 offset, quint32 queueID) {
         sendQueueEntryRemovedMessage(offset, queueID);
+    }
+
+    void ConnectedClient::queueEntryAdded(quint32 offset, quint32 queueID) {
+        sendQueueEntryAddedMessage(offset, queueID);
     }
 
     void ConnectedClient::readBinaryCommands() {

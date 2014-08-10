@@ -77,6 +77,7 @@ namespace PMP {
     private slots:
         void connected();
         void receivedQueueContents(int queueLength, int startOffset, QList<quint32> queueIDs);
+        void queueEntryAdded(quint32 offset, quint32 queueID);
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         //void trackIsAtPosition(quint32 queueID, int index);
         void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist);
