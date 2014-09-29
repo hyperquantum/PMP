@@ -47,7 +47,13 @@ namespace PMP {
         const AudioData& findAudioData(const HashID& hash);
         const TagData* findTagData(const HashID& hash);
 
+        HashID getRandom();
+
     private:
+        void registerHash(const HashID& hash);
+
+        QList<HashID> _hashList;
+        QHash<HashID, int> _hashIndex;
         QHash<HashID, AudioData> _audioCache;
         QMultiHash<HashID, const TagData*> _tagCache;
         QMultiHash<HashID, QString> _pathCache;

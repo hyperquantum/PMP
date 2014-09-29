@@ -23,15 +23,18 @@
 
 #include <QFileInfo>
 #include <QtDebug>
+#include <QtGlobal>
 
 namespace PMP {
 
     Resolver::Resolver() {
-        //
+        //qsrand(....);
     }
 
     void Resolver::registerData(const HashID& hash, const AudioData& data) {
         if (hash.empty()) { return; }
+
+        registerHash(hash);
 
         AudioData& cached = _audioCache[hash];
 
@@ -64,6 +67,7 @@ namespace PMP {
         QFileInfo info(filename);
 
         if (info.isAbsolute() || info.makeAbsolute()) {
+            registerHash(hash);
             _pathCache.insert(hash, info.filePath());
         }
     }
@@ -120,6 +124,21 @@ namespace PMP {
         }
 
         return result;
+    }
+
+    HashID Resolver::getRandom() {
+        if (_hashList.empty()) return HashID();
+
+        int randomIndex = qrand() % _hashList.size();
+        return _hashList[randomIndex];
+    }
+
+    void Resolver::registerHash(const HashID& hash) {
+        QHash<HashID, int>::const_iterator it = _hashIndex.constFind(hash);
+        if (it != _hashIndex.constEnd()) return; /* registered already */
+
+        _hashList.append(hash);
+        _hashIndex.insert(hash, _hashList.size() - 1);
     }
 
 }
