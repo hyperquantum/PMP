@@ -37,7 +37,7 @@ namespace PMP {
 
     int QueueModel::rowCount(const QModelIndex& parent) const {
         int rows = _modelRows;
-        qDebug() << "QueueModel::rowCount returning" << rows;
+        //qDebug() << "QueueModel::rowCount returning" << rows;
         return rows;
     }
 
@@ -69,7 +69,7 @@ namespace PMP {
             if (queueID == 0) { return QString("?"); }
 
             TrackMonitor* track = _source->trackFromID(queueID);
-            if (track == 0) { return QString("?"); }
+            if (track == 0) { return QString("? ") + QString::number(queueID); }
 
             int col = index.column();
             switch (col) {

@@ -86,9 +86,10 @@ PLANNED FEATURES
 
 No guarantees here!  This is more like a TO-DO list.
 
- * Remote with GUI interface
+ * Remote (client program) with GUI interface
  * Differentiate between different users by having them authenticate themselves
- * Last.fm scrobbling
+ * Public mode / personal mode
+ * Last.fm scrobbling (in personal mode)
  * Syncronization of music databases across different machines
  * Bridging of PMP server instances, to access music from another machine
  * Naming a PMP Server instance; e.g. "living room"

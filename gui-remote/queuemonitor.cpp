@@ -94,6 +94,7 @@ namespace PMP {
         connect(_connection, SIGNAL(connected()), this, SLOT(connected()));
         connect(_connection, SIGNAL(receivedQueueContents(int, int, QList<quint32>)), this, SLOT(receivedQueueContents(int, int, QList<quint32>)));
         connect(_connection, SIGNAL(queueEntryRemoved(quint32, quint32)), this, SLOT(queueEntryRemoved(quint32, quint32)));
+        connect(_connection, SIGNAL(queueEntryAdded(quint32, quint32)), this, SLOT(queueEntryAdded(quint32, quint32)));
         connect(_connection, SIGNAL(receivedTrackInfo(quint32, int, QString, QString)), this, SLOT(receivedTrackInfo(quint32, int, QString, QString)));
 
         if (_connection->isConnected()) {
@@ -213,6 +214,7 @@ namespace PMP {
     void QueueMonitor::queueEntryAdded(quint32 offset, quint32 queueID) {
         if ((int)offset > _queueLength) {
             /* problem */
+            qDebug() << "PROBLEM: QueueMonitor::queueEntryAdded: Q-length=0, received offset" << offset << "and queueID" << queueID;
             return;
         }
 
@@ -232,12 +234,14 @@ namespace PMP {
         }
         else {
             /* TODO: error correction */
+            qDebug() << "PROBLEM: QueueMonitor::queueEntryAdded: _queueLengthSent=" << _queueLengthSent << "; _queueLength=" << _queueLength;
         }
     }
 
     void QueueMonitor::queueEntryRemoved(quint32 offset, quint32 queueID) {
         if (_queueLength == 0) {
             /* problem */
+            qDebug() << "PROBLEM: QueueMonitor::queueEntryRemoved: Q-length=0, received offset" << offset << "and queueID" << queueID;
             return;
         }
 
@@ -249,6 +253,7 @@ namespace PMP {
             }
             else {
                 /* TODO: error recovery */
+                qDebug() << "PROBLEM: QueueMonitor::queueEntryRemoved: ID does not match; offset=" << offset << "; received ID=" << queueID << "; found ID=" << _queue[offset];
             }
         }
 
@@ -257,12 +262,13 @@ namespace PMP {
             sendNextSlotBatchRequest(3);
         }
 
-        if (_queueLengthSent + 1 == _queueLength) {
+        if (_queueLengthSent - 1 == _queueLength) {
             _queueLengthSent--;
             emit tracksRemoved(offset, offset);
         }
         else {
             /* TODO: error correction */
+            qDebug() << "PROBLEM: QueueMonitor::queueEntryRemoved: _queueLengthSent=" << _queueLengthSent << "; _queueLength=" << _queueLength;
         }
     }
 
@@ -313,7 +319,7 @@ namespace PMP {
 
         /* kinda dumb, we signal that all rows have changed */
         if (_queueLengthSent > 0) {
-            emit tracksChanged(0, _queueLengthSent);
+            emit tracksChanged(0, _queueLengthSent - 1);
         }
     }
 
