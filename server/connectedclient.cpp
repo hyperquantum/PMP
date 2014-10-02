@@ -517,7 +517,7 @@ namespace PMP {
                 + (lengthBytes[2] << 8)
                 + lengthBytes[3];
 
-            qDebug() << "binary message length:" << messageLength;
+            qDebug() << "incoming binary message with length " << messageLength;
 
             if (_socket->bytesAvailable() - sizeof(lengthBytes) < messageLength) {
                 break; /* message not complete yet */
@@ -539,7 +539,7 @@ namespace PMP {
         }
 
         int messageType = NetworkUtil::get2Bytes(message, 0);
-        qDebug() << "received binary message with type" << messageType;
+        qDebug() << " binary message has type" << messageType;
 
         switch (messageType) {
         case 1: /* single-byte action message */
@@ -549,7 +549,7 @@ namespace PMP {
             }
 
             quint8 actionType = NetworkUtil::getByte(message, 2);
-            qDebug() << " single byte action with type" << actionType;
+            qDebug() << "  single byte action with type" << actionType;
 
             if (actionType >= 100 && actionType <= 200) {
                 _player->setVolume(actionType - 100);
@@ -566,8 +566,14 @@ namespace PMP {
             case 3:
                 _player->skip();
                 break;
-            case 10:
+            case 10: /* request for state info */
                 sendStateInfo();
+                break;
+            case 20: /* enable dynamic mode */
+                _player->enableDynamicMode();
+                break;
+            case 21: /* disable dynamic mode */
+                _player->disableDynamicMode();
                 break;
             case 99:
                 _server->shutdown();

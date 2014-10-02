@@ -227,6 +227,13 @@
      </property>
     </widget>
    </item>
+   <item>
+    <widget class="QCheckBox" name="dynamicModeCheckBox">
+     <property name="text">
+      <string>dynamic mode</string>
+     </property>
+    </widget>
+   </item>
   </layout>
  </widget>
  <resources/>

@@ -51,6 +51,9 @@ namespace PMP {
 
         void setVolume(int percentage);
 
+        void enableDynamicMode();
+        void disableDynamicMode();
+
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
 
         void sendTrackInfoRequest(uint queueID);

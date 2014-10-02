@@ -326,6 +326,22 @@ namespace PMP {
         sendSingleByteAction(100 + percentage); /* 100 to 200 = set volume */
     }
 
+    void ServerConnection::enableDynamicMode() {
+        if (!_binarySendingMode) {
+            return; /* only supported in binary mode */
+        }
+
+        sendSingleByteAction(20); /* 20 = enable dynamic mode */
+    }
+
+    void ServerConnection::disableDynamicMode() {
+        if (!_binarySendingMode) {
+            return; /* only supported in binary mode */
+        }
+
+        sendSingleByteAction(21); /* 21 = disable dynamic mode */
+    }
+
     void ServerConnection::readBinaryCommands() {
         char lengthBytes[4];
 
@@ -336,7 +352,7 @@ namespace PMP {
                 + (lengthBytes[2] << 8)
                 + lengthBytes[3];
 
-            qDebug() << "binary message length:" << messageLength;
+            qDebug() << "incoming binary message with length " << messageLength;
 
             if (_socket.bytesAvailable() - sizeof(lengthBytes) < messageLength) {
                 break; /* message not complete yet */
@@ -358,7 +374,7 @@ namespace PMP {
         }
 
         int messageType = NetworkUtil::get2Bytes(message, 0);
-        qDebug() << "received binary message with type" << messageType;
+        qDebug() << " binary message has type" << messageType;
 
         switch (messageType) {
         case 1: /* player state message */

@@ -55,6 +55,8 @@ namespace PMP {
         connect(_ui->pauseButton, SIGNAL(clicked()), _connection, SLOT(pause()));
         connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
 
+        connect(_ui->dynamicModeCheckBox, SIGNAL(stateChanged(int)), this, SLOT(changeDynamicMode(int)));
+
         connect(_connection, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
         connect(_ui->volumeIncreaseButton, SIGNAL(clicked()), this, SLOT(increaseVolume()));
         connect(_ui->volumeDecreaseButton, SIGNAL(clicked()), this, SLOT(decreaseVolume()));
@@ -103,6 +105,15 @@ namespace PMP {
     void MainWidget::increaseVolume() {
         if (_volume >= 0) {
             _connection->setVolume(_volume < 95 ? _volume + 5 : 100);
+        }
+    }
+
+    void MainWidget::changeDynamicMode(int checkState) {
+        if (checkState == Qt::Checked) {
+            _connection->enableDynamicMode();
+        }
+        else {
+            _connection->disableDynamicMode();
         }
     }
 

@@ -50,6 +50,8 @@ namespace PMP {
         void decreaseVolume();
         void increaseVolume();
 
+        void changeDynamicMode(int checkState);
+
         void noCurrentTrack();
         void nowPlayingTrack(quint32 queueID);
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);

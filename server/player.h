@@ -57,6 +57,9 @@ namespace PMP {
 
         void setVolume(int volume);
 
+        void enableDynamicMode();
+        void disableDynamicMode();
+
     Q_SIGNALS:
 
         void stateChanged(Player::State state);
@@ -82,6 +85,7 @@ namespace PMP {
         qint64 _playPosition;
         State _state;
         bool _ignoreNextStopEvent;
+        bool _generatorEnabled;
     };
 }
 #endif

@@ -30,7 +30,8 @@ namespace PMP {
      : QObject(parent), _resolver(resolver),
         _player(new QMediaPlayer(this)),
         _nowPlaying(0), _playPosition(0),
-        _state(Stopped), _ignoreNextStopEvent(false)
+        _state(Stopped), _ignoreNextStopEvent(false),
+        _generatorEnabled(false)
     {
         setVolume(75);
         connect(_player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(internalMediaStatusChanged(QMediaPlayer::MediaStatus)));
@@ -127,6 +128,14 @@ namespace PMP {
         _player->setVolume(volume);
     }
 
+    void Player::enableDynamicMode() {
+        _generatorEnabled = true;
+    }
+
+    void Player::disableDynamicMode() {
+        _generatorEnabled = false;
+    }
+
     void Player::internalMediaStatusChanged(QMediaPlayer::MediaStatus state) {
         qDebug() << "Player::internalMediaStateChanged state:" << state;
     }
@@ -202,13 +211,15 @@ namespace PMP {
             }
 
             /* TODO: move elsewhere */
-            int tracksToGenerate = 1;
-            if (_queue.length() < 10) { tracksToGenerate = 10 - _queue.length(); }
-            while (tracksToGenerate > 0) {
-                tracksToGenerate--;
-                HashID randomHash = _resolver->getRandom();
-                if (randomHash.empty()) { break; /* nothing available */ }
-                _queue.enqueue(randomHash);
+            if (_generatorEnabled) {
+                int tracksToGenerate = 1;
+                if (_queue.length() < 10) { tracksToGenerate = 10 - _queue.length(); }
+                while (tracksToGenerate > 0) {
+                    tracksToGenerate--;
+                    HashID randomHash = _resolver->getRandom();
+                    if (randomHash.empty()) { break; /* nothing available */ }
+                    _queue.enqueue(randomHash);
+                }
             }
 
             return true;
