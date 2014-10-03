@@ -31,7 +31,8 @@ namespace PMP {
         QWidget(parent),
         _ui(new Ui::MainWidget),
         _connection(0), _queueMonitor(0), _queueModel(0),
-        _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1)
+        _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1),
+        _dynamicModeEnabled(false)
     {
         _ui->setupUi(this);
     }
@@ -56,6 +57,8 @@ namespace PMP {
         connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
 
         connect(_ui->dynamicModeCheckBox, SIGNAL(stateChanged(int)), this, SLOT(changeDynamicMode(int)));
+        connect(_connection, SIGNAL(dynamicModeEnabled()), this, SLOT(dynamicModeEnabled()));
+        connect(_connection, SIGNAL(dynamicModeDisabled()), this, SLOT(dynamicModeDisabled()));
 
         connect(_connection, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
         connect(_ui->volumeIncreaseButton, SIGNAL(clicked()), this, SLOT(increaseVolume()));
@@ -110,11 +113,27 @@ namespace PMP {
 
     void MainWidget::changeDynamicMode(int checkState) {
         if (checkState == Qt::Checked) {
-            _connection->enableDynamicMode();
+            if (!_dynamicModeEnabled) {
+                _connection->enableDynamicMode();
+                _dynamicModeEnabled = true;
+            }
         }
         else {
-            _connection->disableDynamicMode();
+            if (_dynamicModeEnabled)  {
+                _connection->disableDynamicMode();
+                _dynamicModeEnabled = false;
+            }
         }
+    }
+
+    void MainWidget::dynamicModeEnabled() {
+        _dynamicModeEnabled = true;
+        _ui->dynamicModeCheckBox->setChecked(true);
+    }
+
+    void MainWidget::dynamicModeDisabled() {
+        _dynamicModeEnabled = false;
+        _ui->dynamicModeCheckBox->setChecked(false);
     }
 
     void MainWidget::noCurrentTrack() {

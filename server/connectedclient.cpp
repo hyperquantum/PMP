@@ -38,6 +38,7 @@ namespace PMP {
         connect(socket, SIGNAL(readyRead()), this, SLOT(dataArrived()));
         connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(socketError(QAbstractSocket::SocketError)));
         connect(player, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
+        connect(player, SIGNAL(dynamicModeStatusChanged(bool)), this, SLOT(dynamicModeStatusChanged(bool)));
         connect(player, SIGNAL(stateChanged(Player::State)), this, SLOT(playerStateChanged(Player::State)));
         connect(player, SIGNAL(currentTrackChanged(QueueEntry const*)), this, SLOT(currentTrackChanged(QueueEntry const*)));
         connect(player, SIGNAL(positionChanged(qint64)), this, SLOT(trackPositionChanged(qint64)));
@@ -283,6 +284,21 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendDynamicModeStatusMessage() {
+        if (!_binaryMode) {
+            return; // only supported in binary mode
+        }
+
+        quint8 enabled = _player->dynamicModeEnabled() ? 1 : 0;
+
+        QByteArray message;
+        message.reserve(3);
+        NetworkUtil::append2Bytes(message, 8); /* message type */
+        NetworkUtil::appendByte(message, enabled);
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendQueueContentMessage(quint32 startOffset, quint8 length) {
         Queue& queue = _player->queue();
         uint queueLength = queue.length();
@@ -394,6 +410,10 @@ namespace PMP {
 
     void ConnectedClient::volumeChanged(int volume) {
         sendVolumeMessage();
+    }
+
+    void ConnectedClient::dynamicModeStatusChanged(bool enabled) {
+        sendDynamicModeStatusMessage();
     }
 
     void ConnectedClient::playerStateChanged(Player::State state) {
@@ -568,6 +588,9 @@ namespace PMP {
                 break;
             case 10: /* request for state info */
                 sendStateInfo();
+                break;
+            case 11: /* request for status of dynamic mode */
+                sendDynamicModeStatusMessage();
                 break;
             case 20: /* enable dynamic mode */
                 _player->enableDynamicMode();

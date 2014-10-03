@@ -59,6 +59,7 @@ namespace PMP {
 
         void enableDynamicMode();
         void disableDynamicMode();
+        bool dynamicModeEnabled();
 
     Q_SIGNALS:
 
@@ -66,6 +67,7 @@ namespace PMP {
         void currentTrackChanged(QueueEntry const* newTrack);
         void positionChanged(qint64 position);
         void volumeChanged(int volume);
+        void dynamicModeStatusChanged(bool enabled);
 
         /*! Emitted when the queue is empty and the current track is finished. */
         void finished();

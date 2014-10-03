@@ -152,6 +152,7 @@ namespace PMP {
 
                 emit connected();
                 sendSingleByteAction(10); /* request player state */
+                requestDynamicModeStatus(); // FIXME: must become optional
             }
                 break;
             case BinaryMode:
@@ -340,6 +341,14 @@ namespace PMP {
         }
 
         sendSingleByteAction(21); /* 21 = disable dynamic mode */
+    }
+
+    void ServerConnection::requestDynamicModeStatus() {
+        if (!_binarySendingMode) {
+            return; /* only supported in binary mode */
+        }
+
+        sendSingleByteAction(11); /* 11 = request status of dynamic mode */
     }
 
     void ServerConnection::readBinaryCommands() {
@@ -560,6 +569,22 @@ namespace PMP {
             quint32 queueID = NetworkUtil::get4Bytes(message, 6);
 
             emit queueEntryAdded(offset, queueID);
+        }
+            break;
+        case 8: /* dynamic mode status */
+        {
+            if (messageLength != 3) {
+                return; /* invalid message */
+            }
+
+            quint8 isEnabled = NetworkUtil::getByte(message, 2);
+
+            if (isEnabled > 0) {
+                emit dynamicModeEnabled();
+            }
+            else {
+                emit dynamicModeDisabled();
+            }
         }
             break;
         default:

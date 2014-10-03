@@ -53,6 +53,7 @@ namespace PMP {
 
         void enableDynamicMode();
         void disableDynamicMode();
+        void requestDynamicModeStatus();
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
 
@@ -70,6 +71,10 @@ namespace PMP {
         void stopped();
 
         void volumeChanged(int percentage);
+
+        void dynamicModeEnabled();
+        void dynamicModeDisabled();
+
         void noCurrentTrack();
         void nowPlayingTrack(quint32 queueID);
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);

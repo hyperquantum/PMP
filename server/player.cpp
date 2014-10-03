@@ -130,10 +130,16 @@ namespace PMP {
 
     void Player::enableDynamicMode() {
         _generatorEnabled = true;
+        emit dynamicModeStatusChanged(true);
     }
 
     void Player::disableDynamicMode() {
         _generatorEnabled = false;
+        emit dynamicModeStatusChanged(false);
+    }
+
+    bool Player::dynamicModeEnabled() {
+        return _generatorEnabled;
     }
 
     void Player::internalMediaStatusChanged(QMediaPlayer::MediaStatus state) {

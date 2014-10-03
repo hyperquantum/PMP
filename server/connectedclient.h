@@ -45,11 +45,13 @@ namespace PMP {
         void socketError(QAbstractSocket::SocketError error);
 
         void volumeChanged(int volume);
+        void dynamicModeStatusChanged(bool enabled);
         void playerStateChanged(Player::State state);
         void currentTrackChanged(QueueEntry const* entry);
         void trackPositionChanged(qint64 position);
         void sendStateInfo();
         void sendVolumeMessage();
+        void sendDynamicModeStatusMessage();
         void sendTextualQueueInfo();
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         void queueEntryAdded(quint32 offset, quint32 queueID);
