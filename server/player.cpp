@@ -31,13 +31,14 @@ namespace PMP {
         _player(new QMediaPlayer(this)),
         _nowPlaying(0), _playPosition(0),
         _state(Stopped), _ignoreNextStopEvent(false),
-        _generatorEnabled(false)
+        _generator(&_queue, resolver)
     {
         setVolume(75);
         connect(_player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(internalMediaStatusChanged(QMediaPlayer::MediaStatus)));
         connect(_player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(internalStateChanged(QMediaPlayer::State)));
         connect(_player, SIGNAL(positionChanged(qint64)), this, SLOT(internalPositionChanged(qint64)));
         connect(_player, SIGNAL(volumeChanged(int)), this, SIGNAL(volumeChanged(int)));
+        connect(&_generator, SIGNAL(enabledChanged(bool)), this, SIGNAL(dynamicModeStatusChanged(bool)));
     }
 
     int Player::volume() const {
@@ -129,17 +130,15 @@ namespace PMP {
     }
 
     void Player::enableDynamicMode() {
-        _generatorEnabled = true;
-        emit dynamicModeStatusChanged(true);
+        _generator.enable();
     }
 
     void Player::disableDynamicMode() {
-        _generatorEnabled = false;
-        emit dynamicModeStatusChanged(false);
+        _generator.disable();
     }
 
     bool Player::dynamicModeEnabled() {
-        return _generatorEnabled;
+        return _generator.enabled();
     }
 
     void Player::internalMediaStatusChanged(QMediaPlayer::MediaStatus state) {
@@ -214,18 +213,6 @@ namespace PMP {
             if (play) {
                 changeState(Playing);
                 _player->play();
-            }
-
-            /* TODO: move elsewhere */
-            if (_generatorEnabled) {
-                int tracksToGenerate = 1;
-                if (_queue.length() < 10) { tracksToGenerate = 10 - _queue.length(); }
-                while (tracksToGenerate > 0) {
-                    tracksToGenerate--;
-                    HashID randomHash = _resolver->getRandom();
-                    if (randomHash.empty()) { break; /* nothing available */ }
-                    _queue.enqueue(randomHash);
-                }
             }
 
             return true;

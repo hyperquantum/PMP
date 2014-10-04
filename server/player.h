@@ -20,12 +20,14 @@
 #ifndef PMP_PLAYER_H
 #define PMP_PLAYER_H
 
+#include "generator.h"
 #include "queue.h"
 
 #include <QMediaPlayer>
 
 namespace PMP {
 
+    class Generator;
     class Resolver;
 
     class Player : public QObject {
@@ -87,7 +89,7 @@ namespace PMP {
         qint64 _playPosition;
         State _state;
         bool _ignoreNextStopEvent;
-        bool _generatorEnabled;
+        Generator _generator;
     };
 }
 #endif
