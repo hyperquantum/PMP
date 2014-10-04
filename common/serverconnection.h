@@ -56,6 +56,7 @@ namespace PMP {
         void requestDynamicModeStatus();
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
+        void deleteQueueEntry(uint queueID);
 
         void sendTrackInfoRequest(uint queueID);
         void sendTrackInfoRequest(QList<uint> const& queueIDs);

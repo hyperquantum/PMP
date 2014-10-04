@@ -37,6 +37,8 @@ namespace PMP {
         QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
         QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
 
+        uint trackAt(const QModelIndex& index) const;
+
     private slots:
         void tracksInserted(int firstIndex, int lastIndex);
         void tracksRemoved(int firstIndex, int lastIndex);
@@ -55,8 +57,6 @@ namespace PMP {
                 //
             }
         };
-
-
 
         QueueMonitor* _source;
         int _modelRows;

@@ -47,6 +47,8 @@ namespace PMP {
 
         QueueEntry* dequeue();
 
+        bool remove(quint32 queueID);
+
         QList<QueueEntry*> entries(int startoffset, int maxCount);
 
         QueueEntry* lookup(quint32 queueID);
@@ -56,6 +58,8 @@ namespace PMP {
         void entryRemoved(quint32 offset, quint32 queueID);
 
     private:
+        int findIndex(quint32 queueID);
+
         uint _nextQueueID;
         QHash<quint32, QueueEntry*> _index;
         QQueue<QueueEntry*> _queue;

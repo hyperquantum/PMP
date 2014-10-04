@@ -261,6 +261,15 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ServerConnection::deleteQueueEntry(uint queueID) {
+        QByteArray message;
+        message.reserve(6);
+        NetworkUtil::append2Bytes(message, 5); /* message type */
+        NetworkUtil::append4Bytes(message, queueID);
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::sendTrackInfoRequest(uint queueID) {
         qDebug() << "sending request for track info of QID" << queueID;
 

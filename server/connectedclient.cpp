@@ -657,6 +657,21 @@ namespace PMP {
             sendQueueContentMessage(startOffset, length);
         }
             break;
+        case 5: /* request to delete an entry in the queue */
+        {
+            if (messageLength != 6) {
+                return; /* invalid message */
+            }
+
+            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+
+            if (queueID <= 0) {
+                return; /* invalid queue ID */
+            }
+
+            _player->queue().remove(queueID);
+        }
+            break;
         default:
             qDebug() << "unknown binary message type" << messageType;
             break; /* unknown message type */

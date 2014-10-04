@@ -101,6 +101,12 @@ namespace PMP {
         return QVariant();
     }
 
+    uint QueueModel::trackAt(const QModelIndex& index) const {
+        int row = index.row();
+        quint32 queueID = _source->queueEntry(row);
+        return queueID;
+    }
+
     void QueueModel::tracksInserted(int firstIndex, int lastIndex) {
         qDebug() << "QueueModel::tracksInserted " << firstIndex << lastIndex;
 

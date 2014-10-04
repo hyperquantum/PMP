@@ -25,6 +25,8 @@
 #include "queuemodel.h"
 #include "queuemonitor.h"
 
+#include <QKeyEvent>
+
 namespace PMP {
 
     MainWidget::MainWidget(QWidget *parent) :
@@ -51,6 +53,7 @@ namespace PMP {
         _ui->pauseButton->setEnabled(false);
         _ui->skipButton->setEnabled(false);
         _ui->queueTableView->setModel(_queueModel);
+        _ui->queueTableView->installEventFilter(this);
 
         connect(_ui->playButton, SIGNAL(clicked()), _connection, SLOT(play()));
         connect(_ui->pauseButton, SIGNAL(clicked()), _connection, SLOT(pause()));
@@ -74,6 +77,30 @@ namespace PMP {
         connect(_connection, SIGNAL(trackPositionChanged(quint64)), this, SLOT(trackPositionChanged(quint64)));
         connect(_connection, SIGNAL(queueLengthChanged(int)), this, SLOT(queueLengthChanged(int)));
         connect(_connection, SIGNAL(receivedTrackInfo(quint32, int, QString, QString)), this, SLOT(receivedTrackInfo(quint32, int, QString, QString)));
+    }
+
+    bool MainWidget::eventFilter(QObject* object, QEvent* event) {
+        if (_ui->queueTableView->hasFocus()) {
+            if (event->type() == QEvent::KeyPress) {
+                QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+
+                if (keyEvent->key() == Qt::Key_Delete) {
+                    qDebug() << "got delete key";
+
+                    QModelIndex index = _ui->queueTableView->currentIndex();
+                    if (index.isValid()) {
+                        uint queueID = _queueModel->trackAt(index);
+
+                        if (queueID > 0) {
+                            _connection->deleteQueueEntry(queueID);
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+
+        return QWidget::eventFilter(object, event);
     }
 
     void MainWidget::playing() {

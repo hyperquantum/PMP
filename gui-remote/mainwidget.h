@@ -41,6 +41,9 @@ namespace PMP {
 
         void setConnection(ServerConnection* connection);
 
+    protected:
+        bool eventFilter(QObject*, QEvent*);
+
     private slots:
         void playing();
         void paused();

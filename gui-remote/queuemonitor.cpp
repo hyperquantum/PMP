@@ -50,7 +50,7 @@ namespace PMP {
     }
 
     QString TrackMonitor::title() {
-        qDebug() << "TrackMonitor::title() called for queueID " << _queueID;
+        //qDebug() << "TrackMonitor::title() called for queueID " << _queueID;
 
         if (!_infoRequestedAlready) {
             _infoRequestedAlready = true;
@@ -113,6 +113,8 @@ namespace PMP {
     }
 
     quint32 QueueMonitor::queueEntry(int index) {
+        if (index < 0) return 0;
+
         /* see if we need to fetch more of the queue */
         if (index < _queueLength && (index + 3) >= _requestQueueUpTo) {
             qDebug() << "QueueMonitor::queueEntry: will raise up-to, is now" << _requestQueueUpTo;

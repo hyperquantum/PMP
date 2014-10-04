@@ -71,6 +71,17 @@ namespace PMP {
         return entry;
     }
 
+    bool Queue::remove(quint32 queueID) {
+        int index = findIndex(queueID);
+        if (index < 0) return false; // not found
+
+        _queue.removeAt(index);
+
+        emit entryRemoved(index, queueID);
+
+        return true;
+    }
+
     QList<QueueEntry*> Queue::entries(int startoffset, int maxCount) {
         return _queue.mid(startoffset, maxCount);
     }
@@ -80,6 +91,16 @@ namespace PMP {
         if (it == _index.end()) { return 0; }
 
         return it.value();
+    }
+
+    int Queue::findIndex(quint32 queueID) {
+        // FIXME: find a more efficient way to get the index
+        int length = _queue.length();
+        for (int i = 0; i < length; ++i) {
+            if (_queue[i]->queueID() == queueID) return i;
+        }
+
+        return -1; // not found
     }
 
 }
