@@ -67,12 +67,41 @@ namespace PMP {
         int tracksToGenerate = 1;
         uint queueLength = _queue->length();
         if (queueLength < 10) { tracksToGenerate = 10 - queueLength; }
+
+        int extraTries = 5;
         while (tracksToGenerate > 0) {
             tracksToGenerate--;
+
             HashID randomHash = _resolver->getRandom();
             if (randomHash.empty()) { break; /* nothing available */ }
+
+            if (!satisfiesFilters(randomHash)) {
+                if (extraTries > 0) {
+                    --extraTries;
+                    tracksToGenerate++;
+                }
+
+                continue;
+            }
+
             _queue->enqueue(randomHash);
         }
+    }
+
+    bool Generator::satisfiesFilters(const HashID& hash) {
+        if (hash.empty()) return false;
+
+        /* can we find a file for the track? */
+        if (!_resolver->haveAnyPathInfo(hash)) return false;
+
+        /* get audio info */
+        const AudioData& audioData = _resolver->findAudioData(hash);
+        int trackLengthSeconds = audioData.trackLength();
+
+        /* is it a real track, not a short sound file? */
+        if (trackLengthSeconds < 10 && trackLengthSeconds >= 0) return false;
+
+        return true;
     }
 
 }

@@ -24,6 +24,7 @@
 
 namespace PMP {
 
+    class HashID;
     class Queue;
     class Resolver;
 
@@ -47,6 +48,8 @@ namespace PMP {
         void checkAndRefillQueue();
 
     private:
+        bool satisfiesFilters(const HashID& hash);
+
         Queue* _queue;
         Resolver* _resolver;
         bool _enabled;

@@ -72,6 +72,11 @@ namespace PMP {
         }
     }
 
+    bool Resolver::haveAnyPathInfo(const HashID& hash) {
+        QList<QString> paths = _pathCache.values(hash);
+        return paths.count() > 0;
+    }
+
     QString Resolver::findPath(const HashID& hash) {
         QList<QString> paths = _pathCache.values(hash);
         qDebug() << "Resolver::findPath for hash " << hash.dumpToString();

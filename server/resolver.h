@@ -43,6 +43,7 @@ namespace PMP {
         void registerFile(const FileData& file, const QString& filename);
         void registerFile(const HashID& hash, const QString& filename);
 
+        bool haveAnyPathInfo(const HashID& hash);
         QString findPath(const HashID& hash);
         const AudioData& findAudioData(const HashID& hash);
         const TagData* findTagData(const HashID& hash);
