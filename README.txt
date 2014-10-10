@@ -86,7 +86,7 @@ PLANNED FEATURES
 
 No guarantees here!  This is more like a TO-DO list.
 
- * Remote (client program) with GUI interface
+ * 'Trim queue' button in remote
  * Differentiate between different users by having them authenticate themselves
  * Public mode / personal mode
  * Last.fm scrobbling (in personal mode)
