@@ -29,11 +29,14 @@ namespace PMP {
     class FileData;
     class HashID;
     class QueueEntry;
+    class Resolver;
 
     class Queue : public QObject {
         Q_OBJECT
     public:
         Queue();
+
+        bool checkPotentialRepetitionByAdd(Resolver& resolver, const HashID& hash, int repetitionAvoidanceSeconds, int* nonRepetitionSpan = 0) const;
 
     public slots:
         void clear();

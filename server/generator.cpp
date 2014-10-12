@@ -22,17 +22,38 @@
 #include "queue.h"
 #include "resolver.h"
 
+#include <QtDebug>
 #include <QTimer>
 
 namespace PMP {
 
+    class Generator::Candidate {
+    public:
+        Candidate(const HashID& hashID)
+         : _hash(hashID), _lengthSeconds(0)
+        {
+            //
+        }
+
+        const HashID& hash() const { return _hash; }
+
+        void setLengthSeconds(uint seconds) { _lengthSeconds = seconds; }
+        uint lengthSeconds() const { return _lengthSeconds; }
+
+    private:
+        HashID _hash;
+        uint _lengthSeconds;
+    };
+
     Generator::Generator(Queue* queue, Resolver* resolver)
-     : _queue(queue), _resolver(resolver), _enabled(false), _refillPending(false)
+     : _queue(queue), _resolver(resolver), _enabled(false), _refillPending(false),
+       _upcomingRuntime(0), _upcomingTimer(new QTimer(this)), _noRepetitionSpan(25 * 60)
     {
         connect(_queue, SIGNAL(entryRemoved(quint32, quint32)), this, SLOT(queueEntryRemoved(quint32, quint32)));
+        connect(_upcomingTimer, SIGNAL(timeout()), this, SLOT(checkRefillUpcomingBuffer()));
 
-        _refillPending = true;
-        QTimer::singleShot(100, this, SLOT(checkAndRefillQueue()));
+        /* one time, to get a minimal start amount of tracks */
+        checkRefillUpcomingBuffer();
     }
 
     bool Generator::enabled() const {
@@ -41,15 +62,22 @@ namespace PMP {
 
     void Generator::enable() {
         if (_enabled) return; /* enabled already */
-        _enabled = true;
-        emit enabledChanged(true);
 
-        queueEntryRemoved(0, 0); /* force filling of the queue */
+        qDebug() << "generator enabled";
+        _enabled = true;
+
+        emit enabledChanged(true);
+        _upcomingTimer->start(5000);
+        queueEntryRemoved(0, 0); /* force immediate filling of the queue */
     }
 
     void Generator::disable() {
         if (!_enabled) return; /* disabled already */
+
+        qDebug() << "generator disabled";
         _enabled = false;
+
+        _upcomingTimer->stop();
         emit enabledChanged(false);
     }
 
@@ -59,6 +87,34 @@ namespace PMP {
         QTimer::singleShot(100, this, SLOT(checkAndRefillQueue()));
     }
 
+    void Generator::checkRefillUpcomingBuffer() {
+        //int upcomingToGenerate = desiredUpcomingLength - _upcoming.length();
+        int iterationsLeft = 5;
+        while (iterationsLeft > 0
+               && ((uint)_upcoming.length() < desiredUpcomingLength
+                    || _upcomingRuntime < desiredUpcomingRuntime))
+        {
+            iterationsLeft--;
+
+            HashID randomHash = _resolver->getRandom();
+            if (randomHash.empty()) { break; /* nothing available */ }
+
+            Candidate* c = new Candidate(randomHash);
+
+            if (satisfiesFilters(c)) {
+                _upcoming.enqueue(c);
+                _upcomingRuntime += c->lengthSeconds();
+            }
+        }
+
+        qDebug() << "generator: buffer length:" << _upcoming.length() << "; runtime:" << (_upcomingRuntime / 60) << "min" << (_upcomingRuntime % 60) << "sec";
+
+        /* if buffer full without big effort in this last call */
+        if (iterationsLeft >= 4 && _queue->length() < desiredQueueLength) {
+            queueEntryRemoved(0, 0); /* force immediate filling of the queue */
+        }
+    }
+
     void Generator::checkAndRefillQueue() {
         _refillPending = false;
 
@@ -66,30 +122,52 @@ namespace PMP {
 
         int tracksToGenerate = 1;
         uint queueLength = _queue->length();
-        if (queueLength < 10) { tracksToGenerate = 10 - queueLength; }
+        if (queueLength < desiredQueueLength) {
+            tracksToGenerate = desiredQueueLength - queueLength;
+        }
 
-        int extraTries = 5;
-        while (tracksToGenerate > 0) {
-            tracksToGenerate--;
+        int iterationsLeft = 15;
+        while (iterationsLeft > 0
+                && tracksToGenerate > 0
+                && !_upcoming.empty())
+        {
+            iterationsLeft--;
 
-            HashID randomHash = _resolver->getRandom();
-            if (randomHash.empty()) { break; /* nothing available */ }
+            Candidate* c = _upcoming.dequeue();
+            _upcomingRuntime -= c->lengthSeconds();
 
-            if (!satisfiesFilters(randomHash)) {
-                if (extraTries > 0) {
-                    --extraTries;
-                    tracksToGenerate++;
-                }
+            /* check filters again */
+            bool ok = satisfiesFilters(c);
 
-                continue;
+            /* check last play time according to play history */
+            if (ok) {
+                // TODO
             }
 
-            _queue->enqueue(randomHash);
+            /* check occurrence in queue */
+            int nonRepetitionSpan = 0;
+            if (ok) {
+                if (_queue->checkPotentialRepetitionByAdd(*_resolver, c->hash(), _noRepetitionSpan, &nonRepetitionSpan)) {
+                    ok = false;
+                }
+            }
+
+            /* check occurrence in 'now playing' */
+            if (ok && nonRepetitionSpan < _noRepetitionSpan) {
+                // TODO
+            }
+
+            if (ok) {
+                _queue->enqueue(c->hash());
+                tracksToGenerate--;
+            }
+
+            delete c;
         }
     }
 
-    bool Generator::satisfiesFilters(const HashID& hash) {
-        if (hash.empty()) return false;
+    bool Generator::satisfiesFilters(Candidate* candidate) {
+        const HashID& hash = candidate->hash();
 
         /* can we find a file for the track? */
         if (!_resolver->haveAnyPathInfo(hash)) return false;
@@ -100,6 +178,8 @@ namespace PMP {
 
         /* is it a real track, not a short sound file? */
         if (trackLengthSeconds < 10 && trackLengthSeconds >= 0) return false;
+
+        candidate->setLengthSeconds(trackLengthSeconds);
 
         return true;
     }

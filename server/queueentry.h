@@ -47,6 +47,7 @@ namespace PMP {
         QString const* filename() const;
         bool checkValidFilename(Resolver& resolver, QString* outFilename = 0);
 
+        void checkAudioData(Resolver& resolver);
         void checkTrackData(Resolver& resolver);
 
         /** Length in seconds. Is negative when unknown. */

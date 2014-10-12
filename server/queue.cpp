@@ -21,6 +21,8 @@
 
 #include "queueentry.h"
 
+#include <QtDebug>
+
 namespace PMP {
 
     Queue::Queue()
@@ -101,6 +103,37 @@ namespace PMP {
         }
 
         return -1; // not found
+    }
+
+    bool Queue::checkPotentialRepetitionByAdd(Resolver& resolver, const HashID& hash, int repetitionAvoidanceSeconds, int* nonRepetitionSpan) const {
+        int span = 0;
+
+        for (int i = _queue.length() - 1; i >= 0; --i) {
+            QueueEntry* entry = _queue[i];
+            if (entry->hash() == 0) {
+                /* TODO: small problem; we don't know the track's hash yet. This could potentially lead to a repetition. */
+                qDebug() << "queue repetition check: don't know hash yet of queue entry" << entry->queueID();
+                continue;
+            }
+
+            const HashID& entryHash = *entry->hash();
+
+            if (entryHash == hash) {
+                if (nonRepetitionSpan != 0) { *nonRepetitionSpan = span; }
+                return true; /* potential repetition */
+            }
+
+            entry->checkAudioData(resolver);
+            int entryLength = entry->lengthInSeconds();
+
+            if (entryLength > 0) {
+                span += entryLength;
+                if (span >= repetitionAvoidanceSeconds) { break; }
+            }
+        }
+
+        if (nonRepetitionSpan != 0) { *nonRepetitionSpan = span; }
+        return false;
     }
 
 }

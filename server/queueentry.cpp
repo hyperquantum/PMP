@@ -114,12 +114,18 @@ namespace PMP {
         return false;
     }
 
-    void QueueEntry::checkTrackData(Resolver& resolver) {
+    void QueueEntry::checkAudioData(Resolver& resolver) {
         if (_hash.empty()) return;
 
         if (!_audioInfo.isComplete()) {
             _audioInfo = resolver.findAudioData(_hash);
         }
+    }
+
+    void QueueEntry::checkTrackData(Resolver& resolver) {
+        if (_hash.empty()) return;
+
+        checkAudioData(resolver);
 
         const TagData* tag = _tagData;
         if (tag) return;

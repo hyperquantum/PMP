@@ -21,6 +21,8 @@
 #define PMP_GENERATOR_H
 
 #include <QObject>
+#include <QQueue>
+#include <QTimer>
 
 namespace PMP {
 
@@ -45,15 +47,26 @@ namespace PMP {
     private slots:
         void queueEntryRemoved(quint32, quint32);
 
+        void checkRefillUpcomingBuffer();
         void checkAndRefillQueue();
 
     private:
-        bool satisfiesFilters(const HashID& hash);
+        class Candidate;
+
+        static const uint desiredQueueLength = 10;
+        static const uint desiredUpcomingLength = 2 * desiredQueueLength;
+        static const uint desiredUpcomingRuntime = 30 * 60; /* 30 min */
+
+        bool satisfiesFilters(Candidate* candidate);
 
         Queue* _queue;
         Resolver* _resolver;
         bool _enabled;
         bool _refillPending;
+        QQueue<Candidate*> _upcoming;
+        uint _upcomingRuntime;
+        QTimer* _upcomingTimer;
+        int _noRepetitionSpan;
     };
 }
 #endif
