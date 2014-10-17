@@ -86,9 +86,11 @@ PLANNED FEATURES
 
 No guarantees here!  This is more like a TO-DO list.
 
+ * Button in remote to manually add more tracks from dynamic mode
  * 'Trim queue' button in remote
  * Differentiate between different users by having them authenticate themselves
  * Public mode / personal mode
+ * Separate play history for each user and for public mode
  * Last.fm scrobbling (in personal mode)
  * Syncronization of music databases across different machines
  * Bridging of PMP server instances, to access music from another machine

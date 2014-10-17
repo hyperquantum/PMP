@@ -28,6 +28,7 @@ namespace PMP {
 
     class HashID;
     class Queue;
+    class QueueEntry;
     class Resolver;
 
     class Generator : public QObject {
@@ -40,6 +41,8 @@ namespace PMP {
     public slots:
         void enable();
         void disable();
+
+        void currentTrackChanged(QueueEntry const* newTrack);
 
     Q_SIGNALS:
         void enabledChanged(bool enabled);
@@ -59,6 +62,7 @@ namespace PMP {
 
         bool satisfiesFilters(Candidate* candidate);
 
+        QueueEntry const* _currentTrack;
         Queue* _queue;
         Resolver* _resolver;
         bool _enabled;

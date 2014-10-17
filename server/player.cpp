@@ -39,6 +39,7 @@ namespace PMP {
         connect(_player, SIGNAL(positionChanged(qint64)), this, SLOT(internalPositionChanged(qint64)));
         connect(_player, SIGNAL(volumeChanged(int)), this, SIGNAL(volumeChanged(int)));
         connect(&_generator, SIGNAL(enabledChanged(bool)), this, SIGNAL(dynamicModeStatusChanged(bool)));
+        connect(this, SIGNAL(currentTrackChanged(QueueEntry const*)), &_generator, SLOT(currentTrackChanged(QueueEntry const*)));
     }
 
     int Player::volume() const {

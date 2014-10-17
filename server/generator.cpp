@@ -20,6 +20,7 @@
 #include "generator.h"
 
 #include "queue.h"
+#include "queueentry.h"
 #include "resolver.h"
 
 #include <QtDebug>
@@ -46,7 +47,7 @@ namespace PMP {
     };
 
     Generator::Generator(Queue* queue, Resolver* resolver)
-     : _queue(queue), _resolver(resolver), _enabled(false), _refillPending(false),
+     : _currentTrack(0), _queue(queue), _resolver(resolver), _enabled(false), _refillPending(false),
        _upcomingRuntime(0), _upcomingTimer(new QTimer(this)), _noRepetitionSpan(25 * 60)
     {
         connect(_queue, SIGNAL(entryRemoved(quint32, quint32)), this, SLOT(queueEntryRemoved(quint32, quint32)));
@@ -79,6 +80,10 @@ namespace PMP {
 
         _upcomingTimer->stop();
         emit enabledChanged(false);
+    }
+
+    void Generator::currentTrackChanged(QueueEntry const* newTrack) {
+        _currentTrack = newTrack;
     }
 
     void Generator::queueEntryRemoved(quint32, quint32) {
@@ -154,7 +159,13 @@ namespace PMP {
 
             /* check occurrence in 'now playing' */
             if (ok && nonRepetitionSpan < _noRepetitionSpan) {
-                // TODO
+                QueueEntry const* current = _currentTrack;
+                if (current != 0) {
+                    HashID const* currentHash = current->hash();
+                    if (currentHash != 0 && c->hash() == *currentHash) {
+                        ok = false;
+                    }
+                }
             }
 
             if (ok) {
