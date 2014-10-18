@@ -30,16 +30,13 @@ namespace PMP {
      : QObject(parent), _resolver(resolver),
         _player(new QMediaPlayer(this)),
         _nowPlaying(0), _playPosition(0),
-        _state(Stopped), _ignoreNextStopEvent(false),
-        _generator(&_queue, resolver)
+        _state(Stopped), _ignoreNextStopEvent(false)
     {
         setVolume(75);
         connect(_player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(internalMediaStatusChanged(QMediaPlayer::MediaStatus)));
         connect(_player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(internalStateChanged(QMediaPlayer::State)));
         connect(_player, SIGNAL(positionChanged(qint64)), this, SLOT(internalPositionChanged(qint64)));
         connect(_player, SIGNAL(volumeChanged(int)), this, SIGNAL(volumeChanged(int)));
-        connect(&_generator, SIGNAL(enabledChanged(bool)), this, SIGNAL(dynamicModeStatusChanged(bool)));
-        connect(this, SIGNAL(currentTrackChanged(QueueEntry const*)), &_generator, SLOT(currentTrackChanged(QueueEntry const*)));
     }
 
     int Player::volume() const {
@@ -130,18 +127,6 @@ namespace PMP {
         _player->setVolume(volume);
     }
 
-    void Player::enableDynamicMode() {
-        _generator.enable();
-    }
-
-    void Player::disableDynamicMode() {
-        _generator.disable();
-    }
-
-    bool Player::dynamicModeEnabled() {
-        return _generator.enabled();
-    }
-
     void Player::internalMediaStatusChanged(QMediaPlayer::MediaStatus state) {
         qDebug() << "Player::internalMediaStateChanged state:" << state;
     }
@@ -186,11 +171,8 @@ namespace PMP {
     bool Player::startNext(bool play) {
         qDebug() << "Player::startNext";
 
-        //State initialState = _state;
         QueueEntry* oldNowPlaying = _nowPlaying;
         uint oldQueueLength = _queue.length();
-
-        /* TODO: save current track in history */
 
         while (!_queue.empty()) {
             QueueEntry* entry = _queue.dequeue();

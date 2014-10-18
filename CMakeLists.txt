@@ -39,6 +39,7 @@ set(PMP_COMMON_HEADERS
 set(PMP_SERVER_SOURCES
     server/connectedclient.cpp
     server/generator.cpp
+    server/history.cpp
     server/player.cpp
     server/queue.cpp
     server/queueentry.cpp
@@ -49,6 +50,7 @@ set(PMP_SERVER_SOURCES
 set(PMP_SERVER_HEADERS
     server/connectedclient.h
     server/generator.h
+    server/history.h
     server/player.h
     server/queue.h
     server/queueentry.h

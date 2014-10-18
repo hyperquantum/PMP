@@ -19,6 +19,7 @@
 
 #include "generator.h"
 
+#include "history.h"
 #include "queue.h"
 #include "queueentry.h"
 #include "resolver.h"
@@ -46,8 +47,9 @@ namespace PMP {
         uint _lengthSeconds;
     };
 
-    Generator::Generator(Queue* queue, Resolver* resolver)
-     : _currentTrack(0), _queue(queue), _resolver(resolver), _enabled(false), _refillPending(false),
+    Generator::Generator(Queue* queue, Resolver* resolver, History* history)
+     : _currentTrack(0), _queue(queue), _resolver(resolver), _history(history),
+       _enabled(false), _refillPending(false),
        _upcomingRuntime(0), _upcomingTimer(new QTimer(this)), _noRepetitionSpan(25 * 60)
     {
         connect(_queue, SIGNAL(entryRemoved(quint32, quint32)), this, SLOT(queueEntryRemoved(quint32, quint32)));
@@ -144,11 +146,6 @@ namespace PMP {
             /* check filters again */
             bool ok = satisfiesFilters(c);
 
-            /* check last play time according to play history */
-            if (ok) {
-                // TODO
-            }
-
             /* check occurrence in queue */
             int nonRepetitionSpan = 0;
             if (ok) {
@@ -162,9 +159,29 @@ namespace PMP {
                 QueueEntry const* current = _currentTrack;
                 if (current != 0) {
                     HashID const* currentHash = current->hash();
-                    if (currentHash != 0 && c->hash() == *currentHash) {
-                        ok = false;
+                    if (currentHash != 0) {
+                        if (c->hash() == *currentHash) {
+                            ok = false;
+                        }
+                        else {
+                            // TODO: take into account the remaining time of the currently playing track
+
+//                            const AudioData& audio = _resolver->findAudioData(c->hash());
+//                            if (audio.trackLength() > 0) {
+//                                nonRepetitionSpan += audio.trackLength();
+//                            }
+                        }
                     }
+                }
+            }
+
+            /* check last play time, taking the future queue position into account */
+            if (ok) {
+                QDateTime lastPlay = _history->lastPlayed(c->hash());
+                if (lastPlay.isValid()
+                    && lastPlay.addSecs(_noRepetitionSpan) > QDateTime::currentDateTimeUtc().addSecs(nonRepetitionSpan))
+                {
+                    ok = false;
                 }
             }
 

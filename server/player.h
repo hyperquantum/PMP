@@ -20,14 +20,12 @@
 #ifndef PMP_PLAYER_H
 #define PMP_PLAYER_H
 
-#include "generator.h"
 #include "queue.h"
 
 #include <QMediaPlayer>
 
 namespace PMP {
 
-    class Generator;
     class Resolver;
 
     class Player : public QObject {
@@ -59,17 +57,12 @@ namespace PMP {
 
         void setVolume(int volume);
 
-        void enableDynamicMode();
-        void disableDynamicMode();
-        bool dynamicModeEnabled();
-
     Q_SIGNALS:
 
         void stateChanged(Player::State state);
         void currentTrackChanged(QueueEntry const* newTrack);
         void positionChanged(qint64 position);
         void volumeChanged(int volume);
-        void dynamicModeStatusChanged(bool enabled);
 
         /*! Emitted when the queue is empty and the current track is finished. */
         void finished();
@@ -89,7 +82,6 @@ namespace PMP {
         qint64 _playPosition;
         State _state;
         bool _ignoreNextStopEvent;
-        Generator _generator;
     };
 }
 #endif

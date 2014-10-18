@@ -19,6 +19,8 @@
 
 #include "common/filedata.h"
 
+#include "generator.h"
+#include "history.h"
 #include "player.h"
 #include "queue.h"
 #include "resolver.h"
@@ -111,7 +113,13 @@ int main(int argc, char *argv[]) {
     }
 
     Player player(0, &resolver);
+
+    History history(&player);
+
     Queue& queue = player.queue();
+
+    Generator generator(&queue, &resolver, &history);
+    QObject::connect(&player, SIGNAL(currentTrackChanged(QueueEntry const*)), &generator, SLOT(currentTrackChanged(QueueEntry const*)));
 
     out << endl
         << "Adding to queue:" << endl;
@@ -129,7 +137,7 @@ int main(int argc, char *argv[]) {
     out << endl;
 
     Server server;
-    if (!server.listen(&player, QHostAddress::Any, 23432)) {
+    if (!server.listen(&player, &generator, QHostAddress::Any, 23432)) {
         out << "Could not start TCP listener: " << server.errorString() << endl;
         out << "Exiting." << endl;
         return 1;

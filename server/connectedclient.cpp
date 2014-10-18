@@ -22,6 +22,7 @@
 #include "common/hashid.h"
 #include "common/networkutil.h"
 
+#include "generator.h"
 //#include "player.h"
 #include "queue.h"
 #include "queueentry.h"
@@ -29,8 +30,8 @@
 
 namespace PMP {
 
-    ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player)
-     : QObject(server), _socket(socket), _server(server), _player(player),
+    ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player, Generator* generator)
+     : QObject(server), _socket(socket), _server(server), _player(player), _generator(generator),
         _binaryMode(false), _clientProtocolNo(-1), _lastSentNowPlayingID(0)
     {
         connect(server, SIGNAL(shuttingDown()), this, SLOT(terminateConnection()));
@@ -38,7 +39,7 @@ namespace PMP {
         connect(socket, SIGNAL(readyRead()), this, SLOT(dataArrived()));
         connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(socketError(QAbstractSocket::SocketError)));
         connect(player, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
-        connect(player, SIGNAL(dynamicModeStatusChanged(bool)), this, SLOT(dynamicModeStatusChanged(bool)));
+        connect(generator, SIGNAL(enabledChanged(bool)), this, SLOT(dynamicModeStatusChanged(bool)));
         connect(player, SIGNAL(stateChanged(Player::State)), this, SLOT(playerStateChanged(Player::State)));
         connect(player, SIGNAL(currentTrackChanged(QueueEntry const*)), this, SLOT(currentTrackChanged(QueueEntry const*)));
         connect(player, SIGNAL(positionChanged(qint64)), this, SLOT(trackPositionChanged(qint64)));
@@ -289,7 +290,7 @@ namespace PMP {
             return; // only supported in binary mode
         }
 
-        quint8 enabled = _player->dynamicModeEnabled() ? 1 : 0;
+        quint8 enabled = _generator->enabled() ? 1 : 0;
 
         QByteArray message;
         message.reserve(3);
@@ -593,10 +594,10 @@ namespace PMP {
                 sendDynamicModeStatusMessage();
                 break;
             case 20: /* enable dynamic mode */
-                _player->enableDynamicMode();
+                _generator->enable();
                 break;
             case 21: /* disable dynamic mode */
-                _player->disableDynamicMode();
+                _generator->disable();
                 break;
             case 99:
                 _server->shutdown();

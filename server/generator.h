@@ -27,6 +27,7 @@
 namespace PMP {
 
     class HashID;
+    class History;
     class Queue;
     class QueueEntry;
     class Resolver;
@@ -34,7 +35,7 @@ namespace PMP {
     class Generator : public QObject {
         Q_OBJECT
     public:
-        Generator(Queue* queue, Resolver* resolver);
+        Generator(Queue* queue, Resolver* resolver, History* history);
 
         bool enabled() const;
 
@@ -65,6 +66,7 @@ namespace PMP {
         QueueEntry const* _currentTrack;
         Queue* _queue;
         Resolver* _resolver;
+        History* _history;
         bool _enabled;
         bool _refillPending;
         QQueue<Candidate*> _upcoming;

@@ -32,8 +32,9 @@ namespace PMP {
         connect(_server, SIGNAL(newConnection()), this, SLOT(newConnectionReceived()));
     }
 
-    bool Server::listen(Player* player, const QHostAddress& address, quint16 port) {
+    bool Server::listen(Player* player, Generator* generator, const QHostAddress& address, quint16 port) {
         _player = player;
+        _generator = generator;
 
         if (!_server->listen(QHostAddress::Any, port)) {
             return false;
@@ -57,6 +58,6 @@ namespace PMP {
     void Server::newConnectionReceived() {
         QTcpSocket *connection = _server->nextPendingConnection();
 
-        new ConnectedClient(connection, this, _player);
+        new ConnectedClient(connection, this, _player, _generator);
     }
 }

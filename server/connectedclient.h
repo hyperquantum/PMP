@@ -28,13 +28,14 @@
 
 namespace PMP {
 
+    class Generator;
     class QueueEntry;
     class Server;
 
     class ConnectedClient : public QObject {
         Q_OBJECT
     public:
-        ConnectedClient(QTcpSocket* socket, Server* server, Player* player);
+        ConnectedClient(QTcpSocket* socket, Server* server, Player* player, Generator* generator);
 
     Q_SIGNALS:
 
@@ -72,6 +73,7 @@ namespace PMP {
         QTcpSocket* _socket;
         Server* _server;
         Player* _player;
+        Generator* _generator;
         QByteArray _textReadBuffer;
         bool _binaryMode;
         int _clientProtocolNo;

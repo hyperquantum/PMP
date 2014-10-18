@@ -17,39 +17,36 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVER_H
-#define PMP_SERVER_H
+#ifndef PMP_HISTORY_H
+#define PMP_HISTORY_H
 
-#include <QTcpServer>
+#include "common/hashid.h"
+
+#include <QDateTime>
+#include <QHash>
+#include <QObject>
 
 namespace PMP {
 
-    class Generator;
+    class HashID;
     class Player;
+    class QueueEntry;
 
-    class Server : public QObject {
+    class History : public QObject {
         Q_OBJECT
     public:
-        explicit Server(QObject* parent = 0);
+        History(Player* player);
 
-        bool listen(Player* player, Generator* generator, const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
-        QString errorString() const;
-
-        quint16 port() const;
-
-    public slots:
-        void shutdown();
-
-    Q_SIGNALS:
-        void shuttingDown();
+        QDateTime lastPlayed(HashID const& hash) const;
 
     private slots:
-        void newConnectionReceived();
+        void currentTrackChanged(QueueEntry const* newTrack);
 
     private:
         Player* _player;
-        Generator* _generator;
-        QTcpServer* _server;
+        QHash<HashID, QDateTime> _lastPlayHash;
+        QueueEntry const* _nowPlaying;
     };
+
 }
 #endif
