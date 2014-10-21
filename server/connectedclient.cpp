@@ -220,11 +220,15 @@ namespace PMP {
     void ConnectedClient::sendBinaryMessage(QByteArray const& message) {
         quint32 length = message.length();
 
+        qDebug() << "   need to send a binary message of length" << length;
+
         char lengthArr[4];
         lengthArr[0] = (length >> 24) & 255;
         lengthArr[1] = (length >> 16) & 255;
         lengthArr[2] = (length >> 8) & 255;
         lengthArr[3] = length & 255;
+
+        //qDebug() << "      arr[3]=" << ((int)(quint8)lengthArr[3]);
 
         _socket->write(lengthArr, sizeof(lengthArr));
         _socket->write(message.data(), length);
@@ -532,17 +536,14 @@ namespace PMP {
         char lengthBytes[4];
 
         while (_socket->peek(lengthBytes, sizeof(lengthBytes)) == sizeof(lengthBytes)) {
-            quint32 messageLength =
-                (lengthBytes[0] << 24)
-                + (lengthBytes[1] << 16)
-                + (lengthBytes[2] << 8)
-                + lengthBytes[3];
-
-            qDebug() << "incoming binary message with length " << messageLength;
+            quint32 messageLength = NetworkUtil::get4Bytes(lengthBytes);
 
             if (_socket->bytesAvailable() - sizeof(lengthBytes) < messageLength) {
+                qDebug() << "waiting for incoming message with length" << messageLength << " --- only partially received";
                 break; /* message not complete yet */
             }
+
+            qDebug() << "received complete binary message with length" << messageLength;
 
             _socket->read(lengthBytes, sizeof(lengthBytes)); /* consume the length */
             QByteArray message = _socket->read(messageLength);
@@ -620,6 +621,8 @@ namespace PMP {
                 return; /* invalid queue ID */
             }
 
+            qDebug() << "received track info request for Q-ID" << queueID;
+
             sendTrackInfoMessage(queueID);
         }
             break;
@@ -640,8 +643,10 @@ namespace PMP {
                     QIDs.append(queueID);
                 }
 
-                offset++;
+                offset += 4;
             }
+
+            qDebug() << "received bulk track info request for" << QIDs.size() << "tracks";
 
             sendTrackInfoMessage(QIDs);
         }

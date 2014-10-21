@@ -63,6 +63,13 @@ namespace PMP {
             + (quint16)(quint8)buffer[position + 1];
     }
 
+    quint32 NetworkUtil::get4Bytes(char const* buffer) {
+        return ((quint32)(quint8)buffer[0] << 24)
+            + ((quint32)(quint8)buffer[1] << 16)
+            + ((quint32)(quint8)buffer[2] << 8)
+            + (quint32)(quint8)buffer[3];
+    }
+
     quint32 NetworkUtil::get4Bytes(QByteArray const& buffer, uint position) {
         return ((quint32)(quint8)buffer[position] << 24)
             + ((quint32)(quint8)buffer[position + 1] << 16)

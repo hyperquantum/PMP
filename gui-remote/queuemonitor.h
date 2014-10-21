@@ -44,6 +44,9 @@ namespace PMP {
 
         bool setInfo(int lengthInSeconds, QString const& title, QString const& artist);
 
+    public slots:
+        void notifyInfoRequestedAlready();
+
     Q_SIGNALS:
         void pleaseAskForMyInfo(quint32 queueID);
         void infoChanged();
@@ -83,8 +86,11 @@ namespace PMP {
         void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist);
         void emitTracksChangedSignal();
         void sendNextSlotBatchRequest(int size);
+        void sendBulkTrackInfoRequest(QList<quint32> IDs);
 
     private:
+        static const uint initialQueueFetchLength = 10;
+
         ServerConnection* _connection;
         int _queueLength;
         int _queueLengthSent;

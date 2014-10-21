@@ -364,17 +364,14 @@ namespace PMP {
         char lengthBytes[4];
 
         while (_socket.peek(lengthBytes, sizeof(lengthBytes)) == sizeof(lengthBytes)) {
-            quint32 messageLength =
-                (lengthBytes[0] << 24)
-                + (lengthBytes[1] << 16)
-                + (lengthBytes[2] << 8)
-                + lengthBytes[3];
-
-            qDebug() << "incoming binary message with length " << messageLength;
+            quint32 messageLength = NetworkUtil::get4Bytes(lengthBytes);
 
             if (_socket.bytesAvailable() - sizeof(lengthBytes) < messageLength) {
+                qDebug() << "waiting for incoming message with length" << messageLength << " --- only partially received";
                 break; /* message not complete yet */
             }
+
+            qDebug() << "received complete binary message with length" << messageLength;
 
             _socket.read(lengthBytes, sizeof(lengthBytes)); /* consume the length */
             QByteArray message = _socket.read(messageLength);

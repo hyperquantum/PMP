@@ -22,6 +22,7 @@
 #include "common/serverconnection.h"
 
 #include <QDebug>
+#include <QtGlobal>
 #include <QTimer>
 
 namespace PMP {
@@ -83,6 +84,10 @@ namespace PMP {
         return true;
     }
 
+    void TrackMonitor::notifyInfoRequestedAlready() {
+        _infoRequestedAlready = true;
+    }
+
     /* QueueMonitor */
 
     QueueMonitor::QueueMonitor(QObject* parent, ServerConnection* connection)
@@ -108,8 +113,8 @@ namespace PMP {
         _queueRequestedUpTo = 0;
         _queue.clear();
 
-        _queueRequestedUpTo = 3;
-        _connection->sendQueueFetchRequest(0, 3); // only 3 for testing purposes
+        _queueRequestedUpTo = initialQueueFetchLength;
+        _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
     }
 
     quint32 QueueMonitor::queueEntry(int index) {
@@ -145,8 +150,26 @@ namespace PMP {
         _queueRequestedUpTo += requestCount;
     }
 
+    void QueueMonitor::sendBulkTrackInfoRequest(QList<quint32> IDs) {
+        quint32 ID;
+        foreach(ID, IDs) {
+            TrackMonitor* track = trackFromID(ID);
+            if (track != 0 ) track->notifyInfoRequestedAlready();
+        }
+
+        _connection->sendTrackInfoRequest(IDs);
+    }
+
     void QueueMonitor::receivedQueueContents(int queueLength, int startOffset, QList<quint32> queueIDs) {
         qDebug() << "received queue contents; q-length=" << queueLength << "  startoffset=" << startOffset << "  ID count=" << queueIDs.size();
+
+        /* After we receive the very first queue contents we immediately
+           request track info of the first tracks in the queue. */
+        if (startOffset == 0 && _queueLength <= 0) {
+            qDebug() << " very first queue contents; immediately requesting track info";
+
+            sendBulkTrackInfoRequest(queueIDs.mid(startOffset, qMin(queueIDs.size(), (int)initialQueueFetchLength)));
+        }
 
         _queueLength = queueLength;
 
@@ -158,7 +181,7 @@ namespace PMP {
             && _queueRequestedUpTo < _requestQueueUpTo)
         {
             qDebug() << " sending next auto queue fetch request -- will request up to" << _requestQueueUpTo;
-            sendNextSlotBatchRequest(3);
+            sendNextSlotBatchRequest(5);
         }
 
         if (_queueLengthSent < queueLength) {
