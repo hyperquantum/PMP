@@ -49,22 +49,22 @@ int main(int argc, char *argv[]) {
     //foreach (const QString &path, app.libraryPaths())
     //    out << " LIB PATH : " << path << endl;
 
-    FileData const* song =
+    FileData song =
         FileData::create(
             HashID(4018772, QByteArray::fromHex("b27e235c22f43a25a76a4b4916f7298359b7ed25"), QByteArray::fromHex("b72e952ef61b3d69c649791b6ed583d4")),
             "Gladys Knight", "License To Kill"
         );
 
     // fake hash for testing a hash with no known paths
-    FileData const* song2 =
+    FileData song2 =
         FileData::create(
             HashID(4104358, QByteArray::fromHex("abc1235c22f43a25a5874b496747298359b7ed25"), QByteArray::fromHex("1239872ef61b3d69c649791b6ed583d4")),
             "Gunther", "Ding Dong Song"
         );
 
     Resolver resolver;
-    resolver.registerData(*song);
-    resolver.registerData(*song2);
+    resolver.registerData(song);
+    resolver.registerData(song2);
 
     QDirIterator it(".", QDirIterator::Subdirectories);
     uint fileCount = 0;
@@ -78,31 +78,31 @@ int main(int argc, char *argv[]) {
         QString path = entry.absoluteFilePath();
         out << "  " << path << endl;
 
-        FileData const* data = FileData::analyzeFile(path);
-        if (data == 0) {
+        FileData data = FileData::analyzeFile(path);
+        if (!data.isValid()) {
             out << "     failed to analyze file!" << endl;
             continue;
         }
 
-        resolver.registerFile(*data, path);
+        resolver.registerFile(data, path);
 
-        if (data->trackLength() <= 10) {
-            out << "     skipping file because length (" << data->trackLength() << ") unknown or not larger than 10 seconds" << endl;
+        if (data.audio().trackLength() <= 10) {
+            out << "     skipping file because length (" << data.audio().trackLength() << ") unknown or not larger than 10 seconds" << endl;
             continue;
         }
 
         ++fileCount;
-        uniqueFiles.insert(data->hash());
+        uniqueFiles.insert(data.hash());
 
         // FIXME: durations of 24 hours and longer will not work with this code
-        QTime length = QTime(0, 0).addSecs(data->trackLength());
+        QTime length = QTime(0, 0).addSecs(data.audio().trackLength());
 
         out << "     " << length.toString() << endl
-            << "     " << data->artist() << endl
-            << "     " << data->title() << endl
-            << "     " << data->album() << endl
-            << "     " << data->comment() << endl
-            << "     " << data->hash().dumpToString() << endl;
+            << "     " << data.tags().artist() << endl
+            << "     " << data.tags().title() << endl
+            << "     " << data.tags().album() << endl
+            << "     " << data.tags().comment() << endl
+            << "     " << data.hash().dumpToString() << endl;
     }
 
     out << endl

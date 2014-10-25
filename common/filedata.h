@@ -32,27 +32,38 @@ namespace TagLib {
 
 namespace PMP {
 
-    class FileData : public AudioData, public TagData {
+    class FileData {
     public:
+        FileData(const HashID& hash);
 
-        static bool supportsExtension(QString const& extension);
-
-        static FileData const* analyzeFile(const QByteArray& fileContents, const QString& fileExtension);
-        static FileData const* analyzeFile(const QString& filename);
-
-        static FileData const* create(const HashID& hash,
-                                      const QString& artist, const QString& title,
-                                      FileFormat format = UnknownFormat, int trackLength = -1);
-
-        const HashID& hash() const { return _hash; }
-
-    private:
         FileData(const HashID& hash,
             const QString& artist, const QString& title,
             const QString& album, const QString& comment,
-            FileFormat format, int trackLength);
+            AudioData::FileFormat format, int trackLength);
 
-        static FileData const* analyzeMp3(TagLib::ByteVectorStream& fileContents);
+        static bool supportsExtension(QString const& extension);
+
+        static FileData analyzeFile(const QByteArray& fileContents, const QString& fileExtension);
+        static FileData analyzeFile(const QString& filename);
+
+        static FileData create(const HashID& hash,
+                               const QString& artist, const QString& title,
+                               AudioData::FileFormat format = AudioData::UnknownFormat,
+                               int trackLength = -1);
+
+        bool isValid() const { return !_hash.empty(); }
+
+        const HashID& hash() const { return _hash; }
+
+        const AudioData& audio() const { return _audio; }
+        AudioData& audio() { return _audio; }
+
+        const TagData& tags() const { return _tags; }
+        TagData& tags() { return _tags; }
+
+    private:
+
+        static FileData analyzeMp3(TagLib::ByteVectorStream& fileContents);
         //static FileData const* analyzeWma(TagLib::ByteVectorStream& fileContents);
 
         static void getDataFromTag(const TagLib::Tag* tag,
@@ -62,6 +73,8 @@ namespace PMP {
         static HashID getHashFrom(TagLib::ByteVector* data);
 
         HashID _hash;
+        AudioData _audio;
+        TagData _tags;
     };
 }
 #endif

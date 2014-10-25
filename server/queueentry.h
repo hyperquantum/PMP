@@ -22,6 +22,7 @@
 
 #include "common/audiodata.h"
 #include "common/hashid.h"
+#include "common/tagdata.h"
 
 #include <QObject>
 
@@ -29,7 +30,6 @@ namespace PMP {
 
     class FileData;
     class Resolver;
-    class TagData;
 
     class QueueEntry : public QObject {
         Q_OBJECT
@@ -65,7 +65,8 @@ namespace PMP {
         AudioData _audioInfo;
         QString _filename;
         bool _haveFilename;
-        const TagData* _tagData;
+        bool _fetchedTagData;
+        TagData _tagData;
 
     };
 }

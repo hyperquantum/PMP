@@ -15,20 +15,26 @@ request, but not published on a website yet.
 You can contact the developer at:   hyperquantum@gmail.com
 
 
-DEPENDENCIES FOR BUILDING
--------------------------
+  File content:
+    1. Dependencies for building
+    2. Building on Windows
+    3. Planned features
+
+
+1. DEPENDENCIES FOR BUILDING
+----------------------------
 
 * CMake
 * pkg-config
 * TagLib
-* Qt 5     (developed with Qt 5.2)
+* Qt 5      (developed with Qt 5.2)
+* MinGW-32  if building on Windows
 
 
+2. BUILDING ON WINDOWS
+----------------------
 
-COMPILING ON WINDOWS
---------------------
-
-Compilation on Linux is trivial, but on Windows it takes some effort.
+Building on Linux is trivial, but on Windows it takes some effort.
 
 How to compile from source on Windows, using MinGW 32-bit:
 
@@ -81,8 +87,8 @@ How to compile from source on Windows, using MinGW 32-bit:
     press 'Generate'
 
 
-PLANNED FEATURES
-----------------
+3. PLANNED FEATURES
+-------------------
 
 No guarantees here!  This is more like a TO-DO list.
 
@@ -95,4 +101,5 @@ No guarantees here!  This is more like a TO-DO list.
  * Syncronization of music databases across different machines
  * Bridging of PMP server instances, to access music from another machine
  * Naming a PMP Server instance; e.g. "living room"
+ * Support for other formats than just MP3
 

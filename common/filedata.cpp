@@ -31,13 +31,19 @@
 
 namespace PMP {
 
+    FileData::FileData(const HashID& hash)
+     : _hash(hash)
+    {
+        //
+    }
+
     FileData::FileData(const HashID& hash,
         const QString& artist, const QString& title,
         const QString& album, const QString& comment,
-        FileFormat format, int trackLength)
-     : AudioData(format, trackLength),
-       TagData(artist, title, album, comment),
-       _hash(hash)
+        AudioData::FileFormat format, int trackLength)
+     : _hash(hash),
+       _audio(format, trackLength),
+       _tags(artist, title, album, comment)
     {
         //
     }
@@ -50,7 +56,7 @@ namespace PMP {
             //|| lowercaseExtension == "wma" || lowercaseExtension == "asf";
     }
 
-    FileData const* FileData::analyzeFile(const QByteArray& fileContents, const QString& fileExtension) {
+    FileData FileData::analyzeFile(const QByteArray& fileContents, const QString& fileExtension) {
         TagLib::ByteVector fileContentsScratch(fileContents.data(), fileContents.length());
         TagLib::ByteVectorStream fileScratchStream(fileContentsScratch);
 
@@ -61,25 +67,25 @@ namespace PMP {
         }
         else {
             /* file type not (yet) supported */
-            return 0;
+            return FileData(HashID());
         }
     }
 
-    FileData const* FileData::analyzeFile(const QString& filename) {
+    FileData FileData::analyzeFile(const QString& filename) {
         QFileInfo fileInfo(filename);
 
         QFile file(filename);
-        if (!file.open(QIODevice::ReadOnly)) return 0;
+        if (!file.open(QIODevice::ReadOnly)) return FileData(HashID());
 
         QByteArray fileContents = file.readAll();
         return analyzeFile(fileContents, fileInfo.suffix());
     }
 
-    FileData const* FileData::create(const HashID& hash,
+    FileData FileData::create(const HashID& hash,
         const QString& artist, const QString& title,
-        FileFormat format, int length)
+        AudioData::FileFormat format, int length)
     {
-        return new FileData(hash, artist, title, "", "", format, length);
+        return FileData(hash, artist, title, "", "", format, length);
     }
 
     HashID FileData::getHashFrom(TagLib::ByteVector* data) {
@@ -106,10 +112,10 @@ namespace PMP {
         comment = TStringToQString(tag->comment());
     }
 
-    FileData const* FileData::analyzeMp3(TagLib::ByteVectorStream& fileContents)
+    FileData FileData::analyzeMp3(TagLib::ByteVectorStream& fileContents)
     {
         TagLib::MPEG::File tagFile(&fileContents, TagLib::ID3v2::FrameFactory::instance());
-        if (!tagFile.isValid()) { return 0; }
+        if (!tagFile.isValid()) { return FileData(HashID()); }
 
         QString artist, title, album, comment;
         getDataFromTag(tagFile.tag(), artist, title, album, comment);
@@ -124,10 +130,10 @@ namespace PMP {
 
         TagLib::ByteVector* strippedData = fileContents.data();
 
-        return new FileData(
+        return FileData(
             getHashFrom(strippedData),
             artist, title, album, comment,
-            MP3, lengthInSeconds
+            AudioData::MP3, lengthInSeconds
         );
     }
 

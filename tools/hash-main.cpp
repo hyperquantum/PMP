@@ -70,18 +70,18 @@ int main(int argc, char *argv[]) {
     out << "MD5 Hash:  " << md5_hasher.result().toHex() << endl;
     out << "SHA1 Hash: " << sha1_hasher.result().toHex() << endl;
 
-    FileData const* filedata = FileData::analyzeFile(fileContents, fileInfo.suffix());
+    FileData filedata = FileData::analyzeFile(fileContents, fileInfo.suffix());
 
-    if (!filedata) {
+    if (!filedata.isValid()) {
         out << "Something went wrong when analyzing the file!" << endl;
         return 1;
     }
 
-    out << "title : " << filedata->title() << endl;
-    out << "artist: " << filedata->artist() << endl;
-    out << "stripped file size: " << filedata->hash().length() << endl;
-    out << "stripped MD5 Hash:  " << filedata->hash().MD5().toHex() << endl;
-    out << "stripped SHA1 Hash: " << filedata->hash().SHA1().toHex() << endl;
+    out << "title : " << filedata.tags().title() << endl;
+    out << "artist: " << filedata.tags().artist() << endl;
+    out << "stripped file size: " << filedata.hash().length() << endl;
+    out << "stripped MD5 Hash:  " << filedata.hash().MD5().toHex() << endl;
+    out << "stripped SHA1 Hash: " << filedata.hash().SHA1().toHex() << endl;
 
     return 0;
 }

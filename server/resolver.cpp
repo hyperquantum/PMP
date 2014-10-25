@@ -50,8 +50,8 @@ namespace PMP {
     void Resolver::registerData(const FileData& data) {
         if (data.hash().empty()) { return; }
 
-        registerData(data.hash(), data);
-        _tagCache.insert(data.hash(), new TagData(data));
+        registerData(data.hash(), data.audio());
+        _tagCache.insert(data.hash(), new TagData(data.tags()));
     }
 
     void Resolver::registerFile(const FileData& file, const QString& filename) {
@@ -74,7 +74,7 @@ namespace PMP {
 
     bool Resolver::haveAnyPathInfo(const HashID& hash) {
         QList<QString> paths = _pathCache.values(hash);
-        return paths.count() > 0;
+        return !paths.empty();
     }
 
     QString Resolver::findPath(const HashID& hash) {

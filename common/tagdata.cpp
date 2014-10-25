@@ -21,6 +21,11 @@
 
 namespace PMP {
 
+    TagData::TagData()
+    {
+        //
+    }
+
     TagData::TagData(const QString& artist, const QString& title,
                      const QString& album, const QString& comment)
      : _artist(artist), _title(title),

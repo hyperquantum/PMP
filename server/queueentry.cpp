@@ -30,27 +30,27 @@ namespace PMP {
 
     QueueEntry::QueueEntry(uint queueID, QString const& filename)
      : _queueID(queueID), _filename(filename), _haveFilename(true),
-       _tagData(0)
+       _fetchedTagData(false)
     {
         //
     }
 
     QueueEntry::QueueEntry(uint queueID, FileData const& filedata)
      : _queueID(queueID), _hash(filedata.hash()), _haveFilename(false),
-       _tagData(new TagData(filedata))
+       _fetchedTagData(true), _tagData(filedata.tags())
     {
         //
     }
 
     QueueEntry::QueueEntry(uint queueID, HashID const& hash)
      : _queueID(queueID), _hash(hash), _haveFilename(false),
-       _tagData(0)
+       _fetchedTagData(false)
     {
         //
     }
 
     QueueEntry::~QueueEntry() {
-        delete _tagData;
+        //
     }
 
     HashID const* QueueEntry::hash() const {
@@ -127,13 +127,13 @@ namespace PMP {
 
         checkAudioData(resolver);
 
-        const TagData* tag = _tagData;
-        if (tag) return;
+        if (_fetchedTagData) return;
 
-        tag = resolver.findTagData(_hash);
-        //if (tag) {
-            _tagData = tag;
-        //}
+        const TagData* tag = resolver.findTagData(_hash);
+        if (tag) {
+            _tagData = *tag;
+            _fetchedTagData = true;
+        }
     }
 
     int QueueEntry::lengthInSeconds() const {
@@ -141,17 +141,10 @@ namespace PMP {
     }
 
     QString QueueEntry::artist() const {
-        TagData const* tag = _tagData;
-        if (tag) { return tag->artist(); }
-
-        return "";
+        return _tagData.artist();
     }
 
     QString QueueEntry::title() const {
-        TagData const* tag = _tagData;
-        if (tag) { return tag->title(); }
-
-        return "";
+        return _tagData.title();
     }
-
 }

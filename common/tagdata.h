@@ -26,6 +26,7 @@ namespace PMP {
 
     class TagData {
     public:
+        TagData();
         TagData(const QString& artist, const QString& title,
                 const QString& album, const QString& comment);
 
