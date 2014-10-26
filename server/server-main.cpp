@@ -19,6 +19,7 @@
 
 #include "common/filedata.h"
 
+#include "fileanalysistask.h"
 #include "generator.h"
 #include "history.h"
 #include "player.h"
@@ -29,7 +30,7 @@
 #include <QCoreApplication>
 #include <QDirIterator>
 #include <QFileInfo>
-#include <QTime>
+#include <QThreadPool>
 
 using namespace PMP;
 
@@ -66,9 +67,14 @@ int main(int argc, char *argv[]) {
     resolver.registerData(song);
     resolver.registerData(song2);
 
+    Player player(0, &resolver);
+    Queue& queue = player.queue();
+    History history(&player);
+
+    Generator generator(&queue, &resolver, &history);
+    QObject::connect(&player, SIGNAL(currentTrackChanged(QueueEntry const*)), &generator, SLOT(currentTrackChanged(QueueEntry const*)));
+
     QDirIterator it(".", QDirIterator::Subdirectories);
-    uint fileCount = 0;
-    QSet<HashID> uniqueFiles;
     while (it.hasNext()) {
         QFileInfo entry(it.next());
         if (!entry.isFile()) continue;
@@ -76,60 +82,15 @@ int main(int argc, char *argv[]) {
         if (!FileData::supportsExtension(entry.suffix())) continue;
 
         QString path = entry.absoluteFilePath();
-        out << "  " << path << endl;
 
-        FileData data = FileData::analyzeFile(path);
-        if (!data.isValid()) {
-            out << "     failed to analyze file!" << endl;
-            continue;
-        }
+        qDebug() << "starting background analysis of" << path;
 
-        resolver.registerFile(data, path);
-
-        if (data.audio().trackLength() <= 10) {
-            out << "     skipping file because length (" << data.audio().trackLength() << ") unknown or not larger than 10 seconds" << endl;
-            continue;
-        }
-
-        ++fileCount;
-        uniqueFiles.insert(data.hash());
-
-        // FIXME: durations of 24 hours and longer will not work with this code
-        QTime length = QTime(0, 0).addSecs(data.audio().trackLength());
-
-        out << "     " << length.toString() << endl
-            << "     " << data.tags().artist() << endl
-            << "     " << data.tags().title() << endl
-            << "     " << data.tags().album() << endl
-            << "     " << data.tags().comment() << endl
-            << "     " << data.hash().dumpToString() << endl;
+        FileAnalysisTask* task = new FileAnalysisTask(path);
+        resolver.connect(task, SIGNAL(finished(QString, FileData*)), &resolver, SLOT(analysedFile(QString, FileData*)));
+        QThreadPool::globalInstance()->start(task);
     }
 
-    out << endl
-        << fileCount << " files, " << uniqueFiles.size() << " unique hashes" << endl;
-
-    if (uniqueFiles.empty()) {
-        return 0; // nothing to play
-    }
-
-    Player player(0, &resolver);
-
-    History history(&player);
-
-    Queue& queue = player.queue();
-
-    Generator generator(&queue, &resolver, &history);
-    QObject::connect(&player, SIGNAL(currentTrackChanged(QueueEntry const*)), &generator, SLOT(currentTrackChanged(QueueEntry const*)));
-
-    out << endl
-        << "Adding to queue:" << endl;
-
-    QSet<HashID> queuedHashes;
-    for (QSet<HashID>::const_iterator it = uniqueFiles.begin(); queuedHashes.count() < 10 && it != uniqueFiles.end(); ++it) {
-        out << " - " << it->dumpToString() << endl;
-        queuedHashes.insert(*it);
-        queue.enqueue(*it);
-    }
+    generator.enable();
 
     out << endl
         << "Volume = " << player.volume() << endl;

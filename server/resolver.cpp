@@ -138,6 +138,17 @@ namespace PMP {
         return _hashList[randomIndex];
     }
 
+    void Resolver::analysedFile(QString filename, FileData* data) {
+        if (data != 0) {
+            qDebug() << "file analysis complete:" << filename;
+            registerFile(*data, filename);
+            delete data;
+        }
+        else {
+            qDebug() << "file analysis FAILED:" << filename;
+        }
+    }
+
     void Resolver::registerHash(const HashID& hash) {
         QHash<HashID, int>::const_iterator it = _hashIndex.constFind(hash);
         if (it != _hashIndex.constEnd()) return; /* registered already */

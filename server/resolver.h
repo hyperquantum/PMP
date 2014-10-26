@@ -50,6 +50,9 @@ namespace PMP {
 
         HashID getRandom();
 
+    public slots:
+        void analysedFile(QString filename, FileData* data);
+
     private:
         void registerHash(const HashID& hash);
 
