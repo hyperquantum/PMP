@@ -52,14 +52,22 @@ int main(int argc, char *argv[]) {
 
     FileData song =
         FileData::create(
-            HashID(4018772, QByteArray::fromHex("b27e235c22f43a25a76a4b4916f7298359b7ed25"), QByteArray::fromHex("b72e952ef61b3d69c649791b6ed583d4")),
+            HashID(
+                4018772,
+                QByteArray::fromHex("b27e235c22f43a25a76a4b4916f7298359b7ed25"),
+                QByteArray::fromHex("b72e952ef61b3d69c649791b6ed583d4")
+            ),
             "Gladys Knight", "License To Kill"
         );
 
     // fake hash for testing a hash with no known paths
     FileData song2 =
         FileData::create(
-            HashID(4104358, QByteArray::fromHex("abc1235c22f43a25a5874b496747298359b7ed25"), QByteArray::fromHex("1239872ef61b3d69c649791b6ed583d4")),
+            HashID(
+                4104358,
+                QByteArray::fromHex("abc1235c22f43a25a5874b496747298359b7ed25"),
+                QByteArray::fromHex("1239872ef61b3d69c649791b6ed583d4")
+            ),
             "Gunther", "Ding Dong Song"
         );
 
@@ -74,7 +82,7 @@ int main(int argc, char *argv[]) {
     Generator generator(&queue, &resolver, &history);
     QObject::connect(&player, SIGNAL(currentTrackChanged(QueueEntry const*)), &generator, SLOT(currentTrackChanged(QueueEntry const*)));
 
-    QDirIterator it(".", QDirIterator::Subdirectories);
+    QDirIterator it(".", QDirIterator::Subdirectories | QDirIterator::FollowSymlinks);
     while (it.hasNext()) {
         QFileInfo entry(it.next());
         if (!entry.isFile()) continue;
