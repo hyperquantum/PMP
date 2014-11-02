@@ -360,6 +360,19 @@ namespace PMP {
         sendSingleByteAction(11); /* 11 = request status of dynamic mode */
     }
 
+    void ServerConnection::setDynamicModeNoRepetitionSpan(int seconds) {
+        if (!_binarySendingMode) {
+            return; /* only supported in binary mode */
+        }
+
+        QByteArray message;
+        message.reserve(6);
+        NetworkUtil::append2Bytes(message, 6); /* message type */
+        NetworkUtil::append4Bytes(message, seconds);
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::readBinaryCommands() {
         char lengthBytes[4];
 
@@ -579,20 +592,21 @@ namespace PMP {
             break;
         case 8: /* dynamic mode status */
         {
-            if (messageLength != 3) {
-                return; /* invalid message */
-            }
+            if (messageLength != 7) return; /* invalid message */
 
             quint8 isEnabled = NetworkUtil::getByte(message, 2);
+            int noRepetitionSpan = (int)NetworkUtil::get4Bytes(message, 3);
 
-            if (isEnabled > 0) {
-                emit dynamicModeEnabled();
-            }
-            else {
-                emit dynamicModeDisabled();
-            }
+            if (noRepetitionSpan < 0) return; /* invalid message */
+
+            emit dynamicModeStatusReceived(isEnabled > 0, noRepetitionSpan);
         }
             break;
+//        case 9: /*  */
+//        {
+//
+//        }
+//            break;
         default:
             qDebug() << "unknown binary message type" << messageType;
             break; /* unknown message type */

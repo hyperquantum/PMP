@@ -54,6 +54,7 @@ namespace PMP {
         void enableDynamicMode();
         void disableDynamicMode();
         void requestDynamicModeStatus();
+        void setDynamicModeNoRepetitionSpan(int seconds);
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
         void deleteQueueEntry(uint queueID);
@@ -73,8 +74,7 @@ namespace PMP {
 
         void volumeChanged(int percentage);
 
-        void dynamicModeEnabled();
-        void dynamicModeDisabled();
+        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
 
         void noCurrentTrack();
         void nowPlayingTrack(quint32 queueID);

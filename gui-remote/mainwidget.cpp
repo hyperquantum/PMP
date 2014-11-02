@@ -25,6 +25,9 @@
 #include "queuemodel.h"
 #include "queuemonitor.h"
 
+#include <algorithm>
+
+#include <QtDebug>
 #include <QKeyEvent>
 
 namespace PMP {
@@ -34,7 +37,7 @@ namespace PMP {
         _ui(new Ui::MainWidget),
         _connection(0), _queueMonitor(0), _queueModel(0),
         _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1),
-        _dynamicModeEnabled(false)
+        _dynamicModeEnabled(false), _noRepetitionUpdating(0)
     {
         _ui->setupUi(this);
     }
@@ -60,8 +63,8 @@ namespace PMP {
         connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
 
         connect(_ui->dynamicModeCheckBox, SIGNAL(stateChanged(int)), this, SLOT(changeDynamicMode(int)));
-        connect(_connection, SIGNAL(dynamicModeEnabled()), this, SLOT(dynamicModeEnabled()));
-        connect(_connection, SIGNAL(dynamicModeDisabled()), this, SLOT(dynamicModeDisabled()));
+        connect(_ui->noRepetitionComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(noRepetitionIndexChanged(int)));
+        connect(_connection, SIGNAL(dynamicModeStatusReceived(bool, int)), this, SLOT(dynamicModeStatusReceived(bool, int)));
 
         connect(_connection, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
         connect(_ui->volumeIncreaseButton, SIGNAL(clicked()), this, SLOT(increaseVolume()));
@@ -153,14 +156,121 @@ namespace PMP {
         }
     }
 
-    void MainWidget::dynamicModeEnabled() {
-        _dynamicModeEnabled = true;
-        _ui->dynamicModeCheckBox->setChecked(true);
+    void MainWidget::buildNoRepetitionList(int spanToSelect) {
+        _noRepetitionUpdating++;
+
+        _noRepetitionList.clear();
+        _ui->noRepetitionComboBox->clear();
+
+        _noRepetitionList.append(0);
+        _noRepetitionList.append(3600); // 1 hour
+        _noRepetitionList.append(2 * 3600); // 2 hours
+        _noRepetitionList.append(4 * 3600); // 4 hours
+        _noRepetitionList.append(6 * 3600); // 6 hours
+        _noRepetitionList.append(10 * 3600); // 10 hours
+        _noRepetitionList.append(24 * 3600); // 24 hours
+        _noRepetitionList.append(2 * 24 * 3600); // 48 hours (2 days)
+        _noRepetitionList.append(3 * 24 * 3600); // 72 hours (3 days)
+        _noRepetitionList.append(7 * 24 * 3600); // 7 days
+
+        int indexOfSpanToSelect = -1;
+
+        if (spanToSelect >= 0) {
+            indexOfSpanToSelect = _noRepetitionList.indexOf(spanToSelect);
+            if (indexOfSpanToSelect < 0) {
+                _noRepetitionList.append(spanToSelect);
+                std::sort(_noRepetitionList.begin(), _noRepetitionList.end());
+                indexOfSpanToSelect = _noRepetitionList.indexOf(spanToSelect);
+            }
+        }
+
+        int span;
+        foreach(span, _noRepetitionList) {
+            _ui->noRepetitionComboBox->addItem(noRepetitionTimeString(span));
+        }
+
+        if (indexOfSpanToSelect >= 0) {
+            _ui->noRepetitionComboBox->setCurrentIndex(indexOfSpanToSelect);
+        }
+
+        _noRepetitionUpdating--;
     }
 
-    void MainWidget::dynamicModeDisabled() {
-        _dynamicModeEnabled = false;
-        _ui->dynamicModeCheckBox->setChecked(false);
+    QString MainWidget::noRepetitionTimeString(int seconds) {
+        QString output;
+
+        if (seconds > 24 * 60 * 60) {
+            int days = seconds / (24 * 60 * 60);
+            seconds -= days * (24 * 60 * 60);
+            output += QString::number(days);
+            output += (days == 1) ? " day" : " days";
+        }
+
+        if (seconds > 60 * 60) {
+            int hours = seconds / (60 * 60);
+            seconds -= hours * (60 * 60);
+            if (output.size() > 0) output += " ";
+            output += QString::number(hours);
+            output += (hours == 1) ? " hour" : " hours";
+        }
+
+        if (seconds > 60) {
+            int minutes = seconds / 60;
+            seconds -= minutes * 60;
+            if (output.size() > 0) output += " ";
+            output += QString::number(minutes);
+            output += (minutes == 1) ? " minute" : " minutes";
+        }
+
+        if (seconds > 0 || output.size() == 0) {
+            if (output.size() > 0) output += " ";
+            output += QString::number(seconds);
+            output += (seconds == 1) ? " second" : " seconds";
+        }
+
+        return output;
+    }
+
+    void MainWidget::noRepetitionIndexChanged(int index) {
+        if (_noRepetitionUpdating > 0
+            || index < 0 || index >= _noRepetitionList.size())
+        {
+            return;
+        }
+
+        int newSpan = _noRepetitionList[index];
+
+        qDebug() << "noRepetitionIndexChanged: index" << index << "  value" << newSpan;
+
+        _connection->setDynamicModeNoRepetitionSpan(newSpan);
+    }
+
+    void MainWidget::dynamicModeStatusReceived(bool enabled, int noRepetitionSpan) {
+        _dynamicModeEnabled = enabled;
+        _ui->dynamicModeCheckBox->setChecked(enabled);
+
+        int noRepetitionIndex = _ui->noRepetitionComboBox->currentIndex();
+        if (noRepetitionIndex < 0
+            || _noRepetitionList[noRepetitionIndex] != noRepetitionSpan)
+        {
+            /* search for non-repetition span in list of choices */
+            noRepetitionIndex = -1;
+            for (int i = 0; i < _noRepetitionList.size(); ++i) {
+                if (_noRepetitionList[i] == noRepetitionSpan) {
+                    noRepetitionIndex = i;
+                    break;
+                }
+            }
+
+            if (noRepetitionIndex >= 0) { /* found in list */
+                _noRepetitionUpdating++;
+                _ui->noRepetitionComboBox->setCurrentIndex(noRepetitionIndex);
+                _noRepetitionUpdating--;
+            }
+            else { /* not found in list */
+                buildNoRepetitionList(noRepetitionSpan);
+            }
+        }
     }
 
     void MainWidget::noCurrentTrack() {

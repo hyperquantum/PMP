@@ -47,6 +47,7 @@ namespace PMP {
 
         void volumeChanged(int volume);
         void dynamicModeStatusChanged(bool enabled);
+        void dynamicModeNoRepetitionSpanChanged(int seconds);
         void playerStateChanged(Player::State state);
         void currentTrackChanged(QueueEntry const* entry);
         void trackPositionChanged(qint64 position);

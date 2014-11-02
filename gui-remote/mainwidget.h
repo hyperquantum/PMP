@@ -54,8 +54,8 @@ namespace PMP {
         void increaseVolume();
 
         void changeDynamicMode(int checkState);
-        void dynamicModeEnabled();
-        void dynamicModeDisabled();
+        void noRepetitionIndexChanged(int index);
+        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
 
         void noCurrentTrack();
         void nowPlayingTrack(quint32 queueID);
@@ -65,6 +65,9 @@ namespace PMP {
         void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist);
 
     private:
+        void buildNoRepetitionList(int spanToSelect);
+        QString noRepetitionTimeString(int seconds);
+
         Ui::MainWidget* _ui;
         ServerConnection* _connection;
         QueueMonitor* _queueMonitor;
@@ -75,6 +78,8 @@ namespace PMP {
         QString _nowPlayingArtist;
         int _nowPlayingLength;
         bool _dynamicModeEnabled;
+        QList<int> _noRepetitionList;
+        int _noRepetitionUpdating;
     };
 }
 #endif

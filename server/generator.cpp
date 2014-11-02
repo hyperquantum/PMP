@@ -63,6 +63,19 @@ namespace PMP {
         return _enabled;
     }
 
+    int Generator::noRepetitionSpan() const {
+        return _noRepetitionSpan;
+    }
+
+    void Generator::setNoRepetitionSpan(int seconds) {
+        if (_noRepetitionSpan == seconds) return; /* no change */
+
+        qDebug() << "changing no-repetition span from" << _noRepetitionSpan << "to" << seconds;
+        _noRepetitionSpan = seconds;
+
+        emit noRepetitionSpanChanged(seconds);
+    }
+
     void Generator::enable() {
         if (_enabled) return; /* enabled already */
 

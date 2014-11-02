@@ -39,14 +39,19 @@ namespace PMP {
 
         bool enabled() const;
 
+        int noRepetitionSpan() const;
+
     public slots:
         void enable();
         void disable();
+
+        void setNoRepetitionSpan(int seconds);
 
         void currentTrackChanged(QueueEntry const* newTrack);
 
     Q_SIGNALS:
         void enabledChanged(bool enabled);
+        void noRepetitionSpanChanged(int seconds);
 
     private slots:
         void queueEntryRemoved(quint32, quint32);

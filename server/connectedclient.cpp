@@ -40,6 +40,7 @@ namespace PMP {
         connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(socketError(QAbstractSocket::SocketError)));
         connect(player, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
         connect(generator, SIGNAL(enabledChanged(bool)), this, SLOT(dynamicModeStatusChanged(bool)));
+        connect(generator, SIGNAL(noRepetitionSpanChanged(int)), this, SLOT(dynamicModeNoRepetitionSpanChanged(int)));
         connect(player, SIGNAL(stateChanged(Player::State)), this, SLOT(playerStateChanged(Player::State)));
         connect(player, SIGNAL(currentTrackChanged(QueueEntry const*)), this, SLOT(currentTrackChanged(QueueEntry const*)));
         connect(player, SIGNAL(positionChanged(qint64)), this, SLOT(trackPositionChanged(qint64)));
@@ -295,11 +296,13 @@ namespace PMP {
         }
 
         quint8 enabled = _generator->enabled() ? 1 : 0;
+        quint32 noRepetitionSpan = (quint32)_generator->noRepetitionSpan();
 
         QByteArray message;
-        message.reserve(3);
+        message.reserve(7);
         NetworkUtil::append2Bytes(message, 8); /* message type */
         NetworkUtil::appendByte(message, enabled);
+        NetworkUtil::append4Bytes(message, noRepetitionSpan);
 
         sendBinaryMessage(message);
     }
@@ -418,6 +421,10 @@ namespace PMP {
     }
 
     void ConnectedClient::dynamicModeStatusChanged(bool enabled) {
+        sendDynamicModeStatusMessage();
+    }
+
+    void ConnectedClient::dynamicModeNoRepetitionSpanChanged(int seconds) {
         sendDynamicModeStatusMessage();
     }
 
@@ -676,6 +683,20 @@ namespace PMP {
             }
 
             _player->queue().remove(queueID);
+        }
+            break;
+        case 6: /* request to change generator non-repetition interval */
+        {
+            if (messageLength != 6) {
+                return; /* invalid message */
+            }
+
+            qint32 intervalMinutes = (qint32)NetworkUtil::get4Bytes(message, 2);
+            if (intervalMinutes < 0) {
+                return; /* invalid message */
+            }
+
+            _generator->setNoRepetitionSpan(intervalMinutes);
         }
             break;
         default:
