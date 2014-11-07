@@ -20,22 +20,66 @@ You can contact the developer here:   hyperquantum@gmail.com
 
 
 Contents of this file:
-    1. Dependencies for building
-    2. Building on Windows
-    3. Planned features
+    1. Dependencies for running PMP
+    2. Running PMP
+    3. Dependencies for building
+    4. Building on Windows
+    5. Planned features
 
 
-1. DEPENDENCIES FOR BUILDING
+1. DEPENDENCIES FOR RUNNING PMP
+-------------------------------
+
+You need to run a MySQL server instance.
+PMP will use MySQL to store its data.
+
+Linux users can install MySQL server using their distribution's package manager.
+
+Windows users can get an installer here:
+  http://dev.mysql.com/downloads/mysql/
+
+One can pick the 32-bit or 64-bit version of MySQL server, PMP should work with
+both.
+
+MySQL should be configured as a developer installation (it uses less memory that
+way) and should be set to use Unicode (UTF-8) by default. Default storage engine
+should be InnoDB.
+
+
+2. RUNNING PMP
+--------------
+
+The PMP server needs a database connection. When you run it for the first time,
+it will generate an empty configuration file. Then you can set the database
+connection parameters in the configuration file. On Windows the file can be
+found here:
+
+  C:\Users\username\AppData\Roaming\Party Music Player\Party Music Player - Server.ini
+
+An example configuration:
+
+  [database]
+  hostname=localhost
+  username=root
+  password=mysecretpassword
+
+
+3. DEPENDENCIES FOR BUILDING
 ----------------------------
 
 * CMake
 * pkg-config
 * TagLib
 * Qt 5      (developed with Qt 5.2)
+* MySQL client library
 * MinGW-32  if building on Windows
 
+The MySQL client library should match the word-size of PMP.  So if PMP is built
+for x86 architecture (32-bit), then the 32-bit version of MySQL client library
+should be used.
 
-2. BUILDING ON WINDOWS
+
+4. BUILDING ON WINDOWS
 ----------------------
 
 Building on Linux is trivial, but on Windows it takes some effort.
@@ -89,9 +133,17 @@ How to compile from source on Windows, using MinGW 32-bit:
     add variable CMAKE_PREFIX_PATH and set it to the Qt install dir (e.g. C:/Qt/5.2.1/mingw48_32)
     press 'Configure', select a generator with "MinGW Makefiles"
     press 'Generate'
+    open cmd.exe in the 'bin' directory of PMP and run "mingw32-make"
+* Get the MySQL client library
+    --> http://dev.mysql.com/downloads/connector/c/
+    the mysql version number does not matter, just pick the latest version
+    download 'Windows (x86, 32-bit), ZIP Archive'
+    extract 'lib/libmysql.dll' to the PMP 'bin' directory
+    OR alternatively:
+      if your MySQL server is 32-bit, then you can copy the DLL from that installation
 
 
-3. PLANNED FEATURES
+5. PLANNED FEATURES
 -------------------
 
 No guarantees here!  This is more like a TO-DO list.
@@ -106,4 +158,5 @@ No guarantees here!  This is more like a TO-DO list.
  * Bridging of PMP server instances, to access music from another machine
  * Naming a PMP Server instance; e.g. "living room"
  * Support for other formats than just MP3
+ * Support for other database providers than MySQL
 

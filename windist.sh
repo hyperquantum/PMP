@@ -23,6 +23,8 @@ cp "$BIN_DIR"/PMP-GUI-Remote.exe "$DIST_DIR"/
 cp "$BIN_DIR"/PMP-Cmd-Remote.exe "$DIST_DIR"/
 cp "$BIN_DIR"/PMP-HashTool.exe "$DIST_DIR"/
 
+cp "$BIN_DIR"/libmysql.dll "$DIST_DIR"/
+
 cp "$MINGW_BIN_DIR"/libtag.dll "$DIST_DIR"/
 
 cp "$QT_BIN_DIR"/libgcc_s_dw2-1.dll "$DIST_DIR"/
@@ -49,6 +51,7 @@ cp -r "$QT_PLUGINS_DIR"/sqldrivers "$DIST_DIR"
 
 chmod -R +r "$DIST_DIR"
 
+cp "$DIST_DIR"/libmysql.dll "$INCR_TMPDIR"/
 cp "$DIST_DIR"/*.exe "$INCR_TMPDIR"/
 cp "$DIST_DIR"/*LICENSE* "$INCR_TMPDIR"/
 cp "$DIST_DIR"/README* "$INCR_TMPDIR"/
