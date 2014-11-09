@@ -19,6 +19,7 @@
 
 #include "common/filedata.h"
 
+#include "database.h"
 #include "fileanalysistask.h"
 #include "generator.h"
 #include "history.h"
@@ -30,80 +31,9 @@
 #include <QCoreApplication>
 #include <QDirIterator>
 #include <QFileInfo>
-#include <QSettings>
-#include <QSqlDatabase>
-#include <QSqlError>
-#include <QSqlQuery>
 #include <QThreadPool>
 
 using namespace PMP;
-
-bool initDB(QTextStream& out) {
-    out << "initializing database" << endl;
-
-    QSettings settings(QSettings::IniFormat, QSettings::UserScope,
-                       QCoreApplication::organizationName(),
-                       QCoreApplication::applicationName());
-    settings.setIniCodec("UTF-8");
-
-    bool incompleteDbSettings = false;
-
-    QVariant hostname = settings.value("database/hostname");
-    if (!hostname.isValid() || hostname.toString() == "") {
-        settings.setValue("database/hostname", "");
-        incompleteDbSettings = true;
-    }
-
-    QVariant user = settings.value("database/username");
-    if (!user.isValid() || user.toString() == "") {
-        settings.setValue("database/username", "");
-        incompleteDbSettings = true;
-    }
-
-    QVariant password = settings.value("database/password");
-    if (!password.isValid() || password.toString() == "") {
-        settings.setValue("database/password", "");
-        incompleteDbSettings = true;
-    }
-
-//    QVariant schema = settings.value("database/schema");
-//    if (!schema.isValid() || schema.toString() == "") {
-//        settings.setValue("database/schema", "");
-//        incompleteDbSettings = true;
-//    }
-
-    if (incompleteDbSettings) {
-        out << " incomplete database settings!" << endl;
-        return false;
-    }
-
-    QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
-    db.setHostName(hostname.toString());
-    db.setUserName(user.toString());
-    db.setPassword(password.toString());
-    bool dbOk = db.open();
-
-    if (!dbOk) {
-        out << " ERROR: could not connect to database: " << db.lastError().text() << endl;
-        return false;
-    }
-
-    QSqlQuery q;
-    q.prepare("CREATE DATABASE IF NOT EXISTS pmp; USE pmp;");
-    if (!q.exec()) {
-        out << " database initialization problem: " << db.lastError().text() << endl;
-        return false;
-    }
-
-    q.prepare("CREATE TABLE IF NOT EXISTS pmp_misc(`Key` VARCHAR(63) NOT NULL, `Value` VARCHAR(255), PRIMARY KEY(`Key`) )");
-    if (!q.exec()) {
-        out << " database initialization problem: " << db.lastError().text() << endl;
-        return false;
-    }
-
-    out << " database initialization completed successfully" << endl;
-    return true;
-}
 
 int main(int argc, char *argv[]) {
 
@@ -121,7 +51,7 @@ int main(int argc, char *argv[]) {
     //foreach (const QString &path, app.libraryPaths())
     //    out << " LIB PATH : " << path << endl;
 
-    initDB(out);
+    Database::init(out);
 
     FileData song =
         FileData::create(
