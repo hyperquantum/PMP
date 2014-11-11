@@ -67,17 +67,17 @@ namespace PMP {
             return false;
         }
 
+        /* open connection */
         QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
         db.setHostName(hostname.toString());
         db.setUserName(user.toString());
         db.setPassword(password.toString());
-        bool dbOk = db.open();
-
-        if (!dbOk) {
+        if (!db.open()) {
             out << " ERROR: could not connect to database: " << db.lastError().text() << endl << endl;
             return false;
         }
 
+        /* create schema if needed */
         QSqlQuery q;
         q.prepare("CREATE DATABASE IF NOT EXISTS pmp; USE pmp;");
         if (!q.exec()) {
@@ -85,12 +85,22 @@ namespace PMP {
             return false;
         }
 
-        q.prepare("CREATE TABLE IF NOT EXISTS pmp_misc(`Key` VARCHAR(63) NOT NULL, `Value` VARCHAR(255), PRIMARY KEY(`Key`) )");
+        /* create table 'pmp_misc' if needed */
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_misc("
+            " `Key` VARCHAR(63) NOT NULL,"
+            " `Value` VARCHAR(255),"
+            " PRIMARY KEY(`Key`) "
+            ") "
+            "ENGINE = InnoDB "
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
+        );
         if (!q.exec()) {
             out << " database initialization problem: " << db.lastError().text() << endl << endl;
             return false;
         }
 
+        /* get UUID, or generate one and store it if it does not exist yet */
         q.prepare("SELECT `Value` FROM pmp_misc WHERE `Key`=?");
         q.addBindValue("UUID");
         if (!q.exec()) {
@@ -112,6 +122,22 @@ namespace PMP {
             }
         }
         out << " UUID is " << uuid.toString() << endl;
+
+        /* create table 'pmp_hash' if needed */
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_hash("
+            " `HashID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+            " `InputLength` INT UNSIGNED NOT NULL,"
+            " `SHA1` VARCHAR(40) NOT NULL,"
+            " `MD5` VARCHAR(32) NOT NULL,"
+            " PRIMARY KEY (`HashID`),"
+            " UNIQUE INDEX `IDX_pmphash` (`InputLength` ASC, `SHA1` ASC, `MD5` ASC) "
+            ") ENGINE = InnoDB"
+        );
+        if (!q.exec()) {
+            out << " database initialization problem: " << db.lastError().text() << endl << endl;
+            return false;
+        }
 
         out << " database initialization completed successfully" << endl << endl;
         return true;
