@@ -116,7 +116,6 @@ How to compile from source on Windows, using MinGW 32-bit:
       open cmd.exe with Administrative privileges
       cd into the "bin" directory
       run the command: mingw32-make.exe install
-      copy the content of C:\taglib\lib into C:\MinGW\lib
 * Get pkg-config
     --> http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/
     download file pkg-config_0.26-1_win32.zip
