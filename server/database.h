@@ -20,7 +20,11 @@
 #ifndef PMP_DATABASE_H
 #define PMP_DATABASE_H
 
+#include "common/hashid.h"
+
+#include <QList>
 #include <QObject>
+#include <QPair>
 #include <QString>
 #include <QTextStream>
 
@@ -33,6 +37,16 @@ namespace PMP {
     public:
         static bool init(QTextStream& out);
 
+        static Database* instance() { return _instance; }
+
+        void registerHash(const HashID& hash);
+
+        uint getHashID(const HashID& hash);
+
+        QList<QPair<uint,HashID> > getHashes(uint largerThanID = 0);
+
+    private:
+        static Database* _instance;
     };
 }
 #endif

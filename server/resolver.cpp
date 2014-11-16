@@ -21,6 +21,8 @@
 
 #include "common/filedata.h"
 
+#include "database.h"
+
 #include <QFileInfo>
 #include <QtDebug>
 #include <QtGlobal>
@@ -28,7 +30,41 @@
 namespace PMP {
 
     Resolver::Resolver() {
-        //qsrand(....);
+        Database* db = Database::instance();
+
+        if (db != 0) {
+            QList<QPair<uint, HashID> > hashes = db->getHashes();
+
+            QPair<uint, HashID> pair;
+            foreach(pair, hashes) {
+                _idToHash[pair.first] = pair.second;
+                _hashToID[pair.second] = pair.first;
+                _hashList.append(pair.second);
+            }
+
+            qDebug() << "loaded" << _hashList.count() << "hashes from the database" << endl;
+        }
+    }
+
+    uint Resolver::registerHash(const HashID& hash) {
+        if (hash.empty()) return 0; /* invalid hash */
+
+        uint id = _hashToID.value(hash, 0);
+
+        if (id > 0) return id; /* registered already */
+
+        Database* db = Database::instance();
+        if (db != 0) {
+            db->registerHash(hash);
+            id = db->getHashID(hash);
+
+            _idToHash[id] = hash;
+            _hashToID[hash] = id;
+
+            qDebug() << "got ID" << id << "for registered hash" << hash.dumpToString();
+        }
+
+        return id;
     }
 
     void Resolver::registerData(const HashID& hash, const AudioData& data) {
@@ -147,14 +183,6 @@ namespace PMP {
         else {
             qDebug() << "file analysis FAILED:" << filename;
         }
-    }
-
-    void Resolver::registerHash(const HashID& hash) {
-        QHash<HashID, int>::const_iterator it = _hashIndex.constFind(hash);
-        if (it != _hashIndex.constEnd()) return; /* registered already */
-
-        _hashList.append(hash);
-        _hashIndex.insert(hash, _hashList.size() - 1);
     }
 
 }

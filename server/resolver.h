@@ -54,10 +54,14 @@ namespace PMP {
         void analysedFile(QString filename, FileData* data);
 
     private:
-        void registerHash(const HashID& hash);
+        uint registerHash(const HashID& hash);
 
+        QHash<uint, HashID> _idToHash;
+        QHash<HashID, uint> _hashToID;
         QList<HashID> _hashList;
-        QHash<HashID, int> _hashIndex;
+
+        //QHash<HashID, int> _hashIndex;
+
         QHash<HashID, AudioData> _audioCache;
         QMultiHash<HashID, const TagData*> _tagCache;
         QMultiHash<HashID, QString> _pathCache;

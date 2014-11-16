@@ -19,14 +19,19 @@
 
 #include "database.h"
 
+#include "common/hashid.h"
+
 #include <QCoreApplication>
 #include <QSettings>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QtDebug>
 #include <QUuid>
 
 namespace PMP {
+
+    Database* Database::_instance = 0;
 
     bool Database::init(QTextStream& out) {
         out << "initializing database" << endl;
@@ -139,8 +144,80 @@ namespace PMP {
             return false;
         }
 
+        _instance = new Database();
+
         out << " database initialization completed successfully" << endl << endl;
         return true;
+    }
+
+    void Database::registerHash(const HashID& hash) {
+        QString sha1 = hash.SHA1().toHex();
+        QString md5 = hash.MD5().toHex();
+
+        QSqlQuery q;
+        q.prepare(
+            "INSERT IGNORE INTO pmp_hash(InputLength, `SHA1`, `MD5`) "
+            "VALUES(?,?,?)"
+        );
+        q.addBindValue(hash.length());
+        q.addBindValue(sha1);
+        q.addBindValue(md5);
+
+        if (!q.exec()) { /* error */
+            qDebug() << "Database::registerHashID : could not execute; " << q.lastError().text() << endl;
+        }
+    }
+
+    uint Database::getHashID(const HashID& hash) {
+        QString sha1 = hash.SHA1().toHex();
+        QString md5 = hash.MD5().toHex();
+
+        QSqlQuery q;
+        q.prepare(
+            "SELECT HashID FROM pmp_hash"
+            " WHERE InputLength=? AND `SHA1`=? AND `MD5`=?"
+        );
+        q.addBindValue(hash.length());
+        q.addBindValue(sha1);
+        q.addBindValue(md5);
+
+        if (!q.exec()) { /* error */
+            qDebug() << "Database::getHashID : could not execute; " << q.lastError().text() << endl;
+            return 0;
+        }
+        else if (!q.next()){
+            qDebug() << "Database::getHashID : no result" << endl;
+            return 0;
+        }
+
+        return q.value(0).toUInt();
+    }
+
+    QList<QPair<uint,HashID> > Database::getHashes(uint largerThanID) {
+        QSqlQuery q;
+        q.prepare(
+            "SELECT HashID,InputLength,`SHA1`,`MD5` FROM pmp_hash"
+            " WHERE HashID > ? "
+            "ORDER BY HashID"
+        );
+        q.addBindValue(largerThanID);
+
+        QList<QPair<uint,HashID> > result;
+
+        if (!q.exec()) { /* error */
+            qDebug() << "Database::getHashes : could not execute; " << q.lastError().text() << endl;
+            return result;
+        }
+
+        while (q.next()) {
+            uint hashID = q.value(0).toUInt();
+            uint length = q.value(1).toUInt();
+            QByteArray sha1 = QByteArray::fromHex(q.value(2).toByteArray());
+            QByteArray md5 = QByteArray::fromHex(q.value(3).toByteArray());
+            result.append(QPair<uint,HashID>(hashID, HashID(length, sha1, md5)));
+        }
+
+        return result;
     }
 
 }
