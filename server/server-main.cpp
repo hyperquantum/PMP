@@ -63,20 +63,8 @@ int main(int argc, char *argv[]) {
             "Gladys Knight", "License To Kill"
         );
 
-    // fake hash for testing a hash with no known paths
-    FileData song2 =
-        FileData::create(
-            HashID(
-                4104358,
-                QByteArray::fromHex("abc1235c22f43a25a5874b496747298359b7ed25"),
-                QByteArray::fromHex("1239872ef61b3d69c649791b6ed583d4")
-            ),
-            "Gunther", "Ding Dong Song"
-        );
-
     Resolver resolver;
     resolver.registerData(song);
-    resolver.registerData(song2);
 
     Player player(0, &resolver);
     Queue& queue = player.queue();
