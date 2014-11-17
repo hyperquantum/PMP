@@ -60,6 +60,7 @@ namespace PMP {
 
             _idToHash[id] = hash;
             _hashToID[hash] = id;
+            _hashList.append(hash);
 
             qDebug() << "got ID" << id << "for registered hash" << hash.dumpToString();
         }
