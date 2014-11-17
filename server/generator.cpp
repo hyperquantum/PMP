@@ -50,7 +50,8 @@ namespace PMP {
     Generator::Generator(Queue* queue, Resolver* resolver, History* history)
      : _currentTrack(0), _queue(queue), _resolver(resolver), _history(history),
        _enabled(false), _refillPending(false),
-       _upcomingRuntime(0), _upcomingTimer(new QTimer(this)), _noRepetitionSpan(25 * 60)
+       _upcomingRuntimeSeconds(0), _upcomingTimer(new QTimer(this)),
+       _noRepetitionSpan(60 * 60 /* one hour */)
     {
         connect(_queue, SIGNAL(entryRemoved(quint32, quint32)), this, SLOT(queueEntryRemoved(quint32, quint32)));
         connect(_upcomingTimer, SIGNAL(timeout()), this, SLOT(checkRefillUpcomingBuffer()));
@@ -102,6 +103,10 @@ namespace PMP {
     }
 
     void Generator::queueEntryRemoved(quint32, quint32) {
+        requestQueueRefill();
+    }
+
+    void Generator::requestQueueRefill() {
         if (_refillPending) return;
         _refillPending = true;
         QTimer::singleShot(100, this, SLOT(checkAndRefillQueue()));
@@ -109,10 +114,10 @@ namespace PMP {
 
     void Generator::checkRefillUpcomingBuffer() {
         //int upcomingToGenerate = desiredUpcomingLength - _upcoming.length();
-        int iterationsLeft = 5;
+        int iterationsLeft = 8;
         while (iterationsLeft > 0
-               && ((uint)_upcoming.length() < desiredUpcomingLength
-                    || _upcomingRuntime < desiredUpcomingRuntime))
+               && ((uint)_upcoming.length() < maximalUpcomingCount
+                    || _upcomingRuntimeSeconds < desiredUpcomingRuntimeSeconds))
         {
             iterationsLeft--;
 
@@ -123,16 +128,22 @@ namespace PMP {
 
             if (satisfiesFilters(c)) {
                 _upcoming.enqueue(c);
-                _upcomingRuntime += c->lengthSeconds();
+                _upcomingRuntimeSeconds += c->lengthSeconds();
+            }
+
+            /* urgent queue refill needed? */
+            if (iterationsLeft >= 6
+                && (uint)_upcoming.length() >= minimalUpcomingCount
+                && _queue->length() < desiredQueueLength)
+            {
+                requestQueueRefill();
+                break;
             }
         }
 
-        qDebug() << "generator: buffer length:" << _upcoming.length() << "; runtime:" << (_upcomingRuntime / 60) << "min" << (_upcomingRuntime % 60) << "sec";
-
-        /* if buffer full without big effort in this last call */
-        if (iterationsLeft >= 4 && _queue->length() < desiredQueueLength) {
-            queueEntryRemoved(0, 0); /* force immediate filling of the queue */
-        }
+        qDebug() << "generator: buffer length:" << _upcoming.length()
+                 << "; runtime:" << (_upcomingRuntimeSeconds / 60) << "min"
+                 << (_upcomingRuntimeSeconds % 60) << "sec";
     }
 
     void Generator::checkAndRefillQueue() {
@@ -154,7 +165,7 @@ namespace PMP {
             iterationsLeft--;
 
             Candidate* c = _upcoming.dequeue();
-            _upcomingRuntime -= c->lengthSeconds();
+            _upcomingRuntimeSeconds -= c->lengthSeconds();
 
             /* check filters again */
             bool ok = satisfiesFilters(c);
@@ -172,18 +183,8 @@ namespace PMP {
                 QueueEntry const* current = _currentTrack;
                 if (current != 0) {
                     HashID const* currentHash = current->hash();
-                    if (currentHash != 0) {
-                        if (c->hash() == *currentHash) {
-                            ok = false;
-                        }
-                        else {
-                            // TODO: take into account the remaining time of the currently playing track
-
-//                            const AudioData& audio = _resolver->findAudioData(c->hash());
-//                            if (audio.trackLength() > 0) {
-//                                nonRepetitionSpan += audio.trackLength();
-//                            }
-                        }
+                    if (currentHash != 0 && c->hash() == *currentHash) {
+                        ok = false;
                     }
                 }
             }

@@ -63,9 +63,11 @@ namespace PMP {
         class Candidate;
 
         static const uint desiredQueueLength = 10;
-        static const uint desiredUpcomingLength = 2 * desiredQueueLength;
-        static const uint desiredUpcomingRuntime = 30 * 60; /* 30 min */
+        static const uint minimalUpcomingCount = 2 * desiredQueueLength;
+        static const uint maximalUpcomingCount = 3 * desiredQueueLength;
+        static const uint desiredUpcomingRuntimeSeconds = 3600; /* 1 hour */
 
+        void requestQueueRefill();
         bool satisfiesFilters(Candidate* candidate);
 
         QueueEntry const* _currentTrack;
@@ -75,7 +77,7 @@ namespace PMP {
         bool _enabled;
         bool _refillPending;
         QQueue<Candidate*> _upcoming;
-        uint _upcomingRuntime;
+        uint _upcomingRuntimeSeconds;
         QTimer* _upcomingTimer;
         int _noRepetitionSpan;
     };
