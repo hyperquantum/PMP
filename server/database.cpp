@@ -27,6 +27,7 @@
 #include <QSqlError>
 #include <QSqlQuery>
 #include <QtDebug>
+#include <QTextStream>
 #include <QUuid>
 
 namespace PMP {
@@ -144,6 +145,24 @@ namespace PMP {
             return false;
         }
 
+        /* create table 'pmp_filename' if needed */
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_filename("
+            " `HashID` INT UNSIGNED NOT NULL,"
+            " `FilenameWithoutDir` VARCHAR(255) NOT NULL,"
+            " CONSTRAINT `FK_pmpfilenamehashid`"
+            "  FOREIGN KEY (`HashID`)"
+            "   REFERENCES pmp_hash (`HashID`)"
+            "   ON DELETE CASCADE ON UPDATE CASCADE"
+            ") "
+            "ENGINE = InnoDB "
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
+        );
+        if (!q.exec()) {
+            out << " database initialization problem: " << db.lastError().text() << endl << endl;
+            return false;
+        }
+
         _instance = new Database();
 
         out << " database initialization completed successfully" << endl << endl;
@@ -218,6 +237,76 @@ namespace PMP {
         }
 
         return result;
+    }
+
+    void Database::registerFilename(uint hashID, const QString& filenameWithoutPath) {
+        /* We do not support extremely long file names.  Lookup for those files should be
+           done by other means. */
+        if (filenameWithoutPath.length() > 255) return;
+
+        /* A race condition could cause duplicate records to be registered; that is
+           tolerable however. */
+
+        QSqlQuery q;
+        q.prepare(
+            "SELECT EXISTS("
+            " SELECT * FROM pmp_filename WHERE `HashID`=? AND `FilenameWithoutDir`=? "
+            ")"
+        );
+        q.addBindValue(hashID);
+        q.addBindValue(filenameWithoutPath);
+        int i;
+        if (!executeScalar(q, i)) {
+            qDebug() << "Database::getHashes : could not execute; " << q.lastError().text() << endl;
+            return;
+        }
+
+        if (i != 0) return; /* already registered */
+
+        q.prepare(
+            "INSERT INTO pmp_filename(`HashID`,`FilenameWithoutDir`)"
+            " VALUES(?,?)"
+        );
+        q.addBindValue(hashID);
+        q.addBindValue(filenameWithoutPath);
+        if (!q.exec()) {
+            qDebug() << "Database::getHashes : could not execute; " << q.lastError().text() << endl;
+            return;
+        }
+    }
+
+    bool Database::executeScalar(QSqlQuery& q, int& i, const int& defaultValue) {
+        if (!q.exec()) {
+            i = defaultValue;
+            return false;
+        }
+
+        if (q.next()) {
+            QVariant v = q.value(0);
+            i = (v.isNull()) ? defaultValue : v.toInt();
+        }
+        else {
+            i = defaultValue;
+        }
+
+        return true;
+    }
+
+    bool Database::executeScalar(QSqlQuery& q, QString& s, const QString& defaultValue) {
+        if (!q.exec()) {
+            s = defaultValue; // NECESSARY?
+            return false;
+        }
+
+        if (q.next()) {
+            QVariant v = q.value(0);
+            s = (v.isNull()) ? defaultValue : v.toString();
+        }
+        else {
+            s = defaultValue;
+        }
+
+        return true;
     }
 
 }

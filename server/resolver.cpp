@@ -104,8 +104,14 @@ namespace PMP {
         QFileInfo info(filename);
 
         if (info.isAbsolute() || info.makeAbsolute()) {
-            registerHash(hash);
+            uint hashID = registerHash(hash);
             _pathCache.insert(hash, info.filePath());
+            //qDebug() << "will connect ID" << hashID << "to filename" << filename;
+
+            Database* db = Database::instance();
+            if (hashID > 0 && db != 0) {
+                db->registerFilename(hashID, info.fileName());
+            }
         }
     }
 

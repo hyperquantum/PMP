@@ -26,7 +26,10 @@
 #include <QObject>
 #include <QPair>
 #include <QString>
-#include <QTextStream>
+#include <QtGlobal>
+
+QT_FORWARD_DECLARE_CLASS(QSqlQuery)
+QT_FORWARD_DECLARE_CLASS(QTextStream)
 
 namespace PMP {
 
@@ -40,12 +43,15 @@ namespace PMP {
         static Database* instance() { return _instance; }
 
         void registerHash(const HashID& hash);
-
         uint getHashID(const HashID& hash);
-
         QList<QPair<uint,HashID> > getHashes(uint largerThanID = 0);
 
+        void registerFilename(uint hashID, const QString& filenameWithoutPath);
+
     private:
+        bool executeScalar(QSqlQuery& q, int& i, const int& defaultValue = 0);
+        bool executeScalar(QSqlQuery& q, QString& s, const QString& defaultValue = "");
+
         static Database* _instance;
     };
 }
