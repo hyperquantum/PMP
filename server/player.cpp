@@ -29,6 +29,7 @@ namespace PMP {
     Player::Player(QObject* parent, Resolver* resolver)
      : QObject(parent), _resolver(resolver),
         _player(new QMediaPlayer(this)),
+        _queue(resolver),
         _nowPlaying(0), _playPosition(0),
         _state(Stopped), _ignoreNextStopEvent(false)
     {

@@ -22,13 +22,40 @@
 #include "queueentry.h"
 
 #include <QtDebug>
+#include <QTimer>
 
 namespace PMP {
 
-    Queue::Queue()
-     : _nextQueueID(1)
+    Queue::Queue(Resolver* resolver)
+     : _nextQueueID(1),
+       _resolver(resolver), _queueFrontChecker(new QTimer(this))
     {
-        //
+        connect(_queueFrontChecker, SIGNAL(timeout()), this, SLOT(checkFrontOfQueue()));
+        _queueFrontChecker->start(10 * 1000);
+    }
+
+    void Queue::checkFrontOfQueue() {
+        int length = _queue.length();
+        uint operationsDone = 0;
+
+        for (int i = 0; i < length && i < 10 && operationsDone <= 3; ++i) {
+            QueueEntry* entry = _queue[i];
+
+            if (entry->hash() == 0) {
+                qDebug() << "Queue: need to calculate hash for queue index number" << (i + 1);
+                operationsDone++;
+                if (!entry->checkHash(*_resolver)) continue; /* check next track */
+            }
+
+            QString const* filename = entry->filename();
+            if (filename == 0) {
+                qDebug() << "Queue: need to get a valid filename for queue index number" << (i + 1);
+                operationsDone++;
+                entry->checkValidFilename(*_resolver);
+            }
+
+            /* TODO: preload files right at the front (here or in the player) */
+        }
     }
 
     void Queue::clear() {
@@ -105,15 +132,25 @@ namespace PMP {
         return -1; // not found
     }
 
-    bool Queue::checkPotentialRepetitionByAdd(Resolver& resolver, const HashID& hash, int repetitionAvoidanceSeconds, int* nonRepetitionSpan) const {
+    bool Queue::checkPotentialRepetitionByAdd(const HashID& hash,
+                                              int repetitionAvoidanceSeconds,
+                                              int* nonRepetitionSpan) const
+    {
         int span = 0;
 
         for (int i = _queue.length() - 1; i >= 0; --i) {
             QueueEntry* entry = _queue[i];
             if (entry->hash() == 0) {
-                /* TODO: small problem; we don't know the track's hash yet. This could potentially lead to a repetition. */
-                qDebug() << "queue repetition check: don't know hash yet of queue entry" << entry->queueID();
-                continue;
+                /* we don't know the track's hash yet. We need to calculate it first */
+                qDebug() << "Queue::checkPotentialRepetitionByAdd: need to calculate hash first, for QID " << entry->queueID();
+                entry->checkHash(*_resolver);
+
+                if (entry->hash() == 0) {
+                    qDebug() << "PROBLEM: failed calculating hash of QID " << entry->queueID();
+                    /* could not calculate hash, so let's pray that this is a different
+                       track and continue */
+                    continue;
+                }
             }
 
             const HashID& entryHash = *entry->hash();
@@ -123,7 +160,7 @@ namespace PMP {
                 return true; /* potential repetition */
             }
 
-            entry->checkAudioData(resolver);
+            entry->checkAudioData(*_resolver);
             int entryLength = entry->lengthInSeconds();
 
             if (entryLength > 0) {

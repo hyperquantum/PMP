@@ -59,6 +59,26 @@ namespace PMP {
         return &_hash;
     }
 
+    bool QueueEntry::checkHash(Resolver& resolver) {
+        if (!_hash.empty()) return true; /* already got it */
+
+        if (!_haveFilename) {
+            qDebug() << "PROBLEM: QueueEntry" << _queueID << "does not have either hash nor filename";
+            return false;
+        }
+
+        FileData data = FileData::analyzeFile(_filename);
+
+        if (!data.isValid()) {
+            qDebug() << "PROBLEM: QueueEntry" << _queueID << ": analysis of file failed:" << _filename;
+            return false;
+        }
+
+        _hash = data.hash();
+        resolver.registerFile(data, _filename);
+        return true;
+    }
+
     void QueueEntry::setFilename(QString const& filename) {
         _filename = filename;
         _haveFilename = true;
@@ -105,6 +125,8 @@ namespace PMP {
             if (!file.makeAbsolute()) { return false; }
             _filename = file.absolutePath();
         }
+
+        /* TODO: verify more information, like known last modification date, file size... */
 
         if (file.isFile() && file.isReadable()) {
             if (outFilename) { (*outFilename) = _filename; }

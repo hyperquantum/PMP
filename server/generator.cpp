@@ -173,7 +173,9 @@ namespace PMP {
             /* check occurrence in queue */
             int nonRepetitionSpan = 0;
             if (ok) {
-                if (_queue->checkPotentialRepetitionByAdd(*_resolver, c->hash(), _noRepetitionSpan, &nonRepetitionSpan)) {
+                if (_queue->checkPotentialRepetitionByAdd(c->hash(), _noRepetitionSpan,
+                                                          &nonRepetitionSpan))
+                {
                     ok = false;
                 }
             }
@@ -192,8 +194,11 @@ namespace PMP {
             /* check last play time, taking the future queue position into account */
             if (ok) {
                 QDateTime lastPlay = _history->lastPlayed(c->hash());
-                if (lastPlay.isValid()
-                    && lastPlay.addSecs(_noRepetitionSpan) > QDateTime::currentDateTimeUtc().addSecs(nonRepetitionSpan))
+                QDateTime maxLastPlay =
+                    QDateTime::currentDateTimeUtc().addSecs(nonRepetitionSpan)
+                                                   .addSecs(-_noRepetitionSpan);
+
+                if (lastPlay.isValid() && lastPlay > maxLastPlay)
                 {
                     ok = false;
                 }

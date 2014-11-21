@@ -23,6 +23,9 @@
 #include <QHash>
 #include <QObject>
 #include <QQueue>
+#include <QtGlobal>
+
+QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP {
 
@@ -34,9 +37,11 @@ namespace PMP {
     class Queue : public QObject {
         Q_OBJECT
     public:
-        Queue();
+        Queue(Resolver* resolver);
 
-        bool checkPotentialRepetitionByAdd(Resolver& resolver, const HashID& hash, int repetitionAvoidanceSeconds, int* nonRepetitionSpan = 0) const;
+        bool checkPotentialRepetitionByAdd(const HashID& hash,
+                                           int repetitionAvoidanceSeconds,
+                                           int* nonRepetitionSpan = 0) const;
 
     public slots:
         void clear();
@@ -61,11 +66,14 @@ namespace PMP {
         void entryRemoved(quint32 offset, quint32 queueID);
 
     private:
+        void checkFrontOfQueue();
         int findIndex(quint32 queueID);
 
         uint _nextQueueID;
         QHash<quint32, QueueEntry*> _index;
         QQueue<QueueEntry*> _queue;
+        Resolver* _resolver;
+        QTimer* _queueFrontChecker;
     };
 }
 #endif

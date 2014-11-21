@@ -42,6 +42,7 @@ namespace PMP {
         uint queueID() const { return _queueID; }
 
         HashID const* hash() const;
+        bool checkHash(Resolver& resolver);
 
         void setFilename(QString const& filename);
         QString const* filename() const;
