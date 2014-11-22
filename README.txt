@@ -9,6 +9,8 @@ Copyright (C) 2011-2014  Kevin André
 Party Music Player, abbreviated as PMP, is a client-server music system.
 The server is responsible for playing music, and a separate program,
 a 'remote', is used to connect to the server and instruct it what to do.
+PMP uses hashes to keep track of music files, so it can deal with moved/renamed
+and duplicate files without any problems.
 
 The software is licenced under GPLv3.
 
@@ -24,14 +26,16 @@ Contents of this file:
     2. Running PMP
     3. Dependencies for building
     4. Building on Windows
-    5. Planned features
+    5. Caveats / limitations
+    6. Planned features
 
 
 1. DEPENDENCIES FOR RUNNING PMP
 -------------------------------
 
-You need to run a MySQL server instance.
-PMP will use MySQL to store its data.
+You need to run a MySQL server instance. PMP currently uses MySQL to store its
+data. It may be possible to use MariaDB instead of MySQL, but I have not
+verified if that really works.
 
 Linux users can install MySQL server using their distribution's package manager.
 
@@ -69,14 +73,14 @@ An example configuration:
 
 * CMake
 * pkg-config
-* TagLib
-* Qt 5      (developed with Qt 5.2)
+* TagLib    (I have version 1.9.1)
+* Qt 5      (I have Qt 5.2)
 * MySQL client library
 * MinGW-32  if building on Windows
 
 The MySQL client library should match the word-size of PMP.  So if PMP is built
-for x86 architecture (32-bit), then the 32-bit version of MySQL client library
-should be used.
+for the x86 architecture (32-bit), then the 32-bit version of MySQL client
+library should be used.
 
 
 4. BUILDING ON WINDOWS
@@ -141,8 +145,31 @@ How to compile from source on Windows, using MinGW 32-bit:
     OR alternatively:
       if your MySQL server is 32-bit, then you can copy the DLL from that installation
 
+Disclaimer: these steps were written during a long process of trial and error,
+so they can possibly contain some mistakes.
 
-5. PLANNED FEATURES
+
+5. CAVEATS / LIMITATIONS
+------------------------
+
+Since this project is in a very early stage of development, you can expect a few
+things to be missing or not working correctly ;)
+
+ * Only MP3 files supported for now
+    --> because hashing is only implemented for MP3 files at this time
+ * Database requires MySQL (maybe MariaDB), SQLite is not an option
+ * No manual selection of tracks yet, only dynamic mode
+ * No configuration yet of where to find music files, the PMP 'bin' directory is
+   the only location used right now
+ * No scanning yet for new/modified files while the server is running, only a
+   simple indexation is performed when the server is started
+ * Only limited queue manipulation supported: deleting yes, moving no
+ * Playback history is not saved in the database yet
+ * No custom filters for dynamic mode yet
+ * Etc.
+
+
+6. PLANNED FEATURES
 -------------------
 
 No guarantees here!  This is more like a TO-DO list.
