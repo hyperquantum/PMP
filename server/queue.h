@@ -65,8 +65,10 @@ namespace PMP {
         void entryAdded(quint32 offset, quint32 queueID);
         void entryRemoved(quint32 offset, quint32 queueID);
 
-    private:
+    private slots:
         void checkFrontOfQueue();
+
+    private:
         int findIndex(quint32 queueID);
 
         uint _nextQueueID;
