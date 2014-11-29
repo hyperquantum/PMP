@@ -64,6 +64,7 @@ set(PMP_SERVER_HEADERS
 
 set(PMP_GUI_REMOTE_SOURCES
     gui-remote/connectionwidget.cpp
+    gui-remote/currenttrackmonitor.cpp
     gui-remote/gui-remote-main.cpp
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp
@@ -72,6 +73,7 @@ set(PMP_GUI_REMOTE_SOURCES
 )
 set(PMP_GUI_REMOTE_HEADERS
     gui-remote/connectionwidget.h
+    gui-remote/currenttrackmonitor.h
     gui-remote/mainwidget.h
     gui-remote/mainwindow.h
     gui-remote/queuemodel.h

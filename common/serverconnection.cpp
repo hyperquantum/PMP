@@ -151,7 +151,6 @@ namespace PMP {
                 _state = BinaryMode;
 
                 emit connected();
-                sendSingleByteAction(10); /* request player state */
                 requestDynamicModeStatus(); // FIXME: must become optional
             }
                 break;
@@ -304,6 +303,14 @@ namespace PMP {
         sendSingleByteAction(99); /* 99 = shutdown server */
     }
 
+    void ServerConnection::requestPlayerState() {
+        if (!_binarySendingMode) {
+            return; /* too early for that */
+        }
+
+        sendSingleByteAction(10); /* 10 = request player state */
+    }
+
     void ServerConnection::play() {
         if (!_binarySendingMode) {
             return; /* too early for that */
@@ -431,21 +438,25 @@ namespace PMP {
                 emit noCurrentTrack();
             }
 
+            PlayState s = UnknownState;
             switch (playerState) {
             case 1:
+                s = Stopped;
                 emit stopped();
                 break;
             case 2:
+                s = Playing;
                 emit playing();
                 break;
             case 3:
+                s = Paused;
                 emit paused();
                 break;
             }
 
             emit trackPositionChanged(position);
             emit queueLengthChanged(queueLength);
-
+            emit receivedPlayerState(s, volume, queueLength, queueID, position);
         }
             break;
         case 2: /* volume change message */

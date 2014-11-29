@@ -22,6 +22,7 @@
 
 #include "common/serverconnection.h"
 
+#include "currenttrackmonitor.h"
 #include "queuemodel.h"
 #include "queuemonitor.h"
 
@@ -35,11 +36,14 @@ namespace PMP {
     MainWidget::MainWidget(QWidget *parent) :
         QWidget(parent),
         _ui(new Ui::MainWidget),
-        _connection(0), _queueMonitor(0), _queueModel(0),
-        _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1),
+        _connection(0), _currentTrackMonitor(0), _queueMonitor(0), _queueModel(0),
+        _volume(-1), _nowPlayingQID(0), /*_nowPlayingPosition(0),*/ _nowPlayingLength(-1),
         _dynamicModeEnabled(false), _noRepetitionUpdating(0)
     {
         _ui->setupUi(this);
+
+        /* make sure the progress bar is set to zero */
+        _ui->trackTimeProgressBar->reset();
     }
 
     MainWidget::~MainWidget()
@@ -49,6 +53,7 @@ namespace PMP {
 
     void MainWidget::setConnection(ServerConnection* connection) {
         _connection = connection;
+        _currentTrackMonitor = new CurrentTrackMonitor(_connection);
         _queueMonitor = new QueueMonitor(_connection, _connection);
         _queueModel = new QueueModel(_connection, _queueMonitor);
 
@@ -66,20 +71,18 @@ namespace PMP {
         connect(_ui->noRepetitionComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(noRepetitionIndexChanged(int)));
         connect(_connection, SIGNAL(dynamicModeStatusReceived(bool, int)), this, SLOT(dynamicModeStatusReceived(bool, int)));
 
-        connect(_connection, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
+        connect(_currentTrackMonitor, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
         connect(_ui->volumeIncreaseButton, SIGNAL(clicked()), this, SLOT(increaseVolume()));
         connect(_ui->volumeDecreaseButton, SIGNAL(clicked()), this, SLOT(decreaseVolume()));
 
-        connect(_connection, SIGNAL(playing()), this, SLOT(playing()));
-        connect(_connection, SIGNAL(paused()), this, SLOT(paused()));
-        connect(_connection, SIGNAL(stopped()), this, SLOT(stopped()));
+        connect(_currentTrackMonitor, SIGNAL(playing(quint32)), this, SLOT(playing(quint32)));
+        connect(_currentTrackMonitor, SIGNAL(paused(quint32)), this, SLOT(paused(quint32)));
+        connect(_currentTrackMonitor, SIGNAL(stopped()), this, SLOT(stopped()));
+        connect(_currentTrackMonitor, SIGNAL(trackProgress(quint32, quint64, int)), this, SLOT(trackProgress(quint32, quint64, int)));
+        connect(_currentTrackMonitor, SIGNAL(trackProgress(quint64)), this, SLOT(trackProgress(quint64)));
+        connect(_currentTrackMonitor, SIGNAL(receivedTitleArtist(QString, QString)), this, SLOT(receivedTitleArtist(QString, QString)));
 
-        connect(_connection, SIGNAL(noCurrentTrack()), this, SLOT(noCurrentTrack()));
-        connect(_connection, SIGNAL(nowPlayingTrack(quint32)), this, SLOT(nowPlayingTrack(quint32)));
-        connect(_connection, SIGNAL(nowPlayingTrack(QString, QString, int)), this, SLOT(nowPlayingTrack(QString, QString, int)));
-        connect(_connection, SIGNAL(trackPositionChanged(quint64)), this, SLOT(trackPositionChanged(quint64)));
         connect(_connection, SIGNAL(queueLengthChanged(int)), this, SLOT(queueLengthChanged(int)));
-        connect(_connection, SIGNAL(receivedTrackInfo(quint32, int, QString, QString)), this, SLOT(receivedTrackInfo(quint32, int, QString, QString)));
     }
 
     bool MainWidget::eventFilter(QObject* object, QEvent* event) {
@@ -88,7 +91,7 @@ namespace PMP {
                 QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
 
                 if (keyEvent->key() == Qt::Key_Delete) {
-                    qDebug() << "got delete key";
+                    //qDebug() << "got delete key";
 
                     QModelIndex index = _ui->queueTableView->currentIndex();
                     if (index.isValid()) {
@@ -106,22 +109,126 @@ namespace PMP {
         return QWidget::eventFilter(object, event);
     }
 
-    void MainWidget::playing() {
+    void MainWidget::playing(quint32 queueID) {
+        if (_nowPlayingQID != queueID) {
+            _nowPlayingQID = queueID;
+            _nowPlayingArtist = "";
+            _nowPlayingTitle = "";
+            _nowPlayingLength = -1;
+            _ui->artistTitleLabel->setText("");
+            _ui->trackTimeProgressBar->reset();
+            _ui->lengthValueLabel->setText("");
+            _ui->positionValueLabel->setText("");
+        }
+
         _ui->playButton->setEnabled(false);
         _ui->pauseButton->setEnabled(true);
-        _ui->stateValueLabel->setText("playing");
+        _ui->skipButton->setEnabled(true);
+        _ui->playStateLabel->setText("playing");
     }
 
-    void MainWidget::paused() {
+    void MainWidget::paused(quint32 queueID) {
+        if (_nowPlayingQID != queueID) {
+            _nowPlayingQID = queueID;
+            _nowPlayingArtist = "";
+            _nowPlayingTitle = "";
+            _nowPlayingLength = -1;
+            _ui->artistTitleLabel->setText("");
+            _ui->trackTimeProgressBar->reset();
+            _ui->lengthValueLabel->setText("");
+            _ui->positionValueLabel->setText("");
+        }
+
         _ui->playButton->setEnabled(true);
         _ui->pauseButton->setEnabled(false);
-        _ui->stateValueLabel->setText("paused");
+        _ui->skipButton->setEnabled(true);
+        _ui->playStateLabel->setText("paused");
     }
 
     void MainWidget::stopped() {
+        _nowPlayingQID = 0;
+        _nowPlayingArtist = "";
+        _nowPlayingTitle = "";
+        _nowPlayingLength = -1;
+
+        _ui->artistTitleLabel->setText("<no current track>");
+        _ui->trackTimeProgressBar->reset();
+        _ui->lengthValueLabel->setText("");
+        _ui->positionValueLabel->setText("");
+
         _ui->playButton->setEnabled(true);
         _ui->pauseButton->setEnabled(false);
-        _ui->stateValueLabel->setText("stopped");
+        _ui->skipButton->setEnabled(false);
+        _ui->playStateLabel->setText("stopped");
+    }
+
+    void MainWidget::trackProgress(quint32 queueID, quint64 position, int lengthSeconds) {
+        if (queueID != _nowPlayingQID) return;
+
+        //qDebug() << "DISPLAY: nowPlayingTrack, track length (secs):" << lengthInSeconds;
+
+        if (lengthSeconds != _nowPlayingLength) {
+            _nowPlayingLength = lengthSeconds;
+
+            if (lengthSeconds < 0) {
+                _ui->lengthValueLabel->setText("?");
+                _ui->trackTimeProgressBar->reset();
+            }
+            else {
+                int sec = lengthSeconds % 60;
+                int min = (lengthSeconds / 60) % 60;
+                int hrs = lengthSeconds / 3600;
+
+                _ui->lengthValueLabel->setText(
+                    QString::number(hrs).rightJustified(2, '0')
+                     + ":" + QString::number(min).rightJustified(2, '0')
+                     + ":" + QString::number(sec).rightJustified(2, '0')
+                );
+
+                _ui->trackTimeProgressBar->setMaximum(lengthSeconds * 10);
+            }
+        }
+
+        trackProgress(position);
+    }
+
+    void MainWidget::trackProgress(quint64 position) {
+        //qDebug() << "DISPLAY: trackPositionChanged" << position;
+        int positionInSeconds = position / 1000;
+
+        int partialSec = position % 1000;
+        int sec = positionInSeconds % 60;
+        int min = (positionInSeconds / 60) % 60;
+        int hrs = positionInSeconds / 3600;
+
+        _ui->positionValueLabel->setText(
+            QString::number(hrs).rightJustified(2, '0')
+             + ":" + QString::number(min).rightJustified(2, '0')
+             + ":" + QString::number(sec).rightJustified(2, '0')
+             + "." + QString::number(partialSec).rightJustified(3, '0')
+        );
+
+        if (_nowPlayingLength > 0) {
+            /* progressbar uses tenths of a second */
+            _ui->trackTimeProgressBar->setValue(position / 100);
+        }
+        else {
+            _ui->trackTimeProgressBar->setValue(0);
+        }
+    }
+
+    void MainWidget::receivedTitleArtist(QString title, QString artist) {
+        _nowPlayingTitle = title;
+        _nowPlayingArtist = artist;
+
+        QString artistToShow = (artist == "") ? "<unknown artist>" : artist;
+        QString titleToShow = (title == "") ? "<unknown title>" : title;
+        QString artistTitleToShow =
+            (artist == "" && title == "")
+             ? "<unknown artist/title>"
+             : artistToShow + " " + QChar(0x2013) /* <- EN DASH */ + " " + titleToShow;
+
+        _ui->artistTitleLabel->setText(artistTitleToShow);
     }
 
     void MainWidget::volumeChanged(int percentage) {
@@ -273,81 +380,8 @@ namespace PMP {
         }
     }
 
-    void MainWidget::noCurrentTrack() {
-        _nowPlayingQID = 0;
-        _nowPlayingArtist = "";
-        _nowPlayingTitle = "";
-        _nowPlayingLength = -1;
-        _ui->titleValueLabel->setText("");
-        _ui->artistValueLabel->setText("");
-        _ui->lengthValueLabel->setText("");
-        _ui->positionValueLabel->setText("");
-        _ui->skipButton->setEnabled(false);
-    }
-
-    void MainWidget::nowPlayingTrack(quint32 queueID) {
-        _ui->skipButton->setEnabled(true);
-
-        if (queueID != _nowPlayingQID) {
-            _nowPlayingQID = queueID;
-            _nowPlayingArtist = "";
-            _nowPlayingTitle = "";
-            _nowPlayingLength = -1;
-
-            _connection->sendTrackInfoRequest(queueID);
-        }
-
-        nowPlayingTrack(_nowPlayingTitle, _nowPlayingArtist, _nowPlayingLength);
-    }
-
-    void MainWidget::nowPlayingTrack(QString title, QString artist, int lengthInSeconds) {
-        _ui->titleValueLabel->setText(title);
-        _ui->artistValueLabel->setText(artist);
-
-        if (lengthInSeconds < 0) {
-            _ui->lengthValueLabel->setText("?");
-        }
-        else {
-            int sec = lengthInSeconds % 60;
-            int min = (lengthInSeconds / 60) % 60;
-            int hrs = lengthInSeconds / 3600;
-
-            _ui->lengthValueLabel->setText(
-                QString::number(hrs).rightJustified(2, '0')
-                 + ":" + QString::number(min).rightJustified(2, '0')
-                 + ":" + QString::number(sec).rightJustified(2, '0')
-            );
-        }
-    }
-
-    void MainWidget::trackPositionChanged(quint64 position) {
-        int positionInSeconds = position / 1000;
-
-        int partialSec = position % 1000;
-        int sec = positionInSeconds % 60;
-        int min = (positionInSeconds / 60) % 60;
-        int hrs = positionInSeconds / 3600;
-
-        _ui->positionValueLabel->setText(
-            QString::number(hrs).rightJustified(2, '0')
-             + ":" + QString::number(min).rightJustified(2, '0')
-             + ":" + QString::number(sec).rightJustified(2, '0')
-             + "." + QString::number(partialSec).rightJustified(3, '0')
-        );
-    }
-
     void MainWidget::queueLengthChanged(int length) {
         _ui->queueLengthValueLabel->setText(QString::number(length));
-    }
-
-    void MainWidget::receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist) {
-        if (_nowPlayingQID != queueID) { return; }
-
-        _nowPlayingArtist = artist;
-        _nowPlayingTitle = title;
-        _nowPlayingLength = lengthInSeconds;
-
-        nowPlayingTrack(title, artist, lengthInSeconds);
     }
 
 }

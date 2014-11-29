@@ -28,6 +28,7 @@ namespace Ui {
 
 namespace PMP {
 
+    class CurrentTrackMonitor;
     class QueueModel;
     class QueueMonitor;
     class ServerConnection;
@@ -45,9 +46,13 @@ namespace PMP {
         bool eventFilter(QObject*, QEvent*);
 
     private slots:
-        void playing();
-        void paused();
+        void playing(quint32 queueID);
+        void paused(quint32 queueID);
         void stopped();
+
+        void trackProgress(quint32 queueID, quint64 position, int lengthSeconds);
+        void trackProgress(quint64 position);
+        void receivedTitleArtist(QString title, QString artist);
 
         void volumeChanged(int percentage);
         void decreaseVolume();
@@ -57,12 +62,7 @@ namespace PMP {
         void noRepetitionIndexChanged(int index);
         void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
 
-        void noCurrentTrack();
-        void nowPlayingTrack(quint32 queueID);
-        void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
-        void trackPositionChanged(quint64 position);
         void queueLengthChanged(int length);
-        void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist);
 
     private:
         void buildNoRepetitionList(int spanToSelect);
@@ -70,10 +70,12 @@ namespace PMP {
 
         Ui::MainWidget* _ui;
         ServerConnection* _connection;
+        CurrentTrackMonitor* _currentTrackMonitor;
         QueueMonitor* _queueMonitor;
         QueueModel* _queueModel;
         int _volume;
         quint32 _nowPlayingQID;
+        //quint64 _nowPlayingPosition;
         QString _nowPlayingTitle;
         QString _nowPlayingArtist;
         int _nowPlayingLength;

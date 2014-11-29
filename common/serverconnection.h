@@ -35,6 +35,10 @@ namespace PMP {
             HandshakeFailure, BinaryHandshake, BinaryMode
         };
     public:
+        enum PlayState {
+            UnknownState = 0, Stopped = 1, Playing = 2, Paused = 3
+        };
+
         ServerConnection(QObject* parent = 0);
 
         void reset();
@@ -45,6 +49,7 @@ namespace PMP {
     public slots:
         void shutdownServer();
 
+        void requestPlayerState();
         void play();
         void pause();
         void skip();
@@ -71,6 +76,8 @@ namespace PMP {
         void playing();
         void paused();
         void stopped();
+        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
+                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
 
         void volumeChanged(int percentage);
 
