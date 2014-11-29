@@ -1,7 +1,7 @@
 cd `dirname $0`
 
 SRC_DIR="."
-BIN_DIR="bin"
+BIN_DIR="win32_build"
 DIST_DIR="PMP_win32"
 INCR_TMPDIR="PMP_win32_incremental"
 ZIP_FILE="PMP_win32.zip"
