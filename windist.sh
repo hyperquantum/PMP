@@ -1,7 +1,10 @@
-cd `dirname $0`
+# This script packages the binaries for Windows-x86.
+# It is meant to be run in a Cygwin shell.
+
+cd $(dirname $0)
 
 SRC_DIR="."
-BIN_DIR="win32_build"
+BIN_DIR="bin_win32_release"
 DIST_DIR="PMP_win32"
 INCR_TMPDIR="PMP_win32_incremental"
 ZIP_FILE="PMP_win32.zip"
@@ -11,9 +14,19 @@ MINGW_BIN_DIR="/cygdrive/C/MinGW/bin"
 QT_BIN_DIR="/cygdrive/C/Qt/5.2.1/mingw48_32/bin"
 QT_PLUGINS_DIR="/cygdrive/C/Qt/5.2.1/mingw48_32/plugins"
 
+# (1) cleanup from previous runs (if necessary)
 rm -rf "$DIST_DIR" "$INCR_TMPDIR"
 mkdir  "$DIST_DIR" "$INCR_TMPDIR"
 rm -rf "$ZIP_FILE" "$INCR_ZIP"
+
+# (2) run build
+echo "Running make..."
+pushd "$BIN_DIR" >/dev/null
+mingw32-make || exit
+popd >/dev/null
+
+# (3) copy files to release directories
+echo "Copying files..."
 
 cp "$SRC_DIR"/README* "$DIST_DIR"/
 cp "$SRC_DIR"/*LICENSE* "$DIST_DIR"/
@@ -56,8 +69,12 @@ cp "$DIST_DIR"/*.exe "$INCR_TMPDIR"/
 cp "$DIST_DIR"/*LICENSE* "$INCR_TMPDIR"/
 cp "$DIST_DIR"/README* "$INCR_TMPDIR"/
 
+# (4) create zip files
+echo "Creating archives..."
 zip -r -q "$ZIP_FILE" "$DIST_DIR"/* \
   && rm -rf "$DIST_DIR" \
   && mv "$INCR_TMPDIR" "$DIST_DIR" \
   && zip -r -q "$INCR_ZIP" "$DIST_DIR"/* \
-  && rm -rf "$DIST_DIR"
+  && rm -rf "$DIST_DIR" || exit
+
+echo "Finished."
