@@ -22,15 +22,26 @@ You can contact the developer here:   hyperquantum@gmail.com
 
 
 Contents of this file:
-    1. Dependencies for running PMP
-    2. Running PMP
-    3. Dependencies for building
-    4. Building on Windows
-    5. Caveats / limitations
-    6. Planned features
+    1. Features
+    2. Dependencies for running PMP
+    3. Running PMP
+    4. Dependencies for building
+    5. Building on Windows
+    6. Caveats / limitations
+    7. Planned features
 
 
-1. DEPENDENCIES FOR RUNNING PMP
+1. FEATURES
+-----------
+
+ * Server executable
+ * Command-line remote  (very primitive)
+ * Remote with graphical user-interface
+ * Use of hashing to identify tracks
+ * Dynamic mode with track repetition avoidance
+
+
+2. DEPENDENCIES FOR RUNNING PMP
 -------------------------------
 
 You need to run a MySQL server instance. PMP currently uses MySQL to store its
@@ -50,7 +61,7 @@ way) and should be set to use Unicode (UTF-8) by default. Default storage engine
 should be InnoDB.
 
 
-2. RUNNING PMP
+3. RUNNING PMP
 --------------
 
 The PMP server needs a database connection. When you run it for the first time,
@@ -68,7 +79,7 @@ An example configuration:
   password=mysecretpassword
 
 
-3. DEPENDENCIES FOR BUILDING
+4. DEPENDENCIES FOR BUILDING
 ----------------------------
 
 * CMake
@@ -83,7 +94,7 @@ for the x86 architecture (32-bit), then the 32-bit version of MySQL client
 library should be used.
 
 
-4. BUILDING ON WINDOWS
+5. BUILDING ON WINDOWS
 ----------------------
 
 Building on Linux is trivial, but on Windows it takes some effort.
@@ -149,7 +160,7 @@ Disclaimer: these steps were written during a long process of trial and error,
 so they can possibly contain some mistakes.
 
 
-5. CAVEATS / LIMITATIONS
+6. CAVEATS / LIMITATIONS
 ------------------------
 
 Since this project is in a very early stage of development, you can expect a few
@@ -169,7 +180,7 @@ things to be missing or not working correctly ;)
  * Etc.
 
 
-6. PLANNED FEATURES
+7. PLANNED FEATURES
 -------------------
 
 No guarantees here!  This is more like a TO-DO list.
@@ -181,6 +192,9 @@ No guarantees here!  This is more like a TO-DO list.
  * Separate play history for each user and for public mode
  * Last.fm scrobbling (in personal mode)
  * Syncronization of music databases across different machines
+ * Handling of two files that are the same track but have a different hash
+ * Find a way to identify artists
+ * Dynamic mode: avoid repeating the same artist within a certain timespan
  * Bridging of PMP server instances, to access music from another machine
  * Naming a PMP Server instance; e.g. "living room"
  * Support for other formats than just MP3
