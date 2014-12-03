@@ -61,7 +61,11 @@ namespace PMP {
 
         void onVolumeChanged(int percentage);
 
+        void onTimeout();
+
     private:
+        static const int TIMER_INTERVAL = 200; /* 5 times a second */
+
         ServerConnection* _connection;
         ServerConnection::PlayState _state;
         int _volume;
@@ -71,6 +75,7 @@ namespace PMP {
         QString _nowPlayingTitle;
         QString _nowPlayingArtist;
         QTimer* _timer;
+        quint64 _timerPosition;
     };
 }
 #endif

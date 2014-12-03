@@ -21,6 +21,8 @@
 
 #include "common/serverconnection.h"
 
+#include <cstdlib>
+#include <QtDebug>
 #include <QTimer>
 
 namespace PMP {
@@ -29,7 +31,7 @@ namespace PMP {
      : QObject(connection),
         _connection(connection), _state(ServerConnection::UnknownState), _volume(-1),
         _nowPlayingQID(0), _nowPlayingPosition(0), _nowPlayingLengthSeconds(-1),
-        _timer(0)
+        _timer(new QTimer(this)), _timerPosition(0)
     {
         connect(_connection, SIGNAL(connected()), this, SLOT(connected()));
         connect(
@@ -46,6 +48,9 @@ namespace PMP {
             _connection, SIGNAL(volumeChanged(int)),
             this, SLOT(onVolumeChanged(int))
         );
+
+        _timer->setInterval(TIMER_INTERVAL);
+        connect(_timer, SIGNAL(timeout()), this, SLOT(onTimeout()));
 
         if (_connection->isConnected()) {
             connected();
@@ -71,7 +76,10 @@ namespace PMP {
     {
         ServerConnection::PlayState state = (ServerConnection::PlayState)s;
 
-        if (nowPlayingQID != _nowPlayingQID && nowPlayingQID > 0) {
+        bool stateChanged = state != _state;
+        bool trackChanged = nowPlayingQID != _nowPlayingQID;
+
+        if (trackChanged && nowPlayingQID > 0) {
             _nowPlayingLengthSeconds = -1;
             _nowPlayingTitle = "";
             _nowPlayingArtist = "";
@@ -105,6 +113,25 @@ namespace PMP {
             _volume = volume;
             emit volumeChanged(_volume);
         }
+
+        if (!stateChanged && !trackChanged) {
+            qint64 positionDrift = (qint64)_timerPosition - (qint64)nowPlayingPosition;
+            if (std::abs(positionDrift) >= (3 * TIMER_INTERVAL) / 2)
+            {
+                qDebug() << "CurrentTrackMonitor: timer drifted too much; real=" << nowPlayingPosition << ", timer=" << _timerPosition << "; restarting timer";
+                if (_timer->isActive()) _timer->stop();
+                _timerPosition = nowPlayingPosition;
+                _timer->start();
+            }
+        }
+        else if (state == ServerConnection::Playing) {
+            if (_timer->isActive()) _timer->stop();
+            _timerPosition = nowPlayingPosition;
+            _timer->start();
+        }
+        else { /* not playing */
+            if (_timer->isActive()) _timer->stop();
+        }
     }
 
     void CurrentTrackMonitor::receivedTrackInfo(quint32 queueID, int lengthInSeconds,
@@ -131,6 +158,16 @@ namespace PMP {
             _volume = percentage;
             emit volumeChanged(_volume);
         }
+    }
+
+    void CurrentTrackMonitor::onTimeout() {
+        if (_timerPosition >= _nowPlayingPosition + 1000) {
+            /* oh boy, we are too far ahead */
+            return;
+        }
+
+        _timerPosition += 200;
+        emit trackProgress(_timerPosition);
     }
 
 }
