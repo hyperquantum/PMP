@@ -27,6 +27,7 @@
 #include <QString>
 #include <QtGlobal>
 
+QT_FORWARD_DECLARE_CLASS(QElapsedTimer)
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP {
@@ -64,7 +65,7 @@ namespace PMP {
         void onTimeout();
 
     private:
-        static const int TIMER_INTERVAL = 200; /* 5 times a second */
+        static const int TIMER_INTERVAL = 40; /* 25 times per second */
 
         ServerConnection* _connection;
         ServerConnection::PlayState _state;
@@ -75,6 +76,7 @@ namespace PMP {
         QString _nowPlayingTitle;
         QString _nowPlayingArtist;
         QTimer* _timer;
+        QElapsedTimer* _elapsedTimer;
         quint64 _timerPosition;
     };
 }

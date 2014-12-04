@@ -22,6 +22,7 @@
 #include "common/serverconnection.h"
 
 #include <cstdlib>
+#include <QElapsedTimer>
 #include <QtDebug>
 #include <QTimer>
 
@@ -31,7 +32,7 @@ namespace PMP {
      : QObject(connection),
         _connection(connection), _state(ServerConnection::UnknownState), _volume(-1),
         _nowPlayingQID(0), _nowPlayingPosition(0), _nowPlayingLengthSeconds(-1),
-        _timer(new QTimer(this)), _timerPosition(0)
+        _timer(new QTimer(this)), _elapsedTimer(new QElapsedTimer()), _timerPosition(0)
     {
         connect(_connection, SIGNAL(connected()), this, SLOT(connected()));
         connect(
@@ -65,6 +66,7 @@ namespace PMP {
         _nowPlayingLengthSeconds = -1;
         _nowPlayingTitle = "";
         _nowPlayingArtist = "";
+        _timerPosition = 0;
 
         _connection->requestPlayerState();
     }
@@ -78,6 +80,7 @@ namespace PMP {
 
         bool stateChanged = state != _state;
         bool trackChanged = nowPlayingQID != _nowPlayingQID;
+        bool positionChanged = nowPlayingPosition != _nowPlayingPosition;
 
         if (trackChanged && nowPlayingQID > 0) {
             _nowPlayingLengthSeconds = -1;
@@ -98,7 +101,13 @@ namespace PMP {
             emit paused(nowPlayingQID);
         }
 
-        if (nowPlayingPosition != _nowPlayingPosition) {
+        if (positionChanged || stateChanged) {
+            /* re-align elapsed timer */
+            _timerPosition = nowPlayingPosition;
+            _elapsedTimer->start();
+        }
+
+        if (positionChanged) {
             _nowPlayingPosition = nowPlayingPosition;
             emit trackProgress(nowPlayingPosition);
         }
@@ -114,20 +123,9 @@ namespace PMP {
             emit volumeChanged(_volume);
         }
 
-        if (!stateChanged && !trackChanged) {
-            qint64 positionDrift = (qint64)_timerPosition - (qint64)nowPlayingPosition;
-            if (std::abs(positionDrift) >= (3 * TIMER_INTERVAL) / 2)
-            {
-                qDebug() << "CurrentTrackMonitor: timer drifted too much; real=" << nowPlayingPosition << ", timer=" << _timerPosition << "; restarting timer";
-                if (_timer->isActive()) _timer->stop();
-                _timerPosition = nowPlayingPosition;
-                _timer->start();
-            }
-        }
-        else if (state == ServerConnection::Playing) {
-            if (_timer->isActive()) _timer->stop();
-            _timerPosition = nowPlayingPosition;
-            _timer->start();
+        /* start or stop the elapsed timer */
+        if (state == ServerConnection::Playing) {
+            if (!_timer->isActive()) _timer->start();
         }
         else { /* not playing */
             if (_timer->isActive()) _timer->stop();
@@ -142,7 +140,7 @@ namespace PMP {
         if (lengthInSeconds != _nowPlayingLengthSeconds) {
             _nowPlayingLengthSeconds = lengthInSeconds;
             if (lengthInSeconds >= 0) {
-                emit trackProgress(queueID, _nowPlayingPosition, lengthInSeconds);
+                emit trackProgress(queueID, _timerPosition, lengthInSeconds);
             }
         }
 
@@ -166,7 +164,7 @@ namespace PMP {
             return;
         }
 
-        _timerPosition += 200;
+        _timerPosition = _nowPlayingPosition + _elapsedTimer->elapsed();
         emit trackProgress(_timerPosition);
     }
 
