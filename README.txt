@@ -12,6 +12,10 @@ a 'remote', is used to connect to the server and instruct it what to do.
 PMP uses hashes to keep track of music files, so it can deal with moved/renamed
 and duplicate files without any problems.
 
+PMP is portable software and should be compatible with most popular operating
+systems in use today. I have only tested Windows and Linux, but others like
+Mac OS X, BSD... should be supported as well.
+
 The software is licenced under GPLv3.
 
 Rudimentary project website:  http://hyperquantum.be/pmp/
@@ -180,11 +184,12 @@ things to be missing or not working correctly ;)
  * Etc.
 
 
-7. PLANNED FEATURES
--------------------
+7. PLANNED FEATURES / TO-DO's
+-----------------------------
 
 No guarantees here!  This is more like a TO-DO list.
 
+ * Get music from a user-defined location, not the 'bin' directory
  * Button in remote to manually add more tracks from dynamic mode
  * 'Trim queue' button in remote
  * Differentiate between different users by having them authenticate themselves
@@ -193,10 +198,12 @@ No guarantees here!  This is more like a TO-DO list.
  * Last.fm scrobbling (in personal mode)
  * Syncronization of music databases across different machines
  * Handling of two files that are the same track but have a different hash
+ * Search functionality with fuzzy matching option
  * Find a way to identify artists
  * Dynamic mode: avoid repeating the same artist within a certain timespan
  * Bridging of PMP server instances, to access music from another machine
  * Naming a PMP Server instance; e.g. "living room"
  * Support for other formats than just MP3
+ * Manual song play to a second audio device (for headphones)
  * Support for other database providers than MySQL
 
