@@ -187,7 +187,7 @@ things to be missing or not working correctly ;)
 7. PLANNED FEATURES / TO-DO's
 -----------------------------
 
-No guarantees here!  This is more like a TO-DO list.
+Only a list of ideas.  No promises!
 
  * Get music from a user-defined location, not the 'bin' directory
  * Button in remote to manually add more tracks from dynamic mode
@@ -201,6 +201,8 @@ No guarantees here!  This is more like a TO-DO list.
  * Search functionality with fuzzy matching option
  * Find a way to identify artists
  * Dynamic mode: avoid repeating the same artist within a certain timespan
+ * Silence detection at the start and end of each track
+ * Crossfading
  * Bridging of PMP server instances, to access music from another machine
  * Naming a PMP Server instance; e.g. "living room"
  * Support for other formats than just MP3
