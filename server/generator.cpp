@@ -224,7 +224,7 @@ namespace PMP {
         int trackLengthSeconds = audioData.trackLength();
 
         /* is it a real track, not a short sound file? */
-        if (trackLengthSeconds < 10 && trackLengthSeconds >= 0) return false;
+        if (trackLengthSeconds < 15 && trackLengthSeconds >= 0) return false;
 
         candidate->setLengthSeconds(trackLengthSeconds);
 
