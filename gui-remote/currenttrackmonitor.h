@@ -72,6 +72,7 @@ namespace PMP {
         int _volume;
         quint32 _nowPlayingQID;
         quint64 _nowPlayingPosition; // milliseconds
+        bool _receivedTrackInfo;
         int _nowPlayingLengthSeconds;
         QString _nowPlayingTitle;
         QString _nowPlayingArtist;

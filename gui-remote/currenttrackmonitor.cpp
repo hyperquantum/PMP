@@ -31,7 +31,8 @@ namespace PMP {
     CurrentTrackMonitor::CurrentTrackMonitor(ServerConnection* connection)
      : QObject(connection),
         _connection(connection), _state(ServerConnection::UnknownState), _volume(-1),
-        _nowPlayingQID(0), _nowPlayingPosition(0), _nowPlayingLengthSeconds(-1),
+        _nowPlayingQID(0), _nowPlayingPosition(0),
+        _receivedTrackInfo(false), _nowPlayingLengthSeconds(-1),
         _timer(new QTimer(this)), _elapsedTimer(new QElapsedTimer()), _timerPosition(0)
     {
         connect(_connection, SIGNAL(connected()), this, SLOT(connected()));
@@ -63,6 +64,7 @@ namespace PMP {
         _volume = -1;
         _nowPlayingQID = 0;
         _nowPlayingPosition = 0;
+        _receivedTrackInfo = false;
         _nowPlayingLengthSeconds = -1;
         _nowPlayingTitle = "";
         _nowPlayingArtist = "";
@@ -83,6 +85,7 @@ namespace PMP {
         bool positionChanged = nowPlayingPosition != _nowPlayingPosition;
 
         if (trackChanged && nowPlayingQID > 0) {
+            _receivedTrackInfo = false;
             _nowPlayingLengthSeconds = -1;
             _nowPlayingTitle = "";
             _nowPlayingArtist = "";
@@ -137,14 +140,20 @@ namespace PMP {
     {
         if (queueID != _nowPlayingQID) return;
 
-        if (lengthInSeconds != _nowPlayingLengthSeconds) {
+        bool alreadyReceivedInfo = _receivedTrackInfo;
+        _receivedTrackInfo = true;
+        qDebug() << "CurrentTrackMonitor::receivedTrackInfo  artist:" << artist << " title:" << title;
+
+        if (/*!alreadyReceivedInfo || */lengthInSeconds != _nowPlayingLengthSeconds) {
             _nowPlayingLengthSeconds = lengthInSeconds;
             if (lengthInSeconds >= 0) {
                 emit trackProgress(queueID, _timerPosition, lengthInSeconds);
             }
         }
 
-        if (title != _nowPlayingTitle || artist != _nowPlayingArtist) {
+        if (!alreadyReceivedInfo /* send it even if it's empty */
+            || title != _nowPlayingTitle || artist != _nowPlayingArtist)
+        {
             _nowPlayingTitle = title;
             _nowPlayingArtist = artist;
             emit receivedTitleArtist(title, artist);
