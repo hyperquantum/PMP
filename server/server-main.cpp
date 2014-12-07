@@ -27,6 +27,7 @@
 #include "queue.h"
 #include "resolver.h"
 #include "server.h"
+#include "serversettings.h"
 
 #include <QCoreApplication>
 #include <QDirIterator>
@@ -51,6 +52,28 @@ int main(int argc, char *argv[]) {
     //foreach (const QString &path, app.libraryPaths())
     //    out << " LIB PATH : " << path << endl;
 
+    QStringList musicPaths;
+    {
+        ServerSettings serversettings;
+        QSettings& settings = serversettings.getSettings();
+
+        QVariant musicPathsSetting = settings.value("media/scan_directories");
+        if (!musicPathsSetting.isValid() || musicPathsSetting.toStringList().empty()) {
+            musicPaths.append("C:/My/Music/Collection");
+            musicPaths.append("C:/Our/Shared/Music");
+            settings.setValue("media/scan_directories", musicPaths);
+            out << "No music paths set.  Check the settings file." << endl << endl;
+        }
+        else {
+            musicPaths = musicPathsSetting.toStringList();
+            out << "Music paths to scan:" << endl;
+            Q_FOREACH(QString path, musicPaths) {
+                out << "  " << path << endl;
+            }
+            out << endl;
+        }
+    }
+
     Database::init(out);
 
     FileData song =
@@ -71,22 +94,29 @@ int main(int argc, char *argv[]) {
     History history(&player);
 
     Generator generator(&queue, &resolver, &history);
-    QObject::connect(&player, SIGNAL(currentTrackChanged(QueueEntry const*)), &generator, SLOT(currentTrackChanged(QueueEntry const*)));
+    QObject::connect(
+        &player, SIGNAL(currentTrackChanged(QueueEntry const*)),
+        &generator, SLOT(currentTrackChanged(QueueEntry const*))
+    );
 
-    QDirIterator it(".", QDirIterator::Subdirectories | QDirIterator::FollowSymlinks);
-    while (it.hasNext()) {
-        QFileInfo entry(it.next());
-        if (!entry.isFile()) continue;
+    musicPaths.append("."); /* temporary, for backwards compatibility */
 
-        if (!FileData::supportsExtension(entry.suffix())) continue;
+    Q_FOREACH(QString musicPath, musicPaths) {
+        QDirIterator it(musicPath, QDirIterator::Subdirectories/* | QDirIterator::FollowSymlinks */);
+        while (it.hasNext()) {
+            QFileInfo entry(it.next());
+            if (!entry.isFile()) continue;
 
-        QString path = entry.absoluteFilePath();
+            if (!FileData::supportsExtension(entry.suffix())) continue;
 
-        qDebug() << "starting background analysis of" << path;
+            QString path = entry.absoluteFilePath();
 
-        FileAnalysisTask* task = new FileAnalysisTask(path);
-        resolver.connect(task, SIGNAL(finished(QString, FileData*)), &resolver, SLOT(analysedFile(QString, FileData*)));
-        QThreadPool::globalInstance()->start(task);
+            qDebug() << "starting background analysis of" << path;
+
+            FileAnalysisTask* task = new FileAnalysisTask(path);
+            resolver.connect(task, SIGNAL(finished(QString, FileData*)), &resolver, SLOT(analysedFile(QString, FileData*)));
+            QThreadPool::globalInstance()->start(task);
+        }
     }
 
     generator.enable();

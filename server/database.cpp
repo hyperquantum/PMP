@@ -21,8 +21,8 @@
 
 #include "common/hashid.h"
 
-#include <QCoreApplication>
-#include <QSettings>
+#include "serversettings.h"
+
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
@@ -37,10 +37,8 @@ namespace PMP {
     bool Database::init(QTextStream& out) {
         out << "initializing database" << endl;
 
-        QSettings settings(QSettings::IniFormat, QSettings::UserScope,
-                           QCoreApplication::organizationName(),
-                           QCoreApplication::applicationName());
-        settings.setIniCodec("UTF-8");
+        ServerSettings serversettings;
+        QSettings& settings = serversettings.getSettings();
 
         bool incompleteDbSettings = false;
 

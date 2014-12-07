@@ -48,6 +48,7 @@ set(PMP_SERVER_SOURCES
     server/resolver.cpp
     server/server.cpp
     server/server-main.cpp
+    server/serversettings.cpp
 )
 set(PMP_SERVER_HEADERS
     server/connectedclient.h
@@ -60,6 +61,7 @@ set(PMP_SERVER_HEADERS
     server/queueentry.h
     server/resolver.h
     server/server.h
+    server/serversettings.h
 )
 
 set(PMP_GUI_REMOTE_SOURCES
