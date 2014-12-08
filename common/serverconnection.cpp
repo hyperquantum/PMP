@@ -295,6 +295,17 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ServerConnection::sendPossibleFilenamesRequest(uint queueID) {
+        qDebug() << "sending request for possible filenames of QID" << queueID;
+
+        QByteArray message;
+        message.reserve(6);
+        NetworkUtil::append2Bytes(message, 7); /* message type */
+        NetworkUtil::append4Bytes(message, queueID);
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::shutdownServer() {
         if (!_binarySendingMode) {
             return; /* too early for that */
@@ -613,11 +624,27 @@ namespace PMP {
             emit dynamicModeStatusReceived(isEnabled > 0, noRepetitionSpan);
         }
             break;
-//        case 9: /*  */
-//        {
-//
-//        }
-//            break;
+        case 9: /* possible filenames for a QID */
+        {
+            if (messageLength < 6) return; /* invalid message */
+
+            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+
+            QList<QString> names;
+            int offset = 6;
+            while (offset < messageLength) {
+                if (offset > messageLength - 4) return; /* invalid message */
+                quint32 nameLength = NetworkUtil::get4Bytes(message, offset);
+                offset += 4;
+                if (nameLength + (uint)offset > (uint)messageLength) return; /* invalid message */
+                QString name = NetworkUtil::getUtf8String(message, offset, nameLength);
+                offset += nameLength;
+                names.append(name);
+            }
+
+            emit receivedPossibleFilenames(queueID, names);
+        }
+            break;
         default:
             qDebug() << "unknown binary message type" << messageType;
             break; /* unknown message type */

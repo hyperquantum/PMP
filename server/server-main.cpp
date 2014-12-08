@@ -76,18 +76,18 @@ int main(int argc, char *argv[]) {
 
     Database::init(out);
 
-    FileData song =
-        FileData::create(
-            HashID(
-                4018772,
-                QByteArray::fromHex("b27e235c22f43a25a76a4b4916f7298359b7ed25"),
-                QByteArray::fromHex("b72e952ef61b3d69c649791b6ed583d4")
-            ),
-            "Gladys Knight", "License To Kill"
-        );
+//    FileData song =
+//        FileData::create(
+//            HashID(
+//                4018772,
+//                QByteArray::fromHex("b27e235c22f43a25a76a4b4916f7298359b7ed25"),
+//                QByteArray::fromHex("b72e952ef61b3d69c649791b6ed583d4")
+//            ),
+//            "Gladys Knight", "License To Kill"
+//        );
 
     Resolver resolver;
-    resolver.registerData(song);
+//    resolver.registerData(song);
 
     Player player(0, &resolver);
     Queue& queue = player.queue();

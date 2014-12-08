@@ -82,7 +82,7 @@ namespace PMP {
         }
 
         /* create schema if needed */
-        QSqlQuery q;
+        QSqlQuery q(db);
         q.prepare("CREATE DATABASE IF NOT EXISTS pmp; USE pmp;");
         if (!q.exec()) {
             out << " database initialization problem: " << db.lastError().text() << endl << endl;
@@ -181,7 +181,7 @@ namespace PMP {
         q.addBindValue(md5);
 
         if (!q.exec()) { /* error */
-            qDebug() << "Database::registerHashID : could not execute; " << q.lastError().text() << endl;
+            qDebug() << "Database::registerHash : could not execute; " << q.lastError().text() << endl;
         }
     }
 
@@ -255,7 +255,7 @@ namespace PMP {
         q.addBindValue(filenameWithoutPath);
         int i;
         if (!executeScalar(q, i)) {
-            qDebug() << "Database::getHashes : could not execute; " << q.lastError().text() << endl;
+            qDebug() << "Database::registerFilename : could not execute; " << q.lastError().text() << endl;
             return;
         }
 
@@ -268,9 +268,32 @@ namespace PMP {
         q.addBindValue(hashID);
         q.addBindValue(filenameWithoutPath);
         if (!q.exec()) {
-            qDebug() << "Database::getHashes : could not execute; " << q.lastError().text() << endl;
+            qDebug() << "Database::registerFilename : could not execute; " << q.lastError().text() << endl;
             return;
         }
+    }
+
+    QList<QString> Database::getFilenames(uint hashID) {
+        QSqlQuery q;
+        q.prepare(
+            "SELECT `FilenameWithoutDir` FROM pmp_filename"
+            " WHERE HashID=?"
+        );
+        q.addBindValue(hashID);
+
+        QList<QString> result;
+
+        if (!q.exec()) { /* error */
+            qDebug() << "Database::getFilenames : could not execute; " << q.lastError().text() << endl;
+            return result;
+        }
+
+        while (q.next()) {
+            QString name = q.value(0).toString();
+            result.append(name);
+        }
+
+        return result;
     }
 
     bool Database::executeScalar(QSqlQuery& q, int& i, const int& defaultValue) {

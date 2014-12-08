@@ -21,15 +21,19 @@
 
 #include "common/serverconnection.h"
 
+#include <cstdlib>
 #include <QDebug>
 #include <QtGlobal>
 #include <QTimer>
 
 namespace PMP {
 
-    TrackMonitor::TrackMonitor(quint32 queueID/*, int position*/)
-     : _queueID(queueID), //_position(position),
-       _infoRequestedAlready(queueID == 0), _lengthSeconds(-1)
+    TrackMonitor::TrackMonitor(QObject* parent, ServerConnection* connection,
+                               quint32 queueID/*, int position*/)
+     : QObject(parent),
+       _connection(connection), _queueID(queueID), //_position(position),
+       _infoRequestedAlready(queueID == 0), _askedForFilename(false),
+       _lengthSeconds(-1)
     {
         //
     }
@@ -44,18 +48,16 @@ namespace PMP {
     int TrackMonitor::lengthInSeconds() {
         if (!_infoRequestedAlready) {
             _infoRequestedAlready = true;
-            emit pleaseAskForMyInfo(_queueID);
+            _connection->sendTrackInfoRequest(_queueID);
         }
 
         return _lengthSeconds;
     }
 
     QString TrackMonitor::title() {
-        //qDebug() << "TrackMonitor::title() called for queueID " << _queueID;
-
         if (!_infoRequestedAlready) {
             _infoRequestedAlready = true;
-            emit pleaseAskForMyInfo(_queueID);
+            _connection->sendTrackInfoRequest(_queueID);
         }
 
         return _title;
@@ -64,13 +66,15 @@ namespace PMP {
     QString TrackMonitor::artist() {
         if (!_infoRequestedAlready) {
             _infoRequestedAlready = true;
-            emit pleaseAskForMyInfo(_queueID);
+            _connection->sendTrackInfoRequest(_queueID);
         }
 
         return _artist;
     }
 
-    bool TrackMonitor::setInfo(int lengthInSeconds, QString const& title, QString const& artist) {
+    bool TrackMonitor::setInfo(int lengthInSeconds, QString const& title,
+                               QString const& artist)
+    {
         bool changed =
             _lengthSeconds != lengthInSeconds || _title != title || _artist != artist;
 
@@ -80,8 +84,51 @@ namespace PMP {
         _title = title;
         _artist = artist;
 
+        if (title.trimmed() == "" && !_askedForFilename) {
+            _askedForFilename = true;
+            _connection->sendPossibleFilenamesRequest(_queueID);
+        }
+
         emit infoChanged();
         return true;
+    }
+
+    bool TrackMonitor::setPossibleFilenames(QList<QString> const& names) {
+        if (names.empty()) return false;
+
+        int shortestLength = names[0].length();
+        int longestLength = names[0].length();
+
+        int limit = 20;
+        Q_FOREACH(QString name, names) {
+            if (name.length() < shortestLength) shortestLength = name.length();
+            else if (name.length() > longestLength) longestLength = name.length();
+
+            if (--limit <= 0) break;
+        }
+
+        /* Avoid a potential overflow, don't add shortest and longest, the result does not
+           need to be exact. */
+        int middleLength = (shortestLength + 1) / 2 + (longestLength + 1) / 2;
+
+        QString middle = names[0];
+
+        limit = 10;
+        Q_FOREACH(QString name, names) {
+            int diff = std::abs(name.length() - middleLength);
+            int oldDiff = std::abs(middle.length() - middleLength);
+
+            if (diff < oldDiff) middle = name;
+
+            if (--limit <= 0) break;
+        }
+
+        if (_title.trimmed() == "" && _title != middle) {
+            _title = middle;
+            return true;
+        }
+
+        return false;
     }
 
     void TrackMonitor::notifyInfoRequestedAlready() {
@@ -97,10 +144,26 @@ namespace PMP {
        _trackChangeEventPending(false)
     {
         connect(_connection, SIGNAL(connected()), this, SLOT(connected()));
-        connect(_connection, SIGNAL(receivedQueueContents(int, int, QList<quint32>)), this, SLOT(receivedQueueContents(int, int, QList<quint32>)));
-        connect(_connection, SIGNAL(queueEntryRemoved(quint32, quint32)), this, SLOT(queueEntryRemoved(quint32, quint32)));
-        connect(_connection, SIGNAL(queueEntryAdded(quint32, quint32)), this, SLOT(queueEntryAdded(quint32, quint32)));
-        connect(_connection, SIGNAL(receivedTrackInfo(quint32, int, QString, QString)), this, SLOT(receivedTrackInfo(quint32, int, QString, QString)));
+        connect(
+            _connection, SIGNAL(receivedQueueContents(int, int, QList<quint32>)),
+            this, SLOT(receivedQueueContents(int, int, QList<quint32>))
+        );
+        connect(
+            _connection, SIGNAL(queueEntryRemoved(quint32, quint32)),
+            this, SLOT(queueEntryRemoved(quint32, quint32))
+        );
+        connect(
+            _connection, SIGNAL(queueEntryAdded(quint32, quint32)),
+            this, SLOT(queueEntryAdded(quint32, quint32))
+        );
+        connect(
+            _connection, SIGNAL(receivedTrackInfo(quint32, int, QString, QString)),
+            this, SLOT(receivedTrackInfo(quint32, int, QString, QString))
+        );
+        connect(
+            _connection, SIGNAL(receivedPossibleFilenames(quint32, QList<QString>)),
+            this, SLOT(receivedPossibleFilenames(quint32, QList<QString>))
+        );
 
         if (_connection->isConnected()) {
             connected();
@@ -331,8 +394,7 @@ namespace PMP {
         TrackMonitor* t = _tracks[queueID];
 
         if (t == 0) {
-            t = new TrackMonitor(queueID);
-            connect(t, SIGNAL(pleaseAskForMyInfo(quint32)), _connection, SLOT(sendTrackInfoRequest(quint32)));
+            t = new TrackMonitor(this, _connection, queueID);
             _tracks[queueID] = t;
         }
 
@@ -342,19 +404,21 @@ namespace PMP {
     void QueueMonitor::emitTracksChangedSignal() {
         _trackChangeEventPending = false;
 
-        /* kinda dumb, we signal that all rows have changed */
+        /* Kinda dumb, we signal that all rows have changed.
+           We do this because we don't track the queue index of each QID. */
         if (_queueLengthSent > 0) {
             emit tracksChanged(0, _queueLengthSent - 1);
         }
     }
 
-    void QueueMonitor::receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist) {
+    void QueueMonitor::receivedTrackInfo(quint32 queueID, int lengthInSeconds,
+                                         QString title, QString artist)
+    {
         TrackMonitor* t = trackFromID(queueID);
 
         bool change = false;
         if (t == 0) {
-            t = new TrackMonitor(queueID);
-            connect(t, SIGNAL(pleaseAskForMyInfo(quint32)), _connection, SLOT(sendTrackInfoRequest(quint32)));
+            t = new TrackMonitor(this, _connection, queueID);
             _tracks[queueID] = t;
             change = true;
         }
@@ -365,6 +429,18 @@ namespace PMP {
         if (change && !_trackChangeEventPending) {
             _trackChangeEventPending = true;
             QTimer::singleShot(200, this, SLOT(emitTracksChangedSignal()));
+        }
+    }
+
+    void QueueMonitor::receivedPossibleFilenames(quint32 queueID, QList<QString> names) {
+        TrackMonitor* t = trackFromID(queueID);
+        if (t != 0) {
+            bool change = t->setPossibleFilenames(names);
+
+            if (change&& !_trackChangeEventPending) {
+                _trackChangeEventPending = true;
+                QTimer::singleShot(200, this, SLOT(emitTracksChangedSignal()));
+            }
         }
     }
 

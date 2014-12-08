@@ -22,10 +22,12 @@
 #include "common/hashid.h"
 #include "common/networkutil.h"
 
+#include "database.h"
 #include "generator.h"
 //#include "player.h"
 #include "queue.h"
 #include "queueentry.h"
+#include "resolver.h"
 #include "server.h"
 
 namespace PMP {
@@ -416,6 +418,24 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendPossibleTrackFilenames(quint32 queueID,
+                                                     QList<QString> const& names)
+    {
+        QByteArray message;
+        //message.reserve(2 + );
+        NetworkUtil::append2Bytes(message, 9);
+
+        NetworkUtil::append4Bytes(message, queueID);
+
+        Q_FOREACH(QString name, names) {
+            QByteArray nameBytes = name.toUtf8();
+            NetworkUtil::append4Bytes(message, nameBytes.size());
+            message += nameBytes;
+        }
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::volumeChanged(int volume) {
         sendVolumeMessage();
     }
@@ -550,7 +570,7 @@ namespace PMP {
                 break; /* message not complete yet */
             }
 
-            qDebug() << "received complete binary message with length" << messageLength;
+            //qDebug() << "received complete binary message with length" << messageLength;
 
             _socket->read(lengthBytes, sizeof(lengthBytes)); /* consume the length */
             QByteArray message = _socket->read(messageLength);
@@ -568,7 +588,6 @@ namespace PMP {
         }
 
         int messageType = NetworkUtil::get2Bytes(message, 0);
-        qDebug() << " binary message has type" << messageType;
 
         switch (messageType) {
         case 1: /* single-byte action message */
@@ -578,40 +597,48 @@ namespace PMP {
             }
 
             quint8 actionType = NetworkUtil::getByte(message, 2);
-            qDebug() << "  single byte action with type" << actionType;
 
             if (actionType >= 100 && actionType <= 200) {
+                qDebug() << "received CHANGE VOLUME command, volume" << ((int)actionType - 100);
                 _player->setVolume(actionType - 100);
                 break;
             }
 
             switch(actionType) {
             case 1:
+                qDebug() << "received PLAY command";
                 _player->play();
                 break;
             case 2:
+                qDebug() << "received PAUSE command";
                 _player->pause();
                 break;
             case 3:
+                qDebug() << "received SKIP command";
                 _player->skip();
                 break;
             case 10: /* request for state info */
+                qDebug() << "received request for player status";
                 sendStateInfo();
                 break;
             case 11: /* request for status of dynamic mode */
+                qDebug() << "received request for dynamic mode status";
                 sendDynamicModeStatusMessage();
                 break;
             case 20: /* enable dynamic mode */
+                qDebug() << "received ENABLE DYNAMIC MODE command";
                 _generator->enable();
                 break;
             case 21: /* disable dynamic mode */
+                qDebug() << "received DISABLE DYNAMIC MODE command";
                 _generator->disable();
                 break;
             case 99:
+                qDebug() << "received SHUTDOWN command";
                 _server->shutdown();
                 break;
             default:
-                qDebug() << "unrecognized single-byte action type:" << (int)actionType;
+                qDebug() << "received unrecognized single-byte action type:" << (int)actionType;
                 break; /* unknown action type */
             }
         }
@@ -667,6 +694,8 @@ namespace PMP {
             quint32 startOffset = NetworkUtil::get4Bytes(message, 2);
             quint8 length = NetworkUtil::getByte(message, 6);
 
+            qDebug() << "received queue fetch request; offset:" << startOffset << "  length:" << length;
+
             sendQueueContentMessage(startOffset, length);
         }
             break;
@@ -677,6 +706,7 @@ namespace PMP {
             }
 
             quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+            qDebug() << "received removal request for QID" << queueID;
 
             if (queueID <= 0) {
                 return; /* invalid queue ID */
@@ -692,6 +722,8 @@ namespace PMP {
             }
 
             qint32 intervalMinutes = (qint32)NetworkUtil::get4Bytes(message, 2);
+            qDebug() << "received change request for generator non-repetition interval;  minutes:" << intervalMinutes;
+
             if (intervalMinutes < 0) {
                 return; /* invalid message */
             }
@@ -699,8 +731,47 @@ namespace PMP {
             _generator->setNoRepetitionSpan(intervalMinutes);
         }
             break;
+        case 7: /* request for possible filenames of a QID */
+        {
+            if (messageLength != 6) {
+                return; /* invalid message */
+            }
+
+            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+            qDebug() << "received request for possible filenames of QID" << queueID;
+
+            if (queueID <= 0) {
+                return; /* invalid queue ID */
+            }
+
+            QueueEntry* entry = _player->queue().lookup(queueID);
+            if (entry == 0) {
+                return; /* not found :-/ */
+            }
+
+            const HashID* hash = entry->hash();
+            if (hash == 0) {
+                /* hash not found */
+                /* TODO: register callback to resume this once the hash becomes known */
+                return;
+            }
+
+            uint hashID = _player->resolver().getID(*hash);
+
+            /* FIXME: do this in another thread, it will slow down the main thread */
+
+            Database* db = Database::instance();
+            if (db == 0) {
+                return; /* database unusable */
+            }
+
+            QList<QString> filenames = db->getFilenames(hashID);
+
+            sendPossibleTrackFilenames(queueID, filenames);
+        }
+            break;
         default:
-            qDebug() << "unknown binary message type" << messageType;
+            qDebug() << "received unknown binary message type" << messageType << " with length" << messageLength;
             break; /* unknown message type */
         }
     }

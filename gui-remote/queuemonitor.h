@@ -26,12 +26,13 @@
 
 namespace PMP {
 
+    class QueueMonitor;
     class ServerConnection;
 
     class TrackMonitor : public QObject {
         Q_OBJECT
     public:
-        TrackMonitor(quint32 queueID/*, int position*/);
+        TrackMonitor(QObject* parent, ServerConnection* connection, quint32 queueID);
 
         quint32 queueID() const { return _queueID; }
 
@@ -43,18 +44,20 @@ namespace PMP {
         QString artist();
 
         bool setInfo(int lengthInSeconds, QString const& title, QString const& artist);
+        bool setPossibleFilenames(QList<QString> const& names);
 
     public slots:
         void notifyInfoRequestedAlready();
 
     Q_SIGNALS:
-        void pleaseAskForMyInfo(quint32 queueID);
         void infoChanged();
 
     private:
+        ServerConnection* _connection;
         quint32 _queueID;
         //int _position;
         bool _infoRequestedAlready;
+        bool _askedForFilename;
         int _lengthSeconds;
         QString _title;
         QString _artist;
@@ -79,11 +82,15 @@ namespace PMP {
 
     private slots:
         void connected();
-        void receivedQueueContents(int queueLength, int startOffset, QList<quint32> queueIDs);
+        void receivedQueueContents(int queueLength, int startOffset,
+                                   QList<quint32> queueIDs);
         void queueEntryAdded(quint32 offset, quint32 queueID);
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         //void trackIsAtPosition(quint32 queueID, int index);
-        void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist);
+        void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title,
+                               QString artist);
+        void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
+
         void emitTracksChangedSignal();
         void sendNextSlotBatchRequest(int size);
         void sendBulkTrackInfoRequest(QList<quint32> IDs);

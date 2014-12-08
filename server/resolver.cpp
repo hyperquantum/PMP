@@ -181,6 +181,10 @@ namespace PMP {
         return _hashList[randomIndex];
     }
 
+    uint Resolver::getID(const HashID& hash) const {
+        return _hashToID.value(hash, 0);
+    }
+
     void Resolver::analysedFile(QString filename, FileData* data) {
         if (data != 0) {
             qDebug() << "file analysis complete:" << filename;

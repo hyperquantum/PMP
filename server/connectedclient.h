@@ -69,6 +69,7 @@ namespace PMP {
         void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
         void sendTrackInfoMessage(quint32 queueID);
         void sendTrackInfoMessage(QList<quint32> const& queueIDs);
+        void sendPossibleTrackFilenames(quint32 queueID, QList<QString> const& names);
         void handleBinaryMessage(QByteArray const& message);
 
         QTcpSocket* _socket;
