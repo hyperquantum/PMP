@@ -108,8 +108,9 @@ namespace PMP {
         }
 
         /* Avoid a potential overflow, don't add shortest and longest, the result does not
-           need to be exact. */
-        int middleLength = (shortestLength + 1) / 2 + (longestLength + 1) / 2;
+           need to be exact.
+           Also, if there are only two possibilities, we favor the longest. */
+        int middleLength = (shortestLength + 1) / 2 + (longestLength + 1) / 2 + 1;
 
         QString middle = names[0];
 
