@@ -70,10 +70,12 @@ cp "$DIST_DIR"/*LICENSE* "$INCR_TMPDIR"/
 cp "$DIST_DIR"/README* "$INCR_TMPDIR"/
 
 # (4) create zip files
-echo "Creating archives..."
+echo "Creating full archive..."
 zip -r -q "$ZIP_FILE" "$DIST_DIR"/* \
-  && rm -rf "$DIST_DIR" \
-  && mv "$INCR_TMPDIR" "$DIST_DIR" \
+  && rm -rf "$DIST_DIR" || exit
+
+echo "Creating incremental archive..."
+mv "$INCR_TMPDIR" "$DIST_DIR" \
   && zip -r -q "$INCR_ZIP" "$DIST_DIR"/* \
   && rm -rf "$DIST_DIR" || exit
 
