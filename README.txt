@@ -75,12 +75,18 @@ found here:
 
   C:\Users\username\AppData\Roaming\Party Music Player\Party Music Player - Server.ini
 
+You also need to tell PMP where to look for music files. This is done in the
+configuration file as well.
+
 An example configuration:
 
   [database]
   hostname=localhost
   username=root
   password=mysecretpassword
+  
+  [media]
+  scan_directories=C:/Users/myname/Music, C:/Users/Public/Music
 
 
 4. DEPENDENCIES FOR BUILDING
