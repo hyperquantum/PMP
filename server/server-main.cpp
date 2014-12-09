@@ -32,9 +32,30 @@
 #include <QCoreApplication>
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QStandardPaths>
 #include <QThreadPool>
 
 using namespace PMP;
+
+QStringList generateDefaultScanPaths() {
+    QStringList paths;
+    paths.reserve(3);
+
+    paths.append(QStandardPaths::standardLocations(QStandardPaths::MusicLocation));
+
+    QStringList documentsPaths =
+        QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation);
+    paths.append(documentsPaths);
+
+    /* Qt <5.3 returns the documents location as downloads location */
+    QStringList downloadsPaths =
+        QStandardPaths::standardLocations(QStandardPaths::DownloadLocation);
+    Q_FOREACH(QString path, downloadsPaths) {
+        if (!documentsPaths.contains(path)) paths.append(path);
+    }
+
+    return paths;
+}
 
 int main(int argc, char *argv[]) {
 
@@ -59,19 +80,19 @@ int main(int argc, char *argv[]) {
 
         QVariant musicPathsSetting = settings.value("media/scan_directories");
         if (!musicPathsSetting.isValid() || musicPathsSetting.toStringList().empty()) {
-            musicPaths.append("C:/My/Music/Collection");
-            musicPaths.append("C:/Our/Shared/Music");
+            out << "No music paths set.  Setting default paths." << endl << endl;
+            musicPaths = generateDefaultScanPaths();
             settings.setValue("media/scan_directories", musicPaths);
-            out << "No music paths set.  Check the settings file." << endl << endl;
         }
         else {
             musicPaths = musicPathsSetting.toStringList();
-            out << "Music paths to scan:" << endl;
-            Q_FOREACH(QString path, musicPaths) {
-                out << "  " << path << endl;
-            }
-            out << endl;
         }
+
+        out << "Music paths to scan:" << endl;
+        Q_FOREACH(QString path, musicPaths) {
+            out << "  " << path << endl;
+        }
+        out << endl;
     }
 
     Database::init(out);
