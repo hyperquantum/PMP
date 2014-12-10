@@ -180,8 +180,6 @@ things to be missing or not working correctly ;)
     --> because hashing is only implemented for MP3 files at this time
  * Database requires MySQL (maybe MariaDB), SQLite is not an option
  * No manual selection of tracks yet, only dynamic mode
- * No configuration yet of where to find music files, the PMP 'bin' directory is
-   the only location used right now
  * No scanning yet for new/modified files while the server is running, only a
    simple indexation is performed when the server is started
  * Only limited queue manipulation supported: deleting yes, moving no
