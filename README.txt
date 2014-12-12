@@ -193,7 +193,6 @@ things to be missing or not working correctly ;)
 
 Only a list of ideas.  No promises!
 
- * Get music from a user-defined location, not the 'bin' directory
  * Button in remote to manually add more tracks from dynamic mode
  * 'Trim queue' button in remote
  * Differentiate between different users by having them authenticate themselves
