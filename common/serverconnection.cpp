@@ -402,7 +402,7 @@ namespace PMP {
                 break; /* message not complete yet */
             }
 
-            qDebug() << "received complete binary message with length" << messageLength;
+            //qDebug() << "received complete binary message with length" << messageLength;
 
             _socket.read(lengthBytes, sizeof(lengthBytes)); /* consume the length */
             QByteArray message = _socket.read(messageLength);
@@ -420,7 +420,6 @@ namespace PMP {
         }
 
         int messageType = NetworkUtil::get2Bytes(message, 0);
-        qDebug() << " binary message has type" << messageType;
 
         switch (messageType) {
         case 1: /* player state message */
@@ -435,8 +434,7 @@ namespace PMP {
             quint32 queueID = NetworkUtil::get4Bytes(message, 8);
             quint64 position = NetworkUtil::get8Bytes(message, 12);
 
-            //qDebug() << "received position bytes" << (quint8)message[12] << (quint8)message[13] << (quint8)message[14] << (quint8)message[15] << (quint8)message[16] << (quint8)message[17] << (quint8)message[18] << (quint8)message[19];
-            //qDebug() << "track position:" << position;
+            qDebug() << "received player state message";
 
             /* FIXME: events too simplistic */
 
@@ -478,6 +476,8 @@ namespace PMP {
 
             quint8 volume = NetworkUtil::getByte(message, 2);
 
+            qDebug() << "received volume changed event;  volume:" << volume;
+
             if (volume <= 100) { emit volumeChanged(volume); }
         }
             break;
@@ -492,9 +492,6 @@ namespace PMP {
             quint32 titleSize = NetworkUtil::get4Bytes(message, 10);
             quint32 artistSize = NetworkUtil::get4Bytes(message, 14);
 
-            //qDebug() << " received track length bytes:" << (uint)(quint8)message[6] << (uint)(quint8)message[7] << (uint)(quint8)message[8] << (uint)(quint8)message[9];
-            //qDebug() << "received track length" << lengthSeconds;
-
             if (queueID == 0) {
                 return; /* invalid message */
             }
@@ -505,6 +502,8 @@ namespace PMP {
 
             QString title = NetworkUtil::getUtf8String(message, 18, titleSize);
             QString artist = NetworkUtil::getUtf8String(message, 18 + titleSize, artistSize);
+
+            qDebug() << "received track info reply;  QID:" << queueID << " seconds:" << lengthSeconds << " title:" << title << " artist:" << artist;
 
             receivedTrackInfo(queueID, lengthSeconds, title, artist);
         }
@@ -551,6 +550,8 @@ namespace PMP {
                 offsets.append(offset);
             }
 
+            qDebug() << "received bulk track info reply;  count:" << offsets.size();
+
             /* now read all track info's */
             foreach(offset, offsets) {
                 quint32 queueID = NetworkUtil::get4Bytes(message, offset);
@@ -585,6 +586,8 @@ namespace PMP {
                 return; /* invalid message */
             }
 
+            qDebug() << "received queue contents;  Q-length:" << queueLength << " offset:" << startOffset << " count:" << queueIDs.size();
+
             emit receivedQueueContents(queueLength, startOffset, queueIDs);
         }
             break;
@@ -596,6 +599,8 @@ namespace PMP {
 
             quint32 offset = NetworkUtil::get4Bytes(message, 2);
             quint32 queueID = NetworkUtil::get4Bytes(message, 6);
+
+            qDebug() << "received queue track removal event;  QID:" << queueID << " offset:" << offset;
 
             emit queueEntryRemoved(offset, queueID);
         }
@@ -609,6 +614,8 @@ namespace PMP {
             quint32 offset = NetworkUtil::get4Bytes(message, 2);
             quint32 queueID = NetworkUtil::get4Bytes(message, 6);
 
+            qDebug() << "received queue track insertion event;  QID:" << queueID << " offset:" << offset;
+
             emit queueEntryAdded(offset, queueID);
         }
             break;
@@ -620,6 +627,8 @@ namespace PMP {
             int noRepetitionSpan = (int)NetworkUtil::get4Bytes(message, 3);
 
             if (noRepetitionSpan < 0) return; /* invalid message */
+
+            qDebug() << "received dynamic mode status:" << (isEnabled > 0 ? "ON" : "OFF");
 
             emit dynamicModeStatusReceived(isEnabled > 0, noRepetitionSpan);
         }
@@ -642,11 +651,13 @@ namespace PMP {
                 names.append(name);
             }
 
+            qDebug() << "received a list of" << names.size() << "possible filenames for QID" << queueID;
+
             emit receivedPossibleFilenames(queueID, names);
         }
             break;
         default:
-            qDebug() << "unknown binary message type" << messageType;
+            qDebug() << "received unknown binary message type" << messageType << " with length" << messageLength;
             break; /* unknown message type */
         }
     }
