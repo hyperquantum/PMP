@@ -173,6 +173,7 @@ namespace PMP {
         qDebug() << "Player::startNext";
 
         QueueEntry* oldNowPlaying = _nowPlaying;
+        if (oldNowPlaying) { _queue.addToHistory(oldNowPlaying); }
         uint oldQueueLength = _queue.length();
 
         while (!_queue.empty()) {
@@ -181,8 +182,7 @@ namespace PMP {
             if (!entry->checkValidFilename(*_resolver, &filename)) {
                 /* error */
                 qDebug() << " skipping unplayable track (could not get filename)";
-                /* TODO: keep in history with failure note */
-                delete entry;
+                _queue.addToHistory(entry); // not played
                 continue;
             }
 
@@ -202,7 +202,7 @@ namespace PMP {
             return true;
         }
 
-        /* stopped */
+        /* we stop because we have nothing left to play */
 
         changeState(Stopped);
         _player->stop();

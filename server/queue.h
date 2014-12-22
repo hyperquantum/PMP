@@ -37,6 +37,10 @@ namespace PMP {
     class Queue : public QObject {
         Q_OBJECT
     public:
+        enum HistoryType {
+            Played, Skipped, Error
+        };
+
         Queue(Resolver* resolver);
 
         bool checkPotentialRepetitionByAdd(const HashID& hash,
@@ -61,6 +65,8 @@ namespace PMP {
 
         QueueEntry* lookup(quint32 queueID);
 
+        void addToHistory(QueueEntry* entry/*, HistoryType historyType*/);
+
     Q_SIGNALS:
         void entryAdded(quint32 offset, quint32 queueID);
         void entryRemoved(quint32 offset, quint32 queueID);
@@ -74,6 +80,7 @@ namespace PMP {
         uint _nextQueueID;
         QHash<quint32, QueueEntry*> _index;
         QQueue<QueueEntry*> _queue;
+        QQueue<QueueEntry*> _history;
         Resolver* _resolver;
         QTimer* _queueFrontChecker;
     };

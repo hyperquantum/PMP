@@ -122,6 +122,20 @@ namespace PMP {
         return it.value();
     }
 
+    void Queue::addToHistory(QueueEntry* entry/*, Queue::HistoryType historyType*/) {
+        if (!entry) return;
+
+        qDebug() << "adding QID" << entry->queueID() << "to the queue history";
+        _history.enqueue(entry);
+
+        if (_history.size() > 10) {
+            QueueEntry* oldest = _history.dequeue();
+            qDebug() << " deleting QID" << oldest->queueID() << "after removing it from the queue history";
+
+            delete oldest;
+        }
+    }
+
     int Queue::findIndex(quint32 queueID) {
         // FIXME: find a more efficient way to get the index
         int length = _queue.length();
