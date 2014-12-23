@@ -72,7 +72,7 @@ namespace PMP {
         }
 
         /* open connection */
-        QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL");
+        QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL", "PMP_main_dbconn");
         db.setHostName(hostname.toString());
         db.setUserName(user.toString());
         db.setPassword(password.toString());
@@ -162,6 +162,7 @@ namespace PMP {
         }
 
         _instance = new Database();
+        _instance->_db = db;
 
         out << " database initialization completed successfully" << endl << endl;
         return true;
@@ -171,7 +172,7 @@ namespace PMP {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
 
-        QSqlQuery q;
+        QSqlQuery q(_db);
         q.prepare(
             "INSERT IGNORE INTO pmp_hash(InputLength, `SHA1`, `MD5`) "
             "VALUES(?,?,?)"
@@ -180,7 +181,7 @@ namespace PMP {
         q.addBindValue(sha1);
         q.addBindValue(md5);
 
-        if (!q.exec()) { /* error */
+        if (!executeQuery(q)) { /* error */
             qDebug() << "Database::registerHash : could not execute; " << q.lastError().text() << endl;
         }
     }
@@ -189,7 +190,7 @@ namespace PMP {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
 
-        QSqlQuery q;
+        QSqlQuery q(_db);
         q.prepare(
             "SELECT HashID FROM pmp_hash"
             " WHERE InputLength=? AND `SHA1`=? AND `MD5`=?"
@@ -198,7 +199,7 @@ namespace PMP {
         q.addBindValue(sha1);
         q.addBindValue(md5);
 
-        if (!q.exec()) { /* error */
+        if (!executeQuery(q)) { /* error */
             qDebug() << "Database::getHashID : could not execute; " << q.lastError().text() << endl;
             return 0;
         }
@@ -211,7 +212,7 @@ namespace PMP {
     }
 
     QList<QPair<uint,HashID> > Database::getHashes(uint largerThanID) {
-        QSqlQuery q;
+        QSqlQuery q(_db);
         q.prepare(
             "SELECT HashID,InputLength,`SHA1`,`MD5` FROM pmp_hash"
             " WHERE HashID > ? "
@@ -221,7 +222,7 @@ namespace PMP {
 
         QList<QPair<uint,HashID> > result;
 
-        if (!q.exec()) { /* error */
+        if (!executeQuery(q)) { /* error */
             qDebug() << "Database::getHashes : could not execute; " << q.lastError().text() << endl;
             return result;
         }
@@ -245,7 +246,7 @@ namespace PMP {
         /* A race condition could cause duplicate records to be registered; that is
            tolerable however. */
 
-        QSqlQuery q;
+        QSqlQuery q(_db);
         q.prepare(
             "SELECT EXISTS("
             " SELECT * FROM pmp_filename WHERE `HashID`=? AND `FilenameWithoutDir`=? "
@@ -267,14 +268,14 @@ namespace PMP {
         );
         q.addBindValue(hashID);
         q.addBindValue(filenameWithoutPath);
-        if (!q.exec()) {
+        if (!executeQuery(q)) {
             qDebug() << "Database::registerFilename : could not execute; " << q.lastError().text() << endl;
             return;
         }
     }
 
     QList<QString> Database::getFilenames(uint hashID) {
-        QSqlQuery q;
+        QSqlQuery q(_db);
         q.prepare(
             "SELECT `FilenameWithoutDir` FROM pmp_filename"
             " WHERE HashID=?"
@@ -283,7 +284,7 @@ namespace PMP {
 
         QList<QString> result;
 
-        if (!q.exec()) { /* error */
+        if (!executeQuery(q)) { /* error */
             qDebug() << "Database::getFilenames : could not execute; " << q.lastError().text() << endl;
             return result;
         }
@@ -297,7 +298,7 @@ namespace PMP {
     }
 
     bool Database::executeScalar(QSqlQuery& q, int& i, const int& defaultValue) {
-        if (!q.exec()) {
+        if (!executeQuery(q)) {
             i = defaultValue;
             return false;
         }
@@ -314,7 +315,7 @@ namespace PMP {
     }
 
     bool Database::executeScalar(QSqlQuery& q, QString& s, const QString& defaultValue) {
-        if (!q.exec()) {
+        if (!executeQuery(q)) {
             s = defaultValue; // NECESSARY?
             return false;
         }
@@ -328,6 +329,30 @@ namespace PMP {
         }
 
         return true;
+    }
+
+    bool Database::executeQuery(QSqlQuery& q) {
+        if (q.exec()) return true;
+
+        QSqlError error = q.lastError();
+        qDebug() << "Database: query failed:" << error.text();
+        qDebug() << " error type:" << error.type();
+        qDebug() << " error number:" << error.number();
+        qDebug() << " db error:" << error.databaseText();
+        qDebug() << " driver error:" << error.driverText();
+
+        if (!_db.isOpen()) {
+            qDebug() << " connection not open!";
+        }
+
+        if (!_db.isValid()) {
+            qDebug() << " connection not valid!";
+        }
+
+
+
+
+        return false;
     }
 
 }

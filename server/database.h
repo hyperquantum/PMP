@@ -26,6 +26,7 @@
 #include <QObject>
 #include <QPair>
 #include <QString>
+#include <QSqlDatabase>
 #include <QtGlobal>
 
 QT_FORWARD_DECLARE_CLASS(QSqlQuery)
@@ -53,7 +54,11 @@ namespace PMP {
         bool executeScalar(QSqlQuery& q, int& i, const int& defaultValue = 0);
         bool executeScalar(QSqlQuery& q, QString& s, const QString& defaultValue = "");
 
+        bool executeQuery(QSqlQuery& q);
+
         static Database* _instance;
+
+        QSqlDatabase _db;
     };
 }
 #endif
