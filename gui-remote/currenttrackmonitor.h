@@ -48,6 +48,7 @@ namespace PMP {
         void trackProgress(quint64 position);
 
         void receivedTitleArtist(QString title, QString artist);
+        void receivedPossibleFilename(QString name);
 
         void volumeChanged(int percentage);
 
@@ -59,6 +60,8 @@ namespace PMP {
 
         void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title,
                                QString artist);
+
+        void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
 
         void onVolumeChanged(int percentage);
 
@@ -73,9 +76,11 @@ namespace PMP {
         quint32 _nowPlayingQID;
         quint64 _nowPlayingPosition; // milliseconds
         bool _receivedTrackInfo;
+        bool _receivedPossibleFilenames;
         int _nowPlayingLengthSeconds;
         QString _nowPlayingTitle;
         QString _nowPlayingArtist;
+        QString _nowPlayingFilename;
         QTimer* _timer;
         QElapsedTimer* _elapsedTimer;
         quint64 _timerPosition;

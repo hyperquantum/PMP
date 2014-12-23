@@ -67,22 +67,62 @@ namespace PMP {
         connect(_ui->pauseButton, SIGNAL(clicked()), _connection, SLOT(pause()));
         connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
 
-        connect(_ui->dynamicModeCheckBox, SIGNAL(stateChanged(int)), this, SLOT(changeDynamicMode(int)));
-        connect(_ui->noRepetitionComboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(noRepetitionIndexChanged(int)));
-        connect(_connection, SIGNAL(dynamicModeStatusReceived(bool, int)), this, SLOT(dynamicModeStatusReceived(bool, int)));
+        connect(
+            _ui->dynamicModeCheckBox, SIGNAL(stateChanged(int)),
+            this, SLOT(changeDynamicMode(int))
+        );
+        connect(
+            _ui->noRepetitionComboBox, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(noRepetitionIndexChanged(int))
+        );
+        connect(
+            _connection, SIGNAL(dynamicModeStatusReceived(bool, int)),
+            this, SLOT(dynamicModeStatusReceived(bool, int))
+        );
 
-        connect(_currentTrackMonitor, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
-        connect(_ui->volumeIncreaseButton, SIGNAL(clicked()), this, SLOT(increaseVolume()));
-        connect(_ui->volumeDecreaseButton, SIGNAL(clicked()), this, SLOT(decreaseVolume()));
+        connect(
+            _currentTrackMonitor, SIGNAL(volumeChanged(int)),
+            this, SLOT(volumeChanged(int))
+        );
+        connect(
+            _ui->volumeIncreaseButton, SIGNAL(clicked()),
+            this, SLOT(increaseVolume())
+        );
+        connect(
+            _ui->volumeDecreaseButton, SIGNAL(clicked()),
+            this, SLOT(decreaseVolume())
+        );
 
-        connect(_currentTrackMonitor, SIGNAL(playing(quint32)), this, SLOT(playing(quint32)));
-        connect(_currentTrackMonitor, SIGNAL(paused(quint32)), this, SLOT(paused(quint32)));
+        connect(
+            _currentTrackMonitor, SIGNAL(playing(quint32)),
+            this, SLOT(playing(quint32))
+        );
+        connect(
+            _currentTrackMonitor, SIGNAL(paused(quint32)),
+            this, SLOT(paused(quint32))
+        );
         connect(_currentTrackMonitor, SIGNAL(stopped()), this, SLOT(stopped()));
-        connect(_currentTrackMonitor, SIGNAL(trackProgress(quint32, quint64, int)), this, SLOT(trackProgress(quint32, quint64, int)));
-        connect(_currentTrackMonitor, SIGNAL(trackProgress(quint64)), this, SLOT(trackProgress(quint64)));
-        connect(_currentTrackMonitor, SIGNAL(receivedTitleArtist(QString, QString)), this, SLOT(receivedTitleArtist(QString, QString)));
+        connect(
+            _currentTrackMonitor, SIGNAL(trackProgress(quint32, quint64, int)),
+            this, SLOT(trackProgress(quint32, quint64, int))
+        );
+        connect(
+            _currentTrackMonitor, SIGNAL(trackProgress(quint64)),
+            this, SLOT(trackProgress(quint64))
+        );
+        connect(
+            _currentTrackMonitor, SIGNAL(receivedTitleArtist(QString, QString)),
+            this, SLOT(receivedTitleArtist(QString, QString))
+        );
+        connect(
+            _currentTrackMonitor, SIGNAL(receivedPossibleFilename(QString)),
+            this, SLOT(receivedPossibleFilename(QString))
+        );
 
-        connect(_connection, SIGNAL(queueLengthChanged(int)), this, SLOT(queueLengthChanged(int)));
+        connect(
+            _connection, SIGNAL(queueLengthChanged(int)),
+            this, SLOT(queueLengthChanged(int))
+        );
     }
 
     bool MainWidget::eventFilter(QObject* object, QEvent* event) {
@@ -229,6 +269,12 @@ namespace PMP {
              : artistToShow + " " + QChar(0x2013) /* <- EN DASH */ + " " + titleToShow;
 
         _ui->artistTitleLabel->setText(artistTitleToShow);
+    }
+
+    void MainWidget::receivedPossibleFilename(QString name) {
+        if (_nowPlayingTitle.trimmed() == "") {
+            _ui->artistTitleLabel->setText(name);
+        }
     }
 
     void MainWidget::volumeChanged(int percentage) {

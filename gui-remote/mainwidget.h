@@ -53,6 +53,7 @@ namespace PMP {
         void trackProgress(quint32 queueID, quint64 position, int lengthSeconds);
         void trackProgress(quint64 position);
         void receivedTitleArtist(QString title, QString artist);
+        void receivedPossibleFilename(QString name);
 
         void volumeChanged(int percentage);
         void decreaseVolume();

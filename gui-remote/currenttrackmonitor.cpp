@@ -32,7 +32,8 @@ namespace PMP {
      : QObject(connection),
         _connection(connection), _state(ServerConnection::UnknownState), _volume(-1),
         _nowPlayingQID(0), _nowPlayingPosition(0),
-        _receivedTrackInfo(false), _nowPlayingLengthSeconds(-1),
+        _receivedTrackInfo(false), _receivedPossibleFilenames(false),
+        _nowPlayingLengthSeconds(-1),
         _timer(new QTimer(this)), _elapsedTimer(new QElapsedTimer()), _timerPosition(0)
     {
         connect(_connection, SIGNAL(connected()), this, SLOT(connected()));
@@ -45,6 +46,10 @@ namespace PMP {
         connect(
             _connection, SIGNAL(receivedTrackInfo(quint32, int, QString, QString)),
             this, SLOT(receivedTrackInfo(quint32, int, QString, QString))
+        );
+        connect(
+            _connection, SIGNAL(receivedPossibleFilenames(quint32, QList<QString>)),
+            this, SLOT(receivedPossibleFilenames(quint32, QList<QString>))
         );
         connect(
             _connection, SIGNAL(volumeChanged(int)),
@@ -65,9 +70,11 @@ namespace PMP {
         _nowPlayingQID = 0;
         _nowPlayingPosition = 0;
         _receivedTrackInfo = false;
+        _receivedPossibleFilenames = false;
         _nowPlayingLengthSeconds = -1;
         _nowPlayingTitle = "";
         _nowPlayingArtist = "";
+        _nowPlayingFilename = "";
         _timerPosition = 0;
 
         _connection->requestPlayerState();
@@ -86,9 +93,11 @@ namespace PMP {
 
         if (trackChanged && nowPlayingQID > 0) {
             _receivedTrackInfo = false;
+            _receivedPossibleFilenames = false;
             _nowPlayingLengthSeconds = -1;
             _nowPlayingTitle = "";
             _nowPlayingArtist = "";
+            _nowPlayingFilename = "";
             _connection->sendTrackInfoRequest(nowPlayingQID);
         }
 
@@ -157,6 +166,28 @@ namespace PMP {
             _nowPlayingTitle = title;
             _nowPlayingArtist = artist;
             emit receivedTitleArtist(title, artist);
+
+            if (!alreadyReceivedInfo && title.trimmed() == ""
+                && !_receivedPossibleFilenames)
+            {
+                _connection->sendPossibleFilenamesRequest(queueID);
+            }
+        }
+    }
+
+    void CurrentTrackMonitor::receivedPossibleFilenames(quint32 queueID,
+                                                        QList<QString> names)
+    {
+        if (queueID != _nowPlayingQID) return;
+
+        QString longest;
+        Q_FOREACH(QString name, names) {
+            if (name.size() > longest.size()) longest = name;
+        }
+
+        if (_nowPlayingFilename != longest) {
+            _nowPlayingFilename = longest;
+            emit receivedPossibleFilename(longest);
         }
     }
 
