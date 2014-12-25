@@ -47,6 +47,8 @@ namespace PMP {
                                            int repetitionAvoidanceSeconds,
                                            int* nonRepetitionSpan = 0) const;
 
+        uint getNextQueueID();
+
     public slots:
         void clear();
         bool empty() const;

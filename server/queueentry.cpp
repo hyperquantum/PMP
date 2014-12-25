@@ -21,6 +21,7 @@
 
 #include "common/filedata.h"
 
+#include "queue.h"
 #include "resolver.h"
 
 #include <QFileInfo>
@@ -28,22 +29,25 @@
 
 namespace PMP {
 
-    QueueEntry::QueueEntry(uint queueID, QString const& filename)
-     : _queueID(queueID), _filename(filename), _haveFilename(true),
+    QueueEntry::QueueEntry(Queue* parent, QString const& filename)
+     : QObject(parent),
+       _queueID(parent->getNextQueueID()), _filename(filename), _haveFilename(true),
        _fetchedTagData(false)
     {
         //
     }
 
-    QueueEntry::QueueEntry(uint queueID, FileData const& filedata)
-     : _queueID(queueID), _hash(filedata.hash()), _haveFilename(false),
+    QueueEntry::QueueEntry(Queue* parent, FileData const& filedata)
+     : QObject(parent),
+       _queueID(parent->getNextQueueID()), _hash(filedata.hash()), _haveFilename(false),
        _fetchedTagData(true), _tagData(filedata.tags())
     {
         //
     }
 
-    QueueEntry::QueueEntry(uint queueID, HashID const& hash)
-     : _queueID(queueID), _hash(hash), _haveFilename(false),
+    QueueEntry::QueueEntry(Queue* parent, HashID const& hash)
+     : QObject(parent),
+       _queueID(parent->getNextQueueID()), _hash(hash), _haveFilename(false),
        _fetchedTagData(false)
     {
         //

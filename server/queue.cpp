@@ -70,16 +70,20 @@ namespace PMP {
         return _queue.length();
     }
 
+    uint Queue::getNextQueueID() {
+        return _nextQueueID++;
+    }
+
     QueueEntry* Queue::enqueue(QString const& filename) {
-        return enqueue(new QueueEntry(_nextQueueID++, filename));
+        return enqueue(new QueueEntry(this, filename));
     }
 
     QueueEntry* Queue::enqueue(FileData const& filedata) {
-        return enqueue(new QueueEntry(_nextQueueID++, filedata));
+        return enqueue(new QueueEntry(this, filedata));
     }
 
     QueueEntry* Queue::enqueue(HashID const& hash) {
-        return enqueue(new QueueEntry(_nextQueueID++, hash));
+        return enqueue(new QueueEntry(this, hash));
     }
 
     QueueEntry* Queue::enqueue(QueueEntry* entry) {

@@ -29,14 +29,15 @@
 namespace PMP {
 
     class FileData;
+    class Queue;
     class Resolver;
 
     class QueueEntry : public QObject {
         Q_OBJECT
     public:
-        QueueEntry(uint queueID, QString const& filename);
-        QueueEntry(uint queueID, FileData const& filedata);
-        QueueEntry(uint queueID, HashID const& hash);
+        QueueEntry(Queue* parent, QString const& filename);
+        QueueEntry(Queue* parent, FileData const& filedata);
+        QueueEntry(Queue* parent, HashID const& hash);
         ~QueueEntry();
 
         uint queueID() const { return _queueID; }
