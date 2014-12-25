@@ -64,7 +64,6 @@ cp -r "$QT_PLUGINS_DIR"/sqldrivers "$DIST_DIR"
 
 chmod -R +r "$DIST_DIR"
 
-cp "$DIST_DIR"/libmysql.dll "$INCR_TMPDIR"/
 cp "$DIST_DIR"/*.exe "$INCR_TMPDIR"/
 cp "$DIST_DIR"/*LICENSE* "$INCR_TMPDIR"/
 cp "$DIST_DIR"/README* "$INCR_TMPDIR"/
