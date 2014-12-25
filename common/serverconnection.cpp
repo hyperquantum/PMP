@@ -653,6 +653,10 @@ namespace PMP {
 
             qDebug() << "received a list of" << names.size() << "possible filenames for QID" << queueID;
 
+            if (names.size() == 1) {
+                qDebug() << " received name" << names[0];
+            }
+
             emit receivedPossibleFilenames(queueID, names);
         }
             break;

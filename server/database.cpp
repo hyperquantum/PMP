@@ -349,8 +349,32 @@ namespace PMP {
             qDebug() << " connection not valid!";
         }
 
+        /* An extended sleep period followed by a resume will result in the error "MySQL
+           server has gone away", error code 2006. In that case we try to reopen the
+           connection and re-execute the query. */
+        if (error.number() == 2006) {
+            qDebug() << " will try to re-establish a connection and re-execute the query";
+            _db.close();
+            _db.setDatabaseName("pmp");
+            if (!_db.open()) {
+                qDebug() << "  FAILED.  Connection not reopened.";
+                return false;
+            }
 
+            if (!q.exec()) {
+                QSqlError error2 = q.lastError();
+                qDebug() << "  FAILED to re-execute query:" << error2.text();
+                qDebug() << "  error type:" << error2.type();
+                qDebug() << "  error number:" << error2.number();
+                qDebug() << "  db error:" << error2.databaseText();
+                qDebug() << "  driver error:" << error2.driverText();
+                qDebug() << "  BAILING OUT.";
+                return false;
+            }
 
+            qDebug() << "  SUCCESS!";
+            return true;
+        }
 
         return false;
     }
