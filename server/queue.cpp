@@ -83,7 +83,7 @@ namespace PMP {
     }
 
     QueueEntry* Queue::enqueue(QueueEntry* entry) {
-        _index.insert(entry->queueID(), entry);
+        _idLookup.insert(entry->queueID(), entry);
         _queue.enqueue(entry);
 
         emit entryAdded(_queue.size() - 1, entry->queueID());
@@ -116,8 +116,8 @@ namespace PMP {
     }
 
     QueueEntry* Queue::lookup(quint32 queueID) {
-        QHash<quint32, QueueEntry*>::iterator it = _index.find(queueID);
-        if (it == _index.end()) { return 0; }
+        QHash<quint32, QueueEntry*>::iterator it = _idLookup.find(queueID);
+        if (it == _idLookup.end()) { return 0; }
 
         return it.value();
     }
@@ -132,8 +132,11 @@ namespace PMP {
             QueueEntry* oldest = _history.dequeue();
             qDebug() << " deleting QID" << oldest->queueID() << "after removing it from the queue history";
 
+            _idLookup.remove(oldest->queueID());
             delete oldest;
         }
+
+        qDebug() << " history size now:" << _history.size();
     }
 
     int Queue::findIndex(quint32 queueID) {

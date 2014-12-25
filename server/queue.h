@@ -78,7 +78,7 @@ namespace PMP {
         int findIndex(quint32 queueID);
 
         uint _nextQueueID;
-        QHash<quint32, QueueEntry*> _index;
+        QHash<quint32, QueueEntry*> _idLookup;
         QQueue<QueueEntry*> _queue;
         QQueue<QueueEntry*> _history;
         Resolver* _resolver;
