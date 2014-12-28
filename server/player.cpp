@@ -23,6 +23,7 @@
 #include "resolver.h"
 
 #include <QtDebug>
+#include <QtGlobal>
 
 namespace PMP {
 
@@ -30,14 +31,28 @@ namespace PMP {
      : QObject(parent), _resolver(resolver),
         _player(new QMediaPlayer(this)),
         _queue(resolver),
-        _nowPlaying(0), _playPosition(0),
-        _state(Stopped), _ignoreNextStopEvent(false)
+        _nowPlaying(0), _playPosition(0), _maxPosReachedInCurrent(0),
+        _seekHappenedInCurrent(false),
+        _state(Stopped), _transitioningToNextTrack(false)
     {
         setVolume(75);
-        connect(_player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(internalMediaStatusChanged(QMediaPlayer::MediaStatus)));
-        connect(_player, SIGNAL(stateChanged(QMediaPlayer::State)), this, SLOT(internalStateChanged(QMediaPlayer::State)));
-        connect(_player, SIGNAL(positionChanged(qint64)), this, SLOT(internalPositionChanged(qint64)));
-        connect(_player, SIGNAL(volumeChanged(int)), this, SIGNAL(volumeChanged(int)));
+
+        connect(
+            _player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)),
+            this, SLOT(internalMediaStatusChanged(QMediaPlayer::MediaStatus))
+        );
+        connect(
+            _player, SIGNAL(stateChanged(QMediaPlayer::State)),
+            this, SLOT(internalStateChanged(QMediaPlayer::State))
+        );
+        connect(
+            _player, SIGNAL(positionChanged(qint64)),
+            this, SLOT(internalPositionChanged(qint64))
+        );
+        connect(
+            _player, SIGNAL(volumeChanged(int)),
+            this, SIGNAL(volumeChanged(int))
+        );
     }
 
     int Player::volume() const {
@@ -112,16 +127,27 @@ namespace PMP {
     }
 
     void Player::skip() {
+        bool mustPlay;
+
         switch (_state) {
             case Stopped:
-                break; /* no effect */
+            default:
+                return; /* do nothing */
             case Paused:
-                startNext(false);
+                mustPlay = false;
                 break;
             case Playing:
-                startNext(true);
+                mustPlay = true;
                 break;
         }
+
+        /* add previous track to history */
+        if (_nowPlaying) {
+            _queue.addToHistory(_nowPlaying, calcPermillagePlayed(), false);
+        }
+
+        /* start next track */
+        startNext(mustPlay);
     }
 
     void Player::setVolume(int volume) {
@@ -137,9 +163,18 @@ namespace PMP {
 
         switch (state) {
             case QMediaPlayer::StoppedState:
-                if (_ignoreNextStopEvent) {
-                    _ignoreNextStopEvent = false;
+            {
+                if (_transitioningToNextTrack) {
+                    /* this is the stop event from the track we are
+                       transitioning AWAY from, so we ignore it. */
+                    _transitioningToNextTrack = false;
                     break;
+                }
+
+                /* add previous track to history */
+                if (_nowPlaying) {
+                    bool hadError = _player->mediaStatus() == QMediaPlayer::InvalidMedia;
+                    _queue.addToHistory(_nowPlaying, calcPermillagePlayed(), hadError);
                 }
 
                 switch (_state) {
@@ -152,12 +187,12 @@ namespace PMP {
                     case Stopped:
                         break;
                 }
-
+            }
                 break;
             case QMediaPlayer::PausedState:
                 break; /* do nothing */
             case QMediaPlayer::PlayingState:
-                _ignoreNextStopEvent = false;
+                _transitioningToNextTrack = false;
                 break;
         }
     }
@@ -166,6 +201,10 @@ namespace PMP {
         if (_state == Stopped) { _playPosition = 0; return; }
 
         _playPosition = position;
+
+        if (position > _maxPosReachedInCurrent)
+            _maxPosReachedInCurrent = position;
+
         emit positionChanged(position);
     }
 
@@ -173,26 +212,39 @@ namespace PMP {
         qDebug() << "Player::startNext";
 
         QueueEntry* oldNowPlaying = _nowPlaying;
-        if (oldNowPlaying) { _queue.addToHistory(oldNowPlaying); }
         uint oldQueueLength = _queue.length();
 
+        /* find next track to play */
+        QueueEntry* next = 0;
+        QString filename;
         while (!_queue.empty()) {
             QueueEntry* entry = _queue.dequeue();
-            QString filename;
-            if (!entry->checkValidFilename(*_resolver, &filename)) {
-                /* error */
-                qDebug() << " skipping unplayable track (could not get filename)";
-                _queue.addToHistory(entry); // not played
-                continue;
+
+            if (entry->checkValidFilename(*_resolver, &filename)) {
+                next = entry;
+                break;
             }
 
+            /* error */
+            qDebug() << " skipping unplayable track (could not get filename)";
+            /* register track as not played */
+            _queue.addToHistory(entry, 0, true);
+        }
+
+        if (next != 0) {
+            _transitioningToNextTrack = true;
             qDebug() << " loading media " << filename;
-            _ignoreNextStopEvent = true; /* ignore the next stop event until we are playing again */
             _player->setMedia(QUrl::fromLocalFile(filename));
-            _nowPlaying = entry;
+
+            _nowPlaying = next;
             _playPosition = 0;
-            entry->checkTrackData(*_resolver);
-            emit currentTrackChanged(entry);
+            _maxPosReachedInCurrent = 0;
+            _seekHappenedInCurrent = false;
+
+            /* try to figure out track length, and if possible tag, artist... */
+            next->checkTrackData(*_resolver);
+
+            emit currentTrackChanged(next);
 
             if (play) {
                 changeState(Playing);
@@ -204,12 +256,15 @@ namespace PMP {
 
         /* we stop because we have nothing left to play */
 
+        _transitioningToNextTrack = true; /* to prevent duplicate history items */
         changeState(Stopped);
         _player->stop();
 
         if (oldNowPlaying != 0 ) {
             _nowPlaying = 0;
             _playPosition = 0;
+            _maxPosReachedInCurrent = 0;
+            _seekHappenedInCurrent = false;
             emit currentTrackChanged(0);
         }
 
@@ -219,6 +274,35 @@ namespace PMP {
         }
 
         return false;
+    }
+
+    int Player::calcPermillagePlayed() {
+        qint64 position = _player->position();
+
+        if (position > _maxPosReachedInCurrent) {
+            qDebug() << "adjusting maximum position reached from" << _maxPosReachedInCurrent << "to" << position;
+            _maxPosReachedInCurrent = position;
+        }
+
+        return calcPermillagePlayed(
+            _nowPlaying, _maxPosReachedInCurrent, _seekHappenedInCurrent
+        );
+    }
+
+    /* permillage (for lack of a better name) is like percentage, but with factor 1000
+       instead of 100 */
+    int Player::calcPermillagePlayed(QueueEntry* track, qint64 positionReached,
+                                     bool seeked)
+    {
+        if (seeked) return -1;
+        if (track == 0) return -2;
+
+        int secsLength = track->lengthInSeconds();
+        if (secsLength < 0) return -3;
+
+        /* positionReached is in milliseconds (seconds times 1000), and length is in
+           seconds, so we do not need to multiply with 1000 again */
+        return qBound(0, int(positionReached / secsLength), 1000);
     }
 
 }

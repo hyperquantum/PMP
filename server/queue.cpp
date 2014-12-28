@@ -126,10 +126,10 @@ namespace PMP {
         return it.value();
     }
 
-    void Queue::addToHistory(QueueEntry* entry/*, Queue::HistoryType historyType*/) {
+    void Queue::addToHistory(QueueEntry* entry, int permillagePlayed, bool hadError/*, Queue::HistoryType historyType*/) {
         if (!entry) return;
 
-        qDebug() << "adding QID" << entry->queueID() << "to the queue history";
+        qDebug() << "adding QID" << entry->queueID() << "to the queue history; play-permillage:" << permillagePlayed << " error?" << hadError;
         _history.enqueue(entry);
 
         if (_history.size() > 10) {

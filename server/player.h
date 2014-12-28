@@ -75,13 +75,18 @@ namespace PMP {
         bool startNext(bool play);
 
     private:
+        int calcPermillagePlayed();
+        static int calcPermillagePlayed(QueueEntry* track, qint64 positionReached, bool seeked);
+
         Resolver* _resolver;
         QMediaPlayer* _player;
         Queue _queue;
         QueueEntry* _nowPlaying;
         qint64 _playPosition;
+        qint64 _maxPosReachedInCurrent;
+        bool _seekHappenedInCurrent;
         State _state;
-        bool _ignoreNextStopEvent;
+        bool _transitioningToNextTrack;
     };
 }
 #endif
