@@ -53,6 +53,7 @@ namespace PMP {
         void play();
         void pause();
         void skip();
+        void seekTo(uint queueID, qint64 position);
 
         void setVolume(int percentage);
 

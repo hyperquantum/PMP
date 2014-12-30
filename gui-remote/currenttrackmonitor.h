@@ -39,6 +39,9 @@ namespace PMP {
 
         ServerConnection::PlayState state() const { return _state; }
 
+    public slots:
+        void seekTo(qint64 position);
+
     Q_SIGNALS:
         void playing(quint32 queueID);
         void paused(quint32 queueID);

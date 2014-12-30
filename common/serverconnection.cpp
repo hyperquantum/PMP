@@ -346,6 +346,20 @@ namespace PMP {
         sendSingleByteAction(3); /* 3 = skip */
     }
 
+    void ServerConnection::seekTo(uint queueID, qint64 position) {
+        if (!_binarySendingMode) {
+            return; /* too early for that */
+        }
+
+        QByteArray message;
+        message.reserve(14);
+        NetworkUtil::append2Bytes(message, 8); /* message type */
+        NetworkUtil::append4Bytes(message, queueID);
+        NetworkUtil::append8Bytes(message, position);
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::setVolume(int percentage) {
         if (!_binarySendingMode) {
             return; /* too early for that */

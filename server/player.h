@@ -40,6 +40,7 @@ namespace PMP {
         bool playing() const;
         State state() const;
         QueueEntry const* nowPlaying() const;
+        uint nowPlayingQID() const;
         qint64 playPosition() const;
 
         Queue& queue();
@@ -54,6 +55,8 @@ namespace PMP {
 
         /** Skip the currently playing/paused track. Does nothing when not currently playing. */
         void skip();
+
+        void seekTo(qint64 position);
 
         void setVolume(int volume);
 

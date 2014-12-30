@@ -770,6 +770,25 @@ namespace PMP {
             sendPossibleTrackFilenames(queueID, filenames);
         }
             break;
+        case 8: /* seek command */
+        {
+            if (messageLength != 14) {
+                return; /* invalid message */
+            }
+
+            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+            qint64 position = (qint64)NetworkUtil::get8Bytes(message, 6);
+
+            qDebug() << "received seek command; QID:" << queueID << "  position:" << position;
+
+            if (queueID != _player->nowPlayingQID()) {
+                return; /* invalid queue ID */
+            }
+
+            if (position < 0) return; /* invalid position */
+
+            _player->seekTo(position);
+        }
         default:
             qDebug() << "received unknown binary message type" << messageType << " with length" << messageLength;
             break; /* unknown message type */

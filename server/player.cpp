@@ -79,6 +79,11 @@ namespace PMP {
         return _nowPlaying;
     }
 
+    uint Player::nowPlayingQID() const {
+        QueueEntry* entry = _nowPlaying;
+        return (entry == 0) ? 0 : entry->queueID();
+    }
+
     qint64 Player::playPosition() const {
         return _playPosition;
     }
@@ -148,6 +153,14 @@ namespace PMP {
 
         /* start next track */
         startNext(mustPlay);
+    }
+
+    void Player::seekTo(qint64 position) {
+        if (_state != Playing && _state != Paused) return;
+        //if (!_player->isSeekable()) return;
+
+        _player->setPosition(position);
+        positionChanged(position); /* notify all listeners immediately */
     }
 
     void Player::setVolume(int volume) {

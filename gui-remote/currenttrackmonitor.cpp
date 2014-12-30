@@ -80,6 +80,10 @@ namespace PMP {
         _connection->requestPlayerState();
     }
 
+    void CurrentTrackMonitor::seekTo(qint64 position) {
+        _connection->seekTo(_nowPlayingQID, position);
+    }
+
     void CurrentTrackMonitor::receivedPlayerState(int s, quint8 volume,
                                                   quint32 queueLength,
                                                   quint32 nowPlayingQID,
