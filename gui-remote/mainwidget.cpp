@@ -41,9 +41,6 @@ namespace PMP {
         _dynamicModeEnabled(false), _noRepetitionUpdating(0)
     {
         _ui->setupUi(this);
-
-        /* make sure the progress bar is set to zero */
-        _ui->trackTimeProgressBar->reset();
     }
 
     MainWidget::~MainWidget()
@@ -161,7 +158,6 @@ namespace PMP {
             _nowPlayingTitle = "";
             _nowPlayingLength = -1;
             _ui->artistTitleLabel->setText("");
-            _ui->trackTimeProgressBar->reset();
             _ui->trackProgress->setCurrentTrack(-1);
             _ui->lengthValueLabel->setText("");
             _ui->positionValueLabel->setText("");
@@ -180,7 +176,6 @@ namespace PMP {
             _nowPlayingTitle = "";
             _nowPlayingLength = -1;
             _ui->artistTitleLabel->setText("");
-            _ui->trackTimeProgressBar->reset();
             _ui->trackProgress->setCurrentTrack(-1);
             _ui->lengthValueLabel->setText("");
             _ui->positionValueLabel->setText("");
@@ -199,7 +194,6 @@ namespace PMP {
         _nowPlayingLength = -1;
 
         _ui->artistTitleLabel->setText("<no current track>");
-        _ui->trackTimeProgressBar->reset();
         _ui->trackProgress->setCurrentTrack(-1);
         _ui->lengthValueLabel->setText("");
         _ui->positionValueLabel->setText("");
@@ -220,7 +214,6 @@ namespace PMP {
 
             if (lengthSeconds < 0) {
                 _ui->lengthValueLabel->setText("?");
-                _ui->trackTimeProgressBar->reset();
                 _ui->trackProgress->setCurrentTrack(-1);
             }
             else {
@@ -234,7 +227,6 @@ namespace PMP {
                      + ":" + QString::number(sec).rightJustified(2, '0')
                 );
 
-                _ui->trackTimeProgressBar->setMaximum(lengthSeconds * 10);
                 _ui->trackProgress->setCurrentTrack(qint64(lengthSeconds) * 1000);
             }
         }
@@ -257,14 +249,6 @@ namespace PMP {
              + ":" + QString::number(sec).rightJustified(2, '0')
              + "." + QString::number(partialSec).rightJustified(3, '0')
         );
-
-        if (_nowPlayingLength > 0) {
-            /* progressbar uses tenths of a second */
-            _ui->trackTimeProgressBar->setValue(position / 100);
-        }
-        else {
-            _ui->trackTimeProgressBar->setValue(0);
-        }
 
         _ui->trackProgress->setTrackPosition(position);
     }
