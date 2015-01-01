@@ -62,20 +62,21 @@ namespace PMP {
         QRect rect = this->rect().adjusted(+1, +1, -1, -1);
 
         if (_trackLength <= 0) {
-            painter.fillRect(rect, QBrush(QColor(200, 200, 200)));
+            painter.fillRect(rect, QBrush(QColor(220, 220, 220)));
             return;
         }
 
-        painter.fillRect(rect, QBrush(QColor(20, 40, 140)));
+        painter.fillRect(rect, QBrush(QColor(170, 190, 250)));
 
         if (_trackPosition > 0) {
             QRectF rect2(rect);
+            rect2.adjust(+2, +2, -2, -2);
             int x = _trackPosition * (rect2.width() - 1) / _trackLength;
             rect2.setWidth(x);
-            painter.fillRect(rect2, QBrush(QColor(20, 240, 20)));
+            painter.fillRect(rect2, QBrush(QColor(100, 110, 250)));
         }
 
-        painter.setPen(QPen(Qt::gray));
+        painter.setPen(QPen(QColor(20, 30, 250)));
         painter.drawRect(rect);
     }
 
