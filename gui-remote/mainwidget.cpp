@@ -63,6 +63,11 @@ namespace PMP {
         _ui->queueTableView->setModel(_queueModel);
         _ui->queueTableView->installEventFilter(this);
 
+        connect(
+            _ui->trackProgress, SIGNAL(seekRequested(qint64)),
+            _currentTrackMonitor, SLOT(seekTo(qint64))
+        );
+
         connect(_ui->playButton, SIGNAL(clicked()), _connection, SLOT(play()));
         connect(_ui->pauseButton, SIGNAL(clicked()), _connection, SLOT(pause()));
         connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
@@ -157,6 +162,7 @@ namespace PMP {
             _nowPlayingLength = -1;
             _ui->artistTitleLabel->setText("");
             _ui->trackTimeProgressBar->reset();
+            _ui->trackProgress->setCurrentTrack(-1);
             _ui->lengthValueLabel->setText("");
             _ui->positionValueLabel->setText("");
         }
@@ -175,6 +181,7 @@ namespace PMP {
             _nowPlayingLength = -1;
             _ui->artistTitleLabel->setText("");
             _ui->trackTimeProgressBar->reset();
+            _ui->trackProgress->setCurrentTrack(-1);
             _ui->lengthValueLabel->setText("");
             _ui->positionValueLabel->setText("");
         }
@@ -193,6 +200,7 @@ namespace PMP {
 
         _ui->artistTitleLabel->setText("<no current track>");
         _ui->trackTimeProgressBar->reset();
+        _ui->trackProgress->setCurrentTrack(-1);
         _ui->lengthValueLabel->setText("");
         _ui->positionValueLabel->setText("");
 
@@ -213,6 +221,7 @@ namespace PMP {
             if (lengthSeconds < 0) {
                 _ui->lengthValueLabel->setText("?");
                 _ui->trackTimeProgressBar->reset();
+                _ui->trackProgress->setCurrentTrack(-1);
             }
             else {
                 int sec = lengthSeconds % 60;
@@ -226,6 +235,7 @@ namespace PMP {
                 );
 
                 _ui->trackTimeProgressBar->setMaximum(lengthSeconds * 10);
+                _ui->trackProgress->setCurrentTrack(qint64(lengthSeconds) * 1000);
             }
         }
 
@@ -255,6 +265,8 @@ namespace PMP {
         else {
             _ui->trackTimeProgressBar->setValue(0);
         }
+
+        _ui->trackProgress->setTrackPosition(position);
     }
 
     void MainWidget::receivedTitleArtist(QString title, QString artist) {

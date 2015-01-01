@@ -27,6 +27,11 @@
       </widget>
      </item>
      <item>
+      <widget class="PMP::TrackProgressWidget" name="trackProgress">
+
+      </widget>
+     </item>
+     <item>
       <widget class="QProgressBar" name="trackTimeProgressBar">
        <property name="value">
         <number>24</number>
@@ -249,6 +254,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PMP::TrackProgressWidget</class>
+   <extends>QWidget</extends>
+   <header>gui-remote/trackprogresswidget.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

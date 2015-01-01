@@ -72,6 +72,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/mainwindow.cpp
     gui-remote/queuemodel.cpp
     gui-remote/queuemonitor.cpp
+    gui-remote/trackprogresswidget.cpp
 )
 set(PMP_GUI_REMOTE_HEADERS
     gui-remote/connectionwidget.h
@@ -80,6 +81,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/mainwindow.h
     gui-remote/queuemodel.h
     gui-remote/queuemonitor.h
+    gui-remote/trackprogresswidget.h
 )
 set(PMP_GUI_REMOTE_UIS
     gui-remote/connectionwidget.ui
