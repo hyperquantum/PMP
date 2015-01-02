@@ -66,17 +66,17 @@ namespace PMP {
             return;
         }
 
-        painter.fillRect(rect, QBrush(QColor(170, 190, 250)));
+        painter.fillRect(rect, QBrush(QColor(210, 220, 255)));
 
         if (_trackPosition > 0) {
             QRectF rect2(rect);
             rect2.adjust(+2, +2, -2, -2);
             int x = _trackPosition * (rect2.width() - 1) / _trackLength;
             rect2.setWidth(x);
-            painter.fillRect(rect2, QBrush(QColor(100, 110, 250)));
+            painter.fillRect(rect2, QBrush(QColor(170, 190, 250)));
         }
 
-        painter.setPen(QPen(QColor(20, 30, 250)));
+        painter.setPen(QPen(QColor(170, 190, 250)));
         painter.drawRect(rect);
     }
 
