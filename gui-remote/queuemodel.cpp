@@ -101,6 +101,16 @@ namespace PMP {
         return QVariant();
     }
 
+    Qt::ItemFlags QueueModel::flags(const QModelIndex& index) const {
+        return Qt::ItemIsSelectable | Qt::ItemIsEnabled
+            | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
+    }
+
+    Qt::DropActions QueueModel::supportedDropActions() const
+    {
+        return Qt::MoveAction;
+    }
+
     uint QueueModel::trackAt(const QModelIndex& index) const {
         int row = index.row();
         quint32 queueID = _source->queueEntry(row);
