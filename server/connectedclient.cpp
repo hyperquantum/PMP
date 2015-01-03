@@ -789,6 +789,7 @@ namespace PMP {
 
             _player->seekTo(position);
         }
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType << " with length" << messageLength;
             break; /* unknown message type */
