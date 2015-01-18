@@ -110,6 +110,10 @@ int main(int argc, char *argv[]) {
     Resolver resolver;
 //    resolver.registerData(song);
 
+    /* unique server instance ID (not to be confused with the unique ID of the database)*/
+    QUuid serverInstanceIdentifier = QUuid::createUuid();
+    out << "Server instance identifier: " << serverInstanceIdentifier.toString() << endl << endl;
+
     Player player(0, &resolver);
     Queue& queue = player.queue();
     History history(&player);
@@ -147,7 +151,7 @@ int main(int argc, char *argv[]) {
 
     out << endl;
 
-    Server server;
+    Server server(0, serverInstanceIdentifier);
     if (!server.listen(&player, &generator, QHostAddress::Any, 23432)) {
         out << "Could not start TCP listener: " << server.errorString() << endl;
         out << "Exiting." << endl;

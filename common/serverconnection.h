@@ -24,6 +24,7 @@
 #include <QList>
 #include <QObject>
 #include <QTcpSocket>
+#include <QUuid>
 
 namespace PMP {
 
@@ -48,6 +49,8 @@ namespace PMP {
 
     public slots:
         void shutdownServer();
+
+        void sendServerInstanceIdentifierRequest();
 
         void requestPlayerState();
         void play();
@@ -75,6 +78,8 @@ namespace PMP {
         void cannotConnect(QAbstractSocket::SocketError error);
         void invalidServer();
         void connectionBroken(QAbstractSocket::SocketError error);
+
+        void receivedServerInstanceIdentifier(QUuid uuid);
 
         void playing();
         void paused();

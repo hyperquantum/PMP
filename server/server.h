@@ -20,7 +20,10 @@
 #ifndef PMP_SERVER_H
 #define PMP_SERVER_H
 
-#include <QTcpServer>
+#include <QHostAddress>
+#include <QUuid>
+
+QT_FORWARD_DECLARE_CLASS(QTcpServer)
 
 namespace PMP {
 
@@ -30,12 +33,16 @@ namespace PMP {
     class Server : public QObject {
         Q_OBJECT
     public:
-        explicit Server(QObject* parent = 0);
+        explicit Server(QObject* parent, const QUuid& serverInstanceIdentifier);
 
-        bool listen(Player* player, Generator* generator, const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
+        bool listen(Player* player, Generator* generator,
+                    const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
+
         QString errorString() const;
 
         quint16 port() const;
+
+        QUuid uuid() const { return _uuid; }
 
     public slots:
         void shutdown();
@@ -47,6 +54,7 @@ namespace PMP {
         void newConnectionReceived();
 
     private:
+        QUuid _uuid;
         Player* _player;
         Generator* _generator;
         QTcpServer* _server;

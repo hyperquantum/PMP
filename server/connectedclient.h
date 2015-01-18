@@ -64,6 +64,7 @@ namespace PMP {
         void executeTextCommand(QString const& commandText);
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
+        void sendServerInstanceIdentifier();
         void sendQueueContentMessage(quint32 startOffset, quint8 length);
         void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
         void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);

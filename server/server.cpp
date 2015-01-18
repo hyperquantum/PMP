@@ -22,17 +22,25 @@
 #include "connectedclient.h"
 
 #include <QByteArray>
+#include <QTcpServer>
 #include <QTcpSocket>
 
 namespace PMP {
 
-    Server::Server(QObject* parent)
-     : QObject(parent), _player(0), _server(new QTcpServer(this))
+    Server::Server(QObject* parent, const QUuid& serverInstanceIdentifier)
+     : QObject(parent),
+       _uuid(serverInstanceIdentifier),
+       _player(0), _server(new QTcpServer(this))
     {
+        /* generate a new UUID for ourselves if we did not receive a valid one */
+        if (_uuid.isNull()) _uuid = QUuid::createUuid();
+
         connect(_server, SIGNAL(newConnection()), this, SLOT(newConnectionReceived()));
     }
 
-    bool Server::listen(Player* player, Generator* generator, const QHostAddress& address, quint16 port) {
+    bool Server::listen(Player* player, Generator* generator, const QHostAddress& address,
+                        quint16 port)
+    {
         _player = player;
         _generator = generator;
 

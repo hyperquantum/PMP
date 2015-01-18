@@ -309,6 +309,21 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendServerInstanceIdentifier() {
+        if (!_binaryMode) {
+            return; // only supported in binary mode
+        }
+
+        QUuid uuid = _server->uuid();
+
+        QByteArray message;
+        message.reserve(2 + 16);
+        NetworkUtil::append2Bytes(message, 10); /* message type */
+        message.append(uuid.toRfc4122());
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendQueueContentMessage(quint32 startOffset, quint8 length) {
         Queue& queue = _player->queue();
         uint queueLength = queue.length();
@@ -624,6 +639,10 @@ namespace PMP {
             case 11: /* request for status of dynamic mode */
                 qDebug() << "received request for dynamic mode status";
                 sendDynamicModeStatusMessage();
+                break;
+            case 12:
+                qDebug() << "received request for server instance UUID";
+                sendServerInstanceIdentifier();
                 break;
             case 20: /* enable dynamic mode */
                 qDebug() << "received ENABLE DYNAMIC MODE command";

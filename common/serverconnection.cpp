@@ -150,8 +150,11 @@ namespace PMP {
 
                 _state = BinaryMode;
 
+                // FIXME: these request must become optional  (put them somewhere else)
+                sendServerInstanceIdentifierRequest();
+                requestDynamicModeStatus();
+
                 emit connected();
-                requestDynamicModeStatus(); // FIXME: must become optional
             }
                 break;
             case BinaryMode:
@@ -312,6 +315,14 @@ namespace PMP {
         }
 
         sendSingleByteAction(99); /* 99 = shutdown server */
+    }
+
+    void ServerConnection::sendServerInstanceIdentifierRequest() {
+        if (!_binarySendingMode) {
+            return; /* too early for that */
+        }
+
+        sendSingleByteAction(12); /* 12 = request for server instance UUID */
     }
 
     void ServerConnection::requestPlayerState() {
@@ -672,6 +683,16 @@ namespace PMP {
             }
 
             emit receivedPossibleFilenames(queueID, names);
+        }
+            break;
+        case 10: /* server instance identifier response */
+        {
+            if (messageLength != (2 + 16)) return; /* invalid message */
+
+            QUuid uuid = QUuid::fromRfc4122(message.mid(2));
+            qDebug() << "received server instance identifier:" << uuid;
+
+            emit receivedServerInstanceIdentifier(uuid);
         }
             break;
         default:
