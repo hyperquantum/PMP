@@ -108,9 +108,15 @@ namespace PMP {
         int index = findIndex(queueID);
         if (index < 0) return false; // not found
 
+        QueueEntry* entry = _queue[index];
         _queue.removeAt(index);
 
         emit entryRemoved(index, queueID);
+
+        qDebug() << "deleting QID" << queueID << "because it was deleted from the queue";
+
+        _idLookup.remove(queueID);
+        delete entry;
 
         return true;
     }
