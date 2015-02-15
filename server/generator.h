@@ -44,6 +44,7 @@ namespace PMP {
     public slots:
         void enable();
         void disable();
+        void requestQueueExpansion();
 
         void setNoRepetitionSpan(int seconds);
 
@@ -63,11 +64,13 @@ namespace PMP {
         class Candidate;
 
         static const uint desiredQueueLength = 10;
+        static const uint expandCount = 5;
         static const uint minimalUpcomingCount = 2 * desiredQueueLength;
-        static const uint maximalUpcomingCount = 3 * desiredQueueLength;
+        static const uint maximalUpcomingCount = 3 * desiredQueueLength + 3 * expandCount;
         static const uint desiredUpcomingRuntimeSeconds = 3600; /* 1 hour */
 
         void requestQueueRefill();
+        int expandQueue(int howManyTracksToAdd, int maxIterations);
         bool satisfiesFilters(Candidate* candidate);
 
         QueueEntry const* _currentTrack;

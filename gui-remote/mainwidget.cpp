@@ -86,6 +86,10 @@ namespace PMP {
         );
 
         connect(
+            _ui->expandButton, SIGNAL(clicked()), _connection, SLOT(expandQueue())
+        );
+
+        connect(
             _currentTrackMonitor, SIGNAL(volumeChanged(int)),
             this, SLOT(volumeChanged(int))
         );

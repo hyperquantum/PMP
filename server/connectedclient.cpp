@@ -652,6 +652,10 @@ namespace PMP {
                 qDebug() << "received DISABLE DYNAMIC MODE command";
                 _generator->disable();
                 break;
+            case 22: /* request queue expansion */
+                qDebug() << "received queue expansion command";
+                _generator->requestQueueExpansion();
+                break;
             case 99:
                 qDebug() << "received SHUTDOWN command";
                 _server->shutdown();

@@ -53,8 +53,14 @@ namespace PMP {
        _upcomingRuntimeSeconds(0), _upcomingTimer(new QTimer(this)),
        _noRepetitionSpan(60 * 60 /* one hour */)
     {
-        connect(_queue, SIGNAL(entryRemoved(quint32, quint32)), this, SLOT(queueEntryRemoved(quint32, quint32)));
-        connect(_upcomingTimer, SIGNAL(timeout()), this, SLOT(checkRefillUpcomingBuffer()));
+        connect(
+            _queue, SIGNAL(entryRemoved(quint32, quint32)),
+            this, SLOT(queueEntryRemoved(quint32, quint32))
+        );
+        connect(
+            _upcomingTimer, SIGNAL(timeout()),
+            this, SLOT(checkRefillUpcomingBuffer())
+        );
 
         /* one time, to get a minimal start amount of tracks */
         checkRefillUpcomingBuffer();
@@ -85,7 +91,10 @@ namespace PMP {
 
         emit enabledChanged(true);
         _upcomingTimer->start(5000);
-        queueEntryRemoved(0, 0); /* force immediate filling of the queue */
+
+        /* Start filling the upcoming buffer at once, and already fill the queue a bit if
+           possible. */
+        checkRefillUpcomingBuffer();
     }
 
     void Generator::disable() {
@@ -96,6 +105,15 @@ namespace PMP {
 
         _upcomingTimer->stop();
         emit enabledChanged(false);
+    }
+
+    void Generator::requestQueueExpansion() {
+        if ((uint)_upcoming.size() < minimalUpcomingCount) {
+            qDebug() << "generator: not executing queue expansion because upcoming buffer is low";
+            return;
+        }
+
+        expandQueue(expandCount, 15);
     }
 
     void Generator::currentTrackChanged(QueueEntry const* newTrack) {
@@ -151,13 +169,19 @@ namespace PMP {
 
         if (!_enabled) return;
 
-        int tracksToGenerate = 1;
+        int tracksToGenerate = 0;
         uint queueLength = _queue->length();
         if (queueLength < desiredQueueLength) {
             tracksToGenerate = desiredQueueLength - queueLength;
         }
 
-        int iterationsLeft = 15;
+        expandQueue(tracksToGenerate, 15);
+    }
+
+    int Generator::expandQueue(int howManyTracksToAdd, int maxIterations) {
+        int iterationsLeft = maxIterations;
+        int tracksToGenerate = howManyTracksToAdd;
+
         while (iterationsLeft > 0
                 && tracksToGenerate > 0
                 && !_upcoming.empty())
@@ -211,6 +235,9 @@ namespace PMP {
 
             delete c;
         }
+
+        /* return how many were added to the queue */
+        return howManyTracksToAdd - tracksToGenerate;
     }
 
     bool Generator::satisfiesFilters(Candidate* candidate) {
