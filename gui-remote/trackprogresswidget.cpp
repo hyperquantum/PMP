@@ -22,6 +22,7 @@
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
+#include <QtDebug>
 
 namespace PMP {
 
@@ -71,8 +72,8 @@ namespace PMP {
         if (_trackPosition > 0) {
             QRectF rect2(rect);
             rect2.adjust(+2, +2, -2, -2);
-            int x = _trackPosition * (rect2.width() - 1) / _trackLength;
-            rect2.setWidth(x);
+            int w = (_trackPosition * rect2.width() + _trackLength / 2) / _trackLength;
+            rect2.setWidth(w);
             painter.fillRect(rect2, QBrush(QColor(170, 190, 250)));
         }
 
@@ -82,11 +83,21 @@ namespace PMP {
 
     void TrackProgressWidget::mousePressEvent(QMouseEvent* event) {
         if (_trackLength > 0 && event->button() == Qt::LeftButton) {
-            QRect rect = this->rect().adjusted(+1, +1, -1, -1);
+            QRect rect = this->rect().adjusted(+1+2, +1+2, -1-2, -1-2);
 
             if (rect.contains(event->pos())) {
                 int x = event->x();
-                qint64 position = (x - rect.x()) * _trackLength / rect.width();
+                if (x < rect.left() || x > rect.x() + rect.width()) {
+                    return;
+                }
+
+                qDebug() << "TrackProgressWidget::mousePressEvent  with x=" << x << " and rectangle width" << rect.width();
+                qint64 position = ((x - rect.x()) * _trackLength + rect.width() / 2) / rect.width();
+                qDebug() << " calculated position:" << position;
+
+                int x_r = (position * rect.width() + _trackLength / 2) / _trackLength + rect.x();
+                qDebug() << " calculated x from calculated position would be:" << x_r;
+
                 emit seekRequested(position);
             }
         }
