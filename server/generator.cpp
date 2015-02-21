@@ -90,7 +90,7 @@ namespace PMP {
         _enabled = true;
 
         emit enabledChanged(true);
-        _upcomingTimer->start(5000);
+        _upcomingTimer->start(upcomingTimerFreqMs);
 
         /* Start filling the upcoming buffer at once, and already fill the queue a bit if
            possible. */
@@ -131,7 +131,6 @@ namespace PMP {
     }
 
     void Generator::checkRefillUpcomingBuffer() {
-        //int upcomingToGenerate = desiredUpcomingLength - _upcoming.length();
         int iterationsLeft = 8;
         while (iterationsLeft > 0
                && ((uint)_upcoming.length() < maximalUpcomingCount
@@ -162,6 +161,10 @@ namespace PMP {
         qDebug() << "generator: buffer length:" << _upcoming.length()
                  << "; runtime:" << (_upcomingRuntimeSeconds / 60) << "min"
                  << (_upcomingRuntimeSeconds % 60) << "sec";
+
+        if ((uint)_upcoming.length() >= maximalUpcomingCount) {
+            _upcomingTimer->stop();
+        }
     }
 
     void Generator::checkAndRefillQueue() {
@@ -234,6 +237,12 @@ namespace PMP {
             }
 
             delete c;
+        }
+
+        if ((uint)_upcoming.length() < maximalUpcomingCount
+            && !_upcomingTimer->isActive())
+        {
+            _upcomingTimer->start(upcomingTimerFreqMs);
         }
 
         /* return how many were added to the queue */

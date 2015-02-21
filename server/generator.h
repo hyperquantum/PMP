@@ -63,6 +63,7 @@ namespace PMP {
     private:
         class Candidate;
 
+        static const int upcomingTimerFreqMs = 5000;
         static const uint desiredQueueLength = 10;
         static const uint expandCount = 5;
         static const uint minimalUpcomingCount = 2 * desiredQueueLength;
