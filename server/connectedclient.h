@@ -73,6 +73,7 @@ namespace PMP {
         void sendPossibleTrackFilenames(quint32 queueID, QList<QString> const& names);
         void handleBinaryMessage(QByteArray const& message);
 
+        bool _terminated;
         QTcpSocket* _socket;
         Server* _server;
         Player* _player;

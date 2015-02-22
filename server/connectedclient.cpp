@@ -33,8 +33,10 @@
 namespace PMP {
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player, Generator* generator)
-     : QObject(server), _socket(socket), _server(server), _player(player), _generator(generator),
-        _binaryMode(false), _clientProtocolNo(-1), _lastSentNowPlayingID(0)
+     : QObject(server),
+       _terminated(false), _socket(socket),
+       _server(server), _player(player), _generator(generator),
+       _binaryMode(false), _clientProtocolNo(-1), _lastSentNowPlayingID(0)
     {
         connect(server, SIGNAL(shuttingDown()), this, SLOT(terminateConnection()));
         connect(socket, SIGNAL(disconnected()), this, SLOT(terminateConnection()));
@@ -54,6 +56,8 @@ namespace PMP {
     }
 
     void ConnectedClient::terminateConnection() {
+        if (_terminated) return;
+        _terminated = true;
         _socket->close();
         _textReadBuffer.clear();
         _socket->deleteLater();
@@ -61,6 +65,11 @@ namespace PMP {
     }
 
     void ConnectedClient::dataArrived() {
+        if (_terminated) {
+            qDebug() << "ConnectedClient::dataArrived called on a terminated connection???";
+            return;
+        }
+
         if (_binaryMode && _clientProtocolNo >= 0) {
             readBinaryCommands();
             return;
@@ -112,7 +121,7 @@ namespace PMP {
     }
 
     void ConnectedClient::readTextCommands() {
-        while (!_binaryMode) {
+        while (!_terminated && !_binaryMode) {
             bool hadSemicolon = false;
             char c;
             while (_socket->getChar(&c)) {
@@ -187,7 +196,7 @@ namespace PMP {
             }
             else {
                 /* unknown command ???? */
-
+                qDebug() << "unknown text command: " << command;
             }
 
             return;
@@ -217,10 +226,20 @@ namespace PMP {
     }
 
     void ConnectedClient::sendTextCommand(QString const& command) {
+        if (_terminated) {
+            qDebug() << "sendTextCommand: cannot proceed because connection is terminated";
+            return;
+        }
+
         _socket->write((command + ";").toUtf8());
     }
 
     void ConnectedClient::sendBinaryMessage(QByteArray const& message) {
+        if (_terminated) {
+            qDebug() << "sendBinaryMessage: cannot proceed because connection is terminated";
+            return;
+        }
+
         quint32 length = message.length();
 
         qDebug() << "   need to send a binary message of length" << length;
@@ -577,7 +596,10 @@ namespace PMP {
     void ConnectedClient::readBinaryCommands() {
         char lengthBytes[4];
 
-        while (_socket->peek(lengthBytes, sizeof(lengthBytes)) == sizeof(lengthBytes)) {
+        while
+            (_socket->isOpen()
+            && _socket->peek(lengthBytes, sizeof(lengthBytes)) == sizeof(lengthBytes))
+        {
             quint32 messageLength = NetworkUtil::get4Bytes(lengthBytes);
 
             if (_socket->bytesAvailable() - sizeof(lengthBytes) < messageLength) {
