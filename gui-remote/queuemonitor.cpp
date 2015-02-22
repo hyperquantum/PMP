@@ -28,6 +28,8 @@
 
 namespace PMP {
 
+    /* ========================== TrackMonitor ========================== */
+
     TrackMonitor::TrackMonitor(QObject* parent, ServerConnection* connection,
                                quint32 queueID/*, int position*/)
      : QObject(parent),
@@ -136,7 +138,7 @@ namespace PMP {
         _infoRequestedAlready = true;
     }
 
-    /* QueueMonitor */
+    /* ========================== QueueMonitor ========================== */
 
     QueueMonitor::QueueMonitor(QObject* parent, ServerConnection* connection)
      : QObject(parent), _connection(connection),
@@ -144,26 +146,33 @@ namespace PMP {
        _requestQueueUpTo(5), _queueRequestedUpTo(0),
        _trackChangeEventPending(false)
     {
-        connect(_connection, SIGNAL(connected()), this, SLOT(connected()));
         connect(
-            _connection, SIGNAL(receivedQueueContents(int, int, QList<quint32>)),
-            this, SLOT(receivedQueueContents(int, int, QList<quint32>))
+            _connection, &ServerConnection::connected,
+            this, &QueueMonitor::connected
         );
         connect(
-            _connection, SIGNAL(queueEntryRemoved(quint32, quint32)),
-            this, SLOT(queueEntryRemoved(quint32, quint32))
+            _connection, &ServerConnection::receivedQueueContents,
+            this, &QueueMonitor::receivedQueueContents
         );
         connect(
-            _connection, SIGNAL(queueEntryAdded(quint32, quint32)),
-            this, SLOT(queueEntryAdded(quint32, quint32))
+            _connection, &ServerConnection::queueEntryRemoved,
+            this, &QueueMonitor::queueEntryRemoved
         );
         connect(
-            _connection, SIGNAL(receivedTrackInfo(quint32, int, QString, QString)),
-            this, SLOT(receivedTrackInfo(quint32, int, QString, QString))
+            _connection, &ServerConnection::queueEntryAdded,
+            this, &QueueMonitor::queueEntryAdded
         );
         connect(
-            _connection, SIGNAL(receivedPossibleFilenames(quint32, QList<QString>)),
-            this, SLOT(receivedPossibleFilenames(quint32, QList<QString>))
+            _connection, &ServerConnection::queueEntryMoved,
+            this, &QueueMonitor::queueEntryMoved
+        );
+        connect(
+            _connection, &ServerConnection::receivedTrackInfo,
+            this, &QueueMonitor::receivedTrackInfo
+        );
+        connect(
+            _connection, &ServerConnection::receivedPossibleFilenames,
+            this, &QueueMonitor::receivedPossibleFilenames
         );
 
         if (_connection->isConnected()) {
@@ -359,6 +368,14 @@ namespace PMP {
             /* TODO: error correction */
             qDebug() << "PROBLEM: QueueMonitor::queueEntryRemoved: _queueLengthSent=" << _queueLengthSent << "; _queueLength=" << _queueLength;
         }
+    }
+
+    void QueueMonitor::queueEntryMoved(quint32 fromOffset, quint32 toOffset,
+                                       quint32 queueID)
+    {
+        /* maybe we need to expand this later */
+        queueEntryRemoved(fromOffset, queueID);
+        queueEntryAdded(toOffset, queueID);
     }
 
 //    void TrackMonitor::trackIsAtPosition(quint32 queueID, int index) {

@@ -38,18 +38,57 @@ namespace PMP {
        _server(server), _player(player), _generator(generator),
        _binaryMode(false), _clientProtocolNo(-1), _lastSentNowPlayingID(0)
     {
-        connect(server, SIGNAL(shuttingDown()), this, SLOT(terminateConnection()));
-        connect(socket, SIGNAL(disconnected()), this, SLOT(terminateConnection()));
-        connect(socket, SIGNAL(readyRead()), this, SLOT(dataArrived()));
-        connect(socket, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(socketError(QAbstractSocket::SocketError)));
-        connect(player, SIGNAL(volumeChanged(int)), this, SLOT(volumeChanged(int)));
-        connect(generator, SIGNAL(enabledChanged(bool)), this, SLOT(dynamicModeStatusChanged(bool)));
-        connect(generator, SIGNAL(noRepetitionSpanChanged(int)), this, SLOT(dynamicModeNoRepetitionSpanChanged(int)));
-        connect(player, SIGNAL(stateChanged(Player::State)), this, SLOT(playerStateChanged(Player::State)));
-        connect(player, SIGNAL(currentTrackChanged(QueueEntry const*)), this, SLOT(currentTrackChanged(QueueEntry const*)));
-        connect(player, SIGNAL(positionChanged(qint64)), this, SLOT(trackPositionChanged(qint64)));
-        connect(&player->queue(), SIGNAL(entryRemoved(quint32, quint32)), this, SLOT(queueEntryRemoved(quint32, quint32)));
-        connect(&player->queue(), SIGNAL(entryAdded(quint32, quint32)), this, SLOT(queueEntryAdded(quint32, quint32)));
+        connect(
+            server, &Server::shuttingDown,
+            this, &ConnectedClient::terminateConnection
+        );
+
+        connect(
+            socket, &QTcpSocket::disconnected,
+            this, &ConnectedClient::terminateConnection
+        );
+        connect(socket, &QTcpSocket::readyRead, this, &ConnectedClient::dataArrived);
+        connect(
+            socket, static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QTcpSocket::error),
+            this, &ConnectedClient::socketError
+        );
+
+        connect(player, &Player::volumeChanged, this, &ConnectedClient::volumeChanged);
+        connect(
+            generator, &Generator::enabledChanged,
+            this, &ConnectedClient::dynamicModeStatusChanged
+        );
+        connect(
+            generator, &Generator::noRepetitionSpanChanged,
+            this, &ConnectedClient::dynamicModeNoRepetitionSpanChanged
+        );
+        connect(
+            player, &Player::stateChanged,
+            this, &ConnectedClient::playerStateChanged
+        );
+        connect(
+            player, &Player::currentTrackChanged,
+            this, &ConnectedClient::currentTrackChanged
+        );
+        connect(
+            player, &Player::positionChanged,
+            this, &ConnectedClient::trackPositionChanged
+        );
+
+        Queue* queue = &player->queue();
+
+        connect(
+            queue, &Queue::entryRemoved,
+            this, &ConnectedClient::queueEntryRemoved
+        );
+        connect(
+            queue, &Queue::entryAdded,
+            this, &ConnectedClient::queueEntryAdded
+        );
+        connect(
+            queue, &Queue::entryMoved,
+            this, &ConnectedClient::queueEntryMoved
+        );
 
         /* send greeting */
         sendTextCommand("PMP 0.1 Welcome!");
@@ -149,10 +188,14 @@ namespace PMP {
     }
 
     void ConnectedClient::executeTextCommand(QString const& commandText) {
+        qDebug() << "received text commandline:" << commandText;
+
         int spaceIndex = commandText.indexOf(' ');
-        QString command = commandText;
+        QString command;
 
         if (spaceIndex < 0) { /* command without arguments */
+            command = commandText;
+
             if (command == "play") {
                 _player->play();
             }
@@ -196,33 +239,68 @@ namespace PMP {
             }
             else {
                 /* unknown command ???? */
-                qDebug() << "unknown text command: " << command;
+                qDebug() << " unknown text command: " << command;
             }
 
             return;
         }
 
         /* split command at the space; don't include the space in the parts */
-        QString rest = command.mid(spaceIndex + 1);
-        command = command.left(spaceIndex);
+        command = commandText.left(spaceIndex);
+        QString rest = commandText.mid(spaceIndex + 1);
         spaceIndex = rest.indexOf(' ');
+        QString arg1;
 
-        // one argument?
-        if (spaceIndex < 0) {
-            // 'volume' with one argument changes current volume
+        if (spaceIndex < 0) { /* one argument only */
+            arg1 = rest;
+
+            /* 'volume' with one argument changes current volume */
             if (command == "volume") {
                 bool ok;
-                uint volume = rest.toUInt(&ok);
+                uint volume = arg1.toUInt(&ok);
                 if (ok && volume >= 0 && volume <= 100) {
                     _player->setVolume(volume);
                 }
             }
             else {
                 /* unknown command ???? */
-
+                qDebug() << " unknown text command: " << command;
             }
+
+            return;
         }
 
+        /* two arguments or more */
+
+        arg1 = rest.left(spaceIndex);
+        rest = rest.mid(spaceIndex + 1);
+        spaceIndex = rest.indexOf(' ');
+        QString arg2;
+
+        if (spaceIndex < 0) { /* two arguments only */
+            arg2 = rest;
+
+            if (command == "qmove") {
+                bool ok;
+                uint queueID = arg1.toUInt(&ok);
+                if (!ok || queueID == 0) return;
+
+                if (!arg2.startsWith("+") && !arg2.startsWith("-")) return;
+                int moveDiff = arg2.toInt(&ok);
+                if (!ok || moveDiff == 0) return;
+
+                _player->queue().move(queueID, moveDiff);
+            }
+            else {
+                /* unknown command ???? */
+                qDebug() << " unknown text command: " << command;
+            }
+
+            return;
+        }
+
+        /* unknown command ???? */
+        qDebug() << " unknown text command: " << command;
     }
 
     void ConnectedClient::sendTextCommand(QString const& command) {
@@ -387,6 +465,19 @@ namespace PMP {
         message.reserve(10);
         NetworkUtil::append2Bytes(message, 7); /* message type */
         NetworkUtil::append4Bytes(message, offset);
+        NetworkUtil::append4Bytes(message, queueID);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendQueueEntryMovedMessage(quint32 fromOffset, quint32 toOffset,
+                                                     quint32 queueID)
+    {
+        QByteArray message;
+        message.reserve(14);
+        NetworkUtil::append2Bytes(message, 11); /* message type */
+        NetworkUtil::append4Bytes(message, fromOffset);
+        NetworkUtil::append4Bytes(message, toOffset);
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
@@ -591,6 +682,12 @@ namespace PMP {
 
     void ConnectedClient::queueEntryAdded(quint32 offset, quint32 queueID) {
         sendQueueEntryAddedMessage(offset, queueID);
+    }
+
+    void ConnectedClient::queueEntryMoved(quint32 fromOffset, quint32 toOffset,
+                                          quint32 queueID)
+    {
+        sendQueueEntryMovedMessage(fromOffset, toOffset, queueID);
     }
 
     void ConnectedClient::readBinaryCommands() {
@@ -824,7 +921,8 @@ namespace PMP {
             quint32 queueID = NetworkUtil::get4Bytes(message, 2);
             qint64 position = (qint64)NetworkUtil::get8Bytes(message, 6);
 
-            qDebug() << "received seek command; QID:" << queueID << "  position:" << position;
+            qDebug() << "received seek command; QID:" << queueID
+                     << "  position:" << position;
 
             if (queueID != _player->nowPlayingQID()) {
                 return; /* invalid queue ID */
@@ -835,8 +933,24 @@ namespace PMP {
             _player->seekTo(position);
         }
             break;
+        case 9: /* request to move an item in the queue */
+        {
+            if (messageLength != 8) {
+                return; /* invalid message */
+            }
+
+            qint16 move = NetworkUtil::get2Bytes(message, 2);
+            quint32 queueID = NetworkUtil::get4Bytes(message, 4);
+
+            qDebug() << "received track move command; QID:" << queueID
+                     << " move:" << move;
+
+            _player->queue().move(queueID, move);
+        }
+            break;
         default:
-            qDebug() << "received unknown binary message type" << messageType << " with length" << messageLength;
+            qDebug() << "received unknown binary message type" << messageType
+                     << " with length" << messageLength;
             break; /* unknown message type */
         }
     }

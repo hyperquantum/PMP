@@ -68,6 +68,7 @@ namespace PMP {
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
         void deleteQueueEntry(uint queueID);
+        void moveQueueEntry(uint queueID, qint16 offsetDiff);
 
         void sendTrackInfoRequest(uint queueID);
         void sendTrackInfoRequest(QList<uint> const& queueIDs);
@@ -97,10 +98,13 @@ namespace PMP {
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
         void trackPositionChanged(quint64 position);
         void queueLengthChanged(int length);
-        void receivedQueueContents(int queueLength, int startOffset, QList<quint32> queueIDs);
+        void receivedQueueContents(int queueLength, int startOffset,
+                                   QList<quint32> queueIDs);
         void queueEntryAdded(quint32 offset, quint32 queueID);
         void queueEntryRemoved(quint32 offset, quint32 queueID);
-        void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title, QString artist);
+        void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
+        void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title,
+                               QString artist);
         void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
 
     private slots:

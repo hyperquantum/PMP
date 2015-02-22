@@ -86,6 +86,7 @@ namespace PMP {
                                    QList<quint32> queueIDs);
         void queueEntryAdded(quint32 offset, quint32 queueID);
         void queueEntryRemoved(quint32 offset, quint32 queueID);
+        void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
         //void trackIsAtPosition(quint32 queueID, int index);
         void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title,
                                QString artist);

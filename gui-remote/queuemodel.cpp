@@ -30,9 +30,18 @@ namespace PMP {
     {
         _modelRows = _source->queueLength();
 
-        connect(_source, SIGNAL(tracksInserted(int, int)), this, SLOT(tracksInserted(int, int)));
-        connect(_source, SIGNAL(tracksRemoved(int, int)), this, SLOT(tracksRemoved(int, int)));
-        connect(_source, SIGNAL(tracksChanged(int, int)), this, SLOT(tracksChanged(int, int)));
+        connect(
+            _source, &QueueMonitor::tracksInserted,
+            this, &QueueModel::tracksInserted
+        );
+        connect(
+            _source, &QueueMonitor::tracksRemoved,
+            this, &QueueModel::tracksRemoved
+        );
+        connect(
+            _source, &QueueMonitor::tracksChanged,
+            this, &QueueModel::tracksChanged
+        );
     }
 
     int QueueModel::rowCount(const QModelIndex& parent) const {

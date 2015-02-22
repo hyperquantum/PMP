@@ -57,6 +57,7 @@ namespace PMP {
         void sendTextualQueueInfo();
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         void queueEntryAdded(quint32 offset, quint32 queueID);
+        void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
 
     private:
         void readTextCommands();
@@ -68,6 +69,8 @@ namespace PMP {
         void sendQueueContentMessage(quint32 startOffset, quint8 length);
         void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
         void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
+        void sendQueueEntryMovedMessage(quint32 fromOffset, quint32 toOffset,
+                                        quint32 queueID);
         void sendTrackInfoMessage(quint32 queueID);
         void sendTrackInfoMessage(QList<quint32> const& queueIDs);
         void sendPossibleTrackFilenames(quint32 queueID, QList<QString> const& names);

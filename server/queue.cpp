@@ -121,6 +121,38 @@ namespace PMP {
         return true;
     }
 
+    bool Queue::move(quint32 queueID, qint16 indexDiff) {
+        int index = findIndex(queueID);
+        if (index < 0) return false; // not found
+
+        if (indexDiff == 0) return true; /* no-op */
+
+        /* sanity checks */
+        if (indexDiff < 0) {
+            /* cannot move beyond first place */
+            if (index < -indexDiff) {
+                qDebug() << "Queue::move: cannot move item" << queueID << "upwards"
+                    << -indexDiff << "places because its index is now" << index;
+                return false;
+            }
+        }
+        else { /* indexDiff > 0 */
+            /* cannot move beyond last place */
+            if (_queue.size() - indexDiff < index) {
+                qDebug() << "Queue::move: cannot move item" << queueID << "downwards"
+                    << indexDiff << "places because its index is now" << index
+                    << "and the queue only has" << _queue.size() << "items";
+                return false;
+            }
+        }
+
+        int newIndex = index + indexDiff;
+        _queue.move(index, newIndex);
+
+        emit entryMoved(index, newIndex, queueID);
+        return true;
+    }
+
     QList<QueueEntry*> Queue::entries(int startoffset, int maxCount) {
         return _queue.mid(startoffset, maxCount);
     }

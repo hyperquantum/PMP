@@ -272,6 +272,16 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ServerConnection::moveQueueEntry(uint queueID, qint16 offsetDiff) {
+        QByteArray message;
+        message.reserve(8);
+        NetworkUtil::append2Bytes(message, 9); /* message type */
+        NetworkUtil::append2Bytes(message, offsetDiff);
+        NetworkUtil::append4Bytes(message, queueID);
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::sendTrackInfoRequest(uint queueID) {
         qDebug() << "sending request for track info of QID" << queueID;
 
@@ -703,8 +713,25 @@ namespace PMP {
             emit receivedServerInstanceIdentifier(uuid);
         }
             break;
+        case 11: /* queue entry moved */
+        {
+            if (messageLength != 14) {
+                return; /* invalid message */
+            }
+
+            quint32 fromOffset = NetworkUtil::get4Bytes(message, 2);
+            quint32 toOffset = NetworkUtil::get4Bytes(message, 6);
+            quint32 queueID = NetworkUtil::get4Bytes(message, 10);
+
+            qDebug() << "received queue track moved event;  QID:" << queueID
+                     << " from-offset:" << fromOffset << " to-offset:" << toOffset;
+
+            emit queueEntryMoved(fromOffset, toOffset, queueID);
+        }
+            break;
         default:
-            qDebug() << "received unknown binary message type" << messageType << " with length" << messageLength;
+            qDebug() << "received unknown binary message type" << messageType
+                     << " with length" << messageLength;
             break; /* unknown message type */
         }
     }

@@ -60,8 +60,8 @@ namespace PMP {
         QueueEntry* enqueue(QueueEntry* entry);
 
         QueueEntry* dequeue();
-
         bool remove(quint32 queueID);
+        bool move(quint32 queueID, qint16 indexDiff);
 
         QList<QueueEntry*> entries(int startoffset, int maxCount);
 
@@ -72,6 +72,7 @@ namespace PMP {
     Q_SIGNALS:
         void entryAdded(quint32 offset, quint32 queueID);
         void entryRemoved(quint32 offset, quint32 queueID);
+        void entryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
 
     private slots:
         void checkFrontOfQueue();

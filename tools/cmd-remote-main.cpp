@@ -33,6 +33,8 @@ void printUsage(QTextStream& out, QString const& programName) {
         << "    volume <number>: set volume percentage (0-100)" << endl
         << "    nowplaying: get info about the track currently playing" << endl
         << "    queue: get queue length and the first tracks waiting in the queue" << endl
+        << "    qmove <QID> <-diff>: move a track up in the queue (e.g. -3)" << endl
+        << "    qmove <QID> <+diff>: move a track down in the queue (eg. +2)" << endl
         << "    shutdown: shutdown the server program" << endl
         << endl;
 }
@@ -89,7 +91,7 @@ int main(int argc, char *argv[]) {
     }
     else if (command == "volume") {
         if (commandArgs > 1) {
-            out << "Command 'volume' requires one or two arguments!" << endl;
+            out << "Command 'volume' cannot have more than one argument!" << endl;
             return 1;
         }
         else if (commandArgs == 1) {
@@ -109,6 +111,35 @@ int main(int argc, char *argv[]) {
             commandToSend = command;
             waitForResponse = true;
         }
+    }
+    else if (command == "qmove") {
+        if (commandArgs != 2) {
+            out << "Command 'qmove' requires two arguments!" << endl;
+            return 1;
+        }
+
+        bool ok;
+        uint queueID = args[commandArgOffset].toUInt(&ok);
+        if (!ok || queueID == 0) {
+            out << "Command 'qmove' requires a valid QID as its first argument!" << endl;
+            return 1;
+        }
+
+        if (!args[commandArgOffset + 1].startsWith("+")
+            && !args[commandArgOffset + 1].startsWith("-"))
+        {
+            out << "Second argument of command 'qmove' must start with \"+\" or \"-\"!" << endl;
+            return 1;
+        }
+        int moveDiff = args[commandArgOffset + 1].toInt(&ok);
+        if (!ok || moveDiff == 0) {
+            out << "Second argument of command 'qmove' must be a positive or negative number!" << endl;
+            return 1;
+        }
+
+        /* OK */
+        commandToSend = command + " " + args[commandArgOffset] + " " + args[commandArgOffset + 1];
+        waitForResponse = false;
     }
     else {
         out << "Command not recognized: " << command << endl;
