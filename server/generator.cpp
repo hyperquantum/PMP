@@ -29,6 +29,8 @@
 
 namespace PMP {
 
+    /* ========================== Candidate ========================== */
+
     class Generator::Candidate {
     public:
         Candidate(const HashID& hashID)
@@ -46,6 +48,8 @@ namespace PMP {
         HashID _hash;
         uint _lengthSeconds;
     };
+
+    /* ========================== Generator ========================== */
 
     Generator::Generator(Queue* queue, Resolver* resolver, History* history)
      : _currentTrack(0), _queue(queue), _resolver(resolver), _history(history),
@@ -133,7 +137,7 @@ namespace PMP {
     void Generator::checkRefillUpcomingBuffer() {
         int iterationsLeft = 8;
         while (iterationsLeft > 0
-               && ((uint)_upcoming.length() < maximalUpcomingCount
+               && (_upcoming.length() < maximalUpcomingCount
                     || _upcomingRuntimeSeconds < desiredUpcomingRuntimeSeconds))
         {
             iterationsLeft--;
@@ -150,19 +154,30 @@ namespace PMP {
 
             /* urgent queue refill needed? */
             if (iterationsLeft >= 6
-                && (uint)_upcoming.length() >= minimalUpcomingCount
+                && _enabled
+                && _upcoming.length() >= minimalUpcomingCount
                 && _queue->length() < desiredQueueLength)
             {
-                requestQueueRefill();
+                /* bail out early */
                 break;
             }
+        }
+
+        /* can we do a queue refill right away? */
+        if (_enabled && iterationsLeft >= 6
+            && _upcoming.length() >= minimalUpcomingCount
+            && _queue->length() < desiredQueueLength)
+        {
+            requestQueueRefill();
         }
 
         qDebug() << "generator: buffer length:" << _upcoming.length()
                  << "; runtime:" << (_upcomingRuntimeSeconds / 60) << "min"
                  << (_upcomingRuntimeSeconds % 60) << "sec";
 
-        if ((uint)_upcoming.length() >= maximalUpcomingCount) {
+        if (_upcoming.length() >= maximalUpcomingCount
+            && !(_enabled && _queue->length() < desiredQueueLength))
+        {
             _upcomingTimer->stop();
         }
     }

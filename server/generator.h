@@ -64,11 +64,11 @@ namespace PMP {
         class Candidate;
 
         static const int upcomingTimerFreqMs = 5000;
-        static const uint desiredQueueLength = 10;
-        static const uint expandCount = 5;
-        static const uint minimalUpcomingCount = 2 * desiredQueueLength;
-        static const uint maximalUpcomingCount = 3 * desiredQueueLength + 3 * expandCount;
-        static const uint desiredUpcomingRuntimeSeconds = 3600; /* 1 hour */
+        static const int desiredQueueLength = 10;
+        static const int expandCount = 5;
+        static const int minimalUpcomingCount = 2 * desiredQueueLength;
+        static const int maximalUpcomingCount = 3 * desiredQueueLength + 3 * expandCount;
+        static const int desiredUpcomingRuntimeSeconds = 3600; /* 1 hour */
 
         void requestQueueRefill();
         int expandQueue(int howManyTracksToAdd, int maxIterations);
