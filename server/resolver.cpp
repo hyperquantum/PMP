@@ -23,11 +23,28 @@
 
 #include "database.h"
 
+#include <QDirIterator>
 #include <QFileInfo>
 #include <QtDebug>
 #include <QtGlobal>
 
 namespace PMP {
+
+    /* ========================== VerifiedFile ========================== */
+
+    bool Resolver::VerifiedFile::stillValid() {
+        QFileInfo info(_path);
+
+        if (!info.isFile() || !info.isReadable()
+            || !equals(info.size(), info.lastModified()))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /* ========================== Resolver ========================== */
 
     Resolver::Resolver() {
         Database* db = Database::instance();
@@ -44,6 +61,10 @@ namespace PMP {
 
             qDebug() << "loaded" << _hashList.count() << "hashes from the database" << endl;
         }
+    }
+
+    void Resolver::setMusicPaths(QList<QString> paths) {
+        _musicPaths = paths;
     }
 
     uint Resolver::registerHash(const HashID& hash) {
@@ -91,47 +112,157 @@ namespace PMP {
         _tagCache.insert(data.hash(), new TagData(data.tags()));
     }
 
-    void Resolver::registerFile(const FileData& file, const QString& filename) {
+    void Resolver::registerFile(const FileData& file, const QString& filename,
+                                qint64 fileSize, QDateTime fileLastModified)
+    {
         if (file.hash().empty()) { return; }
 
         registerData(file);
-        registerFile(file.hash(), filename);
+        registerFile(file.hash(), filename, fileSize, fileLastModified);
     }
 
-    void Resolver::registerFile(const HashID& hash, const QString& filename) {
-        if (hash.empty() || filename.length() <= 0) { return; }
+    void Resolver::registerFile(const HashID& hash, const QString& filename,
+                                qint64 fileSize, QDateTime fileLastModified)
+    {
+        if (hash.empty() || filename.length() <= 0 || fileSize <= 0
+            || fileLastModified.isNull())
+        {
+            return;
+        }
+
+        uint hashID = registerHash(hash);
 
         QFileInfo info(filename);
+        if (!info.isAbsolute()) return; /* we need absolute names here */
 
-        if (info.isAbsolute() || info.makeAbsolute()) {
-            uint hashID = registerHash(hash);
-            _pathCache.insert(hash, info.filePath());
-            //qDebug() << "will connect ID" << hashID << "to filename" << filename;
-
-            Database* db = Database::instance();
-            if (hashID > 0 && db != 0) {
-                db->registerFilename(hashID, info.fileName());
+        VerifiedFile* file = _paths.value(filename, 0);
+        if (file != 0) {
+            if (file->equals(hash, fileSize, fileLastModified))
+            {
+                /* registered already, and no changes */
+                return;
             }
+
+            /* changes found */
+            qDebug() << "Resolver: file different now:" << filename;
+            _filesForHash.remove(hash, file);
+            _paths.remove(filename);
+            delete file;
+            file = 0;
+        }
+
+        file = new VerifiedFile(filename, fileSize, fileLastModified, hash);
+
+        _filesForHash.insert(hash, file);
+        _paths[filename] = file;
+        //qDebug() << "will connect ID" << hashID << "to filename" << filename;
+
+        Database* db = Database::instance();
+        if (hashID > 0 && db != 0) {
+            /* save filename without path in the database */
+            db->registerFilename(hashID, info.fileName());
         }
     }
 
     bool Resolver::haveAnyPathInfo(const HashID& hash) {
-        QList<QString> paths = _pathCache.values(hash);
+        QList<VerifiedFile*> paths = _filesForHash.values(hash);
         return !paths.empty();
     }
 
-    QString Resolver::findPath(const HashID& hash) {
-        QList<QString> paths = _pathCache.values(hash);
+    bool Resolver::pathStillValid(const HashID& hash, QString path) {
+        VerifiedFile* file = _paths.value(path, 0);
+        if (file) {
+            if (file->stillValid()) return true;
+
+            qDebug() << "Resolver::pathStillValid : removing path:" << path;
+            _paths.remove(path);
+            _filesForHash.remove(hash, file);
+            delete file;
+            return false;
+        }
+
+        Q_FOREACH(file, _filesForHash.values(hash)) {
+            if (file->_path != path) continue;
+
+            if (file->stillValid()) return true;
+            qDebug() << "Resolver::pathStillValid : removing path:" << path;
+            //_paths.remove(path);
+            _filesForHash.remove(hash, file);
+            delete file;
+            return false;
+        }
+
+        return false;
+    }
+
+    QString Resolver::findPath(const HashID& hash, bool fast) {
+        QList<VerifiedFile*> files = _filesForHash.values(hash);
         qDebug() << "Resolver::findPath for hash " << hash.dumpToString();
-        qDebug() << " candidates for hash: " << paths.count();
+        qDebug() << " candidates for hash: " << files.count();
 
-        QString path;
-        foreach(path, paths) {
-            qDebug() << " candidate: " << path;
-            QFileInfo info(path);
+        foreach(VerifiedFile* file, files) {
+            qDebug() << " candidate: " << file->_path;
 
-            if (info.isFile() && info.isReadable()) {
-                return path;
+            if (file->stillValid()) {
+                return file->_path;
+            }
+
+            qDebug() << "  candidate not suitable anymore, deleting the path";
+            _filesForHash.remove(hash, file);
+            _paths.remove(file->_path);
+            delete file;
+        }
+
+        /* stop here if we had to get a result fast */
+        if (fast) return "";
+
+        Database* db = Database::instance();
+        if (db == 0) {
+            return ""; /* database unusable */
+        }
+
+        uint hashID = getID(hash);
+
+        QList<QString> filenames = db->getFilenames(hashID);
+        if (filenames.empty()) return "";
+
+        qDebug() << " going to see if the file was moved somewhere else";
+
+        Q_FOREACH(QString musicPath, _musicPaths) {
+            QDirIterator it(musicPath, QDir::Dirs | QDir::Readable | QDir::NoDotAndDotDot,
+                            QDirIterator::Subdirectories);
+
+            while (it.hasNext()) {
+                QFileInfo entry(it.next());
+                if (!entry.isDir()) continue;
+
+                QDir dir(entry.filePath());
+
+                Q_FOREACH(QString fileShort, filenames) {
+                    if (!dir.exists(fileShort)) continue;
+
+                    QString candidatePath = dir.filePath(fileShort);
+
+                    qDebug() << "  checking out:" << candidatePath;
+
+                    QFileInfo candidate(candidatePath);
+
+                    if (_paths.contains(candidatePath)) {
+                        continue; /* this one will have a different hash */
+                    }
+
+                    FileData d = FileData::analyzeFile(candidate);
+                    if (!d.isValid()) continue; /* failed to analyze */
+
+                    registerFile(
+                        d, candidatePath, candidate.size(), candidate.lastModified()
+                    );
+
+                    if (d.hash() == hash) {
+                        qDebug() << "   we have a MATCH!";
+                        return candidatePath;
+                    }
+                }
             }
         }
 
@@ -185,10 +316,12 @@ namespace PMP {
         return _hashToID.value(hash, 0);
     }
 
-    void Resolver::analysedFile(QString filename, FileData* data) {
+    void Resolver::analysedFile(QString filename, qint64 fileSize,
+                                QDateTime fileLastModified, FileData* data)
+    {
         if (data != 0) {
             qDebug() << "file analysis complete:" << filename;
-            registerFile(*data, filename);
+            registerFile(*data, filename, fileSize, fileLastModified);
             delete data;
         }
         else {

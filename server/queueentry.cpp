@@ -71,7 +71,8 @@ namespace PMP {
             return false;
         }
 
-        FileData data = FileData::analyzeFile(_filename);
+        QFileInfo info(_filename);
+        FileData data = FileData::analyzeFile(info);
 
         if (!data.isValid()) {
             qDebug() << "PROBLEM: QueueEntry" << _queueID << ": analysis of file failed:" << _filename;
@@ -79,7 +80,7 @@ namespace PMP {
         }
 
         _hash = data.hash();
-        resolver.registerFile(data, _filename);
+        resolver.registerFile(data, _filename, info.size(), info.lastModified());
         return true;
     }
 
@@ -96,47 +97,66 @@ namespace PMP {
         return 0;
     }
 
-    bool QueueEntry::checkValidFilename(Resolver& resolver, QString* outFilename) {
+    bool QueueEntry::checkValidFilename(Resolver& resolver, bool fast,
+                                        QString* outFilename)
+    {
         qDebug() << "QueueEntry::checkValidFilename QID" << _queueID;
 
-        if (!_haveFilename) {
-            HashID const* fileHash = this->hash();
-            if (fileHash == 0) {
-                qDebug() << " no hash, cannot get filename";
+        HashID const* fileHash = this->hash();
+
+        if (_haveFilename) {
+            qDebug() << " have filename, need to verify it: " << _filename;
+
+            if (fileHash) {
+                if (resolver.pathStillValid(*fileHash, _filename)) {
+                    if (outFilename) { (*outFilename) = _filename; }
+                    return true;
+                }
+
+                qDebug() << "  filename is no longer valid";
+                _haveFilename = false;
+                _filename = "";
+            }
+            else {
+                QString name = _filename;
+                QFileInfo file(name);
+
+                if (file.isRelative()) {
+                    if (!file.makeAbsolute()) {
+                        qDebug() << "  failed to make path absolute";
+                        return false;
+                    }
+                    _filename = file.absolutePath();
+                }
+
+                if (file.isFile() && file.isReadable()) {
+                    if (outFilename) { (*outFilename) = _filename; }
+                    return true;
+                }
+
+                qDebug() << "  filename is no longer valid, and we have no hash";
                 return false;
             }
+        }
 
-            QString path = resolver.findPath(*fileHash);
+        /* we don't have a valid filename */
 
-            if (path.length() > 0) {
-                _filename = path;
-                _haveFilename = true;
-                if (outFilename) { (*outFilename) = _filename; }
-                qDebug() << " found filename: " << path;
-                return true;
-            }
-
-            qDebug() << " no known filename";
+        if (fileHash == 0) {
+            qDebug() << " no hash, cannot get filename";
             return false;
         }
 
-        qDebug() << " have filename, need to verify it: " << _filename;
+        QString path = resolver.findPath(*fileHash, fast);
 
-        QString name = _filename;
-        QFileInfo file(name);
-
-        if (file.isRelative()) {
-            if (!file.makeAbsolute()) { return false; }
-            _filename = file.absolutePath();
-        }
-
-        /* TODO: verify more information, like known last modification date, file size... */
-
-        if (file.isFile() && file.isReadable()) {
+        if (path.length() > 0) {
+            _filename = path;
+            _haveFilename = true;
             if (outFilename) { (*outFilename) = _filename; }
+            qDebug() << " found filename: " << path;
             return true;
         }
 
+        qDebug() << " no known filename";
         return false;
     }
 

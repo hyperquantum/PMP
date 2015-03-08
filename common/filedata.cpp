@@ -56,11 +56,13 @@ namespace PMP {
             //|| lowercaseExtension == "wma" || lowercaseExtension == "asf";
     }
 
-    FileData FileData::analyzeFile(const QByteArray& fileContents, const QString& fileExtension) {
-        TagLib::ByteVector fileContentsScratch(fileContents.data(), fileContents.length());
+    FileData FileData::analyzeFile(const QByteArray& contents,
+                                   const QString& extension)
+    {
+        TagLib::ByteVector fileContentsScratch(contents.data(), contents.length());
         TagLib::ByteVectorStream fileScratchStream(fileContentsScratch);
 
-        QString lowercaseExtension = fileExtension.toLower();
+        QString lowercaseExtension = extension.toLower();
 
         if (lowercaseExtension == "mp3") {
             return analyzeMp3(fileScratchStream);
@@ -73,8 +75,11 @@ namespace PMP {
 
     FileData FileData::analyzeFile(const QString& filename) {
         QFileInfo fileInfo(filename);
+        return analyzeFile(fileInfo);
+    }
 
-        QFile file(filename);
+    FileData FileData::analyzeFile(QFileInfo& fileInfo) {
+        QFile file(fileInfo.filePath());
         if (!file.open(QIODevice::ReadOnly)) return FileData(HashID());
 
         QByteArray fileContents = file.readAll();

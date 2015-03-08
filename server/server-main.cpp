@@ -25,6 +25,7 @@
 #include "history.h"
 #include "player.h"
 #include "queue.h"
+#include "queueentry.h"
 #include "resolver.h"
 #include "server.h"
 #include "serversettings.h"
@@ -120,11 +121,13 @@ int main(int argc, char *argv[]) {
 
     Generator generator(&queue, &resolver, &history);
     QObject::connect(
-        &player, SIGNAL(currentTrackChanged(QueueEntry const*)),
-        &generator, SLOT(currentTrackChanged(QueueEntry const*))
+        &player, &Player::currentTrackChanged,
+        &generator, &Generator::currentTrackChanged
     );
 
     musicPaths.append("."); /* temporary, for backwards compatibility */
+
+    resolver.setMusicPaths(musicPaths);
 
     Q_FOREACH(QString musicPath, musicPaths) {
         QDirIterator it(musicPath, QDirIterator::Subdirectories/* | QDirIterator::FollowSymlinks */);
@@ -139,7 +142,10 @@ int main(int argc, char *argv[]) {
             qDebug() << "starting background analysis of" << path;
 
             FileAnalysisTask* task = new FileAnalysisTask(path);
-            resolver.connect(task, SIGNAL(finished(QString, FileData*)), &resolver, SLOT(analysedFile(QString, FileData*)));
+            resolver.connect(
+                task, &FileAnalysisTask::finished,
+                &resolver, &Resolver::analysedFile
+            );
             QThreadPool::globalInstance()->start(task);
         }
     }

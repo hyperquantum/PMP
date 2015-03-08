@@ -233,7 +233,7 @@ namespace PMP {
         while (!_queue.empty()) {
             QueueEntry* entry = _queue.dequeue();
 
-            if (entry->checkValidFilename(*_resolver, &filename)) {
+            if (entry->checkValidFilename(*_resolver, true, &filename)) {
                 next = entry;
                 break;
             }

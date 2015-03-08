@@ -21,6 +21,8 @@
 
 #include "common/filedata.h"
 
+#include <QFileInfo>
+
 namespace PMP {
 
     FileAnalysisTask::FileAnalysisTask(const QString& filename)
@@ -30,12 +32,14 @@ namespace PMP {
     }
 
     void FileAnalysisTask::run() {
+        QFileInfo info(_filename);
+
         FileData d = FileData::analyzeFile(_filename);
 
         FileData* result = 0;
         if (d.isValid()) result = new FileData(d);
 
-        emit finished(_filename, result);
+        emit finished(_filename, info.size(), info.lastModified(), result);
     }
 
 }

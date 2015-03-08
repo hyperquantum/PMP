@@ -30,6 +30,8 @@ namespace TagLib {
     class Tag;
 }
 
+QT_FORWARD_DECLARE_CLASS(QFileInfo)
+
 namespace PMP {
 
     class FileData {
@@ -45,6 +47,7 @@ namespace PMP {
 
         static FileData analyzeFile(const QByteArray& fileContents, const QString& fileExtension);
         static FileData analyzeFile(const QString& filename);
+        static FileData analyzeFile(QFileInfo& file);
 
         static FileData create(const HashID& hash,
                                const QString& artist, const QString& title,

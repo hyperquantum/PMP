@@ -20,6 +20,7 @@
 #include "queue.h"
 
 #include "queueentry.h"
+#include "resolver.h"
 
 #include <QtDebug>
 #include <QTimer>
@@ -51,7 +52,12 @@ namespace PMP {
             if (filename == 0) {
                 qDebug() << "Queue: need to get a valid filename for queue index number" << (i + 1);
                 operationsDone++;
-                entry->checkValidFilename(*_resolver);
+                entry->checkValidFilename(*_resolver, false);
+            }
+            else if (!_resolver->pathStillValid(*entry->hash(), *filename)) {
+                qDebug() << "Queue: filename no longer valid for queue index number" << (i + 1);
+                operationsDone++;
+                entry->checkValidFilename(*_resolver, false);
             }
 
             /* TODO: preload files right at the front (here or in the player) */

@@ -20,6 +20,7 @@
 #ifndef PMP_FILEANALYSISTASK_H
 #define PMP_FILEANALYSISTASK_H
 
+#include <QDateTime>
 #include <QObject>
 #include <QRunnable>
 #include <QString>
@@ -36,7 +37,8 @@ namespace PMP {
         void run();
 
     Q_SIGNALS:
-        void finished(QString filename, FileData* filedata);
+        void finished(QString filename, qint64 fileSize, QDateTime fileLastModified,
+                      FileData* filedata);
 
     private:
         QString _filename;
