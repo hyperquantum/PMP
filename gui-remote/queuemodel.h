@@ -25,12 +25,14 @@
 
 namespace PMP {
 
-    class QueueMonitor;
+    class QueueEntryInfoFetcher;
+    class QueueMediator;
 
     class QueueModel : public QAbstractTableModel {
         Q_OBJECT
     public:
-        QueueModel(QObject* parent, QueueMonitor* source);
+        QueueModel(QObject* parent, QueueMediator* source,
+                   QueueEntryInfoFetcher* trackInfoFetcher);
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -39,12 +41,18 @@ namespace PMP {
         Qt::ItemFlags flags(const QModelIndex& index) const;
         Qt::DropActions supportedDropActions() const;
 
-        uint trackAt(const QModelIndex& index) const;
+        quint32 trackIdAt(const QModelIndex& index) const;
 
     private slots:
-        void tracksInserted(int firstIndex, int lastIndex);
-        void tracksRemoved(int firstIndex, int lastIndex);
-        void tracksChanged(int firstIndex, int lastIndex);
+        void queueResetted(int queueLength);
+        void entriesReceived(int index, QList<quint32> entries);
+        void tracksChanged(QList<quint32> queueIDs);
+        void trackAdded(int index, quint32 queueID);
+        void trackRemoved(int index, quint32 queueID);
+        void trackMoved(int fromIndex, int toIndex, quint32 queueID);
+//        void tracksInserted(int firstIndex, int lastIndex);
+//        void tracksRemoved(int firstIndex, int lastIndex);
+//        void tracksChanged(int firstIndex, int lastIndex);
 
     private:
         struct Track {
@@ -60,7 +68,10 @@ namespace PMP {
             }
         };
 
-        QueueMonitor* _source;
+        //Track* trackAt(const QModelIndex& index) const;
+
+        QueueMediator* _source;
+        QueueEntryInfoFetcher* _infoFetcher;
         int _modelRows;
         QList<Track*> _tracks;
     };

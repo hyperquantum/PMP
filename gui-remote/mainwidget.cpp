@@ -23,6 +23,8 @@
 #include "common/serverconnection.h"
 
 #include "currenttrackmonitor.h"
+#include "queueentryinfofetcher.h"
+#include "queuemediator.h"
 #include "queuemodel.h"
 #include "queuemonitor.h"
 
@@ -36,8 +38,10 @@ namespace PMP {
     MainWidget::MainWidget(QWidget *parent) :
         QWidget(parent),
         _ui(new Ui::MainWidget),
-        _connection(0), _currentTrackMonitor(0), _queueMonitor(0), _queueModel(0),
-        _volume(-1), _nowPlayingQID(0), /*_nowPlayingPosition(0),*/ _nowPlayingLength(-1),
+        _connection(0), _currentTrackMonitor(0),
+        _queueMonitor(0), _queueMediator(0),
+        _queueEntryInfoFetcher(0), _queueModel(0),
+        _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1),
         _dynamicModeEnabled(false), _noRepetitionUpdating(0)
     {
         _ui->setupUi(this);
@@ -52,7 +56,10 @@ namespace PMP {
         _connection = connection;
         _currentTrackMonitor = new CurrentTrackMonitor(_connection);
         _queueMonitor = new QueueMonitor(_connection, _connection);
-        _queueModel = new QueueModel(_connection, _queueMonitor);
+        _queueMediator = new QueueMediator(_connection, _queueMonitor, _connection);
+        _queueEntryInfoFetcher =
+            new QueueEntryInfoFetcher(_connection, _queueMediator, _connection);
+        _queueModel = new QueueModel(_connection, _queueMediator, _queueEntryInfoFetcher);
 
         _ui->playButton->setEnabled(false);
         _ui->pauseButton->setEnabled(false);
@@ -144,7 +151,7 @@ namespace PMP {
 
                     QModelIndex index = _ui->queueTableView->currentIndex();
                     if (index.isValid()) {
-                        uint queueID = _queueModel->trackAt(index);
+                        quint32 queueID = _queueModel->trackIdAt(index);
 
                         if (queueID > 0) {
                             _connection->deleteQueueEntry(queueID);

@@ -283,6 +283,8 @@ namespace PMP {
     }
 
     void ServerConnection::sendTrackInfoRequest(uint queueID) {
+        if (queueID == 0) return;
+
         qDebug() << "sending request for track info of QID" << queueID;
 
         QByteArray message;
@@ -294,6 +296,8 @@ namespace PMP {
     }
 
     void ServerConnection::sendTrackInfoRequest(QList<uint> const& queueIDs) {
+        if (queueIDs.empty()) return;
+
         qDebug() << "sending bulk request for track info of" << queueIDs.size() << "QIDs";
 
         QByteArray message;

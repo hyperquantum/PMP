@@ -20,65 +20,21 @@
 #ifndef PMP_QUEUEMONITOR_H
 #define PMP_QUEUEMONITOR_H
 
-#include <QHash>
-#include <QList>
-#include <QObject>
+#include "abstractqueuemonitor.h"
 
 namespace PMP {
 
-    class QueueMonitor;
     class ServerConnection;
 
-    class TrackMonitor : public QObject {
-        Q_OBJECT
-    public:
-        TrackMonitor(QObject* parent, ServerConnection* connection, quint32 queueID);
-
-        quint32 queueID() const { return _queueID; }
-
-        /*int queuePosition() const { return _position; }
-        void setQueuePosition(int position);*/
-
-        int lengthInSeconds();
-        QString title();
-        QString artist();
-
-        bool setInfo(int lengthInSeconds, QString const& title, QString const& artist);
-        bool setPossibleFilenames(QList<QString> const& names);
-
-    public slots:
-        void notifyInfoRequestedAlready();
-
-    Q_SIGNALS:
-        void infoChanged();
-
-    private:
-        ServerConnection* _connection;
-        quint32 _queueID;
-        //int _position;
-        bool _infoRequestedAlready;
-        bool _askedForFilename;
-        int _lengthSeconds;
-        QString _title;
-        QString _artist;
-    };
-
-    class QueueMonitor : public QObject {
+    class QueueMonitor : public AbstractQueueMonitor {
         Q_OBJECT
 
     public:
         QueueMonitor(QObject* parent, ServerConnection* connection);
 
-        uint queueLength() const { return _queueLength; }
+        int queueLength() const { return _queueLength; }
         quint32 queueEntry(int index);
-        TrackMonitor* trackAtPosition(int index);
-        TrackMonitor* trackFromID(quint32 queueID);
-
-    Q_SIGNALS:
-        //void queueLengthChanged(int newLength);
-        void tracksInserted(int firstIndex, int lastIndex);
-        void tracksRemoved(int firstIndex, int lastIndex);
-        void tracksChanged(int firstIndex, int lastIndex);
+        QList<quint32> knownQueuePart() const { return _queue; }
 
     private slots:
         void connected();
@@ -87,27 +43,21 @@ namespace PMP {
         void queueEntryAdded(quint32 offset, quint32 queueID);
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
-        //void trackIsAtPosition(quint32 queueID, int index);
-        void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title,
-                               QString artist);
-        void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
 
-        void emitTracksChangedSignal();
         void sendNextSlotBatchRequest(int size);
-        void sendBulkTrackInfoRequest(QList<quint32> IDs);
 
     private:
-        static const uint initialQueueFetchLength = 10;
+        static const int initialQueueFetchLength = 10;
+        static const int indexMarginForQueueFetch = 3;
+        static const int extraRaiseFetchUpTo = 4;
+        static const int queueFetchBatchSize = 4;
 
         ServerConnection* _connection;
+        bool _waitingForVeryFirstQueueInfo;
         int _queueLength;
-        int _queueLengthSent;
         int _requestQueueUpTo;
         int _queueRequestedUpTo;
         QList<quint32> _queue; // no need for a QQueue, a QList will suffice
-        QHash<quint32, TrackMonitor*> _tracks;
-        //QHash<quint32, int> _idToPosition;
-        bool _trackChangeEventPending;
     };
 }
 #endif

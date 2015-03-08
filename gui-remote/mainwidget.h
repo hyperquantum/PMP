@@ -29,6 +29,8 @@ namespace Ui {
 namespace PMP {
 
     class CurrentTrackMonitor;
+    class QueueEntryInfoFetcher;
+    class QueueMediator;
     class QueueModel;
     class QueueMonitor;
     class ServerConnection;
@@ -73,10 +75,11 @@ namespace PMP {
         ServerConnection* _connection;
         CurrentTrackMonitor* _currentTrackMonitor;
         QueueMonitor* _queueMonitor;
+        QueueMediator* _queueMediator;
+        QueueEntryInfoFetcher* _queueEntryInfoFetcher;
         QueueModel* _queueModel;
         int _volume;
         quint32 _nowPlayingQID;
-        //quint64 _nowPlayingPosition;
         QString _nowPlayingTitle;
         QString _nowPlayingArtist;
         int _nowPlayingLength;

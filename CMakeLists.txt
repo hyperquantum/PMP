@@ -82,20 +82,26 @@ set(PMP_SERVER_HEADERS
 )
 
 set(PMP_GUI_REMOTE_SOURCES
+    gui-remote/abstractqueuemonitor.cpp
     gui-remote/connectionwidget.cpp
     gui-remote/currenttrackmonitor.cpp
     gui-remote/gui-remote-main.cpp
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp
+    gui-remote/queueentryinfofetcher.cpp
+    gui-remote/queuemediator.cpp
     gui-remote/queuemodel.cpp
     gui-remote/queuemonitor.cpp
     gui-remote/trackprogresswidget.cpp
 )
 set(PMP_GUI_REMOTE_HEADERS
+    gui-remote/abstractqueuemonitor.h
     gui-remote/connectionwidget.h
     gui-remote/currenttrackmonitor.h
     gui-remote/mainwidget.h
     gui-remote/mainwindow.h
+    gui-remote/queueentryinfofetcher.h
+    gui-remote/queuemediator.h
     gui-remote/queuemodel.h
     gui-remote/queuemonitor.h
     gui-remote/trackprogresswidget.h
