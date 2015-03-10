@@ -320,7 +320,7 @@ namespace PMP {
                                 QDateTime fileLastModified, FileData* data)
     {
         if (data != 0) {
-            qDebug() << "file analysis complete:" << filename;
+            //qDebug() << "file analysis complete:" << filename;
             registerFile(*data, filename, fileSize, fileLastModified);
             delete data;
         }

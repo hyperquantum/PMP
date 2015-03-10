@@ -129,6 +129,7 @@ int main(int argc, char *argv[]) {
 
     resolver.setMusicPaths(musicPaths);
 
+    int filesStartedAnalyzing = 0;
     Q_FOREACH(QString musicPath, musicPaths) {
         QDirIterator it(musicPath, QDirIterator::Subdirectories/* | QDirIterator::FollowSymlinks */);
         while (it.hasNext()) {
@@ -139,7 +140,7 @@ int main(int argc, char *argv[]) {
 
             QString path = entry.absoluteFilePath();
 
-            qDebug() << "starting background analysis of" << path;
+            //qDebug() << "starting background analysis of" << path;
 
             FileAnalysisTask* task = new FileAnalysisTask(path);
             resolver.connect(
@@ -147,8 +148,11 @@ int main(int argc, char *argv[]) {
                 &resolver, &Resolver::analysedFile
             );
             QThreadPool::globalInstance()->start(task);
+            filesStartedAnalyzing++;
         }
     }
+    out << "Started background analysis of " << filesStartedAnalyzing << " music files" << endl
+        << endl;
 
     generator.enable();
 
