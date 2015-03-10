@@ -49,15 +49,30 @@ namespace PMP {
             }
 
             QString const* filename = entry->filename();
+            if (filename != 0 && !_resolver->pathStillValid(*entry->hash(), *filename)) {
+                qDebug() << "Queue: filename no longer valid for queue index number" << (i + 1);
+                filename = 0;
+            }
             if (filename == 0) {
+                int& backoff = entry->fileFinderBackoff();
+                if (backoff > 0) {
+                    backoff--;
+                    continue;
+                }
+
+                int& failedCount = entry->fileFinderFailedCount();
+
                 qDebug() << "Queue: need to get a valid filename for queue index number" << (i + 1);
                 operationsDone++;
-                entry->checkValidFilename(*_resolver, false);
-            }
-            else if (!_resolver->pathStillValid(*entry->hash(), *filename)) {
-                qDebug() << "Queue: filename no longer valid for queue index number" << (i + 1);
-                operationsDone++;
-                entry->checkValidFilename(*_resolver, false);
+                if (entry->checkValidFilename(*_resolver, false)) {
+                    backoff = 0;
+                    if (failedCount > 0) failedCount >>= 1; /* divide by two */
+                }
+                else {
+                    failedCount = qMin(failedCount + 1, 100);
+                    backoff = failedCount * (1 + i);
+                    continue;
+                }
             }
 
             /* TODO: preload files right at the front (here or in the player) */

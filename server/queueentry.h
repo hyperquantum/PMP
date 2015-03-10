@@ -58,7 +58,8 @@ namespace PMP {
         QString artist() const;
         QString title() const;
 
-
+        int& fileFinderBackoff() { return _fileFinderBackoff; }
+        int& fileFinderFailedCount() { return _fileFinderFailedCount; }
 
     private:
         uint const _queueID;
@@ -69,7 +70,8 @@ namespace PMP {
         bool _haveFilename;
         bool _fetchedTagData;
         TagData _tagData;
-
+        int _fileFinderBackoff;
+        int _fileFinderFailedCount;
     };
 }
 #endif

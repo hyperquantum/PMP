@@ -32,7 +32,7 @@ namespace PMP {
     QueueEntry::QueueEntry(Queue* parent, QString const& filename)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _filename(filename), _haveFilename(true),
-       _fetchedTagData(false)
+       _fetchedTagData(false), _fileFinderBackoff(0), _fileFinderFailedCount(0)
     {
         //
     }
