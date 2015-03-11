@@ -31,10 +31,10 @@ echo "Copying files..."
 cp "$SRC_DIR"/README* "$DIST_DIR"/
 cp "$SRC_DIR"/*LICENSE* "$DIST_DIR"/
 
-cp "$BIN_DIR"/PMP-Server.exe "$DIST_DIR"/
-cp "$BIN_DIR"/PMP-GUI-Remote.exe "$DIST_DIR"/
-cp "$BIN_DIR"/PMP-Cmd-Remote.exe "$DIST_DIR"/
-cp "$BIN_DIR"/PMP-HashTool.exe "$DIST_DIR"/
+cp "$BIN_DIR"/src/PMP-Server.exe "$DIST_DIR"/
+cp "$BIN_DIR"/src/PMP-GUI-Remote.exe "$DIST_DIR"/
+cp "$BIN_DIR"/src/PMP-Cmd-Remote.exe "$DIST_DIR"/
+cp "$BIN_DIR"/src/PMP-HashTool.exe "$DIST_DIR"/
 
 cp "$BIN_DIR"/libmysql.dll "$DIST_DIR"/
 
