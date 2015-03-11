@@ -70,7 +70,7 @@ namespace PMP {
                 }
                 else {
                     failedCount = qMin(failedCount + 1, 100);
-                    backoff = failedCount * (1 + i);
+                    backoff = failedCount + (i * 2);
                     continue;
                 }
             }
