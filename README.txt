@@ -193,7 +193,6 @@ things to be missing or not working correctly ;)
 
 Only a list of ideas.  No promises!
 
- * Button in remote to manually add more tracks from dynamic mode
  * 'Trim queue' button in remote
  * Differentiate between different users by having them authenticate themselves
  * Public mode / personal mode
