@@ -493,16 +493,24 @@ namespace PMP {
         QString artist = track->artist();
         qint32 length = track->lengthInSeconds(); /* SIGNED NUMBER!! */
 
+        const int maxSize = (1 << 16) - 1;
+
+        /* worst case: 4 bytes in UTF-8 for each char */
+        title.truncate(maxSize / 4);
+        artist.truncate(maxSize / 4);
+
         QByteArray titleData = title.toUtf8();
         QByteArray artistData = artist.toUtf8();
 
         QByteArray message;
-        message.reserve((2 + 4 + 4 + 4 + 4) + titleData.size() + artistData.size());
+        message.reserve((2 + 1 + 1 + 4 * 3) + titleData.size() + artistData.size());
         NetworkUtil::append2Bytes(message, 3); /* message type */
+        NetworkUtil::appendByte(message, 0); /* TODO: track status */
+        NetworkUtil::appendByte(message, 0); /* reserved for future use */
         NetworkUtil::append4Bytes(message, queueID);
         NetworkUtil::append4Bytes(message, length); /* length in seconds, SIGNED */
-        NetworkUtil::append4Bytes(message, titleData.size());
-        NetworkUtil::append4Bytes(message, artistData.size());
+        NetworkUtil::append2Bytes(message, titleData.size());
+        NetworkUtil::append2Bytes(message, artistData.size());
         message += titleData;
         message += artistData;
 
@@ -514,13 +522,39 @@ namespace PMP {
             return;
         }
 
-        QByteArray message;
-        message.reserve(2 + queueIDs.size() * (16 + /*title*/20 + /*artist*/15)); /* a guess at how much space we will need */
-        NetworkUtil::append2Bytes(message, 4);
+        const int maxSize = (1 << 16) - 1;
 
-        quint32 queueID;
-        foreach(queueID, queueIDs) {
-            QueueEntry* track = _player->queue().lookup(queueID);
+        /* not too big? */
+        if (queueIDs.size() > maxSize) {
+            /* TODO: maybe delay the second part? */
+            sendTrackInfoMessage(queueIDs.mid(0, maxSize));
+            sendTrackInfoMessage(queueIDs.mid(maxSize));
+            return;
+        }
+
+        QByteArray message;
+        /* reserve some memory, take a guess at how much space we will probably need */
+        message.reserve(
+            4 + queueIDs.size() * (2 + 12 + /*title*/20 + /*artist*/15)
+        );
+
+        NetworkUtil::append2Bytes(message, 4); /* message type */
+        NetworkUtil::append2Bytes(message, (uint)queueIDs.size());
+
+        Queue& queue = _player->queue();
+
+        Q_FOREACH(quint32 queueID, queueIDs) {
+            QueueEntry* track = queue.lookup(queueID);
+            // TODO
+            NetworkUtil::appendByte(message, 0); /* track status */
+            NetworkUtil::appendByte(message, 0); /* reserved for future use */
+        }
+        if (queueIDs.size() % 2 != 0) {
+            NetworkUtil::append2Bytes(message, 0); /* filler */
+        }
+
+        Q_FOREACH(quint32 queueID, queueIDs) {
+            QueueEntry* track = queue.lookup(queueID);
             if (track == 0) { continue; /* ID not found */ }
 
             track->checkTrackData(_player->resolver());
@@ -529,13 +563,17 @@ namespace PMP {
             QString artist = track->artist();
             qint32 length = track->lengthInSeconds(); /* SIGNED NUMBER!! */
 
+            /* worst case: 4 bytes in UTF-8 for each char */
+            title.truncate(maxSize / 4);
+            artist.truncate(maxSize / 4);
+
             QByteArray titleData = title.toUtf8();
             QByteArray artistData = artist.toUtf8();
 
             NetworkUtil::append4Bytes(message, queueID);
             NetworkUtil::append4Bytes(message, length); /* length in seconds, SIGNED */
-            NetworkUtil::append4Bytes(message, titleData.size());
-            NetworkUtil::append4Bytes(message, artistData.size());
+            NetworkUtil::append2Bytes(message, (uint)titleData.size());
+            NetworkUtil::append2Bytes(message, (uint)artistData.size());
             message += titleData;
             message += artistData;
         }
