@@ -7,8 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>590</width>
-    <height>538</height>
+    <height>550</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>500</width>
+    <height>550</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>Form</string>
