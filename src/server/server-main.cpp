@@ -71,6 +71,9 @@ int main(int argc, char *argv[]) {
 
     out << endl << "PMP --- Party Music Player" << endl << endl;
 
+    /* seed random number generator */
+    qsrand(QTime::currentTime().msec());
+
     //foreach (const QString &path, app.libraryPaths())
     //    out << " LIB PATH : " << path << endl;
 
