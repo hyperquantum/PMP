@@ -56,6 +56,7 @@ namespace PMP {
         class AddOperation;
         class MoveOperation;
 
+        void doResetQueue();
         bool doLocalOperation(Operation* op);
         bool handleServerOperation(Operation* op);
 

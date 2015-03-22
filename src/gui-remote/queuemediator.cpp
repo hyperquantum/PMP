@@ -383,14 +383,23 @@ namespace PMP {
     void QueueMediator::resetQueue(int queueLength) {
         qDebug() << "QueueMediator: resetting state, length=" << queueLength;
         _queueLength = queueLength;
-        _myQueue.clear();
+        _myQueue = _sourceMonitor->knownQueuePart();
 
-        Q_FOREACH(Operation* op, _pendingOperations) {
-            delete op;
-        }
+        qDeleteAll(_pendingOperations);
         _pendingOperations.clear();
 
         emit queueResetted(queueLength);
+    }
+
+    void QueueMediator::doResetQueue() {
+        qDebug() << "QueueMediator: resetting state to that from source";
+        _queueLength = _sourceMonitor->queueLength();
+        _myQueue = _sourceMonitor->knownQueuePart();
+
+        qDeleteAll(_pendingOperations);
+        _pendingOperations.clear();
+
+        emit queueResetted(_queueLength);
     }
 
     void QueueMediator::entriesReceivedAtServer(int index, QList<quint32> entries) {
@@ -411,10 +420,12 @@ namespace PMP {
 
     bool QueueMediator::doLocalOperation(Operation* op) {
         if (!op->execute(*this, true)) {
+            qDebug() << "QueueMediator::doLocalOperation: FAILED to execute";
+
             /* PROBLEM */
             delete op;
 
-            resetQueue(_sourceMonitor->queueLength());
+            doResetQueue();
             return false;
         }
 
@@ -469,8 +480,10 @@ namespace PMP {
 
         if (!allFailMustReset) return true;
 
+        qDebug() << " rollback failed; resetting";
+
         /* failure --> start over fresh */
-        resetQueue(_sourceMonitor->queueLength());
+        doResetQueue();
         return false;
     }
 

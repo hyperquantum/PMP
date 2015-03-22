@@ -237,7 +237,7 @@ namespace PMP {
 
         qDebug() << " fromRow=" << fromRow << " ; QID=" << queueID << "; toRow=" << toRow;
 
-        if (fromRow != toRow) {
+        if (fromRow != (uint)toRow) {
             _source->moveTrack(fromRow, toRow, queueID);
         }
 
@@ -285,9 +285,7 @@ namespace PMP {
         if (_modelRows > 0) {
             beginRemoveRows(QModelIndex(), 0, _modelRows - 1);
             _modelRows = 0;
-            Q_FOREACH(Track* t, _tracks) {
-                delete t;
-            }
+            qDeleteAll(_tracks);
             _tracks.clear();
             endRemoveRows();
         }
@@ -295,6 +293,11 @@ namespace PMP {
         if (queueLength > 0) {
             beginInsertRows(QModelIndex(), 0, queueLength - 1);
             _modelRows = queueLength;
+            QList<quint32> knownQueue = _source->knownQueuePart();
+            _tracks.reserve(knownQueue.size());
+            Q_FOREACH(quint32 queueID, knownQueue) {
+                _tracks.append(new Track(queueID));
+            }
             endInsertRows();
         }
     }
