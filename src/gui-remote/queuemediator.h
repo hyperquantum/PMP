@@ -33,6 +33,8 @@ namespace PMP {
         QueueMediator(QObject* parent, QueueMonitor* monitor,
                       ServerConnection* connection);
 
+        QUuid serverUuid() const;
+
         int queueLength() const { return _queueLength; }
         quint32 queueEntry(int index);
         QList<quint32> knownQueuePart() const { return _myQueue; }

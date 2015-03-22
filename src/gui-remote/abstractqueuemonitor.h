@@ -22,6 +22,7 @@
 
 #include <QList>
 #include <QObject>
+#include <QUuid>
 
 namespace PMP {
 
@@ -29,6 +30,8 @@ namespace PMP {
         Q_OBJECT
     public:
         AbstractQueueMonitor(QObject* parent = 0);
+
+        virtual QUuid serverUuid() const = 0;
 
         virtual int queueLength() const = 0;
         virtual quint32 queueEntry(int index) = 0;

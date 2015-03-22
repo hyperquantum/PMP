@@ -356,6 +356,10 @@ namespace PMP {
         );
     }
 
+    QUuid QueueMediator::serverUuid() const {
+        return _sourceMonitor->serverUuid();
+    }
+
     quint32 QueueMediator::queueEntry(int index) {
         if (index < 0 || index >= _myQueue.size()) {
             /* make sure the info will be fetched from the server */

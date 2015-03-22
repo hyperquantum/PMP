@@ -40,6 +40,12 @@ namespace PMP {
         QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
         Qt::ItemFlags flags(const QModelIndex& index) const;
         Qt::DropActions supportedDropActions() const;
+        QMimeData* mimeData(const QModelIndexList& indexes) const;
+        QStringList mimeTypes() const;
+        bool dropMimeData(const QMimeData* data, Qt::DropAction action,
+                          int row, int column, const QModelIndex& parent);
+        bool canDropMimeData(const QMimeData* data, Qt::DropAction action,
+                             int row, int column, const QModelIndex& parent) const;
 
         quint32 trackIdAt(const QModelIndex& index) const;
 

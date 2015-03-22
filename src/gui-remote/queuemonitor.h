@@ -32,12 +32,15 @@ namespace PMP {
     public:
         QueueMonitor(QObject* parent, ServerConnection* connection);
 
+        QUuid serverUuid() const { return _serverUuid; }
+
         int queueLength() const { return _queueLength; }
         quint32 queueEntry(int index);
         QList<quint32> knownQueuePart() const { return _queue; }
 
     private slots:
         void connected();
+        void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);
         void queueEntryAdded(quint32 offset, quint32 queueID);
@@ -53,6 +56,7 @@ namespace PMP {
         static const int queueFetchBatchSize = 4;
 
         ServerConnection* _connection;
+        QUuid _serverUuid;
         bool _waitingForVeryFirstQueueInfo;
         int _queueLength;
         int _requestQueueUpTo;

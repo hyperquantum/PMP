@@ -22,6 +22,10 @@
 #include "queueentryinfofetcher.h"
 #include "queuemediator.h"
 
+#include <QBuffer>
+#include <QDataStream>
+#include <QList>
+#include <QMimeData>
 #include <QtDebug>
 
 namespace PMP {
@@ -143,6 +147,120 @@ namespace PMP {
     Qt::DropActions QueueModel::supportedDropActions() const
     {
         return Qt::MoveAction;
+    }
+
+    QStringList QueueModel::mimeTypes() const {
+        return QStringList(QString("application/x-pmp-queueitem"));
+    }
+
+    QMimeData* QueueModel::mimeData(const QModelIndexList& indexes) const {
+        if (indexes.isEmpty()) return 0;
+
+        qDebug() << "QueueModel::mimeData called; indexes count =" << indexes.size();
+
+        QUuid serverUuid = _source->serverUuid();
+        if (serverUuid.isNull()) return 0;
+
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QDataStream stream(&buffer);
+        stream.setVersion(QDataStream::Qt_5_2);
+
+        stream << serverUuid;
+
+        QList<int> rows;
+        QList<quint32> ids;
+        int prevRow = -1;
+        Q_FOREACH(const QModelIndex& index, indexes) {
+            int row = index.row();
+            if (row == prevRow) continue;
+            prevRow = row;
+
+            quint32 queueID = _source->queueEntry(row);
+            qDebug() << " row" << row << "; col" << index.column() << ";  QID" << queueID;
+            rows.append(row);
+            ids.append(queueID);
+        }
+
+        stream << (quint32)rows.size();
+        for (int i = 0; i < rows.size(); ++i) {
+            stream << (quint32)(uint)rows[i];
+            stream << ids[i];
+        }
+
+        buffer.close();
+
+        QMimeData* data = new QMimeData();
+
+        data->setData("application/x-pmp-queueitem", buffer.data());
+        return data;
+    }
+
+    bool QueueModel::dropMimeData(const QMimeData* data, Qt::DropAction action,
+                                  int row, int column, const QModelIndex& parent)
+    {
+        qDebug() << "QueueModel::dropMimeData called; action=" << action
+                 << "; row=" << row;
+
+        if (row == -1) {
+            row = parent.row();
+            column = parent.column();
+            //parent = parent.parent();
+            qDebug() << " went up one level: row=" << row;
+        }
+
+        if (!data->hasFormat("application/x-pmp-queueitem")) return false;
+        QDataStream stream(data->data("application/x-pmp-queueitem"));
+
+        QUuid serverUuid;
+        stream >> serverUuid;
+
+        qint32 count;
+        stream >> count;
+        if (count > 1) return false; // FIXME
+
+        quint32 fromRow;
+        quint32 queueID;
+        stream >> fromRow;
+        stream >> queueID;
+
+        int toRow = (uint)row < fromRow ? row : row - 1;
+        if (row < 0) {
+            toRow = _modelRows - 1;
+        }
+        else if ((uint)row > fromRow) {
+            toRow = row - 1;
+        }
+        else {
+            toRow = row;
+        }
+
+        qDebug() << " fromRow=" << fromRow << " ; QID=" << queueID << "; toRow=" << toRow;
+
+        if (fromRow != toRow) {
+            _source->moveTrack(fromRow, toRow, queueID);
+        }
+
+        return true;
+    }
+
+    bool QueueModel::canDropMimeData(const QMimeData* data, Qt::DropAction action,
+                                     int row, int column, const QModelIndex& parent) const
+    {
+        if (!QAbstractTableModel::canDropMimeData(data, action, row, column, parent)) {
+            return false;
+        }
+
+        if (!data->hasFormat("application/x-pmp-queueitem")) return false;
+
+        QDataStream stream(data->data("application/x-pmp-queueitem"));
+
+        QUuid serverUuid;
+        stream >> serverUuid;
+
+        if (serverUuid.isNull() || serverUuid != _source->serverUuid()) return false;
+
+        return true;
     }
 
     quint32 QueueModel::trackIdAt(const QModelIndex& index) const {

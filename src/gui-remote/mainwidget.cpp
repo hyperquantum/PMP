@@ -66,9 +66,11 @@ namespace PMP {
         _ui->skipButton->setEnabled(false);
         _ui->queueTableView->setModel(_queueModel);
         _ui->queueTableView->installEventFilter(this);
-//        _ui->queueTableView->setDragEnabled(true);
-//        _ui->queueTableView->setAcceptDrops(true);
-//        _ui->queueTableView->setDropIndicatorShown(true);
+        _ui->queueTableView->setDragEnabled(true);
+        _ui->queueTableView->setAcceptDrops(true);
+        _ui->queueTableView->setDropIndicatorShown(true);
+        _ui->queueTableView->setSelectionMode(QAbstractItemView::ContiguousSelection);
+        _ui->queueTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
         connect(
             _ui->trackProgress, SIGNAL(seekRequested(qint64)),

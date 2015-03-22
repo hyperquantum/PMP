@@ -39,6 +39,10 @@ namespace PMP {
             this, &QueueMonitor::connected
         );
         connect(
+            _connection, &ServerConnection::receivedServerInstanceIdentifier,
+            this, &QueueMonitor::receivedServerInstanceIdentifier
+        );
+        connect(
             _connection, &ServerConnection::receivedQueueContents,
             this, &QueueMonitor::receivedQueueContents
         );
@@ -69,6 +73,10 @@ namespace PMP {
 
         _queueRequestedUpTo = initialQueueFetchLength;
         _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
+    }
+
+    void QueueMonitor::receivedServerInstanceIdentifier(QUuid uuid) {
+        _serverUuid = uuid;
     }
 
     quint32 QueueMonitor::queueEntry(int index) {
