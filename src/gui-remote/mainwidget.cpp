@@ -69,7 +69,7 @@ namespace PMP {
         _ui->queueTableView->setDragEnabled(true);
         _ui->queueTableView->setAcceptDrops(true);
         _ui->queueTableView->setDropIndicatorShown(true);
-        _ui->queueTableView->setSelectionMode(QAbstractItemView::ContiguousSelection);
+        _ui->queueTableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _ui->queueTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
         connect(
