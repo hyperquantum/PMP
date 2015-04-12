@@ -206,6 +206,7 @@ Only a list of ideas.  No promises!
  * Dynamic mode: avoid repeating the same artist within a certain timespan
  * Silence detection at the start and end of each track
  * Crossfading
+ * Time-based auto-stop function.
  * Bridging of PMP server instances, to access music from another machine
  * Naming a PMP Server instance; e.g. "living room"
  * Support for other formats than just MP3

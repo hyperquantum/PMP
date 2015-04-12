@@ -43,6 +43,7 @@ namespace PMP {
         quint16 port() const;
 
         QUuid uuid() const { return _uuid; }
+        QString serverPassword() { return _serverPassword; }
 
     public slots:
         void shutdown();
@@ -54,7 +55,10 @@ namespace PMP {
         void newConnectionReceived();
 
     private:
+        static QString generateServerPassword();
+
         QUuid _uuid;
+        QString _serverPassword;
         Player* _player;
         Generator* _generator;
         QTcpServer* _server;

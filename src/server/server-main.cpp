@@ -172,6 +172,7 @@ int main(int argc, char *argv[]) {
     }
 
     out << "Now listening on port " << server.port() << endl
+        << "Server password is " << server.serverPassword() << endl
         << endl;
 
     // exit when the server instance signals it

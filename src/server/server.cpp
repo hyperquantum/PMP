@@ -20,10 +20,13 @@
 #include "server.h"
 
 #include "connectedclient.h"
+#include "serversettings.h"
 
 #include <QByteArray>
 #include <QTcpServer>
 #include <QTcpSocket>
+
+#define QT_USE_QSTRINGBUILDER
 
 namespace PMP {
 
@@ -35,7 +38,41 @@ namespace PMP {
         /* generate a new UUID for ourselves if we did not receive a valid one */
         if (_uuid.isNull()) _uuid = QUuid::createUuid();
 
+        ServerSettings serversettings;
+        QSettings& settings = serversettings.getSettings();
+
+        QVariant serverPassword = settings.value("security/serverpassword");
+        if (!serverPassword.isValid() || serverPassword.toString() == ""
+            || serverPassword.toString().length() < 6)
+        {
+            _serverPassword = generateServerPassword();
+            settings.setValue("security/serverpassword", _serverPassword);
+        }
+        else {
+            _serverPassword = serverPassword.toString();
+        }
+
         connect(_server, SIGNAL(newConnection()), this, SLOT(newConnectionReceived()));
+    }
+
+    QString Server::generateServerPassword() {
+        const QString chars =
+            "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz123456789!@%&*()+=:;<>?/-";
+
+        QString serverPassword;
+        serverPassword.reserve(8);
+        int prevIndex = 70;
+        for (int i = 0; i < 8; ++i) {
+            int index;
+            do {
+                index = qrand() % chars.length();
+            } while (qAbs(index - prevIndex) < 16);
+            prevIndex = index;
+            QChar c = chars[index];
+            serverPassword += c;
+        }
+
+        return serverPassword;
     }
 
     bool Server::listen(Player* player, Generator* generator, const QHostAddress& address,
