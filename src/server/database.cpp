@@ -161,6 +161,24 @@ namespace PMP {
             return false;
         }
 
+        /* create table 'pmp_user' if needed */
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_user("
+            " `UserID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+            " `Login` VARCHAR(63) NOT NULL,"
+            " `Salt` VARCHAR(255),"
+            " `Password` VARCHAR(255),"
+            " PRIMARY KEY (`UserID`),"
+            " UNIQUE INDEX `IDX_pmpuser_login` (`Login`)"
+            ") "
+            "ENGINE = InnoDB "
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
+        );
+        if (!q.exec()) {
+            out << " database initialization problem: " << db.lastError().text() << endl << endl;
+            return false;
+        }
+
         _instance = new Database();
         _instance->_db = db;
 
@@ -297,7 +315,75 @@ namespace PMP {
         return result;
     }
 
-    bool Database::executeScalar(QSqlQuery& q, int& i, const int& defaultValue) {
+    QList<User> Database::getUsers() {
+        QSqlQuery q(_db);
+        q.prepare("SELECT `UserID`,`Login`,`Salt`,`Password` FROM pmp_user");
+
+        QList<User> result;
+
+        if (!executeQuery(q)) { /* error */
+            qDebug() << "Database::getUsers : could not execute; " << q.lastError().text() << endl;
+            return result;
+        }
+
+        while (q.next()) {
+            quint32 userID = q.value(0).toUInt();
+            QString login = q.value(1).toString();
+            QString salt = q.value(2).toString();
+            QString password = q.value(3).toString();
+
+            result.append(User::fromDb(userID, login, salt, password));
+        }
+
+        qDebug() << "Database::getUsers() : user count:" << result.size();
+
+        return result;
+    }
+
+    bool Database::checkUserExists(QString userName) {
+        QSqlQuery q(_db);
+        q.prepare("SELECT EXISTS(SELECT * FROM pmp_user WHERE LOWER(`Login`)=LOWER(?))");
+        q.addBindValue(userName);
+
+        if (!executeQuery(q)) { /* error */
+            qDebug() << "Database::checkUserExists : could not execute; "
+                     << q.lastError().text() << endl;
+            return false; // FIXME ???
+        }
+
+        if (q.next()) {
+            return q.value(0).toBool();
+        }
+
+        return false;
+    }
+
+    quint32 Database::registerNewUser(User& user) {
+        QSqlQuery q(_db);
+        q.prepare("INSERT INTO pmp_user(`Login`,`Salt`,`Password`) VALUES(?,?,?)");
+        q.addBindValue(user.login);
+        q.addBindValue(QString::fromLatin1(user.salt.toBase64()));
+        q.addBindValue(QString::fromLatin1(user.password.toBase64()));
+
+        if (!executeQuery(q)) { /* error */
+            qDebug() << "Database::registerNewUser : could not execute INSERT; "
+                     << q.lastError().text() << endl;
+            return 0;
+        }
+
+        q.prepare("SELECT LAST_INSERT_ID()");
+
+        uint userId = 0;
+        if (!executeScalar(q, userId, 0)) {
+            qDebug() << "Database::registerNewUser : could not execute SELECT; "
+                     << q.lastError().text() << endl;
+            return 0;
+        }
+
+        return userId;
+    }
+
+    bool Database::executeScalar(QSqlQuery& q, int& i, int defaultValue) {
         if (!executeQuery(q)) {
             i = defaultValue;
             return false;
@@ -306,6 +392,23 @@ namespace PMP {
         if (q.next()) {
             QVariant v = q.value(0);
             i = (v.isNull()) ? defaultValue : v.toInt();
+        }
+        else {
+            i = defaultValue;
+        }
+
+        return true;
+    }
+
+    bool Database::executeScalar(QSqlQuery& q, uint& i, uint defaultValue) {
+        if (!executeQuery(q)) {
+            i = defaultValue;
+            return false;
+        }
+
+        if (q.next()) {
+            QVariant v = q.value(0);
+            i = (v.isNull()) ? defaultValue : v.toUInt();
         }
         else {
             i = defaultValue;
@@ -333,6 +436,8 @@ namespace PMP {
 
     bool Database::executeQuery(QSqlQuery& q) {
         if (q.exec()) return true;
+
+        /* something went wrong */
 
         QSqlError error = q.lastError();
         qDebug() << "Database: query failed:" << error.text();

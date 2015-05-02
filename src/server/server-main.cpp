@@ -29,6 +29,7 @@
 #include "resolver.h"
 #include "server.h"
 #include "serversettings.h"
+#include "users.h"
 
 #include <QCoreApplication>
 #include <QDirIterator>
@@ -118,6 +119,7 @@ int main(int argc, char *argv[]) {
     QUuid serverInstanceIdentifier = QUuid::createUuid();
     out << "Server instance identifier: " << serverInstanceIdentifier.toString() << endl << endl;
 
+    Users users;
     Player player(0, &resolver);
     Queue& queue = player.queue();
     History history(&player);
@@ -157,15 +159,13 @@ int main(int argc, char *argv[]) {
     out << "Started background analysis of " << filesStartedAnalyzing << " music files" << endl
         << endl;
 
-    generator.enable();
-
     out << endl
         << "Volume = " << player.volume() << endl;
 
     out << endl;
 
     Server server(0, serverInstanceIdentifier);
-    if (!server.listen(&player, &generator, QHostAddress::Any, 23432)) {
+    if (!server.listen(&player, &generator, &users, QHostAddress::Any, 23432)) {
         out << "Could not start TCP listener: " << server.errorString() << endl;
         out << "Exiting." << endl;
         return 1;
@@ -177,6 +177,8 @@ int main(int argc, char *argv[]) {
 
     // exit when the server instance signals it
     QObject::connect(&server, SIGNAL(shuttingDown()), &app, SLOT(quit()));
+
+    generator.enable();
 
     return app.exec();
 }

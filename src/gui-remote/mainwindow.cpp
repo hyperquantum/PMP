@@ -23,6 +23,8 @@
 
 #include "connectionwidget.h"
 #include "mainwidget.h"
+#include "useraccountcreationwidget.h"
+#include "userpickerwidget.h"
 
 #include <QMessageBox>
 
@@ -31,10 +33,13 @@ namespace PMP {
     MainWindow::MainWindow(QWidget* parent)
      : QMainWindow(parent),
        _connectionWidget(new ConnectionWidget(this)),
-       _connection(0), _mainWidget(0)
+       _connection(0), _userPickerWidget(0), _mainWidget(0)
     {
         setCentralWidget(_connectionWidget);
-        connect(_connectionWidget, SIGNAL(doConnect(QString, uint)), this, SLOT(onDoConnect(QString, uint)));
+        connect(
+            _connectionWidget, &ConnectionWidget::doConnect,
+            this, &MainWindow::onDoConnect
+        );
     }
 
     MainWindow::~MainWindow() {
@@ -44,34 +49,95 @@ namespace PMP {
     void MainWindow::onDoConnect(QString server, uint port) {
         _connection = new ServerConnection();
 
-        connect(_connection, SIGNAL(connected()), this, SLOT(onConnected()));
-        connect(_connection, SIGNAL(cannotConnect(QAbstractSocket::SocketError)), this, SLOT(onCannotConnect(QAbstractSocket::SocketError)));
-        connect(_connection, SIGNAL(invalidServer()), this, SLOT(onInvalidServer()));
-        connect(_connection, SIGNAL(connectionBroken(QAbstractSocket::SocketError)), this, SLOT(onConnectionBroken(QAbstractSocket::SocketError)));
+        connect(
+            _connection, &ServerConnection::connected,
+            this, &MainWindow::onConnected
+        );
+        connect(
+            _connection, &ServerConnection::cannotConnect,
+            this, &MainWindow::onCannotConnect
+        );
+        connect(
+            _connection, &ServerConnection::invalidServer,
+            this, &MainWindow::onInvalidServer
+        );
+        connect(
+            _connection, &ServerConnection::connectionBroken,
+            this, &MainWindow::onConnectionBroken
+        );
 
         _connection->connectToHost(server, port);
     }
 
     void MainWindow::onConnected() {
-        _mainWidget = new MainWidget(this);
-        _mainWidget->setConnection(_connection);
-        setCentralWidget(_mainWidget);
-        _connectionWidget->close();
+        showUserAccountPicker();
+    }
+
+    void MainWindow::showUserAccountPicker() {
+        _userPickerWidget = new UserPickerWidget(this, _connection);
+
+        connect(
+            _userPickerWidget, &UserPickerWidget::accountClicked,
+            this, &MainWindow::showMainWidget
+        );
+
+        connect(
+            _userPickerWidget, &UserPickerWidget::createAccountClicked,
+            this, &MainWindow::onCreateAccountClicked
+        );
+
+        setCentralWidget(_userPickerWidget);
     }
 
     void MainWindow::onCannotConnect(QAbstractSocket::SocketError error) {
         QMessageBox::warning(this, "Connection failure", "Failed to connect to that server.");
-        _connectionWidget->reenableFields(); /* let the user try to correct any possible mistake */
+
+        /* let the user try to correct any possible mistake */
+        _connectionWidget->reenableFields();
     }
 
     void MainWindow::onInvalidServer() {
         QMessageBox::warning(this, "Connection failure", "This is not a valid PMP server!");
-        _connectionWidget->reenableFields(); /* let the user try to correct any possible mistake */
+
+        /* let the user try to correct any possible mistake */
+        _connectionWidget->reenableFields();
     }
 
     void MainWindow::onConnectionBroken(QAbstractSocket::SocketError error) {
         QMessageBox::warning(this, "Connection failure", "Connection to the server was lost!");
         this->close();
+    }
+
+    void MainWindow::showMainWidget() {
+        _mainWidget = new MainWidget(this);
+        _mainWidget->setConnection(_connection);
+        setCentralWidget(_mainWidget);
+    }
+
+    void MainWindow::onCreateAccountClicked() {
+        _userAccountCreationWidget = new UserAccountCreationWidget(this, _connection);
+
+        connect(
+            _userAccountCreationWidget, &UserAccountCreationWidget::accountCreated,
+            this, &MainWindow::onAccountCreated
+        );
+        connect(
+            _userAccountCreationWidget, &UserAccountCreationWidget::cancelClicked,
+            this, &MainWindow::onAccountCreationCancel
+        );
+
+        setCentralWidget(_userAccountCreationWidget);
+    }
+
+    void MainWindow::onAccountCreated(QString login, QString password, quint32 accountId)
+    {
+        _userAccountCreationWidget = 0;
+        showUserAccountPicker();
+    }
+
+    void MainWindow::onAccountCreationCancel() {
+        _userAccountCreationWidget = 0;
+        showUserAccountPicker();
     }
 
 }

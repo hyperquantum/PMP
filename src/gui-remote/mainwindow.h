@@ -28,6 +28,8 @@ namespace PMP {
     class ConnectionWidget;
     class MainWidget;
     class ServerConnection;
+    class UserAccountCreationWidget;
+    class UserPickerWidget;
 
     class MainWindow : public QMainWindow {
         Q_OBJECT
@@ -43,9 +45,18 @@ namespace PMP {
         void onInvalidServer();
         void onConnectionBroken(QAbstractSocket::SocketError error);
 
+        void onCreateAccountClicked();
+        void onAccountCreated(QString login, QString password, quint32 accountId);
+        void onAccountCreationCancel();
+
     private:
+        void showUserAccountPicker();
+        void showMainWidget();
+
         ConnectionWidget* _connectionWidget;
         ServerConnection* _connection;
+        UserPickerWidget* _userPickerWidget;
+        UserAccountCreationWidget* _userAccountCreationWidget;
         MainWidget* _mainWidget;
     };
 }

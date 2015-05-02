@@ -28,6 +28,9 @@
 
 namespace PMP {
 
+    /**
+        Represents a connection to a PMP server.
+    */
     class ServerConnection : public QObject {
         Q_OBJECT
 
@@ -38,6 +41,10 @@ namespace PMP {
     public:
         enum PlayState {
             UnknownState = 0, Stopped = 1, Playing = 2, Paused = 3
+        };
+
+        enum UserRegistrationError {
+            UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
         };
 
         ServerConnection(QObject* parent = 0);
@@ -75,6 +82,10 @@ namespace PMP {
 
         void sendPossibleFilenamesRequest(uint queueID);
 
+        void sendUserAccountsFetchRequest();
+
+        void createNewUserAccount(QString login, QString password);
+
     Q_SIGNALS:
         void connected();
         void cannotConnect(QAbstractSocket::SocketError error);
@@ -107,6 +118,10 @@ namespace PMP {
                                QString artist);
         void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
 
+        void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
+        void userAccountCreatedSuccessfully(QString login, quint32 id);
+        void userAccountCreationError(QString login, UserRegistrationError errorType);
+
     private slots:
         void onConnected();
         void onReadyRead();
@@ -121,12 +136,26 @@ namespace PMP {
         void readBinaryCommands();
         void executeTextCommand(QString const& commandText);
         void handleBinaryMessage(QByteArray const& message);
+        void handleResultMessage(quint16 errorType, quint32 clientReference,
+                                 quint32 intData, QByteArray const& blobData);
+
+        void sendInitiateNewUserAccountMessage(QString login, quint32 clientReference);
+        void sendFinishNewUserAccountMessage(QString login, QByteArray salt,
+                                             QByteArray hashedPassword,
+                                             quint32 clientReference);
+
+        void handleNewUserSalt(QString login, QByteArray salt);
+        void handleUserRegistrationResult(quint16 errorType, quint32 intData,
+                                          QByteArray const& blobData);
 
         State _state;
         QTcpSocket _socket;
         QByteArray _readBuffer;
         bool _binarySendingMode;
         int _serverProtocolNo;
+        uint _userAccountRegistrationRef;
+        QString _userAccountRegistrationLogin;
+        QString _userAccountRegistrationPassword;
     };
 }
 #endif

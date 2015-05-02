@@ -22,6 +22,7 @@
 
 #include "common/hashid.h"
 
+#include <QByteArray>
 #include <QList>
 #include <QObject>
 #include <QPair>
@@ -35,6 +36,28 @@ QT_FORWARD_DECLARE_CLASS(QTextStream)
 namespace PMP {
 
     class FileData;
+
+    class User {
+    public:
+        User(quint32 id, QString login, QByteArray salt, QByteArray password)
+         : id(id), login(login), salt(salt), password(password)
+        {
+            //
+        }
+
+        static User fromDb(quint32 id, QString login, QString salt, QString password) {
+            return User(
+                id, login,
+                QByteArray::fromBase64(salt.toLatin1()),
+                QByteArray::fromBase64(password.toLatin1())
+            );
+        }
+
+        quint32 id;
+        QString login;
+        QByteArray salt;
+        QByteArray password;
+    };
 
     class Database : public QObject {
         Q_OBJECT
@@ -50,8 +73,13 @@ namespace PMP {
         void registerFilename(uint hashID, const QString& filenameWithoutPath);
         QList<QString> getFilenames(uint hashID);
 
+        QList<User> getUsers();
+        bool checkUserExists(QString userName);
+        quint32 registerNewUser(User& user);
+
     private:
-        bool executeScalar(QSqlQuery& q, int& i, const int& defaultValue = 0);
+        bool executeScalar(QSqlQuery& q, int& i, int defaultValue = 0);
+        bool executeScalar(QSqlQuery& q, uint& i, uint defaultValue = 0);
         bool executeScalar(QSqlQuery& q, QString& s, const QString& defaultValue = "");
 
         bool executeQuery(QSqlQuery& q);

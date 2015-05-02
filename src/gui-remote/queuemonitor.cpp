@@ -65,9 +65,10 @@ namespace PMP {
     }
 
     void QueueMonitor::connected() {
+        _connection->sendServerInstanceIdentifierRequest();
+
         _waitingForVeryFirstQueueInfo = true;
         _queueLength = 0;
-        //_queueLengthSent = 0;
         _queueRequestedUpTo = 0;
         _queue.clear();
 

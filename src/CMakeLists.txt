@@ -21,6 +21,7 @@ set(PMP_COMMON_SOURCES
     common/audiodata.cpp
     common/filedata.cpp
     common/hashid.cpp
+    common/networkprotocol.cpp
     common/networkutil.cpp
     common/serverconnection.cpp
     common/tagdata.cpp
@@ -42,6 +43,7 @@ set(PMP_SERVER_SOURCES
     server/server.cpp
     server/server-main.cpp
     server/serversettings.cpp
+    server/users.cpp
 )
 set(PMP_SERVER_HEADERS
     server/connectedclient.h
@@ -55,6 +57,7 @@ set(PMP_SERVER_HEADERS
     server/resolver.h
     server/server.h
     server/serversettings.h
+    server/users.h
 )
 
 set(PMP_GUI_REMOTE_SOURCES
@@ -69,6 +72,8 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/queuemodel.cpp
     gui-remote/queuemonitor.cpp
     gui-remote/trackprogresswidget.cpp
+    gui-remote/useraccountcreationwidget.cpp
+    gui-remote/userpickerwidget.cpp
 )
 set(PMP_GUI_REMOTE_HEADERS
     gui-remote/abstractqueuemonitor.h
@@ -81,10 +86,14 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/queuemodel.h
     gui-remote/queuemonitor.h
     gui-remote/trackprogresswidget.h
+    gui-remote/useraccountcreationwidget.h
+    gui-remote/userpickerwidget.h
 )
 set(PMP_GUI_REMOTE_UIS
     gui-remote/connectionwidget.ui
     gui-remote/mainwidget.ui
+    gui-remote/useraccountcreationwidget.ui
+    gui-remote/userpickerwidget.ui
 )
 
 qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})

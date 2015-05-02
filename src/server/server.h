@@ -29,13 +29,14 @@ namespace PMP {
 
     class Generator;
     class Player;
+    class Users;
 
     class Server : public QObject {
         Q_OBJECT
     public:
-        explicit Server(QObject* parent, const QUuid& serverInstanceIdentifier);
+        Server(QObject* parent, const QUuid& serverInstanceIdentifier);
 
-        bool listen(Player* player, Generator* generator,
+        bool listen(Player* player, Generator* generator, Users* users,
                     const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
 
         QString errorString() const;
@@ -61,6 +62,7 @@ namespace PMP {
         QString _serverPassword;
         Player* _player;
         Generator* _generator;
+        Users* _users;
         QTcpServer* _server;
     };
 }

@@ -141,6 +141,8 @@ namespace PMP {
             _connection, SIGNAL(queueLengthChanged(int)),
             this, SLOT(queueLengthChanged(int))
         );
+
+        _connection->requestDynamicModeStatus();
     }
 
     bool MainWidget::eventFilter(QObject* object, QEvent* event) {

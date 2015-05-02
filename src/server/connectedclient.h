@@ -20,6 +20,8 @@
 #ifndef PMP_CONNECTEDCLIENT_H
 #define PMP_CONNECTEDCLIENT_H
 
+#include "common/networkprotocol.h"
+
 #include "player.h" /* for the State enum :( */
 
 #include <QByteArray>
@@ -31,11 +33,13 @@ namespace PMP {
     class Generator;
     class QueueEntry;
     class Server;
+    class Users;
 
     class ConnectedClient : public QObject {
         Q_OBJECT
     public:
-        ConnectedClient(QTcpSocket* socket, Server* server, Player* player, Generator* generator);
+        ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
+                        Generator* generator, Users* users);
 
     Q_SIGNALS:
 
@@ -66,6 +70,7 @@ namespace PMP {
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
         void sendServerInstanceIdentifier();
+        void sendUsersList();
         void sendQueueContentMessage(quint32 startOffset, quint8 length);
         void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
         void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
@@ -74,6 +79,15 @@ namespace PMP {
         void sendTrackInfoMessage(quint32 queueID);
         void sendTrackInfoMessage(QList<quint32> const& queueIDs);
         void sendPossibleTrackFilenames(quint32 queueID, QList<QString> const& names);
+        void sendNewUserAccountSaltMessage(QString login, QByteArray const& salt);
+        void sendSuccessMessage(quint32 clientReference, quint32 intData);
+        void sendSuccessMessage(quint32 clientReference, quint32 intData,
+                                QByteArray const& blobData);
+        void sendResultMessage(NetworkProtocol::ErrorType errorType,
+                              quint32 clientReference, quint32 intData);
+        void sendResultMessage(NetworkProtocol::ErrorType errorType,
+                              quint32 clientReference, quint32 intData,
+                              QByteArray const& blobData);
         void handleBinaryMessage(QByteArray const& message);
 
         bool _terminated;
@@ -81,10 +95,13 @@ namespace PMP {
         Server* _server;
         Player* _player;
         Generator* _generator;
+        Users* _users;
         QByteArray _textReadBuffer;
         bool _binaryMode;
         int _clientProtocolNo;
         quint32 _lastSentNowPlayingID;
+        QString _userAccountRegistering;
+        QByteArray _saltForUserAccountRegistering;
     };
 }
 #endif

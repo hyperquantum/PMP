@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>UserPickerWidget</class>
+ <widget class="QWidget" name="UserPickerWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <spacer name="verticalSpacer_4">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QLabel" name="whichUserAreYouLabel">
+     <property name="styleSheet">
+      <string notr="true">font:10pt;</string>
+     </property>
+     <property name="text">
+      <string>Which user are you?</string>
+     </property>
+     <property name="margin">
+      <number>10</number>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="usersListFrame">
+     <property name="frameShape">
+      <enum>QFrame::StyledPanel</enum>
+     </property>
+     <property name="frameShadow">
+      <enum>QFrame::Raised</enum>
+     </property>
+     <layout class="QVBoxLayout" name="usersListLayout">
+      <item>
+       <widget class="QLabel" name="loadingUserListLabel">
+        <property name="text">
+         <string>(loading list of user accounts...)</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QLabel" name="noUserAccountsYetLabel">
+        <property name="text">
+         <string>(no user accounts registered on the server yet)</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCommandLinkButton" name="createNewAccountButton">
+     <property name="text">
+      <string>Create new account...</string>
+     </property>
+     <property name="description">
+      <string>If you do not have an account on the server yet, click here to create one</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>43</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
