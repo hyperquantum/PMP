@@ -88,6 +88,8 @@ namespace PMP {
         void sendResultMessage(NetworkProtocol::ErrorType errorType,
                               quint32 clientReference, quint32 intData,
                               QByteArray const& blobData);
+        void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
+                                      QByteArray const& sessionSalt);
         void handleBinaryMessage(QByteArray const& message);
 
         bool _terminated;
@@ -102,6 +104,8 @@ namespace PMP {
         quint32 _lastSentNowPlayingID;
         QString _userAccountRegistering;
         QByteArray _saltForUserAccountRegistering;
+        QString _userAccountLoggingIn;
+        QByteArray _sessionSaltForUserLoggingIn;
     };
 }
 #endif

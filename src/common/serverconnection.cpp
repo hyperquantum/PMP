@@ -30,7 +30,8 @@ namespace PMP {
      : QObject(parent),
       _state(ServerConnection::NotConnected),
       _binarySendingMode(false),
-      _serverProtocolNo(-1), _userAccountRegistrationRef(0)
+      _serverProtocolNo(-1), _nextRef(1),
+      _userAccountRegistrationRef(0), _userLoginRef(0)
     {
         connect(&_socket, SIGNAL(connected()), this, SLOT(onConnected()));
         connect(&_socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
@@ -324,22 +325,49 @@ namespace PMP {
     }
 
     void ServerConnection::createNewUserAccount(QString login, QString password) {
-        int reference = ++_userAccountRegistrationRef;
+        _userAccountRegistrationRef = _nextRef;
+        _nextRef++;
+
         _userAccountRegistrationLogin = login;
         _userAccountRegistrationPassword = password;
 
-        sendInitiateNewUserAccountMessage(login, reference);
+        sendInitiateNewUserAccountMessage(login, _userAccountRegistrationRef);
+    }
+
+    void ServerConnection::login(QString login, QString password) {
+        _userLoginRef = _nextRef;
+        _nextRef++;
+
+        _userLoggingIn = login;
+        _userLoggingInPassword = password;
+
+        sendInitiateLoginMessage(login, _userLoginRef);
     }
 
     void ServerConnection::handleNewUserSalt(QString login, QByteArray salt) {
         if (login != _userAccountRegistrationLogin) return;
 
-        int reference = _userAccountRegistrationRef;
+        uint reference = _userAccountRegistrationRef;
 
         QByteArray hashedPassword =
             NetworkProtocol::hashPassword(salt, _userAccountRegistrationPassword);
 
         sendFinishNewUserAccountMessage(login, salt, hashedPassword, reference);
+    }
+
+    void ServerConnection::handleLoginSalt(QString login, QByteArray userSalt,
+                                           QByteArray sessionSalt)
+    {
+        if (login != _userLoggingIn) return;
+
+        uint reference = _userLoginRef;
+
+        QByteArray hashedPassword =
+            NetworkProtocol::hashPasswordForSession(
+                userSalt, sessionSalt, _userLoggingInPassword
+            );
+
+        sendFinishLoginMessage(login, userSalt, sessionSalt, hashedPassword, reference);
     }
 
     void ServerConnection::handleUserRegistrationResult(quint16 errorType,
@@ -348,8 +376,14 @@ namespace PMP {
     {
         (void)blobData; /* we don't use this */
 
+        QString login = _userAccountRegistrationLogin;
+
+        /* clean up potentially sensitive information */
+        _userAccountRegistrationLogin = "";
+        _userAccountRegistrationPassword = "";
+
         if (errorType == 0) {
-            emit userAccountCreatedSuccessfully(_userAccountRegistrationLogin, intData);
+            emit userAccountCreatedSuccessfully(login, intData);
         }
         else {
             UserRegistrationError error;
@@ -366,12 +400,38 @@ namespace PMP {
                 break;
             }
 
-            emit userAccountCreationError(_userAccountRegistrationLogin, error);
+            emit userAccountCreationError(login, error);
         }
+    }
+
+    void ServerConnection::handleUserLoginResult(quint16 errorType, quint32 intData,
+                                                 const QByteArray &blobData)
+    {
+        (void)blobData; /* we don't use this */
+
+        QString login = _userLoggingIn;
 
         /* clean up potentially sensitive information */
-        _userAccountRegistrationLogin = "";
-        _userAccountRegistrationPassword = "";
+        _userLoggingIn = "";
+        _userLoggingInPassword = "";
+
+        if (errorType == 0) {
+            emit userLoggedInSuccessfully(login, intData);
+        }
+        else {
+            UserLoginError error;
+
+            switch (errorType) {
+            case NetworkProtocol::UserLoginAuthenticationFailed:
+                error = UserLoginAuthenticationFailed;
+                break;
+            default:
+                error = UnknownUserLoginError;
+                break;
+            }
+
+            emit userLoginError(login, error);
+        }
     }
 
     void ServerConnection::sendUserAccountsFetchRequest() {
@@ -517,6 +577,26 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ServerConnection::sendInitiateLoginMessage(QString login,
+                                                    quint32 clientReference)
+    {
+        if (!_binarySendingMode) {
+            return; /* only supported in binary mode */
+        }
+
+        QByteArray loginBytes = login.toUtf8();
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + loginBytes.size());
+        NetworkUtil::append2Bytes(message, NetworkProtocol::InitiateLoginMessage);
+        NetworkUtil::appendByte(message, loginBytes.size());
+        NetworkUtil::appendByte(message, 0); /* unused */
+        NetworkUtil::append4Bytes(message, clientReference);
+        message += loginBytes;
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::sendFinishNewUserAccountMessage(QString login, QByteArray salt,
                                                            QByteArray hashedPassword,
                                                            quint32 clientReference)
@@ -528,13 +608,44 @@ namespace PMP {
         QByteArray loginBytes = login.toUtf8();
 
         QByteArray message;
-        message.reserve(2 + 2 + 4 + loginBytes.size() + salt.size() + hashedPassword.size());
+        message.reserve(4 + 4 + loginBytes.size() + salt.size() + hashedPassword.size());
         NetworkUtil::append2Bytes(message, NetworkProtocol::FinishNewUserAccountMessage);
         NetworkUtil::appendByte(message, loginBytes.size());
         NetworkUtil::appendByte(message, salt.size());
         NetworkUtil::append4Bytes(message, clientReference);
         message += loginBytes;
         message += salt;
+        message += hashedPassword;
+
+        sendBinaryMessage(message);
+    }
+
+    void ServerConnection::sendFinishLoginMessage(QString login, QByteArray userSalt,
+                                                  QByteArray sessionSalt,
+                                                  QByteArray hashedPassword,
+                                                  quint32 clientReference)
+    {
+        if (!_binarySendingMode) {
+            return; /* only supported in binary mode */
+        }
+
+        QByteArray loginBytes = login.toUtf8();
+
+        QByteArray message;
+        message.reserve(
+            4 + 4 + 4 + loginBytes.size() + userSalt.size() + sessionSalt.size()
+            + hashedPassword.size()
+        );
+        NetworkUtil::append2Bytes(message, NetworkProtocol::FinishLoginMessage);
+        NetworkUtil::append2Bytes(message, 0); /* unused */
+        NetworkUtil::appendByte(message, (quint8)loginBytes.size());
+        NetworkUtil::appendByte(message, (quint8)userSalt.size());
+        NetworkUtil::appendByte(message, (quint8)sessionSalt.size());
+        NetworkUtil::appendByte(message, (quint8)hashedPassword.size());
+        NetworkUtil::append4Bytes(message, clientReference);
+        message += loginBytes;
+        message += userSalt;
+        message += sessionSalt;
         message += hashedPassword;
 
         sendBinaryMessage(message);
@@ -948,6 +1059,30 @@ namespace PMP {
             handleResultMessage(errorType, clientReference, intData, blobData);
         }
             break;
+        case NetworkProtocol::UserLoginSaltMessage:
+        {
+            if (messageLength < 8) {
+                return; /* invalid message */
+            }
+
+            int loginBytesSize = (uint)NetworkUtil::getByte(message, 4);
+            int userSaltBytesSize = (uint)NetworkUtil::getByte(message, 5);
+            int sessionSaltBytesSize = (uint)NetworkUtil::getByte(message, 6);
+
+            if (messageLength !=
+                    8 + loginBytesSize + userSaltBytesSize + sessionSaltBytesSize)
+            {
+                return; /* invalid message */
+            }
+
+            QString login = NetworkUtil::getUtf8String(message, 8, loginBytesSize);
+            QByteArray userSalt = message.mid(8 + loginBytesSize, userSaltBytesSize);
+            QByteArray sessionSalt =
+                message.mid(8 + loginBytesSize + userSaltBytesSize, sessionSaltBytesSize);
+
+            handleLoginSalt(login, userSalt, sessionSalt);
+        }
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
@@ -959,6 +1094,17 @@ namespace PMP {
                                                quint32 intData,
                                                QByteArray const& blobData)
     {
+        if ((NetworkProtocol::ErrorType)errorType
+                == NetworkProtocol::InvalidMessageStructure)
+        {
+            qDebug() << " errortype = InvalidMessageStructure !!";
+        }
+
+        if (clientReference == _userLoginRef) {
+            handleUserLoginResult(errorType, intData, blobData);
+            return;
+        }
+
         if (clientReference == _userAccountRegistrationRef) {
             handleUserRegistrationResult(errorType, intData, blobData);
             return;

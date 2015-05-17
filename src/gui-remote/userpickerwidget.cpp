@@ -67,7 +67,7 @@ namespace PMP {
 
                 connect(
                     button, &QCommandLinkButton::clicked,
-                    this, &UserPickerWidget::accountClicked
+                    [=]() { emit accountClicked(username); }
                 );
 
                 _ui->usersListLayout->addWidget(button);

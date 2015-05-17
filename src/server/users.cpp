@@ -34,17 +34,43 @@ namespace PMP {
         Database* db = Database::instance();
         if (!db) return;
 
-        _users = db->getUsers();
+        QList<User> users = db->getUsers();
+
+        _usersById.clear();
+        _userIdsByLogin.clear();
+        _usersById.reserve(users.size());
+        _userIdsByLogin.reserve(users.size());
+        Q_FOREACH(User u, users) {
+            _usersById.insert(u.id, u);
+            _userIdsByLogin.insert(u.login.toLower(), u.id);
+        }
     }
 
     QList<UserIdAndLogin> Users::getUsers() {
         QList<UserIdAndLogin> result;
 
-        Q_FOREACH(User u, _users) {
+        Q_FOREACH(User u, _usersById.values()) {
             result.append(UserIdAndLogin(u.id, u.login));
         }
 
         return result;
+    }
+
+    bool Users::getUserByLogin(QString login, User& user) {
+        quint32 id = _userIdsByLogin.value(login.toLower(), 0);
+        if (id == 0) return false;
+
+        user = _usersById.value(id);
+        return true;
+    }
+
+    bool Users::checkUserLoginPassword(const User& user, const QByteArray &sessionSalt,
+                                       const QByteArray& hashedPassword)
+    {
+        QByteArray expected =
+            NetworkProtocol::hashPasswordForSession(sessionSalt, user.password);
+
+        return hashedPassword == expected;
     }
 
     QByteArray Users::generateSalt() {

@@ -47,6 +47,10 @@ namespace PMP {
             UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
         };
 
+        enum UserLoginError {
+            UnknownUserLoginError, UserLoginAuthenticationFailed
+        };
+
         ServerConnection(QObject* parent = 0);
 
         void reset();
@@ -83,8 +87,8 @@ namespace PMP {
         void sendPossibleFilenamesRequest(uint queueID);
 
         void sendUserAccountsFetchRequest();
-
         void createNewUserAccount(QString login, QString password);
+        void login(QString login, QString password);
 
     Q_SIGNALS:
         void connected();
@@ -122,6 +126,9 @@ namespace PMP {
         void userAccountCreatedSuccessfully(QString login, quint32 id);
         void userAccountCreationError(QString login, UserRegistrationError errorType);
 
+        void userLoggedInSuccessfully(QString login, quint32 id);
+        void userLoginError(QString login, UserLoginError errorType);
+
     private slots:
         void onConnected();
         void onReadyRead();
@@ -148,14 +155,26 @@ namespace PMP {
         void handleUserRegistrationResult(quint16 errorType, quint32 intData,
                                           QByteArray const& blobData);
 
+        void sendInitiateLoginMessage(QString login, quint32 clientReference);
+        void sendFinishLoginMessage(QString login, QByteArray userSalt,
+                                    QByteArray sessionSalt, QByteArray hashedPassword,
+                                    quint32 clientReference);
+        void handleLoginSalt(QString login, QByteArray userSalt, QByteArray sessionSalt);
+        void handleUserLoginResult(quint16 errorType, quint32 intData,
+                                   QByteArray const& blobData);
+
         State _state;
         QTcpSocket _socket;
         QByteArray _readBuffer;
         bool _binarySendingMode;
         int _serverProtocolNo;
+        uint _nextRef;
         uint _userAccountRegistrationRef;
         QString _userAccountRegistrationLogin;
         QString _userAccountRegistrationPassword;
+        uint _userLoginRef;
+        QString _userLoggingIn;
+        QString _userLoggingInPassword;
     };
 }
 #endif

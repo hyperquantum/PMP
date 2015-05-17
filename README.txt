@@ -92,7 +92,8 @@ An example configuration:
 4. DEPENDENCIES FOR BUILDING
 ----------------------------
 
-* CMake
+* C++ compiler with support for C++ 2011
+* CMake 3.1 or higher
 * pkg-config
 * TagLib    (I have version 1.9.1)
 * Qt 5      (I have Qt 5.2)
@@ -112,7 +113,7 @@ Building on Linux is trivial, but on Windows it takes some effort.
 How to compile from source on Windows, using MinGW 32-bit:
 
 * Download and install CMake
-   --> http://www.cmake.org/cmake/resources/software.html  --> Win32 Installer
+   --> http://www.cmake.org/download/  --> Win32 Installer
 * Download and install MinGW
    --> http://www.mingw.org/  --> Download Installer
    install these parts: mingw-developer-toolkit, mingw32-base, mingw32-gcc-g++, msys-base

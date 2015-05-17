@@ -34,6 +34,7 @@ namespace PMP {
     {
         _ui->setupUi(this);
         _ui->passwordFeedbackLabel->setText(""); /* remove placeholder text */
+        _ui->usernameLineEdit->setFocus();
 
         connect(
             _ui->newPasswordLineEdit, &QLineEdit::textChanged,
@@ -52,7 +53,6 @@ namespace PMP {
             _connection, &ServerConnection::userAccountCreatedSuccessfully,
             this, &UserAccountCreationWidget::userAccountCreatedSuccessfully
         );
-
         connect(
             _connection, &ServerConnection::userAccountCreationError,
             this, &UserAccountCreationWidget::userAccountCreationError

@@ -644,6 +644,28 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendUserLoginSaltMessage(QString login,
+                                                   const QByteArray &userSalt,
+                                                   const QByteArray &sessionSalt)
+    {
+        QByteArray loginBytes = login.toUtf8();
+
+        QByteArray message;
+        message.reserve(4 + 4 + loginBytes.size() + userSalt.size() + sessionSalt.size());
+        NetworkUtil::append2Bytes(message, NetworkProtocol::UserLoginSaltMessage);
+        NetworkUtil::append2Bytes(message, 0); /* unused */
+        NetworkUtil::appendByte(message, (quint8)loginBytes.size());
+        NetworkUtil::appendByte(message, (quint8)userSalt.size());
+        NetworkUtil::appendByte(message, (quint8)sessionSalt.size());
+        NetworkUtil::appendByte(message, 0); /* unused */
+
+        message += loginBytes;
+        message += userSalt;
+        message += sessionSalt;
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
         sendResultMessage(NetworkProtocol::NoError, clientReference, intData);
@@ -1071,7 +1093,7 @@ namespace PMP {
             break;
         case NetworkProtocol::InitiateNewUserAccountMessage:
         {
-            if (messageLength <= 8 ) {
+            if (messageLength <= 8) {
                 return; /* invalid message */
             }
 
@@ -1105,7 +1127,7 @@ namespace PMP {
             break;
         case NetworkProtocol::FinishNewUserAccountMessage:
         {
-            if (messageLength <= 8 ) {
+            if (messageLength <= 8) {
                 return; /* invalid message */
             }
 
@@ -1134,7 +1156,7 @@ namespace PMP {
                     NetworkProtocol::UserAccountRegistrationMismatch,
                     clientReference, 0, loginBytes
                 );
-                break;
+                return;
             }
 
             QByteArray hashedPasswordFromClient =
@@ -1148,7 +1170,7 @@ namespace PMP {
                 sendResultMessage(
                     NetworkProtocol::InvalidMessageStructure, clientReference, 0
                 );
-                break;
+                return;
             }
 
             QPair<Users::ErrorCode, quint32> result =
@@ -1161,6 +1183,117 @@ namespace PMP {
                 Users::toNetworkProtocolError(result.first),
                 clientReference, result.second
             );
+        }
+            break;
+        case NetworkProtocol::InitiateLoginMessage:
+        {
+            if (messageLength <= 8) {
+                return; /* invalid message */
+            }
+
+            qint32 loginLength = (quint32)NetworkUtil::getByte(message, 2);
+            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+            if (messageLength - 8 != loginLength) {
+                return; /* invalid message */
+            }
+
+            qDebug() << "received initiate-login request; clientRef:"
+                     << clientReference;
+
+            QByteArray loginBytes = message.mid(8);
+            QString login = QString::fromUtf8(loginBytes);
+
+            User user;
+            bool userLookup = _users->getUserByLogin(login, user);
+
+            if (!userLookup) { /* user does not exist */
+                sendResultMessage(
+                    NetworkProtocol::InvalidUserAccountName, clientReference, 0,
+                    loginBytes
+                );
+                return;
+            }
+
+            QByteArray userSalt = user.salt;
+            QByteArray sessionSalt = Users::generateSalt();
+
+            _userAccountLoggingIn = user.login;
+            _sessionSaltForUserLoggingIn = sessionSalt;
+
+            sendUserLoginSaltMessage(login, userSalt, sessionSalt);
+        }
+            break;
+        case NetworkProtocol::FinishLoginMessage:
+        {
+            if (messageLength <= 12) {
+                return; /* invalid message */
+            }
+
+            qint32 loginLength = (quint32)NetworkUtil::getByte(message, 4);
+            qint32 userSaltLength = (quint32)NetworkUtil::getByte(message, 5);
+            qint32 sessionSaltLength = (quint32)NetworkUtil::getByte(message, 6);
+            qint32 hashedPasswordLength = (quint32)NetworkUtil::getByte(message, 7);
+            quint32 clientReference = NetworkUtil::get4Bytes(message, 8);
+
+            qDebug() << "received finish-login request; clientRef:"
+                     << clientReference;
+
+            if (messageLength - 12 !=
+                    loginLength + userSaltLength + sessionSaltLength
+                    + hashedPasswordLength)
+            {
+                sendResultMessage(
+                    NetworkProtocol::InvalidMessageStructure, clientReference, 0
+                );
+                return; /* invalid message */
+            }
+
+            QByteArray loginBytes = message.mid(12, loginLength);
+            QString login = QString::fromUtf8(loginBytes);
+
+            User user;
+            bool userLookup = _users->getUserByLogin(login, user);
+
+            if (!userLookup) { /* user does not exist */
+                sendResultMessage(
+                    NetworkProtocol::InvalidUserAccountName, clientReference, 0,
+                    loginBytes
+                );
+                return;
+            }
+
+            QByteArray userSaltFromClient = message.mid(12 + loginLength, userSaltLength);
+            QByteArray sessionSaltFromClient =
+                message.mid(12 + loginLength + userSaltLength, sessionSaltLength);
+
+            if (login != _userAccountLoggingIn
+                || userSaltFromClient != user.salt
+                || sessionSaltFromClient != _sessionSaltForUserLoggingIn)
+            {
+                sendResultMessage(
+                    NetworkProtocol::UserAccountLoginMismatch,
+                    clientReference, 0, loginBytes
+                );
+                break;
+            }
+
+            QByteArray hashedPasswordFromClient =
+                message.mid(12 + loginLength + userSaltLength + sessionSaltLength);
+
+            bool loginSucceeded =
+                Users::checkUserLoginPassword(
+                    user, sessionSaltFromClient, hashedPasswordFromClient
+                );
+
+            if (loginSucceeded) {
+                sendSuccessMessage(clientReference, user.id);
+            }
+            else {
+                sendResultMessage(
+                    NetworkProtocol::UserLoginAuthenticationFailed, clientReference, 0
+                );
+            }
         }
             break;
         default:

@@ -22,6 +22,7 @@
 #include "common/serverconnection.h"
 
 #include "connectionwidget.h"
+#include "loginwidget.h"
 #include "mainwidget.h"
 #include "useraccountcreationwidget.h"
 #include "userpickerwidget.h"
@@ -33,7 +34,7 @@ namespace PMP {
     MainWindow::MainWindow(QWidget* parent)
      : QMainWindow(parent),
        _connectionWidget(new ConnectionWidget(this)),
-       _connection(0), _userPickerWidget(0), _mainWidget(0)
+       _connection(0), _userPickerWidget(0), _loginWidget(0), _mainWidget(0)
     {
         setCentralWidget(_connectionWidget);
         connect(
@@ -78,7 +79,7 @@ namespace PMP {
 
         connect(
             _userPickerWidget, &UserPickerWidget::accountClicked,
-            this, &MainWindow::showMainWidget
+            this, &MainWindow::showLoginWidget
         );
 
         connect(
@@ -140,4 +141,29 @@ namespace PMP {
         showUserAccountPicker();
     }
 
+    void MainWindow::showLoginWidget(QString login) {
+        _loginWidget = new LoginWidget(this, _connection, login);
+
+        connect(
+            _loginWidget, &LoginWidget::loggedIn,
+            this, &MainWindow::onLoggedIn
+        );
+
+        connect(
+            _loginWidget, &LoginWidget::cancelClicked,
+            this, &MainWindow::onLoginCancel
+        );
+
+        setCentralWidget(_loginWidget);
+    }
+
+    void MainWindow::onLoggedIn(QString login) {
+        _loginWidget = 0;
+        showMainWidget();
+    }
+
+    void MainWindow::onLoginCancel() {
+        _loginWidget = 0;
+        showUserAccountPicker();
+    }
 }

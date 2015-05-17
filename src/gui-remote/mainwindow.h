@@ -26,6 +26,7 @@
 namespace PMP {
 
     class ConnectionWidget;
+    class LoginWidget;
     class MainWidget;
     class ServerConnection;
     class UserAccountCreationWidget;
@@ -49,14 +50,19 @@ namespace PMP {
         void onAccountCreated(QString login, QString password, quint32 accountId);
         void onAccountCreationCancel();
 
+        void onLoggedIn(QString login);
+        void onLoginCancel();
+
     private:
         void showUserAccountPicker();
+        void showLoginWidget(QString login);
         void showMainWidget();
 
         ConnectionWidget* _connectionWidget;
         ServerConnection* _connection;
         UserPickerWidget* _userPickerWidget;
         UserAccountCreationWidget* _userAccountCreationWidget;
+        LoginWidget* _loginWidget;
         MainWidget* _mainWidget;
     };
 }

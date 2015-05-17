@@ -79,4 +79,20 @@ namespace PMP {
         return hasher.result();
     }
 
+    QByteArray NetworkProtocol::hashPasswordForSession(const QByteArray& userSalt,
+                                                       const QByteArray& sessionSalt,
+                                                       QString password)
+    {
+        QByteArray hashedSaltedUserPassword = hashPassword(userSalt, password);
+        return hashPasswordForSession(sessionSalt, hashedSaltedUserPassword);
+    }
+
+    QByteArray NetworkProtocol::hashPasswordForSession(const QByteArray& sessionSalt,
+                                               const QByteArray& hashedSaltedUserPassword)
+    {
+        QCryptographicHash hasher(QCryptographicHash::Sha256);
+        hasher.addData(sessionSalt);
+        hasher.addData(hashedSaltedUserPassword);
+        return hasher.result();
+    }
 }

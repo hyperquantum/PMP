@@ -47,7 +47,12 @@ namespace PMP {
         Users();
 
         QList<UserIdAndLogin> getUsers();
+        bool getUserByLogin(QString login, User& user);
+        static bool checkUserLoginPassword(User const& user,
+                                           QByteArray const& sessionSalt,
+                                           QByteArray const& hashedPassword);
 
+        static QByteArray generateSalt();
         static ErrorCode generateSaltForNewAccount(QString accountName,
                                                    QByteArray& salt);
 
@@ -60,9 +65,8 @@ namespace PMP {
     private:
         void loadUsers();
 
-        static QByteArray generateSalt();
-
-        QList<User> _users;
+        QHash<quint32, User> _usersById;
+        QHash<QString, quint32> _userIdsByLogin;
     };
 }
 #endif

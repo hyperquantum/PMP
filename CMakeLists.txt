@@ -15,8 +15,10 @@
 # You should have received a copy of the GNU General Public License along
 # with PMP.  If not, see <http://www.gnu.org/licenses/>.
 
-cmake_minimum_required(VERSION 2.8.9)
+cmake_minimum_required(VERSION 3.1.0 FATAL_ERROR)
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
+set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(PMP)
 
 include(FindPkgConfig)

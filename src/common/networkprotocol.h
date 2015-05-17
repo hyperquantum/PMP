@@ -42,7 +42,8 @@ namespace PMP {
             QueueEntryMovedMessage = 11,
             UsersListMessage = 12,
             NewUserAccountSaltMessage = 13,
-            SimpleResultMessage = 14
+            SimpleResultMessage = 14,
+            UserLoginSaltMessage = 15
         };
 
         enum ClientMessageType {
@@ -57,7 +58,9 @@ namespace PMP {
             PlayerSeekRequestMessage = 8,
             QueueEntryMoveRequestMessage = 9,
             InitiateNewUserAccountMessage = 10,
-            FinishNewUserAccountMessage = 11
+            FinishNewUserAccountMessage = 11,
+            InitiateLoginMessage = 12,
+            FinishLoginMessage = 13
         };
 
         enum ErrorType {
@@ -67,6 +70,8 @@ namespace PMP {
             InvalidUserAccountName = 11,
             UserAccountAlreadyExists = 12,
             UserAccountRegistrationMismatch = 13,
+            UserAccountLoginMismatch = 14,
+            UserLoginAuthenticationFailed = 15,
 
             DatabaseProblem = 90,
             UnknownError = 255
@@ -75,7 +80,11 @@ namespace PMP {
         static int ratePassword(QString password);
 
         static QByteArray hashPassword(QByteArray const& salt, QString password);
-
+        static QByteArray hashPasswordForSession(QByteArray const& userSalt,
+                                                 QByteArray const& sessionSalt,
+                                                 QString password);
+        static QByteArray hashPasswordForSession(QByteArray const& sessionSalt,
+                                              QByteArray const& hashedSaltedUserPassword);
     };
 }
 #endif

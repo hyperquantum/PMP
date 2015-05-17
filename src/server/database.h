@@ -39,6 +39,12 @@ namespace PMP {
 
     class User {
     public:
+        User()
+         : id(0), login("")
+        {
+            //
+        }
+
         User(quint32 id, QString login, QByteArray salt, QByteArray password)
          : id(id), login(login), salt(salt), password(password)
         {

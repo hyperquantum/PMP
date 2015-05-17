@@ -17,40 +17,42 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_USERPICKERWIDGET_H
-#define PMP_USERPICKERWIDGET_H
+#ifndef PMP_LOGINWIDGET_H
+#define PMP_LOGINWIDGET_H
 
-#include <QList>
-#include <QPair>
+#include "common/serverconnection.h" // for the enum :-/
+
 #include <QWidget>
 
-QT_FORWARD_DECLARE_CLASS(QCommandLinkButton)
-
 namespace Ui {
-    class UserPickerWidget;
+class LoginWidget;
 }
 
 namespace PMP {
 
     class ServerConnection;
 
-    class UserPickerWidget : public QWidget {
+    class LoginWidget : public QWidget
+    {
         Q_OBJECT
 
     public:
-        UserPickerWidget(QWidget *parent, ServerConnection* connection);
-        ~UserPickerWidget();
+        LoginWidget(QWidget* parent, ServerConnection *connection, QString login);
+        ~LoginWidget();
 
     Q_SIGNALS:
-        void accountClicked(QString login);
-        void createAccountClicked();
+        void loggedIn(QString login, quint32 accountId);
+        void cancelClicked();
 
     private slots:
-        void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
+        void loginClicked();
+
+        void userLoggedInSuccessfully(QString login, quint32 id);
+        void userLoginError(QString login, ServerConnection::UserLoginError errorType);
 
     private:
-        Ui::UserPickerWidget* _ui;
+        Ui::LoginWidget* _ui;
         ServerConnection* _connection;
     };
 }
-#endif
+#endif // PMP_LOGINWIDGET_H
