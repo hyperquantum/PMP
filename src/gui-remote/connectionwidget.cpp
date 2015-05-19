@@ -36,9 +36,6 @@ namespace PMP {
         _ui->portLineEdit->setValidator(portValidator);
         _ui->portLineEdit->setText("23432");
 
-        _ui->usernameLineEdit->setEnabled(false);
-        _ui->passwordLineEdit->setEnabled(false);
-
         connect(_ui->connectButton, SIGNAL(clicked()), this, SLOT(connectClicked()));
     }
 
@@ -79,8 +76,6 @@ namespace PMP {
 
         _ui->serverLineEdit->setEnabled(false);
         _ui->portLineEdit->setEnabled(false);
-        _ui->usernameLineEdit->setEnabled(false);
-        _ui->passwordLineEdit->setEnabled(false);
         _ui->connectButton->setEnabled(false);
 
         emit doConnect(server, portNumber);
