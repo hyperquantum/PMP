@@ -33,7 +33,8 @@ namespace PMP {
         _queue(resolver),
         _nowPlaying(0), _playPosition(0), _maxPosReachedInCurrent(0),
         _seekHappenedInCurrent(false),
-        _state(Stopped), _transitioningToNextTrack(false)
+        _state(Stopped), _transitioningToNextTrack(false),
+        _userPlayingFor(0)
     {
         setVolume(75);
 
@@ -86,6 +87,10 @@ namespace PMP {
 
     qint64 Player::playPosition() const {
         return _playPosition;
+    }
+
+    quint32 Player::userPlayingFor() const {
+        return _userPlayingFor;
     }
 
     Queue& Player::queue() {
@@ -165,6 +170,13 @@ namespace PMP {
 
     void Player::setVolume(int volume) {
         _player->setVolume(volume);
+    }
+
+    void Player::setUserPlayingFor(quint32 user) {
+        if (_userPlayingFor == user) return; /* no change */
+
+        _userPlayingFor = user;
+        emit userPlayingForChanged(user);
     }
 
     void Player::internalMediaStatusChanged(QMediaPlayer::MediaStatus state) {

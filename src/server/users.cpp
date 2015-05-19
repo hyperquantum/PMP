@@ -56,6 +56,13 @@ namespace PMP {
         return result;
     }
 
+    QString Users::getUserLogin(quint32 userId) const {
+        auto it = _usersById.find(userId);
+        if (it == _usersById.end()) return ""; /* not found */
+
+        return it->login;
+    }
+
     bool Users::getUserByLogin(QString login, User& user) {
         quint32 id = _userIdsByLogin.value(login.toLower(), 0);
         if (id == 0) return false;
@@ -115,8 +122,13 @@ namespace PMP {
     {
         QString account = accountName.trimmed();
 
+        /* Account name length must fit in a byte when using UTF-8 (that's why its length
+         *  must be <= 63), it cannot start or end with whitespace, and the name 'Public'
+         * is reserved to prevent confusion between public and personal mode.
+         */
         if (account != accountName
-            || account.length() == 0 || account.length() > 63)
+            || account.length() == 0 || account.length() > 63
+            || account.compare("PUBLIC", Qt::CaseInsensitive) == 0)
         {
             return QPair<Users::ErrorCode, quint32>(InvalidAccountName, 0);
         }

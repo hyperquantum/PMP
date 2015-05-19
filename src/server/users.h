@@ -47,6 +47,7 @@ namespace PMP {
         Users();
 
         QList<UserIdAndLogin> getUsers();
+        QString getUserLogin(quint32 userId) const;
         bool getUserByLogin(QString login, User& user);
         static bool checkUserLoginPassword(User const& user,
                                            QByteArray const& sessionSalt,

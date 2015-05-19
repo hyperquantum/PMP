@@ -39,7 +39,8 @@ namespace PMP {
      : QObject(server),
        _terminated(false), _socket(socket),
        _server(server), _player(player), _generator(generator), _users(users),
-       _binaryMode(false), _clientProtocolNo(-1), _lastSentNowPlayingID(0)
+       _binaryMode(false), _clientProtocolNo(-1), _lastSentNowPlayingID(0),
+       _userLoggedIn(0)
     {
         connect(
             server, &Server::shuttingDown,
@@ -76,6 +77,10 @@ namespace PMP {
         connect(
             player, &Player::positionChanged,
             this, &ConnectedClient::trackPositionChanged
+        );
+        connect(
+            player, &Player::userPlayingForChanged,
+            [=](quint32 user) { sendUserPlayingForModeMessage(); }
         );
 
         Queue* queue = &player->queue();
@@ -405,6 +410,26 @@ namespace PMP {
         NetworkUtil::append2Bytes(message, NetworkProtocol::DynamicModeStatusMessage);
         NetworkUtil::appendByte(message, enabled);
         NetworkUtil::append4Bytes(message, noRepetitionSpan);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendUserPlayingForModeMessage() {
+        if (!_binaryMode) {
+            return; // only supported in binary mode
+        }
+
+        quint32 user = _player->userPlayingFor();
+        QString login = _users->getUserLogin(user);
+        QByteArray loginBytes = login.toUtf8();
+
+        QByteArray message;
+        message.reserve(4 + 4 + loginBytes.length());
+        NetworkUtil::append2Bytes(message, NetworkProtocol::UserPlayingForModeMessage);
+        NetworkUtil::appendByte(message, (quint8)loginBytes.size());
+        NetworkUtil::appendByte(message, 0); /* unused */
+        NetworkUtil::append4Bytes(message, user);
+        message += loginBytes;
 
         sendBinaryMessage(message);
     }
@@ -839,7 +864,8 @@ namespace PMP {
             quint32 messageLength = NetworkUtil::get4Bytes(lengthBytes);
 
             if (_socket->bytesAvailable() - sizeof(lengthBytes) < messageLength) {
-                qDebug() << "waiting for incoming message with length" << messageLength << " --- only partially received";
+                qDebug() << "waiting for incoming message with length" << messageLength
+                         << " --- only partially received";
                 break; /* message not complete yet */
             }
 
@@ -872,7 +898,8 @@ namespace PMP {
             quint8 actionType = NetworkUtil::getByte(message, 2);
 
             if (actionType >= 100 && actionType <= 200) {
-                qDebug() << "received CHANGE VOLUME command, volume" << ((int)actionType - 100);
+                qDebug() << "received CHANGE VOLUME command, volume"
+                         << ((uint)actionType - 100);
                 _player->setVolume(actionType - 100);
                 break;
             }
@@ -906,6 +933,10 @@ namespace PMP {
                 qDebug() << "received request for list of user accounts";
                 sendUsersList();
                 break;
+            case 14:
+                qDebug() << "received request for PUBLIC/PERSONAL mode status";
+                sendUserPlayingForModeMessage();
+                break;
             case 20: /* enable dynamic mode */
                 qDebug() << "received ENABLE DYNAMIC MODE command";
                 _generator->enable();
@@ -915,15 +946,28 @@ namespace PMP {
                 _generator->disable();
                 break;
             case 22: /* request queue expansion */
-                qDebug() << "received queue expansion command";
+                qDebug() << "received QUEUE EXPANSION command";
                 _generator->requestQueueExpansion();
+                break;
+            case 30: /* switch to public mode */
+                qDebug() << "received SWITCH TO PUBLIC MODE command";
+                _player->setUserPlayingFor(0);
+                break;
+            case 31: /* switch to personal mode */
+                qDebug() << "received SWITCH TO PERSONAL MODE command";
+                if (_userLoggedIn > 0) {
+                    qDebug() << " switching to personal mode for user "
+                             << _userLoggedInName;
+                    _player->setUserPlayingFor(_userLoggedIn);
+                }
                 break;
             case 99:
                 qDebug() << "received SHUTDOWN command";
                 _server->shutdown();
                 break;
             default:
-                qDebug() << "received unrecognized single-byte action type:" << (int)actionType;
+                qDebug() << "received unrecognized single-byte action type:"
+                         << (int)actionType;
                 break; /* unknown action type */
             }
         }
@@ -1287,6 +1331,8 @@ namespace PMP {
                 );
 
             if (loginSucceeded) {
+                _userLoggedIn = user.id;
+                _userLoggedInName = user.login;
                 sendSuccessMessage(clientReference, user.id);
             }
             else {

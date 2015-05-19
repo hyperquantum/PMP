@@ -56,6 +56,10 @@ namespace PMP {
         _socket.connectToHost(host, port);
     }
 
+    QString ServerConnection::userLoggedInName() const {
+        return _userLoggedInName;
+    }
+
     void ServerConnection::onConnected() {
         qDebug() << "connected to host";
         _state = Handshake;
@@ -344,6 +348,18 @@ namespace PMP {
         sendInitiateLoginMessage(login, _userLoginRef);
     }
 
+    void ServerConnection::switchToPublicMode() {
+        sendSingleByteAction(30);
+    }
+
+    void ServerConnection::switchToPersonalMode() {
+        sendSingleByteAction(31);
+    }
+
+    void ServerConnection::requestUserPlayingForMode() {
+        sendSingleByteAction(14);
+    }
+
     void ServerConnection::handleNewUserSalt(QString login, QByteArray salt) {
         if (login != _userAccountRegistrationLogin) return;
 
@@ -412,13 +428,16 @@ namespace PMP {
         QString login = _userLoggingIn;
 
         /* clean up potentially sensitive information */
-        _userLoggingIn = "";
         _userLoggingInPassword = "";
 
         if (errorType == 0) {
+            _userLoggedInName = _userLoggingIn;
+            _userLoggingIn = "";
             emit userLoggedInSuccessfully(login, intData);
         }
         else {
+            _userLoggingIn = "";
+
             UserLoginError error;
 
             switch (errorType) {
@@ -1081,6 +1100,24 @@ namespace PMP {
                 message.mid(8 + loginBytesSize + userSaltBytesSize, sessionSaltBytesSize);
 
             handleLoginSalt(login, userSalt, sessionSalt);
+        }
+            break;
+        case NetworkProtocol::UserPlayingForModeMessage:
+        {
+            if (messageLength < 8) {
+                return; /* invalid message */
+            }
+
+            int loginBytesSize = (uint)NetworkUtil::getByte(message, 2);
+            quint32 userId = NetworkUtil::get4Bytes(message, 4);
+
+            if (messageLength != 8 + loginBytesSize) {
+                return; /* invalid message */
+            }
+
+            QString login = NetworkUtil::getUtf8String(message, 8, loginBytesSize);
+
+            emit receivedUserPlayingFor(userId, login);
         }
             break;
         default:

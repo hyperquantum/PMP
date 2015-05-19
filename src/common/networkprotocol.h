@@ -43,7 +43,8 @@ namespace PMP {
             UsersListMessage = 12,
             NewUserAccountSaltMessage = 13,
             SimpleResultMessage = 14,
-            UserLoginSaltMessage = 15
+            UserLoginSaltMessage = 15,
+            UserPlayingForModeMessage = 16,
         };
 
         enum ClientMessageType {

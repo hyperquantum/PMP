@@ -67,7 +67,8 @@ namespace PMP {
 
         QueueEntry* lookup(quint32 queueID);
 
-        void addToHistory(QueueEntry* entry, int permillagePlayed, bool hadError/*, HistoryType historyType*/);
+        void addToHistory(QueueEntry* entry, int permillagePlayed, bool hadError/*,
+                          HistoryType historyType*/);
 
     Q_SIGNALS:
         void entryAdded(quint32 offset, quint32 queueID);

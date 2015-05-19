@@ -42,6 +42,7 @@ namespace PMP {
         QueueEntry const* nowPlaying() const;
         uint nowPlayingQID() const;
         qint64 playPosition() const;
+        quint32 userPlayingFor() const;
 
         Queue& queue();
 
@@ -60,12 +61,15 @@ namespace PMP {
 
         void setVolume(int volume);
 
+        void setUserPlayingFor(quint32 user);
+
     Q_SIGNALS:
 
         void stateChanged(Player::State state);
         void currentTrackChanged(QueueEntry const* newTrack);
         void positionChanged(qint64 position);
         void volumeChanged(int volume);
+        void userPlayingForChanged(quint32 user);
 
         /*! Emitted when the queue is empty and the current track is finished. */
         void finished();
@@ -90,6 +94,7 @@ namespace PMP {
         bool _seekHappenedInCurrent;
         State _state;
         bool _transitioningToNextTrack;
+        quint32 _userPlayingFor;
     };
 }
 #endif

@@ -43,6 +43,7 @@ Contents of this file:
  * Remote with graphical user-interface
  * Use of hashing to identify tracks
  * Dynamic mode with track repetition avoidance
+ * User authentication and public/personal operating modes
 
 
 2. DEPENDENCIES FOR RUNNING PMP
@@ -196,8 +197,6 @@ things to be missing or not working correctly ;)
 Only a list of ideas.  No promises!
 
  * 'Trim queue' button in remote
- * Differentiate between different users by having them authenticate themselves
- * Public mode / personal mode
  * Separate play history for each user and for public mode
  * Last.fm scrobbling (in personal mode)
  * Syncronization of music databases across different machines

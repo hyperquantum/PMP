@@ -58,6 +58,7 @@ namespace PMP {
         void sendStateInfo();
         void sendVolumeMessage();
         void sendDynamicModeStatusMessage();
+        void sendUserPlayingForModeMessage();
         void sendTextualQueueInfo();
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         void queueEntryAdded(quint32 offset, quint32 queueID);
@@ -106,6 +107,8 @@ namespace PMP {
         QByteArray _saltForUserAccountRegistering;
         QString _userAccountLoggingIn;
         QByteArray _sessionSaltForUserLoggingIn;
+        quint32 _userLoggedIn;
+        QString _userLoggedInName;
     };
 }
 #endif

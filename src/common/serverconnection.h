@@ -58,6 +58,8 @@ namespace PMP {
 
         bool isConnected() const { return _state == BinaryMode; }
 
+        QString userLoggedInName() const;
+
     public slots:
         void shutdownServer();
 
@@ -89,6 +91,10 @@ namespace PMP {
         void sendUserAccountsFetchRequest();
         void createNewUserAccount(QString login, QString password);
         void login(QString login, QString password);
+
+        void switchToPublicMode();
+        void switchToPersonalMode();
+        void requestUserPlayingForMode();
 
     Q_SIGNALS:
         void connected();
@@ -128,6 +134,8 @@ namespace PMP {
 
         void userLoggedInSuccessfully(QString login, quint32 id);
         void userLoginError(QString login, UserLoginError errorType);
+
+        void receivedUserPlayingFor(quint32 userId, QString userLogin);
 
     private slots:
         void onConnected();
@@ -175,6 +183,7 @@ namespace PMP {
         uint _userLoginRef;
         QString _userLoggingIn;
         QString _userLoggingInPassword;
+        QString _userLoggedInName;
     };
 }
 #endif

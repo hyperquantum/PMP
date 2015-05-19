@@ -61,6 +61,9 @@ namespace PMP {
             new QueueEntryInfoFetcher(_connection, _queueMediator, _connection);
         _queueModel = new QueueModel(_connection, _queueMediator, _queueEntryInfoFetcher);
 
+        _ui->toPersonalModeButton->setText(_connection->userLoggedInName());
+        _ui->toPublicModeButton->setEnabled(false);
+        _ui->toPersonalModeButton->setEnabled(false);
         _ui->playButton->setEnabled(false);
         _ui->pauseButton->setEnabled(false);
         _ui->skipButton->setEnabled(false);
@@ -75,6 +78,19 @@ namespace PMP {
         connect(
             _ui->trackProgress, SIGNAL(seekRequested(qint64)),
             _currentTrackMonitor, SLOT(seekTo(qint64))
+        );
+
+        connect(
+            _connection, &ServerConnection::receivedUserPlayingFor,
+            this, &MainWidget::userPlayingForChanged
+        );
+        connect(
+            _ui->toPublicModeButton, &QPushButton::clicked,
+            _connection, &ServerConnection::switchToPublicMode
+        );
+        connect(
+            _ui->toPersonalModeButton, &QPushButton::clicked,
+            _connection, &ServerConnection::switchToPersonalMode
         );
 
         connect(_ui->playButton, SIGNAL(clicked()), _connection, SLOT(play()));
@@ -142,6 +158,7 @@ namespace PMP {
             this, SLOT(queueLengthChanged(int))
         );
 
+        _connection->requestUserPlayingForMode();
         _connection->requestDynamicModeStatus();
     }
 
@@ -442,6 +459,16 @@ namespace PMP {
 
     void MainWidget::queueLengthChanged(int length) {
         _ui->queueLengthValueLabel->setText(QString::number(length));
+    }
+
+    void MainWidget::userPlayingForChanged(quint32 userId, QString login) {
+        _ui->userPlayingForLabel->setText(
+            (userId == 0) ? "PUBLIC mode" : "PERSONAL mode"
+        );
+
+        _ui->toPersonalModeButton->setEnabled(userId == 0);
+        _ui->toPublicModeButton->setEnabled(userId != 0);
+
     }
 
 }

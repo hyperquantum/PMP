@@ -67,6 +67,8 @@ namespace PMP {
 
         void queueLengthChanged(int length);
 
+        void userPlayingForChanged(quint32 userId, QString login);
+
     private:
         void buildNoRepetitionList(int spanToSelect);
         QString noRepetitionTimeString(int seconds);
