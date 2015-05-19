@@ -43,6 +43,10 @@ namespace PMP {
         }
 
         connect(
+            _ui->passwordLineEdit, &QLineEdit::returnPressed,
+            this, &LoginWidget::loginClicked
+        );
+        connect(
             _ui->loginButton, &QPushButton::clicked,
             this, &LoginWidget::loginClicked
         );
