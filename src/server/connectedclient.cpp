@@ -706,7 +706,7 @@ namespace PMP {
                                             quint32 clientReference, quint32 intData)
     {
         QByteArray data; /* empty data */
-        sendResultMessage(errorType, clientReference, 0, data);
+        sendResultMessage(errorType, clientReference, intData, data);
     }
 
     void ConnectedClient::sendResultMessage(NetworkProtocol::ErrorType errorType,
@@ -1306,6 +1306,9 @@ namespace PMP {
                 );
                 return;
             }
+
+            qDebug() << " user lookup successfull: user id =" << user.id
+                     << "; login =" << user.login;
 
             QByteArray userSaltFromClient = message.mid(12 + loginLength, userSaltLength);
             QByteArray sessionSaltFromClient =

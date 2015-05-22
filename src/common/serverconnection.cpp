@@ -31,7 +31,7 @@ namespace PMP {
       _state(ServerConnection::NotConnected),
       _binarySendingMode(false),
       _serverProtocolNo(-1), _nextRef(1),
-      _userAccountRegistrationRef(0), _userLoginRef(0)
+      _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0)
     {
         connect(&_socket, SIGNAL(connected()), this, SLOT(onConnected()));
         connect(&_socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
@@ -54,6 +54,10 @@ namespace PMP {
         _state = Connecting;
         _readBuffer.clear();
         _socket.connectToHost(host, port);
+    }
+
+    quint32 ServerConnection::userLoggedInId() const {
+        return _userLoggedInId;
     }
 
     QString ServerConnection::userLoggedInName() const {
@@ -426,11 +430,16 @@ namespace PMP {
         (void)blobData; /* we don't use this */
 
         QString login = _userLoggingIn;
+        quint32 userId = intData;
+
+        qDebug() << " received login result: errorType =" << errorType
+                 << "; login =" << login << "; id =" << userId;
 
         /* clean up potentially sensitive information */
         _userLoggingInPassword = "";
 
         if (errorType == 0) {
+            _userLoggedInId = userId;
             _userLoggedInName = _userLoggingIn;
             _userLoggingIn = "";
             emit userLoggedInSuccessfully(login, intData);
@@ -1116,6 +1125,9 @@ namespace PMP {
             }
 
             QString login = NetworkUtil::getUtf8String(message, 8, loginBytesSize);
+
+            qDebug() << "received user playing for: id =" << userId
+                     << "; login =" << login;
 
             emit receivedUserPlayingFor(userId, login);
         }

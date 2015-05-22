@@ -61,6 +61,7 @@ namespace PMP {
             new QueueEntryInfoFetcher(_connection, _queueMediator, _connection);
         _queueModel = new QueueModel(_connection, _queueMediator, _queueEntryInfoFetcher);
 
+        _ui->userPlayingForLabel->setText("");
         _ui->toPersonalModeButton->setText(_connection->userLoggedInName());
         _ui->toPublicModeButton->setEnabled(false);
         _ui->toPersonalModeButton->setEnabled(false);
@@ -462,13 +463,17 @@ namespace PMP {
     }
 
     void MainWidget::userPlayingForChanged(quint32 userId, QString login) {
-        _ui->userPlayingForLabel->setText(
-            (userId == 0) ? "PUBLIC mode" : "PERSONAL mode"
-        );
+        if (userId == 0) {
+            _ui->playingModeLabel->setText("PUBLIC mode");
+            _ui->userPlayingForLabel->setText("");
+        }
+        else {
+            _ui->playingModeLabel->setText("PERSONAL mode");
+            _ui->userPlayingForLabel->setText(login);
+        }
 
-        _ui->toPersonalModeButton->setEnabled(userId == 0);
+        _ui->toPersonalModeButton->setEnabled(userId != _connection->userLoggedInId());
         _ui->toPublicModeButton->setEnabled(userId != 0);
-
     }
 
 }

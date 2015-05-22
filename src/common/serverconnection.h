@@ -58,6 +58,7 @@ namespace PMP {
 
         bool isConnected() const { return _state == BinaryMode; }
 
+        quint32 userLoggedInId() const;
         QString userLoggedInName() const;
 
     public slots:
@@ -183,6 +184,7 @@ namespace PMP {
         uint _userLoginRef;
         QString _userLoggingIn;
         QString _userLoggingInPassword;
+        quint32 _userLoggedInId;
         QString _userLoggedInName;
     };
 }

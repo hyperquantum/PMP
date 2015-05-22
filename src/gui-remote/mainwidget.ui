@@ -19,7 +19,7 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="verticalLayout_3">
    <item>
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
@@ -88,29 +88,36 @@
       </spacer>
      </item>
      <item>
-      <widget class="QLabel" name="userPlayingForLabel">
-       <property name="text">
-        <string>unknown mode</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <layout class="QVBoxLayout" name="verticalLayout">
        <item>
-        <widget class="QPushButton" name="toPersonalModeButton">
+        <widget class="QLabel" name="playingModeLabel">
          <property name="text">
-          <string>Kevin</string>
+          <string>unknown mode</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QPushButton" name="toPublicModeButton">
+        <widget class="QLabel" name="userPlayingForLabel">
          <property name="text">
-          <string>Public</string>
+          <string>Timmy</string>
          </property>
         </widget>
        </item>
       </layout>
+     </item>
+     <item>
+      <widget class="QPushButton" name="toPersonalModeButton">
+       <property name="text">
+        <string>Kevin</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="toPublicModeButton">
+       <property name="text">
+        <string>Public</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>
