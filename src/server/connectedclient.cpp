@@ -1203,6 +1203,10 @@ namespace PMP {
                 return;
             }
 
+            /* clean up state */
+            _userAccountRegistering = "";
+            _saltForUserAccountRegistering.clear();
+
             QByteArray hashedPasswordFromClient =
                 message.mid(8 + loginLength + saltLength);
 
@@ -1322,8 +1326,12 @@ namespace PMP {
                     NetworkProtocol::UserAccountLoginMismatch,
                     clientReference, 0, loginBytes
                 );
-                break;
+                return;
             }
+
+            /* clean up state */
+            _userAccountLoggingIn = "";
+            _sessionSaltForUserLoggingIn.clear();
 
             QByteArray hashedPasswordFromClient =
                 message.mid(12 + loginLength + userSaltLength + sessionSaltLength);
