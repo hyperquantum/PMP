@@ -465,11 +465,13 @@ namespace PMP {
     void MainWidget::userPlayingForChanged(quint32 userId, QString login) {
         if (userId == 0) {
             _ui->playingModeLabel->setText("PUBLIC mode");
-            _ui->userPlayingForLabel->setText("");
+            _ui->userPlayingForLabel->setText("~~~");
         }
         else {
             _ui->playingModeLabel->setText("PERSONAL mode");
-            _ui->userPlayingForLabel->setText(login);
+            _ui->userPlayingForLabel->setText(
+                QString(QChar(0x2013)) + " " + login + " " + QChar(0x2013)
+            );
         }
 
         _ui->toPersonalModeButton->setEnabled(userId != _connection->userLoggedInId());

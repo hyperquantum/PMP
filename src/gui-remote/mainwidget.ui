@@ -94,12 +94,18 @@
          <property name="text">
           <string>unknown mode</string>
          </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
         </widget>
        </item>
        <item>
         <widget class="QLabel" name="userPlayingForLabel">
          <property name="text">
           <string>Timmy</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
          </property>
         </widget>
        </item>
