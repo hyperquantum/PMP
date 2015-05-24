@@ -153,7 +153,8 @@ namespace PMP {
 
         /* add previous track to history */
         if (_nowPlaying) {
-            _queue.addToHistory(_nowPlaying, calcPermillagePlayed(), false);
+            bool hadSeek = _seekHappenedInCurrent;
+            addToHistory(_nowPlaying, calcPermillagePlayed(), false, hadSeek);
         }
 
         /* start next track */
@@ -164,6 +165,7 @@ namespace PMP {
         if (_state != Playing && _state != Paused) return;
         //if (!_player->isSeekable()) return;
 
+        _seekHappenedInCurrent = true;
         _player->setPosition(position);
         positionChanged(position); /* notify all listeners immediately */
     }
@@ -199,7 +201,8 @@ namespace PMP {
                 /* add previous track to history */
                 if (_nowPlaying) {
                     bool hadError = _player->mediaStatus() == QMediaPlayer::InvalidMedia;
-                    _queue.addToHistory(_nowPlaying, calcPermillagePlayed(), hadError);
+                    bool hadSeek = _seekHappenedInCurrent;
+                    addToHistory(_nowPlaying, calcPermillagePlayed(), hadError, hadSeek);
                 }
 
                 switch (_state) {
@@ -252,8 +255,7 @@ namespace PMP {
 
             /* error */
             qDebug() << " skipping unplayable track (could not get filename)";
-            /* register track as not played */
-            _queue.addToHistory(entry, 0, true);
+            addToHistory(entry, 0, true, false); /* register track as not played */
         }
 
         if (next != 0) {
@@ -301,11 +303,18 @@ namespace PMP {
         return false;
     }
 
+    void Player::addToHistory(QueueEntry *entry, int permillage, bool hadError,
+                              bool hadSeek)
+    {
+        _queue.addToHistory(entry, permillage, hadError);
+    }
+
     int Player::calcPermillagePlayed() {
         qint64 position = _player->position();
 
         if (position > _maxPosReachedInCurrent) {
-            qDebug() << "adjusting maximum position reached from" << _maxPosReachedInCurrent << "to" << position;
+            qDebug() << "adjusting maximum position reached from"
+                     << _maxPosReachedInCurrent << "to" << position;
             _maxPosReachedInCurrent = position;
         }
 

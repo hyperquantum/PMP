@@ -82,8 +82,10 @@ namespace PMP {
         bool startNext(bool play);
 
     private:
+        void addToHistory(QueueEntry* entry, int permillage, bool hadError, bool hadSeek);
         int calcPermillagePlayed();
-        static int calcPermillagePlayed(QueueEntry* track, qint64 positionReached, bool seeked);
+        static int calcPermillagePlayed(QueueEntry* track, qint64 positionReached,
+                                        bool seeked);
 
         Resolver* _resolver;
         QMediaPlayer* _player;
