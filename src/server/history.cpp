@@ -19,15 +19,30 @@
 
 #include "history.h"
 
+#include "database.h"
 #include "player.h"
 #include "queueentry.h"
+#include "resolver.h"
 
 namespace PMP {
 
     History::History(Player* player)
      : _player(player), _nowPlaying(0)
     {
-        connect(player, SIGNAL(currentTrackChanged(QueueEntry const*)), this, SLOT(currentTrackChanged(QueueEntry const*)));
+        connect(
+            player, &Player::currentTrackChanged,
+            this, &History::currentTrackChanged
+        );
+
+        connect(
+            player, &Player::failedToPlayTrack,
+            this, &History::failedToPlayTrack
+        );
+
+        connect(
+            player, &Player::donePlayingTrack,
+            this, &History::donePlayingTrack
+        );
     }
 
     QDateTime History::lastPlayed(HashID const& hash) const {
@@ -37,13 +52,33 @@ namespace PMP {
     void History::currentTrackChanged(QueueEntry const* newTrack) {
         if (_nowPlaying != 0 && newTrack != _nowPlaying) {
             const HashID* hash = _nowPlaying->hash();
-            // TODO: make sure hash is known, so history won't get lost
+            /* TODO: make sure hash is known, so history won't get lost */
             if (hash != 0) {
                 _lastPlayHash[*hash] = QDateTime::currentDateTimeUtc();
             }
         }
 
         _nowPlaying = newTrack;
+    }
+
+    void History::failedToPlayTrack(const QueueEntry *track) {
+        /* we don't use this yet */
+    }
+
+    void History::donePlayingTrack(QueueEntry const* track, int permillage, bool hadError,
+                                   bool hadSeek)
+    {
+        Database* db = Database::instance();
+        const HashID* hash = track->hash();
+        if (db && hash) {
+            uint hashID = _player->resolver().getID(*hash);
+            quint32 user = _player->userPlayingFor();
+
+            db->addToHistory(
+                hashID, user, track->started(), track->ended(), permillage,
+                !(hadError || hadSeek)
+            );
+        }
     }
 
 }

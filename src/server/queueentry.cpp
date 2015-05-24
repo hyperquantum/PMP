@@ -193,4 +193,12 @@ namespace PMP {
     QString QueueEntry::title() const {
         return _tagData.title();
     }
+
+    void QueueEntry::setStartedNow() {
+        _started = QDateTime::currentDateTime();
+    }
+
+    void QueueEntry::setEndedNow() {
+        _ended = QDateTime::currentDateTime();
+    }
 }

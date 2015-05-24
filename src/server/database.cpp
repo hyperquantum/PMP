@@ -77,7 +77,8 @@ namespace PMP {
         db.setUserName(user.toString());
         db.setPassword(password.toString());
         if (!db.open()) {
-            out << " ERROR: could not connect to database: " << db.lastError().text() << endl << endl;
+            out << " ERROR: could not connect to database: " << db.lastError().text()
+                << endl << endl;
             return false;
         }
 
@@ -85,7 +86,8 @@ namespace PMP {
         QSqlQuery q(db);
         q.prepare("CREATE DATABASE IF NOT EXISTS pmp; USE pmp;");
         if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl << endl;
+            out << " database initialization problem: " << db.lastError().text() << endl
+                << endl;
             return false;
         }
 
@@ -100,7 +102,8 @@ namespace PMP {
             "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
         );
         if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl << endl;
+            out << " database initialization problem: " << db.lastError().text() << endl
+                << endl;
             return false;
         }
 
@@ -139,7 +142,8 @@ namespace PMP {
             ") ENGINE = InnoDB"
         );
         if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl << endl;
+            out << " database initialization problem: " << db.lastError().text() << endl
+                << endl;
             return false;
         }
 
@@ -157,7 +161,8 @@ namespace PMP {
             "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
         );
         if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl << endl;
+            out << " database initialization problem: " << db.lastError().text() << endl
+                << endl;
             return false;
         }
 
@@ -175,7 +180,39 @@ namespace PMP {
             "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
         );
         if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl << endl;
+            out << " database initialization problem: " << db.lastError().text() << endl
+                << endl;
+            return false;
+        }
+
+        /* create table 'pmp_history' if needed */
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_history ("
+            " `HistoryID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+            " `HashID` INT UNSIGNED NOT NULL,"
+            " `UserID` INT UNSIGNED,"
+            " `Start` DATETIME NOT NULL,"
+            " `End` DATETIME,"
+            " `Permillage` INT NOT NULL,"
+            " `ValidForScoring` BIT NOT NULL,"
+            " PRIMARY KEY (`HistoryID`),"
+            " INDEX `IDX_history_hash` (`HashID` ASC),"
+            " INDEX `IDX_history_user_hash` (`UserID` ASC, `HashID` ASC),"
+            " CONSTRAINT `FK_history_hash`"
+            "  FOREIGN KEY (`HashID`)"
+            "  REFERENCES `pmp_hash` (`HashID`)"
+            "   ON DELETE RESTRICT ON UPDATE CASCADE,"
+            " CONSTRAINT `FK_history_user`"
+            "  FOREIGN KEY (`UserID`)"
+            "  REFERENCES `pmp_user` (`UserID`)"
+            "   ON DELETE RESTRICT ON UPDATE CASCADE"
+            ") "
+            "ENGINE = InnoDB "
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
+        );
+        if (!q.exec()) {
+            out << " database initialization problem: " << db.lastError().text() << endl
+                << endl;
             return false;
         }
 
@@ -200,7 +237,8 @@ namespace PMP {
         q.addBindValue(md5);
 
         if (!executeQuery(q)) { /* error */
-            qDebug() << "Database::registerHash : could not execute; " << q.lastError().text() << endl;
+            qDebug() << "Database::registerHash : could not execute; "
+                     << q.lastError().text() << endl;
         }
     }
 
@@ -218,7 +256,8 @@ namespace PMP {
         q.addBindValue(md5);
 
         if (!executeQuery(q)) { /* error */
-            qDebug() << "Database::getHashID : could not execute; " << q.lastError().text() << endl;
+            qDebug() << "Database::getHashID : could not execute; "
+                     << q.lastError().text() << endl;
             return 0;
         }
         else if (!q.next()){
@@ -241,7 +280,8 @@ namespace PMP {
         QList<QPair<uint,HashID> > result;
 
         if (!executeQuery(q)) { /* error */
-            qDebug() << "Database::getHashes : could not execute; " << q.lastError().text() << endl;
+            qDebug() << "Database::getHashes : could not execute; "
+                     << q.lastError().text() << endl;
             return result;
         }
 
@@ -274,7 +314,8 @@ namespace PMP {
         q.addBindValue(filenameWithoutPath);
         int i;
         if (!executeScalar(q, i)) {
-            qDebug() << "Database::registerFilename : could not execute; " << q.lastError().text() << endl;
+            qDebug() << "Database::registerFilename : could not execute; "
+                     << q.lastError().text() << endl;
             return;
         }
 
@@ -287,7 +328,8 @@ namespace PMP {
         q.addBindValue(hashID);
         q.addBindValue(filenameWithoutPath);
         if (!executeQuery(q)) {
-            qDebug() << "Database::registerFilename : could not execute; " << q.lastError().text() << endl;
+            qDebug() << "Database::registerFilename : could not execute; "
+                     << q.lastError().text() << endl;
             return;
         }
     }
@@ -303,7 +345,8 @@ namespace PMP {
         QList<QString> result;
 
         if (!executeQuery(q)) { /* error */
-            qDebug() << "Database::getFilenames : could not execute; " << q.lastError().text() << endl;
+            qDebug() << "Database::getFilenames : could not execute; "
+                     << q.lastError().text() << endl;
             return result;
         }
 
@@ -322,7 +365,8 @@ namespace PMP {
         QList<User> result;
 
         if (!executeQuery(q)) { /* error */
-            qDebug() << "Database::getUsers : could not execute; " << q.lastError().text() << endl;
+            qDebug() << "Database::getUsers : could not execute; "
+                     << q.lastError().text() << endl;
             return result;
         }
 
@@ -381,6 +425,31 @@ namespace PMP {
         }
 
         return userId;
+    }
+
+    void Database::addToHistory(quint32 hashId, quint32 userId, QDateTime start,
+                                QDateTime end, int permillage, bool validForScoring)
+    {
+        QSqlQuery q(_db);
+        q.prepare(
+            "INSERT INTO pmp_history"
+            " (`HashID`,`UserID`,`Start`,`End`,`Permillage`,`ValidForScoring`) "
+            "VALUES(?,?,?,?,?,?)"
+        );
+        q.addBindValue(hashId);
+        q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
+        q.addBindValue(start.toUTC());
+        q.addBindValue(end.toUTC());
+        q.addBindValue(permillage);
+        q.addBindValue(validForScoring);
+
+        if (!executeQuery(q)) { /* error */
+            qDebug() << "Database::addToHistory : could not execute INSERT; "
+                     << q.lastError().text() << endl;
+            return;
+        }
+
+        return;
     }
 
     bool Database::executeScalar(QSqlQuery& q, int& i, int defaultValue) {

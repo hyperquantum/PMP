@@ -24,6 +24,7 @@
 #include "common/hashid.h"
 #include "common/tagdata.h"
 
+#include <QDateTime>
 #include <QObject>
 
 namespace PMP {
@@ -61,6 +62,11 @@ namespace PMP {
         int& fileFinderBackoff() { return _fileFinderBackoff; }
         int& fileFinderFailedCount() { return _fileFinderFailedCount; }
 
+        QDateTime started() const { return _started; }
+        QDateTime ended() const { return _ended; }
+        void setStartedNow();
+        void setEndedNow();
+
     private:
         uint const _queueID;
         HashID _hash;
@@ -72,6 +78,8 @@ namespace PMP {
         TagData _tagData;
         int _fileFinderBackoff;
         int _fileFinderFailedCount;
+        QDateTime _started;
+        QDateTime _ended;
     };
 }
 #endif

@@ -70,6 +70,9 @@ namespace PMP {
         void positionChanged(qint64 position);
         void volumeChanged(int volume);
         void userPlayingForChanged(quint32 user);
+        void failedToPlayTrack(QueueEntry const* track);
+        void donePlayingTrack(QueueEntry const* track, int permillage, bool hadError,
+                              bool hadSeek);
 
         /*! Emitted when the queue is empty and the current track is finished. */
         void finished();

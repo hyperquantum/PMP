@@ -274,6 +274,7 @@ namespace PMP {
             emit currentTrackChanged(next);
 
             if (play) {
+                _nowPlaying->setStartedNow();
                 changeState(Playing);
                 _player->play();
             }
@@ -306,7 +307,18 @@ namespace PMP {
     void Player::addToHistory(QueueEntry *entry, int permillage, bool hadError,
                               bool hadSeek)
     {
+        _nowPlaying->setEndedNow(); /* register end time */
+
+        permillage = qMin(permillage, 1000); /* prevent overrun by wrong track lengths */
+
         _queue.addToHistory(entry, permillage, hadError);
+
+        if (permillage <= 0 && hadError) {
+            emit failedToPlayTrack(entry);
+        }
+        else {
+            emit donePlayingTrack(entry, permillage, hadError, hadSeek);
+        }
     }
 
     int Player::calcPermillagePlayed() {

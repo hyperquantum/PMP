@@ -41,6 +41,9 @@ namespace PMP {
 
     private slots:
         void currentTrackChanged(QueueEntry const* newTrack);
+        void failedToPlayTrack(QueueEntry const* track);
+        void donePlayingTrack(QueueEntry const* track, int permillage, bool hadError,
+                              bool hadSeek);
 
     private:
         Player* _player;

@@ -23,6 +23,7 @@
 #include "common/hashid.h"
 
 #include <QByteArray>
+#include <QDateTime>
 #include <QList>
 #include <QObject>
 #include <QPair>
@@ -82,6 +83,9 @@ namespace PMP {
         QList<User> getUsers();
         bool checkUserExists(QString userName);
         quint32 registerNewUser(User& user);
+
+        void addToHistory(quint32 hashId, quint32 userId, QDateTime start, QDateTime end,
+                          int permillage, bool validForScoring);
 
     private:
         bool executeScalar(QSqlQuery& q, int& i, int defaultValue = 0);
