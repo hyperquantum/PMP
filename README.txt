@@ -186,7 +186,6 @@ things to be missing or not working correctly ;)
    simple indexation is performed when the server is started
  * Queue manipulation in the clients is still limited: only move/delete of one
    entry at a time.
- * Playback history is not saved in the database yet
  * No custom filters for dynamic mode yet
  * Etc.
 
