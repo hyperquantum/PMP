@@ -199,6 +199,13 @@ namespace PMP {
     }
 
     void QueueEntry::setEndedNow() {
+        /* set 'started' equal to 'ended' if 'started' hasn't been set yet */
+        if (_started.isNull()) {
+            _started = QDateTime::currentDateTime();
+            _ended = _started;
+            return;
+        }
+
         _ended = QDateTime::currentDateTime();
     }
 }

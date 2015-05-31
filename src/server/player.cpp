@@ -116,6 +116,10 @@ namespace PMP {
                 startNext(true); /* we're not playing yet */
                 break;
             case Paused:
+                /* set start time if it hasn't been set yet */
+                if (_nowPlaying->started().isNull()) {
+                    _nowPlaying->setStartedNow();
+                }
                 _player->play(); /* resume paused track */
                 changeState(Playing);
                 break;
