@@ -436,22 +436,23 @@ namespace PMP {
                  << "   start" << start << "\n"
                  << "   end" << end;
 
-        QSqlQuery q(_db);
-        q.prepare(
-            "INSERT INTO pmp_history"
-            " (`HashID`,`UserID`,`Start`,`End`,`Permillage`,`ValidForScoring`) "
-            "VALUES(?,?,?,?,?,?)"
-        );
-        q.addBindValue(hashId);
-        q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
-        q.addBindValue(start.toUTC());
-        q.addBindValue(end.toUTC());
-        q.addBindValue(permillage);
-        q.addBindValue(validForScoring);
+        auto preparer =
+            [=] (QSqlQuery& q) {
+                q.prepare(
+                    "INSERT INTO pmp_history"
+                    " (`HashID`,`UserID`,`Start`,`End`,`Permillage`,`ValidForScoring`) "
+                    "VALUES(?,?,?,?,?,?)"
+                );
+                q.addBindValue(hashId);
+                q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
+                q.addBindValue(start.toUTC());
+                q.addBindValue(end.toUTC());
+                q.addBindValue(permillage);
+                q.addBindValue(validForScoring);
+            };
 
-        if (!executeQuery(q)) { /* error */
-            qDebug() << "Database::addToHistory : could not execute INSERT; "
-                     << q.lastError().text() << endl;
+        if (!executeQuery(preparer)) { /* error */
+            qDebug() << "Database::addToHistory : query FAILED!" << endl;
             return;
         }
 
@@ -509,6 +510,62 @@ namespace PMP {
         return true;
     }
 
+    bool Database::executeQuery(std::function<void (QSqlQuery&)> preparer)
+    {
+        QSqlQuery q(_db);
+        preparer(q);
+        if (q.exec()) return true;
+
+        /* something went wrong */
+
+        QSqlError error = q.lastError();
+        qDebug() << "Database: query failed:" << error.text();
+        qDebug() << " error type:" << error.type();
+        qDebug() << " error number:" << error.number();
+        qDebug() << " db error:" << error.databaseText();
+        qDebug() << " driver error:" << error.driverText();
+        qDebug() << " sql:" << q.lastQuery();
+
+        if (!_db.isOpen()) {
+            qDebug() << " connection not open!";
+        }
+
+        if (!_db.isValid()) {
+            qDebug() << " connection not valid!";
+        }
+
+        if (error.number() != 2006) return false;
+
+        /* An extended sleep period followed by a resume will result in the error "MySQL
+           server has gone away", error code 2006. In that case we try to reopen the
+           connection and re-execute the query. */
+
+        qDebug() << " will try to re-establish a connection and re-execute the query";
+        _db.close();
+        _db.setDatabaseName("pmp");
+        if (!_db.open()) {
+            qDebug() << "  FAILED.  Connection not reopened.";
+            return false;
+        }
+
+        preparer(q);
+
+        if (!q.exec()) {
+            QSqlError error2 = q.lastError();
+            qDebug() << "  FAILED to re-execute query:" << error2.text();
+            qDebug() << "  error type:" << error2.type();
+            qDebug() << "  error number:" << error2.number();
+            qDebug() << "  db error:" << error2.databaseText();
+            qDebug() << "  driver error:" << error2.driverText();
+            qDebug() << "  sql:" << q.lastQuery();
+            qDebug() << "  BAILING OUT.";
+            return false;
+        }
+
+        qDebug() << "  SUCCESS!";
+        return true;
+    }
+
     bool Database::executeQuery(QSqlQuery& q) {
         if (q.exec()) return true;
 
@@ -520,6 +577,7 @@ namespace PMP {
         qDebug() << " error number:" << error.number();
         qDebug() << " db error:" << error.databaseText();
         qDebug() << " driver error:" << error.driverText();
+        qDebug() << " sql:" << q.lastQuery();
 
         if (!_db.isOpen()) {
             qDebug() << " connection not open!";
@@ -548,6 +606,7 @@ namespace PMP {
                 qDebug() << "  error number:" << error2.number();
                 qDebug() << "  db error:" << error2.databaseText();
                 qDebug() << "  driver error:" << error2.driverText();
+                qDebug() << "  sql:" << q.lastQuery();
                 qDebug() << "  BAILING OUT.";
                 return false;
             }

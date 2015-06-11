@@ -31,6 +31,8 @@
 #include <QSqlDatabase>
 #include <QtGlobal>
 
+#include <functional>
+
 QT_FORWARD_DECLARE_CLASS(QSqlQuery)
 QT_FORWARD_DECLARE_CLASS(QTextStream)
 
@@ -92,6 +94,7 @@ namespace PMP {
         bool executeScalar(QSqlQuery& q, uint& i, uint defaultValue = 0);
         bool executeScalar(QSqlQuery& q, QString& s, const QString& defaultValue = "");
 
+        bool executeQuery(std::function<void (QSqlQuery&)> preparer);
         bool executeQuery(QSqlQuery& q);
 
         static Database* _instance;
