@@ -1,7 +1,7 @@
 # This script packages the binaries for Windows-x86.
 # It is meant to be run in a Cygwin shell.
 
-cd $(dirname $0)
+cd $(dirname "$0")
 
 SRC_DIR="."
 BIN_DIR="bin_win32_release"
@@ -14,18 +14,48 @@ MINGW_BIN_DIR="/cygdrive/C/MinGW/bin"
 QT_BIN_DIR="/cygdrive/C/Qt/5.2.1/mingw48_32/bin"
 QT_PLUGINS_DIR="/cygdrive/C/Qt/5.2.1/mingw48_32/plugins"
 
+CMAKE_EXE="/cygdrive/C/Program Files (x86)/CMake/bin/cmake.exe"
+
 # (1) cleanup from previous runs (if necessary)
 rm -rf "$DIST_DIR" "$INCR_TMPDIR"
 mkdir  "$DIST_DIR" "$INCR_TMPDIR"
 rm -rf "$ZIP_FILE" "$INCR_ZIP"
 
-# (2) run build
+# (2) create build directory if first time
+if [ ! -d "$BIN_DIR" ]; then
+    echo "Creating build directory..."
+    mkdir "$BIN_DIR" || exit
+fi
+
+# (3) run CMake for the first time
+if [ ! -f "$BIN_DIR"/Makefile ]; then
+    if [ ! -x "$CMAKE_EXE" ] ; then
+        >&2 echo "ERROR: CMake executable not found: $CMAKE_EXE"
+        exit
+    fi
+    
+    echo "Running CMake..."
+    pushd "$BIN_DIR" >/dev/null
+    "$CMAKE_EXE" \
+        -G "MinGW Makefiles" \
+        -D "CMAKE_CXX_COMPILER=mingw32-g++.exe" \
+        -D "CMAKE_BUILD_TYPE:STRING=Release" .. || exit
+    popd >/dev/null
+fi
+
+# (4) run build
 echo "Running make..."
 pushd "$BIN_DIR" >/dev/null
 mingw32-make || exit
 popd >/dev/null
 
-# (3) copy files to release directories
+# (5) copy files to release directories
+
+if [ ! -f "$BIN_DIR"/libmysql.dll ] ; then
+    >&2 echo "ERROR: libmysql.dll not found in directory $BIN_DIR"
+    exit
+fi
+
 echo "Copying files..."
 
 cp "$SRC_DIR"/README* "$DIST_DIR"/
@@ -68,7 +98,8 @@ cp "$DIST_DIR"/*.exe "$INCR_TMPDIR"/
 cp "$DIST_DIR"/*LICENSE* "$INCR_TMPDIR"/
 cp "$DIST_DIR"/README* "$INCR_TMPDIR"/
 
-# (4) create zip files
+# (6) create zip files
+
 echo "Creating full archive..."
 zip -r -q "$ZIP_FILE" "$DIST_DIR"/* \
   && rm -rf "$DIST_DIR" || exit
