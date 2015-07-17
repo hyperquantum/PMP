@@ -1,6 +1,14 @@
 # This script packages the binaries for Windows-x86.
 # It is meant to be run in a Cygwin shell.
 
+# PREREQUISITES:
+#   - Cygwin environment with "zip" tool installed
+#   - CMake installed in Windows  (C:\Program Files (x86)\CMake)
+#   - MinGW32 installed  (C:\MinGW)
+#   - QT5 installed in Windows  (C:\Qt\5.2.1\mingw48_32)
+#   - taglib and pkg-config installed in the MinGW path as described in the README
+#   - libmysql.dll needs to be copied into the build directory as described in the README
+
 cd $(dirname "$0")
 
 SRC_DIR="."
