@@ -42,12 +42,18 @@ namespace PMP {
         ServerSettings serversettings;
         QSettings& settings = serversettings.getSettings();
 
-        QVariant serverPassword = settings.value("security/serverpassword");
+        /* get rid of old 'serverpassword' setting if it still exists */
+        settings.remove("security/serverpassword");
+
+        QVariant serverPassword = settings.value("security/fixedserverpassword");
         if (!serverPassword.isValid() || serverPassword.toString() == ""
             || serverPassword.toString().length() < 6)
         {
             _serverPassword = generateServerPassword();
-            settings.setValue("security/serverpassword", _serverPassword);
+
+            /* put placeholder in settings file, so that one can define a fixed
+             * server password if desired */
+            settings.setValue("security/fixedserverpassword", "");
         }
         else {
             _serverPassword = serverPassword.toString();
