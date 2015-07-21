@@ -227,18 +227,19 @@ namespace PMP {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
 
-        QSqlQuery q(_db);
-        q.prepare(
-            "INSERT IGNORE INTO pmp_hash(InputLength, `SHA1`, `MD5`) "
-            "VALUES(?,?,?)"
-        );
-        q.addBindValue(hash.length());
-        q.addBindValue(sha1);
-        q.addBindValue(md5);
+        auto preparer =
+            [=] (QSqlQuery& q) {
+                q.prepare(
+                    "INSERT IGNORE INTO pmp_hash(InputLength, `SHA1`, `MD5`) "
+                    "VALUES(?,?,?)"
+                );
+                q.addBindValue(hash.length());
+                q.addBindValue(sha1);
+                q.addBindValue(md5);
+            };
 
-        if (!executeQuery(q)) { /* error */
-            qDebug() << "Database::registerHash : could not execute; "
-                     << q.lastError().text() << endl;
+        if (!executeVoid(preparer)) { /* error */
+            qDebug() << "Database::registerHash : insert failed!" << endl;
         }
     }
 
@@ -246,26 +247,24 @@ namespace PMP {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
 
-        QSqlQuery q(_db);
-        q.prepare(
-            "SELECT HashID FROM pmp_hash"
-            " WHERE InputLength=? AND `SHA1`=? AND `MD5`=?"
-        );
-        q.addBindValue(hash.length());
-        q.addBindValue(sha1);
-        q.addBindValue(md5);
+        auto preparer =
+            [=] (QSqlQuery& q) {
+                q.prepare(
+                    "SELECT HashID FROM pmp_hash"
+                    " WHERE InputLength=? AND `SHA1`=? AND `MD5`=?"
+                );
+                q.addBindValue(hash.length());
+                q.addBindValue(sha1);
+                q.addBindValue(md5);
+            };
 
-        if (!executeQuery(q)) { /* error */
-            qDebug() << "Database::getHashID : could not execute; "
-                     << q.lastError().text() << endl;
-            return 0;
-        }
-        else if (!q.next()){
-            qDebug() << "Database::getHashID : no result" << endl;
+        uint id;
+        if (!executeScalar(preparer, id, 0)) { /* error */
+            qDebug() << "Database::getHashID : query failed!" << endl;
             return 0;
         }
 
-        return q.value(0).toUInt();
+        return id;
     }
 
     QList<QPair<uint,HashID> > Database::getHashes(uint largerThanID) {
@@ -304,32 +303,38 @@ namespace PMP {
         /* A race condition could cause duplicate records to be registered; that is
            tolerable however. */
 
-        QSqlQuery q(_db);
-        q.prepare(
-            "SELECT EXISTS("
-            " SELECT * FROM pmp_filename WHERE `HashID`=? AND `FilenameWithoutDir`=? "
-            ")"
-        );
-        q.addBindValue(hashID);
-        q.addBindValue(filenameWithoutPath);
-        int i;
-        if (!executeScalar(q, i)) {
-            qDebug() << "Database::registerFilename : could not execute; "
-                     << q.lastError().text() << endl;
+        auto preparer =
+            [=] (QSqlQuery& q) {
+                q.prepare(
+                    "SELECT EXISTS("
+                    " SELECT * FROM pmp_filename"
+                    "  WHERE `HashID`=? AND `FilenameWithoutDir`=? "
+                    ")"
+                );
+                q.addBindValue(hashID);
+                q.addBindValue(filenameWithoutPath);
+            };
+
+        bool exists;
+        if (!executeScalar(preparer, exists, false)) {
+            qDebug() << "Database::registerFilename : select failed!" << endl;
             return;
         }
 
-        if (i != 0) return; /* already registered */
+        if (exists) return; /* already registered */
 
-        q.prepare(
-            "INSERT INTO pmp_filename(`HashID`,`FilenameWithoutDir`)"
-            " VALUES(?,?)"
-        );
-        q.addBindValue(hashID);
-        q.addBindValue(filenameWithoutPath);
-        if (!executeQuery(q)) {
-            qDebug() << "Database::registerFilename : could not execute; "
-                     << q.lastError().text() << endl;
+        auto preparer2 =
+            [=] (QSqlQuery& q) {
+                q.prepare(
+                    "INSERT INTO pmp_filename(`HashID`,`FilenameWithoutDir`)"
+                    " VALUES(?,?)"
+                );
+                q.addBindValue(hashID);
+                q.addBindValue(filenameWithoutPath);
+            };
+
+        if (!executeVoid(preparer2)) {
+            qDebug() << "Database::registerFilename : insert failed!" << endl;
             return;
         }
     }
@@ -385,42 +390,44 @@ namespace PMP {
     }
 
     bool Database::checkUserExists(QString userName) {
-        QSqlQuery q(_db);
-        q.prepare("SELECT EXISTS(SELECT * FROM pmp_user WHERE LOWER(`Login`)=LOWER(?))");
-        q.addBindValue(userName);
+        auto preparer =
+            [=] (QSqlQuery& q) {
+                q.prepare(
+                    "SELECT EXISTS(SELECT * FROM pmp_user WHERE LOWER(`Login`)=LOWER(?))"
+                );
+                q.addBindValue(userName);
+            };
 
-        if (!executeQuery(q)) { /* error */
-            qDebug() << "Database::checkUserExists : could not execute; "
-                     << q.lastError().text() << endl;
+        bool exists;
+        if (!executeScalar(preparer, exists, false)) { /* error */
+            qDebug() << "Database::checkUserExists : query failed!" << endl;
             return false; // FIXME ???
         }
 
-        if (q.next()) {
-            return q.value(0).toBool();
-        }
-
-        return false;
+        return exists;
     }
 
     quint32 Database::registerNewUser(User& user) {
-        QSqlQuery q(_db);
-        q.prepare("INSERT INTO pmp_user(`Login`,`Salt`,`Password`) VALUES(?,?,?)");
-        q.addBindValue(user.login);
-        q.addBindValue(QString::fromLatin1(user.salt.toBase64()));
-        q.addBindValue(QString::fromLatin1(user.password.toBase64()));
+        auto preparer =
+            [=] (QSqlQuery& q) {
+                q.prepare(
+                    "INSERT INTO pmp_user(`Login`,`Salt`,`Password`) VALUES(?,?,?)"
+                );
+                q.addBindValue(user.login);
+                q.addBindValue(QString::fromLatin1(user.salt.toBase64()));
+                q.addBindValue(QString::fromLatin1(user.password.toBase64()));
+            };
 
-        if (!executeQuery(q)) { /* error */
-            qDebug() << "Database::registerNewUser : could not execute INSERT; "
-                     << q.lastError().text() << endl;
+        if (!executeVoid(preparer)) { /* error */
+            qDebug() << "Database::registerNewUser : insert failed!" << endl;
             return 0;
         }
 
-        q.prepare("SELECT LAST_INSERT_ID()");
+        auto preparer2 = prepareSimple("SELECT LAST_INSERT_ID()");
 
         uint userId = 0;
-        if (!executeScalar(q, userId, 0)) {
-            qDebug() << "Database::registerNewUser : could not execute SELECT; "
-                     << q.lastError().text() << endl;
+        if (!executeScalar(preparer2, userId, 0)) {
+            qDebug() << "Database::registerNewUser : select failed!" << endl;
             return 0;
         }
 
@@ -451,7 +458,7 @@ namespace PMP {
                 q.addBindValue(validForScoring);
             };
 
-        if (!executeQuery(preparer)) { /* error */
+        if (!executeVoid(preparer)) { /* error */
             qDebug() << "Database::addToHistory : query FAILED!" << endl;
             return;
         }
@@ -459,6 +466,28 @@ namespace PMP {
         return;
     }
 
+    bool Database::executeScalar(std::function<void (QSqlQuery&)> preparer, bool& b,
+                                 bool defaultValue)
+    {
+        auto resultGetter =
+            [&b, defaultValue] (QSqlQuery& q) {
+                if (q.next()) {
+                    QVariant v = q.value(0);
+                    b = (v.isNull()) ? defaultValue : v.toBool();
+                }
+                else {
+                    b = defaultValue;
+                }
+            };
+
+        if (executeQuery(preparer, true, resultGetter))
+            return true;
+
+        b = defaultValue;
+        return false;
+    }
+
+    /*
     bool Database::executeScalar(QSqlQuery& q, int& i, int defaultValue) {
         if (!executeQuery(q)) {
             i = defaultValue;
@@ -475,7 +504,30 @@ namespace PMP {
 
         return true;
     }
+    */
 
+    bool Database::executeScalar(std::function<void (QSqlQuery&)> preparer, int& i,
+                                 int defaultValue)
+    {
+        auto resultGetter =
+            [&i, defaultValue] (QSqlQuery& q) {
+                if (q.next()) {
+                    QVariant v = q.value(0);
+                    i = (v.isNull()) ? defaultValue : v.toInt();
+                }
+                else {
+                    i = defaultValue;
+                }
+            };
+
+        if (executeQuery(preparer, true, resultGetter))
+            return true;
+
+        i = defaultValue;
+        return false;
+    }
+
+    /*
     bool Database::executeScalar(QSqlQuery& q, uint& i, uint defaultValue) {
         if (!executeQuery(q)) {
             i = defaultValue;
@@ -492,7 +544,30 @@ namespace PMP {
 
         return true;
     }
+    */
 
+    bool Database::executeScalar(std::function<void (QSqlQuery&)> preparer, uint& i,
+                                 uint defaultValue)
+    {
+        auto resultGetter =
+            [&i, defaultValue] (QSqlQuery& q) {
+                if (q.next()) {
+                    QVariant v = q.value(0);
+                    i = (v.isNull()) ? defaultValue : v.toUInt();
+                }
+                else {
+                    i = defaultValue;
+                }
+            };
+
+        if (executeQuery(preparer, true, resultGetter))
+            return true;
+
+        i = defaultValue;
+        return false;
+    }
+
+    /*
     bool Database::executeScalar(QSqlQuery& q, QString& s, const QString& defaultValue) {
         if (!executeQuery(q)) {
             s = defaultValue; // NECESSARY?
@@ -509,12 +584,26 @@ namespace PMP {
 
         return true;
     }
+    */
 
-    bool Database::executeQuery(std::function<void (QSqlQuery&)> preparer)
+    std::function<void (QSqlQuery&)> Database::prepareSimple(QString sql) {
+        return [=] (QSqlQuery& q) { q.prepare(sql); };
+    }
+
+    bool Database::executeVoid(std::function<void (QSqlQuery&)> preparer) {
+        return executeQuery(preparer, false, std::function<void (QSqlQuery&)>());
+    }
+
+    bool Database::executeQuery(std::function<void (QSqlQuery&)> preparer,
+                                bool processResult,
+                                std::function<void (QSqlQuery&)> resultFetcher)
     {
         QSqlQuery q(_db);
         preparer(q);
-        if (q.exec()) return true;
+        if (q.exec()) {
+            if (processResult) resultFetcher(q);
+            return true;
+        }
 
         /* something went wrong */
 
@@ -563,6 +652,8 @@ namespace PMP {
         }
 
         qDebug() << "  SUCCESS!";
+
+        if (processResult) resultFetcher(q);
         return true;
     }
 

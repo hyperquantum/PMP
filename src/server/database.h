@@ -90,11 +90,20 @@ namespace PMP {
                           int permillage, bool validForScoring);
 
     private:
-        bool executeScalar(QSqlQuery& q, int& i, int defaultValue = 0);
-        bool executeScalar(QSqlQuery& q, uint& i, uint defaultValue = 0);
-        bool executeScalar(QSqlQuery& q, QString& s, const QString& defaultValue = "");
+        std::function<void (QSqlQuery&)> prepareSimple(QString sql);
 
-        bool executeQuery(std::function<void (QSqlQuery&)> preparer);
+        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                           bool& b, bool defaultValue);
+        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                           int& i, int defaultValue);
+        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                           uint& i, uint defaultValue);
+
+        bool executeVoid(std::function<void (QSqlQuery&)> preparer);
+
+        bool executeQuery(std::function<void (QSqlQuery&)> preparer,
+                          bool processResult,
+                          std::function<void (QSqlQuery&)> resultFetcher);
         bool executeQuery(QSqlQuery& q);
 
         static Database* _instance;
