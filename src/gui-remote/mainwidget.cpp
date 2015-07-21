@@ -22,6 +22,7 @@
 
 #include "common/serverconnection.h"
 
+#include "autopersonalmodeaction.h"
 #include "currenttrackmonitor.h"
 #include "queueentryinfofetcher.h"
 #include "queuemediator.h"
@@ -54,6 +55,7 @@ namespace PMP {
 
     void MainWidget::setConnection(ServerConnection* connection) {
         _connection = connection;
+        new AutoPersonalModeAction(connection); /* uses connection as parent */
         _currentTrackMonitor = new CurrentTrackMonitor(_connection);
         _queueMonitor = new QueueMonitor(_connection, _connection);
         _queueMediator = new QueueMediator(_connection, _queueMonitor, _connection);
