@@ -466,6 +466,23 @@ namespace PMP {
         return;
     }
 
+    QDateTime Database::getLastHeard(quint32 hashId, quint32 userId) {
+        auto preparer =
+            [=] (QSqlQuery& q) {
+                q.prepare("SELECT MAX(End) FROM pmp_history WHERE HashID=? AND UserID=?");
+                q.addBindValue(hashId);
+                q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
+            };
+
+        QDateTime lastHeard;
+        if (!executeScalar(preparer, lastHeard)) { /* error */
+            qDebug() << "Database::getLastHeard : query failed!" << endl;
+            return QDateTime(); // FIXME ???
+        }
+
+        return lastHeard;
+    }
+
     bool Database::executeScalar(std::function<void (QSqlQuery&)> preparer, bool& b,
                                  bool defaultValue)
     {
@@ -564,6 +581,26 @@ namespace PMP {
             return true;
 
         i = defaultValue;
+        return false;
+    }
+
+    bool Database::executeScalar(std::function<void (QSqlQuery&)> preparer, QDateTime& d)
+    {
+        auto resultGetter =
+            [&d] (QSqlQuery& q) {
+                if (q.next()) {
+                    QVariant v = q.value(0);
+                    d = (v.isNull()) ? QDateTime() : v.toDateTime();
+                }
+                else {
+                    d = QDateTime();
+                }
+            };
+
+        if (executeQuery(preparer, true, resultGetter))
+            return true;
+
+        d = QDateTime();
         return false;
     }
 

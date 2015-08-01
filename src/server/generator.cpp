@@ -19,6 +19,7 @@
 
 #include "generator.h"
 
+#include "database.h"
 #include "history.h"
 #include "queue.h"
 #include "queueentry.h"
@@ -55,7 +56,7 @@ namespace PMP {
      : _currentTrack(0), _queue(queue), _resolver(resolver), _history(history),
        _enabled(false), _refillPending(false),
        _upcomingRuntimeSeconds(0), _upcomingTimer(new QTimer(this)),
-       _noRepetitionSpan(60 * 60 /* one hour */)
+       _noRepetitionSpan(60 * 60 /* one hour */), _userPlayingFor(0)
     {
         connect(
             _queue, SIGNAL(entryRemoved(quint32, quint32)),
@@ -122,6 +123,10 @@ namespace PMP {
 
     void Generator::currentTrackChanged(QueueEntry const* newTrack) {
         _currentTrack = newTrack;
+    }
+
+    void Generator::setUserPlayingFor(quint32 user) {
+        _userPlayingFor = user;
     }
 
     void Generator::queueEntryRemoved(quint32, quint32) {
@@ -200,6 +205,8 @@ namespace PMP {
         int iterationsLeft = maxIterations;
         int tracksToGenerate = howManyTracksToAdd;
 
+        Database* db = Database::instance();
+
         while (iterationsLeft > 0
                 && tracksToGenerate > 0
                 && !_upcoming.empty())
@@ -240,9 +247,21 @@ namespace PMP {
                     QDateTime::currentDateTimeUtc().addSecs(nonRepetitionSpan)
                                                    .addSecs(-_noRepetitionSpan);
 
-                if (lastPlay.isValid() && lastPlay > maxLastPlay)
+                if (lastPlay.isValid())
                 {
-                    ok = false;
+                    if (lastPlay > maxLastPlay) { ok = false; }
+                }
+                else if (db) {
+                    /* check history in the database */
+                    uint id = _resolver->getID(c->hash());
+                    /* FIXME: this is slow */
+                    QDateTime lastHeard = db->getLastHeard(id, _userPlayingFor);
+
+                    if (lastHeard > maxLastPlay) {
+                        qDebug() << "Generator: rejecting candidate with ID" << id
+                                 << "because lastHeard is too recent:" << lastHeard;
+                        ok = false;
+                    }
                 }
             }
 

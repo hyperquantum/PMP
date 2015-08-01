@@ -1,0 +1,2 @@
+
+ * Database access for track repetition avoidance needs to be optimized and data needs to be cached

@@ -44,6 +44,7 @@ Contents of this file:
  * Use of hashing to identify tracks
  * Dynamic mode with track repetition avoidance
  * User authentication and public/personal operating modes
+ * Separate play history for each user and for public mode
 
 
 2. DEPENDENCIES FOR RUNNING PMP
@@ -200,8 +201,9 @@ things to be missing or not working correctly ;)
 
 Only a list of ideas.  No promises!
 
+ * Ability to start a full indexation while the server is running
+ * Store last track repetition avoidance interval for each user in the database
  * 'Trim queue' button in remote
- * Separate play history for each user and for public mode
  * Last.fm scrobbling (in personal mode)
  * Syncronization of music databases across different machines
  * Handling of two files that are the same track but have a different hash

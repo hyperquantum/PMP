@@ -195,17 +195,17 @@ namespace PMP {
     }
 
     void QueueEntry::setStartedNow() {
-        _started = QDateTime::currentDateTime();
+        _started = QDateTime::currentDateTimeUtc();
     }
 
     void QueueEntry::setEndedNow() {
         /* set 'started' equal to 'ended' if 'started' hasn't been set yet */
         if (_started.isNull()) {
-            _started = QDateTime::currentDateTime();
+            _started = QDateTime::currentDateTimeUtc();
             _ended = _started;
             return;
         }
 
-        _ended = QDateTime::currentDateTime();
+        _ended = QDateTime::currentDateTimeUtc();
     }
 }

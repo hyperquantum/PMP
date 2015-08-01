@@ -49,6 +49,7 @@ namespace PMP {
         void setNoRepetitionSpan(int seconds);
 
         void currentTrackChanged(QueueEntry const* newTrack);
+        void setUserPlayingFor(quint32 user);
 
     Q_SIGNALS:
         void enabledChanged(bool enabled);
@@ -84,6 +85,7 @@ namespace PMP {
         uint _upcomingRuntimeSeconds;
         QTimer* _upcomingTimer;
         int _noRepetitionSpan;
+        quint32 _userPlayingFor;
     };
 }
 #endif

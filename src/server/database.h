@@ -88,6 +88,7 @@ namespace PMP {
 
         void addToHistory(quint32 hashId, quint32 userId, QDateTime start, QDateTime end,
                           int permillage, bool validForScoring);
+        QDateTime getLastHeard(quint32 hashId, quint32 userId);
 
     private:
         std::function<void (QSqlQuery&)> prepareSimple(QString sql);
@@ -98,6 +99,8 @@ namespace PMP {
                            int& i, int defaultValue);
         bool executeScalar(std::function<void (QSqlQuery&)> preparer,
                            uint& i, uint defaultValue);
+        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                           QDateTime& d);
 
         bool executeVoid(std::function<void (QSqlQuery&)> preparer);
 

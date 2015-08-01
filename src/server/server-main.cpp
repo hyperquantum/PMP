@@ -117,7 +117,8 @@ int main(int argc, char *argv[]) {
 
     /* unique server instance ID (not to be confused with the unique ID of the database)*/
     QUuid serverInstanceIdentifier = QUuid::createUuid();
-    out << "Server instance identifier: " << serverInstanceIdentifier.toString() << endl << endl;
+    out << "Server instance identifier: " << serverInstanceIdentifier.toString() << endl
+        << endl;
 
     Users users;
     Player player(0, &resolver);
@@ -129,14 +130,19 @@ int main(int argc, char *argv[]) {
         &player, &Player::currentTrackChanged,
         &generator, &Generator::currentTrackChanged
     );
+    QObject::connect(
+        &player, &Player::userPlayingForChanged,
+        &generator, &Generator::setUserPlayingFor
+    );
 
     musicPaths.append("."); /* temporary, for backwards compatibility */
 
     resolver.setMusicPaths(musicPaths);
 
+    out << "Starting media directory traversal" << endl;
     int filesStartedAnalyzing = 0;
     Q_FOREACH(QString musicPath, musicPaths) {
-        QDirIterator it(musicPath, QDirIterator::Subdirectories/* | QDirIterator::FollowSymlinks */);
+        QDirIterator it(musicPath, QDirIterator::Subdirectories); /* we skip symlinks */
         while (it.hasNext()) {
             QFileInfo entry(it.next());
             if (!entry.isFile()) continue;
@@ -156,7 +162,7 @@ int main(int argc, char *argv[]) {
             filesStartedAnalyzing++;
         }
     }
-    out << "Started background analysis of " << filesStartedAnalyzing << " music files" << endl
+    out << "Encountered " << filesStartedAnalyzing << " music files to analyse" << endl
         << endl;
 
     out << endl
