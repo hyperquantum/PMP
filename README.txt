@@ -12,8 +12,8 @@ a 'remote', is used to connect to the server and instruct it what to do.
 PMP uses hashes to keep track of music files, so it can deal with moved/renamed
 and duplicate files without any problems.
 
-PMP is portable software and should be compatible with most popular operating
-systems in use today. I have only tested Windows and Linux, but others like
+PMP is designed to be portable software and should be compatible with most popular
+operating systems in use today. I have only tested Windows and Linux, but others like
 Mac OS X, BSD... should be supported as well.
 
 The software is licenced under GPLv3.
