@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
         new DirectoriesIndexationTask(&resolver, musicPaths);
     QThreadPool::globalInstance()->start(indexTask);
 
-    generator.enable();
+    out << endl << "Starting event loop" << endl;
 
     return app.exec();
 }

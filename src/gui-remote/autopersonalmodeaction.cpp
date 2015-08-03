@@ -71,6 +71,7 @@ namespace PMP {
 
         if (_state == ServerConnection::Stopped && _publicMode) {
             _connection->switchToPersonalMode();
+            _connection->enableDynamicMode();
         }
     }
 }
