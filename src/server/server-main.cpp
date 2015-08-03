@@ -20,7 +20,7 @@
 #include "common/filedata.h"
 
 #include "database.h"
-#include "fileanalysistask.h"
+#include "directoriesindexationtask.h"
 #include "generator.h"
 #include "history.h"
 #include "player.h"
@@ -32,8 +32,6 @@
 #include "users.h"
 
 #include <QCoreApplication>
-#include <QDirIterator>
-#include <QFileInfo>
 #include <QStandardPaths>
 #include <QThreadPool>
 
@@ -136,34 +134,7 @@ int main(int argc, char *argv[]) {
     );
 
     musicPaths.append("."); /* temporary, for backwards compatibility */
-
     resolver.setMusicPaths(musicPaths);
-
-    out << "Starting media directory traversal" << endl;
-    int filesStartedAnalyzing = 0;
-    Q_FOREACH(QString musicPath, musicPaths) {
-        QDirIterator it(musicPath, QDirIterator::Subdirectories); /* we skip symlinks */
-        while (it.hasNext()) {
-            QFileInfo entry(it.next());
-            if (!entry.isFile()) continue;
-
-            if (!FileData::supportsExtension(entry.suffix())) continue;
-
-            QString path = entry.absoluteFilePath();
-
-            //qDebug() << "starting background analysis of" << path;
-
-            FileAnalysisTask* task = new FileAnalysisTask(path);
-            resolver.connect(
-                task, &FileAnalysisTask::finished,
-                &resolver, &Resolver::analysedFile
-            );
-            QThreadPool::globalInstance()->start(task);
-            filesStartedAnalyzing++;
-        }
-    }
-    out << "Encountered " << filesStartedAnalyzing << " music files to analyse" << endl
-        << endl;
 
     out << endl
         << "Volume = " << player.volume() << endl;
@@ -183,6 +154,11 @@ int main(int argc, char *argv[]) {
 
     // exit when the server instance signals it
     QObject::connect(&server, SIGNAL(shuttingDown()), &app, SLOT(quit()));
+
+    /* start indexation of the media directories */
+    DirectoriesIndexationTask* indexTask =
+        new DirectoriesIndexationTask(&resolver, musicPaths);
+    QThreadPool::globalInstance()->start(indexTask);
 
     generator.enable();
 
