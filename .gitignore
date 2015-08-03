@@ -1,5 +1,6 @@
 bin/
 bin_win32_release/
+CMakeLists.txt.user
 *.mp3
 PMP_win32.zip
 PMP_win32_incremental.zip
