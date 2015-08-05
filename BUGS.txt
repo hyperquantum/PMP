@@ -1,2 +1,9 @@
 
- * Database access for track repetition avoidance needs to be optimized and data needs to be cached
+CRASHES
+
+ - GUI remote: when queue contains 10 tracks, dragging the 9th beyond the 10th will cause an assert to fail
+
+
+PERFORMANCE ISSUES
+
+  - Database access for track repetition avoidance needs to be optimized and data needs to be cached
