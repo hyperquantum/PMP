@@ -209,6 +209,7 @@ Only a list of ideas.  No promises!
  * Last.fm scrobbling (in personal mode)
  * Syncronization of music databases across different machines
  * Handling of two files that are the same track but have a different hash
+ * Ability to insert a breakpoint (automatic pause) into the queue
  * Search functionality with fuzzy matching option
  * Find a way to identify artists
  * Dynamic mode: avoid repeating the same artist within a certain timespan
