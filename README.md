@@ -1,20 +1,13 @@
-﻿                 ======================
-                 = Party Music Player =
-                 ======================
+﻿Party Music Player
+==================
 
 Copyright (C) 2011-2015  Kevin André
 
-  !! This project is in a very early stage of development !!
+  *!! This project is in a very early stage of development !!*
 
-Party Music Player, abbreviated as PMP, is a client-server music system.
-The server is responsible for playing music, and a separate program,
-a 'remote', is used to connect to the server and instruct it what to do.
-PMP uses hashes to keep track of music files, so it can deal with moved/renamed
-and duplicate files without any problems.
+Party Music Player, abbreviated as PMP, is a client-server music system. The server is responsible for playing music, and a separate program, a 'remote', is used to connect to the server and instruct it what to do. PMP uses hashes to keep track of music files, so it can deal with moved/renamed and duplicate files without any problems.
 
-PMP is designed to be portable software and should be compatible with most popular
-operating systems in use today. I have only tested Windows and Linux, but others like
-Mac OS X, BSD... should be supported as well.
+PMP is designed to be portable software and should be compatible with most popular operating systems in use today. I have only tested Windows and Linux, but others like Mac OS X, BSD... should be supported as well.
 
 The software is licenced under GPLv3.
 
@@ -26,13 +19,13 @@ You can contact the developer here:   hyperquantum@gmail.com
 
 
 Contents of this file:
-    1. Features
-    2. Dependencies for running PMP
-    3. Running PMP
-    4. Dependencies for building
-    5. Building on Windows
-    6. Caveats / limitations
-    7. Planned features
+  1. Features
+  2. Dependencies for running PMP
+  3. Running PMP
+  4. Dependencies for building
+  5. Building on Windows
+  6. Caveats / limitations
+  7. Planned features
 
 
 1. FEATURES
@@ -50,61 +43,50 @@ Contents of this file:
 2. DEPENDENCIES FOR RUNNING PMP
 -------------------------------
 
-You need to run a MySQL server instance. PMP currently uses MySQL to store its
-data. It may be possible to use MariaDB instead of MySQL, but I have not
-verified if that really works.
+You need to run a MySQL server instance. PMP currently uses MySQL to store its data. It may be possible to use MariaDB instead of MySQL, but I have not verified if that really works.
 
 Linux users can install MySQL server using their distribution's package manager.
 
-Windows users can get an installer here:
-  http://dev.mysql.com/downloads/mysql/
+Windows users can get an installer here:  http://dev.mysql.com/downloads/mysql/
 
-One can pick the 32-bit or 64-bit version of MySQL server, PMP should work with
-both.
+One can pick the 32-bit or 64-bit version of MySQL server, PMP should work with both.
 
-MySQL should be configured as a developer installation (it uses less memory that
-way) and should be set to use Unicode (UTF-8) by default. Default storage engine
-should be InnoDB.
+MySQL should be configured as a developer installation (it uses less memory that way) and should be set to use Unicode (UTF-8) by default. Default storage engine should be InnoDB.
 
 
 3. RUNNING PMP
 --------------
 
-The PMP server needs a database connection. When you run it for the first time,
-it will generate an empty configuration file. Then you can set the database
-connection parameters in the configuration file. On Windows the file can be
-found here:
+The PMP server needs a database connection. When you run it for the first time, it will generate an empty configuration file. Then you can set the database connection parameters in the configuration file. On Windows the file can be found here:
 
   C:\Users\username\AppData\Roaming\Party Music Player\Party Music Player - Server.ini
 
-You also need to tell PMP where to look for music files. This is done in the
-configuration file as well.
+You also need to tell PMP where to look for music files. This is done in the configuration file as well.
 
 An example configuration:
 
-  [database]
-  hostname=localhost
-  username=root
-  password=mysecretpassword
+```
+    [database]
+    hostname=localhost
+    username=root
+    password=mysecretpassword
   
-  [media]
-  scan_directories=C:/Users/myname/Music, C:/Users/Public/Music
-
+    [media]
+    scan_directories=C:/Users/myname/Music, C:/Users/Public/Music
+```
 
 4. DEPENDENCIES FOR BUILDING
 ----------------------------
 
-* C++ compiler with support for C++ 2011
-* CMake 3.1 or higher
-* pkg-config
-* TagLib    (I have version 1.9.1)
-* Qt 5      (I have Qt 5.2)
-* MySQL client library
-* MinGW-32  if building on Windows
+ * C++ compiler with support for C++ 2011
+ * CMake 3.1 or higher
+ * pkg-config
+ * TagLib    (I have version 1.9.1)
+ * Qt 5      (I have Qt 5.2)
+ * MySQL client library  (libmysql)
+ * MinGW-32  if building on Windows
 
-The MySQL client library should match the word-size of PMP.  So if PMP is built
-for the x86 architecture (32-bit), then the 32-bit version of MySQL client
-library should be used.
+The MySQL client library should match the word-size of PMP.  So if PMP is built for the x86 architecture (32-bit), then the 32-bit version of MySQL client library should be used.
 
 
 5. BUILDING ON WINDOWS
@@ -174,24 +156,20 @@ How to compile from source on Windows, using MinGW 32-bit:
     press 'Generate'
     open cmd.exe in the 'bin' directory of PMP and run "mingw32-make"
 
-Disclaimer: these steps were written during a long process of trial and error,
-so they can possibly contain some mistakes.
+Disclaimer: these steps were written during a long process of trial and error, so they can possibly contain some mistakes.
 
 
 6. CAVEATS / LIMITATIONS
 ------------------------
 
-Since this project is in a very early stage of development, you can expect a few
-things to be missing or not working correctly ;)
+Since this project is in a very early stage of development, you can expect a few things to be missing or not working correctly ;)
 
  * Only MP3 files supported for now
     --> because hashing is only implemented for MP3 files at this time
  * Database requires MySQL (maybe MariaDB), SQLite is not an option
  * No manual selection of tracks yet, only dynamic mode
- * No scanning yet for new/modified files while the server is running, only a
-   simple indexation is performed when the server is started
- * Queue manipulation in the clients is still limited: only move/delete of one
-   entry at a time.
+ * No scanning yet for new/modified files while the server is running, only a simple indexation is performed when the server is started
+ * Queue manipulation in the clients is still limited: only move/delete of one entry at a time.
  * No custom filters for dynamic mode yet
  * Etc.
 
@@ -202,25 +180,25 @@ things to be missing or not working correctly ;)
 Only a list of ideas.  No promises!
 
  Small-medium effort improvements:
-  - Ability to start a full indexation while the server is running
-  - Context menu option to move a queue item to the first spot
-  - Store last track repetition avoidance interval for each user in the database
-  - Ability to shut down the server from the GUI remote
-  - 'Trim queue' button in remote
-  - Ability to insert a breakpoint (automatic pause) into the queue
-  - Time-based auto-stop function
-  - Naming a PMP Server instance; e.g. "living room"
+  * Ability to start a full indexation while the server is running
+  * Context menu option to move a queue item to the first spot
+  * Store last track repetition avoidance interval for each user in the database
+  * Ability to shut down the server from the GUI remote
+  * 'Trim queue' button in remote
+  * Ability to insert a breakpoint (automatic pause) into the queue
+  * Time-based auto-stop function
+  * Naming a PMP Server instance; e.g. "living room"
 
  Medium-large effort improvements:
-  - Handling of files that are the same track but have a different hash
-  - Find a way to identify artists
-  - Dynamic mode: avoid repeating the same artist within a certain timespan
-  - Last.fm scrobbling (in personal mode)
-  - Syncronization of music databases across different machines
-  - Search functionality with fuzzy matching option
-  - Silence detection at the start and end of each track
-  - Crossfading
-  - Bridging of PMP server instances, to access music from another machine
-  - Support for other formats than just MP3
-  - Manual song play to a second audio device (for headphones)
-  - Support for other database providers than MySQL
+  * Handling of files that are the same track but have a different hash
+  * Find a way to identify artists
+  * Dynamic mode: avoid repeating the same artist within a certain timespan
+  * Last.fm scrobbling (in personal mode)
+  * Syncronization of music databases across different machines
+  * Search functionality with fuzzy matching option
+  * Silence detection at the start and end of each track
+  * Crossfading
+  * Bridging of PMP server instances, to access music from another machine
+  * Support for other formats than just MP3
+  * Manual song play to a second audio device (for headphones)
+  * Support for other database providers than MySQL
