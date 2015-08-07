@@ -28,7 +28,7 @@ Contents of this file:
   7. Planned features
 
 
-1. FEATURES
+1. Features
 -----------
 
  * Server executable
@@ -40,7 +40,7 @@ Contents of this file:
  * Separate play history for each user and for public mode
 
 
-2. DEPENDENCIES FOR RUNNING PMP
+2. Dependencies For Running PMP
 -------------------------------
 
 You need to run a MySQL server instance. PMP currently uses MySQL to store its data. It may be possible to use MariaDB instead of MySQL, but I have not verified if that really works.
@@ -54,7 +54,7 @@ One can pick the 32-bit or 64-bit version of MySQL server, PMP should work with 
 MySQL should be configured as a developer installation (it uses less memory that way) and should be set to use Unicode (UTF-8) by default. Default storage engine should be InnoDB.
 
 
-3. RUNNING PMP
+3. Running PMP
 --------------
 
 The PMP server needs a database connection. When you run it for the first time, it will generate an empty configuration file. Then you can set the database connection parameters in the configuration file. On Windows the file can be found here:
@@ -75,7 +75,10 @@ An example configuration:
     scan_directories=C:/Users/myname/Music, C:/Users/Public/Music
 ```
 
-4. DEPENDENCIES FOR BUILDING
+Make sure MySQL is running. First start the PMP-Server executable, then start the PMP-GUI-Remote executable.
+
+
+4. Dependencies For Building
 ----------------------------
 
  * C++ compiler with support for C++ 2011
@@ -89,83 +92,96 @@ An example configuration:
 The MySQL client library should match the word-size of PMP.  So if PMP is built for the x86 architecture (32-bit), then the 32-bit version of MySQL client library should be used.
 
 
-5. BUILDING ON WINDOWS
+5. Building On Windows
 ----------------------
 
 Building on Linux is trivial, but on Windows it takes some effort.
 
 How to compile from source on Windows, using MinGW 32-bit:
 
-* Download and install CMake
-   --> http://www.cmake.org/download/  --> Win32 Installer
-* Download and install MinGW
-   --> http://www.mingw.org/  --> Download Installer
-   install these parts:
-     mingw-developer-toolkit, mingw32-base, mingw32-gcc-g++, msys-base
-   add MinGW to Windows User PATH  (see MinGW FAQ)
-* Download and install Qt 5
-   --> http://qt-project.org/downloads  --> Qt Online Installer for Windows
+1. Download and install CMake
+
+  --> http://www.cmake.org/download/  --> Win32 Installer
+
+2. Download and install MinGW
+
+  --> http://www.mingw.org/  --> Download Installer
+  install these parts:
+    mingw-developer-toolkit, mingw32-base, mingw32-gcc-g++, msys-base
+  add MinGW to Windows User PATH  (see MinGW FAQ)
+
+3. Download and install Qt 5
+
+  --> http://qt-project.org/downloads  --> Qt Online Installer for Windows
     add the Qt MinGW bin directory to the Windows User PATH
       (e.g. C:\Qt\5.2.1\mingw48_32\bin)
       make sure to put this directory TO THE LEFT of the MinGW path that is already there
-* Download and build taglib
-   --> http://taglib.github.io/  --> download sourcecode
-    unpack sourcecode
-    edit CMakeLists.txt
-      change "if(NOT WIN32 AND NOT BUILD_FRAMEWORK)" into "if(NOT BUILD_FRAMEWORK)"
-    create 'bin' directory in taglib directory
-    run CMake (cmake-gui)
-    'where is the sourcecode': where you unpacked the sourcecode
-    'where to build the binaries': the "bin" directory you created
-    press 'Configure', select a generator with "MinGW Makefiles"
-    set variable CMAKE_BUILD_TYPE to Release
-    change variable CMAKE_INSTALL_PREFIX to "C:/MinGW" (the MinGW installation directory)
-    press 'Generate'
-    run the makefile with 'make':
-      open cmd.exe
-      cd into the "bin" directory
-      run the command: mingw32-make.exe
-    install:
-      open cmd.exe with Administrative privileges
-      cd into the "bin" directory
-      run the command: mingw32-make.exe install
-* Get pkg-config
-    --> http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/
-    download file pkg-config_0.26-1_win32.zip
-    extract pkg-config.exe to C:\MinGW\bin
-    download file gettext-runtime_0.18.1.1-2_win32.zip
-    extract intl.dll to C:\MinGW\bin
-    --> http://ftp.gnome.org/pub/gnome/binaries/win32/glib/2.28
-    download file glib_2.28.8-1_win32.zip
-    extract libglib-2.0-0.dll to C:\MinGW\bin
-* Get the MySQL client library
-    --> http://dev.mysql.com/downloads/connector/c/
-    the mysql version number does not matter, just pick the latest version
-    download 'Windows (x86, 32-bit), ZIP Archive'
-    extract 'lib/libmysql.dll' to the PMP 'bin' directory
-    OR alternatively:
-      if your MySQL server is 32-bit, then you can copy the DLL from that installation
-* Build PMP
-    Run CMake (cmake-gui)
-    'where is the sourcecode': select PMP sourcecode folder
-    'where to build the binaries': "bin" subdirectory of sourcecode folder
-    add variable CMAKE_PREFIX_PATH and set it to the Qt install dir
-      (e.g. C:/Qt/5.2.1/mingw48_32)
-    press 'Configure', select a generator with "MinGW Makefiles"
-    set CMAKE_BUILD_TYPE to 'Debug' or 'Release' according to your preference
-    press 'Generate'
-    open cmd.exe in the 'bin' directory of PMP and run "mingw32-make"
 
-Disclaimer: these steps were written during a long process of trial and error, so they can possibly contain some mistakes.
+4. Download and build taglib
+
+  --> http://taglib.github.io/  --> download sourcecode
+  unpack sourcecode
+  edit CMakeLists.txt
+    change "if(NOT WIN32 AND NOT BUILD_FRAMEWORK)" into "if(NOT BUILD_FRAMEWORK)"
+  create 'bin' directory in taglib directory
+  run CMake (cmake-gui)
+  'where is the sourcecode': where you unpacked the sourcecode
+  'where to build the binaries': the "bin" directory you created
+  press 'Configure', select a generator with "MinGW Makefiles"
+  set variable CMAKE_BUILD_TYPE to Release
+  change variable CMAKE_INSTALL_PREFIX to "C:/MinGW" (the MinGW installation directory)
+  press 'Generate'
+  run the makefile with 'make':
+    open cmd.exe
+    cd into the "bin" directory
+    run the command: mingw32-make.exe
+  install:
+    open cmd.exe with Administrative privileges
+    cd into the "bin" directory
+    run the command: mingw32-make.exe install
+
+5. Get pkg-config
+
+  --> http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/
+  download file pkg-config_0.26-1_win32.zip
+  extract pkg-config.exe to C:\MinGW\bin
+  download file gettext-runtime_0.18.1.1-2_win32.zip
+  extract intl.dll to C:\MinGW\bin
+  --> http://ftp.gnome.org/pub/gnome/binaries/win32/glib/2.28
+  download file glib_2.28.8-1_win32.zip
+  extract libglib-2.0-0.dll to C:\MinGW\bin
+
+6. Get the MySQL client library
+
+  --> http://dev.mysql.com/downloads/connector/c/
+  the mysql version number does not matter, just pick the latest version
+  download 'Windows (x86, 32-bit), ZIP Archive'
+  extract 'lib/libmysql.dll' to the PMP 'bin' directory
+  OR alternatively:
+    if your MySQL server is 32-bit, then you can copy the DLL from that installation
+
+7. Build PMP
+
+  Run CMake (cmake-gui)
+  'where is the sourcecode': select PMP sourcecode folder
+  'where to build the binaries': "bin" subdirectory of sourcecode folder
+  add variable CMAKE_PREFIX_PATH and set it to the Qt install dir
+    (e.g. C:/Qt/5.2.1/mingw48_32)
+  press 'Configure', select a generator with "MinGW Makefiles"
+  set CMAKE_BUILD_TYPE to 'Debug' or 'Release' according to your preference
+  press 'Generate'
+  open cmd.exe in the 'bin' directory of PMP and run "mingw32-make"
 
 
-6. CAVEATS / LIMITATIONS
+6. Caveats / Limitations
 ------------------------
 
 Since this project is in a very early stage of development, you can expect a few things to be missing or not working correctly ;)
 
  * Only MP3 files supported for now
-    --> because hashing is only implemented for MP3 files at this time
+ 
+   --> because hashing is only implemented for MP3 files at this time
+    
  * Database requires MySQL (maybe MariaDB), SQLite is not an option
  * No manual selection of tracks yet, only dynamic mode
  * No scanning yet for new/modified files while the server is running, only a simple indexation is performed when the server is started
@@ -174,12 +190,13 @@ Since this project is in a very early stage of development, you can expect a few
  * Etc.
 
 
-7. PLANNED FEATURES / TO-DO's
+7. Planned Features / To-Do's
 -----------------------------
 
 Only a list of ideas.  No promises!
 
- Small-medium effort improvements:
+###Small-medium effort improvements:
+
   * Ability to start a full indexation while the server is running
   * Context menu option to move a queue item to the first spot
   * Store last track repetition avoidance interval for each user in the database
@@ -187,9 +204,11 @@ Only a list of ideas.  No promises!
   * 'Trim queue' button in remote
   * Ability to insert a breakpoint (automatic pause) into the queue
   * Time-based auto-stop function
-  * Naming a PMP Server instance; e.g. "living room"
+  * Naming a PMP Server instance (e.g. "living room")
 
- Medium-large effort improvements:
+
+###Medium-large effort improvements:
+
   * Handling of files that are the same track but have a different hash
   * Find a way to identify artists
   * Dynamic mode: avoid repeating the same artist within a certain timespan
