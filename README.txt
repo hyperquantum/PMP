@@ -201,24 +201,26 @@ things to be missing or not working correctly ;)
 
 Only a list of ideas.  No promises!
 
- * Ability to start a full indexation while the server is running
- * Context menu option to move a queue item to the first spot
- * Store last track repetition avoidance interval for each user in the database
- * Ability to shut down the server from the GUI remote
- * 'Trim queue' button in remote
- * Last.fm scrobbling (in personal mode)
- * Syncronization of music databases across different machines
- * Handling of two files that are the same track but have a different hash
- * Ability to insert a breakpoint (automatic pause) into the queue
- * Search functionality with fuzzy matching option
- * Find a way to identify artists
- * Dynamic mode: avoid repeating the same artist within a certain timespan
- * Silence detection at the start and end of each track
- * Crossfading
- * Time-based auto-stop function.
- * Bridging of PMP server instances, to access music from another machine
- * Naming a PMP Server instance; e.g. "living room"
- * Support for other formats than just MP3
- * Manual song play to a second audio device (for headphones)
- * Support for other database providers than MySQL
+ Small-medium effort improvements:
+  - Ability to start a full indexation while the server is running
+  - Context menu option to move a queue item to the first spot
+  - Store last track repetition avoidance interval for each user in the database
+  - Ability to shut down the server from the GUI remote
+  - 'Trim queue' button in remote
+  - Ability to insert a breakpoint (automatic pause) into the queue
+  - Time-based auto-stop function
+  - Naming a PMP Server instance; e.g. "living room"
 
+ Medium-large effort improvements:
+  - Handling of files that are the same track but have a different hash
+  - Find a way to identify artists
+  - Dynamic mode: avoid repeating the same artist within a certain timespan
+  - Last.fm scrobbling (in personal mode)
+  - Syncronization of music databases across different machines
+  - Search functionality with fuzzy matching option
+  - Silence detection at the start and end of each track
+  - Crossfading
+  - Bridging of PMP server instances, to access music from another machine
+  - Support for other formats than just MP3
+  - Manual song play to a second audio device (for headphones)
+  - Support for other database providers than MySQL
