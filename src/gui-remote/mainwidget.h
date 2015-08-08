@@ -61,6 +61,8 @@ namespace PMP {
         void decreaseVolume();
         void increaseVolume();
 
+        void queueContextMenuRequested(const QPoint& position);
+
         void changeDynamicMode(int checkState);
         void noRepetitionIndexChanged(int index);
         void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);

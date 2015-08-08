@@ -33,6 +33,7 @@
 
 #include <QtDebug>
 #include <QKeyEvent>
+#include <QMenu>
 
 namespace PMP {
 
@@ -99,6 +100,11 @@ namespace PMP {
         connect(_ui->playButton, SIGNAL(clicked()), _connection, SLOT(play()));
         connect(_ui->pauseButton, SIGNAL(clicked()), _connection, SLOT(pause()));
         connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
+
+        connect(
+            _ui->queueTableView, &QTableView::customContextMenuRequested,
+            this, &MainWidget::queueContextMenuRequested
+        );
 
         connect(
             _ui->dynamicModeCheckBox, SIGNAL(stateChanged(int)),
@@ -187,6 +193,32 @@ namespace PMP {
         }
 
         return QWidget::eventFilter(object, event);
+    }
+
+    void MainWidget::queueContextMenuRequested(const QPoint& position) {
+        auto index = _ui->queueTableView->indexAt(position);
+        if (index.isValid()) {
+            quint32 queueID = _queueModel->trackIdAt(index);
+            qDebug() << "queue: context menu opening for Q-item" << queueID;
+
+            QMenu* menu = new QMenu(this);
+
+            QAction* removeAction = menu->addAction("Remove");
+            removeAction->setShortcut(QKeySequence::Delete);
+            connect(
+                removeAction, &QAction::triggered,
+                [this, queueID]() {
+                    qDebug() << "queue context menu: remove action triggered for item"
+                             << queueID;
+                    _connection->deleteQueueEntry(queueID);
+                }
+            );
+
+            menu->popup(_ui->queueTableView->viewport()->mapToGlobal(position));
+        }
+        else {
+            qDebug() << "queue: index at mouse position not valid";
+        }
     }
 
     void MainWidget::playing(quint32 queueID) {

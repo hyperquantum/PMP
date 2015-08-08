@@ -252,6 +252,9 @@
    </item>
    <item>
     <widget class="QTableView" name="queueTableView">
+     <property name="contextMenuPolicy">
+      <enum>Qt::CustomContextMenu</enum>
+     </property>
      <property name="alternatingRowColors">
       <bool>true</bool>
      </property>
