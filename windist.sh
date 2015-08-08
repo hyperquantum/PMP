@@ -66,7 +66,12 @@ fi
 
 echo "Copying files..."
 
+# README.txt was renamed to README.md, so we want to overwrite the old file in
+# existing installations.
+echo "This file is obsolete. Open README.md instead." > "$DIST_DIR"/README.txt
+
 cp "$SRC_DIR"/README* "$DIST_DIR"/
+cp "$SRC_DIR"/BUGS* "$DIST_DIR"/
 cp "$SRC_DIR"/*LICENSE* "$DIST_DIR"/
 
 cp "$BIN_DIR"/src/PMP-Server.exe "$DIST_DIR"/
