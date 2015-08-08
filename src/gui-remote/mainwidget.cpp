@@ -198,6 +198,7 @@ namespace PMP {
     void MainWidget::queueContextMenuRequested(const QPoint& position) {
         auto index = _ui->queueTableView->indexAt(position);
         if (index.isValid()) {
+            int row = index.row();
             quint32 queueID = _queueModel->trackIdAt(index);
             qDebug() << "queue: context menu opening for Q-item" << queueID;
 
@@ -207,10 +208,20 @@ namespace PMP {
             removeAction->setShortcut(QKeySequence::Delete);
             connect(
                 removeAction, &QAction::triggered,
-                [this, queueID]() {
+                [this, row, queueID]() {
                     qDebug() << "queue context menu: remove action triggered for item"
                              << queueID;
-                    _connection->deleteQueueEntry(queueID);
+                    _queueMediator->removeTrack(row, queueID);
+                }
+            );
+
+            QAction* moveToFrontAction = menu->addAction("Move to front");
+            connect(
+                moveToFrontAction, &QAction::triggered,
+                [this, row, queueID]() {
+                    qDebug() << "queue context menu: to-front action triggered for item"
+                             << queueID;
+                    _queueMediator->moveTrack(row, 0, queueID);
                 }
             );
 

@@ -196,7 +196,6 @@ Only a list of ideas.  No promises!
 ###Small/medium effort improvements:
 
   * Ability to start a full indexation while the server is running
-  * Context menu option to move a queue item to the first spot
   * Store last track repetition avoidance interval for each user in the database
   * Ability to shut down the server from the GUI remote
   * 'Trim queue' button in remote
