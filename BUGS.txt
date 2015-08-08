@@ -1,7 +1,7 @@
 
 CRASHES
 
- - GUI remote: when queue contains 10 tracks, dragging the 9th beyond the 10th will cause an assert to fail
+ - GUI remote: dragging the second last entry in the queue and dropping it beyond the last entry crashes the client
 
 
 PERFORMANCE ISSUES
