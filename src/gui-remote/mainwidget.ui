@@ -314,6 +314,9 @@
      </item>
      <item>
       <widget class="QComboBox" name="noRepetitionComboBox">
+       <property name="maxVisibleItems">
+        <number>15</number>
+       </property>
        <property name="sizeAdjustPolicy">
         <enum>QComboBox::AdjustToContents</enum>
        </property>

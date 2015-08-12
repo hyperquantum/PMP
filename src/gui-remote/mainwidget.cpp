@@ -402,6 +402,9 @@ namespace PMP {
         _noRepetitionList.append(2 * 24 * 3600); // 48 hours (2 days)
         _noRepetitionList.append(3 * 24 * 3600); // 72 hours (3 days)
         _noRepetitionList.append(7 * 24 * 3600); // 7 days
+        _noRepetitionList.append(14 * 24 * 3600); // 14 days
+        _noRepetitionList.append(21 * 24 * 3600); // 21 days (3 weeks)
+        _noRepetitionList.append(28 * 24 * 3600); // 28 days (4 weeks)
 
         int indexOfSpanToSelect = -1;
 
@@ -429,9 +432,17 @@ namespace PMP {
     QString MainWidget::noRepetitionTimeString(int seconds) {
         QString output;
 
+        if (seconds > 7 * 24 * 60 * 60) {
+            int weeks = seconds / (7 * 24 * 60 * 60);
+            seconds -= weeks * (7 * 24 * 60 * 60);
+            output += QString::number(weeks);
+            output += (weeks == 1) ? " week" : " weeks";
+        }
+
         if (seconds > 24 * 60 * 60) {
             int days = seconds / (24 * 60 * 60);
             seconds -= days * (24 * 60 * 60);
+            if (output.size() > 0) output += " ";
             output += QString::number(days);
             output += (days == 1) ? " day" : " days";
         }
