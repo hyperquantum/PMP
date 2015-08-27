@@ -195,6 +195,7 @@ Only a list of ideas.  No promises!
 
 ###Small/medium effort improvements:
 
+  * Make volume at startup configurable
   * Use icons instead of words for play/pause/skip in the remote
   * Queue contextmenu option to duplicate the entry
   * Ability to start a full indexation while the server is running
