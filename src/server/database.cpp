@@ -33,9 +33,16 @@
 namespace PMP {
 
     Database* Database::_instance = 0;
+    QString Database::_hostname;
+    QString Database::_username;
+    QString Database::_password;
+    bool Database::_initDoneSuccessfully = false;
+    QThreadStorage<QSharedPointer<Database>> Database::_threadLocalDatabases;
+    QAtomicInt Database::_nextDbNameNumber;
 
     bool Database::init(QTextStream& out) {
         out << "initializing database" << endl;
+        _initDoneSuccessfully = false;
 
         ServerSettings serversettings;
         QSettings& settings = serversettings.getSettings();
@@ -71,12 +78,13 @@ namespace PMP {
             return false;
         }
 
+        _hostname = hostname.toString();
+        _username = user.toString();
+        _password = password.toString();
+
         /* open connection */
-        QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL", "PMP_main_dbconn");
-        db.setHostName(hostname.toString());
-        db.setUserName(user.toString());
-        db.setPassword(password.toString());
-        if (!db.open()) {
+        QSqlDatabase db = createDatabaseConnection("PMP_main_dbconn", false);
+        if (!db.isOpen()) {
             out << " ERROR: could not connect to database: " << db.lastError().text()
                 << endl << endl;
             return false;
@@ -216,11 +224,59 @@ namespace PMP {
             return false;
         }
 
-        _instance = new Database();
-        _instance->_db = db;
+        _initDoneSuccessfully = true;
+        _instance = new Database(db);
 
         out << " database initialization completed successfully" << endl << endl;
         return true;
+    }
+
+    Database::Database(QSqlDatabase db)
+     : _db(db)
+    {
+        //
+    }
+
+    QSqlDatabase Database::createDatabaseConnection(QString name, bool setSchema) {
+        QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL", name);
+        db.setHostName(_hostname);
+        db.setUserName(_username);
+        db.setPassword(_password);
+
+        if (setSchema) { db.setDatabaseName("pmp"); }
+
+        if (!db.open()) {
+            qDebug() << "Database::createDatabaseConnection FAIL:"
+                     << "could not open connection; name:" << name;
+        }
+
+        return db;
+    }
+
+    QSharedPointer<Database> Database::getDatabaseForCurrentThread() {
+        if (_threadLocalDatabases.hasLocalData()) {
+            return _threadLocalDatabases.localData();
+        }
+
+        if (!_initDoneSuccessfully) return QSharedPointer<Database>(nullptr);
+
+        int num = _nextDbNameNumber.fetchAndAddAcquire(1);
+        QString dbName = QString::number(num) + "_threaddb";
+
+        qDebug() << "Database: creating connection for thread; num=" << num;
+
+        QSqlDatabase qsqlDb = createDatabaseConnection(dbName, true);
+        QSharedPointer<Database> dbPtr(new Database(qsqlDb));
+
+        if (!dbPtr->isConnectionOpen()) return QSharedPointer<Database>(nullptr);
+
+        _threadLocalDatabases.setLocalData(dbPtr);
+
+        return dbPtr;
+    }
+
+    bool Database::isConnectionOpen() const {
+        return _db.isOpen();
     }
 
     void Database::registerHash(const HashID& hash) {

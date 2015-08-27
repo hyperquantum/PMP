@@ -22,14 +22,17 @@
 
 #include "common/hashid.h"
 
+#include <QAtomicInt>
 #include <QByteArray>
 #include <QDateTime>
 #include <QList>
 #include <QObject>
 #include <QPair>
+#include <QSharedPointer>
 #include <QString>
 #include <QSqlDatabase>
 #include <QtGlobal>
+#include <QThreadStorage>
 
 #include <functional>
 
@@ -75,6 +78,8 @@ namespace PMP {
 
         static Database* instance() { return _instance; }
 
+        bool isConnectionOpen() const;
+
         void registerHash(const HashID& hash);
         uint getHashID(const HashID& hash);
         QList<QPair<uint,HashID> > getHashes(uint largerThanID = 0);
@@ -90,7 +95,11 @@ namespace PMP {
                           int permillage, bool validForScoring);
         QDateTime getLastHeard(quint32 hashId, quint32 userId);
 
+        static QSharedPointer<Database> getDatabaseForCurrentThread();
+
     private:
+        Database(QSqlDatabase db);
+
         std::function<void (QSqlQuery&)> prepareSimple(QString sql);
 
         bool executeScalar(std::function<void (QSqlQuery&)> preparer,
@@ -109,7 +118,15 @@ namespace PMP {
                           std::function<void (QSqlQuery&)> resultFetcher);
         bool executeQuery(QSqlQuery& q);
 
+        static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
+
         static Database* _instance;
+        static QString _hostname;
+        static QString _username;
+        static QString _password;
+        static bool _initDoneSuccessfully;
+        static QThreadStorage<QSharedPointer<Database>> _threadLocalDatabases;
+        static QAtomicInt _nextDbNameNumber;
 
         QSqlDatabase _db;
     };

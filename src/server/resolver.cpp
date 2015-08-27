@@ -47,9 +47,9 @@ namespace PMP {
     /* ========================== Resolver ========================== */
 
     Resolver::Resolver() {
-        Database* db = Database::instance();
+        auto db = Database::getDatabaseForCurrentThread();
 
-        if (db != 0) {
+        if (db != nullptr) {
             QList<QPair<uint, HashID> > hashes = db->getHashes();
 
             QPair<uint, HashID> pair;
@@ -59,7 +59,12 @@ namespace PMP {
                 _hashList.append(pair.second);
             }
 
-            qDebug() << "loaded" << _hashList.count() << "hashes from the database" << endl;
+            qDebug() << "loaded" << _hashList.count()
+                     << "hashes from the database" << endl;
+        }
+        else {
+            qDebug() << "Resolver: could not load hashes because"
+                     << "there is no working DB connection" << endl;
         }
     }
 
