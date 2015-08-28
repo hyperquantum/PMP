@@ -120,7 +120,12 @@ namespace PMP {
         );
 
         connect(
-            _ui->expandButton, SIGNAL(clicked()), _connection, SLOT(expandQueue())
+            _ui->expandButton, &QPushButton::clicked,
+            _connection, &ServerConnection::expandQueue
+        );
+        connect(
+            _ui->trimButton, &QPushButton::clicked,
+            _connection, &ServerConnection::trimQueue
         );
 
         connect(

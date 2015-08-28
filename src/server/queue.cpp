@@ -79,7 +79,12 @@ namespace PMP {
         }
     }
 
-    void Queue::clear() {
+    void Queue::clear(bool doNotifications) {
+        if (doNotifications) {
+            trim(0);
+            return;
+        }
+
         _queue.clear();
     }
 
@@ -93,6 +98,12 @@ namespace PMP {
 
     uint Queue::getNextQueueID() {
         return _nextQueueID++;
+    }
+
+    void Queue::trim(uint length) {
+        while ((uint)_queue.length() > length) {
+            removeAtIndex(_queue.length() - 1);
+        }
     }
 
     QueueEntry* Queue::enqueue(QString const& filename) {
@@ -129,12 +140,20 @@ namespace PMP {
         int index = findIndex(queueID);
         if (index < 0) return false; // not found
 
+        return removeAtIndex(index);
+    }
+
+    bool Queue::removeAtIndex(uint index) {
+        if (index >= (uint)_queue.length()) return false;
+
         QueueEntry* entry = _queue[index];
+        quint32 queueID = entry->queueID();
         _queue.removeAt(index);
 
         emit entryRemoved(index, queueID);
 
-        qDebug() << "deleting QID" << queueID << "because it was deleted from the queue";
+        qDebug() << "deleting QID" << queueID
+                 << "from lookup table because it was deleted from the queue";
 
         _idLookup.remove(queueID);
         delete entry;

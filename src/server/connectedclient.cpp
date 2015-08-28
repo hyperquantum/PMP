@@ -949,6 +949,10 @@ namespace PMP {
                 qDebug() << "received QUEUE EXPANSION command";
                 _generator->requestQueueExpansion();
                 break;
+            case 23:
+                qDebug() << "received TRIM QUEUE command";
+                _player->queue().trim(10); /* TODO: get the '10' from elsewhere */
+                break;
             case 30: /* switch to public mode */
                 qDebug() << "received SWITCH TO PUBLIC MODE command";
                 _player->setUserPlayingFor(0);

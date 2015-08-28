@@ -77,6 +77,7 @@ namespace PMP {
         void enableDynamicMode();
         void disableDynamicMode();
         void expandQueue();
+        void trimQueue();
         void requestDynamicModeStatus();
         void setDynamicModeNoRepetitionSpan(int seconds);
 

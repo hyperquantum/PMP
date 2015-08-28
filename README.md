@@ -201,7 +201,6 @@ Only a list of ideas.  No promises!
   * Ability to start a full indexation while the server is running
   * Store last track repetition avoidance interval for each user in the database
   * Ability to shut down the server from the GUI remote
-  * 'Trim queue' button in remote
   * Ability to insert a breakpoint (automatic pause) into the queue
   * Display last-heard time of each track in the remote
   * Time-based auto-stop function

@@ -12,7 +12,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>500</width>
+    <width>550</width>
     <height>550</height>
    </size>
   </property>
@@ -289,6 +289,13 @@
       <widget class="QPushButton" name="expandButton">
        <property name="text">
         <string>Expand</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="trimButton">
+       <property name="text">
+        <string>Trim</string>
        </property>
       </widget>
      </item>

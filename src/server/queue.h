@@ -50,9 +50,11 @@ namespace PMP {
         uint getNextQueueID();
 
     public slots:
-        void clear();
         bool empty() const;
         uint length() const;
+
+        void clear(bool doNotifications);
+        void trim(uint length);
 
         QueueEntry* enqueue(QString const& filename);
         QueueEntry* enqueue(FileData const& filedata);
@@ -61,6 +63,7 @@ namespace PMP {
 
         QueueEntry* dequeue();
         bool remove(quint32 queueID);
+        bool removeAtIndex(uint index);
         bool move(quint32 queueID, qint16 indexDiff);
 
         QList<QueueEntry*> entries(int startoffset, int maxCount);

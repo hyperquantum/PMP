@@ -564,6 +564,14 @@ namespace PMP {
         sendSingleByteAction(22); /* 22 = request queue expansion */
     }
 
+    void ServerConnection::trimQueue() {
+        if (!_binarySendingMode) {
+            return; /* only supported in binary mode */
+        }
+
+        sendSingleByteAction(23); /* 23 = request queue trim */
+    }
+
     void ServerConnection::requestDynamicModeStatus() {
         if (!_binarySendingMode) {
             return; /* only supported in binary mode */
