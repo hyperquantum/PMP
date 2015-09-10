@@ -1,6 +1,6 @@
 # A simple script to count the number of lines of sourcecode, all included.
 
-cd `dirname $0`
+cd `dirname "$0"`
 
 wc -l \
   src/common/*.h src/common/*.cpp src/server/*.h src/server/*.cpp \
