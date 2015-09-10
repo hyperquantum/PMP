@@ -48,7 +48,6 @@ set(PMP_SERVER_SOURCES
 )
 set(PMP_SERVER_HEADERS
     server/connectedclient.h
-    server/database.h
     server/directoriesindexationtask.h
     server/fileanalysistask.h
     server/generator.h

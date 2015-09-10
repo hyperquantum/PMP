@@ -26,7 +26,6 @@
 #include <QByteArray>
 #include <QDateTime>
 #include <QList>
-#include <QObject>
 #include <QPair>
 #include <QSharedPointer>
 #include <QString>
@@ -71,8 +70,7 @@ namespace PMP {
         QByteArray password;
     };
 
-    class Database : public QObject {
-        Q_OBJECT
+    class Database {
     public:
         static bool init(QTextStream& out);
 
