@@ -76,6 +76,10 @@ int main(int argc, char *argv[]) {
     //foreach (const QString &path, app.libraryPaths())
     //    out << " LIB PATH : " << path << endl;
 
+    /* Keep the threads of the thread pool alive, so we don't have to generate a new
+     * database connection almost everytime a new task is started. */
+    QThreadPool::globalInstance()->setExpiryTimeout(-1);
+
     QStringList musicPaths;
     {
         ServerSettings serversettings;
