@@ -131,22 +131,43 @@
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
       <widget class="QPushButton" name="playButton">
-       <property name="text">
-        <string>Play</string>
+       <property name="icon">
+        <iconset resource="mainwindow.qrc">
+         <normaloff>:/mediabuttons/Play.png</normaloff>:/mediabuttons/Play.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>32</width>
+         <height>32</height>
+        </size>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="pauseButton">
-       <property name="text">
-        <string>Pause</string>
+       <property name="icon">
+        <iconset resource="mainwindow.qrc">
+         <normaloff>:/mediabuttons/Pause.png</normaloff>:/mediabuttons/Pause.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>32</width>
+         <height>32</height>
+        </size>
        </property>
       </widget>
      </item>
      <item>
       <widget class="QPushButton" name="skipButton">
-       <property name="text">
-        <string>Skip</string>
+       <property name="icon">
+        <iconset resource="mainwindow.qrc">
+         <normaloff>:/mediabuttons/Skip.png</normaloff>:/mediabuttons/Skip.png</iconset>
+       </property>
+       <property name="iconSize">
+        <size>
+         <width>32</width>
+         <height>32</height>
+        </size>
        </property>
       </widget>
      </item>
@@ -340,6 +361,8 @@
    <header>gui-remote/trackprogresswidget.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="mainwindow.qrc"/>
+ </resources>
  <connections/>
 </ui>

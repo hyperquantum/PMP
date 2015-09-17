@@ -101,11 +101,15 @@ set(PMP_GUI_REMOTE_UIS
     gui-remote/useraccountcreationwidget.ui
     gui-remote/userpickerwidget.ui
 )
+set(PMP_GUI_REMOTE_RESOURCES
+    gui-remote/mainwindow.qrc
+)
 
 qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
 qt5_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
 qt5_wrap_cpp(PMP_GUI_REMOTE_MOCS ${PMP_GUI_REMOTE_HEADERS})
 qt5_wrap_ui(PMP_GUI_REMOTE_UICS ${PMP_GUI_REMOTE_UIS})
+qt5_add_resources(PMP_GUI_REMOTE_QRCS ${PMP_GUI_REMOTE_RESOURCES})
 
 add_executable(PMP-HashTool
     tools/hash-main.cpp
@@ -123,6 +127,7 @@ add_executable(PMP-Server
 add_executable(PMP-GUI-Remote
     ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
     ${PMP_GUI_REMOTE_UICS}
+    ${PMP_GUI_REMOTE_QRCS}
     ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 
