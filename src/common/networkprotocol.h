@@ -86,6 +86,14 @@ namespace PMP {
                                                  QString password);
         static QByteArray hashPasswordForSession(QByteArray const& sessionSalt,
                                               QByteArray const& hashedSaltedUserPassword);
+
+        static quint16 createTrackStatusForTrack();
+        static quint16 createTrackStatusUnknownId();
+        static quint16 createTrackStatusForBreakPoint();
+
+        static bool isTrackStatusFromRealTrack(quint16 status);
+        static QString getPseudoTrackStatusText(quint16 status);
+
     };
 }
 #endif

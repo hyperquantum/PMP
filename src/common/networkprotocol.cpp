@@ -95,4 +95,30 @@ namespace PMP {
         hasher.addData(hashedSaltedUserPassword);
         return hasher.result();
     }
+
+    quint16 NetworkProtocol::createTrackStatusForTrack() {
+        return 0; /* TODO: make this depend on track load/error/... status */
+    }
+
+    quint16 NetworkProtocol::createTrackStatusUnknownId() {
+        return (1u << 16) - 1;
+    }
+
+    quint16 NetworkProtocol::createTrackStatusForBreakPoint() {
+        return (1u << 15) + 1;
+    }
+
+    bool NetworkProtocol::isTrackStatusFromRealTrack(quint16 status) {
+        return (status & (1u << 15)) == 0;
+    }
+
+    QString NetworkProtocol::getPseudoTrackStatusText(quint16 status) {
+        if (isTrackStatusFromRealTrack(status)) return "<< Real track >>";
+
+        auto type = status - (1u << 15);
+        if (type == 1) return "<<<<< PAUSE >>>>>";
+
+        return "<<<< ????? >>>>";
+    }
+
 }

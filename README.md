@@ -38,6 +38,7 @@ Contents of this file:
  * Dynamic mode with track repetition avoidance
  * User authentication and public/personal operating modes
  * Separate play history for each user and for public mode
+ * Ability to insert a breakpoint (pause) into the queue
 
 
 2. Dependencies For Running PMP
@@ -200,7 +201,6 @@ Only a list of ideas.  No promises!
   * Ability to start a full indexation while the server is running
   * Store last track repetition avoidance interval for each user in the database
   * Ability to shut down the server from the GUI remote
-  * Ability to insert a breakpoint (automatic pause) into the queue
   * Display last-heard time of each track in the remote
   * Time-based auto-stop function
   * Naming a PMP Server instance (e.g. "living room")

@@ -32,6 +32,8 @@
 #include "server.h"
 #include "users.h"
 
+#include <QMap>
+
 namespace PMP {
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
@@ -536,12 +538,23 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    quint16 ConnectedClient::createTrackStatusFor(QueueEntry* entry) {
+        if (entry->isTrack()) {
+            return NetworkProtocol::createTrackStatusForTrack();
+        }
+        else {
+            /* TODO: there will be more pseudos; differentiate between them... */
+            return NetworkProtocol::createTrackStatusForBreakPoint();
+        }
+    }
+
     void ConnectedClient::sendTrackInfoMessage(quint32 queueID) {
         QueueEntry* track = _player->queue().lookup(queueID);
         if (track == 0) { return; /* sorry, cannot send */ }
 
         track->checkTrackData(_player->resolver());
 
+        auto trackStatus = createTrackStatusFor(track);
         QString title = track->title();
         QString artist = track->artist();
         qint32 length = track->lengthInSeconds(); /* SIGNED NUMBER!! */
@@ -558,8 +571,7 @@ namespace PMP {
         QByteArray message;
         message.reserve((2 + 1 + 1 + 4 * 3) + titleData.size() + artistData.size());
         NetworkUtil::append2Bytes(message, NetworkProtocol::TrackInfoMessage);
-        NetworkUtil::appendByte(message, 0); /* TODO: track status */
-        NetworkUtil::appendByte(message, 0); /* reserved for future use */
+        NetworkUtil::append2Bytes(message, trackStatus);
         NetworkUtil::append4Bytes(message, queueID);
         NetworkUtil::append4Bytes(message, length); /* length in seconds, SIGNED */
         NetworkUtil::append2Bytes(message, titleData.size());
@@ -596,11 +608,14 @@ namespace PMP {
 
         Queue& queue = _player->queue();
 
+        /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
+
         Q_FOREACH(quint32 queueID, queueIDs) {
             QueueEntry* track = queue.lookup(queueID);
-            // TODO
-            NetworkUtil::appendByte(message, 0); /* track status */
-            NetworkUtil::appendByte(message, 0); /* reserved for future use */
+            auto trackStatus =
+                track ? createTrackStatusFor(track)
+                      : NetworkProtocol::createTrackStatusUnknownId();
+            NetworkUtil::append2Bytes(message, trackStatus);
         }
         if (queueIDs.size() % 2 != 0) {
             NetworkUtil::append2Bytes(message, 0); /* filler */
@@ -916,6 +931,10 @@ namespace PMP {
             case 3:
                 qDebug() << "received SKIP command";
                 _player->skip();
+                break;
+            case 4:
+                qDebug() << "received INSERT BREAK AT FRONT command";
+                _player->queue().insertBreakAtFront();
                 break;
             case 10: /* request for state info */
                 qDebug() << "received request for player status";

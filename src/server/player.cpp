@@ -251,6 +251,10 @@ namespace PMP {
         QString filename;
         while (!_queue.empty()) {
             QueueEntry* entry = _queue.dequeue();
+            if (!entry->isTrack()) {
+                if (entry->type() == QueueEntryType::Break) { play = false; }
+                continue;
+            }
 
             if (entry->checkValidFilename(*_resolver, true, &filename)) {
                 next = entry;
@@ -281,6 +285,9 @@ namespace PMP {
                 _nowPlaying->setStartedNow();
                 changeState(Playing);
                 _player->play();
+            }
+            else {
+                changeState(Paused);
             }
 
             return true;

@@ -31,7 +31,8 @@ namespace PMP {
 
     QueueEntry::QueueEntry(Queue* parent, QString const& filename)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _filename(filename), _haveFilename(true),
+       _queueID(parent->getNextQueueID()), _type(QueueEntryType::Track),
+       _filename(filename), _haveFilename(true),
        _fetchedTagData(false), _fileFinderBackoff(0), _fileFinderFailedCount(0)
     {
         //
@@ -39,18 +40,35 @@ namespace PMP {
 
     QueueEntry::QueueEntry(Queue* parent, FileData const& filedata)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _hash(filedata.hash()), _haveFilename(false),
-       _fetchedTagData(true), _tagData(filedata.tags())
+       _queueID(parent->getNextQueueID()), _type(QueueEntryType::Track),
+       _hash(filedata.hash()), _haveFilename(false),
+       _fetchedTagData(true), _tagData(filedata.tags()),
+       _fileFinderBackoff(0), _fileFinderFailedCount(0)
     {
         //
     }
 
     QueueEntry::QueueEntry(Queue* parent, HashID const& hash)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _hash(hash), _haveFilename(false),
-       _fetchedTagData(false)
+       _queueID(parent->getNextQueueID()), _type(QueueEntryType::Track),
+       _hash(hash), _haveFilename(false),
+       _fetchedTagData(false),
+       _fileFinderBackoff(0), _fileFinderFailedCount(0)
     {
         //
+    }
+
+    QueueEntry::QueueEntry(Queue* parent, QueueEntryType type)
+     : QObject(parent),
+       _queueID(parent->getNextQueueID()), _type(type),
+       _haveFilename(false), _fetchedTagData(false),
+       _fileFinderBackoff(0), _fileFinderFailedCount(0)
+    {
+        //
+    }
+
+    QueueEntry* QueueEntry::createBreak(Queue* parent) {
+        return new QueueEntry(parent, QueueEntryType::Break);
     }
 
     QueueEntry::~QueueEntry() {
@@ -67,7 +85,8 @@ namespace PMP {
         if (!_hash.empty()) return true; /* already got it */
 
         if (!_haveFilename) {
-            qDebug() << "PROBLEM: QueueEntry" << _queueID << "does not have either hash nor filename";
+            qDebug() << "PROBLEM: QueueEntry" << _queueID
+                     << "does not have either hash nor filename";
             return false;
         }
 
@@ -75,7 +94,8 @@ namespace PMP {
         FileData data = FileData::analyzeFile(info);
 
         if (!data.isValid()) {
-            qDebug() << "PROBLEM: QueueEntry" << _queueID << ": analysis of file failed:" << _filename;
+            qDebug() << "PROBLEM: QueueEntry" << _queueID
+                     << ": analysis of file failed:" << _filename;
             return false;
         }
 
@@ -101,6 +121,7 @@ namespace PMP {
                                         QString* outFilename)
     {
         qDebug() << "QueueEntry::checkValidFilename QID" << _queueID;
+        if (!isTrack()) return false;
 
         HashID const* fileHash = this->hash();
 

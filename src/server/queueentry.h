@@ -33,15 +33,25 @@ namespace PMP {
     class Queue;
     class Resolver;
 
+    enum class QueueEntryType {
+        Track = 0,
+        Break
+    };
+
     class QueueEntry : public QObject {
         Q_OBJECT
     public:
         QueueEntry(Queue* parent, QString const& filename);
         QueueEntry(Queue* parent, FileData const& filedata);
         QueueEntry(Queue* parent, HashID const& hash);
+
+        static QueueEntry* createBreak(Queue* parent);
+
         ~QueueEntry();
 
         uint queueID() const { return _queueID; }
+        QueueEntryType type() const { return _type; }
+        bool isTrack() const { return _type == QueueEntryType::Track; }
 
         HashID const* hash() const;
         bool checkHash(Resolver& resolver);
@@ -68,7 +78,10 @@ namespace PMP {
         void setEndedNow();
 
     private:
+        QueueEntry(Queue* parent, QueueEntryType type);
+
         uint const _queueID;
+        QueueEntryType _type;
         HashID _hash;
         //bool _fetchedAudioInfo;
         AudioData _audioInfo;

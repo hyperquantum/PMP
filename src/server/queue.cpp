@@ -41,6 +41,7 @@ namespace PMP {
 
         for (int i = 0; i < length && i < 10 && operationsDone <= 3; ++i) {
             QueueEntry* entry = _queue[i];
+            if (!entry->isTrack()) continue;
 
             if (entry->hash() == 0) {
                 qDebug() << "Queue: need to calculate hash for queue index number" << (i + 1);
@@ -53,6 +54,7 @@ namespace PMP {
                 qDebug() << "Queue: filename no longer valid for queue index number" << (i + 1);
                 filename = 0;
             }
+
             if (filename == 0) {
                 int& backoff = entry->fileFinderBackoff();
                 if (backoff > 0) {
@@ -123,8 +125,22 @@ namespace PMP {
         _queue.enqueue(entry);
 
         emit entryAdded(_queue.size() - 1, entry->queueID());
-
         return entry;
+    }
+
+    QueueEntry* Queue::enqueueAtFront(QueueEntry* entry) {
+        _idLookup.insert(entry->queueID(), entry);
+        _queue.prepend(entry);
+
+        emit entryAdded(0, entry->queueID());
+        return entry;
+    }
+
+    void Queue::insertBreakAtFront() {
+        if (!_queue.empty() && _queue[0]->type() == QueueEntryType::Break)
+            return;
+
+        enqueueAtFront(QueueEntry::createBreak(this));
     }
 
     QueueEntry* Queue::dequeue() {
@@ -205,7 +221,7 @@ namespace PMP {
     }
 
     void Queue::addToHistory(QueueEntry* entry, int permillagePlayed, bool hadError/*, Queue::HistoryType historyType*/) {
-        if (!entry) return;
+        if (!entry || !entry->isTrack()) return;
 
         qDebug() << "adding QID" << entry->queueID() << "to the queue history; play-permillage:" << permillagePlayed << " error?" << hadError;
         _history.enqueue(entry);
@@ -239,6 +255,8 @@ namespace PMP {
 
         for (int i = _queue.length() - 1; i >= 0; --i) {
             QueueEntry* entry = _queue[i];
+            if (!entry->isTrack()) continue;
+
             if (entry->hash() == 0) {
                 /* we don't know the track's hash yet. We need to calculate it first */
                 qDebug() << "Queue::checkPotentialRepetitionByAdd: need to calculate hash first, for QID " << entry->queueID();

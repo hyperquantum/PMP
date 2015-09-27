@@ -59,7 +59,7 @@ namespace PMP {
         QueueEntry* enqueue(QString const& filename);
         QueueEntry* enqueue(FileData const& filedata);
         QueueEntry* enqueue(HashID const& hash);
-        QueueEntry* enqueue(QueueEntry* entry);
+        void insertBreakAtFront();
 
         QueueEntry* dequeue();
         bool remove(quint32 queueID);
@@ -82,6 +82,9 @@ namespace PMP {
         void checkFrontOfQueue();
 
     private:
+        QueueEntry* enqueue(QueueEntry* entry);
+        QueueEntry* enqueueAtFront(QueueEntry* entry);
+
         int findIndex(quint32 queueID);
 
         uint _nextQueueID;

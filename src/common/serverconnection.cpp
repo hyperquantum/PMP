@@ -518,6 +518,14 @@ namespace PMP {
         sendSingleByteAction(3); /* 3 = skip */
     }
 
+    void ServerConnection::insertPauseAtFront() {
+        if (!_binarySendingMode) {
+            return; /* too early for that */
+        }
+
+        sendSingleByteAction(4); /* 4 = insert pause at front */
+    }
+
     void ServerConnection::seekTo(uint queueID, qint64 position) {
         if (!_binarySendingMode) {
             return; /* too early for that */
@@ -784,8 +792,7 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            quint8 status = NetworkUtil::getByte(message, 2);
-            /* skip 1 reserved 1 byte for future use */
+            quint16 status = NetworkUtil::get2Bytes(message, 2);
             quint32 queueID = NetworkUtil::get4Bytes(message, 4);
             int lengthSeconds = (qint32)NetworkUtil::get4Bytes(message, 8);
             int titleSize = (uint)NetworkUtil::get2Bytes(message, 12);
@@ -799,9 +806,14 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            QString title = NetworkUtil::getUtf8String(message, 16, titleSize);
-            QString artist =
-                NetworkUtil::getUtf8String(message, 16 + titleSize, artistSize);
+            QString title, artist;
+            if (NetworkProtocol::isTrackStatusFromRealTrack(status)) {
+                title = NetworkUtil::getUtf8String(message, 16, titleSize);
+                artist = NetworkUtil::getUtf8String(message, 16 + titleSize, artistSize);
+            }
+            else {
+                title = artist = NetworkProtocol::getPseudoTrackStatusText(status);
+            }
 
             qDebug() << "received track info reply;  QID:" << queueID
                 << " seconds:" << lengthSeconds << " title:" << title
@@ -825,12 +837,10 @@ namespace PMP {
             }
 
             int offset = 4;
-            QList<quint8> statuses;
+            QList<quint16> statuses;
             for (int i = 0; i < trackCount; ++i) {
-                statuses.append(NetworkUtil::getByte(message, offset));
-                offset++;
-                /* skip reserved byte */
-                offset++;
+                statuses.append(NetworkUtil::get2Bytes(message, offset));
+                offset += 2;
             }
             if (trackCount % 2 != 0) {
                 offset += 2; /* skip filler */
@@ -880,16 +890,23 @@ namespace PMP {
             for (int i = 0; i < trackCount; ++i) {
                 offset = offsets[i];
                 quint32 queueID = NetworkUtil::get4Bytes(message, offset);
-                quint8 status = statuses[i];
+                quint16 status = statuses[i];
                 int lengthSeconds = (uint)NetworkUtil::get4Bytes(message, offset + 4);
                 int titleSize = (uint)NetworkUtil::get2Bytes(message, offset + 8);
                 int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 10);
                 offset += 12;
 
-                QString title =
-                    NetworkUtil::getUtf8String(message, offset, titleSize);
-                QString artist =
-                    NetworkUtil::getUtf8String(message, offset + titleSize, artistSize);
+                QString title, artist;
+                if (NetworkProtocol::isTrackStatusFromRealTrack(status)) {
+                    title = NetworkUtil::getUtf8String(message, offset, titleSize);
+                    artist =
+                        NetworkUtil::getUtf8String(
+                            message, offset + titleSize, artistSize
+                        );
+                }
+                else {
+                    title = artist = NetworkProtocol::getPseudoTrackStatusText(status);
+                }
 
                 emit receivedTrackInfo(queueID, lengthSeconds, title, artist);
             }
@@ -915,7 +932,8 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            qDebug() << "received queue contents;  Q-length:" << queueLength << " offset:" << startOffset << " count:" << queueIDs.size();
+            qDebug() << "received queue contents;  Q-length:" << queueLength
+                     << " offset:" << startOffset << " count:" << queueIDs.size();
 
             emit receivedQueueContents(queueLength, startOffset, queueIDs);
         }

@@ -79,6 +79,7 @@ namespace PMP {
                                         quint32 queueID);
         void sendTrackInfoMessage(quint32 queueID);
         void sendTrackInfoMessage(QList<quint32> const& queueIDs);
+        quint16 createTrackStatusFor(QueueEntry* entry);
         void sendPossibleTrackFilenames(quint32 queueID, QList<QString> const& names);
         void sendNewUserAccountSaltMessage(QString login, QByteArray const& salt);
         void sendSuccessMessage(quint32 clientReference, quint32 intData);
