@@ -11,4 +11,5 @@ INCORRECT BEHAVIOUR
 
 PERFORMANCE ISSUES
 
+  - Indexation at server startup can cause the machine to become very slow
   - Database access for track repetition avoidance needs to be optimized and data needs to be cached
