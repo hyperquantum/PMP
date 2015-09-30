@@ -208,6 +208,7 @@ Only a list of ideas.  No promises!
 
 ###Medium/large effort improvements:
 
+  * Browsing the server music files from the remote, and adding those tracks to the queue
   * Handling of files that are the same track but have a different hash
   * Find a way to identify artists
   * Dynamic mode: avoid repeating the same artist within a certain timespan
