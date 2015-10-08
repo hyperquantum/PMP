@@ -7,6 +7,7 @@ CRASHES
 INCORRECT BEHAVIOUR
 
  - GUI remote: queue length not updated after initial queue population (probably because no player status message was sent during queue population)
+ - diagnostic logging now produces unreadable text when two different threads write something to the log
 
 
 PERFORMANCE ISSUES
