@@ -33,7 +33,7 @@ namespace PMP {
     public:
         enum State { Stopped, Playing, Paused };
 
-        Player(QObject* parent, Resolver* resolver);
+        Player(QObject* parent, Resolver* resolver, int defaultVolume);
 
         int volume() const;
 

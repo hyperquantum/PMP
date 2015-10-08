@@ -81,9 +81,25 @@ int main(int argc, char *argv[]) {
     QThreadPool::globalInstance()->setExpiryTimeout(-1);
 
     QStringList musicPaths;
+    int defaultVolume = -1;
     {
         ServerSettings serversettings;
         QSettings& settings = serversettings.getSettings();
+
+        QVariant defaultVolumeSetting = settings.value("player/default_volume");
+        if (defaultVolumeSetting.isValid()
+            && defaultVolumeSetting.toString() != "")
+        {
+            bool ok;
+            defaultVolume = defaultVolumeSetting.toString().toInt(&ok);
+            if (!ok || defaultVolume < 0 || defaultVolume > 100) {
+                out << "Invalid default volume setting found. Ignoring." << endl << endl;
+                defaultVolume = -1;
+            }
+        }
+        if (defaultVolume < 0) {
+            settings.setValue("player/default_volume", "");
+        }
 
         QVariant musicPathsSetting = settings.value("media/scan_directories");
         if (!musicPathsSetting.isValid() || musicPathsSetting.toStringList().empty()) {
@@ -123,7 +139,7 @@ int main(int argc, char *argv[]) {
         << endl;
 
     Users users;
-    Player player(0, &resolver);
+    Player player(0, &resolver, defaultVolume);
     Queue& queue = player.queue();
     History history(&player);
 

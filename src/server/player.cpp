@@ -27,7 +27,7 @@
 
 namespace PMP {
 
-    Player::Player(QObject* parent, Resolver* resolver)
+    Player::Player(QObject* parent, Resolver* resolver, int defaultVolume)
      : QObject(parent), _resolver(resolver),
         _player(new QMediaPlayer(this)),
         _queue(resolver),
@@ -36,7 +36,7 @@ namespace PMP {
         _state(Stopped), _transitioningToNextTrack(false),
         _userPlayingFor(0)
     {
-        setVolume(75);
+        setVolume((defaultVolume >= 0 && defaultVolume <= 100) ? defaultVolume : 75);
 
         connect(
             _player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)),
