@@ -196,6 +196,7 @@ Only a list of ideas.  No promises!
 
 ###Small/medium effort improvements:
 
+  * Provide keyboard shortcuts for volume adjustment
   * Queue contextmenu option to duplicate the entry
   * Ability to start a full indexation while the server is running
   * Store last track repetition avoidance interval for each user in the database
