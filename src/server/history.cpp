@@ -83,13 +83,13 @@ namespace PMP {
         );
     }
 
-    QDateTime History::lastPlayed(HashID const& hash) const {
+    QDateTime History::lastPlayed(FileHash const& hash) const {
         return _lastPlayHash[hash];
     }
 
     void History::currentTrackChanged(QueueEntry const* newTrack) {
         if (_nowPlaying != 0 && newTrack != _nowPlaying) {
-            const HashID* hash = _nowPlaying->hash();
+            const FileHash* hash = _nowPlaying->hash();
             /* TODO: make sure hash is known, so history won't get lost */
             if (hash != 0) {
                 _lastPlayHash[*hash] = QDateTime::currentDateTimeUtc();
@@ -106,7 +106,7 @@ namespace PMP {
     void History::donePlayingTrack(QueueEntry const* track, int permillage, bool hadError,
                                    bool hadSeek)
     {
-        const HashID* hash = track->hash();
+        const FileHash* hash = track->hash();
         uint hashID = _player->resolver().getID(*hash);
         quint32 user = _player->userPlayingFor();
 

@@ -116,7 +116,7 @@ namespace PMP {
         return enqueue(new QueueEntry(this, filedata));
     }
 
-    QueueEntry* Queue::enqueue(HashID const& hash) {
+    QueueEntry* Queue::enqueue(FileHash const& hash) {
         return enqueue(new QueueEntry(this, hash));
     }
 
@@ -247,7 +247,7 @@ namespace PMP {
         return -1; // not found
     }
 
-    bool Queue::checkPotentialRepetitionByAdd(const HashID& hash,
+    bool Queue::checkPotentialRepetitionByAdd(const FileHash& hash,
                                               int repetitionAvoidanceSeconds,
                                               int* nonRepetitionSpan) const
     {
@@ -270,7 +270,7 @@ namespace PMP {
                 }
             }
 
-            const HashID& entryHash = *entry->hash();
+            const FileHash& entryHash = *entry->hash();
 
             if (entryHash == hash) {
                 if (nonRepetitionSpan != 0) { *nonRepetitionSpan = span; }

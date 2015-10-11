@@ -21,7 +21,7 @@
 #define PMP_QUEUEENTRY_H
 
 #include "common/audiodata.h"
-#include "common/hashid.h"
+#include "common/filehash.h"
 #include "common/tagdata.h"
 
 #include <QDateTime>
@@ -43,7 +43,7 @@ namespace PMP {
     public:
         QueueEntry(Queue* parent, QString const& filename);
         QueueEntry(Queue* parent, FileData const& filedata);
-        QueueEntry(Queue* parent, HashID const& hash);
+        QueueEntry(Queue* parent, FileHash const& hash);
 
         static QueueEntry* createBreak(Queue* parent);
 
@@ -53,7 +53,7 @@ namespace PMP {
         QueueEntryType type() const { return _type; }
         bool isTrack() const { return _type == QueueEntryType::Track; }
 
-        HashID const* hash() const;
+        FileHash const* hash() const;
         bool checkHash(Resolver& resolver);
 
         void setFilename(QString const& filename);
@@ -82,7 +82,7 @@ namespace PMP {
 
         uint const _queueID;
         QueueEntryType _type;
-        HashID _hash;
+        FileHash _hash;
         //bool _fetchedAudioInfo;
         AudioData _audioInfo;
         QString _filename;

@@ -21,7 +21,7 @@
 #define PMP_RESOLVER_H
 
 #include "common/audiodata.h"
-#include "common/hashid.h"
+#include "common/filehash.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -41,24 +41,24 @@ namespace PMP {
 
         void setMusicPaths(QList<QString> paths);
 
-        void registerData(const HashID& hash, const AudioData& data);
+        void registerData(const FileHash& hash, const AudioData& data);
         void registerData(const FileData& data);
 
         void registerFile(const FileData& file, const QString& filename, qint64 fileSize,
                           QDateTime fileLastModified);
-        void registerFile(const HashID& hash, const QString& filename, qint64 fileSize,
+        void registerFile(const FileHash& hash, const QString& filename, qint64 fileSize,
                           QDateTime fileLastModified);
 
-        bool haveAnyPathInfo(const HashID& hash);
-        QString findPath(const HashID& hash, bool fast);
-        bool pathStillValid(const HashID& hash, QString path);
+        bool haveAnyPathInfo(const FileHash& hash);
+        QString findPath(const FileHash& hash, bool fast);
+        bool pathStillValid(const FileHash& hash, QString path);
 
-        const AudioData& findAudioData(const HashID& hash);
-        const TagData* findTagData(const HashID& hash);
+        const AudioData& findAudioData(const FileHash& hash);
+        const TagData* findTagData(const FileHash& hash);
 
-        HashID getRandom();
+        FileHash getRandom();
 
-        uint getID(const HashID& hash) const;
+        uint getID(const FileHash& hash) const;
 
     public slots:
         void analysedFile(QString filename, qint64 fileSize, QDateTime fileLastModified,
@@ -69,16 +69,16 @@ namespace PMP {
             QString _path;
             qint64 _size;
             QDateTime _lastModifiedUtc;
-            HashID _hash;
+            FileHash _hash;
 
-            VerifiedFile(QString path, qint64 size, QDateTime lastModified, HashID hash)
+            VerifiedFile(QString path, qint64 size, QDateTime lastModified, FileHash hash)
              : _path(path), _size(size), _lastModifiedUtc(lastModified.toUTC()),
                _hash(hash)
             {
                 //
             }
 
-            bool equals(HashID const& hash, qint64 size, QDateTime modified) {
+            bool equals(FileHash const& hash, qint64 size, QDateTime modified) {
                 return _hash == hash && _size == size
                     && _lastModifiedUtc == modified.toUTC();
             }
@@ -90,18 +90,18 @@ namespace PMP {
             bool stillValid();
         };
 
-        uint registerHash(const HashID& hash);
+        uint registerHash(const FileHash& hash);
 
         QList<QString> _musicPaths;
 
-        QHash<uint, HashID> _idToHash;
-        QHash<HashID, uint> _hashToID;
-        QList<HashID> _hashList;
+        QHash<uint, FileHash> _idToHash;
+        QHash<FileHash, uint> _hashToID;
+        QList<FileHash> _hashList;
 
-        QHash<HashID, AudioData> _audioCache;
-        QMultiHash<HashID, const TagData*> _tagCache;
+        QHash<FileHash, AudioData> _audioCache;
+        QMultiHash<FileHash, const TagData*> _tagCache;
 
-        QMultiHash<HashID, VerifiedFile*> _filesForHash;
+        QMultiHash<FileHash, VerifiedFile*> _filesForHash;
         QHash<QString, VerifiedFile*> _paths;
     };
 }

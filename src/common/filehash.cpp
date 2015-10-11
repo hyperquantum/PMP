@@ -17,24 +17,24 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "hashid.h"
+#include "filehash.h"
 
 namespace PMP {
 
-    HashID::HashID()
+    FileHash::FileHash()
      : _length(0)
     {
         //
     }
 
-    HashID::HashID(uint length, const QByteArray& sha1,
+    FileHash::FileHash(uint length, const QByteArray& sha1,
         const QByteArray& md5)
      : _length(length), _sha1(sha1), _md5(md5)
     {
         //
     }
 
-    QString HashID::dumpToString() const {
+    QString FileHash::dumpToString() const {
         return "(" + QString::number(_length) + "; "
             + _sha1.toHex() + "; "
             + _md5.toHex() + ")";

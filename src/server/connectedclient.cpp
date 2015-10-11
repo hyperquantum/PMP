@@ -19,7 +19,7 @@
 
 #include "connectedclient.h"
 
-#include "common/hashid.h"
+#include "common/filehash.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
 
@@ -783,7 +783,7 @@ namespace PMP {
         }
 
         int seconds = entry->lengthInSeconds();
-        HashID const* hash = entry->hash();
+        FileHash const* hash = entry->hash();
 
         sendTextCommand(
             "nowplaying track\n QID: " + QString::number(entry->queueID())
@@ -1101,7 +1101,7 @@ namespace PMP {
                 return; /* not found :-/ */
             }
 
-            const HashID* hash = entry->hash();
+            const FileHash* hash = entry->hash();
             if (hash == 0) {
                 /* hash not found */
                 /* TODO: register callback to resume this once the hash becomes known */

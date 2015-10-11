@@ -21,7 +21,7 @@
 #define PMP_FILEDATA_H
 
 #include "audiodata.h"
-#include "hashid.h"
+#include "filehash.h"
 #include "tagdata.h"
 
 namespace TagLib {
@@ -36,9 +36,9 @@ namespace PMP {
 
     class FileData {
     public:
-        FileData(const HashID& hash);
+        FileData(const FileHash& hash);
 
-        FileData(const HashID& hash,
+        FileData(const FileHash& hash,
             const QString& artist, const QString& title,
             const QString& album, const QString& comment,
             AudioData::FileFormat format, int trackLength);
@@ -49,14 +49,14 @@ namespace PMP {
         static FileData analyzeFile(const QString& filename);
         static FileData analyzeFile(QFileInfo& file);
 
-        static FileData create(const HashID& hash,
+        static FileData create(const FileHash& hash,
                                const QString& artist, const QString& title,
                                AudioData::FileFormat format = AudioData::UnknownFormat,
                                int trackLength = -1);
 
         bool isValid() const { return !_hash.empty(); }
 
-        const HashID& hash() const { return _hash; }
+        const FileHash& hash() const { return _hash; }
 
         const AudioData& audio() const { return _audio; }
         AudioData& audio() { return _audio; }
@@ -73,9 +73,9 @@ namespace PMP {
                                    QString& artist, QString& title,
                                    QString& album, QString& comment);
 
-        static HashID getHashFrom(TagLib::ByteVector* data);
+        static FileHash getHashFrom(TagLib::ByteVector* data);
 
-        HashID _hash;
+        FileHash _hash;
         AudioData _audio;
         TagData _tags;
     };

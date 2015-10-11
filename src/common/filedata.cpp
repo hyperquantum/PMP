@@ -31,13 +31,13 @@
 
 namespace PMP {
 
-    FileData::FileData(const HashID& hash)
+    FileData::FileData(const FileHash& hash)
      : _hash(hash)
     {
         //
     }
 
-    FileData::FileData(const HashID& hash,
+    FileData::FileData(const FileHash& hash,
         const QString& artist, const QString& title,
         const QString& album, const QString& comment,
         AudioData::FileFormat format, int trackLength)
@@ -69,7 +69,7 @@ namespace PMP {
         }
         else {
             /* file type not (yet) supported */
-            return FileData(HashID());
+            return FileData(FileHash());
         }
     }
 
@@ -80,20 +80,20 @@ namespace PMP {
 
     FileData FileData::analyzeFile(QFileInfo& fileInfo) {
         QFile file(fileInfo.filePath());
-        if (!file.open(QIODevice::ReadOnly)) return FileData(HashID());
+        if (!file.open(QIODevice::ReadOnly)) return FileData(FileHash());
 
         QByteArray fileContents = file.readAll();
         return analyzeFile(fileContents, fileInfo.suffix());
     }
 
-    FileData FileData::create(const HashID& hash,
+    FileData FileData::create(const FileHash& hash,
         const QString& artist, const QString& title,
         AudioData::FileFormat format, int length)
     {
         return FileData(hash, artist, title, "", "", format, length);
     }
 
-    HashID FileData::getHashFrom(TagLib::ByteVector* data) {
+    FileHash FileData::getHashFrom(TagLib::ByteVector* data) {
         uint size = data->size();
 
         QCryptographicHash md5Hasher(QCryptographicHash::Md5);
@@ -102,7 +102,7 @@ namespace PMP {
         QCryptographicHash sha1Hasher(QCryptographicHash::Sha1);
         sha1Hasher.addData(data->data(), size);
 
-        return HashID(size, sha1Hasher.result(), md5Hasher.result());
+        return FileHash(size, sha1Hasher.result(), md5Hasher.result());
     }
 
     void FileData::getDataFromTag(const TagLib::Tag* tag,
@@ -120,7 +120,7 @@ namespace PMP {
     FileData FileData::analyzeMp3(TagLib::ByteVectorStream& fileContents)
     {
         TagLib::MPEG::File tagFile(&fileContents, TagLib::ID3v2::FrameFactory::instance());
-        if (!tagFile.isValid()) { return FileData(HashID()); }
+        if (!tagFile.isValid()) { return FileData(FileHash()); }
 
         QString artist, title, album, comment;
         getDataFromTag(tagFile.tag(), artist, title, album, comment);

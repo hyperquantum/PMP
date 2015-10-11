@@ -20,7 +20,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 set(PMP_COMMON_SOURCES
     common/audiodata.cpp
     common/filedata.cpp
-    common/hashid.cpp
+    common/filehash.cpp
     common/networkprotocol.cpp
     common/networkutil.cpp
     common/serverconnection.cpp
@@ -115,7 +115,7 @@ add_executable(PMP-HashTool
     tools/hash-main.cpp
     common/audiodata.cpp
     common/filedata.cpp
-    common/hashid.cpp
+    common/filehash.cpp
     common/tagdata.cpp
 )
 add_executable(PMP-Cmd-Remote tools/cmd-remote-main.cpp)

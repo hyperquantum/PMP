@@ -34,19 +34,19 @@ namespace PMP {
 
     class Generator::Candidate {
     public:
-        Candidate(const HashID& hashID)
+        Candidate(const FileHash& hashID)
          : _hash(hashID), _lengthSeconds(0)
         {
             //
         }
 
-        const HashID& hash() const { return _hash; }
+        const FileHash& hash() const { return _hash; }
 
         void setLengthSeconds(uint seconds) { _lengthSeconds = seconds; }
         uint lengthSeconds() const { return _lengthSeconds; }
 
     private:
-        HashID _hash;
+        FileHash _hash;
         uint _lengthSeconds;
     };
 
@@ -147,7 +147,7 @@ namespace PMP {
         {
             iterationsLeft--;
 
-            HashID randomHash = _resolver->getRandom();
+            FileHash randomHash = _resolver->getRandom();
             if (randomHash.empty()) { break; /* nothing available */ }
 
             Candidate* c = new Candidate(randomHash);
@@ -233,7 +233,7 @@ namespace PMP {
             if (ok && nonRepetitionSpan < _noRepetitionSpan) {
                 QueueEntry const* current = _currentTrack;
                 if (current != 0) {
-                    HashID const* currentHash = current->hash();
+                    FileHash const* currentHash = current->hash();
                     if (currentHash != 0 && c->hash() == *currentHash) {
                         ok = false;
                     }
@@ -284,7 +284,7 @@ namespace PMP {
     }
 
     bool Generator::satisfiesFilters(Candidate* candidate) {
-        const HashID& hash = candidate->hash();
+        const FileHash& hash = candidate->hash();
 
         /* can we find a file for the track? */
         if (!_resolver->haveAnyPathInfo(hash)) return false;

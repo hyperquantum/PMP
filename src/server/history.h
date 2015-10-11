@@ -20,7 +20,7 @@
 #ifndef PMP_HISTORY_H
 #define PMP_HISTORY_H
 
-#include "common/hashid.h"
+#include "common/filehash.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -28,7 +28,7 @@
 
 namespace PMP {
 
-    class HashID;
+    class FileHash;
     class Player;
     class QueueEntry;
 
@@ -37,7 +37,7 @@ namespace PMP {
     public:
         History(Player* player);
 
-        QDateTime lastPlayed(HashID const& hash) const;
+        QDateTime lastPlayed(FileHash const& hash) const;
 
     private slots:
         void currentTrackChanged(QueueEntry const* newTrack);
@@ -47,7 +47,7 @@ namespace PMP {
 
     private:
         Player* _player;
-        QHash<HashID, QDateTime> _lastPlayHash;
+        QHash<FileHash, QDateTime> _lastPlayHash;
         QueueEntry const* _nowPlaying;
     };
 

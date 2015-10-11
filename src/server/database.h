@@ -20,7 +20,7 @@
 #ifndef PMP_DATABASE_H
 #define PMP_DATABASE_H
 
-#include "common/hashid.h"
+#include "common/filehash.h"
 
 #include <QAtomicInt>
 #include <QByteArray>
@@ -78,9 +78,9 @@ namespace PMP {
 
         bool isConnectionOpen() const;
 
-        void registerHash(const HashID& hash);
-        uint getHashID(const HashID& hash);
-        QList<QPair<uint,HashID> > getHashes(uint largerThanID = 0);
+        void registerHash(const FileHash& hash);
+        uint getHashID(const FileHash& hash);
+        QList<QPair<uint,FileHash> > getHashes(uint largerThanID = 0);
 
         void registerFilename(uint hashID, const QString& filenameWithoutPath);
         QList<QString> getFilenames(uint hashID);

@@ -19,7 +19,7 @@
 
 #include "database.h"
 
-#include "common/hashid.h"
+#include "common/filehash.h"
 
 #include "serversettings.h"
 
@@ -279,7 +279,7 @@ namespace PMP {
         return _db.isOpen();
     }
 
-    void Database::registerHash(const HashID& hash) {
+    void Database::registerHash(const FileHash& hash) {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
 
@@ -299,7 +299,7 @@ namespace PMP {
         }
     }
 
-    uint Database::getHashID(const HashID& hash) {
+    uint Database::getHashID(const FileHash& hash) {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
 
@@ -323,7 +323,7 @@ namespace PMP {
         return id;
     }
 
-    QList<QPair<uint,HashID> > Database::getHashes(uint largerThanID) {
+    QList<QPair<uint,FileHash> > Database::getHashes(uint largerThanID) {
         QSqlQuery q(_db);
         q.prepare(
             "SELECT HashID,InputLength,`SHA1`,`MD5` FROM pmp_hash"
@@ -332,7 +332,7 @@ namespace PMP {
         );
         q.addBindValue(largerThanID);
 
-        QList<QPair<uint,HashID> > result;
+        QList<QPair<uint,FileHash> > result;
 
         if (!executeQuery(q)) { /* error */
             qDebug() << "Database::getHashes : could not execute; "
@@ -345,7 +345,7 @@ namespace PMP {
             uint length = q.value(1).toUInt();
             QByteArray sha1 = QByteArray::fromHex(q.value(2).toByteArray());
             QByteArray md5 = QByteArray::fromHex(q.value(3).toByteArray());
-            result.append(QPair<uint,HashID>(hashID, HashID(length, sha1, md5)));
+            result.append(QPair<uint,FileHash>(hashID, FileHash(length, sha1, md5)));
         }
 
         return result;

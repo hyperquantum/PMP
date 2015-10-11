@@ -30,7 +30,7 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 namespace PMP {
 
     class FileData;
-    class HashID;
+    class FileHash;
     class QueueEntry;
     class Resolver;
 
@@ -43,7 +43,7 @@ namespace PMP {
 
         Queue(Resolver* resolver);
 
-        bool checkPotentialRepetitionByAdd(const HashID& hash,
+        bool checkPotentialRepetitionByAdd(const FileHash& hash,
                                            int repetitionAvoidanceSeconds,
                                            int* nonRepetitionSpan = 0) const;
 
@@ -58,7 +58,7 @@ namespace PMP {
 
         QueueEntry* enqueue(QString const& filename);
         QueueEntry* enqueue(FileData const& filedata);
-        QueueEntry* enqueue(HashID const& hash);
+        QueueEntry* enqueue(FileHash const& hash);
         void insertBreakAtFront();
 
         QueueEntry* dequeue();

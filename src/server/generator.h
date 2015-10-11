@@ -26,7 +26,7 @@
 
 namespace PMP {
 
-    class HashID;
+    class FileHash;
     class History;
     class Queue;
     class QueueEntry;

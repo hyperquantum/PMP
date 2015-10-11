@@ -50,9 +50,9 @@ namespace PMP {
         auto db = Database::getDatabaseForCurrentThread();
 
         if (db != nullptr) {
-            QList<QPair<uint, HashID> > hashes = db->getHashes();
+            QList<QPair<uint, FileHash> > hashes = db->getHashes();
 
-            QPair<uint, HashID> pair;
+            QPair<uint, FileHash> pair;
             foreach(pair, hashes) {
                 _idToHash[pair.first] = pair.second;
                 _hashToID[pair.second] = pair.first;
@@ -72,7 +72,7 @@ namespace PMP {
         _musicPaths = paths;
     }
 
-    uint Resolver::registerHash(const HashID& hash) {
+    uint Resolver::registerHash(const FileHash& hash) {
         if (hash.empty()) return 0; /* invalid hash */
 
         uint id = _hashToID.value(hash, 0);
@@ -94,7 +94,7 @@ namespace PMP {
         return id;
     }
 
-    void Resolver::registerData(const HashID& hash, const AudioData& data) {
+    void Resolver::registerData(const FileHash& hash, const AudioData& data) {
         if (hash.empty()) { return; }
 
         registerHash(hash);
@@ -126,7 +126,7 @@ namespace PMP {
         registerFile(file.hash(), filename, fileSize, fileLastModified);
     }
 
-    void Resolver::registerFile(const HashID& hash, const QString& filename,
+    void Resolver::registerFile(const FileHash& hash, const QString& filename,
                                 qint64 fileSize, QDateTime fileLastModified)
     {
         if (hash.empty() || filename.length() <= 0 || fileSize <= 0
@@ -169,12 +169,12 @@ namespace PMP {
         }
     }
 
-    bool Resolver::haveAnyPathInfo(const HashID& hash) {
+    bool Resolver::haveAnyPathInfo(const FileHash& hash) {
         QList<VerifiedFile*> paths = _filesForHash.values(hash);
         return !paths.empty();
     }
 
-    bool Resolver::pathStillValid(const HashID& hash, QString path) {
+    bool Resolver::pathStillValid(const FileHash& hash, QString path) {
         VerifiedFile* file = _paths.value(path, 0);
         if (file) {
             if (file->stillValid()) return true;
@@ -200,7 +200,7 @@ namespace PMP {
         return false;
     }
 
-    QString Resolver::findPath(const HashID& hash, bool fast) {
+    QString Resolver::findPath(const FileHash& hash, bool fast) {
         QList<VerifiedFile*> files = _filesForHash.values(hash);
         qDebug() << "Resolver::findPath for hash " << hash.dumpToString();
         qDebug() << " candidates for hash: " << files.count();
@@ -274,11 +274,11 @@ namespace PMP {
         return ""; /* not found */
     }
 
-    const AudioData& Resolver::findAudioData(const HashID& hash) {
+    const AudioData& Resolver::findAudioData(const FileHash& hash) {
         return _audioCache[hash];
     }
 
-    const TagData* Resolver::findTagData(const HashID& hash) {
+    const TagData* Resolver::findTagData(const FileHash& hash) {
         QList<const TagData*> tags = _tagCache.values(hash);
 
         /* try to return a match with complete tags */
@@ -310,14 +310,14 @@ namespace PMP {
         return result;
     }
 
-    HashID Resolver::getRandom() {
-        if (_hashList.empty()) return HashID();
+    FileHash Resolver::getRandom() {
+        if (_hashList.empty()) return FileHash();
 
         int randomIndex = qrand() % _hashList.size();
         return _hashList[randomIndex];
     }
 
-    uint Resolver::getID(const HashID& hash) const {
+    uint Resolver::getID(const FileHash& hash) const {
         return _hashToID.value(hash, 0);
     }
 

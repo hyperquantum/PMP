@@ -48,7 +48,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, HashID const& hash)
+    QueueEntry::QueueEntry(Queue* parent, FileHash const& hash)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _type(QueueEntryType::Track),
        _hash(hash), _haveFilename(false),
@@ -75,7 +75,7 @@ namespace PMP {
         //
     }
 
-    HashID const* QueueEntry::hash() const {
+    FileHash const* QueueEntry::hash() const {
         if (_hash.empty()) { return 0; }
 
         return &_hash;
@@ -123,7 +123,7 @@ namespace PMP {
         qDebug() << "QueueEntry::checkValidFilename QID" << _queueID;
         if (!isTrack()) return false;
 
-        HashID const* fileHash = this->hash();
+        FileHash const* fileHash = this->hash();
 
         if (_haveFilename) {
             qDebug() << " have filename, need to verify it: " << _filename;

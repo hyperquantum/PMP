@@ -20,7 +20,7 @@
 #ifndef PMP_CURRENTTRACKMONITOR_H
 #define PMP_CURRENTTRACKMONITOR_H
 
-#include "common/hashid.h"
+#include "common/filehash.h"
 #include "common/serverconnection.h"
 
 #include <QObject>

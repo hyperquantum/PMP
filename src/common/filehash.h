@@ -26,10 +26,10 @@
 
 namespace PMP {
 
-    class HashID {
+    class FileHash {
     public:
-        HashID();
-        HashID(uint length, const QByteArray& sha1,
+        FileHash();
+        FileHash(uint length, const QByteArray& sha1,
             const QByteArray& md5);
 
         bool empty() const { return _length == 0 && _sha1.size() == 0 && _md5.size() == 0; }
@@ -46,17 +46,17 @@ namespace PMP {
         QByteArray _md5;
     };
 
-    inline bool operator==(const HashID& me, const HashID& other) {
+    inline bool operator==(const FileHash& me, const FileHash& other) {
         return me.length() == other.length()
             && me.SHA1() == other.SHA1()
             && me.MD5() == other.MD5();
     }
 
-    inline bool operator!=(const HashID& me, const HashID& other) {
+    inline bool operator!=(const FileHash& me, const FileHash& other) {
         return !(me == other);
     }
 
-    inline uint qHash(const HashID& hashID) {
+    inline uint qHash(const FileHash& hashID) {
         return hashID.length()
             ^ qHash(hashID.SHA1())
             ^ qHash(hashID.MD5());
