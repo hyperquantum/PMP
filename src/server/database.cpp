@@ -493,11 +493,11 @@ namespace PMP {
     void Database::addToHistory(quint32 hashId, quint32 userId, QDateTime start,
                                 QDateTime end, int permillage, bool validForScoring)
     {
-        qDebug() << "  Database::addToHistory called\n"
-                 << "   hash" << hashId << " user" << userId << " perm" << permillage
-                 << " forScoring" << validForScoring << "\n"
-                 << "   start" << start << "\n"
-                 << "   end" << end;
+//        qDebug() << "  Database::addToHistory called\n"
+//                 << "   hash" << hashId << " user" << userId << " perm" << permillage
+//                 << " forScoring" << validForScoring << "\n"
+//                 << "   start" << start << "\n"
+//                 << "   end" << end;
 
         auto preparer =
             [=] (QSqlQuery& q) {
