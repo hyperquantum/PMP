@@ -27,6 +27,9 @@
 #include "useraccountcreationwidget.h"
 #include "userpickerwidget.h"
 
+#include <QAction>
+#include <QMenu>
+#include <QMenuBar>
 #include <QMessageBox>
 
 namespace PMP {
@@ -36,6 +39,8 @@ namespace PMP {
        _connectionWidget(new ConnectionWidget(this)),
        _connection(0), _userPickerWidget(0), _loginWidget(0), _mainWidget(0)
     {
+        createMenus();
+
         setCentralWidget(_connectionWidget);
         connect(
             _connectionWidget, &ConnectionWidget::doConnect,
@@ -45,6 +50,13 @@ namespace PMP {
 
     MainWindow::~MainWindow() {
         //
+    }
+
+    void MainWindow::createMenus() {
+        QMenu* menu = menuBar()->addMenu(tr("&PMP"));
+
+        QAction* closeAction = menu->addAction(tr("&Close remote"));
+        connect(closeAction, &QAction::triggered, this, &MainWindow::close);
     }
 
     void MainWindow::onDoConnect(QString server, uint port) {

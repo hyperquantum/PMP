@@ -54,6 +54,7 @@ namespace PMP {
         void onLoginCancel();
 
     private:
+        void createMenus();
         void showUserAccountPicker();
         void showLoginWidget(QString login);
         void showMainWidget();
