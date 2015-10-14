@@ -984,6 +984,10 @@ namespace PMP {
                     _player->setUserPlayingFor(_userLoggedIn);
                 }
                 break;
+            case 40:
+                qDebug() << "received START FULL INDEXATION command";
+                _player->resolver().startFullIndexation();
+                break;
             case 99:
                 qDebug() << "received SHUTDOWN command";
                 _server->shutdown();

@@ -153,7 +153,6 @@ int main(int argc, char *argv[]) {
         &generator, &Generator::setUserPlayingFor
     );
 
-    musicPaths.append("."); /* temporary, for backwards compatibility */
     resolver.setMusicPaths(musicPaths);
 
     out << endl
@@ -178,9 +177,7 @@ int main(int argc, char *argv[]) {
     out << endl << "Server initialization complete. Starting indexation thread." << endl;
 
     /* start indexation of the media directories */
-    DirectoriesIndexationTask* indexTask =
-        new DirectoriesIndexationTask(&resolver, musicPaths);
-    QThreadPool::globalInstance()->start(indexTask);
+    resolver.startFullIndexation();
 
     return app.exec();
 }

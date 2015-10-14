@@ -23,6 +23,8 @@
 #include <QAbstractSocket>
 #include <QMainWindow>
 
+QT_FORWARD_DECLARE_CLASS(QAction)
+
 namespace PMP {
 
     class ConnectionWidget;
@@ -53,6 +55,8 @@ namespace PMP {
         void onLoggedIn(QString login);
         void onLoginCancel();
 
+        void onStartFullIndexationTriggered();
+
     private:
         void createMenus();
         void showUserAccountPicker();
@@ -65,6 +69,8 @@ namespace PMP {
         UserAccountCreationWidget* _userAccountCreationWidget;
         LoginWidget* _loginWidget;
         MainWidget* _mainWidget;
+
+        QAction* _startFullIndexationAction;
     };
 }
 #endif

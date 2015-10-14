@@ -22,11 +22,13 @@
 #include "common/filedata.h"
 
 #include "database.h"
+#include "directoriesindexationtask.h"
 
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QtDebug>
 #include <QtGlobal>
+#include <QThreadPool>
 
 namespace PMP {
 
@@ -70,6 +72,12 @@ namespace PMP {
 
     void Resolver::setMusicPaths(QList<QString> paths) {
         _musicPaths = paths;
+    }
+
+    void Resolver::startFullIndexation() {
+        DirectoriesIndexationTask* indexTask =
+            new DirectoriesIndexationTask(this, _musicPaths);
+        QThreadPool::globalInstance()->start(indexTask);
     }
 
     uint Resolver::registerHash(const FileHash& hash) {

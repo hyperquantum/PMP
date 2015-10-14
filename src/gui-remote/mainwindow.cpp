@@ -55,8 +55,21 @@ namespace PMP {
     void MainWindow::createMenus() {
         QMenu* menu = menuBar()->addMenu(tr("&PMP"));
 
+        _startFullIndexationAction = menu->addAction(tr("&Start full indexation"));
+        _startFullIndexationAction->setVisible(false); /* made visible after connected */
+        connect(
+            _startFullIndexationAction, &QAction::triggered,
+            this, &MainWindow::onStartFullIndexationTriggered
+        );
+
+        menu->addSeparator();
+
         QAction* closeAction = menu->addAction(tr("&Close remote"));
         connect(closeAction, &QAction::triggered, this, &MainWindow::close);
+    }
+
+    void MainWindow::onStartFullIndexationTriggered() {
+        if (_connection) { _connection->startFullIndexation(); }
     }
 
     void MainWindow::onDoConnect(QString server, uint port) {
@@ -172,6 +185,8 @@ namespace PMP {
     void MainWindow::onLoggedIn(QString login) {
         _loginWidget = 0;
         showMainWidget();
+
+        _startFullIndexationAction->setVisible(true);
     }
 
     void MainWindow::onLoginCancel() {

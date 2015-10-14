@@ -250,6 +250,12 @@ namespace PMP {
     }
 
     void ServerConnection::sendSingleByteAction(quint8 action) {
+        if (!_binarySendingMode) {
+            qDebug() << "PROBLEM: cannot send single byte action yet; action:"
+                     << (int)action;
+            return; /* too early for that */
+        }
+
         qDebug() << "sending single byte action" << (int)action;
 
         QByteArray message;
@@ -463,66 +469,34 @@ namespace PMP {
     }
 
     void ServerConnection::sendUserAccountsFetchRequest() {
-        if (!_binarySendingMode) {
-            return; /* too early for that */
-        }
-
         sendSingleByteAction(13); /* 13 = fetch list of user accounts */
     }
 
     void ServerConnection::shutdownServer() {
-        if (!_binarySendingMode) {
-            return; /* too early for that */
-        }
-
         sendSingleByteAction(99); /* 99 = shutdown server */
     }
 
     void ServerConnection::sendServerInstanceIdentifierRequest() {
-        if (!_binarySendingMode) {
-            return; /* too early for that */
-        }
-
         sendSingleByteAction(12); /* 12 = request for server instance UUID */
     }
 
     void ServerConnection::requestPlayerState() {
-        if (!_binarySendingMode) {
-            return; /* too early for that */
-        }
-
         sendSingleByteAction(10); /* 10 = request player state */
     }
 
     void ServerConnection::play() {
-        if (!_binarySendingMode) {
-            return; /* too early for that */
-        }
-
         sendSingleByteAction(1); /* 1 = play */
     }
 
     void ServerConnection::pause() {
-        if (!_binarySendingMode) {
-            return; /* too early for that */
-        }
-
         sendSingleByteAction(2); /* 2 = pause */
     }
 
     void ServerConnection::skip() {
-        if (!_binarySendingMode) {
-            return; /* too early for that */
-        }
-
         sendSingleByteAction(3); /* 3 = skip */
     }
 
     void ServerConnection::insertPauseAtFront() {
-        if (!_binarySendingMode) {
-            return; /* too early for that */
-        }
-
         sendSingleByteAction(4); /* 4 = insert pause at front */
     }
 
@@ -541,50 +515,26 @@ namespace PMP {
     }
 
     void ServerConnection::setVolume(int percentage) {
-        if (!_binarySendingMode) {
-            return; /* too early for that */
-        }
-
         sendSingleByteAction(100 + percentage); /* 100 to 200 = set volume */
     }
 
     void ServerConnection::enableDynamicMode() {
-        if (!_binarySendingMode) {
-            return; /* only supported in binary mode */
-        }
-
         sendSingleByteAction(20); /* 20 = enable dynamic mode */
     }
 
     void ServerConnection::disableDynamicMode() {
-        if (!_binarySendingMode) {
-            return; /* only supported in binary mode */
-        }
-
         sendSingleByteAction(21); /* 21 = disable dynamic mode */
     }
 
     void ServerConnection::expandQueue() {
-        if (!_binarySendingMode) {
-            return; /* only supported in binary mode */
-        }
-
         sendSingleByteAction(22); /* 22 = request queue expansion */
     }
 
     void ServerConnection::trimQueue() {
-        if (!_binarySendingMode) {
-            return; /* only supported in binary mode */
-        }
-
         sendSingleByteAction(23); /* 23 = request queue trim */
     }
 
     void ServerConnection::requestDynamicModeStatus() {
-        if (!_binarySendingMode) {
-            return; /* only supported in binary mode */
-        }
-
         sendSingleByteAction(11); /* 11 = request status of dynamic mode */
     }
 
@@ -599,6 +549,10 @@ namespace PMP {
         NetworkUtil::append4Bytes(message, seconds);
 
         sendBinaryMessage(message);
+    }
+
+    void ServerConnection::startFullIndexation() {
+        sendSingleByteAction(40); /* 40 = start full indexation */
     }
 
     void ServerConnection::sendInitiateNewUserAccountMessage(QString login,

@@ -101,6 +101,8 @@ namespace PMP {
         void switchToPersonalMode();
         void requestUserPlayingForMode();
 
+        void startFullIndexation();
+
     Q_SIGNALS:
         void connected();
         void cannotConnect(QAbstractSocket::SocketError error);

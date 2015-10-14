@@ -41,6 +41,8 @@ namespace PMP {
 
         void setMusicPaths(QList<QString> paths);
 
+        void startFullIndexation();
+
         void registerData(const FileHash& hash, const AudioData& data);
         void registerData(const FileData& data);
 
