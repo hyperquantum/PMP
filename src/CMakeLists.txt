@@ -33,8 +33,6 @@ set(PMP_COMMON_HEADERS
 set(PMP_SERVER_SOURCES
     server/connectedclient.cpp
     server/database.cpp
-    server/directoriesindexationtask.cpp
-    server/fileanalysistask.cpp
     server/generator.cpp
     server/history.cpp
     server/player.cpp
@@ -48,8 +46,6 @@ set(PMP_SERVER_SOURCES
 )
 set(PMP_SERVER_HEADERS
     server/connectedclient.h
-    server/directoriesindexationtask.h
-    server/fileanalysistask.h
     server/generator.h
     server/history.h
     server/player.h

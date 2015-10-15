@@ -22,10 +22,10 @@
 #include "common/filedata.h"
 
 #include "database.h"
-#include "directoriesindexationtask.h"
 
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QtConcurrent/QtConcurrent>
 #include <QtDebug>
 #include <QtGlobal>
 #include <QThreadPool>
@@ -48,7 +48,9 @@ namespace PMP {
 
     /* ========================== Resolver ========================== */
 
-    Resolver::Resolver() {
+    Resolver::Resolver()
+     : _lock(QReadWriteLock::Recursive)
+    {
         auto db = Database::getDatabaseForCurrentThread();
 
         if (db != nullptr) {
@@ -71,39 +73,95 @@ namespace PMP {
     }
 
     void Resolver::setMusicPaths(QList<QString> paths) {
+        QWriteLocker lock(&_lock);
         _musicPaths = paths;
     }
 
-    void Resolver::startFullIndexation() {
-        DirectoriesIndexationTask* indexTask =
-            new DirectoriesIndexationTask(this, _musicPaths);
-        QThreadPool::globalInstance()->start(indexTask);
+    QList<QString> Resolver::musicPaths() {
+        QReadLocker lock(&_lock);
+        QList<QString> paths = _musicPaths;
+        paths.detach();
+        return paths;
+    }
+
+    bool Resolver::startFullIndexation() {
+        if (!_fullIndexationRunning.testAndSetAcquire(0, 1)) {
+            return false; /* already running */
+        }
+
+        QtConcurrent::run(this, &Resolver::doFullIndexation);
+        return true;
+    }
+
+    void Resolver::doFullIndexation() {
+        qDebug() << "full indexation started";
+
+        QList<QString> musicPaths = this->musicPaths();
+
+        QList<QString> filesToAnalyze;
+
+        /* traverse filesystem to find music files */
+        Q_FOREACH(QString musicPath, musicPaths) {
+            QDirIterator it(musicPath, QDirIterator::Subdirectories); /* no symlinks */
+
+            while (it.hasNext()) {
+                QFileInfo entry(it.next());
+                if (!entry.isFile()) continue;
+                if (!FileData::supportsExtension(entry.suffix())) continue;
+
+                filesToAnalyze.append(entry.absoluteFilePath());
+            }
+        }
+
+        qDebug() << "full indexation:" << filesToAnalyze.size() << "files to analyze";
+
+        /* analyze the files we found */
+        Q_FOREACH(QString filePath, filesToAnalyze) {
+            QFileInfo info(filePath);
+
+            FileData data = FileData::analyzeFile(filePath);
+            if (!data.isValid()) {
+                qDebug() << "file analysis FAILED:" << filePath;
+                continue;
+            }
+
+            registerFile(data, filePath, info.size(), info.lastModified());
+        }
+
+        qDebug() << "full indexation finished.";
+        _fullIndexationRunning.storeRelease(0);
+        emit fullIndexationFinished();
     }
 
     uint Resolver::registerHash(const FileHash& hash) {
         if (hash.empty()) return 0; /* invalid hash */
 
+        QWriteLocker lock(&_lock);
+
         uint id = _hashToID.value(hash, 0);
 
         if (id > 0) return id; /* registered already */
 
-        Database* db = Database::instance();
-        if (db != 0) {
-            db->registerHash(hash);
-            id = db->getHashID(hash);
+        auto db = Database::getDatabaseForCurrentThread();
+        if (!db) return 0;
 
-            _idToHash[id] = hash;
-            _hashToID[hash] = id;
-            _hashList.append(hash);
+        db->registerHash(hash);
+        id = db->getHashID(hash);
+        if (id <= 0) return 0; /* something went wrong */
 
-            qDebug() << "got ID" << id << "for registered hash" << hash.dumpToString();
-        }
+        _idToHash[id] = hash;
+        _hashToID[hash] = id;
+        _hashList.append(hash);
+
+        qDebug() << "got ID" << id << "for registered hash" << hash.dumpToString();
 
         return id;
     }
 
     void Resolver::registerData(const FileHash& hash, const AudioData& data) {
         if (hash.empty()) { return; }
+
+        QWriteLocker lock(&_lock);
 
         registerHash(hash);
 
@@ -121,6 +179,8 @@ namespace PMP {
     void Resolver::registerData(const FileData& data) {
         if (data.hash().empty()) { return; }
 
+        QWriteLocker lock(&_lock);
+
         registerData(data.hash(), data.audio());
         _tagCache.insert(data.hash(), new TagData(data.tags()));
     }
@@ -129,6 +189,8 @@ namespace PMP {
                                 qint64 fileSize, QDateTime fileLastModified)
     {
         if (file.hash().empty()) { return; }
+
+        QWriteLocker lock(&_lock);
 
         registerData(file);
         registerFile(file.hash(), filename, fileSize, fileLastModified);
@@ -142,6 +204,8 @@ namespace PMP {
         {
             return;
         }
+
+        QWriteLocker lock(&_lock);
 
         uint hashID = registerHash(hash);
 
@@ -170,19 +234,23 @@ namespace PMP {
         _paths[filename] = file;
         //qDebug() << "will connect ID" << hashID << "to filename" << filename;
 
-        Database* db = Database::instance();
-        if (hashID > 0 && db != 0) {
+        auto db = Database::getDatabaseForCurrentThread();
+        if (hashID > 0 && db != nullptr) {
             /* save filename without path in the database */
             db->registerFilename(hashID, info.fileName());
         }
     }
 
     bool Resolver::haveAnyPathInfo(const FileHash& hash) {
+        QReadLocker lock(&_lock);
+
         QList<VerifiedFile*> paths = _filesForHash.values(hash);
         return !paths.empty();
     }
 
     bool Resolver::pathStillValid(const FileHash& hash, QString path) {
+        QWriteLocker lock(&_lock);
+
         VerifiedFile* file = _paths.value(path, 0);
         if (file) {
             if (file->stillValid()) return true;
@@ -209,6 +277,8 @@ namespace PMP {
     }
 
     QString Resolver::findPath(const FileHash& hash, bool fast) {
+        QWriteLocker lock(&_lock);
+
         QList<VerifiedFile*> files = _filesForHash.values(hash);
         qDebug() << "Resolver::findPath for hash " << hash.dumpToString();
         qDebug() << " candidates for hash: " << files.count();
@@ -229,8 +299,8 @@ namespace PMP {
         /* stop here if we had to get a result fast */
         if (fast) return "";
 
-        Database* db = Database::instance();
-        if (db == 0) {
+        auto db = Database::getDatabaseForCurrentThread();
+        if (!db) {
             return ""; /* database unusable */
         }
 
@@ -283,10 +353,13 @@ namespace PMP {
     }
 
     const AudioData& Resolver::findAudioData(const FileHash& hash) {
+        QReadLocker lock(&_lock);
         return _audioCache[hash];
     }
 
     const TagData* Resolver::findTagData(const FileHash& hash) {
+        QReadLocker lock(&_lock);
+
         QList<const TagData*> tags = _tagCache.values(hash);
 
         /* try to return a match with complete tags */
@@ -319,27 +392,15 @@ namespace PMP {
     }
 
     FileHash Resolver::getRandom() {
+        QReadLocker lock(&_lock);
         if (_hashList.empty()) return FileHash();
 
         int randomIndex = qrand() % _hashList.size();
         return _hashList[randomIndex];
     }
 
-    uint Resolver::getID(const FileHash& hash) const {
+    uint Resolver::getID(const FileHash& hash) {
+        QReadLocker lock(&_lock);
         return _hashToID.value(hash, 0);
     }
-
-    void Resolver::analysedFile(QString filename, qint64 fileSize,
-                                QDateTime fileLastModified, FileData* data)
-    {
-        if (data != 0) {
-            //qDebug() << "file analysis complete:" << filename;
-            registerFile(*data, filename, fileSize, fileLastModified);
-            delete data;
-        }
-        else {
-            qDebug() << "file analysis FAILED:" << filename;
-        }
-    }
-
 }

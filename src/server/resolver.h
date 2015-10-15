@@ -23,10 +23,12 @@
 #include "common/audiodata.h"
 #include "common/filehash.h"
 
+#include <QAtomicInt>
 #include <QDateTime>
 #include <QHash>
 #include <QMultiHash>
 #include <QObject>
+#include <QReadWriteLock>
 #include <QString>
 
 namespace PMP {
@@ -40,8 +42,9 @@ namespace PMP {
         Resolver();
 
         void setMusicPaths(QList<QString> paths);
+        QList<QString> musicPaths();
 
-        void startFullIndexation();
+        bool startFullIndexation();
 
         void registerData(const FileHash& hash, const AudioData& data);
         void registerData(const FileData& data);
@@ -60,11 +63,10 @@ namespace PMP {
 
         FileHash getRandom();
 
-        uint getID(const FileHash& hash) const;
+        uint getID(const FileHash& hash);
 
-    public slots:
-        void analysedFile(QString filename, qint64 fileSize, QDateTime fileLastModified,
-                          FileData* data);
+    Q_SIGNALS:
+        void fullIndexationFinished();
 
     private:
         struct VerifiedFile {
@@ -94,6 +96,10 @@ namespace PMP {
 
         uint registerHash(const FileHash& hash);
 
+        void doFullIndexation();
+
+        QReadWriteLock _lock;
+
         QList<QString> _musicPaths;
 
         QHash<uint, FileHash> _idToHash;
@@ -105,6 +111,8 @@ namespace PMP {
 
         QMultiHash<FileHash, VerifiedFile*> _filesForHash;
         QHash<QString, VerifiedFile*> _paths;
+
+        QAtomicInt _fullIndexationRunning;
     };
 }
 #endif

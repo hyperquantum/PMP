@@ -20,7 +20,6 @@
 #include "common/filedata.h"
 
 #include "database.h"
-#include "directoriesindexationtask.h"
 #include "generator.h"
 #include "history.h"
 #include "player.h"
