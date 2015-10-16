@@ -198,7 +198,6 @@ Only a list of ideas.  No promises!
 
   * Provide keyboard shortcuts for volume adjustment
   * Queue contextmenu option to duplicate the entry
-  * Ability to start a full indexation while the server is running
   * Store last track repetition avoidance interval for each user in the database
   * Ability to shut down the server from the GUI remote
   * Display last-heard time of each track in the remote
