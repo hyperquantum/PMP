@@ -205,7 +205,7 @@ namespace PMP {
         int iterationsLeft = maxIterations;
         int tracksToGenerate = howManyTracksToAdd;
 
-        Database* db = Database::instance();
+        auto db = Database::getDatabaseForCurrentThread();
 
         while (iterationsLeft > 0
                 && tracksToGenerate > 0

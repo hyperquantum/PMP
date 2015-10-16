@@ -32,7 +32,6 @@
 
 namespace PMP {
 
-    Database* Database::_instance = 0;
     QString Database::_hostname;
     QString Database::_username;
     QString Database::_password;
@@ -225,7 +224,6 @@ namespace PMP {
         }
 
         _initDoneSuccessfully = true;
-        _instance = new Database(db);
 
         out << " database initialization completed successfully" << endl << endl;
         return true;

@@ -74,8 +74,6 @@ namespace PMP {
     public:
         static bool init(QTextStream& out);
 
-        static Database* instance() { return _instance; }
-
         bool isConnectionOpen() const;
 
         void registerHash(const FileHash& hash);
@@ -118,7 +116,6 @@ namespace PMP {
 
         static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
 
-        static Database* _instance;
         static QString _hostname;
         static QString _username;
         static QString _password;

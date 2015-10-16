@@ -31,7 +31,7 @@ namespace PMP {
     }
 
     void Users::loadUsers() {
-        Database* db = Database::instance();
+        auto db = Database::getDatabaseForCurrentThread();
         if (!db) return;
 
         QList<User> users = db->getUsers();
@@ -101,7 +101,7 @@ namespace PMP {
             return InvalidAccountName;
         }
 
-        Database* db = Database::instance();
+        auto db = Database::getDatabaseForCurrentThread();
         if (db) {
             if (db->checkUserExists(accountName)) {
                 return AccountAlreadyExists;
@@ -133,7 +133,7 @@ namespace PMP {
             return QPair<Users::ErrorCode, quint32>(InvalidAccountName, 0);
         }
 
-        Database* db = Database::instance();
+        auto db = Database::getDatabaseForCurrentThread();
         if (db) {
             if (db->checkUserExists(accountName)) {
                 return QPair<Users::ErrorCode, quint32>(AccountAlreadyExists, 0);

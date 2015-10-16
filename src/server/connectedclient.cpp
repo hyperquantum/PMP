@@ -1116,8 +1116,8 @@ namespace PMP {
 
             /* FIXME: do this in another thread, it will slow down the main thread */
 
-            Database* db = Database::instance();
-            if (db == 0) {
+            auto db = Database::getDatabaseForCurrentThread();
+            if (!db) {
                 return; /* database unusable */
             }
 
