@@ -56,6 +56,7 @@ namespace PMP {
         void onLoginCancel();
 
         void onStartFullIndexationTriggered();
+        void onShutdownServerTriggered();
 
     private:
         void createMenus();
@@ -70,7 +71,10 @@ namespace PMP {
         LoginWidget* _loginWidget;
         MainWidget* _mainWidget;
 
+        QAction* _serverAdminAction;
+        QAction* _shutdownServerAction;
         QAction* _startFullIndexationAction;
+        QAction* _closeAction;
     };
 }
 #endif

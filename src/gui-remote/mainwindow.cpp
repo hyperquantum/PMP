@@ -53,23 +53,60 @@ namespace PMP {
     }
 
     void MainWindow::createMenus() {
-        QMenu* menu = menuBar()->addMenu(tr("&PMP"));
+        /* Actions */
 
-        _startFullIndexationAction = menu->addAction(tr("&Start full indexation"));
-        _startFullIndexationAction->setVisible(false); /* made visible after connected */
+        _shutdownServerAction = new QAction(tr("&Shutdown server"), this);
+        connect(
+            _shutdownServerAction, &QAction::triggered,
+            this, &MainWindow::onShutdownServerTriggered
+        );
+
+        _startFullIndexationAction = new QAction(tr("&Start full indexation"), this);
+        _startFullIndexationAction->setVisible(false); /* needs active connection */
         connect(
             _startFullIndexationAction, &QAction::triggered,
             this, &MainWindow::onStartFullIndexationTriggered
         );
 
-        menu->addSeparator();
+        _closeAction = new QAction(tr("&Close remote"), this);
+        connect(_closeAction, &QAction::triggered, this, &MainWindow::close);
 
-        QAction* closeAction = menu->addAction(tr("&Close remote"));
-        connect(closeAction, &QAction::triggered, this, &MainWindow::close);
+        /* Menus */
+
+        QMenu* menu = menuBar()->addMenu(tr("&PMP"));
+
+        menu->addAction(_startFullIndexationAction);
+
+        QMenu* serverAdminMenu = menu->addMenu(tr("Server &administration"));
+        _serverAdminAction = serverAdminMenu->menuAction();
+        _serverAdminAction->setVisible(false); /* needs active connection */
+
+        serverAdminMenu->addAction(_shutdownServerAction);
+
+        menu->addSeparator();
+        menu->addAction(_closeAction);
     }
 
     void MainWindow::onStartFullIndexationTriggered() {
         if (_connection) { _connection->startFullIndexation(); }
+    }
+
+    void MainWindow::onShutdownServerTriggered() {
+        QMessageBox msgBox;
+        msgBox.setIcon(QMessageBox::Warning);
+        msgBox.setText(tr("You are about to shutdown the PMP server."));
+        msgBox.setInformativeText(
+            tr("All remotes (clients) connected to this server will be closed,"
+               " and the server will become unavailable. "
+               "Are you sure you wish to continue?")
+        );
+        msgBox.setStandardButtons(QMessageBox::Ok | QMessageBox::Cancel);
+        msgBox.setDefaultButton(QMessageBox::Cancel);
+        int buttonClicked = msgBox.exec();
+
+        if (buttonClicked == QMessageBox::Cancel) return;
+
+        _connection->shutdownServer();
     }
 
     void MainWindow::onDoConnect(QString server, uint port) {
@@ -116,21 +153,27 @@ namespace PMP {
     }
 
     void MainWindow::onCannotConnect(QAbstractSocket::SocketError error) {
-        QMessageBox::warning(this, "Connection failure", "Failed to connect to that server.");
+        QMessageBox::warning(
+            this, tr("Connection failure"), tr("Failed to connect to that server.")
+        );
 
         /* let the user try to correct any possible mistake */
         _connectionWidget->reenableFields();
     }
 
     void MainWindow::onInvalidServer() {
-        QMessageBox::warning(this, "Connection failure", "This is not a valid PMP server!");
+        QMessageBox::warning(
+            this, tr("Connection failure"), tr("This is not a valid PMP server!")
+        );
 
         /* let the user try to correct any possible mistake */
         _connectionWidget->reenableFields();
     }
 
     void MainWindow::onConnectionBroken(QAbstractSocket::SocketError error) {
-        QMessageBox::warning(this, "Connection failure", "Connection to the server was lost!");
+        QMessageBox::warning(
+            this, tr("Connection failure"), tr("Connection to the server was lost!")
+        );
         this->close();
     }
 
@@ -187,6 +230,7 @@ namespace PMP {
         showMainWidget();
 
         _startFullIndexationAction->setVisible(true);
+        _serverAdminAction->setVisible(true);
     }
 
     void MainWindow::onLoginCancel() {
