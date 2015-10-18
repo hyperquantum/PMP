@@ -45,6 +45,7 @@ namespace PMP {
             SimpleResultMessage = 14,
             UserLoginSaltMessage = 15,
             UserPlayingForModeMessage = 16,
+            ServerEventNotificationMessage = 17,
         };
 
         enum ClientMessageType {

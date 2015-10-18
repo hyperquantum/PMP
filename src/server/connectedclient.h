@@ -70,6 +70,7 @@ namespace PMP {
         void executeTextCommand(QString const& commandText);
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
+        void sendEventNotificationMessage(quint8 event);
         void sendServerInstanceIdentifier();
         void sendUsersList();
         void sendQueueContentMessage(quint32 startOffset, quint8 length);

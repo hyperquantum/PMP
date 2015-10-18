@@ -128,6 +128,14 @@ namespace PMP {
             _connection, &ServerConnection::connectionBroken,
             this, &MainWindow::onConnectionBroken
         );
+        connect(
+            _connection, &ServerConnection::fullIndexationStarted,
+            [this] { _startFullIndexationAction->setEnabled(false); }
+        );
+        connect(
+            _connection, &ServerConnection::fullIndexationFinished,
+            [this] { _startFullIndexationAction->setEnabled(_connection->isLoggedIn()); }
+        );
 
         _connection->connectToHost(server, port);
     }
@@ -226,9 +234,12 @@ namespace PMP {
     }
 
     void MainWindow::onLoggedIn(QString login) {
+        _connection->requestFullIndexationRunningStatus();
+
         _loginWidget = 0;
         showMainWidget();
 
+        _startFullIndexationAction->setEnabled(false);
         _startFullIndexationAction->setVisible(true);
         _serverAdminAction->setVisible(true);
     }

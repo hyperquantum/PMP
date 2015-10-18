@@ -555,6 +555,10 @@ namespace PMP {
         sendSingleByteAction(40); /* 40 = start full indexation */
     }
 
+    void ServerConnection::requestFullIndexationRunningStatus() {
+        sendSingleByteAction(15); /* 15 = request for full indexation running status */
+    }
+
     void ServerConnection::sendInitiateNewUserAccountMessage(QString login,
                                                              quint32 clientReference)
     {
@@ -681,6 +685,30 @@ namespace PMP {
         int messageType = NetworkUtil::get2Bytes(message, 0);
 
         switch ((NetworkProtocol::ServerMessageType)messageType) {
+        case NetworkProtocol::ServerEventNotificationMessage:
+        {
+            if (messageLength != 4) {
+                return; /* invalid message */
+            }
+
+            quint8 event = NetworkUtil::getByte(message, 2);
+            //quint8 eventArg = NetworkUtil::getByte(message, 3);
+
+            //qDebug() << "received server event" << event << "with arg" << eventArg;
+
+            switch (event) {
+            case 1:
+                emit fullIndexationStarted();
+                break;
+            case 2:
+                emit fullIndexationFinished();
+                break;
+            default:
+                qDebug() << "received unknown server event:" << event;
+                break;
+            }
+        }
+            break;
         case NetworkProtocol::PlayerStateMessage:
         {
             if (messageLength != 20) {

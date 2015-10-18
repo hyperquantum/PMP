@@ -49,8 +49,13 @@ namespace PMP {
     /* ========================== Resolver ========================== */
 
     Resolver::Resolver()
-     : _lock(QReadWriteLock::Recursive)
+     : _lock(QReadWriteLock::Recursive), _fullIndexationWatcher(this)
     {
+        connect(
+            &_fullIndexationWatcher, &QFutureWatcher<void>::finished,
+            this, &Resolver::fullIndexationFinished
+        );
+
         auto db = Database::getDatabaseForCurrentThread();
 
         if (db != nullptr) {
@@ -84,12 +89,19 @@ namespace PMP {
         return paths;
     }
 
+    bool Resolver::fullIndexationRunning() {
+        return _fullIndexationRunning.load() != 0;
+    }
+
     bool Resolver::startFullIndexation() {
         if (!_fullIndexationRunning.testAndSetAcquire(0, 1)) {
             return false; /* already running */
         }
 
-        QtConcurrent::run(this, &Resolver::doFullIndexation);
+        emit fullIndexationStarted();
+        QFuture<void> future = QtConcurrent::run(this, &Resolver::doFullIndexation);
+        _fullIndexationWatcher.setFuture(future);
+
         return true;
     }
 
@@ -130,7 +142,6 @@ namespace PMP {
 
         qDebug() << "full indexation finished.";
         _fullIndexationRunning.storeRelease(0);
-        emit fullIndexationFinished();
     }
 
     uint Resolver::registerHash(const FileHash& hash) {

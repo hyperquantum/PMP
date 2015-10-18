@@ -44,6 +44,9 @@ namespace PMP {
        _binaryMode(false), _clientProtocolNo(-1), _lastSentNowPlayingID(0),
        _userLoggedIn(0)
     {
+        auto queue = &player->queue();
+        auto resolver = &_player->resolver();
+
         connect(
             server, &Server::shuttingDown,
             this, &ConnectedClient::terminateConnection
@@ -82,10 +85,8 @@ namespace PMP {
         );
         connect(
             player, &Player::userPlayingForChanged,
-            [=](quint32 user) { sendUserPlayingForModeMessage(); }
+            [this](quint32 user) { sendUserPlayingForModeMessage(); }
         );
-
-        Queue* queue = &player->queue();
 
         connect(
             queue, &Queue::entryRemoved,
@@ -98,6 +99,15 @@ namespace PMP {
         connect(
             queue, &Queue::entryMoved,
             this, &ConnectedClient::queueEntryMoved
+        );
+
+        connect(
+            resolver, &Resolver::fullIndexationStarted,
+            [this] { sendEventNotificationMessage(1); }
+        );
+        connect(
+            resolver, &Resolver::fullIndexationFinished,
+            [this] { sendEventNotificationMessage(2); }
         );
 
         /* send greeting */
@@ -328,8 +338,12 @@ namespace PMP {
             return;
         }
 
-        quint32 length = message.length();
+        if (!_binaryMode) {
+            qDebug() << "sendBinaryMessage: cannot send this when not in binary mode";
+            return; /* only supported in binary mode */
+        }
 
+        quint32 length = message.length();
         qDebug() << "   need to send a binary message of length" << length;
 
         char lengthArr[4];
@@ -400,10 +414,6 @@ namespace PMP {
     }
 
     void ConnectedClient::sendDynamicModeStatusMessage() {
-        if (!_binaryMode) {
-            return; // only supported in binary mode
-        }
-
         quint8 enabled = _generator->enabled() ? 1 : 0;
         quint32 noRepetitionSpan = (quint32)_generator->noRepetitionSpan();
 
@@ -417,10 +427,6 @@ namespace PMP {
     }
 
     void ConnectedClient::sendUserPlayingForModeMessage() {
-        if (!_binaryMode) {
-            return; // only supported in binary mode
-        }
-
         quint32 user = _player->userPlayingFor();
         QString login = _users->getUserLogin(user);
         QByteArray loginBytes = login.toUtf8();
@@ -436,11 +442,19 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendServerInstanceIdentifier() {
-        if (!_binaryMode) {
-            return; // only supported in binary mode
-        }
+    void ConnectedClient::sendEventNotificationMessage(quint8 event) {
+        qDebug() << "   sending server event number" << event;
 
+        QByteArray message;
+        message.reserve(2 + 2);
+        NetworkUtil::append2Bytes(message, NetworkProtocol::ServerEventNotificationMessage);
+        NetworkUtil::appendByte(message, event);
+        NetworkUtil::appendByte(message, 0); /* unused */
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendServerInstanceIdentifier() {
         QUuid uuid = _server->uuid();
 
         QByteArray message;
@@ -452,10 +466,6 @@ namespace PMP {
     }
 
     void ConnectedClient::sendUsersList() {
-        if (!_binaryMode) {
-            return; // only supported in binary mode
-        }
-
         QList<UserIdAndLogin> users = _users->getUsers();
 
         QByteArray message;
@@ -955,6 +965,15 @@ namespace PMP {
             case 14:
                 qDebug() << "received request for PUBLIC/PERSONAL mode status";
                 sendUserPlayingForModeMessage();
+                break;
+            case 15:
+                qDebug() << "received request for (full) indexation running status";
+                if (_player->resolver().fullIndexationRunning()) {
+                    sendEventNotificationMessage(1);
+                }
+                else {
+                    sendEventNotificationMessage(2);
+                }
                 break;
             case 20: /* enable dynamic mode */
                 qDebug() << "received ENABLE DYNAMIC MODE command";

@@ -57,6 +57,7 @@ namespace PMP {
         void connectToHost(QString const& host, quint16 port);
 
         bool isConnected() const { return _state == BinaryMode; }
+        bool isLoggedIn() const { return userLoggedInId() > 0; }
 
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
@@ -102,6 +103,7 @@ namespace PMP {
         void requestUserPlayingForMode();
 
         void startFullIndexation();
+        void requestFullIndexationRunningStatus();
 
     Q_SIGNALS:
         void connected();
@@ -143,6 +145,9 @@ namespace PMP {
         void userLoginError(QString login, UserLoginError errorType);
 
         void receivedUserPlayingFor(quint32 userId, QString userLogin);
+
+        void fullIndexationStarted();
+        void fullIndexationFinished();
 
     private slots:
         void onConnected();

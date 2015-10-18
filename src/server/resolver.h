@@ -25,6 +25,7 @@
 
 #include <QAtomicInt>
 #include <QDateTime>
+#include <QFutureWatcher>
 #include <QHash>
 #include <QMultiHash>
 #include <QObject>
@@ -45,6 +46,7 @@ namespace PMP {
         QList<QString> musicPaths();
 
         bool startFullIndexation();
+        bool fullIndexationRunning();
 
         void registerData(const FileHash& hash, const AudioData& data);
         void registerData(const FileData& data);
@@ -66,6 +68,7 @@ namespace PMP {
         uint getID(const FileHash& hash);
 
     Q_SIGNALS:
+        void fullIndexationStarted();
         void fullIndexationFinished();
 
     private:
@@ -113,6 +116,7 @@ namespace PMP {
         QHash<QString, VerifiedFile*> _paths;
 
         QAtomicInt _fullIndexationRunning;
+        QFutureWatcher<void> _fullIndexationWatcher;
     };
 }
 #endif
