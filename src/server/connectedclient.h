@@ -41,6 +41,8 @@ namespace PMP {
         ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                         Generator* generator, Users* users);
 
+        ~ConnectedClient();
+
     Q_SIGNALS:
 
     private slots:
@@ -63,6 +65,8 @@ namespace PMP {
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         void queueEntryAdded(quint32 offset, quint32 queueID);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
+        void onUserPlayingForChanged(quint32 user);
+        void onFullIndexationRunStatusChanged(bool running);
 
     private:
         void readTextCommands();

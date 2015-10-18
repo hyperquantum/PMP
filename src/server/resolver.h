@@ -23,7 +23,6 @@
 #include "common/audiodata.h"
 #include "common/filehash.h"
 
-#include <QAtomicInt>
 #include <QDateTime>
 #include <QFutureWatcher>
 #include <QHash>
@@ -67,9 +66,11 @@ namespace PMP {
 
         uint getID(const FileHash& hash);
 
+    private slots:
+        void onFullIndexationFinished();
+
     Q_SIGNALS:
-        void fullIndexationStarted();
-        void fullIndexationFinished();
+        void fullIndexationRunStatusChanged(bool running);
 
     private:
         struct VerifiedFile {
@@ -115,7 +116,7 @@ namespace PMP {
         QMultiHash<FileHash, VerifiedFile*> _filesForHash;
         QHash<QString, VerifiedFile*> _paths;
 
-        QAtomicInt _fullIndexationRunning;
+        bool _fullIndexationRunning;
         QFutureWatcher<void> _fullIndexationWatcher;
     };
 }

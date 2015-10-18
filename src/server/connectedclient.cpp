@@ -85,7 +85,7 @@ namespace PMP {
         );
         connect(
             player, &Player::userPlayingForChanged,
-            [this](quint32 user) { sendUserPlayingForModeMessage(); }
+            this, &ConnectedClient::onUserPlayingForChanged
         );
 
         connect(
@@ -102,24 +102,26 @@ namespace PMP {
         );
 
         connect(
-            resolver, &Resolver::fullIndexationStarted,
-            [this] { sendEventNotificationMessage(1); }
-        );
-        connect(
-            resolver, &Resolver::fullIndexationFinished,
-            [this] { sendEventNotificationMessage(2); }
+            resolver, &Resolver::fullIndexationRunStatusChanged,
+            this, &ConnectedClient::onFullIndexationRunStatusChanged
         );
 
         /* send greeting */
         sendTextCommand("PMP 0.1 Welcome!");
     }
 
+    ConnectedClient::~ConnectedClient() {
+        qDebug() << "ConnectedClient: destructor called";
+        _socket->deleteLater();
+    }
+
     void ConnectedClient::terminateConnection() {
+        qDebug() << "terminateConnection() called";
         if (_terminated) return;
+        qDebug() << " will terminate and cleanup connection now";
         _terminated = true;
         _socket->close();
         _textReadBuffer.clear();
-        _socket->deleteLater();
         this->deleteLater();
     }
 
@@ -762,6 +764,14 @@ namespace PMP {
         sendDynamicModeStatusMessage();
     }
 
+    void ConnectedClient::onUserPlayingForChanged(quint32 user) {
+        sendUserPlayingForModeMessage();
+    }
+
+    void ConnectedClient::onFullIndexationRunStatusChanged(bool running) {
+        sendEventNotificationMessage(running ? 1 : 2);
+    }
+
     void ConnectedClient::playerStateChanged(Player::State state) {
         if (_binaryMode) {
             sendStateInfo();
@@ -968,12 +978,9 @@ namespace PMP {
                 break;
             case 15:
                 qDebug() << "received request for (full) indexation running status";
-                if (_player->resolver().fullIndexationRunning()) {
-                    sendEventNotificationMessage(1);
-                }
-                else {
-                    sendEventNotificationMessage(2);
-                }
+                onFullIndexationRunStatusChanged(
+                    _player->resolver().fullIndexationRunning()
+                );
                 break;
             case 20: /* enable dynamic mode */
                 qDebug() << "received ENABLE DYNAMIC MODE command";
