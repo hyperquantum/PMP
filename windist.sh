@@ -66,12 +66,15 @@ fi
 
 echo "Copying files..."
 
-# README.txt was renamed to README.md, so we want to overwrite the old file in
-# existing installations.
+# Provide placeholders for old files that have been renamed. We want to
+# overwrite the file with the old name in existing installations.
+#  - README.txt has been renamed to README.md
 echo "This file is obsolete. Open README.md instead." > "$DIST_DIR"/README.txt
+#  - BUGS.txt has been renamed to TODOs.txt
+echo "This file is obsolete. Open TODOs.txt instead." > "$DIST_DIR"/BUGS.txt
 
 cp "$SRC_DIR"/README* "$DIST_DIR"/
-cp "$SRC_DIR"/BUGS* "$DIST_DIR"/
+cp "$SRC_DIR"/TODOs* "$DIST_DIR"/
 cp "$SRC_DIR"/*LICENSE* "$DIST_DIR"/
 
 cp "$BIN_DIR"/src/PMP-Server.exe "$DIST_DIR"/
@@ -107,9 +110,12 @@ cp -r "$QT_PLUGINS_DIR"/sqldrivers "$DIST_DIR"
 
 chmod -R +r "$DIST_DIR"
 
+# files that are part of the incremental archive
 cp "$DIST_DIR"/*.exe "$INCR_TMPDIR"/
 cp "$DIST_DIR"/*LICENSE* "$INCR_TMPDIR"/
 cp "$DIST_DIR"/README* "$INCR_TMPDIR"/
+cp "$DIST_DIR"/BUGS* "$INCR_TMPDIR"/
+cp "$DIST_DIR"/TODOs* "$INCR_TMPDIR"/
 
 # (6) create zip files
 
