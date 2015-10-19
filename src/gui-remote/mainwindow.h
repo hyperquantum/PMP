@@ -60,6 +60,7 @@ namespace PMP {
 
     private:
         void createMenus();
+        void updateStatusBar();
         void showUserAccountPicker();
         void showLoginWidget(QString login);
         void showMainWidget();

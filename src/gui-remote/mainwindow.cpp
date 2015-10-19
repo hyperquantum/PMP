@@ -31,6 +31,7 @@
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QStatusBar>
 
 namespace PMP {
 
@@ -40,6 +41,7 @@ namespace PMP {
        _connection(0), _userPickerWidget(0), _loginWidget(0), _mainWidget(0)
     {
         createMenus();
+        updateStatusBar();
 
         setCentralWidget(_connectionWidget);
         connect(
@@ -85,6 +87,22 @@ namespace PMP {
 
         menu->addSeparator();
         menu->addAction(_closeAction);
+    }
+
+    void MainWindow::updateStatusBar() {
+        auto bar = this->statusBar();
+
+        if (!_connection || !_connection->isConnected()) {
+            bar->showMessage(tr("Not connected."));
+        }
+        else if (_connection->userLoggedInId() <= 0) {
+            bar->showMessage(tr("Connected."));
+        }
+        else {
+            bar->showMessage(
+                QString(tr("Logged in as %1")).arg(_connection->userLoggedInName())
+            );
+        }
     }
 
     void MainWindow::onStartFullIndexationTriggered() {
@@ -142,6 +160,7 @@ namespace PMP {
 
     void MainWindow::onConnected() {
         showUserAccountPicker();
+        updateStatusBar();
     }
 
     void MainWindow::showUserAccountPicker() {
@@ -179,6 +198,8 @@ namespace PMP {
     }
 
     void MainWindow::onConnectionBroken(QAbstractSocket::SocketError error) {
+        updateStatusBar();
+
         QMessageBox::warning(
             this, tr("Connection failure"), tr("Connection to the server was lost!")
         );
@@ -234,6 +255,7 @@ namespace PMP {
     }
 
     void MainWindow::onLoggedIn(QString login) {
+        updateStatusBar();
         _connection->requestFullIndexationRunningStatus();
 
         _loginWidget = 0;
