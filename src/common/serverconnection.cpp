@@ -468,6 +468,20 @@ namespace PMP {
         }
     }
 
+    void ServerConnection::onFullIndexationRunningStatusReceived(bool running) {
+        auto oldValue = _doingFullIndexation;
+        _doingFullIndexation = running;
+
+        emit fullIndexationStatusReceived(running);
+
+        if (oldValue.isKnown()) {
+            if (running)
+                emit fullIndexationStarted();
+            else
+                emit fullIndexationFinished();
+        }
+    }
+
     void ServerConnection::sendUserAccountsFetchRequest() {
         sendSingleByteAction(13); /* 13 = fetch list of user accounts */
     }
@@ -692,16 +706,16 @@ namespace PMP {
             }
 
             quint8 event = NetworkUtil::getByte(message, 2);
-            //quint8 eventArg = NetworkUtil::getByte(message, 3);
+            quint8 eventArg = NetworkUtil::getByte(message, 3);
 
-            //qDebug() << "received server event" << event << "with arg" << eventArg;
+            qDebug() << "received server event" << event << "with arg" << eventArg;
 
             switch (event) {
             case 1:
-                emit fullIndexationStarted();
+                onFullIndexationRunningStatusReceived(true);
                 break;
             case 2:
-                emit fullIndexationFinished();
+                onFullIndexationRunningStatusReceived(false);
                 break;
             default:
                 qDebug() << "received unknown server event:" << event;

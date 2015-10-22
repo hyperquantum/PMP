@@ -20,6 +20,8 @@
 #ifndef PMP_SERVERCONNECTION_H
 #define PMP_SERVERCONNECTION_H
 
+#include "tribool.h"
+
 #include <QByteArray>
 #include <QList>
 #include <QObject>
@@ -61,6 +63,8 @@ namespace PMP {
 
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
+
+        TriBool doingFullIndexation() const { return _doingFullIndexation; }
 
     public slots:
         void shutdownServer();
@@ -146,6 +150,7 @@ namespace PMP {
 
         void receivedUserPlayingFor(quint32 userId, QString userLogin);
 
+        void fullIndexationStatusReceived(bool running);
         void fullIndexationStarted();
         void fullIndexationFinished();
 
@@ -183,6 +188,8 @@ namespace PMP {
         void handleUserLoginResult(quint16 errorType, quint32 intData,
                                    QByteArray const& blobData);
 
+        void onFullIndexationRunningStatusReceived(bool running);
+
         State _state;
         QTcpSocket _socket;
         QByteArray _readBuffer;
@@ -197,6 +204,7 @@ namespace PMP {
         QString _userLoggingInPassword;
         quint32 _userLoggedInId;
         QString _userLoggedInName;
+        TriBool _doingFullIndexation;
     };
 }
 #endif

@@ -28,20 +28,33 @@
 #include "userpickerwidget.h"
 
 #include <QAction>
+#include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
 #include <QStatusBar>
+#include <QTimer>
 
 namespace PMP {
 
     MainWindow::MainWindow(QWidget* parent)
      : QMainWindow(parent),
+       _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
        _connection(0), _userPickerWidget(0), _loginWidget(0), _mainWidget(0)
     {
         createMenus();
-        updateStatusBar();
+
+        _leftStatus = new QLabel("", this);
+        _leftStatus->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+        _rightStatus = new QLabel("", this);
+        _rightStatus->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+        statusBar()->addPermanentWidget(_leftStatus, 1);
+        statusBar()->addPermanentWidget(_rightStatus, 1);
+        connect(
+            _leftStatusTimer, &QTimer::timeout, this, &MainWindow::onLeftStatusTimeout
+        );
+        updateRightStatus();
 
         setCentralWidget(_connectionWidget);
         connect(
@@ -89,20 +102,34 @@ namespace PMP {
         menu->addAction(_closeAction);
     }
 
-    void MainWindow::updateStatusBar() {
-        auto bar = this->statusBar();
-
+    void MainWindow::updateRightStatus() {
         if (!_connection || !_connection->isConnected()) {
-            bar->showMessage(tr("Not connected."));
+            _rightStatus->setText(tr("Not connected."));
         }
         else if (_connection->userLoggedInId() <= 0) {
-            bar->showMessage(tr("Connected."));
+            _rightStatus->setText(tr("Connected."));
+        }
+        else if (_connection->doingFullIndexation().toBool()) {
+            _rightStatus->setText(tr("Full indexation running..."));
         }
         else {
-            bar->showMessage(
-                QString(tr("Logged in as %1")).arg(_connection->userLoggedInName())
+            _rightStatus->setText(
+                QString(tr("Logged in as %1.")).arg(_connection->userLoggedInName())
             );
         }
+    }
+
+    void MainWindow::setLeftStatus(int intervalMs, QString text) {
+        _leftStatus->setText(text);
+
+        /* make the text disappear again after some time */
+        _leftStatusTimer->stop();
+        _leftStatusTimer->start(intervalMs);
+    }
+
+    void MainWindow::onLeftStatusTimeout() {
+        _leftStatusTimer->stop();
+        _leftStatus->setText("");
     }
 
     void MainWindow::onStartFullIndexationTriggered() {
@@ -147,12 +174,26 @@ namespace PMP {
             this, &MainWindow::onConnectionBroken
         );
         connect(
+            _connection, &ServerConnection::fullIndexationStatusReceived,
+            [this](bool running) {
+                _startFullIndexationAction->setEnabled(
+                    !running && _connection->isLoggedIn()
+                );
+                updateRightStatus();
+            }
+        );
+        connect(
             _connection, &ServerConnection::fullIndexationStarted,
-            [this] { _startFullIndexationAction->setEnabled(false); }
+            [this] {
+                setLeftStatus(3000, tr("Full indexation started"));
+            }
         );
         connect(
             _connection, &ServerConnection::fullIndexationFinished,
-            [this] { _startFullIndexationAction->setEnabled(_connection->isLoggedIn()); }
+            [this] {
+            qDebug() << "fullIndexationFinished triggered";
+                setLeftStatus(5000, tr("Full indexation finished"));
+            }
         );
 
         _connection->connectToHost(server, port);
@@ -160,7 +201,7 @@ namespace PMP {
 
     void MainWindow::onConnected() {
         showUserAccountPicker();
-        updateStatusBar();
+        updateRightStatus();
     }
 
     void MainWindow::showUserAccountPicker() {
@@ -198,7 +239,7 @@ namespace PMP {
     }
 
     void MainWindow::onConnectionBroken(QAbstractSocket::SocketError error) {
-        updateStatusBar();
+        updateRightStatus();
 
         QMessageBox::warning(
             this, tr("Connection failure"), tr("Connection to the server was lost!")
@@ -255,7 +296,7 @@ namespace PMP {
     }
 
     void MainWindow::onLoggedIn(QString login) {
-        updateStatusBar();
+        updateRightStatus();
         _connection->requestFullIndexationRunningStatus();
 
         _loginWidget = 0;

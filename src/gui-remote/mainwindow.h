@@ -24,6 +24,8 @@
 #include <QMainWindow>
 
 QT_FORWARD_DECLARE_CLASS(QAction)
+QT_FORWARD_DECLARE_CLASS(QLabel)
+QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP {
 
@@ -58,12 +60,19 @@ namespace PMP {
         void onStartFullIndexationTriggered();
         void onShutdownServerTriggered();
 
+        void onLeftStatusTimeout();
+
     private:
         void createMenus();
-        void updateStatusBar();
+        void updateRightStatus();
+        void setLeftStatus(int intervalMs, QString text);
         void showUserAccountPicker();
         void showLoginWidget(QString login);
         void showMainWidget();
+
+        QLabel* _leftStatus;
+        QLabel* _rightStatus;
+        QTimer* _leftStatusTimer;
 
         ConnectionWidget* _connectionWidget;
         ServerConnection* _connection;
