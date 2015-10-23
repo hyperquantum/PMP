@@ -296,7 +296,8 @@ namespace PMP {
         /* is it a real track, not a short sound file? */
         if (trackLengthSeconds < 15 && trackLengthSeconds >= 0) return false;
 
-        candidate->setLengthSeconds(trackLengthSeconds);
+        if (trackLengthSeconds >= 0)
+            candidate->setLengthSeconds(trackLengthSeconds);
 
         return true;
     }

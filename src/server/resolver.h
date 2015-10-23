@@ -47,12 +47,7 @@ namespace PMP {
         bool startFullIndexation();
         bool fullIndexationRunning();
 
-        void registerData(const FileHash& hash, const AudioData& data);
-        void registerData(const FileData& data);
-
         void registerFile(const FileData& file, const QString& filename, qint64 fileSize,
-                          QDateTime fileLastModified);
-        void registerFile(const FileHash& hash, const QString& filename, qint64 fileSize,
                           QDateTime fileLastModified);
 
         bool haveAnyPathInfo(const FileHash& hash);
@@ -98,7 +93,44 @@ namespace PMP {
             bool stillValid();
         };
 
-        uint registerHash(const FileHash& hash);
+        class HashKnowledge {
+            FileHash _hash;
+            uint _hashId;
+            AudioData _audio;
+            QList<const TagData*> _tags;
+
+        public:
+            HashKnowledge(FileHash hash, uint hashId)
+             : _hash(hash), _hashId(hashId)
+            {
+                //
+            }
+
+            const FileHash& hash() const { return _hash; }
+
+            uint id() const { return _hashId; }
+            void setId(uint id) { _hashId = id; }
+
+            const AudioData& audio() const { return _audio; }
+            AudioData& audio() { return _audio; }
+
+            void addTags(const TagData* t) {
+                _tags.append(t); /* TODO: this leads to (many) duplicates */
+            }
+
+            //operator const FileHash& () const { return _hash; }
+
+            TagData const* findBestTag();
+
+        };
+
+        HashKnowledge* registerHash(const FileHash& hash);
+
+        HashKnowledge* registerData(const FileHash& hash, const AudioData& data);
+        HashKnowledge* registerData(const FileData& data);
+
+        void registerFile(HashKnowledge* hash, const QString& filename, qint64 fileSize,
+                          QDateTime fileLastModified);
 
         void doFullIndexation();
 
@@ -107,17 +139,16 @@ namespace PMP {
         QList<QString> _musicPaths;
 
         QHash<uint, FileHash> _idToHash;
-        QHash<FileHash, uint> _hashToID;
         QList<FileHash> _hashList;
-
-        QHash<FileHash, AudioData> _audioCache;
-        QMultiHash<FileHash, const TagData*> _tagCache;
+        QHash<FileHash, HashKnowledge*> _hashKnowledge;
 
         QMultiHash<FileHash, VerifiedFile*> _filesForHash;
         QHash<QString, VerifiedFile*> _paths;
 
         bool _fullIndexationRunning;
         QFutureWatcher<void> _fullIndexationWatcher;
+
+        AudioData _emptyAudioData;
     };
 }
 #endif

@@ -46,6 +46,37 @@ namespace PMP {
         return true;
     }
 
+    /* ========================== HashKnowledge ========================= */
+
+    TagData const* Resolver::HashKnowledge::findBestTag() {
+        /* try to return a match with complete tags */
+        const TagData* result = nullptr;
+        int resultScore = -1;
+        Q_FOREACH (const TagData* tag, _tags) {
+            int score = 0;
+
+            QString title = tag->title();
+            QString artist = tag->artist();
+
+            if (title.length() > 0) {
+                score += 100000;
+                score += 8 * title.length();
+            }
+
+            if (artist.length() > 0) {
+                score += 80000;
+                score += artist.length();
+            }
+
+            if (score <= resultScore) { continue; }
+
+            result = tag;
+            resultScore = score;
+        }
+
+        return result;
+    }
+
     /* ========================== Resolver ========================== */
 
     Resolver::Resolver()
@@ -64,8 +95,10 @@ namespace PMP {
 
             QPair<uint, FileHash> pair;
             foreach(pair, hashes) {
-                _idToHash[pair.first] = pair.second;
-                _hashToID[pair.second] = pair.first;
+                auto knowledge = new HashKnowledge(pair.second, pair.first);
+                _hashKnowledge.insert(pair.second, knowledge);
+                _idToHash.insert(pair.first, pair.second);
+                //_hashToID[pair.second] = pair.first;
                 _hashList.append(pair.second);
             }
 
@@ -150,56 +183,69 @@ namespace PMP {
         qDebug() << "full indexation finished.";
     }
 
-    uint Resolver::registerHash(const FileHash& hash) {
-        if (hash.empty()) return 0; /* invalid hash */
+    Resolver::HashKnowledge* Resolver::registerHash(const FileHash& hash) {
+        if (hash.empty()) return nullptr; /* invalid hash */
 
         QWriteLocker lock(&_lock);
 
-        uint id = _hashToID.value(hash, 0);
-
-        if (id > 0) return id; /* registered already */
+        auto knowledge = _hashKnowledge.value(hash, nullptr);
+        if (!knowledge) {
+            knowledge = new HashKnowledge(hash, 0);
+            _hashKnowledge[hash] = knowledge;
+        }
+        else if (knowledge->id() > 0) {
+            return knowledge; /* registered already */
+        }
 
         auto db = Database::getDatabaseForCurrentThread();
-        if (!db) return 0;
+        if (!db) return knowledge; /* database not available */
 
         db->registerHash(hash);
-        id = db->getHashID(hash);
-        if (id <= 0) return 0; /* something went wrong */
+        uint id = db->getHashID(hash);
+        if (id <= 0) return knowledge; /* something went wrong */
 
+        knowledge->setId(id);
         _idToHash[id] = hash;
-        _hashToID[hash] = id;
+        //_hashToID[hash] = id;
         _hashList.append(hash);
 
         qDebug() << "got ID" << id << "for registered hash" << hash.dumpToString();
 
-        return id;
+        return knowledge;
     }
 
-    void Resolver::registerData(const FileHash& hash, const AudioData& data) {
-        if (hash.empty()) { return; }
+    Resolver::HashKnowledge* Resolver::registerData(const FileHash& hash,
+                                                    const AudioData& data)
+    {
+        if (hash.empty()) { return nullptr; }
 
         QWriteLocker lock(&_lock);
 
-        registerHash(hash);
+        auto knowledge = registerHash(hash);
+        if (!knowledge) return nullptr; /* we could not register the hash */
 
-        AudioData& cached = _audioCache[hash];
+        AudioData& audio = knowledge->audio();
 
         if (data.format() != AudioData::UnknownFormat) {
-            cached.setFormat(data.format());
+            audio.setFormat(data.format());
         }
 
-        if (data.trackLength() >= 0) {
-            cached.setTrackLength(data.trackLength());
+        if (data.trackLength() >= 0) { /* TODO: what if the existing length is different? */
+            audio.setTrackLength(data.trackLength());
         }
+
+        return knowledge;
     }
 
-    void Resolver::registerData(const FileData& data) {
-        if (data.hash().empty()) { return; }
+    Resolver::HashKnowledge* Resolver::registerData(const FileData& data) {
+        if (data.hash().empty()) { return nullptr; }
 
         QWriteLocker lock(&_lock);
 
-        registerData(data.hash(), data.audio());
-        _tagCache.insert(data.hash(), new TagData(data.tags()));
+        auto knowledge = registerData(data.hash(), data.audio());
+        knowledge->addTags(new TagData(data.tags()));
+
+        return knowledge;
     }
 
     void Resolver::registerFile(const FileData& file, const QString& filename,
@@ -209,29 +255,26 @@ namespace PMP {
 
         QWriteLocker lock(&_lock);
 
-        registerData(file);
-        registerFile(file.hash(), filename, fileSize, fileLastModified);
+        auto knowledge = registerData(file);
+        registerFile(knowledge, filename, fileSize, fileLastModified);
     }
 
-    void Resolver::registerFile(const FileHash& hash, const QString& filename,
+    void Resolver::registerFile(HashKnowledge* hash, const QString& filename,
                                 qint64 fileSize, QDateTime fileLastModified)
     {
-        if (hash.empty() || filename.length() <= 0 || fileSize <= 0
-            || fileLastModified.isNull())
+        if (!hash || filename.length() <= 0 || fileSize <= 0 || fileLastModified.isNull())
         {
             return;
         }
 
         QWriteLocker lock(&_lock);
 
-        uint hashID = registerHash(hash);
-
         QFileInfo info(filename);
         if (!info.isAbsolute()) return; /* we need absolute names here */
 
         VerifiedFile* file = _paths.value(filename, 0);
-        if (file != 0) {
-            if (file->equals(hash, fileSize, fileLastModified))
+        if (file) {
+            if (file->equals(hash->hash(), fileSize, fileLastModified))
             {
                 /* registered already, and no changes */
                 return;
@@ -239,22 +282,22 @@ namespace PMP {
 
             /* changes found */
             qDebug() << "Resolver: file different now:" << filename;
-            _filesForHash.remove(hash, file);
+            _filesForHash.remove(hash->hash(), file);
             _paths.remove(filename);
             delete file;
             file = 0;
         }
 
-        file = new VerifiedFile(filename, fileSize, fileLastModified, hash);
+        file = new VerifiedFile(filename, fileSize, fileLastModified, hash->hash());
 
-        _filesForHash.insert(hash, file);
+        _filesForHash.insert(hash->hash(), file);
         _paths[filename] = file;
         //qDebug() << "will connect ID" << hashID << "to filename" << filename;
 
         auto db = Database::getDatabaseForCurrentThread();
-        if (hashID > 0 && db != nullptr) {
+        if (hash->id() > 0 && db != nullptr) {
             /* save filename without path in the database */
-            db->registerFilename(hashID, info.fileName());
+            db->registerFilename(hash->id(), info.fileName());
         }
     }
 
@@ -371,41 +414,20 @@ namespace PMP {
 
     const AudioData& Resolver::findAudioData(const FileHash& hash) {
         QReadLocker lock(&_lock);
-        return _audioCache[hash];
+
+        auto knowledge = _hashKnowledge.value(hash, nullptr);
+        if (knowledge) return knowledge->audio();
+
+        return _emptyAudioData; /* we could not register the hash */
     }
 
     const TagData* Resolver::findTagData(const FileHash& hash) {
         QReadLocker lock(&_lock);
 
-        QList<const TagData*> tags = _tagCache.values(hash);
+        auto knowledge = _hashKnowledge.value(hash, nullptr);
+        if (knowledge) return knowledge->findBestTag();
 
-        /* try to return a match with complete tags */
-        const TagData* result = 0;
-        int resultScore = -1;
-        const TagData* tag;
-        foreach (tag, tags) {
-            int score = 0;
-
-            QString title = tag->title();
-            QString artist = tag->artist();
-
-            if (title.length() > 0) {
-                score += 100000;
-                score += 8 * title.length();
-            }
-
-            if (artist.length() > 0) {
-                score += 80000;
-                score += artist.length();
-            }
-
-            if (score <= resultScore) { continue; }
-
-            result = tag;
-            resultScore = score;
-        }
-
-        return result;
+        return nullptr;
     }
 
     FileHash Resolver::getRandom() {
@@ -418,6 +440,10 @@ namespace PMP {
 
     uint Resolver::getID(const FileHash& hash) {
         QReadLocker lock(&_lock);
-        return _hashToID.value(hash, 0);
+
+        auto knowledge = _hashKnowledge.value(hash, nullptr);
+        if (knowledge) return knowledge->id();
+
+        return 0;
     }
 }
