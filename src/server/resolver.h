@@ -113,10 +113,9 @@ namespace PMP {
 
             const AudioData& audio() const { return _audio; }
             AudioData& audio() { return _audio; }
+            void addAudioInfo(AudioData const& audio);
 
-            void addTags(const TagData* t) {
-                _tags.append(t); /* TODO: this leads to (many) duplicates */
-            }
+            void addTags(const TagData* t);
 
             //operator const FileHash& () const { return _hash; }
 
@@ -125,8 +124,6 @@ namespace PMP {
         };
 
         HashKnowledge* registerHash(const FileHash& hash);
-
-        HashKnowledge* registerData(const FileHash& hash, const AudioData& data);
         HashKnowledge* registerData(const FileData& data);
 
         void registerFile(HashKnowledge* hash, const QString& filename, qint64 fileSize,
@@ -138,9 +135,9 @@ namespace PMP {
 
         QList<QString> _musicPaths;
 
-        QHash<uint, FileHash> _idToHash;
         QList<FileHash> _hashList;
         QHash<FileHash, HashKnowledge*> _hashKnowledge;
+        QHash<uint, HashKnowledge*> _idToHash;
 
         QMultiHash<FileHash, VerifiedFile*> _filesForHash;
         QHash<QString, VerifiedFile*> _paths;

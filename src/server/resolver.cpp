@@ -48,6 +48,28 @@ namespace PMP {
 
     /* ========================== HashKnowledge ========================= */
 
+    void Resolver::HashKnowledge::addAudioInfo(const AudioData& audio) {
+        if (audio.format() != AudioData::UnknownFormat) {
+            _audio.setFormat(audio.format());
+        }
+
+        /* TODO: what if the existing length is different? */
+        if (audio.trackLength() >= 0) {
+            _audio.setTrackLength(audio.trackLength());
+        }
+    }
+
+    void Resolver::HashKnowledge::addTags(const TagData *t) {
+        if (!t) return;
+
+        /* check for duplicates */
+        Q_FOREACH(const TagData* tag, _tags) {
+            if (*tag == *t) return; /* a duplicate */
+        }
+
+        _tags.append(t);
+    }
+
     TagData const* Resolver::HashKnowledge::findBestTag() {
         /* try to return a match with complete tags */
         const TagData* result = nullptr;
@@ -97,7 +119,7 @@ namespace PMP {
             foreach(pair, hashes) {
                 auto knowledge = new HashKnowledge(pair.second, pair.first);
                 _hashKnowledge.insert(pair.second, knowledge);
-                _idToHash.insert(pair.first, pair.second);
+                _idToHash.insert(pair.first, knowledge);
                 //_hashToID[pair.second] = pair.first;
                 _hashList.append(pair.second);
             }
@@ -205,34 +227,10 @@ namespace PMP {
         if (id <= 0) return knowledge; /* something went wrong */
 
         knowledge->setId(id);
-        _idToHash[id] = hash;
-        //_hashToID[hash] = id;
+        _idToHash[id] = knowledge;
         _hashList.append(hash);
 
         qDebug() << "got ID" << id << "for registered hash" << hash.dumpToString();
-
-        return knowledge;
-    }
-
-    Resolver::HashKnowledge* Resolver::registerData(const FileHash& hash,
-                                                    const AudioData& data)
-    {
-        if (hash.empty()) { return nullptr; }
-
-        QWriteLocker lock(&_lock);
-
-        auto knowledge = registerHash(hash);
-        if (!knowledge) return nullptr; /* we could not register the hash */
-
-        AudioData& audio = knowledge->audio();
-
-        if (data.format() != AudioData::UnknownFormat) {
-            audio.setFormat(data.format());
-        }
-
-        if (data.trackLength() >= 0) { /* TODO: what if the existing length is different? */
-            audio.setTrackLength(data.trackLength());
-        }
 
         return knowledge;
     }
@@ -242,7 +240,10 @@ namespace PMP {
 
         QWriteLocker lock(&_lock);
 
-        auto knowledge = registerData(data.hash(), data.audio());
+        auto knowledge = registerHash(data.hash());
+        if (!knowledge) return nullptr; /* something went wrong */
+
+        knowledge->addAudioInfo(data.audio());
         knowledge->addTags(new TagData(data.tags()));
 
         return knowledge;

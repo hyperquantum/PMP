@@ -35,11 +35,23 @@ namespace PMP {
         QString album() const { return _album; }
         QString comment() const { return _comment; }
 
+        bool operator == (TagData const& other) const {
+            return _artist == other._artist
+                && _title == other._title
+                && _album == other._album
+                && _comment == other._comment;
+        }
+
+        bool operator != (TagData const& other) const {
+            return !(*this == other);
+        }
+
     private:
         QString _artist;
         QString _title;
         QString _album;
         QString _comment;
     };
+
 }
 #endif
