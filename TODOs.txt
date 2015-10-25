@@ -2,17 +2,22 @@
 BUGS
 
  - GUI remote: dragging the second last entry in the queue and dropping it beyond the last entry crashes the client
- - GUI remote: queue length not updated after initial queue population (probably because no player status message was sent during queue population)
+ - GUI remote: queue length not updated after initial queue population (only a player status message from the server will trigger an update now)
  - diagnostic logging now produces unreadable text when two different threads write something to the log
 
 
 PERFORMANCE ISSUES
 
- - Database access for track repetition avoidance needs to be optimized and data needs to be cached
+ - database access for track repetition avoidance needs to be optimized and data needs to be cached
 
 
 FEATURES
 
- - GUI remote needs status bar, to show current server activity (e.g. indexation)
  - work around the need for a full indexation at server startup
  - associate a title and artist with each hash and save that information in the database
+ - provide 'forgot password' functionality to enable a user to reset their password
+
+
+POLISHING
+
+ - sort accounts by username in the 'select account' widget
