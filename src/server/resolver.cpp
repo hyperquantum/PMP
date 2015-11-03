@@ -34,6 +34,31 @@ namespace PMP {
 
     /* ========================== VerifiedFile ========================== */
 
+    struct Resolver::VerifiedFile {
+        QString _path;
+        qint64 _size;
+        QDateTime _lastModifiedUtc;
+        FileHash _hash;
+
+        VerifiedFile(QString path, qint64 size, QDateTime lastModified, FileHash hash)
+         : _path(path), _size(size), _lastModifiedUtc(lastModified.toUTC()),
+           _hash(hash)
+        {
+            //
+        }
+
+        bool equals(FileHash const& hash, qint64 size, QDateTime modified) {
+            return _hash == hash && _size == size
+                && _lastModifiedUtc == modified.toUTC();
+        }
+
+        bool equals(qint64 size, QDateTime modified) {
+            return _size == size && _lastModifiedUtc == modified.toUTC();
+        }
+
+        bool stillValid();
+    };
+
     bool Resolver::VerifiedFile::stillValid() {
         QFileInfo info(_path);
 
@@ -47,6 +72,35 @@ namespace PMP {
     }
 
     /* ========================== HashKnowledge ========================= */
+
+    class Resolver::HashKnowledge {
+        FileHash _hash;
+        uint _hashId;
+        AudioData _audio;
+        QList<const TagData*> _tags;
+
+    public:
+        HashKnowledge(FileHash hash, uint hashId)
+         : _hash(hash), _hashId(hashId)
+        {
+            //
+        }
+
+        const FileHash& hash() const { return _hash; }
+
+        uint id() const { return _hashId; }
+        void setId(uint id) { _hashId = id; }
+
+        const AudioData& audio() const { return _audio; }
+        AudioData& audio() { return _audio; }
+        void addAudioInfo(AudioData const& audio);
+
+        void addTags(const TagData* t);
+
+        //operator const FileHash& () const { return _hash; }
+
+        TagData const* findBestTag();
+    };
 
     void Resolver::HashKnowledge::addAudioInfo(const AudioData& audio) {
         if (audio.format() != AudioData::UnknownFormat) {
