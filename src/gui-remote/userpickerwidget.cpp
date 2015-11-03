@@ -22,6 +22,8 @@
 
 #include "common/serverconnection.h"
 
+#include <algorithm>
+
 namespace PMP {
 
     UserPickerWidget::UserPickerWidget(QWidget *parent, ServerConnection *connection)
@@ -51,6 +53,13 @@ namespace PMP {
     }
 
     void UserPickerWidget::receivedUserAccounts(QList<QPair<uint, QString> > accounts) {
+        std::sort(
+            accounts.begin(), accounts.end(),
+            [](const QPair<uint,QString>& u1, const QPair<uint,QString>& u2) {
+                return u1.second < u2.second;
+            }
+        );
+
         _ui->loadingUserListLabel->setVisible(false);
 
         if (accounts.size() <= 0) {

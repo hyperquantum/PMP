@@ -18,6 +18,11 @@ FEATURES
  - provide 'forgot password' functionality to enable a user to reset their password
 
 
+USER FRIENDLINESS
+
+ - a breakpoint in the queue should not put the next track in the player yet
+
+
 POLISHING
 
- - sort accounts by username in the 'select account' widget
+ ...
