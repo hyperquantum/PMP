@@ -233,9 +233,9 @@
       <widget class="QFrame" name="horizontalFrame">
        <layout class="QHBoxLayout" name="horizontalLayout_5">
         <item>
-         <widget class="QPushButton" name="insertPauseButton">
+         <widget class="QPushButton" name="insertBreakButton">
           <property name="text">
-           <string>Insert pause</string>
+           <string>Insert break</string>
           </property>
          </widget>
         </item>

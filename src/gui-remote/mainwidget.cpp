@@ -102,7 +102,7 @@ namespace PMP {
         connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
 
         connect(
-            _ui->insertPauseButton, &QPushButton::clicked,
+            _ui->insertBreakButton, &QPushButton::clicked,
             _connection, &ServerConnection::insertPauseAtFront
         );
 

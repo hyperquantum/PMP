@@ -252,7 +252,9 @@ namespace PMP {
         while (!_queue.empty()) {
             QueueEntry* entry = _queue.dequeue();
             if (!entry->isTrack()) {
-                if (entry->type() == QueueEntryType::Break) { play = false; }
+                if (entry->type() == QueueEntryType::Break) {
+                    break; /* this will cause playback to stop because next == 0 */
+                }
                 continue;
             }
 

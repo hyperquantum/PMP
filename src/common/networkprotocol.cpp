@@ -116,7 +116,7 @@ namespace PMP {
         if (isTrackStatusFromRealTrack(status)) return "<< Real track >>";
 
         auto type = status - (1u << 15);
-        if (type == 1) return "<<<<< PAUSE >>>>>";
+        if (type == 1) return "<<<<< BREAK >>>>>";
 
         return "<<<< ????? >>>>";
     }
