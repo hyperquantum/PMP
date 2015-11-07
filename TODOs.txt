@@ -20,7 +20,7 @@ FEATURES
 
 USER FRIENDLINESS
 
- - a breakpoint in the queue should not put the next track in the player yet
+ ...
 
 
 POLISHING
