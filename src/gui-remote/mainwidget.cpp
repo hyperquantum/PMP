@@ -367,6 +367,9 @@ namespace PMP {
     void MainWidget::volumeChanged(int percentage) {
         _volume = percentage;
         _ui->volumeValueLabel->setText(QString::number(percentage));
+
+        _ui->volumeDecreaseButton->setEnabled(percentage > 0);
+        _ui->volumeIncreaseButton->setEnabled(percentage < 100);
     }
 
     void MainWidget::decreaseVolume() {
