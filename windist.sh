@@ -13,10 +13,12 @@ cd $(dirname "$0")
 
 SRC_DIR="."
 BIN_DIR="bin_win32_release"
-DIST_DIR="PMP_win32"
+ZIPROOT_DIR="PMP_win32"
 INCR_TMPDIR="PMP_win32_incremental"
-ZIP_FILE="PMP_win32.zip"
+FULL_ZIP="PMP_win32.zip"
 INCR_ZIP="PMP_win32_incremental.zip"
+ZIPSRCFULL_DIR="archive_full"
+ZIPSRCINCR_DIR="archive_incremental"
 
 MINGW_BIN_DIR="/cygdrive/C/MinGW/bin"
 QT_BIN_DIR="/cygdrive/C/Qt/5.2.1/mingw48_32/bin"
@@ -25,9 +27,9 @@ QT_PLUGINS_DIR="/cygdrive/C/Qt/5.2.1/mingw48_32/plugins"
 CMAKE_EXE="/cygdrive/C/Program Files (x86)/CMake/bin/cmake.exe"
 
 # (1) cleanup from previous runs (if necessary)
-rm -rf "$DIST_DIR" "$INCR_TMPDIR"
-mkdir  "$DIST_DIR" "$INCR_TMPDIR"
-rm -rf "$ZIP_FILE" "$INCR_ZIP"
+rm -rf "$ZIPSRCFULL_DIR" "$ZIPSRCINCR_DIR"
+mkdir -p "$ZIPSRCFULL_DIR"/"$ZIPROOT_DIR" "$ZIPSRCINCR_DIR"/"$ZIPROOT_DIR"
+rm -rf "$FULL_ZIP" "$INCR_ZIP"
 
 # (2) create build directory if first time
 if [ ! -d "$BIN_DIR" ]; then
@@ -66,12 +68,15 @@ fi
 
 echo "Copying files..."
 
+DIST_DIR="$ZIPSRCFULL_DIR"/"$ZIPROOT_DIR"
+INCR_DIST_DIR="$ZIPSRCINCR_DIR"/"$ZIPROOT_DIR"
+
 # Provide placeholders for old files that have been renamed. We want to
 # overwrite the file with the old name in existing installations.
 #  - README.txt has been renamed to README.md
-echo "This file is obsolete. Open README.md instead." > "$DIST_DIR"/README.txt
+echo "This file is obsolete. Open README.md instead." > "$INCR_DIST_DIR"/README.txt
 #  - BUGS.txt has been renamed to TODOs.txt
-echo "This file is obsolete. Open TODOs.txt instead." > "$DIST_DIR"/BUGS.txt
+echo "This file is obsolete. Open TODOs.txt instead." > "$INCR_DIST_DIR"/BUGS.txt
 
 cp "$SRC_DIR"/README* "$DIST_DIR"/
 cp "$SRC_DIR"/TODOs* "$DIST_DIR"/
@@ -108,24 +113,33 @@ cp -r "$QT_PLUGINS_DIR"/mediaservice "$DIST_DIR"
 cp -r "$QT_PLUGINS_DIR"/platforms "$DIST_DIR"
 cp -r "$QT_PLUGINS_DIR"/sqldrivers "$DIST_DIR"
 
-chmod -R +r "$DIST_DIR"
-
 # files that are part of the incremental archive
-cp "$DIST_DIR"/*.exe "$INCR_TMPDIR"/
-cp "$DIST_DIR"/*LICENSE* "$INCR_TMPDIR"/
-cp "$DIST_DIR"/README* "$INCR_TMPDIR"/
-cp "$DIST_DIR"/BUGS* "$INCR_TMPDIR"/
-cp "$DIST_DIR"/TODOs* "$INCR_TMPDIR"/
+cp "$DIST_DIR"/*.exe "$INCR_DIST_DIR"/
+cp "$DIST_DIR"/*LICENSE* "$INCR_DIST_DIR"/
+cp "$DIST_DIR"/README* "$INCR_DIST_DIR"/
+cp "$DIST_DIR"/TODOs* "$INCR_DIST_DIR"/
+
+chmod -R +r "$DIST_DIR"
+chmod -R +r "$INCR_DIST_DIR"
 
 # (6) create zip files
 
-echo "Creating full archive..."
-zip -r -q "$ZIP_FILE" "$DIST_DIR"/* \
-  && rm -rf "$DIST_DIR" || exit
-
 echo "Creating incremental archive..."
-mv "$INCR_TMPDIR" "$DIST_DIR" \
-  && zip -r -q "$INCR_ZIP" "$DIST_DIR"/* \
-  && rm -rf "$DIST_DIR" || exit
+
+pushd "$ZIPSRCINCR_DIR" >/dev/null \
+  && zip -r -q "$INCR_ZIP" "$ZIPROOT_DIR"/* \
+  && popd >/dev/null \
+  && mv "$ZIPSRCINCR_DIR"/"$INCR_ZIP" . \
+  && rm -rf "$ZIPSRCINCR_DIR" \
+  || exit
+
+echo "Creating full archive..."
+
+pushd "$ZIPSRCFULL_DIR" >/dev/null \
+  && zip -r -q "$FULL_ZIP" "$ZIPROOT_DIR"/* \
+  && popd >/dev/null \
+  && mv "$ZIPSRCFULL_DIR"/"$FULL_ZIP" . \
+  && rm -rf "$ZIPSRCFULL_DIR" \
+  || exit
 
 echo "Finished."
