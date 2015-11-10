@@ -53,7 +53,8 @@ namespace PMP {
     /* ========================== Generator ========================== */
 
     Generator::Generator(Queue* queue, Resolver* resolver, History* history)
-     : _currentTrack(0), _queue(queue), _resolver(resolver), _history(history),
+     : _currentTrack(0),
+       _queue(queue), _resolver(resolver), _history(history),
        _enabled(false), _refillPending(false),
        _upcomingRuntimeSeconds(0), _upcomingTimer(new QTimer(this)),
        _noRepetitionSpan(60 * 60 /* one hour */), _userPlayingFor(0)

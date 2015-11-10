@@ -27,7 +27,6 @@
 #include <QFileInfo>
 #include <QtConcurrent/QtConcurrent>
 #include <QtDebug>
-#include <QtGlobal>
 #include <QThreadPool>
 
 namespace PMP {
@@ -157,6 +156,7 @@ namespace PMP {
 
     Resolver::Resolver()
      : _lock(QReadWriteLock::Recursive),
+       _randomDevice(), _randomEngine(_randomDevice()),
        _fullIndexationRunning(false), _fullIndexationWatcher(this)
     {
         connect(
@@ -489,7 +489,8 @@ namespace PMP {
         QReadLocker lock(&_lock);
         if (_hashList.empty()) return FileHash();
 
-        int randomIndex = qrand() % _hashList.size();
+        std::uniform_int_distribution<int> uniformDistr(0, _hashList.size() - 1);
+        int randomIndex = uniformDistr(_randomEngine);
         return _hashList[randomIndex];
     }
 

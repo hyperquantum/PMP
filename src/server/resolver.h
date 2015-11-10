@@ -23,6 +23,8 @@
 #include "common/audiodata.h"
 #include "common/filehash.h"
 
+#include <random>
+
 #include <QDateTime>
 #include <QFutureWatcher>
 #include <QHash>
@@ -80,6 +82,8 @@ namespace PMP {
         void doFullIndexation();
 
         QReadWriteLock _lock;
+        std::random_device _randomDevice;
+        std::mt19937 _randomEngine;
 
         QList<QString> _musicPaths;
 
