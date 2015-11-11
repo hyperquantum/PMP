@@ -195,32 +195,32 @@ Since this project is in a very early stage of development, you can expect a few
 Only a list of ideas.  **No promises!**
 
 Importance/priority:  
- [H]: high
- [M]: medium
- [L]: low
+  * (**H**): high
+  * (**M**): medium
+  * (**L**): low
 
 ###Small/medium effort improvements:
 
-  * [M] Provide keyboard shortcuts for volume adjustment
-  * [M] Queue contextmenu option to duplicate the entry
-  * [H] Store last track repetition avoidance interval for each user in the database
-  * [H] Display last-heard time of each track in the remote
-  * [L] Time-based auto-stop function
-  * [L] Naming a PMP Server instance (e.g. "living room")
+  * (**M**) Provide keyboard shortcuts for volume adjustment
+  * (**M**) Queue contextmenu option to duplicate the entry
+  * (**H**) Store last track repetition avoidance interval for each user in the database
+  * (**H**) Display last-heard time of each track in the remote
+  * (**L**) Time-based auto-stop function
+  * (**L**) Naming a PMP Server instance (e.g. "living room")
 
 
 ###Medium/large effort improvements:
 
-  * [H] Browsing the server music files from the remote, and adding those tracks to the queue
-  * [H] Handling of files that are the same track but have a different hash
-  * [M] Find a way to identify artists
-  * [H] Dynamic mode: avoid repeating the same artist within a certain timespan
-  * [M] Last.fm scrobbling (in personal mode)
-  * [H] Syncronization of music databases across different machines
-  * [H] Search functionality with fuzzy matching option
-  * [L] Silence detection at the start and end of each track
-  * [L] Crossfading
-  * [M] Bridging of PMP server instances, to access music from another machine
-  * [M] Support for other formats than just MP3
-  * [L] Manual song play to a second audio device (for headphones)
-  * [L] Support for other database providers than MySQL
+  * (**H**) Browsing the server music files from the remote, and adding those tracks to the queue
+  * (**H**) Handling of files that are the same track but have a different hash
+  * (**M**) Find a way to identify artists
+  * (**H**) Dynamic mode: avoid repeating the same artist within a certain timespan
+  * (**M**) Last.fm scrobbling (in personal mode)
+  * (**H**) Syncronization of music databases across different machines
+  * (**H**) Search functionality with fuzzy matching option
+  * (**L**) Silence detection at the start and end of each track
+  * (**L**) Crossfading
+  * (**M**) Bridging of PMP server instances, to access music from another machine
+  * (**M**) Support for other formats than just MP3
+  * (**L**) Manual song play to a second audio device (for headphones)
+  * (**L**) Support for other database providers than MySQL
