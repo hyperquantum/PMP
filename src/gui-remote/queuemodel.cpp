@@ -219,26 +219,27 @@ namespace PMP {
         stream >> count;
         if (count > 1) return false; // FIXME
 
-        quint32 fromRow;
+        quint32 oldIndex;
         quint32 queueID;
-        stream >> fromRow;
+        stream >> oldIndex;
         stream >> queueID;
 
-        int toRow = (uint)row < fromRow ? row : row - 1;
+        int newIndex;
         if (row < 0) {
-            toRow = _modelRows - 1;
+            newIndex = _modelRows - 1;
         }
-        else if ((uint)row > fromRow) {
-            toRow = row - 1;
+        else if ((uint)row > oldIndex) {
+            newIndex = row - 1;
         }
         else {
-            toRow = row;
+            newIndex = row;
         }
 
-        qDebug() << " fromRow=" << fromRow << " ; QID=" << queueID << "; toRow=" << toRow;
+        qDebug() << " oldIndex=" << oldIndex << " ; QID=" << queueID
+                 << "; newIndex=" << newIndex;
 
-        if (fromRow != (uint)toRow) {
-            _source->moveTrack(fromRow, toRow, queueID);
+        if (oldIndex != (uint)newIndex) {
+            _source->moveTrack(oldIndex, newIndex, queueID);
         }
 
         return true;
@@ -387,9 +388,14 @@ namespace PMP {
     }
 
     void QueueModel::trackMoved(int fromIndex, int toIndex, quint32 queueID) {
-        qDebug() << "QueueModel::trackMoved; from=" << fromIndex << "; to=" << toIndex << "; QID=" << queueID;
+        qDebug() << "QueueModel::trackMoved; oldIndex=" << fromIndex
+                 << "; newIndex=" << toIndex << "; QID=" << queueID;
 
-        beginMoveRows(QModelIndex(), fromIndex, fromIndex, QModelIndex(), toIndex);
+        if (fromIndex == toIndex) return; /* should not happen */
+
+        /* the to-index has a slightly different meaning for Qt, so we need adjustment */
+        int qtToIndex = (fromIndex < toIndex) ? toIndex + 1 : toIndex;
+        beginMoveRows(QModelIndex(), fromIndex, fromIndex, QModelIndex(), qtToIndex);
 
         Track* t = 0;
         if (fromIndex < _tracks.size()) {
