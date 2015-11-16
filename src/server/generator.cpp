@@ -288,7 +288,7 @@ namespace PMP {
         const FileHash& hash = candidate->hash();
 
         /* can we find a file for the track? */
-        if (!_resolver->haveAnyPathInfo(hash)) return false;
+        if (!_resolver->haveFileFor(hash)) return false;
 
         /* get audio info */
         const AudioData& audioData = _resolver->findAudioData(hash);

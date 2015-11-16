@@ -52,7 +52,7 @@ namespace PMP {
         void registerFile(const FileData& file, const QString& filename, qint64 fileSize,
                           QDateTime fileLastModified);
 
-        bool haveAnyPathInfo(const FileHash& hash);
+        bool haveFileFor(const FileHash& hash);
         QString findPath(const FileHash& hash, bool fast);
         bool pathStillValid(const FileHash& hash, QString path);
 
@@ -90,9 +90,8 @@ namespace PMP {
         QList<FileHash> _hashList;
         QHash<FileHash, HashKnowledge*> _hashKnowledge;
         QHash<uint, HashKnowledge*> _idToHash;
-
-        QMultiHash<FileHash, VerifiedFile*> _filesForHash;
         QHash<QString, VerifiedFile*> _paths;
+        //QMultiHash<FileHash, VerifiedFile*> _filesForHash;
 
         bool _fullIndexationRunning;
         QFutureWatcher<void> _fullIndexationWatcher;

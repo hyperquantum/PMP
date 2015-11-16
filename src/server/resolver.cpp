@@ -31,25 +31,28 @@
 
 namespace PMP {
 
-    /* ========================== VerifiedFile ========================== */
+    /* ========================== private class declarations ========================== */
 
     struct Resolver::VerifiedFile {
+        Resolver::HashKnowledge* _parent;
         QString _path;
         qint64 _size;
         QDateTime _lastModifiedUtc;
-        FileHash _hash;
 
-        VerifiedFile(QString path, qint64 size, QDateTime lastModified, FileHash hash)
-         : _path(path), _size(size), _lastModifiedUtc(lastModified.toUTC()),
-           _hash(hash)
+        VerifiedFile(Resolver::HashKnowledge* parent, QString path,
+                     qint64 size, QDateTime lastModified)
+         : _parent(parent), _path(path),
+           _size(size), _lastModifiedUtc(lastModified.toUTC())
         {
             //
         }
 
-        bool equals(FileHash const& hash, qint64 size, QDateTime modified) {
-            return _hash == hash && _size == size
-                && _lastModifiedUtc == modified.toUTC();
+        void update(qint64 size, QDateTime modified) {
+            _size = size;
+            _lastModifiedUtc = modified;
         }
+
+        bool equals(FileHash const& hash, qint64 size, QDateTime modified);
 
         bool equals(qint64 size, QDateTime modified) {
             return _size == size && _lastModifiedUtc == modified.toUTC();
@@ -58,29 +61,17 @@ namespace PMP {
         bool stillValid();
     };
 
-    bool Resolver::VerifiedFile::stillValid() {
-        QFileInfo info(_path);
-
-        if (!info.isFile() || !info.isReadable()
-            || !equals(info.size(), info.lastModified()))
-        {
-            return false;
-        }
-
-        return true;
-    }
-
-    /* ========================== HashKnowledge ========================= */
-
     class Resolver::HashKnowledge {
+        Resolver* _parent;
         FileHash _hash;
         uint _hashId;
         AudioData _audio;
         QList<const TagData*> _tags;
+        QList<Resolver::VerifiedFile*> _files;
 
     public:
-        HashKnowledge(FileHash hash, uint hashId)
-         : _hash(hash), _hashId(hashId)
+        HashKnowledge(Resolver* parent, FileHash hash, uint hashId)
+         : _parent(parent), _hash(hash), _hashId(hashId)
         {
             //
         }
@@ -99,7 +90,38 @@ namespace PMP {
         //operator const FileHash& () const { return _hash; }
 
         TagData const* findBestTag();
+
+        void addPath(const QString& filename,
+                     qint64 fileSize, QDateTime fileLastModified);
+        void removeInvalidPath(Resolver::VerifiedFile* file);
+
+        bool isAvailable();
+        bool isStillValid(Resolver::VerifiedFile* file);
+        QString getFile();
     };
+
+    /* ========================== VerifiedFile ========================== */
+
+    bool Resolver::VerifiedFile::equals(FileHash const& hash,
+                                        qint64 size, QDateTime modified)
+    {
+        return _size == size && _lastModifiedUtc == modified.toUTC()
+            && _parent->hash() == hash;
+    }
+
+    bool Resolver::VerifiedFile::stillValid() {
+        QFileInfo info(_path);
+
+        if (!info.isFile() || !info.isReadable()
+            || !equals(info.size(), info.lastModified()))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /* ========================== HashKnowledge ========================= */
 
     void Resolver::HashKnowledge::addAudioInfo(const AudioData& audio) {
         if (audio.format() != AudioData::UnknownFormat) {
@@ -152,6 +174,86 @@ namespace PMP {
         return result;
     }
 
+    void Resolver::HashKnowledge::addPath(const QString& filename,
+                                          qint64 fileSize, QDateTime fileLastModified)
+    {
+        QFileInfo info(filename);
+        if (!info.isAbsolute()) {
+            qDebug() << "Resolver: cannot add file without absolute path:" << filename;
+            return; /* we need absolute names here */
+        }
+
+        /* check if the file was already known */
+        VerifiedFile* file = _parent->_paths.value(filename, nullptr);
+        if (file) {
+            if (file->_parent == this) {
+                /* make sure file specifics are up-to-date and that is all */
+                file->update(fileSize, fileLastModified);
+                return;
+            }
+
+            /* previously know file had a different hash */
+            qDebug() << "Resolver: file changed into another hash:" << filename;
+            file->_parent->removeInvalidPath(file);
+            //file = nullptr;
+        }
+
+        file = new VerifiedFile(this, filename, fileSize, fileLastModified);
+        _files.append(file);
+        _parent->_paths[filename] = file;
+
+        // TODO: move this to another thread
+        auto db = Database::getDatabaseForCurrentThread();
+        if (_hashId > 0 && db) {
+            /* save filename without path in the database */
+            db->registerFilename(_hashId, info.fileName());
+        }
+    }
+
+    void Resolver::HashKnowledge::removeInvalidPath(Resolver::VerifiedFile* file) {
+        qDebug() << "Resolver: removing path:" << file->_path;
+
+        if (_parent->_paths.value(file->_path, nullptr) == file) {
+            _parent->_paths.remove(file->_path);
+        }
+
+        _files.removeOne(file);
+        delete file;
+    }
+
+    bool Resolver::HashKnowledge::isStillValid(Resolver::VerifiedFile* file) {
+        if (file->_parent != this) return false;
+
+        if (file->stillValid()) return true;
+
+        removeInvalidPath(file);
+        return false;
+    }
+
+    bool Resolver::HashKnowledge::isAvailable() {
+        Resolver::VerifiedFile* file = nullptr;
+
+        Q_FOREACH(file, _files) {
+            if (file->stillValid()) return true;
+
+            removeInvalidPath(file);
+        }
+
+        return false;
+    }
+
+    QString Resolver::HashKnowledge::getFile() {
+        Resolver::VerifiedFile* file = nullptr;
+
+        Q_FOREACH(file, _files) {
+            if (file->stillValid()) return file->_path;
+
+            removeInvalidPath(file);
+        }
+
+        return ""; /* no file available */
+    }
+
     /* ========================== Resolver ========================== */
 
     Resolver::Resolver()
@@ -171,10 +273,9 @@ namespace PMP {
 
             QPair<uint, FileHash> pair;
             foreach(pair, hashes) {
-                auto knowledge = new HashKnowledge(pair.second, pair.first);
+                auto knowledge = new HashKnowledge(this, pair.second, pair.first);
                 _hashKnowledge.insert(pair.second, knowledge);
                 _idToHash.insert(pair.first, knowledge);
-                //_hashToID[pair.second] = pair.first;
                 _hashList.append(pair.second);
             }
 
@@ -266,8 +367,9 @@ namespace PMP {
 
         auto knowledge = _hashKnowledge.value(hash, nullptr);
         if (!knowledge) {
-            knowledge = new HashKnowledge(hash, 0);
+            knowledge = new HashKnowledge(this, hash, 0);
             _hashKnowledge[hash] = knowledge;
+            _hashList.append(hash);
         }
         else if (knowledge->id() > 0) {
             return knowledge; /* registered already */
@@ -282,7 +384,6 @@ namespace PMP {
 
         knowledge->setId(id);
         _idToHash[id] = knowledge;
-        _hashList.append(hash);
 
         qDebug() << "got ID" << id << "for registered hash" << hash.dumpToString();
 
@@ -324,91 +425,35 @@ namespace PMP {
 
         QWriteLocker lock(&_lock);
 
-        QFileInfo info(filename);
-        if (!info.isAbsolute()) return; /* we need absolute names here */
-
-        VerifiedFile* file = _paths.value(filename, 0);
-        if (file) {
-            if (file->equals(hash->hash(), fileSize, fileLastModified))
-            {
-                /* registered already, and no changes */
-                return;
-            }
-
-            /* changes found */
-            qDebug() << "Resolver: file different now:" << filename;
-            _filesForHash.remove(hash->hash(), file);
-            _paths.remove(filename);
-            delete file;
-            file = 0;
-        }
-
-        file = new VerifiedFile(filename, fileSize, fileLastModified, hash->hash());
-
-        _filesForHash.insert(hash->hash(), file);
-        _paths[filename] = file;
-        //qDebug() << "will connect ID" << hashID << "to filename" << filename;
-
-        auto db = Database::getDatabaseForCurrentThread();
-        if (hash->id() > 0 && db != nullptr) {
-            /* save filename without path in the database */
-            db->registerFilename(hash->id(), info.fileName());
-        }
+        hash->addPath(filename, fileSize, fileLastModified);
     }
 
-    bool Resolver::haveAnyPathInfo(const FileHash& hash) {
-        QReadLocker lock(&_lock);
+    bool Resolver::haveFileFor(const FileHash& hash) {
+        QWriteLocker lock(&_lock);
 
-        QList<VerifiedFile*> paths = _filesForHash.values(hash);
-        return !paths.empty();
+        auto knowledge = _hashKnowledge.value(hash, nullptr);
+        return knowledge && knowledge->isAvailable();
     }
 
     bool Resolver::pathStillValid(const FileHash& hash, QString path) {
         QWriteLocker lock(&_lock);
 
-        VerifiedFile* file = _paths.value(path, 0);
-        if (file) {
-            if (file->stillValid()) return true;
+        VerifiedFile* file = _paths.value(path, nullptr);
+        if (!file) return false;
 
-            qDebug() << "Resolver::pathStillValid : removing path:" << path;
-            _paths.remove(path);
-            _filesForHash.remove(hash, file);
-            delete file;
-            return false;
-        }
-
-        Q_FOREACH(file, _filesForHash.values(hash)) {
-            if (file->_path != path) continue;
-
-            if (file->stillValid()) return true;
-            qDebug() << "Resolver::pathStillValid : removing path:" << path;
-            //_paths.remove(path);
-            _filesForHash.remove(hash, file);
-            delete file;
-            return false;
-        }
-
-        return false;
+        auto knowledge = file->_parent;
+        return knowledge->isStillValid(file);
     }
 
     QString Resolver::findPath(const FileHash& hash, bool fast) {
         QWriteLocker lock(&_lock);
 
-        QList<VerifiedFile*> files = _filesForHash.values(hash);
         qDebug() << "Resolver::findPath for hash " << hash.dumpToString();
-        qDebug() << " candidates for hash: " << files.count();
 
-        foreach(VerifiedFile* file, files) {
-            qDebug() << " candidate: " << file->_path;
-
-            if (file->stillValid()) {
-                return file->_path;
-            }
-
-            qDebug() << "  candidate not suitable anymore, deleting the path";
-            _filesForHash.remove(hash, file);
-            _paths.remove(file->_path);
-            delete file;
+        auto knowledge = _hashKnowledge.value(hash, nullptr);
+        if (knowledge) {
+            QString path = knowledge->getFile();
+            if (path.length() > 0) return path;
         }
 
         /* stop here if we had to get a result fast */
