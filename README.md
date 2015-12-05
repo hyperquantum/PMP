@@ -218,6 +218,7 @@ Importance/priority:
   * (**M**) Last.fm scrobbling (in personal mode)
   * (**H**) Syncronization of music databases across different machines
   * (**H**) Search functionality with fuzzy matching option
+  * (**M**) Browsing the playback history from the remote
   * (**L**) Silence detection at the start and end of each track
   * (**L**) Crossfading
   * (**M**) Bridging of PMP server instances, to access music from another machine
