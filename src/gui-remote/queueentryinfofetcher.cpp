@@ -198,9 +198,11 @@ namespace PMP {
     }
 
     void QueueEntryInfoFetcher::queueResetted(int queueLength) {
-        qDebug() << "QueueEntryInfoFetcher::queueResetted called with length" << queueLength;
+        qDebug() << "QueueEntryInfoFetcher::queueResetted called with length"
+                 << queueLength;
 
-        _entries.clear(); // FIXME: memory leak
+        qDeleteAll(_entries); /* delete all objects before clearing */
+        _entries.clear();
         _entries.reserve(queueLength);
 
         QList<quint32> IDs;
@@ -282,7 +284,8 @@ namespace PMP {
         QList<quint32> list = _trackChangeNotificationsPending.toList();
         _trackChangeNotificationsPending.clear();
 
-        qDebug() << "QueueEntryInfoFetcher: going to emit tracksChanged signal for" << list.size() << "tracks";
+        qDebug() << "QueueEntryInfoFetcher: going to emit tracksChanged signal for"
+                 << list.size() << "tracks";
         emit tracksChanged(list);
     }
 

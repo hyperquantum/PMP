@@ -22,6 +22,7 @@
 
 #include <QByteArray>
 #include <QHash>
+#include <QMetaType>
 #include <QString>
 
 namespace PMP {
@@ -61,6 +62,8 @@ namespace PMP {
             ^ qHash(hashID.SHA1())
             ^ qHash(hashID.MD5());
     }
-
 }
+
+Q_DECLARE_METATYPE(PMP::FileHash)
+
 #endif

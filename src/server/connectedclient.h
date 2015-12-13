@@ -30,6 +30,7 @@
 
 namespace PMP {
 
+    class CollectionMonitor;
     class Generator;
     class QueueEntry;
     class Server;
@@ -39,7 +40,8 @@ namespace PMP {
         Q_OBJECT
     public:
         ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
-                        Generator* generator, Users* users);
+                        Generator* generator, Users* users,
+                        CollectionMonitor* collectionMonitor);
 
         ~ConnectedClient();
 
@@ -105,6 +107,7 @@ namespace PMP {
         Player* _player;
         Generator* _generator;
         Users* _users;
+        CollectionMonitor* _collectionMonitor;
         QByteArray _textReadBuffer;
         bool _binaryMode;
         int _clientProtocolNo;

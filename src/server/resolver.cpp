@@ -68,6 +68,8 @@ namespace PMP {
         AudioData _audio;
         QList<const TagData*> _tags;
         QList<Resolver::VerifiedFile*> _files;
+        QString _quickTitle;
+        QString _quickArtist;
 
     public:
         HashKnowledge(Resolver* parent, FileHash hash, uint hashId)
@@ -87,9 +89,9 @@ namespace PMP {
 
         void addTags(const TagData* t);
 
-        //operator const FileHash& () const { return _hash; }
-
         TagData const* findBestTag();
+        QString quickTitle() { return _quickTitle; }
+        QString quickArtist() { return _quickArtist; }
 
         void addPath(const QString& filename,
                      qint64 fileSize, QDateTime fileLastModified);
@@ -143,6 +145,19 @@ namespace PMP {
         }
 
         _tags.append(t);
+        auto tags = findBestTag();
+        if (tags) {
+            QString oldQuickTitle = _quickTitle;
+            QString oldQuickArtist = _quickArtist;
+
+            _quickTitle = tags->title();
+            _quickArtist = tags->artist();
+
+            if (oldQuickTitle != _quickTitle || oldQuickArtist != _quickArtist)
+            {
+                emit _parent->hashTagInfoChanged(_hash, _quickTitle, _quickArtist);
+            }
+        }
     }
 
     TagData const* Resolver::HashKnowledge::findBestTag() {
@@ -208,6 +223,10 @@ namespace PMP {
             /* save filename without path in the database */
             db->registerFilename(_hashId, info.fileName());
         }
+
+        if (_files.length() == 1) { /* count went from 0 to 1 */
+            emit _parent->hashBecameAvailable(_hash);
+        }
     }
 
     void Resolver::HashKnowledge::removeInvalidPath(Resolver::VerifiedFile* file) {
@@ -219,6 +238,10 @@ namespace PMP {
 
         _files.removeOne(file);
         delete file;
+
+        if (_files.length() == 0) { /* count went from 1 to 0 */
+            emit _parent->hashBecameUnavailable(_hash);
+        }
     }
 
     bool Resolver::HashKnowledge::isStillValid(Resolver::VerifiedFile* file) {

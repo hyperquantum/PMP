@@ -69,6 +69,10 @@ namespace PMP {
     Q_SIGNALS:
         void fullIndexationRunStatusChanged(bool running);
 
+        void hashBecameAvailable(PMP::FileHash hash);
+        void hashBecameUnavailable(PMP::FileHash hash);
+        void hashTagInfoChanged(PMP::FileHash hash, QString title, QString artist);
+
     private:
         struct VerifiedFile;
         class HashKnowledge;

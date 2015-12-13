@@ -19,6 +19,8 @@
 
 #include "filehash.h"
 
+//#include <QtDebug>
+
 namespace PMP {
 
     FileHash::FileHash()
@@ -39,4 +41,16 @@ namespace PMP {
             + _sha1.toHex() + "; "
             + _md5.toHex() + ")";
     }
+
+    /* utility object to automatically do the qRegisterMetaType call at program startup */
+    class FileHashInit {
+    public:
+        FileHashInit() {
+            //qDebug() << "FileHashInit running";
+            qRegisterMetaType<PMP::FileHash>();
+        }
+    };
+
+    static FileHashInit fileHashInit;
+
 }

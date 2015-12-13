@@ -27,6 +27,7 @@ QT_FORWARD_DECLARE_CLASS(QTcpServer)
 
 namespace PMP {
 
+    class CollectionMonitor;
     class Generator;
     class Player;
     class Users;
@@ -37,6 +38,7 @@ namespace PMP {
         Server(QObject* parent, const QUuid& serverInstanceIdentifier);
 
         bool listen(Player* player, Generator* generator, Users* users,
+                    CollectionMonitor* collectionMonitor,
                     const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
 
         QString errorString() const;
@@ -63,6 +65,7 @@ namespace PMP {
         Player* _player;
         Generator* _generator;
         Users* _users;
+        CollectionMonitor* _collectionMonitor;
         QTcpServer* _server;
     };
 }

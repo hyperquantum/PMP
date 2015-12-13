@@ -19,6 +19,7 @@
 
 #include "common/filedata.h"
 
+#include "collectionmonitor.h"
 #include "database.h"
 #include "generator.h"
 #include "history.h"
@@ -142,6 +143,20 @@ int main(int argc, char *argv[]) {
     Queue& queue = player.queue();
     History history(&player);
 
+    CollectionMonitor collectionMonitor;
+    QObject::connect(
+        &resolver, &Resolver::hashBecameAvailable,
+        &collectionMonitor, &CollectionMonitor::hashBecameAvailable
+    );
+    QObject::connect(
+        &resolver, &Resolver::hashBecameUnavailable,
+        &collectionMonitor, &CollectionMonitor::hashBecameUnavailable
+    );
+    QObject::connect(
+        &resolver, &Resolver::hashTagInfoChanged,
+        &collectionMonitor, &CollectionMonitor::hashTagInfoChanged
+    );
+
     Generator generator(&queue, &resolver, &history);
     QObject::connect(
         &player, &Player::currentTrackChanged,
@@ -160,7 +175,12 @@ int main(int argc, char *argv[]) {
     out << endl;
 
     Server server(0, serverInstanceIdentifier);
-    if (!server.listen(&player, &generator, &users, QHostAddress::Any, 23432)) {
+    bool listening =
+        server.listen(
+            &player, &generator, &users, &collectionMonitor, QHostAddress::Any, 23432
+        );
+
+    if (!listening) {
         out << "Could not start TCP listener: " << server.errorString() << endl;
         out << "Exiting." << endl;
         return 1;

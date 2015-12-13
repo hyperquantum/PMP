@@ -33,7 +33,8 @@ namespace PMP {
     Server::Server(QObject* parent, const QUuid& serverInstanceIdentifier)
      : QObject(parent),
        _uuid(serverInstanceIdentifier),
-       _player(0), _generator(0), _users(0),
+       _player(nullptr), _generator(nullptr), _users(nullptr),
+       _collectionMonitor(nullptr),
        _server(new QTcpServer(this))
     {
         /* generate a new UUID for ourselves if we did not receive a valid one */
@@ -83,11 +84,13 @@ namespace PMP {
     }
 
     bool Server::listen(Player* player, Generator* generator, Users* users,
+                        CollectionMonitor* collectionMonitor,
                         const QHostAddress& address, quint16 port)
     {
         _player = player;
         _generator = generator;
         _users = users;
+        _collectionMonitor = collectionMonitor;
 
         if (!_server->listen(QHostAddress::Any, port)) {
             return false;
@@ -111,6 +114,8 @@ namespace PMP {
     void Server::newConnectionReceived() {
         QTcpSocket *connection = _server->nextPendingConnection();
 
-        new ConnectedClient(connection, this, _player, _generator, _users);
+        new ConnectedClient(
+            connection, this, _player, _generator, _users, _collectionMonitor
+        );
     }
 }

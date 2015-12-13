@@ -23,6 +23,7 @@
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
 
+#include "collectionmonitor.h"
 #include "database.h"
 #include "generator.h"
 //#include "player.h"
@@ -37,7 +38,8 @@
 namespace PMP {
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
-                                     Generator* generator, Users* users)
+                                     Generator* generator, Users* users,
+                                     CollectionMonitor *collectionMonitor)
      : QObject(server),
        _terminated(false), _socket(socket),
        _server(server), _player(player), _generator(generator), _users(users),
