@@ -21,6 +21,7 @@
 #define PMP_RESOLVER_H
 
 #include "common/audiodata.h"
+#include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
 
 #include <random>
@@ -60,6 +61,8 @@ namespace PMP {
         const TagData* findTagData(const FileHash& hash);
 
         FileHash getRandom();
+        QList<FileHash> getAllHashes();
+        QList<CollectionTrackInfo> getHashesTrackInfo(QList<FileHash> hashes);
 
         uint getID(const FileHash& hash);
 

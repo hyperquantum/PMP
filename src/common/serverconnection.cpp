@@ -573,6 +573,14 @@ namespace PMP {
         sendSingleByteAction(15); /* 15 = request for full indexation running status */
     }
 
+    void ServerConnection::fetchCollection(AbstractCollectionFetcher* fetcher) {
+        auto fetcherReference = _nextRef;
+        _nextRef++;
+
+        _collectionFetchers[fetcherReference] = fetcher;
+        sendCollectionFetchRequestMessage(fetcherReference);
+    }
+
     void ServerConnection::sendInitiateNewUserAccountMessage(QString login,
                                                              quint32 clientReference)
     {
@@ -663,6 +671,20 @@ namespace PMP {
         message += userSalt;
         message += sessionSalt;
         message += hashedPassword;
+
+        sendBinaryMessage(message);
+    }
+
+    void ServerConnection::sendCollectionFetchRequestMessage(uint clientReference) {
+        if (!_binarySendingMode) {
+            return; /* only supported in binary mode */
+        }
+
+        QByteArray message;
+        message.reserve(4 + 4);
+        NetworkUtil::append2Bytes(message, NetworkProtocol::CollectionFetchRequestMessage);
+        NetworkUtil::append2Bytes(message, 0); /* unused */
+        NetworkUtil::append4Bytes(message, clientReference);
 
         sendBinaryMessage(message);
     }
@@ -1154,6 +1176,101 @@ namespace PMP {
             emit receivedUserPlayingFor(userId, login);
         }
             break;
+        case NetworkProtocol::CollectionFetchResponseMessage:
+        {
+            if (messageLength < 4) {
+                return; /* invalid message */
+            }
+
+            int trackCount = (uint)NetworkUtil::get2Bytes(message, 2);
+            if (trackCount == 0
+                || messageLength < 8 + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2)
+            {
+                return; /* irrelevant or invalid message */
+            }
+
+            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+            auto collectionFetcher = _collectionFetchers.value(clientReference, nullptr);
+            if (!collectionFetcher) {
+                return; /* irrelevant or invalid message */
+            }
+
+            int offset = 8;
+            QList<int> offsets;
+            offsets.append(offset);
+
+            while (true) {
+                /* skip hash */
+                /* skip availability */
+                int titleSize =
+                    (uint)NetworkUtil::get2Bytes(
+                        message, offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1);
+                int artistSize =
+                    (uint)NetworkUtil::get2Bytes(
+                        message, offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2);
+                int titleArtistOffset =
+                    offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2;
+
+                if (titleSize > messageLength - titleArtistOffset
+                    || artistSize > messageLength - titleArtistOffset
+                    || (titleSize + artistSize) > messageLength - titleArtistOffset)
+                {
+                    return; /* invalid message */
+                }
+
+                if (titleArtistOffset + titleSize + artistSize == messageLength) {
+                    break; /* end of message */
+                }
+
+                /* at least one more track info follows */
+
+                /* offset for next track */
+                offset = titleArtistOffset + titleSize + artistSize;
+
+                if (offset
+                    + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 > messageLength)
+                {
+                    return;  /* invalid message */
+                }
+
+                offsets.append(offset);
+            }
+
+            qDebug() << "received collection fetch response;  track count:" << trackCount;
+
+            if (trackCount != offsets.size()) {
+                return; /* invalid message */
+            }
+
+            /* now read all track info's */
+            QList<CollectionTrackInfo> infos;
+            infos.reserve(trackCount);
+            for (int i = 0; i < trackCount; ++i) {
+                offset = offsets[i];
+
+                bool ok;
+                FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
+                if (!ok || hash.empty()) {
+                    return; /* invalid message */
+                }
+                offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+
+                quint8 availabilityByte = NetworkUtil::getByte(message, offset);
+                int titleSize = (uint)NetworkUtil::get2Bytes(message, offset + 1);
+                int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 3);
+                offset += 5;
+
+                QString title = NetworkUtil::getUtf8String(message, offset, titleSize);
+                QString artist =
+                    NetworkUtil::getUtf8String(message, offset + titleSize, artistSize);
+
+                CollectionTrackInfo info(hash, availabilityByte & 1, title, artist);
+                infos.append(info);
+            }
+
+            collectionFetcher->receivedData(infos);
+        }
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
@@ -1181,7 +1298,21 @@ namespace PMP {
             return;
         }
 
-        qDebug() << " client reference is unknown";
+        auto collectionFetcher = _collectionFetchers.value(clientReference, nullptr);
+        if (collectionFetcher) {
+            if ((NetworkProtocol::ErrorType)errorType == NetworkProtocol::NoError) {
+                collectionFetcher->completed();
+            }
+            else {
+                qDebug() << "received ERROR code" << errorType << "from collection fetch";
+                collectionFetcher->errorOccurred();
+            }
+
+            _collectionFetchers.remove(clientReference);
+            return;
+        }
+
+        qDebug() << " client reference is unknown:" << clientReference;
 
         switch ((NetworkProtocol::ErrorType) errorType) {
 
@@ -1190,6 +1321,14 @@ namespace PMP {
                      << "intData:" << intData << "";
             break;
         }
+    }
+
+    // ============================================================================ //
+
+    AbstractCollectionFetcher::AbstractCollectionFetcher(QObject* parent)
+     : QObject(parent)
+    {
+        //
     }
 
 }

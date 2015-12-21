@@ -117,7 +117,7 @@ namespace PMP {
 
             qDebug() << "CollectionMonitor: going to send" << fullNotifications.size()
                      << "full notifications and" << availabilityNotifications.size()
-                     << "availability noticifations";
+                     << "availability notifications";
 
             emitFullNotifications(fullNotifications);
             emitAvailabilityNotifications(availabilityNotifications);

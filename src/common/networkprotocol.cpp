@@ -19,6 +19,11 @@
 
 #include "networkprotocol.h"
 
+#include "filehash.h"
+#include "networkutil.h"
+
+#include <limits>
+
 #include <QCryptographicHash>
 
 namespace PMP {
@@ -121,4 +126,32 @@ namespace PMP {
         return "<<<< ????? >>>>";
     }
 
+    void NetworkProtocol::appendHash(QByteArray &buffer, const FileHash &hash) {
+        NetworkUtil::append8Bytes(buffer, hash.length());
+        buffer += hash.SHA1();
+        buffer += hash.MD5();
+        // TODO: check if the length of what we added matches FILEHASH_BYTECOUNT
+    }
+
+    FileHash NetworkProtocol::getHash(const QByteArray& buffer, uint position, bool* ok) {
+        if ((uint)buffer.size() - (uint)FILEHASH_BYTECOUNT < position) {
+            /* not enough bytes to read */
+            if (ok) *ok = false;
+            return FileHash();
+        }
+
+        quint64 lengthPart = NetworkUtil::get8Bytes(buffer, position);
+        position += 8;
+
+        if (lengthPart > std::numeric_limits<uint>::max()) {
+            /* conversion of 64-bit number to platform-specific uint would truncate */
+            if (ok) *ok = false;
+            return FileHash();
+        }
+
+        QByteArray sha1Data = buffer.mid(position, 20);
+        QByteArray md5Data = buffer.mid(position, 16);
+
+        return FileHash(lengthPart, sha1Data, md5Data);
+    }
 }

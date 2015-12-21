@@ -562,6 +562,31 @@ namespace PMP {
         return _hashList[randomIndex];
     }
 
+    QList<FileHash> Resolver::getAllHashes() {
+        QReadLocker lock(&_lock);
+        auto copy = _hashList;
+        return copy;
+    }
+
+    QList<CollectionTrackInfo> Resolver::getHashesTrackInfo(QList<FileHash> hashes) {
+        QReadLocker lock(&_lock);
+
+        QList<CollectionTrackInfo> result;
+        result.reserve(hashes.size());
+
+        Q_FOREACH(auto hash, hashes) {
+            auto knowledge = _hashKnowledge.value(hash, nullptr);
+            if (!knowledge) continue;
+
+            CollectionTrackInfo info(hash, knowledge->isAvailable(),
+                                     knowledge->quickTitle(), knowledge->quickArtist());
+
+            result.append(info);
+        }
+
+        return result;
+    }
+
     uint Resolver::getID(const FileHash& hash) {
         QReadLocker lock(&_lock);
 

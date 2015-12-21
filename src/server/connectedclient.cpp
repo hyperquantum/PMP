@@ -34,6 +34,7 @@
 #include "users.h"
 
 #include <QMap>
+#include <QTimer>
 
 namespace PMP {
 
@@ -718,6 +719,57 @@ namespace PMP {
         message += sessionSalt;
 
         sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::onCollectionTrackInfoBatchToSend(uint clientReference,
+                                                        QList<CollectionTrackInfo> tracks)
+    {
+        const int maxSize = (1 << 16) - 1;
+
+        /* not too big? */
+        if (tracks.size() > maxSize) {
+            /* TODO: maybe delay the second part? */
+            onCollectionTrackInfoBatchToSend(clientReference, tracks.mid(0, maxSize));
+            onCollectionTrackInfoBatchToSend(clientReference, tracks.mid(maxSize));
+            return;
+        }
+
+        /* estimate how much bytes we will need and reserve that memory in the buffer */
+        QByteArray message;
+        message.reserve(
+            2 + 2 + 4
+            + tracks.size() * (NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 + 20 + 15)
+        );
+        NetworkUtil::append2Bytes(message, NetworkProtocol::CollectionFetchResponseMessage);
+        NetworkUtil::append2Bytes(message, tracks.size());
+        NetworkUtil::append4Bytes(message, clientReference);
+
+        for (int i = 0; i < tracks.size(); ++i) {
+            const CollectionTrackInfo& track = tracks[i];
+
+            QString title = track.title();
+            QString artist = track.artist();
+
+            /* worst case: 4 bytes in UTF-8 for each char */
+            title.truncate(maxSize / 4);
+            artist.truncate(maxSize / 4);
+
+            QByteArray titleData = title.toUtf8();
+            QByteArray artistData = artist.toUtf8();
+
+            NetworkProtocol::appendHash(message, track.hash());
+            NetworkUtil::appendByte(message, track.isAvailable() ? 1 : 0);
+            NetworkUtil::append2Bytes(message, (uint)titleData.size());
+            NetworkUtil::append2Bytes(message, (uint)artistData.size());
+            message += titleData;
+            message += artistData;
+        }
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::onCollectionTrackInfoCompleted(uint clientReference) {
+        sendSuccessMessage(clientReference, 0);
     }
 
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
@@ -1408,10 +1460,70 @@ namespace PMP {
             }
         }
             break;
+        case NetworkProtocol::CollectionFetchRequestMessage:
+        {
+            if (messageLength != 8) {
+                return; /* invalid message */
+            }
+
+            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+            handleCollectionFetchRequest(clientReference);
+        }
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
             break; /* unknown message type */
+        }
+    }
+
+    void ConnectedClient::handleCollectionFetchRequest(uint clientReference) {
+        auto sender =
+            new CollectionSender(this, clientReference, &_player->resolver());
+
+        connect(sender, &CollectionSender::sendCollectionList,
+                this, &ConnectedClient::onCollectionTrackInfoBatchToSend);
+
+        connect(sender, &CollectionSender::allSent,
+                this, &ConnectedClient::onCollectionTrackInfoCompleted);
+    }
+
+    /* =============================== CollectionSender =============================== */
+
+    CollectionSender::CollectionSender(ConnectedClient* connection, uint clientReference,
+                                       Resolver *resolver)
+     : QObject(connection), _clientRef(clientReference), _resolver(resolver),
+       _currentIndex(0)
+    {
+        _hashes = _resolver->getAllHashes();
+
+        QTimer::singleShot(0, this, SLOT(sendNextBatch()));
+    }
+
+    void CollectionSender::sendNextBatch() {
+        if (_currentIndex >= _hashes.size()) {
+            qDebug() << "CollectionSender: all completed.  ref=" << _clientRef;
+            emit allSent(_clientRef);
+            return;
+        }
+
+        int batchSize = qMin(30, _hashes.size());
+        batchSize = qMin(batchSize, _hashes.size() - _currentIndex);
+
+        auto batch = _hashes.mid(_currentIndex, batchSize);
+        _currentIndex += batchSize;
+
+        auto infoToSend = _resolver->getHashesTrackInfo(batch);
+        qDebug() << "CollectionSender: have batch of" << infoToSend.size()
+                 << "to send.  ref=" << _clientRef;
+
+        /* schedule next batch already */
+        QTimer::singleShot(100, this, SLOT(sendNextBatch()));
+
+        /* send this batch if it is not empty */
+        if (!infoToSend.isEmpty()) {
+            emit sendCollectionList(_clientRef, infoToSend);
         }
     }
 

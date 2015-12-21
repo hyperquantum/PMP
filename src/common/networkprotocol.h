@@ -25,6 +25,8 @@
 
 namespace PMP {
 
+    class FileHash;
+
     class NetworkProtocol {
     public:
         enum ServerMessageType {
@@ -46,6 +48,7 @@ namespace PMP {
             UserLoginSaltMessage = 15,
             UserPlayingForModeMessage = 16,
             ServerEventNotificationMessage = 17,
+            CollectionFetchResponseMessage = 18,
         };
 
         enum ClientMessageType {
@@ -62,7 +65,8 @@ namespace PMP {
             InitiateNewUserAccountMessage = 10,
             FinishNewUserAccountMessage = 11,
             InitiateLoginMessage = 12,
-            FinishLoginMessage = 13
+            FinishLoginMessage = 13,
+            CollectionFetchRequestMessage = 14,
         };
 
         enum ErrorType {
@@ -95,6 +99,9 @@ namespace PMP {
         static bool isTrackStatusFromRealTrack(quint16 status);
         static QString getPseudoTrackStatusText(quint16 status);
 
+        static const int FILEHASH_BYTECOUNT = 8 /*length*/ + 20 /*SHA-1*/ + 16 /*MD5*/;
+        static void appendHash(QByteArray& buffer, const FileHash& hash);
+        static FileHash getHash(const QByteArray& buffer, uint position, bool* ok);
     };
 }
 #endif

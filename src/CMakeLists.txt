@@ -19,6 +19,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(PMP_COMMON_SOURCES
     common/audiodata.cpp
+    common/collectiontrackinfo.cpp
     common/filedata.cpp
     common/filehash.cpp
     common/networkprotocol.cpp

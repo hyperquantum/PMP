@@ -20,6 +20,8 @@
 #ifndef PMP_CONNECTEDCLIENT_H
 #define PMP_CONNECTEDCLIENT_H
 
+#include "common/collectiontrackinfo.h"
+#include "common/filehash.h"
 #include "common/networkprotocol.h"
 
 #include "player.h" /* for the State enum :( */
@@ -31,8 +33,10 @@
 namespace PMP {
 
     class CollectionMonitor;
+    class CollectionSender;
     class Generator;
     class QueueEntry;
+    class Resolver;
     class Server;
     class Users;
 
@@ -69,6 +73,9 @@ namespace PMP {
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
         void onUserPlayingForChanged(quint32 user);
         void onFullIndexationRunStatusChanged(bool running);
+        void onCollectionTrackInfoBatchToSend(uint clientReference,
+                                              QList<CollectionTrackInfo> tracks);
+        void onCollectionTrackInfoCompleted(uint clientReference);
 
     private:
         void readTextCommands();
@@ -100,6 +107,7 @@ namespace PMP {
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
         void handleBinaryMessage(QByteArray const& message);
+        void handleCollectionFetchRequest(uint clientReference);
 
         bool _terminated;
         QTcpSocket* _socket;
@@ -119,5 +127,26 @@ namespace PMP {
         quint32 _userLoggedIn;
         QString _userLoggedInName;
     };
+
+    class CollectionSender : public QObject {
+        Q_OBJECT
+    public:
+        CollectionSender(ConnectedClient* connection, uint clientReference,
+                         Resolver* resolver);
+
+    Q_SIGNALS:
+        void sendCollectionList(uint clientReference, QList<CollectionTrackInfo> tracks);
+        void allSent(uint clientReference);
+
+    private slots:
+        void sendNextBatch();
+
+    private:
+        uint _clientRef;
+        Resolver* _resolver;
+        QList<FileHash> _hashes;
+        int _currentIndex;
+    };
+
 }
 #endif

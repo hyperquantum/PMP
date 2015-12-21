@@ -20,15 +20,19 @@
 #ifndef PMP_SERVERCONNECTION_H
 #define PMP_SERVERCONNECTION_H
 
+#include "collectiontrackinfo.h"
 #include "tribool.h"
 
 #include <QByteArray>
+#include <QHash>
 #include <QList>
 #include <QObject>
 #include <QTcpSocket>
 #include <QUuid>
 
 namespace PMP {
+
+    class AbstractCollectionFetcher;
 
     /**
         Represents a connection to a PMP server.
@@ -65,6 +69,8 @@ namespace PMP {
         QString userLoggedInName() const;
 
         TriBool doingFullIndexation() const { return _doingFullIndexation; }
+
+        void fetchCollection(AbstractCollectionFetcher* fetcher);
 
     public slots:
         void shutdownServer();
@@ -190,6 +196,8 @@ namespace PMP {
 
         void onFullIndexationRunningStatusReceived(bool running);
 
+        void sendCollectionFetchRequestMessage(uint clientReference);
+
         State _state;
         QTcpSocket _socket;
         QByteArray _readBuffer;
@@ -205,6 +213,19 @@ namespace PMP {
         quint32 _userLoggedInId;
         QString _userLoggedInName;
         TriBool _doingFullIndexation;
+        QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
+    };
+
+    class AbstractCollectionFetcher : public QObject {
+        Q_OBJECT
+    protected:
+        AbstractCollectionFetcher(QObject* parent = 0);
+
+    public slots:
+        virtual void receivedData(QList<CollectionTrackInfo> data) = 0;
+        virtual void completed() = 0;
+        virtual void errorOccurred() = 0;
+
     };
 }
 #endif
