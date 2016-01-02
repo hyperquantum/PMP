@@ -5,6 +5,7 @@ BUGS
  - GUI remote: queue length not updated after initial queue population (only a player status message from the server will trigger an update now)
  - diagnostic logging now produces unreadable text when two different threads write something to the log
  - when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
+ - "Expand" action generates less than 5 new tracks because of multiple candidate rejections (lastHeard too recent)
 
 
 PERFORMANCE ISSUES
