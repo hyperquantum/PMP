@@ -1497,6 +1497,7 @@ namespace PMP {
        _currentIndex(0)
     {
         _hashes = _resolver->getAllHashes();
+        qDebug() << "CollectionSender: starting.  Hash count:" << _hashes.size();
 
         QTimer::singleShot(0, this, SLOT(sendNextBatch()));
     }

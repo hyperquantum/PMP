@@ -25,6 +25,7 @@
 #include <limits>
 
 #include <QCryptographicHash>
+#include <QtDebug>
 
 namespace PMP {
 
@@ -136,6 +137,7 @@ namespace PMP {
     FileHash NetworkProtocol::getHash(const QByteArray& buffer, uint position, bool* ok) {
         if ((uint)buffer.size() - (uint)FILEHASH_BYTECOUNT < position) {
             /* not enough bytes to read */
+            qDebug() << "NetworkProtocol::getHash: ERROR: not enough bytes to read";
             if (ok) *ok = false;
             return FileHash();
         }
@@ -145,6 +147,7 @@ namespace PMP {
 
         if (lengthPart > std::numeric_limits<uint>::max()) {
             /* conversion of 64-bit number to platform-specific uint would truncate */
+            qDebug() << "NetworkProtocol::getHash: ERROR: length overflow";
             if (ok) *ok = false;
             return FileHash();
         }
@@ -152,6 +155,7 @@ namespace PMP {
         QByteArray sha1Data = buffer.mid(position, 20);
         QByteArray md5Data = buffer.mid(position, 16);
 
+        if (ok) *ok = true;
         return FileHash(lengthPart, sha1Data, md5Data);
     }
 }

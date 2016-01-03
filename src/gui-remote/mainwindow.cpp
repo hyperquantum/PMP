@@ -21,6 +21,7 @@
 
 #include "common/serverconnection.h"
 
+#include "collectionwidget.h"
 #include "connectionwidget.h"
 #include "loginwidget.h"
 #include "mainwidget.h"
@@ -28,6 +29,7 @@
 #include "userpickerwidget.h"
 
 #include <QAction>
+#include <QDockWidget>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
@@ -251,6 +253,15 @@ namespace PMP {
         _mainWidget = new MainWidget(this);
         _mainWidget->setConnection(_connection);
         setCentralWidget(_mainWidget);
+
+        auto collectionDock = new QDockWidget(tr("Music Collection"), this);
+        collectionDock->setAllowedAreas(
+            (Qt::DockWidgetAreas)(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea)
+        );
+        auto collectionWidget = new CollectionWidget(collectionDock);
+        collectionWidget->setConnection(_connection);
+        collectionDock->setWidget(collectionWidget);
+        addDockWidget(Qt::LeftDockWidgetArea, collectionDock);
     }
 
     void MainWindow::onCreateAccountClicked() {

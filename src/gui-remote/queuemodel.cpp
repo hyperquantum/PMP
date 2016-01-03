@@ -78,9 +78,9 @@ namespace PMP {
         if (role == Qt::DisplayRole) {
             if (orientation == Qt::Horizontal) {
                 switch (section) {
-                    case 0: return QString("Title");
-                    case 1: return QString("Artist");
-                    case 2: return QString("Length");
+                    case 0: return QString(tr("Title"));
+                    case 1: return QString(tr("Artist"));
+                    case 2: return QString(tr("Length"));
                 }
             }
             else if (orientation == Qt::Vertical) {

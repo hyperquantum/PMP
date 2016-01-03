@@ -63,6 +63,8 @@ set(PMP_SERVER_HEADERS
 set(PMP_GUI_REMOTE_SOURCES
     gui-remote/abstractqueuemonitor.cpp
     gui-remote/autopersonalmodeaction.cpp
+    gui-remote/collectiontablemodel.cpp
+    gui-remote/collectionwidget.cpp
     gui-remote/connectionwidget.cpp
     gui-remote/currenttrackmonitor.cpp
     gui-remote/gui-remote-main.cpp
@@ -80,6 +82,8 @@ set(PMP_GUI_REMOTE_SOURCES
 set(PMP_GUI_REMOTE_HEADERS
     gui-remote/abstractqueuemonitor.h
     gui-remote/autopersonalmodeaction.h
+    gui-remote/collectiontablemodel.h
+    gui-remote/collectionwidget.h
     gui-remote/connectionwidget.h
     gui-remote/currenttrackmonitor.h
     gui-remote/loginwidget.h
@@ -94,6 +98,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/userpickerwidget.h
 )
 set(PMP_GUI_REMOTE_UIS
+    gui-remote/collectionwidget.ui
     gui-remote/connectionwidget.ui
     gui-remote/loginwidget.ui
     gui-remote/mainwidget.ui

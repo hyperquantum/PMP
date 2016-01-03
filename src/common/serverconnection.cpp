@@ -1239,6 +1239,7 @@ namespace PMP {
             qDebug() << "received collection fetch response;  track count:" << trackCount;
 
             if (trackCount != offsets.size()) {
+                qDebug() << " invalid message detected: offsets size:" << offsets.size();
                 return; /* invalid message */
             }
 
@@ -1251,6 +1252,8 @@ namespace PMP {
                 bool ok;
                 FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
                 if (!ok || hash.empty()) {
+                    qDebug() << " invalid message detected: did not read hash correctly;"
+                             << "  ok=" << (ok ? "true" : "false");
                     return; /* invalid message */
                 }
                 offset += NetworkProtocol::FILEHASH_BYTECOUNT;
