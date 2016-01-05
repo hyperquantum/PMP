@@ -975,9 +975,10 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        int messageType = NetworkUtil::get2Bytes(message, 0);
+        auto messageType =
+            (NetworkProtocol::ClientMessageType)NetworkUtil::get2Bytes(message, 0);
 
-        switch ((NetworkProtocol::ClientMessageType)messageType) {
+        switch (messageType) {
         case NetworkProtocol::SingleByteActionMessage:
         {
             if (messageLength != 3) {
@@ -1471,10 +1472,45 @@ namespace PMP {
             handleCollectionFetchRequest(clientReference);
         }
             break;
+        case NetworkProtocol::AddHashToEndOfQueueRequestMessage:
+        case NetworkProtocol::AddHashToFrontOfQueueRequestMessage:
+            parseAddHashToQueueRequest(message, messageType);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
             break; /* unknown message type */
+        }
+    }
+
+    void ConnectedClient::parseAddHashToQueueRequest(const QByteArray& message,
+                                           NetworkProtocol::ClientMessageType messageType)
+    {
+        qDebug() << "received 'add filehash to queue' request";
+
+        if (message.length() != 2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT) {
+            /* invalid message */
+            return;
+        }
+
+        bool ok;
+        FileHash hash = NetworkProtocol::getHash(message, 4, &ok);
+        if (!ok || hash.empty()) {
+            return; /* invalid message */
+        }
+
+        qDebug() << " request contains hash:" << hash.dumpToString();
+
+        Queue& queue = _player->queue();
+
+        if (messageType == NetworkProtocol::AddHashToEndOfQueueRequestMessage) {
+            queue.enqueue(hash);
+        }
+        else if (messageType == NetworkProtocol::AddHashToFrontOfQueueRequestMessage) {
+            queue.insertAtFront(hash);
+        }
+        else {
+            return; /* invalid message */
         }
     }
 

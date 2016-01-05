@@ -37,6 +37,8 @@ namespace PMP {
 
         void addFirstTime(QList<CollectionTrackInfo> tracks);
 
+        CollectionTrackInfo* trackAt(const QModelIndex& index) const;
+
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
         QVariant headerData(int section, Qt::Orientation orientation,

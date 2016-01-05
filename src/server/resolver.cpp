@@ -280,7 +280,7 @@ namespace PMP {
     /* ========================== Resolver ========================== */
 
     Resolver::Resolver()
-     : _lock(QReadWriteLock::Recursive),
+     : _lock(QMutex::Recursive),
        _randomDevice(), _randomEngine(_randomDevice()),
        _fullIndexationRunning(false), _fullIndexationWatcher(this)
     {
@@ -312,12 +312,12 @@ namespace PMP {
     }
 
     void Resolver::setMusicPaths(QList<QString> paths) {
-        QWriteLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
         _musicPaths = paths;
     }
 
     QList<QString> Resolver::musicPaths() {
-        QReadLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
         QList<QString> paths = _musicPaths;
         paths.detach();
         return paths;
@@ -386,7 +386,7 @@ namespace PMP {
     Resolver::HashKnowledge* Resolver::registerHash(const FileHash& hash) {
         if (hash.empty()) return nullptr; /* invalid hash */
 
-        QWriteLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
 
         auto knowledge = _hashKnowledge.value(hash, nullptr);
         if (!knowledge) {
@@ -416,7 +416,7 @@ namespace PMP {
     Resolver::HashKnowledge* Resolver::registerData(const FileData& data) {
         if (data.hash().empty()) { return nullptr; }
 
-        QWriteLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
 
         auto knowledge = registerHash(data.hash());
         if (!knowledge) return nullptr; /* something went wrong */
@@ -432,7 +432,7 @@ namespace PMP {
     {
         if (file.hash().empty()) { return; }
 
-        QWriteLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
 
         auto knowledge = registerData(file);
         registerFile(knowledge, filename, fileSize, fileLastModified);
@@ -446,20 +446,20 @@ namespace PMP {
             return;
         }
 
-        QWriteLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
 
         hash->addPath(filename, fileSize, fileLastModified);
     }
 
     bool Resolver::haveFileFor(const FileHash& hash) {
-        QWriteLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
 
         auto knowledge = _hashKnowledge.value(hash, nullptr);
         return knowledge && knowledge->isAvailable();
     }
 
     bool Resolver::pathStillValid(const FileHash& hash, QString path) {
-        QWriteLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
 
         VerifiedFile* file = _paths.value(path, nullptr);
         if (!file) return false;
@@ -469,28 +469,42 @@ namespace PMP {
     }
 
     QString Resolver::findPath(const FileHash& hash, bool fast) {
-        QWriteLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
 
         qDebug() << "Resolver::findPath for hash " << hash.dumpToString();
 
         auto knowledge = _hashKnowledge.value(hash, nullptr);
         if (knowledge) {
             QString path = knowledge->getFile();
-            if (path.length() > 0) return path;
+            if (path.length() > 0) {
+                qDebug() << " found path directly.";
+                return path;
+            }
         }
 
         /* stop here if we had to get a result fast */
-        if (fast) return "";
+        if (fast) {
+            qDebug() << " no precomputed path available; we give up because no time left";
+            return "";
+        }
 
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) {
+            qDebug() << " database not available";
             return ""; /* database unusable */
         }
 
         uint hashID = getID(hash);
+        if (!hashID) {
+            qDebug() << " hash not in database, cannot find path.";
+            return "";
+        }
 
         QList<QString> filenames = db->getFilenames(hashID);
-        if (filenames.empty()) return "";
+        if (filenames.empty()) {
+            qDebug() << " no known filenames, cannot find path.";
+            return "";
+        }
 
         qDebug() << " going to see if the file was moved somewhere else";
 
@@ -536,7 +550,7 @@ namespace PMP {
     }
 
     const AudioData& Resolver::findAudioData(const FileHash& hash) {
-        QReadLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
 
         auto knowledge = _hashKnowledge.value(hash, nullptr);
         if (knowledge) return knowledge->audio();
@@ -545,7 +559,7 @@ namespace PMP {
     }
 
     const TagData* Resolver::findTagData(const FileHash& hash) {
-        QReadLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
 
         auto knowledge = _hashKnowledge.value(hash, nullptr);
         if (knowledge) return knowledge->findBestTag();
@@ -554,7 +568,7 @@ namespace PMP {
     }
 
     FileHash Resolver::getRandom() {
-        QReadLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
         if (_hashList.empty()) return FileHash();
 
         std::uniform_int_distribution<int> uniformDistr(0, _hashList.size() - 1);
@@ -563,13 +577,13 @@ namespace PMP {
     }
 
     QList<FileHash> Resolver::getAllHashes() {
-        QReadLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
         auto copy = _hashList;
         return copy;
     }
 
     QList<CollectionTrackInfo> Resolver::getHashesTrackInfo(QList<FileHash> hashes) {
-        QReadLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
 
         QList<CollectionTrackInfo> result;
         result.reserve(hashes.size());
@@ -588,7 +602,7 @@ namespace PMP {
     }
 
     uint Resolver::getID(const FileHash& hash) {
-        QReadLocker lock(&_lock);
+        QMutexLocker lock(&_lock);
 
         auto knowledge = _hashKnowledge.value(hash, nullptr);
         if (knowledge) return knowledge->id();

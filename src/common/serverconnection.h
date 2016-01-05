@@ -99,6 +99,9 @@ namespace PMP {
         void deleteQueueEntry(uint queueID);
         void moveQueueEntry(uint queueID, qint16 offsetDiff);
 
+        void insertQueueEntryAtFront(FileHash const& hash);
+        void insertQueueEntryAtEnd(FileHash const& hash);
+
         void sendTrackInfoRequest(uint queueID);
         void sendTrackInfoRequest(QList<uint> const& queueIDs);
 

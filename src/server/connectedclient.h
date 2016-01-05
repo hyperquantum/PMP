@@ -108,6 +108,8 @@ namespace PMP {
                                       QByteArray const& sessionSalt);
         void handleBinaryMessage(QByteArray const& message);
         void handleCollectionFetchRequest(uint clientReference);
+        void parseAddHashToQueueRequest(QByteArray const& message,
+                                        NetworkProtocol::ClientMessageType messageType);
 
         bool _terminated;
         QTcpSocket* _socket;

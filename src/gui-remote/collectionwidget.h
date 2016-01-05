@@ -40,6 +40,9 @@ namespace PMP {
 
         void setConnection(ServerConnection* connection);
 
+    private slots:
+        void collectionContextMenuRequested(const QPoint& position);
+
     private:
         Ui::CollectionWidget* _ui;
         ServerConnection* _connection;

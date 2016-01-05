@@ -67,6 +67,8 @@ namespace PMP {
             InitiateLoginMessage = 12,
             FinishLoginMessage = 13,
             CollectionFetchRequestMessage = 14,
+            AddHashToEndOfQueueRequestMessage = 15,
+            AddHashToFrontOfQueueRequestMessage = 16,
         };
 
         enum ErrorType {

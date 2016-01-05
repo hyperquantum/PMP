@@ -297,6 +297,26 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ServerConnection::insertQueueEntryAtFront(FileHash const& hash) {
+        QByteArray message;
+        message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        NetworkUtil::append2Bytes(message, NetworkProtocol::AddHashToFrontOfQueueRequestMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkProtocol::appendHash(message, hash);
+
+        sendBinaryMessage(message);
+    }
+
+    void ServerConnection::insertQueueEntryAtEnd(FileHash const& hash) {
+        QByteArray message;
+        message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        NetworkUtil::append2Bytes(message, NetworkProtocol::AddHashToEndOfQueueRequestMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkProtocol::appendHash(message, hash);
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::sendTrackInfoRequest(uint queueID) {
         if (queueID == 0) return;
 

@@ -153,6 +153,7 @@ namespace PMP {
         }
 
         QByteArray sha1Data = buffer.mid(position, 20);
+        position += 20;
         QByteArray md5Data = buffer.mid(position, 16);
 
         if (ok) *ok = true;

@@ -24,6 +24,9 @@
 
 #include "collectiontablemodel.h"
 
+#include <QMenu>
+#include <QtDebug>
+
 namespace PMP {
 
     CollectionWidget::CollectionWidget(QWidget* parent)
@@ -32,6 +35,11 @@ namespace PMP {
     {
         _ui->setupUi(this);
         _ui->collectionTableView->setModel(_collectionModel);
+
+        connect(
+            _ui->collectionTableView, &QTableView::customContextMenuRequested,
+            this, &CollectionWidget::collectionContextMenuRequested
+        );
     }
 
     CollectionWidget::~CollectionWidget() {
@@ -41,6 +49,40 @@ namespace PMP {
     void CollectionWidget::setConnection(ServerConnection* connection) {
         _connection = connection;
         _collectionModel->setConnection(connection);
+    }
+
+    void CollectionWidget::collectionContextMenuRequested(const QPoint& position) {
+        qDebug() << "CollectionWidget: contextmenu requested";
+
+        auto index = _ui->collectionTableView->indexAt(position);
+
+        if (index.isValid()) {
+            //int row = index.row();
+            auto track = _collectionModel->trackAt(index);
+            if (!track) return;
+
+            QMenu* menu = new QMenu(this);
+
+            QAction* enqueueFrontAction = menu->addAction("Add to front of queue");
+            connect(
+                enqueueFrontAction, &QAction::triggered,
+                [this, track]() {
+                    qDebug() << "collection context menu: enqueue (front) triggered";
+                    _connection->insertQueueEntryAtFront(track->hash());
+                }
+            );
+
+            QAction* enqueueEndAction = menu->addAction("Add to end of queue");
+            connect(
+                enqueueEndAction, &QAction::triggered,
+                [this, track]() {
+                    qDebug() << "collection context menu: enqueue (end) triggered";
+                    _connection->insertQueueEntryAtEnd(track->hash());
+                }
+            );
+
+            menu->popup(_ui->collectionTableView->viewport()->mapToGlobal(position));
+        }
     }
 
 }

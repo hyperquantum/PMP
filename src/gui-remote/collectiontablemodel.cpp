@@ -49,6 +49,15 @@ namespace PMP {
         }
     }
 
+    CollectionTrackInfo* CollectionTableModel::trackAt(const QModelIndex& index) const {
+        int row = index.row();
+        if (row < 0 || row >= _tracks.size()) {
+            return nullptr;
+        }
+
+        return _tracks[row];
+    }
+
     int CollectionTableModel::rowCount(const QModelIndex& parent) const {
         //qDebug() << "CollectionTableModel::rowCount returning" << _modelRows;
         return _tracks.size();

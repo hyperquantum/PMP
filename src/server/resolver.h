@@ -30,8 +30,8 @@
 #include <QFutureWatcher>
 #include <QHash>
 #include <QMultiHash>
+#include <QMutex>
 #include <QObject>
-#include <QReadWriteLock>
 #include <QString>
 
 namespace PMP {
@@ -88,7 +88,7 @@ namespace PMP {
 
         void doFullIndexation();
 
-        QReadWriteLock _lock;
+        QMutex _lock;
         std::random_device _randomDevice;
         std::mt19937 _randomEngine;
 

@@ -136,6 +136,10 @@ namespace PMP {
         return entry;
     }
 
+    QueueEntry* Queue::insertAtFront(const FileHash& hash) {
+        return enqueueAtFront(new QueueEntry(this, hash));
+    }
+
     void Queue::insertBreakAtFront() {
         if (!_queue.empty() && _queue[0]->type() == QueueEntryType::Break)
             return;
