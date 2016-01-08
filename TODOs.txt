@@ -15,6 +15,7 @@ PERFORMANCE ISSUES
 
 FEATURES
 
+ - use a shuffled pool of tracks as source for the random track generator, and draw from it until it's empty
  - work around the need for a full indexation at server startup
  - associate a title and artist with each hash and save that information in the database
  - provide 'forgot password' functionality to enable a user to reset their password
