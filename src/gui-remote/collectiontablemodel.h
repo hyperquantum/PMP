@@ -47,8 +47,8 @@ namespace PMP {
 
     private:
         int findInsertIndexFor(const CollectionTrackInfo& track) const;
-        /*int getOrder(const CollectionTrackInfo& track1,
-                     const CollectionTrackInfo& track2) const;*/
+        static bool compareLessThan(const CollectionTrackInfo* track1,
+                                    const CollectionTrackInfo* track2);
 
         QHash<FileHash, CollectionTrackInfo*> _hashes;
         QList<CollectionTrackInfo*> _tracks;
@@ -66,7 +66,8 @@ namespace PMP {
 
     private:
         CollectionTableModel* _model;
-        uint _tracksReceivedCount;
+        //uint _tracksReceivedCount;
+        QList<CollectionTrackInfo> _tracksReceived;
     };
 
 }

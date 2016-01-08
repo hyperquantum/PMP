@@ -21,6 +21,8 @@
 
 #include <QtDebug>
 
+#include <algorithm>
+
 namespace PMP {
 
     CollectionTableModel::CollectionTableModel(QObject* parent)
@@ -35,6 +37,39 @@ namespace PMP {
     }
 
     void CollectionTableModel::addFirstTime(QList<CollectionTrackInfo> tracks) {
+        qDebug() << "CollectionTableModel::addFirstTime called for" << tracks.size()
+                 << "tracks";
+
+        if (_hashes.empty()) { /* fast path */
+            QHash<FileHash, CollectionTrackInfo*> hashes;
+            hashes.reserve(tracks.size());
+
+            Q_FOREACH(auto track, tracks) {
+                if (hashes.contains(track.hash()))
+                    continue; /* already present */
+
+                auto trackObj = new CollectionTrackInfo(track);
+                hashes.insert(track.hash(), trackObj);
+            }
+
+            auto tracks = hashes.values();
+            // TODO: put sort into another thread
+            std::sort(
+                tracks.begin(),
+                tracks.end(),
+                [=](CollectionTrackInfo* t1, CollectionTrackInfo* t2) {
+                    return compareLessThan(t1, t2);
+                }
+            );
+
+            beginInsertRows(QModelIndex(), 0, tracks.size() - 1);
+            _hashes = hashes;
+            _tracks = tracks;
+            endInsertRows();
+
+            return;
+        }
+
         Q_FOREACH(auto track, tracks) {
             if (_hashes.contains(track.hash()))
                 continue; /* already present */
@@ -97,41 +132,72 @@ namespace PMP {
     int CollectionTableModel::findInsertIndexFor(const CollectionTrackInfo& track) const {
         if (_tracks.empty()) return 0;
 
-        return _tracks.size(); /* FIXME: sorting */
+        int lower = 0;
+        int upper = _tracks.size() - 1;
+        if (compareLessThan(_tracks[upper], &track)) return upper + 1;
 
+        if (compareLessThan(&track, _tracks[lower])) return lower;
 
+        /* binary search */
+        while (upper - lower > 20) {
+            int middle = lower / 2 + upper / 2;
 
+            if (compareLessThan(&track, _tracks[middle])) {
+                upper = middle;
+            }
+            else {
+                lower = middle;
+            }
+        }
+
+        /* last part: linear search */
+        for (int i = lower; i < upper; ++i) {
+            if (!compareLessThan(&track, _tracks[i])) return i;
+        }
+
+        return upper;
     }
 
-    /*int CollectionTableModel::getOrder(const CollectionTrackInfo& track1,
-                                       const CollectionTrackInfo& track2) const
+    bool CollectionTableModel::compareLessThan(const CollectionTrackInfo* track1,
+                                               const CollectionTrackInfo* track2)
     {
-        QString title1 = track1.title();
-        QString title2 = track2.title();
+        QString title1 = track1->title();
+        QString title2 = track2->title();
+        QString artist1 = track1->artist();
+        QString artist2 = track2->artist();
 
-        if (title1 < title2) return -1;
-        if (title1 < title2) return -1;
+        bool empty1 = title1.isEmpty() && artist1.isEmpty();
+        bool empty2 = title2.isEmpty() && artist2.isEmpty();
 
+        if (empty1 || empty2) {
+            if (!empty1) return true; /* not empty comes first */
+            return false;
+        }
 
-
-    }*/
+        if (title1 < title2) return true;
+        if (title2 < title1) return false;
+        if (artist1 < artist2) return true;
+        /*if (artist2 < artist1)*/ return false;
+    }
 
     // ============================================================================ //
 
     CollectionTableFetcher::CollectionTableFetcher(CollectionTableModel* parent)
-     : AbstractCollectionFetcher(parent), _model(parent), _tracksReceivedCount(0)
+     : AbstractCollectionFetcher(parent), _model(parent)//, _tracksReceivedCount(0)
     {
         //
     }
 
     void CollectionTableFetcher::receivedData(QList<CollectionTrackInfo> data) {
-        _tracksReceivedCount += data.size();
-        _model->addFirstTime(data);
+        //_tracksReceivedCount += data.size();
+        _tracksReceived += data;
+        //_model->addFirstTime(data);
     }
 
     void CollectionTableFetcher::completed() {
         qDebug() << "CollectionTableFetcher: fetch completed.  Tracks received:"
-                 << _tracksReceivedCount;
+                 << _tracksReceived.size(); //_tracksReceivedCount;
+        _model->addFirstTime(_tracksReceived);
         this->deleteLater();
     }
 
