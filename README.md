@@ -182,8 +182,7 @@ Since this project is in a very early stage of development, you can expect a few
  * Only MP3 files supported for now  
    → because hashing is only implemented for MP3 files at this time
  * Database requires MySQL (maybe MariaDB), SQLite is not an option
- * No manual selection of tracks yet, only dynamic mode
- * No scanning yet for new/modified files while the server is running, only a simple indexation is performed when the server is started
+ * No automatic detection yet of new/modified/deleted files while the server is running, a full indexation must be started manually
  * Queue manipulation in the clients is still limited: only move/delete of one entry at a time.
  * No custom filters for dynamic mode yet
  * Etc.
@@ -211,7 +210,6 @@ Importance/priority:
 
 ###Medium/large effort improvements:
 
-  * (**H**) Browsing the server music files from the remote, and adding those tracks to the queue
   * (**H**) Handling of files that are the same track but have a different hash
   * (**M**) Find a way to identify artists
   * (**H**) Dynamic mode: avoid repeating the same artist within a certain timespan
