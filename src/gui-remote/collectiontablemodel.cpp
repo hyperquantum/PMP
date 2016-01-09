@@ -174,10 +174,11 @@ namespace PMP {
             return false;
         }
 
-        if (title1 < title2) return true;
-        if (title2 < title1) return false;
-        if (artist1 < artist2) return true;
-        /*if (artist2 < artist1)*/ return false;
+        int titleComparison = title1.localeAwareCompare(title2);
+        if (titleComparison != 0) return titleComparison < 0;
+
+        int artistComparison = artist1.localeAwareCompare(artist2);
+        return artistComparison < 0;
     }
 
     // ============================================================================ //
