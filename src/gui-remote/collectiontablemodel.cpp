@@ -40,13 +40,16 @@ namespace PMP {
         qDebug() << "CollectionTableModel::addFirstTime called for" << tracks.size()
                  << "tracks";
 
-        if (_hashes.empty()) { /* fast path */
+        if (_hashes.empty()) { /* fast path: insert all at once */
             QHash<FileHash, CollectionTrackInfo*> hashes;
             hashes.reserve(tracks.size());
 
-            Q_FOREACH(auto track, tracks) {
+            Q_FOREACH(CollectionTrackInfo const& track, tracks) {
                 if (hashes.contains(track.hash()))
                     continue; /* already present */
+
+                if (!track.isAvailable() && track.titleAndArtistUnknown())
+                    continue; /* not interesting enough to add */
 
                 auto trackObj = new CollectionTrackInfo(track);
                 hashes.insert(track.hash(), trackObj);
@@ -70,9 +73,12 @@ namespace PMP {
             return;
         }
 
-        Q_FOREACH(auto track, tracks) {
+        Q_FOREACH(CollectionTrackInfo const& track, tracks) {
             if (_hashes.contains(track.hash()))
                 continue; /* already present */
+
+            if (!track.isAvailable() && track.titleAndArtistUnknown())
+                continue; /* not interesting enough to add */
 
             int index = findInsertIndexFor(track);
             auto trackObj = new CollectionTrackInfo(track);
@@ -161,22 +167,21 @@ namespace PMP {
     bool CollectionTableModel::compareLessThan(const CollectionTrackInfo* track1,
                                                const CollectionTrackInfo* track2)
     {
-        QString title1 = track1->title();
-        QString title2 = track2->title();
-        QString artist1 = track1->artist();
-        QString artist2 = track2->artist();
-
-        bool empty1 = title1.isEmpty() && artist1.isEmpty();
-        bool empty2 = title2.isEmpty() && artist2.isEmpty();
+        bool empty1 = track1->titleAndArtistUnknown();
+        bool empty2 = track2->titleAndArtistUnknown();
 
         if (empty1 || empty2) {
             if (!empty1) return true; /* not empty comes first */
             return false;
         }
 
+        QString title1 = track1->title();
+        QString title2 = track2->title();
         int titleComparison = title1.localeAwareCompare(title2);
         if (titleComparison != 0) return titleComparison < 0;
 
+        QString artist1 = track1->artist();
+        QString artist2 = track2->artist();
         int artistComparison = artist1.localeAwareCompare(artist2);
         return artistComparison < 0;
     }

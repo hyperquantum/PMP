@@ -48,6 +48,10 @@ namespace PMP {
         const QString& artist() const { return _artist; }
         // TODO: track length
 
+        bool titleAndArtistUnknown() const {
+            return _title.isEmpty() && _artist.isEmpty();
+        }
+
     private:
         FileHash _hash;
         bool _isAvailable;
