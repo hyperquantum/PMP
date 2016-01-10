@@ -261,7 +261,7 @@ namespace PMP {
         auto collectionWidget = new CollectionWidget(collectionDock);
         collectionWidget->setConnection(_connection);
         collectionDock->setWidget(collectionWidget);
-        addDockWidget(Qt::LeftDockWidgetArea, collectionDock);
+        addDockWidget(Qt::RightDockWidgetArea, collectionDock);
     }
 
     void MainWindow::onCreateAccountClicked() {
