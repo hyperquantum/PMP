@@ -20,6 +20,7 @@
 #include "resolver.h"
 
 #include "common/filedata.h"
+//#include "common/util.h"
 
 #include "database.h"
 
@@ -281,7 +282,7 @@ namespace PMP {
 
     Resolver::Resolver()
      : _lock(QMutex::Recursive),
-       _randomDevice(), _randomEngine(_randomDevice()),
+       //_randomEngine(Util::getRandomSeed()),
        _fullIndexationRunning(false), _fullIndexationWatcher(this)
     {
         connect(
@@ -567,6 +568,7 @@ namespace PMP {
         return nullptr;
     }
 
+    /*
     FileHash Resolver::getRandom() {
         QMutexLocker lock(&_lock);
         if (_hashList.empty()) return FileHash();
@@ -575,6 +577,7 @@ namespace PMP {
         int randomIndex = uniformDistr(_randomEngine);
         return _hashList[randomIndex];
     }
+    */
 
     QList<FileHash> Resolver::getAllHashes() {
         QMutexLocker lock(&_lock);

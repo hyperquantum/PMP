@@ -19,6 +19,8 @@
 
 #include "generator.h"
 
+#include "common/util.h"
+
 #include "database.h"
 #include "history.h"
 #include "queue.h"
@@ -27,6 +29,8 @@
 
 #include <QtDebug>
 #include <QTimer>
+
+#include <algorithm>
 
 namespace PMP {
 
@@ -53,23 +57,33 @@ namespace PMP {
     /* ========================== Generator ========================== */
 
     Generator::Generator(Queue* queue, Resolver* resolver, History* history)
-     : _currentTrack(0),
+     : _randomEngine(Util::getRandomSeed()), _currentTrack(0),
        _queue(queue), _resolver(resolver), _history(history),
        _enabled(false), _refillPending(false),
        _upcomingRuntimeSeconds(0), _upcomingTimer(new QTimer(this)),
        _noRepetitionSpan(60 * 60 /* one hour */), _userPlayingFor(0)
     {
         connect(
-            _queue, SIGNAL(entryRemoved(quint32, quint32)),
-            this, SLOT(queueEntryRemoved(quint32, quint32))
+            _queue, &Queue::entryRemoved,
+            this, &Generator::queueEntryRemoved
         );
         connect(
-            _upcomingTimer, SIGNAL(timeout()),
-            this, SLOT(checkRefillUpcomingBuffer())
+            _upcomingTimer, &QTimer::timeout,
+            this, &Generator::checkRefillUpcomingBuffer
+        );
+        connect(
+            _resolver, &Resolver::hashBecameAvailable,
+            this, &Generator::hashBecameAvailable
+        );
+        connect(
+            _resolver, &Resolver::hashBecameUnavailable,
+            this, &Generator::hashBecameUnavailable
         );
 
-        /* one time, to get a minimal start amount of tracks */
-        checkRefillUpcomingBuffer();
+        _hashesSource = _resolver->getAllHashes();
+        _hashesInSource = _hashesSource.toSet();
+        std::shuffle(_hashesSource.begin(), _hashesSource.end(), _randomEngine);
+        qDebug() << "Generator: starting with source of size" << _hashesSource.size();
     }
 
     bool Generator::enabled() const {
@@ -92,7 +106,7 @@ namespace PMP {
     void Generator::enable() {
         if (_enabled) return; /* enabled already */
 
-        qDebug() << "generator enabled";
+        qDebug() << "Generator enabled";
         _enabled = true;
 
         emit enabledChanged(true);
@@ -106,7 +120,7 @@ namespace PMP {
     void Generator::disable() {
         if (!_enabled) return; /* disabled already */
 
-        qDebug() << "generator disabled";
+        qDebug() << "Generator disabled";
         _enabled = false;
 
         _upcomingTimer->stop();
@@ -115,7 +129,7 @@ namespace PMP {
 
     void Generator::requestQueueExpansion() {
         if ((uint)_upcoming.size() < minimalUpcomingCount) {
-            qDebug() << "generator: not executing queue expansion because upcoming buffer is low";
+            qDebug() << "Generator: no queue expansion because upcoming buffer is low";
             return;
         }
 
@@ -134,10 +148,61 @@ namespace PMP {
         requestQueueRefill();
     }
 
+    void Generator::hashBecameAvailable(FileHash hash) {
+        if (_hashesInSource.contains(hash)
+            || _hashesSpent.contains(hash))
+        {
+            return; /* already known */
+        }
+
+        _hashesInSource.insert(hash);
+
+        /* put it at a random index in the source list */
+        unsigned endIndex = _hashesSource.size();
+        std::uniform_int_distribution<unsigned> range(0, endIndex);
+        unsigned randomIndex = range(_randomEngine);
+
+        /* Avoid shifting the list with 'insert()'; we append and then use swap.
+           We can do this because the list is in random order anyway. */
+        _hashesSource.append(hash); /* append is at endIndex */
+        if (randomIndex < endIndex) {
+            std::swap(_hashesSource[randomIndex], _hashesSource[endIndex]);
+        }
+    }
+
+    void Generator::hashBecameUnavailable(PMP::FileHash hash) {
+        /* We don't remove it from the source because that is expensive. We will simply
+           leave it inside the source, because unavailable tracks are filtered when
+           pulled out of the source. */
+        _hashesSpent.remove(hash);
+    }
+
     void Generator::requestQueueRefill() {
         if (_refillPending) return;
         _refillPending = true;
         QTimer::singleShot(100, this, SLOT(checkAndRefillQueue()));
+    }
+
+    FileHash Generator::getNextRandomHash() {
+        if (_hashesSource.isEmpty()) {
+            if (_hashesSpent.isEmpty()) { return FileHash(); /* nothing available */ }
+
+            /* rebuild source */
+            qDebug() << "Generator: rebuilding source list";
+            _hashesSource = _hashesSpent.toList();
+            std::shuffle(_hashesSource.begin(), _hashesSource.end(), _randomEngine);
+        }
+
+        FileHash randomHash = _hashesSource.takeLast();
+        if (!randomHash.empty()) { _hashesSpent.insert(randomHash); }
+
+        auto sourceHashCount = _hashesSource.size();
+        if (sourceHashCount % 10 == 0) {
+            qDebug() << "Generator: source list down to" << sourceHashCount
+                     << " ; spent list count:" << _hashesSpent.size();
+        }
+
+        return randomHash;
     }
 
     void Generator::checkRefillUpcomingBuffer() {
@@ -148,7 +213,7 @@ namespace PMP {
         {
             iterationsLeft--;
 
-            FileHash randomHash = _resolver->getRandom();
+            FileHash randomHash = getNextRandomHash();
             if (randomHash.empty()) { break; /* nothing available */ }
 
             Candidate* c = new Candidate(randomHash);

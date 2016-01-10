@@ -20,13 +20,17 @@
 #ifndef PMP_GENERATOR_H
 #define PMP_GENERATOR_H
 
+#include "common/filehash.h"
+
 #include <QObject>
 #include <QQueue>
+#include <QSet>
 #include <QTimer>
+
+#include <random>
 
 namespace PMP {
 
-    class FileHash;
     class History;
     class Queue;
     class QueueEntry;
@@ -57,6 +61,8 @@ namespace PMP {
 
     private slots:
         void queueEntryRemoved(quint32, quint32);
+        void hashBecameAvailable(PMP::FileHash hash);
+        void hashBecameUnavailable(PMP::FileHash hash);
 
         void checkRefillUpcomingBuffer();
         void checkAndRefillQueue();
@@ -71,10 +77,15 @@ namespace PMP {
         static const int maximalUpcomingCount = 3 * desiredQueueLength + 3 * expandCount;
         static const int desiredUpcomingRuntimeSeconds = 3600; /* 1 hour */
 
+        FileHash getNextRandomHash();
         void requestQueueRefill();
         int expandQueue(int howManyTracksToAdd, int maxIterations);
         bool satisfiesFilters(Candidate* candidate);
 
+        std::mt19937 _randomEngine;
+        QList<FileHash> _hashesSource;
+        QSet<FileHash> _hashesInSource;
+        QSet<FileHash> _hashesSpent;
         QueueEntry const* _currentTrack;
         Queue* _queue;
         Resolver* _resolver;

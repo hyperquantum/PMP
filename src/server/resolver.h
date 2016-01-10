@@ -24,7 +24,7 @@
 #include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
 
-#include <random>
+//#include <random>
 
 #include <QDateTime>
 #include <QFutureWatcher>
@@ -60,7 +60,7 @@ namespace PMP {
         const AudioData& findAudioData(const FileHash& hash);
         const TagData* findTagData(const FileHash& hash);
 
-        FileHash getRandom();
+        //FileHash getRandom();
         QList<FileHash> getAllHashes();
         QList<CollectionTrackInfo> getHashesTrackInfo(QList<FileHash> hashes);
 
@@ -89,8 +89,7 @@ namespace PMP {
         void doFullIndexation();
 
         QMutex _lock;
-        std::random_device _randomDevice;
-        std::mt19937 _randomEngine;
+        //std::mt19937 _randomEngine;
 
         QList<QString> _musicPaths;
 

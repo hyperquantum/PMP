@@ -26,6 +26,7 @@ set(PMP_COMMON_SOURCES
     common/networkutil.cpp
     common/serverconnection.cpp
     common/tagdata.cpp
+    common/util.cpp
 )
 set(PMP_COMMON_HEADERS
     common/serverconnection.h
@@ -123,6 +124,10 @@ add_executable(PMP-HashTool
     common/tagdata.cpp
 )
 add_executable(PMP-Cmd-Remote tools/cmd-remote-main.cpp)
+add_executable(quicktest
+    tools/quicktest.cpp
+    common/util.cpp
+)
 
 add_executable(PMP-Server
     ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS}
@@ -137,6 +142,7 @@ add_executable(PMP-GUI-Remote
 
 # Qt dependencies for each executable
 qt5_use_modules(PMP-HashTool Core)
+qt5_use_modules(quicktest Core)
 qt5_use_modules(PMP-Server Core Multimedia Network Sql)
 qt5_use_modules(PMP-Cmd-Remote Core Network)
 qt5_use_modules(PMP-GUI-Remote Core Gui Network Widgets)
