@@ -32,6 +32,11 @@ namespace PMP {
     }
 
     void CollectionTableModel::setConnection(ServerConnection* connection) {
+        connect(
+            connection, &ServerConnection::collectionTracksChanged,
+            this, &CollectionTableModel::onCollectionTracksChanged
+        );
+
         auto fetcher = new CollectionTableFetcher(this);
         connection->fetchCollection(fetcher);
     }
@@ -65,13 +70,19 @@ namespace PMP {
                 }
             );
 
-            beginInsertRows(QModelIndex(), 0, tracks.size() - 1);
-            _hashes = hashes;
-            _tracks = tracks;
-            endInsertRows();
+            qDebug() << " addFirstTime: inserting" << tracks.size() << "tracks";
+
+            if (!tracks.empty()) {
+                beginInsertRows(QModelIndex(), 0, tracks.size() - 1);
+                _hashes = hashes;
+                _tracks = tracks;
+                endInsertRows();
+            }
 
             return;
         }
+
+        qDebug() << " addFirstTime: will have to insert/update one by one";
 
         Q_FOREACH(CollectionTrackInfo const& track, tracks) {
             if (_hashes.contains(track.hash()))
@@ -87,6 +98,67 @@ namespace PMP {
             _hashes.insert(track.hash(), trackObj);
             _tracks.insert(index, trackObj);
             endInsertRows();
+        }
+    }
+
+    void CollectionTableModel::onCollectionTracksChanged(
+                                                       QList<CollectionTrackInfo> changes)
+    {
+        qDebug() << "CollectionTableModel: got tracks changed event; count:"
+                 << changes.size();
+
+        Q_FOREACH(auto const& track, changes) {
+            if (!_hashes.contains(track.hash())) {
+                /* add only if interesting enough */
+                if (!track.isAvailable() && track.titleAndArtistUnknown())
+                    continue;
+
+                /* add new item */
+
+                int index = findInsertIndexFor(track);
+                auto trackObj = new CollectionTrackInfo(track);
+
+                beginInsertRows(QModelIndex(), index, index);
+                _hashes.insert(track.hash(), trackObj);
+                _tracks.insert(index, trackObj);
+                endInsertRows();
+                continue;
+            }
+
+            /* update an existing item */
+
+            auto const* existing = _hashes[track.hash()];
+            if (track == *existing) continue; /* nothing changed for this track */
+
+            qDebug() << "CollectionTableModel: updating existing track: "
+                     << track.title() << "-" << track.artist();
+
+            int oldIndex = findIndexOf(*existing);
+            if (oldIndex < 0) {
+                qDebug() << "  OOPS: index not found of track to update!!";
+                continue;
+            }
+            auto trackObj = new CollectionTrackInfo(track);
+            int newIndex = findInsertIndexFor(*trackObj);
+
+            if (oldIndex != newIndex) {
+                /* the track is moved from the old to the new position */
+
+                /* the to-index has a slightly different meaning for Qt, so we need
+                 *  adjustment */
+                int qtToIndex = (oldIndex < newIndex) ? newIndex + 1 : newIndex;
+                beginMoveRows(QModelIndex(), oldIndex, oldIndex, QModelIndex(), qtToIndex);
+                _tracks.removeAt(oldIndex);
+                _tracks.insert(newIndex, trackObj);
+                _hashes[track.hash()] = trackObj;
+                endMoveRows();
+            }
+            else {
+                _hashes[track.hash()] = trackObj;
+                // TODO: how to notify the view that the row has changed?
+            }
+
+            delete existing;
         }
     }
 
@@ -140,50 +212,77 @@ namespace PMP {
 
         int lower = 0;
         int upper = _tracks.size() - 1;
-        if (compareLessThan(_tracks[upper], &track)) return upper + 1;
-
-        if (compareLessThan(&track, _tracks[lower])) return lower;
+        if (compare(*_tracks[upper], track) < 0) return upper + 1;
+        if (compare(track, *_tracks[0]) < 0) return 0;
 
         /* binary search */
-        while (upper - lower > 20) {
+        while (upper - lower > 5) {
             int middle = lower / 2 + upper / 2;
 
-            if (compareLessThan(&track, _tracks[middle])) {
+            int comparison = compare(track, *_tracks[middle]);
+            if (comparison < 0) {
                 upper = middle;
             }
-            else {
+            else if (comparison > 0) {
                 lower = middle;
             }
+            else return middle;
         }
 
         /* last part: linear search */
         for (int i = lower; i < upper; ++i) {
-            if (!compareLessThan(&track, _tracks[i])) return i;
+            int comparison = compare(track, *_tracks[i]);
+            if (comparison <= 0) return i;
         }
 
         return upper;
     }
 
+    int CollectionTableModel::findIndexOf(const CollectionTrackInfo& track) const {
+        int index = findInsertIndexFor(track);
+        if (index >= _tracks.size()) return -1; /* not found */
+
+        if (track.hash() == _tracks[index]->hash()) return index;
+
+        return -1;
+    }
+
+    int CollectionTableModel::compare(const CollectionTrackInfo &track1,
+                                      const CollectionTrackInfo &track2)
+    {
+        bool empty1 = track1.titleAndArtistUnknown();
+        bool empty2 = track2.titleAndArtistUnknown();
+
+        if (empty1 || empty2) {
+            if (!empty1) {
+                return -1; /* track 1 goes first */
+            }
+            else if (!empty2) {
+                return 1; /* track 2 goes first */
+            }
+
+            /* both are empty */
+
+            return PMP::compare(track1.hash(), track2.hash());
+        }
+
+        QString title1 = track1.title();
+        QString title2 = track2.title();
+        int titleComparison = title1.localeAwareCompare(title2);
+        if (titleComparison != 0) return titleComparison;
+
+        QString artist1 = track1.artist();
+        QString artist2 = track2.artist();
+        int artistComparison = artist1.localeAwareCompare(artist2);
+        if (artistComparison != 0) return artistComparison;
+
+        return PMP::compare(track1.hash(), track2.hash());
+    }
+
     bool CollectionTableModel::compareLessThan(const CollectionTrackInfo* track1,
                                                const CollectionTrackInfo* track2)
     {
-        bool empty1 = track1->titleAndArtistUnknown();
-        bool empty2 = track2->titleAndArtistUnknown();
-
-        if (empty1 || empty2) {
-            if (!empty1) return true; /* not empty comes first */
-            return false;
-        }
-
-        QString title1 = track1->title();
-        QString title2 = track2->title();
-        int titleComparison = title1.localeAwareCompare(title2);
-        if (titleComparison != 0) return titleComparison < 0;
-
-        QString artist1 = track1->artist();
-        QString artist2 = track2->artist();
-        int artistComparison = artist1.localeAwareCompare(artist2);
-        return artistComparison < 0;
+        return compare(*track1, *track2) < 0;
     }
 
     // ============================================================================ //

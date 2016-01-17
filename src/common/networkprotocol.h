@@ -49,6 +49,7 @@ namespace PMP {
             UserPlayingForModeMessage = 16,
             ServerEventNotificationMessage = 17,
             CollectionFetchResponseMessage = 18,
+            CollectionChangeNotificationMessage = 19,
         };
 
         enum ClientMessageType {

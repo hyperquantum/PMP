@@ -21,6 +21,7 @@
 #define PMP_SERVERCONNECTION_H
 
 #include "collectiontrackinfo.h"
+#include "networkprotocol.h"
 #include "tribool.h"
 
 #include <QByteArray>
@@ -163,6 +164,8 @@ namespace PMP {
         void fullIndexationStarted();
         void fullIndexationFinished();
 
+        void collectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
+
     private slots:
         void onConnected();
         void onReadyRead();
@@ -198,6 +201,9 @@ namespace PMP {
                                    QByteArray const& blobData);
 
         void onFullIndexationRunningStatusReceived(bool running);
+
+        void parseTrackInfoBatchMessage(QByteArray const& message,
+                                        NetworkProtocol::ServerMessageType messageType);
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 

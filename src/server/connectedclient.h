@@ -76,6 +76,8 @@ namespace PMP {
         void onCollectionTrackInfoBatchToSend(uint clientReference,
                                               QList<CollectionTrackInfo> tracks);
         void onCollectionTrackInfoCompleted(uint clientReference);
+        void onHashAvailabilityChanged(QList<QPair<PMP::FileHash, bool> > changes);
+        void onHashInfoChanged(QList<PMP::CollectionTrackInfo> changes);
 
     private:
         void readTextCommands();
@@ -91,8 +93,8 @@ namespace PMP {
         void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
         void sendQueueEntryMovedMessage(quint32 fromOffset, quint32 toOffset,
                                         quint32 queueID);
-        void sendTrackInfoMessage(quint32 queueID);
-        void sendTrackInfoMessage(QList<quint32> const& queueIDs);
+        void sendQueueEntryInfoMessage(quint32 queueID);
+        void sendQueueEntryInfoMessage(QList<quint32> const& queueIDs);
         quint16 createTrackStatusFor(QueueEntry* entry);
         void sendPossibleTrackFilenames(quint32 queueID, QList<QString> const& names);
         void sendNewUserAccountSaltMessage(QString login, QByteArray const& salt);
@@ -106,6 +108,8 @@ namespace PMP {
                               QByteArray const& blobData);
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
+        void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
+                                       QList<CollectionTrackInfo> tracks);
         void handleBinaryMessage(QByteArray const& message);
         void handleCollectionFetchRequest(uint clientReference);
         void parseAddHashToQueueRequest(QByteArray const& message,

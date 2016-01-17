@@ -20,7 +20,7 @@
 #ifndef PMP_COLLECTIONMONITOR_H
 #define PMP_COLLECTIONMONITOR_H
 
-#include "common/filehash.h"
+#include "common/collectiontrackinfo.h"
 
 #include <QHash>
 #include <QMetaType>
@@ -29,17 +29,29 @@
 
 namespace PMP {
 
-    class CollectionNotificationInfo {
-    public:
-        FileHash hash;
-        bool isAvailable;
-        QString title, artist;
-    };
-
     /*! class that monitors the collection on behalf of connected remotes */
     class CollectionMonitor : public QObject {
         Q_OBJECT
     public:
+        CollectionMonitor(QObject* parent = 0);
+
+    public slots:
+        void hashBecameAvailable(PMP::FileHash hash);
+        void hashBecameUnavailable(PMP::FileHash hash);
+        void hashTagInfoChanged(PMP::FileHash hash, QString title, QString artist);
+
+    Q_SIGNALS:
+        void hashAvailabilityChanged(QList<QPair<PMP::FileHash, bool> > changes);
+        void hashInfoChanged(QList<PMP::CollectionTrackInfo> changes);
+
+    private slots:
+        void emitNotifications();
+
+    private:
+        void checkNeedToSendNotifications();
+        void emitFullNotifications(QList<FileHash> hashes);
+        void emitAvailabilityNotifications(QList<FileHash> hashes);
+
         struct HashInfo {
             bool isAvailable;
             QString title, artist;
@@ -51,25 +63,6 @@ namespace PMP {
             }
         };
 
-        CollectionMonitor(QObject* parent = 0);
-
-    public slots:
-        void hashBecameAvailable(PMP::FileHash hash);
-        void hashBecameUnavailable(PMP::FileHash hash);
-        void hashTagInfoChanged(PMP::FileHash hash, QString title, QString artist);
-
-    Q_SIGNALS:
-        void hashAvailabilityChanged(QList<QPair<PMP::FileHash, bool> > changes);
-        void hashInfoChanged(QList<PMP::CollectionNotificationInfo> changes);
-
-    private slots:
-        void emitNotifications();
-
-    private:
-        void checkNeedToSendNotifications();
-        void emitFullNotifications(QList<FileHash> hashes);
-        void emitAvailabilityNotifications(QList<FileHash> hashes);
-
         struct Changed {
             bool availability;
             bool tags;
@@ -80,7 +73,4 @@ namespace PMP {
         uint _pendingTagNotificationCount;
     };
 }
-
-Q_DECLARE_METATYPE(PMP::CollectionNotificationInfo)
-
 #endif

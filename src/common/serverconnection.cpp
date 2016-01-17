@@ -738,9 +738,10 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        int messageType = NetworkUtil::get2Bytes(message, 0);
+        auto messageType =
+            (NetworkProtocol::ServerMessageType)NetworkUtil::get2Bytes(message, 0);
 
-        switch ((NetworkProtocol::ServerMessageType)messageType) {
+        switch (messageType) {
         case NetworkProtocol::ServerEventNotificationMessage:
         {
             if (messageLength != 4) {
@@ -1197,107 +1198,125 @@ namespace PMP {
         }
             break;
         case NetworkProtocol::CollectionFetchResponseMessage:
-        {
-            if (messageLength < 4) {
-                return; /* invalid message */
-            }
-
-            int trackCount = (uint)NetworkUtil::get2Bytes(message, 2);
-            if (trackCount == 0
-                || messageLength < 8 + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2)
-            {
-                return; /* irrelevant or invalid message */
-            }
-
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-            auto collectionFetcher = _collectionFetchers.value(clientReference, nullptr);
-            if (!collectionFetcher) {
-                return; /* irrelevant or invalid message */
-            }
-
-            int offset = 8;
-            QList<int> offsets;
-            offsets.append(offset);
-
-            while (true) {
-                /* skip hash */
-                /* skip availability */
-                int titleSize =
-                    (uint)NetworkUtil::get2Bytes(
-                        message, offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1);
-                int artistSize =
-                    (uint)NetworkUtil::get2Bytes(
-                        message, offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2);
-                int titleArtistOffset =
-                    offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2;
-
-                if (titleSize > messageLength - titleArtistOffset
-                    || artistSize > messageLength - titleArtistOffset
-                    || (titleSize + artistSize) > messageLength - titleArtistOffset)
-                {
-                    return; /* invalid message */
-                }
-
-                if (titleArtistOffset + titleSize + artistSize == messageLength) {
-                    break; /* end of message */
-                }
-
-                /* at least one more track info follows */
-
-                /* offset for next track */
-                offset = titleArtistOffset + titleSize + artistSize;
-
-                if (offset
-                    + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 > messageLength)
-                {
-                    return;  /* invalid message */
-                }
-
-                offsets.append(offset);
-            }
-
-            qDebug() << "received collection fetch response;  track count:" << trackCount;
-
-            if (trackCount != offsets.size()) {
-                qDebug() << " invalid message detected: offsets size:" << offsets.size();
-                return; /* invalid message */
-            }
-
-            /* now read all track info's */
-            QList<CollectionTrackInfo> infos;
-            infos.reserve(trackCount);
-            for (int i = 0; i < trackCount; ++i) {
-                offset = offsets[i];
-
-                bool ok;
-                FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-                if (!ok || hash.empty()) {
-                    qDebug() << " invalid message detected: did not read hash correctly;"
-                             << "  ok=" << (ok ? "true" : "false");
-                    return; /* invalid message */
-                }
-                offset += NetworkProtocol::FILEHASH_BYTECOUNT;
-
-                quint8 availabilityByte = NetworkUtil::getByte(message, offset);
-                int titleSize = (uint)NetworkUtil::get2Bytes(message, offset + 1);
-                int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 3);
-                offset += 5;
-
-                QString title = NetworkUtil::getUtf8String(message, offset, titleSize);
-                QString artist =
-                    NetworkUtil::getUtf8String(message, offset + titleSize, artistSize);
-
-                CollectionTrackInfo info(hash, availabilityByte & 1, title, artist);
-                infos.append(info);
-            }
-
-            collectionFetcher->receivedData(infos);
-        }
+        case NetworkProtocol::CollectionChangeNotificationMessage:
+            parseTrackInfoBatchMessage(message, messageType);
             break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
             break; /* unknown message type */
+        }
+    }
+
+    void ServerConnection::parseTrackInfoBatchMessage(QByteArray const& message,
+                                           NetworkProtocol::ServerMessageType messageType)
+    {
+        qint32 messageLength = message.length();
+        if (messageLength < 4) {
+            return; /* invalid message */
+        }
+
+        bool isNotification =
+            messageType == NetworkProtocol::CollectionChangeNotificationMessage;
+
+        int offset = isNotification ? 4 : 8;
+
+        int trackCount = (uint)NetworkUtil::get2Bytes(message, 2);
+        if (trackCount == 0
+            || messageLength < offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2)
+        {
+            return; /* irrelevant or invalid message */
+        }
+
+        AbstractCollectionFetcher* collectionFetcher = nullptr;
+        if (!isNotification) {
+            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+            collectionFetcher = _collectionFetchers.value(clientReference, nullptr);
+            if (!collectionFetcher) {
+                return; /* irrelevant or invalid message */
+            }
+        }
+
+        QList<int> offsets;
+        offsets.append(offset);
+
+        while (true) {
+            /* skip hash */
+            /* skip availability */
+            int titleSize =
+                (uint)NetworkUtil::get2Bytes(
+                    message, offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1);
+            int artistSize =
+                (uint)NetworkUtil::get2Bytes(
+                    message, offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2);
+            int titleArtistOffset =
+                offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2;
+
+            if (titleSize > messageLength - titleArtistOffset
+                || artistSize > messageLength - titleArtistOffset
+                || (titleSize + artistSize) > messageLength - titleArtistOffset)
+            {
+                return; /* invalid message */
+            }
+
+            if (titleArtistOffset + titleSize + artistSize == messageLength) {
+                break; /* end of message */
+            }
+
+            /* at least one more track info follows */
+
+            /* offset for next track */
+            offset = titleArtistOffset + titleSize + artistSize;
+
+            if (offset
+                + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 > messageLength)
+            {
+                return;  /* invalid message */
+            }
+
+            offsets.append(offset);
+        }
+
+        qDebug() << "received collection track info message;  track count:" << trackCount;
+
+        if (trackCount != offsets.size()) {
+            qDebug() << " invalid message detected: offsets size:" << offsets.size();
+            return; /* invalid message */
+        }
+
+        /* now read all track info's */
+        QList<CollectionTrackInfo> infos;
+        infos.reserve(trackCount);
+        for (int i = 0; i < trackCount; ++i) {
+            offset = offsets[i];
+
+            bool ok;
+            FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
+            if (!ok || hash.empty()) {
+                qDebug() << " invalid message detected: did not read hash correctly;"
+                         << "  ok=" << (ok ? "true" : "false");
+                return; /* invalid message */
+            }
+            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+
+            quint8 availabilityByte = NetworkUtil::getByte(message, offset);
+            int titleSize = (uint)NetworkUtil::get2Bytes(message, offset + 1);
+            int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 3);
+            offset += 5;
+
+            QString title = NetworkUtil::getUtf8String(message, offset, titleSize);
+            QString artist =
+                NetworkUtil::getUtf8String(message, offset + titleSize, artistSize);
+
+            CollectionTrackInfo info(hash, availabilityByte & 1, title, artist);
+            infos.append(info);
+        }
+
+        if (isNotification) {
+            emit collectionTracksChanged(infos);
+        }
+        else {
+            collectionFetcher->receivedData(infos);
         }
     }
 

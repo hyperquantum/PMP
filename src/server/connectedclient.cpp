@@ -40,10 +40,11 @@ namespace PMP {
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,
-                                     CollectionMonitor *collectionMonitor)
+                                     CollectionMonitor* collectionMonitor)
      : QObject(server),
        _terminated(false), _socket(socket),
        _server(server), _player(player), _generator(generator), _users(users),
+       _collectionMonitor(collectionMonitor),
        _binaryMode(false), _clientProtocolNo(-1), _lastSentNowPlayingID(0),
        _userLoggedIn(0)
     {
@@ -107,6 +108,15 @@ namespace PMP {
         connect(
             resolver, &Resolver::fullIndexationRunStatusChanged,
             this, &ConnectedClient::onFullIndexationRunStatusChanged
+        );
+
+        connect(
+            collectionMonitor, &CollectionMonitor::hashAvailabilityChanged,
+            this, &ConnectedClient::onHashAvailabilityChanged
+        );
+        connect(
+            collectionMonitor, &CollectionMonitor::hashInfoChanged,
+            this, &ConnectedClient::onHashInfoChanged
         );
 
         /* send greeting */
@@ -563,7 +573,7 @@ namespace PMP {
         }
     }
 
-    void ConnectedClient::sendTrackInfoMessage(quint32 queueID) {
+    void ConnectedClient::sendQueueEntryInfoMessage(quint32 queueID) {
         QueueEntry* track = _player->queue().lookup(queueID);
         if (track == 0) { return; /* sorry, cannot send */ }
 
@@ -597,7 +607,7 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendTrackInfoMessage(QList<quint32> const& queueIDs) {
+    void ConnectedClient::sendQueueEntryInfoMessage(QList<quint32> const& queueIDs) {
         if (queueIDs.empty()) {
             return;
         }
@@ -607,8 +617,8 @@ namespace PMP {
         /* not too big? */
         if (queueIDs.size() > maxSize) {
             /* TODO: maybe delay the second part? */
-            sendTrackInfoMessage(queueIDs.mid(0, maxSize));
-            sendTrackInfoMessage(queueIDs.mid(maxSize));
+            sendQueueEntryInfoMessage(queueIDs.mid(0, maxSize));
+            sendQueueEntryInfoMessage(queueIDs.mid(maxSize));
             return;
         }
 
@@ -724,13 +734,22 @@ namespace PMP {
     void ConnectedClient::onCollectionTrackInfoBatchToSend(uint clientReference,
                                                         QList<CollectionTrackInfo> tracks)
     {
+        sendTrackInfoBatchMessage(clientReference, false, tracks);
+    }
+
+    void ConnectedClient::sendTrackInfoBatchMessage(uint clientReference,
+                                                    bool isNotification,
+                                                    QList<CollectionTrackInfo> tracks)
+    {
         const int maxSize = (1 << 16) - 1;
 
         /* not too big? */
         if (tracks.size() > maxSize) {
             /* TODO: maybe delay the second part? */
-            onCollectionTrackInfoBatchToSend(clientReference, tracks.mid(0, maxSize));
-            onCollectionTrackInfoBatchToSend(clientReference, tracks.mid(maxSize));
+            sendTrackInfoBatchMessage(clientReference, isNotification,
+                                      tracks.mid(0, maxSize));
+            sendTrackInfoBatchMessage(clientReference, isNotification,
+                                      tracks.mid(maxSize));
             return;
         }
 
@@ -740,9 +759,15 @@ namespace PMP {
             2 + 2 + 4
             + tracks.size() * (NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 + 20 + 15)
         );
-        NetworkUtil::append2Bytes(message, NetworkProtocol::CollectionFetchResponseMessage);
+        NetworkUtil::append2Bytes(
+            message,
+            isNotification ? NetworkProtocol::CollectionChangeNotificationMessage
+                           : NetworkProtocol::CollectionFetchResponseMessage
+        );
         NetworkUtil::append2Bytes(message, tracks.size());
-        NetworkUtil::append4Bytes(message, clientReference);
+        if (!isNotification) {
+            NetworkUtil::append4Bytes(message, clientReference);
+        }
 
         for (int i = 0; i < tracks.size(); ++i) {
             const CollectionTrackInfo& track = tracks[i];
@@ -766,6 +791,17 @@ namespace PMP {
         }
 
         sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::onHashAvailabilityChanged(QList<QPair<FileHash, bool> > changes)
+    {
+        // TODO
+
+
+    }
+
+    void ConnectedClient::onHashInfoChanged(QList<CollectionTrackInfo> changes) {
+        sendTrackInfoBatchMessage(0, true, changes);
     }
 
     void ConnectedClient::onCollectionTrackInfoCompleted(uint clientReference) {
@@ -1094,7 +1130,7 @@ namespace PMP {
 
             qDebug() << "received track info request for Q-ID" << queueID;
 
-            sendTrackInfoMessage(queueID);
+            sendQueueEntryInfoMessage(queueID);
         }
             break;
         case NetworkProtocol::BulkTrackInfoRequestMessage:
@@ -1119,7 +1155,7 @@ namespace PMP {
 
             qDebug() << "received bulk track info request for" << QIDs.size() << "tracks";
 
-            sendTrackInfoMessage(QIDs);
+            sendQueueEntryInfoMessage(QIDs);
         }
             break;
         case NetworkProtocol::QueueFetchRequestMessage:

@@ -58,6 +58,19 @@ namespace PMP {
         QString _title, _artist;
     };
 
+    inline bool operator==(const CollectionTrackInfo& me,
+                           const CollectionTrackInfo& other)
+    {
+        return me.title() == other.title()
+                && me.hash() == other.hash()
+                && me.artist() == other.artist();
+    }
+
+    inline bool operator!=(const CollectionTrackInfo& me,
+                           const CollectionTrackInfo& other)
+    {
+        return !(me == other);
+    }
 }
 
 Q_DECLARE_METATYPE(PMP::CollectionTrackInfo)

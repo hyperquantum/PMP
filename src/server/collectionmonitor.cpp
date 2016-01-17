@@ -128,7 +128,7 @@ namespace PMP {
     }
 
     void CollectionMonitor::emitFullNotifications(QList<FileHash> hashes) {
-        QList<CollectionNotificationInfo> notifications;
+        QList<CollectionTrackInfo> notifications;
         notifications.reserve(hashes.size());
 
         Q_FOREACH(FileHash h, hashes) {
@@ -136,12 +136,7 @@ namespace PMP {
             if (it == _collection.end()) continue; /* disappeared?? */
 
             const HashInfo& value = it.value();
-            CollectionNotificationInfo info;
-            info.hash = h;
-            info.isAvailable = value.isAvailable;
-            info.title = value.title;
-            info.artist = value.artist;
-
+            CollectionTrackInfo info(h, value.isAvailable, value.title, value.artist);
             notifications.append(info);
         }
 
@@ -161,16 +156,4 @@ namespace PMP {
 
         emit hashAvailabilityChanged(notifications);
     }
-
-
-    /* utility object to automatically do the qRegisterMetaType call at program startup */
-    class CollectionNotificationInfoInit {
-    public:
-        CollectionNotificationInfoInit() {
-            qRegisterMetaType<PMP::CollectionNotificationInfo>();
-        }
-    };
-
-    static CollectionNotificationInfoInit collectionNotificationInfoInit;
-
 }

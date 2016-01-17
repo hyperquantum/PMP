@@ -45,8 +45,14 @@ namespace PMP {
                             int role = Qt::DisplayRole) const;
         QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
 
+    private slots:
+        void onCollectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
+
     private:
         int findInsertIndexFor(const CollectionTrackInfo& track) const;
+        int findIndexOf(const CollectionTrackInfo& track) const;
+        static int compare(const CollectionTrackInfo& track1,
+                           const CollectionTrackInfo &track2);
         static bool compareLessThan(const CollectionTrackInfo* track1,
                                     const CollectionTrackInfo* track2);
 

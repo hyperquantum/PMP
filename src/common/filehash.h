@@ -33,7 +33,9 @@ namespace PMP {
         FileHash(uint length, const QByteArray& sha1,
             const QByteArray& md5);
 
-        bool empty() const { return _length == 0 && _sha1.size() == 0 && _md5.size() == 0; }
+        bool empty() const {
+            return _length == 0 && _sha1.size() == 0 && _md5.size() == 0;
+        }
 
         uint length() const { return _length; }
         const QByteArray& SHA1() const { return _sha1; }
@@ -61,6 +63,35 @@ namespace PMP {
         return hashID.length()
             ^ qHash(hashID.SHA1())
             ^ qHash(hashID.MD5());
+    }
+
+    inline int compare(const FileHash& me, const FileHash& other) {
+        if (me.length() < other.length()) return -1;
+        if (other.length() < me.length()) return 1;
+
+        if (me.SHA1() < other.SHA1()) return -1;
+        if (other.SHA1() < me.SHA1()) return 1;
+
+        if (me.MD5() < other.MD5()) return -1;
+        if (other.MD5() < me.MD5()) return 1;
+
+        return 0;
+    }
+
+    inline bool operator<(const FileHash& me, const FileHash& other) {
+        return compare(me, other) < 0;
+    }
+
+    inline bool operator<=(const FileHash& me, const FileHash& other) {
+        return compare(me, other) <= 0;
+    }
+
+    inline bool operator>(const FileHash& me, const FileHash& other) {
+        return compare(me, other) > 0;
+    }
+
+    inline bool operator>=(const FileHash& me, const FileHash& other) {
+        return compare(me, other) >= 0;
     }
 }
 
