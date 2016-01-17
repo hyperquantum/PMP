@@ -207,7 +207,6 @@ Importance/priority:
   * (**L**) Time-based auto-stop function
   * (**L**) Naming a PMP Server instance (e.g. "living room")
 
-
 ###Medium/large effort improvements:
 
   * (**H**) Handling of files that are the same track but have a different hash
@@ -221,5 +220,6 @@ Importance/priority:
   * (**L**) Crossfading
   * (**M**) Bridging of PMP server instances, to access music from another machine
   * (**M**) Support for other formats than just MP3
+  * (**M**) Android remote for a server instance elsewhere
   * (**L**) Manual song play to a second audio device (for headphones)
   * (**L**) Support for other database providers than MySQL
