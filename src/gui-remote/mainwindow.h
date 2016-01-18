@@ -24,7 +24,9 @@
 #include <QMainWindow>
 
 QT_FORWARD_DECLARE_CLASS(QAction)
+QT_FORWARD_DECLARE_CLASS(QDockWidget)
 QT_FORWARD_DECLARE_CLASS(QLabel)
+QT_FORWARD_DECLARE_CLASS(QMenu)
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP {
@@ -80,11 +82,14 @@ namespace PMP {
         UserAccountCreationWidget* _userAccountCreationWidget;
         LoginWidget* _loginWidget;
         MainWidget* _mainWidget;
+        QDockWidget* _musicCollectionDock;
 
         QAction* _serverAdminAction;
         QAction* _shutdownServerAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
+
+        QMenu* _viewMenu;
     };
 }
 #endif

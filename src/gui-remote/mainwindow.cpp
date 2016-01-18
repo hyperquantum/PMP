@@ -43,8 +43,14 @@ namespace PMP {
      : QMainWindow(parent),
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
-       _connection(0), _userPickerWidget(0), _loginWidget(0), _mainWidget(0)
+       _connection(nullptr), _userPickerWidget(nullptr), _loginWidget(nullptr),
+       _mainWidget(nullptr),
+       _musicCollectionDock(new QDockWidget(tr("Music collection"), this))
     {
+        _musicCollectionDock->setAllowedAreas(
+            (Qt::DockWidgetAreas)(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea)
+        );
+
         createMenus();
 
         _leftStatus = new QLabel("", this);
@@ -90,18 +96,22 @@ namespace PMP {
 
         /* Menus */
 
-        QMenu* menu = menuBar()->addMenu(tr("&PMP"));
+        QMenu* pmpMenu = menuBar()->addMenu(tr("&PMP"));
 
-        menu->addAction(_startFullIndexationAction);
+        pmpMenu->addAction(_startFullIndexationAction);
 
-        QMenu* serverAdminMenu = menu->addMenu(tr("Server &administration"));
+        QMenu* serverAdminMenu = pmpMenu->addMenu(tr("Server &administration"));
         _serverAdminAction = serverAdminMenu->menuAction();
         _serverAdminAction->setVisible(false); /* needs active connection */
-
         serverAdminMenu->addAction(_shutdownServerAction);
 
-        menu->addSeparator();
-        menu->addAction(_closeAction);
+        pmpMenu->addSeparator();
+        pmpMenu->addAction(_closeAction);
+
+        _viewMenu = menuBar()->addMenu(tr("&View"));
+        _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
+
+        _viewMenu->addAction(_musicCollectionDock->toggleViewAction());
     }
 
     void MainWindow::updateRightStatus() {
@@ -254,14 +264,12 @@ namespace PMP {
         _mainWidget->setConnection(_connection);
         setCentralWidget(_mainWidget);
 
-        auto collectionDock = new QDockWidget(tr("Music Collection"), this);
-        collectionDock->setAllowedAreas(
-            (Qt::DockWidgetAreas)(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea)
-        );
-        auto collectionWidget = new CollectionWidget(collectionDock);
+        auto collectionWidget = new CollectionWidget(_musicCollectionDock);
         collectionWidget->setConnection(_connection);
-        collectionDock->setWidget(collectionWidget);
-        addDockWidget(Qt::RightDockWidgetArea, collectionDock);
+        _musicCollectionDock->setWidget(collectionWidget);
+        addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
+
+        _viewMenu->menuAction()->setVisible(true);
     }
 
     void MainWindow::onCreateAccountClicked() {
