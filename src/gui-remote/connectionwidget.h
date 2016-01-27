@@ -20,6 +20,8 @@
 #ifndef PMP_CONNECTIONWIDGET_H
 #define PMP_CONNECTIONWIDGET_H
 
+#include <QHostAddress>
+#include <QUuid>
 #include <QWidget>
 
 namespace Ui {
@@ -42,6 +44,7 @@ namespace PMP {
         void doConnect(QString server, uint port);
 
     private slots:
+        void foundServer(QHostAddress address, quint16 port, QUuid id);
         void connectClicked();
 
     private:

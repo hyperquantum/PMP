@@ -19,12 +19,16 @@
 
 #include "server.h"
 
+#include "common/networkutil.h"
+
 #include "connectedclient.h"
 #include "serversettings.h"
 
 #include <QByteArray>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QTimer>
+#include <QUdpSocket>
 
 #define QT_USE_QSTRINGBUILDER
 
@@ -35,7 +39,8 @@ namespace PMP {
        _uuid(serverInstanceIdentifier),
        _player(nullptr), _generator(nullptr), _users(nullptr),
        _collectionMonitor(nullptr),
-       _server(new QTcpServer(this))
+       _server(new QTcpServer(this)), _udpSocket(new QUdpSocket(this)),
+       _broadcastTimer(new QTimer(this))
     {
         /* generate a new UUID for ourselves if we did not receive a valid one */
         if (_uuid.isNull()) _uuid = QUuid::createUuid();
@@ -60,7 +65,14 @@ namespace PMP {
             _serverPassword = serverPassword.toString();
         }
 
-        connect(_server, SIGNAL(newConnection()), this, SLOT(newConnectionReceived()));
+        connect(
+            _server, &QTcpServer::newConnection,
+            this, &Server::newConnectionReceived
+        );
+
+        connect(_udpSocket, &QUdpSocket::readyRead, this, &Server::readPendingDatagrams);
+
+        connect(_broadcastTimer, &QTimer::timeout, this, &Server::sendBroadcast);
     }
 
     QString Server::generateServerPassword() {
@@ -96,6 +108,17 @@ namespace PMP {
             return false;
         }
 
+        bool bound =
+            _udpSocket->bind(
+                23432, QAbstractSocket::ShareAddress | QAbstractSocket::ReuseAddressHint
+            );
+        if (!bound) {
+            qDebug() << "Server: UDPSOCKET BIND FAILED";
+        }
+
+        sendBroadcast();
+        //_broadcastTimer->start(5000);
+
         return true;
     }
 
@@ -108,6 +131,7 @@ namespace PMP {
     }
 
     void Server::shutdown() {
+        _broadcastTimer->stop();
         emit shuttingDown();
     }
 
@@ -117,5 +141,32 @@ namespace PMP {
         new ConnectedClient(
             connection, this, _player, _generator, _users, _collectionMonitor
         );
+    }
+
+    void Server::sendBroadcast() {
+        QByteArray datagram = "PMPSERVERANNOUNCEv01 ";
+        NetworkUtil::append2Bytes(datagram, port());
+
+        _udpSocket->writeDatagram(datagram, QHostAddress::Broadcast, 23433);
+    }
+
+    void Server::readPendingDatagrams() {
+        while (_udpSocket->hasPendingDatagrams()) {
+            QByteArray datagram;
+            datagram.resize(_udpSocket->pendingDatagramSize());
+            QHostAddress sender;
+            quint16 senderPort;
+
+            _udpSocket->readDatagram(
+                datagram.data(), datagram.size(), &sender, &senderPort
+            );
+
+            if (datagram.size() < 11 || !datagram.startsWith("PMPPROBEv01"))
+                continue;
+
+            qDebug() << "Server: received probe from client port" << senderPort;
+
+            sendBroadcast();
+        }
     }
 }

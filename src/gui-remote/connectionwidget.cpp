@@ -21,6 +21,9 @@
 
 #include "ui_connectionwidget.h"
 
+#include "common/serverdiscoverer.h"
+
+#include <QCommandLinkButton>
 #include <QMessageBox>
 
 namespace PMP {
@@ -37,6 +40,15 @@ namespace PMP {
         _ui->portLineEdit->setText("23432");
 
         connect(_ui->connectButton, SIGNAL(clicked()), this, SLOT(connectClicked()));
+
+        auto discoverer = new ServerDiscoverer(this);
+
+        connect(
+            discoverer, &ServerDiscoverer::foundServer,
+            this, &ConnectionWidget::foundServer
+        );
+
+        discoverer->sendProbe();
     }
 
     ConnectionWidget::~ConnectionWidget() {
@@ -49,6 +61,30 @@ namespace PMP {
         //_ui->usernameLineEdit->setEnabled(true);
         //_ui->passwordLineEdit->setEnabled(true);
         _ui->connectButton->setEnabled(true);
+    }
+
+    void ConnectionWidget::foundServer(QHostAddress address, quint16 port, QUuid id) {
+        QCommandLinkButton* button =
+            new QCommandLinkButton(_ui->serversFoundGroupBox);
+
+        button->setText(QString(tr("Server %1")).arg(id.toString()));
+        button->setDescription(address.toString());
+        // TODO: add extra adresses if they appear
+
+        connect(
+            button, &QCommandLinkButton::clicked,
+            [=]() {
+                _ui->serverLineEdit->setEnabled(false);
+                _ui->portLineEdit->setEnabled(false);
+                _ui->connectButton->setEnabled(false);
+
+                emit doConnect(address.toString(), port);
+            }
+        );
+
+        _ui->serversFoundGroupBox->layout()->addWidget(button);
+
+        _ui->noServersFoundLabel->hide();
     }
 
     void ConnectionWidget::connectClicked() {

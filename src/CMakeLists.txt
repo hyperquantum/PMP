@@ -25,11 +25,13 @@ set(PMP_COMMON_SOURCES
     common/networkprotocol.cpp
     common/networkutil.cpp
     common/serverconnection.cpp
+    common/serverdiscoverer.cpp
     common/tagdata.cpp
     common/util.cpp
 )
 set(PMP_COMMON_HEADERS
     common/serverconnection.h
+    common/serverdiscoverer.h
 )
 
 set(PMP_SERVER_SOURCES

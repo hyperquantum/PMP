@@ -72,7 +72,7 @@ namespace PMP {
                 QCommandLinkButton* button =
                     new QCommandLinkButton(_ui->usersListFrame);
                 button->setText(username);
-                button->setDescription(QString("Login as %1").arg(username));
+                button->setDescription(QString(tr("Login as %1")).arg(username));
 
                 connect(
                     button, &QCommandLinkButton::clicked,

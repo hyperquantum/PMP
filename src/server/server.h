@@ -24,6 +24,8 @@
 #include <QUuid>
 
 QT_FORWARD_DECLARE_CLASS(QTcpServer)
+QT_FORWARD_DECLARE_CLASS(QTimer)
+QT_FORWARD_DECLARE_CLASS(QUdpSocket)
 
 namespace PMP {
 
@@ -56,6 +58,8 @@ namespace PMP {
 
     private slots:
         void newConnectionReceived();
+        void sendBroadcast();
+        void readPendingDatagrams();
 
     private:
         static QString generateServerPassword();
@@ -67,6 +71,8 @@ namespace PMP {
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         QTcpServer* _server;
+        QUdpSocket* _udpSocket;
+        QTimer* _broadcastTimer;
     };
 }
 #endif
