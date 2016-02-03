@@ -44,7 +44,7 @@ namespace PMP {
         void doConnect(QString server, uint port);
 
     private slots:
-        void foundServer(QHostAddress address, quint16 port, QUuid id);
+        void foundServer(QHostAddress address, quint16 port, QUuid id, QString name);
         void connectClicked();
 
     private:

@@ -77,6 +77,7 @@ namespace PMP {
         void shutdownServer();
 
         void sendServerInstanceIdentifierRequest();
+        void sendServerNameRequest();
 
         void requestPlayerState();
         void play();
@@ -126,6 +127,7 @@ namespace PMP {
         void connectionBroken(QAbstractSocket::SocketError error);
 
         void receivedServerInstanceIdentifier(QUuid uuid);
+        void receivedServerName(quint8 nameType, QString name);
 
         void playing();
         void paused();

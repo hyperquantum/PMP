@@ -23,7 +23,9 @@
 #include "serverconnection.h"
 
 #include <QByteArray>
+#include <QNetworkInterface>
 #include <QtDebug>
+#include <QTimer>
 #include <QUdpSocket>
 
 namespace PMP {
@@ -31,6 +33,8 @@ namespace PMP {
     ServerDiscoverer::ServerDiscoverer(QObject* parent)
      : QObject(parent), _socket(new QUdpSocket(this))
     {
+        _localHostNetworkAddresses = QNetworkInterface::allAddresses();
+
         bool bound =
             _socket->bind(
                 23433, QAbstractSocket::ShareAddress | QAbstractSocket::ReuseAddressHint
@@ -43,12 +47,28 @@ namespace PMP {
     }
 
     ServerDiscoverer::~ServerDiscoverer() {
-        qDeleteAll(_addresses);
+        qDeleteAll(_addresses.values());
+        qDeleteAll(_servers.values());
     }
 
     void ServerDiscoverer::sendProbe() {
+        /* first send to localhost and then broadcast */
+        sendProbeToLocalhost();
+        QTimer::singleShot(100, this, SLOT(sendBroadcastProbe()));
+    }
+
+    void ServerDiscoverer::sendProbeToLocalhost() {
+        sendProbeTo(QHostAddress::LocalHost);
+        sendProbeTo(QHostAddress::LocalHostIPv6);
+    }
+
+    void ServerDiscoverer::sendBroadcastProbe() {
+        sendProbeTo(QHostAddress::Broadcast);
+    }
+
+    void ServerDiscoverer::sendProbeTo(QHostAddress const& destination) {
         QByteArray datagram = "PMPPROBEv01";
-        _socket->writeDatagram(datagram, QHostAddress::Broadcast, 23432);
+        _socket->writeDatagram(datagram, destination, 23432);
     }
 
     void ServerDiscoverer::readPendingDatagrams() {
@@ -69,21 +89,67 @@ namespace PMP {
                      << "origin port" << senderPort
                      << "; server active on port" << serverListeningPort;
 
-            if (_addresses.contains(sender))
-                continue; /* already (being) handled */
+            receivedProbeReply(sender, serverListeningPort);
+        }
+    }
 
-            auto prober = new ServerProbe(this, sender, serverListeningPort);
-            _addresses[sender] = prober;
+    void ServerDiscoverer::receivedProbeReply(const QHostAddress& server, quint16 port) {
+        auto serverAndPort = qMakePair(server, port);
 
+        if (_addresses.contains(serverAndPort))
+            return; /* already (being) handled */
+
+        /* The sender of the datagram we receive is never 127.0.0.1 or ::1, but instead
+         * the IPv4 or IPv6 address of the host on the network. We want to detect that
+         * situation, because we prefer connecting to the server through the host's
+         * loopback interface. */
+
+        bool isLocalhostServer =
+            server == QHostAddress::LocalHost
+                || server == QHostAddress::LocalHostIPv6;
+        bool isLocalHostAlias =
+            !isLocalhostServer && _localHostNetworkAddresses.contains(server);
+        if (isLocalHostAlias) { isLocalhostServer = true; }
+
+        ServerProbe* newProbe = nullptr;
+        if (!isLocalhostServer) {
+            newProbe = new ServerProbe(this, server, port);
+            _addresses[serverAndPort] = newProbe;
+        }
+        else {
+            qDebug() << " probe reply is from localhost";
+
+            auto localhostIpv4AndPort =
+                qMakePair(QHostAddress::LocalHost, port);
+            auto localhostIpv6AndPort =
+                qMakePair(QHostAddress::LocalHostIPv6, port);
+
+            auto localhostProbe =
+                _addresses.value(localhostIpv4AndPort, nullptr);
+            if (!localhostProbe)
+                localhostProbe = _addresses.value(localhostIpv6AndPort, nullptr);
+
+            if (!localhostProbe) {
+                qDebug() << "  creating ServerProbe for localhost";
+                localhostProbe = new ServerProbe(this, QHostAddress::LocalHost, port);
+                newProbe = localhostProbe;
+                _addresses[localhostIpv4AndPort] = localhostProbe;
+                _addresses[localhostIpv6AndPort] = localhostProbe;
+            }
+
+            _addresses[serverAndPort] = localhostProbe;
+        }
+
+        if (newProbe) {
             connect(
-                prober, &ServerProbe::foundServer,
+                newProbe, &ServerProbe::foundServer,
                 this, &ServerDiscoverer::onFoundServer
             );
         }
     }
 
     void ServerDiscoverer::onFoundServer(QHostAddress address, quint16 port,
-                                         QUuid serverId)
+                                         QUuid serverId, QString name)
     {
         bool isNew = false;
         auto serverData = _servers.value(serverId, nullptr);
@@ -91,6 +157,7 @@ namespace PMP {
             isNew = true;
             serverData = new ServerData();
             serverData->port = port;
+            serverData->name = name;
             _servers[serverId] = serverData;
         }
 
@@ -101,7 +168,7 @@ namespace PMP {
         }
 
         if (isNew) {
-            emit foundServer(address, port, serverId);
+            emit foundServer(address, port, serverId, name);
         }
         else if (newAddress) {
             emit foundExtraServerAddress(address, serverId);
@@ -112,8 +179,11 @@ namespace PMP {
 
     ServerProbe::ServerProbe(QObject* parent, QHostAddress const& address, quint16 port)
      : QObject(parent),
-       _address(address), _port(port), _connection(new ServerConnection(this))
+       _address(address), _port(port), _connection(new ServerConnection(this)),
+       _serverNameType(0)
     {
+        qDebug() << "ServerProbe created for" << address << "port" << port;
+
         connect(
             _connection, &ServerConnection::connected,
             this, &ServerProbe::onConnected
@@ -122,22 +192,63 @@ namespace PMP {
             _connection, &ServerConnection::receivedServerInstanceIdentifier,
             this, &ServerProbe::onReceivedServerUuid
         );
+        connect(
+            _connection, &ServerConnection::receivedServerName,
+            this, &ServerProbe::onReceivedServerName
+        );
 
         _connection->connectToHost(address.toString(), port);
+
+        /* set a timer to avoid waiting indefinitely */
+        QTimer::singleShot(4000, this, SLOT(onTimeout()));
     }
 
     void ServerProbe::onConnected() {
         _connection->sendServerInstanceIdentifierRequest();
+        _connection->sendServerNameRequest();
     }
 
     void ServerProbe::onReceivedServerUuid(QUuid uuid) {
         _serverId = uuid;
+        emitSignalIfDataComplete();
+    }
 
+    void ServerProbe::onReceivedServerName(quint8 nameType, QString name) {
+        if (_serverNameType > nameType || _serverName == name || name == "")
+            return;
+
+        _serverNameType = nameType;
+        _serverName = name;
+
+        emitSignalIfDataComplete();
+    }
+
+    void ServerProbe::onTimeout() {
+        if (_connection == nullptr)
+            return; /* already cleaned up */
+
+        qDebug() << "ServerProbe: TIMEOUT for" << _address << "port" << _port;
+
+        /* clean up */
         _connection->reset();
         _connection->deleteLater();
         _connection = nullptr;
 
-        emit foundServer(_address, _port, _serverId);
+        if (!_serverId.isNull()) { /* server found but did not receive a name? */
+            /* send with empty name */
+            emit foundServer(_address, _port, _serverId, _serverName);
+        }
     }
 
+    void ServerProbe::emitSignalIfDataComplete() {
+        if (_serverId.isNull() || _serverName == "")
+            return; /* not yet complete */
+
+        /* clean up */
+        _connection->reset();
+        _connection->deleteLater();
+        _connection = nullptr;
+
+        emit foundServer(_address, _port, _serverId, _serverName);
+    }
 }

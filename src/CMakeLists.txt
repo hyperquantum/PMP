@@ -144,7 +144,7 @@ add_executable(PMP-GUI-Remote
 
 # Qt dependencies for each executable
 qt5_use_modules(PMP-HashTool Core)
-qt5_use_modules(quicktest Core)
+qt5_use_modules(quicktest Core Network)
 qt5_use_modules(PMP-Server Core Multimedia Network Sql)
 qt5_use_modules(PMP-Cmd-Remote Core Network)
 qt5_use_modules(PMP-GUI-Remote Core Gui Network Widgets)

@@ -110,6 +110,7 @@ namespace PMP {
                                       QByteArray const& sessionSalt);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
                                        QList<CollectionTrackInfo> tracks);
+        void sendServerNameMessage(quint8 type, QString name);
         void handleBinaryMessage(QByteArray const& message);
         void handleCollectionFetchRequest(uint clientReference);
         void parseAddHashToQueueRequest(QByteArray const& message,

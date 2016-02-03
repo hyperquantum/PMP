@@ -50,6 +50,7 @@ namespace PMP {
             ServerEventNotificationMessage = 17,
             CollectionFetchResponseMessage = 18,
             CollectionChangeNotificationMessage = 19,
+            ServerNameMessage = 20,
         };
 
         enum ClientMessageType {

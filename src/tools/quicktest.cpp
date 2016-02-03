@@ -19,17 +19,25 @@
 
 #include "common/util.h"
 
-#include <iostream>
-
-using namespace std;
+#include <QHostAddress>
+#include <QHostInfo>
+#include <QNetworkInterface>
+#include <QtDebug>
 
 int main(int argc, char *argv[]) {
+    /*
     int seed;
     seed = PMP::Util::getRandomSeed();
     seed = PMP::Util::getRandomSeed();
     seed = PMP::Util::getRandomSeed();
+    qDebug << "last seed:" << seed;
+    */
 
-    cout << "last seed: " << seed << endl;
+    qDebug() << "Local hostname:" << QHostInfo::localHostName();
+
+    foreach (const QHostAddress& address, QNetworkInterface::allAddresses()) {
+        qDebug() << address.toString();
+    }
 
     return 0;
 }

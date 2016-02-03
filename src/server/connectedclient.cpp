@@ -33,6 +33,7 @@
 #include "server.h"
 #include "users.h"
 
+#include <QHostInfo>
 #include <QMap>
 #include <QTimer>
 
@@ -808,6 +809,20 @@ namespace PMP {
         sendSuccessMessage(clientReference, 0);
     }
 
+    void ConnectedClient::sendServerNameMessage(quint8 type, QString name) {
+        name.truncate(63);
+        QByteArray nameBytes = name.toUtf8();
+
+        QByteArray message;
+        message.reserve(2 + 2 + nameBytes.size());
+        NetworkUtil::append2Bytes(message, NetworkProtocol::ServerNameMessage);
+        NetworkUtil::appendByte(message, 0); /* unused */
+        NetworkUtil::appendByte(message, type);
+        message += nameBytes;
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
         sendResultMessage(NetworkProtocol::NoError, clientReference, intData);
@@ -1072,6 +1087,10 @@ namespace PMP {
                 onFullIndexationRunStatusChanged(
                     _player->resolver().fullIndexationRunning()
                 );
+                break;
+            case 16:
+                qDebug() << "received request for server name";
+                sendServerNameMessage(0, QHostInfo::localHostName());
                 break;
             case 20: /* enable dynamic mode */
                 qDebug() << "received ENABLE DYNAMIC MODE command";

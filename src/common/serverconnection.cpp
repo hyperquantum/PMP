@@ -514,6 +514,10 @@ namespace PMP {
         sendSingleByteAction(12); /* 12 = request for server instance UUID */
     }
 
+    void ServerConnection::sendServerNameRequest() {
+        sendSingleByteAction(16); /* 16 = request for server name */
+    }
+
     void ServerConnection::requestPlayerState() {
         sendSingleByteAction(10); /* 10 = request player state */
     }
@@ -1200,6 +1204,19 @@ namespace PMP {
         case NetworkProtocol::CollectionFetchResponseMessage:
         case NetworkProtocol::CollectionChangeNotificationMessage:
             parseTrackInfoBatchMessage(message, messageType);
+            break;
+        case NetworkProtocol::ServerNameMessage:
+        {
+            if (messageLength < 4) {
+                return; /* invalid message */
+            }
+
+            quint8 nameType = NetworkUtil::getByte(message, 3);
+            QString name = NetworkUtil::getUtf8String(message, 4, messageLength - 4);
+
+            qDebug() << "received server name; type:" << nameType << " name:" << name;
+            emit receivedServerName(nameType, name);
+        }
             break;
         default:
             qDebug() << "received unknown binary message type" << messageType

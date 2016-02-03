@@ -58,18 +58,22 @@ namespace PMP {
     void ConnectionWidget::reenableFields() {
         _ui->serverLineEdit->setEnabled(true);
         _ui->portLineEdit->setEnabled(true);
-        //_ui->usernameLineEdit->setEnabled(true);
-        //_ui->passwordLineEdit->setEnabled(true);
         _ui->connectButton->setEnabled(true);
     }
 
-    void ConnectionWidget::foundServer(QHostAddress address, quint16 port, QUuid id) {
+    void ConnectionWidget::foundServer(QHostAddress address, quint16 port,
+                                       QUuid id, QString name)
+    {
         QCommandLinkButton* button =
             new QCommandLinkButton(_ui->serversFoundGroupBox);
 
-        button->setText(QString(tr("Server %1")).arg(id.toString()));
+        QString caption = name;
+        if (caption == "") { caption = tr("<server with unknown name>"); }
+
+        button->setText(caption);
         button->setDescription(address.toString());
         // TODO: add extra adresses if they appear
+        button->adjustSize();
 
         connect(
             button, &QCommandLinkButton::clicked,

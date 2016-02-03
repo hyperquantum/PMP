@@ -23,6 +23,8 @@
 #include <QHash>
 #include <QHostAddress>
 #include <QObject>
+#include <QPair>
+#include <QPointer>
 #include <QUuid>
 
 QT_FORWARD_DECLARE_CLASS(QUdpSocket)
@@ -42,21 +44,29 @@ namespace PMP {
         void sendProbe();
 
     Q_SIGNALS:
-        void foundServer(QHostAddress address, quint16 port, QUuid id);
+        void foundServer(QHostAddress address, quint16 port, QUuid id, QString name);
         void foundExtraServerAddress(QHostAddress address, QUuid id);
 
     private slots:
+        void sendProbeToLocalhost();
+        void sendBroadcastProbe();
         void readPendingDatagrams();
-        void onFoundServer(QHostAddress address, quint16 port, QUuid serverId);
+        void onFoundServer(QHostAddress address, quint16 port,
+                           QUuid serverId, QString name);
 
     private:
+        void sendProbeTo(QHostAddress const& destination);
+        void receivedProbeReply(QHostAddress const& server, quint16 port);
+
         struct ServerData {
             quint16 port;
             QList<QHostAddress> addresses;
+            QString name;
         };
 
+        QList<QHostAddress> _localHostNetworkAddresses;
         QUdpSocket* _socket;
-        QHash<QHostAddress, ServerProbe*> _addresses;
+        QHash<QPair<QHostAddress, quint16>, QPointer<ServerProbe> > _addresses;
         QHash<QUuid, ServerData*> _servers;
     };
 
@@ -66,17 +76,24 @@ namespace PMP {
         ServerProbe(QObject* parent, QHostAddress const& address, quint16 port);
 
     Q_SIGNALS:
-        void foundServer(QHostAddress address, quint16 port, QUuid serverId);
+        void foundServer(QHostAddress address, quint16 port,
+                         QUuid serverId, QString name);
 
     private slots:
         void onConnected();
         void onReceivedServerUuid(QUuid uuid);
+        void onReceivedServerName(quint8 nameType, QString name);
+        void onTimeout();
 
     private:
+        void emitSignalIfDataComplete();
+
         QHostAddress _address;
         quint16 _port;
         ServerConnection* _connection;
         QUuid _serverId;
+        QString _serverName;
+        uint _serverNameType;
     };
 }
 #endif
