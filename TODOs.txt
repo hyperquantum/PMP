@@ -33,3 +33,4 @@ USER FRIENDLINESS
 POLISHING
 
  - when skipping the current track after a long-time pause (say, more than 10 min), do not let the skip affect scoring of the paused track
+ - better display of a breakpoint in the queue
