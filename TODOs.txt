@@ -8,7 +8,7 @@ BUGS
  - track info for a queue entry is requested 3 times for each track
  - Generator might get into infinite loop if source list does not contain any suitable candidates (?)
  - music collection list sorting does not ignore spaces between words
- - most server commands should be unavailable to a client before it has done a successful login procedure
+ - the commandline client does not support user authentication which is now required for some commands it supports
 
 
 PERFORMANCE ISSUES

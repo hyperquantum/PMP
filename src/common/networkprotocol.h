@@ -76,12 +76,14 @@ namespace PMP {
         enum ErrorType {
             NoError = 0,
             InvalidMessageStructure = 1,
+            NotLoggedIn = 10,
 
             InvalidUserAccountName = 11,
             UserAccountAlreadyExists = 12,
             UserAccountRegistrationMismatch = 13,
             UserAccountLoginMismatch = 14,
             UserLoginAuthenticationFailed = 15,
+            AlreadyLoggedIn = 16,
 
             DatabaseProblem = 90,
             UnknownError = 255

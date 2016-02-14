@@ -139,6 +139,10 @@ namespace PMP {
         this->deleteLater();
     }
 
+    bool ConnectedClient::isLoggedIn() const {
+        return _userLoggedIn > 0;
+    }
+
     void ConnectedClient::dataArrived() {
         if (_terminated) {
             qDebug() << "ConnectedClient::dataArrived called on a terminated connection???";
@@ -189,8 +193,7 @@ namespace PMP {
                 this->terminateConnection();
                 break;
             default:
-                // problem ??
-
+                qDebug() << "ConnectedClient: unhandled socket error:" << error;
                 break;
         }
     }
@@ -233,13 +236,13 @@ namespace PMP {
             command = commandText;
 
             if (command == "play") {
-                _player->play();
+                if (isLoggedIn()) { _player->play(); }
             }
             else if (command == "pause") {
-                _player->pause();
+                if (isLoggedIn()) { _player->pause(); }
             }
             else if (command == "skip") {
-                _player->skip();
+                if (isLoggedIn()) { _player->skip(); }
             }
             else if (command == "volume") {
                 /* 'volume' without arguments sends current volume */
@@ -257,7 +260,7 @@ namespace PMP {
                 sendTextualQueueInfo();
             }
             else if (command == "shutdown") {
-                _server->shutdown();
+                if (isLoggedIn()) { _server->shutdown(); }
             }
             else if (command == "binary") {
                 /* switch to binary mode */
@@ -295,7 +298,7 @@ namespace PMP {
                 bool ok;
                 uint volume = arg1.toUInt(&ok);
                 if (ok && volume >= 0 && volume <= 100) {
-                    _player->setVolume(volume);
+                    if (isLoggedIn()) { _player->setVolume(volume); }
                 }
             }
             else {
@@ -325,7 +328,7 @@ namespace PMP {
                 int moveDiff = arg2.toInt(&ok);
                 if (!ok || moveDiff == 0) return;
 
-                _player->queue().move(queueID, moveDiff);
+                if (isLoggedIn()) { _player->queue().move(queueID, moveDiff); }
             }
             else {
                 /* unknown command ???? */
@@ -1041,26 +1044,27 @@ namespace PMP {
             if (actionType >= 100 && actionType <= 200) {
                 qDebug() << "received CHANGE VOLUME command, volume"
                          << ((uint)actionType - 100);
-                _player->setVolume(actionType - 100);
+
+                if (isLoggedIn()) { _player->setVolume(actionType - 100); }
                 break;
             }
 
             switch(actionType) {
             case 1:
                 qDebug() << "received PLAY command";
-                _player->play();
+                if (isLoggedIn()) { _player->play(); }
                 break;
             case 2:
                 qDebug() << "received PAUSE command";
-                _player->pause();
+                if (isLoggedIn()) { _player->pause(); }
                 break;
             case 3:
                 qDebug() << "received SKIP command";
-                _player->skip();
+                if (isLoggedIn()) { _player->skip(); }
                 break;
             case 4:
                 qDebug() << "received INSERT BREAK AT FRONT command";
-                _player->queue().insertBreakAtFront();
+                if (isLoggedIn()) { _player->queue().insertBreakAtFront(); }
                 break;
             case 10: /* request for state info */
                 qDebug() << "received request for player status";
@@ -1094,19 +1098,20 @@ namespace PMP {
                 break;
             case 20: /* enable dynamic mode */
                 qDebug() << "received ENABLE DYNAMIC MODE command";
-                _generator->enable();
+                if (isLoggedIn()) { _generator->enable(); }
                 break;
             case 21: /* disable dynamic mode */
                 qDebug() << "received DISABLE DYNAMIC MODE command";
-                _generator->disable();
+                if (isLoggedIn()) { _generator->disable(); }
                 break;
             case 22: /* request queue expansion */
                 qDebug() << "received QUEUE EXPANSION command";
-                _generator->requestQueueExpansion();
+                if (isLoggedIn()) { _generator->requestQueueExpansion(); }
                 break;
             case 23:
                 qDebug() << "received TRIM QUEUE command";
-                _player->queue().trim(10); /* TODO: get the '10' from elsewhere */
+                 /* TODO: get the '10' from elsewhere */
+                if (isLoggedIn()) { _player->queue().trim(10); }
                 break;
             case 30: /* switch to public mode */
                 qDebug() << "received SWITCH TO PUBLIC MODE command";
@@ -1114,7 +1119,7 @@ namespace PMP {
                 break;
             case 31: /* switch to personal mode */
                 qDebug() << "received SWITCH TO PERSONAL MODE command";
-                if (_userLoggedIn > 0) {
+                if (isLoggedIn()) {
                     qDebug() << " switching to personal mode for user "
                              << _userLoggedInName;
                     _player->setUserPlayingFor(_userLoggedIn);
@@ -1122,11 +1127,11 @@ namespace PMP {
                 break;
             case 40:
                 qDebug() << "received START FULL INDEXATION command";
-                _player->resolver().startFullIndexation();
+                if (isLoggedIn()) { _player->resolver().startFullIndexation(); }
                 break;
             case 99:
                 qDebug() << "received SHUTDOWN command";
-                _server->shutdown();
+                if (isLoggedIn()) { _server->shutdown(); }
                 break;
             default:
                 qDebug() << "received unrecognized single-byte action type:"
@@ -1183,10 +1188,13 @@ namespace PMP {
                 return; /* invalid message */
             }
 
+            if (!isLoggedIn()) return; /* client needs to be authenticated for this */
+
             quint32 startOffset = NetworkUtil::get4Bytes(message, 2);
             quint8 length = NetworkUtil::getByte(message, 6);
 
-            qDebug() << "received queue fetch request; offset:" << startOffset << "  length:" << length;
+            qDebug() << "received queue fetch request; offset:" << startOffset
+                     << "  length:" << length;
 
             sendQueueContentMessage(startOffset, length);
         }
@@ -1196,6 +1204,8 @@ namespace PMP {
             if (messageLength != 6) {
                 return; /* invalid message */
             }
+
+            if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
             quint32 queueID = NetworkUtil::get4Bytes(message, 2);
             qDebug() << "received removal request for QID" << queueID;
@@ -1212,6 +1222,8 @@ namespace PMP {
             if (messageLength != 6) {
                 return; /* invalid message */
             }
+
+            if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
             qint32 intervalMinutes = (qint32)NetworkUtil::get4Bytes(message, 2);
             qDebug() << "received change request for generator non-repetition interval;  minutes:" << intervalMinutes;
@@ -1268,6 +1280,8 @@ namespace PMP {
                 return; /* invalid message */
             }
 
+            if (!isLoggedIn()) return; /* client needs to be authenticated for this */
+
             quint32 queueID = NetworkUtil::get4Bytes(message, 2);
             qint64 position = (qint64)NetworkUtil::get8Bytes(message, 6);
 
@@ -1288,6 +1302,8 @@ namespace PMP {
             if (messageLength != 8) {
                 return; /* invalid message */
             }
+
+            if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
             qint16 move = NetworkUtil::get2Bytes(message, 2);
             quint32 queueID = NetworkUtil::get4Bytes(message, 4);
@@ -1412,6 +1428,11 @@ namespace PMP {
             qDebug() << "received initiate-login request; clientRef:"
                      << clientReference;
 
+            if (isLoggedIn()) { /* already logged in */
+                sendResultMessage(NetworkProtocol::AlreadyLoggedIn, clientReference, 0);
+                return;
+            }
+
             QByteArray loginBytes = message.mid(8);
             QString login = QString::fromUtf8(loginBytes);
 
@@ -1524,6 +1545,12 @@ namespace PMP {
 
             quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
 
+            if (!isLoggedIn()) {
+                /* client needs to be authenticated for this */
+                sendResultMessage(NetworkProtocol::NotLoggedIn, clientReference, 0);
+                return;
+            }
+
             handleCollectionFetchRequest(clientReference);
         }
             break;
@@ -1547,6 +1574,8 @@ namespace PMP {
             /* invalid message */
             return;
         }
+
+        if (!isLoggedIn()) { return; /* client needs to be authenticated for this */ }
 
         bool ok;
         FileHash hash = NetworkProtocol::getHash(message, 4, &ok);

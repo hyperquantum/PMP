@@ -80,6 +80,8 @@ namespace PMP {
         void onHashInfoChanged(QList<PMP::CollectionTrackInfo> changes);
 
     private:
+        bool isLoggedIn() const;
+
         void readTextCommands();
         void readBinaryCommands();
         void executeTextCommand(QString const& commandText);
