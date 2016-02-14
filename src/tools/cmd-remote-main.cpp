@@ -209,6 +209,11 @@ int main(int argc, char *argv[]) {
         QString response = QString::fromUtf8(dataReceived.data(), semicolonIndex);
         out << " server response: " << response << endl;
     }
+    else {
+        /* Wait a little bit before closing the socket. This allows the server to cleanup
+           the connection properly after we exit. */
+        socket.waitForReadyRead(100);
+    }
 
     return 0;
 }
