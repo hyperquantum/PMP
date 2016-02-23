@@ -1,6 +1,7 @@
 
 BUGS
 
+ - some tracks do not play on Windows; presumably because they have an ID3 tag with version 2.4
  - for some tracks we get the wrong length (caused by length estimation in TagLib)
  - GUI remote: queue length not updated after initial queue population (only a player status message from the server will trigger an update now)
  - diagnostic logging produces unreadable text when two different threads write something to the log
@@ -22,6 +23,7 @@ FEATURES
  - work around the need for a full indexation at server startup
  - associate a title and artist with each hash and save that information in the database
  - provide 'forgot password' functionality to enable a user to reset their password
+ - 'like' button for the song that is playing, that will bump the score of the song a little bit
 
 
 USER FRIENDLINESS
