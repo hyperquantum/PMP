@@ -263,11 +263,13 @@ namespace PMP {
 
             if (entry->hash() == 0) {
                 /* we don't know the track's hash yet. We need to calculate it first */
-                qDebug() << "Queue::checkPotentialRepetitionByAdd: need to calculate hash first, for QID " << entry->queueID();
+                qDebug() << "Queue::checkPotentialRepetitionByAdd:"
+                         << "need to calculate hash first, for QID" << entry->queueID();
                 entry->checkHash(*_resolver);
 
                 if (entry->hash() == 0) {
-                    qDebug() << "PROBLEM: failed calculating hash of QID " << entry->queueID();
+                    qDebug() << "PROBLEM: failed calculating hash of QID"
+                             << entry->queueID();
                     /* could not calculate hash, so let's pray that this is a different
                        track and continue */
                     continue;
@@ -282,7 +284,7 @@ namespace PMP {
             }
 
             entry->checkAudioData(*_resolver);
-            int entryLength = entry->lengthInSeconds();
+            int entryLength = entry->lengthInMilliseconds() / 1000;
 
             if (entryLength > 0) {
                 span += entryLength;

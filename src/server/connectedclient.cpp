@@ -586,7 +586,7 @@ namespace PMP {
         auto trackStatus = createTrackStatusFor(track);
         QString title = track->title();
         QString artist = track->artist();
-        qint32 length = track->lengthInSeconds(); /* SIGNED NUMBER!! */
+        qint32 length = track->lengthInMilliseconds() / 1000; /* SIGNED NUMBER!! */
 
         const int maxSize = (1 << 16) - 1;
 
@@ -658,7 +658,7 @@ namespace PMP {
 
             QString title = track->title();
             QString artist = track->artist();
-            qint32 length = track->lengthInSeconds(); /* SIGNED NUMBER!! */
+            qint32 length = track->lengthInMilliseconds() / 1000; /* SIGNED NUMBER!! */
 
             /* worst case: 4 bytes in UTF-8 for each char */
             title.truncate(maxSize / 4);
@@ -910,7 +910,7 @@ namespace PMP {
             return;
         }
 
-        int seconds = entry->lengthInSeconds();
+        int seconds = entry->lengthInMilliseconds() / 1000;
         FileHash const* hash = entry->hash();
 
         sendTextCommand(
@@ -951,7 +951,7 @@ namespace PMP {
             ++index;
             entry->checkTrackData(resolver);
 
-            int lengthInSeconds = entry->lengthInSeconds();
+            int lengthInSeconds = entry->lengthInMilliseconds() / 1000;
 
             command += "\n";
             command += QString::number(index).rightJustified(5);

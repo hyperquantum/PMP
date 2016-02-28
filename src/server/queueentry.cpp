@@ -203,8 +203,8 @@ namespace PMP {
         }
     }
 
-    int QueueEntry::lengthInSeconds() const {
-        return _audioInfo.trackLength();
+    quint64 QueueEntry::lengthInMilliseconds() const {
+        return (quint64)1000 * _audioInfo.trackLength();
     }
 
     QString QueueEntry::artist() const {

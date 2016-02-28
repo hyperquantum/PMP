@@ -249,8 +249,7 @@ namespace PMP {
     void Player::internalDurationChanged(qint64 duration) {
         if (_nowPlaying == nullptr) return;
 
-        int previouslyKnownLength =
-            (quint64)_nowPlaying->lengthInSeconds() * 1000;
+        int previouslyKnownLength = _nowPlaying->lengthInMilliseconds();
         int lengthFromPlayer = _player->duration();
 
         if (lengthFromPlayer <= 0) {
@@ -383,12 +382,10 @@ namespace PMP {
         if (seeked) return -1;
         if (track == 0) return -2;
 
-        int secsLength = track->lengthInSeconds();
-        if (secsLength < 0) return -3;
+        int msLength = track->lengthInMilliseconds();
+        if (msLength < 0) return -3;
 
-        /* positionReached is in milliseconds (seconds times 1000), and length is in
-           seconds, so we do not need to multiply with 1000 again */
-        return qBound(0, int(positionReached / secsLength), 1000);
+        return qBound(0, int(positionReached * 1000 / msLength), 1000);
     }
 
 }

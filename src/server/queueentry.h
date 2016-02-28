@@ -63,8 +63,8 @@ namespace PMP {
         void checkAudioData(Resolver& resolver);
         void checkTrackData(Resolver& resolver);
 
-        /** Length in seconds. Is negative when unknown. */
-        int lengthInSeconds() const;
+        /** Length in milliseconds. Is negative when unknown. */
+        quint64 lengthInMilliseconds() const;
 
         QString artist() const;
         QString title() const;
