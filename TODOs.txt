@@ -17,17 +17,25 @@ PERFORMANCE ISSUES
  - database access for track repetition avoidance needs to be optimized and data needs to be cached
 
 
-FEATURES
+TECHNICAL TODO
 
- - add support for dragging tracks from the music collection into the queue
- - work around the need for a full indexation at server startup
- - associate a title and artist with each hash and save that information in the database
- - provide 'forgot password' functionality to enable a user to reset their password
+ - keep track lengths in milliseconds, not seconds
+ - track preload mechanism; especially important for tracks on an external medium
+ - associate a title and artist with each hash and save that information in the database (?)
+
+
+IDEAS
+
  - 'like' button for the song that is playing, that will bump the score of the song a little bit
+ - 'love' & 'hate' button for the song that is playing
+ - statistics view for the user; with things like "amount of tracks played in the last 7/30/... days"
 
 
 USER FRIENDLINESS
 
+ - provide 'forgot password' functionality to enable a user to reset their password
+ - support for dragging tracks from the music collection into the queue
+ - work around the need for a full indexation at server startup
  - when creating a new account, explain the meaning of the password score
  - GUI remote: after login it should show what server it is connected to somehow
 
