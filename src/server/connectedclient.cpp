@@ -353,7 +353,7 @@ namespace PMP {
 
     void ConnectedClient::sendBinaryMessage(QByteArray const& message) {
         if (_terminated) {
-            qDebug() << "sendBinaryMessage: cannot proceed because connection is terminated";
+            qDebug() << "sendBinaryMessage: cannot send because connection is terminated";
             return;
         }
 
@@ -363,7 +363,7 @@ namespace PMP {
         }
 
         quint32 length = message.length();
-        qDebug() << "   need to send a binary message of length" << length;
+        //qDebug() << "   need to send a binary message of length" << length;
 
         char lengthArr[4];
         lengthArr[0] = (length >> 24) & 255;
@@ -378,7 +378,7 @@ namespace PMP {
     }
 
     void ConnectedClient::sendStateInfo() {
-        qDebug() << "sending state info";
+        //qDebug() << "sending state info";
 
         Player::State state = _player->state();
         quint8 stateNum = 0;
