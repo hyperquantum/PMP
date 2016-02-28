@@ -204,7 +204,7 @@ namespace PMP {
     }
 
     quint64 QueueEntry::lengthInMilliseconds() const {
-        return (quint64)1000 * _audioInfo.trackLength();
+        return _audioInfo.trackLengthMilliseconds();
     }
 
     QString QueueEntry::artist() const {

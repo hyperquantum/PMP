@@ -39,19 +39,22 @@ namespace PMP {
     class Generator::Candidate {
     public:
         Candidate(const FileHash& hashID)
-         : _hash(hashID), _lengthSeconds(0)
+         : _hash(hashID), _lengthMilliseconds(0)
         {
             //
         }
 
         const FileHash& hash() const { return _hash; }
 
-        void setLengthSeconds(uint seconds) { _lengthSeconds = seconds; }
-        uint lengthSeconds() const { return _lengthSeconds; }
+        void setLengthMilliseconds(uint milliseconds) {
+            _lengthMilliseconds = milliseconds;
+        }
+
+        uint lengthMilliseconds() const { return _lengthMilliseconds; }
 
     private:
         FileHash _hash;
-        uint _lengthSeconds;
+        uint _lengthMilliseconds;
     };
 
     /* ========================== Generator ========================== */
@@ -220,7 +223,7 @@ namespace PMP {
 
             if (satisfiesFilters(c)) {
                 _upcoming.enqueue(c);
-                _upcomingRuntimeSeconds += c->lengthSeconds();
+                _upcomingRuntimeSeconds += c->lengthMilliseconds() / 1000;
             }
 
             /* urgent queue refill needed? */
@@ -280,7 +283,7 @@ namespace PMP {
             iterationsLeft--;
 
             Candidate* c = _upcoming.dequeue();
-            _upcomingRuntimeSeconds -= c->lengthSeconds();
+            _upcomingRuntimeSeconds -= c->lengthMilliseconds() / 1000;
 
             /* check filters again */
             bool ok = satisfiesFilters(c);
@@ -357,13 +360,13 @@ namespace PMP {
 
         /* get audio info */
         const AudioData& audioData = _resolver->findAudioData(hash);
-        int trackLengthSeconds = audioData.trackLength();
+        int msLength = audioData.trackLengthMilliseconds();
 
         /* is it a real track, not a short sound file? */
-        if (trackLengthSeconds < 15 && trackLengthSeconds >= 0) return false;
+        if (msLength < 15000 && msLength >= 0) return false;
 
-        if (trackLengthSeconds >= 0)
-            candidate->setLengthSeconds(trackLengthSeconds);
+        if (msLength >= 0)
+            candidate->setLengthMilliseconds(msLength);
 
         return true;
     }

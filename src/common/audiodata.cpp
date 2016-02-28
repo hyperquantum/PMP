@@ -22,13 +22,13 @@
 namespace PMP {
 
     AudioData::AudioData()
-     : _format(UnknownFormat), _trackLength(-1)
+     : _format(UnknownFormat), _trackLengthMilliseconds(-1)
     {
         //
     }
 
-    AudioData::AudioData(FileFormat format, int trackLength)
-     : _format(format), _trackLength(trackLength)
+    AudioData::AudioData(FileFormat format, quint64 trackLengthMilliseconds)
+     : _format(format), _trackLengthMilliseconds(trackLengthMilliseconds)
     {
         //
     }

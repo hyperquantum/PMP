@@ -40,9 +40,9 @@ namespace PMP {
     FileData::FileData(const FileHash& hash,
         const QString& artist, const QString& title,
         const QString& album, const QString& comment,
-        AudioData::FileFormat format, int trackLength)
+        AudioData::FileFormat format, quint64 trackLengthMilliseconds)
      : _hash(hash),
-       _audio(format, trackLength),
+       _audio(format, trackLengthMilliseconds),
        _tags(artist, title, album, comment)
     {
         //
@@ -88,9 +88,9 @@ namespace PMP {
 
     FileData FileData::create(const FileHash& hash,
         const QString& artist, const QString& title,
-        AudioData::FileFormat format, int length)
+        AudioData::FileFormat format, quint64 lengthMilliseconds)
     {
-        return FileData(hash, artist, title, "", "", format, length);
+        return FileData(hash, artist, title, "", "", format, lengthMilliseconds);
     }
 
     FileHash FileData::getHashFrom(TagLib::ByteVector* data) {
@@ -125,10 +125,10 @@ namespace PMP {
         QString artist, title, album, comment;
         getDataFromTag(tagFile.tag(), artist, title, album, comment);
 
-        int lengthInSeconds = -1;
+        quint64 lengthInMilliseconds = -1;
         TagLib::AudioProperties* audioProperties = tagFile.audioProperties();
         if (audioProperties != 0) {
-           lengthInSeconds = audioProperties->length();
+           lengthInMilliseconds = audioProperties->length() * 1000;
         }
 
         tagFile.strip(); /* strip all tag headers */
@@ -138,7 +138,7 @@ namespace PMP {
         return FileData(
             getHashFrom(strippedData),
             artist, title, album, comment,
-            AudioData::MP3, lengthInSeconds
+            AudioData::MP3, lengthInMilliseconds
         );
     }
 

@@ -33,21 +33,31 @@ namespace PMP {
         };
 
         AudioData();
-        AudioData(FileFormat format, int trackLength);
+        AudioData(FileFormat format, quint64 trackLengthMilliseconds);
 
-        bool isComplete() const { return _format != UnknownFormat && _trackLength >= 0; }
+        bool isComplete() const {
+            return _format != UnknownFormat && _trackLengthMilliseconds >= 0;
+        }
 
         FileFormat format() const { return _format; }
         void setFormat(FileFormat format) { _format = format; }
 
-        int trackLength() const { return _trackLength; }
-        void setTrackLength(int length) { _trackLength = length; }
+        quint64 trackLengthMilliseconds() const { return _trackLengthMilliseconds; }
+        int trackLengthSeconds() const { return _trackLengthMilliseconds / 1000; }
+
+        void setTrackLengthMilliseconds(quint64 length) {
+            _trackLengthMilliseconds = length;
+        }
+
+        void setTrackLengthSeconds(int length) {
+            _trackLengthMilliseconds = length * 1000;
+        }
 
         static QString millisecondsToTimeString(quint64 lengthMilliseconds);
 
     private:
         FileFormat _format;
-        int _trackLength;
+        quint64 _trackLengthMilliseconds;
     };
 }
 #endif

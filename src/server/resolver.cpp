@@ -132,8 +132,8 @@ namespace PMP {
         }
 
         /* TODO: what if the existing length is different? */
-        if (audio.trackLength() >= 0) {
-            _audio.setTrackLength(audio.trackLength());
+        if (audio.trackLengthMilliseconds() >= 0) {
+            _audio.setTrackLengthMilliseconds(audio.trackLengthMilliseconds());
         }
     }
 

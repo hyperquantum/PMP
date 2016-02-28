@@ -41,7 +41,7 @@ namespace PMP {
         FileData(const FileHash& hash,
             const QString& artist, const QString& title,
             const QString& album, const QString& comment,
-            AudioData::FileFormat format, int trackLength);
+            AudioData::FileFormat format, quint64 trackLengthMilliseconds);
 
         static bool supportsExtension(QString const& extension);
 
@@ -52,7 +52,7 @@ namespace PMP {
         static FileData create(const FileHash& hash,
                                const QString& artist, const QString& title,
                                AudioData::FileFormat format = AudioData::UnknownFormat,
-                               int trackLength = -1);
+                               quint64 lengthMilliseconds = -1);
 
         bool isValid() const { return !_hash.empty(); }
 
