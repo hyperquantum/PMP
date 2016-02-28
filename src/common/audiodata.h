@@ -20,6 +20,8 @@
 #ifndef PMP_AUDIODATA_H
 #define PMP_AUDIODATA_H
 
+#include <QString>
+
 namespace PMP {
 
     class AudioData {
@@ -40,6 +42,8 @@ namespace PMP {
 
         int trackLength() const { return _trackLength; }
         void setTrackLength(int length) { _trackLength = length; }
+
+        static QString millisecondsToTimeString(quint64 lengthMilliseconds);
 
     private:
         FileFormat _format;

@@ -82,6 +82,7 @@ namespace PMP {
         void internalStateChanged(QMediaPlayer::State state);
         void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
         void internalPositionChanged(qint64 position);
+        void internalDurationChanged(qint64 duration);
         bool startNext(bool play);
 
     private:

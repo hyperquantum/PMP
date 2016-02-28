@@ -20,6 +20,7 @@
 #include "mainwidget.h"
 #include "ui_mainwidget.h"
 
+#include "common/audiodata.h"
 #include "common/serverconnection.h"
 
 #include "autopersonalmodeaction.h"
@@ -308,17 +309,13 @@ namespace PMP {
                 _ui->trackProgress->setCurrentTrack(-1);
             }
             else {
-                int sec = lengthSeconds % 60;
-                int min = (lengthSeconds / 60) % 60;
-                int hrs = lengthSeconds / 3600;
+                quint64 lengthInMilliseconds = (quint64)lengthSeconds * 1000;
 
                 _ui->lengthValueLabel->setText(
-                    QString::number(hrs).rightJustified(2, '0')
-                     + ":" + QString::number(min).rightJustified(2, '0')
-                     + ":" + QString::number(sec).rightJustified(2, '0')
+                    AudioData::millisecondsToTimeString(lengthInMilliseconds)
                 );
 
-                _ui->trackProgress->setCurrentTrack(qint64(lengthSeconds) * 1000);
+                _ui->trackProgress->setCurrentTrack(lengthInMilliseconds);
             }
         }
 
@@ -327,20 +324,8 @@ namespace PMP {
 
     void MainWidget::trackProgress(quint64 position) {
         //qDebug() << "DISPLAY: trackPositionChanged" << position;
-        int positionInSeconds = position / 1000;
 
-        int partialSec = position % 1000;
-        int sec = positionInSeconds % 60;
-        int min = (positionInSeconds / 60) % 60;
-        int hrs = positionInSeconds / 3600;
-
-        _ui->positionValueLabel->setText(
-            QString::number(hrs).rightJustified(2, '0')
-             + ":" + QString::number(min).rightJustified(2, '0')
-             + ":" + QString::number(sec).rightJustified(2, '0')
-             + "." + QString::number(partialSec).rightJustified(3, '0')
-        );
-
+        _ui->positionValueLabel->setText(AudioData::millisecondsToTimeString(position));
         _ui->trackProgress->setTrackPosition(position);
     }
 

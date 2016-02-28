@@ -54,6 +54,10 @@ namespace PMP {
             _player, SIGNAL(volumeChanged(int)),
             this, SIGNAL(volumeChanged(int))
         );
+        connect(
+            _player, &QMediaPlayer::durationChanged,
+            this, &Player::internalDurationChanged
+        );
     }
 
     int Player::volume() const {
@@ -224,7 +228,9 @@ namespace PMP {
             case QMediaPlayer::PausedState:
                 break; /* do nothing */
             case QMediaPlayer::PlayingState:
+            {
                 _transitioningToNextTrack = false;
+            }
                 break;
         }
     }
@@ -238,6 +244,27 @@ namespace PMP {
             _maxPosReachedInCurrent = position;
 
         emit positionChanged(position);
+    }
+
+    void Player::internalDurationChanged(qint64 duration) {
+        if (_nowPlaying == nullptr) return;
+
+        int previouslyKnownLength =
+            (quint64)_nowPlaying->lengthInSeconds() * 1000;
+        int lengthFromPlayer = _player->duration();
+
+        if (lengthFromPlayer <= 0) {
+            qDebug() << "Player: don't know the actual track length yet";
+        }
+        else if (previouslyKnownLength != lengthFromPlayer
+            && previouslyKnownLength > 0)
+        {
+            qDebug() << "Player: actual track length differs from known length;"
+                     << AudioData::millisecondsToTimeString(previouslyKnownLength)
+                     << "before,"
+                     << AudioData::millisecondsToTimeString(lengthFromPlayer)
+                     << "now";
+        }
     }
 
     bool Player::startNext(bool play) {
@@ -270,13 +297,13 @@ namespace PMP {
 
         if (next != 0) {
             _transitioningToNextTrack = true;
-            qDebug() << " loading media " << filename;
-            _player->setMedia(QUrl::fromLocalFile(filename));
-
             _nowPlaying = next;
             _playPosition = 0;
             _maxPosReachedInCurrent = 0;
             _seekHappenedInCurrent = false;
+
+            qDebug() << " loading media " << filename;
+            _player->setMedia(QUrl::fromLocalFile(filename));
 
             /* try to figure out track length, and if possible tag, artist... */
             next->checkTrackData(*_resolver);

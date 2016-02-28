@@ -33,4 +33,17 @@ namespace PMP {
         //
     }
 
+    QString AudioData::millisecondsToTimeString(quint64 lengthMilliseconds) {
+        int partialSeconds = lengthMilliseconds % 1000;
+        int totalSeconds = lengthMilliseconds / 1000;
+
+        int sec = totalSeconds % 60;
+        int min = (totalSeconds / 60) % 60;
+        int hrs = totalSeconds / 3600;
+
+        return QString::number(hrs).rightJustified(2, '0')
+                + ":" + QString::number(min).rightJustified(2, '0')
+                + ":" + QString::number(sec).rightJustified(2, '0')
+                + "." + QString::number(partialSeconds).rightJustified(3, '0');
+    }
 }
