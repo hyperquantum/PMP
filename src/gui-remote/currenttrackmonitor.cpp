@@ -36,24 +36,25 @@ namespace PMP {
         _nowPlayingLengthSeconds(-1),
         _timer(new QTimer(this)), _elapsedTimer(new QElapsedTimer()), _timerPosition(0)
     {
-        connect(_connection, SIGNAL(connected()), this, SLOT(connected()));
         connect(
-            _connection,
-            SIGNAL(receivedPlayerState(int, quint8, quint32, quint32, quint64)),
-            this,
-            SLOT(receivedPlayerState(int, quint8, quint32, quint32, quint64))
+            _connection, &ServerConnection::connected,
+            this, &CurrentTrackMonitor::connected
         );
         connect(
-            _connection, SIGNAL(receivedTrackInfo(quint32, int, QString, QString)),
-            this, SLOT(receivedTrackInfo(quint32, int, QString, QString))
+            _connection, &ServerConnection::receivedPlayerState,
+            this, &CurrentTrackMonitor::receivedPlayerState
         );
         connect(
-            _connection, SIGNAL(receivedPossibleFilenames(quint32, QList<QString>)),
-            this, SLOT(receivedPossibleFilenames(quint32, QList<QString>))
+            _connection, &ServerConnection::receivedTrackInfo,
+            this, &CurrentTrackMonitor::receivedTrackInfo
         );
         connect(
-            _connection, SIGNAL(volumeChanged(int)),
-            this, SLOT(onVolumeChanged(int))
+            _connection, &ServerConnection::receivedPossibleFilenames,
+            this, &CurrentTrackMonitor::receivedPossibleFilenames
+        );
+        connect(
+            _connection, &ServerConnection::volumeChanged,
+            this, &CurrentTrackMonitor::onVolumeChanged
         );
 
         _timer->setInterval(TIMER_INTERVAL);
@@ -148,7 +149,8 @@ namespace PMP {
         }
     }
 
-    void CurrentTrackMonitor::receivedTrackInfo(quint32 queueID, int lengthInSeconds,
+    void CurrentTrackMonitor::receivedTrackInfo(quint32 queueID, QueueEntryType type,
+                                                int lengthInSeconds,
                                                 QString title, QString artist)
     {
         if (queueID != _nowPlayingQID) return;

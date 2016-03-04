@@ -849,6 +849,8 @@ namespace PMP {
                 return; /* invalid message */
             }
 
+            QueueEntryType type = NetworkProtocol::trackStatusToQueueEntryType(status);
+
             QString title, artist;
             if (NetworkProtocol::isTrackStatusFromRealTrack(status)) {
                 title = NetworkUtil::getUtf8String(message, 16, titleSize);
@@ -859,10 +861,10 @@ namespace PMP {
             }
 
             qDebug() << "received track info reply;  QID:" << queueID
-                << " seconds:" << lengthSeconds << " title:" << title
-                << " artist:" << artist;
+                     << " type:" << (int)type << " seconds:" << lengthSeconds
+                     << " title:" << title << " artist:" << artist;
 
-            receivedTrackInfo(queueID, lengthSeconds, title, artist);
+            emit receivedTrackInfo(queueID, type, lengthSeconds, title, artist);
         }
             break;
         case NetworkProtocol::BulkTrackInfoMessage:
@@ -939,6 +941,8 @@ namespace PMP {
                 int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 10);
                 offset += 12;
 
+                auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
+
                 QString title, artist;
                 if (NetworkProtocol::isTrackStatusFromRealTrack(status)) {
                     title = NetworkUtil::getUtf8String(message, offset, titleSize);
@@ -951,7 +955,7 @@ namespace PMP {
                     title = artist = NetworkProtocol::getPseudoTrackStatusText(status);
                 }
 
-                emit receivedTrackInfo(queueID, lengthSeconds, title, artist);
+                emit receivedTrackInfo(queueID, type, lengthSeconds, title, artist);
             }
         }
             break;

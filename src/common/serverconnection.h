@@ -149,8 +149,8 @@ namespace PMP {
         void queueEntryAdded(quint32 offset, quint32 queueID);
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
-        void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title,
-                               QString artist);
+        void receivedTrackInfo(quint32 queueID, QueueEntryType type, int lengthInSeconds,
+                               QString title, QString artist);
         void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
 
         void receivedUserAccounts(QList<QPair<uint, QString> > accounts);

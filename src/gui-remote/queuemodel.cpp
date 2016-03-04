@@ -101,16 +101,28 @@ namespace PMP {
             QueueEntryInfo* info = _infoFetcher->entryInfoByQID(queueID);
             if (info == 0) { return QString("? ") + QString::number(queueID); }
 
+            auto queueEntryType = info->type();
             int col = index.column();
+
+            switch (queueEntryType) {
+                case QueueEntryType::Track:
+                    break; /* handled below */
+
+                case QueueEntryType::BreakPoint:
+                    if (col <= 1) return "--- BREAK ---";
+                    return "";
+
+                default:
+                    return "";
+            }
+
+            /* Track */
+
             switch (col) {
                 case 0:
                 {
                     QString title = info->title();
-                    if (title == "") {
-                        return info->informativeFilename();
-                    }
-
-                    return title;
+                    return (title != "") ? title : info->informativeFilename();
                 }
                 case 1: return info->artist();
                 case 2:
@@ -132,7 +144,20 @@ namespace PMP {
             return QString("Foobar");
         }
         else if (role == Qt::TextAlignmentRole) {
-            return (index.column() == 2 ? Qt::AlignRight : Qt::AlignLeft)
+            quint32 queueID = trackIdAt(index);
+            if (queueID == 0) { return QVariant(); }
+
+            QueueEntryInfo* info = _infoFetcher->entryInfoByQID(queueID);
+            if (info == 0) { return QVariant(); }
+
+            auto queueEntryType = info->type();
+            int col = index.column();
+
+            if (queueEntryType == QueueEntryType::BreakPoint) {
+                return Qt::AlignCenter;
+            }
+
+            return (col == 2 ? Qt::AlignRight : Qt::AlignLeft)
                 + Qt::AlignVCenter;
         }
 

@@ -29,14 +29,15 @@ namespace PMP {
     /* ========================== QueueEntryInfo ========================== */
 
     QueueEntryInfo::QueueEntryInfo(quint32 queueID)
-     : _queueID(queueID), _lengthSeconds(-1)
+     : _queueID(queueID), _type(QueueEntryType::Unknown), _lengthSeconds(-1)
     {
         //
     }
 
-    void QueueEntryInfo::setInfo(int lengthInSeconds, QString const& title,
-                                 QString const& artist)
+    void QueueEntryInfo::setInfo(QueueEntryType type, int lengthInSeconds,
+                                 QString const& title, QString const& artist)
     {
+        _type = type;
         _lengthSeconds = lengthInSeconds;
         _title = title;
         _artist = artist;
@@ -154,7 +155,8 @@ namespace PMP {
         queueResetted(0);
     }
 
-    void QueueEntryInfoFetcher::receivedTrackInfo(quint32 queueID, int lengthInSeconds,
+    void QueueEntryInfoFetcher::receivedTrackInfo(quint32 queueID, QueueEntryType type,
+                                                  int lengthInSeconds,
                                                   QString title, QString artist)
     {
         QueueEntryInfo*& info = _entries[queueID];
@@ -163,14 +165,14 @@ namespace PMP {
             info = new QueueEntryInfo(queueID);
         }
         else {
-            if (info->artist() == artist && info->title() == title
-                && info->lengthInSeconds() == lengthInSeconds)
+            if (info->type() == type && info->lengthInSeconds() == lengthInSeconds
+                && info->artist() == artist && info->title() == title)
             {
                 return; /* no change */
             }
         }
 
-        info->setInfo(lengthInSeconds, title, artist);
+        info->setInfo(type, lengthInSeconds, title, artist);
 
         if ((title.trimmed().isEmpty() || artist.trimmed().isEmpty())
             && info->informativeFilename().isEmpty())

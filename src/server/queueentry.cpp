@@ -31,7 +31,7 @@ namespace PMP {
 
     QueueEntry::QueueEntry(Queue* parent, QString const& filename)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _type(QueueEntryType::Track),
+       _queueID(parent->getNextQueueID()), _kind(QueueEntryKind::Track),
        _filename(filename), _haveFilename(true),
        _fetchedTagData(false), _fileFinderBackoff(0), _fileFinderFailedCount(0)
     {
@@ -40,7 +40,7 @@ namespace PMP {
 
     QueueEntry::QueueEntry(Queue* parent, FileData const& filedata)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _type(QueueEntryType::Track),
+       _queueID(parent->getNextQueueID()), _kind(QueueEntryKind::Track),
        _hash(filedata.hash()), _haveFilename(false),
        _fetchedTagData(true), _tagData(filedata.tags()),
        _fileFinderBackoff(0), _fileFinderFailedCount(0)
@@ -50,7 +50,7 @@ namespace PMP {
 
     QueueEntry::QueueEntry(Queue* parent, FileHash const& hash)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _type(QueueEntryType::Track),
+       _queueID(parent->getNextQueueID()), _kind(QueueEntryKind::Track),
        _hash(hash), _haveFilename(false),
        _fetchedTagData(false),
        _fileFinderBackoff(0), _fileFinderFailedCount(0)
@@ -58,9 +58,9 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, QueueEntryType type)
+    QueueEntry::QueueEntry(Queue* parent, QueueEntryKind kind)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _type(type),
+       _queueID(parent->getNextQueueID()), _kind(kind),
        _haveFilename(false), _fetchedTagData(false),
        _fileFinderBackoff(0), _fileFinderFailedCount(0)
     {
@@ -68,7 +68,7 @@ namespace PMP {
     }
 
     QueueEntry* QueueEntry::createBreak(Queue* parent) {
-        return new QueueEntry(parent, QueueEntryType::Break);
+        return new QueueEntry(parent, QueueEntryKind::Break);
     }
 
     QueueEntry::~QueueEntry() {

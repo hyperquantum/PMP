@@ -141,7 +141,7 @@ namespace PMP {
     }
 
     void Queue::insertBreakAtFront() {
-        if (!_queue.empty() && _queue[0]->type() == QueueEntryType::Break)
+        if (!_queue.empty() && _queue[0]->kind() == QueueEntryKind::Break)
             return;
 
         enqueueAtFront(QueueEntry::createBreak(this));

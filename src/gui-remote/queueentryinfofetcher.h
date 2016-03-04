@@ -20,6 +20,8 @@
 #ifndef PMP_QUEUEENTRYINFOFETCHER_H
 #define PMP_QUEUEENTRYINFOFETCHER_H
 
+#include "common/networkprotocol.h"
+
 #include "abstractqueuemonitor.h"
 
 #include <QHash>
@@ -37,17 +39,20 @@ namespace PMP {
 
         quint32 queueID() const { return _queueID; }
 
+        QueueEntryType type() const { return _type; }
         int lengthInSeconds() const { return _lengthSeconds; }
         QString artist() const { return _artist; }
         QString title() const { return _title; }
 
         QString informativeFilename() const { return _informativeFilename; }
 
-        void setInfo(int lengthInSeconds, QString const& title, QString const& artist);
+        void setInfo(QueueEntryType type, int lengthInSeconds,
+                     QString const& title, QString const& artist);
         bool setPossibleFilenames(QList<QString> const& names);
 
     private:
         quint32 _queueID;
+        QueueEntryType _type;
         int _lengthSeconds;
         QString _title;
         QString _artist;
@@ -69,8 +74,8 @@ namespace PMP {
     private slots:
         void connected();
 
-        void receivedTrackInfo(quint32 queueID, int lengthInSeconds, QString title,
-                               QString artist);
+        void receivedTrackInfo(quint32 queueID, QueueEntryType type, int lengthInSeconds,
+                               QString title, QString artist);
         void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
 
         void queueResetted(int queueLength);

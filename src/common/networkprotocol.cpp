@@ -127,6 +127,16 @@ namespace PMP {
         return "<<<< ????? >>>>";
     }
 
+    QueueEntryType NetworkProtocol::trackStatusToQueueEntryType(quint16 status) {
+        if (isTrackStatusFromRealTrack(status))
+            return QueueEntryType::Track;
+
+        auto type = status - (1u << 15);
+        if (type == 1) return QueueEntryType::BreakPoint;
+
+        return QueueEntryType::Unknown;
+    }
+
     void NetworkProtocol::appendHash(QByteArray &buffer, const FileHash &hash) {
         NetworkUtil::append8Bytes(buffer, hash.length());
         buffer += hash.SHA1();

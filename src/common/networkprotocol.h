@@ -27,6 +27,12 @@ namespace PMP {
 
     class FileHash;
 
+    enum class QueueEntryType : quint8 {
+        Unknown = 0,
+        Track = 1,
+        BreakPoint = 10,
+    };
+
     class NetworkProtocol {
     public:
         enum ServerMessageType {
@@ -104,6 +110,7 @@ namespace PMP {
 
         static bool isTrackStatusFromRealTrack(quint16 status);
         static QString getPseudoTrackStatusText(quint16 status);
+        static QueueEntryType trackStatusToQueueEntryType(quint16 status);
 
         static const int FILEHASH_BYTECOUNT = 8 /*length*/ + 20 /*SHA-1*/ + 16 /*MD5*/;
         static void appendHash(QByteArray& buffer, const FileHash& hash);
