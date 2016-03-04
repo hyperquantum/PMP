@@ -25,6 +25,7 @@
 
 namespace PMP {
 
+    class QueueEntryInfo;
     class QueueEntryInfoFetcher;
     class QueueMediator;
 
@@ -74,6 +75,8 @@ namespace PMP {
                 //
             }
         };
+
+        QVariant trackModelData(QueueEntryInfo* info, int col, int role) const;
 
         //Track* trackAt(const QModelIndex& index) const;
 

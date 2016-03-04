@@ -23,7 +23,10 @@
 #include "queuemediator.h"
 
 #include <QBuffer>
+#include <QBrush>
+#include <QColor>
 #include <QDataStream>
+#include <QFont>
 #include <QList>
 #include <QMimeData>
 #include <QtDebug>
@@ -94,71 +97,88 @@ namespace PMP {
     QVariant QueueModel::data(const QModelIndex& index, int role) const {
         //qDebug() << "QueueModel::data called with role" << role;
 
-        if (role == Qt::DisplayRole) {
-            quint32 queueID = trackIdAt(index);
-            if (queueID == 0) { return QString(); }
+        int col = index.column();
 
-            QueueEntryInfo* info = _infoFetcher->entryInfoByQID(queueID);
-            if (info == 0) { return QString("? ") + QString::number(queueID); }
+        quint32 queueID = trackIdAt(index);
 
-            auto queueEntryType = info->type();
-            int col = index.column();
+        QueueEntryInfo* info =
+            queueID ? _infoFetcher->entryInfoByQID(queueID) : nullptr;
 
-            switch (queueEntryType) {
-                case QueueEntryType::Track:
-                    break; /* handled below */
+        /* handle real track entries in a separate function */
+        if (info && info->type() == QueueEntryType::Track)
+            return trackModelData(info, col, role);
 
-                case QueueEntryType::BreakPoint:
-                    if (col <= 1) return "--- BREAK ---";
-                    return "";
+        /* handling for non-track queue entries */
 
-                default:
-                    return "";
-            }
+        switch (role) {
+            case Qt::DisplayRole:
+                if (info == 0) { return QString(); }
 
-            /* Track */
+                switch (info->type()) {
+                    case QueueEntryType::Unknown:
+                        break; /* default: empty */
 
-            switch (col) {
-                case 0:
-                {
-                    QString title = info->title();
-                    return (title != "") ? title : info->informativeFilename();
+                    case QueueEntryType::Track:
+                        break; /* unreachable, see above */
+
+                    case QueueEntryType::BreakPoint:
+                        if (col <= 1) return "--- BREAK ---";
+                        return "";
                 }
-                case 1: return info->artist();
-                case 2:
-                {
-                    int lengthInSeconds = info->lengthInSeconds();
+                break;
 
-                    if (lengthInSeconds < 0) { return "?"; }
+            case Qt::TextAlignmentRole:
+                if (info == 0) { return QVariant(); }
 
-                    int sec = lengthInSeconds % 60;
-                    int min = (lengthInSeconds / 60) % 60;
-                    int hrs = lengthInSeconds / 3600;
-
-                    return QString::number(hrs).rightJustified(2, '0')
-                        + ":" + QString::number(min).rightJustified(2, '0')
-                        + ":" + QString::number(sec).rightJustified(2, '0');
-                }
-            }
-
-            return QString("Foobar");
-        }
-        else if (role == Qt::TextAlignmentRole) {
-            quint32 queueID = trackIdAt(index);
-            if (queueID == 0) { return QVariant(); }
-
-            QueueEntryInfo* info = _infoFetcher->entryInfoByQID(queueID);
-            if (info == 0) { return QVariant(); }
-
-            auto queueEntryType = info->type();
-            int col = index.column();
-
-            if (queueEntryType == QueueEntryType::BreakPoint) {
                 return Qt::AlignCenter;
-            }
 
-            return (col == 2 ? Qt::AlignRight : Qt::AlignLeft)
-                + Qt::AlignVCenter;
+            case Qt::FontRole:
+            {
+                QFont font;
+                font.setItalic(true);
+                return font;
+            }
+            case Qt::ForegroundRole:
+                return QBrush(QColor::fromRgb(30, 30, 30));
+
+            case Qt::BackgroundRole:
+                return QBrush(QColor::fromRgb(220, 220, 220));
+        }
+
+        return QVariant();
+    }
+
+    QVariant QueueModel::trackModelData(QueueEntryInfo* info, int col, int role) const {
+        switch (role) {
+            case Qt::DisplayRole:
+                switch (col) {
+                    case 0:
+                    {
+                        QString title = info->title();
+                        return (title != "") ? title : info->informativeFilename();
+                    }
+                    case 1: return info->artist();
+                    case 2:
+                    {
+                        int lengthInSeconds = info->lengthInSeconds();
+
+                        if (lengthInSeconds < 0) { return "?"; }
+
+                        int sec = lengthInSeconds % 60;
+                        int min = (lengthInSeconds / 60) % 60;
+                        int hrs = lengthInSeconds / 3600;
+
+                        return QString::number(hrs).rightJustified(2, '0')
+                            + ":" + QString::number(min).rightJustified(2, '0')
+                            + ":" + QString::number(sec).rightJustified(2, '0');
+                    }
+                }
+
+                return QString("Foobar");
+
+            case Qt::TextAlignmentRole:
+                return (col == 2 ? Qt::AlignRight : Qt::AlignLeft)
+                    + Qt::AlignVCenter;
         }
 
         return QVariant();
