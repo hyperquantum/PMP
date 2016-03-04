@@ -6,8 +6,7 @@ BUGS
  - GUI remote: queue length not updated after initial queue population (only a player status message from the server will trigger an update now)
  - diagnostic logging produces unreadable text when two different threads write something to the log
  - when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
- - track info for a queue entry is requested 3 times for each track
- - Generator might get into infinite loop if source list does not contain any suitable candidates (?)
+ - track info for a queue entry is requested 3 times or more for each track
  - music collection list sorting does not ignore spaces between words
  - the commandline client does not support user authentication which is now required for some commands it supports
 
@@ -20,7 +19,7 @@ PERFORMANCE ISSUES
 TECHNICAL TODO
 
  - keep track lengths in milliseconds, not seconds
- - track preload mechanism; especially important for tracks on an external medium
+ - we need a track preload mechanism; especially important for tracks on an external medium
  - associate a title and artist with each hash and save that information in the database (?)
 
 
@@ -29,6 +28,8 @@ IDEAS
  - 'like' button for the song that is playing, that will bump the score of the song a little bit
  - 'love' & 'hate' button for the song that is playing
  - statistics view for the user; with things like "amount of tracks played in the last 7/30/... days"
+ - 'about the remote' window; with client version and protocol version
+ - 'about the server' window; with server name, UUID and protocol version
 
 
 USER FRIENDLINESS
