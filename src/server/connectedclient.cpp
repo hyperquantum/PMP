@@ -1040,104 +1040,7 @@ namespace PMP {
             }
 
             quint8 actionType = NetworkUtil::getByte(message, 2);
-
-            if (actionType >= 100 && actionType <= 200) {
-                qDebug() << "received CHANGE VOLUME command, volume"
-                         << ((uint)actionType - 100);
-
-                if (isLoggedIn()) { _player->setVolume(actionType - 100); }
-                break;
-            }
-
-            switch(actionType) {
-            case 1:
-                qDebug() << "received PLAY command";
-                if (isLoggedIn()) { _player->play(); }
-                break;
-            case 2:
-                qDebug() << "received PAUSE command";
-                if (isLoggedIn()) { _player->pause(); }
-                break;
-            case 3:
-                qDebug() << "received SKIP command";
-                if (isLoggedIn()) { _player->skip(); }
-                break;
-            case 4:
-                qDebug() << "received INSERT BREAK AT FRONT command";
-                if (isLoggedIn()) { _player->queue().insertBreakAtFront(); }
-                break;
-            case 10: /* request for state info */
-                qDebug() << "received request for player status";
-                sendStateInfo();
-                break;
-            case 11: /* request for status of dynamic mode */
-                qDebug() << "received request for dynamic mode status";
-                sendDynamicModeStatusMessage();
-                break;
-            case 12:
-                qDebug() << "received request for server instance UUID";
-                sendServerInstanceIdentifier();
-                break;
-            case 13:
-                qDebug() << "received request for list of user accounts";
-                sendUsersList();
-                break;
-            case 14:
-                qDebug() << "received request for PUBLIC/PERSONAL mode status";
-                sendUserPlayingForModeMessage();
-                break;
-            case 15:
-                qDebug() << "received request for (full) indexation running status";
-                onFullIndexationRunStatusChanged(
-                    _player->resolver().fullIndexationRunning()
-                );
-                break;
-            case 16:
-                qDebug() << "received request for server name";
-                sendServerNameMessage(0, QHostInfo::localHostName());
-                break;
-            case 20: /* enable dynamic mode */
-                qDebug() << "received ENABLE DYNAMIC MODE command";
-                if (isLoggedIn()) { _generator->enable(); }
-                break;
-            case 21: /* disable dynamic mode */
-                qDebug() << "received DISABLE DYNAMIC MODE command";
-                if (isLoggedIn()) { _generator->disable(); }
-                break;
-            case 22: /* request queue expansion */
-                qDebug() << "received QUEUE EXPANSION command";
-                if (isLoggedIn()) { _generator->requestQueueExpansion(); }
-                break;
-            case 23:
-                qDebug() << "received TRIM QUEUE command";
-                 /* TODO: get the '10' from elsewhere */
-                if (isLoggedIn()) { _player->queue().trim(10); }
-                break;
-            case 30: /* switch to public mode */
-                qDebug() << "received SWITCH TO PUBLIC MODE command";
-                _player->setUserPlayingFor(0);
-                break;
-            case 31: /* switch to personal mode */
-                qDebug() << "received SWITCH TO PERSONAL MODE command";
-                if (isLoggedIn()) {
-                    qDebug() << " switching to personal mode for user "
-                             << _userLoggedInName;
-                    _player->setUserPlayingFor(_userLoggedIn);
-                }
-                break;
-            case 40:
-                qDebug() << "received START FULL INDEXATION command";
-                if (isLoggedIn()) { _player->resolver().startFullIndexation(); }
-                break;
-            case 99:
-                qDebug() << "received SHUTDOWN command";
-                if (isLoggedIn()) { _server->shutdown(); }
-                break;
-            default:
-                qDebug() << "received unrecognized single-byte action type:"
-                         << (int)actionType;
-                break; /* unknown action type */
-            }
+            handleSingleByteAction(actionType);
         }
             break;
         case NetworkProtocol::TrackInfoRequestMessage:
@@ -1595,6 +1498,109 @@ namespace PMP {
         }
         else {
             return; /* invalid message */
+        }
+    }
+
+    void ConnectedClient::handleSingleByteAction(quint8 action) {
+        /* actions 100-200 represent a SET VOLUME command */
+        if (action >= 100 && action <= 200) {
+            qDebug() << "received CHANGE VOLUME command, volume"
+                     << ((uint)action - 100);
+
+            if (isLoggedIn()) { _player->setVolume(action - 100); }
+            return;
+        }
+
+        /* Other actions */
+
+        switch (action) {
+        case 1:
+            qDebug() << "received PLAY command";
+            if (isLoggedIn()) { _player->play(); }
+            break;
+        case 2:
+            qDebug() << "received PAUSE command";
+            if (isLoggedIn()) { _player->pause(); }
+            break;
+        case 3:
+            qDebug() << "received SKIP command";
+            if (isLoggedIn()) { _player->skip(); }
+            break;
+        case 4:
+            qDebug() << "received INSERT BREAK AT FRONT command";
+            if (isLoggedIn()) { _player->queue().insertBreakAtFront(); }
+            break;
+        case 10: /* request for state info */
+            qDebug() << "received request for player status";
+            sendStateInfo();
+            break;
+        case 11: /* request for status of dynamic mode */
+            qDebug() << "received request for dynamic mode status";
+            sendDynamicModeStatusMessage();
+            break;
+        case 12:
+            qDebug() << "received request for server instance UUID";
+            sendServerInstanceIdentifier();
+            break;
+        case 13:
+            qDebug() << "received request for list of user accounts";
+            sendUsersList();
+            break;
+        case 14:
+            qDebug() << "received request for PUBLIC/PERSONAL mode status";
+            sendUserPlayingForModeMessage();
+            break;
+        case 15:
+            qDebug() << "received request for (full) indexation running status";
+            onFullIndexationRunStatusChanged(
+                _player->resolver().fullIndexationRunning()
+            );
+            break;
+        case 16:
+            qDebug() << "received request for server name";
+            sendServerNameMessage(0, QHostInfo::localHostName());
+            break;
+        case 20: /* enable dynamic mode */
+            qDebug() << "received ENABLE DYNAMIC MODE command";
+            if (isLoggedIn()) { _generator->enable(); }
+            break;
+        case 21: /* disable dynamic mode */
+            qDebug() << "received DISABLE DYNAMIC MODE command";
+            if (isLoggedIn()) { _generator->disable(); }
+            break;
+        case 22: /* request queue expansion */
+            qDebug() << "received QUEUE EXPANSION command";
+            if (isLoggedIn()) { _generator->requestQueueExpansion(); }
+            break;
+        case 23:
+            qDebug() << "received TRIM QUEUE command";
+             /* TODO: get the '10' from elsewhere */
+            if (isLoggedIn()) { _player->queue().trim(10); }
+            break;
+        case 30: /* switch to public mode */
+            qDebug() << "received SWITCH TO PUBLIC MODE command";
+            _player->setUserPlayingFor(0);
+            break;
+        case 31: /* switch to personal mode */
+            qDebug() << "received SWITCH TO PERSONAL MODE command";
+            if (isLoggedIn()) {
+                qDebug() << " switching to personal mode for user "
+                         << _userLoggedInName;
+                _player->setUserPlayingFor(_userLoggedIn);
+            }
+            break;
+        case 40:
+            qDebug() << "received START FULL INDEXATION command";
+            if (isLoggedIn()) { _player->resolver().startFullIndexation(); }
+            break;
+        case 99:
+            qDebug() << "received SHUTDOWN command";
+            if (isLoggedIn()) { _server->shutdown(); }
+            break;
+        default:
+            qDebug() << "received unrecognized single-byte action type:"
+                     << (int)action;
+            break; /* unknown action type */
         }
     }
 

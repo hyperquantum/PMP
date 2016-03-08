@@ -114,6 +114,7 @@ namespace PMP {
                                        QList<CollectionTrackInfo> tracks);
         void sendServerNameMessage(quint8 type, QString name);
         void handleBinaryMessage(QByteArray const& message);
+        void handleSingleByteAction(quint8 action);
         void handleCollectionFetchRequest(uint clientReference);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         NetworkProtocol::ClientMessageType messageType);
