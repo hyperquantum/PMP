@@ -26,12 +26,13 @@
 
 namespace PMP {
 
-    ServerConnection::ServerConnection(QObject* parent)
+    ServerConnection::ServerConnection(QObject* parent, bool subscribeToAllServerEvents)
      : QObject(parent),
-      _state(ServerConnection::NotConnected),
-      _binarySendingMode(false),
-      _serverProtocolNo(-1), _nextRef(1),
-      _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0)
+       _autoSubscribeToEventsAfterConnect(subscribeToAllServerEvents),
+       _state(ServerConnection::NotConnected),
+       _binarySendingMode(false),
+       _serverProtocolNo(-1), _nextRef(1),
+       _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0)
     {
         connect(&_socket, SIGNAL(connected()), this, SLOT(onConnected()));
         connect(&_socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
@@ -158,10 +159,14 @@ namespace PMP {
                     return;
                 }
 
-                _serverProtocolNo = (heading[3] << 8) + heading[4];
-                qDebug() << "server supports protocol " << QString::number(_serverProtocolNo);
+                _serverProtocolNo = (uint(heading[3]) << 8) + uint(heading[4]);
+                qDebug() << "server supports protocol " << _serverProtocolNo;
 
                 _state = BinaryMode;
+
+                if (_autoSubscribeToEventsAfterConnect) {
+                    sendSingleByteAction(50); /* 50 = subscribe to all server events */
+                }
 
                 emit connected();
             }

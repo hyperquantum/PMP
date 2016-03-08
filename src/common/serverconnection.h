@@ -58,7 +58,7 @@ namespace PMP {
             UnknownUserLoginError, UserLoginAuthenticationFailed
         };
 
-        ServerConnection(QObject* parent = 0);
+        ServerConnection(QObject* parent = 0, bool subscribeToAllServerEvents = true);
 
         void reset();
         void connectToHost(QString const& host, quint16 port);
@@ -209,6 +209,7 @@ namespace PMP {
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 
+        bool _autoSubscribeToEventsAfterConnect;
         State _state;
         QTcpSocket _socket;
         QByteArray _readBuffer;

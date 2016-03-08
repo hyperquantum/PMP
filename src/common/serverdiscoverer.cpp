@@ -179,7 +179,8 @@ namespace PMP {
 
     ServerProbe::ServerProbe(QObject* parent, QHostAddress const& address, quint16 port)
      : QObject(parent),
-       _address(address), _port(port), _connection(new ServerConnection(this)),
+       _address(address), _port(port),
+       _connection(new ServerConnection(this, false)),
        _serverNameType(0)
     {
         qDebug() << "ServerProbe created for" << address << "port" << port;

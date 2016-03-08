@@ -1593,6 +1593,13 @@ namespace PMP {
             qDebug() << "received START FULL INDEXATION command";
             if (isLoggedIn()) { _player->resolver().startFullIndexation(); }
             break;
+        case 50:
+            qDebug() << "received SUBSCRIBE TO ALL EVENTS command";
+            /* Not yet implemented; currently all events are always broadcasted to the
+             * client. This command is here to prepare for the future. In the future we
+             * will no longer send any events by default that the client did not request.
+             */
+            break;
         case 99:
             qDebug() << "received SHUTDOWN command";
             if (isLoggedIn()) { _server->shutdown(); }
