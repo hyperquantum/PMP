@@ -9,6 +9,7 @@ BUGS
  - track info for a queue entry is requested 3 times or more for each track
  - music collection list sorting does not ignore spaces between words
  - the commandline client does not support user authentication which is now required for some commands it supports
+ - after probing a server the client outputs "QIODevice::read: device not open"
 
 
 PERFORMANCE ISSUES
@@ -21,6 +22,7 @@ TECHNICAL TODO
  - keep track lengths in milliseconds, not seconds
  - we need a track preload mechanism; especially important for tracks on an external medium
  - associate a title and artist with each hash and save that information in the database (?)
+ - when running an indexation, analyze the most recently created/updated files first
 
 
 IDEAS
