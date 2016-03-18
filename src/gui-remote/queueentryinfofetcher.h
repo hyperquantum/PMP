@@ -66,7 +66,6 @@ namespace PMP {
                               ServerConnection* connection);
 
         QueueEntryInfo* entryInfoByQID(quint32 queueID);
-//        QueueEntryInfo* entryInfoByIndex(int index);
 
     Q_SIGNALS:
         void tracksChanged(QList<quint32> queueIDs);
@@ -88,12 +87,15 @@ namespace PMP {
         void emitTracksChangedSignal();
 
     private:
+        void sendRequest(quint32 queueID);
+
         static const int initialQueueFetchLength = 10;
 
         AbstractQueueMonitor* _monitor;
         ServerConnection* _connection;
         QHash<quint32, QueueEntryInfo*> _entries;
         QSet<quint32> _trackChangeNotificationsPending;
+        QSet<quint32> _infoRequestsSent;
     };
 }
 #endif

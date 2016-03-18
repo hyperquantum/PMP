@@ -6,7 +6,6 @@ BUGS
  - GUI remote: queue length not updated after initial queue population (only a player status message from the server will trigger an update now)
  - diagnostic logging produces unreadable text when two different threads write something to the log
  - when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
- - track info for a queue entry is requested 3 times or more for each track
  - music collection list sorting does not ignore spaces between words
  - the commandline client does not support user authentication which is now required for some commands it supports
  - after probing a server the client outputs "QIODevice::read: device not open"

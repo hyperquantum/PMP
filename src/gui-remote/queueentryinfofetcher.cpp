@@ -131,25 +131,10 @@ namespace PMP {
         if (queueID == 0) return 0;
 
         QueueEntryInfo* info = _entries[queueID];
-        if (info == 0) {
-            _connection->sendTrackInfoRequest(queueID);
-        }
+        if (!info) { sendRequest(queueID); }
 
         return info;
     }
-
-//    QueueEntryInfo* QueueEntryInfoFetcher::entryInfoByIndex(int index) {
-//        if (index < 0 || index >= _monitor->queueLength()) {
-//            return 0;
-//        }
-//
-//        quint32 qid = _monitor->queueEntry(index);
-//        if (qid == 0) {
-//            return 0;
-//        }
-//
-//        return entryInfoByQID(qid);
-//    }
 
     void QueueEntryInfoFetcher::connected() {
         queueResetted(0);
@@ -159,9 +144,11 @@ namespace PMP {
                                                   int lengthInSeconds,
                                                   QString title, QString artist)
     {
+        _infoRequestsSent.remove(queueID);
+
         QueueEntryInfo*& info = _entries[queueID];
 
-        if (info == 0) {
+        if (!info) {
             info = new QueueEntryInfo(queueID);
         }
         else {
@@ -177,6 +164,7 @@ namespace PMP {
         if ((title.trimmed().isEmpty() || artist.trimmed().isEmpty())
             && info->informativeFilename().isEmpty())
         {
+            /* no title/artist info available, so we want to display a filename instead */
             _connection->sendPossibleFilenamesRequest(queueID);
         }
 
@@ -188,7 +176,7 @@ namespace PMP {
     {
         QueueEntryInfo*& info = _entries[queueID];
 
-        if (info == 0) {
+        if (!info) {
             info = new QueueEntryInfo(queueID);
         }
 
@@ -203,6 +191,8 @@ namespace PMP {
         qDebug() << "QueueEntryInfoFetcher::queueResetted called with length"
                  << queueLength;
 
+        _infoRequestsSent.clear();
+
         qDeleteAll(_entries); /* delete all objects before clearing */
         _entries.clear();
         _entries.reserve(queueLength);
@@ -215,6 +205,7 @@ namespace PMP {
             quint32 qid = _monitor->queueEntry(i);
             if (qid > 0) {
                 IDs.append(qid);
+                _infoRequestsSent << qid;
             }
         }
 
@@ -229,6 +220,8 @@ namespace PMP {
                     IDs.append(entry);
                     _entries[entry] = new QueueEntryInfo(entry);
                 }
+
+                _infoRequestsSent << entry;
             }
 
             _connection->sendTrackInfoRequest(IDs);
@@ -237,12 +230,14 @@ namespace PMP {
 
     void QueueEntryInfoFetcher::trackAdded(int index, quint32 queueID) {
         if (index < initialQueueFetchLength && queueID > 0) {
-            _connection->sendTrackInfoRequest(queueID);
+            sendRequest(queueID);
             _entries[queueID] = new QueueEntryInfo(queueID);
         }
     }
 
     void QueueEntryInfoFetcher::trackRemoved(int index, quint32 queueID) {
+        _infoRequestsSent.remove(queueID);
+
         if (!_entries.contains(queueID)) return;
 
         delete _entries[queueID];
@@ -254,7 +249,7 @@ namespace PMP {
         if (toIndex < initialQueueFetchLength && queueID > 0
             && !_entries.contains(queueID))
         {
-            _connection->sendTrackInfoRequest(queueID);
+            sendRequest(queueID);
             _entries[queueID] = new QueueEntryInfo(queueID);
         }
 
@@ -264,7 +259,7 @@ namespace PMP {
             int index = initialQueueFetchLength - 1;
             quint32 qid = _monitor->queueEntry(index);
             if (qid > 0 && !_entries.contains(qid)) {
-                _connection->sendTrackInfoRequest(qid);
+                sendRequest(qid);
                 _entries[qid] = new QueueEntryInfo(qid);
             }
         }
@@ -289,6 +284,14 @@ namespace PMP {
         qDebug() << "QueueEntryInfoFetcher: going to emit tracksChanged signal for"
                  << list.size() << "tracks";
         emit tracksChanged(list);
+    }
+
+    void QueueEntryInfoFetcher::sendRequest(quint32 queueID) {
+        if (_infoRequestsSent.contains(queueID))
+            return; /* sent already and waiting for an answer */
+
+        _infoRequestsSent << queueID;
+        _connection->sendTrackInfoRequest(queueID);
     }
 
 }
