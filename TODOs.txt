@@ -31,6 +31,8 @@ IDEAS
  - statistics view for the user; with things like "amount of tracks played in the last 7/30/... days"
  - 'about the remote' window; with client version and protocol version
  - 'about the server' window; with server name, UUID and protocol version
+ - ability to put playback volume adjustments in the queue (the same way as breakpoints)
+ - show recent play history in the client (e.g. last 3 songs)
 
 
 USER FRIENDLINESS
