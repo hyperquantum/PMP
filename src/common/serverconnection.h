@@ -104,8 +104,8 @@ namespace PMP {
         void insertQueueEntryAtFront(FileHash const& hash);
         void insertQueueEntryAtEnd(FileHash const& hash);
 
-        void sendTrackInfoRequest(uint queueID);
-        void sendTrackInfoRequest(QList<uint> const& queueIDs);
+        void sendQueueEntryInfoRequest(uint queueID);
+        void sendQueueEntryInfoRequest(QList<uint> const& queueIDs);
 
         void sendPossibleFilenamesRequest(uint queueID);
 

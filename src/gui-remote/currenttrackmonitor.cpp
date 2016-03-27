@@ -103,7 +103,7 @@ namespace PMP {
             _nowPlayingTitle = "";
             _nowPlayingArtist = "";
             _nowPlayingFilename = "";
-            _connection->sendTrackInfoRequest(nowPlayingQID);
+            _connection->sendQueueEntryInfoRequest(nowPlayingQID);
         }
 
         if (state == ServerConnection::Playing) {

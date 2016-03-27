@@ -209,7 +209,7 @@ namespace PMP {
             }
         }
 
-        _connection->sendTrackInfoRequest(IDs);
+        _connection->sendQueueEntryInfoRequest(IDs);
     }
 
     void QueueEntryInfoFetcher::entriesReceived(int index, QList<quint32> entries) {
@@ -224,7 +224,7 @@ namespace PMP {
                 _infoRequestsSent << entry;
             }
 
-            _connection->sendTrackInfoRequest(IDs);
+            _connection->sendQueueEntryInfoRequest(IDs);
         }
     }
 
@@ -291,7 +291,7 @@ namespace PMP {
             return; /* sent already and waiting for an answer */
 
         _infoRequestsSent << queueID;
-        _connection->sendTrackInfoRequest(queueID);
+        _connection->sendQueueEntryInfoRequest(queueID);
     }
 
 }
