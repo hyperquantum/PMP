@@ -24,7 +24,7 @@
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
 
-#include "player.h" /* for the State enum :( */
+#include "playerstate.h"
 
 #include <QByteArray>
 #include <QList>
@@ -35,6 +35,7 @@ namespace PMP {
     class CollectionMonitor;
     class CollectionSender;
     class Generator;
+    class Player;
     class QueueEntry;
     class Resolver;
     class Server;
@@ -60,7 +61,7 @@ namespace PMP {
         void volumeChanged(int volume);
         void dynamicModeStatusChanged(bool enabled);
         void dynamicModeNoRepetitionSpanChanged(int seconds);
-        void playerStateChanged(Player::State state);
+        void playerStateChanged(PlayerState state);
         void currentTrackChanged(QueueEntry const* entry);
         void trackPositionChanged(qint64 position);
         void sendStateInfo();

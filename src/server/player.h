@@ -20,6 +20,7 @@
 #ifndef PMP_PLAYER_H
 #define PMP_PLAYER_H
 
+#include "playerstate.h"
 #include "queue.h"
 
 #include <QMediaPlayer>
@@ -31,14 +32,12 @@ namespace PMP {
     class Player : public QObject {
         Q_OBJECT
     public:
-        enum State { Stopped, Playing, Paused };
-
         Player(QObject* parent, Resolver* resolver, int defaultVolume);
 
         int volume() const;
 
         bool playing() const;
-        State state() const;
+        PlayerState state() const;
         QueueEntry const* nowPlaying() const;
         uint nowPlayingQID() const;
         qint64 playPosition() const;
@@ -65,7 +64,7 @@ namespace PMP {
 
     Q_SIGNALS:
 
-        void stateChanged(Player::State state);
+        void stateChanged(PlayerState state);
         void currentTrackChanged(QueueEntry const* newTrack);
         void positionChanged(qint64 position);
         void volumeChanged(int volume);
@@ -78,7 +77,7 @@ namespace PMP {
         void finished();
 
     private slots:
-        void changeState(State state);
+        void changeState(PlayerState state);
         void internalStateChanged(QMediaPlayer::State state);
         void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
         void internalPositionChanged(qint64 position);
@@ -98,7 +97,7 @@ namespace PMP {
         qint64 _playPosition;
         qint64 _maxPosReachedInCurrent;
         bool _seekHappenedInCurrent;
-        State _state;
+        PlayerState _state;
         bool _transitioningToNextTrack;
         quint32 _userPlayingFor;
     };

@@ -26,7 +26,7 @@
 #include "collectionmonitor.h"
 #include "database.h"
 #include "generator.h"
-//#include "player.h"
+#include "player.h"
 #include "queue.h"
 #include "queueentry.h"
 #include "resolver.h"
@@ -380,16 +380,16 @@ namespace PMP {
     void ConnectedClient::sendStateInfo() {
         //qDebug() << "sending state info";
 
-        Player::State state = _player->state();
+        PlayerState state = _player->state();
         quint8 stateNum = 0;
         switch (state) {
-        case Player::Stopped:
+        case PlayerState::Stopped:
             stateNum = 1;
             break;
-        case Player::Playing:
+        case PlayerState::Playing:
             stateNum = 2;
             break;
-        case Player::Paused:
+        case PlayerState::Paused:
             stateNum = 3;
             break;
         }
@@ -880,20 +880,20 @@ namespace PMP {
         sendEventNotificationMessage(running ? 1 : 2);
     }
 
-    void ConnectedClient::playerStateChanged(Player::State state) {
+    void ConnectedClient::playerStateChanged(PlayerState state) {
         if (_binaryMode) {
             sendStateInfo();
             return;
         }
 
         switch (state) {
-        case Player::Playing:
+        case PlayerState::Playing:
             sendTextCommand("playing");
             break;
-        case Player::Paused:
+        case PlayerState::Paused:
             sendTextCommand("paused");
             break;
-        case Player::Stopped:
+        case PlayerState::Stopped:
             sendTextCommand("stopped");
             break;
         }
