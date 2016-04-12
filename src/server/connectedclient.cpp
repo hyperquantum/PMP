@@ -39,6 +39,8 @@
 
 namespace PMP {
 
+    const qint16 ConnectedClient::ServerProtocolNo = 2;
+
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,
                                      CollectionMonitor* collectionMonitor)
@@ -272,8 +274,9 @@ namespace PMP {
                 binaryHeader[0] = 'P';
                 binaryHeader[1] = 'M';
                 binaryHeader[2] = 'P';
-                binaryHeader[3] = 0; /* protocol number; high byte */
-                binaryHeader[4] = 1; /* protocol number; low byte */
+                /* the next two bytes are the protocol version */
+                binaryHeader[3] = char(((unsigned)ServerProtocolNo >> 8) & 255);
+                binaryHeader[4] = char((unsigned)ServerProtocolNo & 255);
                 _socket->write(binaryHeader, sizeof(binaryHeader));
             }
             else {

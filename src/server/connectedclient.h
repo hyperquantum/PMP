@@ -120,6 +120,8 @@ namespace PMP {
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         NetworkProtocol::ClientMessageType messageType);
 
+        static const qint16 ServerProtocolNo;
+
         bool _terminated;
         QTcpSocket* _socket;
         Server* _server;
