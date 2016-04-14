@@ -26,6 +26,8 @@
 
 namespace PMP {
 
+    const qint16 ServerConnection::ClientProtocolNo = 2;
+
     ServerConnection::ServerConnection(QObject* parent, bool subscribeToAllServerEvents)
      : QObject(parent),
        _autoSubscribeToEventsAfterConnect(subscribeToAllServerEvents),
@@ -129,8 +131,9 @@ namespace PMP {
                 binaryHeader[0] = 'P';
                 binaryHeader[1] = 'M';
                 binaryHeader[2] = 'P';
-                binaryHeader[3] = 0; /* protocol number; high byte */
-                binaryHeader[4] = 1; /* protocol number; low byte */
+                /* the next two bytes are the protocol version */
+                binaryHeader[3] = char(((unsigned)ClientProtocolNo >> 8) & 255);
+                binaryHeader[4] = char((unsigned)ClientProtocolNo & 255);
                 _socket.write(binaryHeader, sizeof(binaryHeader));
 
                 _binarySendingMode = true;

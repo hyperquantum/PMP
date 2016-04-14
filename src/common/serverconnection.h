@@ -209,6 +209,8 @@ namespace PMP {
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 
+        static const qint16 ClientProtocolNo;
+
         bool _autoSubscribeToEventsAfterConnect;
         State _state;
         QTcpSocket _socket;

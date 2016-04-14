@@ -183,7 +183,7 @@ namespace PMP {
             }
 
             _clientProtocolNo = (heading[3] << 8) + heading[4];
-            qDebug() << "client supports protocol " << QString::number(_clientProtocolNo);
+            qDebug() << "client supports protocol " << _clientProtocolNo;
         }
 
         readBinaryCommands();
