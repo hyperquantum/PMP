@@ -34,6 +34,11 @@ namespace PMP {
         //
     }
 
+    void QueueEntryInfo::setHash(QueueEntryType type, const FileHash& hash) {
+        _type = type;
+        _hash = hash;
+    }
+
     void QueueEntryInfo::setInfo(QueueEntryType type, int lengthInSeconds,
                                  QString const& title, QString const& artist)
     {
@@ -87,11 +92,19 @@ namespace PMP {
     QueueEntryInfoFetcher::QueueEntryInfoFetcher(QObject* parent,
                                                  AbstractQueueMonitor* monitor,
                                                  ServerConnection* connection)
-     : QObject(parent), _monitor(monitor), _connection(connection)
+     : QObject(parent), _monitor(monitor), _connection(connection), _userPlayingFor(0)
     {
         connect(
             _connection, &ServerConnection::connected,
             this, &QueueEntryInfoFetcher::connected
+        );
+        connect(
+            _connection, &ServerConnection::receivedUserPlayingFor,
+            this, &QueueEntryInfoFetcher::receivedUserPlayingFor
+        );
+        connect(
+            _connection, &ServerConnection::receivedQueueEntryHash,
+            this, &QueueEntryInfoFetcher::receivedQueueEntryHash
         );
         connect(
             _connection, &ServerConnection::receivedTrackInfo,
@@ -138,6 +151,35 @@ namespace PMP {
 
     void QueueEntryInfoFetcher::connected() {
         queueResetted(0);
+    }
+
+    void QueueEntryInfoFetcher::receivedUserPlayingFor(quint32 userId, QString userLogin)
+    {
+        if (_userPlayingFor == userId) return;
+
+        _userPlayingFor = userId;
+        emit userPlayingForChanged(userId);
+    }
+
+    void QueueEntryInfoFetcher::receivedQueueEntryHash(quint32 queueID,
+                                                       QueueEntryType type, FileHash hash)
+    {
+        _hashRequestsSent.remove(queueID);
+
+        QueueEntryInfo*& info = _entries[queueID];
+
+        if (!info) {
+            info = new QueueEntryInfo(queueID);
+        }
+        else {
+            if (info->type() == type && info->hash() == hash) {
+                return; /* no change */
+            }
+        }
+
+        info->setHash(type, hash);
+
+        trackChangeToSchedule(queueID);
     }
 
     void QueueEntryInfoFetcher::receivedTrackInfo(quint32 queueID, QueueEntryType type,
@@ -192,6 +234,7 @@ namespace PMP {
                  << queueLength;
 
         _infoRequestsSent.clear();
+        _hashRequestsSent.clear();
 
         qDeleteAll(_entries); /* delete all objects before clearing */
         _entries.clear();
@@ -206,10 +249,12 @@ namespace PMP {
             if (qid > 0) {
                 IDs.append(qid);
                 _infoRequestsSent << qid;
+                _hashRequestsSent << qid;
             }
         }
 
         _connection->sendQueueEntryInfoRequest(IDs);
+        _connection->sendQueueEntryHashRequest(IDs);
     }
 
     void QueueEntryInfoFetcher::entriesReceived(int index, QList<quint32> entries) {
@@ -222,14 +267,21 @@ namespace PMP {
                 }
 
                 _infoRequestsSent << entry;
+                _hashRequestsSent << entry;
             }
 
             _connection->sendQueueEntryInfoRequest(IDs);
+            _connection->sendQueueEntryHashRequest(IDs);
         }
     }
 
     void QueueEntryInfoFetcher::trackAdded(int index, quint32 queueID) {
         if (index < initialQueueFetchLength && queueID > 0) {
+            /* unlikely, but... */
+            if (_entries.contains(queueID)) {
+                delete _entries[queueID];
+            }
+
             sendRequest(queueID);
             _entries[queueID] = new QueueEntryInfo(queueID);
         }
@@ -291,7 +343,13 @@ namespace PMP {
             return; /* sent already and waiting for an answer */
 
         _infoRequestsSent << queueID;
+        _hashRequestsSent << queueID;
+
         _connection->sendQueueEntryInfoRequest(queueID);
+
+        QList<uint> ids;
+        ids.append(queueID);
+        _connection->sendQueueEntryHashRequest(ids);
     }
 
 }

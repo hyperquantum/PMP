@@ -34,10 +34,10 @@ namespace PMP {
     class QueueModel;
     class QueueMonitor;
     class ServerConnection;
+    class UserDataFetcher;
 
     class MainWidget : public QWidget {
         Q_OBJECT
-
     public:
         explicit MainWidget(QWidget *parent = 0);
         ~MainWidget();
@@ -81,6 +81,7 @@ namespace PMP {
         QueueMonitor* _queueMonitor;
         QueueMediator* _queueMediator;
         QueueEntryInfoFetcher* _queueEntryInfoFetcher;
+        UserDataFetcher* _userDataFetcher;
         QueueModel* _queueModel;
         int _volume;
         quint32 _nowPlayingQID;

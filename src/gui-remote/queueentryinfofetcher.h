@@ -20,10 +20,12 @@
 #ifndef PMP_QUEUEENTRYINFOFETCHER_H
 #define PMP_QUEUEENTRYINFOFETCHER_H
 
+#include "common/filehash.h"
 #include "common/networkprotocol.h"
 
 #include "abstractqueuemonitor.h"
 
+#include <QDateTime>
 #include <QHash>
 #include <QSet>
 
@@ -40,12 +42,14 @@ namespace PMP {
         quint32 queueID() const { return _queueID; }
 
         QueueEntryType type() const { return _type; }
+        const FileHash& hash() const { return _hash; }
         int lengthInSeconds() const { return _lengthSeconds; }
         QString artist() const { return _artist; }
         QString title() const { return _title; }
 
         QString informativeFilename() const { return _informativeFilename; }
 
+        void setHash(QueueEntryType type, const FileHash& hash);
         void setInfo(QueueEntryType type, int lengthInSeconds,
                      QString const& title, QString const& artist);
         bool setPossibleFilenames(QList<QString> const& names);
@@ -53,6 +57,7 @@ namespace PMP {
     private:
         quint32 _queueID;
         QueueEntryType _type;
+        FileHash _hash;
         int _lengthSeconds;
         QString _title;
         QString _artist;
@@ -68,11 +73,15 @@ namespace PMP {
         QueueEntryInfo* entryInfoByQID(quint32 queueID);
 
     Q_SIGNALS:
+        void userPlayingForChanged(quint32 userId);
         void tracksChanged(QList<quint32> queueIDs);
 
     private slots:
         void connected();
 
+        void receivedUserPlayingFor(quint32 userId, QString userLogin);
+
+        void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
         void receivedTrackInfo(quint32 queueID, QueueEntryType type, int lengthInSeconds,
                                QString title, QString artist);
         void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
@@ -93,9 +102,11 @@ namespace PMP {
 
         AbstractQueueMonitor* _monitor;
         ServerConnection* _connection;
+        quint32 _userPlayingFor;
         QHash<quint32, QueueEntryInfo*> _entries;
         QSet<quint32> _trackChangeNotificationsPending;
         QSet<quint32> _infoRequestsSent;
+        QSet<quint32> _hashRequestsSent;
     };
 }
 #endif

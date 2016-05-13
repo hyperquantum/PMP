@@ -33,11 +33,16 @@
 #include "server.h"
 #include "users.h"
 
+#include <limits>
+
 #include <QHostInfo>
 #include <QMap>
+#include <QThreadPool>
 #include <QTimer>
 
 namespace PMP {
+
+    /* ====================== ConnectedClient ====================== */
 
     const qint16 ConnectedClient::ServerProtocolNo = 2;
 
@@ -681,6 +686,50 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendQueueEntryHashMessage(const QList<quint32> &queueIDs) {
+        if (queueIDs.empty()) {
+            return;
+        }
+
+        const int maxSize = (1 << 16) - 1;
+
+        /* not too big? */
+        if (queueIDs.size() > maxSize) {
+            /* TODO: maybe delay the second part? */
+            sendQueueEntryInfoMessage(queueIDs.mid(0, maxSize));
+            sendQueueEntryInfoMessage(queueIDs.mid(maxSize));
+            return;
+        }
+
+        QByteArray message;
+        message.reserve(4 + queueIDs.size() * (8 + NetworkProtocol::FILEHASH_BYTECOUNT));
+
+        NetworkUtil::append2Bytes(message, NetworkProtocol::BulkQueueEntryHashMessage);
+        NetworkUtil::append2Bytes(message, (uint)queueIDs.size());
+
+        Queue& queue = _player->queue();
+
+        /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
+
+        FileHash emptyHash;
+
+        Q_FOREACH(quint32 queueID, queueIDs) {
+            QueueEntry* track = queue.lookup(queueID);
+            auto trackStatus =
+                track ? createTrackStatusFor(track)
+                      : NetworkProtocol::createTrackStatusUnknownId();
+
+            const FileHash* hash = track->hash();
+
+            NetworkUtil::append4Bytes(message, queueID);
+            NetworkUtil::append2Bytes(message, trackStatus);
+            NetworkUtil::append2Bytes(message, 0); /* filler */
+            NetworkProtocol::appendHash(message, hash ? *hash : emptyHash);
+        }
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendPossibleTrackFilenames(quint32 queueID,
                                                      QList<QString> const& names)
     {
@@ -795,6 +844,48 @@ namespace PMP {
             NetworkUtil::append2Bytes(message, (uint)artistData.size());
             message += titleData;
             message += artistData;
+        }
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::userDataForHashesFetchCompleted(quint32 userId,
+                                                          QList<UserDataForHash> results)
+    {
+        const int maxSize = (1 << 16) - 1;
+
+        /* not too big? */
+        if (results.size() > maxSize) {
+            /* TODO: maybe delay the second part? */
+            userDataForHashesFetchCompleted(userId, results.mid(0, maxSize));
+            userDataForHashesFetchCompleted(userId, results.mid(maxSize));
+            return;
+        }
+
+        QByteArray message;
+        message.reserve(
+            2 + 2 + 4 + 4 + results.size() * (NetworkProtocol::FILEHASH_BYTECOUNT + 8)
+        );
+
+        NetworkUtil::append2Bytes(message, NetworkProtocol::HashUserDataMessage);
+        NetworkUtil::append2Bytes(message, results.size());
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append2Bytes(message, 1 /* fields; 1 = previously heard */);
+        NetworkUtil::append4Bytes(message, userId);
+
+        Q_FOREACH(auto const& result, results) {
+            NetworkProtocol::appendHash(message, result.hash);
+
+            qint64 previouslyHeard;
+            if (result.previouslyHeard.isValid()) {
+                previouslyHeard =
+                    (quint64)result.previouslyHeard.toUTC().toMSecsSinceEpoch();
+            }
+            else {
+                previouslyHeard = std::numeric_limits<qint64>::min();
+            }
+
+            NetworkUtil::append8Bytes(message, previouslyHeard);
         }
 
         sendBinaryMessage(message);
@@ -1083,9 +1174,34 @@ namespace PMP {
                 offset += 4;
             }
 
-            qDebug() << "received bulk track info request for" << QIDs.size() << "tracks";
+            qDebug() << "received bulk track info request for" << QIDs.size() << "QIDs";
 
             sendQueueEntryInfoMessage(QIDs);
+        }
+            break;
+        case NetworkProtocol::BulkQueueEntryHashRequestMessage:
+        {
+            if (messageLength < 8 || (messageLength - 4) % 4 != 0) {
+                return; /* invalid message */
+            }
+
+            QList<quint32> QIDs;
+            QIDs.reserve((messageLength - 4) / 4);
+
+            qint32 offset = 4;
+            while (offset <= messageLength - 4) {
+                quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+
+                if (queueID > 0) {
+                    QIDs.append(queueID);
+                }
+
+                offset += 4;
+            }
+
+            qDebug() << "received bulk hash info request for" << QIDs.size() << "QIDs";
+
+            sendQueueEntryHashMessage(QIDs);
         }
             break;
         case NetworkProtocol::QueueFetchRequestMessage:
@@ -1464,6 +1580,9 @@ namespace PMP {
         case NetworkProtocol::AddHashToFrontOfQueueRequestMessage:
             parseAddHashToQueueRequest(message, messageType);
             break;
+        case NetworkProtocol::HashUserDataRequestMessage:
+            parseHashUserDataRequest(message);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
@@ -1502,6 +1621,49 @@ namespace PMP {
         else {
             return; /* invalid message */
         }
+    }
+
+    void ConnectedClient::parseHashUserDataRequest(const QByteArray& message) {
+        if (message.length() <= 2 + 2 + 4) {
+            return; /* invalid message */
+        }
+
+        if (!isLoggedIn()) { return; /* client needs to be authenticated for this */ }
+
+        quint16 fields = NetworkUtil::get2Bytes(message, 2);
+        quint32 userId = NetworkUtil::get4Bytes(message, 4);
+
+        int offset = 2 + 2 + 4;
+        int hashCount = (message.length() - offset) / NetworkProtocol::FILEHASH_BYTECOUNT;
+        if ((message.length() - offset) % NetworkProtocol::FILEHASH_BYTECOUNT != 0) {
+            return; /* invalid message */
+        }
+
+        qDebug() << "received request for user data (fields="<< fields
+                 << ") on" << hashCount << "hashes";
+
+        fields = fields & 1; /* filter non-supported fields */
+
+        if (fields == 0) return; /* no data that we can return */
+
+        QList<FileHash> hashes;
+        hashes.reserve(hashCount);
+
+        for (int i = 0; i < hashCount; ++i) {
+            bool ok;
+            auto hash = NetworkProtocol::getHash(message, offset, &ok);
+            if (!ok || hash.empty()) continue;
+
+            hashes.append(hash);
+            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+        }
+
+        auto fetcher = new UserDataForHashesFetcher(userId, hashes, _player->resolver());
+        connect(
+            fetcher, &UserDataForHashesFetcher::finishedWithResult,
+            this, &ConnectedClient::userDataForHashesFetchCompleted
+        );
+        QThreadPool::globalInstance()->start(fetcher);
     }
 
     void ConnectedClient::handleSingleByteAction(quint8 action) {

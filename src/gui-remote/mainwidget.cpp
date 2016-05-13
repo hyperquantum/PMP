@@ -29,6 +29,7 @@
 #include "queuemediator.h"
 #include "queuemodel.h"
 #include "queuemonitor.h"
+#include "userdatafetcher.h"
 
 #include <algorithm>
 
@@ -43,7 +44,7 @@ namespace PMP {
         _ui(new Ui::MainWidget),
         _connection(0), _currentTrackMonitor(0),
         _queueMonitor(0), _queueMediator(0),
-        _queueEntryInfoFetcher(0), _queueModel(0),
+        _queueEntryInfoFetcher(0), _userDataFetcher(0), _queueModel(0),
         _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1),
         _dynamicModeEnabled(false), _noRepetitionUpdating(0)
     {
@@ -63,7 +64,11 @@ namespace PMP {
         _queueMediator = new QueueMediator(_connection, _queueMonitor, _connection);
         _queueEntryInfoFetcher =
             new QueueEntryInfoFetcher(_connection, _queueMediator, _connection);
-        _queueModel = new QueueModel(_connection, _queueMediator, _queueEntryInfoFetcher);
+        _userDataFetcher = new UserDataFetcher(_connection, _connection);
+        _queueModel =
+            new QueueModel(
+                _connection, _queueMediator, _queueEntryInfoFetcher, _userDataFetcher
+            );
 
         _ui->userPlayingForLabel->setText("");
         _ui->toPersonalModeButton->setText(_connection->userLoggedInName());

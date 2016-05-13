@@ -47,6 +47,7 @@ set(PMP_SERVER_SOURCES
     server/server.cpp
     server/server-main.cpp
     server/serversettings.cpp
+    server/userdataforhashesfetcher.cpp
     server/users.cpp
 )
 set(PMP_SERVER_HEADERS
@@ -60,6 +61,7 @@ set(PMP_SERVER_HEADERS
     server/resolver.h
     server/server.h
     server/serversettings.h
+    server/userdataforhashesfetcher.h
     server/users.h
 )
 
@@ -80,6 +82,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/queuemonitor.cpp
     gui-remote/trackprogresswidget.cpp
     gui-remote/useraccountcreationwidget.cpp
+    gui-remote/userdatafetcher.cpp
     gui-remote/userpickerwidget.cpp
 )
 set(PMP_GUI_REMOTE_HEADERS
@@ -98,6 +101,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/queuemonitor.h
     gui-remote/trackprogresswidget.h
     gui-remote/useraccountcreationwidget.h
+    gui-remote/userdatafetcher.h
     gui-remote/userpickerwidget.h
 )
 set(PMP_GUI_REMOTE_UIS

@@ -25,6 +25,7 @@
 #include "tribool.h"
 
 #include <QByteArray>
+#include <QDateTime>
 #include <QHash>
 #include <QList>
 #include <QObject>
@@ -107,6 +108,10 @@ namespace PMP {
         void sendQueueEntryInfoRequest(uint queueID);
         void sendQueueEntryInfoRequest(QList<uint> const& queueIDs);
 
+        void sendQueueEntryHashRequest(QList<uint> const& queueIDs);
+
+        void sendHashUserDataRequest(quint32 userId, QList<FileHash> const& hashes);
+
         void sendPossibleFilenamesRequest(uint queueID);
 
         void sendUserAccountsFetchRequest();
@@ -151,6 +156,9 @@ namespace PMP {
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
         void receivedTrackInfo(quint32 queueID, QueueEntryType type, int lengthInSeconds,
                                QString title, QString artist);
+        void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
+        void receivedHashUserData(FileHash hash, quint32 userId,
+                                  QDateTime previouslyHeard);
         void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
 
         void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
@@ -206,6 +214,9 @@ namespace PMP {
 
         void parseTrackInfoBatchMessage(QByteArray const& message,
                                         NetworkProtocol::ServerMessageType messageType);
+
+        void parseBulkQueueEntryHashMessage(QByteArray const& message);
+        void parseHashUserDataMessage(QByteArray const& message);
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 

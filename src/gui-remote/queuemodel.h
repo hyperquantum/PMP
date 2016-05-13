@@ -28,12 +28,14 @@ namespace PMP {
     class QueueEntryInfo;
     class QueueEntryInfoFetcher;
     class QueueMediator;
+    class UserDataFetcher;
 
     class QueueModel : public QAbstractTableModel {
         Q_OBJECT
     public:
         QueueModel(QObject* parent, QueueMediator* source,
-                   QueueEntryInfoFetcher* trackInfoFetcher);
+                   QueueEntryInfoFetcher* trackInfoFetcher,
+                   UserDataFetcher* userDataFetcher);
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -52,6 +54,8 @@ namespace PMP {
         quint32 trackIdAt(const QModelIndex& index) const;
 
     private slots:
+        void onUserPlayingForChanged(quint32 userId);
+
         void queueResetted(int queueLength);
         void entriesReceived(int index, QList<quint32> entries);
         void tracksChanged(QList<quint32> queueIDs);
@@ -82,6 +86,8 @@ namespace PMP {
 
         QueueMediator* _source;
         QueueEntryInfoFetcher* _infoFetcher;
+        UserDataFetcher* _userDataFetcher;
+        quint32 _userPlayingFor;
         int _modelRows;
         QList<Track*> _tracks;
     };

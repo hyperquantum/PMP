@@ -25,8 +25,10 @@
 #include "common/networkprotocol.h"
 
 #include "playerstate.h"
+#include "userdataforhashesfetcher.h"
 
 #include <QByteArray>
+#include <QDateTime>
 #include <QList>
 #include <QTcpSocket>
 
@@ -80,6 +82,9 @@ namespace PMP {
         void onHashAvailabilityChanged(QList<QPair<PMP::FileHash, bool> > changes);
         void onHashInfoChanged(QList<PMP::CollectionTrackInfo> changes);
 
+        void userDataForHashesFetchCompleted(quint32 userId,
+                                             QList<PMP::UserDataForHash> results);
+
     private:
         bool isLoggedIn() const;
 
@@ -98,6 +103,7 @@ namespace PMP {
                                         quint32 queueID);
         void sendQueueEntryInfoMessage(quint32 queueID);
         void sendQueueEntryInfoMessage(QList<quint32> const& queueIDs);
+        void sendQueueEntryHashMessage(QList<quint32> const& queueIDs);
         quint16 createTrackStatusFor(QueueEntry* entry);
         void sendPossibleTrackFilenames(quint32 queueID, QList<QString> const& names);
         void sendNewUserAccountSaltMessage(QString login, QByteArray const& salt);
@@ -119,6 +125,7 @@ namespace PMP {
         void handleCollectionFetchRequest(uint clientReference);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         NetworkProtocol::ClientMessageType messageType);
+        void parseHashUserDataRequest(QByteArray const& message);
 
         static const qint16 ServerProtocolNo;
 

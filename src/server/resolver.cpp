@@ -612,4 +612,20 @@ namespace PMP {
 
         return 0;
     }
+
+    QList<QPair<uint, FileHash>> Resolver::getIDs(QList<FileHash> hashes) {
+        QMutexLocker lock(&_lock);
+
+        QList<QPair<uint, FileHash>> result;
+        result.reserve(hashes.size());
+
+        Q_FOREACH(auto hash, hashes) {
+            auto knowledge = _hashKnowledge.value(hash, nullptr);
+            if (!knowledge) continue;
+
+            result.append(QPair<uint, FileHash>(knowledge->id(), hash));
+        }
+
+        return result;
+    }
 }

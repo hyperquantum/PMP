@@ -21,6 +21,7 @@
 
 #include "queueentryinfofetcher.h"
 #include "queuemediator.h"
+#include "userdatafetcher.h"
 
 #include <QBuffer>
 #include <QBrush>
@@ -34,12 +35,17 @@
 namespace PMP {
 
     QueueModel::QueueModel(QObject* parent, QueueMediator* source,
-                           QueueEntryInfoFetcher* trackInfoFetcher)
+                           QueueEntryInfoFetcher* trackInfoFetcher,
+                           UserDataFetcher* userDataFetcher)
      : QAbstractTableModel(parent), _source(source), _infoFetcher(trackInfoFetcher),
-        _modelRows(0)
+        _userDataFetcher(userDataFetcher), _userPlayingFor(0), _modelRows(0)
     {
         _modelRows = _source->queueLength();
 
+        connect(
+            _infoFetcher, &QueueEntryInfoFetcher::userPlayingForChanged,
+            this, &QueueModel::onUserPlayingForChanged
+        );
         connect(
             _source, &AbstractQueueMonitor::queueResetted,
             this, &QueueModel::queueResetted
@@ -72,7 +78,7 @@ namespace PMP {
     }
 
     int QueueModel::columnCount(const QModelIndex& parent) const {
-        return 3;
+        return 4;
     }
 
     QVariant QueueModel::headerData(int section, Qt::Orientation orientation,
@@ -84,6 +90,7 @@ namespace PMP {
                     case 0: return QString(tr("Title"));
                     case 1: return QString(tr("Artist"));
                     case 2: return QString(tr("Length"));
+                    case 3: return QString(tr("Prev. heard"));
                 }
             }
             else if (orientation == Qt::Vertical) {
@@ -150,38 +157,56 @@ namespace PMP {
 
     QVariant QueueModel::trackModelData(QueueEntryInfo* info, int col, int role) const {
         switch (role) {
-            case Qt::DisplayRole:
-                switch (col) {
-                    case 0:
-                    {
-                        QString title = info->title();
-                        return (title != "") ? title : info->informativeFilename();
-                    }
-                    case 1: return info->artist();
-                    case 2:
-                    {
-                        int lengthInSeconds = info->lengthInSeconds();
-
-                        if (lengthInSeconds < 0) { return "?"; }
-
-                        int sec = lengthInSeconds % 60;
-                        int min = (lengthInSeconds / 60) % 60;
-                        int hrs = lengthInSeconds / 3600;
-
-                        return QString::number(hrs).rightJustified(2, '0')
-                            + ":" + QString::number(min).rightJustified(2, '0')
-                            + ":" + QString::number(sec).rightJustified(2, '0');
-                    }
-                }
-
-                return QString("Foobar");
-
             case Qt::TextAlignmentRole:
                 return (col == 2 ? Qt::AlignRight : Qt::AlignLeft)
                     + Qt::AlignVCenter;
+
+            case Qt::DisplayRole:
+                break; /* handled below */
+
+            default:
+                return QVariant();
         }
 
-        return QVariant();
+        /* DisplayRole */
+
+        switch (col) {
+            case 0:
+            {
+                QString title = info->title();
+                return (title != "") ? title : info->informativeFilename();
+            }
+            case 1: return info->artist();
+            case 2:
+            {
+                int lengthInSeconds = info->lengthInSeconds();
+
+                if (lengthInSeconds < 0) { return "?"; }
+
+                int sec = lengthInSeconds % 60;
+                int min = (lengthInSeconds / 60) % 60;
+                int hrs = lengthInSeconds / 3600;
+
+                return QString::number(hrs).rightJustified(2, '0')
+                    + ":" + QString::number(min).rightJustified(2, '0')
+                    + ":" + QString::number(sec).rightJustified(2, '0');
+            }
+            case 3:
+            {
+                auto& hash = info->hash();
+                if (hash.empty()) return QVariant(); /* unknown */
+
+                auto hashData =
+                    _userDataFetcher->getHashDataForUser(_userPlayingFor, hash);
+
+                if (!hashData || !hashData->previouslyHeardKnown)
+                    return QVariant();
+
+                return hashData->previouslyHeard; // TODO: formatting
+            }
+        }
+
+        return QString("Foobar");
     }
 
     Qt::ItemFlags QueueModel::flags(const QModelIndex& index) const {
@@ -323,6 +348,14 @@ namespace PMP {
         if (t == 0) return 0;
 
         return t->_queueID;
+    }
+
+    void QueueModel::onUserPlayingForChanged(quint32 userId) {
+        _userPlayingFor = userId;
+
+        // TODO : invalidate the user-bound columns
+
+
     }
 
     void QueueModel::queueResetted(int queueLength) {

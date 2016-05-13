@@ -22,6 +22,8 @@
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
 
+#include <limits>
+
 #include <QtDebug>
 
 namespace PMP {
@@ -355,12 +357,52 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ServerConnection::sendQueueEntryHashRequest(QList<uint> const& queueIDs) {
+        if (queueIDs.empty()) return;
+
+        qDebug() << "sending bulk request for hash info of" << queueIDs.size() << "QIDs";
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 * queueIDs.size());
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::BulkQueueEntryHashRequestMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+
+        foreach(uint QID, queueIDs) {
+            NetworkUtil::append4Bytes(message, QID);
+        }
+
+        sendBinaryMessage(message);
+    }
+
+    void ServerConnection::sendHashUserDataRequest(quint32 userId,
+                                                   const QList<FileHash>& hashes)
+    {
+        if (hashes.empty()) return;
+
+        qDebug() << "sending bulk request for" << hashes.size()
+                 << "hashes for user" << userId;
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + hashes.size() * NetworkProtocol::FILEHASH_BYTECOUNT);
+        NetworkUtil::append2Bytes(message, NetworkProtocol::HashUserDataRequestMessage);
+        NetworkUtil::append2Bytes(message, 1); /* data requested (1 = previously heard) */
+        NetworkUtil::append4Bytes(message, userId); /* user ID */
+
+        foreach (FileHash hash, hashes) {
+            NetworkProtocol::appendHash(message, hash);
+        }
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::sendPossibleFilenamesRequest(uint queueID) {
         qDebug() << "sending request for possible filenames of QID" << queueID;
 
         QByteArray message;
         message.reserve(6);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::PossibleFilenamesForQueueEntryRequestMessage);
+        NetworkUtil::append2Bytes(
+                  message, NetworkProtocol::PossibleFilenamesForQueueEntryRequestMessage);
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
@@ -967,6 +1009,11 @@ namespace PMP {
             }
         }
             break;
+        case NetworkProtocol::BulkQueueEntryHashMessage:
+        {
+            parseBulkQueueEntryHashMessage(message);
+        }
+            break;
         case NetworkProtocol::QueueContentsMessage:
         {
             if (messageLength < 14) {
@@ -1230,6 +1277,9 @@ namespace PMP {
             emit receivedServerName(nameType, name);
         }
             break;
+        case NetworkProtocol::HashUserDataMessage:
+            parseHashUserDataMessage(message);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
@@ -1346,6 +1396,82 @@ namespace PMP {
         }
         else {
             collectionFetcher->receivedData(infos);
+        }
+    }
+
+    void ServerConnection::parseBulkQueueEntryHashMessage(const QByteArray &message) {
+        qint32 messageLength = message.length();
+        if (messageLength < 4) {
+            return; /* invalid message */
+        }
+
+        int trackCount = (uint)NetworkUtil::get2Bytes(message, 2);
+        if (trackCount == 0
+            || messageLength
+                != 4 + trackCount * (8 + NetworkProtocol::FILEHASH_BYTECOUNT))
+        {
+            return; /* irrelevant or invalid message */
+        }
+
+        qDebug() << "received bulk queue entry hash message; count:" << trackCount;
+
+        int offset = 4;
+        for (int i = 0; i < trackCount; ++i) {
+            quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+            quint16 status = NetworkUtil::get2Bytes(message, offset + 4);
+            offset += 8;
+
+            bool ok;
+            FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
+            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+            if (!ok) continue;
+
+            auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
+
+            emit receivedQueueEntryHash(queueID, type, hash);
+        }
+    }
+
+    void ServerConnection::parseHashUserDataMessage(const QByteArray& message) {
+        int messageLength = message.length();
+        if (messageLength < 12) {
+            return; /* invalid message */
+        }
+
+        int hashCount = (uint)NetworkUtil::get2Bytes(message, 2);
+        quint16 fields = NetworkUtil::get2Bytes(message, 6);
+        quint32 userId = NetworkUtil::get4Bytes(message, 8);
+        int offset = 12;
+
+        if ((fields & 1) != fields || fields == 0) {
+            return; /* has unsupported fields or none */
+        }
+
+        /* fields should only be ==1 at this time */
+        int bytesPerHash = NetworkProtocol::FILEHASH_BYTECOUNT + 8;
+
+        if ((messageLength - offset) != hashCount * bytesPerHash) {
+            return; /* invalid message */
+        }
+
+        qDebug() << "received hash user data message; count:" << hashCount;
+
+        bool ok;
+        for (int i = 0; i < hashCount; ++i) {
+            FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
+            if (!ok) return; /* invalid message */
+            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+
+            qint64 previouslyHeardRaw = (qint64)NetworkUtil::get8Bytes(message, offset);
+            offset += 8;
+
+            QDateTime previouslyHeard;
+            if (previouslyHeardRaw != std::numeric_limits<qint64>::min()) {
+                previouslyHeard =
+                    QDateTime::fromMSecsSinceEpoch(previouslyHeardRaw, Qt::UTC);
+            }
+
+            emit receivedHashUserData(hash, userId, previouslyHeard);
         }
     }
 

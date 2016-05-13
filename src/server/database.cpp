@@ -534,7 +534,62 @@ namespace PMP {
             return QDateTime(); // FIXME ???
         }
 
+        lastHeard.setTimeSpec(Qt::UTC); /* make sure it is treated as UTC */
+
         return lastHeard;
+    }
+
+    QList<QPair<quint32, QDateTime>> Database::getLastHeard(quint32 userId,
+                                                            QList<quint32> hashIds)
+    {
+        QSqlQuery q(_db);
+        q.prepare(
+            "SELECT ha.HashID, hi.PrevHeard "
+            "FROM pmp.pmp_hash AS ha"
+            " LEFT JOIN"
+            "  (SELECT HashID, MAX(End) AS PrevHeard FROM pmp.pmp_history"
+            "   WHERE UserID=? GROUP BY HashID) AS hi "
+            "ON ha.HashID=hi.HashID "
+            "WHERE ha.HashID IN " + buildParamsList(hashIds.size())
+        );
+        q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
+        Q_FOREACH(auto hashId, hashIds) {
+            q.addBindValue(hashId);
+        }
+
+        QList<QPair<quint32, QDateTime>> result;
+
+        if (!executeQuery(q)) { /* error */
+            qDebug() << "Database::getLastHeard (bulk) : could not execute; "
+                     << q.lastError().text() << endl;
+            return result;
+        }
+
+        while (q.next()) {
+            quint32 hashID = q.value(0).toUInt();
+            QDateTime prevHeard = q.value(1).toDateTime();
+            prevHeard.setTimeSpec(Qt::UTC); /* make sure it is treated as UTC */
+
+            result.append(QPair<quint32, QDateTime>(hashID, prevHeard));
+        }
+
+        return result;
+    }
+
+    QString Database::buildParamsList(unsigned paramsCount) {
+        QString s;
+        s.reserve(2 + paramsCount * 2);
+        s += "(";
+
+        for (unsigned i = 0; i < paramsCount; ++i) {
+            if (i == 0)
+                s += "?";
+            else
+                s += ",?";
+        }
+
+        s += ")";
+        return s;
     }
 
     bool Database::executeScalar(std::function<void (QSqlQuery&)> preparer, bool& b,

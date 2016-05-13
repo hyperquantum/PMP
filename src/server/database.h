@@ -90,11 +90,15 @@ namespace PMP {
         void addToHistory(quint32 hashId, quint32 userId, QDateTime start, QDateTime end,
                           int permillage, bool validForScoring);
         QDateTime getLastHeard(quint32 hashId, quint32 userId);
+        QList<QPair<quint32, QDateTime>> getLastHeard(quint32 userId,
+                                                      QList<quint32> hashIds);
 
         static QSharedPointer<Database> getDatabaseForCurrentThread();
 
     private:
         Database(QSqlDatabase db);
+
+        QString buildParamsList(unsigned paramsCount);
 
         std::function<void (QSqlQuery&)> prepareSimple(QString sql);
 

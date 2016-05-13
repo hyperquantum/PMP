@@ -57,6 +57,8 @@ namespace PMP {
             CollectionFetchResponseMessage = 18,
             CollectionChangeNotificationMessage = 19,
             ServerNameMessage = 20,
+            BulkQueueEntryHashMessage = 21,
+            HashUserDataMessage = 22,
         };
 
         enum ClientMessageType {
@@ -77,6 +79,8 @@ namespace PMP {
             CollectionFetchRequestMessage = 14,
             AddHashToEndOfQueueRequestMessage = 15,
             AddHashToFrontOfQueueRequestMessage = 16,
+            BulkQueueEntryHashRequestMessage = 17,
+            HashUserDataRequestMessage = 18,
         };
 
         enum ErrorType {

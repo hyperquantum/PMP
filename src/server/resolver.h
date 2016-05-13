@@ -32,6 +32,7 @@
 #include <QMultiHash>
 #include <QMutex>
 #include <QObject>
+#include <QPair>
 #include <QString>
 
 namespace PMP {
@@ -65,6 +66,7 @@ namespace PMP {
         QList<CollectionTrackInfo> getHashesTrackInfo(QList<FileHash> hashes);
 
         uint getID(const FileHash& hash);
+        QList<QPair<uint, FileHash>> getIDs(QList<FileHash> hashes);
 
     private slots:
         void onFullIndexationFinished();
