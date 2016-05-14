@@ -63,7 +63,15 @@ namespace PMP {
 
         HashData& hashData = userData->getOrCreateHash(hash);
         hashData.previouslyHeard = previouslyHeard;
-        hashData.previouslyHeardKnown = previouslyHeard.isValid();
+        hashData.previouslyHeardKnown = true;
+
+        bool first = _pendingNotificationsUsers.isEmpty();
+
+        _pendingNotificationsUsers << userId;
+
+        if (first) {
+            QTimer::singleShot(100, this, SLOT(sendPendingNotifications()));
+        }
     }
 
     void UserDataFetcher::sendPendingRequests() {
@@ -76,6 +84,16 @@ namespace PMP {
         }
 
         _hashesToFetchForUsers.clear();
+    }
+
+    void UserDataFetcher::sendPendingNotifications() {
+        if (_pendingNotificationsUsers.isEmpty()) return;
+
+        Q_FOREACH(quint32 userId, _pendingNotificationsUsers) {
+            emit dataReceivedForUser(userId);
+        }
+
+        _pendingNotificationsUsers.clear();
     }
 
     UserDataFetcher::UserData* UserDataFetcher::getOrCreateUserData(quint32 userId)

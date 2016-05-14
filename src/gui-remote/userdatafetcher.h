@@ -42,11 +42,15 @@ namespace PMP {
 
         HashData const* getHashDataForUser(quint32 userId, FileHash const& hash);
 
+    Q_SIGNALS:
+        void dataReceivedForUser(quint32 userId);
+
     private slots:
         //void connected();
         void receivedHashUserData(FileHash hash, quint32 userId,
                                   QDateTime previouslyHeard);
         void sendPendingRequests();
+        void sendPendingNotifications();
 
     private:
         UserData* getOrCreateUserData(quint32 userId);
@@ -55,6 +59,7 @@ namespace PMP {
         ServerConnection* _connection;
         QHash<quint32, UserData*> _userData;
         QHash<quint32, QSet<FileHash> > _hashesToFetchForUsers;
+        QSet<quint32> _pendingNotificationsUsers;
     };
 
     struct UserDataFetcher::HashData {

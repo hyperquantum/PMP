@@ -55,6 +55,7 @@ namespace PMP {
 
     private slots:
         void onUserPlayingForChanged(quint32 userId);
+        void userDataReceivedForUser(quint32 userId);
 
         void queueResetted(int queueLength);
         void entriesReceived(int index, QList<quint32> entries);

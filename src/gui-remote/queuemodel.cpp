@@ -59,6 +59,10 @@ namespace PMP {
             this, &QueueModel::tracksChanged
         );
         connect(
+            _userDataFetcher, &UserDataFetcher::dataReceivedForUser,
+            this, &QueueModel::userDataReceivedForUser
+        );
+        connect(
             _source, &AbstractQueueMonitor::trackAdded,
             this, &QueueModel::trackAdded
         );
@@ -202,7 +206,10 @@ namespace PMP {
                 if (!hashData || !hashData->previouslyHeardKnown)
                     return QVariant();
 
-                return hashData->previouslyHeard; // TODO: formatting
+                if (hashData->previouslyHeard.isNull())
+                    return tr("Never");
+
+                return hashData->previouslyHeard; // TODO: formatting?
             }
         }
 
@@ -353,9 +360,10 @@ namespace PMP {
     void QueueModel::onUserPlayingForChanged(quint32 userId) {
         _userPlayingFor = userId;
 
-        // TODO : invalidate the user-bound columns
-
-
+        /* the columns with user-bound data need to be refreshed */
+        emit dataChanged(
+            createIndex(0, 3), createIndex(_modelRows, 3)
+        );
     }
 
     void QueueModel::queueResetted(int queueLength) {
@@ -424,6 +432,14 @@ namespace PMP {
         /* we don't know the indexes, so we say everything changed */
         emit dataChanged(
             createIndex(0, 0), createIndex(_modelRows, 2)
+        );
+    }
+
+    void QueueModel::userDataReceivedForUser(quint32 userId) {
+        qDebug() << "QueueModel::userDataReceivedForUser; user:" << userId;
+
+        emit dataChanged(
+            createIndex(0, 3), createIndex(_modelRows, 3)
         );
     }
 
