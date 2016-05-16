@@ -53,7 +53,8 @@ namespace PMP {
         void play();
         void pause();
 
-        /** Skip the currently playing/paused track. Does nothing when not currently playing. */
+        /** Skip the currently playing/paused track. Does nothing when not currently
+            playing. */
         void skip();
 
         void seekTo(qint64 position);
