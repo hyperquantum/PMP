@@ -97,6 +97,10 @@ namespace PMP {
         return _noRepetitionSpan;
     }
 
+    History& Generator::history() {
+        return *_history;
+    }
+
     void Generator::setNoRepetitionSpan(int seconds) {
         if (_noRepetitionSpan == seconds) return; /* no change */
 

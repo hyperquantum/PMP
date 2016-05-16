@@ -45,6 +45,8 @@ namespace PMP {
 
         int noRepetitionSpan() const;
 
+        History& history();
+
     public slots:
         void enable();
         void disable();

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,42 +17,35 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_HISTORY_H
-#define PMP_HISTORY_H
+#ifndef PMP_ADDTOHISTORYTASK_H
+#define PMP_ADDTOHISTORYTASK_H
 
-#include "common/filehash.h"
+//#include "common/filehash.h"
 
 #include <QDateTime>
-#include <QHash>
 #include <QObject>
+#include <QRunnable>
 
 namespace PMP {
 
-    class FileHash;
-    class Player;
-    class QueueEntry;
-
-    class History : public QObject {
+    class AddToHistoryTask : public QObject, public QRunnable {
         Q_OBJECT
     public:
-        History(Player* player);
+        AddToHistoryTask(uint hashID, quint32 user, QDateTime started, QDateTime ended,
+                         int permillage, bool validForScoring);
 
-        QDateTime lastPlayed(FileHash const& hash) const;
+        void run();
 
     Q_SIGNALS:
         void updatedHashUserStats(uint hashID, quint32 user, QDateTime previouslyHeard);
 
-    private slots:
-        void currentTrackChanged(QueueEntry const* newTrack);
-        void failedToPlayTrack(QueueEntry const* track);
-        void donePlayingTrack(QueueEntry const* track, int permillage, bool hadError,
-                              bool hadSeek);
-
     private:
-        Player* _player;
-        QHash<FileHash, QDateTime> _lastPlayHash;
-        QueueEntry const* _nowPlaying;
+        uint _hashID;
+        quint32 _user;
+        QDateTime _started;
+        QDateTime _ended;
+        int _permillage;
+        bool _validForScoring;
     };
-
 }
 #endif

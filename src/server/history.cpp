@@ -19,7 +19,7 @@
 
 #include "history.h"
 
-#include "database.h"
+#include "addtohistorytask.h"
 #include "player.h"
 #include "queueentry.h"
 #include "resolver.h"
@@ -28,41 +28,6 @@
 #include <QThreadPool>
 
 namespace PMP {
-
-    class AddToHistoryTask : public QRunnable {
-    public:
-        AddToHistoryTask(uint hashID, quint32 user, QDateTime started, QDateTime ended,
-                         int permillage, bool validForScoring);
-
-        void run();
-
-    private:
-        uint _hashID;
-        quint32 _user;
-        QDateTime _started;
-        QDateTime _ended;
-        int _permillage;
-        bool _validForScoring;
-    };
-
-    AddToHistoryTask::AddToHistoryTask(uint hashID, quint32 user, QDateTime started,
-                                       QDateTime ended, int permillage,
-                                       bool validForScoring)
-     : _hashID(hashID), _user(user), _started(started), _ended(ended),
-       _permillage(permillage), _validForScoring(validForScoring)
-    {
-        //
-    }
-
-    void AddToHistoryTask::run() {
-        auto db = Database::getDatabaseForCurrentThread();
-
-        if (db != nullptr) {
-            db->addToHistory(
-                _hashID, _user, _started, _ended, _permillage, _validForScoring
-            );
-        }
-    }
 
     History::History(Player* player)
      : _player(player), _nowPlaying(0)
@@ -115,6 +80,11 @@ namespace PMP {
                 hashID, user, track->started(), track->ended(), permillage,
                 !(hadError || hadSeek)
             );
+
+        connect(
+            task, &AddToHistoryTask::updatedHashUserStats,
+            this, &History::updatedHashUserStats
+        );
 
         QThreadPool::globalInstance()->start(task);
     }

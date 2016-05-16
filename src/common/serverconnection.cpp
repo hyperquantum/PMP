@@ -1435,6 +1435,7 @@ namespace PMP {
     void ServerConnection::parseHashUserDataMessage(const QByteArray& message) {
         int messageLength = message.length();
         if (messageLength < 12) {
+            qWarning() << "ServerConnection::parseHashUserDataMessage : invalid message";
             return; /* invalid message */
         }
 

@@ -604,6 +604,17 @@ namespace PMP {
         return result;
     }
 
+    FileHash Resolver::getHashByID(uint id) {
+        QMutexLocker lock(&_lock);
+
+        auto knowledge = _idToHash.value(id, nullptr);
+        if (knowledge) return knowledge->hash();
+
+        qWarning() << "Resolver::getHashByID: ID" << id << "not found";
+
+        return FileHash(); /* empty (invalid) hash */
+    }
+
     uint Resolver::getID(const FileHash& hash) {
         QMutexLocker lock(&_lock);
 

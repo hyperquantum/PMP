@@ -65,6 +65,7 @@ namespace PMP {
         QList<FileHash> getAllHashes();
         QList<CollectionTrackInfo> getHashesTrackInfo(QList<FileHash> hashes);
 
+        FileHash getHashByID(uint id);
         uint getID(const FileHash& hash);
         QList<QPair<uint, FileHash>> getIDs(QList<FileHash> hashes);
 

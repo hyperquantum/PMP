@@ -26,6 +26,7 @@
 #include "collectionmonitor.h"
 #include "database.h"
 #include "generator.h"
+#include "history.h"
 #include "player.h"
 #include "queue.h"
 #include "queueentry.h"
@@ -125,6 +126,11 @@ namespace PMP {
         connect(
             collectionMonitor, &CollectionMonitor::hashInfoChanged,
             this, &ConnectedClient::onHashInfoChanged
+        );
+
+        connect(
+            &generator->history(), &History::updatedHashUserStats,
+            this, &ConnectedClient::onUserHashStatsUpdated
         );
 
         /* send greeting */
@@ -968,6 +974,23 @@ namespace PMP {
 
     void ConnectedClient::onUserPlayingForChanged(quint32 user) {
         sendUserPlayingForModeMessage();
+    }
+
+    void ConnectedClient::onUserHashStatsUpdated(uint hashID, quint32 user,
+                                                 QDateTime previouslyHeard)
+    {
+        qDebug() << "ConnectedClient::onUserHashStatsUpdated; user:" << user
+                 << " hash:" << hashID << " prevHeard:" << previouslyHeard;
+
+        UserDataForHash data;
+        data.hash = _player->resolver().getHashByID(hashID);
+        if (data.hash.empty()) return; /* invalid ID */
+
+        data.previouslyHeard = previouslyHeard;
+
+        QList<UserDataForHash> dataList;
+        dataList << data;
+        userDataForHashesFetchCompleted(user, dataList);
     }
 
     void ConnectedClient::onFullIndexationRunStatusChanged(bool running) {
