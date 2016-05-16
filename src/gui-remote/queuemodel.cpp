@@ -209,7 +209,8 @@ namespace PMP {
                 if (hashData->previouslyHeard.isNull())
                     return tr("Never");
 
-                return hashData->previouslyHeard; // TODO: formatting?
+                 // TODO: formatting?
+                return hashData->previouslyHeard.toLocalTime();
             }
         }
 
