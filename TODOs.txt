@@ -33,6 +33,7 @@ IDEAS
  - 'about the server' window; with server name, UUID and protocol version
  - ability to put playback volume adjustments in the queue (the same way as breakpoints)
  - show recent play history in the client (e.g. last 3 songs)
+ - ability to view statistics such as 'previously heard' for the song currently playing
 
 
 USER FRIENDLINESS
@@ -42,6 +43,7 @@ USER FRIENDLINESS
  - work around the need for a full indexation at server startup
  - when creating a new account, explain the meaning of the password score
  - GUI remote: after login it should show what server it is connected to somehow
+ - inform the user properly when the server is having problems connecting to the database
 
 
 POLISHING
