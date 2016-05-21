@@ -8,7 +8,6 @@ BUGS
  - when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
  - music collection list sorting does not ignore spaces between words
  - the commandline client does not support user authentication which is now required for some commands it supports
- - after probing a server the client outputs "QIODevice::read: device not open"
 
 
 PERFORMANCE ISSUES

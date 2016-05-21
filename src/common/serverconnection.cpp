@@ -766,7 +766,10 @@ namespace PMP {
     void ServerConnection::readBinaryCommands() {
         char lengthBytes[4];
 
-        while (_socket.peek(lengthBytes, sizeof(lengthBytes)) == sizeof(lengthBytes)) {
+        while
+            (_socket.isOpen()
+            && _socket.peek(lengthBytes, sizeof(lengthBytes)) == sizeof(lengthBytes))
+        {
             quint32 messageLength = NetworkUtil::get4Bytes(lengthBytes);
 
             if (_socket.bytesAvailable() - sizeof(lengthBytes) < messageLength) {
