@@ -36,6 +36,7 @@
 #include <QtDebug>
 #include <QKeyEvent>
 #include <QMenu>
+#include <QSettings>
 
 namespace PMP {
 
@@ -53,6 +54,14 @@ namespace PMP {
 
     MainWidget::~MainWidget()
     {
+        QSettings settings(QCoreApplication::organizationName(),
+                           QCoreApplication::applicationName());
+
+        settings.beginGroup("queue");
+        settings.setValue(
+            "columnsstate", _ui->queueTableView->horizontalHeader()->saveState()
+        );
+
         delete _ui;
     }
 
@@ -185,6 +194,16 @@ namespace PMP {
 
         _connection->requestUserPlayingForMode();
         _connection->requestDynamicModeStatus();
+
+        {
+            QSettings settings(QCoreApplication::organizationName(),
+                               QCoreApplication::applicationName());
+
+            settings.beginGroup("queue");
+            _ui->queueTableView->horizontalHeader()->restoreState(
+                settings.value("columnsstate").toByteArray()
+            );
+        }
     }
 
     bool MainWidget::eventFilter(QObject* object, QEvent* event) {

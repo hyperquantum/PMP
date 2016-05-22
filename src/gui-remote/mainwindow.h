@@ -65,6 +65,8 @@ namespace PMP {
         void onLeftStatusTimeout();
 
     private:
+        virtual void closeEvent(QCloseEvent* event);
+
         void createMenus();
         void updateRightStatus();
         void setLeftStatus(int intervalMs, QString text);

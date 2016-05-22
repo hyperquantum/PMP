@@ -29,11 +29,13 @@
 #include "userpickerwidget.h"
 
 #include <QAction>
+#include <QCoreApplication>
 #include <QDockWidget>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QSettings>
 #include <QStatusBar>
 #include <QTimer>
 
@@ -47,6 +49,7 @@ namespace PMP {
        _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this))
     {
+        _musicCollectionDock->setObjectName("musicCollectionDockWidget");
         _musicCollectionDock->setAllowedAreas(
             (Qt::DockWidgetAreas)(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea)
         );
@@ -69,6 +72,17 @@ namespace PMP {
             _connectionWidget, &ConnectionWidget::doConnect,
             this, &MainWindow::onDoConnect
         );
+
+        {
+            QSettings settings(QCoreApplication::organizationName(),
+                               QCoreApplication::applicationName());
+
+            settings.beginGroup("mainwindow");
+            restoreGeometry(settings.value("geometry").toByteArray());
+            restoreState(settings.value("windowstate").toByteArray());
+
+            _musicCollectionDock->setVisible(false); /* because of restoreState above */
+        }
     }
 
     MainWindow::~MainWindow() {
@@ -112,6 +126,18 @@ namespace PMP {
         _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
 
         _viewMenu->addAction(_musicCollectionDock->toggleViewAction());
+    }
+
+    void MainWindow::closeEvent(QCloseEvent* event) {
+        QSettings settings(QCoreApplication::organizationName(),
+                           QCoreApplication::applicationName());
+
+        settings.beginGroup("mainwindow");
+        settings.setValue("geometry", saveGeometry());
+        settings.setValue("windowstate", saveState());
+        settings.setValue("musiccollectionvisible", _musicCollectionDock->isVisible());
+
+        QMainWindow::closeEvent(event);
     }
 
     void MainWindow::updateRightStatus() {
@@ -270,6 +296,16 @@ namespace PMP {
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 
         _viewMenu->menuAction()->setVisible(true);
+
+        {
+            QSettings settings(QCoreApplication::organizationName(),
+                               QCoreApplication::applicationName());
+
+            settings.beginGroup("mainwindow");
+            _musicCollectionDock->setVisible(
+                settings.value("musiccollectionvisible", true).toBool()
+            );
+        }
     }
 
     void MainWindow::onCreateAccountClicked() {

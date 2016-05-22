@@ -26,6 +26,7 @@
 
 #include <QMenu>
 #include <QtDebug>
+#include <QSettings>
 
 namespace PMP {
 
@@ -40,9 +41,27 @@ namespace PMP {
             _ui->collectionTableView, &QTableView::customContextMenuRequested,
             this, &CollectionWidget::collectionContextMenuRequested
         );
+
+        {
+            QSettings settings(QCoreApplication::organizationName(),
+                               QCoreApplication::applicationName());
+
+            settings.beginGroup("collectionview");
+            _ui->collectionTableView->horizontalHeader()->restoreState(
+                settings.value("columnsstate").toByteArray()
+            );
+        }
     }
 
     CollectionWidget::~CollectionWidget() {
+        QSettings settings(QCoreApplication::organizationName(),
+                           QCoreApplication::applicationName());
+
+        settings.beginGroup("collectionview");
+        settings.setValue(
+            "columnsstate", _ui->collectionTableView->horizontalHeader()->saveState()
+        );
+
         delete _ui;
     }
 
