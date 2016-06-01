@@ -88,6 +88,7 @@ namespace PMP {
         QueueMediator* _source;
         QueueEntryInfoFetcher* _infoFetcher;
         UserDataFetcher* _userDataFetcher;
+        bool _receivedUserPlayingFor;
         quint32 _userPlayingFor;
         int _modelRows;
         QList<Track*> _tracks;

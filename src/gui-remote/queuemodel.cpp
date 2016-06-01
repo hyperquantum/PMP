@@ -38,7 +38,8 @@ namespace PMP {
                            QueueEntryInfoFetcher* trackInfoFetcher,
                            UserDataFetcher* userDataFetcher)
      : QAbstractTableModel(parent), _source(source), _infoFetcher(trackInfoFetcher),
-        _userDataFetcher(userDataFetcher), _userPlayingFor(0), _modelRows(0)
+        _userDataFetcher(userDataFetcher),
+        _receivedUserPlayingFor(false), _userPlayingFor(0), _modelRows(0)
     {
         _modelRows = _source->queueLength();
 
@@ -204,7 +205,8 @@ namespace PMP {
             case 3:
             {
                 auto& hash = info->hash();
-                if (hash.empty()) return QVariant(); /* unknown */
+                if (hash.empty() || !_receivedUserPlayingFor)
+                    return QVariant(); /* unknown */
 
                 auto hashData =
                     _userDataFetcher->getHashDataForUser(_userPlayingFor, hash);
@@ -366,6 +368,7 @@ namespace PMP {
 
     void QueueModel::onUserPlayingForChanged(quint32 userId) {
         _userPlayingFor = userId;
+        _receivedUserPlayingFor = true;
 
         /* the columns with user-bound data need to be refreshed */
         emit dataChanged(
@@ -397,7 +400,8 @@ namespace PMP {
     }
 
     void QueueModel::entriesReceived(int index, QList<quint32> entries) {
-        qDebug() << "QueueModel::entriesReceived; index=" << index << "; count=" << entries.size();
+        qDebug() << "QueueModel::entriesReceived; index=" << index
+                 << "; count=" << entries.size();
 
         /* expand tracks list */
         if (index + entries.size() > _tracks.size()) {

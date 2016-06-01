@@ -36,7 +36,6 @@ namespace PMP {
         Q_OBJECT
     public:
         struct HashData;
-        class UserData;
 
         UserDataFetcher(QObject* parent, ServerConnection* connection);
 
@@ -53,6 +52,8 @@ namespace PMP {
         void sendPendingNotifications();
 
     private:
+        class UserData;
+
         UserData* getOrCreateUserData(quint32 userId);
         void needToRequestData(quint32 userId, FileHash const& hash);
 
