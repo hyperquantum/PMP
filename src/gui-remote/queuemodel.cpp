@@ -139,21 +139,27 @@ namespace PMP {
                 break;
 
             case Qt::TextAlignmentRole:
-                if (info == 0) { return QVariant(); }
-
-                return Qt::AlignCenter;
+                if (info)
+                    return Qt::AlignCenter;
+                break;
 
             case Qt::FontRole:
-            {
-                QFont font;
-                font.setItalic(true);
-                return font;
-            }
+                if (info) {
+                    QFont font;
+                    font.setItalic(true);
+                    return font;
+                }
+                break;
+
             case Qt::ForegroundRole:
-                return QBrush(QColor::fromRgb(30, 30, 30));
+                if (info)
+                    return QBrush(QColor::fromRgb(30, 30, 30));
+                break;
 
             case Qt::BackgroundRole:
-                return QBrush(QColor::fromRgb(220, 220, 220));
+                if (info)
+                    return QBrush(QColor::fromRgb(220, 220, 220));
+                break;
         }
 
         return QVariant();
