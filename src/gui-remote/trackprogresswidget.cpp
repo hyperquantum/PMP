@@ -70,9 +70,11 @@ namespace PMP {
         painter.fillRect(rect, QBrush(QColor(210, 220, 255)));
 
         if (_trackPosition > 0) {
+            auto position = qMin(_trackPosition, _trackLength);
+
             QRectF rect2(rect);
             rect2.adjust(+2, +2, -2, -2);
-            int w = (_trackPosition * rect2.width() + _trackLength / 2) / _trackLength;
+            int w = (position * rect2.width() + _trackLength / 2) / _trackLength;
             rect2.setWidth(w);
             painter.fillRect(rect2, QBrush(QColor(170, 190, 250)));
         }
@@ -91,11 +93,15 @@ namespace PMP {
                     return;
                 }
 
-                qDebug() << "TrackProgressWidget::mousePressEvent  with x=" << x << " and rectangle width" << rect.width();
-                qint64 position = ((x - rect.x()) * _trackLength + rect.width() / 2) / rect.width();
+                qDebug() << "TrackProgressWidget::mousePressEvent  with x=" << x
+                         << " and rectangle width" << rect.width();
+
+                qint64 position =
+                    ((x - rect.x()) * _trackLength + rect.width() / 2) / rect.width();
                 qDebug() << " calculated position:" << position;
 
-                int x_r = (position * rect.width() + _trackLength / 2) / _trackLength + rect.x();
+                int x_r =
+                    (position * rect.width() + _trackLength / 2) / _trackLength + rect.x();
                 qDebug() << " calculated x from calculated position would be:" << x_r;
 
                 emit seekRequested(position);
