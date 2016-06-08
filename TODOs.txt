@@ -33,6 +33,7 @@ IDEAS
  - ability to put playback volume adjustments in the queue (the same way as breakpoints)
  - show recent play history in the client (e.g. last 3 songs)
  - ability to view statistics such as 'previously heard' for the song currently playing
+ - visual indication of score for each track in the music collection, to make 'good' tracks stand out
 
 
 USER FRIENDLINESS
