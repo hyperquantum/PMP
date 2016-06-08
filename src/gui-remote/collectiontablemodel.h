@@ -23,6 +23,7 @@
 #include "common/serverconnection.h"
 
 #include <QAbstractTableModel>
+#include <QCollator>
 #include <QHash>
 #include <QList>
 
@@ -51,11 +52,12 @@ namespace PMP {
     private:
         int findInsertIndexFor(const CollectionTrackInfo& track) const;
         int findIndexOf(const CollectionTrackInfo& track) const;
-        static int compare(const CollectionTrackInfo& track1,
-                           const CollectionTrackInfo &track2);
-        static bool compareLessThan(const CollectionTrackInfo* track1,
-                                    const CollectionTrackInfo* track2);
+        int compare(const CollectionTrackInfo& track1,
+                    const CollectionTrackInfo& track2) const;
+        bool compareLessThan(const CollectionTrackInfo* track1,
+                             const CollectionTrackInfo* track2) const;
 
+        QCollator _collator;
         QHash<FileHash, CollectionTrackInfo*> _hashes;
         QList<CollectionTrackInfo*> _tracks;
     };

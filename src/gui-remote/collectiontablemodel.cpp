@@ -28,7 +28,11 @@ namespace PMP {
     CollectionTableModel::CollectionTableModel(QObject* parent)
      : QAbstractTableModel(parent)
     {
-        //
+        _collator.setCaseSensitivity(Qt::CaseInsensitive);
+        _collator.setNumericMode(true);
+
+        /* we need to ignore symbols such as quotes, spaces and parentheses */
+        _collator.setIgnorePunctuation(true);
     }
 
     void CollectionTableModel::setConnection(ServerConnection* connection) {
@@ -248,7 +252,7 @@ namespace PMP {
     }
 
     int CollectionTableModel::compare(const CollectionTrackInfo &track1,
-                                      const CollectionTrackInfo &track2)
+                                      const CollectionTrackInfo &track2) const
     {
         bool empty1 = track1.titleAndArtistUnknown();
         bool empty2 = track2.titleAndArtistUnknown();
@@ -268,19 +272,19 @@ namespace PMP {
 
         QString title1 = track1.title();
         QString title2 = track2.title();
-        int titleComparison = title1.localeAwareCompare(title2);
+        int titleComparison = _collator.compare(title1, title2);
         if (titleComparison != 0) return titleComparison;
 
         QString artist1 = track1.artist();
         QString artist2 = track2.artist();
-        int artistComparison = artist1.localeAwareCompare(artist2);
+        int artistComparison = _collator.compare(artist1, artist2);
         if (artistComparison != 0) return artistComparison;
 
         return PMP::compare(track1.hash(), track2.hash());
     }
 
     bool CollectionTableModel::compareLessThan(const CollectionTrackInfo* track1,
-                                               const CollectionTrackInfo* track2)
+                                               const CollectionTrackInfo* track2) const
     {
         return compare(*track1, *track2) < 0;
     }
