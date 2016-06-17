@@ -38,7 +38,7 @@ Contents of this file:
  * Dynamic mode with track repetition avoidance
  * User authentication and public/personal operating modes
  * Separate play history for each user and for public mode
- * Ability to insert a breakpoint (pause) into the queue
+ * Ability to insert a breakpoint (automatic stop) into the queue
 
 
 2. Dependencies For Running PMP
@@ -203,7 +203,6 @@ Importance/priority:
   * (**M**) Provide keyboard shortcuts for volume adjustment
   * (**M**) Queue contextmenu option to duplicate the entry
   * (**H**) Store last track repetition avoidance interval for each user in the database
-  * (**H**) Display last-heard time of each track in the remote
   * (**L**) Time-based auto-stop function
   * (**L**) Naming a PMP Server instance (e.g. "living room")
 
