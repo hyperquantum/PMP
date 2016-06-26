@@ -158,7 +158,7 @@ namespace PMP {
                                QString title, QString artist);
         void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
         void receivedHashUserData(FileHash hash, quint32 userId,
-                                  QDateTime previouslyHeard);
+                                  QDateTime previouslyHeard, qint16 scorePermillage);
         void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
 
         void receivedUserAccounts(QList<QPair<uint, QString> > accounts);

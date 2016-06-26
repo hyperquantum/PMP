@@ -83,7 +83,7 @@ namespace PMP {
     }
 
     int QueueModel::columnCount(const QModelIndex& parent) const {
-        return 4;
+        return 5;
     }
 
     QVariant QueueModel::headerData(int section, Qt::Orientation orientation,
@@ -96,6 +96,7 @@ namespace PMP {
                     case 1: return QString(tr("Artist"));
                     case 2: return QString(tr("Length"));
                     case 3: return QString(tr("Prev. heard"));
+                    case 4: return QString(tr("Score"));
                 }
             }
             else if (orientation == Qt::Vertical) {
@@ -169,9 +170,28 @@ namespace PMP {
     QVariant QueueModel::trackModelData(QueueEntryInfo* info, int col, int role) const {
         switch (role) {
             case Qt::TextAlignmentRole:
-                return (col == 2 ? Qt::AlignRight : Qt::AlignLeft)
-                    + Qt::AlignVCenter;
+                switch (col) {
+                    case 2:
+                        return Qt::AlignRight + Qt::AlignVCenter;
+                    case 4:
+                    {
+                        auto& hash = info->hash();
+                        if (hash.empty() || !_receivedUserPlayingFor)
+                            return Qt::AlignLeft + Qt::AlignVCenter;
 
+                        auto hashData =
+                            _userDataFetcher->getHashDataForUser(_userPlayingFor, hash);
+                        if (!hashData || !hashData->scoreReceived)
+                            return Qt::AlignLeft + Qt::AlignVCenter;
+
+                        if (hashData->score >= 0)
+                            return Qt::AlignRight + Qt::AlignVCenter;
+                        else
+                            return Qt::AlignLeft + Qt::AlignVCenter;
+                    }
+                    default:
+                        return Qt::AlignLeft + Qt::AlignVCenter;
+                }
             case Qt::DisplayRole:
                 break; /* handled below */
 
@@ -211,7 +231,7 @@ namespace PMP {
                 auto hashData =
                     _userDataFetcher->getHashDataForUser(_userPlayingFor, hash);
 
-                if (!hashData || !hashData->previouslyHeardKnown)
+                if (!hashData || !hashData->previouslyHeardReceived)
                     return QVariant();
 
                 if (hashData->previouslyHeard.isNull())
@@ -219,6 +239,22 @@ namespace PMP {
 
                  // TODO: formatting?
                 return hashData->previouslyHeard.toLocalTime();
+            }
+            case 4:
+            {
+                auto& hash = info->hash();
+                if (hash.empty() || !_receivedUserPlayingFor)
+                    return QVariant(); /* unknown */
+
+                auto hashData =
+                    _userDataFetcher->getHashDataForUser(_userPlayingFor, hash);
+                if (!hashData || !hashData->scoreReceived)
+                    return QVariant();
+
+                if (hashData->score < 0)
+                    return tr("N/A");
+
+                return hashData->score;
             }
         }
 

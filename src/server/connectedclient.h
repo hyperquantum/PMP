@@ -31,6 +31,7 @@
 #include <QDateTime>
 #include <QList>
 #include <QTcpSocket>
+#include <QVector>
 
 namespace PMP {
 
@@ -84,7 +85,8 @@ namespace PMP {
         void onHashInfoChanged(QList<PMP::CollectionTrackInfo> changes);
 
         void userDataForHashesFetchCompleted(quint32 userId,
-                                             QList<PMP::UserDataForHash> results);
+                                             QVector<PMP::UserDataForHash> results,
+                                             bool havePreviouslyHeard, bool haveScore);
 
     private:
         bool isLoggedIn() const;

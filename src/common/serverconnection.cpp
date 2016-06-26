@@ -28,7 +28,7 @@
 
 namespace PMP {
 
-    const qint16 ServerConnection::ClientProtocolNo = 2;
+    const qint16 ServerConnection::ClientProtocolNo = 3;
 
     ServerConnection::ServerConnection(QObject* parent, bool subscribeToAllServerEvents)
      : QObject(parent),
@@ -386,7 +386,7 @@ namespace PMP {
         QByteArray message;
         message.reserve(2 + 2 + 4 + hashes.size() * NetworkProtocol::FILEHASH_BYTECOUNT);
         NetworkUtil::append2Bytes(message, NetworkProtocol::HashUserDataRequestMessage);
-        NetworkUtil::append2Bytes(message, 1); /* data requested (1 = previously heard) */
+        NetworkUtil::append2Bytes(message, 2 | 1); /* request prev. heard & score */
         NetworkUtil::append4Bytes(message, userId); /* user ID */
 
         foreach (FileHash hash, hashes) {
@@ -1438,7 +1438,7 @@ namespace PMP {
     void ServerConnection::parseHashUserDataMessage(const QByteArray& message) {
         int messageLength = message.length();
         if (messageLength < 12) {
-            qWarning() << "ServerConnection::parseHashUserDataMessage : invalid message";
+            qWarning() << "ServerConnection::parseHashUserDataMessage : invalid msg (1)";
             return; /* invalid message */
         }
 
@@ -1447,18 +1447,25 @@ namespace PMP {
         quint32 userId = NetworkUtil::get4Bytes(message, 8);
         int offset = 12;
 
-        if ((fields & 1) != fields || fields == 0) {
+        if ((fields & 3) != fields || fields == 0) {
             return; /* has unsupported fields or none */
         }
 
-        /* fields should only be ==1 at this time */
-        int bytesPerHash = NetworkProtocol::FILEHASH_BYTECOUNT + 8;
+        bool havePreviouslyHeard = (fields & 1) == 1;
+        bool haveScore = (fields & 2) == 2;
+
+        int bytesPerHash =
+            NetworkProtocol::FILEHASH_BYTECOUNT
+                + (havePreviouslyHeard ? 8 : 0)
+                + (haveScore ? 2 : 0);
 
         if ((messageLength - offset) != hashCount * bytesPerHash) {
+            qWarning() << "ServerConnection::parseHashUserDataMessage: invalid msg (2)";
             return; /* invalid message */
         }
 
-        qDebug() << "received hash user data message; count:" << hashCount;
+        qDebug() << "received hash user data message; count:" << hashCount
+                 << "; fields:" << fields;
 
         bool ok;
         for (int i = 0; i < hashCount; ++i) {
@@ -1466,16 +1473,27 @@ namespace PMP {
             if (!ok) return; /* invalid message */
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
 
-            qint64 previouslyHeardRaw = (qint64)NetworkUtil::get8Bytes(message, offset);
-            offset += 8;
-
             QDateTime previouslyHeard;
-            if (previouslyHeardRaw != std::numeric_limits<qint64>::min()) {
-                previouslyHeard =
-                    QDateTime::fromMSecsSinceEpoch(previouslyHeardRaw, Qt::UTC);
+            qint16 score = -1;
+
+            if (havePreviouslyHeard) {
+                qint64 previouslyHeardRaw =
+                    (qint64)NetworkUtil::get8Bytes(message, offset);
+                offset += 8;
+
+                if (previouslyHeardRaw != std::numeric_limits<qint64>::min()) {
+                    previouslyHeard =
+                        QDateTime::fromMSecsSinceEpoch(previouslyHeardRaw, Qt::UTC);
+                }
             }
 
-            emit receivedHashUserData(hash, userId, previouslyHeard);
+            if (haveScore) {
+                score = (qint16)NetworkUtil::get2Bytes(message, offset);
+                offset += 2;
+            }
+
+            // TODO: fixme: receiver cannot know which fields were not received now
+            emit receivedHashUserData(hash, userId, previouslyHeard, score);
         }
     }
 

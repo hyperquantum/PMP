@@ -45,7 +45,7 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 2;
+    const qint16 ConnectedClient::ServerProtocolNo = 3;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,
@@ -856,42 +856,61 @@ namespace PMP {
     }
 
     void ConnectedClient::userDataForHashesFetchCompleted(quint32 userId,
-                                                          QList<UserDataForHash> results)
+                                                         QVector<UserDataForHash> results,
+                                                          bool havePreviouslyHeard,
+                                                          bool haveScore)
     {
         const int maxSize = (1 << 16) - 1;
 
         /* not too big? */
         if (results.size() > maxSize) {
             /* TODO: maybe delay the second part? */
-            userDataForHashesFetchCompleted(userId, results.mid(0, maxSize));
-            userDataForHashesFetchCompleted(userId, results.mid(maxSize));
+            userDataForHashesFetchCompleted(
+                userId, results.mid(0, maxSize), havePreviouslyHeard, haveScore
+            );
+            userDataForHashesFetchCompleted(
+                userId, results.mid(maxSize), havePreviouslyHeard, haveScore
+            );
             return;
         }
 
+        qint16 fields = (havePreviouslyHeard ? 1 : 0) | (haveScore ? 2 : 0);
+        uint fieldsSize = (havePreviouslyHeard ? 8 : 0) + (haveScore ? 2 : 0);
+
+        qDebug() << "sending user data for" << results.size()
+                 << "hashes; fields:" << fields;
+
         QByteArray message;
         message.reserve(
-            2 + 2 + 4 + 4 + results.size() * (NetworkProtocol::FILEHASH_BYTECOUNT + 8)
+            2 + 2 + 4 + 4
+                + results.size() * (NetworkProtocol::FILEHASH_BYTECOUNT + fieldsSize)
         );
 
         NetworkUtil::append2Bytes(message, NetworkProtocol::HashUserDataMessage);
         NetworkUtil::append2Bytes(message, results.size());
         NetworkUtil::append2Bytes(message, 0); /* filler */
-        NetworkUtil::append2Bytes(message, 1 /* fields; 1 = previously heard */);
+        NetworkUtil::append2Bytes(message, fields);
         NetworkUtil::append4Bytes(message, userId);
 
         Q_FOREACH(auto const& result, results) {
             NetworkProtocol::appendHash(message, result.hash);
 
-            qint64 previouslyHeard;
-            if (result.previouslyHeard.isValid()) {
-                previouslyHeard =
-                    (quint64)result.previouslyHeard.toUTC().toMSecsSinceEpoch();
-            }
-            else {
-                previouslyHeard = std::numeric_limits<qint64>::min();
+            if (havePreviouslyHeard) {
+                qint64 previouslyHeard;
+                if (result.previouslyHeard.isValid()) {
+                    previouslyHeard =
+                        (quint64)result.previouslyHeard.toUTC().toMSecsSinceEpoch();
+                }
+                else {
+                    previouslyHeard = std::numeric_limits<qint64>::min();
+                }
+
+                NetworkUtil::append8Bytes(message, previouslyHeard);
             }
 
-            NetworkUtil::append8Bytes(message, previouslyHeard);
+            if (haveScore) {
+                NetworkUtil::append2Bytes(message, (quint16)result.score);
+            }
         }
 
         sendBinaryMessage(message);
@@ -982,15 +1001,17 @@ namespace PMP {
         qDebug() << "ConnectedClient::onUserHashStatsUpdated; user:" << user
                  << " hash:" << hashID << " prevHeard:" << previouslyHeard;
 
+        // TODO : score
+
         UserDataForHash data;
         data.hash = _player->resolver().getHashByID(hashID);
         if (data.hash.empty()) return; /* invalid ID */
 
         data.previouslyHeard = previouslyHeard;
 
-        QList<UserDataForHash> dataList;
+        QVector<UserDataForHash> dataList;
         dataList << data;
-        userDataForHashesFetchCompleted(user, dataList);
+        userDataForHashesFetchCompleted(user, dataList, true, false);
     }
 
     void ConnectedClient::onFullIndexationRunStatusChanged(bool running) {
@@ -1665,11 +1686,11 @@ namespace PMP {
         qDebug() << "received request for user data (fields="<< fields
                  << ") on" << hashCount << "hashes";
 
-        fields = fields & 1; /* filter non-supported fields */
+        fields = fields & 3; /* filter non-supported fields */
 
         if (fields == 0) return; /* no data that we can return */
 
-        QList<FileHash> hashes;
+        QVector<FileHash> hashes;
         hashes.reserve(hashCount);
 
         for (int i = 0; i < hashCount; ++i) {
@@ -1681,7 +1702,12 @@ namespace PMP {
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
         }
 
-        auto fetcher = new UserDataForHashesFetcher(userId, hashes, _player->resolver());
+        auto fetcher =
+            new UserDataForHashesFetcher(
+                userId, hashes,
+                (fields & 1) == 1, (fields & 2) == 2,
+                _player->resolver()
+            );
         connect(
             fetcher, &UserDataForHashesFetcher::finishedWithResult,
             this, &ConnectedClient::userDataForHashesFetchCompleted

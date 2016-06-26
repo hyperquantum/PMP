@@ -545,9 +545,9 @@ namespace PMP {
         QSqlQuery q(_db);
         q.prepare(
             "SELECT ha.HashID, hi.PrevHeard "
-            "FROM pmp.pmp_hash AS ha"
+            "FROM pmp_hash AS ha"
             " LEFT JOIN"
-            "  (SELECT HashID, MAX(End) AS PrevHeard FROM pmp.pmp_history"
+            "  (SELECT HashID, MAX(End) AS PrevHeard FROM pmp_history"
             "   WHERE UserID=? GROUP BY HashID) AS hi "
             "ON ha.HashID=hi.HashID "
             "WHERE ha.HashID IN " + buildParamsList(hashIds.size())
@@ -558,6 +558,7 @@ namespace PMP {
         }
 
         QList<QPair<quint32, QDateTime>> result;
+        result.reserve(hashIds.size());
 
         if (!executeQuery(q)) { /* error */
             qDebug() << "Database::getLastHeard (bulk) : could not execute; "
@@ -571,6 +572,59 @@ namespace PMP {
             prevHeard.setTimeSpec(Qt::UTC); /* make sure it is treated as UTC */
 
             result.append(QPair<quint32, QDateTime>(hashID, prevHeard));
+        }
+
+        return result;
+    }
+
+    QVector<Database::HashHistoryStats> Database::getHashHistoryStats(quint32 userId,
+                                                                   QList<quint32> hashIds)
+    {
+        QSqlQuery q(_db);
+        q.prepare(
+            "SELECT ha.HashID, hi.PrevHeard, hi2.ScoreHeardCount, hi2.ScorePermillage "
+            "FROM pmp_hash AS ha"
+            " LEFT JOIN"
+            "  (SELECT HashID, MAX(End) AS PrevHeard FROM pmp_history"
+            "   WHERE UserID=? GROUP BY HashID) AS hi"
+            "  ON ha.HashID=hi.HashID"
+            " LEFT JOIN"
+            "  (SELECT HashID, COUNT(*) AS ScoreHeardCount,"
+            "   AVG(Permillage) AS ScorePermillage FROM pmp_history"
+            "   WHERE UserID=? AND ValidForScoring != 0 GROUP BY HashID) AS hi2"
+            "  ON ha.HashID=hi2.HashID "
+            "WHERE ha.HashID IN " + buildParamsList(hashIds.size())
+        );
+        QVariant userIdParam = (userId == 0) ? /*NULL*/QVariant(QVariant::UInt) : userId;
+        q.addBindValue(userIdParam);
+        q.addBindValue(userIdParam); /* twice */
+        Q_FOREACH(auto hashId, hashIds) {
+            q.addBindValue(hashId);
+        }
+
+        QVector<HashHistoryStats> result;
+        result.reserve(hashIds.size());
+
+        if (!executeQuery(q)) { /* error */
+            qDebug() << "Database::getHashHistoryStats : could not execute; "
+                     << q.lastError().text() << endl;
+            return result;
+        }
+
+        while (q.next()) {
+            quint32 hashID = q.value(0).toUInt();
+            QDateTime prevHeard = q.value(1).toDateTime();
+            prevHeard.setTimeSpec(Qt::UTC); /* make sure it is treated as UTC */
+            quint32 scoreHeardCount = (quint32)getUInt(q.value(2), 0);
+            qint32 scorePermillage = (qint32)getInt(q.value(3), -1);
+
+            HashHistoryStats stats;
+            stats.hashId = hashID;
+            stats.lastHeard = prevHeard;
+            stats.scoreHeardCount = scoreHeardCount;
+            stats.score = calculateScore(scorePermillage, scoreHeardCount);
+
+            result.append(stats);
         }
 
         return result;
@@ -853,6 +907,27 @@ namespace PMP {
         }
 
         return false;
+    }
+
+    int Database::getInt(QVariant v, int nullValue) {
+        if (v.isNull()) return nullValue;
+        return v.toInt();
+    }
+
+    uint Database::getUInt(QVariant v, uint nullValue) {
+        if (v.isNull()) return nullValue;
+        return v.toUInt();
+    }
+
+    qint16 Database::calculateScore(qint32 permillageFromDB, quint32 heardCount) {
+        if (permillageFromDB < 0 || heardCount < 3) return -1;
+
+        if (permillageFromDB > 1000) permillageFromDB = 1000;
+
+        if (heardCount >= 100) return permillageFromDB;
+
+        quint16 permillage = (quint16)permillageFromDB;
+        return (permillage * heardCount + 500) / (heardCount + 1);
     }
 
 }

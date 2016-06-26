@@ -25,6 +25,18 @@
 
 namespace PMP {
 
+    /*
+        Network protocol versions
+        =========================
+
+        Changes for each version:
+
+          1: first version, no version increments for a long time
+          2: first increment for test purposes, no strict incrementing yet after this
+          3: client msg 18, server msg 22: added support for retreiving scores
+
+    */
+
     class FileHash;
 
     enum class QueueEntryType : quint8 {

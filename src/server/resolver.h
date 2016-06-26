@@ -34,6 +34,7 @@
 #include <QObject>
 #include <QPair>
 #include <QString>
+#include <QVector>
 
 namespace PMP {
 
@@ -68,6 +69,7 @@ namespace PMP {
         FileHash getHashByID(uint id);
         uint getID(const FileHash& hash);
         QList<QPair<uint, FileHash>> getIDs(QList<FileHash> hashes);
+        QVector<QPair<uint, FileHash>> getIDs(QVector<FileHash> hashes);
 
     private slots:
         void onFullIndexationFinished();

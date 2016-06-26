@@ -32,6 +32,7 @@
 #include <QSqlDatabase>
 #include <QtGlobal>
 #include <QThreadStorage>
+#include <QVector>
 
 #include <functional>
 
@@ -72,6 +73,13 @@ namespace PMP {
 
     class Database {
     public:
+        struct HashHistoryStats {
+            quint32 hashId;
+            quint32 scoreHeardCount;
+            QDateTime lastHeard;
+            qint16 score;
+        };
+
         static bool init(QTextStream& out);
 
         bool isConnectionOpen() const;
@@ -91,6 +99,8 @@ namespace PMP {
                           int permillage, bool validForScoring);
         QDateTime getLastHeard(quint32 hashId, quint32 userId);
         QList<QPair<quint32, QDateTime>> getLastHeard(quint32 userId,
+                                                      QList<quint32> hashIds);
+        QVector<HashHistoryStats> getHashHistoryStats(quint32 userId,
                                                       QList<quint32> hashIds);
 
         static QSharedPointer<Database> getDatabaseForCurrentThread();
@@ -117,6 +127,11 @@ namespace PMP {
                           bool processResult,
                           std::function<void (QSqlQuery&)> resultFetcher);
         bool executeQuery(QSqlQuery& q);
+
+        static int getInt(QVariant v, int nullValue);
+        static uint getUInt(QVariant v, uint nullValue);
+
+        static qint16 calculateScore(qint32 permillageFromDB, quint32 heardCount);
 
         static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
 

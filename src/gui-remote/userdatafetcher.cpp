@@ -59,13 +59,15 @@ namespace PMP {
     }
 
     void UserDataFetcher::receivedHashUserData(FileHash hash, quint32 userId,
-                                               QDateTime previouslyHeard)
+                                               QDateTime previouslyHeard, qint16 score)
     {
         UserData* userData = getOrCreateUserData(userId);
 
         HashData& hashData = userData->getOrCreateHash(hash);
         hashData.previouslyHeard = previouslyHeard;
-        hashData.previouslyHeardKnown = true;
+        hashData.previouslyHeardReceived = true;
+        hashData.score = score;
+        hashData.scoreReceived = true;
 
         bool first = _pendingNotificationsUsers.isEmpty();
 

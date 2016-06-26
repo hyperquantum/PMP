@@ -47,7 +47,7 @@ namespace PMP {
     private slots:
         //void connected();
         void receivedHashUserData(FileHash hash, quint32 userId,
-                                  QDateTime previouslyHeard);
+                                  QDateTime previouslyHeard, qint16 score);
         void sendPendingRequests();
         void sendPendingNotifications();
 
@@ -65,13 +65,16 @@ namespace PMP {
 
     struct UserDataFetcher::HashData {
         HashData()
-         : previouslyHeardKnown(false)
+         : previouslyHeardReceived(false), scoreReceived(false)
         {
             //
         }
 
-        bool previouslyHeardKnown;
+        bool previouslyHeardReceived;
         QDateTime previouslyHeard;
+
+        bool scoreReceived;
+        qint16 score;
     };
 
     class UserDataFetcher::UserData {

@@ -22,14 +22,16 @@
 #include "database.h"
 #include "resolver.h"
 
-//#include <QtDebug>
+#include <QtDebug>
 
 namespace PMP {
 
     UserDataForHashesFetcher::UserDataForHashesFetcher(quint32 userId,
-                                                       QList<FileHash> hashes,
+                                                       QVector<FileHash> hashes,
+                                                       bool previouslyHeard, bool score,
                                                        Resolver& resolver)
-        : _userId(userId), _hashes(hashes), _resolver(resolver)
+        : _userId(userId), _hashes(hashes), _resolver(resolver),
+          _previouslyHeard(previouslyHeard), _score(score)
     {
         //
     }
@@ -39,28 +41,47 @@ namespace PMP {
 
         if (!db) return; /* problem */
 
-        QList<UserDataForHash> results;
+        qDebug() << "FETCHING USERDATA; PrevHeard" << _previouslyHeard
+                 << ", Score" << _score;
+
+        QVector<UserDataForHash> results;
         results.reserve(_hashes.size());
 
         auto idsForHashes = _resolver.getIDs(_hashes);
         QHash<quint32, FileHash> ids;
-        //QList<quint32> ids;
         ids.reserve(idsForHashes.size());
         Q_FOREACH(auto idAndHash, idsForHashes) {
-            //ids.append(idAndHash.first);
             ids.insert(idAndHash.first, idAndHash.second);
         }
 
-        auto lastHeardList = db->getLastHeard(_userId, ids.keys());
-        Q_FOREACH(auto lastHeard, lastHeardList) {
-            UserDataForHash data;
-            data.hash = ids.value(lastHeard.first);
-            data.previouslyHeard = lastHeard.second;
+        if (_score) {
+            /* get score and last heard */
+            auto stats = db->getHashHistoryStats(_userId, ids.keys());
+            Q_FOREACH(Database::HashHistoryStats const& stat, stats) {
+                UserDataForHash data;
+                data.hash = ids.value(stat.hashId);
+                data.previouslyHeard = stat.lastHeard;
+                data.score = stat.score;
 
-            results.append(data);
+                qDebug() << "FETCHED: HashID" << stat.hashId
+                         << " PrevHeard" << stat.lastHeard << " Score" << stat.score;
+
+                results.append(data);
+            }
+        }
+        else {
+            /* only last heard */
+            auto lastHeardList = db->getLastHeard(_userId, ids.keys());
+            Q_FOREACH(auto lastHeard, lastHeardList) {
+                UserDataForHash data;
+                data.hash = ids.value(lastHeard.first);
+                data.previouslyHeard = lastHeard.second;
+
+                results.append(data);
+            }
         }
 
-        emit finishedWithResult(_userId, results);
+        emit finishedWithResult(_userId, results, _previouslyHeard, _score);
     }
 
     /* =========================== UserDataForHashInit =========================== */
@@ -71,7 +92,10 @@ namespace PMP {
         UserDataForHashInit() {
             //qDebug() << "UserDataForHashInit running";
             qRegisterMetaType<PMP::UserDataForHash>("PMP::UserDataForHash");
-            qRegisterMetaType<QList<PMP::UserDataForHash> >("QList<PMP::UserDataForHash>");
+            qRegisterMetaType<QList<PMP::UserDataForHash> >(
+                                                           "QList<PMP::UserDataForHash>");
+            qRegisterMetaType<QVector<PMP::UserDataForHash> >(
+                                                         "QVector<PMP::UserDataForHash>");
         }
     };
 

@@ -23,9 +23,9 @@
 #include "common/filehash.h"
 
 #include <QDateTime>
-#include <QList>
 #include <QObject>
 #include <QRunnable>
+#include <QVector>
 
 namespace PMP {
 
@@ -34,23 +34,28 @@ namespace PMP {
     struct UserDataForHash {
         FileHash hash;
         QDateTime previouslyHeard;
+        qint16 score;
     };
 
     class UserDataForHashesFetcher : public QObject, public QRunnable {
         Q_OBJECT
     public:
-        UserDataForHashesFetcher(quint32 userId, QList<FileHash> hashes,
-                                 Resolver &resolver);
+        UserDataForHashesFetcher(quint32 userId, QVector<FileHash> hashes,
+                                 bool previouslyHeard, bool score,
+                                 Resolver& resolver);
 
         void run();
 
     Q_SIGNALS:
-        void finishedWithResult(quint32 userId, QList<PMP::UserDataForHash> results);
+        void finishedWithResult(quint32 userId, QVector<PMP::UserDataForHash> results,
+                                bool havePreviouslyHeard, bool haveScore);
 
     private:
         quint32 _userId;
-        QList<FileHash> _hashes;
+        QVector<FileHash> _hashes;
         Resolver& _resolver;
+        bool _previouslyHeard;
+        bool _score;
     };
 }
 
