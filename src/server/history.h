@@ -40,7 +40,8 @@ namespace PMP {
         QDateTime lastPlayed(FileHash const& hash) const;
 
     Q_SIGNALS:
-        void updatedHashUserStats(uint hashID, quint32 user, QDateTime previouslyHeard);
+        void updatedHashUserStats(uint hashID, quint32 user,
+                                  QDateTime previouslyHeard, qint16 score);
 
     private slots:
         void currentTrackChanged(QueueEntry const* newTrack);

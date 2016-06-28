@@ -37,7 +37,8 @@ namespace PMP {
         void run();
 
     Q_SIGNALS:
-        void updatedHashUserStats(uint hashID, quint32 user, QDateTime previouslyHeard);
+        void updatedHashUserStats(uint hashID, quint32 user,
+                                  QDateTime previouslyHeard, qint16 score);
 
     private:
         uint _hashID;

@@ -76,7 +76,8 @@ namespace PMP {
         void queueEntryAdded(quint32 offset, quint32 queueID);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
         void onUserPlayingForChanged(quint32 user);
-        void onUserHashStatsUpdated(uint hashID, quint32 user, QDateTime previouslyHeard);
+        void onUserHashStatsUpdated(uint hashID, quint32 user,
+                                    QDateTime previouslyHeard, qint16 score);
         void onFullIndexationRunStatusChanged(bool running);
         void onCollectionTrackInfoBatchToSend(uint clientReference,
                                               QList<CollectionTrackInfo> tracks);

@@ -875,6 +875,9 @@ namespace PMP {
         }
 
         qint16 fields = (havePreviouslyHeard ? 1 : 0) | (haveScore ? 2 : 0);
+        fields &=
+            NetworkProtocol::getHashUserDataFieldsMaskForProtocolVersion(
+                                                                       _clientProtocolNo);
         uint fieldsSize = (havePreviouslyHeard ? 8 : 0) + (haveScore ? 2 : 0);
 
         qDebug() << "sending user data for" << results.size()
@@ -996,22 +999,22 @@ namespace PMP {
     }
 
     void ConnectedClient::onUserHashStatsUpdated(uint hashID, quint32 user,
-                                                 QDateTime previouslyHeard)
+                                                 QDateTime previouslyHeard, qint16 score)
     {
         qDebug() << "ConnectedClient::onUserHashStatsUpdated; user:" << user
-                 << " hash:" << hashID << " prevHeard:" << previouslyHeard;
-
-        // TODO : score
+                 << " hash:" << hashID
+                 << " prevHeard:" << previouslyHeard << " score:" << score;
 
         UserDataForHash data;
         data.hash = _player->resolver().getHashByID(hashID);
         if (data.hash.empty()) return; /* invalid ID */
 
         data.previouslyHeard = previouslyHeard;
+        data.score = score;
 
         QVector<UserDataForHash> dataList;
         dataList << data;
-        userDataForHashesFetchCompleted(user, dataList, true, false);
+        userDataForHashesFetchCompleted(user, dataList, true, true);
     }
 
     void ConnectedClient::onFullIndexationRunStatusChanged(bool running) {

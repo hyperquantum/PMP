@@ -48,13 +48,15 @@ namespace PMP {
 
         QList<quint32> hashes;
         hashes << hashId;
-        auto lastHeardResult = db->getLastHeard(userId, hashes);
+        auto lastHeardResult = db->getHashHistoryStats(userId, hashes);
         QDateTime lastHeard;
-        if (lastHeardResult.size() == 1 && lastHeardResult[0].first == hashId) {
-            lastHeard = lastHeardResult[0].second;
+        qint16 score = -1;
+        if (lastHeardResult.size() == 1 && lastHeardResult[0].hashId == hashId) {
+            lastHeard = lastHeardResult[0].lastHeard;
+            score = lastHeardResult[0].score;
         }
 
-        emit updatedHashUserStats(hashId, userId, lastHeard);
+        emit updatedHashUserStats(hashId, userId, lastHeard, score);
     }
 
 }

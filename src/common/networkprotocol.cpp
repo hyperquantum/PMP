@@ -169,4 +169,10 @@ namespace PMP {
         if (ok) *ok = true;
         return FileHash(lengthPart, sha1Data, md5Data);
     }
+
+    qint16 NetworkProtocol::getHashUserDataFieldsMaskForProtocolVersion(int version) {
+        if (version < 3) return 1; /* only previously heard */
+
+        return 3; /* previously heard & score */
+    }
 }
