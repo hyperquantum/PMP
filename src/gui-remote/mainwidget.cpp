@@ -29,6 +29,7 @@
 #include "queuemediator.h"
 #include "queuemodel.h"
 #include "queuemonitor.h"
+#include "scoreformatdelegate.h"
 #include "userdatafetcher.h"
 
 #include <algorithm>
@@ -93,6 +94,7 @@ namespace PMP {
         _ui->queueTableView->setDropIndicatorShown(true);
         _ui->queueTableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _ui->queueTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
+        _ui->queueTableView->setItemDelegateForColumn(4, new ScoreFormatDelegate(this));
 
         connect(
             _ui->trackProgress, SIGNAL(seekRequested(qint64)),
