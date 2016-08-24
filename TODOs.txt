@@ -7,6 +7,7 @@ BUGS
  - diagnostic logging produces unreadable text when two different threads write something to the log
  - when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
  - the commandline client does not support user authentication which is now required for some commands it supports
+ - GUI remote: tracks can be dragged using the right mouse button (not just the left button)
 
 
 PERFORMANCE ISSUES
