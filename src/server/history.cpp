@@ -23,14 +23,14 @@
 #include "player.h"
 #include "queueentry.h"
 #include "resolver.h"
+#include "userdatafortracksfetcher.h"
 
-#include <QRunnable>
 #include <QThreadPool>
 
 namespace PMP {
 
     History::History(Player* player)
-     : _player(player), _nowPlaying(0)
+     : _player(player), _nowPlaying(0), _fetchingTimer(new QTimer(this))
     {
         connect(
             player, &Player::currentTrackChanged,
@@ -46,10 +46,79 @@ namespace PMP {
             player, &Player::donePlayingTrack,
             this, &History::donePlayingTrack
         );
+
+        connect(
+            _fetchingTimer, &QTimer::timeout,
+            this, &History::onFetchingTimerTimeout
+        );
     }
 
     QDateTime History::lastPlayed(FileHash const& hash) const {
         return _lastPlayHash[hash];
+    }
+
+    bool History::fetchMissingUserStats(uint hashID, quint32 user) {
+        if (hashID == 0 || _userStats[user].contains(hashID)) return false;
+
+        scheduleFetch(hashID, user);
+        return true;
+    }
+
+    History::HashStats const* History::getUserStats(uint hashID, quint32 user) {
+        if (hashID == 0) return nullptr;
+
+        QHash<uint, HashStats>& userData = _userStats[user];
+
+        auto hashDataIterator = userData.find(hashID);
+        if (hashDataIterator != userData.end()) {
+            return &hashDataIterator.value();
+        }
+
+        /* we will need to fetch the data from the database first */
+        scheduleFetch(hashID, user);
+
+        return nullptr;
+    }
+
+    void History::scheduleFetch(uint hashID, quint32 user) {
+        QHash<uint, bool>& hashes = _userStatsFetching[user];
+
+        auto hashDataIterator = hashes.find(hashID);
+        if (hashDataIterator == hashes.end()) {
+            hashes[hashID] = false; /* add as not yet fetched */
+        }
+
+        if (!_fetchingTimer->isActive()) {
+            _fetchingTimer->start(fetchingTimerFreqMs);
+        }
+    }
+
+    void History::onFetchingTimerTimeout() {
+        Q_FOREACH(auto user, _userStatsFetching.keys()) {
+            QHash<uint, bool>& hashes = _userStatsFetching[user];
+
+            QVector<uint> hashesToFetch;
+            hashesToFetch.reserve(hashes.size());
+            Q_FOREACH(auto hash, hashes.keys()) {
+                bool& beingFetched = hashes[hash];
+                if (!beingFetched) {
+                    hashesToFetch.append(hash);
+                    beingFetched = true;
+                }
+            }
+
+            /* nothing to fetch for this user? */
+            if (hashesToFetch.isEmpty()) continue;
+
+            /* something to fetch */
+
+            auto fetcher = new UserDataForTracksFetcher(user, hashesToFetch);
+            connect(
+                fetcher, &UserDataForTracksFetcher::finishedWithResult,
+                this, &History::onFetchCompleted
+            );
+            QThreadPool::globalInstance()->start(fetcher);
+        }
     }
 
     void History::currentTrackChanged(QueueEntry const* newTrack) {
@@ -83,10 +152,50 @@ namespace PMP {
 
         connect(
             task, &AddToHistoryTask::updatedHashUserStats,
-            this, &History::updatedHashUserStats
+            this, &History::onUpdatedHashUserStats
         );
 
         QThreadPool::globalInstance()->start(task);
+    }
+
+    void History::onUpdatedHashUserStats(uint hashID, quint32 user,
+                                         QDateTime previouslyHeard, qint16 score)
+    {
+        HashStats& existingStats = _userStats[user][hashID];
+
+        if (previouslyHeard == existingStats.lastHeard
+                && score == existingStats.score)
+        {
+            return; /* no change */
+        }
+
+        existingStats.lastHeard = previouslyHeard;
+        existingStats.score = score;
+
+        emit updatedHashUserStats(hashID, user, previouslyHeard, score);
+    }
+
+    void History::onFetchCompleted(quint32 userId, QVector<UserDataForHashId> results)
+    {
+        QHash<uint, bool>& hashesForFetching = _userStatsFetching[userId];
+        QHash<uint, HashStats>& statsForUser = _userStats[userId];
+
+        Q_FOREACH(UserDataForHashId const& hashData, results) {
+            auto hashId = hashData.hashId;
+
+            hashesForFetching.remove(hashId);
+
+            HashStats& stats = statsForUser[hashId];
+
+            if (stats.lastHeard != hashData.previouslyHeard
+                    || stats.score != hashData.score)
+            {
+                stats.lastHeard = hashData.previouslyHeard;
+                stats.score = hashData.score;
+
+                emit updatedHashUserStats(hashId, userId, stats.lastHeard, stats.score);
+            }
+        }
     }
 
 }

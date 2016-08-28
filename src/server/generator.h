@@ -79,10 +79,11 @@ namespace PMP {
         static const int maximalUpcomingCount = 3 * desiredQueueLength + 3 * expandCount;
         static const int desiredUpcomingRuntimeSeconds = 3600; /* 1 hour */
 
+        quint16 getRandomPermillage();
         FileHash getNextRandomHash();
         void requestQueueRefill();
         int expandQueue(int howManyTracksToAdd, int maxIterations);
-        bool satisfiesFilters(Candidate* candidate);
+        bool satisfiesFilters(Candidate* candidate, bool strict);
 
         std::mt19937 _randomEngine;
         QList<FileHash> _hashesSource;

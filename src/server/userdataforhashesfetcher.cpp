@@ -38,7 +38,6 @@ namespace PMP {
 
     void UserDataForHashesFetcher::run() {
         auto db = Database::getDatabaseForCurrentThread();
-
         if (!db) return; /* problem */
 
         qDebug() << "FETCHING USERDATA; PrevHeard" << _previouslyHeard

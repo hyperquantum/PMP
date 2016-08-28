@@ -22,9 +22,12 @@
 
 #include "common/filehash.h"
 
+#include "userdatafortracksfetcher.h" // for UserDataForHashId
+
 #include <QDateTime>
 #include <QHash>
 #include <QObject>
+#include <QTimer>
 
 namespace PMP {
 
@@ -35,9 +38,18 @@ namespace PMP {
     class History : public QObject {
         Q_OBJECT
     public:
+        struct HashStats {
+            QDateTime lastHeard;
+            qint16 score;
+        };
+
         History(Player* player);
 
+        /** Get last played time since server startup (non-user-specific) */
         QDateTime lastPlayed(FileHash const& hash) const;
+
+        bool fetchMissingUserStats(uint hashID, quint32 user);
+        HashStats const* getUserStats(uint hashID, quint32 user);
 
     Q_SIGNALS:
         void updatedHashUserStats(uint hashID, quint32 user,
@@ -48,12 +60,22 @@ namespace PMP {
         void failedToPlayTrack(QueueEntry const* track);
         void donePlayingTrack(QueueEntry const* track, int permillage, bool hadError,
                               bool hadSeek);
+        void onUpdatedHashUserStats(uint hashID, quint32 user,
+                                    QDateTime previouslyHeard, qint16 score);
+        void onFetchingTimerTimeout();
+        void onFetchCompleted(quint32 userId, QVector<PMP::UserDataForHashId> results);
 
     private:
+        void scheduleFetch(uint hashID, quint32 user);
+
+        static const int fetchingTimerFreqMs = 100;
+
         Player* _player;
         QHash<FileHash, QDateTime> _lastPlayHash;
         QueueEntry const* _nowPlaying;
+        QHash<quint32, QHash<uint, HashStats>> _userStats;
+        QHash<quint32, QHash<uint, bool>> _userStatsFetching;
+        QTimer* _fetchingTimer;
     };
-
 }
 #endif

@@ -38,8 +38,9 @@ namespace PMP {
 
     class Generator::Candidate {
     public:
-        Candidate(const FileHash& hashID)
-         : _hash(hashID), _lengthMilliseconds(0)
+        Candidate(const FileHash& hashID, quint16 randomPermillageNumber)
+         : _hash(hashID), _lengthMilliseconds(0),
+           _randomPermillageNumber(randomPermillageNumber)
         {
             //
         }
@@ -52,9 +53,12 @@ namespace PMP {
 
         uint lengthMilliseconds() const { return _lengthMilliseconds; }
 
+        quint16 randomPermillageNumber() const { return _randomPermillageNumber; }
+
     private:
         FileHash _hash;
         uint _lengthMilliseconds;
+        quint16 _randomPermillageNumber;
     };
 
     /* ========================== Generator ========================== */
@@ -104,7 +108,8 @@ namespace PMP {
     void Generator::setNoRepetitionSpan(int seconds) {
         if (_noRepetitionSpan == seconds) return; /* no change */
 
-        qDebug() << "changing no-repetition span from" << _noRepetitionSpan << "to" << seconds;
+        qDebug() << "changing no-repetition span from" << _noRepetitionSpan
+                 << "to" << seconds;
         _noRepetitionSpan = seconds;
 
         emit noRepetitionSpanChanged(seconds);
@@ -179,15 +184,22 @@ namespace PMP {
 
     void Generator::hashBecameUnavailable(PMP::FileHash hash) {
         /* We don't remove it from the source because that is expensive. We will simply
-           leave it inside the source, because unavailable tracks are filtered when
-           pulled out of the source. */
-        _hashesSpent.remove(hash);
+           leave it inside the source, because unavailable tracks are filtered when tracks
+           are taken from the source list.
+
+           We don't remove it from the spent list, because doing that could make the track
+           reappear in the source too soon if it becomes available again. */
     }
 
     void Generator::requestQueueRefill() {
         if (_refillPending) return;
         _refillPending = true;
         QTimer::singleShot(100, this, SLOT(checkAndRefillQueue()));
+    }
+
+    quint16 Generator::getRandomPermillage() {
+        std::uniform_int_distribution<unsigned> range(0, 1000);
+        return range(_randomEngine);
     }
 
     FileHash Generator::getNextRandomHash() {
@@ -209,6 +221,13 @@ namespace PMP {
                      << " ; spent list count:" << _hashesSpent.size();
         }
 
+        if (sourceHashCount >= 11) {
+            /* fetch some user stats in advance, for the next calls to this function */
+            auto index = qBound(0, sourceHashCount - 11, sourceHashCount);
+            uint id = _resolver->getID(_hashesSource[index]);
+            _history->fetchMissingUserStats(id, _userPlayingFor);
+        }
+
         return randomHash;
     }
 
@@ -223,11 +242,14 @@ namespace PMP {
             FileHash randomHash = getNextRandomHash();
             if (randomHash.empty()) { break; /* nothing available */ }
 
-            Candidate* c = new Candidate(randomHash);
+            Candidate* c = new Candidate(randomHash, getRandomPermillage());
 
-            if (satisfiesFilters(c)) {
+            if (satisfiesFilters(c, false)) {
                 _upcoming.enqueue(c);
                 _upcomingRuntimeSeconds += c->lengthMilliseconds() / 1000;
+            }
+            else {
+                delete c;
             }
 
             /* urgent queue refill needed? */
@@ -278,8 +300,6 @@ namespace PMP {
         int iterationsLeft = maxIterations;
         int tracksToGenerate = howManyTracksToAdd;
 
-        auto db = Database::getDatabaseForCurrentThread();
-
         while (iterationsLeft > 0
                 && tracksToGenerate > 0
                 && !_upcoming.empty())
@@ -290,7 +310,7 @@ namespace PMP {
             _upcomingRuntimeSeconds -= c->lengthMilliseconds() / 1000;
 
             /* check filters again */
-            bool ok = satisfiesFilters(c);
+            bool ok = satisfiesFilters(c, true);
 
             /* check occurrence in queue */
             int nonRepetitionSpan = 0;
@@ -315,25 +335,23 @@ namespace PMP {
 
             /* check last play time, taking the future queue position into account */
             if (ok) {
-                QDateTime lastPlay = _history->lastPlayed(c->hash());
                 QDateTime maxLastPlay =
                     QDateTime::currentDateTimeUtc().addSecs(nonRepetitionSpan)
                                                    .addSecs(-_noRepetitionSpan);
 
-                if (lastPlay.isValid())
-                {
-                    if (lastPlay > maxLastPlay) { ok = false; }
-                }
-                else if (db) {
-                    /* check history in the database */
-                    uint id = _resolver->getID(c->hash());
-                    /* FIXME: this is slow */
-                    QDateTime lastHeard = db->getLastHeard(id, _userPlayingFor);
+                QDateTime lastPlay = _history->lastPlayed(c->hash());
 
-                    if (lastHeard > maxLastPlay) {
-                        qDebug() << "Generator: rejecting candidate with ID" << id
-                                 << "because lastHeard is too recent:" << lastHeard;
-                        ok = false;
+                if (lastPlay.isValid() && lastPlay > maxLastPlay)
+                {
+                    ok = false;
+                }
+                else {
+                    uint id = _resolver->getID(c->hash());
+                    auto userStats = _history->getUserStats(id, _userPlayingFor);
+                    if (!userStats) { ok = false; }
+                    else {
+                        lastPlay = userStats->lastHeard;
+                        if (lastPlay.isValid() && lastPlay > maxLastPlay) { ok = false; }
                     }
                 }
             }
@@ -356,8 +374,10 @@ namespace PMP {
         return howManyTracksToAdd - tracksToGenerate;
     }
 
-    bool Generator::satisfiesFilters(Candidate* candidate) {
+    bool Generator::satisfiesFilters(Candidate* candidate, bool strict) {
+        /* do we have the hash? */
         const FileHash& hash = candidate->hash();
+        if (hash.empty()) return false;
 
         /* can we find a file for the track? */
         if (!_resolver->haveFileFor(hash)) return false;
@@ -369,6 +389,27 @@ namespace PMP {
         /* is it a real track, not a short sound file? */
         if (msLength < 15000 && msLength >= 0) return false;
 
+        /* is score within tolerance? */
+        uint id = _resolver->getID(candidate->hash());
+        auto userStats = _history->getUserStats(id, _userPlayingFor);
+        if (!userStats) {
+            if (strict) {
+                qDebug() << "Generator: rejecting candidate" << id
+                        << "because score is still unknown";
+                return false;
+            }
+        }
+        else {
+            auto score = userStats->score;
+            if (score >= 0 && score < candidate->randomPermillageNumber() - 100) {
+                qDebug() << "Generator: rejecting candidate" << id
+                        << "because it has score" << score << " (threshhold="
+                        << (candidate->randomPermillageNumber() - 100) << ")";
+                return false;
+            }
+        }
+
+        /* save length if known */
         if (msLength >= 0)
             candidate->setLengthMilliseconds(msLength);
 

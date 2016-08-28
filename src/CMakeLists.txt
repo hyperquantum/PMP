@@ -49,6 +49,7 @@ set(PMP_SERVER_SOURCES
     server/server-main.cpp
     server/serversettings.cpp
     server/userdataforhashesfetcher.cpp
+    server/userdatafortracksfetcher.cpp
     server/users.cpp
 )
 set(PMP_SERVER_HEADERS
@@ -64,6 +65,7 @@ set(PMP_SERVER_HEADERS
     server/server.h
     server/serversettings.h
     server/userdataforhashesfetcher.h
+    server/userdatafortracksfetcher.h
     server/users.h
 )
 
