@@ -21,6 +21,8 @@ set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(PMP)
 
+enable_testing()
+
 include(FindPkgConfig)
 
 find_package(Qt5Core REQUIRED)
@@ -43,3 +45,4 @@ endif()
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 add_subdirectory(src)
+add_subdirectory(testing)
