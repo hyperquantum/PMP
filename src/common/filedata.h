@@ -45,7 +45,8 @@ namespace PMP {
 
         static bool supportsExtension(QString const& extension);
 
-        static FileData analyzeFile(const QByteArray& fileContents, const QString& fileExtension);
+        static FileData analyzeFile(const QByteArray& fileContents,
+                                    const QString& fileExtension);
         static FileData analyzeFile(const QString& filename);
         static FileData analyzeFile(QFileInfo& file);
 
