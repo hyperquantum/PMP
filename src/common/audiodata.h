@@ -29,7 +29,8 @@ namespace PMP {
         enum FileFormat {
             UnknownFormat = 0,
             MP3 = 1,
-            WMA = 2
+            WMA = 2,
+            FLAC = 3
         };
 
         AudioData();

@@ -53,6 +53,7 @@ namespace PMP {
 
         /* TODO: support other file types as well */
         return lowercaseExtension == "mp3";
+            //|| lowercaseExtension == "flac";
             //|| lowercaseExtension == "wma" || lowercaseExtension == "asf";
     }
 
@@ -67,6 +68,9 @@ namespace PMP {
         if (lowercaseExtension == "mp3") {
             return analyzeMp3(fileScratchStream);
         }
+        //else if (lowercaseExtension == "flac") {
+        //    return analyzeFlac(fileScratchStream);
+        //}
         else {
             /* file type not (yet) supported */
             return FileData(FileHash());
