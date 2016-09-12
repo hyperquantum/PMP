@@ -8,11 +8,12 @@ BUGS
  - when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
  - the commandline client does not support user authentication which is now required for some commands it supports
  - GUI remote: tracks can be dragged using the right mouse button (not just the left button)
+ - GUI remote: tracks without title/artist info are not listed in the music collection table
 
 
 PERFORMANCE ISSUES
 
- - database access for track repetition avoidance needs to be optimized and data needs to be cached
+ -
 
 
 TECHNICAL TODO
