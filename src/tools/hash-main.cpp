@@ -47,7 +47,8 @@ int main(int argc, char *argv[]) {
     QFileInfo fileInfo(fileName);
 
     if (!FileData::supportsExtension(fileInfo.suffix())) {
-        out << "Files with extension \"" << fileInfo.suffix() << "\" are not supported." << endl;
+        out << "Files with extension \"" << fileInfo.suffix() << "\" are not supported."
+            << endl;
         return 1;
     }
 
