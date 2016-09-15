@@ -118,6 +118,7 @@ cp "$DIST_DIR"/*.exe "$INCR_DIST_DIR"/
 cp "$DIST_DIR"/*LICENSE* "$INCR_DIST_DIR"/
 cp "$DIST_DIR"/README* "$INCR_DIST_DIR"/
 cp "$DIST_DIR"/TODOs* "$INCR_DIST_DIR"/
+cp "$DIST_DIR"/libtag.dll "$INCR_DIST_DIR"/  # TagLib has been updated to version 1.11 on 2016-09-12
 
 chmod -R +r "$DIST_DIR"
 chmod -R +r "$INCR_DIST_DIR"

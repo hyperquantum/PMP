@@ -85,7 +85,7 @@ First make sure MySQL is running. Then start the PMP-Server executable, and fina
  * C++ compiler with support for C++ 2011
  * CMake 3.1 or higher
  * pkg-config
- * TagLib    (I have version 1.9.1)
+ * TagLib 1.11 or higher
  * Qt 5      (I have Qt 5.2)
  * MySQL client library  (libmysql)
  * MinGW-32  if building on Windows
@@ -98,7 +98,8 @@ The MySQL client library should match the word-size of PMP.  So if PMP is built 
 
 Building on Linux is trivial, but on Windows it takes some effort.
 
-How to compile from source on Windows, using MinGW 32-bit:
+These steps describe how to compile from source on Windows, using MinGW 32-bit, assuming
+that MinGW has been installed in "C:\MinGW":
 
 1. Download and install CMake
 
@@ -120,17 +121,17 @@ How to compile from source on Windows, using MinGW 32-bit:
 
 4. Download and build taglib
 
-  → http://taglib.github.io/  → download sourcecode  
+  → http://taglib.github.io/  → download sourcecode (at least version 1.11)  
   unpack sourcecode  
-  edit CMakeLists.txt  
-    change "if(NOT WIN32 AND NOT BUILD_FRAMEWORK)" into "if(NOT BUILD_FRAMEWORK)"  
   create 'bin' directory in taglib directory  
   run CMake (cmake-gui)  
   'where is the sourcecode': where you unpacked the sourcecode  
   'where to build the binaries': the "bin" directory you created  
+  before configuring, add the following CMake variables (not including the quotes):  
+    name: "CMAKE_BUILD_TYPE"; type: "STRING"; value: "Release"  
+    name: "CMAKE_INSTALL_PREFIX"; type: "FILEPATH"; value: "C:/MinGW"  
+    name: "BUILD_SHARED_LIBS"; type: BOOL; value: enabled (or "1")  
   press 'Configure', select a generator with "MinGW Makefiles"  
-  set variable CMAKE_BUILD_TYPE to Release  
-  change variable CMAKE_INSTALL_PREFIX to "C:/MinGW" (the MinGW installation directory)  
   press 'Generate'  
   run the makefile with 'make':  
     open cmd.exe  

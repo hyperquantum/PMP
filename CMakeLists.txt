@@ -32,7 +32,7 @@ find_package(Qt5Network REQUIRED)
 find_package(Qt5Sql REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 
-pkg_check_modules(TAGLIB REQUIRED taglib>=1.6)
+pkg_check_modules(TAGLIB REQUIRED taglib>=1.11)
 
 include_directories(${TAGLIB_INCLUDE_DIRS})
 link_directories(${TAGLIB_LIBRARY_DIRS})
