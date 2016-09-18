@@ -132,7 +132,7 @@ namespace PMP {
         quint64 lengthInMilliseconds = -1;
         TagLib::AudioProperties* audioProperties = tagFile.audioProperties();
         if (audioProperties != 0) {
-           lengthInMilliseconds = audioProperties->length() * 1000;
+           lengthInMilliseconds = audioProperties->lengthInMilliseconds();
         }
 
         tagFile.strip(); /* strip all tag headers */
