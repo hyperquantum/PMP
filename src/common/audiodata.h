@@ -29,12 +29,12 @@ namespace PMP {
         enum FileFormat {
             UnknownFormat = 0,
             MP3 = 1,
-            WMA = 2,
+            //WMA = 2,
             FLAC = 3
         };
 
         AudioData();
-        AudioData(FileFormat format, quint64 trackLengthMilliseconds);
+        AudioData(FileFormat format, qint64 trackLengthMilliseconds);
 
         bool isComplete() const {
             return _format != UnknownFormat && _trackLengthMilliseconds >= 0;
@@ -43,7 +43,7 @@ namespace PMP {
         FileFormat format() const { return _format; }
         void setFormat(FileFormat format) { _format = format; }
 
-        quint64 trackLengthMilliseconds() const { return _trackLengthMilliseconds; }
+        qint64 trackLengthMilliseconds() const { return _trackLengthMilliseconds; }
         int trackLengthSeconds() const { return _trackLengthMilliseconds / 1000; }
 
         void setTrackLengthMilliseconds(quint64 length) {
@@ -54,11 +54,11 @@ namespace PMP {
             _trackLengthMilliseconds = length * 1000;
         }
 
-        static QString millisecondsToTimeString(quint64 lengthMilliseconds);
+        static QString millisecondsToTimeString(qint64 lengthMilliseconds);
 
     private:
         FileFormat _format;
-        quint64 _trackLengthMilliseconds;
+        qint64 _trackLengthMilliseconds;
     };
 }
 #endif

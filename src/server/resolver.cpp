@@ -19,8 +19,7 @@
 
 #include "resolver.h"
 
-#include "common/filedata.h"
-//#include "common/util.h"
+#include "common/fileanalyzer.h"
 
 #include "database.h"
 
@@ -360,7 +359,7 @@ namespace PMP {
             while (it.hasNext()) {
                 QFileInfo entry(it.next());
                 if (!entry.isFile()) continue;
-                if (!FileData::supportsExtension(entry.suffix())) continue;
+                if (!FileAnalyzer::isExtensionSupported(entry.suffix())) continue;
 
                 filesToAnalyze.append(entry.absoluteFilePath());
             }
@@ -370,15 +369,11 @@ namespace PMP {
 
         /* analyze the files we found */
         Q_FOREACH(QString filePath, filesToAnalyze) {
-            QFileInfo info(filePath);
+            FileHash hash = analyzeAndRegisterFile(filePath);
 
-            FileData data = FileData::analyzeFile(filePath);
-            if (!data.isValid()) {
+            if (hash.empty()) {
                 qDebug() << "file analysis FAILED:" << filePath;
-                continue;
             }
-
-            registerFile(data, filePath, info.size(), info.lastModified());
         }
 
         qDebug() << "full indexation finished.";
@@ -414,42 +409,57 @@ namespace PMP {
         return knowledge;
     }
 
-    Resolver::HashKnowledge* Resolver::registerData(const FileData& data) {
-        if (data.hash().empty()) { return nullptr; }
+    FileHash Resolver::analyzeAndRegisterFile(const QString& filename) {
+        QFileInfo info(filename);
+
+        FileAnalyzer analyzer(info);
+        analyzer.analyze();
+
+        if (!analyzer.analysisDone())
+            return FileHash(); /* something went wrong, return invalid hash */
+
+        auto fileSize = info.size();
+        auto fileLastModified = info.lastModified();
+
+        FileHash finalHash = analyzer.hash();
+        FileHash legacyHash = analyzer.legacyHash();
 
         QMutexLocker lock(&_lock);
 
-        auto knowledge = registerHash(data.hash());
-        if (!knowledge) return nullptr; /* something went wrong */
-
-        knowledge->addAudioInfo(data.audio());
-        knowledge->addTags(new TagData(data.tags()));
-
-        return knowledge;
-    }
-
-    void Resolver::registerFile(const FileData& file, const QString& filename,
-                                qint64 fileSize, QDateTime fileLastModified)
-    {
-        if (file.hash().empty()) { return; }
-
-        QMutexLocker lock(&_lock);
-
-        auto knowledge = registerData(file);
-        registerFile(knowledge, filename, fileSize, fileLastModified);
-    }
-
-    void Resolver::registerFile(HashKnowledge* hash, const QString& filename,
-                                qint64 fileSize, QDateTime fileLastModified)
-    {
-        if (!hash || filename.length() <= 0 || fileSize <= 0 || fileLastModified.isNull())
-        {
-            return;
+        HashKnowledge* knowledge;
+        if (legacyHash.empty()) {
+            knowledge = registerHash(finalHash);
+        }
+        else if (!_hashKnowledge.value(legacyHash, nullptr)) {
+            knowledge = registerHash(finalHash);
+        }
+        else if (!_hashKnowledge.value(finalHash, nullptr)) {
+            qDebug() << "registering file under legacy hash:" << info.fileName();
+            knowledge = registerHash(legacyHash);
+        }
+        else {
+            qDebug() << "registering file under final hash, but legacy is present:"
+                     << info.fileName();
+            knowledge = registerHash(finalHash);
         }
 
-        QMutexLocker lock(&_lock);
+        if (!knowledge) {
+            qDebug() << "failed to register hash for:" << info.fileName();
+            return FileHash(); /* something went wrong, return invalid hash */
+        }
 
-        hash->addPath(filename, fileSize, fileLastModified);
+        knowledge->addAudioInfo(analyzer.audioData());
+        knowledge->addTags(new TagData(analyzer.tagData()));
+
+        if (filename.length() <= 0 || fileSize <= 0 || fileLastModified.isNull())
+        {
+            qDebug() << "failed to register file details for:" << info.fileName();
+            return FileHash(); /* return invalid hash */
+        }
+
+        knowledge->addPath(filename, fileSize, fileLastModified);
+
+        return knowledge->hash();
     }
 
     bool Resolver::haveFileFor(const FileHash& hash) {
@@ -526,20 +536,14 @@ namespace PMP {
 
                     qDebug() << "  checking out:" << candidatePath;
 
-                    QFileInfo candidate(candidatePath);
-
                     if (_paths.contains(candidatePath)) {
                         continue; /* this one will have a different hash */
                     }
 
-                    FileData d = FileData::analyzeFile(candidate);
-                    if (!d.isValid()) continue; /* failed to analyze */
+                    FileHash candidateHash = analyzeAndRegisterFile(candidatePath);
+                    if (candidateHash.empty()) continue; /* failed to analyze */
 
-                    registerFile(
-                        d, candidatePath, candidate.size(), candidate.lastModified()
-                    );
-
-                    if (d.hash() == hash) {
+                    if (candidateHash == hash) {
                         qDebug() << "   we have a MATCH!";
                         return candidatePath;
                     }

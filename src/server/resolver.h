@@ -24,8 +24,6 @@
 #include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
 
-//#include <random>
-
 #include <QDateTime>
 #include <QFutureWatcher>
 #include <QHash>
@@ -38,7 +36,6 @@
 
 namespace PMP {
 
-    class FileData;
     class TagData;
 
     class Resolver : public QObject {
@@ -52,8 +49,7 @@ namespace PMP {
         bool startFullIndexation();
         bool fullIndexationRunning();
 
-        void registerFile(const FileData& file, const QString& filename, qint64 fileSize,
-                          QDateTime fileLastModified);
+        FileHash analyzeAndRegisterFile(const QString& filename);
 
         bool haveFileFor(const FileHash& hash);
         QString findPath(const FileHash& hash, bool fast);
@@ -62,7 +58,6 @@ namespace PMP {
         const AudioData& findAudioData(const FileHash& hash);
         const TagData* findTagData(const FileHash& hash);
 
-        //FileHash getRandom();
         QList<FileHash> getAllHashes();
         QList<CollectionTrackInfo> getHashesTrackInfo(QList<FileHash> hashes);
 
@@ -86,15 +81,10 @@ namespace PMP {
         class HashKnowledge;
 
         HashKnowledge* registerHash(const FileHash& hash);
-        HashKnowledge* registerData(const FileData& data);
-
-        void registerFile(HashKnowledge* hash, const QString& filename, qint64 fileSize,
-                          QDateTime fileLastModified);
 
         void doFullIndexation();
 
         QMutex _lock;
-        //std::mt19937 _randomEngine;
 
         QList<QString> _musicPaths;
 
@@ -102,7 +92,6 @@ namespace PMP {
         QHash<FileHash, HashKnowledge*> _hashKnowledge;
         QHash<uint, HashKnowledge*> _idToHash;
         QHash<QString, VerifiedFile*> _paths;
-        //QMultiHash<FileHash, VerifiedFile*> _filesForHash;
 
         bool _fullIndexationRunning;
         QFutureWatcher<void> _fullIndexationWatcher;

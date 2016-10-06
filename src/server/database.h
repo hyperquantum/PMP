@@ -41,8 +41,6 @@ QT_FORWARD_DECLARE_CLASS(QTextStream)
 
 namespace PMP {
 
-    class FileData;
-
     class User {
     public:
         User()

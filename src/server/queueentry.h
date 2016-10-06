@@ -29,7 +29,6 @@
 
 namespace PMP {
 
-    class FileData;
     class Queue;
     class Resolver;
 
@@ -42,7 +41,7 @@ namespace PMP {
         Q_OBJECT
     public:
         QueueEntry(Queue* parent, QString const& filename);
-        QueueEntry(Queue* parent, FileData const& filedata);
+        QueueEntry(Queue* parent, const FileHash& hash, const TagData& tags);
         QueueEntry(Queue* parent, FileHash const& hash);
 
         static QueueEntry* createBreak(Queue* parent);

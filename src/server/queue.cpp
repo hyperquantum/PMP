@@ -112,10 +112,6 @@ namespace PMP {
         return enqueue(new QueueEntry(this, filename));
     }
 
-    QueueEntry* Queue::enqueue(FileData const& filedata) {
-        return enqueue(new QueueEntry(this, filedata));
-    }
-
     QueueEntry* Queue::enqueue(FileHash const& hash) {
         return enqueue(new QueueEntry(this, hash));
     }

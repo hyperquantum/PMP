@@ -29,7 +29,6 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP {
 
-    class FileData;
     class FileHash;
     class QueueEntry;
     class Resolver;
@@ -57,7 +56,6 @@ namespace PMP {
         void trim(uint length);
 
         QueueEntry* enqueue(QString const& filename);
-        QueueEntry* enqueue(FileData const& filedata);
         QueueEntry* enqueue(FileHash const& hash);
         QueueEntry* insertAtFront(FileHash const& hash);
         void insertBreakAtFront();

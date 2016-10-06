@@ -17,7 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "common/filedata.h"
+#include "common/fileanalyzer.h"
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -46,7 +46,7 @@ int main(int argc, char *argv[]) {
     QString fileName = QCoreApplication::arguments()[1];
     QFileInfo fileInfo(fileName);
 
-    if (!FileData::supportsExtension(fileInfo.suffix())) {
+    if (!FileAnalyzer::isExtensionSupported(fileInfo.suffix())) {
         out << "Files with extension \"" << fileInfo.suffix() << "\" are not supported."
             << endl;
         return 1;
@@ -71,18 +71,28 @@ int main(int argc, char *argv[]) {
     out << "MD5 Hash:  " << md5_hasher.result().toHex() << endl;
     out << "SHA1 Hash: " << sha1_hasher.result().toHex() << endl;
 
-    FileData filedata = FileData::analyzeFile(fileContents, fileInfo.suffix());
+    FileAnalyzer analyzer(fileContents, fileInfo.suffix());
+    analyzer.analyze();
 
-    if (!filedata.isValid()) {
+    if (!analyzer.analysisDone()) {
         out << "Something went wrong when analyzing the file!" << endl;
         return 1;
     }
 
-    out << "title : " << filedata.tags().title() << endl;
-    out << "artist: " << filedata.tags().artist() << endl;
-    out << "stripped file size: " << filedata.hash().length() << endl;
-    out << "stripped MD5 Hash:  " << filedata.hash().MD5().toHex() << endl;
-    out << "stripped SHA1 Hash: " << filedata.hash().SHA1().toHex() << endl;
+    FileHash finalHash = analyzer.hash();
+    FileHash legacyHash = analyzer.legacyHash();
+
+    out << "title : " << analyzer.tagData().title() << endl;
+    out << "artist: " << analyzer.tagData().artist() << endl;
+    out << "stripped file size: " << finalHash.length() << endl;
+    out << "stripped MD5 Hash:  " << finalHash.MD5().toHex() << endl;
+    out << "stripped SHA1 Hash: " << finalHash.SHA1().toHex() << endl;
+
+    if (!legacyHash.empty()) {
+        out << "legacy file size: " << legacyHash.length() << endl;
+        out << "legacy MD5 Hash:  " << legacyHash.MD5().toHex() << endl;
+        out << "legacy SHA1 Hash: " << legacyHash.SHA1().toHex() << endl;
+    }
 
     return 0;
 }

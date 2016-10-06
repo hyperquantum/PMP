@@ -27,13 +27,13 @@ namespace PMP {
         //
     }
 
-    AudioData::AudioData(FileFormat format, quint64 trackLengthMilliseconds)
+    AudioData::AudioData(FileFormat format, qint64 trackLengthMilliseconds)
      : _format(format), _trackLengthMilliseconds(trackLengthMilliseconds)
     {
         //
     }
 
-    QString AudioData::millisecondsToTimeString(quint64 lengthMilliseconds) {
+    QString AudioData::millisecondsToTimeString(qint64 lengthMilliseconds) {
         int partialSeconds = lengthMilliseconds % 1000;
         int totalSeconds = lengthMilliseconds / 1000;
 

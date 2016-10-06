@@ -4,7 +4,7 @@ include_directories(${CMAKE_SOURCE_DIR}/src)
 add_executable(PMP_hash_test
     hash_test.cpp
     ${CMAKE_SOURCE_DIR}/src/common/audiodata.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/filedata.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/fileanalyzer.cpp
     ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
     ${CMAKE_SOURCE_DIR}/src/common/tagdata.cpp
 )

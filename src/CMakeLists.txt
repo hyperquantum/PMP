@@ -20,7 +20,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 set(PMP_COMMON_SOURCES
     common/audiodata.cpp
     common/collectiontrackinfo.cpp
-    common/filedata.cpp
+    common/fileanalyzer.cpp
     common/filehash.cpp
     common/networkprotocol.cpp
     common/networkutil.cpp
@@ -131,7 +131,7 @@ qt5_add_resources(PMP_GUI_REMOTE_QRCS ${PMP_GUI_REMOTE_RESOURCES})
 add_executable(PMP-HashTool
     tools/hash-main.cpp
     common/audiodata.cpp
-    common/filedata.cpp
+    common/fileanalyzer.cpp
     common/filehash.cpp
     common/tagdata.cpp
 )

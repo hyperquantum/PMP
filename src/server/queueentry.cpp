@@ -19,8 +19,6 @@
 
 #include "queueentry.h"
 
-#include "common/filedata.h"
-
 #include "queue.h"
 #include "resolver.h"
 
@@ -38,11 +36,11 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, FileData const& filedata)
+    QueueEntry::QueueEntry(Queue* parent, FileHash const& hash, TagData const& tags)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _kind(QueueEntryKind::Track),
-       _hash(filedata.hash()), _haveFilename(false),
-       _fetchedTagData(true), _tagData(filedata.tags()),
+       _hash(hash), _haveFilename(false),
+       _fetchedTagData(true), _tagData(tags),
        _fileFinderBackoff(0), _fileFinderFailedCount(0)
     {
         //
@@ -90,17 +88,14 @@ namespace PMP {
             return false;
         }
 
-        QFileInfo info(_filename);
-        FileData data = FileData::analyzeFile(info);
+        _hash = resolver.analyzeAndRegisterFile(_filename);
 
-        if (!data.isValid()) {
+        if (_hash.empty()) {
             qDebug() << "PROBLEM: QueueEntry" << _queueID
                      << ": analysis of file failed:" << _filename;
             return false;
         }
 
-        _hash = data.hash();
-        resolver.registerFile(data, _filename, info.size(), info.lastModified());
         return true;
     }
 

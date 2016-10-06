@@ -17,8 +17,6 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "common/filedata.h"
-
 #include "collectionmonitor.h"
 #include "database.h"
 #include "generator.h"
@@ -120,18 +118,7 @@ int main(int argc, char *argv[]) {
 
     Database::init(out);
 
-//    FileData song =
-//        FileData::create(
-//            HashID(
-//                4018772,
-//                QByteArray::fromHex("b27e235c22f43a25a76a4b4916f7298359b7ed25"),
-//                QByteArray::fromHex("b72e952ef61b3d69c649791b6ed583d4")
-//            ),
-//            "Gladys Knight", "License To Kill"
-//        );
-
     Resolver resolver;
-//    resolver.registerData(song);
 
     /* unique server instance ID (not to be confused with the unique ID of the database)*/
     QUuid serverInstanceIdentifier = QUuid::createUuid();
