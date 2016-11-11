@@ -126,6 +126,30 @@ namespace PMP {
         return getExtension(extension) != Extension::None;
     }
 
+    bool FileAnalyzer::preprocessFileForPlayback(QByteArray& fileContents,
+                                                 QString extension)
+    {
+        /* only need to do something for MP3 files */
+        if (getExtension(extension) != Extension::MP3) return true;
+
+        /* strip the ID3v2 tag because DirectShow chokes on ID3v2.4 */
+
+        TagLib::ByteVector scratch(fileContents.data(), fileContents.length());
+        TagLib::ByteVectorStream stream(scratch);
+        TagLib::MPEG::File tagFile(&stream, TagLib::ID3v2::FrameFactory::instance());
+        if (!tagFile.isValid()) {
+            return false;
+        }
+
+        tagFile.strip(TagLib::MPEG::File::ID3v2); /* strip the ID3v2 */
+        scratch = *stream.data(); /* get the stripped file contents */
+
+        QByteArray strippedData(scratch.data(), scratch.size());
+        fileContents = strippedData;
+
+        return true; /* success */
+    }
+
     FileAnalyzer::Extension FileAnalyzer::getExtension(QString extension) {
         auto lower = extension.toLower();
         if (lower == "mp3") return Extension::MP3;

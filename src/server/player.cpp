@@ -30,7 +30,7 @@ namespace PMP {
     Player::Player(QObject* parent, Resolver* resolver, int defaultVolume)
      : QObject(parent), _resolver(resolver),
         _player(new QMediaPlayer(this)),
-        _queue(resolver),
+        _queue(resolver), _preloader(nullptr, &_queue, resolver),
         _nowPlaying(0), _playPosition(0), _maxPosReachedInCurrent(0),
         _seekHappenedInCurrent(false),
         _state(PlayerState::Stopped), _transitioningToNextTrack(false),
@@ -284,13 +284,19 @@ namespace PMP {
                 continue;
             }
 
+            filename = _preloader.getPreloadedCacheFileAndLock(entry->queueID());
+            if (!filename.isEmpty()) {
+                next = entry;
+                break;
+            }
+
             if (entry->checkValidFilename(*_resolver, true, &filename)) {
                 next = entry;
                 break;
             }
 
             /* error */
-            qDebug() << " skipping unplayable track (could not get filename)";
+            qDebug() << "Player: skipping unplayable track (could not get filename)";
             addToHistory(entry, 0, true, false); /* register track as not played */
         }
 
@@ -301,7 +307,7 @@ namespace PMP {
             _maxPosReachedInCurrent = 0;
             _seekHappenedInCurrent = false;
 
-            qDebug() << " loading media " << filename;
+            qDebug() << "Player: loading media " << filename;
             _player->setMedia(QUrl::fromLocalFile(filename));
 
             /* try to figure out track length, and if possible tag, artist... */
@@ -326,6 +332,7 @@ namespace PMP {
         _transitioningToNextTrack = true; /* to prevent duplicate history items */
         changeState(PlayerState::Stopped);
         _player->stop();
+        _preloader.lockNone();
 
         if (oldNowPlaying != 0 ) {
             _nowPlaying = 0;
@@ -336,7 +343,7 @@ namespace PMP {
         }
 
         if (_queue.empty() && oldQueueLength > 0) {
-            qDebug() << "finished queue";
+            qDebug() << "Player: queue is finished";
             emit finished();
         }
 

@@ -1,14 +1,13 @@
 
 BUGS
 
- - some tracks do not play on Windows; presumably because they have an ID3 tag with version 2.4
  - for some tracks we get the wrong length (caused by length estimation in TagLib)
  - GUI remote: queue length not updated after initial queue population (only a player status message from the server will trigger an update now)
  - diagnostic logging produces unreadable text when two different threads write something to the log
  - when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
  - the commandline client does not support user authentication which is now required for some commands it supports
  - GUI remote: tracks can be dragged using the right mouse button (not just the left button)
- - GUI remote: tracks without title/artist info are not listed in the music collection table
+ - GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
 
 
 PERFORMANCE ISSUES
@@ -19,7 +18,6 @@ PERFORMANCE ISSUES
 TECHNICAL TODO
 
  - keep track lengths in milliseconds, not seconds
- - we need a track preload mechanism; especially important for tracks on an external medium
  - associate a title and artist with each hash and save that information in the database (?)
  - when running an indexation, analyze the most recently created/updated files first
 

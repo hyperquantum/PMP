@@ -21,6 +21,7 @@
 #define PMP_PLAYER_H
 
 #include "playerstate.h"
+#include "preloader.h"
 #include "queue.h"
 
 #include <QMediaPlayer>
@@ -94,6 +95,7 @@ namespace PMP {
         Resolver* _resolver;
         QMediaPlayer* _player;
         Queue _queue;
+        Preloader _preloader;
         QueueEntry* _nowPlaying;
         qint64 _playPosition;
         qint64 _maxPosReachedInCurrent;

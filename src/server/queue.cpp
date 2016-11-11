@@ -44,14 +44,14 @@ namespace PMP {
             if (!entry->isTrack()) continue;
 
             if (entry->hash() == 0) {
-                qDebug() << "Queue: need to calculate hash for queue index number" << (i + 1);
+                qDebug() << "Queue: need to calculate hash for queue index" << (i + 1);
                 operationsDone++;
                 if (!entry->checkHash(*_resolver)) continue; /* check next track */
             }
 
             QString const* filename = entry->filename();
             if (filename != 0 && !_resolver->pathStillValid(*entry->hash(), *filename)) {
-                qDebug() << "Queue: filename no longer valid for queue index number" << (i + 1);
+                qDebug() << "Queue: filename no longer valid for queue index" << (i + 1);
                 filename = 0;
             }
 
@@ -64,7 +64,8 @@ namespace PMP {
 
                 int& failedCount = entry->fileFinderFailedCount();
 
-                qDebug() << "Queue: need to get a valid filename for queue index number" << (i + 1);
+                qDebug() << "Queue: need to get a valid filename for queue index"
+                         << (i + 1);
                 operationsDone++;
                 if (entry->checkValidFilename(*_resolver, false)) {
                     backoff = 0;
@@ -220,15 +221,20 @@ namespace PMP {
         return it.value();
     }
 
-    void Queue::addToHistory(QueueEntry* entry, int permillagePlayed, bool hadError/*, Queue::HistoryType historyType*/) {
+    void Queue::addToHistory(QueueEntry* entry, int permillagePlayed, bool hadError
+                             /*, Queue::HistoryType historyType*/)
+    {
         if (!entry || !entry->isTrack()) return;
 
-        qDebug() << "adding QID" << entry->queueID() << "to the queue history; play-permillage:" << permillagePlayed << " error?" << hadError;
+        qDebug() << "adding QID" << entry->queueID()
+                 << "to the queue history; play-permillage:" << permillagePlayed
+                 << " error?" << hadError;
         _history.enqueue(entry);
 
         if (_history.size() > 10) {
             QueueEntry* oldest = _history.dequeue();
-            qDebug() << " deleting QID" << oldest->queueID() << "after removing it from the queue history";
+            qDebug() << " deleting QID" << oldest->queueID()
+                     << "after removing it from the queue history";
 
             _idLookup.remove(oldest->queueID());
             delete oldest;

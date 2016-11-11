@@ -476,6 +476,8 @@ namespace PMP {
         if (!file) return false;
 
         auto knowledge = file->_parent;
+        if (knowledge->hash() != hash) return false;
+
         return knowledge->isStillValid(file);
     }
 

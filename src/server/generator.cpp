@@ -108,7 +108,7 @@ namespace PMP {
     void Generator::setNoRepetitionSpan(int seconds) {
         if (_noRepetitionSpan == seconds) return; /* no change */
 
-        qDebug() << "changing no-repetition span from" << _noRepetitionSpan
+        qDebug() << "Generator: changing no-repetition span from" << _noRepetitionSpan
                  << "to" << seconds;
         _noRepetitionSpan = seconds;
 
@@ -271,7 +271,7 @@ namespace PMP {
             requestQueueRefill();
         }
 
-        qDebug() << "generator: buffer length:" << _upcoming.length()
+        qDebug() << "Generator: buffer length:" << _upcoming.length()
                  << "; runtime:" << (_upcomingRuntimeSeconds / 60) << "min"
                  << (_upcomingRuntimeSeconds % 60) << "sec";
 

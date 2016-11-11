@@ -22,6 +22,7 @@
 #include "generator.h"
 #include "history.h"
 #include "player.h"
+#include "preloader.h"
 #include "queue.h"
 #include "queueentry.h"
 #include "resolver.h"
@@ -70,6 +71,9 @@ int main(int argc, char *argv[]) {
 
     /* seed random number generator */
     qsrand(QTime::currentTime().msec());
+
+    /* clean up leftover preloader cache files */
+    Preloader::cleanupOldFiles();
 
     //foreach (const QString &path, app.libraryPaths())
     //    out << " LIB PATH : " << path << endl;

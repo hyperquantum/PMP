@@ -42,6 +42,7 @@ set(PMP_SERVER_SOURCES
     server/generator.cpp
     server/history.cpp
     server/player.cpp
+    server/preloader.cpp
     server/queue.cpp
     server/queueentry.cpp
     server/resolver.cpp
@@ -59,6 +60,7 @@ set(PMP_SERVER_HEADERS
     server/generator.h
     server/history.h
     server/player.h
+    server/preloader.h
     server/queue.h
     server/queueentry.h
     server/resolver.h

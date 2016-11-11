@@ -50,6 +50,9 @@ namespace PMP {
 
         static bool isExtensionSupported(QString const& extension);
 
+        static bool preprocessFileForPlayback(QByteArray& fileContents,
+                                              QString extension);
+
         void analyze();
 
         bool hadError() const;
