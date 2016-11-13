@@ -20,6 +20,7 @@
 #include "mainwindow.h"
 
 #include "common/serverconnection.h"
+#include "common/util.h"
 
 #include "collectionwidget.h"
 #include "connectionwidget.h"
@@ -98,6 +99,14 @@ namespace PMP {
         _closeAction = new QAction(tr("&Close remote"), this);
         connect(_closeAction, &QAction::triggered, this, &MainWindow::close);
 
+        _aboutPmpAction = new QAction(tr("About &PMP..."), this);
+        connect(
+            _aboutPmpAction, &QAction::triggered, this, &MainWindow::onAboutPmpAction
+        );
+
+        _aboutQtAction = new QAction(tr("About &Qt..."), this);
+        connect(_aboutQtAction, &QAction::triggered, this, &MainWindow::onAboutQtAction);
+
         /* Menus */
 
         QMenu* pmpMenu = menuBar()->addMenu(tr("&PMP"));
@@ -116,6 +125,11 @@ namespace PMP {
         _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
 
         _viewMenu->addAction(_musicCollectionDock->toggleViewAction());
+
+        QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
+
+        helpMenu->addAction(_aboutPmpAction);
+        helpMenu->addAction(_aboutQtAction);
     }
 
     void MainWindow::createStatusbar() {
@@ -196,6 +210,31 @@ namespace PMP {
         if (buttonClicked == QMessageBox::Cancel) return;
 
         _connection->shutdownServer();
+    }
+
+    void MainWindow::onAboutPmpAction() {
+        QString aboutText =
+            tr(
+                "<html>"
+                "<h3>About PMP</h3>"
+                "<p>Party Music Player, abbreviated as PMP, is a client-server music"
+                " system.</p>"
+                "<p>PMP is free and open-source software, using the GNU General Public "
+                " License (GPLv3).</p>"
+                "<p>Website: "
+                " <a href=\"http://hyperquantum.be/pmp\">http://hyperquantum.be/pmp</a>"
+                "</p>"
+                "<p>Copyright (C) %1 %2</p>"
+                "</html>"
+            )
+            .arg(QString("2014") + Util::EnDash + "2016") /* copyright from-to */
+            .arg(QString("Kevin Andr") + Util::EAcute); /* needs non-ascii char */
+
+        QMessageBox::about(this, tr("About PMP"), aboutText);
+    }
+
+    void MainWindow::onAboutQtAction() {
+        QMessageBox::aboutQt(this);
     }
 
     void MainWindow::onDoConnect(QString server, uint port) {

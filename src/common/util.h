@@ -20,11 +20,19 @@
 #ifndef PMP_UTIL_H
 #define PMP_UTIL_H
 
+#include <QChar>
+
 namespace PMP {
 
     class Util {
     public:
         static unsigned getRandomSeed();
+
+        /*! The EN DASH (U+2013) character. */
+        static const QChar EnDash;
+
+        /*! The LATIN SMALL LETTER E WITH ACUTE (U+E9) */
+        static const QChar EAcute;
 
     private:
         Util();

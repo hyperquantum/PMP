@@ -61,6 +61,8 @@ namespace PMP {
 
         void onStartFullIndexationTriggered();
         void onShutdownServerTriggered();
+        void onAboutPmpAction();
+        void onAboutQtAction();
 
         void onLeftStatusTimeout();
 
@@ -91,6 +93,8 @@ namespace PMP {
         QAction* _shutdownServerAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
+        QAction* _aboutPmpAction;
+        QAction* _aboutQtAction;
 
         QMenu* _viewMenu;
     };
