@@ -55,17 +55,7 @@ namespace PMP {
         );
 
         createMenus();
-
-        _leftStatus = new QLabel("", this);
-        _leftStatus->setFrameStyle(QFrame::Panel | QFrame::Sunken);
-        _rightStatus = new QLabel("", this);
-        _rightStatus->setFrameStyle(QFrame::Panel | QFrame::Sunken);
-        statusBar()->addPermanentWidget(_leftStatus, 1);
-        statusBar()->addPermanentWidget(_rightStatus, 1);
-        connect(
-            _leftStatusTimer, &QTimer::timeout, this, &MainWindow::onLeftStatusTimeout
-        );
-        updateRightStatus();
+        createStatusbar();
 
         setCentralWidget(_connectionWidget);
         connect(
@@ -126,6 +116,22 @@ namespace PMP {
         _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
 
         _viewMenu->addAction(_musicCollectionDock->toggleViewAction());
+    }
+
+    void MainWindow::createStatusbar() {
+        _leftStatus = new QLabel("", this);
+        _leftStatus->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+        _rightStatus = new QLabel("", this);
+        _rightStatus->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+
+        statusBar()->addPermanentWidget(_leftStatus, 1);
+        statusBar()->addPermanentWidget(_rightStatus, 1);
+
+        connect(
+            _leftStatusTimer, &QTimer::timeout, this, &MainWindow::onLeftStatusTimeout
+        );
+
+        updateRightStatus();
     }
 
     void MainWindow::closeEvent(QCloseEvent* event) {

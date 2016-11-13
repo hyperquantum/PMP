@@ -68,6 +68,7 @@ namespace PMP {
         virtual void closeEvent(QCloseEvent* event);
 
         void createMenus();
+        void createStatusbar();
         void updateRightStatus();
         void setLeftStatus(int intervalMs, QString text);
         void showUserAccountPicker();
