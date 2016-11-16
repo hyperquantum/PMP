@@ -44,5 +44,9 @@ endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
+if(WIN32)
+  option(ENABLE_WIN32_CONSOLE "Show the windows console even outside Debug mode" OFF)
+endif(WIN32)
+
 add_subdirectory(src)
 add_subdirectory(testing)
