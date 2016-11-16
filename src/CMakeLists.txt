@@ -22,6 +22,7 @@ set(PMP_COMMON_SOURCES
     common/collectiontrackinfo.cpp
     common/fileanalyzer.cpp
     common/filehash.cpp
+    common/logging.cpp
     common/networkprotocol.cpp
     common/networkutil.cpp
     common/serverconnection.cpp

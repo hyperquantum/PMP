@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,29 +17,17 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "mainwindow.h"
+#ifndef PMP_LOGGING_H
+#define PMP_LOGGING_H
 
-#include "common/logging.h"
+namespace PMP {
 
-#include <QApplication>
-#include <QMainWindow>
+    class Logging {
+    public:
+        static void enableTextFileLogging();
 
-using namespace PMP;
-
-int main(int argc, char *argv[]) {
-
-    QApplication app(argc, argv);
-
-    QCoreApplication::setApplicationName("Party Music Player - Remote");
-    QCoreApplication::setApplicationVersion("0.0.0.1");
-    QCoreApplication::setOrganizationName("Party Music Player");
-    QCoreApplication::setOrganizationDomain("hyperquantum.be");
-
-    Logging::enableTextFileLogging();
-    /* TODO : cleanup old log files */
-
-    MainWindow window;
-    window.show();
-
-    return app.exec();
+    private:
+        Logging();
+    };
 }
+#endif
