@@ -17,6 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "common/version.h"
+
 #include <QByteArray>
 #include <QtCore>
 #include <QTcpSocket>
@@ -44,9 +46,9 @@ int main(int argc, char *argv[]) {
     QCoreApplication app(argc, argv);
 
     QCoreApplication::setApplicationName("Party Music Player - Remote");
-    QCoreApplication::setApplicationVersion("0.0.0.1");
-    QCoreApplication::setOrganizationName("Party Music Player");
-    QCoreApplication::setOrganizationDomain("hyperquantum.be");
+    QCoreApplication::setApplicationVersion(PMP_VERSION_DISPLAY);
+    QCoreApplication::setOrganizationName(PMP_ORGANIZATION_NAME);
+    QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
 
     QTextStream out(stdout);
 

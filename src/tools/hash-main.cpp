@@ -18,6 +18,7 @@
 */
 
 #include "common/fileanalyzer.h"
+#include "common/version.h"
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
@@ -32,9 +33,9 @@ int main(int argc, char *argv[]) {
     QCoreApplication a(argc, argv);
 
     QCoreApplication::setApplicationName("Party Music Player - Hash tool");
-    QCoreApplication::setApplicationVersion("0.0.0.1");
-    QCoreApplication::setOrganizationName("Party Music Player");
-    QCoreApplication::setOrganizationDomain("hyperquantum.be");
+    QCoreApplication::setApplicationVersion(PMP_VERSION_DISPLAY);
+    QCoreApplication::setOrganizationName(PMP_ORGANIZATION_NAME);
+    QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
 
     QTextStream out(stdout);
 

@@ -21,6 +21,7 @@
 
 #include "common/serverconnection.h"
 #include "common/util.h"
+#include "common/version.h"
 
 #include "collectionwidget.h"
 #include "connectionwidget.h"
@@ -99,7 +100,7 @@ namespace PMP {
         _closeAction = new QAction(tr("&Close remote"), this);
         connect(_closeAction, &QAction::triggered, this, &MainWindow::close);
 
-        _aboutPmpAction = new QAction(tr("About &PMP..."), this);
+        _aboutPmpAction = new QAction(tr("&About PMP..."), this);
         connect(
             _aboutPmpAction, &QAction::triggered, this, &MainWindow::onAboutPmpAction
         );
@@ -217,18 +218,26 @@ namespace PMP {
             tr(
                 "<html>"
                 "<h3>About PMP</h3>"
-                "<p>Party Music Player, abbreviated as PMP, is a client-server music"
-                " system.</p>"
+                "<p><b>Party Music Player</b>, abbreviated as PMP, is a client-server"
+                " music system. The <i>server</i>, which is a separate program, plays the"
+                " music. The program you are looking at right now, the <i>client</i>,"
+                " is used as a remote control for the server. More than one client can"
+                " connect to the same server, even at the same time.</p>"
                 "<p>PMP is free and open-source software, using the GNU General Public "
                 " License (GPLv3).</p>"
-                "<p>Website: "
-                " <a href=\"http://hyperquantum.be/pmp\">http://hyperquantum.be/pmp</a>"
-                "</p>"
-                "<p>Copyright (C) %1 %2</p>"
+                "<p>Website: <a href=\"%1\">%1</a></p>"
+                "<p>Report bugs at: <a href=\"%2\">%2</a></p>"
+                "<p>Party Music Player version %3<br>"
+                "Copyright (C) %4 %5</p>"
+                "<p>Using Qt version %6</p>"
                 "</html>"
             )
+            .arg(PMP_WEBSITE)
+            .arg(PMP_BUGREPORT_LOCATION)
+            .arg(PMP_VERSION_DISPLAY)
             .arg(QString("2014") + Util::EnDash + "2016") /* copyright from-to */
-            .arg(QString("Kevin Andr") + Util::EAcute); /* needs non-ascii char */
+            .arg(QString("Kevin Andr") + Util::EAcute) /* needs non-ascii char */
+            .arg(QT_VERSION_STR);
 
         QMessageBox::about(this, tr("About PMP"), aboutText);
     }
