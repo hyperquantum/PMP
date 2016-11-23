@@ -23,6 +23,7 @@
 #include <QDate>
 #include <QDir>
 #include <QFile>
+#include <QRegularExpression>
 #include <QStringBuilder>
 #include <QtGlobal>
 #include <QTime>
@@ -36,9 +37,12 @@ namespace PMP {
         TextFileLogger() : _initialized(false), _appPid(0) {}
 
         bool init();
+        bool initialized() { return _initialized; }
 
         void logMessage(QtMsgType type, const QMessageLogContext& context,
                         const QString& msg);
+
+        void cleanupOldLogfiles();
 
     private:
         static QString stripSourcefilePath(QString file);
@@ -137,6 +141,30 @@ namespace PMP {
         }
     }
 
+    void TextFileLogger::cleanupOldLogfiles() {
+        if (!_initialized) return;
+
+        QDir dir(_logDir);
+        if (!dir.exists()) { return; }
+
+        QDateTime threshhold = QDateTime(QDate::currentDate().addDays(-6));
+        QRegularExpression regex("^\\d{4}-\\d{2}-\\d{2}-");
+
+        auto files =
+            dir.entryInfoList(
+                QDir::Files | QDir::NoSymLinks | QDir::Readable | QDir::Writable
+            );
+
+        Q_FOREACH(auto file, files) {
+            if (file.lastModified() >= threshhold) continue;
+            if (file.suffix() != "txt") continue;
+            if (!regex.match(file.baseName()).hasMatch()) continue;
+
+            //qDebug() << "deleting old logfile:" << file.fileName();
+            QFile::remove(file.absoluteFilePath());
+        }
+    }
+
     /*! transform "/long/path/name/src/common/xyz.cpp" to "common/xyz.cpp" */
     QString TextFileLogger::stripSourcefilePath(QString file) {
         /* file refers to a source file not present on the machine we are running on, */
@@ -173,6 +201,10 @@ namespace PMP {
         if (!globalTextFileLogger.init()) return;
 
         qInstallMessageHandler(logToTextFile);
+    }
+
+    void Logging::cleanupOldLogfiles() {
+        globalTextFileLogger.cleanupOldLogfiles();
     }
 
 }

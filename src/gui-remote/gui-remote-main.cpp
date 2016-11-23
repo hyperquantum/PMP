@@ -36,7 +36,9 @@ int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
 
     Logging::enableTextFileLogging();
-    /* TODO : cleanup old log files */
+    Logging::cleanupOldLogfiles();
+    /* TODO: do a log cleanup regularly, because the user might keep the client running
+     *       for several days without closing it. */
 
     MainWindow window;
     window.show();

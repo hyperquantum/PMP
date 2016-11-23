@@ -25,6 +25,7 @@ namespace PMP {
     class Logging {
     public:
         static void enableTextFileLogging();
+        static void cleanupOldLogfiles();
 
     private:
         Logging();
