@@ -35,6 +35,8 @@ IDEAS
  - visual indication of score for each track in the music collection, to make 'good' tracks stand out
  - add other statistics relevant for scoring (e.g. was the track manually added to the queue) to the play history
  - provide play/pause buttons in Windows taskbar popup
+ - use libgroove for playback (?)
+ - support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
 
 
 USER FRIENDLINESS
