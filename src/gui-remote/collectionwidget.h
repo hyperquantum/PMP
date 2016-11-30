@@ -30,6 +30,7 @@ namespace PMP {
 
     class CollectionTableModel;
     class ServerConnection;
+    class SortedCollectionTableModel;
 
     class CollectionWidget : public QWidget {
         Q_OBJECT
@@ -46,7 +47,8 @@ namespace PMP {
     private:
         Ui::CollectionWidget* _ui;
         ServerConnection* _connection;
-        CollectionTableModel* _collectionModel;
+        CollectionTableModel* _collectionSourceModel;
+        SortedCollectionTableModel* _collectionDisplayModel;
     };
 }
 #endif

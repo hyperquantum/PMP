@@ -26,6 +26,7 @@
 #include <QCollator>
 #include <QHash>
 #include <QList>
+#include <QSortFilterProxyModel>
 
 namespace PMP {
 
@@ -50,16 +51,32 @@ namespace PMP {
         void onCollectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
 
     private:
-        int findInsertIndexFor(const CollectionTrackInfo& track) const;
-        int findIndexOf(const CollectionTrackInfo& track) const;
-        int compare(const CollectionTrackInfo& track1,
-                    const CollectionTrackInfo& track2) const;
-        bool compareLessThan(const CollectionTrackInfo* track1,
-                             const CollectionTrackInfo* track2) const;
-
-        QCollator _collator;
         QHash<FileHash, CollectionTrackInfo*> _hashes;
         QList<CollectionTrackInfo*> _tracks;
+    };
+
+    class SortedCollectionTableModel : public QSortFilterProxyModel {
+        Q_OBJECT
+    public:
+        SortedCollectionTableModel(CollectionTableModel* source, QObject* parent = 0);
+
+        CollectionTrackInfo* trackAt(const QModelIndex& index) const;
+
+        void sortByTitle();
+        void sortByArtist();
+
+    protected:
+        bool lessThan(const QModelIndex& left, const QModelIndex& right) const;
+
+    private:
+        int compareTitles(const CollectionTrackInfo& track1,
+                          const CollectionTrackInfo& track2) const;
+
+        int compareArtists(const CollectionTrackInfo& track1,
+                           const CollectionTrackInfo& track2) const;
+
+        CollectionTableModel* _source;
+        QCollator _collator;
     };
 
     class CollectionTableFetcher : public AbstractCollectionFetcher {

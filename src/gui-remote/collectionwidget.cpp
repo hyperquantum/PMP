@@ -32,10 +32,18 @@ namespace PMP {
 
     CollectionWidget::CollectionWidget(QWidget* parent)
      : QWidget(parent), _ui(new Ui::CollectionWidget), _connection(nullptr),
-       _collectionModel(new CollectionTableModel(this))
+       _collectionSourceModel(new CollectionTableModel(this)),
+       _collectionDisplayModel(
+           new SortedCollectionTableModel(_collectionSourceModel, this))
     {
         _ui->setupUi(this);
-        _ui->collectionTableView->setModel(_collectionModel);
+
+        //_collectionDisplayModel->sortByTitle();
+
+        _ui->collectionTableView->setModel(_collectionDisplayModel);
+        _ui->collectionTableView->sortByColumn(0, Qt::AscendingOrder);
+        _ui->collectionTableView->setSortingEnabled(true);
+        _ui->collectionTableView->horizontalHeader()->setSortIndicatorShown(true);
 
         connect(
             _ui->collectionTableView, &QTableView::customContextMenuRequested,
@@ -67,41 +75,39 @@ namespace PMP {
 
     void CollectionWidget::setConnection(ServerConnection* connection) {
         _connection = connection;
-        _collectionModel->setConnection(connection);
+        _collectionSourceModel->setConnection(connection);
     }
 
     void CollectionWidget::collectionContextMenuRequested(const QPoint& position) {
         qDebug() << "CollectionWidget: contextmenu requested";
 
         auto index = _ui->collectionTableView->indexAt(position);
+        if (!index.isValid()) return;
 
-        if (index.isValid()) {
-            //int row = index.row();
-            auto track = _collectionModel->trackAt(index);
-            if (!track) return;
+        auto track = _collectionDisplayModel->trackAt(index);
+        if (!track) return;
 
-            QMenu* menu = new QMenu(this);
+        QMenu* menu = new QMenu(this);
 
-            QAction* enqueueFrontAction = menu->addAction("Add to front of queue");
-            connect(
-                enqueueFrontAction, &QAction::triggered,
-                [this, track]() {
-                    qDebug() << "collection context menu: enqueue (front) triggered";
-                    _connection->insertQueueEntryAtFront(track->hash());
-                }
-            );
+        QAction* enqueueFrontAction = menu->addAction("Add to front of queue");
+        connect(
+            enqueueFrontAction, &QAction::triggered,
+            [this, track]() {
+                qDebug() << "collection context menu: enqueue (front) triggered";
+                _connection->insertQueueEntryAtFront(track->hash());
+            }
+        );
 
-            QAction* enqueueEndAction = menu->addAction("Add to end of queue");
-            connect(
-                enqueueEndAction, &QAction::triggered,
-                [this, track]() {
-                    qDebug() << "collection context menu: enqueue (end) triggered";
-                    _connection->insertQueueEntryAtEnd(track->hash());
-                }
-            );
+        QAction* enqueueEndAction = menu->addAction("Add to end of queue");
+        connect(
+            enqueueEndAction, &QAction::triggered,
+            [this, track]() {
+                qDebug() << "collection context menu: enqueue (end) triggered";
+                _connection->insertQueueEntryAtEnd(track->hash());
+            }
+        );
 
-            menu->popup(_ui->collectionTableView->viewport()->mapToGlobal(position));
-        }
+        menu->popup(_ui->collectionTableView->viewport()->mapToGlobal(position));
     }
 
 }
