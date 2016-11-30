@@ -102,7 +102,7 @@ namespace PMP {
         QString time = QTime::currentTime().toString(Qt::ISODate); /* HH:mm:ss */
         QString sourcefile = stripSourcefilePath(context.file);
 
-        auto locationText =
+        QString locationText =
             sourcefile % ":" % QString::number(context.line).leftJustified(6, '-');
 
         switch (type) {
