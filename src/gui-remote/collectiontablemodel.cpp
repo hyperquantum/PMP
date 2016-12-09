@@ -155,12 +155,15 @@ namespace PMP {
     }
 
     CollectionTrackInfo* CollectionTableModel::trackAt(const QModelIndex& index) const {
-        int row = index.row();
-        if (row < 0 || row >= _tracks.size()) {
+        return trackAt(index.row());
+    }
+
+    CollectionTrackInfo* CollectionTableModel::trackAt(int rowIndex) const {
+        if (rowIndex < 0 || rowIndex >= _tracks.size()) {
             return nullptr;
         }
 
-        return _tracks[row];
+        return _tracks[rowIndex];
     }
 
     int CollectionTableModel::rowCount(const QModelIndex& parent) const {
@@ -205,6 +208,8 @@ namespace PMP {
                                                            QObject* parent)
      : _source(source)
     {
+        setFilterCaseSensitivity(Qt::CaseInsensitive);
+
         _collator.setCaseSensitivity(Qt::CaseInsensitive);
         _collator.setNumericMode(true);
 
@@ -241,6 +246,18 @@ namespace PMP {
             default:
                 return compareTitles(*leftTrack, *rightTrack) < 0;
         }
+    }
+
+    bool SortedCollectionTableModel::filterAcceptsRow(int sourceRow,
+                                                    const QModelIndex &sourceParent) const
+    {
+        auto regex = filterRegExp();
+        if (regex.isEmpty()) return true; /* not filtered */
+
+        CollectionTrackInfo* track = _source->trackAt(sourceRow);
+
+        return track->title().contains(regex)
+                || track->artist().contains(regex);
     }
 
     int SortedCollectionTableModel::compareTitles(const CollectionTrackInfo &track1,

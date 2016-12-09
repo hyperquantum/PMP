@@ -38,12 +38,15 @@ namespace PMP {
     {
         _ui->setupUi(this);
 
-        //_collectionDisplayModel->sortByTitle();
-
         _ui->collectionTableView->setModel(_collectionDisplayModel);
         _ui->collectionTableView->sortByColumn(0, Qt::AscendingOrder);
         _ui->collectionTableView->setSortingEnabled(true);
         _ui->collectionTableView->horizontalHeader()->setSortIndicatorShown(true);
+
+        connect(
+            _ui->searchLineEdit, &QLineEdit::textChanged,
+            _collectionDisplayModel, &SortedCollectionTableModel::setFilterFixedString
+        );
 
         connect(
             _ui->collectionTableView, &QTableView::customContextMenuRequested,

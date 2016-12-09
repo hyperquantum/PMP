@@ -40,6 +40,7 @@ namespace PMP {
         void addFirstTime(QList<CollectionTrackInfo> tracks);
 
         CollectionTrackInfo* trackAt(const QModelIndex& index) const;
+        CollectionTrackInfo* trackAt(int rowIndex) const;
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -67,6 +68,7 @@ namespace PMP {
 
     protected:
         bool lessThan(const QModelIndex& left, const QModelIndex& right) const;
+        bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
 
     private:
         int compareTitles(const CollectionTrackInfo& track1,
