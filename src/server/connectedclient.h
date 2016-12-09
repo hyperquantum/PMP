@@ -68,6 +68,7 @@ namespace PMP {
         void currentTrackChanged(QueueEntry const* entry);
         void trackPositionChanged(qint64 position);
         void sendStateInfo();
+        void sendStateInfoAfterTimeout();
         void sendVolumeMessage();
         void sendDynamicModeStatusMessage();
         void sendUserPlayingForModeMessage();
@@ -131,6 +132,8 @@ namespace PMP {
                                         NetworkProtocol::ClientMessageType messageType);
         void parseHashUserDataRequest(QByteArray const& message);
 
+        void schedulePlayerStateNotification();
+
         static const qint16 ServerProtocolNo;
 
         bool _terminated;
@@ -150,6 +153,7 @@ namespace PMP {
         QByteArray _sessionSaltForUserLoggingIn;
         quint32 _userLoggedIn;
         QString _userLoggedInName;
+        bool _pendingPlayerStatus;
     };
 
     class CollectionSender : public QObject {

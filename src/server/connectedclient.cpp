@@ -55,7 +55,7 @@ namespace PMP {
        _server(server), _player(player), _generator(generator), _users(users),
        _collectionMonitor(collectionMonitor),
        _binaryMode(false), _clientProtocolNo(-1), _lastSentNowPlayingID(0),
-       _userLoggedIn(0)
+       _userLoggedIn(0), _pendingPlayerStatus(false)
     {
         auto queue = &player->queue();
         auto resolver = &_player->resolver();
@@ -389,6 +389,11 @@ namespace PMP {
 
         _socket->write(lengthArr, sizeof(lengthArr));
         _socket->write(message.data(), length);
+    }
+
+    void ConnectedClient::sendStateInfoAfterTimeout() {
+        _pendingPlayerStatus = false;
+        sendStateInfo();
     }
 
     void ConnectedClient::sendStateInfo() {
@@ -1124,12 +1129,21 @@ namespace PMP {
         sendTextCommand(command);
     }
 
+    void ConnectedClient::schedulePlayerStateNotification() {
+        if (_pendingPlayerStatus) return;
+
+        _pendingPlayerStatus = true;
+        QTimer::singleShot(25, this, SLOT(sendStateInfoAfterTimeout()));
+    }
+
     void ConnectedClient::queueEntryRemoved(quint32 offset, quint32 queueID) {
         sendQueueEntryRemovedMessage(offset, queueID);
+        schedulePlayerStateNotification(); /* queue length changed, notify after delay */
     }
 
     void ConnectedClient::queueEntryAdded(quint32 offset, quint32 queueID) {
         sendQueueEntryAddedMessage(offset, queueID);
+        schedulePlayerStateNotification(); /* queue length changed, notify after delay */
     }
 
     void ConnectedClient::queueEntryMoved(quint32 fromOffset, quint32 toOffset,
