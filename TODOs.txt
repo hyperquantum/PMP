@@ -46,7 +46,6 @@ USER FRIENDLINESS
  - when creating a new account, explain the meaning of the password score
  - GUI remote: after login it should show what server it is connected to somehow
  - inform the user properly when the server is having problems connecting to the database
- - ability to sort the music collection by artist instead of title
 
 
 POLISHING

@@ -55,16 +55,22 @@ namespace PMP {
                                QCoreApplication::applicationName());
 
             settings.beginGroup("collectionview");
+
             _ui->collectionTableView->horizontalHeader()->restoreState(
                 settings.value("columnsstate").toByteArray()
             );
+
+            int sortColumn = settings.value("sortcolumn").toInt();
+            if (sortColumn < 0 || sortColumn > 1) { sortColumn = 0; }
+
+            bool sortDescending = settings.value("sortdescending").toBool();
+            auto sortOrder = sortDescending ? Qt::DescendingOrder : Qt::AscendingOrder;
+
+            _ui->collectionTableView->sortByColumn(sortColumn, sortOrder);
+            _ui->collectionTableView->setSortingEnabled(true);
         }
 
         _ui->collectionTableView->horizontalHeader()->setSortIndicatorShown(true);
-        if (!_ui->collectionTableView->isSortingEnabled()) {
-            _ui->collectionTableView->sortByColumn(0, Qt::AscendingOrder);
-            _ui->collectionTableView->setSortingEnabled(true);
-        }
     }
 
     CollectionWidget::~CollectionWidget() {
@@ -74,6 +80,10 @@ namespace PMP {
         settings.beginGroup("collectionview");
         settings.setValue(
             "columnsstate", _ui->collectionTableView->horizontalHeader()->saveState()
+        );
+        settings.setValue("sortcolumn", _collectionDisplayModel->sortColumn());
+        settings.setValue(
+            "sortdescending", _collectionDisplayModel->sortOrder() == Qt::DescendingOrder
         );
 
         delete _ui;
