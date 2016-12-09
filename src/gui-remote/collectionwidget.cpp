@@ -39,9 +39,6 @@ namespace PMP {
         _ui->setupUi(this);
 
         _ui->collectionTableView->setModel(_collectionDisplayModel);
-        _ui->collectionTableView->sortByColumn(0, Qt::AscendingOrder);
-        _ui->collectionTableView->setSortingEnabled(true);
-        _ui->collectionTableView->horizontalHeader()->setSortIndicatorShown(true);
 
         connect(
             _ui->searchLineEdit, &QLineEdit::textChanged,
@@ -61,6 +58,12 @@ namespace PMP {
             _ui->collectionTableView->horizontalHeader()->restoreState(
                 settings.value("columnsstate").toByteArray()
             );
+        }
+
+        _ui->collectionTableView->horizontalHeader()->setSortIndicatorShown(true);
+        if (!_ui->collectionTableView->isSortingEnabled()) {
+            _ui->collectionTableView->sortByColumn(0, Qt::AscendingOrder);
+            _ui->collectionTableView->setSortingEnabled(true);
         }
     }
 
