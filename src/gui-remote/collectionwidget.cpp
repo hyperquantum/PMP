@@ -43,7 +43,7 @@ namespace PMP {
         connect(
             _ui->searchLineEdit, &QLineEdit::textChanged,
             _collectionDisplayModel,
-            &SortedFilteredCollectionTableModel::setFilterFixedString
+            &SortedFilteredCollectionTableModel::setSearchText
         );
 
         connect(

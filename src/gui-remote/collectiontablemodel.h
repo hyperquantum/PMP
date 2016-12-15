@@ -67,6 +67,9 @@ namespace PMP {
         void sortByTitle();
         void sortByArtist();
 
+    public slots:
+        void setSearchText(QString search);
+
     protected:
         bool lessThan(const QModelIndex& left, const QModelIndex& right) const;
         bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
@@ -80,6 +83,7 @@ namespace PMP {
 
         CollectionTableModel* _source;
         QCollator _collator;
+        QStringList _searchParts;
     };
 
     class CollectionTableFetcher : public AbstractCollectionFetcher {

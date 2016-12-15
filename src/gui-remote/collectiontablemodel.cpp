@@ -233,6 +233,11 @@ namespace PMP {
         sort(1);
     }
 
+    void SortedFilteredCollectionTableModel::setSearchText(QString search) {
+        _searchParts = search.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+        invalidateFilter();
+    }
+
     bool SortedFilteredCollectionTableModel::lessThan(const QModelIndex& left,
                                               const QModelIndex& right) const
     {
@@ -251,13 +256,17 @@ namespace PMP {
     bool SortedFilteredCollectionTableModel::filterAcceptsRow(int sourceRow,
                                                     const QModelIndex &sourceParent) const
     {
-        auto regex = filterRegExp();
-        if (regex.isEmpty()) return true; /* not filtered */
+        if (_searchParts.empty()) return true; /* not filtered */
 
         CollectionTrackInfo* track = _source->trackAt(sourceRow);
 
-        return track->title().contains(regex)
-                || track->artist().contains(regex);
+        Q_FOREACH(QString searchPart, _searchParts) {
+            if (!track->title().contains(searchPart, Qt::CaseInsensitive)
+                    && !track->artist().contains(searchPart, Qt::CaseInsensitive))
+                return false;
+        }
+
+        return true;
     }
 
     int SortedFilteredCollectionTableModel::compareTitles(
