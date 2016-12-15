@@ -34,7 +34,7 @@ namespace PMP {
      : QWidget(parent), _ui(new Ui::CollectionWidget), _connection(nullptr),
        _collectionSourceModel(new CollectionTableModel(this)),
        _collectionDisplayModel(
-           new SortedCollectionTableModel(_collectionSourceModel, this))
+           new SortedFilteredCollectionTableModel(_collectionSourceModel, this))
     {
         _ui->setupUi(this);
 
@@ -42,7 +42,8 @@ namespace PMP {
 
         connect(
             _ui->searchLineEdit, &QLineEdit::textChanged,
-            _collectionDisplayModel, &SortedCollectionTableModel::setFilterFixedString
+            _collectionDisplayModel,
+            &SortedFilteredCollectionTableModel::setFilterFixedString
         );
 
         connect(

@@ -56,10 +56,11 @@ namespace PMP {
         QList<CollectionTrackInfo*> _tracks;
     };
 
-    class SortedCollectionTableModel : public QSortFilterProxyModel {
+    class SortedFilteredCollectionTableModel : public QSortFilterProxyModel {
         Q_OBJECT
     public:
-        SortedCollectionTableModel(CollectionTableModel* source, QObject* parent = 0);
+        SortedFilteredCollectionTableModel(CollectionTableModel* source,
+                                           QObject* parent = 0);
 
         CollectionTrackInfo* trackAt(const QModelIndex& index) const;
 

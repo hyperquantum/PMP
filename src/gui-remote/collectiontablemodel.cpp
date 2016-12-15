@@ -204,8 +204,8 @@ namespace PMP {
 
     // ============================================================================ //
 
-    SortedCollectionTableModel::SortedCollectionTableModel(CollectionTableModel* source,
-                                                           QObject* parent)
+    SortedFilteredCollectionTableModel::SortedFilteredCollectionTableModel(
+            CollectionTableModel* source, QObject* parent)
      : _source(source)
     {
         setFilterCaseSensitivity(Qt::CaseInsensitive);
@@ -219,21 +219,21 @@ namespace PMP {
         setSourceModel(source);
     }
 
-    CollectionTrackInfo* SortedCollectionTableModel::trackAt(
+    CollectionTrackInfo* SortedFilteredCollectionTableModel::trackAt(
                                                            const QModelIndex& index) const
     {
         return _source->trackAt(mapToSource(index));
     }
 
-    void SortedCollectionTableModel::sortByTitle() {
+    void SortedFilteredCollectionTableModel::sortByTitle() {
         sort(0);
     }
 
-    void SortedCollectionTableModel::sortByArtist() {
+    void SortedFilteredCollectionTableModel::sortByArtist() {
         sort(1);
     }
 
-    bool SortedCollectionTableModel::lessThan(const QModelIndex& left,
+    bool SortedFilteredCollectionTableModel::lessThan(const QModelIndex& left,
                                               const QModelIndex& right) const
     {
         CollectionTrackInfo* leftTrack = _source->trackAt(left);
@@ -248,7 +248,7 @@ namespace PMP {
         }
     }
 
-    bool SortedCollectionTableModel::filterAcceptsRow(int sourceRow,
+    bool SortedFilteredCollectionTableModel::filterAcceptsRow(int sourceRow,
                                                     const QModelIndex &sourceParent) const
     {
         auto regex = filterRegExp();
@@ -260,8 +260,8 @@ namespace PMP {
                 || track->artist().contains(regex);
     }
 
-    int SortedCollectionTableModel::compareTitles(const CollectionTrackInfo &track1,
-                                                  const CollectionTrackInfo &track2) const
+    int SortedFilteredCollectionTableModel::compareTitles(
+            const CollectionTrackInfo &track1, const CollectionTrackInfo &track2) const
     {
         bool empty1 = track1.titleAndArtistUnknown();
         bool empty2 = track2.titleAndArtistUnknown();
@@ -292,8 +292,8 @@ namespace PMP {
         return PMP::compare(track1.hash(), track2.hash());
     }
 
-    int SortedCollectionTableModel::compareArtists(const CollectionTrackInfo &track1,
-                                                  const CollectionTrackInfo &track2) const
+    int SortedFilteredCollectionTableModel::compareArtists(
+            const CollectionTrackInfo &track1, const CollectionTrackInfo &track2) const
     {
         bool empty1 = track1.titleAndArtistUnknown();
         bool empty2 = track2.titleAndArtistUnknown();
