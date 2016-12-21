@@ -7,6 +7,7 @@ BUGS
  - the commandline client does not support user authentication which is now required for some commands it supports
  - GUI remote: tracks can be dragged using the right mouse button (not just the left button)
  - GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
+ - GUI remote: after a breakpoint is hit, track length and play position are not cleared
 
 
 PERFORMANCE ISSUES
@@ -46,6 +47,8 @@ USER FRIENDLINESS
  - when creating a new account, explain the meaning of the password score
  - GUI remote: after login it should show what server it is connected to somehow
  - inform the user properly when the server is having problems connecting to the database
+ - display the title/artist of the track currently playing in the window title of the remote
+ - the drop indicator in the queue needs to be drawn as a line between tracks
 
 
 POLISHING
