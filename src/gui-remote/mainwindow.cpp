@@ -227,7 +227,7 @@ namespace PMP {
                 " License (GPLv3).</p>"
                 "<p>Website: <a href=\"%1\">%1</a></p>"
                 "<p>Report bugs at: <a href=\"%2\">%2</a></p>"
-                "<p>Party Music Player version %3<br>"
+                "<p>Party Music Player <b>version %3</b><br>"
                 "Copyright (C) %4 %5</p>"
                 "<p>Using Qt version %6</p>"
                 "</html>"
