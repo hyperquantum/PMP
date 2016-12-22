@@ -20,7 +20,7 @@
 #ifndef PMP_VERSION_H
 #define PMP_VERSION_H
 
-#define PMP_VERSION_DISPLAY "0.0.2"
+#define PMP_VERSION_DISPLAY "0.0.3"
 #define PMP_ORGANIZATION_NAME "Party Music Player"
 #define PMP_ORGANIZATION_DOMAIN "hyperquantum.be"
 #define PMP_WEBSITE "http://hyperquantum.be/pmp"
