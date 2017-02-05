@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -48,6 +48,8 @@ namespace PMP {
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
 
         void sendNextSlotBatchRequest(int size);
+
+        void doReset(int queueLength);
 
     private:
         static const int initialQueueFetchLength = 10;
