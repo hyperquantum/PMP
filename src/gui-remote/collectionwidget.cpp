@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,6 +39,9 @@ namespace PMP {
         _ui->setupUi(this);
 
         _ui->collectionTableView->setModel(_collectionDisplayModel);
+        _ui->collectionTableView->setDragEnabled(true);
+        _ui->collectionTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+        _ui->collectionTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
         connect(
             _ui->searchLineEdit, &QLineEdit::textChanged,

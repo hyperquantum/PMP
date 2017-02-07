@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,6 +34,7 @@ namespace PMP {
           1: first version, no version increments for a long time
           2: first increment for test purposes, no strict incrementing yet after this
           3: client msg 18, server msg 22: added support for retreiving scores
+          4: client msg 19: added support for inserting a track at a specific index
 
     */
 
@@ -93,6 +94,7 @@ namespace PMP {
             AddHashToFrontOfQueueRequestMessage = 16,
             BulkQueueEntryHashRequestMessage = 17,
             HashUserDataRequestMessage = 18,
+            InsertHashIntoQueueRequestMessage = 19,
         };
 
         enum ErrorType {

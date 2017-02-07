@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -110,38 +110,70 @@ namespace PMP {
     }
 
     QueueEntry* Queue::enqueue(QString const& filename) {
-        return enqueue(new QueueEntry(this, filename));
-    }
-
-    QueueEntry* Queue::enqueue(FileHash const& hash) {
-        return enqueue(new QueueEntry(this, hash));
-    }
-
-    QueueEntry* Queue::enqueue(QueueEntry* entry) {
-        _idLookup.insert(entry->queueID(), entry);
-        _queue.enqueue(entry);
-
-        emit entryAdded(_queue.size() - 1, entry->queueID());
+        auto entry = new QueueEntry(this, filename);
+        enqueue(entry);
         return entry;
     }
 
-    QueueEntry* Queue::enqueueAtFront(QueueEntry* entry) {
-        _idLookup.insert(entry->queueID(), entry);
-        _queue.prepend(entry);
-
-        emit entryAdded(0, entry->queueID());
+    QueueEntry* Queue::enqueue(FileHash const& hash) {
+        auto entry = new QueueEntry(this, hash);
+        enqueue(entry);
         return entry;
     }
 
     QueueEntry* Queue::insertAtFront(const FileHash& hash) {
-        return enqueueAtFront(new QueueEntry(this, hash));
+        auto entry = new QueueEntry(this, hash);
+        insertAtFront(entry);
+        return entry;
     }
 
     void Queue::insertBreakAtFront() {
         if (!_queue.empty() && _queue[0]->kind() == QueueEntryKind::Break)
             return;
 
-        enqueueAtFront(QueueEntry::createBreak(this));
+        insertAtFront(QueueEntry::createBreak(this));
+    }
+
+    QueueEntry* Queue::insertAtIndex(quint32 index, const FileHash& hash)
+    {
+        if (index > (uint)_queue.size()) return nullptr;
+
+        auto entry = new QueueEntry(this, hash);
+        insertAtIndex(index, entry);
+        return entry;
+    }
+
+    void Queue::enqueue(QueueEntry* entry) {
+        if (!entry->isNewlyCreated() || entry->parent() != this)
+            return;
+
+        entry->markAsNotNewAnymore();
+        _idLookup.insert(entry->queueID(), entry);
+        _queue.enqueue(entry);
+
+        emit entryAdded(_queue.size() - 1, entry->queueID());
+    }
+
+    void Queue::insertAtFront(QueueEntry* entry) {
+        if (!entry->isNewlyCreated() || entry->parent() != this)
+            return;
+
+        entry->markAsNotNewAnymore();
+        _idLookup.insert(entry->queueID(), entry);
+        _queue.prepend(entry);
+
+        emit entryAdded(0, entry->queueID());
+    }
+
+    void Queue::insertAtIndex(quint32 index, QueueEntry* entry) {
+        if (!entry->isNewlyCreated() || entry->parent() != this)
+            return;
+
+        entry->markAsNotNewAnymore();
+        _idLookup.insert(entry->queueID(), entry);
+        _queue.insert((int)index, entry);
+
+        emit entryAdded(index, entry->queueID());
     }
 
     QueueEntry* Queue::dequeue() {

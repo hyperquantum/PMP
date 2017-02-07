@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,7 +19,11 @@
 
 #include "collectiontablemodel.h"
 
+#include <QBuffer>
+#include <QDataStream>
+#include <QMimeData>
 #include <QtDebug>
+#include <QVector>
 
 namespace PMP {
 
@@ -200,6 +204,61 @@ namespace PMP {
         }
 
         return QVariant();
+    }
+
+    Qt::ItemFlags CollectionTableModel::flags(const QModelIndex& index) const {
+        Qt::ItemFlags f(Qt::ItemIsSelectable | Qt::ItemIsEnabled
+                        | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
+        return f;
+    }
+
+    Qt::DropActions CollectionTableModel::supportedDragActions() const
+    {
+        return Qt::CopyAction;
+    }
+
+    Qt::DropActions CollectionTableModel::supportedDropActions() const
+    {
+        return Qt::CopyAction;
+    }
+
+    QMimeData* CollectionTableModel::mimeData(const QModelIndexList& indexes) const {
+        if (indexes.isEmpty()) return 0;
+
+        qDebug() << "CollectionTableModel::mimeData called; indexes count ="
+                 << indexes.size();
+
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QDataStream stream(&buffer);
+        stream.setVersion(QDataStream::Qt_5_2);
+
+        QVector<FileHash> hashes;
+        int prevRow = -1;
+        Q_FOREACH(const QModelIndex& index, indexes) {
+            int row = index.row();
+            if (row == prevRow) continue;
+            prevRow = row;
+
+            auto& hash = _tracks[row]->hash();
+            qDebug() << " row" << row << "; col" << index.column()
+                     << "; hash" << hash.dumpToString();
+            hashes.append(hash);
+        }
+
+        stream << (quint32)hashes.size();
+        for (int i = 0; i < hashes.size(); ++i) {
+            stream << (quint64)hashes[i].length();
+            stream << hashes[i].SHA1();
+            stream << hashes[i].MD5();
+        }
+
+        buffer.close();
+
+        QMimeData* data = new QMimeData();
+
+        data->setData("application/x-pmp-filehash", buffer.data());
+        return data;
     }
 
     // ============================================================================ //

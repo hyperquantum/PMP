@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,6 +29,7 @@
 
 #include <QByteArray>
 #include <QDateTime>
+#include <QHash>
 #include <QList>
 #include <QTcpSocket>
 #include <QVector>
@@ -130,6 +131,7 @@ namespace PMP {
         void handleCollectionFetchRequest(uint clientReference);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         NetworkProtocol::ClientMessageType messageType);
+        void parseInsertHashIntoQueueRequest(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
 
         void schedulePlayerStateNotification();
@@ -154,6 +156,7 @@ namespace PMP {
         quint32 _userLoggedIn;
         QString _userLoggedInName;
         bool _pendingPlayerStatus;
+        QHash<quint32, quint32> _trackAdditionConfirmationsPending;
     };
 
     class CollectionSender : public QObject {

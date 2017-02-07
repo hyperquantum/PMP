@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,7 +29,7 @@ namespace PMP {
 
     QueueEntry::QueueEntry(Queue* parent, QString const& filename)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _kind(QueueEntryKind::Track),
+       _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
        _filename(filename), _haveFilename(true),
        _fetchedTagData(false), _fileFinderBackoff(0), _fileFinderFailedCount(0)
     {
@@ -38,7 +38,7 @@ namespace PMP {
 
     QueueEntry::QueueEntry(Queue* parent, FileHash const& hash, TagData const& tags)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _kind(QueueEntryKind::Track),
+       _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
        _hash(hash), _haveFilename(false),
        _fetchedTagData(true), _tagData(tags),
        _fileFinderBackoff(0), _fileFinderFailedCount(0)
@@ -48,7 +48,7 @@ namespace PMP {
 
     QueueEntry::QueueEntry(Queue* parent, FileHash const& hash)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _kind(QueueEntryKind::Track),
+       _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
        _hash(hash), _haveFilename(false),
        _fetchedTagData(false),
        _fileFinderBackoff(0), _fileFinderFailedCount(0)
@@ -58,7 +58,7 @@ namespace PMP {
 
     QueueEntry::QueueEntry(Queue* parent, QueueEntryKind kind)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _kind(kind),
+       _queueID(parent->getNextQueueID()), _new(true), _kind(kind),
        _haveFilename(false), _fetchedTagData(false),
        _fileFinderBackoff(0), _fileFinderFailedCount(0)
     {
@@ -71,6 +71,10 @@ namespace PMP {
 
     QueueEntry::~QueueEntry() {
         //
+    }
+
+    void QueueEntry::markAsNotNewAnymore() {
+        _new = false;
     }
 
     FileHash const* QueueEntry::hash() const {

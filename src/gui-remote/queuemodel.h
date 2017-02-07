@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -43,6 +43,7 @@ namespace PMP {
                             int role = Qt::DisplayRole) const;
         QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
         Qt::ItemFlags flags(const QModelIndex& index) const;
+        Qt::DropActions supportedDragActions() const;
         Qt::DropActions supportedDropActions() const;
         QMimeData* mimeData(const QModelIndexList& indexes) const;
         QStringList mimeTypes() const;
@@ -82,6 +83,8 @@ namespace PMP {
         };
 
         QVariant trackModelData(QueueEntryInfo* info, int col, int role) const;
+        bool dropQueueItemMimeData(const QMimeData* data, Qt::DropAction action, int row);
+        bool dropFileHashMimeData(const QMimeData* data, int row);
 
         //Track* trackAt(const QModelIndex& index) const;
 

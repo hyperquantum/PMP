@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -266,13 +266,19 @@ namespace PMP {
             | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
     }
 
-    Qt::DropActions QueueModel::supportedDropActions() const
-    {
-        return Qt::MoveAction;
+    Qt::DropActions QueueModel::supportedDragActions() const {
+        return Qt::MoveAction; // TODO: add support for copying queue items
+    }
+
+    Qt::DropActions QueueModel::supportedDropActions() const {
+        return Qt::MoveAction | Qt::CopyAction;
     }
 
     QStringList QueueModel::mimeTypes() const {
-        return QStringList(QString("application/x-pmp-queueitem"));
+        return {
+            QString("application/x-pmp-queueitem"),
+            QString("application/x-pmp-filehash")
+        };
     }
 
     QMimeData* QueueModel::mimeData(const QModelIndexList& indexes) const {
@@ -318,20 +324,9 @@ namespace PMP {
         return data;
     }
 
-    bool QueueModel::dropMimeData(const QMimeData* data, Qt::DropAction action,
-                                  int row, int column, const QModelIndex& parent)
+    bool QueueModel::dropQueueItemMimeData(const QMimeData *data, Qt::DropAction action,
+                                           int row)
     {
-        qDebug() << "QueueModel::dropMimeData called; action=" << action
-                 << "; row=" << row;
-
-        if (row == -1) {
-            row = parent.row();
-            column = parent.column();
-            //parent = parent.parent();
-            qDebug() << " went up one level: row=" << row;
-        }
-
-        if (!data->hasFormat("application/x-pmp-queueitem")) return false;
         QDataStream stream(data->data("application/x-pmp-queueitem"));
 
         QUuid serverUuid;
@@ -367,23 +362,86 @@ namespace PMP {
         return true;
     }
 
+    bool QueueModel::dropFileHashMimeData(const QMimeData *data, int row) {
+        qDebug() << "QueueModel::dropFileHashMimeData called";
+
+        QDataStream stream(data->data("application/x-pmp-filehash"));
+
+        quint32 count;
+        stream >> count;
+        if (count > 1) return false; // FIXME
+
+        quint64 hashLength;
+        stream >> hashLength;
+        QByteArray sha1, md5;
+        stream >> sha1;
+        stream >> md5;
+
+        FileHash hash(hashLength, sha1, md5);
+        if (hash.empty()) return false;
+
+        int newIndex = (row < 0) ? _modelRows : row;
+
+        qDebug() << " inserting at index" << newIndex
+                 << "filehash:" << hash.dumpToString();
+
+        _source->insertFileAsync(newIndex, hash);
+        return true;
+    }
+
+    bool QueueModel::dropMimeData(const QMimeData* data, Qt::DropAction action,
+                                  int row, int column, const QModelIndex& parent)
+    {
+        qDebug() << "QueueModel::dropMimeData called; action=" << action
+                 << "; row=" << row;
+
+        if (row == -1) {
+            row = parent.row();
+            column = parent.column();
+            //parent = parent.parent();
+            qDebug() << " went up one level: row=" << row;
+        }
+
+        if (data->hasFormat("application/x-pmp-queueitem")) {
+            return dropQueueItemMimeData(data, action, row);
+        }
+
+        if (data->hasFormat("application/x-pmp-filehash")) {
+            return dropFileHashMimeData(data, row);
+        }
+
+        return false; /* format not supported */
+    }
+
     bool QueueModel::canDropMimeData(const QMimeData* data, Qt::DropAction action,
                                      int row, int column, const QModelIndex& parent) const
     {
+        qDebug() << "QueueModel::canDropMimeData called";
+
         if (!QAbstractTableModel::canDropMimeData(data, action, row, column, parent)) {
             return false;
         }
 
-        if (!data->hasFormat("application/x-pmp-queueitem")) return false;
+        if (data->hasFormat("application/x-pmp-queueitem")) {
+            QDataStream stream(data->data("application/x-pmp-queueitem"));
 
-        QDataStream stream(data->data("application/x-pmp-queueitem"));
+            QUuid serverUuid;
+            stream >> serverUuid;
 
-        QUuid serverUuid;
-        stream >> serverUuid;
+            return !serverUuid.isNull() && serverUuid == _source->serverUuid();
+        }
 
-        if (serverUuid.isNull() || serverUuid != _source->serverUuid()) return false;
+        if (data->hasFormat("application/x-pmp-filehash")) {
+            qDebug() << "recognized application/x-pmp-filehash";
 
-        return true;
+            QDataStream stream(data->data("application/x-pmp-filehash"));
+
+            //
+
+            return true; // FIXME
+        }
+
+        return false;
     }
 
     quint32 QueueModel::trackIdAt(const QModelIndex& index) const {

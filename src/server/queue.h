@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -55,10 +55,16 @@ namespace PMP {
         void clear(bool doNotifications);
         void trim(uint length);
 
+        void enqueue(QueueEntry* entry);
         QueueEntry* enqueue(QString const& filename);
         QueueEntry* enqueue(FileHash const& hash);
+
+        void insertAtFront(QueueEntry* entry);
         QueueEntry* insertAtFront(FileHash const& hash);
         void insertBreakAtFront();
+
+        void insertAtIndex(quint32 index, QueueEntry* entry);
+        QueueEntry* insertAtIndex(quint32 index, FileHash const& hash);
 
         QueueEntry* dequeue();
         bool remove(quint32 queueID);
@@ -81,9 +87,6 @@ namespace PMP {
         void checkFrontOfQueue();
 
     private:
-        QueueEntry* enqueue(QueueEntry* entry);
-        QueueEntry* enqueueAtFront(QueueEntry* entry);
-
         int findIndex(quint32 queueID);
 
         uint _nextQueueID;

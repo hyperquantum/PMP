@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -45,7 +45,7 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 3;
+    const qint16 ConnectedClient::ServerProtocolNo = 4;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,
@@ -1141,8 +1141,19 @@ namespace PMP {
         schedulePlayerStateNotification(); /* queue length changed, notify after delay */
     }
 
-    void ConnectedClient::queueEntryAdded(quint32 offset, quint32 queueID) {
-        sendQueueEntryAddedMessage(offset, queueID);
+    void ConnectedClient::queueEntryAdded(quint32 offset, quint32 queueID)
+    {
+        auto it = _trackAdditionConfirmationsPending.find(queueID);
+        if (it != _trackAdditionConfirmationsPending.end()) {
+            auto clientReference = it.value();
+            _trackAdditionConfirmationsPending.erase(it);
+
+            sendSuccessMessage(clientReference, queueID);
+        }
+        else {
+            sendQueueEntryAddedMessage(offset, queueID);
+        }
+
         schedulePlayerStateNotification(); /* queue length changed, notify after delay */
     }
 
@@ -1644,6 +1655,9 @@ namespace PMP {
         case NetworkProtocol::HashUserDataRequestMessage:
             parseHashUserDataRequest(message);
             break;
+        case NetworkProtocol::InsertHashIntoQueueRequestMessage:
+            parseInsertHashIntoQueueRequest(message);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
@@ -1682,6 +1696,35 @@ namespace PMP {
         else {
             return; /* invalid message */
         }
+    }
+
+    void ConnectedClient::parseInsertHashIntoQueueRequest(const QByteArray &message) {
+        qDebug() << "received 'insert filehash into queue at index' request";
+
+        if (message.length() != 2 + 2 + 4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT) {
+            return; /* invalid message */
+        }
+
+        if (!isLoggedIn()) { return; /* client needs to be authenticated for this */ }
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        quint32 index = NetworkUtil::get4Bytes(message, 8);
+
+        qDebug() << " client ref:" << clientReference << "; " << "index:" << index;
+
+        bool ok;
+        FileHash hash = NetworkProtocol::getHash(message, 12, &ok);
+        if (!ok || hash.empty()) {
+            return; /* invalid message */
+        }
+
+        qDebug() << " request contains hash:" << hash.dumpToString();
+
+        Queue& queue = _player->queue();
+        auto entry = new QueueEntry(&queue, hash);
+
+        _trackAdditionConfirmationsPending[entry->queueID()] = clientReference;
+        queue.insertAtIndex(index, entry);
     }
 
     void ConnectedClient::parseHashUserDataRequest(const QByteArray& message) {

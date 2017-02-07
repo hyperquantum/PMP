@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,6 +35,30 @@
 namespace PMP {
 
     class AbstractCollectionFetcher;
+
+    class RequestID {
+    public:
+        RequestID() : _rawId(0) {}
+        RequestID(uint rawId) : _rawId(rawId) {}
+
+        bool isValid() const { return _rawId > 0; }
+        uint rawId() const { return _rawId; }
+
+    private:
+        uint _rawId;
+    };
+
+    inline bool operator==(const RequestID& me, const RequestID& other) {
+        return me.rawId() == other.rawId();
+    }
+
+    inline bool operator!=(const RequestID& me, const RequestID& other) {
+        return !(me == other);
+    }
+
+    inline uint qHash(const RequestID& requestId) {
+        return requestId.rawId();
+    }
 
     /**
         Represents a connection to a PMP server.
@@ -73,6 +97,8 @@ namespace PMP {
         TriBool doingFullIndexation() const { return _doingFullIndexation; }
 
         void fetchCollection(AbstractCollectionFetcher* fetcher);
+
+        RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
 
     public slots:
         void shutdownServer();
@@ -151,7 +177,7 @@ namespace PMP {
         void queueLengthChanged(int length);
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);
-        void queueEntryAdded(quint32 offset, quint32 queueID);
+        void queueEntryAdded(quint32 offset, quint32 queueID, RequestID requestID);
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
         void receivedTrackInfo(quint32 queueID, QueueEntryType type, int lengthInSeconds,
@@ -182,6 +208,8 @@ namespace PMP {
         void onSocketError(QAbstractSocket::SocketError error);
 
     private:
+        uint getNewReference();
+
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
         void sendSingleByteAction(quint8 action);
@@ -239,6 +267,7 @@ namespace PMP {
         QString _userLoggedInName;
         TriBool _doingFullIndexation;
         QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
+        QHash<uint, quint32> _insertAtIndexRequests;
     };
 
     class AbstractCollectionFetcher : public QObject {

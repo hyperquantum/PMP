@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -52,6 +52,9 @@ namespace PMP {
         QueueEntryKind kind() const { return _kind; }
         bool isTrack() const { return _kind == QueueEntryKind::Track; }
 
+        bool isNewlyCreated() { return _new; }
+        void markAsNotNewAnymore();
+
         FileHash const* hash() const;
         bool checkHash(Resolver& resolver);
 
@@ -80,6 +83,7 @@ namespace PMP {
         QueueEntry(Queue* parent, QueueEntryKind kind);
 
         uint const _queueID;
+        bool _new;
         QueueEntryKind _kind;
         FileHash _hash;
         //bool _fetchedAudioInfo;

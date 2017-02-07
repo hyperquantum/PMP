@@ -42,7 +42,6 @@ IDEAS
 USER FRIENDLINESS
 
  - provide 'forgot password' functionality to enable a user to reset their password
- - support for dragging tracks from the music collection into the queue
  - work around the need for a full indexation at server startup
  - when creating a new account, explain the meaning of the password score
  - GUI remote: after login it should show what server it is connected to somehow

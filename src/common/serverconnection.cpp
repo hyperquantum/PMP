@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,7 +28,7 @@
 
 namespace PMP {
 
-    const qint16 ServerConnection::ClientProtocolNo = 3;
+    const qint16 ServerConnection::ClientProtocolNo = 4;
 
     ServerConnection::ServerConnection(QObject* parent, bool subscribeToAllServerEvents)
      : QObject(parent),
@@ -327,6 +327,36 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    uint ServerConnection::getNewReference() {
+        // don't use: return _nextRef++;
+        auto ref = _nextRef;
+        _nextRef++;
+        return ref;
+    }
+
+    RequestID ServerConnection::insertQueueEntryAtIndex(const FileHash& hash,
+                                                        quint32 index)
+    {
+        if (hash.empty()) return RequestID(); /* invalid */
+
+        auto ref = getNewReference();
+        _insertAtIndexRequests.insert(ref, index);
+
+        qDebug() << "sending request to add a track at index" << index << "; ref=" << ref;
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        NetworkUtil::append2Bytes(message, NetworkProtocol::InsertHashIntoQueueRequestMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkUtil::append4Bytes(message, index);
+        NetworkProtocol::appendHash(message, hash);
+
+        sendBinaryMessage(message);
+
+        return ref;
+    }
+
     void ServerConnection::sendQueueEntryInfoRequest(uint queueID) {
         if (queueID == 0) return;
 
@@ -409,9 +439,7 @@ namespace PMP {
     }
 
     void ServerConnection::createNewUserAccount(QString login, QString password) {
-        _userAccountRegistrationRef = _nextRef;
-        _nextRef++;
-
+        _userAccountRegistrationRef = getNewReference();
         _userAccountRegistrationLogin = login;
         _userAccountRegistrationPassword = password;
 
@@ -419,9 +447,7 @@ namespace PMP {
     }
 
     void ServerConnection::login(QString login, QString password) {
-        _userLoginRef = _nextRef;
-        _nextRef++;
-
+        _userLoginRef = getNewReference();
         _userLoggingIn = login;
         _userLoggingInPassword = password;
 
@@ -501,7 +527,7 @@ namespace PMP {
     }
 
     void ServerConnection::handleUserLoginResult(quint16 errorType, quint32 intData,
-                                                 const QByteArray &blobData)
+                                                 const QByteArray& blobData)
     {
         (void)blobData; /* we don't use this */
 
@@ -648,9 +674,7 @@ namespace PMP {
     }
 
     void ServerConnection::fetchCollection(AbstractCollectionFetcher* fetcher) {
-        auto fetcherReference = _nextRef;
-        _nextRef++;
-
+        auto fetcherReference = getNewReference();
         _collectionFetchers[fetcherReference] = fetcher;
         sendCollectionFetchRequestMessage(fetcherReference);
     }
@@ -1052,7 +1076,8 @@ namespace PMP {
             quint32 offset = NetworkUtil::get4Bytes(message, 2);
             quint32 queueID = NetworkUtil::get4Bytes(message, 6);
 
-            qDebug() << "received queue track removal event;  QID:" << queueID << " offset:" << offset;
+            qDebug() << "received queue track removal event;  QID:" << queueID
+                     << " offset:" << offset;
 
             emit queueEntryRemoved(offset, queueID);
         }
@@ -1066,9 +1091,10 @@ namespace PMP {
             quint32 offset = NetworkUtil::get4Bytes(message, 2);
             quint32 queueID = NetworkUtil::get4Bytes(message, 6);
 
-            qDebug() << "received queue track insertion event;  QID:" << queueID << " offset:" << offset;
+            qDebug() << "received queue track insertion event;  QID:" << queueID
+                     << " offset:" << offset;
 
-            emit queueEntryAdded(offset, queueID);
+            emit queueEntryAdded(offset, queueID, RequestID());
         }
             break;
         case NetworkProtocol::DynamicModeStatusMessage:
@@ -1103,7 +1129,8 @@ namespace PMP {
                 names.append(name);
             }
 
-            qDebug() << "received a list of" << names.size() << "possible filenames for QID" << queueID;
+            qDebug() << "received a list of" << names.size()
+                     << "possible filenames for QID" << queueID;
 
             if (names.size() == 1) {
                 qDebug() << " received name" << names[0];
@@ -1504,7 +1531,7 @@ namespace PMP {
         if ((NetworkProtocol::ErrorType)errorType
                 == NetworkProtocol::InvalidMessageStructure)
         {
-            qDebug() << " errortype = InvalidMessageStructure !!";
+            qWarning() << "errortype = InvalidMessageStructure !!";
         }
 
         if (clientReference == _userLoginRef) {
@@ -1523,7 +1550,8 @@ namespace PMP {
                 collectionFetcher->completed();
             }
             else {
-                qDebug() << "received ERROR code" << errorType << "from collection fetch";
+                qWarning() << "received ERROR code" << errorType
+                           << "from collection fetch";
                 collectionFetcher->errorOccurred();
             }
 
@@ -1531,13 +1559,29 @@ namespace PMP {
             return;
         }
 
-        qDebug() << " client reference is unknown:" << clientReference;
+        auto insertRequestIterator = _insertAtIndexRequests.find(clientReference);
+        if (insertRequestIterator != _insertAtIndexRequests.end()) {
+            if ((NetworkProtocol::ErrorType)errorType == NetworkProtocol::NoError) {
+                RequestID request(clientReference);
+                auto insertedQueueID = intData;
+                auto insertedAtOffset = insertRequestIterator.value();
+                emit queueEntryAdded(insertedAtOffset, insertedQueueID, request);
+            }
+            else {
+                // TODO: report error to the originator of the request
+            }
+
+            _insertAtIndexRequests.erase(insertRequestIterator);
+            return;
+        }
+
+        qWarning() << " client reference is unknown:" << clientReference;
 
         switch ((NetworkProtocol::ErrorType) errorType) {
 
         default:
-            qDebug() << " WARNING: error/result type is unknown/unhandled; "
-                     << "intData:" << intData << "";
+            qWarning() << "error/result type is unknown/unhandled; intData:" << intData
+                       << "; blobdata-length:" << blobData.size();
             break;
         }
     }
