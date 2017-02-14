@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,6 @@
 
 #include "common/serverconnection.h"
 
-//#include <cstdlib>
 #include <QElapsedTimer>
 #include <QtDebug>
 #include <QTimer>
@@ -31,7 +30,7 @@ namespace PMP {
     CurrentTrackMonitor::CurrentTrackMonitor(ServerConnection* connection)
      : QObject(connection),
         _connection(connection), _state(ServerConnection::UnknownState), _volume(-1),
-        _nowPlayingQID(0), _nowPlayingPosition(0),
+        _queueLength(0), _nowPlayingQID(0), _nowPlayingPosition(0),
         _receivedTrackInfo(false), _receivedPossibleFilenames(false),
         _nowPlayingLengthSeconds(-1),
         _timer(new QTimer(this)), _elapsedTimer(new QElapsedTimer()), _timerPosition(0)
@@ -68,6 +67,7 @@ namespace PMP {
     void CurrentTrackMonitor::connected() {
         _state = ServerConnection::UnknownState;
         _volume = -1;
+        _queueLength = 0;
         _nowPlayingQID = 0;
         _nowPlayingPosition = 0;
         _receivedTrackInfo = false;
@@ -109,13 +109,13 @@ namespace PMP {
         if (state == ServerConnection::Playing) {
             _state = state;
             _nowPlayingQID = nowPlayingQID;
-            emit playing(nowPlayingQID);
+            emit playing(nowPlayingQID, queueLength);
         }
 
         if (state == ServerConnection::Paused) {
             _state = state;
             _nowPlayingQID = nowPlayingQID;
-            emit paused(nowPlayingQID);
+            emit paused(nowPlayingQID, queueLength);
         }
 
         if (positionChanged || stateChanged) {
@@ -132,7 +132,12 @@ namespace PMP {
         if (state == ServerConnection::Stopped) {
             _state = state;
             _nowPlayingQID = 0;
-            emit stopped();
+            emit stopped(queueLength);
+        }
+
+        if (queueLength != _queueLength) {
+            _queueLength = queueLength;
+            emit queueLengthChanged(queueLength, state);
         }
 
         if (volume != _volume) {
@@ -157,7 +162,8 @@ namespace PMP {
 
         bool alreadyReceivedInfo = _receivedTrackInfo;
         _receivedTrackInfo = true;
-        qDebug() << "CurrentTrackMonitor::receivedTrackInfo  artist:" << artist << " title:" << title;
+        qDebug() << "CurrentTrackMonitor::receivedTrackInfo:  artist:" << artist
+                 << " title:" << title;
 
         if (/*!alreadyReceivedInfo || */lengthInSeconds != _nowPlayingLengthSeconds) {
             _nowPlayingLengthSeconds = lengthInSeconds;
@@ -213,5 +219,4 @@ namespace PMP {
         _timerPosition = _nowPlayingPosition + _elapsedTimer->elapsed();
         emit trackProgress(_timerPosition);
     }
-
 }

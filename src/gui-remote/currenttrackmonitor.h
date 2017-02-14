@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -43,9 +43,11 @@ namespace PMP {
         void seekTo(qint64 position);
 
     Q_SIGNALS:
-        void playing(quint32 queueID);
-        void paused(quint32 queueID);
-        void stopped();
+        void playing(quint32 queueID, quint32 queueLength);
+        void paused(quint32 queueID, quint32 queueLength);
+        void stopped(quint32 queueLength);
+
+        void queueLengthChanged(quint32 queueLength, int state);
 
         void trackProgress(quint32 queueID, quint64 position, int lengthSeconds);
         void trackProgress(quint64 position);
@@ -76,6 +78,7 @@ namespace PMP {
         ServerConnection* _connection;
         ServerConnection::PlayState _state;
         int _volume;
+        quint32 _queueLength;
         quint32 _nowPlayingQID;
         quint64 _nowPlayingPosition; // milliseconds
         bool _receivedTrackInfo;

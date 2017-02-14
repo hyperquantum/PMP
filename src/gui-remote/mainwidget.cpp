@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -164,14 +164,20 @@ namespace PMP {
         );
 
         connect(
-            _currentTrackMonitor, SIGNAL(playing(quint32)),
-            this, SLOT(playing(quint32))
+            _currentTrackMonitor, &CurrentTrackMonitor::playing,
+            this, &MainWidget::playing
         );
         connect(
-            _currentTrackMonitor, SIGNAL(paused(quint32)),
-            this, SLOT(paused(quint32))
+            _currentTrackMonitor, &CurrentTrackMonitor::paused, this, &MainWidget::paused
         );
-        connect(_currentTrackMonitor, SIGNAL(stopped()), this, SLOT(stopped()));
+        connect(
+            _currentTrackMonitor, &CurrentTrackMonitor::stopped,
+            this, &MainWidget::stopped
+        );
+        connect(
+            _currentTrackMonitor, &CurrentTrackMonitor::queueLengthChanged,
+            this, &MainWidget::queueLengthChanged
+        );
         connect(
             _currentTrackMonitor, SIGNAL(trackProgress(quint32, quint64, int)),
             this, SLOT(trackProgress(quint32, quint64, int))
@@ -187,11 +193,6 @@ namespace PMP {
         connect(
             _currentTrackMonitor, SIGNAL(receivedPossibleFilename(QString)),
             this, SLOT(receivedPossibleFilename(QString))
-        );
-
-        connect(
-            _connection, SIGNAL(queueLengthChanged(int)),
-            this, SLOT(queueLengthChanged(int))
         );
 
         _connection->requestUserPlayingForMode();
@@ -305,7 +306,7 @@ namespace PMP {
         _ui->playStateLabel->setText("paused");
     }
 
-    void MainWidget::stopped() {
+    void MainWidget::stopped(quint32 queueLength) {
         _nowPlayingQID = 0;
         _nowPlayingArtist = "";
         _nowPlayingTitle = "";
@@ -316,10 +317,20 @@ namespace PMP {
         _ui->lengthValueLabel->setText("");
         _ui->positionValueLabel->setText("");
 
-        _ui->playButton->setEnabled(true);
+        _ui->playButton->setEnabled(queueLength > 0);
         _ui->pauseButton->setEnabled(false);
         _ui->skipButton->setEnabled(false);
         _ui->playStateLabel->setText("stopped");
+    }
+
+    void MainWidget::queueLengthChanged(quint32 queueLength, int state)
+    {
+        _ui->queueLengthValueLabel->setText(QString::number(queueLength));
+
+        _ui->playButton->setEnabled(
+            state == (int)ServerConnection::Paused
+                || (state == (int)ServerConnection::Stopped && queueLength > 0)
+        );
     }
 
     void MainWidget::trackProgress(quint32 queueID, quint64 position, int lengthSeconds) {
@@ -536,10 +547,6 @@ namespace PMP {
                 buildNoRepetitionList(noRepetitionSpan);
             }
         }
-    }
-
-    void MainWidget::queueLengthChanged(int length) {
-        _ui->queueLengthValueLabel->setText(QString::number(length));
     }
 
     void MainWidget::userPlayingForChanged(quint32 userId, QString login) {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -50,7 +50,8 @@ namespace PMP {
     private slots:
         void playing(quint32 queueID);
         void paused(quint32 queueID);
-        void stopped();
+        void stopped(quint32 queueLength);
+        void queueLengthChanged(quint32 queueLength, int state);
 
         void trackProgress(quint32 queueID, quint64 position, int lengthSeconds);
         void trackProgress(quint64 position);
@@ -66,8 +67,6 @@ namespace PMP {
         void changeDynamicMode(int checkState);
         void noRepetitionIndexChanged(int index);
         void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
-
-        void queueLengthChanged(int length);
 
         void userPlayingForChanged(quint32 userId, QString login);
 
