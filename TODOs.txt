@@ -48,7 +48,6 @@ USER FRIENDLINESS
  - inform the user properly when the server is having problems connecting to the database
  - display the title/artist of the track currently playing in the window title of the remote
  - the drop indicator in the queue needs to be drawn as a line between tracks
- - add button to erase the filter of the music collection
 
 
 POLISHING
