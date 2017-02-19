@@ -86,7 +86,7 @@ First make sure MySQL is running. Then start the PMP-Server executable, and fina
  * CMake 3.1 or higher
  * pkg-config
  * TagLib 1.11 or higher
- * Qt 5      (I have Qt 5.2)
+ * Qt 5.2 or higher
  * MySQL client library  (libmysql)
  * MinGW-32  if building on Windows
 
