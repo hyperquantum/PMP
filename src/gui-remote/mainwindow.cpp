@@ -235,7 +235,7 @@ namespace PMP {
             .arg(PMP_WEBSITE)
             .arg(PMP_BUGREPORT_LOCATION)
             .arg(PMP_VERSION_DISPLAY)
-            .arg(QString("2014") + Util::EnDash + "2016") /* copyright from-to */
+            .arg(QString("2014") + Util::EnDash + "2017") /* copyright from-to */
             .arg(QString("Kevin Andr") + Util::EAcute) /* needs non-ascii char */
             .arg(QT_VERSION_STR);
 
