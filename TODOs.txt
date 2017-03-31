@@ -20,6 +20,7 @@ TECHNICAL TODO
  - keep track lengths in milliseconds, not seconds
  - associate a title and artist with each hash and save that information in the database (?)
  - when running an indexation, analyze the most recently created/updated files first
+ - large file support (?)
 
 
 IDEAS
