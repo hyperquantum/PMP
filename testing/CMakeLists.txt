@@ -30,3 +30,13 @@ add_hashtest(
     tone.mp3
     12512-be0ab48d7f019063bd32647b241b32b9-212874cdd1c5719afa3a4a66b75f250f7ca10dbc
 )
+
+add_hashtest(
+    noise.flac
+    230536-0026c468c4fc1c84ac5cb17cbe504fe0-d0d0224a2259f4ef0cb6bf50903b7dd1e60c7a90
+)
+
+add_hashtest(
+    tone.flac
+    50070-fc8a0825f871a9fd235c2960bd92679e-0f6da8f31d5af63893d087dc1595716400fb0d02
+)

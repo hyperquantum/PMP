@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -48,7 +48,8 @@ namespace PMP {
         FileAnalyzer(const TagLib::ByteVector& fileContents,
                      const QString& fileExtension);
 
-        static bool isExtensionSupported(QString const& extension);
+        static bool isExtensionSupported(QString const& extension,
+                                         bool enableExperimentalFileFormats = false);
 
         static bool preprocessFileForPlayback(QByteArray& fileContents,
                                               QString extension);
@@ -82,6 +83,8 @@ namespace PMP {
                                       unsigned long& position);
         static bool findPreviousMpegFrame(TagLib::ByteVector const& data,
                                           unsigned long& position);
+
+        static bool stripFlacHeaders(TagLib::ByteVector& flacData);
 
         void analyzeMp3();
         void analyzeFlac();

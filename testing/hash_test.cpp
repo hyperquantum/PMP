@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -88,7 +88,7 @@ int main(int argc, char *argv[]) {
     QFileInfo fileInfo(fileName);
     QString extension = fileInfo.suffix();
 
-    if (!FileAnalyzer::isExtensionSupported(extension)) {
+    if (!FileAnalyzer::isExtensionSupported(extension, true)) {
         err << "File extension not supported: " << extension << endl;
         return 2;
     }
@@ -150,21 +150,6 @@ int main(int argc, char *argv[]) {
      * local. */
     scratch = *scratchStream.data();
 
-//    QString originalChecksumAgain = checksum(contentsOriginal);
-//    if (originalChecksum != originalChecksumAgain) {
-//        err << "Modification in scratch memory has affected original copy!" << endl
-//            << "Filename: " << fileName << endl
-//            << "Checksum at start: " << originalChecksum << endl
-//            << "Checksum now:      " << originalChecksumAgain << endl;
-//        return 1;
-//    }
-
-//    if (contentsOriginal.data() == scratch.data()) {
-//        err << "Scratch memory still points to same memory as original data!" << endl
-//            << "Filename: " << fileName << endl;
-//        return 1;
-//    }
-
     if (scratch == contentsOriginal) {
         err << "Changing artist in scratch buffer did not have any effect!" << endl
             << "Filename: " << fileName << endl
@@ -173,7 +158,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    //FileData newData = FileData::analyzeFile(scratch, extension);
     FileAnalyzer analyzer2(scratch, extension);
     analyzer2.analyze();
     if (!analyzer2.analysisDone()) {

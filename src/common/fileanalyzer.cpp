@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,12 +17,12 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include "fileanalyzer.h"
 
 #include <QCryptographicHash>
 
 /* TagLib includes */
+#include "flacfile.h"
 #include "id3v2framefactory.h"
 #include "mpegfile.h"
 //#include "tbytevector.h"
@@ -122,8 +122,16 @@ namespace PMP {
         return _tags;
     }
 
-    bool FileAnalyzer::isExtensionSupported(QString const& extension) {
-        return getExtension(extension) != Extension::None;
+    bool FileAnalyzer::isExtensionSupported(QString const& extension,
+                                            bool enableExperimentalFileFormats)
+    {
+        auto extensionEnum = getExtension(extension);
+
+        if (extensionEnum == Extension::FLAC) /* FLAC is experimental */
+            return enableExperimentalFileFormats;
+
+        /* all (other) recognized extensions are supported */
+        return extensionEnum != Extension::None;
     }
 
     bool FileAnalyzer::preprocessFileForPlayback(QByteArray& fileContents,
@@ -250,8 +258,8 @@ namespace PMP {
 
     void FileAnalyzer::analyzeMp3() {
         TagLib::ByteVector scratch = _fileContents;
-
         TagLib::ByteVectorStream stream(scratch);
+
         TagLib::MPEG::File tagFile(&stream, TagLib::ID3v2::FrameFactory::instance());
         if (!tagFile.isValid()) {
             _error = true;
@@ -262,7 +270,7 @@ namespace PMP {
 
         getDataFromTag(tagFile.tag());
 
-        TagLib::AudioProperties* audioProperties = tagFile.audioProperties();
+        auto* audioProperties = tagFile.audioProperties();
         if (audioProperties) {
             _audio.setTrackLengthMilliseconds(audioProperties->lengthInMilliseconds());
         }
@@ -290,7 +298,83 @@ namespace PMP {
     }
 
     void FileAnalyzer::analyzeFlac() {
-        _error = true; /* TODO: FLAC not yet supported*/
+        TagLib::ByteVector scratch = _fileContents;
+        TagLib::ByteVectorStream stream(scratch);
+
+        TagLib::FLAC::File tagFile(&stream, TagLib::ID3v2::FrameFactory::instance());
+
+        if (!tagFile.isValid()) {
+            _error = true;
+            return;
+        }
+
+        _audio.setFormat(AudioData::FLAC);
+
+        getDataFromTag(tagFile.tag());
+
+        auto* audioProperties = tagFile.audioProperties();
+        if (audioProperties) {
+            _audio.setTrackLengthMilliseconds(audioProperties->lengthInMilliseconds());
+        }
+
+        /* strip all tags (hopefully) */
+        tagFile.strip();
+        tagFile.save(); /* apparently, strip() does not do a save by itself */
+        scratch = *stream.data(); /* get the modifications into our scratch buffer */
+
+        /* strip ID3v1 manually (TagLib might have failed to do this) */
+        stripID3v1(scratch);
+
+        /* strip the header and metadata blocks */
+        if (!stripFlacHeaders(scratch)) {
+            _error = true;
+            return;
+        }
+
+        _hash = getHashFrom(scratch);
+    }
+
+    bool FileAnalyzer::stripFlacHeaders(TagLib::ByteVector& flacData) {
+        const int metadataBlockHeaderSize = 4;
+
+        if (flacData.size() < 4 /* fLaC */ + metadataBlockHeaderSize
+                || !flacData.containsAt("fLaC", 0))
+        {
+            return false;
+        }
+
+        TagLib::ByteVectorStream stream(flacData);
+        stream.seek(4); /* skip "fLaC" */
+
+        while (true) {
+            /* https://xiph.org/flac/format.html
+
+               METADATA_BLOCK_HEADER:
+                <1>  Last-metadata-block flag: '1' if this block is the last metadata
+                      block before the audio blocks, '0' otherwise.
+                <7>  BLOCK_TYPE
+                <24> Length (in bytes) of metadata to follow (does not include the size of
+                      the METADATA_BLOCK_HEADER)
+            */
+            TagLib::ByteVector blockHeader = stream.readBlock(metadataBlockHeaderSize);
+            if (blockHeader.size() != metadataBlockHeaderSize) return false;
+
+            bool lastBlockFlag = blockHeader[0] & '\x80';
+            unsigned int blockSize = blockHeader.toUInt(1u, 3u);
+
+            /* skip the current metadata block */
+            stream.seek(blockSize, TagLib::ByteVectorStream::Position::Current);
+            if (stream.tell() >= stream.length()) return false;
+
+            if (lastBlockFlag) break;
+        }
+
+        auto audioDataStartPosition = stream.tell();
+        stream.removeBlock(0, audioDataStartPosition);
+
+        /* save modifications to parameter */
+        flacData = *stream.data();
+        return true;
     }
 
 }
