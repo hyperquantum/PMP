@@ -4,11 +4,11 @@ Copyright (C) 2011-2017  Kevin André
 
   *!! This project is in a very early stage of development !!*
 
-Party Music Player, abbreviated as PMP, is a client-server music system. The server is responsible for playing music, and a separate program, a 'remote', is used to connect to the server and instruct it what to do. PMP uses hashes to keep track of music files, so it can deal with moved/renamed and duplicate files without any problems.
+Party Music Player, abbreviated as PMP, is a multi-user client-server music system. The server is responsible for playing music, and a separate program, a 'remote', is used to connect to the server and instruct it what to do. PMP has an advanced file tracking mechanism; it can deal with moved/renamed and duplicate files without any problems.
 
 PMP is designed to be portable software and should be compatible with most popular operating systems in use today. Only Windows and Linux have been tested, but others like Mac OS X, BSD... should be supported as well.
 
-The software is licenced under GPLv3.
+The software is licenced under [GPLv3](./LICENSE.GPLv3.txt).
 
 Rudimentary project website:  http://hyperquantum.be/pmp/
 
@@ -16,28 +16,43 @@ GitHub repository:  https://github.com/hyperquantum/PMP
 
 You can contact the developer here:   hyperquantum@gmail.com
 
-
+## Table of Contents
 Contents of this file:
-  1. Features
-  2. Dependencies for running PMP
-  3. Running PMP
-  4. Dependencies for building
-  5. Building on Linux
-  6. Building on Windows
-  7. Caveats / limitations
-  8. Planned features
+  1. [Features](#1-features)
+  2. [Dependencies for running PMP](#2-dependencies-for-running-pmp)
+  3. [Running PMP](#3-running-pmp)
+  4. [Dependencies for building](#4-dependencies-for-building)
+  5. [Building on Linux](#5-building-on-linux)
+  6. [Building on Windows](#6-building-on-windows)
+  7. [Caveats / limitations](#7-caveats--limitations)
+  8. [Planned features](#8-planned-features--to-dos)
 
 
 ## 1. Features
 
- * Server executable
- * Command-line remote  (very primitive)
- * Remote with graphical user-interface
- * Use of hashing to identify tracks
- * Dynamic mode with track repetition avoidance
- * User authentication and public/personal operating modes
- * Separate play history for each user and for public mode
- * Ability to insert a breakpoint (automatic stop) into the queue
+ * **Client-server**
+   * Server executable without graphical user-interface
+   * Client executable to connect to and control the server
+   * Multiple clients can be connected to the same server at the same time
+ * **Multi-user**
+   * Creation of user accounts on the server
+   * Authentication with username and password when connecting to the server
+   * Each user has their own playback history, track scores, and preferences
+ * **Advanced file tracking**
+   * Tracks are identified by file contents, ignoring irrelevant bits like metadata
+   * Known tracks are still recognized after moving or renaming files
+   * Duplicate files (created by a file copy operation) are recognized as being the same track
+ * **Queue-based**
+   * Tracks to be played are added to a queue
+   * The top entry in the queue is the next track to be played
+   * Breakpoints can be added to the queue, to stop playback when they are reached
+ * **Dynamic mode** with track repetition avoidance
+   * Dynamic mode adds random tracks to the queue
+   * Tracks with a higher score are more likely to be selected
+   * Avoids adding tracks that were played recently
+ * **Auto scoring** based on playback history of each track
+ * Distinction between *personal* or *public* mode
+   * *Public* mode allows playing music for someone else without affecting your personal track scores
 
 
 ## 2. Dependencies For Running PMP
