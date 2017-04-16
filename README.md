@@ -1,5 +1,4 @@
-﻿Party Music Player
-==================
+﻿# Party Music Player
 
 Copyright (C) 2011-2017  Kevin André
 
@@ -29,8 +28,7 @@ Contents of this file:
   8. Planned features
 
 
-1. Features
------------
+## 1. Features
 
  * Server executable
  * Command-line remote  (very primitive)
@@ -42,8 +40,7 @@ Contents of this file:
  * Ability to insert a breakpoint (automatic stop) into the queue
 
 
-2. Dependencies For Running PMP
--------------------------------
+## 2. Dependencies For Running PMP
 
 You need to run a MySQL server instance. PMP currently uses MySQL to store its data. It may be possible to use MariaDB instead of MySQL, but I have not verified if that really works.
 
@@ -56,8 +53,7 @@ One can pick the 32-bit or 64-bit version of MySQL server, PMP should work with 
 MySQL should be configured as a developer installation (it uses less memory that way) and should be set to use Unicode (UTF-8) by default. Default storage engine should be InnoDB.
 
 
-3. Running PMP
---------------
+## 3. Running PMP
 
 The PMP server needs a database connection. When you run it for the first time, it will generate an empty configuration file. Then you can set the database connection parameters in the configuration file. On Windows the file can be found here:
 
@@ -80,8 +76,7 @@ An example configuration:
 First make sure MySQL is running. Then start the PMP-Server executable, and finally start the PMP-GUI-Remote executable.
 
 
-4. Dependencies For Building
-----------------------------
+## 4. Dependencies For Building
 
  * C++ compiler with support for C++ 2011
  * CMake 3.1 or higher
@@ -95,8 +90,7 @@ The MySQL client library should be 32-bit if PMP was built for the x86 architect
 When building on Windows, there is no need to install MinGW by itself. The Qt installer provides an option to install a MinGW toolchain that is compatible with the version of Qt you wish to install.
 
 
-5. Building On Linux
---------------------
+## 5. Building On Linux
 
 Building PMP on Linux and other Unix-like operating systems should be relatively simple:
 
@@ -111,8 +105,7 @@ Building PMP on Linux and other Unix-like operating systems should be relatively
 These instructions might need some tweaks, as they haven't been tested (at least not recently).
 
 
-6. Building On Windows
-----------------------
+## 6. Building On Windows
 
 Building PMP on Windows takes some effort.
 
@@ -120,12 +113,12 @@ These steps describe how to do an x86 (32-bit) build of PMP on Windows, with
 Qt 5.3 and TagLib 1.11. For a 64-bit build, or for different versions of Qt and/or TagLib,
 the steps need to be modified accordingly.
 
-1. Download and install CMake
+### 1. Download and install CMake
 
   → http://www.cmake.org/download/  → Win32 Installer  
   install with default options  
 
-2. Download and install Qt 5
+### 2. Download and install Qt 5
 
   → http://qt-project.org/downloads  → Qt Online Installer for Windows  
   run installer, select the following components to install:  
@@ -136,7 +129,7 @@ the steps need to be modified accordingly.
     C:\Qt\Tools\mingw482_32  
     C:\Qt\Tools\mingw482_32\bin  
 
-3. Download and build taglib
+### 3. Download and build taglib
 
   → http://taglib.github.io/  → download sourcecode (at least version 1.11)  
   unpack sourcecode  
@@ -156,7 +149,7 @@ the steps need to be modified accordingly.
     run command: mingw32-make  
     run command: mingw32-make install  
 
-4. Get pkg-config
+### 4. Get pkg-config
 
   → http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/  
   download file pkg-config_0.26-1_win32.zip  
@@ -167,7 +160,7 @@ the steps need to be modified accordingly.
   download file glib_2.28.8-1_win32.zip  
   extract libglib-2.0-0.dll to C:\Qt\Tools\mingw482_32\bin  
 
-5. Get the MySQL client library
+### 5. Get the MySQL client library
 
   → http://dev.mysql.com/downloads/connector/c/  
   the mysql version number does not matter, just pick the latest version  
@@ -176,7 +169,7 @@ the steps need to be modified accordingly.
   OR alternatively:  
     if your MySQL server is 32-bit, then you can copy the DLL from that installation
 
-6. Build PMP
+### 6. Build PMP
 
   Run CMake (cmake-gui)  
   'where is the sourcecode': select PMP sourcecode folder  
@@ -187,7 +180,7 @@ the steps need to be modified accordingly.
   press 'Generate'  
   open cmd.exe in the 'bin' directory of PMP and run "mingw32-make"  
 
-7. Running PMP
+### 7. Running PMP
 
   First start the server:  
     open cmd.exe and cd into the PMP 'bin' directory  
@@ -198,8 +191,7 @@ the steps need to be modified accordingly.
     OR alternatively, start it in a cmd window like the server  
 
 
-7. Caveats / Limitations
-------------------------
+## 7. Caveats / Limitations
 
 Since this project is in a very early stage of development, you can expect a few things to be missing or not working correctly ;)
 
@@ -212,8 +204,7 @@ Since this project is in a very early stage of development, you can expect a few
  * Etc.
 
 
-8. Planned Features / To-Do's
------------------------------
+## 8. Planned Features / To-Do's
 
 Only a list of ideas.  **No promises!**
 
@@ -222,7 +213,7 @@ Importance/priority:
   * (**M**): medium
   * (**L**): low
 
-###Small/medium effort improvements:
+### Small/medium effort improvements:
 
   * (**M**) Provide keyboard shortcuts for volume adjustment
   * (**M**) Queue contextmenu option to duplicate the entry
@@ -230,7 +221,7 @@ Importance/priority:
   * (**L**) Time-based auto-stop function
   * (**L**) Naming a PMP Server instance (e.g. "living room")
 
-###Medium/large effort improvements:
+### Medium/large effort improvements:
 
   * (**H**) Handling of files that are the same track but have a different hash
   * (**M**) Find a way to identify artists
