@@ -21,20 +21,26 @@
 
 #include <QCoreApplication>
 #include <QCryptographicHash>
+#include <QDataStream>
 #include <QFile>
 #include <QFileInfo>
+#include <QSaveFile>
 #include <QTextStream>
 #include <QVector>
 
 #include <functional>
 
 /* TagLib includes */
+#include <apetag.h>
 #include <flacfile.h>
+#include <id3v1tag.h>
 #include <id3v2framefactory.h>
+#include <id3v2tag.h>
 #include <mpegfile.h>
 #include <tbytevector.h>
 #include <tfile.h>
 #include <tbytevectorstream.h>
+#include <xiphcomment.h>
 
 using namespace PMP;
 
@@ -68,6 +74,114 @@ TagLib::File* createFileObject(TagLib::ByteVectorStream& fileStream, QString ext
     return nullptr;
 }
 
+QList<std::function<void (TagLib::ID3v1::Tag*)> > getId3v1Modifiers() {
+    QList<std::function<void (TagLib::ID3v1::Tag*)> > modifiers;
+
+    modifiers.append([](TagLib::ID3v1::Tag* id3v1) { id3v1->setTitle("T7777tttt77"); });
+    modifiers.append([](TagLib::ID3v1::Tag* id3v1) { id3v1->setArtist("L1111llll11"); });
+    modifiers.append([](TagLib::ID3v1::Tag* id3v1) { id3v1->setAlbum("O0000oooo00"); });
+    modifiers.append([](TagLib::ID3v1::Tag* id3v1) { id3v1->setYear(2097); });
+    modifiers.append([](TagLib::ID3v1::Tag* id3v1) { id3v1->setComment("1 Hello ID3"); });
+
+    return modifiers;
+}
+
+QList<std::function<void (TagLib::ID3v2::Tag*)> > getId3v2Modifiers() {
+    QList<std::function<void (TagLib::ID3v2::Tag*)> > modifiers;
+
+    modifiers.append([](TagLib::ID3v2::Tag* id3v2) { id3v2->setTitle("Qqqqq1234qq"); });
+    modifiers.append([](TagLib::ID3v2::Tag* id3v2) { id3v2->setArtist("Ddd7788ddd"); });
+    modifiers.append([](TagLib::ID3v2::Tag* id3v2) { id3v2->setAlbum("Rrrrr5005rrr"); });
+    modifiers.append([](TagLib::ID3v2::Tag* id3v2) { id3v2->setYear(2098); });
+    modifiers.append([](TagLib::ID3v2::Tag* id3v2) { id3v2->setComment("2 Hello ID3"); });
+
+    return modifiers;
+}
+
+QList<std::function<void (TagLib::APE::Tag*)> > getApeModifiers() {
+    QList<std::function<void (TagLib::APE::Tag*)> > modifiers;
+
+    modifiers.append([](TagLib::APE::Tag* ape) { ape->setTitle("AaaaaaBbbbb"); });
+    modifiers.append([](TagLib::APE::Tag* ape) { ape->setArtist("CcccccDddd"); });
+    modifiers.append([](TagLib::APE::Tag* ape) { ape->setAlbum("EeeeeFfffff"); });
+    modifiers.append([](TagLib::APE::Tag* ape) { ape->setYear(2097); });
+    modifiers.append([](TagLib::APE::Tag* ape) { ape->setComment("Hello APE"); });
+
+    return modifiers;
+}
+
+QList<std::function<void (TagLib::Ogg::XiphComment*)> > getXiphModifiers() {
+    QList<std::function<void (TagLib::Ogg::XiphComment*)> > modifiers;
+
+    modifiers.append([](TagLib::Ogg::XiphComment* xc) { xc->setTitle("KkkkkkLllll"); });
+    modifiers.append([](TagLib::Ogg::XiphComment* xc) { xc->setArtist("MmmmNnnnnn"); });
+    modifiers.append([](TagLib::Ogg::XiphComment* xc) { xc->setAlbum("OooooPppppp"); });
+    modifiers.append([](TagLib::Ogg::XiphComment* xc) { xc->setYear(2096); });
+    modifiers.append([](TagLib::Ogg::XiphComment* xc) { xc->setComment("Hello XIPH"); });
+
+    return modifiers;
+}
+
+QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers() {
+    QList<std::function<void (TagLib::MPEG::File*)> > modifiers;
+
+    Q_FOREACH(auto id3v1Modifier, getId3v1Modifiers()) {
+        modifiers.append(
+            [id3v1Modifier](TagLib::MPEG::File* file) {
+                id3v1Modifier(file->ID3v1Tag(true));
+            }
+        );
+    }
+
+    Q_FOREACH(auto id3v2Modifier, getId3v2Modifiers()) {
+        modifiers.append(
+            [id3v2Modifier](TagLib::MPEG::File* file) {
+                id3v2Modifier(file->ID3v2Tag(true));
+            }
+        );
+    }
+
+    Q_FOREACH(auto apeModifier, getApeModifiers()) {
+        modifiers.append(
+            [apeModifier](TagLib::MPEG::File* file) {
+                apeModifier(file->APETag(true));
+            }
+        );
+    }
+
+    return modifiers;
+}
+
+QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers() {
+    QList<std::function<void (TagLib::FLAC::File*)> > modifiers;
+
+    Q_FOREACH(auto id3v1Modifier, getId3v1Modifiers()) {
+        modifiers.append(
+            [id3v1Modifier](TagLib::FLAC::File* file) {
+                id3v1Modifier(file->ID3v1Tag(true));
+            }
+        );
+    }
+
+    Q_FOREACH(auto id3v2Modifier, getId3v2Modifiers()) {
+        modifiers.append(
+            [id3v2Modifier](TagLib::FLAC::File* file) {
+                id3v2Modifier(file->ID3v2Tag(true));
+            }
+        );
+    }
+
+    Q_FOREACH(auto xiphModifier, getXiphModifiers()) {
+        modifiers.append(
+            [xiphModifier](TagLib::FLAC::File* file) {
+                xiphModifier(file->xiphComment(true));
+            }
+        );
+    }
+
+    return modifiers;
+}
+
 QList<std::function<void (TagLib::File*)> > getModifiers(QString extension) {
     QList<std::function<void (TagLib::File*)> > modifiers;
 
@@ -76,9 +190,27 @@ QList<std::function<void (TagLib::File*)> > getModifiers(QString extension) {
     modifiers.append([](TagLib::File* file) { file->tag()->setAlbum("Eeeeeeeeee"); });
     modifiers.append([](TagLib::File* file) { file->tag()->setYear(2099); });
     modifiers.append([](TagLib::File* file) { file->tag()->setComment("No comment!"); });
-    modifiers.append([](TagLib::File* file) {  });
 
-    // TODO: format-specific file modifications
+    /* format-specific file modifications */
+
+    if (extension == "mp3") {
+        Q_FOREACH(auto mp3Modifier, getMp3Modifiers()) {
+            modifiers.append(
+                [mp3Modifier](TagLib::File* file) {
+                    mp3Modifier(static_cast<TagLib::MPEG::File*>(file));
+                }
+            );
+        }
+    }
+    else if (extension == "flac") {
+        Q_FOREACH(auto flacModifier, getFlacModifiers()) {
+            modifiers.append(
+                [flacModifier](TagLib::File* file) {
+                    flacModifier(static_cast<TagLib::FLAC::File*>(file));
+                }
+            );
+        }
+    }
 
     return modifiers;
 }
@@ -182,6 +314,8 @@ public:
                      << "Expected: " << _expectedResult << endl
                      << "Original: " << originalResult() << endl
                      << "Modified: " << modifiedHash << endl;
+
+                writeDebugFile(_filename + "_MODIFIED.data", modifiedData);
                 return false;
             }
 
@@ -192,6 +326,19 @@ public:
     }
 
 private:
+    void writeDebugFile(QString filename, const TagLib::ByteVector& contents) {
+        QSaveFile file(filename);
+        if (!file.open(QIODevice::WriteOnly)) {
+            _err << "Could not open file for writing: " << filename << endl;
+            return;
+        }
+
+        QDataStream stream(&file);
+        stream.writeRawData(contents.data(), contents.size());
+
+        file.commit();
+    }
+
     TagLib::ByteVector applyModification(
             std::function<TagLib::ByteVector (const TagLib::ByteVector&)> modifier)
     {
@@ -221,7 +368,6 @@ private:
         return *scratchStream.data();
     }
 
-
     QTextStream _out;
     QTextStream _err;
     bool _error;
@@ -231,11 +377,6 @@ private:
     TagLib::ByteVector _originalFileContents;
     QString _originalResult;
 };
-
-void setArtistAndYear(TagLib::File* file) {
-    file->tag()->setArtist("Aaaaaaaaaa");
-    file->tag()->setYear(2099);
-}
 
 int main(int argc, char *argv[]) {
 
