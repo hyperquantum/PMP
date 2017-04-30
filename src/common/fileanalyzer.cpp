@@ -207,6 +207,8 @@ namespace PMP {
     }
 
     bool FileAnalyzer::stripAPE(TagLib::ByteVector& data) {
+        // TODO FIXME : this does not work (correctly)
+
         auto length = data.size();
         if (length < 32U) return false;
 

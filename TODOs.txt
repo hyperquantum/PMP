@@ -8,6 +8,7 @@ BUGS
  - GUI remote: tracks can be dragged using the right mouse button (not just the left button)
  - GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
  - GUI remote: after a breakpoint is hit, track length and play position are not cleared
+ - hash calculation is wrong for MP3 files containing an APE tag
 
 
 PERFORMANCE ISSUES
