@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
     }
 
     bool isExperimentalFileFormat =
-        FileAnalyzer::isExtensionSupported(fileInfo.suffix(), false);
+        !FileAnalyzer::isExtensionSupported(fileInfo.suffix(), false);
 
     QFile file(fileName);
     if (!file.open(QIODevice::ReadOnly)) {
