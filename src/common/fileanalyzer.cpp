@@ -286,6 +286,7 @@ namespace PMP {
 
         /* strip the rest (ID3v1 and APE) */
         finalDifferentFromLegacy |= stripID3v1(scratch);
+        finalDifferentFromLegacy |= stripID3v1(scratch); /* ID3v1 might occur twice */
         finalDifferentFromLegacy |= stripAPE(scratch);
 
         /* get the final hash */
@@ -326,6 +327,7 @@ namespace PMP {
 
         /* strip ID3v1 manually (TagLib might have failed to do this) */
         stripID3v1(scratch);
+        stripID3v1(scratch); /* ID3v1 might occur twice */
 
         /* strip the header and metadata blocks */
         if (!stripFlacHeaders(scratch)) {

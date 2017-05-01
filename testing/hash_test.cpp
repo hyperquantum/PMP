@@ -276,29 +276,18 @@ public:
 
     bool testModifications(QList<std::function<void (TagLib::File*)> > modifiers) {
         QVector<TagLib::ByteVector> transformed;
-        transformed.reserve(modifiers.size());
 
-        /* Apply all modifications, and make sure they really are different modifications
-           of the original. */
-        Q_FOREACH(auto modifier, modifiers) {
-            auto modifiedData = applyModification(modifier);
-            _out << "Modified data checksum: " << checksum(modifiedData) << endl;
+        /* Single data transformations */
+        auto singleTransformed = generateSingleModifiedData(modifiers);
+        if (singleTransformed.size() == 0) return false; /* something went wrong */
+        transformed << singleTransformed;
 
-            if (modifiedData == originalFileContents()) {
-                _err << "Problem: modification ineffective; test would be unreliable"
-                     << endl;
-                return false;
-            }
+        /* Apply combinations of two consecutive modifications */
+        auto multiTransformed = generateMultiModifiedData(modifiers);
+        if (multiTransformed.size() == 0) return false; /* something went wrong */
+        transformed << multiTransformed;
 
-            if (transformed.contains(modifiedData)) {
-                _err << "Problem: modification not unique; test would be unreliable"
-                     << endl;
-                return false;
-            }
-
-            transformed.append(modifiedData);
-        }
-
+        unsigned correctHashCount = 0;
         Q_FOREACH(auto modifiedData, transformed) {
             FileAnalyzer analyzer(modifiedData, extension());
             analyzer.analyze();
@@ -319,13 +308,90 @@ public:
                 return false;
             }
 
-            _out << "Modification resulted in correct hash." << endl;
+            correctHashCount++;
         }
 
-        return true;
+        _out << "Got correct hash in " << correctHashCount << " of " << transformed.size()
+             << " cases." << endl;
+
+        return correctHashCount == (unsigned)transformed.size();
     }
 
 private:
+
+    QVector<TagLib::ByteVector> generateSingleModifiedData(
+                                    QList<std::function<void (TagLib::File*)> > modifiers)
+    {
+        QVector<TagLib::ByteVector> transformed;
+        transformed.reserve(modifiers.size());
+
+        _out << "Generating single modifications" << endl;
+
+        /* Apply each modification, and make sure they each generate a result different
+           from the others and from the original data. */
+        Q_FOREACH(auto modifier, modifiers) {
+            auto modifiedData = applyModification(originalFileContents(), modifier);
+            _out << "Modified data checksum: " << checksum(modifiedData) << endl;
+
+            if (modifiedData.size() == 0) {
+                _err << "Problem: modification went wrong, returned no result" << endl;
+                return QVector<TagLib::ByteVector>();
+            }
+
+            if (modifiedData == originalFileContents()) {
+                _err << "Problem: modification ineffective; test would be unreliable"
+                     << endl;
+                return QVector<TagLib::ByteVector>();
+            }
+
+            if (transformed.contains(modifiedData)) {
+                _err << "Problem: modification not unique; test would be unreliable"
+                     << endl;
+                return QVector<TagLib::ByteVector>();
+            }
+
+            transformed.append(modifiedData);
+        }
+
+        return transformed;
+    }
+
+    QVector<TagLib::ByteVector> generateMultiModifiedData(
+                                    QList<std::function<void (TagLib::File*)> > modifiers)
+    {
+        QVector<TagLib::ByteVector> transformed;
+        transformed.reserve(modifiers.size() * modifiers.size());
+
+        _out << "Generating combined modifications" << endl;
+
+        Q_FOREACH(auto modifier1, modifiers) {
+            auto modifiedData1 = applyModification(originalFileContents(), modifier1);
+            if (modifiedData1.size() == 0) {
+                _err << "Problem: modification went wrong, returned no result" << endl;
+                return QVector<TagLib::ByteVector>();
+            }
+
+            Q_FOREACH(auto modifier2, modifiers) {
+                auto modifiedData2 = applyModification(modifiedData1, modifier2);
+                _out << "Modified data checksum: " << checksum(modifiedData2) << endl;
+                if (modifiedData2.size() == 0) {
+                    _err << "Problem: modification went wrong, returned no result"
+                         << endl;
+                    return QVector<TagLib::ByteVector>();
+                }
+
+                if (modifiedData2 == originalFileContents()) {
+                    _err << "Problem: combined modification is no-op" << endl;
+                    return QVector<TagLib::ByteVector>();
+                }
+
+                transformed.append(modifiedData2);
+            }
+        }
+
+        return transformed;
+    }
+
     void writeDebugFile(QString filename, const TagLib::ByteVector& contents) {
         QSaveFile file(filename);
         if (!file.open(QIODevice::WriteOnly)) {
@@ -345,9 +411,11 @@ private:
         return modifier(originalFileContents());
     }
 
-    TagLib::ByteVector applyModification(std::function<void (TagLib::File*)> modifier) {
+    TagLib::ByteVector applyModification(const TagLib::ByteVector& startData,
+                                         std::function<void (TagLib::File*)> modifier)
+    {
         /* create a stream from the original file contents (makes a copy) */
-        TagLib::ByteVectorStream scratchStream(originalFileContents());
+        TagLib::ByteVectorStream scratchStream(startData);
 
         TagLib::File* scratchFile = createFileObject(scratchStream, extension());
 
@@ -408,6 +476,5 @@ int main(int argc, char *argv[]) {
     if (!result) return 1;
 
     out << "Success!" << endl;
-
     return 0;
 }
