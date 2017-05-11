@@ -127,8 +127,11 @@ namespace PMP {
     {
         auto extensionEnum = getExtension(extension);
 
-        if (extensionEnum == Extension::FLAC) /* FLAC is experimental */
-            return enableExperimentalFileFormats;
+        (void)enableExperimentalFileFormats; /* no experimental formats at this time */
+
+        ///* Experimental formats */
+        //if (extensionEnum == Extension::SomeExperimentalFormat)
+        //    return enableExperimentalFileFormats;
 
         /* all (other) recognized extensions are supported */
         return extensionEnum != Extension::None;

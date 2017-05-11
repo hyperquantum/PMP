@@ -51,28 +51,38 @@ Contents of this file:
    * Tracks with a higher score are more likely to be selected
    * Avoids adding tracks that were played recently
  * **Auto scoring** based on playback history of each track
- * Distinction between *personal* or *public* mode
+ * Distinction between *personal* and *public* mode
    * *Public* mode allows playing music for someone else without affecting your personal track scores
 
 
 ## 2. Dependencies For Running PMP
 
-You need to run a MySQL server instance. PMP currently uses MySQL to store its data. It may be possible to use MariaDB instead of MySQL, but I have not verified if that really works.
+  1. MySQL
 
-Linux users can install MySQL server using their distribution's package manager.
+     You need to run a MySQL server instance. PMP currently uses MySQL to store its data. It may be possible to use MariaDB instead of MySQL, but I have not verified if that really works.
 
-Windows users can get an installer here:  http://dev.mysql.com/downloads/mysql/
+     Linux users can install MySQL server using their distribution's package manager.
 
-One can pick the 32-bit or 64-bit version of MySQL server, PMP should work with both.
+     Windows users can get an installer here:  http://dev.mysql.com/downloads/mysql/
 
-MySQL should be configured as a developer installation (it uses less memory that way) and should be set to use Unicode (UTF-8) by default. Default storage engine should be InnoDB.
+     One can pick the 32-bit or 64-bit version of MySQL server, PMP should work with both.
+
+     MySQL should be configured as a developer installation (it uses less memory that way) and should be set to use Unicode (UTF-8) by default. Default storage engine should be InnoDB.
+
+  2. Codecs / Plugins
+
+     Windows users will need to install the [Xiph codecs](https://xiph.org/dshow/downloads/) or some other more generic codec pack if they need support for FLAC audio.
+     
+     Linux users may need to install a GStreamer plugin to get support for MP3 files.
 
 
 ## 3. Running PMP
 
 The PMP server needs a database connection. When you run it for the first time, it will generate an empty configuration file. Then you can set the database connection parameters in the configuration file. On Windows the file can be found here:
 
+```
   C:\Users\username\AppData\Roaming\Party Music Player\Party Music Player - Server.ini
+```
 
 You also need to tell PMP where to look for music files. This is done in the configuration file as well.
 
@@ -210,8 +220,8 @@ the steps need to be modified accordingly.
 
 Since this project is in a very early stage of development, you can expect a few things to be missing or not working correctly ;)
 
- * Only MP3 files supported for now  
-   → because hashing is only implemented for MP3 files at this time
+ * Only MP3 and FLAC files supported for now  
+   → because file tracking is currently only implemented for those formats
  * Database requires MySQL (maybe MariaDB), SQLite is not an option
  * No automatic detection yet of new/modified/deleted files while the server is running, a full indexation must be started manually
  * Queue manipulation in the clients is still limited: only move/delete/insert of one entry at a time.
@@ -248,7 +258,7 @@ Importance/priority:
   * (**L**) Silence detection at the start and end of each track
   * (**L**) Crossfading
   * (**M**) Bridging of PMP server instances, to access music from another machine
-  * (**M**) Support for other formats than just MP3
+  * (**L**) Support for other formats than just MP3 and FLAC
   * (**M**) Android remote for a server instance elsewhere
   * (**L**) Manual song play to a second audio device (for headphones)
   * (**L**) Support for other database providers than MySQL
