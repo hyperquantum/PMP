@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,16 +23,99 @@
 #include <QDate>
 #include <QDir>
 #include <QFile>
+#include <QMutex>
+#include <QMutexLocker>
 #include <QRegularExpression>
 #include <QStringBuilder>
+#include <QTextStream>
 #include <QtGlobal>
 #include <QTime>
 
 namespace PMP {
 
+    /* ========================== LoggerBase ========================== */
+
+    class LoggerBase {
+    protected:
+        static QString stripSourcefilePath(QString file);
+    };
+
+    /*! transform "/long/path/name/src/common/xyz.cpp" to "common/xyz.cpp" */
+    QString LoggerBase::stripSourcefilePath(QString file) {
+        /* file refers to a source file not present on the machine we are running on, */
+        /* so we will use string operations instead of QFileInfo */
+
+        /* writing a loop ourselves is faster than calling lastIndexOf() multiple times */
+        int lastOne = -1;
+        for (int i = file.size() - 1; i >= 0; --i) {
+            if (file[i] != '/' && file[i] != '\\') continue; /* not a separator */
+
+            if (lastOne >= 0) {
+                /* we found the second last one */
+                return file.mid( i + 1);
+            }
+
+            lastOne = i; /* we found the last one */
+        }
+
+        if (lastOne >= 0) return file.mid(lastOne + 1);
+        return file;
+    }
+
+    /* ========================== ConsoleLogger ========================== */
+
+    class ConsoleLogger : LoggerBase {
+    public:
+        ConsoleLogger() : _mutex(QMutex::Recursive), _out(stdout) {}
+
+        void logMessage(QtMsgType type, const QMessageLogContext& context,
+                        const QString& msg);
+
+    private:
+        QMutex _mutex;
+        QTextStream _out;
+    };
+
+    void ConsoleLogger::logMessage(QtMsgType type, const QMessageLogContext& context,
+                                   const QString& msg)
+    {
+        QString time = QTime::currentTime().toString(Qt::ISODate); /* HH:mm:ss */
+        QString sourcefile = stripSourcefilePath(context.file);
+
+        QString locationText =
+            sourcefile % ":" % QString::number(context.line).leftJustified(6, '-');
+
+        QString output;
+        switch (type) {
+            case QtDebugMsg:
+                output = time % " [D] " % locationText % msg % "\n";
+                break;
+            /* QtInfoMsg is only available in Qt 5.5 and later
+            case QtInfoMsg:
+                output = time % " [I] " % locationText % msg % "\n";
+                break;
+            */
+            case QtWarningMsg:
+                output = time % " [Warning] " % locationText % msg % "\n";
+                break;
+            case QtCriticalMsg:
+                output = time % " [CRITICAL] " % locationText % msg % "\n";
+                break;
+            case QtFatalMsg:
+                output = time % " [FATAL] " % locationText % msg % "\n";
+                break;
+            default:
+                output = time % " [???] " % locationText % msg % "\n";
+                break;
+        }
+
+        QMutexLocker lock(&_mutex);
+        _out << output << flush;
+    }
+
     /* ========================== TextFileLogger ========================== */
 
-    class TextFileLogger {
+    class TextFileLogger : LoggerBase {
     public:
         TextFileLogger() : _initialized(false), _appPid(0) {}
 
@@ -45,7 +128,7 @@ namespace PMP {
         void cleanupOldLogfiles();
 
     private:
-        static QString stripSourcefilePath(QString file);
+        void writeToLogFile(QString const& output);
 
         bool _initialized;
         qint64 _appPid;
@@ -71,9 +154,7 @@ namespace PMP {
         return true;
     }
 
-    void TextFileLogger::logMessage(QtMsgType type, const QMessageLogContext& context,
-                                    const QString& msg)
-    {
+    void TextFileLogger::writeToLogFile(const QString& output) {
         QDate today = QDate::currentDate();
 
         QString logFile =
@@ -99,46 +180,44 @@ namespace PMP {
             file.write("\n", 1);
         }
 
+        file.write(output.toUtf8());
+        file.close();
+    }
+
+    void TextFileLogger::logMessage(QtMsgType type, const QMessageLogContext& context,
+                                    const QString& msg)
+    {
         QString time = QTime::currentTime().toString(Qt::ISODate); /* HH:mm:ss */
         QString sourcefile = stripSourcefilePath(context.file);
 
         QString locationText =
             sourcefile % ":" % QString::number(context.line).leftJustified(6, '-');
 
+        QString output;
         switch (type) {
             case QtDebugMsg:
-                file.write(
-                    QString(time % " [D] " % locationText % msg % "\n").toUtf8()
-                );
-                file.close();
+                output = time % " [D] " % locationText % msg % "\n";
                 break;
             /* QtInfoMsg is only available in Qt 5.5 and later
             case QtInfoMsg:
-                file.write(
-                    QString(time % " [I] " % locationText % msg % "\n").toUtf8()
-                );
-                file.close();
+                output = time % " [I] " % locationText % msg % "\n";
                 break;
             */
             case QtWarningMsg:
-                file.write(
-                    QString(time % " [Warning] " % locationText % msg % "\n").toUtf8()
-                );
-                file.close();
+                output = time % " [Warning] " % locationText % msg % "\n";
                 break;
             case QtCriticalMsg:
-                file.write(
-                    QString(time % " [CRITICAL] " % locationText % msg % "\n").toUtf8()
-                );
-                file.close();
+                output = time % " [CRITICAL] " % locationText % msg % "\n";
                 break;
             case QtFatalMsg:
-                file.write(
-                    QString(time % " [FATAL] " % locationText % msg % "\n").toUtf8()
-                );
-                file.close();
-                abort();
+                output = time % " [FATAL] " % locationText % msg % "\n";
+                break;
+            default:
+                output = time % " [???] " % locationText % msg % "\n";
+                break;
         }
+
+        writeToLogFile(output);
     }
 
     void TextFileLogger::cleanupOldLogfiles() {
@@ -165,46 +244,50 @@ namespace PMP {
         }
     }
 
-    /*! transform "/long/path/name/src/common/xyz.cpp" to "common/xyz.cpp" */
-    QString TextFileLogger::stripSourcefilePath(QString file) {
-        /* file refers to a source file not present on the machine we are running on, */
-        /* so we will use string operations instead of QFileInfo */
-
-        /* writing a loop ourselves is faster than calling lastIndexOf() multiple times */
-        int lastOne = -1;
-        for (int i = file.size() - 1; i >= 0; --i) {
-            if (file[i] != '/' && file[i] != '\\') continue; /* not a separator */
-
-            if (lastOne >= 0) {
-                /* we found the second last one */
-                return file.mid( i + 1);
-            }
-
-            lastOne = i; /* we found the last one */
-        }
-
-        if (lastOne >= 0) return file.mid(lastOne + 1);
-        return file;
-    }
-
     /* ========================== Logging ========================== */
 
+    ConsoleLogger globalConsoleLogger; /* global instance */
     TextFileLogger globalTextFileLogger; /* global instance */
 
     void logToTextFile(QtMsgType type, const QMessageLogContext& context,
                        const QString& msg)
     {
         globalTextFileLogger.logMessage(type, context, msg);
+
+        if (type == QtFatalMsg) { abort(); }
     }
 
-    void Logging::enableTextFileLogging() {
+    void logToTextFileAndConsole(QtMsgType type, const QMessageLogContext& context,
+                                 const QString& msg)
+    {
+        globalConsoleLogger.logMessage(type, context, msg);
+        globalTextFileLogger.logMessage(type, context, msg);
+
+        if (type == QtFatalMsg) { abort(); }
+    }
+
+    void logToConsole(QtMsgType type, const QMessageLogContext& context,
+                      const QString& msg)
+    {
+        globalConsoleLogger.logMessage(type, context, msg);
+
+        if (type == QtFatalMsg) { abort(); }
+    }
+
+    void Logging::enableTextFileLogging(bool alsoPrintToStdOut) {
         if (!globalTextFileLogger.init()) return;
 
-        qInstallMessageHandler(logToTextFile);
+        if (alsoPrintToStdOut)
+            qInstallMessageHandler(logToTextFileAndConsole);
+        else
+            qInstallMessageHandler(logToTextFile);
+    }
+
+    void Logging::enableConsoleOnlyLogging() {
+        qInstallMessageHandler(logToConsole);
     }
 
     void Logging::cleanupOldLogfiles() {
         globalTextFileLogger.cleanupOldLogfiles();
     }
-
 }

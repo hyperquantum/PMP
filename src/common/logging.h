@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,8 @@ namespace PMP {
 
     class Logging {
     public:
-        static void enableTextFileLogging();
+        static void enableTextFileLogging(bool alsoPrintToStdOut);
+        static void enableConsoleOnlyLogging();
         static void cleanupOldLogfiles();
 
     private:

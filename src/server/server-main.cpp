@@ -17,6 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "common/logging.h"
 #include "common/version.h"
 
 #include "collectionmonitor.h"
@@ -70,6 +71,9 @@ int main(int argc, char *argv[]) {
     QTextStream out(stdout);
 
     out << endl << "PMP --- Party Music Player" << endl << endl;
+
+    /* set up logging */
+    Logging::enableConsoleOnlyLogging();
 
     /* seed random number generator */
     qsrand(QTime::currentTime().msec());

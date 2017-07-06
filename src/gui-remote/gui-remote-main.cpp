@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationName(PMP_ORGANIZATION_NAME);
     QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
 
-    Logging::enableTextFileLogging();
+    Logging::enableTextFileLogging(false);
     Logging::cleanupOldLogfiles();
     /* TODO: do a log cleanup regularly, because the user might keep the client running
      *       for several days without closing it. */

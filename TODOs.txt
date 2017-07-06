@@ -1,8 +1,15 @@
+﻿
+PLANNED NEXT
+
+ - keep track time in database; get the time from the player when a track is played until the end
+ - keep file sizes in database; they can be used for efficient file lookup in case a file has been renamed
+ - server: keep logs in text files like it is done in the client
+ - create Last.FM scrobbler  (but how/where are we going to keep user authentication data?)
+
 
 BUGS
 
  - for some tracks we get the wrong length (caused by length estimation in TagLib)
- - diagnostic logging produces unreadable text when two different threads write something to the log
  - when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
  - the commandline client does not support user authentication which is now required for some commands it supports
  - GUI remote: tracks can be dragged using the right mouse button (not just the left button)
