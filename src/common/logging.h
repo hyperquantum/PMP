@@ -24,8 +24,10 @@ namespace PMP {
 
     class Logging {
     public:
-        static void enableTextFileLogging(bool alsoPrintToStdOut);
         static void enableConsoleOnlyLogging();
+        static void enableTextFileOnlyLogging();
+        static void enableConsoleAndTextFileLogging(bool reducedConsoleOutput);
+
         static void cleanupOldLogfiles();
 
     private:

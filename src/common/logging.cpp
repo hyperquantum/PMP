@@ -117,10 +117,10 @@ namespace PMP {
 
     class TextFileLogger : LoggerBase {
     public:
-        TextFileLogger() : _initialized(false), _appPid(0) {}
+        TextFileLogger() : _mutex(QMutex::Recursive), _initialized(false), _appPid(0) {}
 
         bool init();
-        bool initialized() { return _initialized; }
+        bool initialized();
 
         void logMessage(QtMsgType type, const QMessageLogContext& context,
                         const QString& msg);
@@ -130,13 +130,20 @@ namespace PMP {
     private:
         void writeToLogFile(QString const& output);
 
+        QMutex _mutex;
         bool _initialized;
         qint64 _appPid;
         QByteArray _byteOrderMark;
         QString _logDir;
     };
 
+    bool TextFileLogger::initialized() {
+        QMutexLocker lock(&_mutex);
+        return _initialized;
+    }
+
     bool TextFileLogger::init() {
+        QMutexLocker lock(&_mutex);
         _initialized = false;
         _appPid = QCoreApplication::applicationPid();
 
@@ -155,8 +162,9 @@ namespace PMP {
     }
 
     void TextFileLogger::writeToLogFile(const QString& output) {
-        QDate today = QDate::currentDate();
+        QMutexLocker lock(&_mutex);
 
+        QDate today = QDate::currentDate();
         QString logFile =
             _logDir + "/" + today.toString(Qt::ISODate)
                 + "-P" + QString::number(_appPid) + ".txt";
@@ -266,6 +274,17 @@ namespace PMP {
         if (type == QtFatalMsg) { abort(); }
     }
 
+    void logToTextFileAndReducedConsole(QtMsgType type, const QMessageLogContext& context,
+                                        const QString& msg)
+    {
+        if (type != QtDebugMsg)
+            globalConsoleLogger.logMessage(type, context, msg);
+
+        globalTextFileLogger.logMessage(type, context, msg);
+
+        if (type == QtFatalMsg) { abort(); }
+    }
+
     void logToConsole(QtMsgType type, const QMessageLogContext& context,
                       const QString& msg)
     {
@@ -274,13 +293,19 @@ namespace PMP {
         if (type == QtFatalMsg) { abort(); }
     }
 
-    void Logging::enableTextFileLogging(bool alsoPrintToStdOut) {
+    void Logging::enableTextFileOnlyLogging() {
         if (!globalTextFileLogger.init()) return;
 
-        if (alsoPrintToStdOut)
-            qInstallMessageHandler(logToTextFileAndConsole);
+        qInstallMessageHandler(logToTextFile);
+    }
+
+    void Logging::enableConsoleAndTextFileLogging(bool reducedConsoleOutput) {
+        if (!globalTextFileLogger.init()) return;
+
+        if (reducedConsoleOutput)
+            qInstallMessageHandler(logToTextFileAndReducedConsole);
         else
-            qInstallMessageHandler(logToTextFile);
+            qInstallMessageHandler(logToTextFileAndConsole);
     }
 
     void Logging::enableConsoleOnlyLogging() {

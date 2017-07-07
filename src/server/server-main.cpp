@@ -73,7 +73,7 @@ int main(int argc, char *argv[]) {
     out << endl << "PMP --- Party Music Player" << endl << endl;
 
     /* set up logging */
-    Logging::enableConsoleOnlyLogging();
+    Logging::enableConsoleAndTextFileLogging(true);
 
     /* seed random number generator */
     qsrand(QTime::currentTime().msec());
