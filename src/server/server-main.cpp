@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -74,6 +74,9 @@ int main(int argc, char *argv[]) {
 
     /* set up logging */
     Logging::enableConsoleAndTextFileLogging(true);
+    Logging::cleanupOldLogfiles();
+    /* TODO: do a log cleanup regularly, because a server is likely to be run for days,
+     *       weeks, or months before being restarted. */
 
     /* seed random number generator */
     qsrand(QTime::currentTime().msec());
