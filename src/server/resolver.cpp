@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -303,11 +303,11 @@ namespace PMP {
             }
 
             qDebug() << "loaded" << _hashList.count()
-                     << "hashes from the database" << endl;
+                     << "hashes from the database";
         }
         else {
             qDebug() << "Resolver: could not load hashes because"
-                     << "there is no working DB connection" << endl;
+                     << "there is no working DB connection";
         }
     }
 
