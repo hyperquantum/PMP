@@ -24,6 +24,9 @@
     <layout class="QVBoxLayout" name="verticalLayout_2">
      <item>
       <widget class="QLabel" name="artistTitleLabel">
+       <property name="styleSheet">
+        <string notr="true">font-size: 11pt;</string>
+       </property>
        <property name="text">
         <string>Artist - Title</string>
        </property>
