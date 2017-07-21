@@ -3,7 +3,7 @@ PLANNED NEXT
 
  - keep track time in database; get the time from the player when a track is played until the end
  - keep file sizes in database; they can be used for efficient file lookup in case a file has been renamed
- - server: keep logs in text files like it is done in the client
+ - regular automatic cleanup of old log files while the server is running
  - create Last.FM scrobbler  (but how/where are we going to keep user authentication data?)
 
 
