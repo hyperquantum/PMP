@@ -193,7 +193,7 @@ int main(int argc, char *argv[]) {
     // exit when the server instance signals it
     QObject::connect(&server, SIGNAL(shuttingDown()), &app, SLOT(quit()));
 
-    out << endl << "Server initialization complete. Starting indexation thread." << endl;
+    out << endl << "Server initialization complete." << endl;
 
     /* start indexation of the media directories */
     resolver.startFullIndexation();
