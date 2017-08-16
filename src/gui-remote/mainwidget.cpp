@@ -440,6 +440,7 @@ namespace PMP {
         _noRepetitionList.append(14 * 24 * 3600); // 14 days
         _noRepetitionList.append(21 * 24 * 3600); // 21 days (3 weeks)
         _noRepetitionList.append(28 * 24 * 3600); // 28 days (4 weeks)
+        _noRepetitionList.append(56 * 24 * 3600); // 56 days (8 weeks)
 
         int indexOfSpanToSelect = -1;
 
