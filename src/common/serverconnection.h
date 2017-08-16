@@ -22,6 +22,7 @@
 
 #include "collectiontrackinfo.h"
 #include "networkprotocol.h"
+#include "playerhistorytrackinfo.h"
 #include "tribool.h"
 
 #include <QByteArray>
@@ -31,6 +32,7 @@
 #include <QObject>
 #include <QTcpSocket>
 #include <QUuid>
+#include <QVector>
 
 namespace PMP {
 
@@ -140,6 +142,8 @@ namespace PMP {
 
         void sendPossibleFilenamesRequest(uint queueID);
 
+        void sendPlayerHistoryRequest(int limit);
+
         void sendUserAccountsFetchRequest();
         void createNewUserAccount(QString login, QString password);
         void login(QString login, QString password);
@@ -174,6 +178,10 @@ namespace PMP {
         void nowPlayingTrack(quint32 queueID);
         void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
         void trackPositionChanged(quint64 position);
+
+        void receivedPlayerHistoryEntry(PMP::PlayerHistoryTrackInfo track);
+        void receivedPlayerHistory(QVector<PMP::PlayerHistoryTrackInfo> tracks);
+
         void queueLengthChanged(int length);
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);
@@ -245,6 +253,8 @@ namespace PMP {
 
         void parseBulkQueueEntryHashMessage(QByteArray const& message);
         void parseHashUserDataMessage(QByteArray const& message);
+        void parseNewHistoryEntryMessage(QByteArray const& message);
+        void parsePlayerHistoryMessage(QByteArray const& message);
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 

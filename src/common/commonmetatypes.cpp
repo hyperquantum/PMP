@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,17 +18,25 @@
 */
 
 #include "collectiontrackinfo.h"
+#include "filehash.h"
+#include "playerhistorytrackinfo.h"
 
 namespace PMP {
 
-    /* utility object to automatically do the qRegisterMetaType call at program startup */
-    class CollectionTrackInfoInit {
-    public:
-        CollectionTrackInfoInit() {
+    /** Utility object to automatically do the qRegisterMetaType calls at program
+     *  startup */
+    class CommonMetatypesInit {
+    protected:
+        CommonMetatypesInit() {
             qRegisterMetaType<PMP::CollectionTrackInfo>();
+            qRegisterMetaType<PMP::FileHash>();
+            qRegisterMetaType<PMP::PlayerHistoryTrackInfo>();
         }
+
+    private:
+        static CommonMetatypesInit GlobalVariable;
     };
 
-    static CollectionTrackInfoInit collectionTrackInfoInitInit;
+    CommonMetatypesInit CommonMetatypesInit::GlobalVariable;
 
 }

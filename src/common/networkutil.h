@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 #define PMP_NETWORKUTIL_H
 
 #include <QByteArray>
+#include <QDateTime>
 #include <QString>
 
 namespace PMP {
@@ -33,12 +34,24 @@ namespace PMP {
         static int append4Bytes(QByteArray& buffer, quint32 number);
         static int append8Bytes(QByteArray& buffer, quint64 number);
 
+        static int append8ByteQDateTimeMsSinceEpoch(QByteArray& buffer,
+                                                    QDateTime dateTime);
+        static int append8ByteMaybeEmptyQDateTimeMsSinceEpoch(QByteArray& buffer,
+                                                              QDateTime dateTime);
+
         static quint32 get4Bytes(char const* buffer);
 
         static quint8 getByte(QByteArray const& buffer, uint position);
         static quint16 get2Bytes(QByteArray const& buffer, uint position);
         static quint32 get4Bytes(QByteArray const& buffer, uint position);
         static quint64 get8Bytes(QByteArray const& buffer, uint position);
+
+        static QDateTime getQDateTimeFrom8ByteMsSinceEpoch(QByteArray const& buffer,
+                                                           uint position);
+        static QDateTime getMaybeEmptyQDateTimeFrom8ByteMsSinceEpoch(
+                                                           QByteArray const& buffer,
+                                                           uint position);
+
         static QString getUtf8String(QByteArray const& buffer, uint position, uint length);
 
     };

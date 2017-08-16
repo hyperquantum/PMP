@@ -25,6 +25,7 @@
 
 #include "autopersonalmodeaction.h"
 #include "currenttrackmonitor.h"
+#include "playerhistorymodel.h"
 #include "queueentryinfofetcher.h"
 #include "queuemediator.h"
 #include "queuemodel.h"
@@ -48,7 +49,7 @@ namespace PMP {
         _queueMonitor(0), _queueMediator(0),
         _queueEntryInfoFetcher(0), _userDataFetcher(0), _queueModel(0),
         _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1),
-        _dynamicModeEnabled(false), _noRepetitionUpdating(0)
+        _dynamicModeEnabled(false), _noRepetitionUpdating(0), _historyModel(nullptr)
     {
         _ui->setupUi(this);
     }
@@ -62,6 +63,13 @@ namespace PMP {
         settings.setValue(
             "columnsstate", _ui->queueTableView->horizontalHeader()->saveState()
         );
+        settings.endGroup();
+
+        settings.beginGroup("history");
+        settings.setValue(
+            "columnsstate", _ui->historyTableView->horizontalHeader()->saveState()
+        );
+        settings.endGroup();
 
         delete _ui;
     }
@@ -79,6 +87,8 @@ namespace PMP {
             new QueueModel(
                 _connection, _queueMediator, _queueEntryInfoFetcher, _userDataFetcher
             );
+        _historyModel = new PlayerHistoryModel(this, _queueEntryInfoFetcher);
+        _historyModel->setConnection(connection);
 
         _ui->userPlayingForLabel->setText("");
         _ui->toPersonalModeButton->setText(_connection->userLoggedInName());
@@ -95,6 +105,7 @@ namespace PMP {
         _ui->queueTableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _ui->queueTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
         _ui->queueTableView->setItemDelegateForColumn(4, new ScoreFormatDelegate(this));
+        _ui->historyTableView->setModel(_historyModel);
 
         connect(
             _ui->trackProgress, SIGNAL(seekRequested(qint64)),
@@ -206,6 +217,13 @@ namespace PMP {
             _ui->queueTableView->horizontalHeader()->restoreState(
                 settings.value("columnsstate").toByteArray()
             );
+            settings.endGroup();
+
+            settings.beginGroup("history");
+            _ui->historyTableView->horizontalHeader()->restoreState(
+                settings.value("columnsstate").toByteArray()
+            );
+            settings.endGroup();
         }
     }
 

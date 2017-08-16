@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,6 +18,8 @@
 */
 
 #include "networkutil.h"
+
+#include <limits>
 
 #include <QDebug>
 
@@ -54,6 +56,26 @@ namespace PMP {
         return 8;
     }
 
+    int NetworkUtil::append8ByteQDateTimeMsSinceEpoch(QByteArray& buffer,
+                                                      QDateTime dateTime)
+    {
+        if (!dateTime.isValid()) {
+            qWarning() << "writing invalid QDateTime to buffer";
+        }
+
+        qint64 milliSeconds = dateTime.toUTC().toMSecsSinceEpoch();
+        return append8Bytes(buffer, milliSeconds);
+    }
+
+    int NetworkUtil::append8ByteMaybeEmptyQDateTimeMsSinceEpoch(QByteArray& buffer,
+                                                                QDateTime dateTime)
+    {
+        if (!dateTime.isValid())
+            return append8Bytes(buffer, std::numeric_limits<qint64>::min());
+
+        return append8Bytes(buffer, dateTime.toUTC().toMSecsSinceEpoch());
+    }
+
     quint8 NetworkUtil::getByte(QByteArray const& buffer, uint position) {
         return buffer[position];
     }
@@ -88,9 +110,28 @@ namespace PMP {
             + (quint64)(quint8)buffer[position + 7];
     }
 
-    QString NetworkUtil::getUtf8String(QByteArray const& buffer, uint position, uint length) {
+    QDateTime NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(const QByteArray& buffer,
+                                                             uint position)
+    {
+        return QDateTime::fromMSecsSinceEpoch(get8Bytes(buffer, position), Qt::UTC);
+    }
+
+    QDateTime NetworkUtil::getMaybeEmptyQDateTimeFrom8ByteMsSinceEpoch(
+            const QByteArray& buffer, uint position)
+    {
+        qint64 raw = get8Bytes(buffer, position);
+        if (raw == std::numeric_limits<qint64>::min())
+            return QDateTime(); /* return invalid QDateTime */
+
+        return QDateTime::fromMSecsSinceEpoch(raw, Qt::UTC);
+    }
+
+    QString NetworkUtil::getUtf8String(QByteArray const& buffer, uint position,
+                                       uint length)
+    {
         if (length > (uint)buffer.size() || position > (uint)buffer.size() - length) {
-            qDebug() << "OVERFLOW in NetworkUtil::getUtf8String; position" << position << " length" << length << " buffer size" << buffer.size();
+            qWarning() << "OVERFLOW when reading UTF-8 string; position:" << position
+                       << "length:" << length << "buffer size:" << buffer.size();
             return "";
         }
 

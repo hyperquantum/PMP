@@ -39,7 +39,6 @@ IDEAS
  - 'about the remote' window; with client version and protocol version
  - 'about the server' window; with server name, UUID and protocol version
  - ability to put playback volume adjustments in the queue (the same way as breakpoints)
- - show recent play history in the client (e.g. last 3 songs)
  - ability to view statistics such as 'previously heard' and 'score' for the song currently playing
  - visual indication of score for each track in the music collection, to make 'good' tracks stand out
  - add other statistics relevant for scoring (e.g. was the track manually added to the queue) to the play history

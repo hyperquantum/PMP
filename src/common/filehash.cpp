@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,8 +18,6 @@
 */
 
 #include "filehash.h"
-
-//#include <QtDebug>
 
 namespace PMP {
 
@@ -43,16 +41,5 @@ namespace PMP {
             + _sha1.toHex() + "; "
             + _md5.toHex() + ")";
     }
-
-    /* utility object to automatically do the qRegisterMetaType call at program startup */
-    class FileHashInit {
-    public:
-        FileHashInit() {
-            //qDebug() << "FileHashInit running";
-            qRegisterMetaType<PMP::FileHash>();
-        }
-    };
-
-    static FileHashInit fileHashInit;
 
 }

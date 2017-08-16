@@ -33,8 +33,9 @@ namespace PMP {
 
           1: first version, no version increments for a long time
           2: first increment for test purposes, no strict incrementing yet after this
-          3: client msg 18, server msg 22: added support for retreiving scores
+          3: client msg 18, server msg 22: added support for retrieving scores
           4: client msg 19: added support for inserting a track at a specific index
+          5: client msg 20, server msg 23 & 24: added player history fetching
 
     */
 
@@ -72,6 +73,8 @@ namespace PMP {
             ServerNameMessage = 20,
             BulkQueueEntryHashMessage = 21,
             HashUserDataMessage = 22,
+            NewHistoryEntryMessage = 23,
+            PlayerHistoryMessage = 24,
         };
 
         enum ClientMessageType {
@@ -95,6 +98,7 @@ namespace PMP {
             BulkQueueEntryHashRequestMessage = 17,
             HashUserDataRequestMessage = 18,
             InsertHashIntoQueueRequestMessage = 19,
+            PlayerHistoryRequestMessage = 20,
         };
 
         enum ErrorType {

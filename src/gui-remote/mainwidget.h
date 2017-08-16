@@ -29,6 +29,7 @@ namespace Ui {
 namespace PMP {
 
     class CurrentTrackMonitor;
+    class PlayerHistoryModel;
     class QueueEntryInfoFetcher;
     class QueueMediator;
     class QueueModel;
@@ -90,6 +91,7 @@ namespace PMP {
         bool _dynamicModeEnabled;
         QList<int> _noRepetitionList;
         int _noRepetitionUpdating;
+        PlayerHistoryModel* _historyModel;
     };
 }
 #endif

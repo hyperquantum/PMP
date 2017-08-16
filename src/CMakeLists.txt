@@ -19,7 +19,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(PMP_COMMON_SOURCES
     common/audiodata.cpp
-    common/collectiontrackinfo.cpp
+    common/commonmetatypes.cpp
     common/fileanalyzer.cpp
     common/filehash.cpp
     common/logging.cpp
@@ -83,6 +83,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/loginwidget.cpp
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp
+    gui-remote/playerhistorymodel.cpp
     gui-remote/queueentryinfofetcher.cpp
     gui-remote/queuemediator.cpp
     gui-remote/queuemodel.cpp
@@ -103,6 +104,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/loginwidget.h
     gui-remote/mainwidget.h
     gui-remote/mainwindow.h
+    gui-remote/playerhistorymodel.h
     gui-remote/queueentryinfofetcher.h
     gui-remote/queuemediator.h
     gui-remote/queuemodel.h
@@ -138,6 +140,7 @@ endif (NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT ENABLE_WIN32_CONSOLE)
 add_executable(PMP-HashTool
     tools/hash-main.cpp
     common/audiodata.cpp
+    common/commonmetatypes.cpp
     common/fileanalyzer.cpp
     common/filehash.cpp
     common/tagdata.cpp

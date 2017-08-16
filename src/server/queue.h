@@ -20,9 +20,11 @@
 #ifndef PMP_QUEUE_H
 #define PMP_QUEUE_H
 
+#include <QDateTime>
 #include <QHash>
 #include <QObject>
 #include <QQueue>
+#include <QSharedPointer>
 #include <QtGlobal>
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
@@ -30,6 +32,7 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 namespace PMP {
 
     class FileHash;
+    class PlayerHistoryEntry;
     class QueueEntry;
     class Resolver;
 
@@ -75,8 +78,8 @@ namespace PMP {
 
         QueueEntry* lookup(quint32 queueID);
 
-        void addToHistory(QueueEntry* entry, int permillagePlayed, bool hadError/*,
-                          HistoryType historyType*/);
+        void addToHistory(QSharedPointer<const PlayerHistoryEntry> entry);
+        QList<QSharedPointer<const PlayerHistoryEntry>> recentHistory(int limit);
 
     Q_SIGNALS:
         void entryAdded(quint32 offset, quint32 queueID);
@@ -92,9 +95,38 @@ namespace PMP {
         uint _nextQueueID;
         QHash<quint32, QueueEntry*> _idLookup;
         QQueue<QueueEntry*> _queue;
-        QQueue<QueueEntry*> _history;
+        QQueue<QSharedPointer<const PlayerHistoryEntry>> _history;
         Resolver* _resolver;
         QTimer* _queueFrontChecker;
     };
+
+    class PlayerHistoryEntry {
+    public:
+        PlayerHistoryEntry(uint queueID, uint user, QDateTime started, QDateTime ended,
+                           bool hadError, bool hadSeek, int permillage)
+         : _queueID(queueID), _user(user), _started(started), _ended(ended),
+           _permillage(permillage), _error(hadError), _seek(hadSeek)
+        {
+            //
+        }
+
+        uint queueID() const { return _queueID; }
+        uint user() const { return _user; }
+        QDateTime started() const { return _started; }
+        QDateTime ended() const { return _ended; }
+        bool hadError() const { return _error; }
+        bool hadSeek() const { return _seek; }
+        int permillage() const { return _permillage; }
+
+    private:
+        uint _queueID;
+        uint _user;
+        QDateTime _started;
+        QDateTime _ended;
+        int _permillage;
+        bool _error;
+        bool _seek;
+    };
+
 }
 #endif

@@ -67,6 +67,9 @@ namespace PMP {
         void dynamicModeNoRepetitionSpanChanged(int seconds);
         void playerStateChanged(PlayerState state);
         void currentTrackChanged(QueueEntry const* entry);
+        void trackHistoryEvent(uint queueID, QDateTime started, QDateTime ended,
+                               quint32 userPlayedFor, int permillagePlayed, bool hadError,
+                               bool hadSeek);
         void trackPositionChanged(qint64 position);
         void sendStateInfo();
         void sendStateInfoAfterTimeout();
@@ -125,6 +128,10 @@ namespace PMP {
                                       QByteArray const& sessionSalt);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
                                        QList<CollectionTrackInfo> tracks);
+        void sendNewHistoryEntryMessage(uint queueID, QDateTime started, QDateTime ended,
+                                        quint32 userPlayedFor, int permillagePlayed,
+                                        bool hadError, bool hadSeek);
+        void sendQueueHistoryMessage(int limit);
         void sendServerNameMessage(quint8 type, QString name);
         void handleBinaryMessage(QByteArray const& message);
         void handleSingleByteAction(quint8 action);
@@ -133,6 +140,7 @@ namespace PMP {
                                         NetworkProtocol::ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
+        void parsePlayerHistoryRequest(QByteArray const& message);
 
         void schedulePlayerStateNotification();
 

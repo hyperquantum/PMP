@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -350,14 +350,38 @@ namespace PMP {
         return false;
     }
 
-    void Player::addToHistory(QueueEntry *entry, int permillage, bool hadError,
+    void Player::addToHistory(QueueEntry* entry, int permillage, bool hadError,
                               bool hadSeek)
     {
         _nowPlaying->setEndedNow(); /* register end time */
 
+        if (!entry->isTrack())
+            return; /* don't put breakpoints in the history */
+
+        auto userPlayedFor = _userPlayingFor;
+
         permillage = qMin(permillage, 1000); /* prevent overrun by wrong track lengths */
 
-        _queue.addToHistory(entry, permillage, hadError);
+        auto queueID = entry->queueID();
+
+        QDateTime started = entry->started();
+        if (!started.isValid())
+            started = QDateTime::currentDateTimeUtc();
+
+        QDateTime ended = entry->ended();
+        if (!ended.isValid()) {
+            if (permillage > 0)
+                ended = QDateTime::currentDateTimeUtc();
+            else
+                ended = started;
+        }
+
+        auto historyEntry =
+            QSharedPointer<PlayerHistoryEntry>::create(
+                queueID, userPlayedFor, started, ended, hadError, hadSeek, permillage
+            );
+
+        _queue.addToHistory(historyEntry);
 
         if (permillage <= 0 && hadError) {
             emit failedToPlayTrack(entry);
@@ -365,6 +389,10 @@ namespace PMP {
         else {
             emit donePlayingTrack(entry, permillage, hadError, hadSeek);
         }
+
+        emit trackHistoryEvent(
+            queueID, started, ended, userPlayedFor, permillage, hadError, hadSeek
+        );
     }
 
     int Player::calcPermillagePlayed() {

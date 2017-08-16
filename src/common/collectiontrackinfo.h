@@ -76,4 +76,3 @@ namespace PMP {
 Q_DECLARE_METATYPE(PMP::CollectionTrackInfo)
 
 #endif
-

@@ -22,8 +22,6 @@
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
 
-#include <limits>
-
 #include <QtDebug>
 
 namespace PMP {
@@ -576,6 +574,19 @@ namespace PMP {
             else
                 emit fullIndexationFinished();
         }
+    }
+
+    void ServerConnection::sendPlayerHistoryRequest(int limit) {
+        if (limit < 0) limit = 0;
+        if (limit > 255) { limit = 255; }
+
+        QByteArray message;
+        message.reserve(2 + 2);
+        NetworkUtil::append2Bytes(message, NetworkProtocol::PlayerHistoryRequestMessage);
+        NetworkUtil::appendByte(message, 0); /* filler */
+        NetworkUtil::appendByte(message, (uint)limit);
+
+        sendBinaryMessage(message);
     }
 
     void ServerConnection::sendUserAccountsFetchRequest() {
@@ -1310,6 +1321,12 @@ namespace PMP {
         case NetworkProtocol::HashUserDataMessage:
             parseHashUserDataMessage(message);
             break;
+        case NetworkProtocol::NewHistoryEntryMessage:
+            parseNewHistoryEntryMessage(message);
+            break;
+        case NetworkProtocol::PlayerHistoryMessage:
+            parsePlayerHistoryMessage(message);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
@@ -1429,7 +1446,7 @@ namespace PMP {
         }
     }
 
-    void ServerConnection::parseBulkQueueEntryHashMessage(const QByteArray &message) {
+    void ServerConnection::parseBulkQueueEntryHashMessage(const QByteArray& message) {
         qint32 messageLength = message.length();
         if (messageLength < 4) {
             return; /* invalid message */
@@ -1504,14 +1521,11 @@ namespace PMP {
             qint16 score = -1;
 
             if (havePreviouslyHeard) {
-                qint64 previouslyHeardRaw =
-                    (qint64)NetworkUtil::get8Bytes(message, offset);
+                previouslyHeard =
+                    NetworkUtil::getMaybeEmptyQDateTimeFrom8ByteMsSinceEpoch(
+                        message, offset
+                    );
                 offset += 8;
-
-                if (previouslyHeardRaw != std::numeric_limits<qint64>::min()) {
-                    previouslyHeard =
-                        QDateTime::fromMSecsSinceEpoch(previouslyHeardRaw, Qt::UTC);
-                }
             }
 
             if (haveScore) {
@@ -1522,6 +1536,70 @@ namespace PMP {
             // TODO: fixme: receiver cannot know which fields were not received now
             emit receivedHashUserData(hash, userId, previouslyHeard, score);
         }
+    }
+
+    void ServerConnection::parseNewHistoryEntryMessage(const QByteArray& message) {
+        qDebug() << "parsing player history entry message";
+
+        if (message.length() != 4 + 28) {
+            return; /* invalid message */
+        }
+
+        quint32 queueID = NetworkUtil::get4Bytes(message, 4);
+        quint32 user = NetworkUtil::get4Bytes(message, 8);
+        QDateTime started = NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, 12);
+        QDateTime ended = NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, 20);
+        int permillagePlayed = (qint16)NetworkUtil::get2Bytes(message, 28);
+        quint16 status = NetworkUtil::get2Bytes(message, 30);
+
+        bool hadError = status & 1;
+        bool hadSeek = status & 2;
+
+        PlayerHistoryTrackInfo info(queueID, user, started, ended, hadError, hadSeek,
+                                    permillagePlayed);
+
+        emit receivedPlayerHistoryEntry(info);
+    }
+
+    void ServerConnection::parsePlayerHistoryMessage(const QByteArray& message) {
+        qDebug() << "parsing player history list message";
+
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        int entryCount = (uint)NetworkUtil::getByte(message, 3);
+
+        if (message.length() != 4 + entryCount * 28) {
+            return; /* invalid message */
+        }
+
+        int offset = 4;
+        QVector<PlayerHistoryTrackInfo> entries;
+        entries.reserve(entryCount);
+        for(int i = 0; i < entryCount; ++i) {
+            auto queueID = NetworkUtil::get4Bytes(message, offset);
+            auto user = NetworkUtil::get4Bytes(message, offset + 4);
+            auto started =
+                NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 8);
+            auto ended =
+                NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 16);
+            int permillagePlayed = (qint16)NetworkUtil::get2Bytes(message, offset + 24);
+            quint16 status = NetworkUtil::get2Bytes(message, offset + 26);
+
+            bool hadError = status & 1;
+            bool hadSeek = status & 2;
+
+            entries.append(
+                PlayerHistoryTrackInfo(
+                    queueID, user, started, ended, hadError, hadSeek, permillagePlayed
+                )
+            );
+
+            offset += 28;
+        }
+
+        emit receivedPlayerHistory(entries);
     }
 
     void ServerConnection::handleResultMessage(quint16 errorType, quint32 clientReference,

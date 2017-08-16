@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,6 +24,7 @@
 #include "preloader.h"
 #include "queue.h"
 
+#include <QDateTime>
 #include <QMediaPlayer>
 
 namespace PMP {
@@ -74,6 +75,9 @@ namespace PMP {
         void failedToPlayTrack(QueueEntry const* track);
         void donePlayingTrack(QueueEntry const* track, int permillage, bool hadError,
                               bool hadSeek);
+        void trackHistoryEvent(uint queueID, QDateTime started, QDateTime ended,
+                               quint32 userPlayedFor, int permillagePlayed, bool hadError,
+                               bool hadSeek);
 
         /*! Emitted when the queue is empty and the current track is finished. */
         void finished();

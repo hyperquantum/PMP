@@ -253,26 +253,32 @@ namespace PMP {
         return it.value();
     }
 
-    void Queue::addToHistory(QueueEntry* entry, int permillagePlayed, bool hadError
-                             /*, Queue::HistoryType historyType*/)
+    void Queue::addToHistory(QSharedPointer<const PlayerHistoryEntry> entry)
     {
-        if (!entry || !entry->isTrack()) return;
+        if (!entry) return;
 
         qDebug() << "adding QID" << entry->queueID()
-                 << "to the queue history; play-permillage:" << permillagePlayed
-                 << " error?" << hadError;
+                 << "to the queue history; play-permillage:" << entry->permillage()
+                 << " error?" << entry->hadError();
         _history.enqueue(entry);
 
-        if (_history.size() > 10) {
-            QueueEntry* oldest = _history.dequeue();
-            qDebug() << " deleting QID" << oldest->queueID()
-                     << "after removing it from the queue history";
+        if (_history.size() > 20) {
+            auto oldest = _history.dequeue();
+            qDebug() << "deleting oldest queue history entry: QID" << oldest->queueID();
 
+            QueueEntry* oldestEntry = _idLookup[oldest->queueID()];
             _idLookup.remove(oldest->queueID());
-            delete oldest;
+            delete oldestEntry;
         }
 
         qDebug() << " history size now:" << _history.size();
+    }
+
+    QList<QSharedPointer<const PlayerHistoryEntry> > Queue::recentHistory(int limit) {
+        if (limit <= 0 || limit > _history.size())
+            return _history;
+
+        return _history.mid(_history.size() - limit, limit);
     }
 
     int Queue::findIndex(quint32 queueID) {
