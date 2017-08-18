@@ -78,6 +78,9 @@ namespace PMP {
             tracks = tracks.mid(tracks.size() - _historySizeGoal, _historySizeGoal);
         }
 
+        if (tracks.empty())
+            return;
+
         beginInsertRows(QModelIndex(), 0, tracks.size() - 1);
         Q_FOREACH(auto const& track, tracks) {
             _list.append(QSharedPointer<PlayerHistoryTrackInfo>::create(track));
