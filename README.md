@@ -2,7 +2,7 @@
 
 Copyright (C) 2011-2017  Kevin André
 
-  *!! This project is in a very early stage of development !!*
+  *!! This project is still in an early stage of development !!*
 
 Party Music Player, abbreviated as PMP, is a multi-user client-server music system. The server is responsible for playing music, and a separate program, a 'remote', is used to connect to the server and instruct it what to do. PMP has an advanced file tracking mechanism; it can deal with moved/renamed and duplicate files without any problems.
 
@@ -10,11 +10,7 @@ PMP is designed to be portable software and should be compatible with most popul
 
 The software is licenced under [GPLv3](./LICENSE.GPLv3.txt).
 
-Rudimentary project website:  http://hyperquantum.be/pmp/
-
-GitHub repository:  https://github.com/hyperquantum/PMP
-
-You can contact the developer here:   hyperquantum@gmail.com
+*This is (pre-)alpha quality software*. Important functionality is still missing. There are no official releases yet. Anyone interested in trying PMP will need to build it from source.
 
 ## Table of Contents
 Contents of this file:
@@ -26,6 +22,7 @@ Contents of this file:
   6. [Building on Windows](#6-building-on-windows)
   7. [Caveats / limitations](#7-caveats--limitations)
   8. [Planned features](#8-planned-features--to-dos)
+  9. [More information](#9-more-information)
 
 
 ## 1. Features
@@ -262,3 +259,12 @@ Importance/priority:
   * (**M**) Android remote for a server instance elsewhere
   * (**L**) Manual song play to a second audio device (for headphones)
   * (**L**) Support for other database providers than MySQL
+
+
+## 9. More information
+
+Rudimentary project website:  http://hyperquantum.be/pmp/
+
+GitHub repository:  https://github.com/hyperquantum/PMP
+
+You can contact the developer here:   hyperquantum@gmail.com
