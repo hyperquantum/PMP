@@ -51,6 +51,10 @@ namespace PMP {
        _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this))
     {
+        setWindowTitle(
+            QString(tr("Party Music Player ")) + Util::EnDash + tr(" Remote")
+        );
+
         _musicCollectionDock->setObjectName("musicCollectionDockWidget");
         _musicCollectionDock->setAllowedAreas(
             (Qt::DockWidgetAreas)(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea)
