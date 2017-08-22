@@ -108,6 +108,12 @@ namespace PMP {
         _ui->historyTableView->setModel(_historyModel);
 
         connect(
+            _historyModel, &PlayerHistoryModel::rowsInserted,
+            _ui->historyTableView, &QTableView::scrollToBottom,
+            Qt::QueuedConnection /* queued because it must be the last slot to run */
+        );
+
+        connect(
             _ui->trackProgress, SIGNAL(seekRequested(qint64)),
             _currentTrackMonitor, SLOT(seekTo(qint64))
         );
