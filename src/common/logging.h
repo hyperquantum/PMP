@@ -20,6 +20,8 @@
 #ifndef PMP_LOGGING_H
 #define PMP_LOGGING_H
 
+#include <QString>
+
 namespace PMP {
 
     class Logging {
@@ -27,6 +29,8 @@ namespace PMP {
         static void enableConsoleOnlyLogging();
         static void enableTextFileOnlyLogging();
         static void enableConsoleAndTextFileLogging(bool reducedConsoleOutput);
+
+        static void setFilenameSuffix(QString suffix);
 
         static void cleanupOldLogfiles();
 

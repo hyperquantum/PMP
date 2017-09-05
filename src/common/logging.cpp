@@ -125,6 +125,8 @@ namespace PMP {
         void logMessage(QtMsgType type, const QMessageLogContext& context,
                         const QString& msg);
 
+        void setFilenameSuffix(QString suffix);
+
         void cleanupOldLogfiles();
 
     private:
@@ -135,6 +137,7 @@ namespace PMP {
         qint64 _appPid;
         QByteArray _byteOrderMark;
         QString _logDir;
+        QString _suffix;
     };
 
     bool TextFileLogger::initialized() {
@@ -167,7 +170,9 @@ namespace PMP {
         QDate today = QDate::currentDate();
         QString logFile =
             _logDir + "/" + today.toString(Qt::ISODate)
-                + "-P" + QString::number(_appPid) + ".txt";
+                + "-P" + QString::number(_appPid)
+                + (_suffix.isEmpty() ? "" : ("-" + _suffix))
+                + ".txt";
 
         QFile file(logFile);
         bool existed = file.exists();
@@ -226,6 +231,16 @@ namespace PMP {
         }
 
         writeToLogFile(output);
+    }
+
+    void TextFileLogger::setFilenameSuffix(QString suffix) {
+        QMutexLocker lock(&_mutex);
+
+        /* cut off an initial dash character, because we put one there automatically */
+        if (suffix.startsWith("-"))
+            suffix = suffix.mid(1);
+
+        _suffix = suffix;
     }
 
     void TextFileLogger::cleanupOldLogfiles() {
@@ -310,6 +325,10 @@ namespace PMP {
 
     void Logging::enableConsoleOnlyLogging() {
         qInstallMessageHandler(logToConsole);
+    }
+
+    void Logging::setFilenameSuffix(QString suffix) {
+        globalTextFileLogger.setFilenameSuffix(suffix);
     }
 
     void Logging::cleanupOldLogfiles() {
