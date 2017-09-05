@@ -230,35 +230,30 @@ Since this project is in a very early stage of development, you can expect a few
 
 Only a list of ideas.  **No promises!**
 
-Importance/priority:  
-  * (**H**): high
-  * (**M**): medium
-  * (**L**): low
+Effort is a rough estimate. Priorities can still change.
 
-### Small/medium effort improvements:
-
-  * (**M**) Provide keyboard shortcuts for volume adjustment
-  * (**M**) Queue contextmenu option to duplicate the entry
-  * (**H**) Store last track repetition avoidance interval for each user in the database
-  * (**L**) Time-based auto-stop function
-  * (**L**) Naming a PMP Server instance (e.g. "living room")
-
-### Medium/large effort improvements:
-
-  * (**H**) Handling of files that are the same track but have a different hash
-  * (**M**) Find a way to identify artists
-  * (**H**) Dynamic mode: avoid repeating the same artist within a certain timespan
-  * (**M**) Last.fm scrobbling (in personal mode)
-  * (**H**) Syncronization of music databases across different machines
-  * (**M**) Fuzzy matching option when searching in the music collection
-  * (**M**) Browsing the playback history from the remote
-  * (**L**) Silence detection at the start and end of each track
-  * (**L**) Crossfading
-  * (**M**) Bridging of PMP server instances, to access music from another machine
-  * (**L**) Support for other formats than just MP3 and FLAC
-  * (**M**) Android remote for a server instance elsewhere
-  * (**L**) Manual song play to a second audio device (for headphones)
-  * (**L**) Support for other database providers than MySQL
+| Feature                                                   | Priority | Effort       |
+| --------------------------------------------------------- | -------- | ------------ |
+| Save/restore dynamic mode settings for each user          | High     | Medium       |
+| Artist-based track repetition avoidance                   | High     | Medium       |
+| Scrobbling to Last.fm                                     | High     | Large        |
+| Server to server database synchronization                 | High     | Large        |
+| Group song duplicates together and treat them as one      | High     | Large        |
+| Identify song duplicates which have different hash values | High     | Large        |
+| Keyboard shortcuts for adjusting volume                   | Medium   | Small        |
+| Queue contextmenu option to duplicate the entry           | Medium   | Small        |
+| Fuzzy matching when searching the music collection        | Medium   | Medium       |
+| Server to server remote music access                      | Medium   | Medium       |
+| Identify artist by something better than text             | Medium   | Large        |
+| Android app for controlling the server (only a remote)    | Medium   | Large        |
+| Naming a server instance (e.g. "living room")             | Low      | Small        |
+| Time-based auto-stop function                             | Low      | Medium       |
+| Support for other database providers than MySQL           | Low      | Medium       |
+| Support for other music formats than MP3 and FLAC         | Low      | Medium/Large |
+| Manual playback to a second audio device (for headphones) | Low      | Medium/Large |
+| Silence detection at the start and end of each track      | Low      | Large        |
+| Crossfading                                               | Low      | Large        |
+| ReplayGain support                                        | Low      | Large(?)     |
 
 
 ## 9. More information
