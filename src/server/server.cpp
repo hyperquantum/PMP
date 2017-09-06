@@ -118,7 +118,7 @@ namespace PMP {
                 23432, QAbstractSocket::ShareAddress | QAbstractSocket::ReuseAddressHint
             );
         if (!bound) {
-            qDebug() << "Server: UDPSOCKET BIND FAILED";
+            qWarning() << "UdpSocket bind failed; cannot listen for probes";
         }
 
         sendBroadcast();
@@ -169,7 +169,7 @@ namespace PMP {
             if (datagram.size() < 11 || !datagram.startsWith("PMPPROBEv01"))
                 continue;
 
-            qDebug() << "Server: received probe from client port" << senderPort;
+            qDebug() << "received probe from client port" << senderPort;
 
             sendBroadcast();
         }
