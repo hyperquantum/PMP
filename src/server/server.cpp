@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -55,6 +55,11 @@ namespace PMP {
         if (!serverPassword.isValid() || serverPassword.toString() == ""
             || serverPassword.toString().length() < 6)
         {
+            if (serverPassword.isValid() && serverPassword.toString().length() > 0) {
+                qWarning() << "ignoring 'fixedserverpassword' setting because"
+                           << "its value is unsafe (too short)";
+            }
+
             _serverPassword = generateServerPassword();
 
             /* put placeholder in settings file, so that one can define a fixed
