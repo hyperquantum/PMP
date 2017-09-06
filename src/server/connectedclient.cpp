@@ -22,6 +22,7 @@
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
+#include "common/version.h"
 
 #include "collectionmonitor.h"
 #include "database.h"
@@ -136,7 +137,7 @@ namespace PMP {
         );
 
         /* send greeting */
-        sendTextCommand("PMP 0.1 Welcome!");
+        sendTextCommand("PMP " PMP_VERSION_DISPLAY " Welcome!");
     }
 
     ConnectedClient::~ConnectedClient() {
