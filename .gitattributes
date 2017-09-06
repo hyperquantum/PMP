@@ -1,0 +1,4 @@
+* text=auto
+
+# Files that require Unix newlines
+*.sh text eol=lf
