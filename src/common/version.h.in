@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,10 +20,10 @@
 #ifndef PMP_VERSION_H
 #define PMP_VERSION_H
 
-#define PMP_VERSION_DISPLAY "0.0.3"
-#define PMP_ORGANIZATION_NAME "Party Music Player"
-#define PMP_ORGANIZATION_DOMAIN "hyperquantum.be"
-#define PMP_WEBSITE "http://hyperquantum.be/pmp"
-#define PMP_BUGREPORT_LOCATION "https://github.com/hyperquantum/PMP/issues"
+#define PMP_VERSION_DISPLAY "${PMP_VERSION_DISPLAY}"
+#define PMP_ORGANIZATION_NAME "${PMP_ORGANIZATION_NAME}"
+#define PMP_ORGANIZATION_DOMAIN "${PMP_ORGANIZATION_DOMAIN}"
+#define PMP_WEBSITE "${PMP_WEBSITE}"
+#define PMP_BUGREPORT_LOCATION "${PMP_BUGREPORT_LOCATION}"
 
 #endif

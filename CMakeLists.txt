@@ -23,7 +23,9 @@ project(PMP)
 
 enable_testing()
 
+set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(FindPkgConfig)
+include(PMPVersion)
 
 find_package(Qt5Core REQUIRED)
 find_package(Qt5Gui REQUIRED)
