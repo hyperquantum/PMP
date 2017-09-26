@@ -52,6 +52,9 @@ namespace PMP {
         _dynamicModeEnabled(false), _noRepetitionUpdating(0), _historyModel(nullptr)
     {
         _ui->setupUi(this);
+
+        _ui->splitter->setStretchFactor(0, 4);
+        _ui->splitter->setStretchFactor(1, 8);
     }
 
     MainWidget::~MainWidget()
