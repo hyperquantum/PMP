@@ -74,6 +74,10 @@ namespace PMP {
         );
         settings.endGroup();
 
+        settings.beginGroup("historysplitter");
+        settings.setValue("state", _ui->splitter->saveState());
+        settings.endGroup();
+
         delete _ui;
     }
 
@@ -232,6 +236,10 @@ namespace PMP {
             _ui->historyTableView->horizontalHeader()->restoreState(
                 settings.value("columnsstate").toByteArray()
             );
+            settings.endGroup();
+
+            settings.beginGroup("historysplitter");
+            _ui->splitter->restoreState(settings.value("state").toByteArray());
             settings.endGroup();
         }
     }
