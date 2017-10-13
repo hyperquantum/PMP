@@ -1,7 +1,22 @@
+:: ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+::
+:: This batch script packages the binaries for Windows-x86.
+::
+:: PREREQUISITES:
+::  - Qt5 MinGW edition installed with same version Qt MinGW toolkit
+::  - CMake installed in Windows
+::  - 7-Zip installed in Windows
+::  - taglib and pkg-config installed as described in the README
+::  - libmysql.dll copied into the build directory as described in the README
+::
+:: The installation paths of Qt, MinGW, CMake and 7-Zip are configured below.
+::
+:: ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
+
 @ECHO OFF
 SETLOCAL ENABLEEXTENSIONS
 
-:: Fixed paths
+:: Installation paths -- ADJUST AS NEEDED
 SET MINGW_BIN_DIR=C:\Qt\Tools\mingw482_32\bin
 SET QT_BIN_DIR=C:\Qt\5.3\mingw482_32\bin
 SET QT_PLUGINS_DIR=C:\Qt\5.3\mingw482_32\plugins
