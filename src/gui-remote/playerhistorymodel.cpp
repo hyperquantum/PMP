@@ -23,6 +23,8 @@
 
 #include "queueentryinfofetcher.h"
 
+#include <QBrush>
+
 namespace PMP {
 
     PlayerHistoryModel::PlayerHistoryModel(QObject* parent,
@@ -119,7 +121,21 @@ namespace PMP {
     }
 
     QVariant PlayerHistoryModel::data(const QModelIndex& index, int role) const {
-        if (role == Qt::DisplayRole && index.row() < _list.size()) {
+        if (!index.isValid() || index.row() < 0 || index.row() >= _list.size()) {
+            return QVariant();
+        }
+
+        auto item = _list[index.row()];
+
+        if (role == Qt::ForegroundRole) {
+            return item->hadError() ? QBrush(Qt::red) : QVariant();
+        }
+
+        if (role == Qt::BackgroundRole) {
+            return item->hadError() ? QBrush(Qt::white) : QVariant();
+        }
+
+        if (role == Qt::DisplayRole) {
             int col = index.column();
 
             auto queueID = _list[index.row()]->queueID();
