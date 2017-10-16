@@ -44,7 +44,7 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 4;
+    const qint16 ConnectedClient::ServerProtocolNo = 5;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,

@@ -26,7 +26,7 @@
 
 namespace PMP {
 
-    const qint16 ServerConnection::ClientProtocolNo = 4;
+    const qint16 ServerConnection::ClientProtocolNo = 5;
 
     ServerConnection::ServerConnection(QObject* parent, bool subscribeToAllServerEvents)
      : QObject(parent),
