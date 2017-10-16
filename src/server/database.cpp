@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,13 +28,13 @@
 #include <QSqlQuery>
 #include <QtDebug>
 #include <QTextStream>
-#include <QUuid>
 
 namespace PMP {
 
     QString Database::_hostname;
     QString Database::_username;
     QString Database::_password;
+    QUuid Database::_uuid;
     bool Database::_initDoneSuccessfully = false;
     QThreadStorage<QSharedPointer<Database>> Database::_threadLocalDatabases;
     QAtomicInt Database::_nextDbNameNumber;
@@ -135,7 +135,8 @@ namespace PMP {
                 return false;
             }
         }
-        out << " UUID is " << uuid.toString() << endl;
+        _uuid = uuid;
+        out << " UUID is " << _uuid.toString() << endl;
 
         /* create table 'pmp_hash' if needed */
         q.prepare(
@@ -275,6 +276,10 @@ namespace PMP {
 
     bool Database::isConnectionOpen() const {
         return _db.isOpen();
+    }
+
+    QUuid Database::getDatabaseIdentifier() const {
+        return _uuid;
     }
 
     void Database::registerHash(const FileHash& hash) {

@@ -105,6 +105,7 @@ namespace PMP {
     public slots:
         void shutdownServer();
 
+        void sendDatabaseIdentifierRequest();
         void sendServerInstanceIdentifierRequest();
         void sendServerNameRequest();
 
@@ -161,6 +162,7 @@ namespace PMP {
         void invalidServer();
         void connectionBroken(QAbstractSocket::SocketError error);
 
+        void receivedDatabaseIdentifier(QUuid uuid);
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedServerName(quint8 nameType, QString name);
 

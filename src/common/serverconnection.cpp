@@ -26,7 +26,7 @@
 
 namespace PMP {
 
-    const qint16 ServerConnection::ClientProtocolNo = 5;
+    const qint16 ServerConnection::ClientProtocolNo = 6;
 
     ServerConnection::ServerConnection(QObject* parent, bool subscribeToAllServerEvents)
      : QObject(parent),
@@ -595,6 +595,10 @@ namespace PMP {
 
     void ServerConnection::shutdownServer() {
         sendSingleByteAction(99); /* 99 = shutdown server */
+    }
+
+    void ServerConnection::sendDatabaseIdentifierRequest() {
+        sendSingleByteAction(17); /* 17 = request for database UUID */
     }
 
     void ServerConnection::sendServerInstanceIdentifierRequest() {
@@ -1326,6 +1330,16 @@ namespace PMP {
             break;
         case NetworkProtocol::PlayerHistoryMessage:
             parsePlayerHistoryMessage(message);
+            break;
+        case NetworkProtocol::DatabaseIdentifierMessage:
+        {
+            if (messageLength != (2 + 16)) return; /* invalid message */
+
+            QUuid uuid = QUuid::fromRfc4122(message.mid(2));
+            qDebug() << "received database identifier:" << uuid;
+
+            emit receivedDatabaseIdentifier(uuid);
+        }
             break;
         default:
             qDebug() << "received unknown binary message type" << messageType

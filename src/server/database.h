@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,6 +32,7 @@
 #include <QSqlDatabase>
 #include <QtGlobal>
 #include <QThreadStorage>
+#include <QUuid>
 #include <QVector>
 
 #include <functional>
@@ -81,6 +82,8 @@ namespace PMP {
         static bool init(QTextStream& out);
 
         bool isConnectionOpen() const;
+
+        QUuid getDatabaseIdentifier() const;
 
         void registerHash(const FileHash& hash);
         uint getHashID(const FileHash& hash);
@@ -136,6 +139,7 @@ namespace PMP {
         static QString _hostname;
         static QString _username;
         static QString _password;
+        static QUuid _uuid;
         static bool _initDoneSuccessfully;
         static QThreadStorage<QSharedPointer<Database>> _threadLocalDatabases;
         static QAtomicInt _nextDbNameNumber;

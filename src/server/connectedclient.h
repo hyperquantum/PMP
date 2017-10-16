@@ -104,6 +104,7 @@ namespace PMP {
         void sendBinaryMessage(QByteArray const& message);
         void sendEventNotificationMessage(quint8 event);
         void sendServerInstanceIdentifier();
+        void sendDatabaseIdentifier();
         void sendUsersList();
         void sendQueueContentMessage(quint32 startOffset, quint8 length);
         void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);

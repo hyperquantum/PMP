@@ -44,7 +44,7 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 5;
+    const qint16 ConnectedClient::ServerProtocolNo = 6;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,
@@ -488,7 +488,9 @@ namespace PMP {
 
         QByteArray message;
         message.reserve(2 + 2);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::ServerEventNotificationMessage);
+        NetworkUtil::append2Bytes(
+            message, NetworkProtocol::ServerEventNotificationMessage
+        );
         NetworkUtil::appendByte(message, event);
         NetworkUtil::appendByte(message, 0); /* unused */
 
@@ -500,7 +502,25 @@ namespace PMP {
 
         QByteArray message;
         message.reserve(2 + 16);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::ServerInstanceIdentifierMessage);
+        NetworkUtil::append2Bytes(
+            message, NetworkProtocol::ServerInstanceIdentifierMessage
+        );
+        message.append(uuid.toRfc4122());
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendDatabaseIdentifier() {
+        auto db = Database::getDatabaseForCurrentThread();
+        if (!db) {
+            return; /* database unusable */
+        }
+
+        QUuid uuid = db->getDatabaseIdentifier();
+
+        QByteArray message;
+        message.reserve(2 + 16);
+        NetworkUtil::append2Bytes(message, NetworkProtocol::DatabaseIdentifierMessage);
         message.append(uuid.toRfc4122());
 
         sendBinaryMessage(message);
@@ -1911,6 +1931,10 @@ namespace PMP {
         case 16:
             qDebug() << "received request for server name";
             sendServerNameMessage(0, QHostInfo::localHostName());
+            break;
+        case 17:
+            qDebug() << "received request for database UUID";
+            sendDatabaseIdentifier();
             break;
         case 20: /* enable dynamic mode */
             qDebug() << "received ENABLE DYNAMIC MODE command";

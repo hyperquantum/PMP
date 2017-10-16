@@ -36,6 +36,7 @@ namespace PMP {
           3: client msg 18, server msg 22: added support for retrieving scores
           4: client msg 19: added support for inserting a track at a specific index
           5: client msg 20, server msg 23 & 24: added player history fetching
+          6: single byte request 17 & server msg 25: retreiving the database identifier
 
     */
 
@@ -75,6 +76,7 @@ namespace PMP {
             HashUserDataMessage = 22,
             NewHistoryEntryMessage = 23,
             PlayerHistoryMessage = 24,
+            DatabaseIdentifierMessage = 25,
         };
 
         enum ClientMessageType {
