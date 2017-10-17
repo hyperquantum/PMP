@@ -138,8 +138,14 @@ namespace PMP {
             this, &ConnectedClient::onUserHashStatsUpdated
         );
 
-        /* send greeting */
-        sendTextCommand("PMP " PMP_VERSION_DISPLAY " Welcome!");
+        /* Send greeting.
+         * The space at the end allows the client to detect that this server supports the
+         * new 'binary' text command with one argument. A server whose greeting ends with
+         * "Welcome!" without space will likely only support the 'binary' command without
+         * argument. Of course, the greeting could also be changed to something completely
+         * different from "Welcome!", in which case the space at the end will no longer be
+         * needed. */
+        sendTextCommand("PMP " PMP_VERSION_DISPLAY " Welcome! ");
     }
 
     ConnectedClient::~ConnectedClient() {
@@ -199,7 +205,7 @@ namespace PMP {
             }
 
             _clientProtocolNo = (heading[3] << 8) + heading[4];
-            qDebug() << "client supports protocol " << _clientProtocolNo;
+            qDebug() << "client protocol version:" << _clientProtocolNo;
         }
 
         readBinaryCommands();
@@ -273,19 +279,10 @@ namespace PMP {
             if (isLoggedIn()) { _server->shutdown(); }
         }
         else if (command == "binary") {
-            /* switch to binary mode */
-            _binaryMode = true;
-            /* tell the client that all further communication will be in binary mode */
-            sendTextCommand("binary");
-
-            char binaryHeader[5];
-            binaryHeader[0] = 'P';
-            binaryHeader[1] = 'M';
-            binaryHeader[2] = 'P';
-            /* the next two bytes are the protocol version */
-            binaryHeader[3] = char(((unsigned)ServerProtocolNo >> 8) & 255);
-            binaryHeader[4] = char((unsigned)ServerProtocolNo & 255);
-            _socket->write(binaryHeader, sizeof(binaryHeader));
+            /* 'binary' command without argument is obsolete, but we need to continue
+             * supporting it for some time in order to be compatible with older clients */
+            qDebug() << " 'binary' command has obsolete form (needs argument)";
+            handleBinaryModeSwitchRequest();
         }
         else {
             /* unknown command ???? */
@@ -296,8 +293,18 @@ namespace PMP {
     void ConnectedClient::executeTextCommandWithArgs(const QString& command,
                                                      const QString& arg1)
     {
-        /* 'volume' with one argument changes current volume */
-        if (command == "volume") {
+        if (command == "binary") {
+            /* Requiring an argument that is (nearly) impossible to remember will prevent
+             * an accidental switch to binary mode when a person is typing commands. */
+            if (arg1 == "NUxwyGR3ivTcB27VGYdy") {
+                handleBinaryModeSwitchRequest();
+            }
+            else {
+                qDebug() << " argument for 'binary' command not recognized";
+            }
+        }
+        else if (command == "volume") {
+            /* 'volume' with one argument is a request to changes the current volume */
             bool ok;
             uint volume = arg1.toUInt(&ok);
             if (ok && volume >= 0 && volume <= 100) {
@@ -373,6 +380,27 @@ namespace PMP {
         }
 
         _socket->write((command + ";").toUtf8());
+    }
+
+    void ConnectedClient::handleBinaryModeSwitchRequest() {
+        if (_binaryMode) {
+            qDebug() << "cannot switch to binary mode, already in it";
+            return;
+        }
+
+        /* switch to binary mode */
+        _binaryMode = true;
+        /* tell the client that all further communication will be in binary mode */
+        sendTextCommand("binary");
+
+        char binaryHeader[5];
+        binaryHeader[0] = 'P';
+        binaryHeader[1] = 'M';
+        binaryHeader[2] = 'P';
+        /* the next two bytes are the protocol version */
+        binaryHeader[3] = char(((unsigned)ServerProtocolNo >> 8) & 255);
+        binaryHeader[4] = char((unsigned)ServerProtocolNo & 255);
+        _socket->write(binaryHeader, sizeof(binaryHeader));
     }
 
     void ConnectedClient::sendBinaryMessage(QByteArray const& message) {

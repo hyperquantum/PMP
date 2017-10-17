@@ -116,6 +116,8 @@ namespace PMP {
                 _readBuffer.clear(); /* text consumed */
 
                 qDebug() << "server hello:" << serverHelloString;
+                bool supportsNewBinaryCommandWithArg =
+                    !serverHelloString.endsWith(" Welcome!");
 
                 /* TODO: other checks */
 
@@ -124,7 +126,10 @@ namespace PMP {
                 _state = TextMode;
 
                 /* immediately switch to binary mode */
-                sendTextCommand("binary");
+                if (supportsNewBinaryCommandWithArg)
+                    sendTextCommand("binary NUxwyGR3ivTcB27VGYdy");
+                else
+                    sendTextCommand("binary");
 
                 /* send binary hello */
                 char binaryHeader[5];
@@ -163,7 +168,7 @@ namespace PMP {
                 }
 
                 _serverProtocolNo = (uint(heading[3]) << 8) + uint(heading[4]);
-                qDebug() << "server supports protocol " << _serverProtocolNo;
+                qDebug() << "server protocol version:" << _serverProtocolNo;
 
                 _state = BinaryMode;
 

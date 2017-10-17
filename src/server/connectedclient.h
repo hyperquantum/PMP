@@ -105,6 +105,7 @@ namespace PMP {
         void executeTextCommandWithArgs(QString const& command, QString const& arg1,
                                         QString const& arg2);
         void sendTextCommand(QString const& command);
+        void handleBinaryModeSwitchRequest();
         void sendBinaryMessage(QByteArray const& message);
         void sendEventNotificationMessage(quint8 event);
         void sendServerInstanceIdentifier();
