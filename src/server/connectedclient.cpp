@@ -70,7 +70,9 @@ namespace PMP {
         );
         connect(socket, &QTcpSocket::readyRead, this, &ConnectedClient::dataArrived);
         connect(
-            socket, static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(&QTcpSocket::error),
+            socket,
+            static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(
+                                                                      &QTcpSocket::error),
             this, &ConnectedClient::socketError
         );
 
@@ -161,7 +163,7 @@ namespace PMP {
 
     void ConnectedClient::dataArrived() {
         if (_terminated) {
-            qDebug() << "ConnectedClient::dataArrived called on a terminated connection???";
+            qDebug() << "dataArrived called on a terminated connection???";
             return;
         }
 
@@ -242,126 +244,131 @@ namespace PMP {
         }
     }
 
+    void ConnectedClient::executeTextCommandWithoutArgs(const QString& command) {
+        if (command == "play") {
+            if (isLoggedIn()) { _player->play(); }
+        }
+        else if (command == "pause") {
+            if (isLoggedIn()) { _player->pause(); }
+        }
+        else if (command == "skip") {
+            if (isLoggedIn()) { _player->skip(); }
+        }
+        else if (command == "volume") {
+            /* 'volume' without arguments sends current volume */
+            sendVolumeMessage();
+        }
+        else if (command == "state") {
+            /* pretend state has changed, in order to send state info */
+            playerStateChanged(_player->state());
+        }
+        else if (command == "nowplaying") {
+            /* pretend current track has changed, in order to send current track info */
+            currentTrackChanged(_player->nowPlaying());
+        }
+        else if (command == "queue") {
+            sendTextualQueueInfo();
+        }
+        else if (command == "shutdown") {
+            if (isLoggedIn()) { _server->shutdown(); }
+        }
+        else if (command == "binary") {
+            /* switch to binary mode */
+            _binaryMode = true;
+            /* tell the client that all further communication will be in binary mode */
+            sendTextCommand("binary");
+
+            char binaryHeader[5];
+            binaryHeader[0] = 'P';
+            binaryHeader[1] = 'M';
+            binaryHeader[2] = 'P';
+            /* the next two bytes are the protocol version */
+            binaryHeader[3] = char(((unsigned)ServerProtocolNo >> 8) & 255);
+            binaryHeader[4] = char((unsigned)ServerProtocolNo & 255);
+            _socket->write(binaryHeader, sizeof(binaryHeader));
+        }
+        else {
+            /* unknown command ???? */
+            qDebug() << " unknown text command: " << command;
+        }
+    }
+
+    void ConnectedClient::executeTextCommandWithArgs(const QString& command,
+                                                     const QString& arg1)
+    {
+        /* 'volume' with one argument changes current volume */
+        if (command == "volume") {
+            bool ok;
+            uint volume = arg1.toUInt(&ok);
+            if (ok && volume >= 0 && volume <= 100) {
+                if (isLoggedIn()) { _player->setVolume(volume); }
+            }
+        }
+        else {
+            /* unknown command ???? */
+            qDebug() << " unknown text command: " << command;
+        }
+    }
+
+    void ConnectedClient::executeTextCommandWithArgs(const QString& command,
+                                                     const QString& arg1,
+                                                     const QString& arg2)
+    {
+        if (command == "qmove") {
+            bool ok;
+            uint queueID = arg1.toUInt(&ok);
+            if (!ok || queueID == 0) return;
+
+            if (!arg2.startsWith("+") && !arg2.startsWith("-")) return;
+            int moveDiff = arg2.toInt(&ok);
+            if (!ok || moveDiff == 0) return;
+
+            if (isLoggedIn()) { _player->queue().move(queueID, moveDiff); }
+        }
+        else {
+            /* unknown command ???? */
+            qDebug() << " unknown text command: " << command;
+        }
+    }
+
     void ConnectedClient::executeTextCommand(QString const& commandText) {
         qDebug() << "received text commandline:" << commandText;
 
         int spaceIndex = commandText.indexOf(' ');
-        QString command;
 
         if (spaceIndex < 0) { /* command without arguments */
-            command = commandText;
-
-            if (command == "play") {
-                if (isLoggedIn()) { _player->play(); }
-            }
-            else if (command == "pause") {
-                if (isLoggedIn()) { _player->pause(); }
-            }
-            else if (command == "skip") {
-                if (isLoggedIn()) { _player->skip(); }
-            }
-            else if (command == "volume") {
-                /* 'volume' without arguments sends current volume */
-                sendVolumeMessage();
-            }
-            else if (command == "state") {
-                /* pretend state has changed, in order to send state info */
-                playerStateChanged(_player->state());
-            }
-            else if (command == "nowplaying") {
-                /* pretend current track has changed, in order to send current track info */
-                currentTrackChanged(_player->nowPlaying());
-            }
-            else if (command == "queue") {
-                sendTextualQueueInfo();
-            }
-            else if (command == "shutdown") {
-                if (isLoggedIn()) { _server->shutdown(); }
-            }
-            else if (command == "binary") {
-                /* switch to binary mode */
-                _binaryMode = true;
-                /* tell the client that all further communication will be in binary mode */
-                sendTextCommand("binary");
-
-                char binaryHeader[5];
-                binaryHeader[0] = 'P';
-                binaryHeader[1] = 'M';
-                binaryHeader[2] = 'P';
-                /* the next two bytes are the protocol version */
-                binaryHeader[3] = char(((unsigned)ServerProtocolNo >> 8) & 255);
-                binaryHeader[4] = char((unsigned)ServerProtocolNo & 255);
-                _socket->write(binaryHeader, sizeof(binaryHeader));
-            }
-            else {
-                /* unknown command ???? */
-                qDebug() << " unknown text command: " << command;
-            }
-
+            executeTextCommandWithoutArgs(commandText);
             return;
         }
 
         /* split command at the space; don't include the space in the parts */
-        command = commandText.left(spaceIndex);
+        QString command = commandText.left(spaceIndex);
         QString rest = commandText.mid(spaceIndex + 1);
         spaceIndex = rest.indexOf(' ');
-        QString arg1;
 
         if (spaceIndex < 0) { /* one argument only */
-            arg1 = rest;
-
-            /* 'volume' with one argument changes current volume */
-            if (command == "volume") {
-                bool ok;
-                uint volume = arg1.toUInt(&ok);
-                if (ok && volume >= 0 && volume <= 100) {
-                    if (isLoggedIn()) { _player->setVolume(volume); }
-                }
-            }
-            else {
-                /* unknown command ???? */
-                qDebug() << " unknown text command: " << command;
-            }
-
+            executeTextCommandWithArgs(command, rest);
             return;
         }
 
         /* two arguments or more */
 
-        arg1 = rest.left(spaceIndex);
+        QString arg1 = rest.left(spaceIndex);
         rest = rest.mid(spaceIndex + 1);
         spaceIndex = rest.indexOf(' ');
-        QString arg2;
 
         if (spaceIndex < 0) { /* two arguments only */
-            arg2 = rest;
-
-            if (command == "qmove") {
-                bool ok;
-                uint queueID = arg1.toUInt(&ok);
-                if (!ok || queueID == 0) return;
-
-                if (!arg2.startsWith("+") && !arg2.startsWith("-")) return;
-                int moveDiff = arg2.toInt(&ok);
-                if (!ok || moveDiff == 0) return;
-
-                if (isLoggedIn()) { _player->queue().move(queueID, moveDiff); }
-            }
-            else {
-                /* unknown command ???? */
-                qDebug() << " unknown text command: " << command;
-            }
-
+            executeTextCommandWithArgs(command, arg1, rest);
             return;
         }
 
         /* unknown command ???? */
-        qDebug() << " unknown text command: " << command;
+        qDebug() << " unknown text command, or wrong number of arguments";
     }
 
     void ConnectedClient::sendTextCommand(QString const& command) {
         if (_terminated) {
-            qDebug() << "sendTextCommand: cannot proceed because connection is terminated";
+            qDebug() << "cannot send text command because connection is terminated";
             return;
         }
 
@@ -370,12 +377,12 @@ namespace PMP {
 
     void ConnectedClient::sendBinaryMessage(QByteArray const& message) {
         if (_terminated) {
-            qDebug() << "sendBinaryMessage: cannot send because connection is terminated";
+            qDebug() << "cannot send binary message because connection is terminated";
             return;
         }
 
         if (!_binaryMode) {
-            qDebug() << "sendBinaryMessage: cannot send this when not in binary mode";
+            qDebug() << "cannot send binary message when not in binary mode";
             return; /* only supported in binary mode */
         }
 
@@ -387,8 +394,6 @@ namespace PMP {
         lengthArr[1] = (length >> 16) & 255;
         lengthArr[2] = (length >> 8) & 255;
         lengthArr[3] = length & 255;
-
-        //qDebug() << "      arr[3]=" << ((int)(quint8)lengthArr[3]);
 
         _socket->write(lengthArr, sizeof(lengthArr));
         _socket->write(message.data(), length);
@@ -798,8 +803,10 @@ namespace PMP {
                                                      QList<QString> const& names)
     {
         QByteArray message;
-        //message.reserve(2 + );
-        NetworkUtil::append2Bytes(message, NetworkProtocol::PossibleFilenamesForQueueEntryMessage);
+        message.reserve(2 + 4 + names.size() * (4 + 30)); /* only an approximation */
+        NetworkUtil::append2Bytes(
+            message, NetworkProtocol::PossibleFilenamesForQueueEntryMessage
+        );
 
         NetworkUtil::append4Bytes(message, queueID);
 
@@ -1133,8 +1140,8 @@ namespace PMP {
              + "\n position: " + QString::number(_player->playPosition())
              + "\n title: " + entry->title()
              + "\n artist: " + entry->artist()
-             + "\n length: " + (seconds < 0 ? "?" : QString::number(seconds))
-             + " sec\n hash length: " + (hash == 0 ? "?" : QString::number(hash->length()))
+             + "\n length: " + (seconds < 0 ? "?" : QString::number(seconds)) + " sec"
+             + "\n hash length: " + (hash == 0 ? "?" : QString::number(hash->length()))
              + "\n hash SHA-1: " + (hash == 0 ? "?" : hash->SHA1().toHex())
              + "\n hash MD5: " + (hash == 0 ? "?" : hash->MD5().toHex())
         );
@@ -1401,7 +1408,8 @@ namespace PMP {
             if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
             qint32 intervalMinutes = (qint32)NetworkUtil::get4Bytes(message, 2);
-            qDebug() << "received change request for generator non-repetition interval;  minutes:" << intervalMinutes;
+            qDebug() << "received change request for generator non-repetition interval;"
+                     << "minutes:" << intervalMinutes;
 
             if (intervalMinutes < 0) {
                 return; /* invalid message */

@@ -100,6 +100,10 @@ namespace PMP {
         void readTextCommands();
         void readBinaryCommands();
         void executeTextCommand(QString const& commandText);
+        void executeTextCommandWithoutArgs(QString const& command);
+        void executeTextCommandWithArgs(QString const& command, QString const& arg1);
+        void executeTextCommandWithArgs(QString const& command, QString const& arg1,
+                                        QString const& arg2);
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
         void sendEventNotificationMessage(quint8 event);
