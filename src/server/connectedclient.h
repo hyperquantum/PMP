@@ -95,6 +95,8 @@ namespace PMP {
                                              bool havePreviouslyHeard, bool haveScore);
 
     private:
+        void enableEvents();
+
         bool isLoggedIn() const;
 
         void readTextCommands();
@@ -153,6 +155,8 @@ namespace PMP {
         static const qint16 ServerProtocolNo;
 
         bool _terminated;
+        bool _binaryMode;
+        bool _eventsEnabled;
         QTcpSocket* _socket;
         Server* _server;
         Player* _player;
@@ -160,7 +164,6 @@ namespace PMP {
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         QByteArray _textReadBuffer;
-        bool _binaryMode;
         int _clientProtocolNo;
         quint32 _lastSentNowPlayingID;
         QString _userAccountRegistering;

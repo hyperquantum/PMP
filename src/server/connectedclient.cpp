@@ -50,14 +50,11 @@ namespace PMP {
                                      Generator* generator, Users* users,
                                      CollectionMonitor* collectionMonitor)
      : QObject(server),
-       _terminated(false), _socket(socket),
+       _terminated(false), _binaryMode(false), _eventsEnabled(false), _socket(socket),
        _server(server), _player(player), _generator(generator), _users(users),
-       _collectionMonitor(collectionMonitor),
-       _binaryMode(false), _clientProtocolNo(-1), _lastSentNowPlayingID(0),
-       _userLoggedIn(0), _pendingPlayerStatus(false)
+       _collectionMonitor(collectionMonitor), _clientProtocolNo(-1),
+       _lastSentNowPlayingID(0), _userLoggedIn(0), _pendingPlayerStatus(false)
     {
-        auto queue = &player->queue();
-        auto resolver = &_player->resolver();
 
         connect(
             server, &Server::shuttingDown,
@@ -74,68 +71,6 @@ namespace PMP {
             static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(
                                                                       &QTcpSocket::error),
             this, &ConnectedClient::socketError
-        );
-
-        connect(player, &Player::volumeChanged, this, &ConnectedClient::volumeChanged);
-        connect(
-            generator, &Generator::enabledChanged,
-            this, &ConnectedClient::dynamicModeStatusChanged
-        );
-        connect(
-            generator, &Generator::noRepetitionSpanChanged,
-            this, &ConnectedClient::dynamicModeNoRepetitionSpanChanged
-        );
-        connect(
-            player, &Player::stateChanged,
-            this, &ConnectedClient::playerStateChanged
-        );
-        connect(
-            player, &Player::currentTrackChanged,
-            this, &ConnectedClient::currentTrackChanged
-        );
-        connect(
-            player, &Player::trackHistoryEvent,
-            this, &ConnectedClient::trackHistoryEvent
-        );
-        connect(
-            player, &Player::positionChanged,
-            this, &ConnectedClient::trackPositionChanged
-        );
-        connect(
-            player, &Player::userPlayingForChanged,
-            this, &ConnectedClient::onUserPlayingForChanged
-        );
-
-        connect(
-            queue, &Queue::entryRemoved,
-            this, &ConnectedClient::queueEntryRemoved
-        );
-        connect(
-            queue, &Queue::entryAdded,
-            this, &ConnectedClient::queueEntryAdded
-        );
-        connect(
-            queue, &Queue::entryMoved,
-            this, &ConnectedClient::queueEntryMoved
-        );
-
-        connect(
-            resolver, &Resolver::fullIndexationRunStatusChanged,
-            this, &ConnectedClient::onFullIndexationRunStatusChanged
-        );
-
-        connect(
-            collectionMonitor, &CollectionMonitor::hashAvailabilityChanged,
-            this, &ConnectedClient::onHashAvailabilityChanged
-        );
-        connect(
-            collectionMonitor, &CollectionMonitor::hashInfoChanged,
-            this, &ConnectedClient::onHashInfoChanged
-        );
-
-        connect(
-            &generator->history(), &History::updatedHashUserStats,
-            this, &ConnectedClient::onUserHashStatsUpdated
         );
 
         /* Send greeting.
@@ -161,6 +96,78 @@ namespace PMP {
         _socket->close();
         _textReadBuffer.clear();
         this->deleteLater();
+    }
+
+    void ConnectedClient::enableEvents() {
+        if (_eventsEnabled) return;
+
+        qDebug() << "enabling event notifications";
+        _eventsEnabled = true;
+
+        auto queue = &_player->queue();
+        auto resolver = &_player->resolver();
+
+        connect(_player, &Player::volumeChanged, this, &ConnectedClient::volumeChanged);
+        connect(
+            _generator, &Generator::enabledChanged,
+            this, &ConnectedClient::dynamicModeStatusChanged
+        );
+        connect(
+            _generator, &Generator::noRepetitionSpanChanged,
+            this, &ConnectedClient::dynamicModeNoRepetitionSpanChanged
+        );
+        connect(
+            _player, &Player::stateChanged,
+            this, &ConnectedClient::playerStateChanged
+        );
+        connect(
+            _player, &Player::currentTrackChanged,
+            this, &ConnectedClient::currentTrackChanged
+        );
+        connect(
+            _player, &Player::trackHistoryEvent,
+            this, &ConnectedClient::trackHistoryEvent
+        );
+        connect(
+            _player, &Player::positionChanged,
+            this, &ConnectedClient::trackPositionChanged
+        );
+        connect(
+            _player, &Player::userPlayingForChanged,
+            this, &ConnectedClient::onUserPlayingForChanged
+        );
+
+        connect(
+            queue, &Queue::entryRemoved,
+            this, &ConnectedClient::queueEntryRemoved
+        );
+        connect(
+            queue, &Queue::entryAdded,
+            this, &ConnectedClient::queueEntryAdded
+        );
+        connect(
+            queue, &Queue::entryMoved,
+            this, &ConnectedClient::queueEntryMoved
+        );
+
+        connect(
+            resolver, &Resolver::fullIndexationRunStatusChanged,
+            this, &ConnectedClient::onFullIndexationRunStatusChanged
+        );
+
+        connect(
+            _collectionMonitor, &CollectionMonitor::hashAvailabilityChanged,
+            this, &ConnectedClient::onHashAvailabilityChanged
+        );
+        connect(
+            _collectionMonitor, &CollectionMonitor::hashInfoChanged,
+            this, &ConnectedClient::onHashInfoChanged
+        );
+
+        connect(
+            &_generator->history(), &History::updatedHashUserStats,
+            this, &ConnectedClient::onUserHashStatsUpdated
+        );
     }
 
     bool ConnectedClient::isLoggedIn() const {
@@ -206,6 +213,11 @@ namespace PMP {
 
             _clientProtocolNo = (heading[3] << 8) + heading[4];
             qDebug() << "client protocol version:" << _clientProtocolNo;
+
+            /* Help out old clients that do not know that the client now has to explicitly
+             * ask for event notifications. */
+            if (_clientProtocolNo < 2)
+                enableEvents();
         }
 
         readBinaryCommands();
@@ -2007,10 +2019,7 @@ namespace PMP {
             break;
         case 50:
             qDebug() << "received SUBSCRIBE TO ALL EVENTS command";
-            /* Not yet implemented; currently all events are always broadcasted to the
-             * client. This command is here to prepare for the future. In the future we
-             * will no longer send any events by default that the client did not request.
-             */
+            enableEvents();
             break;
         case 99:
             qDebug() << "received SHUTDOWN command";
