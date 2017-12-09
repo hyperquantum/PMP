@@ -47,6 +47,7 @@ IDEAS
  - support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
  - display PMP server version in the client 'About' dialog
  - interactive editing of the list of directories to scan for music
+ - allow dragging tracks from the history into the queue to re-insert a track
 
 
 USER FRIENDLINESS
