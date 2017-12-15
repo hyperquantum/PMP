@@ -33,6 +33,7 @@
 #include <QAction>
 #include <QCoreApplication>
 #include <QDockWidget>
+#include <QKeyEvent>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
@@ -79,6 +80,8 @@ namespace PMP {
 
             _musicCollectionDock->setVisible(false); /* because of restoreState above */
         }
+
+        installEventFilter(this);
     }
 
     MainWindow::~MainWindow() {
@@ -163,6 +166,66 @@ namespace PMP {
         settings.setValue("musiccollectionvisible", _musicCollectionDock->isVisible());
 
         QMainWindow::closeEvent(event);
+    }
+
+    bool MainWindow::eventFilter(QObject* object, QEvent* event) {
+        if (event->type() == QEvent::KeyPress) {
+            QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+
+            if (keyEventFilter(keyEvent))
+                return true;
+        }
+
+        return QMainWindow::eventFilter(object, event);
+    }
+
+    bool MainWindow::keyEventFilter(QKeyEvent* event) {
+        //qDebug() << "got key:" << event->key();
+
+        switch (event->key()) {
+            case Qt::Key_MediaNext:
+            {
+                qDebug() << "got Next button";
+                auto& controller = _connection->simplePlayerController();
+
+                if (controller.canSkip())
+                    controller.skip();
+                return true;
+            }
+            case Qt::Key_MediaPause:
+            {
+                qDebug() << "got Pause button";
+                auto& controller = _connection->simplePlayerController();
+
+                if (controller.canPause())
+                    controller.pause();
+                return true;
+            }
+            case Qt::Key_MediaPlay:
+            {
+                qDebug() << "got Play button";
+                auto& controller = _connection->simplePlayerController();
+
+                if (controller.canPlay())
+                    controller.play();
+                else if (controller.canPause())
+                    controller.pause();
+                return true;
+            }
+            case Qt::Key_MediaTogglePlayPause:
+            {
+                qDebug() << "got Play/Pause button";
+                auto& controller = _connection->simplePlayerController();
+
+                if (controller.canPlay())
+                    controller.play();
+                else if (controller.canPause())
+                    controller.pause();
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void MainWindow::updateRightStatus() {

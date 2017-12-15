@@ -34,7 +34,8 @@ namespace PMP {
        _state(ServerConnection::NotConnected),
        _binarySendingMode(false),
        _serverProtocolNo(-1), _nextRef(1),
-       _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0)
+       _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0),
+       _simplePlayerController(nullptr)
     {
         connect(&_socket, SIGNAL(connected()), this, SLOT(onConnected()));
         connect(&_socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
@@ -42,6 +43,8 @@ namespace PMP {
             &_socket, SIGNAL(error(QAbstractSocket::SocketError)),
             this, SLOT(onSocketError(QAbstractSocket::SocketError))
         );
+
+        _simplePlayerController = new SimplePlayerControllerImpl(this);
     }
 
     void ServerConnection::reset() {
@@ -65,6 +68,10 @@ namespace PMP {
 
     QString ServerConnection::userLoggedInName() const {
         return _userLoggedInName;
+    }
+
+    SimplePlayerController& ServerConnection::simplePlayerController() {
+        return *_simplePlayerController;
     }
 
     void ServerConnection::onConnected() {
@@ -1692,6 +1699,52 @@ namespace PMP {
      : QObject(parent)
     {
         //
+    }
+
+    // ============================================================================ //
+
+    SimplePlayerControllerImpl::SimplePlayerControllerImpl(ServerConnection* connection)
+     : QObject(connection),
+       _connection(connection), _state(ServerConnection::UnknownState), _queueLength(0)
+    {
+        connect(
+            _connection, &ServerConnection::receivedPlayerState,
+            this, &SimplePlayerControllerImpl::receivedPlayerState
+        );
+    }
+
+    void SimplePlayerControllerImpl::receivedPlayerState(int state, quint8 volume,
+                quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition)
+    {
+        _state = (ServerConnection::PlayState)state;
+        _queueLength = queueLength;
+    }
+
+    void SimplePlayerControllerImpl::play() {
+        _connection->play();
+    }
+
+    void SimplePlayerControllerImpl::pause() {
+        _connection->pause();
+    }
+
+    void SimplePlayerControllerImpl::skip() {
+        _connection->skip();
+    }
+
+    bool SimplePlayerControllerImpl::canPlay() {
+        return _queueLength > 0
+            && (_state == ServerConnection::Paused
+                || _state == ServerConnection::Stopped);
+    }
+
+    bool SimplePlayerControllerImpl::canPause() {
+        return _state == ServerConnection::Playing;
+    }
+
+    bool SimplePlayerControllerImpl::canSkip() {
+        return _state == ServerConnection::Playing
+            || _state == ServerConnection::Paused;
     }
 
 }

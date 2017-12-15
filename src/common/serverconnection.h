@@ -23,6 +23,7 @@
 #include "collectiontrackinfo.h"
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
+#include "simpleplayercontroller.h"
 #include "tribool.h"
 
 #include <QByteArray>
@@ -37,6 +38,7 @@
 namespace PMP {
 
     class AbstractCollectionFetcher;
+    class SimplePlayerControllerImpl;
 
     class RequestID {
     public:
@@ -101,6 +103,8 @@ namespace PMP {
         void fetchCollection(AbstractCollectionFetcher* fetcher);
 
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
+
+        SimplePlayerController& simplePlayerController();
 
     public slots:
         void shutdownServer();
@@ -280,6 +284,7 @@ namespace PMP {
         TriBool _doingFullIndexation;
         QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
         QHash<uint, quint32> _insertAtIndexRequests;
+        SimplePlayerControllerImpl* _simplePlayerController;
     };
 
     class AbstractCollectionFetcher : public QObject {
@@ -291,7 +296,31 @@ namespace PMP {
         virtual void receivedData(QList<CollectionTrackInfo> data) = 0;
         virtual void completed() = 0;
         virtual void errorOccurred() = 0;
+    };
 
+    class SimplePlayerControllerImpl : public QObject, public SimplePlayerController {
+        Q_OBJECT
+    public:
+        SimplePlayerControllerImpl(ServerConnection* connection);
+
+        ~SimplePlayerControllerImpl() {}
+
+        void play();
+        void pause();
+        void skip();
+
+        bool canPlay();
+        bool canPause();
+        bool canSkip();
+
+    private slots:
+        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
+                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
+
+    private:
+        ServerConnection* _connection;
+        ServerConnection::PlayState _state;
+        uint _queueLength;
     };
 }
 #endif

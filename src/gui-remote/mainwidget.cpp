@@ -245,27 +245,37 @@ namespace PMP {
     }
 
     bool MainWidget::eventFilter(QObject* object, QEvent* event) {
-        if (_ui->queueTableView->hasFocus()) {
-            if (event->type() == QEvent::KeyPress) {
-                QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
+        if (event->type() == QEvent::KeyPress) {
+            QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
 
-                if (keyEvent->key() == Qt::Key_Delete) {
-                    //qDebug() << "got delete key";
-
-                    QModelIndex index = _ui->queueTableView->currentIndex();
-                    if (index.isValid()) {
-                        quint32 queueID = _queueModel->trackIdAt(index);
-
-                        if (queueID > 0) {
-                            _connection->deleteQueueEntry(queueID);
-                            return true;
-                        }
-                    }
-                }
-            }
+            if (keyEventFilter(keyEvent))
+                return true;
         }
 
         return QWidget::eventFilter(object, event);
+    }
+
+    bool MainWidget::keyEventFilter(QKeyEvent* event) {
+        switch (event->key()) {
+        case Qt::Key_Delete:
+            if (_ui->queueTableView->hasFocus()) {
+                //qDebug() << "got delete key";
+
+                QModelIndex index = _ui->queueTableView->currentIndex();
+                if (index.isValid()) {
+                    quint32 queueID = _queueModel->trackIdAt(index);
+
+                    if (queueID > 0) {
+                        _connection->deleteQueueEntry(queueID);
+                        return true;
+                    }
+                }
+            }
+
+            break;
+        }
+
+        return false;
     }
 
     void MainWidget::queueContextMenuRequested(const QPoint& position) {

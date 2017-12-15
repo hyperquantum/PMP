@@ -72,6 +72,8 @@ namespace PMP {
         void userPlayingForChanged(quint32 userId, QString login);
 
     private:
+        bool keyEventFilter(QKeyEvent* event);
+
         void buildNoRepetitionList(int spanToSelect);
         QString noRepetitionTimeString(int seconds);
 

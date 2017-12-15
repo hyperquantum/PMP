@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -45,6 +45,9 @@ namespace PMP {
         MainWindow(QWidget* parent = 0);
         ~MainWindow();
 
+    protected:
+        bool eventFilter(QObject*, QEvent*);
+
     private slots:
         void onDoConnect(QString server, uint port);
         void onConnected();
@@ -67,6 +70,7 @@ namespace PMP {
         void onLeftStatusTimeout();
 
     private:
+        bool keyEventFilter(QKeyEvent* event);
         virtual void closeEvent(QCloseEvent* event);
 
         void createMenus();
