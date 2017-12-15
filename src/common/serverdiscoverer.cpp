@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -69,6 +69,7 @@ namespace PMP {
     void ServerDiscoverer::sendProbeTo(QHostAddress const& destination) {
         QByteArray datagram = "PMPPROBEv01";
         _socket->writeDatagram(datagram, destination, 23432);
+        _socket->flush();
     }
 
     void ServerDiscoverer::readPendingDatagrams() {

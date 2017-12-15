@@ -392,6 +392,7 @@ namespace PMP {
         }
 
         _socket->write((command + ";").toUtf8());
+        _socket->flush();
     }
 
     void ConnectedClient::handleBinaryModeSwitchRequest() {
@@ -413,6 +414,7 @@ namespace PMP {
         binaryHeader[3] = char(((unsigned)ServerProtocolNo >> 8) & 255);
         binaryHeader[4] = char((unsigned)ServerProtocolNo & 255);
         _socket->write(binaryHeader, sizeof(binaryHeader));
+        _socket->flush();
     }
 
     void ConnectedClient::sendBinaryMessage(QByteArray const& message) {
@@ -437,6 +439,7 @@ namespace PMP {
 
         _socket->write(lengthArr, sizeof(lengthArr));
         _socket->write(message.data(), length);
+        _socket->flush();
     }
 
     void ConnectedClient::sendStateInfoAfterTimeout() {

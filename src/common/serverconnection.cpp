@@ -140,6 +140,7 @@ namespace PMP {
                 binaryHeader[3] = char(((unsigned)ClientProtocolNo >> 8) & 255);
                 binaryHeader[4] = char((unsigned)ClientProtocolNo & 255);
                 _socket.write(binaryHeader, sizeof(binaryHeader));
+                _socket.flush();
 
                 _binarySendingMode = true;
             }
@@ -247,6 +248,7 @@ namespace PMP {
     void ServerConnection::sendTextCommand(QString const& command) {
         qDebug() << "sending command" << command;
         _socket.write((command + ";").toUtf8());
+        _socket.flush();
     }
 
     void ServerConnection::sendBinaryMessage(QByteArray const& message) {
@@ -260,6 +262,7 @@ namespace PMP {
 
         _socket.write(lengthArr, sizeof(lengthArr));
         _socket.write(message.data(), length);
+        _socket.flush();
     }
 
     void ServerConnection::sendSingleByteAction(quint8 action) {

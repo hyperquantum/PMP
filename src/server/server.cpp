@@ -153,6 +153,7 @@ namespace PMP {
         NetworkUtil::append2Bytes(datagram, port());
 
         _udpSocket->writeDatagram(datagram, QHostAddress::Broadcast, 23433);
+        _udpSocket->flush();
     }
 
     void Server::readPendingDatagrams() {
