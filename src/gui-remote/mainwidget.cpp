@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -597,11 +597,11 @@ namespace PMP {
 
     void MainWidget::userPlayingForChanged(quint32 userId, QString login) {
         if (userId == 0) {
-            _ui->playingModeLabel->setText("PUBLIC mode");
+            _ui->playingModeLabel->setText(tr("PUBLIC mode"));
             _ui->userPlayingForLabel->setText("~~~");
         }
         else {
-            _ui->playingModeLabel->setText("PERSONAL mode");
+            _ui->playingModeLabel->setText(tr("PERSONAL mode"));
             _ui->userPlayingForLabel->setText(
                 QString(QChar(0x2013)) + " " + login + " " + QChar(0x2013)
             );
