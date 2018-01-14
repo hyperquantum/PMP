@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,14 +30,16 @@ namespace PMP {
     class CollectionTrackInfo {
     public:
         CollectionTrackInfo()
-         : _isAvailable(false)
+         : _isAvailable(false), _lengthInMs(-1)
         {
             //
         }
 
         CollectionTrackInfo(FileHash const& hash, bool isAvailable,
-                            QString const& title, QString const& artist)
-        : _hash(hash), _isAvailable(isAvailable), _title(title), _artist(artist)
+                            QString const& title, QString const& artist,
+                            QString const& album, qint32 lengthInMilliseconds)
+        : _hash(hash), _isAvailable(isAvailable), _lengthInMs(lengthInMilliseconds),
+          _title(title), _artist(artist), _album(album)
         {
             //
         }
@@ -46,7 +48,11 @@ namespace PMP {
         bool isAvailable() const { return _isAvailable; }
         const QString& title() const { return _title; }
         const QString& artist() const { return _artist; }
-        // TODO: track length
+        const QString& album() const { return _album; }
+        qint32 lengthInMilliseconds() const { return _lengthInMs; }
+        qint32 lengthInSeconds() const {
+            return (_lengthInMs >= 0) ? _lengthInMs / 1000 : -1;
+        }
 
         bool titleAndArtistUnknown() const {
             return _title.isEmpty() && _artist.isEmpty();
@@ -55,9 +61,11 @@ namespace PMP {
     private:
         FileHash _hash;
         bool _isAvailable;
-        QString _title, _artist;
+        qint32 _lengthInMs;
+        QString _title, _artist, _album;
     };
 
+    /*
     inline bool operator==(const CollectionTrackInfo& me,
                            const CollectionTrackInfo& other)
     {
@@ -71,6 +79,7 @@ namespace PMP {
     {
         return !(me == other);
     }
+    */
 }
 
 Q_DECLARE_METATYPE(PMP::CollectionTrackInfo)

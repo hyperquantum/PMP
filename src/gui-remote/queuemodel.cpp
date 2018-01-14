@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,6 +18,8 @@
 */
 
 #include "queuemodel.h"
+
+#include "common/util.h"
 
 #include "queueentryinfofetcher.h"
 #include "queuemediator.h"
@@ -211,16 +213,8 @@ namespace PMP {
             case 2:
             {
                 int lengthInSeconds = info->lengthInSeconds();
-
                 if (lengthInSeconds < 0) { return "?"; }
-
-                int sec = lengthInSeconds % 60;
-                int min = (lengthInSeconds / 60) % 60;
-                int hrs = lengthInSeconds / 3600;
-
-                return QString::number(hrs).rightJustified(2, '0')
-                    + ":" + QString::number(min).rightJustified(2, '0')
-                    + ":" + QString::number(sec).rightJustified(2, '0');
+                return Util::secondsToHoursMinuteSecondsText(lengthInSeconds);
             }
             case 3:
             {

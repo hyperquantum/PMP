@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -37,6 +37,7 @@ namespace PMP {
           4: client msg 19: added support for inserting a track at a specific index
           5: client msg 20, server msg 23 & 24: added player history fetching
           6: single byte request 17 & server msg 25: retreiving the database identifier
+          7: server msgs 18 & 19 extended with album and track length
 
     */
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -50,7 +50,8 @@ namespace PMP {
     }
 
     void CollectionMonitor::hashTagInfoChanged(FileHash hash,
-                                               QString title, QString artist)
+                                               QString title, QString artist,
+                                               QString album, qint32 lengthInMilliseconds)
     {
         HashInfo& info = _collection[hash];
         bool changed = title != info.title || artist != info.artist;
@@ -58,6 +59,8 @@ namespace PMP {
 
         info.title = title;
         info.artist = artist;
+        info.album = album;
+        info.lengthInMilliseconds = lengthInMilliseconds;
 
         Changed& notification = _pendingNotifications[hash];
         if (!notification.tags) {
@@ -136,7 +139,8 @@ namespace PMP {
             if (it == _collection.end()) continue; /* disappeared?? */
 
             const HashInfo& value = it.value();
-            CollectionTrackInfo info(h, value.isAvailable, value.title, value.artist);
+            CollectionTrackInfo info(h, value.isAvailable, value.title, value.artist,
+                                     value.album, value.lengthInMilliseconds);
             notifications.append(info);
         }
 

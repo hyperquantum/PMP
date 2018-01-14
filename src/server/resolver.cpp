@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,6 +28,9 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QtDebug>
 #include <QThreadPool>
+
+#include <algorithm>
+#include <limits>
 
 namespace PMP {
 
@@ -70,6 +73,7 @@ namespace PMP {
         QList<Resolver::VerifiedFile*> _files;
         QString _quickTitle;
         QString _quickArtist;
+        QString _quickAlbum;
 
     public:
         HashKnowledge(Resolver* parent, FileHash hash, uint hashId)
@@ -85,13 +89,15 @@ namespace PMP {
 
         const AudioData& audio() const { return _audio; }
         AudioData& audio() { return _audio; }
-        void addAudioInfo(AudioData const& audio);
 
-        void addTags(const TagData* t);
+        qint32 lengthInMilliseconds() { return (qint32)_audio.trackLengthMilliseconds(); }
+
+        void addInfo(AudioData const& audio, TagData const& t);
 
         TagData const* findBestTag();
         QString quickTitle() { return _quickTitle; }
         QString quickArtist() { return _quickArtist; }
+        QString quickAlbum() { return _quickAlbum; }
 
         void addPath(const QString& filename,
                      qint64 fileSize, QDateTime fileLastModified);
@@ -125,38 +131,54 @@ namespace PMP {
 
     /* ========================== HashKnowledge ========================= */
 
-    void Resolver::HashKnowledge::addAudioInfo(const AudioData& audio) {
+    void Resolver::HashKnowledge::addInfo(AudioData const& audio, TagData const& t) {
         if (audio.format() != AudioData::UnknownFormat) {
             _audio.setFormat(audio.format());
         }
 
-        /* TODO: what if the existing length is different? */
-        if (audio.trackLengthMilliseconds() >= 0) {
-            _audio.setTrackLengthMilliseconds(audio.trackLengthMilliseconds());
-        }
-    }
-
-    void Resolver::HashKnowledge::addTags(const TagData *t) {
-        if (!t) return;
-
-        /* check for duplicates */
-        Q_FOREACH(const TagData* tag, _tags) {
-            if (*tag == *t) return; /* a duplicate */
+        auto newLength = audio.trackLengthMilliseconds();
+        auto oldLength = _audio.trackLengthMilliseconds();
+        if (newLength >= 0 && newLength <= std::numeric_limits<qint32>::max()) {
+            _audio.setTrackLengthMilliseconds(newLength);
         }
 
-        _tags.append(t);
-        auto tags = findBestTag();
-        if (tags) {
-            QString oldQuickTitle = _quickTitle;
-            QString oldQuickArtist = _quickArtist;
+        bool infoChanged = _audio.trackLengthMilliseconds() != oldLength;
 
-            _quickTitle = tags->title();
-            _quickArtist = tags->artist();
-
-            if (oldQuickTitle != _quickTitle || oldQuickArtist != _quickArtist)
+        /* check for duplicate tags */
+        bool tagIsNew = true;
+        Q_FOREACH(const TagData* existing, _tags) {
+            if (existing->title() == t.title()
+                    && existing->artist() == t.artist()
+                    && existing->album() == t.album())
             {
-                emit _parent->hashTagInfoChanged(_hash, _quickTitle, _quickArtist);
+                tagIsNew = false;
+                break;
             }
+        }
+
+        if (tagIsNew) {
+            _tags.append(new TagData(t));
+
+            auto tags = findBestTag();
+            if (tags) {
+                QString oldQuickTitle = _quickTitle;
+                QString oldQuickArtist = _quickArtist;
+                QString oldQuickAlbum = _quickAlbum;
+
+                _quickTitle = tags->title();
+                _quickArtist = tags->artist();
+                _quickAlbum = tags->album();
+
+                infoChanged |=
+                        oldQuickTitle != _quickTitle || oldQuickArtist != _quickArtist
+                            || oldQuickAlbum != _quickAlbum;
+            }
+        }
+
+        if (infoChanged) {
+            emit _parent->hashTagInfoChanged(_hash, _quickTitle, _quickArtist,
+                                             _quickAlbum,
+                                             _audio.trackLengthMilliseconds());
         }
     }
 
@@ -167,17 +189,23 @@ namespace PMP {
         Q_FOREACH (const TagData* tag, _tags) {
             int score = 0;
 
-            QString title = tag->title();
-            QString artist = tag->artist();
+            int titleLength = tag->title().length();
+            int artistLength = tag->artist().length();
+            int albumLength = tag->album().length();
 
-            if (title.length() > 0) {
+            if (titleLength > 0) {
                 score += 100000;
-                score += 8 * title.length();
+                score += 8 * std::min(titleLength, 256);
             }
 
-            if (artist.length() > 0) {
+            if (artistLength > 0) {
                 score += 80000;
-                score += artist.length();
+                score += std::min(artistLength, 256);
+            }
+
+            if (albumLength > 0) {
+                score += 6000;
+                score += std::min(albumLength, 256);
             }
 
             if (score <= resultScore) { continue; }
@@ -418,6 +446,13 @@ namespace PMP {
         if (!analyzer.analysisDone())
             return FileHash(); /* something went wrong, return invalid hash */
 
+        if (analyzer.audioData().trackLengthMilliseconds()
+                > std::numeric_limits<qint32>::max())
+        {
+            qDebug() << "audio too long, not registering:" << filename;
+            return FileHash(); /* file too long, probably not music anyway */
+        }
+
         auto fileSize = info.size();
         auto fileLastModified = info.lastModified();
 
@@ -448,8 +483,7 @@ namespace PMP {
             return FileHash(); /* something went wrong, return invalid hash */
         }
 
-        knowledge->addAudioInfo(analyzer.audioData());
-        knowledge->addTags(new TagData(analyzer.tagData()));
+        knowledge->addInfo(analyzer.audioData(), analyzer.tagData());
 
         if (filename.length() <= 0 || fileSize <= 0 || fileLastModified.isNull())
         {
@@ -601,8 +635,16 @@ namespace PMP {
             auto knowledge = _hashKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
 
+            auto lengthInMilliseconds = knowledge->audio().trackLengthMilliseconds();
+            if (lengthInMilliseconds > std::numeric_limits<qint32>::max())
+            {
+                lengthInMilliseconds = 0;
+            }
+
             CollectionTrackInfo info(hash, knowledge->isAvailable(),
-                                     knowledge->quickTitle(), knowledge->quickArtist());
+                                     knowledge->quickTitle(), knowledge->quickArtist(),
+                                     knowledge->quickAlbum(),
+                                     (qint32)lengthInMilliseconds);
 
             result.append(info);
         }

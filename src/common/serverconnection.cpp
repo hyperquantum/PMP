@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,7 +26,7 @@
 
 namespace PMP {
 
-    const qint16 ServerConnection::ClientProtocolNo = 6;
+    const qint16 ServerConnection::ClientProtocolNo = 7;
 
     ServerConnection::ServerConnection(QObject* parent, bool subscribeToAllServerEvents)
      : QObject(parent),
@@ -1376,9 +1376,13 @@ namespace PMP {
 
         int offset = isNotification ? 4 : 8;
 
+        bool withAlbumAndTrackLength = _serverProtocolNo >= 7;
+        const int fixedInfoLengthPerTrack =
+            NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2
+                + (withAlbumAndTrackLength ? 2 + 4 : 0);
+
         int trackCount = (uint)NetworkUtil::get2Bytes(message, 2);
-        if (trackCount == 0
-            || messageLength < offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2)
+        if (trackCount == 0 || messageLength < offset + fixedInfoLengthPerTrack)
         {
             return; /* irrelevant or invalid message */
         }
@@ -1396,35 +1400,39 @@ namespace PMP {
         offsets.append(offset);
 
         while (true) {
-            /* skip hash */
-            /* skip availability */
-            int titleSize =
-                (uint)NetworkUtil::get2Bytes(
-                    message, offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1);
-            int artistSize =
-                (uint)NetworkUtil::get2Bytes(
-                    message, offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2);
-            int titleArtistOffset =
-                offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2;
+            /* set pointer past hash and availability */
+            int current = offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1;
+            int titleSize = (uint)NetworkUtil::get2Bytes(message, current);
+            current += 2;
+            int artistSize = (uint)NetworkUtil::get2Bytes(message, current);
+            current += 2;
+            int albumSize = 0;
+            //qint32 trackLength = 0;
+            if (withAlbumAndTrackLength) {
+                albumSize = (uint)NetworkUtil::get2Bytes(message, current);
+                current += 2;
+                //trackLength = (qint32)NetworkUtil::get4Bytes(message, current);
+                current += 4;
+            }
 
-            if (titleSize > messageLength - titleArtistOffset
-                || artistSize > messageLength - titleArtistOffset
-                || (titleSize + artistSize) > messageLength - titleArtistOffset)
+            if (titleSize > messageLength - current
+                || artistSize > messageLength - current
+                || albumSize > messageLength - current
+                || (titleSize + artistSize + albumSize) > messageLength - current)
             {
                 return; /* invalid message */
             }
 
-            if (titleArtistOffset + titleSize + artistSize == messageLength) {
+            if (current + titleSize + artistSize + albumSize == messageLength) {
                 break; /* end of message */
             }
 
             /* at least one more track info follows */
 
             /* offset for next track */
-            offset = titleArtistOffset + titleSize + artistSize;
+            offset = current + titleSize + artistSize + albumSize;
 
-            if (offset
-                + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 > messageLength)
+            if (offset + fixedInfoLengthPerTrack > messageLength)
             {
                 return;  /* invalid message */
             }
@@ -1432,7 +1440,9 @@ namespace PMP {
             offsets.append(offset);
         }
 
-        qDebug() << "received collection track info message;  track count:" << trackCount;
+        qDebug() << "received collection track info message;  track count:" << trackCount
+                 << "; notification?" << (isNotification ? "Y" : "N")
+                 << "; with album & length?" << (withAlbumAndTrackLength ? "Y" : "N");
 
         if (trackCount != offsets.size()) {
             qDebug() << " invalid message detected: offsets size:" << offsets.size();
@@ -1458,12 +1468,25 @@ namespace PMP {
             int titleSize = (uint)NetworkUtil::get2Bytes(message, offset + 1);
             int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 3);
             offset += 5;
+            int albumSize = 0;
+            qint32 trackLengthInMs = -1;
+            if (withAlbumAndTrackLength) {
+                albumSize = (uint)NetworkUtil::get2Bytes(message, offset);
+                trackLengthInMs = (qint32)NetworkUtil::get4Bytes(message, offset + 2);
+                offset += 6;
+            }
 
             QString title = NetworkUtil::getUtf8String(message, offset, titleSize);
-            QString artist =
-                NetworkUtil::getUtf8String(message, offset + titleSize, artistSize);
+            offset += titleSize;
+            QString artist = NetworkUtil::getUtf8String(message, offset, artistSize);
+            offset += artistSize;
+            QString album = "";
+            if (withAlbumAndTrackLength) {
+                album = NetworkUtil::getUtf8String(message, offset, albumSize);
+            }
 
-            CollectionTrackInfo info(hash, availabilityByte & 1, title, artist);
+            CollectionTrackInfo info(hash, availabilityByte & 1, title, artist, album,
+                                     trackLengthInMs);
             infos.append(info);
         }
 

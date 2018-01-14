@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,6 +18,8 @@
 */
 
 #include "collectiontablemodel.h"
+
+#include "common/util.h"
 
 #include <QBuffer>
 #include <QDataStream>
@@ -176,7 +178,7 @@ namespace PMP {
     }
 
     int CollectionTableModel::columnCount(const QModelIndex& parent) const {
-        return 2;
+        return 4;
     }
 
     QVariant CollectionTableModel::headerData(int section, Qt::Orientation orientation,
@@ -186,6 +188,8 @@ namespace PMP {
             switch (section) {
                 case 0: return QString(tr("Title"));
                 case 1: return QString(tr("Artist"));
+                case 2: return QString(tr("Length"));
+                case 3: return QString(tr("Album"));
             }
         }
 
@@ -195,12 +199,29 @@ namespace PMP {
     QVariant CollectionTableModel::data(const QModelIndex& index, int role) const {
         //qDebug() << "CollectionTableModel::data called with role" << role;
 
-        if (role == Qt::DisplayRole && index.row() < _tracks.size()) {
-            int col = index.column();
-            switch (col) {
-                case 0: return _tracks[index.row()]->title();
-                case 1: return _tracks[index.row()]->artist();
-            }
+        int col = index.column();
+        switch (role) {
+            case Qt::TextAlignmentRole:
+                switch (col) {
+                    case 2: return Qt::AlignRight + Qt::AlignVCenter;
+                }
+                break;
+            case Qt::DisplayRole:
+                if (index.row() < _tracks.size()) {
+                    switch (col) {
+                        case 0: return _tracks[index.row()]->title();
+                        case 1: return _tracks[index.row()]->artist();
+                        case 2:
+                        {
+                            int lengthInSeconds = _tracks[index.row()]->lengthInSeconds();
+
+                            if (lengthInSeconds < 0) { return "?"; }
+                            return Util::secondsToHoursMinuteSecondsText(lengthInSeconds);
+                        }
+                        case 3: return _tracks[index.row()]->album();
+                    }
+                }
+                break;
         }
 
         return QVariant();

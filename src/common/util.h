@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 #define PMP_UTIL_H
 
 #include <QChar>
+#include <QString>
 
 namespace PMP {
 
@@ -33,6 +34,8 @@ namespace PMP {
 
         /*! The LATIN SMALL LETTER E WITH ACUTE (U+E9) */
         static const QChar EAcute;
+
+        static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
 
     private:
         Util();

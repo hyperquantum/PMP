@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,7 +44,7 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 6;
+    const qint16 ConnectedClient::ServerProtocolNo = 7;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,
@@ -923,12 +923,15 @@ namespace PMP {
             return;
         }
 
+        bool withAlbumAndTrackLength = _clientProtocolNo >= 7;
+
         /* estimate how much bytes we will need and reserve that memory in the buffer */
+        const int bytesEstimatedPerTrack =
+            NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 + 20 + 15
+                + (withAlbumAndTrackLength ? 2 + 15 + 4 : 0);
         QByteArray message;
-        message.reserve(
-            2 + 2 + 4
-            + tracks.size() * (NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 + 20 + 15)
-        );
+        message.reserve(2 + 2 + 4 + tracks.size() * bytesEstimatedPerTrack);
+
         NetworkUtil::append2Bytes(
             message,
             isNotification ? NetworkProtocol::CollectionChangeNotificationMessage
@@ -944,20 +947,30 @@ namespace PMP {
 
             QString title = track.title();
             QString artist = track.artist();
+            QString album = track.album();
 
             /* worst case: 4 bytes in UTF-8 for each char */
             title.truncate(maxSize / 4);
             artist.truncate(maxSize / 4);
+            album.truncate(maxSize / 4);
 
             QByteArray titleData = title.toUtf8();
             QByteArray artistData = artist.toUtf8();
+            QByteArray albumData = album.toUtf8();
 
             NetworkProtocol::appendHash(message, track.hash());
             NetworkUtil::appendByte(message, track.isAvailable() ? 1 : 0);
             NetworkUtil::append2Bytes(message, (uint)titleData.size());
             NetworkUtil::append2Bytes(message, (uint)artistData.size());
+            if (withAlbumAndTrackLength) {
+                NetworkUtil::append2Bytes(message, (uint)albumData.size());
+                NetworkUtil::append4Bytes(message, track.lengthInMilliseconds());
+            }
+
             message += titleData;
             message += artistData;
+            if (withAlbumAndTrackLength)
+                message += albumData;
         }
 
         sendBinaryMessage(message);

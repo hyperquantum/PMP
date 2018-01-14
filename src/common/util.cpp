@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -42,6 +42,18 @@ namespace PMP {
         auto result = counterValue ^ clockValue;
         qDebug() << "Util::getRandomSeed returning" << result;
         return result;
+    }
+
+    QString Util::secondsToHoursMinuteSecondsText(qint32 totalSeconds) {
+        if (totalSeconds < 0) { return "?"; }
+
+        int sec = totalSeconds % 60;
+        int min = (totalSeconds / 60) % 60;
+        int hrs = (totalSeconds / 60) / 60;
+
+        return QString::number(hrs).rightJustified(2, '0')
+            + ":" + QString::number(min).rightJustified(2, '0')
+            + ":" + QString::number(sec).rightJustified(2, '0');
     }
 
 }
