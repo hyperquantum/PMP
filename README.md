@@ -1,6 +1,6 @@
 ﻿# Party Music Player
 
-Copyright (C) 2011-2017  Kevin André
+Copyright (C) 2011-2018  Kevin André
 
   *!! This project is still in an early stage of development !!*
 
