@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,6 +18,7 @@
 */
 
 #include "common/logging.h"
+#include "common/util.h"
 #include "common/version.h"
 
 #include "collectionmonitor.h"
@@ -70,7 +71,10 @@ int main(int argc, char *argv[]) {
 
     QTextStream out(stdout);
 
-    out << endl << "PMP --- Party Music Player" << endl << endl;
+    out << endl
+        << "Party Music Player - version " PMP_VERSION_DISPLAY << endl
+        << Util::getCopyrightLine(true) << endl
+        << endl;
 
     /* set up logging */
     Logging::enableConsoleAndTextFileLogging(true);

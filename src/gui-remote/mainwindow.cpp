@@ -295,15 +295,14 @@ namespace PMP {
                 "<p>Website: <a href=\"%1\">%1</a></p>"
                 "<p>Report bugs at: <a href=\"%2\">%2</a></p>"
                 "<p>Party Music Player <b>version %3</b><br>"
-                "Copyright (C) %4 %5</p>"
-                "<p>Using Qt version %6</p>"
+                "%4</p>" /* copyright line */
+                "<p>Using Qt version %5</p>"
                 "</html>"
             )
             .arg(PMP_WEBSITE)
             .arg(PMP_BUGREPORT_LOCATION)
             .arg(PMP_VERSION_DISPLAY)
-            .arg(QString("2014") + Util::EnDash + "2017") /* copyright from-to */
-            .arg(QString("Kevin Andr") + Util::EAcute) /* needs non-ascii char */
+            .arg(Util::getCopyrightLine(false))
             .arg(QT_VERSION_STR);
 
         QMessageBox::about(this, tr("About PMP"), aboutText);

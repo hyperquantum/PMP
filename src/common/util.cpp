@@ -19,12 +19,15 @@
 
 #include "util.h"
 
+#include "common/version.h"
+
 #include <QAtomicInt>
 #include <QDateTime>
 #include <QtDebug>
 
 namespace PMP {
 
+    const QChar Util::Copyright = QChar(0xA9);
     const QChar Util::EnDash = QChar(0x2013);
     const QChar Util::EAcute = QChar(0xE9);
 
@@ -54,6 +57,22 @@ namespace PMP {
         return QString::number(hrs).rightJustified(2, '0')
             + ":" + QString::number(min).rightJustified(2, '0')
             + ":" + QString::number(sec).rightJustified(2, '0');
+    }
+
+    QString Util::getCopyrightLine(bool mustBeAscii) {
+        auto line = QString("Copyright %1 %2 %3");
+
+        if (mustBeAscii) {
+            line = line.arg("(C)").arg(PMP_COPYRIGHT_YEARS).arg("Kevin Andre");
+        }
+        else {
+            line =
+                line.arg(Copyright)
+                    .arg(QString(PMP_COPYRIGHT_YEARS).replace('-', EnDash))
+                    .arg(QString("Kevin Andr") + EAcute);
+        }
+
+        return line;
     }
 
 }

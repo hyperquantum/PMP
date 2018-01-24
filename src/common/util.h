@@ -29,6 +29,9 @@ namespace PMP {
     public:
         static unsigned getRandomSeed();
 
+        /*! The copyright symbol */
+        static const QChar Copyright;
+
         /*! The EN DASH (U+2013) character. */
         static const QChar EnDash;
 
@@ -36,6 +39,8 @@ namespace PMP {
         static const QChar EAcute;
 
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
+
+        static QString getCopyrightLine(bool mustBeAscii = true);
 
     private:
         Util();
