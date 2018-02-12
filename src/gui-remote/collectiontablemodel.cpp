@@ -21,168 +21,435 @@
 
 #include "common/util.h"
 
+#include <QBrush>
 #include <QBuffer>
 #include <QDataStream>
 #include <QMimeData>
 #include <QtDebug>
 #include <QVector>
 
+#include <algorithm>
+#include <functional>
+
 namespace PMP {
 
-    CollectionTableModel::CollectionTableModel(QObject* parent)
-     : QAbstractTableModel(parent)
-    {
-        //
+    namespace {
+
+    class Comparisons {
+    public:
+
+        template <typename T>
+        static int compare(T const& first, T const& second) {
+            if (first < second) return -1;
+            if (second < first) return 1;
+            return 0;
+        }
+
+        template <typename T>
+        static int compare(T const& first, T const& second, bool descending) {
+            return descending ? compare(second, first) : compare(first, second);
+        }
+
+        template <typename T>
+        static int compare(T const& first, T const& second, Qt::SortOrder sortOrder) {
+            return compare(first, second, sortOrder == Qt::DescendingOrder);
+        }
+
+        template <typename T>
+        static int compare(T const& first, T const& second,
+                           std::function<int(T const& first, T const& second)> comparer,
+                           bool descending)
+        {
+            return descending ? comparer(second, first) : comparer(first, second);
+        }
+
+        template <typename T>
+        static int compare(T const& first, T const& second,
+                           std::function<int(T const& first, T const& second)> comparer,
+                           Qt::SortOrder sortOrder)
+        {
+            return compare(first, second, comparer, sortOrder == Qt::DescendingOrder);
+        }
+
+        /*static int compare<>(QString const& first, QString const& second) {
+            return first.compare(second);
+        }*/
+
+    };
+
     }
 
-    void CollectionTableModel::setConnection(ServerConnection* connection) {
+    // ============================================================================ //
+
+    SortedCollectionTableModel::SortedCollectionTableModel(QObject* parent)
+     : QAbstractTableModel(parent), _sortBy(0), _sortOrder(Qt::AscendingOrder)
+    {
+        _collator.setCaseSensitivity(Qt::CaseInsensitive);
+        _collator.setNumericMode(true);
+
+        /* we need to ignore symbols such as quotes, spaces and parentheses */
+        _collator.setIgnorePunctuation(true);
+    }
+
+    void SortedCollectionTableModel::setConnection(ServerConnection* connection) {
         connect(
             connection, &ServerConnection::collectionTracksChanged,
-            this, &CollectionTableModel::onCollectionTracksChanged
+            this, &SortedCollectionTableModel::onCollectionTracksChanged
         );
 
         auto fetcher = new CollectionTableFetcher(this);
         connection->fetchCollection(fetcher);
     }
 
-    void CollectionTableModel::addFirstTime(QList<CollectionTrackInfo> tracks) {
-        qDebug() << "CollectionTableModel::addFirstTime called for" << tracks.size()
-                 << "tracks";
+    bool SortedCollectionTableModel::lessThan(int index1, int index2) const {
+        //qDebug() << "lessThan called:" << index1 << "," << index2;
+        return compareTracks(*_tracks.at(index1), *_tracks.at(index2)) < 0;
+    }
 
-        if (_hashes.empty()) { /* fast path: insert all at once */
-            QHash<FileHash, CollectionTrackInfo*> hashes;
-            hashes.reserve(tracks.size());
+    bool SortedCollectionTableModel::lessThan(const CollectionTrackInfo& track1,
+                                              const CollectionTrackInfo& track2) const
+    {
+        return compareTracks(track1, track2) < 0;
+    }
 
-            Q_FOREACH(CollectionTrackInfo const& track, tracks) {
-                if (hashes.contains(track.hash()))
-                    continue; /* already present */
+    void SortedCollectionTableModel::sortByTitle() {
+        sort(0);
+    }
 
-                if (!track.isAvailable() && track.titleAndArtistUnknown())
-                    continue; /* not interesting enough to add */
+    void SortedCollectionTableModel::sortByArtist() {
+        sort(1);
+    }
 
-                auto trackObj = new CollectionTrackInfo(track);
-                hashes.insert(track.hash(), trackObj);
-            }
+    int SortedCollectionTableModel::sortColumn() const {
+        return _sortBy;
+    }
 
-            auto tracks = hashes.values();
+    Qt::SortOrder SortedCollectionTableModel::sortOrder() const {
+        return _sortOrder;
+    }
 
-            qDebug() << " addFirstTime: inserting" << tracks.size() << "tracks";
+    int SortedCollectionTableModel::compareStrings(const QString& s1, const QString& s2,
+                                                   Qt::SortOrder sortOrder) const
+    {
+        return sortOrder == Qt::DescendingOrder
+                ? _collator.compare(s2, s1)
+                : _collator.compare(s1, s2);
+    }
 
-            if (!tracks.empty()) {
-                beginInsertRows(QModelIndex(), 0, tracks.size() - 1);
-                _hashes = hashes;
-                _tracks = tracks;
-                endInsertRows();
-            }
+    int SortedCollectionTableModel::compareTracks(const CollectionTrackInfo& track1,
+                                                  const CollectionTrackInfo& track2) const
+    {
+        switch (_sortBy) {
+            case 0:
+            default:
+                return compareTitles(track1, track2, _sortOrder);
+            case 1:
+                return compareArtists(track1, track2, _sortOrder);
+            case 2:
+                return compareLengths(track1, track2, _sortOrder);
+            case 3:
+                return compareAlbums(track1, track2, _sortOrder);
+        }
+    }
 
+    int SortedCollectionTableModel::compareTitles(const CollectionTrackInfo& track1,
+                                                  const CollectionTrackInfo& track2,
+                                                  Qt::SortOrder sortOrder) const
+    {
+        bool empty1 = track1.titleAndArtistUnknown();
+        bool empty2 = track2.titleAndArtistUnknown();
+
+        if (empty1 || empty2) {
+            if (!empty1) return -1; /* track 1 goes first */
+            if (!empty2) return 1; /* track 2 goes first */
+
+            /* both are empty; compare other properties */
+        }
+        else {
+            auto title1 = track1.title();
+            auto title2 = track2.title();
+            int titleComparison = compareStrings(title1, title2, sortOrder);
+            if (titleComparison != 0) return titleComparison;
+
+            auto artist1 = track1.artist();
+            auto artist2 = track2.artist();
+            int artistComparison = compareStrings(artist1, artist2, sortOrder);
+            if (artistComparison != 0) return artistComparison;
+        }
+
+        return Comparisons::compare(
+            track1.hash(), track2.hash(),
+            std::function<int(FileHash const&, FileHash const&)>(&PMP::compare),
+            sortOrder
+        );
+    }
+
+    int SortedCollectionTableModel::compareArtists(const CollectionTrackInfo& track1,
+                                                   const CollectionTrackInfo& track2,
+                                                   Qt::SortOrder sortOrder) const
+    {
+        bool empty1 = track1.titleAndArtistUnknown();
+        bool empty2 = track2.titleAndArtistUnknown();
+
+        if (empty1 || empty2) {
+            if (!empty1) return -1; /* track 1 goes first */
+            if (!empty2) return 1; /* track 2 goes first */
+
+            /* both are empty; compare other properties */
+        }
+        else {
+            auto artist1 = track1.artist();
+            auto artist2 = track2.artist();
+            int artistComparison = compareStrings(artist1, artist2, sortOrder);
+            if (artistComparison != 0) return artistComparison;
+
+            auto title1 = track1.title();
+            auto title2 = track2.title();
+            int titleComparison = compareStrings(title1, title2, sortOrder);
+            if (titleComparison != 0) return titleComparison;
+        }
+
+        return PMP::compare(track1.hash(), track2.hash());
+    }
+
+    int SortedCollectionTableModel::compareLengths(const CollectionTrackInfo& track1,
+                                                   const CollectionTrackInfo& track2,
+                                                   Qt::SortOrder sortOrder) const
+    {
+        auto length1 = track1.lengthInMilliseconds();
+        auto length2 = track2.lengthInMilliseconds();
+
+        if (length1 < 0 || length2 < 0) {
+            if (length1 >= 0) return -1; /* track 1 goes first */
+            if (length2 >= 0) return 1; /* track 2 goes first */
+
+            /* both are empty; compare other properties */
+        }
+        else {
+            int comparison = Comparisons::compare(length1, length2, sortOrder);
+            if (comparison != 0) return comparison;
+        }
+
+        auto title1 = track1.title();
+        auto title2 = track2.title();
+        int titleComparison = compareStrings(title1, title2, sortOrder);
+        if (titleComparison != 0) return titleComparison;
+
+        auto artist1 = track1.artist();
+        auto artist2 = track2.artist();
+        int artistComparison = compareStrings(artist1, artist2, sortOrder);
+        if (artistComparison != 0) return artistComparison;
+
+        return PMP::compare(track1.hash(), track2.hash());
+    }
+
+    int SortedCollectionTableModel::compareAlbums(const CollectionTrackInfo& track1,
+                                                  const CollectionTrackInfo& track2,
+                                                  Qt::SortOrder sortOrder) const
+    {
+        auto album1 = track1.album();
+        auto album2 = track2.album();
+
+        bool noAlbum1 = album1.isEmpty();
+        bool noAlbum2 = album2.isEmpty();
+
+        if (noAlbum1 || noAlbum2) {
+            if (!noAlbum1) return -1; /* track 1 goes first */
+            if (!noAlbum2) return 1; /* track 2 goes first */
+
+            /* both are empty; compare other properties */
+        }
+        else {
+            int comparison = compareStrings(album1, album2, sortOrder);
+            if (comparison != 0) return comparison;
+        }
+
+        auto title1 = track1.title();
+        auto title2 = track2.title();
+        int titleComparison = compareStrings(title1, title2, sortOrder);
+        if (titleComparison != 0) return titleComparison;
+
+        return PMP::compare(track1.hash(), track2.hash());
+    }
+
+    void SortedCollectionTableModel::addOrUpdateTracks(QList<CollectionTrackInfo> tracks)
+    {
+        qDebug() << "addOrUpdateTracks called for" << tracks.size() << "tracks";
+
+        if (_hashesToInnerIndexes.empty()) {
+            addWhenModelEmpty(tracks);
             return;
         }
 
-        qDebug() << " addFirstTime: will have to insert/update one by one";
+        Q_FOREACH(CollectionTrackInfo const& track, tracks) {
+            /* hash already present? */
+            auto hashIterator = _hashesToInnerIndexes.find(track.hash());
+            if (hashIterator != _hashesToInnerIndexes.end()) {
+                // TODO: update
+                continue;
+            }
+
+            if (!track.isAvailable() && track.titleAndArtistUnknown())
+                continue; /* not interesting enough to add */
+
+            int indexToInsertAt =
+                findOuterIndexMapIndexForInsert(track, 0, _outerToInnerIndexMap.size());
+
+            beginInsertRows(QModelIndex(), indexToInsertAt, indexToInsertAt);
+            auto trackObj = new CollectionTrackInfo(track);
+            int innerIndex = _tracks.size();
+            _tracks.append(trackObj);
+            _hashesToInnerIndexes.insert(track.hash(), innerIndex);
+            _outerToInnerIndexMap.insert(indexToInsertAt, innerIndex);
+            _innerToOuterIndexMap.append(indexToInsertAt);
+
+            /* all elements that were pushed down by the insert got a new outer index;
+             * update the inner to outer map to reflect this. */
+            rebuildInnerMap(indexToInsertAt + 1);
+
+            endInsertRows();
+        }
+    }
+
+    void SortedCollectionTableModel::onCollectionTracksChanged(
+                                                       QList<CollectionTrackInfo> changes)
+    {
+        addOrUpdateTracks(changes);
+    }
+
+    int SortedCollectionTableModel::findOuterIndexMapIndexForInsert(
+            const CollectionTrackInfo& track,
+            int searchRangeBegin, int searchRangeEnd /* end is not part of the range */)
+    {
+        if (searchRangeBegin >= searchRangeEnd) return -1 /* problem */;
+
+        if (searchRangeEnd - searchRangeBegin <= 50) { /* do linear search */
+            for (int index = searchRangeBegin; index < searchRangeEnd; ++index) {
+                auto const& current = *_tracks.at(_outerToInnerIndexMap.at(index));
+
+                if (lessThan(track, current)) return index;
+            }
+
+            return searchRangeEnd;
+        }
+
+        /* binary search */
+
+        int middleIndex = searchRangeBegin / 2 + searchRangeEnd / 2;
+        auto const& middleTrack = *_tracks.at(_outerToInnerIndexMap.at(middleIndex));
+
+        if (lessThan(track, middleTrack)) {
+            return findOuterIndexMapIndexForInsert(track, searchRangeBegin, middleIndex);
+        }
+        else {
+            return findOuterIndexMapIndexForInsert(track, middleIndex, searchRangeEnd);
+        }
+    }
+
+    void SortedCollectionTableModel::addWhenModelEmpty(QList<CollectionTrackInfo> tracks)
+    {
+        QVector<CollectionTrackInfo*> trackList;
+        QHash<FileHash, int> hashIndexer;
+        trackList.reserve(tracks.size());
+        hashIndexer.reserve(tracks.size());
 
         Q_FOREACH(CollectionTrackInfo const& track, tracks) {
-            if (_hashes.contains(track.hash()))
+            if (hashIndexer.contains(track.hash()))
                 continue; /* already present */
 
             if (!track.isAvailable() && track.titleAndArtistUnknown())
                 continue; /* not interesting enough to add */
 
-            int index = tracks.size();
             auto trackObj = new CollectionTrackInfo(track);
+            hashIndexer.insert(track.hash(), trackList.size());
+            trackList.append(trackObj);
+        }
 
-            beginInsertRows(QModelIndex(), index, index);
-            _hashes.insert(track.hash(), trackObj);
-            _tracks.insert(index, trackObj);
+        qDebug() << " addFirstTime: inserting" << trackList.size() << "tracks";
+
+        if (!trackList.empty()) {
+            _outerToInnerIndexMap.reserve(trackList.size());
+            _innerToOuterIndexMap.reserve(trackList.size());
+
+            beginInsertRows(QModelIndex(), 0, trackList.size() - 1);
+            _tracks = trackList;
+            _hashesToInnerIndexes = hashIndexer;
+            buildIndexMaps();
             endInsertRows();
         }
     }
 
-    void CollectionTableModel::onCollectionTracksChanged(
-                                                       QList<CollectionTrackInfo> changes)
-    {
-        qDebug() << "CollectionTableModel: got tracks changed event; count:"
-                 << changes.size();
+    void SortedCollectionTableModel::sort(int column, Qt::SortOrder order) {
+        if (_sortBy == column && _sortOrder == order) return;
 
-        Q_FOREACH(auto const& track, changes) {
-            if (!_hashes.contains(track.hash())) {
-                /* add only if interesting enough */
-                if (!track.isAvailable() && track.titleAndArtistUnknown())
-                    continue;
+        _sortBy = column;
+        _sortOrder = order;
 
-                /* add new item */
+        if (_outerToInnerIndexMap.empty()) return;
 
-                int index = _tracks.size();
-                auto trackObj = new CollectionTrackInfo(track);
+        /* sort outer index map */
+        std::sort(
+            _outerToInnerIndexMap.begin(), _outerToInnerIndexMap.end(),
+            [this](int index1, int index2) { return lessThan(index1, index2); }
+        );
 
-                beginInsertRows(QModelIndex(), index, index);
-                _hashes.insert(track.hash(), trackObj);
-                _tracks.insert(index, trackObj);
-                endInsertRows();
-                continue;
-            }
+        /* construct inner map from outer map */
+        rebuildInnerMap();
 
-            /* update an existing item */
+        emit dataChanged(
+            createIndex(0, 0), createIndex(rowCount() - 1, columnCount() - 1)
+        );
+    }
 
-            // TODO : update an existing item
+    void SortedCollectionTableModel::buildIndexMaps() {
+        /* generate unsorted maps */
+        _innerToOuterIndexMap.resize(_tracks.size());
+        _outerToInnerIndexMap.resize(_tracks.size());
+        for (int i = 0; i < _tracks.size(); ++i) {
+            _innerToOuterIndexMap[i] = i;
+            _outerToInnerIndexMap[i] = i;
+        }
 
-//            auto const* existing = _hashes[track.hash()];
-//            if (track == *existing) continue; /* nothing changed for this track */
+        /* sort outer index map */
+        std::sort(
+            _outerToInnerIndexMap.begin(), _outerToInnerIndexMap.end(),
+            [this](int index1, int index2) { return lessThan(index1, index2); }
+        );
 
-//            qDebug() << "CollectionTableModel: updating existing track: "
-//                     << track.title() << "-" << track.artist();
+        /* construct inner map from outer map */
+        rebuildInnerMap();
+    }
 
-//            int oldIndex = findIndexOf(*existing);
-//            if (oldIndex < 0) {
-//                qWarning() << "  OOPS: index not found of track to update!!";
-//                continue;
-//            }
-//            auto trackObj = new CollectionTrackInfo(track);
-//            int newIndex = findInsertIndexFor(*trackObj);
-
-//            if (oldIndex != newIndex) {
-//                /* the track is moved from the old to the new position */
-
-//                /* the to-index has a slightly different meaning for Qt, so we need
-//                 *  adjustment */
-//                int qtToIndex = (oldIndex < newIndex) ? newIndex + 1 : newIndex;
-//                beginMoveRows(QModelIndex(), oldIndex, oldIndex, QModelIndex(), qtToIndex);
-//                _tracks.removeAt(oldIndex);
-//                _tracks.insert(newIndex, trackObj);
-//                _hashes[track.hash()] = trackObj;
-//                endMoveRows();
-//            }
-//            else {
-//                _hashes[track.hash()] = trackObj;
-//                // TODO: how to notify the view that the row has changed?
-//            }
-
-//            delete existing;
+    void SortedCollectionTableModel::rebuildInnerMap(int outerStartIndex) {
+        /* (re)construct inner map from outer map */
+        for (int i = outerStartIndex; i < _outerToInnerIndexMap.size(); ++i) {
+            _innerToOuterIndexMap[_outerToInnerIndexMap[i]] = i;
         }
     }
 
-    CollectionTrackInfo* CollectionTableModel::trackAt(const QModelIndex& index) const {
+    CollectionTrackInfo* SortedCollectionTableModel::trackAt(
+                                                           const QModelIndex& index) const
+    {
         return trackAt(index.row());
     }
 
-    CollectionTrackInfo* CollectionTableModel::trackAt(int rowIndex) const {
-        if (rowIndex < 0 || rowIndex >= _tracks.size()) {
-            return nullptr;
-        }
+    CollectionTrackInfo* SortedCollectionTableModel::trackAt(int rowIndex) const {
+        if (rowIndex < 0 || rowIndex >= _tracks.size()) { return nullptr; }
 
-        return _tracks[rowIndex];
+        return _tracks.at(_outerToInnerIndexMap.at(rowIndex));
     }
 
-    int CollectionTableModel::rowCount(const QModelIndex& parent) const {
-        //qDebug() << "CollectionTableModel::rowCount returning" << _modelRows;
-        return _tracks.size();
+    int SortedCollectionTableModel::rowCount(const QModelIndex& parent) const {
+        return _outerToInnerIndexMap.size();
     }
 
-    int CollectionTableModel::columnCount(const QModelIndex& parent) const {
+    int SortedCollectionTableModel::columnCount(const QModelIndex& parent) const {
         return 4;
     }
 
-    QVariant CollectionTableModel::headerData(int section, Qt::Orientation orientation,
-                                              int role) const
+    QVariant SortedCollectionTableModel::headerData(int section,
+                                                    Qt::Orientation orientation,
+                                                    int role) const
     {
         if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
             switch (section) {
@@ -196,30 +463,32 @@ namespace PMP {
         return QVariant();
     }
 
-    QVariant CollectionTableModel::data(const QModelIndex& index, int role) const {
-        //qDebug() << "CollectionTableModel::data called with role" << role;
-
-        int col = index.column();
+    QVariant SortedCollectionTableModel::data(const QModelIndex& index, int role) const {
         switch (role) {
             case Qt::TextAlignmentRole:
-                switch (col) {
+                switch (index.column()) {
                     case 2: return Qt::AlignRight + Qt::AlignVCenter;
                 }
                 break;
             case Qt::DisplayRole:
                 if (index.row() < _tracks.size()) {
-                    switch (col) {
-                        case 0: return _tracks[index.row()]->title();
-                        case 1: return _tracks[index.row()]->artist();
+                    switch (index.column()) {
+                        case 0: return trackAt(index)->title();
+                        case 1: return trackAt(index)->artist();
                         case 2:
                         {
-                            int lengthInSeconds = _tracks[index.row()]->lengthInSeconds();
+                            int lengthInSeconds = trackAt(index)->lengthInSeconds();
 
                             if (lengthInSeconds < 0) { return "?"; }
                             return Util::secondsToHoursMinuteSecondsText(lengthInSeconds);
                         }
-                        case 3: return _tracks[index.row()]->album();
+                        case 3: return trackAt(index)->album();
                     }
+                }
+                break;
+            case Qt::ForegroundRole:
+                if (index.row() < _tracks.size()) {
+                    if (!trackAt(index)->isAvailable()) return QBrush(Qt::gray);
                 }
                 break;
         }
@@ -227,27 +496,27 @@ namespace PMP {
         return QVariant();
     }
 
-    Qt::ItemFlags CollectionTableModel::flags(const QModelIndex& index) const {
+    Qt::ItemFlags SortedCollectionTableModel::flags(const QModelIndex& index) const {
         Qt::ItemFlags f(Qt::ItemIsSelectable | Qt::ItemIsEnabled
                         | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
         return f;
     }
 
-    Qt::DropActions CollectionTableModel::supportedDragActions() const
+    Qt::DropActions SortedCollectionTableModel::supportedDragActions() const
     {
         return Qt::CopyAction;
     }
 
-    Qt::DropActions CollectionTableModel::supportedDropActions() const
+    Qt::DropActions SortedCollectionTableModel::supportedDropActions() const
     {
         return Qt::CopyAction;
     }
 
-    QMimeData* CollectionTableModel::mimeData(const QModelIndexList& indexes) const {
-        if (indexes.isEmpty()) return 0;
+    QMimeData* SortedCollectionTableModel::mimeData(const QModelIndexList& indexes) const
+    {
+        qDebug() << "mimeData called; indexes count =" << indexes.size();
 
-        qDebug() << "CollectionTableModel::mimeData called; indexes count ="
-                 << indexes.size();
+        if (indexes.isEmpty()) return nullptr;
 
         QBuffer buffer;
         buffer.open(QIODevice::WriteOnly);
@@ -261,7 +530,7 @@ namespace PMP {
             if (row == prevRow) continue;
             prevRow = row;
 
-            auto& hash = _tracks[row]->hash();
+            auto& hash = trackAt(row)->hash();
             qDebug() << " row" << row << "; col" << index.column()
                      << "; hash" << hash.dumpToString();
             hashes.append(hash);
@@ -284,57 +553,32 @@ namespace PMP {
 
     // ============================================================================ //
 
-    SortedFilteredCollectionTableModel::SortedFilteredCollectionTableModel(
-            CollectionTableModel* source, QObject* parent)
+    FilteredCollectionTableModel::FilteredCollectionTableModel(
+            SortedCollectionTableModel* source, QObject* parent)
      : _source(source)
     {
         setFilterCaseSensitivity(Qt::CaseInsensitive);
 
-        _collator.setCaseSensitivity(Qt::CaseInsensitive);
-        _collator.setNumericMode(true);
-
-        /* we need to ignore symbols such as quotes, spaces and parentheses */
-        _collator.setIgnorePunctuation(true);
-
         setSourceModel(source);
     }
 
-    CollectionTrackInfo* SortedFilteredCollectionTableModel::trackAt(
+    void FilteredCollectionTableModel::sort(int column, Qt::SortOrder order) {
+        _source->sort(column, order);
+    }
+
+    CollectionTrackInfo* FilteredCollectionTableModel::trackAt(
                                                            const QModelIndex& index) const
     {
         return _source->trackAt(mapToSource(index));
     }
 
-    void SortedFilteredCollectionTableModel::sortByTitle() {
-        sort(0);
-    }
-
-    void SortedFilteredCollectionTableModel::sortByArtist() {
-        sort(1);
-    }
-
-    void SortedFilteredCollectionTableModel::setSearchText(QString search) {
+    void FilteredCollectionTableModel::setSearchText(QString search) {
         _searchParts = search.split(QRegExp("\\s+"), QString::SkipEmptyParts);
         invalidateFilter();
     }
 
-    bool SortedFilteredCollectionTableModel::lessThan(const QModelIndex& left,
-                                              const QModelIndex& right) const
-    {
-        CollectionTrackInfo* leftTrack = _source->trackAt(left);
-        CollectionTrackInfo* rightTrack = _source->trackAt(right);
-
-        switch (left.column()) {
-            case 1:
-                return compareArtists(*leftTrack, *rightTrack) < 0;
-            case 0:
-            default:
-                return compareTitles(*leftTrack, *rightTrack) < 0;
-        }
-    }
-
-    bool SortedFilteredCollectionTableModel::filterAcceptsRow(int sourceRow,
-                                                    const QModelIndex &sourceParent) const
+    bool FilteredCollectionTableModel::filterAcceptsRow(int sourceRow,
+                                                    const QModelIndex& sourceParent) const
     {
         if (_searchParts.empty()) return true; /* not filtered */
 
@@ -349,73 +593,9 @@ namespace PMP {
         return true;
     }
 
-    int SortedFilteredCollectionTableModel::compareTitles(
-            const CollectionTrackInfo &track1, const CollectionTrackInfo &track2) const
-    {
-        bool empty1 = track1.titleAndArtistUnknown();
-        bool empty2 = track2.titleAndArtistUnknown();
-
-        if (empty1 || empty2) {
-            if (!empty1) {
-                return -1; /* track 1 goes first */
-            }
-            else if (!empty2) {
-                return 1; /* track 2 goes first */
-            }
-
-            /* both are empty */
-
-            return PMP::compare(track1.hash(), track2.hash());
-        }
-
-        QString title1 = track1.title();
-        QString title2 = track2.title();
-        int titleComparison = _collator.compare(title1, title2);
-        if (titleComparison != 0) return titleComparison;
-
-        QString artist1 = track1.artist();
-        QString artist2 = track2.artist();
-        int artistComparison = _collator.compare(artist1, artist2);
-        if (artistComparison != 0) return artistComparison;
-
-        return PMP::compare(track1.hash(), track2.hash());
-    }
-
-    int SortedFilteredCollectionTableModel::compareArtists(
-            const CollectionTrackInfo &track1, const CollectionTrackInfo &track2) const
-    {
-        bool empty1 = track1.titleAndArtistUnknown();
-        bool empty2 = track2.titleAndArtistUnknown();
-
-        if (empty1 || empty2) {
-            if (!empty1) {
-                return -1; /* track 1 goes first */
-            }
-            else if (!empty2) {
-                return 1; /* track 2 goes first */
-            }
-
-            /* both are empty */
-
-            return PMP::compare(track1.hash(), track2.hash());
-        }
-
-        QString artist1 = track1.artist();
-        QString artist2 = track2.artist();
-        int artistComparison = _collator.compare(artist1, artist2);
-        if (artistComparison != 0) return artistComparison;
-
-        QString title1 = track1.title();
-        QString title2 = track2.title();
-        int titleComparison = _collator.compare(title1, title2);
-        if (titleComparison != 0) return titleComparison;
-
-        return PMP::compare(track1.hash(), track2.hash());
-    }
-
     // ============================================================================ //
 
-    CollectionTableFetcher::CollectionTableFetcher(CollectionTableModel* parent)
+    CollectionTableFetcher::CollectionTableFetcher(SortedCollectionTableModel* parent)
      : AbstractCollectionFetcher(parent), _model(parent)//, _tracksReceivedCount(0)
     {
         //
@@ -430,7 +610,7 @@ namespace PMP {
     void CollectionTableFetcher::completed() {
         qDebug() << "CollectionTableFetcher: fetch completed.  Tracks received:"
                  << _tracksReceived.size(); //_tracksReceivedCount;
-        _model->addFirstTime(_tracksReceived);
+        _model->addOrUpdateTracks(_tracksReceived);
         this->deleteLater();
     }
 
@@ -438,5 +618,4 @@ namespace PMP {
         qDebug() << "CollectionTableFetcher::errorOccurred() called!";
         // TODO
     }
-
 }

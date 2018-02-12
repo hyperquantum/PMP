@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,9 +32,9 @@ namespace PMP {
 
     CollectionWidget::CollectionWidget(QWidget* parent)
      : QWidget(parent), _ui(new Ui::CollectionWidget), _connection(nullptr),
-       _collectionSourceModel(new CollectionTableModel(this)),
+       _collectionSourceModel(new SortedCollectionTableModel(this)),
        _collectionDisplayModel(
-           new SortedFilteredCollectionTableModel(_collectionSourceModel, this))
+           new FilteredCollectionTableModel(_collectionSourceModel, this))
     {
         _ui->setupUi(this);
 
@@ -45,8 +45,7 @@ namespace PMP {
 
         connect(
             _ui->searchLineEdit, &QLineEdit::textChanged,
-            _collectionDisplayModel,
-            &SortedFilteredCollectionTableModel::setSearchText
+            _collectionDisplayModel, &FilteredCollectionTableModel::setSearchText
         );
 
         connect(
@@ -65,7 +64,7 @@ namespace PMP {
             );
 
             int sortColumn = settings.value("sortcolumn").toInt();
-            if (sortColumn < 0 || sortColumn > 1) { sortColumn = 0; }
+            if (sortColumn < 0 || sortColumn > 3) { sortColumn = 0; }
 
             bool sortDescending = settings.value("sortdescending").toBool();
             auto sortOrder = sortDescending ? Qt::DescendingOrder : Qt::AscendingOrder;
@@ -85,9 +84,9 @@ namespace PMP {
         settings.setValue(
             "columnsstate", _ui->collectionTableView->horizontalHeader()->saveState()
         );
-        settings.setValue("sortcolumn", _collectionDisplayModel->sortColumn());
+        settings.setValue("sortcolumn", _collectionSourceModel->sortColumn());
         settings.setValue(
-            "sortdescending", _collectionDisplayModel->sortOrder() == Qt::DescendingOrder
+            "sortdescending", _collectionSourceModel->sortOrder() == Qt::DescendingOrder
         );
 
         delete _ui;
@@ -107,23 +106,25 @@ namespace PMP {
         auto track = _collectionDisplayModel->trackAt(index);
         if (!track) return;
 
+        FileHash hash = track->hash();
+
         QMenu* menu = new QMenu(this);
 
         QAction* enqueueFrontAction = menu->addAction("Add to front of queue");
         connect(
             enqueueFrontAction, &QAction::triggered,
-            [this, track]() {
+            [this, hash]() {
                 qDebug() << "collection context menu: enqueue (front) triggered";
-                _connection->insertQueueEntryAtFront(track->hash());
+                _connection->insertQueueEntryAtFront(hash);
             }
         );
 
         QAction* enqueueEndAction = menu->addAction("Add to end of queue");
         connect(
             enqueueEndAction, &QAction::triggered,
-            [this, track]() {
+            [this, hash]() {
                 qDebug() << "collection context menu: enqueue (end) triggered";
-                _connection->insertQueueEntryAtEnd(track->hash());
+                _connection->insertQueueEntryAtEnd(hash);
             }
         );
 

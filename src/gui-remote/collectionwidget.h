@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,9 +28,9 @@ namespace Ui {
 
 namespace PMP {
 
-    class CollectionTableModel;
+    class FilteredCollectionTableModel;
     class ServerConnection;
-    class SortedFilteredCollectionTableModel;
+    class SortedCollectionTableModel;
 
     class CollectionWidget : public QWidget {
         Q_OBJECT
@@ -47,8 +47,8 @@ namespace PMP {
     private:
         Ui::CollectionWidget* _ui;
         ServerConnection* _connection;
-        CollectionTableModel* _collectionSourceModel;
-        SortedFilteredCollectionTableModel* _collectionDisplayModel;
+        SortedCollectionTableModel* _collectionSourceModel;
+        FilteredCollectionTableModel* _collectionDisplayModel;
     };
 }
 #endif

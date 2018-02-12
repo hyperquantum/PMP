@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,17 +27,24 @@
 #include <QHash>
 #include <QList>
 #include <QSortFilterProxyModel>
+#include <QVector>
 
 namespace PMP {
 
-    class CollectionTableModel : public QAbstractTableModel {
+    class SortedCollectionTableModel : public QAbstractTableModel {
         Q_OBJECT
     public:
-        CollectionTableModel(QObject* parent = 0);
+        SortedCollectionTableModel(QObject* parent = 0);
 
         void setConnection(ServerConnection* connection);
 
-        void addFirstTime(QList<CollectionTrackInfo> tracks);
+        void addOrUpdateTracks(QList<CollectionTrackInfo> tracks);
+
+        void sortByTitle();
+        void sortByArtist();
+        virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
+        int sortColumn() const;
+        Qt::SortOrder sortOrder() const;
 
         CollectionTrackInfo* trackAt(const QModelIndex& index) const;
         CollectionTrackInfo* trackAt(int rowIndex) const;
@@ -56,44 +63,72 @@ namespace PMP {
         void onCollectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
 
     private:
-        QHash<FileHash, CollectionTrackInfo*> _hashes;
-        QList<CollectionTrackInfo*> _tracks;
+        void addWhenModelEmpty(QList<CollectionTrackInfo> tracks);
+        void buildIndexMaps();
+        void rebuildInnerMap(int outerStartIndex = 0);
+        int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track,
+                                            int searchRangeBegin, int searchRangeEnd);
+
+        bool lessThan(int index1, int index2) const;
+        bool lessThan(CollectionTrackInfo const& track1,
+                      CollectionTrackInfo const& track2) const;
+
+        int compareStrings(const QString& s1, const QString& s2,
+                           Qt::SortOrder sortOrder) const;
+
+        int compareTracks(const CollectionTrackInfo& track1,
+                          const CollectionTrackInfo& track2) const;
+
+        int compareTitles(const CollectionTrackInfo& track1,
+                          const CollectionTrackInfo& track2,
+                          Qt::SortOrder sortOrder) const;
+
+        int compareArtists(const CollectionTrackInfo& track1,
+                           const CollectionTrackInfo& track2,
+                           Qt::SortOrder sortOrder) const;
+
+        int compareLengths(const CollectionTrackInfo& track1,
+                           const CollectionTrackInfo& track2,
+                           Qt::SortOrder sortOrder) const;
+
+        int compareAlbums(const CollectionTrackInfo& track1,
+                          const CollectionTrackInfo& track2,
+                          Qt::SortOrder sortOrder) const;
+
+        QVector<CollectionTrackInfo*> _tracks;
+        QHash<FileHash, int> _hashesToInnerIndexes;
+        QVector<int> _innerToOuterIndexMap;
+        QVector<int> _outerToInnerIndexMap;
+        QCollator _collator;
+        int _sortBy;
+        Qt::SortOrder _sortOrder;
     };
 
-    class SortedFilteredCollectionTableModel : public QSortFilterProxyModel {
+    class FilteredCollectionTableModel : public QSortFilterProxyModel {
         Q_OBJECT
     public:
-        SortedFilteredCollectionTableModel(CollectionTableModel* source,
-                                           QObject* parent = 0);
+        FilteredCollectionTableModel(SortedCollectionTableModel* source,
+                                     QObject* parent = 0);
+
+        virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 
         CollectionTrackInfo* trackAt(const QModelIndex& index) const;
-
-        void sortByTitle();
-        void sortByArtist();
 
     public slots:
         void setSearchText(QString search);
 
     protected:
-        bool lessThan(const QModelIndex& left, const QModelIndex& right) const;
         bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
 
     private:
-        int compareTitles(const CollectionTrackInfo& track1,
-                          const CollectionTrackInfo& track2) const;
-
-        int compareArtists(const CollectionTrackInfo& track1,
-                           const CollectionTrackInfo& track2) const;
-
-        CollectionTableModel* _source;
-        QCollator _collator;
+        SortedCollectionTableModel* _source;
         QStringList _searchParts;
     };
 
     class CollectionTableFetcher : public AbstractCollectionFetcher {
         Q_OBJECT
     public:
-        CollectionTableFetcher(CollectionTableModel* parent);
+        CollectionTableFetcher(SortedCollectionTableModel* parent);
 
     public slots:
         void receivedData(QList<CollectionTrackInfo> data);
@@ -101,10 +136,8 @@ namespace PMP {
         void errorOccurred();
 
     private:
-        CollectionTableModel* _model;
-        //uint _tracksReceivedCount;
+        SortedCollectionTableModel* _model;
         QList<CollectionTrackInfo> _tracksReceived;
     };
-
 }
 #endif
