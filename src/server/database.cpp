@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -217,6 +217,24 @@ namespace PMP {
             ") "
             "ENGINE = InnoDB "
             "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
+        );
+        if (!q.exec()) {
+            out << " database initialization problem: " << db.lastError().text() << endl
+                << endl;
+            return false;
+        }
+
+        /* create table 'pmp_filesize' if needed */
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_filesize("
+            " `HashID` INT UNSIGNED NOT NULL,"
+            " `FileSize` BIGINT NOT NULL," /* signed; Qt uses qint64 for file sizes */
+            " CONSTRAINT `FK_pmpfilesizehashid`"
+            "  FOREIGN KEY (`HashID`)"
+            "   REFERENCES pmp_hash (`HashID`)"
+            "   ON DELETE CASCADE ON UPDATE CASCADE,"
+            " UNIQUE INDEX `IDX_pmpfilesize` (`FileSize` ASC, `HashID` ASC) "
+            ") ENGINE = InnoDB"
         );
         if (!q.exec()) {
             out << " database initialization problem: " << db.lastError().text() << endl
