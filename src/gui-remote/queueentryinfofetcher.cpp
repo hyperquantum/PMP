@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -179,7 +179,7 @@ namespace PMP {
 
         info->setHash(type, hash);
 
-        trackChangeToSchedule(queueID);
+        enqueueTrackChangeNotification(queueID);
     }
 
     void QueueEntryInfoFetcher::receivedTrackInfo(quint32 queueID, QueueEntryType type,
@@ -210,7 +210,7 @@ namespace PMP {
             _connection->sendPossibleFilenamesRequest(queueID);
         }
 
-        trackChangeToSchedule(queueID);
+        enqueueTrackChangeNotification(queueID);
     }
 
     void QueueEntryInfoFetcher::receivedPossibleFilenames(quint32 queueID,
@@ -226,7 +226,7 @@ namespace PMP {
 
         if (!changed) return;
 
-        trackChangeToSchedule(queueID);
+        enqueueTrackChangeNotification(queueID);
     }
 
     void QueueEntryInfoFetcher::queueResetted(int queueLength) {
@@ -317,7 +317,7 @@ namespace PMP {
         }
     }
 
-    void QueueEntryInfoFetcher::trackChangeToSchedule(quint32 queueID) {
+    void QueueEntryInfoFetcher::enqueueTrackChangeNotification(quint32 queueID) {
         bool first = _trackChangeNotificationsPending.isEmpty();
 
         _trackChangeNotificationsPending << queueID;
