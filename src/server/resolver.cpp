@@ -250,6 +250,8 @@ namespace PMP {
         if (_hashId > 0 && db) {
             /* save filename without path in the database */
             db->registerFilename(_hashId, info.fileName());
+
+            db->registerFileSize(_hashId, fileSize);
         }
 
         if (_files.length() == 1) { /* count went from 0 to 1 */

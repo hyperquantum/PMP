@@ -440,6 +440,24 @@ namespace PMP {
         return result;
     }
 
+    void Database::registerFileSize(uint hashId, qint64 size) {
+        auto preparer =
+            [=] (QSqlQuery& q) {
+                q.prepare(
+                    "INSERT INTO pmp_filesize(`HashID`,`FileSize`)"
+                    " VALUES(?,?)"
+                    " ON DUPLICATE KEY UPDATE `FileSize`=`FileSize`"
+                );
+                q.addBindValue(hashId);
+                q.addBindValue(size);
+            };
+
+        if (!executeVoid(preparer)) {
+            qDebug() << "Database::registerFileSize : insert failed!" << endl;
+            return;
+        }
+    }
+
     QList<User> Database::getUsers() {
         QSqlQuery q(_db);
         q.prepare("SELECT `UserID`,`Login`,`Salt`,`Password` FROM pmp_user");
