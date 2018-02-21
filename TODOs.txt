@@ -47,6 +47,7 @@ IDEAS
  - display PMP server version in the client 'About' dialog
  - interactive editing of the list of directories to scan for music
  - allow dragging tracks from the history into the queue to re-insert a track
+ - ability to ban a track permanently or temporarily; this will also hide it in the music collection
 
 
 USER FRIENDLINESS
