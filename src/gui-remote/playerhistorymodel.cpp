@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,6 +24,10 @@
 #include "queueentryinfofetcher.h"
 
 #include <QBrush>
+#include <QBuffer>
+#include <QDataStream>
+#include <QMimeData>
+#include <QVector>
 
 namespace PMP {
 
@@ -60,9 +64,13 @@ namespace PMP {
 
         /* trim the history list if it gets too big */
         while (_list.size() > _historySizeGoal && _historySizeGoal >= 0) {
+            auto oldestEntry = _list.first();
+
             beginRemoveRows(QModelIndex(), 0, 0);
             _list.removeFirst();
             endRemoveRows();
+
+            _infoFetcher->dropInfoFor(oldestEntry->queueID());
         }
     }
 
@@ -176,6 +184,75 @@ namespace PMP {
         }
 
         return QVariant();
+    }
+
+    Qt::ItemFlags PlayerHistoryModel::flags(const QModelIndex& index) const {
+        Qt::ItemFlags f(Qt::ItemIsSelectable | Qt::ItemIsEnabled
+                        | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
+        return f;
+    }
+
+    Qt::DropActions PlayerHistoryModel::supportedDragActions() const
+    {
+        return Qt::CopyAction;
+    }
+
+    Qt::DropActions PlayerHistoryModel::supportedDropActions() const
+    {
+        return Qt::CopyAction;
+    }
+
+
+    QMimeData* PlayerHistoryModel::mimeData(const QModelIndexList& indexes) const {
+        qDebug() << "mimeData called; indexes count =" << indexes.size();
+
+        if (indexes.isEmpty()) return nullptr;
+
+        QBuffer buffer;
+        buffer.open(QIODevice::WriteOnly);
+        QDataStream stream(&buffer);
+        stream.setVersion(QDataStream::Qt_5_2);
+
+        QVector<FileHash> hashes;
+        int prevRow = -1;
+        Q_FOREACH(const QModelIndex& index, indexes) {
+            int row = index.row();
+            if (row == prevRow) continue;
+            prevRow = row;
+
+            auto queueID = _list[row]->queueID();
+            auto info = _infoFetcher->entryInfoByQID(queueID);
+            if (!info) {
+                qDebug() << " ignoring track without info";
+                continue;
+            }
+
+            auto& hash = info->hash();
+            if (hash.empty()) {
+                qDebug() << " ignoring empty hash";
+                continue;
+            }
+
+            qDebug() << " row" << row << "; col" << index.column()
+                     << "; hash" << hash.dumpToString();
+            hashes.append(hash);
+        }
+
+        if (hashes.empty()) return nullptr;
+
+        stream << (quint32)hashes.size();
+        for (int i = 0; i < hashes.size(); ++i) {
+            stream << (quint64)hashes[i].length();
+            stream << hashes[i].SHA1();
+            stream << hashes[i].MD5();
+        }
+
+        buffer.close();
+
+        QMimeData* data = new QMimeData();
+
+        data->setData("application/x-pmp-filehash", buffer.data());
+        return data;
     }
 
 }

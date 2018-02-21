@@ -536,6 +536,8 @@ namespace PMP {
             hashes.append(hash);
         }
 
+        if (hashes.empty()) return nullptr;
+
         stream << (quint32)hashes.size();
         for (int i = 0; i < hashes.size(); ++i) {
             stream << (quint64)hashes[i].length();

@@ -72,6 +72,9 @@ namespace PMP {
 
         QueueEntryInfo* entryInfoByQID(quint32 queueID);
 
+    public slots:
+        void dropInfoFor(quint32 queueId);
+
     Q_SIGNALS:
         void userPlayingForChanged(quint32 userId);
         void tracksChanged(QList<quint32> queueIDs);
@@ -89,7 +92,6 @@ namespace PMP {
         void queueResetted(int queueLength);
         void entriesReceived(int index, QList<quint32> entries);
         void trackAdded(int index, quint32 queueID);
-        void trackRemoved(int index, quint32 queueID);
         void trackMoved(int fromIndex, int toIndex, quint32 queueID);
 
         void enqueueTrackChangeNotification(quint32 queueID);
@@ -97,6 +99,7 @@ namespace PMP {
 
     private:
         void sendRequest(quint32 queueID);
+        void sendHashRequest(quint32 queueId);
 
         static const int initialQueueFetchLength = 10;
 

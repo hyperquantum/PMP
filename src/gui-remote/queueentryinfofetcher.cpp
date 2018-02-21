@@ -127,10 +127,6 @@ namespace PMP {
             this, &QueueEntryInfoFetcher::trackAdded
         );
         connect(
-            _monitor, &AbstractQueueMonitor::trackRemoved,
-            this, &QueueEntryInfoFetcher::trackRemoved
-        );
-        connect(
             _monitor, &AbstractQueueMonitor::trackMoved,
             this, &QueueEntryInfoFetcher::trackMoved
         );
@@ -140,11 +136,26 @@ namespace PMP {
         }
     }
 
+    void QueueEntryInfoFetcher::dropInfoFor(quint32 queueId) {
+        _infoRequestsSent.remove(queueId);
+        _hashRequestsSent.remove(queueId);
+
+        if (!_entries.contains(queueId)) return;
+
+        delete _entries[queueId];
+        _entries.remove(queueId);
+    }
+
     QueueEntryInfo* QueueEntryInfoFetcher::entryInfoByQID(quint32 queueID) {
         if (queueID == 0) return 0;
 
         QueueEntryInfo* info = _entries[queueID];
-        if (!info) { sendRequest(queueID); }
+        if (!info) {
+            sendRequest(queueID);
+        }
+        else if (info->hash().empty() && !_hashRequestsSent.contains(queueID)) {
+            sendHashRequest(queueID);
+        }
 
         return info;
     }
@@ -287,15 +298,6 @@ namespace PMP {
         }
     }
 
-    void QueueEntryInfoFetcher::trackRemoved(int index, quint32 queueID) {
-        _infoRequestsSent.remove(queueID);
-
-        if (!_entries.contains(queueID)) return;
-
-        delete _entries[queueID];
-        _entries.remove(queueID);
-    }
-
     void QueueEntryInfoFetcher::trackMoved(int fromIndex, int toIndex, quint32 queueID) {
         /* was the destination of this move in the tracking zone? */
         if (toIndex < initialQueueFetchLength && queueID > 0
@@ -339,17 +341,23 @@ namespace PMP {
     }
 
     void QueueEntryInfoFetcher::sendRequest(quint32 queueID) {
+        sendHashRequest(queueID);
+
         if (_infoRequestsSent.contains(queueID))
             return; /* sent already and waiting for an answer */
 
-        _infoRequestsSent << queueID;
-        _hashRequestsSent << queueID;
-
         _connection->sendQueueEntryInfoRequest(queueID);
+        _infoRequestsSent << queueID;
+    }
+
+    void QueueEntryInfoFetcher::sendHashRequest(quint32 queueId) {
+        if (_hashRequestsSent.contains(queueId)) return;
 
         QList<uint> ids;
-        ids.append(queueID);
+        ids.append(queueId);
         _connection->sendQueueEntryHashRequest(ids);
+
+        _hashRequestsSent << queueId;
     }
 
 }

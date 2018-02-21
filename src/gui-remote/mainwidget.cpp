@@ -113,6 +113,9 @@ namespace PMP {
         _ui->queueTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
         _ui->queueTableView->setItemDelegateForColumn(4, new ScoreFormatDelegate(this));
         _ui->historyTableView->setModel(_historyModel);
+        _ui->historyTableView->setDragEnabled(true);
+        _ui->historyTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+        _ui->historyTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
         connect(
             _historyModel, &PlayerHistoryModel::rowsInserted,
