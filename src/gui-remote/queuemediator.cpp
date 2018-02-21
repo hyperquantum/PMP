@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -378,6 +378,11 @@ namespace PMP {
 
     void QueueMediator::moveTrack(int fromIndex, int toIndex, quint32 queueID) {
         doLocalOperation(new MoveOperation(fromIndex, toIndex, queueID));
+    }
+
+    void QueueMediator::moveTrackToEnd(int fromIndex, quint32 queueId) {
+        auto toIndex = queueLength() - 1;
+        moveTrack(fromIndex, toIndex, queueId);
     }
 
     void QueueMediator::insertFileAsync(int index, const FileHash& hash) {

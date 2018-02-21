@@ -283,39 +283,51 @@ namespace PMP {
 
     void MainWidget::queueContextMenuRequested(const QPoint& position) {
         auto index = _ui->queueTableView->indexAt(position);
-        if (index.isValid()) {
-            int row = index.row();
-            quint32 queueID = _queueModel->trackIdAt(index);
-            qDebug() << "queue: context menu opening for Q-item" << queueID;
-
-            QMenu* menu = new QMenu(this);
-
-            QAction* removeAction = menu->addAction("Remove");
-            removeAction->setShortcut(QKeySequence::Delete);
-            connect(
-                removeAction, &QAction::triggered,
-                [this, row, queueID]() {
-                    qDebug() << "queue context menu: remove action triggered for item"
-                             << queueID;
-                    _queueMediator->removeTrack(row, queueID);
-                }
-            );
-
-            QAction* moveToFrontAction = menu->addAction("Move to front");
-            connect(
-                moveToFrontAction, &QAction::triggered,
-                [this, row, queueID]() {
-                    qDebug() << "queue context menu: to-front action triggered for item"
-                             << queueID;
-                    _queueMediator->moveTrack(row, 0, queueID);
-                }
-            );
-
-            menu->popup(_ui->queueTableView->viewport()->mapToGlobal(position));
-        }
-        else {
+        if (!index.isValid()) {
             qDebug() << "queue: index at mouse position not valid";
+            return;
         }
+
+        int row = index.row();
+        quint32 queueID = _queueModel->trackIdAt(index);
+        qDebug() << "queue: context menu opening for Q-item" << queueID;
+
+        QMenu* menu = new QMenu(this);
+
+        QAction* removeAction = menu->addAction(tr("Remove"));
+        removeAction->setShortcut(QKeySequence::Delete);
+        connect(
+            removeAction, &QAction::triggered,
+            [this, row, queueID]() {
+                qDebug() << "queue context menu: remove action triggered for item"
+                         << queueID;
+                _queueMediator->removeTrack(row, queueID);
+            }
+        );
+
+        menu->addSeparator();
+
+        QAction* moveToFrontAction = menu->addAction(tr("Move to front"));
+        connect(
+            moveToFrontAction, &QAction::triggered,
+            [this, row, queueID]() {
+                qDebug() << "queue context menu: to-front action triggered for item"
+                         << queueID;
+                _queueMediator->moveTrack(row, 0, queueID);
+            }
+        );
+
+        QAction* moveToEndAction = menu->addAction(tr("Move to end"));
+        connect(
+            moveToEndAction, &QAction::triggered,
+            [this, row, queueID]() {
+                qDebug() << "queue context menu: to-end action triggered for item"
+                         << queueID;
+                _queueMediator->moveTrackToEnd(row, queueID);
+            }
+        );
+
+        menu->popup(_ui->queueTableView->viewport()->mapToGlobal(position));
     }
 
     void MainWidget::playing(quint32 queueID) {
