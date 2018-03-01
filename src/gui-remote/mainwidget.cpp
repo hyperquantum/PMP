@@ -45,9 +45,10 @@ namespace PMP {
     MainWidget::MainWidget(QWidget *parent) :
         QWidget(parent),
         _ui(new Ui::MainWidget),
-        _connection(0), _currentTrackMonitor(0),
-        _queueMonitor(0), _queueMediator(0),
-        _queueEntryInfoFetcher(0), _userDataFetcher(0), _queueModel(0),
+        _connection(nullptr), _currentTrackMonitor(nullptr),
+        _queueMonitor(nullptr), _queueMediator(nullptr),
+        _queueEntryInfoFetcher(nullptr), _userDataFetcher(nullptr),
+        _queueModel(nullptr), _queueContextMenu(nullptr),
         _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1),
         _dynamicModeEnabled(false), _noRepetitionUpdating(0), _historyModel(nullptr)
     {
@@ -292,9 +293,11 @@ namespace PMP {
         quint32 queueID = _queueModel->trackIdAt(index);
         qDebug() << "queue: context menu opening for Q-item" << queueID;
 
-        QMenu* menu = new QMenu(this);
+        if (_queueContextMenu)
+            delete _queueContextMenu;
+        _queueContextMenu = new QMenu(this);
 
-        QAction* removeAction = menu->addAction(tr("Remove"));
+        QAction* removeAction = _queueContextMenu->addAction(tr("Remove"));
         removeAction->setShortcut(QKeySequence::Delete);
         connect(
             removeAction, &QAction::triggered,
@@ -305,9 +308,9 @@ namespace PMP {
             }
         );
 
-        menu->addSeparator();
+        _queueContextMenu->addSeparator();
 
-        QAction* moveToFrontAction = menu->addAction(tr("Move to front"));
+        QAction* moveToFrontAction = _queueContextMenu->addAction(tr("Move to front"));
         connect(
             moveToFrontAction, &QAction::triggered,
             [this, row, queueID]() {
@@ -317,7 +320,7 @@ namespace PMP {
             }
         );
 
-        QAction* moveToEndAction = menu->addAction(tr("Move to end"));
+        QAction* moveToEndAction = _queueContextMenu->addAction(tr("Move to end"));
         connect(
             moveToEndAction, &QAction::triggered,
             [this, row, queueID]() {
@@ -327,7 +330,7 @@ namespace PMP {
             }
         );
 
-        menu->popup(_ui->queueTableView->viewport()->mapToGlobal(position));
+        _queueContextMenu->popup(_ui->queueTableView->viewport()->mapToGlobal(position));
     }
 
     void MainWidget::playing(quint32 queueID) {

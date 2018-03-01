@@ -34,7 +34,8 @@ namespace PMP {
      : QWidget(parent), _ui(new Ui::CollectionWidget), _connection(nullptr),
        _collectionSourceModel(new SortedCollectionTableModel(this)),
        _collectionDisplayModel(
-           new FilteredCollectionTableModel(_collectionSourceModel, this))
+           new FilteredCollectionTableModel(_collectionSourceModel, this)),
+       _collectionContextMenu(nullptr)
     {
         _ui->setupUi(this);
 
@@ -108,9 +109,12 @@ namespace PMP {
 
         FileHash hash = track->hash();
 
-        QMenu* menu = new QMenu(this);
+        if (_collectionContextMenu)
+            delete _collectionContextMenu;
+        _collectionContextMenu = new QMenu(this);
 
-        QAction* enqueueFrontAction = menu->addAction("Add to front of queue");
+        auto enqueueFrontAction =
+            _collectionContextMenu->addAction("Add to front of queue");
         connect(
             enqueueFrontAction, &QAction::triggered,
             [this, hash]() {
@@ -119,7 +123,7 @@ namespace PMP {
             }
         );
 
-        QAction* enqueueEndAction = menu->addAction("Add to end of queue");
+        auto enqueueEndAction = _collectionContextMenu->addAction("Add to end of queue");
         connect(
             enqueueEndAction, &QAction::triggered,
             [this, hash]() {
@@ -128,7 +132,8 @@ namespace PMP {
             }
         );
 
-        menu->popup(_ui->collectionTableView->viewport()->mapToGlobal(position));
+        auto popupPosition = _ui->collectionTableView->viewport()->mapToGlobal(position);
+        _collectionContextMenu->popup(popupPosition);
     }
 
 }

@@ -22,6 +22,8 @@
 
 #include <QWidget>
 
+QT_FORWARD_DECLARE_CLASS(QMenu)
+
 namespace Ui {
     class CollectionWidget;
 }
@@ -49,6 +51,7 @@ namespace PMP {
         ServerConnection* _connection;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;
+        QMenu* _collectionContextMenu;
     };
 }
 #endif

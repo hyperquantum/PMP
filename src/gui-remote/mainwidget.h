@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,8 @@
 #define PMP_MAINWIDGET_H
 
 #include <QWidget>
+
+QT_FORWARD_DECLARE_CLASS(QMenu)
 
 namespace Ui {
     class MainWidget;
@@ -85,6 +87,7 @@ namespace PMP {
         QueueEntryInfoFetcher* _queueEntryInfoFetcher;
         UserDataFetcher* _userDataFetcher;
         QueueModel* _queueModel;
+        QMenu* _queueContextMenu;
         int _volume;
         quint32 _nowPlayingQID;
         QString _nowPlayingTitle;
