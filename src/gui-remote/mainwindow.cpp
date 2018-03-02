@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -181,6 +181,9 @@ namespace PMP {
 
     bool MainWindow::keyEventFilter(QKeyEvent* event) {
         //qDebug() << "got key:" << event->key();
+
+        /* we need an active connection for the actions of the multimedia buttons */
+        if (!_connection) return false;
 
         switch (event->key()) {
             case Qt::Key_MediaNext:
