@@ -50,7 +50,8 @@ namespace PMP {
         _queueEntryInfoFetcher(nullptr), _userDataFetcher(nullptr),
         _queueModel(nullptr), _queueContextMenu(nullptr),
         _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1),
-        _dynamicModeEnabled(false), _noRepetitionUpdating(0), _historyModel(nullptr)
+        _dynamicModeEnabled(false), _noRepetitionUpdating(0),
+        _historyModel(nullptr), _historyContextMenu(nullptr)
     {
         _ui->setupUi(this);
 
@@ -122,6 +123,11 @@ namespace PMP {
             _historyModel, &PlayerHistoryModel::rowsInserted,
             _ui->historyTableView, &QTableView::scrollToBottom,
             Qt::QueuedConnection /* queued because it must be the last slot to run */
+        );
+
+        connect(
+            _ui->historyTableView, &QTableView::customContextMenuRequested,
+            this, &MainWidget::historyContextMenuRequested
         );
 
         connect(
@@ -280,6 +286,46 @@ namespace PMP {
         }
 
         return false;
+    }
+
+    void MainWidget::historyContextMenuRequested(const QPoint& position) {
+        auto index = _ui->historyTableView->indexAt(position);
+        if (!index.isValid()) {
+            qDebug() << "history: index at mouse position not valid";
+            return;
+        }
+
+        int row = index.row();
+        auto hash = _historyModel->trackHashAt(row);
+        if (hash.empty()) {
+            qDebug() << "history: no hash known for track at row" << row;
+            return;
+        }
+
+        if (_historyContextMenu)
+            delete _historyContextMenu;
+        _historyContextMenu = new QMenu(this);
+
+        auto enqueueFrontAction = _historyContextMenu->addAction("Add to front of queue");
+        connect(
+            enqueueFrontAction, &QAction::triggered,
+            [this, hash]() {
+                qDebug() << "history context menu: enqueue (front) triggered";
+                _connection->insertQueueEntryAtFront(hash);
+            }
+        );
+
+        auto enqueueEndAction = _historyContextMenu->addAction("Add to end of queue");
+        connect(
+            enqueueEndAction, &QAction::triggered,
+            [this, hash]() {
+                qDebug() << "history context menu: enqueue (end) triggered";
+                _connection->insertQueueEntryAtEnd(hash);
+            }
+        );
+
+        auto popupPosition = _ui->historyTableView->viewport()->mapToGlobal(position);
+        _historyContextMenu->popup(popupPosition);
     }
 
     void MainWidget::queueContextMenuRequested(const QPoint& position) {

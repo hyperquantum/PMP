@@ -20,6 +20,7 @@
 #ifndef PMP_PLAYERHISTORYMODEL_H
 #define PMP_PLAYERHISTORYMODEL_H
 
+#include "common/filehash.h"
 #include "common/playerhistorytrackinfo.h"
 
 #include <QAbstractTableModel>
@@ -38,6 +39,8 @@ namespace PMP {
         PlayerHistoryModel(QObject* parent, QueueEntryInfoFetcher* trackInfoFetcher);
 
         void setConnection(ServerConnection* connection);
+
+        FileHash trackHashAt(int rowIndex) const;
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;

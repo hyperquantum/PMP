@@ -65,6 +65,7 @@ namespace PMP {
         void decreaseVolume();
         void increaseVolume();
 
+        void historyContextMenuRequested(const QPoint& position);
         void queueContextMenuRequested(const QPoint& position);
 
         void changeDynamicMode(int checkState);
@@ -97,6 +98,7 @@ namespace PMP {
         QList<int> _noRepetitionList;
         int _noRepetitionUpdating;
         PlayerHistoryModel* _historyModel;
+        QMenu* _historyContextMenu;
     };
 }
 #endif

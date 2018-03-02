@@ -26,6 +26,9 @@
       <enum>Qt::Vertical</enum>
      </property>
      <widget class="QTableView" name="historyTableView">
+      <property name="contextMenuPolicy">
+       <enum>Qt::CustomContextMenu</enum>
+      </property>
       <property name="alternatingRowColors">
        <bool>true</bool>
       </property>

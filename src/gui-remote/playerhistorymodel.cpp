@@ -202,6 +202,16 @@ namespace PMP {
         return Qt::CopyAction;
     }
 
+    FileHash PlayerHistoryModel::trackHashAt(int rowIndex) const {
+        if (rowIndex < 0 || rowIndex >= _list.size()) return FileHash();
+
+        auto queueID = _list[rowIndex]->queueID();
+        auto info = _infoFetcher->entryInfoByQID(queueID);
+        if (!info) return FileHash();
+
+        auto& hash = info->hash();
+        return hash.empty() ? FileHash() : hash;
+    }
 
     QMimeData* PlayerHistoryModel::mimeData(const QModelIndexList& indexes) const {
         qDebug() << "mimeData called; indexes count =" << indexes.size();
