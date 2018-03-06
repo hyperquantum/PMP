@@ -38,6 +38,9 @@ namespace PMP {
         /*! The LATIN SMALL LETTER E WITH ACUTE (U+E9) */
         static const QChar EAcute;
 
+        /*! The LATIN SMALL LETTER E WITH DIAERESIS (U+00EB) */
+        static const QChar EDiaeresis;
+
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
 
         static QString getCopyrightLine(bool mustBeAscii = true);

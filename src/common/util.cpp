@@ -30,6 +30,7 @@ namespace PMP {
     const QChar Util::Copyright = QChar(0xA9);
     const QChar Util::EnDash = QChar(0x2013);
     const QChar Util::EAcute = QChar(0xE9);
+    const QChar Util::EDiaeresis = QChar(0xEB);
 
     unsigned Util::getRandomSeed() {
         /* Because std::random_device seems to be not random at all on MINGW 4.8, we use
