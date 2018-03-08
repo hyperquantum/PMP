@@ -17,27 +17,64 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "common/logging.h"
 #include "common/util.h"
+#include "common/version.h"
 
+#include "server/lastfmscrobblingprovider.h"
+
+#include <QCoreApplication>
 #include <QHostAddress>
 #include <QHostInfo>
 #include <QNetworkInterface>
+#include <QSslSocket>
 #include <QtDebug>
 
-int main(int argc, char *argv[]) {
-    /*
-    int seed;
-    seed = PMP::Util::getRandomSeed();
-    seed = PMP::Util::getRandomSeed();
-    seed = PMP::Util::getRandomSeed();
-    qDebug << "last seed:" << seed;
-    */
+using namespace PMP;
 
+int main(int argc, char *argv[]) {
+    
+    QCoreApplication app(argc, argv);
+
+    QCoreApplication::setApplicationName("Party Music Player - Simple test program");
+    QCoreApplication::setApplicationVersion(PMP_VERSION_DISPLAY);
+    QCoreApplication::setOrganizationName(PMP_ORGANIZATION_NAME);
+    QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
+
+    /* set up logging */
+    Logging::enableConsoleAndTextFileLogging(false);
+    Logging::setFilenameSuffix("T"); /* T = Test */
+
+    /*
     qDebug() << "Local hostname:" << QHostInfo::localHostName();
 
     foreach (const QHostAddress& address, QNetworkInterface::allAddresses()) {
         qDebug() << address.toString();
     }
+    */
+    
+    qDebug() << "SSL version:" << QSslSocket::sslLibraryVersionNumber();
+    qDebug() << "SSL version string:" << QSslSocket::sslLibraryVersionString();
+    //return 0;
 
-    return 0;
+    auto lastFm = new PMP::LastFmScrobblingProvider();
+
+    QObject::connect(
+        lastFm, &PMP::LastFmScrobblingProvider::receivedAuthenticationReply,
+        &app, &QCoreApplication::quit
+    );
+
+    //lastFm->doGetMobileTokenCall("xxxxxxxxxxxxx", "xxxxxxxxxxxxxxxx");
+
+    lastFm->setSessionKey("xxxxxxxxxxxxx");
+
+    lastFm->doScrobbleCall(
+        QDateTime(QDate(2018, 03, 05), QTime(15, 57), Qt::LocalTime),
+        "Title",
+        QString("Artist"),
+        "Album",
+        3 * 60 + 39
+    );
+
+    return app.exec();
 }

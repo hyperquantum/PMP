@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2016, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2018, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -42,13 +42,15 @@ set(PMP_SERVER_SOURCES
     server/database.cpp
     server/generator.cpp
     server/history.cpp
+    server/lastfmscrobblingprovider.cpp
     server/player.cpp
     server/preloader.cpp
     server/queue.cpp
     server/queueentry.cpp
     server/resolver.cpp
+    server/scrobbler.cpp
+    server/scrobblingprovider.cpp
     server/server.cpp
-    server/server-main.cpp
     server/serversettings.cpp
     server/userdataforhashesfetcher.cpp
     server/userdatafortracksfetcher.cpp
@@ -60,11 +62,14 @@ set(PMP_SERVER_HEADERS
     server/connectedclient.h
     server/generator.h
     server/history.h
+    server/lastfmscrobblingprovider.h
     server/player.h
     server/preloader.h
     server/queue.h
     server/queueentry.h
     server/resolver.h
+    server/scrobbler.h
+    server/scrobblingprovider.h
     server/server.h
     server/serversettings.h
     server/userdataforhashesfetcher.h
@@ -79,7 +84,6 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/collectionwidget.cpp
     gui-remote/connectionwidget.cpp
     gui-remote/currenttrackmonitor.cpp
-    gui-remote/gui-remote-main.cpp
     gui-remote/loginwidget.cpp
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp
@@ -150,15 +154,18 @@ add_executable(PMP-HashTool
 add_executable(PMP-Cmd-Remote tools/cmd-remote-main.cpp)
 add_executable(quicktest
     tools/quicktest.cpp
-    common/util.cpp
+    ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS}
+    ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 
 add_executable(PMP-Server
+    server/server-main.cpp
     ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS}
     ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 add_executable(PMP-GUI-Remote
     ${PMP_WIN32_FLAG}
+    gui-remote/gui-remote-main.cpp
     ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
     ${PMP_GUI_REMOTE_UICS}
     ${PMP_GUI_REMOTE_QRCS}
@@ -167,12 +174,13 @@ add_executable(PMP-GUI-Remote
 
 # Qt dependencies for each executable
 qt5_use_modules(PMP-HashTool Core)
-qt5_use_modules(quicktest Core Network)
-qt5_use_modules(PMP-Server Core Multimedia Network Sql)
+qt5_use_modules(quicktest Core Multimedia Network Sql Xml)
+qt5_use_modules(PMP-Server Core Multimedia Network Sql Xml)
 qt5_use_modules(PMP-Cmd-Remote Core Network)
 qt5_use_modules(PMP-GUI-Remote Core Gui Network Widgets)
 
 # Link executables to TagLib
 target_link_libraries(PMP-HashTool ${TAGLIB_LIBRARIES})
+target_link_libraries(quicktest ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-Server ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-GUI-Remote ${TAGLIB_LIBRARIES})
