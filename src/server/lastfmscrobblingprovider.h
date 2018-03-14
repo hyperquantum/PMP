@@ -47,11 +47,11 @@ namespace PMP {
 
         void setSessionKey(const QString& sessionKey);
 
+    public slots:
+        void initialize();
+
     Q_SIGNALS:
         void receivedAuthenticationReply();
-
-    public slots:
-
 
     private slots:
         void requestFinished(QNetworkReply* reply);
@@ -59,6 +59,7 @@ namespace PMP {
     private:
         QNetworkReply* signAndSendPost(QVector<QPair<QString, QString>> parameters);
 
+        void parseError(QDomElement const& errorElement);
         void parseScrobbles(QDomElement const& scrobblesElement);
 
         static void signCall(QVector<QPair<QString, QString>>& parameters);

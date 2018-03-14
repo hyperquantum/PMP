@@ -19,6 +19,8 @@
 
 #include "lastfmscrobblingprovider.h"
 
+#include "common/version.h"
+
 #include <algorithm>
 
 #include <QByteArray>
@@ -35,19 +37,38 @@ namespace PMP {
     LastFmScrobblingProvider::LastFmScrobblingProvider()
      : ScrobblingProvider(), _networkAccessManager(nullptr)
     {
-        //
+        qDebug() << "Creating LastFmScrobblingProvider;  user-agent:" << userAgent;
     }
 
     const char* LastFmScrobblingProvider::apiUrl = "https://ws.audioscrobbler.com/2.0/";
     const char* LastFmScrobblingProvider::apiKey = "fc44ba796d201052f53f92818834f907";
     const char* LastFmScrobblingProvider::apiSecret = "3e58b46e070c34718686e0dfbd02d22f";
     const char* LastFmScrobblingProvider::userAgent =
-                                               "Party Music Player (test utility v0.0.5)";
+                    "Party Music Player " PMP_VERSION_DISPLAY " (LFM scrobbler v0.0.1)";
     const char* LastFmScrobblingProvider::contentTypeForPostRequest =
                                                       "application/x-www-form-urlencoded";
 
+    void LastFmScrobblingProvider::initialize() {
+        if (_sessionKey.isNull()) {
+            setState(ScrobblingProviderState::NeedAuthentication);
+        }
+        else {
+            setState(ScrobblingProviderState::ReadyForScrobbling);
+        }
+    }
+
     void LastFmScrobblingProvider::setSessionKey(const QString& sessionKey) {
+        if (_sessionKey == sessionKey) return; /* no change */
         _sessionKey = sessionKey;
+
+        if (_sessionKey.isNull()) {
+            setState(ScrobblingProviderState::NeedAuthentication);
+        }
+        else {
+            if (state() == ScrobblingProviderState::NeedAuthentication) {
+                setState(ScrobblingProviderState::ReadyForScrobbling);
+            }
+        }
     }
 
     void LastFmScrobblingProvider::doGetMobileTokenCall(const QString& username,
@@ -160,11 +181,8 @@ namespace PMP {
             qDebug() << "Last.Fm reply indicates that the request failed";
 
             auto errorElement = lfmElement.firstChildElement("error");
-            if (!errorElement.isNull()) {
-                auto errorCode = errorElement.attribute("code");
-                qDebug() << "error code:" << errorCode;
-                qDebug() << "error message:" << errorElement.text();
-            }
+            parseError(errorElement);
+
         }
         else {
             auto sessionNode = lfmElement.firstChildElement("session");
@@ -189,6 +207,52 @@ namespace PMP {
 
 
         emit receivedAuthenticationReply();
+    }
+
+    void LastFmScrobblingProvider::parseError(const QDomElement& errorElement) {
+        if (errorElement.isNull()) return; /* gibberish */
+
+        auto errorCodeText = errorElement.attribute("code");
+        qDebug() << "error code:" << errorCodeText;
+        qDebug() << "error message:" << errorElement.text();
+
+        bool ok;
+        int errorCode = errorCodeText.toInt(&ok);
+
+        if (!ok) return; /* gibberish */
+
+        switch (errorCode) {
+            case 4: /* authentication failed */
+                setState(ScrobblingProviderState::InvalidUserCredentials);
+                break;
+
+            case 9: /* invalid session key, need to re-authenticate */
+                setSessionKey("");
+                break;
+
+            case 11: case 16:
+                /* TODO: retry request later */
+                setState(ScrobblingProviderState::TemporarilyUnavailable);
+                break;
+
+            case 2: case 3: case 5: case 6: case 7: case 13: case 27:
+                /* these indicate a bug in creating the request */
+                setState(ScrobblingProviderState::PermanentFatalError);
+                break;
+
+            case 10: case 26: /* invalid/suspended API key */
+                setState(ScrobblingProviderState::PermanentFatalError);
+                break;
+
+            case 29: /* rate limit exceeded */
+                setState(ScrobblingProviderState::TemporarilyUnavailable);
+                break;
+
+            default:
+                /* unknown error code */
+                setState(ScrobblingProviderState::PermanentFatalError);
+                break;
+        }
     }
 
     void LastFmScrobblingProvider::parseScrobbles(const QDomElement& scrobblesElement) {

@@ -24,11 +24,12 @@
 
 namespace PMP {
 
-    enum ScrobblingProviderState {
+    enum class ScrobblingProviderState {
         NotInitialized = 0,
         NeedAuthentication,
-        Ready,
+        ReadyForScrobbling,
         TemporarilyUnavailable,
+        InvalidUserCredentials,
         PermanentFatalError,
     };
 
@@ -40,10 +41,11 @@ namespace PMP {
 
         ScrobblingProviderState state() const { return _state; }
 
+    public slots:
+        virtual void initialize() = 0;
+
     Q_SIGNALS:
         void stateChanged(ScrobblingProviderState newState);
-
-    public slots:
 
     protected slots:
         void setState(ScrobblingProviderState newState);
