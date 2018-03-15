@@ -1,5 +1,23 @@
+# Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+#
+# This file is part of PMP (Party Music Player).
+#
+# PMP is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# PMP is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more
+# details.
+#
+# You should have received a copy of the GNU General Public License along
+# with PMP.  If not, see <http://www.gnu.org/licenses/>.
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
+
+configure_file(${CMAKE_SOURCE_DIR}/src/common/version.h.in common/version.h)
 
 add_executable(PMP_hash_test
     hash_test.cpp
@@ -40,3 +58,11 @@ add_hashtest(
     tone.flac
     50070-fc8a0825f871a9fd235c2960bd92679e-0f6da8f31d5af63893d087dc1595716400fb0d02
 )
+
+qt5_wrap_cpp(PMP_TestUtil_MOCS testutil.h)
+add_executable(testutil testutil.cpp
+    ${PMP_TestUtil_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/util.cpp
+)
+qt5_use_modules(testutil Core Test)
+add_test(testutil testutil)
