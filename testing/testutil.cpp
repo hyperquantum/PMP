@@ -37,16 +37,19 @@ void TestUtil::getCopyrightLine() {
     QVERIFY(Util::getCopyrightLine(false).contains(Util::Copyright));
     QVERIFY(Util::getCopyrightLine(true).contains(QString("(C)")));
 
-    QVERIFY(Util::getCopyrightLine(false).contains(QString("Kevin")));
-    QVERIFY(Util::getCopyrightLine(true).contains(QString("Kevin")));
-
-    QVERIFY(Util::getCopyrightLine(false).contains(QString("Andr") + Util::EAcute));
-    QVERIFY(Util::getCopyrightLine(true).contains(QString("Andre")));
+    QVERIFY(Util::getCopyrightLine(false).contains(QString("Kevin Andr") + Util::EAcute));
+    QVERIFY(Util::getCopyrightLine(true).contains(QString("Kevin Andre")));
 
     auto copyrightAscii = Util::getCopyrightLine(true);
     for (int i = 0; i < copyrightAscii.size(); ++i) {
         QVERIFY(copyrightAscii[i] < QChar(128));
     }
+}
+
+void TestUtil::getRandomSeed() {
+    auto seed1 = Util::getRandomSeed();
+    auto seed2 = Util::getRandomSeed();
+    QVERIFY(seed1 != seed2);
 }
 
 QTEST_MAIN(TestUtil)

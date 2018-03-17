@@ -25,7 +25,8 @@
 class TestUtil : public QObject {
     Q_OBJECT
 private slots:
-    void secondsToHoursMinuteSecondsText();
     void getCopyrightLine();
+    void getRandomSeed();
+    void secondsToHoursMinuteSecondsText();
 };
 #endif
