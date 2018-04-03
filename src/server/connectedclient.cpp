@@ -831,12 +831,12 @@ namespace PMP {
                 track ? createTrackStatusFor(track)
                       : NetworkProtocol::createTrackStatusUnknownId();
 
-            const FileHash* hash = track->hash();
+            const FileHash* hash = track ? track->hash() : &emptyHash;
 
             NetworkUtil::append4Bytes(message, queueID);
             NetworkUtil::append2Bytes(message, trackStatus);
             NetworkUtil::append2Bytes(message, 0); /* filler */
-            NetworkProtocol::appendHash(message, hash ? *hash : emptyHash);
+            NetworkProtocol::appendHash(message, *hash);
         }
 
         sendBinaryMessage(message);
