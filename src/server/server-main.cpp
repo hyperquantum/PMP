@@ -144,7 +144,7 @@ int main(int argc, char *argv[]) {
         << endl;
 
     Users users;
-    Player player(0, &resolver, defaultVolume);
+    Player player(nullptr, &resolver, defaultVolume);
     Queue& queue = player.queue();
     History history(&player);
 
@@ -179,7 +179,7 @@ int main(int argc, char *argv[]) {
 
     out << endl;
 
-    Server server(0, serverInstanceIdentifier);
+    Server server(nullptr, serverInstanceIdentifier);
     bool listening =
         server.listen(
             &player, &generator, &users, &collectionMonitor, QHostAddress::Any, 23432
