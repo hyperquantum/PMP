@@ -59,10 +59,26 @@ add_hashtest(
     50070-fc8a0825f871a9fd235c2960bd92679e-0f6da8f31d5af63893d087dc1595716400fb0d02
 )
 
-qt5_wrap_cpp(PMP_TestUtil_MOCS testutil.h)
-add_executable(testutil testutil.cpp
+
+# TestUtil
+qt5_wrap_cpp(PMP_TestUtil_MOCS test_util.h)
+add_executable(test_util test_util.cpp
     ${PMP_TestUtil_MOCS}
     ${CMAKE_SOURCE_DIR}/src/common/util.cpp
 )
-qt5_use_modules(testutil Core Test)
-add_test(testutil testutil)
+qt5_use_modules(test_util Core Test)
+add_test(test_util test_util)
+
+
+# TestScrobbler
+qt5_wrap_cpp(PMP_TestScrobbler_MOCS test_scrobbler.h
+    ${CMAKE_SOURCE_DIR}/src/server/scrobbler.h
+    ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.h
+)
+add_executable(test_scrobbler test_scrobbler.cpp
+    ${PMP_TestScrobbler_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/server/scrobbler.cpp
+    ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.cpp
+)
+qt5_use_modules(test_scrobbler Core Test)
+add_test(test_scrobbler test_scrobbler)

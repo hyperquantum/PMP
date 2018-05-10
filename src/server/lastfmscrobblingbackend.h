@@ -17,10 +17,10 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_LASTFMSCROBBLINGPROVIDER_H
-#define PMP_LASTFMSCROBBLINGPROVIDER_H
+#ifndef PMP_LASTFMSCROBBLINGBACKEND_H
+#define PMP_LASTFMSCROBBLINGBACKEND_H
 
-#include "scrobblingprovider.h"
+#include "scrobblingbackend.h"
 
 #include <QDateTime>
 #include <QPair>
@@ -33,25 +33,36 @@ QT_FORWARD_DECLARE_CLASS(QNetworkReply)
 
 namespace PMP {
 
-    class LastFmScrobblingProvider : public ScrobblingProvider
+    class LastFmScrobblingBackend : public ScrobblingBackend
     {
         Q_OBJECT
     public:
-        LastFmScrobblingProvider();
+        LastFmScrobblingBackend();
 
-        void doGetMobileTokenCall(QString const& username, QString const& password);
+        void doGetMobileTokenCall(QString const& usernameOrEmail,
+                                  QString const& password);
 
         void doScrobbleCall(QDateTime timestamp, QString const& title,
                             QString const& artist, QString const& album,
                             int trackDurationSeconds = -1);
 
+        void setUsername(const QString& username);
         void setSessionKey(const QString& sessionKey);
 
+        QString username() const;
+        QString sessionKey() const;
+
+        void scrobbleTrack(QDateTime timestamp, QString const& title,
+                           QString const& artist, QString const& album,
+                           int trackDurationSeconds = -1) override;
+
     public slots:
-        void initialize();
+        void initialize() override;
+        void authenticateWithCredentials(QString usernameOrEmail, QString password);
 
     Q_SIGNALS:
-        void receivedAuthenticationReply();
+        void needUserCredentials(QString suggestedUsername, bool authenticationFailed);
+        //void receivedAuthenticationReply();
 
     private slots:
         void requestFinished(QNetworkReply* reply);

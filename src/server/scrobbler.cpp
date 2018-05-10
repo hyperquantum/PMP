@@ -19,9 +19,10 @@
 
 #include "scrobbler.h"
 
-#include "scrobblingprovider.h"
+#include "scrobblingbackend.h"
 
 #include <QDebug>
+#include <QTimer>
 
 namespace PMP {
 
@@ -33,34 +34,150 @@ namespace PMP {
         //
     }
 
-    ScrobblingDataSource::ScrobblingDataSource() {
+    /* ======================================================================= */
+
+    ScrobblingDataProvider::ScrobblingDataProvider() {
         //
     }
 
-    ScrobblingDataSource::~ScrobblingDataSource() {
+    ScrobblingDataProvider::~ScrobblingDataProvider() {
         //
     }
 
-    Scrobbler::Scrobbler(QObject* parent)
-     : QObject(parent)
+    /* ======================================================================= */
+
+    Scrobbler::Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,
+                         ScrobblingBackend* backend)
+     : QObject(parent), _dataProvider(dataProvider), _backend(backend),
+        _timeoutTimer(new QTimer(this))
     {
-        //
+        _backend->setParent(this);
+
+        connect(
+            backend, &ScrobblingBackend::stateChanged,
+            this, &Scrobbler::backendStateChanged
+        );
+        connect(
+            backend, &ScrobblingBackend::gotScrobbleResult,
+            this, &Scrobbler::gotScrobbleResult
+        );
+
+        _timeoutTimer->setSingleShot(true);
+        connect(
+            _timeoutTimer, &QTimer::timeout, this, &Scrobbler::timeoutTimerTimedOut
+        );
+
+        checkIfWeHaveSomethingToDo();
     }
 
-    void Scrobbler::addProvider(ScrobblingProvider* provider) {
-        if (provider->parent() != nullptr && provider->parent() != this) {
-            qWarning() << "cannot add provider that already has a parent!";
-            return;
+    void Scrobbler::wakeUp() {
+        checkIfWeHaveSomethingToDo();
+    }
+
+    void Scrobbler::timeoutTimerTimedOut() {
+        qDebug() << "timeout event triggered; backend state:" << _backend->state();
+
+        /* TODO */
+    }
+
+    void Scrobbler::checkIfWeHaveSomethingToDo() {
+        qDebug() << "running checkIfWeHaveSomethingToDo";
+        if (_pendingScrobble) return;
+
+        if (_tracksToScrobble.empty()) {
+            _tracksToScrobble.append(_dataProvider->getNextTracksToScrobble().toList());
+
+            if (_tracksToScrobble.empty()) return;
         }
 
-        provider->setParent(this);
+        qDebug() << " backend state:" << _backend->state();
+        switch (_backend->state()) {
+            case ScrobblingBackendState::NotInitialized:
+                _backend->initialize();
+                QTimer::singleShot(0, this, SLOT(wakeUp()));
+                break;
+            case ScrobblingBackendState::WaitingForAuthenticationResult:
+            case ScrobblingBackendState::WaitingForScrobbleResult:
+                break; /* waiting for timeout event */
+            case ScrobblingBackendState::ReadyForScrobbling:
+                sendNextScrobble();
+                break;
+            case ScrobblingBackendState::TemporarilyUnavailable:
+                /* TODO */
+                break;
+            case ScrobblingBackendState::PermanentFatalError:
+                /* TODO */
+                break;
+            case ScrobblingBackendState::WaitingForUserCredentials:
+            case ScrobblingBackendState::InvalidUserCredentials:
+                /* we will have to wait for (new) credentials; this means waiting until
+                   the state of the backend changes again*/
+                break;
+        }
+    }
 
-        if (_providers.contains(provider)) return;
+    void Scrobbler::sendNextScrobble() {
+        qDebug() << "sendNextScrobble; queue size:" << _tracksToScrobble.size();
+        if (_tracksToScrobble.empty() || _pendingScrobble) return;
 
-        _providers.append(provider);
+        auto trackPtr = _tracksToScrobble.dequeue();
+        _pendingScrobble = trackPtr;
 
+        auto& track = *trackPtr;
 
+        _timeoutTimer->stop();
+        _timeoutTimer->start(5000);
 
+        _backend->scrobbleTrack(
+            track.timestamp(), track.title(), track.artist(), track.album()
+        );
+        /* then we wait for the gotScrobbleResult event to arrive */
+    }
+
+    void Scrobbler::gotScrobbleResult(ScrobbleResult result) {
+        qDebug() << "received scrobble result:" << result;
+        if (!_pendingScrobble) return;
+
+        _timeoutTimer->stop();
+        auto trackPtr = _pendingScrobble;
+        _pendingScrobble = nullptr;
+
+        switch (result) {
+            case ScrobbleResult::Success:
+                emit trackPtr->scrobbledSuccessfully();
+                break;
+            case ScrobbleResult::Ignored:
+                emit trackPtr->cannotBeScrobbled();
+                break;
+            case ScrobbleResult::Error:
+                /* reinsert at front of the queue */
+                _tracksToScrobble.insert(0, trackPtr);
+                break;
+        }
+
+        QTimer::singleShot(0, this, SLOT(wakeUp()));
+    }
+
+    void Scrobbler::backendStateChanged(ScrobblingBackendState newState) {
+        qDebug() << "backend state changed to:" << newState;
+
+        _timeoutTimer->stop();
+
+        /* should we wait for something to change in the backend? */
+        switch (newState) {
+            case ScrobblingBackendState::WaitingForAuthenticationResult:
+                _timeoutTimer->start(5000);
+                break;
+            case ScrobblingBackendState::WaitingForScrobbleResult:
+                _timeoutTimer->start(5000);
+                break;
+            case ScrobblingBackendState::WaitingForUserCredentials:
+                break; /* no waiting for timeout */
+            default:
+                break; /* no waiting for timeout */
+        }
+
+        checkIfWeHaveSomethingToDo();
     }
 
 }

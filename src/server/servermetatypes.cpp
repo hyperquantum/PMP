@@ -17,41 +17,21 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SCROBBLINGPROVIDER_H
-#define PMP_SCROBBLINGPROVIDER_H
-
-#include <QObject>
+#include "scrobblingbackend.h"
 
 namespace PMP {
 
-    enum class ScrobblingProviderState {
-        NotInitialized = 0,
-        NeedAuthentication,
-        ReadyForScrobbling,
-        TemporarilyUnavailable,
-        InvalidUserCredentials,
-        PermanentFatalError,
-    };
-
-    class ScrobblingProvider : public QObject {
-        Q_OBJECT
-    public:
-        ScrobblingProvider();
-        virtual ~ScrobblingProvider();
-
-        ScrobblingProviderState state() const { return _state; }
-
-    public slots:
-        virtual void initialize() = 0;
-
-    Q_SIGNALS:
-        void stateChanged(ScrobblingProviderState newState);
-
-    protected slots:
-        void setState(ScrobblingProviderState newState);
-
+    /** Utility object to automatically do the qRegisterMetaType calls at program
+     *  startup */
+    class ServerMetatypesInit {
     private:
-        ScrobblingProviderState _state;
+        ServerMetatypesInit() {
+            qRegisterMetaType<PMP::ScrobblingBackendState>();
+            qRegisterMetaType<PMP::ScrobbleResult>();
+        }
+
+        static ServerMetatypesInit GlobalVariable;
     };
+
+    ServerMetatypesInit ServerMetatypesInit::GlobalVariable;
 }
-#endif

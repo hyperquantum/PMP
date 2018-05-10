@@ -17,7 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "testutil.h"
+#include "test_util.h"
 
 #include "common/util.h"
 

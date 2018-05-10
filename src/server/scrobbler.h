@@ -20,19 +20,26 @@
 #ifndef PMP_SCROBBLER_H
 #define PMP_SCROBBLER_H
 
+#include "scrobblingbackend.h"
+
+#include <QDateTime>
 #include <QObject>
+#include <QQueue>
 #include <QString>
 #include <QVector>
 
-namespace PMP {
+#include <memory>
 
-    class ScrobblingProvider;
+QT_FORWARD_DECLARE_CLASS(QTimer)
+
+namespace PMP {
 
     class TrackToScrobble {
     public:
         TrackToScrobble();
         virtual ~TrackToScrobble();
 
+        virtual QDateTime timestamp() const = 0;
         virtual QString title() const = 0;
         virtual QString artist() const = 0;
         virtual QString album() const = 0;
@@ -41,27 +48,41 @@ namespace PMP {
         virtual void cannotBeScrobbled() = 0;
     };
 
-    class ScrobblingDataSource {
+    class ScrobblingDataProvider {
     public:
-        ScrobblingDataSource();
-        virtual ~ScrobblingDataSource();
+        virtual ~ScrobblingDataProvider();
 
-    Q_SIGNALS:
+        virtual QVector<std::shared_ptr<TrackToScrobble>> getNextTracksToScrobble() = 0;
 
+    protected:
+        ScrobblingDataProvider();
     };
 
     class Scrobbler : public QObject {
         Q_OBJECT
     public:
-        explicit Scrobbler(QObject* parent = nullptr);
+        Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,
+                  ScrobblingBackend* backend);
 
     public slots:
-        void addProvider(ScrobblingProvider* provider);
+        void wakeUp();
 
     Q_SIGNALS:
 
+    private slots:
+        void timeoutTimerTimedOut();
+        void gotScrobbleResult(ScrobbleResult result);
+        void backendStateChanged(ScrobblingBackendState newState);
+
     private:
-        QVector<ScrobblingProvider*> _providers;
+        void checkIfWeHaveSomethingToDo();
+        void sendNextScrobble();
+
+        ScrobblingDataProvider* _dataProvider;
+        ScrobblingBackend* _backend;
+        QQueue<std::shared_ptr<TrackToScrobble>> _tracksToScrobble;
+        std::shared_ptr<TrackToScrobble> _pendingScrobble;
+        QTimer* _timeoutTimer;
     };
 }
 #endif

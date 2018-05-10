@@ -17,7 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "lastfmscrobblingprovider.h"
+#include "lastfmscrobblingbackend.h"
 
 #include "common/version.h"
 
@@ -34,56 +34,97 @@
 
 namespace PMP {
 
-    LastFmScrobblingProvider::LastFmScrobblingProvider()
-     : ScrobblingProvider(), _networkAccessManager(nullptr)
+    LastFmScrobblingBackend::LastFmScrobblingBackend()
+     : ScrobblingBackend(), _networkAccessManager(nullptr)
     {
         qDebug() << "Creating LastFmScrobblingProvider;  user-agent:" << userAgent;
     }
 
-    const char* LastFmScrobblingProvider::apiUrl = "https://ws.audioscrobbler.com/2.0/";
-    const char* LastFmScrobblingProvider::apiKey = "fc44ba796d201052f53f92818834f907";
-    const char* LastFmScrobblingProvider::apiSecret = "3e58b46e070c34718686e0dfbd02d22f";
-    const char* LastFmScrobblingProvider::userAgent =
+    const char* LastFmScrobblingBackend::apiUrl = "https://ws.audioscrobbler.com/2.0/";
+    const char* LastFmScrobblingBackend::apiKey = "fc44ba796d201052f53f92818834f907";
+    const char* LastFmScrobblingBackend::apiSecret = "3e58b46e070c34718686e0dfbd02d22f";
+    const char* LastFmScrobblingBackend::userAgent =
                     "Party Music Player " PMP_VERSION_DISPLAY " (LFM scrobbler v0.0.1)";
-    const char* LastFmScrobblingProvider::contentTypeForPostRequest =
+    const char* LastFmScrobblingBackend::contentTypeForPostRequest =
                                                       "application/x-www-form-urlencoded";
 
-    void LastFmScrobblingProvider::initialize() {
+    void LastFmScrobblingBackend::initialize() {
         if (_sessionKey.isNull()) {
-            setState(ScrobblingProviderState::NeedAuthentication);
+            setState(ScrobblingBackendState::WaitingForUserCredentials);
+            emit needUserCredentials(_username, false);
         }
         else {
-            setState(ScrobblingProviderState::ReadyForScrobbling);
+            setState(ScrobblingBackendState::ReadyForScrobbling);
         }
     }
 
-    void LastFmScrobblingProvider::setSessionKey(const QString& sessionKey) {
+    void LastFmScrobblingBackend::authenticateWithCredentials(QString usernameOrEmail,
+                                                              QString password)
+    {
+        if (_username != usernameOrEmail) {
+            _username.clear();
+        }
+
+        if (state() != ScrobblingBackendState::NotInitialized
+                && state() != ScrobblingBackendState::WaitingForUserCredentials
+                && state() != ScrobblingBackendState::InvalidUserCredentials)
+        {
+            return; /* cannot authenticate now */
+        }
+
+        doGetMobileTokenCall(usernameOrEmail, password);
+    }
+
+    void LastFmScrobblingBackend::setUsername(const QString& username) {
+        if (_username == username) return; /* no change */
+
+        _username = username;
+    }
+
+    void LastFmScrobblingBackend::setSessionKey(const QString& sessionKey) {
         if (_sessionKey == sessionKey) return; /* no change */
         _sessionKey = sessionKey;
 
-        if (_sessionKey.isNull()) {
-            setState(ScrobblingProviderState::NeedAuthentication);
-        }
-        else {
-            if (state() == ScrobblingProviderState::NeedAuthentication) {
-                setState(ScrobblingProviderState::ReadyForScrobbling);
-            }
+        if (_sessionKey.isNull()) return;
+
+        if (state() == ScrobblingBackendState::WaitingForAuthenticationResult
+                || state() == ScrobblingBackendState::WaitingForUserCredentials)
+        {
+            setState(ScrobblingBackendState::ReadyForScrobbling);
         }
     }
 
-    void LastFmScrobblingProvider::doGetMobileTokenCall(const QString& username,
+    QString LastFmScrobblingBackend::username() const {
+        return _username;
+    }
+
+    QString LastFmScrobblingBackend::sessionKey() const {
+        return _sessionKey;
+    }
+
+    void LastFmScrobblingBackend::doGetMobileTokenCall(const QString& usernameOrEmail,
                                                         const QString& password)
     {
         QVector<QPair<QString, QString>> parameters;
         parameters << QPair<QString, QString>("method", "auth.getMobileSession");
         parameters << QPair<QString, QString>("api_key", apiKey);
         parameters << QPair<QString, QString>("password", password);
-        parameters << QPair<QString, QString>("username", username);
+        parameters << QPair<QString, QString>("username", usernameOrEmail);
 
         signAndSendPost(parameters);
     }
 
-    void LastFmScrobblingProvider::doScrobbleCall(QDateTime timestamp,
+    void LastFmScrobblingBackend::scrobbleTrack(QDateTime timestamp, QString const& title,
+                                              QString const& artist, QString const& album,
+                                              int trackDurationSeconds)
+    {
+        if (state() != ScrobblingBackendState::ReadyForScrobbling) return;
+
+        doScrobbleCall(timestamp, title, artist, album, trackDurationSeconds);
+        setState(ScrobblingBackendState::WaitingForScrobbleResult);
+    }
+
+    void LastFmScrobblingBackend::doScrobbleCall(QDateTime timestamp,
                                                   const QString& title,
                                                   const QString& artist,
                                                   const QString& album,
@@ -111,7 +152,7 @@ namespace PMP {
         signAndSendPost(parameters);
     }
 
-    QNetworkReply* LastFmScrobblingProvider::signAndSendPost(
+    QNetworkReply* LastFmScrobblingBackend::signAndSendPost(
                                               QVector<QPair<QString, QString>> parameters)
     {
         signCall(parameters);
@@ -121,7 +162,7 @@ namespace PMP {
 
             connect(
                 _networkAccessManager, &QNetworkAccessManager::finished,
-                this, &LastFmScrobblingProvider::requestFinished
+                this, &LastFmScrobblingBackend::requestFinished
             );
         }
 
@@ -143,7 +184,7 @@ namespace PMP {
         return _networkAccessManager->post(request, parametersString);
     }
 
-    void LastFmScrobblingProvider::requestFinished(QNetworkReply* reply) {        
+    void LastFmScrobblingBackend::requestFinished(QNetworkReply* reply) {
         auto replyData = reply->readAll();
         qDebug() << "Last.Fm reply received. Byte count:" << replyData.size();
 
@@ -182,7 +223,6 @@ namespace PMP {
 
             auto errorElement = lfmElement.firstChildElement("error");
             parseError(errorElement);
-
         }
         else {
             auto sessionNode = lfmElement.firstChildElement("session");
@@ -206,10 +246,10 @@ namespace PMP {
 
 
 
-        emit receivedAuthenticationReply();
+        //emit receivedAuthenticationReply();
     }
 
-    void LastFmScrobblingProvider::parseError(const QDomElement& errorElement) {
+    void LastFmScrobblingBackend::parseError(const QDomElement& errorElement) {
         if (errorElement.isNull()) return; /* gibberish */
 
         auto errorCodeText = errorElement.attribute("code");
@@ -223,7 +263,8 @@ namespace PMP {
 
         switch (errorCode) {
             case 4: /* authentication failed */
-                setState(ScrobblingProviderState::InvalidUserCredentials);
+                setState(ScrobblingBackendState::InvalidUserCredentials);
+                emit needUserCredentials(_username, true);
                 break;
 
             case 9: /* invalid session key, need to re-authenticate */
@@ -232,30 +273,30 @@ namespace PMP {
 
             case 11: case 16:
                 /* TODO: retry request later */
-                setState(ScrobblingProviderState::TemporarilyUnavailable);
+                setState(ScrobblingBackendState::TemporarilyUnavailable);
                 break;
 
             case 2: case 3: case 5: case 6: case 7: case 13: case 27:
                 /* these indicate a bug in creating the request */
-                setState(ScrobblingProviderState::PermanentFatalError);
+                setState(ScrobblingBackendState::PermanentFatalError);
                 break;
 
             case 10: case 26: /* invalid/suspended API key */
-                setState(ScrobblingProviderState::PermanentFatalError);
+                setState(ScrobblingBackendState::PermanentFatalError);
                 break;
 
             case 29: /* rate limit exceeded */
-                setState(ScrobblingProviderState::TemporarilyUnavailable);
+                setState(ScrobblingBackendState::TemporarilyUnavailable);
                 break;
 
             default:
                 /* unknown error code */
-                setState(ScrobblingProviderState::PermanentFatalError);
+                setState(ScrobblingBackendState::PermanentFatalError);
                 break;
         }
     }
 
-    void LastFmScrobblingProvider::parseScrobbles(const QDomElement& scrobblesElement) {
+    void LastFmScrobblingBackend::parseScrobbles(const QDomElement& scrobblesElement) {
         auto ignoredText = scrobblesElement.attribute("ignored");
         auto acceptedText = scrobblesElement.attribute("accepted");
 
@@ -299,6 +340,7 @@ namespace PMP {
             auto albumText = scrobbleElement.firstChildElement("album").text();
 
             qDebug() << "received:\n"
+                     << " timestamp: " << QString::number(timestampNumber) << "\n"
                      << " title:" << titleText << "\n"
                      << " artist:" << artistText << "\n"
                      << " album:" << albumText;
@@ -310,7 +352,7 @@ namespace PMP {
 
     }
 
-    void LastFmScrobblingProvider::signCall(QVector<QPair<QString, QString>>& parameters)
+    void LastFmScrobblingBackend::signCall(QVector<QPair<QString, QString>>& parameters)
     {
         std::sort(parameters.begin(), parameters.end());
 

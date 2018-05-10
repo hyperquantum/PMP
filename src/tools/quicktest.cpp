@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,7 @@
 #include "common/util.h"
 #include "common/version.h"
 
-#include "server/lastfmscrobblingprovider.h"
+#include "server/lastfmscrobblingbackend.h"
 
 #include <QCoreApplication>
 #include <QHostAddress>
@@ -57,12 +57,13 @@ int main(int argc, char *argv[]) {
     qDebug() << "SSL version string:" << QSslSocket::sslLibraryVersionString();
     //return 0;
 
-    auto lastFm = new PMP::LastFmScrobblingProvider();
+    auto lastFm = new PMP::LastFmScrobblingBackend();
 
+    /*
     QObject::connect(
-        lastFm, &PMP::LastFmScrobblingProvider::receivedAuthenticationReply,
+        lastFm, &PMP::LastFmScrobblingBackend::receivedAuthenticationReply,
         &app, &QCoreApplication::quit
-    );
+    );*/
 
     //lastFm->doGetMobileTokenCall("xxxxxxxxxxxxx", "xxxxxxxxxxxxxxxx");
 
