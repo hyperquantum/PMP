@@ -28,7 +28,9 @@
 class BackendMock : public PMP::ScrobblingBackend {
     Q_OBJECT
 public:
-    BackendMock();
+    BackendMock(bool requireAuthentication);
+
+    void setUserCredentials(QString username, QString password);
 
     int scrobbledSuccessfullyCount() const { return _scrobbledSuccessfullyCount; }
 
@@ -40,10 +42,14 @@ public slots:
                        int trackDurationSeconds = -1) override;
 
 private slots:
+    void pretendAuthenticationResultReceived();
     void pretendSuccessfullScrobble();
 
 private:
     int _scrobbledSuccessfullyCount;
+    QString _username;
+    QString _password;
+    bool _requireAuthentication;
 };
 
 class TrackToScrobbleMock : public PMP::TrackToScrobble {
@@ -84,5 +90,9 @@ class TestScrobbler : public QObject {
 private slots:
     void trivialScrobble();
     void multipleSimpleScrobbles();
+    void scrobbleWithAuthentication();
+
+private:
+    QDateTime makeDateTime(int year, int month, int day, int hours, int minutes);
 };
 #endif

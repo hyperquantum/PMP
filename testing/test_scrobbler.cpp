@@ -32,21 +32,45 @@ using namespace PMP;
 
 // ================================= BackendMock ================================= //
 
-BackendMock::BackendMock()
- : _scrobbledSuccessfullyCount(0)
+BackendMock::BackendMock(bool requireAuthentication)
+ : _scrobbledSuccessfullyCount(0), _requireAuthentication(requireAuthentication)
 {
-    qDebug() << "running BackendMock()";
+    qDebug() << "running BackendMock(" << requireAuthentication << ")";
 }
 
 void BackendMock::initialize() {
-    setState(ScrobblingBackendState::ReadyForScrobbling);
+    if (!_requireAuthentication) {
+        setState(ScrobblingBackendState::ReadyForScrobbling);
+        return;
+    }
+
+    setState(ScrobblingBackendState::WaitingForUserCredentials);
+}
+
+void BackendMock::setUserCredentials(QString username, QString password) {
+    _username = username;
+    _password = password;
+
+    QTimer::singleShot(10, this, SLOT(pretendAuthenticationResultReceived()));
+
+    setState(ScrobblingBackendState::WaitingForAuthenticationResult);
 }
 
 void BackendMock::scrobbleTrack(QDateTime timestamp, QString const& title,
                                 QString const& artist, QString const& album,
                                 int trackDurationSeconds)
 {
-    QTimer::singleShot(0, this, SLOT(pretendSuccessfullScrobble()));
+    if (state() != ScrobblingBackendState::ReadyForScrobbling)
+        return;
+
+    QTimer::singleShot(10, this, SLOT(pretendSuccessfullScrobble()));
+}
+
+void BackendMock::pretendAuthenticationResultReceived() {
+    if (_username == "CorrectUsername" && _password == "CorrectPassword")
+        setState(ScrobblingBackendState::ReadyForScrobbling);
+    else
+        setState(ScrobblingBackendState::InvalidUserCredentials);
 }
 
 void BackendMock::pretendSuccessfullScrobble() {
@@ -101,16 +125,13 @@ void TrackToScrobbleMock::cannotBeScrobbled() {
 
 void TestScrobbler::trivialScrobble() {
     DataProviderMock dataProvider;
-
-    auto track =
-        std::make_shared<TrackToScrobbleMock>(
-            QDateTime(QDate(2018, 4, 4), QTime(1, 30)), "Title", "Artist"
-        );
+    auto time = makeDateTime(2018, 4, 4, 1, 30);
+    auto track = std::make_shared<TrackToScrobbleMock>(time, "Title", "Artist");
     dataProvider.add(track);
 
     QVERIFY(!track->scrobbled());
 
-    auto backend = new BackendMock();
+    auto backend = new BackendMock(false);
     Scrobbler scrobbler(nullptr, &dataProvider, backend);
     scrobbler.wakeUp();
 
@@ -121,7 +142,7 @@ void TestScrobbler::trivialScrobble() {
 void TestScrobbler::multipleSimpleScrobbles() {
     DataProviderMock dataProvider;
 
-    QDateTime time(QDate(2018, 4, 9), QTime(23, 30));
+    auto time = makeDateTime(2018, 4, 9, 23, 30);
 
     QVector<std::shared_ptr<TrackToScrobbleMock>> tracks;
 
@@ -145,7 +166,7 @@ void TestScrobbler::multipleSimpleScrobbles() {
         QVERIFY(!track->scrobbled());
     }
 
-    auto backend = new BackendMock();
+    auto backend = new BackendMock(false);
     Scrobbler scrobbler(nullptr, &dataProvider, backend);
     scrobbler.wakeUp();
 
@@ -154,6 +175,30 @@ void TestScrobbler::multipleSimpleScrobbles() {
     }
 
     QCOMPARE(backend->scrobbledSuccessfullyCount(), 5);
+}
+
+void TestScrobbler::scrobbleWithAuthentication() {
+    DataProviderMock dataProvider;
+    auto time = makeDateTime(2018, 5, 12, 0, 52);
+    auto track = std::make_shared<TrackToScrobbleMock>(time, "Title", "Artist");
+    dataProvider.add(track);
+
+    QVERIFY(!track->scrobbled());
+
+    auto backend = new BackendMock(true);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    scrobbler.wakeUp();
+
+    QTRY_COMPARE(backend->state(), ScrobblingBackendState::WaitingForUserCredentials);
+
+    backend->setUserCredentials("CorrectUsername", "CorrectPassword");
+
+    QTRY_VERIFY(track->scrobbled());
+    QCOMPARE(backend->scrobbledSuccessfullyCount(), 1);
+}
+
+QDateTime TestScrobbler::makeDateTime(int year, int month, int day, int hours, int minutes) {
+    return QDateTime(QDate(year, month, day), QTime(hours, minutes));
 }
 
 QTEST_MAIN(TestScrobbler)
