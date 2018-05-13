@@ -832,6 +832,7 @@ namespace PMP {
                       : NetworkProtocol::createTrackStatusUnknownId();
 
             const FileHash* hash = track ? track->hash() : &emptyHash;
+            hash = hash ? hash : &emptyHash;
 
             NetworkUtil::append4Bytes(message, queueID);
             NetworkUtil::append2Bytes(message, trackStatus);
