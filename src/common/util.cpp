@@ -24,6 +24,7 @@
 #include <QAtomicInt>
 #include <QDateTime>
 #include <QtDebug>
+#include <QThread>
 
 namespace PMP {
 
@@ -45,6 +46,12 @@ namespace PMP {
 
         auto result = counterValue ^ clockValue;
         qDebug() << "Util::getRandomSeed returning" << result;
+
+        /* we want to avoid returning the same result twice by accident (if the clock
+         * advance and the counter difference cancel out each other), so we sleep a
+         * little bit */
+        QThread::msleep(8);
+
         return result;
     }
 

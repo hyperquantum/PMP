@@ -49,7 +49,14 @@ void TestUtil::getCopyrightLine() {
 void TestUtil::getRandomSeed() {
     auto seed1 = Util::getRandomSeed();
     auto seed2 = Util::getRandomSeed();
+    auto seed3 = Util::getRandomSeed();
+    auto seed4 = Util::getRandomSeed();
     QVERIFY(seed1 != seed2);
+    QVERIFY(seed1 != seed3);
+    QVERIFY(seed1 != seed4);
+    QVERIFY(seed2 != seed3);
+    QVERIFY(seed2 != seed4);
+    QVERIFY(seed3 != seed4);
 }
 
 QTEST_MAIN(TestUtil)
