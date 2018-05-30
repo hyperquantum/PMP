@@ -6,7 +6,7 @@ PLANNED NEXT
  - create Last.FM scrobbler  (but how/where are we going to keep user authentication data?)
 
 
-BUGS
+KNOWN BUGS
 
  - for some tracks we get the wrong length (caused by length estimation in TagLib)
  - when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
