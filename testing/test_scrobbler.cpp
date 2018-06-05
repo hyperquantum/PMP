@@ -33,13 +33,14 @@ using namespace PMP;
 // ================================= BackendMock ================================= //
 
 BackendMock::BackendMock(bool requireAuthentication)
- : _scrobbledSuccessfullyCount(0), _requireAuthentication(requireAuthentication)
+ : _scrobbledSuccessfullyCount(0), _requireAuthentication(requireAuthentication),
+   _haveApiToken(false), _apiTokenWillBeAcceptedByApi(false)
 {
     qDebug() << "running BackendMock(" << requireAuthentication << ")";
 }
 
 void BackendMock::initialize() {
-    if (!_requireAuthentication) {
+    if (!_requireAuthentication || _haveApiToken) {
         setState(ScrobblingBackendState::ReadyForScrobbling);
         return;
     }
@@ -56,12 +57,46 @@ void BackendMock::setUserCredentials(QString username, QString password) {
     setState(ScrobblingBackendState::WaitingForAuthenticationResult);
 }
 
+void BackendMock::setApiToken(bool willBeAcceptedByApi) {
+    _haveApiToken = true;
+    _apiTokenWillBeAcceptedByApi = willBeAcceptedByApi;
+
+    switch (state()) {
+        case ScrobblingBackendState::NotInitialized:
+            break;
+        case ScrobblingBackendState::WaitingForUserCredentials:
+        case ScrobblingBackendState::WaitingForAuthenticationResult:
+        case ScrobblingBackendState::InvalidUserCredentials:
+            setState(ScrobblingBackendState::ReadyForScrobbling);
+            break;
+        case ScrobblingBackendState::ReadyForScrobbling:
+        case ScrobblingBackendState::WaitingForScrobbleResult:
+            break;
+        case ScrobblingBackendState::TemporarilyUnavailable:
+        case ScrobblingBackendState::PermanentFatalError:
+            break;
+    }
+}
+
 void BackendMock::scrobbleTrack(QDateTime timestamp, QString const& title,
                                 QString const& artist, QString const& album,
                                 int trackDurationSeconds)
 {
     if (state() != ScrobblingBackendState::ReadyForScrobbling)
         return;
+
+    if (_haveApiToken && !_apiTokenWillBeAcceptedByApi) {
+        QTimer::singleShot(
+            10, this, SLOT(pretendScrobbleFailedBecauseTokenNoLongerValid())
+        );
+        return;
+    }
+
+    (void)timestamp;
+    (void)title;
+    (void)artist;
+    (void)album;
+    (void)trackDurationSeconds;
 
     QTimer::singleShot(10, this, SLOT(pretendSuccessfullScrobble()));
 }
@@ -76,6 +111,12 @@ void BackendMock::pretendAuthenticationResultReceived() {
 void BackendMock::pretendSuccessfullScrobble() {
     _scrobbledSuccessfullyCount++;
     emit gotScrobbleResult(ScrobbleResult::Success);
+}
+
+void BackendMock::pretendScrobbleFailedBecauseTokenNoLongerValid() {
+    _haveApiToken = false;
+    setState(ScrobblingBackendState::WaitingForUserCredentials);
+    emit gotScrobbleResult(ScrobbleResult::Error);
 }
 
 // ================================= DataProviderMock ================================= //
@@ -197,7 +238,34 @@ void TestScrobbler::scrobbleWithAuthentication() {
     QCOMPARE(backend->scrobbledSuccessfullyCount(), 1);
 }
 
-QDateTime TestScrobbler::makeDateTime(int year, int month, int day, int hours, int minutes) {
+void TestScrobbler::scrobbleWithTokenChangeAfterInvalidToken() {
+    DataProviderMock dataProvider;
+    auto time = makeDateTime(2018, 5, 25, 0, 16);
+    auto track = std::make_shared<TrackToScrobbleMock>(time, "Title", "Artist");
+    dataProvider.add(track);
+
+    QVERIFY(!track->scrobbled());
+
+    auto backend = new BackendMock(true);
+    backend->setApiToken(false); /* set an active, but invalid, token */
+    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    scrobbler.wakeUp();
+
+    /* first wait for the initialization to complete */
+    QTRY_COMPARE(backend->state(), ScrobblingBackendState::ReadyForScrobbling);
+
+    /* now wait for the backend to realize that the token is not valid */
+    QTRY_COMPARE(backend->state(), ScrobblingBackendState::WaitingForUserCredentials);
+
+    backend->setApiToken(true); /* set a valid token */
+
+    QTRY_VERIFY(track->scrobbled());
+    QCOMPARE(backend->scrobbledSuccessfullyCount(), 1);
+}
+
+QDateTime TestScrobbler::makeDateTime(int year, int month, int day,
+                                      int hours, int minutes)
+{
     return QDateTime(QDate(year, month, day), QTime(hours, minutes));
 }
 

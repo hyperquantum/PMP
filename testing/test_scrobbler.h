@@ -31,6 +31,7 @@ public:
     BackendMock(bool requireAuthentication);
 
     void setUserCredentials(QString username, QString password);
+    void setApiToken(bool willBeAcceptedByApi);
 
     int scrobbledSuccessfullyCount() const { return _scrobbledSuccessfullyCount; }
 
@@ -44,12 +45,15 @@ public slots:
 private slots:
     void pretendAuthenticationResultReceived();
     void pretendSuccessfullScrobble();
+    void pretendScrobbleFailedBecauseTokenNoLongerValid();
 
 private:
     int _scrobbledSuccessfullyCount;
     QString _username;
     QString _password;
     bool _requireAuthentication;
+    bool _haveApiToken;
+    bool _apiTokenWillBeAcceptedByApi;
 };
 
 class TrackToScrobbleMock : public PMP::TrackToScrobble {
@@ -91,6 +95,7 @@ private slots:
     void trivialScrobble();
     void multipleSimpleScrobbles();
     void scrobbleWithAuthentication();
+    void scrobbleWithTokenChangeAfterInvalidToken();
 
 private:
     QDateTime makeDateTime(int year, int month, int day, int hours, int minutes);

@@ -71,6 +71,7 @@ namespace PMP {
     }
 
     void Scrobbler::wakeUp() {
+        qDebug() << "Scrobbler::wakeUp() called";
         checkIfWeHaveSomethingToDo();
     }
 
