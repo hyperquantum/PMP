@@ -174,11 +174,11 @@ add_executable(PMP-GUI-Remote
 )
 
 # Qt dependencies for each executable
-qt5_use_modules(PMP-HashTool Core)
-qt5_use_modules(quicktest Core Multimedia Network Sql Xml)
-qt5_use_modules(PMP-Server Core Multimedia Network Sql Xml)
-qt5_use_modules(PMP-Cmd-Remote Core Network)
-qt5_use_modules(PMP-GUI-Remote Core Gui Network Widgets)
+target_link_libraries(PMP-HashTool Qt5::Core)
+target_link_libraries(quicktest Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
+target_link_libraries(PMP-Server Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
+target_link_libraries(PMP-Cmd-Remote Qt5::Core Qt5::Network)
+target_link_libraries(PMP-GUI-Remote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
 
 # Link executables to TagLib
 target_link_libraries(PMP-HashTool ${TAGLIB_LIBRARIES})

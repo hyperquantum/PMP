@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2016, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2018, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -33,6 +33,7 @@ find_package(Qt5Multimedia REQUIRED)
 find_package(Qt5Network REQUIRED)
 find_package(Qt5Sql REQUIRED)
 find_package(Qt5Widgets REQUIRED)
+find_package(Qt5Xml REQUIRED)
 
 pkg_check_modules(TAGLIB REQUIRED taglib>=1.11)
 

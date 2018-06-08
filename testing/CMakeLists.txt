@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License along
 # with PMP.  If not, see <http://www.gnu.org/licenses/>.
 
+find_package(Qt5Test REQUIRED)
+
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
 configure_file(${CMAKE_SOURCE_DIR}/src/common/version.h.in common/version.h)
@@ -26,7 +28,7 @@ add_executable(PMP_hash_test
     ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
     ${CMAKE_SOURCE_DIR}/src/common/tagdata.cpp
 )
-qt5_use_modules(PMP_hash_test Core)
+target_link_libraries(PMP_hash_test Qt5::Core)
 target_link_libraries(PMP_hash_test ${TAGLIB_LIBRARIES})
 
 set(HASHTEST_PATH ${CMAKE_SOURCE_DIR}/testing)
@@ -66,7 +68,7 @@ add_executable(test_util test_util.cpp
     ${PMP_TestUtil_MOCS}
     ${CMAKE_SOURCE_DIR}/src/common/util.cpp
 )
-qt5_use_modules(test_util Core Test)
+target_link_libraries(test_util Qt5::Core Qt5::Test)
 add_test(test_util test_util)
 
 
@@ -80,5 +82,5 @@ add_executable(test_scrobbler test_scrobbler.cpp
     ${CMAKE_SOURCE_DIR}/src/server/scrobbler.cpp
     ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.cpp
 )
-qt5_use_modules(test_scrobbler Core Test)
+target_link_libraries(test_scrobbler Qt5::Core Qt5::Test)
 add_test(test_scrobbler test_scrobbler)
