@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -246,7 +246,7 @@ namespace PMP {
         QDir dir(tempDir);
         if (!dir.exists()) { return; }
 
-        QDateTime threshhold = QDateTime(QDate::currentDate().addDays(-20));
+        auto threshhold = QDateTime(QDate::currentDate().addDays(-10));
 
         auto files =
             dir.entryInfoList(
@@ -257,12 +257,14 @@ namespace PMP {
             if (file.lastModified() >= threshhold) continue;
             if (!FileAnalyzer::isExtensionSupported(file.suffix())) continue;
 
-            qDebug() << "Preloader: deleting old file:" << file.fileName();
+            qDebug() << "deleting old file from preload-cache:" << file.fileName();
             QFile::remove(file.absoluteFilePath());
         }
     }
 
     void Preloader::queueEntryAdded(quint32 offset, quint32 queueID) {
+        (void)queueID;
+
         if (offset >= PRELOAD_RANGE) return;
 
         scheduleCheckForTracksToPreload();
@@ -279,6 +281,8 @@ namespace PMP {
 
     void Preloader::queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID)
     {
+        (void)queueID;
+
         if (toOffset >= PRELOAD_RANGE && fromOffset >= PRELOAD_RANGE)
             return;
 
@@ -289,13 +293,13 @@ namespace PMP {
         if (_preloadCheckTimerRunning) return;
 
         _preloadCheckTimerRunning = true;
-        qDebug() << "Preloader: preload check triggered";
+        qDebug() << "preload check triggered";
         QTimer::singleShot(250, this, SLOT(checkForTracksToPreload()));
     }
 
     void Preloader::checkForTracksToPreload() {
         _preloadCheckTimerRunning = false;
-        qDebug() << "Preloader: running preload check";
+        qDebug() << "running preload check";
 
         QList<QueueEntry*> queueEntries = _queue->entries(0, PRELOAD_RANGE);
         Q_FOREACH(QueueEntry* entry, queueEntries) {
@@ -306,18 +310,26 @@ namespace PMP {
             auto id = entry->queueID();
             auto track = _tracksByQueueID.value(id, nullptr);
 
-            if (!track) {
-                qDebug() << "Preloader: putting QID" << id
-                         << "on the list for preloading";
+            if (track && track->status() == PreloadTrack::Preloaded) {
+                if (QFileInfo::exists(track->getCachedFile()))
+                    continue; /* preloaded file is present */
 
-                track =
-                    new PreloadTrack(
-                        hash ? *hash : FileHash(), filename ? *filename : ""
-                    );
-
-                _tracksByQueueID.insert(id, track);
-                _tracksToPreload.append(id);
+                /* file has gone missing (it was in a TEMP folder after all) */
+                qDebug() << "cached file has gone missing; QID:" << id;
+                _tracksByQueueID.remove(id);
+                delete track;
+                track = nullptr;
             }
+
+            if (track) continue;
+
+            qDebug() << "putting QID" << id << "on the list for preloading";
+
+            track =
+                new PreloadTrack(hash ? *hash : FileHash(), filename ? *filename : "");
+
+            _tracksByQueueID.insert(id, track);
+            _tracksToPreload.append(id);
         }
 
         checkForJobsToStart();
@@ -337,7 +349,7 @@ namespace PMP {
             if (!track) continue; /* already removed */
             if (track->status() != PreloadTrack::Status::Initial) continue;
 
-            qDebug() << "Preloader: starting load task for QID" << id;
+            qDebug() << "starting track preload task for QID" << id;
 
             track->setToLoading();
 
@@ -364,8 +376,8 @@ namespace PMP {
 
         _cacheExpirationCheckTimerRunning = true;
 
-        qDebug() << "Preloader: cache expiration check triggered";
-        QTimer::singleShot(250, this, SLOT(checkForCacheExpiration()));
+        qDebug() << "preload-cache expiration check triggered";
+        QTimer::singleShot(500, this, SLOT(checkForCacheExpiration()));
     }
 
     void Preloader::checkForCacheExpiration() {
@@ -378,11 +390,10 @@ namespace PMP {
             if (id == _doNotDeleteQueueID) continue;
 
             auto track = _tracksByQueueID.value(id, nullptr);
-            if (track && track->status() == PreloadTrack::Status::Processing) {
+            if (track && track->status() == PreloadTrack::Status::Processing)
                 continue; /* we'll have to wait */
-            }
 
-            qDebug() << "Preloader: deleting cache info (if any) for QID" << id;
+            qDebug() << "deleting preload-cache info (if any) for QID" << id;
 
             max--;
             _tracksRemoved.removeAt(i);
@@ -403,7 +414,7 @@ namespace PMP {
     }
 
     void Preloader::preloadFailed(uint queueID, int reason) {
-        qDebug() << "Preloader: job FAILED for QID" << queueID << "with reason" << reason;
+        qDebug() << "preload job FAILED for QID" << queueID << "with reason" << reason;
 
         _jobsRunning--;
 
@@ -414,9 +425,8 @@ namespace PMP {
     }
 
     void Preloader::preloadFinished(uint queueID, QString cacheFile) {
-        qDebug() << "Preloader: job finished for QID" << queueID;
-        if (queueID % 10 == 1)
-            qDebug() << "Preloader:" << queueID << "saved as" << cacheFile;
+        qDebug() << "preload job finished for QID" << queueID
+                 << ": saved as" << cacheFile;
 
         _jobsRunning--;
 
@@ -425,8 +435,8 @@ namespace PMP {
             track->setToLoaded(cacheFile);
         }
         else {
-            qDebug() << "Preloader: apparently"
-                     << queueID << "is no longer needed, discarding";
+            qDebug() << "QID" << queueID
+                     << "seems to be no longer needed, discarding cache file";
             QFile::remove(cacheFile);
         }
 
