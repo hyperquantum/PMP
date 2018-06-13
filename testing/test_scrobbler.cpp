@@ -238,6 +238,23 @@ void TestScrobbler::scrobbleWithAuthentication() {
     QCOMPARE(backend->scrobbledSuccessfullyCount(), 1);
 }
 
+void TestScrobbler::scrobbleWithExistingValidToken() {
+    DataProviderMock dataProvider;
+    auto time = makeDateTime(2018, 5, 25, 0, 16);
+    auto track = std::make_shared<TrackToScrobbleMock>(time, "Title", "Artist");
+    dataProvider.add(track);
+
+    QVERIFY(!track->scrobbled());
+
+    auto backend = new BackendMock(true);
+    backend->setApiToken(true); /* set an active, valid token */
+    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    scrobbler.wakeUp();
+
+    QTRY_VERIFY(track->scrobbled());
+    QCOMPARE(backend->scrobbledSuccessfullyCount(), 1);
+}
+
 void TestScrobbler::scrobbleWithTokenChangeAfterInvalidToken() {
     DataProviderMock dataProvider;
     auto time = makeDateTime(2018, 5, 25, 0, 16);

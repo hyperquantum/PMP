@@ -95,6 +95,7 @@ private slots:
     void trivialScrobble();
     void multipleSimpleScrobbles();
     void scrobbleWithAuthentication();
+    void scrobbleWithExistingValidToken();
     void scrobbleWithTokenChangeAfterInvalidToken();
 
 private:
