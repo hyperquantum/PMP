@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -292,6 +292,9 @@ namespace PMP {
 
             if (entry->checkValidFilename(*_resolver, true, &filename)) {
                 next = entry;
+                qWarning() << "QID" << entry->queueID()
+                           << "was not preloaded; using unpreprocessed file that may be "
+                              "slow to access or may fail to play";
                 break;
             }
 
