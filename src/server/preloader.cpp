@@ -231,7 +231,15 @@ namespace PMP {
         auto track = _tracksByQueueID.value(queueID, nullptr);
         if (!track) return "";
 
-        return track->getCachedFile();
+        auto filename = track->getCachedFile();
+        if (filename.isEmpty() || QFileInfo::exists(filename))
+            return filename;
+
+        /* the file that was preloaded has disappeared */
+        _tracksByQueueID.remove(queueID);
+        delete track;
+
+        return "";
     }
 
     void Preloader::lockNone() {
