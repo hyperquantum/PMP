@@ -66,9 +66,9 @@ namespace PMP {
     Generator::Generator(Queue* queue, Resolver* resolver, History* history)
      : _randomEngine(Util::getRandomSeed()), _currentTrack(nullptr),
        _queue(queue), _resolver(resolver), _history(history),
-       _enabled(false), _refillPending(false),
-       _upcomingRuntimeSeconds(0), _upcomingTimer(new QTimer(this)),
-       _noRepetitionSpan(60 * 60 /* one hour */), _userPlayingFor(0)
+       _upcomingTimer(new QTimer(this)), _upcomingRuntimeSeconds(0),
+       _noRepetitionSpan(60 * 60 /* one hour */), _userPlayingFor(0),
+       _enabled(false), _refillPending(false)
     {
         connect(
             _queue, &Queue::entryRemoved,

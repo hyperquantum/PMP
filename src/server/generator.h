@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -93,13 +93,13 @@ namespace PMP {
         Queue* _queue;
         Resolver* _resolver;
         History* _history;
-        bool _enabled;
-        bool _refillPending;
         QQueue<Candidate*> _upcoming;
-        uint _upcomingRuntimeSeconds;
         QTimer* _upcomingTimer;
+        uint _upcomingRuntimeSeconds;
         int _noRepetitionSpan;
         quint32 _userPlayingFor;
+        bool _enabled;
+        bool _refillPending;
     };
 }
 #endif
