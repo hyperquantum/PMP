@@ -326,9 +326,9 @@ namespace PMP {
             /* check occurrence in 'now playing' */
             if (ok && nonRepetitionSpan < _noRepetitionSpan) {
                 QueueEntry const* current = _currentTrack;
-                if (current != 0) {
+                if (current) {
                     FileHash const* currentHash = current->hash();
-                    if (currentHash != 0 && c->hash() == *currentHash) {
+                    if (currentHash && c->hash() == *currentHash) {
                         ok = false;
                     }
                 }
@@ -365,7 +365,7 @@ namespace PMP {
             delete c;
         }
 
-        if ((uint)_upcoming.length() < maximalUpcomingCount
+        if (uint(_upcoming.length()) < maximalUpcomingCount
             && !_upcomingTimer->isActive())
         {
             _upcomingTimer->start(upcomingTimerFreqMs);
@@ -385,7 +385,7 @@ namespace PMP {
 
         /* get audio info */
         const AudioData& audioData = _resolver->findAudioData(hash);
-        int msLength = audioData.trackLengthMilliseconds();
+        auto msLength = audioData.trackLengthMilliseconds();
 
         /* is it a real track, not a short sound file? */
         if (msLength < 15000 && msLength >= 0) return false;
@@ -412,7 +412,7 @@ namespace PMP {
 
         /* save length if known */
         if (msLength >= 0)
-            candidate->setLengthMilliseconds(msLength);
+            candidate->setLengthMilliseconds(uint(msLength));
 
         return true;
     }
