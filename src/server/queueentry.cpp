@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -78,7 +78,7 @@ namespace PMP {
     }
 
     FileHash const* QueueEntry::hash() const {
-        if (_hash.empty()) { return 0; }
+        if (_hash.empty()) { return nullptr; }
 
         return &_hash;
     }
@@ -113,7 +113,7 @@ namespace PMP {
             return &_filename;
         }
 
-        return 0;
+        return nullptr;
     }
 
     bool QueueEntry::checkValidFilename(Resolver& resolver, bool fast,
@@ -161,7 +161,7 @@ namespace PMP {
 
         /* we don't have a valid filename */
 
-        if (fileHash == 0) {
+        if (!fileHash) {
             qDebug() << " no hash, cannot get filename";
             return false;
         }
@@ -202,7 +202,7 @@ namespace PMP {
         }
     }
 
-    quint64 QueueEntry::lengthInMilliseconds() const {
+    qint64 QueueEntry::lengthInMilliseconds() const {
         return _audioInfo.trackLengthMilliseconds();
     }
 

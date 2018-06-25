@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -64,7 +64,7 @@ namespace PMP {
     /* ========================== Generator ========================== */
 
     Generator::Generator(Queue* queue, Resolver* resolver, History* history)
-     : _randomEngine(Util::getRandomSeed()), _currentTrack(0),
+     : _randomEngine(Util::getRandomSeed()), _currentTrack(nullptr),
        _queue(queue), _resolver(resolver), _history(history),
        _enabled(false), _refillPending(false),
        _upcomingRuntimeSeconds(0), _upcomingTimer(new QTimer(this)),
@@ -140,7 +140,7 @@ namespace PMP {
     }
 
     void Generator::requestQueueExpansion() {
-        if ((uint)_upcoming.size() < minimalUpcomingCount) {
+        if (_upcoming.size() < minimalUpcomingCount) {
             qDebug() << "Generator: no queue expansion because upcoming buffer is low";
             return;
         }
@@ -170,9 +170,9 @@ namespace PMP {
         _hashesInSource.insert(hash);
 
         /* put it at a random index in the source list */
-        unsigned endIndex = _hashesSource.size();
-        std::uniform_int_distribution<unsigned> range(0, endIndex);
-        unsigned randomIndex = range(_randomEngine);
+        int endIndex = _hashesSource.size();
+        std::uniform_int_distribution<int> range(0, endIndex);
+        int randomIndex = range(_randomEngine);
 
         /* Avoid shifting the list with 'insert()'; we append and then use swap.
            We can do this because the list is in random order anyway. */
@@ -189,6 +189,7 @@ namespace PMP {
 
            We don't remove it from the spent list, because doing that could make the track
            reappear in the source too soon if it becomes available again. */
+        (void)hash;
     }
 
     void Generator::requestQueueRefill() {
@@ -198,8 +199,8 @@ namespace PMP {
     }
 
     quint16 Generator::getRandomPermillage() {
-        std::uniform_int_distribution<unsigned> range(0, 1000);
-        return range(_randomEngine);
+        std::uniform_int_distribution<int> range(0, 1000);
+        return quint16(range(_randomEngine));
     }
 
     FileHash Generator::getNextRandomHash() {

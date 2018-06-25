@@ -43,19 +43,19 @@ namespace PMP {
             QueueEntry* entry = _queue[i];
             if (!entry->isTrack()) continue;
 
-            if (entry->hash() == 0) {
+            if (entry->hash() == nullptr) {
                 qDebug() << "Queue: need to calculate hash for queue index" << (i + 1);
                 operationsDone++;
                 if (!entry->checkHash(*_resolver)) continue; /* check next track */
             }
 
             QString const* filename = entry->filename();
-            if (filename != 0 && !_resolver->pathStillValid(*entry->hash(), *filename)) {
+            if (filename && !_resolver->pathStillValid(*entry->hash(), *filename)) {
                 qDebug() << "Queue: filename no longer valid for queue index" << (i + 1);
-                filename = 0;
+                filename = nullptr;
             }
 
-            if (filename == 0) {
+            if (!filename) {
                 int& backoff = entry->fileFinderBackoff();
                 if (backoff > 0) {
                     backoff--;
@@ -94,7 +94,7 @@ namespace PMP {
     }
 
     uint Queue::length() const {
-        return _queue.length();
+        return uint(_queue.length());
     }
 
     uint Queue::getNextQueueID() {
@@ -102,7 +102,7 @@ namespace PMP {
     }
 
     void Queue::trim(uint length) {
-        while ((uint)_queue.length() > length) {
+        while (uint(_queue.length()) > length) {
             removeAtIndex(_queue.length() - 1);
         }
     }
@@ -134,7 +134,7 @@ namespace PMP {
 
     QueueEntry* Queue::insertAtIndex(quint32 index, const FileHash& hash)
     {
-        if (index > (uint)_queue.size()) return nullptr;
+        if (index > uint(_queue.size())) return nullptr;
 
         auto entry = new QueueEntry(this, hash);
         insertAtIndex(index, entry);
@@ -149,7 +149,7 @@ namespace PMP {
         _idLookup.insert(entry->queueID(), entry);
         _queue.enqueue(entry);
 
-        emit entryAdded(_queue.size() - 1, entry->queueID());
+        emit entryAdded(uint(_queue.size()) - 1, entry->queueID());
     }
 
     void Queue::insertAtFront(QueueEntry* entry) {
@@ -169,13 +169,13 @@ namespace PMP {
 
         entry->markAsNotNewAnymore();
         _idLookup.insert(entry->queueID(), entry);
-        _queue.insert((int)index, entry);
+        _queue.insert(int(index), entry);
 
         emit entryAdded(index, entry->queueID());
     }
 
     QueueEntry* Queue::dequeue() {
-        if (_queue.empty()) { return 0; }
+        if (_queue.empty()) { return nullptr; }
         QueueEntry* entry = _queue.dequeue();
 
         emit entryRemoved(0, entry->queueID());
@@ -246,7 +246,7 @@ namespace PMP {
 
     QueueEntry* Queue::lookup(quint32 queueID) {
         QHash<quint32, QueueEntry*>::iterator it = _idLookup.find(queueID);
-        if (it == _idLookup.end()) { return 0; }
+        if (it == _idLookup.end()) { return nullptr; }
 
         return it.value();
     }
@@ -299,13 +299,13 @@ namespace PMP {
             QueueEntry* entry = _queue[i];
             if (!entry->isTrack()) continue;
 
-            if (entry->hash() == 0) {
+            if (entry->hash() == nullptr) {
                 /* we don't know the track's hash yet. We need to calculate it first */
                 qDebug() << "Queue::checkPotentialRepetitionByAdd:"
                          << "need to calculate hash first, for QID" << entry->queueID();
                 entry->checkHash(*_resolver);
 
-                if (entry->hash() == 0) {
+                if (entry->hash() == nullptr) {
                     qDebug() << "PROBLEM: failed calculating hash of QID"
                              << entry->queueID();
                     /* could not calculate hash, so let's pray that this is a different
@@ -317,7 +317,7 @@ namespace PMP {
             const FileHash& entryHash = *entry->hash();
 
             if (entryHash == hash) {
-                if (nonRepetitionSpan != 0) { *nonRepetitionSpan = span; }
+                if (nonRepetitionSpan) { *nonRepetitionSpan = span; }
                 return true; /* potential repetition */
             }
 
@@ -330,7 +330,7 @@ namespace PMP {
             }
         }
 
-        if (nonRepetitionSpan != 0) { *nonRepetitionSpan = span; }
+        if (nonRepetitionSpan) { *nonRepetitionSpan = span; }
         return false;
     }
 

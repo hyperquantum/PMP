@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -60,13 +60,14 @@ namespace PMP {
 
         void setFilename(QString const& filename);
         QString const* filename() const;
-        bool checkValidFilename(Resolver& resolver, bool fast, QString* outFilename = 0);
+        bool checkValidFilename(Resolver& resolver, bool fast,
+                                QString* outFilename = nullptr);
 
         void checkAudioData(Resolver& resolver);
         void checkTrackData(Resolver& resolver);
 
         /** Length in milliseconds. Is negative when unknown. */
-        quint64 lengthInMilliseconds() const;
+        qint64 lengthInMilliseconds() const;
 
         QString artist() const;
         QString title() const;

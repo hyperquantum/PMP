@@ -38,9 +38,9 @@ namespace PMP {
          * the system time and an incrementing counter instead. */
 
         static QAtomicInt counter;
-        unsigned counterValue = counter.fetchAndAddOrdered(1);
+        auto counterValue = unsigned(counter.fetchAndAddOrdered(1));
 
-        unsigned clockValue = (quint64)QDateTime::currentMSecsSinceEpoch() & 0xFFFFFFFFu;
+        unsigned clockValue = quint64(QDateTime::currentMSecsSinceEpoch()) & 0xFFFFFFFFu;
 
         //qDebug() << "counterValue:" << counterValue << "  clockValue:" << clockValue;
 

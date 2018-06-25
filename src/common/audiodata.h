@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,9 +44,9 @@ namespace PMP {
         void setFormat(FileFormat format) { _format = format; }
 
         qint64 trackLengthMilliseconds() const { return _trackLengthMilliseconds; }
-        int trackLengthSeconds() const { return _trackLengthMilliseconds / 1000; }
+        int trackLengthSeconds() const { return int(_trackLengthMilliseconds / 1000); }
 
-        void setTrackLengthMilliseconds(quint64 length) {
+        void setTrackLengthMilliseconds(qint64 length) {
             _trackLengthMilliseconds = length;
         }
 

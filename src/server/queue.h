@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,7 +47,7 @@ namespace PMP {
 
         bool checkPotentialRepetitionByAdd(const FileHash& hash,
                                            int repetitionAvoidanceSeconds,
-                                           int* nonRepetitionSpan = 0) const;
+                                           int* nonRepetitionSpan = nullptr) const;
 
         uint getNextQueueID();
 

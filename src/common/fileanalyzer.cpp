@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -46,7 +46,7 @@ namespace PMP {
     FileAnalyzer::FileAnalyzer(const QByteArray& fileContents,
                                const QString& fileExtension)
      : _extension(getExtension(fileExtension)),
-       _fileContents(fileContents.data(), fileContents.length()),
+       _fileContents(fileContents.data(), uint(fileContents.length())),
        _haveReadFile(true), _error(false), _analyzed(false)
     {
         _error |= _extension == Extension::None;
@@ -70,7 +70,7 @@ namespace PMP {
             }
 
             QByteArray contents = _file.readAll();
-            _fileContents.setData(contents.data(), contents.length());
+            _fileContents.setData(contents.data(), uint(contents.length()));
             _haveReadFile = true;
             if (_fileContents.isEmpty()) {
                 _error = true;
@@ -145,7 +145,7 @@ namespace PMP {
 
         /* strip the ID3v2 tag because DirectShow chokes on ID3v2.4 */
 
-        TagLib::ByteVector scratch(fileContents.data(), fileContents.length());
+        TagLib::ByteVector scratch(fileContents.data(), uint(fileContents.length()));
         TagLib::ByteVectorStream stream(scratch);
         TagLib::MPEG::File tagFile(&stream, TagLib::ID3v2::FrameFactory::instance());
         if (!tagFile.isValid()) {
@@ -155,7 +155,7 @@ namespace PMP {
         tagFile.strip(TagLib::MPEG::File::ID3v2); /* strip the ID3v2 */
         scratch = *stream.data(); /* get the stripped file contents */
 
-        QByteArray strippedData(scratch.data(), scratch.size());
+        QByteArray strippedData(scratch.data(), int(scratch.size()));
         fileContents = strippedData;
 
         return true; /* success */
@@ -185,10 +185,10 @@ namespace PMP {
         uint size = data.size();
 
         QCryptographicHash md5Hasher(QCryptographicHash::Md5);
-        md5Hasher.addData(data.data(), size);
+        md5Hasher.addData(data.data(), int(size));
 
         QCryptographicHash sha1Hasher(QCryptographicHash::Sha1);
-        sha1Hasher.addData(data.data(), size);
+        sha1Hasher.addData(data.data(), int(size));
 
         return FileHash(size, sha1Hasher.result(), md5Hasher.result());
     }
@@ -232,9 +232,9 @@ namespace PMP {
         size--; /* prevent out of bounds from checking the second byte */
 
         while (!(position >= size
-               || data[position] != 0xFFu
-               || data[position + 1] == 0xFFu
-               || (data[position + 1] & 0xE0u) != 0xE0u))
+               || data[int(position)] != char(0xFFu)
+               || data[int(position + 1)] == char(0xFFu)
+               || (data[int(position + 1)] & char(0xE0u)) != char(0xE0u)))
         {
             position++;
         }
@@ -250,9 +250,9 @@ namespace PMP {
 
         do {
             position--;
-            if (data[position] == 0xFFu
-                && data[position + 1] != 0xFFu
-                && (data[position + 1] & 0xE0u) == 0xE0u)
+            if (data[int(position)] == char(0xFFu)
+                && data[int(position + 1)] != char(0xFFu)
+                && (data[int(position + 1)] & char(0xE0u)) == char(0xE0u))
             {
                 return true;
             }
@@ -370,14 +370,14 @@ namespace PMP {
             unsigned int blockSize = blockHeader.toUInt(1u, 3u);
 
             /* skip the current metadata block */
-            stream.seek(blockSize, TagLib::ByteVectorStream::Position::Current);
+            stream.seek(long(blockSize), TagLib::ByteVectorStream::Position::Current);
             if (stream.tell() >= stream.length()) return false;
 
             if (lastBlockFlag) break;
         }
 
         auto audioDataStartPosition = stream.tell();
-        stream.removeBlock(0, audioDataStartPosition);
+        stream.removeBlock(0, ulong(audioDataStartPosition));
 
         /* save modifications to parameter */
         flacData = *stream.data();

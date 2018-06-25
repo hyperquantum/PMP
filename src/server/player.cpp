@@ -31,7 +31,7 @@ namespace PMP {
      : QObject(parent), _resolver(resolver),
         _player(new QMediaPlayer(this)),
         _queue(resolver), _preloader(nullptr, &_queue, resolver),
-        _nowPlaying(0), _playPosition(0), _maxPosReachedInCurrent(0),
+        _nowPlaying(nullptr), _playPosition(0), _maxPosReachedInCurrent(0),
         _seekHappenedInCurrent(false),
         _state(PlayerState::Stopped), _transitioningToNextTrack(false),
         _userPlayingFor(0)
@@ -75,7 +75,7 @@ namespace PMP {
     void Player::changeState(PlayerState state) {
         if (_state == state) return;
 
-        qDebug() << "Player: state changed from" << (int)_state << "to" << (int)state;
+        qDebug() << "Player: state changed from" << int(_state) << "to" << int(state);
         _state = state;
         emit stateChanged(state);
     }
@@ -86,7 +86,7 @@ namespace PMP {
 
     uint Player::nowPlayingQID() const {
         QueueEntry* entry = _nowPlaying;
-        return (entry == 0) ? 0 : entry->queueID();
+        return entry ? entry->queueID() : 0;
     }
 
     qint64 Player::playPosition() const {
@@ -249,8 +249,8 @@ namespace PMP {
     void Player::internalDurationChanged(qint64 duration) {
         if (_nowPlaying == nullptr) return;
 
-        int previouslyKnownLength = _nowPlaying->lengthInMilliseconds();
-        int lengthFromPlayer = _player->duration();
+        auto previouslyKnownLength = _nowPlaying->lengthInMilliseconds();
+        auto lengthFromPlayer = _player->duration();
 
         if (lengthFromPlayer <= 0) {
             qDebug() << "Player: don't know the actual track length yet";
@@ -273,7 +273,7 @@ namespace PMP {
         uint oldQueueLength = _queue.length();
 
         /* find next track to play */
-        QueueEntry* next = 0;
+        QueueEntry* next = nullptr;
         QString filename;
         while (!_queue.empty()) {
             QueueEntry* entry = _queue.dequeue();
@@ -303,7 +303,7 @@ namespace PMP {
             addToHistory(entry, 0, true, false); /* register track as not played */
         }
 
-        if (next != 0) {
+        if (next) {
             _transitioningToNextTrack = true;
             _nowPlaying = next;
             _playPosition = 0;
@@ -337,12 +337,12 @@ namespace PMP {
         _player->stop();
         _preloader.lockNone();
 
-        if (oldNowPlaying != 0 ) {
-            _nowPlaying = 0;
+        if (oldNowPlaying) {
+            _nowPlaying = nullptr;
             _playPosition = 0;
             _maxPosReachedInCurrent = 0;
             _seekHappenedInCurrent = false;
-            emit currentTrackChanged(0);
+            emit currentTrackChanged(nullptr);
         }
 
         if (_queue.empty() && oldQueueLength > 0) {
@@ -418,9 +418,9 @@ namespace PMP {
                                      bool seeked)
     {
         if (seeked) return -1;
-        if (track == 0) return -2;
+        if (!track) return -2;
 
-        int msLength = track->lengthInMilliseconds();
+        auto msLength = track->lengthInMilliseconds();
         if (msLength < 0) return -3;
 
         return qBound(0, int(positionReached * 1000 / msLength), 1000);
