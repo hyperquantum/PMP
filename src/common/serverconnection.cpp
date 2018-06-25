@@ -1728,7 +1728,8 @@ namespace PMP {
 
     SimplePlayerControllerImpl::SimplePlayerControllerImpl(ServerConnection* connection)
      : QObject(connection),
-       _connection(connection), _state(ServerConnection::UnknownState), _queueLength(0)
+       _connection(connection), _state(ServerConnection::UnknownState), _queueLength(0),
+       _trackNowPlaying(0), _trackJustSkipped(0)
     {
         connect(
             _connection, &ServerConnection::receivedPlayerState,
@@ -1739,8 +1740,10 @@ namespace PMP {
     void SimplePlayerControllerImpl::receivedPlayerState(int state, quint8 volume,
                 quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition)
     {
-        _state = (ServerConnection::PlayState)state;
+        (void)nowPlayingPosition;
+        _state = ServerConnection::PlayState(state);
         _queueLength = queueLength;
+        _trackNowPlaying = nowPlayingQID;
     }
 
     void SimplePlayerControllerImpl::play() {
@@ -1752,6 +1755,7 @@ namespace PMP {
     }
 
     void SimplePlayerControllerImpl::skip() {
+        _trackJustSkipped = _trackNowPlaying;
         _connection->skip();
     }
 
@@ -1766,8 +1770,10 @@ namespace PMP {
     }
 
     bool SimplePlayerControllerImpl::canSkip() {
-        return _state == ServerConnection::Playing
-            || _state == ServerConnection::Paused;
+        return
+            _trackNowPlaying != _trackJustSkipped
+            && (_state == ServerConnection::Playing
+                || _state == ServerConnection::Paused);
     }
 
 }
