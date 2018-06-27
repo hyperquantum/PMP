@@ -175,6 +175,8 @@ namespace PMP {
     void QueueEntryInfoFetcher::receivedQueueEntryHash(quint32 queueID,
                                                        QueueEntryType type, FileHash hash)
     {
+        qDebug() << "received queue entry hash for QID" << queueID;
+
         _hashRequestsSent.remove(queueID);
 
         QueueEntryInfo*& info = _entries[queueID];
@@ -197,6 +199,8 @@ namespace PMP {
                                                   int lengthInSeconds,
                                                   QString title, QString artist)
     {
+        qDebug() << "received queue entry info for QID" << queueID;
+
         _infoRequestsSent.remove(queueID);
 
         QueueEntryInfo*& info = _entries[queueID];
@@ -227,6 +231,8 @@ namespace PMP {
     void QueueEntryInfoFetcher::receivedPossibleFilenames(quint32 queueID,
                                                           QList<QString> names)
     {
+        qDebug() << "received possible filenames for QID" << queueID;
+
         QueueEntryInfo*& info = _entries[queueID];
 
         if (!info) {
@@ -269,6 +275,9 @@ namespace PMP {
     }
 
     void QueueEntryInfoFetcher::entriesReceived(int index, QList<quint32> entries) {
+        qDebug() << "received QID numbers; index=" << index
+                 << "; count=" << entries.size();
+
         if (index < initialQueueFetchLength) {
             QList<quint32> IDs;
             Q_FOREACH(quint32 entry, entries) {
@@ -281,6 +290,7 @@ namespace PMP {
                 _hashRequestsSent << entry;
             }
 
+            qDebug() << "automatically requesting info/hash for" << IDs.size() << "QIDs";
             _connection->sendQueueEntryInfoRequest(IDs);
             _connection->sendQueueEntryHashRequest(IDs);
         }

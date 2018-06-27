@@ -19,6 +19,8 @@
 
 #include "networkprotocol.h"
 
+#include "common/util.h"
+
 #include "filehash.h"
 #include "networkutil.h"
 
@@ -137,7 +139,12 @@ namespace PMP {
         return QueueEntryType::Unknown;
     }
 
-    void NetworkProtocol::appendHash(QByteArray &buffer, const FileHash &hash) {
+    void NetworkProtocol::appendHash(QByteArray& buffer, const FileHash& hash) {
+        if (hash.empty()) {
+            buffer += Util::generateZeroedMemory(FILEHASH_BYTECOUNT);
+            return;
+        }
+
         NetworkUtil::append8Bytes(buffer, hash.length());
         buffer += hash.SHA1();
         buffer += hash.MD5();
@@ -145,7 +152,7 @@ namespace PMP {
     }
 
     FileHash NetworkProtocol::getHash(const QByteArray& buffer, uint position, bool* ok) {
-        if ((uint)buffer.size() - (uint)FILEHASH_BYTECOUNT < position) {
+        if (uint(buffer.size()) - uint(FILEHASH_BYTECOUNT) < position) {
             /* not enough bytes to read */
             qDebug() << "NetworkProtocol::getHash: ERROR: not enough bytes to read";
             if (ok) *ok = false;

@@ -59,4 +59,27 @@ void TestUtil::getRandomSeed() {
     QVERIFY(seed3 != seed4);
 }
 
+void TestUtil::generateZeroedMemory() {
+    auto a = Util::generateZeroedMemory(29);
+    auto b = Util::generateZeroedMemory(64);
+    auto c = Util::generateZeroedMemory(29);
+
+    QCOMPARE(a.size(), 29);
+    QCOMPARE(b.size(), 64);
+    QCOMPARE(c.size(), 29);
+
+    QVERIFY(a != b);
+    QVERIFY(a == c);
+    QVERIFY(b != c);
+
+    for(int i = 0; i < a.size(); ++i)
+        QVERIFY(a[i] == char(0));
+
+    for(int i = 0; i < b.size(); ++i)
+        QVERIFY(b[i] == char(0));
+
+    for(int i = 0; i < c.size(); ++i)
+        QVERIFY(c[i] == char(0));
+}
+
 QTEST_MAIN(TestUtil)

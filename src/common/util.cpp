@@ -83,4 +83,8 @@ namespace PMP {
         return line;
     }
 
+    QByteArray Util::generateZeroedMemory(int byteCount) {
+        return QByteArray(byteCount, '\0');
+    }
+
 }

@@ -264,6 +264,9 @@ namespace PMP {
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 
+        void invalidMessageReceived(QByteArray const& message, QString messageType = "",
+                                    QString extraInfo = "");
+
         static const qint16 ClientProtocolNo;
 
         bool _autoSubscribeToEventsAfterConnect;

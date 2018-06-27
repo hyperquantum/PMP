@@ -28,5 +28,6 @@ private slots:
     void getCopyrightLine();
     void getRandomSeed();
     void secondsToHoursMinuteSecondsText();
+    void generateZeroedMemory();
 };
 #endif

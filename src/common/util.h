@@ -20,6 +20,7 @@
 #ifndef PMP_UTIL_H
 #define PMP_UTIL_H
 
+#include <QByteArray>
 #include <QChar>
 #include <QString>
 
@@ -44,6 +45,8 @@ namespace PMP {
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
 
         static QString getCopyrightLine(bool mustBeAscii = true);
+
+        static QByteArray generateZeroedMemory(int byteCount);
 
     private:
         Util();

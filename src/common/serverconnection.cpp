@@ -1067,9 +1067,7 @@ namespace PMP {
         }
             break;
         case NetworkProtocol::BulkQueueEntryHashMessage:
-        {
             parseBulkQueueEntryHashMessage(message);
-        }
             break;
         case NetworkProtocol::QueueContentsMessage:
         {
@@ -1501,6 +1499,7 @@ namespace PMP {
     void ServerConnection::parseBulkQueueEntryHashMessage(const QByteArray& message) {
         qint32 messageLength = message.length();
         if (messageLength < 4) {
+            invalidMessageReceived(message, "bulk-queue-entry-hashes");
             return; /* invalid message */
         }
 
@@ -1509,12 +1508,16 @@ namespace PMP {
             || messageLength
                 != 4 + trackCount * (8 + NetworkProtocol::FILEHASH_BYTECOUNT))
         {
+            invalidMessageReceived(
+                message, "bulk-queue-entry-hashes",
+                "track count=" + QString::number(trackCount)
+            );
             return; /* irrelevant or invalid message */
         }
 
         qDebug() << "received bulk queue entry hash message; count:" << trackCount;
 
-        int offset = 4;
+        uint offset = 4;
         for (int i = 0; i < trackCount; ++i) {
             quint32 queueID = NetworkUtil::get4Bytes(message, offset);
             quint16 status = NetworkUtil::get2Bytes(message, offset + 4);
@@ -1523,7 +1526,11 @@ namespace PMP {
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
-            if (!ok) continue;
+            if (!ok) {
+                qWarning() << "could not extract hash for QID" << queueID
+                           << "; track status=" << status;
+                continue;
+            }
 
             auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
 
@@ -1714,6 +1721,13 @@ namespace PMP {
                        << "; blobdata-length:" << blobData.size();
             break;
         }
+    }
+
+    void ServerConnection::invalidMessageReceived(QByteArray const& message,
+                                                  QString messageType, QString extraInfo)
+    {
+        qWarning() << "received invalid message; length=" << message.size()
+                   << " type=" << messageType << " extra info=" << extraInfo;
     }
 
     // ============================================================================ //
