@@ -17,6 +17,7 @@ KNOWN BUGS
  - hash calculation is wrong for MP3 files containing an APE tag
  - preloaded tracks can be deleted before they are used because they are old
  - player fails to play preloaded entries of which the file has been deleted already
+ - server crashes when a server shutdown is performed while a full indexation is running
 
 
 PERFORMANCE ISSUES
@@ -50,6 +51,8 @@ IDEAS
  - interactive editing of the list of directories to scan for music
  - ability to ban a track permanently or temporarily; this will also hide it in the music collection
  - 'play now' option in the context menus of the music collection, the history, and maybe the queue
+ - dark theme for the client
+ - require the server password when registering a new user account
 
 
 USER FRIENDLINESS
