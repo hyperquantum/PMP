@@ -44,7 +44,7 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 7;
+    const qint16 ConnectedClient::ServerProtocolNo = 8;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,
@@ -115,6 +115,14 @@ namespace PMP {
         connect(
             _generator, &Generator::noRepetitionSpanChanged,
             this, &ConnectedClient::dynamicModeNoRepetitionSpanChanged
+        );
+        connect(
+            _generator, &Generator::waveStarting,
+            this, &ConnectedClient::dynamicModeWaveStarting
+        );
+        connect(
+            _generator, &Generator::waveFinished,
+            this, &ConnectedClient::dynamicModeWaveFinished
         );
         connect(
             _player, &Player::stateChanged,
@@ -504,7 +512,7 @@ namespace PMP {
 
     void ConnectedClient::sendDynamicModeStatusMessage() {
         quint8 enabled = _generator->enabled() ? 1 : 0;
-        quint32 noRepetitionSpan = (quint32)_generator->noRepetitionSpan();
+        quint32 noRepetitionSpan = quint32(_generator->noRepetitionSpan());
 
         QByteArray message;
         message.reserve(7);
@@ -523,10 +531,25 @@ namespace PMP {
         QByteArray message;
         message.reserve(4 + 4 + loginBytes.length());
         NetworkUtil::append2Bytes(message, NetworkProtocol::UserPlayingForModeMessage);
-        NetworkUtil::appendByte(message, (quint8)loginBytes.size());
+        NetworkUtil::appendByte(message, quint8(loginBytes.size()));
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, user);
         message += loginBytes;
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendGeneratorWaveStatusMessage(
+            NetworkProtocol::StartStopEventStatus status, quint32 user)
+    {
+        if (_clientProtocolNo < 8) return; /* client will not understand this message */
+
+        QByteArray message;
+        message.reserve(8);
+        NetworkUtil::append2Bytes(message, NetworkProtocol::DynamicModeWaveStatusMessage);
+        NetworkUtil::appendByte(message, 0); /* unused */
+        NetworkUtil::appendByte(message, quint8(status));
+        NetworkUtil::append4Bytes(message, user);
 
         sendBinaryMessage(message);
     }
@@ -1126,6 +1149,18 @@ namespace PMP {
 
     void ConnectedClient::dynamicModeStatusChanged(bool enabled) {
         sendDynamicModeStatusMessage();
+    }
+
+    void ConnectedClient::dynamicModeWaveStarting(quint32 user) {
+        sendGeneratorWaveStatusMessage(
+            NetworkProtocol::StartStopEventStatus::EventActivatedNow, user
+        );
+    }
+
+    void ConnectedClient::dynamicModeWaveFinished(quint32 user) {
+        sendGeneratorWaveStatusMessage(
+            NetworkProtocol::StartStopEventStatus::EventDeactivatedNow, user
+        );
     }
 
     void ConnectedClient::dynamicModeNoRepetitionSpanChanged(int seconds) {
@@ -1974,6 +2009,14 @@ namespace PMP {
         case 11: /* request for status of dynamic mode */
             qDebug() << "received request for dynamic mode status";
             sendDynamicModeStatusMessage();
+
+            sendGeneratorWaveStatusMessage(
+                NetworkProtocol::createAlreadyActiveStartStopEventStatus(
+                    _generator->waveActive()
+                ),
+                _generator->userPlayingFor()
+            );
+
             break;
         case 12:
             qDebug() << "received request for server instance UUID";
@@ -2017,6 +2060,10 @@ namespace PMP {
             qDebug() << "received TRIM QUEUE command";
              /* TODO: get the '10' from elsewhere */
             if (isLoggedIn()) { _player->queue().trim(10); }
+            break;
+        case 24:
+            qDebug() << "received START WAVE command";
+            if (isLoggedIn() && !_generator->waveActive()) { _generator->startWave(); }
             break;
         case 30: /* switch to public mode */
             qDebug() << "received SWITCH TO PUBLIC MODE command";

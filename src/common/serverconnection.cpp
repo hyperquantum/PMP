@@ -26,7 +26,7 @@
 
 namespace PMP {
 
-    const qint16 ServerConnection::ClientProtocolNo = 7;
+    const qint16 ServerConnection::ClientProtocolNo = 8;
 
     ServerConnection::ServerConnection(QObject* parent, bool subscribeToAllServerEvents)
      : QObject(parent),
@@ -695,6 +695,10 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ServerConnection::startDynamicModeWave() {
+        sendSingleByteAction(24); /* 24 = start dynamic mode wave */
+    }
+
     void ServerConnection::startFullIndexation() {
         sendSingleByteAction(40); /* 40 = start full indexation */
     }
@@ -1354,6 +1358,9 @@ namespace PMP {
             emit receivedDatabaseIdentifier(uuid);
         }
             break;
+        case NetworkProtocol::DynamicModeWaveStatusMessage:
+            parseDynamicModeWaveStatusMessage(message);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
@@ -1659,6 +1666,33 @@ namespace PMP {
         }
 
         emit receivedPlayerHistory(entries);
+    }
+
+    void ServerConnection::parseDynamicModeWaveStatusMessage(QByteArray const& message) {
+        qDebug() << "parsing dynamic mode wave status message";
+
+        if (message.length() != 8) {
+            invalidMessageReceived(message, "dynamic-mode-status", "message length != 8");
+            return;
+        }
+
+        auto statusByte = NetworkUtil::getByte(message, 3);
+        if (!NetworkProtocol::isValidStartStopEventStatus(statusByte)) {
+            invalidMessageReceived(
+                message, "dynamic-mode-status",
+                "invalid status value: " + QString::number(statusByte)
+            );
+            return;
+        }
+
+        /* we have no use for the user yet */
+        //auto user = NetworkUtil::get4Bytes(message, 4);
+
+        auto status = NetworkProtocol::StartStopEventStatus(statusByte);
+        bool statusActive = NetworkProtocol::isActive(status);
+        bool statusChanged = NetworkProtocol::isChange(status);
+
+        emit dynamicModeHighScoreWaveStatusReceived(statusActive, statusChanged);
     }
 
     void ServerConnection::handleResultMessage(quint16 errorType, quint32 clientReference,

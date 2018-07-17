@@ -348,6 +348,13 @@
           </spacer>
          </item>
          <item>
+          <widget class="QLabel" name="queueOperationsLabel">
+           <property name="text">
+            <string>queue operations:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <widget class="QPushButton" name="expandButton">
            <property name="text">
             <string>Expand</string>
@@ -363,6 +370,50 @@
          </item>
          <item>
           <spacer name="horizontalSpacer_5">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="dynamicModeLine2Layout">
+         <item>
+          <widget class="QLabel" name="dynamicModeTrackSelectionLabel">
+           <property name="text">
+            <string>dynamic mode track selection:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_8">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="startHighScoredTracksWaveButton">
+           <property name="text">
+            <string>Start high-scored tracks wave</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_7">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>

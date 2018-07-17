@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -64,6 +64,8 @@ namespace PMP {
 
         void volumeChanged(int volume);
         void dynamicModeStatusChanged(bool enabled);
+        void dynamicModeWaveStarting(quint32 user);
+        void dynamicModeWaveFinished(quint32 user);
         void dynamicModeNoRepetitionSpanChanged(int seconds);
         void playerStateChanged(PlayerState state);
         void currentTrackChanged(QueueEntry const* entry);
@@ -113,6 +115,8 @@ namespace PMP {
         void sendServerInstanceIdentifier();
         void sendDatabaseIdentifier();
         void sendUsersList();
+        void sendGeneratorWaveStatusMessage(NetworkProtocol::StartStopEventStatus status,
+                                            quint32 user);
         void sendQueueContentMessage(quint32 startOffset, quint8 length);
         void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
         void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);

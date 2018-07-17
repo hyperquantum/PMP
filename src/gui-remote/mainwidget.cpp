@@ -50,7 +50,8 @@ namespace PMP {
         _queueEntryInfoFetcher(nullptr), _userDataFetcher(nullptr),
         _queueModel(nullptr), _queueContextMenu(nullptr),
         _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1),
-        _dynamicModeEnabled(false), _noRepetitionUpdating(0),
+        _dynamicModeEnabled(false), _dynamicModeHighScoreWaveActive(false),
+        _noRepetitionUpdating(0),
         _historyModel(nullptr), _historyContextMenu(nullptr)
     {
         _ui->setupUi(this);
@@ -167,12 +168,20 @@ namespace PMP {
             this, SLOT(changeDynamicMode(int))
         );
         connect(
+            _ui->startHighScoredTracksWaveButton, &QPushButton::clicked,
+            this, &MainWidget::startHighScoredTracksWave
+        );
+        connect(
             _ui->noRepetitionComboBox, SIGNAL(currentIndexChanged(int)),
             this, SLOT(noRepetitionIndexChanged(int))
         );
         connect(
-            _connection, SIGNAL(dynamicModeStatusReceived(bool, int)),
-            this, SLOT(dynamicModeStatusReceived(bool, int))
+            _connection, &ServerConnection::dynamicModeStatusReceived,
+            this, &MainWidget::dynamicModeStatusReceived
+        );
+        connect(
+            _connection, &ServerConnection::dynamicModeHighScoreWaveStatusReceived,
+            this, &MainWidget::dynamicModeHighScoreWaveStatusReceived
         );
 
         connect(
@@ -530,6 +539,10 @@ namespace PMP {
         }
     }
 
+    void MainWidget::startHighScoredTracksWave() {
+        _connection->startDynamicModeWave();
+    }
+
     void MainWidget::buildNoRepetitionList(int spanToSelect) {
         _noRepetitionUpdating++;
 
@@ -657,6 +670,14 @@ namespace PMP {
                 buildNoRepetitionList(noRepetitionSpan);
             }
         }
+    }
+
+    void MainWidget::dynamicModeHighScoreWaveStatusReceived(bool active,
+                                                            bool statusChanged)
+    {
+        (void)statusChanged;
+
+        _ui->startHighScoredTracksWaveButton->setEnabled(!active);
     }
 
     void MainWidget::userPlayingForChanged(quint32 userId, QString login) {

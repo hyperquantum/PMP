@@ -71,6 +71,8 @@ namespace PMP {
         void changeDynamicMode(int checkState);
         void noRepetitionIndexChanged(int index);
         void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
+        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
+        void startHighScoredTracksWave();
 
         void userPlayingForChanged(quint32 userId, QString login);
 
@@ -95,6 +97,7 @@ namespace PMP {
         QString _nowPlayingArtist;
         int _nowPlayingLength;
         bool _dynamicModeEnabled;
+        bool _dynamicModeHighScoreWaveActive;
         QList<int> _noRepetitionList;
         int _noRepetitionUpdating;
         PlayerHistoryModel* _historyModel;

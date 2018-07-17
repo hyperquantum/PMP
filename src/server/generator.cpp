@@ -38,9 +38,11 @@ namespace PMP {
 
     class Generator::Candidate {
     public:
-        Candidate(const FileHash& hashID, quint16 randomPermillageNumber)
+        Candidate(const FileHash& hashID, quint16 randomPermillageNumber1,
+                  quint16 randomPermillageNumber2)
          : _hash(hashID), _lengthMilliseconds(0),
-           _randomPermillageNumber(randomPermillageNumber)
+           _randomPermillageNumber1(randomPermillageNumber1),
+           _randomPermillageNumber2(randomPermillageNumber2)
         {
             //
         }
@@ -53,12 +55,15 @@ namespace PMP {
 
         uint lengthMilliseconds() const { return _lengthMilliseconds; }
 
-        quint16 randomPermillageNumber() const { return _randomPermillageNumber; }
+        quint16 randomPermillageNumber() const { return _randomPermillageNumber1; }
+
+        quint16 randomPermillageNumber2() const { return _randomPermillageNumber2; }
 
     private:
         FileHash _hash;
         uint _lengthMilliseconds;
-        quint16 _randomPermillageNumber;
+        quint16 _randomPermillageNumber1;
+        quint16 _randomPermillageNumber2;
     };
 
     /* ========================== Generator ========================== */
@@ -67,8 +72,9 @@ namespace PMP {
      : _randomEngine(Util::getRandomSeed()), _currentTrack(nullptr),
        _queue(queue), _resolver(resolver), _history(history),
        _upcomingTimer(new QTimer(this)), _upcomingRuntimeSeconds(0),
-       _noRepetitionSpan(60 * 60 /* one hour */), _userPlayingFor(0),
-       _enabled(false), _refillPending(false)
+       _noRepetitionSpan(60 * 60 /* one hour */), _minimumPermillageByWave(0),
+       _userPlayingFor(0), _enabled(false), _refillPending(false), _waveActive(false),
+       _waveRising(false)
     {
         connect(
             _queue, &Queue::entryRemoved,
@@ -97,6 +103,14 @@ namespace PMP {
         return _enabled;
     }
 
+    bool Generator::waveActive() const {
+        return _waveActive;
+    }
+
+    quint32 Generator::userPlayingFor() const {
+        return _userPlayingFor;
+    }
+
     int Generator::noRepetitionSpan() const {
         return _noRepetitionSpan;
     }
@@ -113,6 +127,26 @@ namespace PMP {
         _noRepetitionSpan = seconds;
 
         emit noRepetitionSpanChanged(seconds);
+    }
+
+    void Generator::startWave() {
+        qDebug() << "Generator::startWave() called";
+
+        if (_userPlayingFor <= 0)
+            return; /* need a user's scores for that */
+
+        bool starting = !_waveActive;
+
+        _waveActive = true;
+        _waveRising = true;
+
+        if (_minimumPermillageByWave <= 500)
+            _minimumPermillageByWave = 500;
+
+        if (starting)
+            emit waveStarting(_userPlayingFor);
+
+        checkFirstUpcomingAgainAfterFiltersChanged();
     }
 
     void Generator::enable() {
@@ -145,7 +179,7 @@ namespace PMP {
             return;
         }
 
-        expandQueue(expandCount, 15);
+        expandQueue(expandCount, 4 * expandCount);
     }
 
     void Generator::currentTrackChanged(QueueEntry const* newTrack) {
@@ -153,7 +187,20 @@ namespace PMP {
     }
 
     void Generator::setUserPlayingFor(quint32 user) {
+        if (_userPlayingFor == user) return; /* no change */
+
+        auto oldUser = _userPlayingFor;
         _userPlayingFor = user;
+
+        /* if a wave is active, terminate it */
+        if (_waveActive) {
+            _waveActive = false;
+            _waveRising = false;
+            _minimumPermillageByWave = 0;
+            emit waveFinished(oldUser);
+        }
+
+        checkFirstUpcomingAgainAfterFiltersChanged();
     }
 
     void Generator::queueEntryRemoved(quint32, quint32) {
@@ -243,7 +290,8 @@ namespace PMP {
             FileHash randomHash = getNextRandomHash();
             if (randomHash.empty()) { break; /* nothing available */ }
 
-            Candidate* c = new Candidate(randomHash, getRandomPermillage());
+            auto c =
+                new Candidate(randomHash, getRandomPermillage(), getRandomPermillage());
 
             if (satisfiesFilters(c, false)) {
                 _upcoming.enqueue(c);
@@ -254,8 +302,7 @@ namespace PMP {
             }
 
             /* urgent queue refill needed? */
-            if (iterationsLeft >= 6
-                && _enabled
+            if (iterationsLeft >= 6 && _enabled
                 && _upcoming.length() >= minimalUpcomingCount
                 && _queue->length() < desiredQueueLength)
             {
@@ -313,6 +360,11 @@ namespace PMP {
             /* check filters again */
             bool ok = satisfiesFilters(c, true);
 
+            /* check score for wave (if active) */
+            if (ok && !satisfiesWaveFilter(c)) {
+                ok = false;
+            }
+
             /* check occurrence in queue */
             int nonRepetitionSpan = 0;
             if (ok) {
@@ -360,6 +412,8 @@ namespace PMP {
             if (ok) {
                 _queue->enqueue(c->hash());
                 tracksToGenerate--;
+
+                advanceWave();
             }
 
             delete c;
@@ -373,6 +427,117 @@ namespace PMP {
 
         /* return how many were added to the queue */
         return howManyTracksToAdd - tracksToGenerate;
+    }
+
+    void Generator::checkFirstUpcomingAgainAfterFiltersChanged() {
+        if (_upcoming.empty()) {
+            if (!_upcomingTimer->isActive())
+                _upcomingTimer->start(upcomingTimerFreqMs);
+
+            return;
+        }
+
+        auto firstUpcoming = _upcoming.head();
+
+        if (satisfiesFilters(firstUpcoming, true) && satisfiesWaveFilter(firstUpcoming))
+            return; /* OK */
+
+        qDebug() << "removing first track from buffer because it does not pass the"
+                 << "filters anymore after a filter change";
+
+        auto candidate = _upcoming.dequeue();
+        _upcomingRuntimeSeconds -= candidate->lengthMilliseconds() / 1000;
+        delete candidate;
+
+        if (!_upcomingTimer->isActive())
+            _upcomingTimer->start(upcomingTimerFreqMs);
+    }
+
+    void Generator::advanceWave() {
+        if (_waveRising) {
+            if (_minimumPermillageByWave < 700)
+                _minimumPermillageByWave += 100; /* add 10% */
+            else
+                _minimumPermillageByWave += 50; /* add 5% */
+
+            if (_minimumPermillageByWave >= 850)
+                _waveRising = false; /* start descending again */
+
+            qDebug() << "wave has risen to" << _minimumPermillageByWave;
+            return;
+        }
+
+        if (!_waveActive && _minimumPermillageByWave > 0) {
+            _minimumPermillageByWave--; /* subtract 0.1% */
+
+            if (_minimumPermillageByWave >= 10) {
+                _minimumPermillageByWave -= 10; /* subtract an additional 1% */
+
+                if (_minimumPermillageByWave >= 500)
+                    _minimumPermillageByWave -= 20; /* subtract an additional 2% */
+            }
+
+            qDebug() << "non-active wave has descended to" << _minimumPermillageByWave;
+            return;
+        }
+
+        if (_minimumPermillageByWave >= 800)
+            _minimumPermillageByWave -= 10; /* subtract 1% */
+        else if (_minimumPermillageByWave >= 700)
+            _minimumPermillageByWave -= 50; /* subtract 5% */
+        else if (_waveActive) {
+            _minimumPermillageByWave -= 100; /* subtract 10% */
+
+            qDebug() << "wave is now no longer considered active (to the outside world)";
+
+            _waveActive = false;
+            emit waveFinished(_userPlayingFor);
+        }
+
+        qDebug() << "wave has descended to" << _minimumPermillageByWave;
+    }
+
+    bool Generator::satisfiesWaveFilter(Candidate* candidate) {
+        if (_minimumPermillageByWave <= 0) return true;
+
+        uint id = _resolver->getID(candidate->hash());
+        auto userStats = _history->getUserStats(id, _userPlayingFor);
+        if (!userStats) return false; /* score data not loaded --> reject */
+
+        auto score = userStats->score;
+
+        if (score < 0) { /* score not defined yet (play count too low)? */
+            /* reject randomly */
+            if (candidate->randomPermillageNumber() < _minimumPermillageByWave
+                    || candidate->randomPermillageNumber2() < _minimumPermillageByWave)
+            {
+                qDebug() << "rejecting candidate" << id
+                         << "randomly because it does not have a score yet";
+                return false;
+            }
+        }
+        else if (score < _minimumPermillageByWave) {
+            qDebug() << "rejecting candidate" << id << "because it has score" << score
+                     << "while the wave currently requires at least"
+                     << _minimumPermillageByWave;
+            return false;
+        }
+        else if (_minimumPermillageByWave >= 500) {
+            /* check if score is too high */
+            auto extra = score - _minimumPermillageByWave;
+
+            if (extra > 100 &&
+                    (candidate->randomPermillageNumber() < extra
+                    || candidate->randomPermillageNumber2() < extra))
+            {
+                qDebug() << "rejecting candidate" << id << "because its score (" << score
+                         << ") is randomly too high for the current wave status ("
+                         << _minimumPermillageByWave << ")";
+                return false;
+            }
+        }
+
+        return true;
     }
 
     bool Generator::satisfiesFilters(Candidate* candidate, bool strict) {
@@ -395,17 +560,17 @@ namespace PMP {
         auto userStats = _history->getUserStats(id, _userPlayingFor);
         if (!userStats) {
             if (strict) {
-                qDebug() << "Generator: rejecting candidate" << id
-                        << "because score is still unknown";
+                qDebug() << "rejecting candidate" << id
+                         << "because its score is still unknown";
                 return false;
             }
         }
-        else {
+        else if (!_waveActive) {
             auto score = userStats->score;
             if (score >= 0 && score < candidate->randomPermillageNumber() - 100) {
-                qDebug() << "Generator: rejecting candidate" << id
-                        << "because it has score" << score << " (threshhold="
-                        << (candidate->randomPermillageNumber() - 100) << ")";
+                qDebug() << "rejecting candidate" << id
+                         << "because it has score" << score << " (threshhold="
+                         << (candidate->randomPermillageNumber() - 100) << ")";
                 return false;
             }
         }

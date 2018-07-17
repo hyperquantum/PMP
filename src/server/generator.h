@@ -42,6 +42,9 @@ namespace PMP {
         Generator(Queue* queue, Resolver* resolver, History* history);
 
         bool enabled() const;
+        bool waveActive() const;
+
+        quint32 userPlayingFor() const;
 
         int noRepetitionSpan() const;
 
@@ -54,12 +57,16 @@ namespace PMP {
 
         void setNoRepetitionSpan(int seconds);
 
+        void startWave();
+
         void currentTrackChanged(QueueEntry const* newTrack);
         void setUserPlayingFor(quint32 user);
 
     Q_SIGNALS:
         void enabledChanged(bool enabled);
         void noRepetitionSpanChanged(int seconds);
+        void waveStarting(quint32 user);
+        void waveFinished(quint32 user);
 
     private slots:
         void queueEntryRemoved(quint32, quint32);
@@ -81,9 +88,12 @@ namespace PMP {
 
         quint16 getRandomPermillage();
         FileHash getNextRandomHash();
+        void checkFirstUpcomingAgainAfterFiltersChanged();
         void requestQueueRefill();
         int expandQueue(int howManyTracksToAdd, int maxIterations);
+        void advanceWave();
         bool satisfiesFilters(Candidate* candidate, bool strict);
+        bool satisfiesWaveFilter(Candidate* candidate);
 
         std::mt19937 _randomEngine;
         QList<FileHash> _hashesSource;
@@ -97,9 +107,12 @@ namespace PMP {
         QTimer* _upcomingTimer;
         uint _upcomingRuntimeSeconds;
         int _noRepetitionSpan;
+        int _minimumPermillageByWave;
         quint32 _userPlayingFor;
         bool _enabled;
         bool _refillPending;
+        bool _waveActive;
+        bool _waveRising;
     };
 }
 #endif

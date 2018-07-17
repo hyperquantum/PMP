@@ -130,6 +130,7 @@ namespace PMP {
         void trimQueue();
         void requestDynamicModeStatus();
         void setDynamicModeNoRepetitionSpan(int seconds);
+        void startDynamicModeWave();
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
         void deleteQueueEntry(uint queueID);
@@ -179,6 +180,7 @@ namespace PMP {
         void volumeChanged(int percentage);
 
         void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
+        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
 
         void noCurrentTrack();
         void nowPlayingTrack(quint32 queueID);
@@ -261,6 +263,8 @@ namespace PMP {
         void parseHashUserDataMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);
+
+        void parseDynamicModeWaveStatusMessage(QByteArray const& message);
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 

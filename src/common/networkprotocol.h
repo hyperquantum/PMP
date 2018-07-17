@@ -36,8 +36,9 @@ namespace PMP {
           3: client msg 18, server msg 22: added support for retrieving scores
           4: client msg 19: added support for inserting a track at a specific index
           5: client msg 20, server msg 23 & 24: added player history fetching
-          6: single byte request 17 & server msg 25: retreiving the database identifier
+          6: single byte request 17 & server msg 25: retrieving the database identifier
           7: server msgs 18 & 19 extended with album and track length
+          8: server msg 26 and single byte request 24 for dynamic mode waves
 
     */
 
@@ -78,6 +79,7 @@ namespace PMP {
             NewHistoryEntryMessage = 23,
             PlayerHistoryMessage = 24,
             DatabaseIdentifierMessage = 25,
+            DynamicModeWaveStatusMessage = 26,
         };
 
         enum ClientMessageType {
@@ -119,6 +121,19 @@ namespace PMP {
             DatabaseProblem = 90,
             UnknownError = 255
         };
+
+        enum class StartStopEventStatus : quint8 {
+            Undefined = 0,
+            StatusNotActive = 1,
+            StatusActiveAlready = 2,
+            EventActivatedNow = 3,
+            EventDeactivatedNow = 4,
+        };
+
+        static bool isValidStartStopEventStatus(quint8 status);
+        static bool isActive(StartStopEventStatus status);
+        static bool isChange(StartStopEventStatus status);
+        static StartStopEventStatus createAlreadyActiveStartStopEventStatus(bool active);
 
         static int ratePassword(QString password);
 
