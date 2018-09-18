@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -52,7 +52,7 @@ namespace PMP {
 
             if (lastOne >= 0) {
                 /* we found the second last one */
-                return file.mid( i + 1);
+                return file.mid(i + 1);
             }
 
             lastOne = i; /* we found the last one */
@@ -90,11 +90,9 @@ namespace PMP {
             case QtDebugMsg:
                 output = time % " [D] " % locationText % msg % "\n";
                 break;
-            /* QtInfoMsg is only available in Qt 5.5 and later
             case QtInfoMsg:
-                output = time % " [I] " % locationText % msg % "\n";
+                output = time % " [Info] " % locationText % msg % "\n";
                 break;
-            */
             case QtWarningMsg:
                 output = time % " [Warning] " % locationText % msg % "\n";
                 break;
@@ -166,6 +164,11 @@ namespace PMP {
 
     void TextFileLogger::writeToLogFile(const QString& output) {
         QMutexLocker lock(&_mutex);
+
+        if (!QDir().mkpath(_logDir)) { /* could not create missing log directory */
+            /* TODO : handle this */
+            return;
+        }
 
         QDate today = QDate::currentDate();
         QString logFile =
@@ -269,8 +272,8 @@ namespace PMP {
 
     /* ========================== Logging ========================== */
 
-    ConsoleLogger globalConsoleLogger; /* global instance */
-    TextFileLogger globalTextFileLogger; /* global instance */
+    static ConsoleLogger globalConsoleLogger; /* global instance */
+    static TextFileLogger globalTextFileLogger; /* global instance */
 
     void logToTextFile(QtMsgType type, const QMessageLogContext& context,
                        const QString& msg)
