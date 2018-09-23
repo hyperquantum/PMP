@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,9 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QFile>
+#include <QtDebug>
+#include <QTextStream>
 
 using namespace PMP;
 
@@ -40,6 +43,20 @@ int main(int argc, char *argv[]) {
     Logging::cleanupOldLogfiles();
     /* TODO: do a log cleanup regularly, because the user might keep the client running
      *       for several days without closing it. */
+
+    QFile styleSheetFile(":qdarkstyle/style.qss");
+    if (styleSheetFile.exists()) {
+        if (styleSheetFile.open(QFile::ReadOnly | QFile::Text)) {
+            QTextStream ts(&styleSheetFile);
+            app.setStyleSheet(ts.readAll());
+        }
+        else {
+            qWarning() << "could not load qdarkstyle style sheet; open() failed";
+        }
+    }
+    else {
+        qWarning() << "could not load qdarkstyle style sheet; file not found";
+    }
 
     MainWindow window;
     window.show();

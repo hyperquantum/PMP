@@ -130,6 +130,7 @@ set(PMP_GUI_REMOTE_UIS
 )
 set(PMP_GUI_REMOTE_RESOURCES
     gui-remote/mainwindow.qrc
+    gui-remote/qdarkstyle/style.qrc
 )
 
 qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
