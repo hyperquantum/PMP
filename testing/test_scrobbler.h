@@ -22,6 +22,8 @@
 
 #include "server/scrobbler.h"
 #include "server/scrobblingbackend.h"
+#include "server/scrobblingdataprovider.h"
+#include "server/tracktoscrobble.h"
 
 #include <QQueue>
 

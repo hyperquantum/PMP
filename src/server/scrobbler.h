@@ -21,12 +21,10 @@
 #define PMP_SCROBBLER_H
 
 #include "scrobblingbackend.h"
+#include "tracktoscrobble.h"
 
-#include <QDateTime>
 #include <QObject>
 #include <QQueue>
-#include <QString>
-#include <QVector>
 
 #include <memory>
 
@@ -34,29 +32,7 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP {
 
-    class TrackToScrobble {
-    public:
-        TrackToScrobble();
-        virtual ~TrackToScrobble();
-
-        virtual QDateTime timestamp() const = 0;
-        virtual QString title() const = 0;
-        virtual QString artist() const = 0;
-        virtual QString album() const = 0;
-
-        virtual void scrobbledSuccessfully() = 0;
-        virtual void cannotBeScrobbled() = 0;
-    };
-
-    class ScrobblingDataProvider {
-    public:
-        virtual ~ScrobblingDataProvider();
-
-        virtual QVector<std::shared_ptr<TrackToScrobble>> getNextTracksToScrobble() = 0;
-
-    protected:
-        ScrobblingDataProvider();
-    };
+    class ScrobblingDataProvider;
 
     class Scrobbler : public QObject {
         Q_OBJECT

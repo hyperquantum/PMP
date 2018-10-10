@@ -50,9 +50,11 @@ set(PMP_SERVER_SOURCES
     server/resolver.cpp
     server/scrobbler.cpp
     server/scrobblingbackend.cpp
+    server/scrobblingdataprovider.cpp
     server/server.cpp
     server/servermetatypes.cpp
     server/serversettings.cpp
+    server/tracktoscrobble.cpp
     server/userdataforhashesfetcher.cpp
     server/userdatafortracksfetcher.cpp
     server/users.cpp

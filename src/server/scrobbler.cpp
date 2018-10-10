@@ -20,31 +20,12 @@
 #include "scrobbler.h"
 
 #include "scrobblingbackend.h"
+#include "scrobblingdataprovider.h"
 
 #include <QDebug>
 #include <QTimer>
 
 namespace PMP {
-
-    TrackToScrobble::TrackToScrobble() {
-        //
-    }
-
-    TrackToScrobble::~TrackToScrobble() {
-        //
-    }
-
-    /* ======================================================================= */
-
-    ScrobblingDataProvider::ScrobblingDataProvider() {
-        //
-    }
-
-    ScrobblingDataProvider::~ScrobblingDataProvider() {
-        //
-    }
-
-    /* ======================================================================= */
 
     Scrobbler::Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,
                          ScrobblingBackend* backend)
