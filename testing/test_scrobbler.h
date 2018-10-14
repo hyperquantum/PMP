@@ -27,6 +27,8 @@
 
 #include <QQueue>
 
+#include <memory>
+
 class BackendMock : public PMP::ScrobblingBackend {
     Q_OBJECT
 public:
@@ -36,6 +38,7 @@ public:
     void setApiToken(bool willBeAcceptedByApi);
 
     int scrobbledSuccessfullyCount() const { return _scrobbledSuccessfullyCount; }
+    int tracksIgnoredCount() const { return _tracksIgnoredCount; }
 
 public slots:
     void initialize() override;
@@ -48,9 +51,11 @@ private slots:
     void pretendAuthenticationResultReceived();
     void pretendSuccessfullScrobble();
     void pretendScrobbleFailedBecauseTokenNoLongerValid();
+    void pretendScrobbleFailedBecauseTrackIgnored();
 
 private:
     int _scrobbledSuccessfullyCount;
+    int _tracksIgnoredCount;
     QString _username;
     QString _password;
     bool _requireAuthentication;
@@ -71,11 +76,13 @@ public:
     void cannotBeScrobbled() override;
 
     bool scrobbled() const { return _scrobbled; }
+    bool ignored() const { return _cannotBeScrobbled; }
 
 private:
     QDateTime _timestamp;
     QString _title, _artist, _album;
     bool _scrobbled;
+    bool _cannotBeScrobbled;
 };
 
 class DataProviderMock : public PMP::ScrobblingDataProvider {
@@ -99,8 +106,18 @@ private slots:
     void scrobbleWithAuthentication();
     void scrobbleWithExistingValidToken();
     void scrobbleWithTokenChangeAfterInvalidToken();
+    void mustSkipScrobblesThatAreTooOld();
 
 private:
     QDateTime makeDateTime(int year, int month, int day, int hours, int minutes);
+    std::shared_ptr<TrackToScrobbleMock> addTrackToScrobble(
+                                                          DataProviderMock& dataProvider);
+    std::shared_ptr<TrackToScrobbleMock> addTrackToScrobble(
+                                                           DataProviderMock& dataProvider,
+                                                           QDateTime time);
+    std::shared_ptr<TrackToScrobbleMock> addTrackToScrobble(
+                                                           DataProviderMock& dataProvider,
+                                                           QDateTime time,
+                                                           QString title, QString artist);
 };
 #endif
