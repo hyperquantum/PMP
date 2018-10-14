@@ -15,9 +15,10 @@ KNOWN BUGS
  - GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
  - GUI remote: after a breakpoint is hit, track length and play position are not cleared
  - hash calculation is wrong for MP3 files containing an APE tag
- - preloaded tracks can be deleted before they are used because they are old
+ - preloaded tracks are sometimes deleted before they are used because they are old
  - player fails to play preloaded entries of which the file has been deleted already
  - server crashes when a server shutdown is performed while a full indexation is running
+ - GUI remote: searching the music collection for "e" does not return results having "ë"
 
 
 PERFORMANCE ISSUES
