@@ -151,6 +151,7 @@ namespace PMP {
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         NetworkProtocol::ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
+        void parseQueueEntryRemovalRequest(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
 

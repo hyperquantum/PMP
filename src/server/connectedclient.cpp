@@ -1474,22 +1474,7 @@ namespace PMP {
         }
             break;
         case NetworkProtocol::QueueEntryRemovalRequestMessage:
-        {
-            if (messageLength != 6) {
-                return; /* invalid message */
-            }
-
-            if (!isLoggedIn()) return; /* client needs to be authenticated for this */
-
-            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
-            qDebug() << "received removal request for QID" << queueID;
-
-            if (queueID <= 0) {
-                return; /* invalid queue ID */
-            }
-
-            _player->queue().remove(queueID);
-        }
+            parseQueueEntryRemovalRequest(message);
             break;
         case NetworkProtocol::GeneratorNonRepetitionChangeMessage:
         {
@@ -1909,6 +1894,23 @@ namespace PMP {
 
         _trackAdditionConfirmationsPending[entry->queueID()] = clientReference;
         queue.insertAtIndex(index, entry);
+    }
+
+    void ConnectedClient::parseQueueEntryRemovalRequest(QByteArray const& message) {
+        if (message.length() != 6) {
+            return; /* invalid message */
+        }
+
+        if (!isLoggedIn()) return; /* client needs to be authenticated for this */
+
+        quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+        qDebug() << "received removal request for QID" << queueID;
+
+        if (queueID <= 0) {
+            return; /* invalid queue ID */
+        }
+
+        _player->queue().remove(queueID);
     }
 
     void ConnectedClient::parseHashUserDataRequest(const QByteArray& message) {
