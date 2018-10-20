@@ -70,6 +70,7 @@ namespace PMP {
     class ServerConnection : public QObject {
         Q_OBJECT
 
+    private:
         enum State {
             NotConnected, Connecting, Handshake, TextMode,
             HandshakeFailure, BinaryHandshake, BinaryMode
