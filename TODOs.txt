@@ -54,6 +54,7 @@ IDEAS
  - 'play now' option in the context menus of the music collection, the history, and maybe the queue
  - dark theme for the client
  - require the server password when registering a new user account
+ - permit server shutdown by commandline remote if the server password is passed along
 
 
 USER FRIENDLINESS
@@ -73,3 +74,8 @@ POLISHING
  - when skipping the current track after a long-time pause (say, more than 10 min), do not let the skip affect scoring of the paused track
  - an icon for the GUI remote executable
  - be more strict in determining the 'end time' for the history of a track that was played; time when paused should not count
+
+
+CODE CLEANUP
+
+ -
