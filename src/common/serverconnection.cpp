@@ -1115,19 +1115,7 @@ namespace PMP {
         }
             break;
         case NetworkProtocol::QueueEntryAddedMessage:
-        {
-            if (messageLength != 10) {
-                return; /* invalid message */
-            }
-
-            quint32 offset = NetworkUtil::get4Bytes(message, 2);
-            quint32 queueID = NetworkUtil::get4Bytes(message, 6);
-
-            qDebug() << "received queue track insertion event;  QID:" << queueID
-                     << " offset:" << offset;
-
-            emit queueEntryAdded(offset, queueID, RequestID());
-        }
+            parseQueueEntryAddedMessage(message);
             break;
         case NetworkProtocol::DynamicModeStatusMessage:
         {
@@ -1693,6 +1681,20 @@ namespace PMP {
         bool statusChanged = NetworkProtocol::isChange(status);
 
         emit dynamicModeHighScoreWaveStatusReceived(statusActive, statusChanged);
+    }
+
+    void ServerConnection::parseQueueEntryAddedMessage(QByteArray const& message) {
+        if (message.length() != 10) {
+            return; /* invalid message */
+        }
+
+        quint32 offset = NetworkUtil::get4Bytes(message, 2);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 6);
+
+        qDebug() << "received queue track insertion event;  QID:" << queueID
+                 << " offset:" << offset;
+
+        emit queueEntryAdded(offset, queueID, RequestID());
     }
 
     void ServerConnection::handleResultMessage(quint16 errorType, quint32 clientReference,

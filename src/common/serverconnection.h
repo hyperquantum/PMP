@@ -267,6 +267,8 @@ namespace PMP {
 
         void parseDynamicModeWaveStatusMessage(QByteArray const& message);
 
+        void parseQueueEntryAddedMessage(QByteArray const& message);
+
         void sendCollectionFetchRequestMessage(uint clientReference);
 
         void invalidMessageReceived(QByteArray const& message, QString messageType = "",
