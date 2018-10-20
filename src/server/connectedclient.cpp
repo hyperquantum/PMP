@@ -44,7 +44,7 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 8;
+    const qint16 ConnectedClient::ServerProtocolNo = 9;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,
@@ -697,6 +697,21 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendQueueEntryAdditionConfirmationMessage(
+            quint32 clientReference, quint32 index, quint32 queueID)
+    {
+        QByteArray message;
+        message.reserve(16);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::QueueEntryAdditionConfirmationMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append4Bytes(message, clientReference);
+        NetworkUtil::append4Bytes(message, index);
+        NetworkUtil::append4Bytes(message, queueID);
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendQueueEntryMovedMessage(quint32 fromOffset, quint32 toOffset,
                                                      quint32 queueID)
     {
@@ -1143,6 +1158,12 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendNonFatalInternalErrorResultMessage(quint32 clientReference)
+    {
+        sendResultMessage(
+                        NetworkProtocol::NonFatalInternalServerError, clientReference, 0);
+    }
+
     void ConnectedClient::volumeChanged(int volume) {
         sendVolumeMessage();
     }
@@ -1328,7 +1349,13 @@ namespace PMP {
             auto clientReference = it.value();
             _trackAdditionConfirmationsPending.erase(it);
 
-            sendSuccessMessage(clientReference, queueID);
+            if (_clientProtocolNo >= 9) {
+                sendQueueEntryAdditionConfirmationMessage(
+                                                        clientReference, offset, queueID);
+            }
+            else {
+                sendSuccessMessage(clientReference, queueID);
+            }
         }
         else {
             sendQueueEntryAddedMessage(offset, queueID);
@@ -1827,6 +1854,9 @@ namespace PMP {
         case NetworkProtocol::PlayerHistoryRequestMessage:
             parsePlayerHistoryRequest(message);
             break;
+        case NetworkProtocol::QueueEntryDuplicationRequestMessage:
+            parseQueueEntryDuplicationRequest(message);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
@@ -1911,6 +1941,48 @@ namespace PMP {
         }
 
         _player->queue().remove(queueID);
+    }
+
+    void ConnectedClient::parseQueueEntryDuplicationRequest(QByteArray const& message) {
+        qDebug() << "received 'duplicate queue entry' request";
+
+        if (message.length() != 2 + 2 + 4 + 4) {
+            return; /* invalid message */
+        }
+
+        if (!isLoggedIn()) return; /* client needs to be authenticated for this */
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 8);
+
+        qDebug() << " client ref:" << clientReference << "; " << "QID:" << queueID;
+
+        if (queueID <= 0) {
+            sendResultMessage(NetworkProtocol::QueueIdNotFound, clientReference, queueID);
+            return; /* invalid queue ID */
+        }
+
+        auto& queue = _player->queue();
+
+        auto index = queue.findIndex(queueID);
+        if (index < 0)
+        {
+            sendResultMessage(NetworkProtocol::QueueIdNotFound, clientReference, queueID);
+            return; /* not found; */
+        }
+
+        auto existing = queue.entryAtIndex(index);
+        if (!existing || existing->queueID() != queueID)
+        {
+            qWarning() << "queue inconsistency for QID" << queueID;
+            sendNonFatalInternalErrorResultMessage(clientReference);
+            return; /* not found; */
+        }
+
+        auto entry = new QueueEntry(&queue, existing);
+
+        _trackAdditionConfirmationsPending[entry->queueID()] = clientReference;
+        queue.insertAtIndex(index + 1, entry);
     }
 
     void ConnectedClient::parseHashUserDataRequest(const QByteArray& message) {

@@ -56,6 +56,18 @@ namespace PMP {
         //
     }
 
+    QueueEntry::QueueEntry(Queue* parent, QueueEntry const* existing)
+     : QObject(parent),
+       _queueID(parent->getNextQueueID()), _new(true), _kind(existing->_kind),
+       _hash(existing->_hash), _audioInfo(existing->_audioInfo),
+       _filename(existing->_filename), _haveFilename(existing->_haveFilename),
+       _fetchedTagData(existing->_fetchedTagData), _tagData(existing->_tagData),
+       _fileFinderBackoff(existing->_fileFinderBackoff),
+       _fileFinderFailedCount(existing->_fileFinderFailedCount)
+    {
+        //
+    }
+
     QueueEntry::QueueEntry(Queue* parent, QueueEntryKind kind)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(kind),

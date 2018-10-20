@@ -251,6 +251,13 @@ namespace PMP {
         return it.value();
     }
 
+    QueueEntry* Queue::entryAtIndex(int index) {
+        if (index < 0 || index >= _queue.size())
+            return nullptr;
+
+        return _queue.at(index);
+    }
+
     void Queue::addToHistory(QSharedPointer<const PlayerHistoryEntry> entry)
     {
         if (!entry) return;

@@ -55,6 +55,8 @@ namespace PMP {
         uint length() const;
 
         QueueEntry* lookup(quint32 queueID);
+        int findIndex(quint32 queueID);
+        QueueEntry* entryAtIndex(int index);
         QList<QueueEntry*> entries(int startoffset, int maxCount);
 
         QList<QSharedPointer<const PlayerHistoryEntry>> recentHistory(int limit);
@@ -90,8 +92,6 @@ namespace PMP {
         void checkFrontOfQueue();
 
     private:
-        int findIndex(quint32 queueID);
-
         uint _nextQueueID;
         QHash<quint32, QueueEntry*> _idLookup;
         QQueue<QueueEntry*> _queue;

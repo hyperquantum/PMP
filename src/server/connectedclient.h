@@ -120,6 +120,8 @@ namespace PMP {
         void sendQueueContentMessage(quint32 startOffset, quint8 length);
         void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
         void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
+        void sendQueueEntryAdditionConfirmationMessage(quint32 clientReference,
+                                                       quint32 index, quint32 queueID);
         void sendQueueEntryMovedMessage(quint32 fromOffset, quint32 toOffset,
                                         quint32 queueID);
         void sendQueueEntryInfoMessage(quint32 queueID);
@@ -136,6 +138,7 @@ namespace PMP {
         void sendResultMessage(NetworkProtocol::ErrorType errorType,
                               quint32 clientReference, quint32 intData,
                               QByteArray const& blobData);
+        void sendNonFatalInternalErrorResultMessage(quint32 clientReference);
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
@@ -152,6 +155,7 @@ namespace PMP {
                                         NetworkProtocol::ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
         void parseQueueEntryRemovalRequest(QByteArray const& message);
+        void parseQueueEntryDuplicationRequest(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
 

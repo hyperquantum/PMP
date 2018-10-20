@@ -365,6 +365,18 @@ namespace PMP {
 
         _queueContextMenu->addSeparator();
 
+        QAction* duplicateAction = _queueContextMenu->addAction(tr("Duplicate"));
+        connect(
+            duplicateAction, &QAction::triggered,
+            [this, queueID]() {
+                qDebug() << "queue context menu: duplicate action triggered for item"
+                         << queueID;
+                _queueMediator->duplicateEntryAsync(queueID);
+            }
+        );
+
+        _queueContextMenu->addSeparator();
+
         QAction* moveToFrontAction = _queueContextMenu->addAction(tr("Move to front"));
         connect(
             moveToFrontAction, &QAction::triggered,

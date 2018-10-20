@@ -389,6 +389,10 @@ namespace PMP {
         _connection->insertQueueEntryAtIndex(hash, index);
     }
 
+    void QueueMediator::duplicateEntryAsync(quint32 queueId) {
+        _connection->duplicateQueueEntry(queueId);
+    }
+
     void QueueMediator::resetQueue(int queueLength) {
         qDebug() << "QueueMediator: resetting state, length=" << queueLength;
         _queueLength = queueLength;

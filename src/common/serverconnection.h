@@ -75,6 +75,12 @@ namespace PMP {
             NotConnected, Connecting, Handshake, TextMode,
             HandshakeFailure, BinaryHandshake, BinaryMode
         };
+
+        class ResultHandler;
+        class CollectionFetchResultHandler;
+        class TrackInsertionResultHandler;
+        class DuplicationResultHandler;
+
     public:
         enum PlayState {
             UnknownState = 0, Stopped = 1, Playing = 2, Paused = 3
@@ -135,6 +141,7 @@ namespace PMP {
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
         void deleteQueueEntry(uint queueID);
+        void duplicateQueueEntry(uint queueID);
         void moveQueueEntry(uint queueID, qint16 offsetDiff);
 
         void insertQueueEntryAtFront(FileHash const& hash);
@@ -268,6 +275,7 @@ namespace PMP {
         void parseDynamicModeWaveStatusMessage(QByteArray const& message);
 
         void parseQueueEntryAddedMessage(QByteArray const& message);
+        void parseQueueEntryAdditionConfirmationMessage(QByteArray const& message);
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 
@@ -292,8 +300,8 @@ namespace PMP {
         quint32 _userLoggedInId;
         QString _userLoggedInName;
         TriBool _doingFullIndexation;
+        QHash<uint, ResultHandler*> _resultHandlers;
         QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
-        QHash<uint, quint32> _insertAtIndexRequests;
         SimplePlayerControllerImpl* _simplePlayerController;
     };
 

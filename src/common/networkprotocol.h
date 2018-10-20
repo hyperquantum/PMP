@@ -39,6 +39,7 @@ namespace PMP {
           6: single byte request 17 & server msg 25: retrieving the database identifier
           7: server msgs 18 & 19 extended with album and track length
           8: server msg 26 and single byte request 24 for dynamic mode waves
+          9: client msg 21, server msg 27: queue entry duplication
 
     */
 
@@ -80,6 +81,7 @@ namespace PMP {
             PlayerHistoryMessage = 24,
             DatabaseIdentifierMessage = 25,
             DynamicModeWaveStatusMessage = 26,
+            QueueEntryAdditionConfirmationMessage = 27,
         };
 
         enum ClientMessageType {
@@ -104,6 +106,7 @@ namespace PMP {
             HashUserDataRequestMessage = 18,
             InsertHashIntoQueueRequestMessage = 19,
             PlayerHistoryRequestMessage = 20,
+            QueueEntryDuplicationRequestMessage = 21,
         };
 
         enum ErrorType {
@@ -118,7 +121,10 @@ namespace PMP {
             UserLoginAuthenticationFailed = 15,
             AlreadyLoggedIn = 16,
 
+            QueueIdNotFound = 20,
+
             DatabaseProblem = 90,
+            NonFatalInternalServerError = 254,
             UnknownError = 255
         };
 
