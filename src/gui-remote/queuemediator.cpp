@@ -389,8 +389,16 @@ namespace PMP {
         _connection->insertQueueEntryAtIndex(hash, index);
     }
 
-    void QueueMediator::duplicateEntryAsync(quint32 queueId) {
-        _connection->duplicateQueueEntry(queueId);
+    void QueueMediator::duplicateEntryAsync(quint32 queueID) {
+        _connection->duplicateQueueEntry(queueID);
+    }
+
+    bool QueueMediator::canDuplicateEntry(quint32 queueID) const {
+        (void)queueID;
+
+        /* we COULD simulate duplication for tracks on older servers, with a regular
+         * insert operation, but there is no reason to put in the effort at this time */
+        return _connection->serverSupportsQueueEntryDuplication();
     }
 
     void QueueMediator::resetQueue(int queueLength) {

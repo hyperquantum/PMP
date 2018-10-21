@@ -287,6 +287,10 @@ namespace PMP {
         return *_simplePlayerController;
     }
 
+    bool ServerConnection::serverSupportsQueueEntryDuplication() const {
+        return _serverProtocolNo >= 9;
+    }
+
     void ServerConnection::onConnected() {
         qDebug() << "connected to host";
         _state = Handshake;

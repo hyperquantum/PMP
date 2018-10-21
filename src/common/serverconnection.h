@@ -113,6 +113,8 @@ namespace PMP {
 
         SimplePlayerController& simplePlayerController();
 
+        bool serverSupportsQueueEntryDuplication() const;
+
     public slots:
         void shutdownServer();
 
