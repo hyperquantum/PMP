@@ -33,7 +33,8 @@ using namespace PMP;
 // ================================= BackendMock ================================= //
 
 BackendMock::BackendMock(bool requireAuthentication)
- : _scrobbledSuccessfullyCount(0), _requireAuthentication(requireAuthentication),
+ : _scrobbledSuccessfullyCount(0), _tracksIgnoredCount(0),
+   _requireAuthentication(requireAuthentication),
    _haveApiToken(false), _apiTokenWillBeAcceptedByApi(false)
 {
     qDebug() << "running BackendMock(" << requireAuthentication << ")";
