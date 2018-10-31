@@ -198,7 +198,7 @@ namespace PMP {
             _backoffMilliseconds = initialBackoffMilliseconds;
         }
         else {
-            _backoffMilliseconds *= 2;
+            _backoffMilliseconds = (_backoffMilliseconds + 1) * 2;
         }
 
         qDebug() << "starting backoff timer with interval:" << _backoffMilliseconds;
