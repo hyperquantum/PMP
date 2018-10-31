@@ -272,8 +272,8 @@ namespace PMP {
                 break;
 
             case 11: case 16:
-                /* TODO: retry request later */
-                setState(ScrobblingBackendState::TemporarilyUnavailable);
+                /* retry request later */
+                emit serviceTemporarilyUnavailable();
                 break;
 
             case 2: case 3: case 5: case 6: case 7: case 13: case 27:
@@ -286,7 +286,7 @@ namespace PMP {
                 break;
 
             case 29: /* rate limit exceeded */
-                setState(ScrobblingBackendState::TemporarilyUnavailable);
+                emit serviceTemporarilyUnavailable();
                 break;
 
             default:

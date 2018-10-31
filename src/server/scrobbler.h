@@ -47,18 +47,23 @@ namespace PMP {
 
     private slots:
         void timeoutTimerTimedOut();
+        void backoffTimerTimedOut();
         void gotScrobbleResult(ScrobbleResult result);
         void backendStateChanged(ScrobblingBackendState newState);
+        void serviceTemporarilyUnavailable();
 
     private:
         void checkIfWeHaveSomethingToDo();
         void sendNextScrobble();
+        void startBackoffTimer(int initialBackoffMilliseconds);
 
         ScrobblingDataProvider* _dataProvider;
         ScrobblingBackend* _backend;
         QQueue<std::shared_ptr<TrackToScrobble>> _tracksToScrobble;
         std::shared_ptr<TrackToScrobble> _pendingScrobble;
         QTimer* _timeoutTimer;
+        QTimer* _backoffTimer;
+        int _backoffMilliseconds;
     };
 }
 #endif

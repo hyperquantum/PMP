@@ -34,6 +34,8 @@ class BackendMock : public PMP::ScrobblingBackend {
 public:
     BackendMock(bool requireAuthentication);
 
+    void setTemporaryUnavailabilitiesToStageForScrobbles(int count);
+
     void setUserCredentials(QString username, QString password);
     void setApiToken(bool willBeAcceptedByApi);
 
@@ -54,6 +56,7 @@ private slots:
     void pretendScrobbleFailedBecauseTrackIgnored();
 
 private:
+    int _temporaryUnavailabilitiesToStageAtScrobbleTime;
     int _scrobbledSuccessfullyCount;
     int _tracksIgnoredCount;
     QString _username;
@@ -77,9 +80,10 @@ public:
 
     bool scrobbled() const { return _scrobbled; }
     bool ignored() const { return _cannotBeScrobbled; }
+    QDateTime scrobbledTimestamp() { return _scrobbledTimestamp; }
 
 private:
-    QDateTime _timestamp;
+    QDateTime _timestamp, _scrobbledTimestamp;
     QString _title, _artist, _album;
     bool _scrobbled;
     bool _cannotBeScrobbled;
@@ -107,6 +111,7 @@ private slots:
     void scrobbleWithExistingValidToken();
     void scrobbleWithTokenChangeAfterInvalidToken();
     void mustSkipScrobblesThatAreTooOld();
+    void retriesAfterTemporaryUnavailability();
 
 private:
     QDateTime makeDateTime(int year, int month, int day, int hours, int minutes);

@@ -24,7 +24,9 @@
 namespace PMP {
 
     ScrobblingBackend::ScrobblingBackend()
-     : QObject(nullptr), _state(ScrobblingBackendState::NotInitialized)
+     : QObject(nullptr),
+       _initialBackoffMillisecondsForUnavailability(5 * 60 * 1000 /* 5 minutes */),
+       _state(ScrobblingBackendState::NotInitialized)
     {
         //
     }
@@ -38,6 +40,12 @@ namespace PMP {
 
         _state = newState;
         emit stateChanged(newState);
+    }
+
+    void ScrobblingBackend::setInitialBackoffMillisecondsForUnavailability(
+                                                                     int timeMilliseconds)
+    {
+        _initialBackoffMillisecondsForUnavailability = timeMilliseconds;
     }
 
     QDebug operator<<(QDebug debug, ScrobblingBackendState state) {
@@ -56,9 +64,6 @@ namespace PMP {
                 break;
             case ScrobblingBackendState::ReadyForScrobbling:
                 debug << "ScrobblingBackendState::ReadyForScrobbling";
-                break;
-            case ScrobblingBackendState::TemporarilyUnavailable:
-                debug << "ScrobblingBackendState::TemporarilyUnavailable";
                 break;
             case ScrobblingBackendState::InvalidUserCredentials:
                 debug << "ScrobblingBackendState::InvalidUserCredentials";

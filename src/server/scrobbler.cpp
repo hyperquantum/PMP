@@ -30,7 +30,8 @@ namespace PMP {
     Scrobbler::Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,
                          ScrobblingBackend* backend)
      : QObject(parent), _dataProvider(dataProvider), _backend(backend),
-        _timeoutTimer(new QTimer(this))
+        _timeoutTimer(new QTimer(this)),
+        _backoffTimer(new QTimer(this)), _backoffMilliseconds(0)
     {
         _backend->setParent(this);
 
@@ -42,10 +43,19 @@ namespace PMP {
             backend, &ScrobblingBackend::gotScrobbleResult,
             this, &Scrobbler::gotScrobbleResult
         );
+        connect(
+            backend, &ScrobblingBackend::serviceTemporarilyUnavailable,
+            this, &Scrobbler::serviceTemporarilyUnavailable
+        );
 
         _timeoutTimer->setSingleShot(true);
         connect(
             _timeoutTimer, &QTimer::timeout, this, &Scrobbler::timeoutTimerTimedOut
+        );
+
+        _backoffTimer->setSingleShot(true);
+        connect(
+            _backoffTimer, &QTimer::timeout, this, &Scrobbler::backoffTimerTimedOut
         );
 
         checkIfWeHaveSomethingToDo();
@@ -60,11 +70,19 @@ namespace PMP {
         qDebug() << "timeout event triggered; backend state:" << _backend->state();
 
         /* TODO */
+
+        // TODO : if a track was being scrobbled, reinsert it at the front of the queue
+    }
+
+    void Scrobbler::backoffTimerTimedOut() {
+        qDebug() << "backoff timer triggered";
+        checkIfWeHaveSomethingToDo();
     }
 
     void Scrobbler::checkIfWeHaveSomethingToDo() {
         qDebug() << "running checkIfWeHaveSomethingToDo";
         if (_pendingScrobble) return;
+        if (_backoffTimer->isActive()) return;
 
         if (_tracksToScrobble.empty()) {
             _tracksToScrobble.append(_dataProvider->getNextTracksToScrobble().toList());
@@ -83,9 +101,6 @@ namespace PMP {
                 break; /* waiting for timeout event */
             case ScrobblingBackendState::ReadyForScrobbling:
                 sendNextScrobble();
-                break;
-            case ScrobblingBackendState::TemporarilyUnavailable:
-                /* TODO */
                 break;
             case ScrobblingBackendState::PermanentFatalError:
                 /* TODO */
@@ -123,6 +138,7 @@ namespace PMP {
         _timeoutTimer->stop();
         auto trackPtr = _pendingScrobble;
         _pendingScrobble = nullptr;
+        _backoffMilliseconds = 0;
 
         switch (result) {
             case ScrobbleResult::Success:
@@ -144,22 +160,49 @@ namespace PMP {
         qDebug() << "backend state changed to:" << newState;
 
         _timeoutTimer->stop();
+        _backoffMilliseconds = 0;
 
         /* should we wait for something to change in the backend? */
         switch (newState) {
             case ScrobblingBackendState::WaitingForAuthenticationResult:
                 _timeoutTimer->start(5000);
-                break;
+                return;
             case ScrobblingBackendState::WaitingForScrobbleResult:
                 _timeoutTimer->start(5000);
-                break;
+                return;
             case ScrobblingBackendState::WaitingForUserCredentials:
-                break; /* no waiting for timeout */
+                return; /* no waiting for timeout */
             default:
-                break; /* no waiting for timeout */
+                checkIfWeHaveSomethingToDo();
+                break;
+        }
+    }
+
+    void Scrobbler::serviceTemporarilyUnavailable() {
+        qDebug() << "serviceTemporarilyUnavailable() called";
+
+        auto trackPtr = _pendingScrobble;
+        _pendingScrobble = nullptr;
+        if (trackPtr) {
+            /* reinsert at front of the queue */
+            _tracksToScrobble.insert(0, trackPtr);
         }
 
-        checkIfWeHaveSomethingToDo();
+        startBackoffTimer(_backend->getInitialBackoffMillisecondsForUnavailability());
+    }
+
+    void Scrobbler::startBackoffTimer(int initialBackoffMilliseconds) {
+        _backoffTimer->stop();
+
+        if (_backoffMilliseconds < initialBackoffMilliseconds) {
+            _backoffMilliseconds = initialBackoffMilliseconds;
+        }
+        else {
+            _backoffMilliseconds *= 2;
+        }
+
+        qDebug() << "starting backoff timer with interval:" << _backoffMilliseconds;
+        _backoffTimer->start(_backoffMilliseconds);
     }
 
 }

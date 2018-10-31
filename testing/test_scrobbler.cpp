@@ -33,11 +33,13 @@ using namespace PMP;
 // ================================= BackendMock ================================= //
 
 BackendMock::BackendMock(bool requireAuthentication)
- : _scrobbledSuccessfullyCount(0), _tracksIgnoredCount(0),
+ : _temporaryUnavailabilitiesToStageAtScrobbleTime(0),
+   _scrobbledSuccessfullyCount(0), _tracksIgnoredCount(0),
    _requireAuthentication(requireAuthentication),
    _haveApiToken(false), _apiTokenWillBeAcceptedByApi(false)
 {
     qDebug() << "running BackendMock(" << requireAuthentication << ")";
+    setInitialBackoffMillisecondsForUnavailability(30);
 }
 
 void BackendMock::initialize() {
@@ -47,6 +49,10 @@ void BackendMock::initialize() {
     }
 
     setState(ScrobblingBackendState::WaitingForUserCredentials);
+}
+
+void BackendMock::setTemporaryUnavailabilitiesToStageForScrobbles(int count) {
+    _temporaryUnavailabilitiesToStageAtScrobbleTime = count;
 }
 
 void BackendMock::setUserCredentials(QString username, QString password) {
@@ -73,7 +79,6 @@ void BackendMock::setApiToken(bool willBeAcceptedByApi) {
         case ScrobblingBackendState::ReadyForScrobbling:
         case ScrobblingBackendState::WaitingForScrobbleResult:
             break;
-        case ScrobblingBackendState::TemporarilyUnavailable:
         case ScrobblingBackendState::PermanentFatalError:
             break;
     }
@@ -85,6 +90,12 @@ void BackendMock::scrobbleTrack(QDateTime timestamp, QString const& title,
 {
     if (state() != ScrobblingBackendState::ReadyForScrobbling)
         return;
+
+    if (_temporaryUnavailabilitiesToStageAtScrobbleTime > 0) {
+        _temporaryUnavailabilitiesToStageAtScrobbleTime--;
+        emit serviceTemporarilyUnavailable();
+        return;
+    }
 
     if (_haveApiToken && !_apiTokenWillBeAcceptedByApi) {
         QTimer::singleShot(
@@ -165,11 +176,20 @@ TrackToScrobbleMock::TrackToScrobbleMock(QDateTime timestamp, QString title,
 
 void TrackToScrobbleMock::scrobbledSuccessfully() {
     qDebug() << "track scrobbled successfully";
+
+    QVERIFY(!_scrobbled);
+    QVERIFY(!_cannotBeScrobbled);
+
     _scrobbled = true;
+    _scrobbledTimestamp = QDateTime::currentDateTimeUtc();
 }
 
 void TrackToScrobbleMock::cannotBeScrobbled() {
     qDebug() << "track could not be scrobbled";
+
+    QVERIFY(!_scrobbled);
+    QVERIFY(!_cannotBeScrobbled);
+
     _cannotBeScrobbled = true;
 }
 
@@ -317,6 +337,25 @@ void TestScrobbler::mustSkipScrobblesThatAreTooOld() {
 
     QCOMPARE(backend->tracksIgnoredCount(), 3);
     QCOMPARE(backend->scrobbledSuccessfullyCount(), 5);
+}
+
+void TestScrobbler::retriesAfterTemporaryUnavailability() {
+    DataProviderMock dataProvider;
+    auto track1 = addTrackToScrobble(dataProvider);
+    auto track2 = addTrackToScrobble(dataProvider);
+
+    QVERIFY(!track1->scrobbled());
+    QVERIFY(!track2->scrobbled());
+
+    auto backend = new BackendMock(false);
+    backend->setTemporaryUnavailabilitiesToStageForScrobbles(3);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    scrobbler.wakeUp();
+
+    QTRY_VERIFY(track2->scrobbled());
+    QVERIFY(track1->scrobbled());
+    QVERIFY(track1->scrobbledTimestamp() < track2->scrobbledTimestamp());
+    QCOMPARE(backend->scrobbledSuccessfullyCount(), 2);
 }
 
 QDateTime TestScrobbler::makeDateTime(int year, int month, int day,

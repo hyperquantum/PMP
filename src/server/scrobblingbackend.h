@@ -31,7 +31,6 @@ namespace PMP {
         WaitingForAuthenticationResult,
         ReadyForScrobbling,
         WaitingForScrobbleResult,
-        TemporarilyUnavailable,
         InvalidUserCredentials,
         PermanentFatalError,
     };
@@ -58,17 +57,24 @@ namespace PMP {
                                    QString const& artist, QString const& album,
                                    int trackDurationSeconds = -1) = 0;
 
+        int getInitialBackoffMillisecondsForUnavailability() const {
+            return _initialBackoffMillisecondsForUnavailability;
+        }
+
     public slots:
         virtual void initialize() = 0;
 
     Q_SIGNALS:
         void stateChanged(ScrobblingBackendState newState);
         void gotScrobbleResult(ScrobbleResult result);
+        void serviceTemporarilyUnavailable();
 
     protected slots:
         void setState(ScrobblingBackendState newState);
+        void setInitialBackoffMillisecondsForUnavailability(int timeMilliseconds);
 
     private:
+        int _initialBackoffMillisecondsForUnavailability;
         ScrobblingBackendState _state;
     };
 }
