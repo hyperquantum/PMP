@@ -241,7 +241,6 @@ Effort is a rough estimate. Priorities can still change.
 | Group song duplicates together and treat them as one      | High     | Large        |
 | Identify song duplicates which have different hash values | High     | Large        |
 | Keyboard shortcuts for adjusting volume                   | Medium   | Small        |
-| Queue contextmenu option to duplicate the entry           | Medium   | Small        |
 | Fuzzy matching when searching the music collection        | Medium   | Medium       |
 | Server to server remote music access                      | Medium   | Medium       |
 | Identify artist by something better than text             | Medium   | Large        |
