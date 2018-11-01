@@ -8,7 +8,7 @@ Party Music Player, abbreviated as PMP, is a multi-user client-server music syst
 
 PMP is designed to be portable software and should be compatible with most popular operating systems in use today. Only Windows and Linux have been tested, but others like Mac OS X, BSD... should be supported as well.
 
-The software is licenced under [GPLv3](./LICENSE.GPLv3.txt).
+The software is licenced under [GPLv3](./LICENSE).
 
 *This is (pre-)alpha quality software*. Important functionality is still missing. There are no official releases yet. Anyone interested in trying PMP will need to build it from source.
 
