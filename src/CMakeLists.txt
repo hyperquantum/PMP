@@ -42,19 +42,14 @@ set(PMP_SERVER_SOURCES
     server/database.cpp
     server/generator.cpp
     server/history.cpp
-    server/lastfmscrobblingbackend.cpp
     server/player.cpp
     server/preloader.cpp
     server/queue.cpp
     server/queueentry.cpp
     server/resolver.cpp
-    server/scrobbler.cpp
-    server/scrobblingbackend.cpp
-    server/scrobblingdataprovider.cpp
     server/server.cpp
     server/servermetatypes.cpp
     server/serversettings.cpp
-    server/tracktoscrobble.cpp
     server/userdataforhashesfetcher.cpp
     server/userdatafortracksfetcher.cpp
     server/users.cpp
@@ -65,14 +60,11 @@ set(PMP_SERVER_HEADERS
     server/connectedclient.h
     server/generator.h
     server/history.h
-    server/lastfmscrobblingbackend.h
     server/player.h
     server/preloader.h
     server/queue.h
     server/queueentry.h
     server/resolver.h
-    server/scrobbler.h
-    server/scrobblingbackend.h
     server/server.h
     server/serversettings.h
     server/userdataforhashesfetcher.h

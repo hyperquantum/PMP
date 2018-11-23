@@ -17,8 +17,6 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "scrobblingbackend.h"
-
 namespace PMP {
 
     /** Utility object to automatically do the qRegisterMetaType calls at program
@@ -26,8 +24,7 @@ namespace PMP {
     class ServerMetatypesInit {
     private:
         ServerMetatypesInit() {
-            qRegisterMetaType<PMP::ScrobblingBackendState>();
-            qRegisterMetaType<PMP::ScrobbleResult>();
+            //qRegisterMetaType<PMP::ClassName>();
         }
 
         static ServerMetatypesInit GlobalVariable;
