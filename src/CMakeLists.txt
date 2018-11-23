@@ -134,9 +134,9 @@ qt5_add_resources(PMP_GUI_REMOTE_QRCS ${PMP_GUI_REMOTE_RESOURCES})
 
 configure_file(common/version.h.in common/version.h)
 
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT ENABLE_WIN32_CONSOLE)
+if (NOT ENABLE_WIN32_CONSOLE)
   set(PMP_WIN32_FLAG WIN32)
-endif (NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT ENABLE_WIN32_CONSOLE)
+endif (NOT ENABLE_WIN32_CONSOLE)
 
 add_executable(PMP-HashTool
     tools/hash-main.cpp
