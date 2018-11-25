@@ -1,81 +1,81 @@
 ﻿
 PLANNED NEXT
 
- - keep track time in database; get the time from the player when a track is played until the end
- - regular automatic cleanup of old log files while the server is running
- - create Last.FM scrobbler  (but how/where are we going to keep user authentication data?)
+ * keep track time in database; get the time from the player when a track is played until the end
+ * regular automatic cleanup of old log files while the server is running
+ * create Last.FM scrobbler  (but how/where are we going to keep user authentication data?)
 
 
 KNOWN BUGS
 
- - for some tracks we get the wrong length (caused by length estimation in TagLib)
- - when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
- - the commandline client does not support user authentication which is now required for some commands it supports
- - GUI remote: tracks can be dragged using the right mouse button (not just the left button)
- - GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
- - GUI remote: after a breakpoint is hit, track length and play position are not cleared
- - hash calculation is wrong for MP3 files containing an APE tag
- - preloaded tracks are sometimes deleted before they are used because they are old
- - player fails to play preloaded entries of which the file has been deleted already
- - server crashes when a server shutdown is performed while a full indexation is running
- - GUI remote: searching the music collection for "e" does not return results having "ë"
+ * for some tracks we get the wrong length (caused by length estimation in TagLib)
+ * when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
+ * the commandline client does not support user authentication which is now required for some commands it supports
+ * GUI remote: tracks can be dragged using the right mouse button (not just the left button)
+ * GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
+ * GUI remote: after a breakpoint is hit, track length and play position are not cleared
+ * hash calculation is wrong for MP3 files containing an APE tag
+ * preloaded tracks are sometimes deleted before they are used because they are old
+ * player fails to play preloaded entries of which the file has been deleted already
+ * server crashes when a server shutdown is performed while a full indexation is running
+ * GUI remote: searching the music collection for "e" does not return results having "ë"
 
 
 PERFORMANCE ISSUES
 
- -
+ *
 
 
 TECHNICAL TODO
 
- - keep track lengths in milliseconds, not seconds
- - associate a title and artist with each hash and save that information in the database (?)
- - when running an indexation, analyze the most recently created/updated files first
- - large file support (?)
+ * keep track lengths in milliseconds, not seconds
+ * associate a title and artist with each hash and save that information in the database (?)
+ * when running an indexation, analyze the most recently created/updated files first
+ * large file support (?)
 
 
 IDEAS
 
- - 'like' button for the song that is playing, that will bump the score of the song a little bit
- - 'love' & 'hate' button for the song that is playing
- - statistics view for the user; with things like "amount of tracks played in the last 7/30/... days"
- - 'about the remote' window; with client version and protocol version
- - 'about the server' window; with server name, UUID and protocol version
- - ability to put playback volume adjustments in the queue (the same way as breakpoints)
- - ability to view statistics such as 'previously heard' and 'score' for the song currently playing
- - visual indication of score for each track in the music collection, to make 'good' tracks stand out
- - add other statistics relevant for scoring (e.g. was the track manually added to the queue) to the play history
- - provide play/pause buttons in Windows taskbar popup
- - use libgroove for playback (?)
- - support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
- - display PMP server version in the client 'About' dialog
- - interactive editing of the list of directories to scan for music
- - ability to ban a track permanently or temporarily; this will also hide it in the music collection
- - 'play now' option in the context menus of the music collection, the history, and maybe the queue
- - dark theme for the client
- - require the server password when registering a new user account
- - permit server shutdown by commandline remote if the server password is passed along
+ * 'like' button for the song that is playing, that will bump the score of the song a little bit
+ * 'love' & 'hate' button for the song that is playing
+ * statistics view for the user; with things like "amount of tracks played in the last 7/30/... days"
+ * 'about the remote' window; with client version and protocol version
+ * 'about the server' window; with server name, UUID and protocol version
+ * ability to put playback volume adjustments in the queue (the same way as breakpoints)
+ * ability to view statistics such as 'previously heard' and 'score' for the song currently playing
+ * visual indication of score for each track in the music collection, to make 'good' tracks stand out
+ * add other statistics relevant for scoring (e.g. was the track manually added to the queue) to the play history
+ * provide play/pause buttons in Windows taskbar popup
+ * use libgroove for playback (?)
+ * support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
+ * display PMP server version in the client 'About' dialog
+ * interactive editing of the list of directories to scan for music
+ * ability to ban a track permanently or temporarily; this will also hide it in the music collection
+ * 'play now' option in the context menus of the music collection, the history, and maybe the queue
+ * dark theme for the client
+ * require the server password when registering a new user account
+ * permit server shutdown by commandline remote if the server password is passed along
 
 
 USER FRIENDLINESS
 
- - provide 'forgot password' functionality to enable a user to reset their password
- - work around the need for a full indexation at server startup
- - when creating a new account, explain the meaning of the password score
- - GUI remote: after login it should show what server it is connected to somehow
- - inform the user properly when the server is having problems connecting to the database
- - display the title/artist of the track currently playing in the window title of the remote
- - the drop indicator in the queue needs to be drawn as a line between tracks
- - GUI remote: disable screensaver while playing
+ * provide 'forgot password' functionality to enable a user to reset their password
+ * work around the need for a full indexation at server startup
+ * when creating a new account, explain the meaning of the password score
+ * GUI remote: after login it should show what server it is connected to somehow
+ * inform the user properly when the server is having problems connecting to the database
+ * display the title/artist of the track currently playing in the window title of the remote
+ * the drop indicator in the queue needs to be drawn as a line between tracks
+ * GUI remote: disable screensaver while playing
 
 
 POLISHING
 
- - when skipping the current track after a long-time pause (say, more than 10 min), do not let the skip affect scoring of the paused track
- - an icon for the GUI remote executable
- - be more strict in determining the 'end time' for the history of a track that was played; time when paused should not count
+ * when skipping the current track after a long-time pause (say, more than 10 min), do not let the skip affect scoring of the paused track
+ * an icon for the GUI remote executable
+ * be more strict in determining the 'end time' for the history of a track that was played; time when paused should not count
 
 
 CODE CLEANUP
 
- -
+ *
