@@ -3,7 +3,7 @@ PLANNED NEXT
 
  * keep track time in database; get the time from the player when a track is played until the end
  * regular automatic cleanup of old log files while the server is running
- * create Last.FM scrobbler  (but how/where are we going to keep user authentication data?)
+ ** create Last.FM scrobbler  (but how/where are we going to keep user authentication data?)
 
 
 KNOWN BUGS
@@ -43,7 +43,7 @@ IDEAS
  * 'about the server' window; with server name, UUID and protocol version
  * ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * ability to view statistics such as 'previously heard' and 'score' for the song currently playing
- * visual indication of score for each track in the music collection, to make 'good' tracks stand out
+ ** visual indication of score for each track in the music collection, to make 'good' tracks stand out
  * add other statistics relevant for scoring (e.g. was the track manually added to the queue) to the play history
  * provide play/pause buttons in Windows taskbar popup
  * use libgroove for playback (?)
@@ -60,13 +60,13 @@ IDEAS
 USER FRIENDLINESS
 
  * provide 'forgot password' functionality to enable a user to reset their password
- * work around the need for a full indexation at server startup
+ ** work around the need for a full indexation at server startup
  * when creating a new account, explain the meaning of the password score
  * GUI remote: after login it should show what server it is connected to somehow
  * inform the user properly when the server is having problems connecting to the database
  * display the title/artist of the track currently playing in the window title of the remote
  * the drop indicator in the queue needs to be drawn as a line between tracks
- * GUI remote: disable screensaver while playing
+ ** GUI remote: disable screensaver while playing
 
 
 POLISHING
