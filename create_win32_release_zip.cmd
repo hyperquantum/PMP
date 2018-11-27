@@ -17,9 +17,9 @@
 SETLOCAL ENABLEEXTENSIONS
 
 :: Installation paths -- ADJUST AS NEEDED
-SET MINGW_BIN_DIR=C:\Qt\Tools\mingw482_32\bin
-SET QT_BIN_DIR=C:\Qt\5.3\mingw482_32\bin
-SET QT_PLUGINS_DIR=C:\Qt\5.3\mingw482_32\plugins
+SET MINGW_BIN_DIR=C:\Qt\Tools\mingw530_32\bin
+SET QT_BIN_DIR=C:\Qt\5.7\mingw53_32\bin
+SET QT_PLUGINS_DIR=C:\Qt\5.7\mingw53_32\plugins
 SET CMAKE_BIN_DIR=%programfiles%\CMake\bin
 SET TOOL_7Z_BIN_DIR=%programfiles%\7-Zip
 
@@ -135,7 +135,6 @@ copy "%MINGW_BIN_DIR%"\libtag.dll "%dist_dir%" >NUL
 copy "%QT_BIN_DIR%"\libgcc_s_dw*.dll "%dist_dir%" >NUL
 copy "%QT_BIN_DIR%"\libstdc*.dll "%dist_dir%" >NUL
 copy "%QT_BIN_DIR%"\libwinpthread*.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\icu*.dll "%dist_dir%" >NUL
 copy "%QT_BIN_DIR%"\Qt5Concurrent.dll "%dist_dir%" >NUL
 copy "%QT_BIN_DIR%"\Qt5Core.dll "%dist_dir%" >NUL
 copy "%QT_BIN_DIR%"\Qt5Gui.dll "%dist_dir%" >NUL
@@ -146,6 +145,7 @@ copy "%QT_BIN_DIR%"\Qt5OpenGL.dll "%dist_dir%" >NUL
 copy "%QT_BIN_DIR%"\Qt5Sql.dll "%dist_dir%" >NUL
 copy "%QT_BIN_DIR%"\Qt5Widgets.dll "%dist_dir%" >NUL
 
+robocopy "%QT_PLUGINS_DIR%"/audio "%dist_dir%"/audio >NUL
 robocopy "%QT_PLUGINS_DIR%"/iconengines "%dist_dir%"/iconengines >NUL
 robocopy "%QT_PLUGINS_DIR%"/imageformats "%dist_dir%"/imageformats >NUL
 robocopy "%QT_PLUGINS_DIR%"/mediaservice "%dist_dir%"/mediaservice >NUL
