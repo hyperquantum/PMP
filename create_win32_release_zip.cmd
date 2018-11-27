@@ -17,9 +17,11 @@
 SETLOCAL ENABLEEXTENSIONS
 
 :: Installation paths -- ADJUST AS NEEDED
-SET MINGW_BIN_DIR=C:\Qt\Tools\mingw530_32\bin
-SET QT_BIN_DIR=C:\Qt\5.7\mingw53_32\bin
-SET QT_PLUGINS_DIR=C:\Qt\5.7\mingw53_32\plugins
+SET MINGW_BASE_DIR=C:\Qt\Tools\mingw530_32
+SET QT_BASE_DIR=C:\Qt\5.7\mingw53_32
+SET MINGW_BIN_DIR="%MINGW_BASE_DIR%"\bin
+SET QT_BIN_DIR="%QT_BASE_DIR%"\bin
+SET QT_PLUGINS_DIR="%QT_BASE_DIR%"\plugins
 SET CMAKE_BIN_DIR=%programfiles%\CMake\bin
 SET TOOL_7Z_BIN_DIR=%programfiles%\7-Zip
 
