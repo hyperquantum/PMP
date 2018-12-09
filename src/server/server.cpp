@@ -90,7 +90,7 @@ namespace PMP {
         for (int i = 0; i < 8; ++i) {
             int index;
             do {
-                index = qrand() % chars.length();
+                index = qrand() % chars.length(); // FIXME : don't use qrand()
             } while (qAbs(index - prevIndex) < 16);
             prevIndex = index;
             QChar c = chars[index];

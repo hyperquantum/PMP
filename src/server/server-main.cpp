@@ -85,6 +85,7 @@ int main(int argc, char *argv[]) {
      *       weeks, or months before being restarted. */
 
     /* seed random number generator */
+    // FIXME : stop using qrand(), and then we can remove this call to qsrand()
     qsrand(QTime::currentTime().msec());
 
     ServerHealthMonitor serverHealthMonitor;
