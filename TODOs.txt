@@ -54,7 +54,6 @@ IDEAS
  * 'play now' option in the context menus of the music collection, the history, and maybe the queue
  * dark theme for the client
  * require the server password when registering a new user account
- * permit server shutdown by commandline remote if the server password is passed along
 
 
 USER FRIENDLINESS

@@ -358,6 +358,11 @@ namespace PMP {
                 if (isLoggedIn()) { _player->setVolume(volume); }
             }
         }
+        else if (command == "shutdown") {
+            if (arg1 == _server->serverPassword()) {
+                _server->shutdown();
+            }
+        }
         else {
             /* unknown command ???? */
             qDebug() << " unknown text command: " << command;
