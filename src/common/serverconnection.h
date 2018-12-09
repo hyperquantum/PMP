@@ -325,7 +325,7 @@ namespace PMP {
     class AbstractCollectionFetcher : public QObject {
         Q_OBJECT
     protected:
-        AbstractCollectionFetcher(QObject* parent = 0);
+        AbstractCollectionFetcher(QObject* parent = nullptr);
 
     public slots:
         virtual void receivedData(QList<CollectionTrackInfo> data) = 0;

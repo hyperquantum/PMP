@@ -469,12 +469,12 @@ namespace PMP {
 
     void MainWindow::onAccountCreated(QString login, QString password, quint32 accountId)
     {
-        _userAccountCreationWidget = 0;
+        _userAccountCreationWidget = nullptr;
         showUserAccountPicker();
     }
 
     void MainWindow::onAccountCreationCancel() {
-        _userAccountCreationWidget = 0;
+        _userAccountCreationWidget = nullptr;
         showUserAccountPicker();
     }
 
@@ -498,7 +498,7 @@ namespace PMP {
         updateRightStatus();
         _connection->requestFullIndexationRunningStatus();
 
-        _loginWidget = 0;
+        _loginWidget = nullptr;
         showMainWidget();
 
         _startFullIndexationAction->setEnabled(false);
@@ -507,7 +507,7 @@ namespace PMP {
     }
 
     void MainWindow::onLoginCancel() {
-        _loginWidget = 0;
+        _loginWidget = nullptr;
         showUserAccountPicker();
     }
 }
