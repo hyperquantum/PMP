@@ -239,11 +239,12 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    const qint16 ServerConnection::ClientProtocolNo = 9;
+    const qint16 ServerConnection::ClientProtocolNo = 10;
 
-    ServerConnection::ServerConnection(QObject* parent, bool subscribeToAllServerEvents)
+    ServerConnection::ServerConnection(QObject* parent,
+                                       ServerEventSubscription eventSubscription)
      : QObject(parent),
-       _autoSubscribeToEventsAfterConnect(subscribeToAllServerEvents),
+       _autoSubscribeToEventsAfterConnect(eventSubscription),
        _state(ServerConnection::NotConnected),
        _binarySendingMode(false),
        _serverProtocolNo(-1), _nextRef(1),
@@ -397,8 +398,18 @@ namespace PMP {
 
                 _state = BinaryMode;
 
-                if (_autoSubscribeToEventsAfterConnect) {
+                if (_autoSubscribeToEventsAfterConnect
+                        == ServerEventSubscription::AllEvents)
+                {
                     sendSingleByteAction(50); /* 50 = subscribe to all server events */
+                }
+                else if (_autoSubscribeToEventsAfterConnect
+                            == ServerEventSubscription::ServerHealthMessages)
+                {
+                    if (_serverProtocolNo >= 10) {
+                         /* 51 = subscribe to server health events */
+                        sendSingleByteAction(51);
+                    }
                 }
 
                 emit connected();
@@ -1591,6 +1602,9 @@ namespace PMP {
         case NetworkProtocol::QueueEntryAdditionConfirmationMessage:
             parseQueueEntryAdditionConfirmationMessage(message);
             break;
+        case NetworkProtocol::ServerHealthMessage:
+            parseServerHealthMessage(message);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
@@ -1960,6 +1974,29 @@ namespace PMP {
         else {
             qWarning() << "no result handler found for reference" << clientReference;
             emit queueEntryAdded(index, queueID, RequestID(clientReference));
+        }
+    }
+
+    void ServerConnection::parseServerHealthMessage(QByteArray const& message) {
+        if (message.length() != 4) {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        quint16 problems = NetworkUtil::get2Bytes(message, 2);
+
+        bool databaseUnavailable = problems & 1u;
+
+        ServerHealthStatus newServerHealthStatus(databaseUnavailable);
+
+        bool healthStatusChanged = _serverHealthStatus != newServerHealthStatus;
+        _serverHealthStatus = newServerHealthStatus;
+
+        if (healthStatusChanged) {
+            if (databaseUnavailable)
+                qWarning() << "server reports that its database is unavailable";
+
+            emit serverHealthChanged(newServerHealthStatus);
         }
     }
 

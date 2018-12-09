@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,8 @@
 
 #ifndef PMP_USERPICKERWIDGET_H
 #define PMP_USERPICKERWIDGET_H
+
+#include "common/serverhealthstatus.h"
 
 #include <QList>
 #include <QPair>
@@ -47,10 +49,12 @@ namespace PMP {
 
     private slots:
         void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
+        void serverHealthChanged(ServerHealthStatus serverHealth);
 
     private:
         Ui::UserPickerWidget* _ui;
         ServerConnection* _connection;
+        bool _serverProblemsPreventLogin;
     };
 }
 #endif

@@ -48,6 +48,7 @@ set(PMP_SERVER_SOURCES
     server/queueentry.cpp
     server/resolver.cpp
     server/server.cpp
+    server/serverhealthmonitor.cpp
     server/servermetatypes.cpp
     server/serversettings.cpp
     server/userdataforhashesfetcher.cpp
@@ -66,6 +67,7 @@ set(PMP_SERVER_HEADERS
     server/queueentry.h
     server/resolver.h
     server/server.h
+    server/serverhealthmonitor.h
     server/serversettings.h
     server/userdataforhashesfetcher.h
     server/userdatafortracksfetcher.h

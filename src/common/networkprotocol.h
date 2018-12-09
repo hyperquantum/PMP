@@ -40,6 +40,7 @@ namespace PMP {
           7: server msgs 18 & 19 extended with album and track length
           8: server msg 26 and single byte request 24 for dynamic mode waves
           9: client msg 21, server msg 27: queue entry duplication
+         10: single byte request 51 & server msg 28: server health messages
 
     */
 
@@ -82,6 +83,7 @@ namespace PMP {
             DatabaseIdentifierMessage = 25,
             DynamicModeWaveStatusMessage = 26,
             QueueEntryAdditionConfirmationMessage = 27,
+            ServerHealthMessage = 28,
         };
 
         enum ClientMessageType {

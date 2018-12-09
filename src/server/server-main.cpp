@@ -31,6 +31,7 @@
 #include "queueentry.h"
 #include "resolver.h"
 #include "server.h"
+#include "serverhealthmonitor.h"
 #include "serversettings.h"
 #include "users.h"
 
@@ -86,6 +87,8 @@ int main(int argc, char *argv[]) {
     /* seed random number generator */
     qsrand(QTime::currentTime().msec());
 
+    ServerHealthMonitor serverHealthMonitor;
+
     /* clean up leftover preloader cache files */
     Preloader::cleanupOldFiles();
 
@@ -134,7 +137,10 @@ int main(int argc, char *argv[]) {
         out << endl;
     }
 
-    Database::init(out);
+    bool databaseInitializationSucceeded = Database::init(out);
+    if (!databaseInitializationSucceeded) {
+        serverHealthMonitor.setDatabaseUnavailable();
+    }
 
     Resolver resolver;
 
@@ -182,7 +188,8 @@ int main(int argc, char *argv[]) {
     Server server(nullptr, serverInstanceIdentifier);
     bool listening =
         server.listen(
-            &player, &generator, &users, &collectionMonitor, QHostAddress::Any, 23432
+            &player, &generator, &users, &collectionMonitor, &serverHealthMonitor,
+            QHostAddress::Any, 23432
         );
 
     if (!listening) {
@@ -201,7 +208,8 @@ int main(int argc, char *argv[]) {
     out << endl << "Server initialization complete." << endl;
 
     /* start indexation of the media directories */
-    resolver.startFullIndexation();
+    if (databaseInitializationSucceeded)
+        resolver.startFullIndexation();
 
     return app.exec();
 }

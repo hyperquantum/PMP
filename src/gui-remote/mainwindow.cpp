@@ -335,6 +335,10 @@ namespace PMP {
             this, &MainWindow::onConnectionBroken
         );
         connect(
+            _connection, &ServerConnection::serverHealthChanged,
+            this, &MainWindow::onServerHealthChanged
+        );
+        connect(
             _connection, &ServerConnection::fullIndexationStatusReceived,
             [this](bool running) {
                 _startFullIndexationAction->setEnabled(
@@ -406,6 +410,23 @@ namespace PMP {
             this, tr("Connection failure"), tr("Connection to the server was lost!")
         );
         this->close();
+    }
+
+    void MainWindow::onServerHealthChanged(ServerHealthStatus serverHealth) {
+        if (!serverHealth.anyProblems()) return;
+
+        if (serverHealth.databaseUnavailable()) {
+            QMessageBox::warning(
+                this, tr("Server problem"),
+                tr("The server reports that its database is not working!")
+            );
+        }
+        else {
+            QMessageBox::warning(
+                this, tr("Server problem"),
+                tr("The server reports an unspecified problem!")
+            );
+        }
     }
 
     void MainWindow::showMainWidget() {

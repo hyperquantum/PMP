@@ -43,6 +43,7 @@ namespace PMP {
     class QueueEntry;
     class Resolver;
     class Server;
+    class ServerHealthMonitor;
     class Users;
 
     class ConnectedClient : public QObject {
@@ -50,7 +51,8 @@ namespace PMP {
     public:
         ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                         Generator* generator, Users* users,
-                        CollectionMonitor* collectionMonitor);
+                        CollectionMonitor* collectionMonitor,
+                        ServerHealthMonitor* serverHealthMonitor);
 
         ~ConnectedClient();
 
@@ -61,6 +63,8 @@ namespace PMP {
         void terminateConnection();
         void dataArrived();
         void socketError(QAbstractSocket::SocketError error);
+
+        void serverHealthChanged(bool databaseUnavailable);
 
         void volumeChanged(int volume);
         void dynamicModeStatusChanged(bool enabled);
@@ -98,6 +102,7 @@ namespace PMP {
 
     private:
         void enableEvents();
+        void enableHealthEvents();
 
         bool isLoggedIn() const;
 
@@ -148,6 +153,9 @@ namespace PMP {
                                         bool hadError, bool hadSeek);
         void sendQueueHistoryMessage(int limit);
         void sendServerNameMessage(quint8 type, QString name);
+        void sendServerHealthMessageIfNotEverythingOkay();
+        void sendServerHealthMessage();
+
         void handleBinaryMessage(QByteArray const& message);
         void handleSingleByteAction(quint8 action);
         void handleCollectionFetchRequest(uint clientReference);
@@ -163,15 +171,13 @@ namespace PMP {
 
         static const qint16 ServerProtocolNo;
 
-        bool _terminated;
-        bool _binaryMode;
-        bool _eventsEnabled;
         QTcpSocket* _socket;
         Server* _server;
         Player* _player;
         Generator* _generator;
         Users* _users;
         CollectionMonitor* _collectionMonitor;
+        ServerHealthMonitor* _serverHealthMonitor;
         QByteArray _textReadBuffer;
         int _clientProtocolNo;
         quint32 _lastSentNowPlayingID;
@@ -181,8 +187,12 @@ namespace PMP {
         QByteArray _sessionSaltForUserLoggingIn;
         quint32 _userLoggedIn;
         QString _userLoggedInName;
-        bool _pendingPlayerStatus;
         QHash<quint32, quint32> _trackAdditionConfirmationsPending;
+        bool _terminated;
+        bool _binaryMode;
+        bool _eventsEnabled;
+        bool _healthEventsEnabled;
+        bool _pendingPlayerStatus;
     };
 
     class CollectionSender : public QObject {

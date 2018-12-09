@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -181,7 +181,8 @@ namespace PMP {
     ServerProbe::ServerProbe(QObject* parent, QHostAddress const& address, quint16 port)
      : QObject(parent),
        _address(address), _port(port),
-       _connection(new ServerConnection(this, false)),
+       _connection(new ServerConnection(this,
+                                          ServerEventSubscription::ServerHealthMessages)),
        _serverNameType(0)
     {
         qDebug() << "ServerProbe created for" << address << "port" << port;
