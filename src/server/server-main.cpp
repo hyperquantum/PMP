@@ -72,6 +72,13 @@ int main(int argc, char *argv[]) {
 
     QTextStream out(stdout);
 
+    bool doIndexation = true;
+    QStringList args = QCoreApplication::arguments();
+    Q_FOREACH(QString arg, args) {
+        if (arg == "-no-index" || arg == "-no-indexation")
+            doIndexation = false;
+    }
+
     out << endl
         << "Party Music Player - version " PMP_VERSION_DISPLAY << endl
         << Util::getCopyrightLine(true) << endl
@@ -209,7 +216,7 @@ int main(int argc, char *argv[]) {
     out << endl << "Server initialization complete." << endl;
 
     /* start indexation of the media directories */
-    if (databaseInitializationSucceeded)
+    if (databaseInitializationSucceeded && doIndexation)
         resolver.startFullIndexation();
 
     return app.exec();
