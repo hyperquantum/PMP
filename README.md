@@ -1,4 +1,4 @@
-﻿# Party Music Player
+﻿# Party Music Player [![license][license-badge]][LICENSE]
 
 Copyright (C) 2011-2018  Kevin André
 
@@ -7,8 +7,6 @@ Copyright (C) 2011-2018  Kevin André
 Party Music Player, abbreviated as PMP, is a multi-user client-server music system. The server is responsible for playing music, and a separate program, a 'remote', is used to connect to the server and instruct it what to do. PMP has an advanced file tracking mechanism; it can deal with moved/renamed and duplicate files without any problems.
 
 PMP is designed to be portable software and should be compatible with most popular operating systems in use today. Only Windows and Linux have been tested, but others like Mac OS X, BSD... should be supported as well.
-
-The software is licenced under [GPLv3](./LICENSE).
 
 *This is (pre-)alpha quality software*. Important functionality is still missing. There are no official releases yet. Anyone interested in trying PMP will need to build it from source.
 
@@ -262,3 +260,6 @@ Rudimentary project website:  http://hyperquantum.be/pmp/
 GitHub repository:  https://github.com/hyperquantum/PMP
 
 You can contact the developer here:   hyperquantum@gmail.com
+
+[LICENSE]: ./LICENSE
+[license-badge]: https://img.shields.io/badge/License-GPLv3-blue.svg
