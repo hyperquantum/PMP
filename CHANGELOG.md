@@ -4,9 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## Unreleased
-*Note*: PMP now requires at least Qt version 5.7.
-
+## 0.0.6 - 2018-12-26
 ### Added
 - The GUI-Remote will now respond to keyboard multimedia keys Play/Pause/Next when the window has focus.
 - Music collection view: new columns Length and Album.
@@ -14,14 +12,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Queue context-menu option "Move to end".
 - History view: support for dragging tracks from the history to the queue.
 - History context-menu with options "Add to front of queue" and "Add to end of queue".
-- Dynamic mode: new "Start high-scored tracks wave" option.
+- Dynamic mode: new "Start high-scored tracks wave" action.
 - Server will report a failed database initialization procedure to the client.
 - Server now prints its version number and some copyright information at startup.
-- Command-line remote can now shut down the server again.
+- Command-line remote is now able to shut down the server again.
 
 ### Changed
 - Music collection view: improved sorting.
 - Debug builds of the GUI Remote no longer have a console window by default on Windows, just like release builds.
+- PMP now requires at least Qt version 5.7.
 
 ### Fixed
 - Queue columns "Last heard" and "Score" could be empty because of a breakpoint somewhere in the queue.
