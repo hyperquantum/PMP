@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -87,6 +87,7 @@ namespace PMP {
 
     private:
         void emitSignalIfDataComplete();
+        void cleanupConnection();
 
         QHostAddress _address;
         quint16 _port;

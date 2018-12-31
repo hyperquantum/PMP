@@ -33,6 +33,7 @@
 #include "queueentry.h"
 #include "resolver.h"
 #include "server.h"
+#include "serverhealthmonitor.h"
 #include "users.h"
 
 #include <QHostInfo>
@@ -44,18 +45,22 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 9;
+    const qint16 ConnectedClient::ServerProtocolNo = 10;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,
-                                     CollectionMonitor* collectionMonitor)
+                                     CollectionMonitor* collectionMonitor,
+                                     ServerHealthMonitor* serverHealthMonitor)
      : QObject(server),
-       _terminated(false), _binaryMode(false), _eventsEnabled(false), _socket(socket),
-       _server(server), _player(player), _generator(generator), _users(users),
-       _collectionMonitor(collectionMonitor), _clientProtocolNo(-1),
-       _lastSentNowPlayingID(0), _userLoggedIn(0), _pendingPlayerStatus(false)
+       _socket(socket), _server(server), _player(player), _generator(generator),
+       _users(users), _collectionMonitor(collectionMonitor),
+       _serverHealthMonitor(serverHealthMonitor),
+       _clientProtocolNo(-1),
+       _lastSentNowPlayingID(0), _userLoggedIn(0),
+       _terminated(false), _binaryMode(false),
+       _eventsEnabled(false), _healthEventsEnabled(false),
+       _pendingPlayerStatus(false)
     {
-
         connect(
             server, &Server::shuttingDown,
             this, &ConnectedClient::terminateConnection
@@ -176,6 +181,28 @@ namespace PMP {
             &_generator->history(), &History::updatedHashUserStats,
             this, &ConnectedClient::onUserHashStatsUpdated
         );
+
+        if (!_healthEventsEnabled) {
+            connect(
+                _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
+                this, &ConnectedClient::serverHealthChanged
+            );
+
+            sendServerHealthMessageIfNotEverythingOkay();
+        }
+    }
+
+    void ConnectedClient::enableHealthEvents() {
+        auto healthEventsWereAlreadyEnabled = _eventsEnabled | _healthEventsEnabled;
+        _healthEventsEnabled = true;
+        if (healthEventsWereAlreadyEnabled) return; /* nothing to do */
+
+        connect(
+            _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
+            this, &ConnectedClient::serverHealthChanged
+        );
+
+        sendServerHealthMessageIfNotEverythingOkay();
     }
 
     bool ConnectedClient::isLoggedIn() const {
@@ -329,6 +356,11 @@ namespace PMP {
             uint volume = arg1.toUInt(&ok);
             if (ok && volume >= 0 && volume <= 100) {
                 if (isLoggedIn()) { _player->setVolume(volume); }
+            }
+        }
+        else if (command == "shutdown") {
+            if (arg1 == _server->serverPassword()) {
+                _server->shutdown();
             }
         }
         else {
@@ -1124,6 +1156,27 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendServerHealthMessageIfNotEverythingOkay() {
+        if (!_serverHealthMonitor->anyProblem()) return;
+
+        sendServerHealthMessage();
+    }
+
+    void ConnectedClient::sendServerHealthMessage() {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 10) return;
+
+        quint16 problems = 0;
+        problems |= _serverHealthMonitor->databaseUnavailable() ? 1u : 0u;
+
+        QByteArray message;
+        message.reserve(2 + 2);
+        NetworkUtil::append2Bytes(message, NetworkProtocol::ServerHealthMessage);
+        NetworkUtil::append2Bytes(message, problems);
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
         sendResultMessage(NetworkProtocol::NoError, clientReference, intData);
@@ -1162,6 +1215,10 @@ namespace PMP {
     {
         sendResultMessage(
                         NetworkProtocol::NonFatalInternalServerError, clientReference, 0);
+    }
+
+    void ConnectedClient::serverHealthChanged(bool databaseUnavailable) {
+        sendServerHealthMessage();
     }
 
     void ConnectedClient::volumeChanged(int volume) {
@@ -2158,6 +2215,10 @@ namespace PMP {
         case 50:
             qDebug() << "received SUBSCRIBE TO ALL EVENTS command";
             enableEvents();
+            break;
+        case 51:
+            qDebug() << "received SUBSCRIBE TO SERVER HEALTH UPDATES command";
+            enableHealthEvents();
             break;
         case 99:
             qDebug() << "received SHUTDOWN command";

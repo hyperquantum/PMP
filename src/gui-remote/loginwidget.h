@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -55,4 +55,4 @@ namespace PMP {
         ServerConnection* _connection;
     };
 }
-#endif // PMP_LOGINWIDGET_H
+#endif

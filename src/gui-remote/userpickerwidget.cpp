@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,14 +26,20 @@
 
 namespace PMP {
 
-    UserPickerWidget::UserPickerWidget(QWidget *parent, ServerConnection *connection)
+    UserPickerWidget::UserPickerWidget(QWidget* parent, ServerConnection* connection)
         : QWidget(parent),
-        _ui(new Ui::UserPickerWidget), _connection(connection)
+        _ui(new Ui::UserPickerWidget), _connection(connection),
+        _serverProblemsPreventLogin(connection->serverHealth().databaseUnavailable())
     {
         _ui->setupUi(this);
 
         _ui->noUserAccountsYetLabel->setVisible(false);
         _ui->createNewAccountButton->setEnabled(false);
+
+        connect(
+            _connection, &ServerConnection::serverHealthChanged,
+            this, &UserPickerWidget::serverHealthChanged
+        );
 
         connect(
             _connection, &ServerConnection::receivedUserAccounts,
@@ -53,6 +59,8 @@ namespace PMP {
     }
 
     void UserPickerWidget::receivedUserAccounts(QList<QPair<uint, QString> > accounts) {
+        bool serverOk = !_serverProblemsPreventLogin;
+
         std::sort(
             accounts.begin(), accounts.end(),
             [](const QPair<uint,QString>& u1, const QPair<uint,QString>& u2) {
@@ -63,7 +71,7 @@ namespace PMP {
         _ui->loadingUserListLabel->setVisible(false);
 
         if (accounts.size() <= 0) {
-            _ui->noUserAccountsYetLabel->setVisible(true);
+            _ui->noUserAccountsYetLabel->setVisible(serverOk);
         }
         else {
             for (int i = 0; i < accounts.size(); ++i) {
@@ -83,7 +91,16 @@ namespace PMP {
             }
         }
 
-        _ui->createNewAccountButton->setEnabled(true);
+        _ui->createNewAccountButton->setEnabled(serverOk);
+    }
+
+    void UserPickerWidget::serverHealthChanged(ServerHealthStatus serverHealth) {
+        _serverProblemsPreventLogin = serverHealth.databaseUnavailable();
+
+        if (_serverProblemsPreventLogin) {
+            _ui->noUserAccountsYetLabel->setVisible(false);
+            _ui->createNewAccountButton->setEnabled(false);
+        }
     }
 
 }

@@ -582,13 +582,16 @@ namespace PMP {
     bool FilteredCollectionTableModel::filterAcceptsRow(int sourceRow,
                                                     const QModelIndex& sourceParent) const
     {
+        (void)sourceParent;
+
         if (_searchParts.empty()) return true; /* not filtered */
 
         CollectionTrackInfo* track = _source->trackAt(sourceRow);
 
         Q_FOREACH(QString searchPart, _searchParts) {
             if (!track->title().contains(searchPart, Qt::CaseInsensitive)
-                    && !track->artist().contains(searchPart, Qt::CaseInsensitive))
+                    && !track->artist().contains(searchPart, Qt::CaseInsensitive)
+                    && !track->album().contains(searchPart, Qt::CaseInsensitive))
                 return false;
         }
 

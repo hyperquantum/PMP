@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,6 +32,7 @@ namespace PMP {
     class CollectionMonitor;
     class Generator;
     class Player;
+    class ServerHealthMonitor;
     class Users;
 
     class Server : public QObject {
@@ -41,6 +42,7 @@ namespace PMP {
 
         bool listen(Player* player, Generator* generator, Users* users,
                     CollectionMonitor* collectionMonitor,
+                    ServerHealthMonitor* serverHealthMonitor,
                     const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
 
         QString errorString() const;
@@ -70,6 +72,7 @@ namespace PMP {
         Generator* _generator;
         Users* _users;
         CollectionMonitor* _collectionMonitor;
+        ServerHealthMonitor* _serverHealthMonitor;
         QTcpServer* _server;
         QUdpSocket* _udpSocket;
         QTimer* _broadcastTimer;

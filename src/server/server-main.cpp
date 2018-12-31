@@ -31,6 +31,7 @@
 #include "queueentry.h"
 #include "resolver.h"
 #include "server.h"
+#include "serverhealthmonitor.h"
 #include "serversettings.h"
 #include "users.h"
 
@@ -71,6 +72,13 @@ int main(int argc, char *argv[]) {
 
     QTextStream out(stdout);
 
+    bool doIndexation = true;
+    QStringList args = QCoreApplication::arguments();
+    Q_FOREACH(QString arg, args) {
+        if (arg == "-no-index" || arg == "-no-indexation")
+            doIndexation = false;
+    }
+
     out << endl
         << "Party Music Player - version " PMP_VERSION_DISPLAY << endl
         << Util::getCopyrightLine(true) << endl
@@ -84,7 +92,10 @@ int main(int argc, char *argv[]) {
      *       weeks, or months before being restarted. */
 
     /* seed random number generator */
+    // FIXME : stop using qrand(), and then we can remove this call to qsrand()
     qsrand(QTime::currentTime().msec());
+
+    ServerHealthMonitor serverHealthMonitor;
 
     /* clean up leftover preloader cache files */
     Preloader::cleanupOldFiles();
@@ -134,7 +145,10 @@ int main(int argc, char *argv[]) {
         out << endl;
     }
 
-    Database::init(out);
+    bool databaseInitializationSucceeded = Database::init(out);
+    if (!databaseInitializationSucceeded) {
+        serverHealthMonitor.setDatabaseUnavailable();
+    }
 
     Resolver resolver;
 
@@ -182,7 +196,8 @@ int main(int argc, char *argv[]) {
     Server server(nullptr, serverInstanceIdentifier);
     bool listening =
         server.listen(
-            &player, &generator, &users, &collectionMonitor, QHostAddress::Any, 23432
+            &player, &generator, &users, &collectionMonitor, &serverHealthMonitor,
+            QHostAddress::Any, 23432
         );
 
     if (!listening) {
@@ -201,7 +216,8 @@ int main(int argc, char *argv[]) {
     out << endl << "Server initialization complete." << endl;
 
     /* start indexation of the media directories */
-    resolver.startFullIndexation();
+    if (databaseInitializationSucceeded && doIndexation)
+        resolver.startFullIndexation();
 
     return app.exec();
 }

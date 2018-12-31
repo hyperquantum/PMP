@@ -23,6 +23,7 @@
 #include "collectiontrackinfo.h"
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
+#include "serverhealthstatus.h"
 #include "simpleplayercontroller.h"
 #include "tribool.h"
 
@@ -64,6 +65,12 @@ namespace PMP {
         return requestId.rawId();
     }
 
+    enum class ServerEventSubscription {
+        None = 0,
+        AllEvents = 1,
+        ServerHealthMessages = 2,
+    };
+
     /**
         Represents a connection to a PMP server.
     */
@@ -94,13 +101,17 @@ namespace PMP {
             UnknownUserLoginError, UserLoginAuthenticationFailed
         };
 
-        ServerConnection(QObject* parent = 0, bool subscribeToAllServerEvents = true);
+        ServerConnection(QObject* parent = nullptr,
+                         ServerEventSubscription eventSubscription =
+                                                      ServerEventSubscription::AllEvents);
 
         void reset();
         void connectToHost(QString const& host, quint16 port);
 
         bool isConnected() const { return _state == BinaryMode; }
         bool isLoggedIn() const { return userLoggedInId() > 0; }
+
+        ServerHealthStatus serverHealth() const { return _serverHealthStatus; }
 
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
@@ -176,6 +187,7 @@ namespace PMP {
         void cannotConnect(QAbstractSocket::SocketError error);
         void invalidServer();
         void connectionBroken(QAbstractSocket::SocketError error);
+        void serverHealthChanged(ServerHealthStatus serverHealth);
 
         void receivedDatabaseIdentifier(QUuid uuid);
         void receivedServerInstanceIdentifier(QUuid uuid);
@@ -279,6 +291,8 @@ namespace PMP {
         void parseQueueEntryAddedMessage(QByteArray const& message);
         void parseQueueEntryAdditionConfirmationMessage(QByteArray const& message);
 
+        void parseServerHealthMessage(QByteArray const& message);
+
         void sendCollectionFetchRequestMessage(uint clientReference);
 
         void invalidMessageReceived(QByteArray const& message, QString messageType = "",
@@ -286,7 +300,7 @@ namespace PMP {
 
         static const qint16 ClientProtocolNo;
 
-        bool _autoSubscribeToEventsAfterConnect;
+        ServerEventSubscription _autoSubscribeToEventsAfterConnect;
         State _state;
         QTcpSocket _socket;
         QByteArray _readBuffer;
@@ -305,12 +319,13 @@ namespace PMP {
         QHash<uint, ResultHandler*> _resultHandlers;
         QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
         SimplePlayerControllerImpl* _simplePlayerController;
+        ServerHealthStatus _serverHealthStatus;
     };
 
     class AbstractCollectionFetcher : public QObject {
         Q_OBJECT
     protected:
-        AbstractCollectionFetcher(QObject* parent = 0);
+        AbstractCollectionFetcher(QObject* parent = nullptr);
 
     public slots:
         virtual void receivedData(QList<CollectionTrackInfo> data) = 0;

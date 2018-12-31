@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,8 @@
 #include <QTcpSocket>
 
 void printUsage(QTextStream& out, QString const& programName) {
-    out << "usage: " << programName << " <server-name-or-ip> <server-port> <command> [<command args>]" << endl
+    out << "usage: " << programName
+                << " <server-name-or-ip> <server-port> <command> [<command args>]" << endl
         << endl
         << "  commands:" << endl
         << endl
@@ -37,7 +38,17 @@ void printUsage(QTextStream& out, QString const& programName) {
         << "    queue: get queue length and the first tracks waiting in the queue" << endl
         << "    qmove <QID> <-diff>: move a track up in the queue (e.g. -3)" << endl
         << "    qmove <QID> <+diff>: move a track down in the queue (eg. +2)" << endl
-        << "    shutdown: shutdown the server program" << endl
+        << "    shutdown <server password>: shutdown the server program" << endl
+        << endl
+        << "  NOTICE: most commands are broken because the command line remote" << endl
+        << "    does not support user authentication yet, and all commands having" << endl
+        << "    side-effects are ignored by the server as long as no successful" << endl
+        << "    authentication has taken place. The only exception is the new" << endl
+        << "    'shutdown' command because it requires the server password." << endl
+        << endl
+        << "  Server Password:" << endl
+        << "    This is a global password for the server, printed to stdout at" << endl
+        << "    server startup."
         << endl;
 }
 
@@ -80,7 +91,7 @@ int main(int argc, char *argv[]) {
     /* Validate command */
     QString commandToSend;
     if (command == "pause" || command == "play" || command == "skip"
-        || command == "nowplaying" || command == "queue" || command == "shutdown")
+        || command == "nowplaying" || command == "queue")
     {
         if (commandArgs > 0) {
             out << "Command '" << command << "' does not accept arguments!" << endl;
@@ -90,6 +101,20 @@ int main(int argc, char *argv[]) {
         /* OK */
         commandToSend = command;
         waitForResponse = (command == "nowplaying" || command == "queue");
+    }
+    else if (command == "shutdown") {
+        if (commandArgs > 1) {
+            out << "Command 'shutdown' requires exactly one argument!" << endl;
+            return 1;
+        }
+        else if (commandArgs == 0) {
+            out << "Command 'shutdown' now requires the server password!" << endl;
+            return 1;
+        }
+
+        /* OK */
+        commandToSend = command + " " + args[commandArgOffset];
+        waitForResponse = false;
     }
     else if (command == "volume") {
         if (commandArgs > 1) {

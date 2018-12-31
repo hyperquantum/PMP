@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -38,7 +38,7 @@ namespace PMP {
      : QObject(parent),
        _uuid(serverInstanceIdentifier),
        _player(nullptr), _generator(nullptr), _users(nullptr),
-       _collectionMonitor(nullptr),
+       _collectionMonitor(nullptr), _serverHealthMonitor(nullptr),
        _server(new QTcpServer(this)), _udpSocket(new QUdpSocket(this)),
        _broadcastTimer(new QTimer(this))
     {
@@ -90,7 +90,7 @@ namespace PMP {
         for (int i = 0; i < 8; ++i) {
             int index;
             do {
-                index = qrand() % chars.length();
+                index = qrand() % chars.length(); // FIXME : don't use qrand()
             } while (qAbs(index - prevIndex) < 16);
             prevIndex = index;
             QChar c = chars[index];
@@ -102,12 +102,14 @@ namespace PMP {
 
     bool Server::listen(Player* player, Generator* generator, Users* users,
                         CollectionMonitor* collectionMonitor,
+                        ServerHealthMonitor* serverHealthMonitor,
                         const QHostAddress& address, quint16 port)
     {
         _player = player;
         _generator = generator;
         _users = users;
         _collectionMonitor = collectionMonitor;
+        _serverHealthMonitor = serverHealthMonitor;
 
         if (!_server->listen(QHostAddress::Any, port)) {
             return false;
@@ -144,7 +146,8 @@ namespace PMP {
         QTcpSocket *connection = _server->nextPendingConnection();
 
         new ConnectedClient(
-            connection, this, _player, _generator, _users, _collectionMonitor
+            connection, this, _player, _generator, _users, _collectionMonitor,
+            _serverHealthMonitor
         );
     }
 
