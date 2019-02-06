@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -207,6 +207,7 @@ void TestScrobbler::trivialScrobble() {
 
     QTRY_VERIFY(track->scrobbled());
     QCOMPARE(backend->scrobbledSuccessfullyCount(), 1);
+    QTRY_COMPARE(backend->state(), ScrobblingBackendState::ReadyForScrobbling);
 }
 
 void TestScrobbler::multipleSimpleScrobbles() {
@@ -242,6 +243,7 @@ void TestScrobbler::multipleSimpleScrobbles() {
     }
 
     QCOMPARE(backend->scrobbledSuccessfullyCount(), 5);
+    QTRY_COMPARE(backend->state(), ScrobblingBackendState::ReadyForScrobbling);
 }
 
 void TestScrobbler::scrobbleWithAuthentication() {
@@ -260,6 +262,7 @@ void TestScrobbler::scrobbleWithAuthentication() {
 
     QTRY_VERIFY(track->scrobbled());
     QCOMPARE(backend->scrobbledSuccessfullyCount(), 1);
+    QTRY_COMPARE(backend->state(), ScrobblingBackendState::ReadyForScrobbling);
 }
 
 void TestScrobbler::scrobbleWithExistingValidToken() {
@@ -275,6 +278,7 @@ void TestScrobbler::scrobbleWithExistingValidToken() {
 
     QTRY_VERIFY(track->scrobbled());
     QCOMPARE(backend->scrobbledSuccessfullyCount(), 1);
+    QTRY_COMPARE(backend->state(), ScrobblingBackendState::ReadyForScrobbling);
 }
 
 void TestScrobbler::scrobbleWithTokenChangeAfterInvalidToken() {
@@ -298,6 +302,7 @@ void TestScrobbler::scrobbleWithTokenChangeAfterInvalidToken() {
 
     QTRY_VERIFY(track->scrobbled());
     QCOMPARE(backend->scrobbledSuccessfullyCount(), 1);
+    QTRY_COMPARE(backend->state(), ScrobblingBackendState::ReadyForScrobbling);
 }
 
 void TestScrobbler::mustSkipScrobblesThatAreTooOld() {
@@ -337,6 +342,7 @@ void TestScrobbler::mustSkipScrobblesThatAreTooOld() {
 
     QCOMPARE(backend->tracksIgnoredCount(), 3);
     QCOMPARE(backend->scrobbledSuccessfullyCount(), 5);
+    QTRY_COMPARE(backend->state(), ScrobblingBackendState::ReadyForScrobbling);
 }
 
 void TestScrobbler::retriesAfterTemporaryUnavailability() {
@@ -356,6 +362,7 @@ void TestScrobbler::retriesAfterTemporaryUnavailability() {
     QVERIFY(track1->scrobbled());
     QVERIFY(track1->scrobbledTimestamp() < track2->scrobbledTimestamp());
     QCOMPARE(backend->scrobbledSuccessfullyCount(), 2);
+    QTRY_COMPARE(backend->state(), ScrobblingBackendState::ReadyForScrobbling);
 }
 
 QDateTime TestScrobbler::makeDateTime(int year, int month, int day,
