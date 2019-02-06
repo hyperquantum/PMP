@@ -43,7 +43,7 @@ IDEAS
  * 'about the server' window; with server name, UUID and protocol version
  * ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * ability to view statistics such as 'previously heard' and 'score' for the song currently playing
- ** visual indication of score for each track in the music collection, to make 'good' tracks stand out
+ ** music collection view: visual indication of score for each track, to make 'good' tracks stand out
  * add other statistics relevant for scoring (e.g. was the track manually added to the queue) to the play history
  * provide play/pause buttons in Windows taskbar popup
  * use libgroove for playback (?)
@@ -54,6 +54,7 @@ IDEAS
  * 'play now' option in the context menus of the music collection, the history, and maybe the queue
  * dark theme for the client
  * require the server password when registering a new user account
+ * music collection view: optional visual indication of tracks that have never been listened to
 
 
 USER FRIENDLINESS
