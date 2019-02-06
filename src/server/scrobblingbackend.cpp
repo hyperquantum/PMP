@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -37,6 +37,10 @@ namespace PMP {
 
     void ScrobblingBackend::setState(ScrobblingBackendState newState) {
         if (_state == newState) return; /* no change */
+
+        if (newState == ScrobblingBackendState::PermanentFatalError) {
+            qWarning() << "backend is switching to state" << newState;
+        }
 
         _state = newState;
         emit stateChanged(newState);

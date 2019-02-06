@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -69,9 +69,10 @@ namespace PMP {
     void Scrobbler::timeoutTimerTimedOut() {
         qDebug() << "timeout event triggered; backend state:" << _backend->state();
 
-        /* TODO */
+        /* if a track was being scrobbled, reinsert it at the front of the queue */
+        reinsertPendingScrobbleAtFrontOfQueue();
 
-        // TODO : if a track was being scrobbled, reinsert it at the front of the queue
+        /* TODO : handle other kinds of timeouts */
     }
 
     void Scrobbler::backoffTimerTimedOut() {
@@ -90,7 +91,8 @@ namespace PMP {
             if (_tracksToScrobble.empty()) return;
         }
 
-        qDebug() << " backend state:" << _backend->state();
+        qDebug() << "we have" << _tracksToScrobble.size() << "tracks to scrobble";
+        qDebug() << "backend state:" << _backend->state();
         switch (_backend->state()) {
             case ScrobblingBackendState::NotInitialized:
                 _backend->initialize();
@@ -114,7 +116,7 @@ namespace PMP {
     }
 
     void Scrobbler::sendNextScrobble() {
-        qDebug() << "sendNextScrobble; queue size:" << _tracksToScrobble.size();
+        qDebug() << "sendNextScrobble; scrobble queue size:" << _tracksToScrobble.size();
         if (_tracksToScrobble.empty() || _pendingScrobble) return;
 
         auto trackPtr = _tracksToScrobble.dequeue();
@@ -136,9 +138,9 @@ namespace PMP {
         if (!_pendingScrobble) return;
 
         _timeoutTimer->stop();
+        _backoffMilliseconds = 0;
         auto trackPtr = _pendingScrobble;
         _pendingScrobble = nullptr;
-        _backoffMilliseconds = 0;
 
         switch (result) {
             case ScrobbleResult::Success:
@@ -165,10 +167,10 @@ namespace PMP {
         /* should we wait for something to change in the backend? */
         switch (newState) {
             case ScrobblingBackendState::WaitingForAuthenticationResult:
-                _timeoutTimer->start(5000);
+                _timeoutTimer->start(30000);
                 return;
             case ScrobblingBackendState::WaitingForScrobbleResult:
-                _timeoutTimer->start(5000);
+                _timeoutTimer->start(30000);
                 return;
             case ScrobblingBackendState::WaitingForUserCredentials:
                 return; /* no waiting for timeout */
@@ -181,12 +183,7 @@ namespace PMP {
     void Scrobbler::serviceTemporarilyUnavailable() {
         qDebug() << "serviceTemporarilyUnavailable() called";
 
-        auto trackPtr = _pendingScrobble;
-        _pendingScrobble = nullptr;
-        if (trackPtr) {
-            /* reinsert at front of the queue */
-            _tracksToScrobble.insert(0, trackPtr);
-        }
+        reinsertPendingScrobbleAtFrontOfQueue();
 
         startBackoffTimer(_backend->getInitialBackoffMillisecondsForUnavailability());
     }
@@ -203,6 +200,16 @@ namespace PMP {
 
         qDebug() << "starting backoff timer with interval:" << _backoffMilliseconds;
         _backoffTimer->start(_backoffMilliseconds);
+    }
+
+    void Scrobbler::reinsertPendingScrobbleAtFrontOfQueue() {
+        auto trackPtr = _pendingScrobble;
+        _pendingScrobble = nullptr;
+
+        if (trackPtr) {
+            /* reinsert at front of the queue */
+            _tracksToScrobble.insert(0, trackPtr);
+        }
     }
 
 }

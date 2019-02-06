@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -56,6 +56,7 @@ namespace PMP {
         void checkIfWeHaveSomethingToDo();
         void sendNextScrobble();
         void startBackoffTimer(int initialBackoffMilliseconds);
+        void reinsertPendingScrobbleAtFrontOfQueue();
 
         ScrobblingDataProvider* _dataProvider;
         ScrobblingBackend* _backend;

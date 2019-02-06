@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -68,12 +68,16 @@ namespace PMP {
         void requestFinished(QNetworkReply* reply);
 
     private:
-        QNetworkReply* signAndSendPost(QVector<QPair<QString, QString>> parameters);
-
-        void parseError(QDomElement const& errorElement);
-        void parseScrobbles(QDomElement const& scrobblesElement);
+        static bool waitingForReply(ScrobblingBackendState state);
+        void updateState();
+        void leaveState(ScrobblingBackendState oldState);
 
         static void signCall(QVector<QPair<QString, QString>>& parameters);
+        QNetworkReply* signAndSendPost(QVector<QPair<QString, QString>> parameters);
+
+        void parseReply(QDomElement const& lfmElement, bool isScrobbleReply);
+        void parseError(QDomElement const& errorElement);
+        ScrobbleResult parseScrobbles(QDomElement const& scrobblesElement);
 
         static const char* apiUrl;
         static const char* apiKey;
