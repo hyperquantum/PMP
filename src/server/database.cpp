@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -175,21 +175,8 @@ namespace PMP {
         }
 
         /* create table 'pmp_user' if needed */
-        q.prepare(
-            "CREATE TABLE IF NOT EXISTS pmp_user("
-            " `UserID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
-            " `Login` VARCHAR(63) NOT NULL,"
-            " `Salt` VARCHAR(255),"
-            " `Password` VARCHAR(255),"
-            " PRIMARY KEY (`UserID`),"
-            " UNIQUE INDEX `IDX_pmpuser_login` (`Login`)"
-            ") "
-            "ENGINE = InnoDB "
-            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
-        );
-        if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl
-                << endl;
+        if (!initUsersTable(q)) {
+            printInitializationError(out, db);
             return false;
         }
 
@@ -248,6 +235,37 @@ namespace PMP {
         return true;
     }
 
+    bool Database::initUsersTable(QSqlQuery& q) {
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_user("
+            " `UserID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+            " `Login` VARCHAR(63) NOT NULL,"
+            " `Salt` VARCHAR(255),"
+            " `Password` VARCHAR(255),"
+            " PRIMARY KEY (`UserID`),"
+            " UNIQUE INDEX `IDX_pmpuser_login` (`Login`)"
+            ") "
+            "ENGINE = InnoDB "
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
+        );
+        if (!q.exec()) {
+            return false;
+        }
+
+        const auto tableName = "pmp_user";
+
+        /* extra columns for Last.Fm scrobbling */
+        if (!addColumnIfNotExists(q, tableName, "EnableLastFmScrobbling", "BIT")
+            || !addColumnIfNotExists(q, tableName, "LastFmUser", "VARCHAR(255)")
+            || !addColumnIfNotExists(q, tableName, "LastFmSessionKey", "VARCHAR(255)")
+            || !addColumnIfNotExists(q, tableName, "LastFmScrobbledUpTo", "INT UNSIGNED"))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
     Database::Database(QSqlDatabase db)
      : _db(db)
     {
@@ -268,6 +286,12 @@ namespace PMP {
         }
 
         return db;
+    }
+
+    void Database::printInitializationError(QTextStream& out, QSqlDatabase& db)
+    {
+        out << " database initialization problem: " << db.lastError().text() << endl;
+        out << endl;
     }
 
     QSharedPointer<Database> Database::getDatabaseForCurrentThread() {
@@ -948,6 +972,30 @@ namespace PMP {
         }
 
         return false;
+    }
+
+    bool Database::addColumnIfNotExists(QSqlQuery& q, QString tableName,
+                                        QString columnName, QString type)
+    {
+        QString sql =
+            QString(
+                "SELECT EXISTS("
+                " SELECT * FROM information_schema.COLUMNS"
+                " WHERE TABLE_SCHEMA = 'pmp' AND TABLE_NAME = '%1' AND COLUMN_NAME = '%2'"
+                ") AS column_exists"
+            ).arg(tableName, columnName);
+
+        q.prepare(sql);
+        if (!q.exec()) return false;
+        bool exists = false;
+        if (q.next()) {
+            exists = q.value(0).toBool();
+        }
+        if (exists) return true;
+
+        sql = QString("ALTER TABLE %1 ADD `%2` %3 NULL").arg(tableName, columnName, type);
+        q.prepare(sql);
+        return q.exec();
     }
 
     int Database::getInt(QVariant v, int nullValue) {

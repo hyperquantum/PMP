@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -131,12 +131,18 @@ namespace PMP {
                           std::function<void (QSqlQuery&)> resultFetcher);
         bool executeQuery(QSqlQuery& q);
 
+        static bool addColumnIfNotExists(QSqlQuery& q, QString tableName,
+                                         QString columnName, QString type);
+
         static int getInt(QVariant v, int nullValue);
         static uint getUInt(QVariant v, uint nullValue);
 
         static qint16 calculateScore(qint32 permillageFromDB, quint32 heardCount);
 
         static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
+        static void printInitializationError(QTextStream& out, QSqlDatabase& db);
+
+        static bool initUsersTable(QSqlQuery& q);
 
         static QString _hostname;
         static QString _username;
