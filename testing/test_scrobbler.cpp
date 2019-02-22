@@ -184,8 +184,8 @@ void TrackToScrobbleMock::scrobbledSuccessfully() {
     _scrobbledTimestamp = QDateTime::currentDateTimeUtc();
 }
 
-void TrackToScrobbleMock::cannotBeScrobbled() {
-    qDebug() << "track could not be scrobbled";
+void TrackToScrobbleMock::scrobbleIgnored() {
+    qDebug() << "track was ignored by scrobbling provider";
 
     QVERIFY(!_scrobbled);
     QVERIFY(!_cannotBeScrobbled);

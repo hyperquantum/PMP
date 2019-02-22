@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,7 +36,7 @@ namespace PMP {
         virtual QString album() const = 0;
 
         virtual void scrobbledSuccessfully() = 0;
-        virtual void cannotBeScrobbled() = 0;
+        virtual void scrobbleIgnored() = 0;
     };
 }
 #endif

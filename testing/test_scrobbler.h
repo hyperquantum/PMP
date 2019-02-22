@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -76,7 +76,7 @@ public:
     QString album() const override { return _album; }
 
     void scrobbledSuccessfully() override;
-    void cannotBeScrobbled() override;
+    void scrobbleIgnored() override;
 
     bool scrobbled() const { return _scrobbled; }
     bool ignored() const { return _cannotBeScrobbled; }

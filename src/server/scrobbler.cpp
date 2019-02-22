@@ -144,10 +144,10 @@ namespace PMP {
 
         switch (result) {
             case ScrobbleResult::Success:
-                emit trackPtr->scrobbledSuccessfully();
+                trackPtr->scrobbledSuccessfully();
                 break;
             case ScrobbleResult::Ignored:
-                emit trackPtr->cannotBeScrobbled();
+                trackPtr->scrobbleIgnored();
                 break;
             case ScrobbleResult::Error:
                 /* reinsert at front of the queue */
