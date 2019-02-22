@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -60,6 +60,7 @@ namespace PMP {
 
         QList<FileHash> getAllHashes();
         QList<CollectionTrackInfo> getHashesTrackInfo(QList<FileHash> hashes);
+        CollectionTrackInfo getHashTrackInfo(uint hashId);
 
         FileHash getHashByID(uint id);
         uint getID(const FileHash& hash);

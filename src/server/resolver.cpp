@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -652,6 +652,26 @@ namespace PMP {
         }
 
         return result;
+    }
+
+    CollectionTrackInfo Resolver::getHashTrackInfo(uint hashId) {
+        QMutexLocker lock(&_lock);
+
+        auto knowledge = _idToHash.value(hashId, nullptr);
+        if (!knowledge) return {};
+
+        auto lengthInMilliseconds = knowledge->audio().trackLengthMilliseconds();
+        if (lengthInMilliseconds > std::numeric_limits<qint32>::max())
+        {
+            lengthInMilliseconds = 0;
+        }
+
+        CollectionTrackInfo info(knowledge->hash(), knowledge->isAvailable(),
+                                 knowledge->quickTitle(), knowledge->quickArtist(),
+                                 knowledge->quickAlbum(),
+                                 qint32(lengthInMilliseconds));
+
+        return info;
     }
 
     FileHash Resolver::getHashByID(uint id) {

@@ -70,6 +70,23 @@ namespace PMP {
         QByteArray password;
     };
 
+    class HistoryRecord {
+    public:
+        HistoryRecord()
+         : id(0), hashId(0), userId(0), permillage(-1), validForScoring(false)
+        {
+            //
+        }
+
+        quint32 id;
+        quint32 hashId;
+        quint32 userId;
+        QDateTime start;
+        QDateTime end;
+        qint16 permillage;
+        bool validForScoring;
+    };
+
     class Database {
     public:
         struct HashHistoryStats {
@@ -105,6 +122,13 @@ namespace PMP {
                                                       QList<quint32> hashIds);
         QVector<HashHistoryStats> getHashHistoryStats(quint32 userId,
                                                       QList<quint32> hashIds);
+        QVector<HistoryRecord> getUserHistoryForScrobbling(quint32 userId,
+                                                           quint32 startId,
+                                                           QDateTime earliestDateTime,
+                                                           int limit);
+
+        quint32 getLastFmScrobbledUpTo(quint32 userId, bool* ok);
+        bool updateLastFmScrobbledUpTo(quint32 userId, quint32 newValue);
 
         static QSharedPointer<Database> getDatabaseForCurrentThread();
 
