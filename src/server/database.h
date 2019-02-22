@@ -136,6 +136,7 @@ namespace PMP {
 
         static int getInt(QVariant v, int nullValue);
         static uint getUInt(QVariant v, uint nullValue);
+        static QDateTime getUtcDateTime(QVariant v);
 
         static qint16 calculateScore(qint32 permillageFromDB, quint32 heardCount);
 

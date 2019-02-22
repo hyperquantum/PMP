@@ -633,8 +633,7 @@ namespace PMP {
 
         while (q.next()) {
             quint32 hashID = q.value(0).toUInt();
-            QDateTime prevHeard = q.value(1).toDateTime();
-            prevHeard.setTimeSpec(Qt::UTC); /* make sure it is treated as UTC */
+            QDateTime prevHeard = getUtcDateTime(q.value(1));
 
             result.append(QPair<quint32, QDateTime>(hashID, prevHeard));
         }
@@ -678,8 +677,7 @@ namespace PMP {
 
         while (q.next()) {
             quint32 hashID = q.value(0).toUInt();
-            QDateTime prevHeard = q.value(1).toDateTime();
-            prevHeard.setTimeSpec(Qt::UTC); /* make sure it is treated as UTC */
+            QDateTime prevHeard = getUtcDateTime(q.value(1));
             quint32 scoreHeardCount = (quint32)getUInt(q.value(2), 0);
             qint32 scorePermillage = (qint32)getInt(q.value(3), -1);
 
@@ -1006,6 +1004,13 @@ namespace PMP {
     uint Database::getUInt(QVariant v, uint nullValue) {
         if (v.isNull()) return nullValue;
         return v.toUInt();
+    }
+
+    QDateTime Database::getUtcDateTime(QVariant v) {
+        /* assuming that it is not null */
+        auto dateTime = v.toDateTime();
+        dateTime.setTimeSpec(Qt::UTC);
+        return dateTime;
     }
 
     qint16 Database::calculateScore(qint32 permillageFromDB, quint32 heardCount) {
