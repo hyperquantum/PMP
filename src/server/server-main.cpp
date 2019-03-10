@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,6 +30,7 @@
 #include "queue.h"
 #include "queueentry.h"
 #include "resolver.h"
+#include "scrobbling.h"
 #include "server.h"
 #include "serverhealthmonitor.h"
 #include "serversettings.h"
@@ -186,6 +187,8 @@ int main(int argc, char *argv[]) {
         &generator, &Generator::setUserPlayingFor
     );
 
+    Scrobbling scrobbling(nullptr, &resolver);
+
     resolver.setMusicPaths(musicPaths);
 
     out << endl
@@ -219,5 +222,7 @@ int main(int argc, char *argv[]) {
     if (databaseInitializationSucceeded && doIndexation)
         resolver.startFullIndexation();
 
-    return app.exec();
+    auto exitCode = app.exec();
+    out << endl << "Server exiting with code " << exitCode << "." << endl;
+    return exitCode;
 }

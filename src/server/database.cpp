@@ -553,6 +553,70 @@ namespace PMP {
         return userId;
     }
 
+    QVector<UserScrobblingDataRecord> Database::getUsersScrobblingData() {
+        auto preparer =
+            prepareSimple(
+                "SELECT `UserID`,`EnableLastFmScrobbling`,`LastFmUser`,"
+                "  `LastFmSessionKey`,`LastFmScrobbledUpTo` "
+                "FROM pmp_user"
+            );
+
+        QVector<UserScrobblingDataRecord> result;
+
+        auto resultGetter =
+            [&result] (QSqlQuery& q) {
+                while (q.next()) {
+                    UserScrobblingDataRecord record;
+                    record.userId = q.value(0).toUInt();
+                    record.enableLastFmScrobbling = getBool(q.value(1), false);
+                    record.lastFmUser = getString(q.value(2), "");
+                    record.lastFmSessionKey = getString(q.value(3), "");
+                    record.lastFmScrobbledUpTo = getUInt(q.value(4), 0);
+
+                    result << record;
+                }
+            };
+
+        if (!executeQuery(preparer, true, resultGetter)) { /* error */
+            qWarning() << "Database::getUsersScrobblingData : could not execute";
+            return {};
+        }
+
+        return result;
+    }
+
+    LastFmScrobblingDataRecord Database::getUserLastFmScrobblingData(quint32 userId) {
+        auto preparer =
+            [=] (QSqlQuery& q) {
+                q.prepare(
+                    "SELECT `EnableLastFmScrobbling`,`LastFmUser`,"
+                    "  `LastFmSessionKey`,`LastFmScrobbledUpTo` "
+                    "FROM pmp_user "
+                    "WHERE UserId=?"
+                );
+                q.addBindValue(userId);
+            };
+
+        LastFmScrobblingDataRecord result;
+
+        auto resultGetter =
+            [&result] (QSqlQuery& q) {
+                if (q.next()) {
+                    result.enableLastFmScrobbling = getBool(q.value(0), false);
+                    result.lastFmUser = getString(q.value(1), "");
+                    result.lastFmSessionKey = getString(q.value(2), "");
+                    result.lastFmScrobbledUpTo = getUInt(q.value(3), 0);
+                }
+            };
+
+        if (!executeQuery(preparer, true, resultGetter)) { /* error */
+            qWarning() << "Database::getUserLastFmScrobblingData : could not execute";
+            return {};
+        }
+
+        return result;
+    }
+
     void Database::addToHistory(quint32 hashId, quint32 userId, QDateTime start,
                                 QDateTime end, int permillage, bool validForScoring)
     {
@@ -741,6 +805,25 @@ namespace PMP {
         }
 
         return result;
+    }
+
+    bool Database::setLastFmScrobblingEnabled(quint32 userId, bool enabled) {
+        auto preparer =
+            [=] (QSqlQuery& q) {
+                q.prepare(
+                    "UPDATE pmp_user SET EnableLastFmScrobbling=? "
+                    "WHERE UserId=?"
+                );
+                q.addBindValue(enabled);
+                q.addBindValue(userId);
+            };
+
+        if (!executeVoid(preparer)) {
+            qWarning() << "Database::setLastFmScrobblingEnabled : could not execute";
+            return false;
+        }
+
+        return true;
     }
 
     quint32 Database::getLastFmScrobbledUpTo(quint32 userId, bool* ok) {
@@ -1083,6 +1166,11 @@ namespace PMP {
         return q.exec();
     }
 
+    bool Database::getBool(QVariant v, bool nullValue) {
+        if (v.isNull()) return nullValue;
+        return v.toBool();
+    }
+
     int Database::getInt(QVariant v, int nullValue) {
         if (v.isNull()) return nullValue;
         return v.toInt();
@@ -1098,6 +1186,11 @@ namespace PMP {
         auto dateTime = v.toDateTime();
         dateTime.setTimeSpec(Qt::UTC);
         return dateTime;
+    }
+
+    QString Database::getString(QVariant v, const char* nullValue) {
+        if (v.isNull()) return nullValue;
+        return v.toString();
     }
 
     qint16 Database::calculateScore(qint32 permillageFromDB, quint32 heardCount) {

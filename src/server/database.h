@@ -70,6 +70,31 @@ namespace PMP {
         QByteArray password;
     };
 
+    class LastFmScrobblingDataRecord {
+    public:
+        LastFmScrobblingDataRecord()
+         : enableLastFmScrobbling(false), lastFmScrobbledUpTo(0)
+        {
+            //
+        }
+
+        bool enableLastFmScrobbling;
+        QString lastFmUser;
+        QString lastFmSessionKey;
+        quint32 lastFmScrobbledUpTo;
+    };
+
+    class UserScrobblingDataRecord : public LastFmScrobblingDataRecord {
+    public:
+        UserScrobblingDataRecord()
+         : userId(0)
+        {
+            //
+        }
+
+        quint32 userId;
+    };
+
     class HistoryRecord {
     public:
         HistoryRecord()
@@ -115,6 +140,12 @@ namespace PMP {
         bool checkUserExists(QString userName);
         quint32 registerNewUser(User& user);
 
+        QVector<UserScrobblingDataRecord> getUsersScrobblingData();
+        LastFmScrobblingDataRecord getUserLastFmScrobblingData(quint32 userId);
+        bool setLastFmScrobblingEnabled(quint32 userId, bool enabled = true);
+        quint32 getLastFmScrobbledUpTo(quint32 userId, bool* ok);
+        bool updateLastFmScrobbledUpTo(quint32 userId, quint32 newValue);
+
         void addToHistory(quint32 hashId, quint32 userId, QDateTime start, QDateTime end,
                           int permillage, bool validForScoring);
         QDateTime getLastHeard(quint32 hashId, quint32 userId);
@@ -126,9 +157,6 @@ namespace PMP {
                                                            quint32 startId,
                                                            QDateTime earliestDateTime,
                                                            int limit);
-
-        quint32 getLastFmScrobbledUpTo(quint32 userId, bool* ok);
-        bool updateLastFmScrobbledUpTo(quint32 userId, quint32 newValue);
 
         static QSharedPointer<Database> getDatabaseForCurrentThread();
 
@@ -158,9 +186,11 @@ namespace PMP {
         static bool addColumnIfNotExists(QSqlQuery& q, QString tableName,
                                          QString columnName, QString type);
 
+        static bool getBool(QVariant v, bool nullValue);
         static int getInt(QVariant v, int nullValue);
         static uint getUInt(QVariant v, uint nullValue);
         static QDateTime getUtcDateTime(QVariant v);
+        static QString getString(QVariant v, const char* nullValue);
 
         static qint16 calculateScore(qint32 permillageFromDB, quint32 heardCount);
 

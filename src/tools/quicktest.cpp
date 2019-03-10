@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -57,7 +57,7 @@ int main(int argc, char *argv[]) {
     qDebug() << "SSL version string:" << QSslSocket::sslLibraryVersionString();
     //return 0;
 
-    auto lastFm = new PMP::LastFmScrobblingBackend();
+    //auto lastFm = new PMP::LastFmScrobblingBackend();
 
     /*
     QObject::connect(
@@ -65,17 +65,18 @@ int main(int argc, char *argv[]) {
         &app, &QCoreApplication::quit
     );*/
 
-    //lastFm->doGetMobileTokenCall("xxxxxxxxxxxxx", "xxxxxxxxxxxxxxxx");
+    //lastFm->authenticateWithCredentials("xxxxxxxxxxxx", "xxxxxxxxxxxxxxx");
 
-    lastFm->setSessionKey("xxxxxxxxxxxxx");
+    //lastFm->setSessionKey("xxxxxxxxxxxxx");
 
+    /*
     lastFm->doScrobbleCall(
         QDateTime(QDate(2018, 03, 05), QTime(15, 57), Qt::LocalTime),
         "Title",
         QString("Artist"),
         "Album",
         3 * 60 + 39
-    );
+    );*/
 
     return app.exec();
 }

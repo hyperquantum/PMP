@@ -50,8 +50,10 @@ set(PMP_SERVER_SOURCES
     server/queueentry.cpp
     server/resolver.cpp
     server/scrobbler.cpp
+    server/scrobbling.cpp
     server/scrobblingbackend.cpp
     server/scrobblingdataprovider.cpp
+    server/scrobblinghost.cpp
     server/server.cpp
     server/serverhealthmonitor.cpp
     server/servermetatypes.cpp
@@ -74,7 +76,9 @@ set(PMP_SERVER_HEADERS
     server/queueentry.h
     server/resolver.h
     server/scrobbler.h
+    server/scrobbling.h
     server/scrobblingbackend.h
+    server/scrobblinghost.h
     server/server.h
     server/serverhealthmonitor.h
     server/serversettings.h

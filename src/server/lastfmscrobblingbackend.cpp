@@ -49,6 +49,8 @@ namespace PMP {
                                                       "application/x-www-form-urlencoded";
 
     void LastFmScrobblingBackend::initialize() {
+        // TODO: check if OpenSSL library is present
+
         leaveState(ScrobblingBackendState::NotInitialized);
     }
 

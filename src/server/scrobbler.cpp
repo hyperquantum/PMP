@@ -33,6 +33,7 @@ namespace PMP {
         _timeoutTimer(new QTimer(this)),
         _backoffTimer(new QTimer(this)), _backoffMilliseconds(0)
     {
+        // TODO: make sure the data provider is cleaned up
         _backend->setParent(this);
 
         connect(
