@@ -127,7 +127,9 @@ namespace PMP {
 
         QVector<QPair<QString, QString>> parameters;
         parameters << QPair<QString, QString>("method", "track.scrobble");
-        parameters << QPair<QString, QString>("album", album);
+        if (!album.isEmpty()) {
+            parameters << QPair<QString, QString>("album", album);
+        }
         parameters << QPair<QString, QString>("api_key", apiKey);
         parameters << QPair<QString, QString>("artist", artist);
         if (trackDurationSeconds > 0) {
