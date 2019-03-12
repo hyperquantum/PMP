@@ -55,6 +55,9 @@ IDEAS
  * dark theme for the client
  * require the server password when registering a new user account
  * music collection view: optional visual indication of tracks that have never been listened to
+ * option for single track mode (vs. continuous play)
+ * "play now" option in context menus
+ * display time remaining during playback
 
 
 USER FRIENDLINESS
