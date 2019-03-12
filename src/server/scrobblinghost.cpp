@@ -56,6 +56,13 @@ namespace PMP {
         }
     }
 
+    void ScrobblingHost::wakeUpForUser(uint userId) {
+        auto scrobbler = _scrobblers.value(userId, nullptr);
+
+        if (scrobbler)
+            scrobbler->wakeUp();
+    }
+
     void ScrobblingHost::setLastFmEnabledForUser(uint userId, bool enabled) {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) { return; }

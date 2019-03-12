@@ -21,7 +21,16 @@
 
 #include "scrobblinghost.h"
 
+#include <QtDebug>
+
 namespace PMP {
+
+    ScrobblingController::ScrobblingController()
+    {
+        //
+    }
+
+    /* ============================================================================ */
 
     UserScrobblingController::UserScrobblingController(uint userId)
      : _userId(userId)
@@ -29,14 +38,20 @@ namespace PMP {
         //
     }
 
+    void UserScrobblingController::wakeUp() {
+        qDebug() << "UserScrobblingController::wakeUp called for user" << _userId;
+        emit wakeUpRequested(_userId);
+    }
+
     void UserScrobblingController::enableLastFm() {
+        qDebug() << "UserScrobblingController::enableLastFm called for user" << _userId;
         emit lastFmEnabledChanged(_userId, true);
     }
 
     /* ============================================================================ */
 
     Scrobbling::Scrobbling(QObject *parent, Resolver* resolver)
-        : QObject(parent), _resolver(resolver), _host(nullptr)
+        : QObject(parent), _resolver(resolver), _host(nullptr), _controller(nullptr)
     {
         _thread.setObjectName("ScrobblingThread");
 
@@ -44,6 +59,12 @@ namespace PMP {
         _host->moveToThread(&_thread);
         connect(&_thread, &QThread::finished, _host, &QObject::deleteLater);
         connect(&_thread, &QThread::started, _host, &ScrobblingHost::load);
+
+        _controller = new ScrobblingController();
+        connect(
+            _controller, &ScrobblingController::wakeUpRequested,
+            _host, &ScrobblingHost::wakeUpForUser
+        );
 
         _thread.start();
     }
@@ -53,8 +74,12 @@ namespace PMP {
         _thread.wait();
     }
 
+    ScrobblingController* Scrobbling::getController() {
+        return _controller;
+    }
+
     UserScrobblingController* Scrobbling::getControllerForUser(uint userId) {
-        auto controller = _controllers.value(userId, nullptr);
+        auto controller = _userControllers.value(userId, nullptr);
         if (controller) return controller;
 
         controller = new UserScrobblingController(userId);
@@ -65,7 +90,12 @@ namespace PMP {
             _host, &ScrobblingHost::setLastFmEnabledForUser
         );
 
-        _controllers.insert(userId, controller);
+        connect(
+            controller, &UserScrobblingController::wakeUpRequested,
+            _host, &ScrobblingHost::wakeUpForUser
+        );
+
+        _userControllers.insert(userId, controller);
         return controller;
     }
 }

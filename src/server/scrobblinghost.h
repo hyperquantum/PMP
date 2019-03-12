@@ -36,6 +36,7 @@ namespace PMP {
 
     public slots:
         void load();
+        void wakeUpForUser(uint userId);
         void setLastFmEnabledForUser(uint userId, bool enabled);
 
     Q_SIGNALS:

@@ -188,6 +188,16 @@ int main(int argc, char *argv[]) {
     );
 
     Scrobbling scrobbling(nullptr, &resolver);
+    auto scrobblingController = scrobbling.getController();
+    QObject::connect(
+        &player, &Player::trackHistoryEvent,
+        scrobblingController,
+        [scrobblingController](uint, QDateTime, QDateTime, quint32 userPlayedFor, int,
+                               bool, bool )
+        {
+            scrobblingController->wakeUpRequested(userPlayedFor);
+        }
+    );
 
     resolver.setMusicPaths(musicPaths);
 

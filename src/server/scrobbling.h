@@ -30,15 +30,26 @@ namespace PMP {
     class Resolver;
     class ScrobblingHost;
 
+    class ScrobblingController : public QObject {
+        Q_OBJECT
+    public:
+        ScrobblingController();
+
+    Q_SIGNALS:
+        void wakeUpRequested(uint userId);
+    };
+
     class UserScrobblingController : public QObject {
         Q_OBJECT
     public:
         UserScrobblingController(uint userId);
 
     public slots:
+        void wakeUp();
         void enableLastFm();
 
     Q_SIGNALS:
+        void wakeUpRequested(uint userId);
         void lastFmEnabledChanged(uint userId, bool enabled);
 
     private:
@@ -51,6 +62,7 @@ namespace PMP {
         explicit Scrobbling(QObject* parent, Resolver* resolver);
         ~Scrobbling();
 
+        ScrobblingController* getController();
         UserScrobblingController* getControllerForUser(uint userId);
 
     Q_SIGNALS:
@@ -59,7 +71,8 @@ namespace PMP {
         Resolver* _resolver;
         ScrobblingHost* _host;
         QThread _thread;
-        QHash<uint, UserScrobblingController*> _controllers;
+        ScrobblingController* _controller;
+        QHash<uint, UserScrobblingController*> _userControllers;
     };
 }
 #endif
