@@ -76,6 +76,7 @@ namespace PMP {
     protected slots:
         void setState(ScrobblingBackendState newState);
         void setInitialBackoffMillisecondsForUnavailability(int timeMilliseconds);
+        void setInitialBackoffMillisecondsForErrorReply(int timeMilliseconds);
 
     private:
         int _initialBackoffMillisecondsForUnavailability;

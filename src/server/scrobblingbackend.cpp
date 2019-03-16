@@ -53,6 +53,12 @@ namespace PMP {
         _initialBackoffMillisecondsForUnavailability = timeMilliseconds;
     }
 
+    void ScrobblingBackend::setInitialBackoffMillisecondsForErrorReply(
+                                                                     int timeMilliseconds)
+    {
+        _initialBackoffMillisecondsForErrorReply = timeMilliseconds;
+    }
+
     QDebug operator<<(QDebug debug, ScrobblingBackendState state) {
         switch (state) {
             case ScrobblingBackendState::NotInitialized:

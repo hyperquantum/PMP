@@ -40,6 +40,7 @@ BackendMock::BackendMock(bool requireAuthentication)
 {
     qDebug() << "running BackendMock(" << requireAuthentication << ")";
     setInitialBackoffMillisecondsForUnavailability(30);
+    setInitialBackoffMillisecondsForErrorReply(30);
 }
 
 void BackendMock::initialize() {
