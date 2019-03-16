@@ -1,3 +1,4 @@
 * handle timeouts
 * make sure OpenSSL is present
 * handle failed requests properly (OpenSSL missing or connection problem)
+* "now playing"
