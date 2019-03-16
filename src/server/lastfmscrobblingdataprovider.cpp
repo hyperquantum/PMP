@@ -116,8 +116,12 @@ namespace PMP {
                really fix that, because we can't pause scrobbling potentially forever
                while waiting for title/artist/album info on a track that we may never see
                again. */
-            if (trackInfo.title().isEmpty() || trackInfo.artist().isEmpty())
+            if (trackInfo.title().isEmpty() || trackInfo.artist().isEmpty()) {
+                qDebug() << "cannot scrobble history record" << historyRecord.id
+                         << "with hash ID" << historyRecord.hashId
+                         << "because artist/title info is incomplete or missing";
                 continue;
+            }
 
             auto track =
                 new TrackForScrobbling(
