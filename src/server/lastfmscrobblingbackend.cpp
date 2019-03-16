@@ -182,6 +182,20 @@ namespace PMP {
         bool isScrobbleReply =
                 state() == ScrobblingBackendState::WaitingForScrobbleResult;
 
+        auto error = reply->error();
+        if (error != QNetworkReply::NoError) {
+            qWarning() << "Last.Fm reply has network error " << error
+                       << "with error text:" << reply->errorString();
+
+            if (isScrobbleReply) {
+                emit gotScrobbleResult(ScrobbleResult::Error);
+                leaveState(ScrobblingBackendState::WaitingForScrobbleResult);
+            }
+
+            reply->deleteLater();
+            return;
+        }
+
         auto replyData = reply->readAll();
         qDebug() << "Last.Fm reply received. Byte count:" << replyData.size();
 
@@ -189,12 +203,6 @@ namespace PMP {
 
         auto replyText = QString::fromUtf8(replyData);
         qDebug() << "Last.Fm reply:\n" << replyText;
-
-        auto error = reply->error();
-        if (error != QNetworkReply::NoError) {
-            qDebug() << "Last.Fm reply has error code" << error
-                     << "with error text:" << reply->errorString();
-        }
 
         QDomDocument dom;
         QString xmlParseError;
