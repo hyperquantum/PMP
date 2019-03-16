@@ -35,6 +35,7 @@ namespace PMP {
         ScrobblingHost(Resolver* resolver);
 
     public slots:
+        void enableScrobbling();
         void load();
         void wakeUpForUser(uint userId);
         void setLastFmEnabledForUser(uint userId, bool enabled);
@@ -49,6 +50,7 @@ namespace PMP {
 
         Resolver* _resolver;
         QHash<uint, Scrobbler*> _scrobblers;
+        bool _enabled;
     };
 
 }

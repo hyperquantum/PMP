@@ -58,12 +58,16 @@ namespace PMP {
         _host = new ScrobblingHost(resolver);
         _host->moveToThread(&_thread);
         connect(&_thread, &QThread::finished, _host, &QObject::deleteLater);
-        connect(&_thread, &QThread::started, _host, &ScrobblingHost::load);
+        //connect(&_thread, &QThread::started, _host, &ScrobblingHost::load);
 
         _controller = new ScrobblingController();
         connect(
             _controller, &ScrobblingController::wakeUpRequested,
             _host, &ScrobblingHost::wakeUpForUser
+        );
+        connect(
+            _controller, &ScrobblingController::enableScrobblingRequested,
+            _host, &ScrobblingHost::enableScrobbling
         );
 
         _thread.start();

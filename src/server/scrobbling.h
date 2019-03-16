@@ -36,6 +36,7 @@ namespace PMP {
         ScrobblingController();
 
     Q_SIGNALS:
+        void enableScrobblingRequested();
         void wakeUpRequested(uint userId);
     };
 

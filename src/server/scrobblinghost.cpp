@@ -24,15 +24,31 @@
 #include "lastfmscrobblingdataprovider.h"
 #include "scrobbler.h"
 
+#include <QtDebug>
+
 namespace PMP {
 
     ScrobblingHost::ScrobblingHost(Resolver* resolver)
-     : _resolver(resolver)
+     : _resolver(resolver), _enabled(false)
     {
         //
     }
 
+    void ScrobblingHost::enableScrobbling() {
+        if (_enabled)
+            return; /* already enabled */
+
+        qDebug() << "ScrobblingHost now enabled";
+        _enabled = true;
+        load();
+    }
+
     void ScrobblingHost::load() {
+        if (!_enabled)
+            return;
+
+        qDebug() << "loading scrobbling settings for all users";
+
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) {
             /* can't load */
@@ -86,6 +102,8 @@ namespace PMP {
     void ScrobblingHost::createLastFmScrobbler(uint userId,
                                                LastFmScrobblingDataRecord const& data)
     {
+        qDebug() << "creating Last.FM scrobbler for user with ID" << userId;
+
         auto dataProvider = new LastFmScrobblingDataProvider(userId, _resolver);
         auto lastFmBackend = new LastFmScrobblingBackend();
 

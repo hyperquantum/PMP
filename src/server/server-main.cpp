@@ -198,6 +198,15 @@ int main(int argc, char *argv[]) {
             scrobblingController->wakeUpRequested(userPlayedFor);
         }
     );
+    QObject::connect(
+        &resolver, &Resolver::fullIndexationRunStatusChanged,
+        scrobblingController,
+        [scrobblingController](bool running)
+        {
+            if (!running) /* if indexation completed... */
+                emit scrobblingController->enableScrobblingRequested();
+        }
+    );
 
     resolver.setMusicPaths(musicPaths);
 
