@@ -26,6 +26,7 @@ namespace PMP {
     ScrobblingBackend::ScrobblingBackend()
      : QObject(nullptr),
        _initialBackoffMillisecondsForUnavailability(5 * 60 * 1000 /* 5 minutes */),
+       _initialBackoffMillisecondsForErrorReply(10 * 1000 /* 10 seconds */),
        _state(ScrobblingBackendState::NotInitialized)
     {
         //

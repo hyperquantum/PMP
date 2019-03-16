@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -61,6 +61,10 @@ namespace PMP {
             return _initialBackoffMillisecondsForUnavailability;
         }
 
+        int getInitialBackoffMillisecondsForErrorReply() const {
+            return _initialBackoffMillisecondsForErrorReply;
+        }
+
     public slots:
         virtual void initialize() = 0;
 
@@ -75,6 +79,7 @@ namespace PMP {
 
     private:
         int _initialBackoffMillisecondsForUnavailability;
+        int _initialBackoffMillisecondsForErrorReply;
         ScrobblingBackendState _state;
     };
 }

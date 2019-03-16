@@ -136,10 +136,21 @@ namespace PMP {
 
     void Scrobbler::gotScrobbleResult(ScrobbleResult result) {
         qDebug() << "received scrobble result:" << result;
-        if (!_pendingScrobble) return;
+        if (!_pendingScrobble) {
+            qDebug() << " did not expect a scrobble result right now";
+            return;
+        }
 
         _timeoutTimer->stop();
+
+        if (result == ScrobbleResult::Error) {
+            reinsertPendingScrobbleAtFrontOfQueue();
+            startBackoffTimer(_backend->getInitialBackoffMillisecondsForErrorReply());
+            return;
+        }
+
         _backoffMilliseconds = 0;
+
         auto trackPtr = _pendingScrobble;
         _pendingScrobble = nullptr;
 
@@ -150,9 +161,7 @@ namespace PMP {
             case ScrobbleResult::Ignored:
                 trackPtr->scrobbleIgnored();
                 break;
-            case ScrobbleResult::Error:
-                /* reinsert at front of the queue */
-                _tracksToScrobble.insert(0, trackPtr);
+            case ScrobbleResult::Error: /* already handled before the switch */
                 break;
         }
 
@@ -196,7 +205,7 @@ namespace PMP {
             _backoffMilliseconds = initialBackoffMilliseconds;
         }
         else {
-            _backoffMilliseconds = (_backoffMilliseconds + 1) * 2;
+            _backoffMilliseconds = (_backoffMilliseconds + 10) * 2;
         }
 
         qDebug() << "starting backoff timer with interval:" << _backoffMilliseconds;
