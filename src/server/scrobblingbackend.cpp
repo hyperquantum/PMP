@@ -39,12 +39,14 @@ namespace PMP {
     void ScrobblingBackend::setState(ScrobblingBackendState newState) {
         if (_state == newState) return; /* no change */
 
+        auto oldState = _state;
+
         if (newState == ScrobblingBackendState::PermanentFatalError) {
             qWarning() << "backend is switching to state" << newState;
         }
 
         _state = newState;
-        emit stateChanged(newState);
+        emit stateChanged(newState, oldState);
     }
 
     void ScrobblingBackend::setInitialBackoffMillisecondsForUnavailability(

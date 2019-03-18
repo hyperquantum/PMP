@@ -69,7 +69,8 @@ namespace PMP {
         virtual void initialize() = 0;
 
     Q_SIGNALS:
-        void stateChanged(ScrobblingBackendState newState);
+        void stateChanged(ScrobblingBackendState newState,
+                                                         ScrobblingBackendState oldState);
         void gotScrobbleResult(ScrobbleResult result);
         void serviceTemporarilyUnavailable();
 

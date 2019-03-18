@@ -49,7 +49,8 @@ namespace PMP {
         void timeoutTimerTimedOut();
         void backoffTimerTimedOut();
         void gotScrobbleResult(ScrobbleResult result);
-        void backendStateChanged(ScrobblingBackendState newState);
+        void backendStateChanged(ScrobblingBackendState newState,
+                                                         ScrobblingBackendState oldState);
         void serviceTemporarilyUnavailable();
 
     private:

@@ -168,11 +168,17 @@ namespace PMP {
         QTimer::singleShot(0, this, SLOT(wakeUp()));
     }
 
-    void Scrobbler::backendStateChanged(ScrobblingBackendState newState) {
+    void Scrobbler::backendStateChanged(ScrobblingBackendState newState,
+                                        ScrobblingBackendState oldState)
+    {
         qDebug() << "backend state changed to:" << newState;
 
         _timeoutTimer->stop();
-        _backoffMilliseconds = 0;
+
+        /* not sure about this */
+        if (oldState == ScrobblingBackendState::PermanentFatalError) {
+            _backoffMilliseconds = 0;
+        }
 
         /* should we wait for something to change in the backend? */
         switch (newState) {
@@ -204,7 +210,7 @@ namespace PMP {
         if (_backoffMilliseconds < initialBackoffMilliseconds) {
             _backoffMilliseconds = initialBackoffMilliseconds;
         }
-        else {
+        else if (_backoffMilliseconds <= 5 * 60 * 1000 /* 5 minutes */) {
             _backoffMilliseconds = (_backoffMilliseconds + 10) * 2;
         }
 
