@@ -1,4 +1,8 @@
+* add GUI for scrobbling: for enabling/disabling it and entering user credentials
+* don't store Last.FM session key in plain text in the database
 * handle timeouts
 * make sure OpenSSL is present
 * handle failed requests properly (OpenSSL missing or connection problem)
 * "now playing"
+* wait a bit before trying to scrobble a track that has just finished playing
+* fix network error QNetworkReply::NetworkError(UnknownNetworkError) with error text: "Network access is disabled."
