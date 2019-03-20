@@ -193,6 +193,17 @@ namespace PMP {
             }
 
             reply->deleteLater();
+
+            /* workaround */
+            if (error == QNetworkReply::UnknownNetworkError
+                    && reply->errorString().contains("Network access is disabled"))
+            {
+                qDebug() << "detected 'Network access is disabled' problem;"
+                         << "applying workaround";
+                auto networkAccessManager = _networkAccessManager;
+                _networkAccessManager = nullptr;
+                if (networkAccessManager) { networkAccessManager->deleteLater(); }
+            }
             return;
         }
 

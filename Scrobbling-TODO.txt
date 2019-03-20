@@ -5,4 +5,3 @@
 * handle failed requests properly (OpenSSL missing or connection problem)
 * "now playing"
 * wait a bit before trying to scrobble a track that has just finished playing
-* fix network error QNetworkReply::NetworkError(UnknownNetworkError) with error text: "Network access is disabled."
