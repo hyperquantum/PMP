@@ -5,3 +5,4 @@
 * handle failed requests properly (OpenSSL missing or connection problem)
 * "now playing"
 * wait a bit before trying to scrobble a track that has just finished playing
+* put some delay between subsequent scrobbles
