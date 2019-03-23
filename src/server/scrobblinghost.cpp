@@ -25,6 +25,7 @@
 #include "scrobbler.h"
 
 #include <QtDebug>
+#include <QTimer>
 
 namespace PMP {
 
@@ -75,8 +76,10 @@ namespace PMP {
     void ScrobblingHost::wakeUpForUser(uint userId) {
         auto scrobbler = _scrobblers.value(userId, nullptr);
 
+        /* wake up with a delay, to give the database enough time to store the track that
+           has just finished playing */
         if (scrobbler)
-            scrobbler->wakeUp();
+            QTimer::singleShot(100, scrobbler, &Scrobbler::wakeUp);
     }
 
     void ScrobblingHost::setLastFmEnabledForUser(uint userId, bool enabled) {
