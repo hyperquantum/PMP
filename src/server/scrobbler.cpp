@@ -207,11 +207,16 @@ namespace PMP {
     void Scrobbler::startBackoffTimer(int initialBackoffMilliseconds) {
         _backoffTimer->stop();
 
+        /* make sure the starting interval is at least above zero */
+        initialBackoffMilliseconds = qMax(10, initialBackoffMilliseconds);
+
+        const int maxInterval = 5 * 60 * 1000 /* 5 minutes */;
+
         if (_backoffMilliseconds < initialBackoffMilliseconds) {
             _backoffMilliseconds = initialBackoffMilliseconds;
         }
-        else if (_backoffMilliseconds <= 5 * 60 * 1000 /* 5 minutes */) {
-            _backoffMilliseconds = (_backoffMilliseconds + 10) * 2;
+        else if (_backoffMilliseconds < maxInterval) {
+            _backoffMilliseconds = qMin(maxInterval, _backoffMilliseconds * 2);
         }
 
         qDebug() << "starting backoff timer with interval:" << _backoffMilliseconds;
