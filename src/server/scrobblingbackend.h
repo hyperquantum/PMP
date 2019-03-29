@@ -57,6 +57,10 @@ namespace PMP {
                                    QString const& artist, QString const& album,
                                    int trackDurationSeconds = -1) = 0;
 
+        int getDelayInMillisecondsBetweenSubsequentScrobbles() const {
+            return _delayInMillisecondsBetweenSubsequentScrobbles;
+        }
+
         int getInitialBackoffMillisecondsForUnavailability() const {
             return _initialBackoffMillisecondsForUnavailability;
         }
@@ -76,10 +80,12 @@ namespace PMP {
 
     protected slots:
         void setState(ScrobblingBackendState newState);
+        void setDelayInMillisecondsBetweenSubsequentScrobbles(int timeMilliseconds);
         void setInitialBackoffMillisecondsForUnavailability(int timeMilliseconds);
         void setInitialBackoffMillisecondsForErrorReply(int timeMilliseconds);
 
     private:
+        int _delayInMillisecondsBetweenSubsequentScrobbles;
         int _initialBackoffMillisecondsForUnavailability;
         int _initialBackoffMillisecondsForErrorReply;
         ScrobblingBackendState _state;

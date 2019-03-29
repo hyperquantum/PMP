@@ -165,7 +165,10 @@ namespace PMP {
                 break;
         }
 
-        QTimer::singleShot(0, this, SLOT(wakeUp()));
+        auto delayBetweenSubsequentScrobbles =
+                _backend->getDelayInMillisecondsBetweenSubsequentScrobbles();
+
+        QTimer::singleShot(delayBetweenSubsequentScrobbles, this, SLOT(wakeUp()));
     }
 
     void Scrobbler::backendStateChanged(ScrobblingBackendState newState,

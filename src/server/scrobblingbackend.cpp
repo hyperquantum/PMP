@@ -25,6 +25,7 @@ namespace PMP {
 
     ScrobblingBackend::ScrobblingBackend()
      : QObject(nullptr),
+       _delayInMillisecondsBetweenSubsequentScrobbles(100 /* 100 ms */),
        _initialBackoffMillisecondsForUnavailability(5 * 60 * 1000 /* 5 minutes */),
        _initialBackoffMillisecondsForErrorReply(10 * 1000 /* 10 seconds */),
        _state(ScrobblingBackendState::NotInitialized)
@@ -49,16 +50,22 @@ namespace PMP {
         emit stateChanged(newState, oldState);
     }
 
+    void ScrobblingBackend::setDelayInMillisecondsBetweenSubsequentScrobbles(
+                                                                     int timeMilliseconds)
+    {
+        _delayInMillisecondsBetweenSubsequentScrobbles = qMax(0, timeMilliseconds);
+    }
+
     void ScrobblingBackend::setInitialBackoffMillisecondsForUnavailability(
                                                                      int timeMilliseconds)
     {
-        _initialBackoffMillisecondsForUnavailability = timeMilliseconds;
+        _initialBackoffMillisecondsForUnavailability = qMax(0, timeMilliseconds);
     }
 
     void ScrobblingBackend::setInitialBackoffMillisecondsForErrorReply(
                                                                      int timeMilliseconds)
     {
-        _initialBackoffMillisecondsForErrorReply = timeMilliseconds;
+        _initialBackoffMillisecondsForErrorReply = qMax(0, timeMilliseconds);
     }
 
     QDebug operator<<(QDebug debug, ScrobblingBackendState state) {

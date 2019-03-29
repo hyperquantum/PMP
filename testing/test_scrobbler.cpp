@@ -39,6 +39,7 @@ BackendMock::BackendMock(bool requireAuthentication)
    _haveApiToken(false), _apiTokenWillBeAcceptedByApi(false)
 {
     qDebug() << "running BackendMock(" << requireAuthentication << ")";
+    setDelayInMillisecondsBetweenSubsequentScrobbles(10);
     setInitialBackoffMillisecondsForUnavailability(30);
     setInitialBackoffMillisecondsForErrorReply(30);
 }

@@ -4,4 +4,3 @@
 * make sure OpenSSL is present
 * handle failed requests properly (OpenSSL missing or connection problem)
 * "now playing"
-* put some delay between subsequent scrobbles
