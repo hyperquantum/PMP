@@ -35,7 +35,8 @@
 namespace PMP {
 
     LastFmScrobblingBackend::LastFmScrobblingBackend()
-     : ScrobblingBackend(), _networkAccessManager(nullptr)
+     : ScrobblingBackend(), _networkAccessManager(nullptr),
+       _authenticationReply(nullptr), _scrobbleReply(nullptr)
     {
         qDebug() << "Creating LastFmScrobblingProvider;  user-agent:" << userAgent;
     }
@@ -61,13 +62,12 @@ namespace PMP {
             _username.clear();
         }
 
-        if (waitingForReply(state()))
+        if (waitingForReply())
         {
             return; /* cannot authenticate now */
         }
 
         doGetMobileTokenCall(usernameOrEmail, password);
-        setState(ScrobblingBackendState::WaitingForAuthenticationResult);
     }
 
     void LastFmScrobblingBackend::setUsername(const QString& username) {
@@ -100,17 +100,17 @@ namespace PMP {
         parameters << QPair<QString, QString>("password", password);
         parameters << QPair<QString, QString>("username", usernameOrEmail);
 
-        signAndSendPost(parameters);
+        _authenticationReply = signAndSendPost(parameters);
     }
 
     void LastFmScrobblingBackend::scrobbleTrack(QDateTime timestamp, QString const& title,
                                               QString const& artist, QString const& album,
                                               int trackDurationSeconds)
     {
-        if (state() != ScrobblingBackendState::ReadyForScrobbling) return;
+        if (waitingForReply() || state() != ScrobblingBackendState::ReadyForScrobbling)
+            return;
 
         doScrobbleCall(timestamp, title, artist, album, trackDurationSeconds);
-        setState(ScrobblingBackendState::WaitingForScrobbleResult);
     }
 
     void LastFmScrobblingBackend::doScrobbleCall(QDateTime timestamp,
@@ -140,7 +140,7 @@ namespace PMP {
         parameters << QPair<QString, QString>("timestamp", timestampText);
         parameters << QPair<QString, QString>("track", title);
 
-        signAndSendPost(parameters);
+        _scrobbleReply = signAndSendPost(parameters);
     }
 
     QNetworkReply* LastFmScrobblingBackend::signAndSendPost(
@@ -172,15 +172,22 @@ namespace PMP {
             parametersString = parametersString.mid(1);
 
         qDebug() << "parameters:" << parametersString;
+        setWaitingForReply(true);
         return _networkAccessManager->post(request, parametersString);
     }
 
     void LastFmScrobblingBackend::requestFinished(QNetworkReply* reply) {
-//        bool isAuthenticationReply =
-//                state() == ScrobblingBackendState::WaitingForAuthenticationResult;
+        setWaitingForReply(false);
 
-        bool isScrobbleReply =
-                state() == ScrobblingBackendState::WaitingForScrobbleResult;
+        bool isScrobbleReply = reply == _scrobbleReply;
+        if (isScrobbleReply) {
+            _scrobbleReply = nullptr;
+        }
+
+        bool isAuthenticationReply = reply == _authenticationReply;
+        if (isAuthenticationReply) {
+            _authenticationReply = nullptr;
+        }
 
         auto error = reply->error();
         if (error != QNetworkReply::NoError) {
@@ -189,7 +196,6 @@ namespace PMP {
 
             if (isScrobbleReply) {
                 emit gotScrobbleResult(ScrobbleResult::Error);
-                leaveState(ScrobblingBackendState::WaitingForScrobbleResult);
             }
 
             reply->deleteLater();
@@ -235,7 +241,6 @@ namespace PMP {
 
         if (isScrobbleReply) {
             emit gotScrobbleResult(ScrobbleResult::Error);
-            leaveState(ScrobblingBackendState::WaitingForScrobbleResult);
         }
     }
 
@@ -251,7 +256,6 @@ namespace PMP {
 
             if (isScrobbleReply) {
                 emit gotScrobbleResult(ScrobbleResult::Error);
-                leaveState(ScrobblingBackendState::WaitingForScrobbleResult);
             }
 
             return;
@@ -264,7 +268,6 @@ namespace PMP {
 
                 auto scrobbleResult = parseScrobbles(scrobblesNode);
                 emit gotScrobbleResult(scrobbleResult);
-                leaveState(ScrobblingBackendState::WaitingForScrobbleResult);
             }
             else {
                 qDebug() << "received a scrobbling result while not expecting one";
@@ -281,7 +284,6 @@ namespace PMP {
 
             _username = nameNode.text();
             _sessionKey = keyNode.text();
-            leaveState(ScrobblingBackendState::WaitingForAuthenticationResult);
         }
     }
 
@@ -307,7 +309,6 @@ namespace PMP {
             case 9: /* invalid session key, need to re-authenticate */
                 qWarning() << "LFM reports session key not valid (or not anymore)";
                 _sessionKey = "";
-                leaveState(ScrobblingBackendState::WaitingForAuthenticationResult);
                 updateState();
                 break;
 
@@ -421,8 +422,6 @@ namespace PMP {
 
         switch (oldState) {
             case ScrobblingBackendState::NotInitialized:
-            case ScrobblingBackendState::WaitingForAuthenticationResult:
-            case ScrobblingBackendState::WaitingForScrobbleResult:
             case ScrobblingBackendState::PermanentFatalError:
                 /* these states need to be switched away from explicitly */
                 return;
@@ -449,24 +448,6 @@ namespace PMP {
             emit needUserCredentials(_username, false);
             return;
         }
-    }
-
-    bool LastFmScrobblingBackend::waitingForReply(ScrobblingBackendState state) {
-        switch (state) {
-            case ScrobblingBackendState::WaitingForAuthenticationResult:
-            case ScrobblingBackendState::WaitingForScrobbleResult:
-                return true;
-
-            case ScrobblingBackendState::NotInitialized:
-            case ScrobblingBackendState::WaitingForUserCredentials:
-            case ScrobblingBackendState::ReadyForScrobbling:
-            case ScrobblingBackendState::InvalidUserCredentials:
-            case ScrobblingBackendState::PermanentFatalError:
-                return false;
-        }
-
-        qWarning() << "unhandled state:" << state;
-        return false;
     }
 
 }

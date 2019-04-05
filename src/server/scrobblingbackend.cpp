@@ -28,7 +28,7 @@ namespace PMP {
        _delayInMillisecondsBetweenSubsequentScrobbles(100 /* 100 ms */),
        _initialBackoffMillisecondsForUnavailability(5 * 60 * 1000 /* 5 minutes */),
        _initialBackoffMillisecondsForErrorReply(10 * 1000 /* 10 seconds */),
-       _state(ScrobblingBackendState::NotInitialized)
+       _state(ScrobblingBackendState::NotInitialized), _waitingForReply(false)
     {
         //
     }
@@ -48,6 +48,10 @@ namespace PMP {
 
         _state = newState;
         emit stateChanged(newState, oldState);
+    }
+
+    void ScrobblingBackend::setWaitingForReply(bool waiting) {
+        _waitingForReply = waiting;
     }
 
     void ScrobblingBackend::setDelayInMillisecondsBetweenSubsequentScrobbles(
@@ -73,12 +77,12 @@ namespace PMP {
             case ScrobblingBackendState::NotInitialized:
                 debug << "ScrobblingBackendState::NotInitialized";
                 break;
-            case ScrobblingBackendState::WaitingForAuthenticationResult:
+            /*case ScrobblingBackendState::WaitingForAuthenticationResult:
                 debug << "ScrobblingBackendState::WaitingForAuthenticationResult";
                 break;
             case ScrobblingBackendState::WaitingForScrobbleResult:
                 debug << "ScrobblingBackendState::WaitingForScrobbleResult";
-                break;
+                break;*/
             case ScrobblingBackendState::WaitingForUserCredentials:
                 debug << "ScrobblingBackendState::WaitingForUserCredentials";
                 break;

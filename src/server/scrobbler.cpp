@@ -93,15 +93,18 @@ namespace PMP {
         }
 
         qDebug() << "we have" << _tracksToScrobble.size() << "tracks to scrobble";
+
+        if (_backend->waitingForReply()) {
+            qDebug() << "backend is still waiting for a reply";
+            return;
+        }
+
         qDebug() << "backend state:" << _backend->state();
         switch (_backend->state()) {
             case ScrobblingBackendState::NotInitialized:
                 _backend->initialize();
                 QTimer::singleShot(0, this, SLOT(wakeUp()));
                 break;
-            case ScrobblingBackendState::WaitingForAuthenticationResult:
-            case ScrobblingBackendState::WaitingForScrobbleResult:
-                break; /* waiting for timeout event */
             case ScrobblingBackendState::ReadyForScrobbling:
                 sendNextScrobble();
                 break;
@@ -185,12 +188,6 @@ namespace PMP {
 
         /* should we wait for something to change in the backend? */
         switch (newState) {
-            case ScrobblingBackendState::WaitingForAuthenticationResult:
-                _timeoutTimer->start(30000);
-                return;
-            case ScrobblingBackendState::WaitingForScrobbleResult:
-                _timeoutTimer->start(30000);
-                return;
             case ScrobblingBackendState::WaitingForUserCredentials:
                 return; /* no waiting for timeout */
             default:

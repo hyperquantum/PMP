@@ -28,9 +28,7 @@ namespace PMP {
     enum class ScrobblingBackendState {
         NotInitialized = 0,
         WaitingForUserCredentials,
-        WaitingForAuthenticationResult,
         ReadyForScrobbling,
-        WaitingForScrobbleResult,
         InvalidUserCredentials,
         PermanentFatalError,
     };
@@ -52,6 +50,7 @@ namespace PMP {
         virtual ~ScrobblingBackend();
 
         ScrobblingBackendState state() const { return _state; }
+        bool waitingForReply() const { return _waitingForReply; }
 
         virtual void scrobbleTrack(QDateTime timestamp, QString const& title,
                                    QString const& artist, QString const& album,
@@ -80,6 +79,7 @@ namespace PMP {
 
     protected slots:
         void setState(ScrobblingBackendState newState);
+        void setWaitingForReply(bool waiting);
         void setDelayInMillisecondsBetweenSubsequentScrobbles(int timeMilliseconds);
         void setInitialBackoffMillisecondsForUnavailability(int timeMilliseconds);
         void setInitialBackoffMillisecondsForErrorReply(int timeMilliseconds);
@@ -89,6 +89,7 @@ namespace PMP {
         int _initialBackoffMillisecondsForUnavailability;
         int _initialBackoffMillisecondsForErrorReply;
         ScrobblingBackendState _state;
+        bool _waitingForReply;
     };
 }
 

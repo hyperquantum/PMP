@@ -68,7 +68,6 @@ namespace PMP {
         void requestFinished(QNetworkReply* reply);
 
     private:
-        static bool waitingForReply(ScrobblingBackendState state);
         void updateState();
         void leaveState(ScrobblingBackendState oldState);
 
@@ -86,6 +85,8 @@ namespace PMP {
         static const char* userAgent;
 
         QNetworkAccessManager* _networkAccessManager;
+        QNetworkReply* _authenticationReply;
+        QNetworkReply* _scrobbleReply;
         QString _username;
         QString _sessionKey;
     };
