@@ -33,7 +33,8 @@ using namespace PMP;
 // ================================= BackendMock ================================= //
 
 BackendMock::BackendMock(bool requireAuthentication)
- : _temporaryUnavailabilitiesToStageAtScrobbleTime(0),
+ : _nowPlayingUpdatedCount(0),
+   _temporaryUnavailabilitiesToStageAtScrobbleTime(0),
    _scrobbledSuccessfullyCount(0), _tracksIgnoredCount(0),
    _requireAuthentication(requireAuthentication),
    _haveApiToken(false), _apiTokenWillBeAcceptedByApi(false)
@@ -85,6 +86,22 @@ void BackendMock::setApiToken(bool willBeAcceptedByApi) {
     }
 }
 
+void BackendMock::updateNowPlaying(QString const& title, QString const& artist,
+                                   QString const& album, int trackDurationSeconds)
+{
+    if (waitingForReply() || state() != ScrobblingBackendState::ReadyForScrobbling)
+        return;
+
+    setWaitingForReply(true);
+
+    (void)title;
+    (void)artist;
+    (void)album;
+    (void)trackDurationSeconds;
+
+    QTimer::singleShot(10, this, &BackendMock::pretendSuccessfulNowPlaying);
+}
+
 void BackendMock::scrobbleTrack(QDateTime timestamp, QString const& title,
                                 QString const& artist, QString const& album,
                                 int trackDurationSeconds)
@@ -117,7 +134,7 @@ void BackendMock::scrobbleTrack(QDateTime timestamp, QString const& title,
     (void)album;
     (void)trackDurationSeconds;
 
-    QTimer::singleShot(10, this, SLOT(pretendSuccessfullScrobble()));
+    QTimer::singleShot(10, this, &BackendMock::pretendSuccessfulScrobble);
 }
 
 void BackendMock::pretendAuthenticationResultReceived() {
@@ -129,7 +146,13 @@ void BackendMock::pretendAuthenticationResultReceived() {
         setState(ScrobblingBackendState::InvalidUserCredentials);
 }
 
-void BackendMock::pretendSuccessfullScrobble() {
+void BackendMock::pretendSuccessfulNowPlaying() {
+    setWaitingForReply(false);
+    _nowPlayingUpdatedCount++;
+    emit gotNowPlayingResult(true);
+}
+
+void BackendMock::pretendSuccessfulScrobble() {
     setWaitingForReply(false);
     _scrobbledSuccessfullyCount++;
     emit gotScrobbleResult(ScrobbleResult::Success);
@@ -202,6 +225,70 @@ void TrackToScrobbleMock::scrobbleIgnored() {
 }
 
 // ================================= TestScrobbler ================================= //
+
+void TestScrobbler::simpleNowPlayingUpdate() {
+    DataProviderMock dataProvider;
+    auto backend = new BackendMock(false);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+
+    QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
+
+    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), "Title", "Artist", "Alb");
+
+    QTRY_COMPARE(backend->nowPlayingUpdatedCount(), 1);
+}
+
+void TestScrobbler::nowPlayingWithAuthentication() {
+    DataProviderMock dataProvider;
+    auto backend = new BackendMock(true);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+
+    QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
+
+    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), "Title", "Artist", "Alb");
+
+    QTRY_COMPARE(backend->state(), ScrobblingBackendState::WaitingForUserCredentials);
+    QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
+
+    backend->setUserCredentials("CorrectUsername", "CorrectPassword");
+
+    QTRY_COMPARE(backend->nowPlayingUpdatedCount(), 1);
+}
+
+void TestScrobbler::nowPlayingWithTrackToScrobble() {
+    DataProviderMock dataProvider;
+    auto track = addTrackToScrobble(dataProvider);
+
+    QVERIFY(!track->scrobbled());
+
+    auto backend = new BackendMock(false);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+
+    QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
+
+    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), "Title", "Artist", "Alb");
+
+    QTRY_COMPARE(backend->nowPlayingUpdatedCount(), 1);
+
+    QTRY_VERIFY(track->scrobbled());
+}
+
+void TestScrobbler::nowPlayingWithImmediateScrobble() {
+    DataProviderMock dataProvider;
+    auto backend = new BackendMock(false);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+
+    QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
+
+    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), "Title", "Artist", "Alb");
+    // no delay here
+    auto track = addTrackToScrobble(dataProvider);
+    scrobbler.wakeUp();
+
+    QTRY_COMPARE(backend->nowPlayingUpdatedCount(), 1);
+
+    QTRY_VERIFY(track->scrobbled());
+}
 
 void TestScrobbler::trivialScrobble() {
     DataProviderMock dataProvider;

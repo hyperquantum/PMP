@@ -102,6 +102,23 @@ namespace PMP {
         }
     }
 
+    /*void ScrobblingHost::setNowPlayingNothing(uint userId) {
+        auto scrobbler = _scrobblers.value(userId, nullptr);
+        if (!scrobbler) return;
+
+        scrobbler->nowPlayingNothing();
+    }*/
+
+    void ScrobblingHost::setNowPlayingTrack(uint userId, QDateTime startTime,
+                                            QString title, QString artist, QString album,
+                                            int trackDurationSeconds)
+    {
+        auto scrobbler = _scrobblers.value(userId, nullptr);
+        if (!scrobbler) return;
+
+        scrobbler->nowPlayingTrack(startTime, title, artist, album, trackDurationSeconds);
+    }
+
     void ScrobblingHost::createLastFmScrobbler(uint userId,
                                                LastFmScrobblingDataRecord const& data)
     {

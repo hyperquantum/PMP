@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -224,6 +224,10 @@ namespace PMP {
 
     QString QueueEntry::title() const {
         return _tagData.title();
+    }
+
+    QString QueueEntry::album() const {
+        return _tagData.album();
     }
 
     void QueueEntry::setStartedNow() {

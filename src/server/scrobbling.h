@@ -20,9 +20,9 @@
 #ifndef PMP_SCROBBLING_H
 #define PMP_SCROBBLING_H
 
-#include <QObject>
-
+#include <QDateTime>
 #include <QHash>
+#include <QObject>
 #include <QThread>
 
 namespace PMP {
@@ -38,6 +38,10 @@ namespace PMP {
     Q_SIGNALS:
         void enableScrobblingRequested();
         void wakeUpRequested(uint userId);
+
+        void nowPlayingUpdateRequested(uint userId, QDateTime startTime,
+                                       QString title, QString artist, QString album,
+                                       int trackDurationSeconds = -1);
     };
 
     class UserScrobblingController : public QObject {

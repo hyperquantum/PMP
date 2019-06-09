@@ -52,6 +52,10 @@ namespace PMP {
         ScrobblingBackendState state() const { return _state; }
         bool waitingForReply() const { return _waitingForReply; }
 
+        virtual void updateNowPlaying(QString const& title, QString const& artist,
+                                      QString const& album,
+                                      int trackDurationSeconds = -1) = 0;
+
         virtual void scrobbleTrack(QDateTime timestamp, QString const& title,
                                    QString const& artist, QString const& album,
                                    int trackDurationSeconds = -1) = 0;
@@ -74,6 +78,7 @@ namespace PMP {
     Q_SIGNALS:
         void stateChanged(ScrobblingBackendState newState,
                                                          ScrobblingBackendState oldState);
+        void gotNowPlayingResult(bool success);
         void gotScrobbleResult(ScrobbleResult result);
         void serviceTemporarilyUnavailable();
 

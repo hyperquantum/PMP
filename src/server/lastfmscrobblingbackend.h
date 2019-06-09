@@ -42,6 +42,9 @@ namespace PMP {
         void doGetMobileTokenCall(QString const& usernameOrEmail,
                                   QString const& password);
 
+        void doUpdateNowPlayingCall(QString const& title, QString const& artist,
+                                    QString const& album, int trackDurationSeconds = -1);
+
         void doScrobbleCall(QDateTime timestamp, QString const& title,
                             QString const& artist, QString const& album,
                             int trackDurationSeconds = -1);
@@ -51,6 +54,10 @@ namespace PMP {
 
         QString username() const;
         QString sessionKey() const;
+
+        void updateNowPlaying(QString const& title, QString const& artist,
+                              QString const& album,
+                              int trackDurationSeconds = -1) override;
 
         void scrobbleTrack(QDateTime timestamp, QString const& title,
                            QString const& artist, QString const& album,
@@ -86,6 +93,7 @@ namespace PMP {
 
         QNetworkAccessManager* _networkAccessManager;
         QNetworkReply* _authenticationReply;
+        QNetworkReply* _nowPlayingReply;
         QNetworkReply* _scrobbleReply;
         QString _username;
         QString _sessionKey;

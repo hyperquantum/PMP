@@ -190,10 +190,14 @@ int main(int argc, char *argv[]) {
     Scrobbling scrobbling(nullptr, &resolver);
     auto scrobblingController = scrobbling.getController();
     QObject::connect(
+        &player, &Player::startedPlaying,
+        scrobblingController, &ScrobblingController::nowPlayingUpdateRequested
+    );
+    QObject::connect(
         &player, &Player::trackHistoryEvent,
         scrobblingController,
         [scrobblingController](uint, QDateTime, QDateTime, quint32 userPlayedFor, int,
-                               bool, bool )
+                               bool, bool)
         {
             scrobblingController->wakeUpRequested(userPlayedFor);
         }

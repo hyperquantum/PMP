@@ -42,12 +42,18 @@ namespace PMP {
 
     public slots:
         void wakeUp();
+        void nowPlayingNothing();
+        void nowPlayingTrack(QDateTime startTime,
+                             QString const& title, QString const& artist,
+                             QString const& album,
+                             int trackDurationSeconds = -1);
 
     Q_SIGNALS:
 
     private slots:
         void timeoutTimerTimedOut();
         void backoffTimerTimedOut();
+        void gotNowPlayingResult(bool success);
         void gotScrobbleResult(ScrobbleResult result);
         void backendStateChanged(ScrobblingBackendState newState,
                                                          ScrobblingBackendState oldState);
@@ -55,6 +61,7 @@ namespace PMP {
 
     private:
         void checkIfWeHaveSomethingToDo();
+        void sendNowPlaying();
         void sendNextScrobble();
         void startBackoffTimer(int initialBackoffMilliseconds);
         void reinsertPendingScrobbleAtFrontOfQueue();
@@ -65,7 +72,15 @@ namespace PMP {
         std::shared_ptr<TrackToScrobble> _pendingScrobble;
         QTimer* _timeoutTimer;
         QTimer* _backoffTimer;
+        QString _nowPlayingTitle;
+        QString _nowPlayingArtist;
+        QString _nowPlayingAlbum;
+        QDateTime _nowPlayingStartTime;
         int _backoffMilliseconds;
+        int _nowPlayingTrackDurationSeconds;
+        bool _nowPlayingPresent;
+        bool _nowPlayingSent;
+        bool _nowPlayingDone;
     };
 }
 #endif

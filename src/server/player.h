@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -78,12 +78,15 @@ namespace PMP {
         void trackHistoryEvent(uint queueID, QDateTime started, QDateTime ended,
                                quint32 userPlayedFor, int permillagePlayed, bool hadError,
                                bool hadSeek);
+        void startedPlaying(uint userPlayingFor, QDateTime startTime,
+                            QString title, QString artist, QString album,
+                            int trackDurationSeconds);
 
         /*! Emitted when the queue is empty and the current track is finished. */
         void finished();
 
     private slots:
-        void changeState(PlayerState state);
+        void changeStateTo(PlayerState state);
         void internalStateChanged(QMediaPlayer::State state);
         void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
         void internalPositionChanged(qint64 position);
@@ -91,6 +94,7 @@ namespace PMP {
         bool startNext(bool play);
 
     private:
+        void emitStartedPlaying(QueueEntry const* queueEntry);
         void addToHistory(QueueEntry* entry, int permillage, bool hadError, bool hadSeek);
         int calcPermillagePlayed();
         static int calcPermillagePlayed(QueueEntry* track, qint64 positionReached,

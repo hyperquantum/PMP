@@ -31,7 +31,9 @@ namespace PMP {
                          ScrobblingBackend* backend)
      : QObject(parent), _dataProvider(dataProvider), _backend(backend),
         _timeoutTimer(new QTimer(this)),
-        _backoffTimer(new QTimer(this)), _backoffMilliseconds(0)
+        _backoffTimer(new QTimer(this)), _backoffMilliseconds(0),
+        _nowPlayingTrackDurationSeconds(-1), _nowPlayingPresent(false),
+        _nowPlayingSent(false), _nowPlayingDone(false)
     {
         // TODO: make sure the data provider is cleaned up
         _backend->setParent(this);
@@ -39,6 +41,10 @@ namespace PMP {
         connect(
             backend, &ScrobblingBackend::stateChanged,
             this, &Scrobbler::backendStateChanged
+        );
+        connect(
+            backend, &ScrobblingBackend::gotNowPlayingResult,
+            this, &Scrobbler::gotNowPlayingResult
         );
         connect(
             backend, &ScrobblingBackend::gotScrobbleResult,
@@ -67,6 +73,44 @@ namespace PMP {
         checkIfWeHaveSomethingToDo();
     }
 
+    void Scrobbler::nowPlayingNothing() {
+        qDebug() << "Scrobbler::nowPlayingNothing() called";
+
+        _nowPlayingPresent = false;
+        //_nowPlayingStartTime =
+        _nowPlayingTitle.clear();
+        _nowPlayingArtist.clear();
+        _nowPlayingAlbum.clear();
+        _nowPlayingTrackDurationSeconds = -1;
+    }
+
+    void Scrobbler::nowPlayingTrack(QDateTime startTime,
+                                    QString const& title, QString const& artist,
+                                    QString const& album, int trackDurationSeconds)
+    {
+        qDebug() << "Scrobbler::nowPlayingTrack() called";
+
+        if (_nowPlayingPresent && _nowPlayingStartTime == startTime)
+            return; /* still the same */
+
+        if (title.isEmpty() || artist.isEmpty()) {
+            qDebug() << "cannot update 'now playing' because title or artist is missing";
+            nowPlayingNothing();
+            return;
+        }
+
+        _nowPlayingPresent = true;
+        _nowPlayingSent = false;
+        _nowPlayingDone = false;
+        _nowPlayingStartTime = startTime;
+        _nowPlayingTitle = title;
+        _nowPlayingArtist = artist;
+        _nowPlayingAlbum = album;
+        _nowPlayingTrackDurationSeconds = trackDurationSeconds;
+
+        checkIfWeHaveSomethingToDo();
+    }
+
     void Scrobbler::timeoutTimerTimedOut() {
         qDebug() << "timeout event triggered; backend state:" << _backend->state();
 
@@ -88,14 +132,20 @@ namespace PMP {
 
         if (_tracksToScrobble.empty()) {
             _tracksToScrobble.append(_dataProvider->getNextTracksToScrobble().toList());
-
-            if (_tracksToScrobble.empty()) return;
         }
 
-        qDebug() << "we have" << _tracksToScrobble.size() << "tracks to scrobble";
+        auto haveNowPlayingToSend = _nowPlayingPresent && !_nowPlayingSent;
+
+        if (_tracksToScrobble.empty() && !haveNowPlayingToSend)
+            return; /* nothing to be done */
+
+        if (haveNowPlayingToSend)
+            qDebug() << "we have a 'now playing' to send";
+        else
+            qDebug() << "we have" << _tracksToScrobble.size() << "tracks to scrobble";
 
         if (_backend->waitingForReply()) {
-            qDebug() << "backend is still waiting for a reply";
+            qDebug() << "backend is still waiting for a reply; cannot do anything";
             return;
         }
 
@@ -106,7 +156,10 @@ namespace PMP {
                 QTimer::singleShot(0, this, SLOT(wakeUp()));
                 break;
             case ScrobblingBackendState::ReadyForScrobbling:
-                sendNextScrobble();
+                if (haveNowPlayingToSend)
+                    sendNowPlaying();
+                else
+                    sendNextScrobble();
                 break;
             case ScrobblingBackendState::PermanentFatalError:
                 /* TODO */
@@ -117,6 +170,22 @@ namespace PMP {
                    the state of the backend changes again*/
                 break;
         }
+    }
+
+    void Scrobbler::sendNowPlaying() {
+        if (!_nowPlayingPresent || _nowPlayingSent) return;
+
+        _nowPlayingSent = true;
+        _nowPlayingDone = false;
+
+        _timeoutTimer->stop();
+        _timeoutTimer->start(5000);
+
+        _backend->updateNowPlaying(
+            _nowPlayingTitle, _nowPlayingArtist, _nowPlayingAlbum,
+            _nowPlayingTrackDurationSeconds
+        );
+        /* then we wait for the gotNowPlayingResult event to arrive */
     }
 
     void Scrobbler::sendNextScrobble() {
@@ -135,6 +204,21 @@ namespace PMP {
             track.timestamp(), track.title(), track.artist(), track.album()
         );
         /* then we wait for the gotScrobbleResult event to arrive */
+    }
+
+    void Scrobbler::gotNowPlayingResult(bool success) {
+        qDebug() << "received 'now playing' result:" << (success ? "success" : "failure");
+
+        _timeoutTimer->stop();
+
+        if (!success) {
+            _nowPlayingSent = false;
+            startBackoffTimer(_backend->getInitialBackoffMillisecondsForErrorReply());
+            return;
+        }
+
+        _nowPlayingDone = true;
+        checkIfWeHaveSomethingToDo();
     }
 
     void Scrobbler::gotScrobbleResult(ScrobbleResult result) {

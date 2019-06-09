@@ -20,8 +20,10 @@
 #ifndef PMP_SCROBBLINGHOST_H
 #define PMP_SCROBBLINGHOST_H
 
+#include <QDateTime>
 #include <QObject>
 #include <QHash>
+#include <QString>
 
 namespace PMP {
 
@@ -39,6 +41,11 @@ namespace PMP {
         void load();
         void wakeUpForUser(uint userId);
         void setLastFmEnabledForUser(uint userId, bool enabled);
+
+        //void setNowPlayingNothing(uint userId);
+        void setNowPlayingTrack(uint userId, QDateTime startTime,
+                                QString title, QString artist, QString album,
+                                int trackDurationSeconds = -1);
 
     Q_SIGNALS:
         void needLastFmCredentials(uint userId, QString suggestedUsername,

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -72,12 +72,16 @@ namespace PMP {
         return _state;
     }
 
-    void Player::changeState(PlayerState state) {
+    void Player::changeStateTo(PlayerState state) {
         if (_state == state) return;
 
         qDebug() << "Player: state changed from" << int(_state) << "to" << int(state);
         _state = state;
         emit stateChanged(state);
+
+        if (state == PlayerState::Playing) {
+            emitStartedPlaying(_nowPlaying);
+        }
     }
 
     QueueEntry const* Player::nowPlaying() const {
@@ -125,7 +129,7 @@ namespace PMP {
                     _nowPlaying->setStartedNow();
                 }
                 _player->play(); /* resume paused track */
-                changeState(PlayerState::Playing);
+                changeStateTo(PlayerState::Playing);
                 break;
             case PlayerState::Playing:
                 break; /* already playing */
@@ -139,7 +143,7 @@ namespace PMP {
                 break; /* no effect */
             case PlayerState::Playing:
                 _player->pause();
-                changeState(PlayerState::Paused);
+                changeStateTo(PlayerState::Paused);
                 break;
         }
     }
@@ -320,11 +324,16 @@ namespace PMP {
 
             if (play) {
                 _nowPlaying->setStartedNow();
-                changeState(PlayerState::Playing);
+                if (_state != PlayerState::Playing) {
+                    changeStateTo(PlayerState::Playing);
+                }
+                else {
+                    emitStartedPlaying(_nowPlaying);
+                }
                 _player->play();
             }
             else {
-                changeState(PlayerState::Paused);
+                changeStateTo(PlayerState::Paused);
             }
 
             return true;
@@ -333,7 +342,7 @@ namespace PMP {
         /* we stop because we have nothing left to play */
 
         _transitioningToNextTrack = true; /* to prevent duplicate history items */
-        changeState(PlayerState::Stopped);
+        changeStateTo(PlayerState::Stopped);
         _player->stop();
         _preloader.lockNone();
 
@@ -351,6 +360,17 @@ namespace PMP {
         }
 
         return false;
+    }
+
+    void Player::emitStartedPlaying(QueueEntry const* queueEntry) {
+        if (!queueEntry) return;
+
+        auto startTime = queueEntry->started();
+        int lengthInSeconds =
+                static_cast<int>(queueEntry->lengthInMilliseconds() / 1000);
+
+        emit startedPlaying(_userPlayingFor, startTime, queueEntry->title(),
+                            queueEntry->artist(), queueEntry->album(), lengthInSeconds);
     }
 
     void Player::addToHistory(QueueEntry* entry, int permillage, bool hadError,

@@ -69,6 +69,10 @@ namespace PMP {
             _controller, &ScrobblingController::enableScrobblingRequested,
             _host, &ScrobblingHost::enableScrobbling
         );
+        connect(
+            _controller, &ScrobblingController::nowPlayingUpdateRequested,
+            _host, &ScrobblingHost::setNowPlayingTrack
+        );
 
         _thread.start();
     }

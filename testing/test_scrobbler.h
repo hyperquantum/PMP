@@ -39,11 +39,16 @@ public:
     void setUserCredentials(QString username, QString password);
     void setApiToken(bool willBeAcceptedByApi);
 
+    int nowPlayingUpdatedCount() const { return _nowPlayingUpdatedCount; }
     int scrobbledSuccessfullyCount() const { return _scrobbledSuccessfullyCount; }
     int tracksIgnoredCount() const { return _tracksIgnoredCount; }
 
 public slots:
     void initialize() override;
+
+    void updateNowPlaying(QString const& title, QString const& artist,
+                          QString const& album,
+                          int trackDurationSeconds = -1) override;
 
     void scrobbleTrack(QDateTime timestamp, QString const& title,
                        QString const& artist, QString const& album,
@@ -51,11 +56,13 @@ public slots:
 
 private slots:
     void pretendAuthenticationResultReceived();
-    void pretendSuccessfullScrobble();
+    void pretendSuccessfulNowPlaying();
+    void pretendSuccessfulScrobble();
     void pretendScrobbleFailedBecauseTokenNoLongerValid();
     void pretendScrobbleFailedBecauseTrackIgnored();
 
 private:
+    int _nowPlayingUpdatedCount;
     int _temporaryUnavailabilitiesToStageAtScrobbleTime;
     int _scrobbledSuccessfullyCount;
     int _tracksIgnoredCount;
@@ -105,6 +112,10 @@ private:
 class TestScrobbler : public QObject {
     Q_OBJECT
 private slots:
+    void simpleNowPlayingUpdate();
+    void nowPlayingWithAuthentication();
+    void nowPlayingWithTrackToScrobble();
+    void nowPlayingWithImmediateScrobble();
     void trivialScrobble();
     void multipleSimpleScrobbles();
     void scrobbleWithAuthentication();

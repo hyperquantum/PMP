@@ -36,7 +36,7 @@ namespace PMP {
 
     LastFmScrobblingBackend::LastFmScrobblingBackend()
      : ScrobblingBackend(), _networkAccessManager(nullptr),
-       _authenticationReply(nullptr), _scrobbleReply(nullptr)
+       _authenticationReply(nullptr), _nowPlayingReply(nullptr), _scrobbleReply(nullptr)
     {
         qDebug() << "Creating LastFmScrobblingProvider;  user-agent:" << userAgent;
     }
@@ -103,6 +103,17 @@ namespace PMP {
         _authenticationReply = signAndSendPost(parameters);
     }
 
+    void LastFmScrobblingBackend::updateNowPlaying(QString const& title,
+                                                   QString const& artist,
+                                                   QString const& album,
+                                                   int trackDurationSeconds)
+    {
+        if (waitingForReply() || state() != ScrobblingBackendState::ReadyForScrobbling)
+            return;
+
+        doUpdateNowPlayingCall(title, artist, album, trackDurationSeconds);
+    }
+
     void LastFmScrobblingBackend::scrobbleTrack(QDateTime timestamp, QString const& title,
                                               QString const& artist, QString const& album,
                                               int trackDurationSeconds)
@@ -111,6 +122,30 @@ namespace PMP {
             return;
 
         doScrobbleCall(timestamp, title, artist, album, trackDurationSeconds);
+    }
+
+    void LastFmScrobblingBackend::doUpdateNowPlayingCall(QString const& title,
+                                                         QString const& artist,
+                                                         QString const& album,
+                                                         int trackDurationSeconds)
+    {
+        if (_sessionKey.isEmpty()) return; /* cannot do it */
+
+        QVector<QPair<QString, QString>> parameters;
+        parameters << QPair<QString, QString>("method", "track.updateNowPlaying");
+        if (!album.isEmpty()) {
+            parameters << QPair<QString, QString>("album", album);
+        }
+        parameters << QPair<QString, QString>("api_key", apiKey);
+        parameters << QPair<QString, QString>("artist", artist);
+        if (trackDurationSeconds > 0) {
+            auto durationText = QString::number(trackDurationSeconds);
+            parameters << QPair<QString, QString>("duration", durationText);
+        }
+        parameters << QPair<QString, QString>("sk", _sessionKey);
+        parameters << QPair<QString, QString>("track", title);
+
+        _nowPlayingReply = signAndSendPost(parameters);
     }
 
     void LastFmScrobblingBackend::doScrobbleCall(QDateTime timestamp,
@@ -179,6 +214,11 @@ namespace PMP {
     void LastFmScrobblingBackend::requestFinished(QNetworkReply* reply) {
         setWaitingForReply(false);
 
+        bool isNowPlayingReply = reply == _nowPlayingReply;
+        if (isNowPlayingReply) {
+            _nowPlayingReply = nullptr;
+        }
+
         bool isScrobbleReply = reply == _scrobbleReply;
         if (isScrobbleReply) {
             _scrobbleReply = nullptr;
@@ -193,6 +233,10 @@ namespace PMP {
         if (error != QNetworkReply::NoError) {
             qWarning() << "Last.Fm reply has network error " << error
                        << "with error text:" << reply->errorString();
+
+            if (isNowPlayingReply) {
+                emit gotNowPlayingResult(false);
+            }
 
             if (isScrobbleReply) {
                 emit gotScrobbleResult(ScrobbleResult::Error);
@@ -227,8 +271,16 @@ namespace PMP {
         if (dom.setContent(replyData, &xmlParseError, &xmlErrorLine)) {
             auto lfmElement = dom.documentElement();
             if (!lfmElement.isNull() && lfmElement.tagName() == "lfm") {
-                parseReply(lfmElement, isScrobbleReply);
-                return;
+                auto status = lfmElement.attribute("status");
+                if (status == "ok") {
+                    parseReply(lfmElement, isScrobbleReply);
+                    return;
+                }
+                else {
+                    qDebug() << "Last.Fm reply indicates that the request failed";
+                    auto errorElement = lfmElement.firstChildElement("error");
+                    parseError(errorElement);
+                }
             }
             else {
                 qDebug() << "Last.Fm reply XML does not have <lfm> root element";
@@ -239,6 +291,10 @@ namespace PMP {
                      << "error at line" << xmlErrorLine << ":" << xmlParseError;
         }
 
+        if (isNowPlayingReply) {
+            emit gotNowPlayingResult(false);
+        }
+
         if (isScrobbleReply) {
             emit gotScrobbleResult(ScrobbleResult::Error);
         }
@@ -247,18 +303,12 @@ namespace PMP {
     void LastFmScrobblingBackend::parseReply(const QDomElement& lfmElement,
                                              bool isScrobbleReply)
     {
-        auto status = lfmElement.attribute("status");
-        if (status != "ok") {
-            qDebug() << "Last.Fm reply indicates that the request failed";
+        auto nowPlayingNode = lfmElement.firstChildElement("nowplaying");
+        if (!nowPlayingNode.isNull()) {
+            qDebug() << "received nowPlaying result";
 
-            auto errorElement = lfmElement.firstChildElement("error");
-            parseError(errorElement);
-
-            if (isScrobbleReply) {
-                emit gotScrobbleResult(ScrobbleResult::Error);
-            }
-
-            return;
+            /* don't parse the reply, just assume that it was successful */
+            emit gotNowPlayingResult(true);
         }
 
         auto scrobblesNode = lfmElement.firstChildElement("scrobbles");
