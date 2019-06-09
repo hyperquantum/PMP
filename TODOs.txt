@@ -51,12 +51,11 @@ IDEAS
  * display PMP server version in the client 'About' dialog
  * interactive editing of the list of directories to scan for music
  * ability to ban a track permanently or temporarily; this will also hide it in the music collection
- * 'play now' option in the context menus of the music collection, the history, and maybe the queue
+ *** 'play now' option in the context menus of the music collection, the history, and maybe the queue
  * dark theme for the client
  * require the server password when registering a new user account
  * music collection view: optional visual indication of tracks that have never been listened to
- * option for single track mode (vs. continuous play)
- * "play now" option in context menus
+ ** option for single track mode (vs. continuous play)
  * display time remaining during playback
 
 
