@@ -130,9 +130,22 @@ namespace PMP {
         connect(
             lastFmBackend, &LastFmScrobblingBackend::needUserCredentials,
             this,
-            [userId, this](QString suggestedUserName, bool authenticationFailed) {
-                emit this->needLastFmCredentials(userId, suggestedUserName,
-                                                 authenticationFailed);
+            [userId, this](QString suggestedUserName) {
+                emit this->needLastFmCredentials(userId, suggestedUserName);
+            }
+        );
+        connect(
+            lastFmBackend, &LastFmScrobblingBackend::gotAuthenticationResult,
+            this,
+            [userId, this](bool success, ClientRequestOrigin origin) {
+                emit this->gotLastFmAuthenticationResult(userId, origin, success);
+            }
+        );
+        connect(
+            lastFmBackend, &LastFmScrobblingBackend::errorOccurredDuringAuthentication,
+            this,
+            [userId, this](ClientRequestOrigin origin) {
+                emit this->errorOccurredDuringAuthentication(userId, origin);
             }
         );
 

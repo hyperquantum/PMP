@@ -22,16 +22,102 @@
 
 #include "scrobblingbackend.h"
 
+#include "clientrequestorigin.h"
+
 #include <QDateTime>
+#include <QNetworkReply>
 #include <QPair>
 #include <QString>
 #include <QVector>
 
 QT_FORWARD_DECLARE_CLASS(QDomElement)
 QT_FORWARD_DECLARE_CLASS(QNetworkAccessManager)
-QT_FORWARD_DECLARE_CLASS(QNetworkReply)
 
 namespace PMP {
+
+    class LastFmScrobblingBackend;
+
+    class LastFmRequestHandler : public QObject {
+        Q_OBJECT
+
+    Q_SIGNALS:
+        void mustRecreateNetworkManager();
+        void fatalError();
+        void shouldTryAgainLater();
+        void mustInvalidateSessionKey();
+
+    protected:
+        LastFmRequestHandler(LastFmScrobblingBackend* parent,
+                             QNetworkReply* pendingReply, QString xmlTagName);
+
+        ~LastFmRequestHandler();
+
+        virtual void onNetworkError(QNetworkReply::NetworkError error, QString errorText);
+        virtual void onParseError();
+        virtual void handleOkReply(const QDomElement& childElement) = 0;
+        virtual void handleErrorCode(int lastFmErrorCode);
+        virtual void onGenericError() = 0;
+
+    private slots:
+        void requestFinished();
+
+    private:
+        void parseReply(QByteArray bytes);
+
+        void handleErrorReply(const QDomElement& errorElement);
+
+        LastFmScrobblingBackend* _parent;
+        QNetworkReply* _reply;
+        QString _xmlTagName;
+    };
+
+    class LastFmAuthenticationRequestHandler : public LastFmRequestHandler {
+        Q_OBJECT
+    public:
+        LastFmAuthenticationRequestHandler(LastFmScrobblingBackend* parent,
+                                           QNetworkReply* pendingReply);
+
+    Q_SIGNALS:
+        void authenticationSuccessful(QString userName, QString sessionKey);
+        void authenticationRejected();
+        void authenticationError();
+
+    protected:
+        void handleOkReply(const QDomElement& childElement) override;
+        void handleErrorCode(int lastFmErrorCode) override;
+        void onGenericError() override;
+    };
+
+    class LastFmNowPlayingRequestHandler : public LastFmRequestHandler {
+        Q_OBJECT
+    public:
+        LastFmNowPlayingRequestHandler(LastFmScrobblingBackend* parent,
+                                       QNetworkReply* pendingReply);
+
+    Q_SIGNALS:
+        void nowPlayingUpdateSuccessful();
+        void nowPlayingUpdateFailed();
+
+    protected:
+        void handleOkReply(const QDomElement& childElement) override;
+        void onGenericError() override;
+    };
+
+    class LastFmScrobbleRequestHandler : public LastFmRequestHandler {
+        Q_OBJECT
+    public:
+        LastFmScrobbleRequestHandler(LastFmScrobblingBackend* parent,
+                                     QNetworkReply* pendingReply);
+
+    Q_SIGNALS:
+        void scrobbleSuccessful();
+        void scrobbleIgnored();
+        void scrobbleError();
+
+    protected:
+        void handleOkReply(const QDomElement& childElement) override;
+        void onGenericError() override;
+    };
 
     class LastFmScrobblingBackend : public ScrobblingBackend
     {
@@ -39,51 +125,56 @@ namespace PMP {
     public:
         LastFmScrobblingBackend();
 
-        void doGetMobileTokenCall(QString const& usernameOrEmail,
-                                  QString const& password);
-
-        void doUpdateNowPlayingCall(QString const& title, QString const& artist,
-                                    QString const& album, int trackDurationSeconds = -1);
-
-        void doScrobbleCall(QDateTime timestamp, QString const& title,
-                            QString const& artist, QString const& album,
-                            int trackDurationSeconds = -1);
-
         void setUsername(const QString& username);
         void setSessionKey(const QString& sessionKey);
 
         QString username() const;
         QString sessionKey() const;
 
-        void updateNowPlaying(QString const& title, QString const& artist,
-                              QString const& album,
-                              int trackDurationSeconds = -1) override;
+        void updateNowPlaying(QString title, QString artist,
+                              QString album, int trackDurationSeconds = -1) override;
 
-        void scrobbleTrack(QDateTime timestamp, QString const& title,
-                           QString const& artist, QString const& album,
+        void scrobbleTrack(QDateTime timestamp, QString title,
+                           QString artist, QString album,
                            int trackDurationSeconds = -1) override;
 
     public slots:
         void initialize() override;
-        void authenticateWithCredentials(QString usernameOrEmail, QString password);
+        void authenticateWithCredentials(QString usernameOrEmail, QString password,
+                                         ClientRequestOrigin origin);
 
     Q_SIGNALS:
-        void needUserCredentials(QString suggestedUsername, bool authenticationFailed);
-        //void receivedAuthenticationReply();
+        void needUserCredentials(QString suggestedUsername);
+        void gotAuthenticationResult(bool success, ClientRequestOrigin origin);
+        void errorOccurredDuringAuthentication(ClientRequestOrigin origin);
 
     private slots:
-        void requestFinished(QNetworkReply* reply);
+        void disposeOfNetworkAccessManager();
 
     private:
         void updateState();
         void leaveState(ScrobblingBackendState oldState);
 
+        LastFmAuthenticationRequestHandler* doGetMobileTokenCall(QString usernameOrEmail,
+                                                                 QString password);
+
+        LastFmNowPlayingRequestHandler* doUpdateNowPlayingCall(QString sessionKey,
+                                                               QString title,
+                                                               QString artist,
+                                                               QString album,
+                                                           int trackDurationSeconds = -1);
+
+        LastFmScrobbleRequestHandler* doScrobbleCall(QString sessionKey,
+                                                     QDateTime timestamp,
+                                                     QString title,
+                                                     QString artist,
+                                                     QString album,
+                                                     int trackDurationSeconds = -1);
+
         static void signCall(QVector<QPair<QString, QString>>& parameters);
         QNetworkReply* signAndSendPost(QVector<QPair<QString, QString>> parameters);
 
-        void parseReply(QDomElement const& lfmElement, bool isScrobbleReply);
-        void parseError(QDomElement const& errorElement);
-        ScrobbleResult parseScrobbles(QDomElement const& scrobblesElement);
+        void connectStateHandlingSignals(LastFmRequestHandler* handler);
 
         static const char* apiUrl;
         static const char* apiKey;
@@ -92,9 +183,6 @@ namespace PMP {
         static const char* userAgent;
 
         QNetworkAccessManager* _networkAccessManager;
-        QNetworkReply* _authenticationReply;
-        QNetworkReply* _nowPlayingReply;
-        QNetworkReply* _scrobbleReply;
         QString _username;
         QString _sessionKey;
     };

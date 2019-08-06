@@ -62,9 +62,6 @@ void BackendMock::setUserCredentials(QString username, QString password) {
     _username = username;
     _password = password;
 
-    if (waitingForReply()) return;
-
-    setWaitingForReply(true);
     QTimer::singleShot(10, this, SLOT(pretendAuthenticationResultReceived()));
 }
 
@@ -76,7 +73,6 @@ void BackendMock::setApiToken(bool willBeAcceptedByApi) {
         case ScrobblingBackendState::NotInitialized:
             break;
         case ScrobblingBackendState::WaitingForUserCredentials:
-        case ScrobblingBackendState::InvalidUserCredentials:
             setState(ScrobblingBackendState::ReadyForScrobbling);
             break;
         case ScrobblingBackendState::ReadyForScrobbling:
@@ -86,13 +82,11 @@ void BackendMock::setApiToken(bool willBeAcceptedByApi) {
     }
 }
 
-void BackendMock::updateNowPlaying(QString const& title, QString const& artist,
-                                   QString const& album, int trackDurationSeconds)
+void BackendMock::updateNowPlaying(QString title, QString artist, QString album,
+                                   int trackDurationSeconds)
 {
-    if (waitingForReply() || state() != ScrobblingBackendState::ReadyForScrobbling)
+    if (state() != ScrobblingBackendState::ReadyForScrobbling)
         return;
-
-    setWaitingForReply(true);
 
     (void)title;
     (void)artist;
@@ -102,11 +96,10 @@ void BackendMock::updateNowPlaying(QString const& title, QString const& artist,
     QTimer::singleShot(10, this, &BackendMock::pretendSuccessfulNowPlaying);
 }
 
-void BackendMock::scrobbleTrack(QDateTime timestamp, QString const& title,
-                                QString const& artist, QString const& album,
-                                int trackDurationSeconds)
+void BackendMock::scrobbleTrack(QDateTime timestamp, QString title, QString artist,
+                                QString album, int trackDurationSeconds)
 {
-    if (waitingForReply() || state() != ScrobblingBackendState::ReadyForScrobbling)
+    if (state() != ScrobblingBackendState::ReadyForScrobbling)
         return;
 
     if (_temporaryUnavailabilitiesToStageAtScrobbleTime > 0) {
@@ -114,8 +107,6 @@ void BackendMock::scrobbleTrack(QDateTime timestamp, QString const& title,
         emit serviceTemporarilyUnavailable();
         return;
     }
-
-    setWaitingForReply(true);
 
     if (_haveApiToken && !_apiTokenWillBeAcceptedByApi) {
         QTimer::singleShot(
@@ -138,35 +129,29 @@ void BackendMock::scrobbleTrack(QDateTime timestamp, QString const& title,
 }
 
 void BackendMock::pretendAuthenticationResultReceived() {
-    setWaitingForReply(false);
-
     if (_username == "CorrectUsername" && _password == "CorrectPassword")
         setState(ScrobblingBackendState::ReadyForScrobbling);
     else
-        setState(ScrobblingBackendState::InvalidUserCredentials);
+        setState(ScrobblingBackendState::WaitingForUserCredentials);
 }
 
 void BackendMock::pretendSuccessfulNowPlaying() {
-    setWaitingForReply(false);
     _nowPlayingUpdatedCount++;
     emit gotNowPlayingResult(true);
 }
 
 void BackendMock::pretendSuccessfulScrobble() {
-    setWaitingForReply(false);
     _scrobbledSuccessfullyCount++;
     emit gotScrobbleResult(ScrobbleResult::Success);
 }
 
 void BackendMock::pretendScrobbleFailedBecauseTokenNoLongerValid() {
-    setWaitingForReply(false);
     _haveApiToken = false;
     setState(ScrobblingBackendState::WaitingForUserCredentials);
     emit gotScrobbleResult(ScrobbleResult::Error);
 }
 
 void BackendMock::pretendScrobbleFailedBecauseTrackIgnored() {
-    setWaitingForReply(false);
     _tracksIgnoredCount++;
     emit gotScrobbleResult(ScrobbleResult::Ignored);
 }

@@ -34,9 +34,313 @@
 
 namespace PMP {
 
+    LastFmRequestHandler::LastFmRequestHandler(LastFmScrobblingBackend* parent,
+                                               QNetworkReply* pendingReply,
+                                               QString xmlTagName)
+     : QObject(parent), _parent(parent), _reply(pendingReply), _xmlTagName(xmlTagName)
+    {
+        connect(
+            _reply, &QNetworkReply::finished,
+            this, &LastFmRequestHandler::requestFinished
+        );
+    }
+
+    LastFmRequestHandler::~LastFmRequestHandler() {
+        _reply->deleteLater();
+    }
+
+    void LastFmRequestHandler::requestFinished() {
+        auto error = _reply->error();
+        if (error != QNetworkReply::NoError) {
+            qWarning() << "Last.Fm reply has network error " << error
+                       << "with error text:" << _reply->errorString();
+
+            onNetworkError(error, _reply->errorString());
+            return;
+        }
+
+        auto replyData = _reply->readAll();
+        qDebug() << "Last.Fm reply received. Byte count:" << replyData.size();
+
+        auto replyText = QString::fromUtf8(replyData);
+        qDebug() << "Last.Fm reply:\n" << replyText;
+
+        parseReply(replyData);
+
+        /* delete the handler after the reply has been handled */
+        deleteLater();
+    }
+
+    void LastFmRequestHandler::onNetworkError(QNetworkReply::NetworkError error,
+                                              QString errorText)
+    {
+        /* workaround for "network access is disabled" problem */
+        if (error == QNetworkReply::UnknownNetworkError
+                && errorText.contains("Network access is disabled"))
+        {
+            qDebug() << "detected 'Network access is disabled' problem;"
+                     << "applying workaround";
+
+            emit mustRecreateNetworkManager();
+        }
+
+        onGenericError();
+    }
+
+    void LastFmRequestHandler::onParseError() {
+        onGenericError();
+    }
+
+    void LastFmRequestHandler::parseReply(QByteArray bytes) {
+        QDomDocument dom;
+        QString xmlParseError;
+        int xmlErrorLine;
+        if (!dom.setContent(bytes, &xmlParseError, &xmlErrorLine)) {
+            qWarning() << "Could not parse the Last.Fm reply as valid XML;"
+                       << "error at line" << xmlErrorLine << ":" << xmlParseError;
+            onParseError();
+            return;
+        }
+
+        auto lfmElement = dom.documentElement();
+        if (lfmElement.isNull() || lfmElement.tagName() != "lfm") {
+            qWarning() << "Last.Fm reply XML does not have <lfm> root element";
+            onParseError();
+            return;
+        }
+
+        auto status = lfmElement.attribute("status");
+        if (status != "ok") {
+            qDebug() << "Last.Fm reply indicates that the request failed";
+            auto errorElement = lfmElement.firstChildElement("error");
+            if (errorElement.isNull()) {
+                qWarning() << "Last.Fm failure reply has no <error> element";
+                onParseError();
+            }
+            else {
+                handleErrorReply(errorElement);
+            }
+            return;
+        }
+
+        auto childNode = lfmElement.firstChildElement(_xmlTagName);
+        if (childNode.isNull()) {
+            qWarning() << "Last.Fm reply does not have " << _xmlTagName << "element";
+            onParseError();
+        }
+        else {
+            handleOkReply(childNode);
+        }
+    }
+
+    void LastFmRequestHandler::handleErrorReply(const QDomElement& errorElement) {
+        auto errorCodeText = errorElement.attribute("code");
+        qDebug() << "received LFM error status;"
+                 << "code:" << errorCodeText << ";"
+                 << "message:" << errorElement.text();
+
+        bool ok;
+        int errorCode = errorCodeText.toInt(&ok);
+        if (!ok) {
+            qWarning() << "could not convert Last.Fm error code to a number";
+            onParseError();
+            return;
+        }
+
+        handleErrorCode(errorCode);
+    }
+
+    void LastFmRequestHandler::handleErrorCode(int lastFmErrorCode) {
+        /* we only handle generic error codes here */
+
+        switch (lastFmErrorCode) {
+            case 9: /* invalid session key, need to re-authenticate */
+                qWarning() << "LFM reports session key not valid (or not anymore)";
+                emit mustInvalidateSessionKey();
+                break;
+
+            case 8: case 11: case 16:
+                /* retry request later */
+                qWarning() << "LFM error code" << lastFmErrorCode
+                           << ": should try again later";
+                emit shouldTryAgainLater();
+                break;
+
+            case 2: case 3: case 5: case 6: case 7: case 13: case 27:
+                qWarning() << "LFM error code" << lastFmErrorCode
+                           << ": probably a bug in the request";
+                emit fatalError();
+                break;
+
+            case 10: case 26: /* invalid/suspended API key */
+                qWarning() << "LFM error code" << lastFmErrorCode
+                           << ": problem with our API key";
+                emit fatalError();
+                break;
+
+            case 29: /* rate limit exceeded */
+                qWarning() << "LFM reports rate limit exceeded";
+                emit shouldTryAgainLater();
+                break;
+
+            default:
+                qWarning() << "unknown/unhandled LFM error code" << lastFmErrorCode;
+                emit fatalError();
+                break;
+        }
+
+        onGenericError();
+    }
+
+    /* ============================================================================ */
+
+    LastFmAuthenticationRequestHandler::LastFmAuthenticationRequestHandler(
+                                                          LastFmScrobblingBackend* parent,
+                                                              QNetworkReply* pendingReply)
+     : LastFmRequestHandler(parent, pendingReply, "session")
+    {
+        //
+    }
+
+    void LastFmAuthenticationRequestHandler::handleOkReply(
+                                                          const QDomElement& childElement)
+    {
+        auto nameNode = childElement.firstChildElement("name");
+        auto keyNode = childElement.firstChildElement("key");
+
+        if (nameNode.isNull() || keyNode.isNull()) {
+            qWarning() << "Last.Fm session node is missing name or key";
+            onParseError();
+            return;
+        }
+
+        qDebug() << "session.name:" << nameNode.text();
+        qDebug() << "session.key:" << keyNode.text();
+
+        auto userName = nameNode.text();
+        auto sessionKey = keyNode.text();
+
+        emit authenticationSuccessful(userName, sessionKey);
+    }
+
+    void LastFmAuthenticationRequestHandler::handleErrorCode(int lastFmErrorCode) {
+        if (lastFmErrorCode == 4) /* authentication failed */ {
+            qDebug() << "LFM authentication failed";
+            emit authenticationRejected();
+        }
+        else {
+            /* generic error, let the base class handle it */
+            LastFmRequestHandler::handleErrorCode(lastFmErrorCode);
+        }
+    }
+
+    void LastFmAuthenticationRequestHandler::onGenericError() {
+        emit authenticationError();
+    }
+
+    /* ============================================================================ */
+
+    LastFmNowPlayingRequestHandler::LastFmNowPlayingRequestHandler(
+                                                          LastFmScrobblingBackend* parent,
+                                                              QNetworkReply* pendingReply)
+     : LastFmRequestHandler(parent, pendingReply, "nowplaying")
+    {
+        //
+    }
+
+    void LastFmNowPlayingRequestHandler::handleOkReply(const QDomElement& childElement) {
+        Q_UNUSED(childElement)
+
+        /* don't parse the reply, just assume that it was successful */
+        emit nowPlayingUpdateSuccessful();
+    }
+
+    void LastFmNowPlayingRequestHandler::onGenericError() {
+        emit nowPlayingUpdateFailed();
+    }
+
+    /* ============================================================================ */
+
+    LastFmScrobbleRequestHandler::LastFmScrobbleRequestHandler(
+                                                          LastFmScrobblingBackend* parent,
+                                                              QNetworkReply* pendingReply)
+     : LastFmRequestHandler(parent, pendingReply, "scrobbles")
+    {
+        //
+    }
+
+    void LastFmScrobbleRequestHandler::handleOkReply(const QDomElement& childElement) {
+        /* it should have exactly one "scrobble" element */
+        auto scrobbleElement = childElement.firstChildElement("scrobble");
+        if (scrobbleElement.isNull()
+                || !scrobbleElement.nextSiblingElement("scrobble").isNull())
+        {
+            emit scrobbleError();
+            return;
+        }
+
+        auto timestampElement = scrobbleElement.firstChildElement("timestamp");
+        if (timestampElement.isNull())
+        {
+            emit scrobbleError();
+            return;
+        }
+
+        bool ok;
+        auto timestampNumber = timestampElement.text().toLongLong(&ok);
+        if (!ok)
+        {
+            emit scrobbleError();
+            return;
+        }
+
+        auto ignoredMessageElement =
+            scrobbleElement.firstChildElement("ignoredMessage");
+        if (ignoredMessageElement.isNull())
+        {
+            emit scrobbleError();
+            return;
+        }
+
+        auto ignoredReasonText = ignoredMessageElement.text();
+        auto ignoredReason = ignoredMessageElement.attribute("code").toInt(&ok);
+        if (!ok)
+        {
+            emit scrobbleError();
+            return;
+        }
+
+        bool scrobbleAccepted = (ignoredReason == 0);
+        if (scrobbleAccepted)
+            qDebug() << "scrobble was accepted";
+        else
+            qDebug() << "scrobble NOT accepted for reason code" << ignoredReason
+                     << ":" << ignoredReasonText;
+
+        auto titleText = scrobbleElement.firstChildElement("track").text();
+        auto artistText = scrobbleElement.firstChildElement("artist").text();
+        auto albumText = scrobbleElement.firstChildElement("album").text();
+
+        qDebug() << "scrobble feedback received:\n"
+                 << " timestamp: " << QString::number(timestampNumber) << "\n"
+                 << " title:" << titleText << "\n"
+                 << " artist:" << artistText << "\n"
+                 << " album:" << albumText;
+
+        if (scrobbleAccepted)
+            emit scrobbleSuccessful();
+        else
+            emit scrobbleIgnored();
+    }
+
+    void LastFmScrobbleRequestHandler::onGenericError() {
+        emit scrobbleError();
+    }
+
+    /* ============================================================================ */
+
     LastFmScrobblingBackend::LastFmScrobblingBackend()
-     : ScrobblingBackend(), _networkAccessManager(nullptr),
-       _authenticationReply(nullptr), _nowPlayingReply(nullptr), _scrobbleReply(nullptr)
+     : ScrobblingBackend(), _networkAccessManager(nullptr)
     {
         qDebug() << "Creating LastFmScrobblingProvider;  user-agent:" << userAgent;
     }
@@ -56,18 +360,35 @@ namespace PMP {
     }
 
     void LastFmScrobblingBackend::authenticateWithCredentials(QString usernameOrEmail,
-                                                              QString password)
+                                                              QString password,
+                                                              ClientRequestOrigin origin)
     {
         if (_username != usernameOrEmail) {
             _username.clear();
         }
 
-        if (waitingForReply())
-        {
-            return; /* cannot authenticate now */
-        }
+        auto handler = doGetMobileTokenCall(usernameOrEmail, password);
 
-        doGetMobileTokenCall(usernameOrEmail, password);
+        connect(
+            handler, &LastFmAuthenticationRequestHandler::authenticationSuccessful,
+            this,
+            [this, origin](QString userName, QString sessionKey) {
+                _username = userName;
+                _sessionKey = sessionKey;
+                updateState();
+                emit gotAuthenticationResult(true, origin);
+            }
+        );
+        connect(
+            handler, &LastFmAuthenticationRequestHandler::authenticationRejected,
+            this,
+            [this, origin]() { emit gotAuthenticationResult(false, origin); }
+        );
+        connect(
+            handler, &LastFmAuthenticationRequestHandler::authenticationError,
+            this,
+            [this, origin]() { emit errorOccurredDuringAuthentication(origin); }
+        );
     }
 
     void LastFmScrobblingBackend::setUsername(const QString& username) {
@@ -91,8 +412,9 @@ namespace PMP {
         return _sessionKey;
     }
 
-    void LastFmScrobblingBackend::doGetMobileTokenCall(const QString& usernameOrEmail,
-                                                        const QString& password)
+    LastFmAuthenticationRequestHandler* LastFmScrobblingBackend::doGetMobileTokenCall(
+                                                                  QString usernameOrEmail,
+                                                                  QString password)
     {
         QVector<QPair<QString, QString>> parameters;
         parameters << QPair<QString, QString>("method", "auth.getMobileSession");
@@ -100,37 +422,64 @@ namespace PMP {
         parameters << QPair<QString, QString>("password", password);
         parameters << QPair<QString, QString>("username", usernameOrEmail);
 
-        _authenticationReply = signAndSendPost(parameters);
+        auto authenticationReply = signAndSendPost(parameters);
+
+        auto handler = new LastFmAuthenticationRequestHandler(this, authenticationReply);
+        connectStateHandlingSignals(handler);
+        return handler;
     }
 
-    void LastFmScrobblingBackend::updateNowPlaying(QString const& title,
-                                                   QString const& artist,
-                                                   QString const& album,
+    void LastFmScrobblingBackend::updateNowPlaying(QString title, QString artist,
+                                                   QString album,
                                                    int trackDurationSeconds)
     {
-        if (waitingForReply() || state() != ScrobblingBackendState::ReadyForScrobbling)
+        if (state() != ScrobblingBackendState::ReadyForScrobbling)
             return;
 
-        doUpdateNowPlayingCall(title, artist, album, trackDurationSeconds);
+        auto handler = doUpdateNowPlayingCall(_sessionKey, title, artist, album,
+                                              trackDurationSeconds);
+
+        connect(
+            handler, &LastFmNowPlayingRequestHandler::nowPlayingUpdateSuccessful,
+            this, [this]() { emit this->gotNowPlayingResult(true); }
+        );
+        connect(
+            handler, &LastFmNowPlayingRequestHandler::nowPlayingUpdateFailed,
+            this, [this]() { emit this->gotNowPlayingResult(false); }
+        );
     }
 
-    void LastFmScrobblingBackend::scrobbleTrack(QDateTime timestamp, QString const& title,
-                                              QString const& artist, QString const& album,
-                                              int trackDurationSeconds)
+    void LastFmScrobblingBackend::scrobbleTrack(QDateTime timestamp, QString title,
+                                                QString artist, QString album,
+                                                int trackDurationSeconds)
     {
-        if (waitingForReply() || state() != ScrobblingBackendState::ReadyForScrobbling)
+        if (state() != ScrobblingBackendState::ReadyForScrobbling)
             return;
 
-        doScrobbleCall(timestamp, title, artist, album, trackDurationSeconds);
+        auto handler = doScrobbleCall(_sessionKey, timestamp, title, artist, album,
+                                      trackDurationSeconds);
+
+        connect(
+            handler, &LastFmScrobbleRequestHandler::scrobbleSuccessful,
+            this, [this]() { emit this->gotScrobbleResult(ScrobbleResult::Success); }
+        );
+        connect(
+            handler, &LastFmScrobbleRequestHandler::scrobbleIgnored,
+            this, [this]() { emit this->gotScrobbleResult(ScrobbleResult::Ignored); }
+        );
+        connect(
+            handler, &LastFmScrobbleRequestHandler::scrobbleError,
+            this, [this]() { emit this->gotScrobbleResult(ScrobbleResult::Error); }
+        );
     }
 
-    void LastFmScrobblingBackend::doUpdateNowPlayingCall(QString const& title,
-                                                         QString const& artist,
-                                                         QString const& album,
-                                                         int trackDurationSeconds)
+    LastFmNowPlayingRequestHandler* LastFmScrobblingBackend::doUpdateNowPlayingCall(
+                                                                 QString sessionKey,
+                                                                 QString title,
+                                                                 QString artist,
+                                                                 QString album,
+                                                                 int trackDurationSeconds)
     {
-        if (_sessionKey.isEmpty()) return; /* cannot do it */
-
         QVector<QPair<QString, QString>> parameters;
         parameters << QPair<QString, QString>("method", "track.updateNowPlaying");
         if (!album.isEmpty()) {
@@ -142,20 +491,24 @@ namespace PMP {
             auto durationText = QString::number(trackDurationSeconds);
             parameters << QPair<QString, QString>("duration", durationText);
         }
-        parameters << QPair<QString, QString>("sk", _sessionKey);
+        parameters << QPair<QString, QString>("sk", sessionKey);
         parameters << QPair<QString, QString>("track", title);
 
-        _nowPlayingReply = signAndSendPost(parameters);
+        auto nowPlayingReply = signAndSendPost(parameters);
+
+        auto handler = new LastFmNowPlayingRequestHandler(this, nowPlayingReply);
+        connectStateHandlingSignals(handler);
+        return handler;
     }
 
-    void LastFmScrobblingBackend::doScrobbleCall(QDateTime timestamp,
-                                                  const QString& title,
-                                                  const QString& artist,
-                                                  const QString& album,
-                                                  int trackDurationSeconds)
+    LastFmScrobbleRequestHandler* LastFmScrobblingBackend::doScrobbleCall(
+                                                                 QString sessionKey,
+                                                                 QDateTime timestamp,
+                                                                 QString title,
+                                                                 QString artist,
+                                                                 QString album,
+                                                                 int trackDurationSeconds)
     {
-        if (_sessionKey.isEmpty()) return; /* cannot do it */
-
         /* 'toSecsSinceEpoch()' requires Qt 5.8, and toTime_t() is deprecated */
         auto timestampAsUnixTime = timestamp.toMSecsSinceEpoch() / 1000;
         auto timestampText = QString::number(timestampAsUnixTime);
@@ -171,11 +524,15 @@ namespace PMP {
             auto durationText = QString::number(trackDurationSeconds);
             parameters << QPair<QString, QString>("duration", durationText);
         }
-        parameters << QPair<QString, QString>("sk", _sessionKey);
+        parameters << QPair<QString, QString>("sk", sessionKey);
         parameters << QPair<QString, QString>("timestamp", timestampText);
         parameters << QPair<QString, QString>("track", title);
 
-        _scrobbleReply = signAndSendPost(parameters);
+        auto scrobbleReply = signAndSendPost(parameters);
+
+        auto handler = new LastFmScrobbleRequestHandler(this, scrobbleReply);
+        connectStateHandlingSignals(handler);
+        return handler;
     }
 
     QNetworkReply* LastFmScrobblingBackend::signAndSendPost(
@@ -185,11 +542,6 @@ namespace PMP {
 
         if (!_networkAccessManager) {
             _networkAccessManager = new QNetworkAccessManager(this);
-
-            connect(
-                _networkAccessManager, &QNetworkAccessManager::finished,
-                this, &LastFmScrobblingBackend::requestFinished
-            );
         }
 
         QUrl url(apiUrl);
@@ -207,245 +559,40 @@ namespace PMP {
             parametersString = parametersString.mid(1);
 
         qDebug() << "parameters:" << parametersString;
-        setWaitingForReply(true);
         return _networkAccessManager->post(request, parametersString);
     }
 
-    void LastFmScrobblingBackend::requestFinished(QNetworkReply* reply) {
-        setWaitingForReply(false);
-
-        bool isNowPlayingReply = reply == _nowPlayingReply;
-        if (isNowPlayingReply) {
-            _nowPlayingReply = nullptr;
-        }
-
-        bool isScrobbleReply = reply == _scrobbleReply;
-        if (isScrobbleReply) {
-            _scrobbleReply = nullptr;
-        }
-
-        bool isAuthenticationReply = reply == _authenticationReply;
-        if (isAuthenticationReply) {
-            _authenticationReply = nullptr;
-        }
-
-        auto error = reply->error();
-        if (error != QNetworkReply::NoError) {
-            qWarning() << "Last.Fm reply has network error " << error
-                       << "with error text:" << reply->errorString();
-
-            if (isNowPlayingReply) {
-                emit gotNowPlayingResult(false);
-            }
-
-            if (isScrobbleReply) {
-                emit gotScrobbleResult(ScrobbleResult::Error);
-            }
-
-            reply->deleteLater();
-
-            /* workaround */
-            if (error == QNetworkReply::UnknownNetworkError
-                    && reply->errorString().contains("Network access is disabled"))
-            {
-                qDebug() << "detected 'Network access is disabled' problem;"
-                         << "applying workaround";
-                auto networkAccessManager = _networkAccessManager;
-                _networkAccessManager = nullptr;
-                if (networkAccessManager) { networkAccessManager->deleteLater(); }
-            }
-            return;
-        }
-
-        auto replyData = reply->readAll();
-        qDebug() << "Last.Fm reply received. Byte count:" << replyData.size();
-
-        reply->deleteLater();
-
-        auto replyText = QString::fromUtf8(replyData);
-        qDebug() << "Last.Fm reply:\n" << replyText;
-
-        QDomDocument dom;
-        QString xmlParseError;
-        int xmlErrorLine;
-        if (dom.setContent(replyData, &xmlParseError, &xmlErrorLine)) {
-            auto lfmElement = dom.documentElement();
-            if (!lfmElement.isNull() && lfmElement.tagName() == "lfm") {
-                auto status = lfmElement.attribute("status");
-                if (status == "ok") {
-                    parseReply(lfmElement, isScrobbleReply);
-                    return;
-                }
-                else {
-                    qDebug() << "Last.Fm reply indicates that the request failed";
-                    auto errorElement = lfmElement.firstChildElement("error");
-                    parseError(errorElement);
-                }
-            }
-            else {
-                qDebug() << "Last.Fm reply XML does not have <lfm> root element";
-            }
-        }
-        else {
-            qDebug() << "Could not parse the Last.Fm reply as valid XML;"
-                     << "error at line" << xmlErrorLine << ":" << xmlParseError;
-        }
-
-        if (isNowPlayingReply) {
-            emit gotNowPlayingResult(false);
-        }
-
-        if (isScrobbleReply) {
-            emit gotScrobbleResult(ScrobbleResult::Error);
-        }
+    void LastFmScrobblingBackend::disposeOfNetworkAccessManager() {
+        qDebug() << "forcing NetworkAccessManager to be recreated next time";
+        auto networkAccessManager = _networkAccessManager;
+        _networkAccessManager = nullptr;
+        if (networkAccessManager) { networkAccessManager->deleteLater(); }
     }
 
-    void LastFmScrobblingBackend::parseReply(const QDomElement& lfmElement,
-                                             bool isScrobbleReply)
+    void LastFmScrobblingBackend::connectStateHandlingSignals(
+                                                            LastFmRequestHandler* handler)
     {
-        auto nowPlayingNode = lfmElement.firstChildElement("nowplaying");
-        if (!nowPlayingNode.isNull()) {
-            qDebug() << "received nowPlaying result";
-
-            /* don't parse the reply, just assume that it was successful */
-            emit gotNowPlayingResult(true);
-        }
-
-        auto scrobblesNode = lfmElement.firstChildElement("scrobbles");
-        if (!scrobblesNode.isNull()) {
-            if (isScrobbleReply) {
-                qDebug() << "received a scrobbling result";
-
-                auto scrobbleResult = parseScrobbles(scrobblesNode);
-                emit gotScrobbleResult(scrobbleResult);
-            }
-            else {
-                qDebug() << "received a scrobbling result while not expecting one";
-            }
-        }
-
-        auto sessionNode = lfmElement.firstChildElement("session");
-        if (!sessionNode.isNull()) {
-            qDebug() << "have session node";
-            auto nameNode = sessionNode.firstChildElement("name");
-            auto keyNode = sessionNode.firstChildElement("key");
-            qDebug() << " name:" << nameNode.text();
-            qDebug() << " key:" << keyNode.text();
-
-            _username = nameNode.text();
-            _sessionKey = keyNode.text();
-        }
-    }
-
-    void LastFmScrobblingBackend::parseError(const QDomElement& errorElement) {
-        if (errorElement.isNull()) return; /* gibberish */
-
-        auto errorCodeText = errorElement.attribute("code");
-        qDebug() << "received LFM error status;"
-                 << "code:" << errorCodeText << ";"
-                 << "message:" << errorElement.text();
-
-        bool ok;
-        int errorCode = errorCodeText.toInt(&ok);
-        if (!ok) { /* gibberish */ return; }
-
-        switch (errorCode) {
-            case 4: /* authentication failed */
-                qWarning() << "LFM authentication failed";
-                setState(ScrobblingBackendState::InvalidUserCredentials);
-                emit needUserCredentials(_username, true);
-                break;
-
-            case 9: /* invalid session key, need to re-authenticate */
-                qWarning() << "LFM reports session key not valid (or not anymore)";
+        connect(
+            handler, &LastFmRequestHandler::mustRecreateNetworkManager,
+            this, &LastFmScrobblingBackend::disposeOfNetworkAccessManager
+        );
+        connect(
+            handler, &LastFmRequestHandler::fatalError,
+            this,
+            [this]() { setState(ScrobblingBackendState::PermanentFatalError); }
+        );
+        connect(
+            handler, &LastFmRequestHandler::shouldTryAgainLater,
+            this, &LastFmScrobblingBackend::serviceTemporarilyUnavailable
+        );
+        connect(
+            handler, &LastFmRequestHandler::mustInvalidateSessionKey,
+            this,
+            [this]() {
                 _sessionKey = "";
                 updateState();
-                break;
-
-            case 8: case 11: case 16:
-                /* retry request later */
-                qWarning() << "LFM error code" << errorCode
-                           << ": should try again later";
-                emit serviceTemporarilyUnavailable();
-                break;
-
-            case 2: case 3: case 5: case 6: case 7: case 13: case 27:
-                qWarning() << "LFM error code" << errorCode
-                           << ": probably a bug in the request";
-                setState(ScrobblingBackendState::PermanentFatalError);
-                break;
-
-            case 10: case 26: /* invalid/suspended API key */
-                qWarning() << "LFM error code" << errorCode
-                           << ": problem with our API key";
-                setState(ScrobblingBackendState::PermanentFatalError);
-                break;
-
-            case 29: /* rate limit exceeded */
-                qWarning() << "LFM reports rate limit exceeded";
-                emit serviceTemporarilyUnavailable();
-                break;
-
-            default:
-                qWarning() << "unknown LFM error code" << errorCode;
-                setState(ScrobblingBackendState::PermanentFatalError);
-                break;
-        }
-    }
-
-    ScrobbleResult LastFmScrobblingBackend::parseScrobbles(
-                                                      const QDomElement& scrobblesElement)
-    {
-        //auto ignoredText = scrobblesElement.attribute("ignored");
-        //auto acceptedText = scrobblesElement.attribute("accepted");
-
-        auto scrobbleElement = scrobblesElement.firstChildElement("scrobble");
-
-        if (!scrobbleElement.nextSiblingElement("scrobble").isNull())
-            return ScrobbleResult::Error; /* more than one scrobble result */
-
-        auto timestampElement = scrobbleElement.firstChildElement("timestamp");
-        if (timestampElement.isNull())
-            return ScrobbleResult::Error;
-
-        bool ok;
-        auto timestampNumber = timestampElement.text().toLongLong(&ok);
-        if (!ok)
-            return ScrobbleResult::Error;
-
-        //if (timestampNumber != _pendingScrobbleTimestamp)
-        //    return ScrobbleResult::Error; /* mismatch */
-
-        bool scrobbleAccepted = false;
-        auto ignoredMessageElement =
-            scrobbleElement.firstChildElement("ignoredMessage");
-        if (ignoredMessageElement.isNull())
-            return ScrobbleResult::Error;
-
-        auto ignoredReasonText = ignoredMessageElement.text();
-        auto ignoredReason = ignoredMessageElement.attribute("code").toInt(&ok);
-        if (!ok)
-            return ScrobbleResult::Error;
-
-        if (ignoredReason == 0) scrobbleAccepted = true;
-
-        if (scrobbleAccepted)
-            qDebug() << "scrobble was accepted";
-        else
-            qDebug() << "scrobble NOT accepted for reason code" << ignoredReason
-                     << ":" << ignoredReasonText;
-
-        auto titleText = scrobbleElement.firstChildElement("track").text();
-        auto artistText = scrobbleElement.firstChildElement("artist").text();
-        auto albumText = scrobbleElement.firstChildElement("album").text();
-
-        qDebug() << "scrobble feedback received:\n"
-                 << " timestamp: " << QString::number(timestampNumber) << "\n"
-                 << " title:" << titleText << "\n"
-                 << " artist:" << artistText << "\n"
-                 << " album:" << albumText;
-
-        return scrobbleAccepted ? ScrobbleResult::Success : ScrobbleResult::Ignored;
+            }
+        );
     }
 
     void LastFmScrobblingBackend::signCall(QVector<QPair<QString, QString>>& parameters)
@@ -493,9 +640,9 @@ namespace PMP {
             return;
         }
 
-        if (oldState != ScrobblingBackendState::InvalidUserCredentials) {
+        if (state() != ScrobblingBackendState::WaitingForUserCredentials) {
             setState(ScrobblingBackendState::WaitingForUserCredentials);
-            emit needUserCredentials(_username, false);
+            emit needUserCredentials(_username);
             return;
         }
     }

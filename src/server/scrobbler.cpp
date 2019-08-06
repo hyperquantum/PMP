@@ -127,6 +127,7 @@ namespace PMP {
 
     void Scrobbler::checkIfWeHaveSomethingToDo() {
         qDebug() << "running checkIfWeHaveSomethingToDo";
+        if (_nowPlayingSent && !_nowPlayingDone) return;
         if (_pendingScrobble) return;
         if (_backoffTimer->isActive()) return;
 
@@ -134,20 +135,16 @@ namespace PMP {
             _tracksToScrobble.append(_dataProvider->getNextTracksToScrobble().toList());
         }
 
+        auto haveTracksToScrobble = !_tracksToScrobble.empty();
         auto haveNowPlayingToSend = _nowPlayingPresent && !_nowPlayingSent;
 
-        if (_tracksToScrobble.empty() && !haveNowPlayingToSend)
+        if (!haveTracksToScrobble && !haveNowPlayingToSend)
             return; /* nothing to be done */
+
+        qDebug() << "we have" << _tracksToScrobble.size() << "tracks to scrobble";
 
         if (haveNowPlayingToSend)
             qDebug() << "we have a 'now playing' to send";
-        else
-            qDebug() << "we have" << _tracksToScrobble.size() << "tracks to scrobble";
-
-        if (_backend->waitingForReply()) {
-            qDebug() << "backend is still waiting for a reply; cannot do anything";
-            return;
-        }
 
         qDebug() << "backend state:" << _backend->state();
         switch (_backend->state()) {
@@ -156,16 +153,15 @@ namespace PMP {
                 QTimer::singleShot(0, this, SLOT(wakeUp()));
                 break;
             case ScrobblingBackendState::ReadyForScrobbling:
-                if (haveNowPlayingToSend)
-                    sendNowPlaying();
-                else
+                if (haveTracksToScrobble)
                     sendNextScrobble();
+                else if (haveNowPlayingToSend)
+                    sendNowPlaying();
                 break;
             case ScrobblingBackendState::PermanentFatalError:
                 /* TODO */
                 break;
             case ScrobblingBackendState::WaitingForUserCredentials:
-            case ScrobblingBackendState::InvalidUserCredentials:
                 /* we will have to wait for (new) credentials; this means waiting until
                    the state of the backend changes again*/
                 break;

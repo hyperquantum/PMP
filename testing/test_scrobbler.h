@@ -46,12 +46,10 @@ public:
 public slots:
     void initialize() override;
 
-    void updateNowPlaying(QString const& title, QString const& artist,
-                          QString const& album,
+    void updateNowPlaying(QString title, QString artist, QString album,
                           int trackDurationSeconds = -1) override;
 
-    void scrobbleTrack(QDateTime timestamp, QString const& title,
-                       QString const& artist, QString const& album,
+    void scrobbleTrack(QDateTime timestamp, QString title, QString artist, QString album,
                        int trackDurationSeconds = -1) override;
 
 private slots:

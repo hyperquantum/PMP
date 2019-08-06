@@ -20,6 +20,8 @@
 #ifndef PMP_SCROBBLINGHOST_H
 #define PMP_SCROBBLINGHOST_H
 
+#include "clientrequestorigin.h"
+
 #include <QDateTime>
 #include <QObject>
 #include <QHash>
@@ -48,8 +50,10 @@ namespace PMP {
                                 int trackDurationSeconds = -1);
 
     Q_SIGNALS:
-        void needLastFmCredentials(uint userId, QString suggestedUsername,
-                                   bool authenticationFailed);
+        void needLastFmCredentials(uint userId, QString suggestedUsername);
+        void gotLastFmAuthenticationResult(uint userId, ClientRequestOrigin origin,
+                                           bool success);
+        void errorOccurredDuringAuthentication(uint userId, ClientRequestOrigin origin);
 
     private:
         void createLastFmScrobbler(uint userId, LastFmScrobblingDataRecord const& data);
