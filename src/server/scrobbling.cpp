@@ -30,6 +30,23 @@ namespace PMP {
         //
     }
 
+    void ScrobblingController::enableScrobbling() {
+        emit enableScrobblingRequested();
+    }
+
+    void ScrobblingController::wakeUp(uint userId) {
+        emit wakeUpRequested(userId);
+    }
+
+    void ScrobblingController::updateNowPlaying(uint userId, QDateTime startTime,
+                                                QString title, QString artist,
+                                                QString album,
+                                                int trackDurationSeconds)
+    {
+        emit nowPlayingUpdateRequested(userId, startTime, title, artist, album,
+                                       trackDurationSeconds);
+    }
+
     /* ============================================================================ */
 
     UserScrobblingController::UserScrobblingController(uint userId)

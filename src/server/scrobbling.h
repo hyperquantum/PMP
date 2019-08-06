@@ -35,6 +35,13 @@ namespace PMP {
     public:
         ScrobblingController();
 
+    public slots:
+        void enableScrobbling();
+        void wakeUp(uint userId);
+        void updateNowPlaying(uint userId, QDateTime startTime,
+                              QString title, QString artist, QString album,
+                              int trackDurationSeconds = -1);
+
     Q_SIGNALS:
         void enableScrobblingRequested();
         void wakeUpRequested(uint userId);
