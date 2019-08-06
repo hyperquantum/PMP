@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,11 +47,12 @@ namespace PMP {
 
     const qint16 ConnectedClient::ServerProtocolNo = 10;
 
-    ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
+    ConnectedClient::ConnectedClient(uint connectionReference, QTcpSocket* socket,
+                                     Server* server, Player* player,
                                      Generator* generator, Users* users,
                                      CollectionMonitor* collectionMonitor,
                                      ServerHealthMonitor* serverHealthMonitor)
-     : QObject(server),
+     : QObject(server), _connectionReference(connectionReference),
        _socket(socket), _server(server), _player(player), _generator(generator),
        _users(users), _collectionMonitor(collectionMonitor),
        _serverHealthMonitor(serverHealthMonitor),

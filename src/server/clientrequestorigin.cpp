@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,22 +18,9 @@
 */
 
 #include "clientrequestorigin.h"
-#include "scrobblingbackend.h"
 
 namespace PMP {
 
-    /** Utility object to automatically do the qRegisterMetaType calls at program
-     *  startup */
-    class ServerMetatypesInit {
-    private:
-        ServerMetatypesInit() {
-            qRegisterMetaType<PMP::ClientRequestOrigin>();
-            qRegisterMetaType<PMP::ScrobblingBackendState>();
-            qRegisterMetaType<PMP::ScrobbleResult>();
-        }
+    const ClientRequestOrigin ClientRequestOrigin::none;
 
-        static ServerMetatypesInit GlobalVariable;
-    };
-
-    ServerMetatypesInit ServerMetatypesInit::GlobalVariable;
 }

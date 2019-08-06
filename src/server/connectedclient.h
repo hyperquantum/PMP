@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,6 +24,7 @@
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
 
+#include "clientrequestorigin.h"
 #include "playerstate.h"
 #include "userdataforhashesfetcher.h"
 
@@ -49,7 +50,8 @@ namespace PMP {
     class ConnectedClient : public QObject {
         Q_OBJECT
     public:
-        ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
+        ConnectedClient(uint connectionReference, QTcpSocket* socket,
+                        Server* server, Player* player,
                         Generator* generator, Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor);
@@ -171,6 +173,7 @@ namespace PMP {
 
         static const qint16 ServerProtocolNo;
 
+        const uint _connectionReference;
         QTcpSocket* _socket;
         Server* _server;
         Player* _player;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 #define PMP_SERVER_H
 
 #include <QHostAddress>
+#include <QSet>
 #include <QUuid>
 
 QT_FORWARD_DECLARE_CLASS(QTcpServer)
@@ -64,8 +65,12 @@ namespace PMP {
         void readPendingDatagrams();
 
     private:
+        uint generateConnectionReference();
+        void retireConnectionReference(uint connectionReference);
         static QString generateServerPassword();
 
+        uint _lastNewConnectionReference;
+        QSet<uint> _connectionReferencesInUse;
         QUuid _uuid;
         QString _serverPassword;
         Player* _player;

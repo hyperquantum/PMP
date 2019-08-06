@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,6 +27,7 @@
 #include <QByteArray>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QtDebug>
 #include <QTimer>
 #include <QUdpSocket>
 
@@ -35,7 +36,7 @@
 namespace PMP {
 
     Server::Server(QObject* parent, const QUuid& serverInstanceIdentifier)
-     : QObject(parent),
+     : QObject(parent), _lastNewConnectionReference(0),
        _uuid(serverInstanceIdentifier),
        _player(nullptr), _generator(nullptr), _users(nullptr),
        _collectionMonitor(nullptr), _serverHealthMonitor(nullptr),
@@ -145,9 +146,22 @@ namespace PMP {
     void Server::newConnectionReceived() {
         QTcpSocket *connection = _server->nextPendingConnection();
 
-        new ConnectedClient(
-            connection, this, _player, _generator, _users, _collectionMonitor,
-            _serverHealthMonitor
+        uint connectionReference = generateConnectionReference();
+
+        qDebug() << "Creating client connection with reference" << connectionReference;
+
+        auto clientConnection =
+            new ConnectedClient(
+                connectionReference, connection, this, _player, _generator, _users,
+                _collectionMonitor, _serverHealthMonitor
+            );
+
+        connect(
+            clientConnection, &ConnectedClient::destroyed,
+            this,
+            [this, connectionReference]() {
+                this->retireConnectionReference(connectionReference);
+            }
         );
     }
 
@@ -177,5 +191,22 @@ namespace PMP {
 
             sendBroadcast();
         }
+    }
+
+    uint Server::generateConnectionReference() {
+        do {
+            _lastNewConnectionReference++;
+        } while (_lastNewConnectionReference == 0
+                 || _connectionReferencesInUse.contains(_lastNewConnectionReference));
+
+        _connectionReferencesInUse << _lastNewConnectionReference;
+
+        qDebug() << "Generated connection reference:" << _lastNewConnectionReference;
+        return _lastNewConnectionReference;
+    }
+
+    void Server::retireConnectionReference(uint connectionReference) {
+        qDebug() << "Removing connection reference:" << connectionReference;
+        _connectionReferencesInUse.remove(connectionReference);
     }
 }

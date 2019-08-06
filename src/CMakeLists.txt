@@ -37,6 +37,7 @@ set(PMP_COMMON_HEADERS
 
 set(PMP_SERVER_SOURCES
     server/addtohistorytask.cpp
+    server/clientrequestorigin.cpp
     server/collectionmonitor.cpp
     server/connectedclient.cpp
     server/database.cpp
