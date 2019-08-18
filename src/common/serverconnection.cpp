@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -239,7 +239,7 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    const qint16 ServerConnection::ClientProtocolNo = 10;
+    const qint16 ServerConnection::ClientProtocolNo = 11;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -1605,11 +1605,69 @@ namespace PMP {
         case NetworkProtocol::ServerHealthMessage:
             parseServerHealthMessage(message);
             break;
+        case NetworkProtocol::CollectionAvailabilityChangeNotificationMessage:
+            parseTrackAvailabilityChangeBatchMessage(message);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
             break; /* unknown message type */
         }
+    }
+
+    void ServerConnection::parseTrackAvailabilityChangeBatchMessage(
+                                                                QByteArray const& message)
+    {
+        qint32 messageLength = message.length();
+        if (messageLength < 8) {
+            qDebug() << "invalid message detected: length is too short";
+            return; /* invalid message */
+        }
+
+        int availableCount = int(uint(NetworkUtil::get2Bytes(message, 4)));
+        int unavailableCount = int(uint(NetworkUtil::get2Bytes(message, 6)));
+
+        int expectedMessageLength =
+            8 + (availableCount + unavailableCount) * NetworkProtocol::FILEHASH_BYTECOUNT;
+
+        if (messageLength != expectedMessageLength) {
+            qDebug() << "invalid message detected: length does not match expected length";
+            return; /* invalid message */
+        }
+
+        uint offset = 8;
+
+        QVector<FileHash> available(availableCount);
+        for (int i = 0; i < availableCount; ++i) {
+            bool ok;
+            FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
+            if (!ok || hash.empty()) {
+                qDebug() << "invalid message detected: did not read hash correctly;"
+                         << "  ok=" << (ok ? "true" : "false");
+                return; /* invalid message */
+            }
+
+            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+            available.append(hash);
+        }
+
+        QVector<FileHash> unavailable(unavailableCount);
+        for (int i = 0; i < unavailableCount; ++i) {
+            bool ok;
+            FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
+            if (!ok || hash.empty()) {
+                qDebug() << "invalid message detected: did not read hash correctly;"
+                         << "  ok=" << (ok ? "true" : "false");
+                return; /* invalid message */
+            }
+
+            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+            unavailable.append(hash);
+        }
+
+        qDebug() << "got track availability changes: " << available.size() << "available,"
+                 << unavailable.size() << "unavailable";
+        emit collectionTracksAvailabilityChanged(available, unavailable);
     }
 
     void ServerConnection::parseTrackInfoBatchMessage(QByteArray const& message,

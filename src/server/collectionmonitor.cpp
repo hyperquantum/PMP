@@ -54,7 +54,8 @@ namespace PMP {
                                                QString album, qint32 lengthInMilliseconds)
     {
         HashInfo& info = _collection[hash];
-        bool changed = title != info.title || artist != info.artist;
+        bool changed =
+                title != info.title || artist != info.artist || album != info.album;
         if (!changed) return;
 
         info.title = title;
@@ -85,27 +86,26 @@ namespace PMP {
     void CollectionMonitor::emitNotifications() {
         if (_pendingNotifications.isEmpty()) return;
 
-        if (_pendingTagNotificationCount >= (uint)_pendingNotifications.size()) {
+        if (_pendingTagNotificationCount >= _pendingNotifications.size()) {
             qDebug() << "CollectionMonitor: going to send" << _pendingNotifications.size()
                      << "full notifications";
 
-            emitFullNotifications(_pendingNotifications.keys());
+            emitFullNotifications(_pendingNotifications.keys().toVector());
         }
         else if (_pendingTagNotificationCount == 0) {
             qDebug() << "CollectionMonitor: going to send" << _pendingNotifications.size()
                      << "availability notifications";
 
-            emitAvailabilityNotifications(_pendingNotifications.keys());
+            emitAvailabilityNotifications(_pendingNotifications.keys().toVector());
         }
         else {
             /* we need to split the list */
 
-            QList<FileHash> fullNotifications;
-            QList<FileHash> availabilityNotifications;
-            fullNotifications.reserve(_pendingTagNotificationCount);
-            availabilityNotifications.reserve(
-                _pendingNotifications.size() - _pendingTagNotificationCount
-            );
+            auto availabilityNotificationCount =
+                    _pendingNotifications.size() - _pendingTagNotificationCount;
+
+            QVector<FileHash> fullNotifications(_pendingTagNotificationCount);
+            QVector<FileHash> availabilityNotifications(availabilityNotificationCount);
 
             QHashIterator<FileHash, Changed> i(_pendingNotifications);
             while (i.hasNext()) {
@@ -130,9 +130,8 @@ namespace PMP {
         _pendingTagNotificationCount = 0;
     }
 
-    void CollectionMonitor::emitFullNotifications(QList<FileHash> hashes) {
-        QList<CollectionTrackInfo> notifications;
-        notifications.reserve(hashes.size());
+    void CollectionMonitor::emitFullNotifications(QVector<FileHash> hashes) {
+        QVector<CollectionTrackInfo> notifications(hashes.size());
 
         Q_FOREACH(FileHash h, hashes) {
             auto it = _collection.find(h);
@@ -147,17 +146,19 @@ namespace PMP {
         emit hashInfoChanged(notifications);
     }
 
-    void CollectionMonitor::emitAvailabilityNotifications(QList<FileHash> hashes) {
-        QList<QPair<FileHash, bool> > notifications;
-        notifications.reserve(hashes.size());
+    void CollectionMonitor::emitAvailabilityNotifications(QVector<FileHash> hashes) {
+        QVector<FileHash> available, unavailable;
 
         Q_FOREACH(FileHash h, hashes) {
             auto it = _collection.find(h);
             if (it == _collection.end()) continue; /* disappeared?? */
 
-            notifications.append(qMakePair(h, it.value().isAvailable));
+            if (it.value().isAvailable)
+                available.append(h);
+            else
+                unavailable.append(h);
         }
 
-        emit hashAvailabilityChanged(notifications);
+        emit hashAvailabilityChanged(available, unavailable);
     }
 }

@@ -93,6 +93,10 @@ namespace PMP {
 
     void SortedCollectionTableModel::setConnection(ServerConnection* connection) {
         connect(
+            connection, &ServerConnection::collectionTracksAvailabilityChanged,
+            this, &SortedCollectionTableModel::onCollectionTracksAvailabilityChanged
+        );
+        connect(
             connection, &ServerConnection::collectionTracksChanged,
             this, &SortedCollectionTableModel::onCollectionTracksChanged
         );
@@ -285,7 +289,14 @@ namespace PMP {
             /* hash already present? */
             auto hashIterator = _hashesToInnerIndexes.find(track.hash());
             if (hashIterator != _hashesToInnerIndexes.end()) {
-                // TODO: update
+                qWarning() << "collection track update not handled:"
+                           << "title:" << track.title() << "; artist:" << track.artist()
+                           << "; album:" << track.album()
+                           << "; available:" << (track.isAvailable() ? "yes" : "no");
+                // TODO: update existing entry
+                //
+                //
+                //
                 continue;
             }
 
@@ -309,6 +320,14 @@ namespace PMP {
 
             endInsertRows();
         }
+    }
+
+    void SortedCollectionTableModel::onCollectionTracksAvailabilityChanged(
+                                                       QVector<PMP::FileHash> available,
+                                                       QVector<PMP::FileHash> unavailable)
+    {
+        updateTrackAvailability(available, true);
+        updateTrackAvailability(unavailable, false);
     }
 
     void SortedCollectionTableModel::onCollectionTracksChanged(
@@ -343,6 +362,32 @@ namespace PMP {
         }
         else {
             return findOuterIndexMapIndexForInsert(track, middleIndex, searchRangeEnd);
+        }
+    }
+
+    void SortedCollectionTableModel::updateTrackAvailability(QVector<FileHash> hashes,
+                                                             bool available)
+    {
+        for (int i = 0; i < hashes.size(); ++i) {
+            auto hashIterator = _hashesToInnerIndexes.find(hashes[i]);
+            if (hashIterator == _hashesToInnerIndexes.end()) {
+                if (!available) continue;
+
+                qWarning() << "hash became available but is not added to collection yet:"
+                           << hashes[i].dumpToString();
+                // TODO: add to the collection
+                //
+                //
+                //
+                //
+                continue;
+            }
+
+            int innerIndex = hashIterator.value();
+            int outerIndex = _innerToOuterIndexMap[innerIndex];
+
+            _tracks[innerIndex]->setAvailable(available);
+            emit dataChanged(createIndex(outerIndex, 0), createIndex(outerIndex, 4 - 1));
         }
     }
 

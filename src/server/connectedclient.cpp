@@ -45,7 +45,7 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 10;
+    const qint16 ConnectedClient::ServerProtocolNo = 11;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,
@@ -973,14 +973,58 @@ namespace PMP {
     }
 
     void ConnectedClient::onCollectionTrackInfoBatchToSend(uint clientReference,
-                                                        QList<CollectionTrackInfo> tracks)
+                                                      QVector<CollectionTrackInfo> tracks)
     {
         sendTrackInfoBatchMessage(clientReference, false, tracks);
     }
 
+    void ConnectedClient::sendTrackAvailabilityBatchMessage(QVector<FileHash> available,
+                                                            QVector<FileHash> unavailable)
+    {
+        if (_clientProtocolNo < 11) /* only send this if the client will understand */
+            return;
+
+        const int maxSize = (1 << 16) - 1;
+
+        /* not too big? */
+        if (available.size() > maxSize) {
+            /* TODO: maybe delay the second part? */
+            sendTrackAvailabilityBatchMessage(available.mid(0, maxSize), unavailable);
+            sendTrackAvailabilityBatchMessage(available.mid(maxSize), unavailable);
+            return;
+        }
+        if (unavailable.size() > maxSize) {
+            /* TODO: maybe delay the second part? */
+            sendTrackAvailabilityBatchMessage(available, unavailable.mid(0, maxSize));
+            sendTrackAvailabilityBatchMessage(available, unavailable.mid(maxSize));
+            return;
+        }
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4
+                        + NetworkProtocol::FILEHASH_BYTECOUNT * available.size()
+                        + NetworkProtocol::FILEHASH_BYTECOUNT * unavailable.size());
+
+        NetworkUtil::append2Bytes(message,
+                        NetworkProtocol::CollectionAvailabilityChangeNotificationMessage);
+        NetworkUtil::append2Bytes(message, 0) /* filler */;
+        NetworkUtil::append2Bytes(message, available.size());
+        NetworkUtil::append2Bytes(message, unavailable.size());
+
+        for (int i = 0; i < available.size(); ++i) {
+            NetworkProtocol::appendHash(message, available[i]);
+        }
+
+        for (int i = 0; i < unavailable.size(); ++i) {
+            NetworkProtocol::appendHash(message, unavailable[i]);
+        }
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendTrackInfoBatchMessage(uint clientReference,
                                                     bool isNotification,
-                                                    QList<CollectionTrackInfo> tracks)
+                                                    QVector<CollectionTrackInfo> tracks)
     {
         const int maxSize = (1 << 16) - 1;
 
@@ -1127,14 +1171,13 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::onHashAvailabilityChanged(QList<QPair<FileHash, bool> > changes)
+    void ConnectedClient::onHashAvailabilityChanged(QVector<FileHash> available,
+                                                    QVector<FileHash> unavailable)
     {
-        // TODO
-
-
+        sendTrackAvailabilityBatchMessage(available, unavailable);
     }
 
-    void ConnectedClient::onHashInfoChanged(QList<CollectionTrackInfo> changes) {
+    void ConnectedClient::onHashInfoChanged(QVector<CollectionTrackInfo> changes) {
         sendTrackInfoBatchMessage(0, true, changes);
     }
 

@@ -26,6 +26,7 @@
 #include <QMetaType>
 #include <QObject>
 #include <QPair>
+#include <QVector>
 
 namespace PMP {
 
@@ -42,21 +43,22 @@ namespace PMP {
                                 QString album, qint32 lengthInMilliseconds);
 
     Q_SIGNALS:
-        void hashAvailabilityChanged(QList<QPair<PMP::FileHash, bool> > changes);
-        void hashInfoChanged(QList<PMP::CollectionTrackInfo> changes);
+        void hashAvailabilityChanged(QVector<PMP::FileHash> available,
+                                     QVector<PMP::FileHash> unavailable);
+        void hashInfoChanged(QVector<PMP::CollectionTrackInfo> changes);
 
     private slots:
         void emitNotifications();
 
     private:
         void checkNeedToSendNotifications();
-        void emitFullNotifications(QList<FileHash> hashes);
-        void emitAvailabilityNotifications(QList<FileHash> hashes);
+        void emitFullNotifications(QVector<FileHash> hashes);
+        void emitAvailabilityNotifications(QVector<FileHash> hashes);
 
         struct HashInfo {
             bool isAvailable;
             QString title, artist, album;
-            quint32 lengthInMilliseconds;
+            qint32 lengthInMilliseconds;
 
             HashInfo()
              : isAvailable(false), lengthInMilliseconds(0)
@@ -78,7 +80,7 @@ namespace PMP {
 
         QHash<FileHash, HashInfo> _collection;
         QHash<FileHash, Changed> _pendingNotifications;
-        uint _pendingTagNotificationCount;
+        int _pendingTagNotificationCount;
     };
 }
 #endif

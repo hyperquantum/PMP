@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -93,7 +93,7 @@ namespace PMP {
             this, &Generator::hashBecameUnavailable
         );
 
-        _hashesSource = _resolver->getAllHashes();
+        _hashesSource = _resolver->getAllHashes().toList();
         _hashesInSource = _hashesSource.toSet();
         std::shuffle(_hashesSource.begin(), _hashesSource.end(), _randomEngine);
         qDebug() << "Generator: starting with source of size" << _hashesSource.size();

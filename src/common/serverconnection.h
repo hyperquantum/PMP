@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -238,6 +238,8 @@ namespace PMP {
         void fullIndexationStarted();
         void fullIndexationFinished();
 
+        void collectionTracksAvailabilityChanged(QVector<PMP::FileHash> available,
+                                                 QVector<PMP::FileHash> unavailable);
         void collectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
 
     private slots:
@@ -278,6 +280,7 @@ namespace PMP {
 
         void onFullIndexationRunningStatusReceived(bool running);
 
+        void parseTrackAvailabilityChangeBatchMessage(QByteArray const& message);
         void parseTrackInfoBatchMessage(QByteArray const& message,
                                         NetworkProtocol::ServerMessageType messageType);
 

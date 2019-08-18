@@ -58,8 +58,8 @@ namespace PMP {
         const AudioData& findAudioData(const FileHash& hash);
         const TagData* findTagData(const FileHash& hash);
 
-        QList<FileHash> getAllHashes();
-        QList<CollectionTrackInfo> getHashesTrackInfo(QList<FileHash> hashes);
+        QVector<FileHash> getAllHashes();
+        QVector<CollectionTrackInfo> getHashesTrackInfo(QVector<FileHash> hashes);
 
         FileHash getHashByID(uint id);
         uint getID(const FileHash& hash);
