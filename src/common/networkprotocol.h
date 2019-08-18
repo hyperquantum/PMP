@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -41,6 +41,7 @@ namespace PMP {
           8: server msg 26 and single byte request 24 for dynamic mode waves
           9: client msg 21, server msg 27: queue entry duplication
          10: single byte request 51 & server msg 28: server health messages
+         11: server msg 29: track availability change notifications
 
     */
 
@@ -84,6 +85,7 @@ namespace PMP {
             DynamicModeWaveStatusMessage = 26,
             QueueEntryAdditionConfirmationMessage = 27,
             ServerHealthMessage = 28,
+            CollectionAvailabilityChangeNotificationMessage = 29,
         };
 
         enum ClientMessageType {

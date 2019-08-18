@@ -93,10 +93,11 @@ namespace PMP {
                                     QDateTime previouslyHeard, qint16 score);
         void onFullIndexationRunStatusChanged(bool running);
         void onCollectionTrackInfoBatchToSend(uint clientReference,
-                                              QList<CollectionTrackInfo> tracks);
+                                              QVector<CollectionTrackInfo> tracks);
         void onCollectionTrackInfoCompleted(uint clientReference);
-        void onHashAvailabilityChanged(QList<QPair<PMP::FileHash, bool> > changes);
-        void onHashInfoChanged(QList<PMP::CollectionTrackInfo> changes);
+        void onHashAvailabilityChanged(QVector<PMP::FileHash> available,
+                                       QVector<PMP::FileHash> unavailable);
+        void onHashInfoChanged(QVector<CollectionTrackInfo> changes);
 
         void userDataForHashesFetchCompleted(quint32 userId,
                                              QVector<PMP::UserDataForHash> results,
@@ -148,8 +149,10 @@ namespace PMP {
         void sendNonFatalInternalErrorResultMessage(quint32 clientReference);
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
+        void sendTrackAvailabilityBatchMessage(QVector<FileHash> available,
+                                               QVector<FileHash> unavailable);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
-                                       QList<CollectionTrackInfo> tracks);
+                                       QVector<CollectionTrackInfo> tracks);
         void sendNewHistoryEntryMessage(uint queueID, QDateTime started, QDateTime ended,
                                         quint32 userPlayedFor, int permillagePlayed,
                                         bool hadError, bool hadSeek);
@@ -205,7 +208,8 @@ namespace PMP {
                          Resolver* resolver);
 
     Q_SIGNALS:
-        void sendCollectionList(uint clientReference, QList<CollectionTrackInfo> tracks);
+        void sendCollectionList(uint clientReference,
+                                QVector<CollectionTrackInfo> tracks);
         void allSent(uint clientReference);
 
     private slots:
@@ -214,7 +218,7 @@ namespace PMP {
     private:
         uint _clientRef;
         Resolver* _resolver;
-        QList<FileHash> _hashes;
+        QVector<FileHash> _hashes;
         int _currentIndex;
     };
 

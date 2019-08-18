@@ -589,6 +589,7 @@ namespace PMP {
             }
         }
 
+        qDebug() << " could not find the file in another location";
         return ""; /* not found */
     }
 
@@ -621,16 +622,16 @@ namespace PMP {
     }
     */
 
-    QList<FileHash> Resolver::getAllHashes() {
+    QVector<FileHash> Resolver::getAllHashes() {
         QMutexLocker lock(&_lock);
-        auto copy = _hashList;
+        auto copy = _hashList.toVector();
         return copy;
     }
 
-    QList<CollectionTrackInfo> Resolver::getHashesTrackInfo(QList<FileHash> hashes) {
+    QVector<CollectionTrackInfo> Resolver::getHashesTrackInfo(QVector<FileHash> hashes) {
         QMutexLocker lock(&_lock);
 
-        QList<CollectionTrackInfo> result;
+        QVector<CollectionTrackInfo> result;
         result.reserve(hashes.size());
 
         Q_FOREACH(auto hash, hashes) {
