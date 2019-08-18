@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -440,10 +440,12 @@ namespace PMP {
     }
 
     int SortedCollectionTableModel::rowCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent)
         return _outerToInnerIndexMap.size();
     }
 
     int SortedCollectionTableModel::columnCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent)
         return 4;
     }
 
@@ -497,6 +499,7 @@ namespace PMP {
     }
 
     Qt::ItemFlags SortedCollectionTableModel::flags(const QModelIndex& index) const {
+        Q_UNUSED(index)
         Qt::ItemFlags f(Qt::ItemIsSelectable | Qt::ItemIsEnabled
                         | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
         return f;
@@ -538,9 +541,9 @@ namespace PMP {
 
         if (hashes.empty()) return nullptr;
 
-        stream << (quint32)hashes.size();
+        stream << quint32(hashes.size());
         for (int i = 0; i < hashes.size(); ++i) {
-            stream << (quint64)hashes[i].length();
+            stream << quint64(hashes[i].length());
             stream << hashes[i].SHA1();
             stream << hashes[i].MD5();
         }
@@ -559,6 +562,7 @@ namespace PMP {
             SortedCollectionTableModel* source, QObject* parent)
      : _source(source)
     {
+        Q_UNUSED(parent)
         setFilterCaseSensitivity(Qt::CaseInsensitive);
 
         setSourceModel(source);
