@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -74,11 +74,11 @@ namespace PMP {
         bool first = _pendingNotifications.size() == 1;
 
         if (first) {
-            QTimer::singleShot(1500, this, SLOT(emitNotifications()));
+            QTimer::singleShot(1500, this, &CollectionMonitor::emitNotifications);
         }
         else if (_pendingNotifications.size() >= 50) {
             /* many notifications pending, don't wait */
-            QTimer::singleShot(0, this, SLOT(emitNotifications()));
+            QTimer::singleShot(0, this, &CollectionMonitor::emitNotifications);
         }
     }
 

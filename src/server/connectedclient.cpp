@@ -2252,7 +2252,7 @@ namespace PMP {
         _hashes = _resolver->getAllHashes();
         qDebug() << "CollectionSender: starting.  Hash count:" << _hashes.size();
 
-        QTimer::singleShot(0, this, SLOT(sendNextBatch()));
+        QTimer::singleShot(0, this, &CollectionSender::sendNextBatch);
     }
 
     void CollectionSender::sendNextBatch() {
@@ -2273,7 +2273,7 @@ namespace PMP {
                  << "to send.  ref=" << _clientRef;
 
         /* schedule next batch already */
-        QTimer::singleShot(100, this, SLOT(sendNextBatch()));
+        QTimer::singleShot(100, this, &CollectionSender::sendNextBatch);
 
         /* send this batch if it is not empty */
         if (!infoToSend.isEmpty()) {
