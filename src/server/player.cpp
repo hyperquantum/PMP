@@ -376,7 +376,7 @@ namespace PMP {
     void Player::addToHistory(QueueEntry* entry, int permillage, bool hadError,
                               bool hadSeek)
     {
-        _nowPlaying->setEndedNow(); /* register end time */
+        entry->setEndedNow(); /* register end time */
 
         if (!entry->isTrack())
             return; /* don't put breakpoints in the history */
