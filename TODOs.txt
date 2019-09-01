@@ -19,6 +19,7 @@ KNOWN BUGS
  * player fails to play preloaded entries of which the file has been deleted already
  * server crashes when a server shutdown is performed while a full indexation is running
  * GUI remote: searching the music collection for "e" does not return results having "ë"
+ * a "skip" operation should not affect the current track's score if performed by another player
 
 
 PERFORMANCE ISSUES
@@ -57,6 +58,7 @@ IDEAS
  * music collection view: optional visual indication of tracks that have never been listened to
  ** option for single track mode (vs. continuous play)
  * display time remaining during playback
+ * save the contents of the queue on server shutdown and restore it at the next server startup
 
 
 USER FRIENDLINESS
