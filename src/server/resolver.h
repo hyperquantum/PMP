@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -81,7 +81,11 @@ namespace PMP {
         struct VerifiedFile;
         class HashKnowledge;
 
+        FileHash analyzeAndRegisterFileInternal(const QString& filename,
+                                                uint fullIndexationNumber);
         HashKnowledge* registerHash(const FileHash& hash);
+        QVector<QString> getPathsThatDontMatchCurrentFullIndexationNumber();
+        void checkFileStillExistsAndIsValid(QString path);
 
         void doFullIndexation();
 
@@ -94,6 +98,7 @@ namespace PMP {
         QHash<uint, HashKnowledge*> _idToHash;
         QHash<QString, VerifiedFile*> _paths;
 
+        uint _fullIndexationNumber;
         bool _fullIndexationRunning;
         QFutureWatcher<void> _fullIndexationWatcher;
 

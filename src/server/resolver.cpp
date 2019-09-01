@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -41,24 +41,33 @@ namespace PMP {
         QString _path;
         qint64 _size;
         QDateTime _lastModifiedUtc;
+        uint _indexationNumber;
 
         VerifiedFile(Resolver::HashKnowledge* parent, QString path,
-                     qint64 size, QDateTime lastModified)
+                     qint64 size, QDateTime lastModified, uint indexationNumber)
          : _parent(parent), _path(path),
-           _size(size), _lastModifiedUtc(lastModified.toUTC())
+           _size(size), _lastModifiedUtc(lastModified.toUTC()),
+           _indexationNumber(indexationNumber)
         {
             //
         }
 
-        void update(qint64 size, QDateTime modified) {
+        void update(qint64 size, QDateTime modified, uint indexationNumber) {
             _size = size;
             _lastModifiedUtc = modified;
+
+            if (indexationNumber > 0)
+                _indexationNumber = indexationNumber;
         }
 
-        bool equals(FileHash const& hash, qint64 size, QDateTime modified);
+        bool equals(FileHash const& hash, qint64 size, QDateTime modified) const;
 
-        bool equals(qint64 size, QDateTime modified) {
+        bool equals(qint64 size, QDateTime modified) const {
             return _size == size && _lastModifiedUtc == modified.toUTC();
+        }
+
+        bool hasIndexationNumber(uint indexationNumber) const {
+            return _indexationNumber == indexationNumber;
         }
 
         bool stillValid();
@@ -100,7 +109,7 @@ namespace PMP {
         QString quickAlbum() { return _quickAlbum; }
 
         void addPath(const QString& filename,
-                     qint64 fileSize, QDateTime fileLastModified);
+                     qint64 fileSize, QDateTime fileLastModified, uint indexationNumber);
         void removeInvalidPath(Resolver::VerifiedFile* file);
 
         bool isAvailable();
@@ -111,7 +120,7 @@ namespace PMP {
     /* ========================== VerifiedFile ========================== */
 
     bool Resolver::VerifiedFile::equals(FileHash const& hash,
-                                        qint64 size, QDateTime modified)
+                                        qint64 size, QDateTime modified) const
     {
         return _size == size && _lastModifiedUtc == modified.toUTC()
             && _parent->hash() == hash;
@@ -218,7 +227,8 @@ namespace PMP {
     }
 
     void Resolver::HashKnowledge::addPath(const QString& filename,
-                                          qint64 fileSize, QDateTime fileLastModified)
+                                          qint64 fileSize, QDateTime fileLastModified,
+                                          uint indexationNumber)
     {
         QFileInfo info(filename);
         if (!info.isAbsolute()) {
@@ -231,7 +241,7 @@ namespace PMP {
         if (file) {
             if (file->_parent == this) {
                 /* make sure file specifics are up-to-date and that is all */
-                file->update(fileSize, fileLastModified);
+                file->update(fileSize, fileLastModified, indexationNumber);
                 return;
             }
 
@@ -241,7 +251,8 @@ namespace PMP {
             //file = nullptr;
         }
 
-        file = new VerifiedFile(this, filename, fileSize, fileLastModified);
+        file = new VerifiedFile(this, filename, fileSize, fileLastModified,
+                                indexationNumber);
         _files.append(file);
         _parent->_paths[filename] = file;
 
@@ -312,7 +323,8 @@ namespace PMP {
     Resolver::Resolver()
      : _lock(QMutex::Recursive),
        //_randomEngine(Util::getRandomSeed()),
-       _fullIndexationRunning(false), _fullIndexationWatcher(this)
+       _fullIndexationNumber(1), _fullIndexationRunning(false),
+       _fullIndexationWatcher(this)
     {
         connect(
             &_fullIndexationWatcher, &QFutureWatcher<void>::finished,
@@ -377,6 +389,7 @@ namespace PMP {
 
     void Resolver::doFullIndexation() {
         qDebug() << "full indexation started";
+        _fullIndexationNumber += 2; /* add 2 so it will never become zero */
 
         QList<QString> musicPaths = this->musicPaths();
 
@@ -399,11 +412,19 @@ namespace PMP {
 
         /* analyze the files we found */
         Q_FOREACH(QString filePath, filesToAnalyze) {
-            FileHash hash = analyzeAndRegisterFile(filePath);
+            FileHash hash =
+                    analyzeAndRegisterFileInternal(filePath, _fullIndexationNumber);
 
             if (hash.empty()) {
                 qDebug() << "file analysis FAILED:" << filePath;
             }
+        }
+
+        qDebug() << "full indexation: going to check for files that are now gone";
+
+        auto pathsToCheck = getPathsThatDontMatchCurrentFullIndexationNumber();
+        for (const auto& path : pathsToCheck) {
+            checkFileStillExistsAndIsValid(path);
         }
 
         qDebug() << "full indexation finished.";
@@ -439,7 +460,27 @@ namespace PMP {
         return knowledge;
     }
 
+    QVector<QString> Resolver::getPathsThatDontMatchCurrentFullIndexationNumber() {
+        QMutexLocker lock(&_lock);
+
+        QVector<QString> result;
+
+        for (const auto file : _paths) {
+            if (!file->hasIndexationNumber(_fullIndexationNumber)) {
+                result << file->_path;
+            }
+        }
+
+        return result;
+    }
+
     FileHash Resolver::analyzeAndRegisterFile(const QString& filename) {
+        return analyzeAndRegisterFileInternal(filename, 0);
+    }
+
+    FileHash Resolver::analyzeAndRegisterFileInternal(const QString& filename,
+                                                      uint fullIndexationNumber)
+    {
         QFileInfo info(filename);
 
         FileAnalyzer analyzer(info);
@@ -493,7 +534,7 @@ namespace PMP {
             return FileHash(); /* return invalid hash */
         }
 
-        knowledge->addPath(filename, fileSize, fileLastModified);
+        knowledge->addPath(filename, fileSize, fileLastModified, fullIndexationNumber);
 
         return knowledge->hash();
     }
@@ -515,6 +556,16 @@ namespace PMP {
         if (knowledge->hash() != hash) return false;
 
         return knowledge->isStillValid(file);
+    }
+
+    void Resolver::checkFileStillExistsAndIsValid(QString path) {
+        QMutexLocker lock(&_lock);
+
+        VerifiedFile* file = _paths.value(path, nullptr);
+        if (!file) return;
+
+        auto knowledge = file->_parent;
+        (void)knowledge->isStillValid(file);
     }
 
     QString Resolver::findPath(const FileHash& hash, bool fast) {
@@ -578,7 +629,8 @@ namespace PMP {
                         continue; /* this one will have a different hash */
                     }
 
-                    FileHash candidateHash = analyzeAndRegisterFile(candidatePath);
+                    FileHash candidateHash =
+                            analyzeAndRegisterFileInternal(candidatePath, 0);
                     if (candidateHash.empty()) continue; /* failed to analyze */
 
                     if (candidateHash == hash) {
