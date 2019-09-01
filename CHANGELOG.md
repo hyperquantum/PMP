@@ -6,10 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- Server now sends a notification to the client when it detects that a track has (dis)appeared.
 
 ### Changed
+- Full indexation will now notice when tracks have disappeared from their previously known location.
 
 ### Fixed
+- Tracks were sometimes wrongly marked as unavailable in the client.
+- Server crashed when trying to play a track marked as unavailable while being in 'stopped' mode.
 
 ## 0.0.6 - 2018-12-26
 ### Added
