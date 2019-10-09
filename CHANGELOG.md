@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Full indexation will now notice when tracks have disappeared from their previously known location.
+- PMP now requires at least Qt version 5.8.
 
 ### Fixed
 - Tracks were sometimes wrongly marked as unavailable in the client.
