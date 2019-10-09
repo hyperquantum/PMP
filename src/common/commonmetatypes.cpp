@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,8 @@
 #include "filehash.h"
 #include "playerhistorytrackinfo.h"
 #include "serverhealthstatus.h"
+#include "scrobblerstatus.h"
+#include "scrobblingprovider.h"
 
 namespace PMP {
 
@@ -33,6 +35,8 @@ namespace PMP {
             qRegisterMetaType<PMP::FileHash>();
             qRegisterMetaType<PMP::PlayerHistoryTrackInfo>();
             qRegisterMetaType<PMP::ServerHealthStatus>();
+            qRegisterMetaType<PMP::ScrobblerStatus>();
+            qRegisterMetaType<PMP::ScrobblingProvider>();
         }
 
     private:

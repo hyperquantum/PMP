@@ -25,6 +25,8 @@ set(PMP_COMMON_SOURCES
     common/logging.cpp
     common/networkprotocol.cpp
     common/networkutil.cpp
+    common/scrobblerstatus.cpp
+    common/scrobblingprovider.cpp
     common/serverconnection.cpp
     common/serverdiscoverer.cpp
     common/tagdata.cpp
