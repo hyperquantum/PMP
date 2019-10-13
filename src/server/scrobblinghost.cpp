@@ -166,8 +166,12 @@ namespace PMP {
     QString ScrobblingHost::decodeToken(QString token) const {
         if (token.isEmpty()) return QString();
 
-        // TODO
+        if (!token.startsWith('?'))
+            return token; /* token in plain text */
 
-        return token;
+        // TODO : decode token
+        qWarning() << "decoding of encoded token not implemented yet";
+
+        return QString();
     }
 }
