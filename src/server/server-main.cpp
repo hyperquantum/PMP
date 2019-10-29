@@ -223,7 +223,7 @@ int main(int argc, char *argv[]) {
     bool listening =
         server.listen(
             &player, &generator, &users, &collectionMonitor, &serverHealthMonitor,
-            QHostAddress::Any, 23432
+            &scrobbling, QHostAddress::Any, 23432
         );
 
     if (!listening) {

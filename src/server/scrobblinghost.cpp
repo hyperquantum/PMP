@@ -29,26 +29,36 @@
 
 namespace PMP {
 
+    ScrobblingHost::ScrobblerData::ScrobblerData()
+     : enabled(false), status(ScrobblerStatus::Unknown), scrobbler(nullptr)
+    {
+        //
+    }
+
+    /* ============================================================================ */
+
     ScrobblingHost::ScrobblingHost(Resolver* resolver)
-     : _resolver(resolver), _enabled(false)
+     : _resolver(resolver), _hostEnabled(false)
     {
         //
     }
 
     void ScrobblingHost::enableScrobbling() {
-        if (_enabled)
+        if (_hostEnabled)
             return; /* already enabled */
 
         qDebug() << "ScrobblingHost now enabled";
-        _enabled = true;
+        _hostEnabled = true;
         load();
     }
 
     void ScrobblingHost::load() {
-        if (!_enabled)
+        if (!_hostEnabled) {
+            qWarning() << "host not enabled, not going to load anything";
             return;
+        }
 
-        qDebug() << "loading scrobbling settings for all users";
+        qDebug() << "(re)loading scrobbling settings for all users";
 
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) {
@@ -59,46 +69,77 @@ namespace PMP {
         auto userData = db->getUsersScrobblingData();
 
         for(auto& data : userData) {
-            if (!data.enableLastFmScrobbling) continue;
-
-            auto scrobbler = _scrobblers.value(data.userId, nullptr);
-
-            if (!data.enableLastFmScrobbling) {
-                // TODO : turn off
-                //if (scrobbler) { }
-            }
-            else if (!scrobbler) {
-                createLastFmScrobbler(data.userId, data);
-            }
+            loadScrobblers(data);
         }
     }
 
     void ScrobblingHost::wakeUpForUser(uint userId) {
-        auto scrobbler = _scrobblers.value(userId, nullptr);
-
-        /* wake up with a delay, to give the database enough time to store the track that
-           has just finished playing */
-        if (scrobbler)
-            QTimer::singleShot(100, scrobbler, &Scrobbler::wakeUp);
-    }
-
-    void ScrobblingHost::setLastFmEnabledForUser(uint userId, bool enabled) {
-        auto db = Database::getDatabaseForCurrentThread();
-        if (!db) { return; }
-
-        db->setLastFmScrobblingEnabled(userId, enabled);
-
-        auto scrobbler = _scrobblers.value(userId, nullptr);
-
-        if (!enabled) {
-            // TODO
-
+        if (!_hostEnabled) {
+            qWarning() << "host not enabled, not going to wake up";
             return;
         }
 
-        if (!scrobbler) {
-            auto lastFmData = db->getUserLastFmScrobblingData(userId);
-            createLastFmScrobbler(userId, lastFmData);
+        auto action =
+            [this, userId](ScrobblingProvider provider) {
+                auto scrobbler = _scrobblersData[userId][provider].scrobbler;
+
+                /* wake up with a delay, to give the database enough time to store the
+                   track that has just finished playing */
+                if (scrobbler)
+                    QTimer::singleShot(100, scrobbler, &Scrobbler::wakeUp);
+            };
+
+        doForAllProviders(action);
+    }
+
+    void ScrobblingHost::setProviderEnabledForUser(uint userId,
+                                                   ScrobblingProvider provider,
+                                                   bool enabled)
+    {
+        if (!_hostEnabled) {
+            qWarning() << "host not enabled, not touching the provider";
+            return;
+        }
+
+        auto db = Database::getDatabaseForCurrentThread();
+        if (!db) { return; }
+
+        switch (provider) {
+            case ScrobblingProvider::LastFm:
+                db->setLastFmScrobblingEnabled(userId, enabled);
+                break;
+            case ScrobblingProvider::Unknown:
+            //default:
+                return;
+        }
+
+        auto& data = _scrobblersData[userId][provider];
+        auto enabledChanged = data.enabled != enabled;
+        data.enabled = enabled;
+
+        enableDisableScrobbler(userId, provider, enabled);
+
+        if (enabledChanged)
+            emit scrobblingProviderEnabledChanged(userId, provider, enabled);
+    }
+
+    void ScrobblingHost::retrieveScrobblingProviderInfo(uint userId) {
+        if (!_hostEnabled) {
+            qWarning() << "host not enabled, not sending provider info";
+            return;
+        }
+
+        qDebug() << "going to emit scrobblingProviderInfoSignal signal(s)";
+
+        /* Last.FM info; no other providers available yet */
+        auto provider = ScrobblingProvider::LastFm;
+        auto& data = _scrobblersData[userId][ScrobblingProvider::LastFm];
+        if (data.enabled) {
+            emit scrobblingProviderInfoSignal(userId, provider, true, data.status);
+        }
+        else {
+            emit scrobblingProviderInfoSignal(userId, provider, false,
+                                              ScrobblerStatus::Unknown);
         }
     }
 
@@ -113,14 +154,87 @@ namespace PMP {
                                             QString title, QString artist, QString album,
                                             int trackDurationSeconds)
     {
-        auto scrobbler = _scrobblers.value(userId, nullptr);
-        if (!scrobbler) return;
+        if (!_hostEnabled)
+            return;
 
-        scrobbler->nowPlayingTrack(startTime, title, artist, album, trackDurationSeconds);
+        auto action =
+            [=](ScrobblingProvider provider) {
+                auto scrobbler = _scrobblersData[userId][provider].scrobbler;
+                if (!scrobbler) return;
+
+                scrobbler->nowPlayingTrack(startTime, title, artist, album,
+                                           trackDurationSeconds);
+            };
+
+        doForAllProviders(action);
     }
 
-    void ScrobblingHost::createLastFmScrobbler(uint userId,
-                                               LastFmScrobblingDataRecord const& data)
+    void ScrobblingHost::loadScrobblers(UserScrobblingDataRecord const& record) {
+        /* for all providers (currently only Last.FM) ... */
+        loadScrobbler(record, ScrobblingProvider::LastFm, record.enableLastFmScrobbling);
+    }
+
+    void ScrobblingHost::loadScrobbler(UserScrobblingDataRecord const& record,
+                                       ScrobblingProvider provider, bool enabled)
+    {
+        auto& data = _scrobblersData[record.userId][provider];
+        data.enabled = enabled;
+
+        enableDisableScrobbler(record.userId, provider, data.enabled);
+    }
+
+    void ScrobblingHost::enableDisableScrobbler(uint userId, ScrobblingProvider provider,
+                                                bool enabled)
+    {
+        if (enabled) {
+            createScrobblerIfNotExists(userId, provider);
+        }
+        else {
+            destroyScrobblerIfExists(userId, provider);
+        }
+    }
+
+    void ScrobblingHost::createScrobblerIfNotExists(uint userId,
+                                                    ScrobblingProvider provider)
+    {
+        auto& data = _scrobblersData[userId][provider];
+        if (data.scrobbler) return; /* already exists */
+
+        auto db = Database::getDatabaseForCurrentThread();
+        if (!db) { return; }
+
+        switch (provider) {
+            case ScrobblingProvider::LastFm:
+            {
+                auto lastFmData = db->getUserLastFmScrobblingData(userId);
+                data.status = ScrobblerStatus::Unknown;
+                data.scrobbler = createLastFmScrobbler(userId, lastFmData);
+            }
+                break;
+
+            case ScrobblingProvider::Unknown:
+                qWarning() << "Cannot create 'Unknown' scrobbling provider";
+                break;
+        }
+
+        if (data.scrobbler)
+            data.scrobbler->wakeUp();
+    }
+
+    void ScrobblingHost::destroyScrobblerIfExists(uint userId,
+                                                  ScrobblingProvider provider)
+    {
+        auto& data = _scrobblersData[userId][provider];
+        auto scrobbler = data.scrobbler;
+        if (!scrobbler) return; /* does not exist */
+
+        data.scrobbler = nullptr;
+        data.status = ScrobblerStatus::Unknown;
+        scrobbler->deleteLater();
+    }
+
+    Scrobbler* ScrobblingHost::createLastFmScrobbler(uint userId,
+                                                   LastFmScrobblingDataRecord const& data)
     {
         qDebug() << "creating Last.FM scrobbler for user with ID" << userId;
 
@@ -128,17 +242,25 @@ namespace PMP {
         auto lastFmBackend = new LastFmScrobblingBackend();
 
         connect(
-            lastFmBackend, &LastFmScrobblingBackend::needUserCredentials,
+            lastFmBackend, &LastFmScrobblingBackend::stateChanged,
             this,
-            [userId, this](QString suggestedUserName) {
-                emit this->needLastFmCredentials(userId, suggestedUserName);
+            [userId, this](ScrobblingBackendState newState) {
+                auto& data = _scrobblersData[userId][ScrobblingProvider::LastFm];
+                auto oldStatus = data.status;
+                auto newStatus = convertToScrobblerStatus(newState);
+                data.status = newStatus;
+
+                if (newStatus != oldStatus)
+                    emit scrobblerStatusChanged(userId, ScrobblingProvider::LastFm,
+                                                newStatus);
             }
         );
         connect(
             lastFmBackend, &LastFmScrobblingBackend::gotAuthenticationResult,
             this,
             [userId, this](bool success, ClientRequestOrigin origin) {
-                emit this->gotLastFmAuthenticationResult(userId, origin, success);
+                emit this->gotAuthenticationResult(userId, ScrobblingProvider::LastFm,
+                                                   origin, success);
             }
         );
         connect(
@@ -159,8 +281,7 @@ namespace PMP {
         }
 
         auto scrobbler = new Scrobbler(this, dataProvider, lastFmBackend);
-        _scrobblers.insert(userId, scrobbler);
-        //scrobbler->wakeUp();
+        return scrobbler;
     }
 
     QString ScrobblingHost::decodeToken(QString token) const {
@@ -174,4 +295,30 @@ namespace PMP {
 
         return QString();
     }
+
+    ScrobblerStatus ScrobblingHost::convertToScrobblerStatus(ScrobblingBackendState state)
+    {
+        switch(state) {
+            case ScrobblingBackendState::NotInitialized:
+                return ScrobblerStatus::Unknown;
+
+            case ScrobblingBackendState::ReadyForScrobbling:
+                return ScrobblerStatus::Green;
+
+            case ScrobblingBackendState::PermanentFatalError:
+                return ScrobblerStatus::Red;
+
+            case ScrobblingBackendState::WaitingForUserCredentials:
+                return ScrobblerStatus::WaitingForUserCredentials;
+        }
+
+        return ScrobblerStatus::Unknown;
+    }
+
+    void ScrobblingHost::doForAllProviders(
+                                          std::function<void (ScrobblingProvider)> action)
+    {
+        action(ScrobblingProvider::LastFm);
+    }
+
 }

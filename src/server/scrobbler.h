@@ -54,9 +54,9 @@ namespace PMP {
         void timeoutTimerTimedOut();
         void backoffTimerTimedOut();
         void gotNowPlayingResult(bool success);
-        void gotScrobbleResult(ScrobbleResult result);
-        void backendStateChanged(ScrobblingBackendState newState,
-                                                         ScrobblingBackendState oldState);
+        void gotScrobbleResult(PMP::ScrobbleResult result);
+        void backendStateChanged(PMP::ScrobblingBackendState newState,
+                                 PMP::ScrobblingBackendState oldState);
         void serviceTemporarilyUnavailable();
 
     private:

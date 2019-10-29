@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,7 @@
 
 #include "filehash.h"
 #include "networkutil.h"
+#include "scrobblingprovider.h"
 
 #include <limits>
 
@@ -52,6 +53,57 @@ namespace PMP {
         return active
                 ? StartStopEventStatus::StatusActiveAlready
                 : StartStopEventStatus::StatusNotActive;
+    }
+
+    quint8 NetworkProtocol::encode(ScrobblingProvider provider) {
+        switch (provider) {
+            case ScrobblingProvider::Unknown:
+                return 0;
+            case ScrobblingProvider::LastFm:
+                return 1;
+        }
+
+        return 0;
+    }
+
+    ScrobblingProvider NetworkProtocol::decodeScrobblingProvider(quint8 provider)
+    {
+        switch (provider) {
+            case 1:
+                return ScrobblingProvider::LastFm;
+            case 0:
+            default:
+                return ScrobblingProvider::Unknown;
+        }
+    }
+
+    quint8 NetworkProtocol::encode(ScrobblerStatus status) {
+        switch (status) {
+            case ScrobblerStatus::Unknown:
+                return 0;
+            case ScrobblerStatus::Green:
+                return 1;
+            case ScrobblerStatus::Red:
+                return 2;
+            case ScrobblerStatus::WaitingForUserCredentials:
+                return 3;
+        }
+
+        return 0;
+    }
+
+    ScrobblerStatus NetworkProtocol::decodeScrobblerStatus(quint8 status) {
+        switch (status) {
+            case 1:
+                return ScrobblerStatus::Green;
+            case 2:
+                return ScrobblerStatus::Red;
+            case 3:
+                return ScrobblerStatus::WaitingForUserCredentials;
+            case 0:
+            default:
+                return ScrobblerStatus::Unknown;
+        }
     }
 
     int NetworkProtocol::ratePassword(QString password) {

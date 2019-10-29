@@ -22,16 +22,24 @@
 
 #include "clientrequestorigin.h"
 
+#include "common/scrobblerstatus.h"
+#include "common/scrobblingprovider.h"
+
 #include <QDateTime>
 #include <QObject>
 #include <QHash>
 #include <QString>
+
+#include <functional>
 
 namespace PMP {
 
     class LastFmScrobblingDataRecord;
     class Resolver;
     class Scrobbler;
+    enum class ScrobblingBackendState;
+    enum class ScrobblingProvider;
+    class UserScrobblingDataRecord;
 
     class ScrobblingHost : public QObject {
         Q_OBJECT
@@ -42,7 +50,9 @@ namespace PMP {
         void enableScrobbling();
         void load();
         void wakeUpForUser(uint userId);
-        void setLastFmEnabledForUser(uint userId, bool enabled);
+        void setProviderEnabledForUser(uint userId, PMP::ScrobblingProvider provider,
+                                       bool enabled);
+        void retrieveScrobblingProviderInfo(uint userId);
 
         //void setNowPlayingNothing(uint userId);
         void setNowPlayingTrack(uint userId, QDateTime startTime,
@@ -50,18 +60,47 @@ namespace PMP {
                                 int trackDurationSeconds = -1);
 
     Q_SIGNALS:
-        void needLastFmCredentials(uint userId, QString suggestedUsername);
-        void gotLastFmAuthenticationResult(uint userId, ClientRequestOrigin origin,
-                                           bool success);
-        void errorOccurredDuringAuthentication(uint userId, ClientRequestOrigin origin);
+        void scrobblingProviderInfoSignal(uint userId, PMP::ScrobblingProvider provider,
+                                          bool enabled, PMP::ScrobblerStatus status);
+        void scrobblerStatusChanged(uint userId, PMP::ScrobblingProvider provider,
+                                    PMP::ScrobblerStatus status);
+        void scrobblingProviderEnabledChanged(uint userId,
+                                              PMP::ScrobblingProvider provider,
+                                              bool enabled);
+        void gotAuthenticationResult(uint userId, PMP::ScrobblingProvider provider,
+                                     PMP::ClientRequestOrigin origin, bool success);
+        void errorOccurredDuringAuthentication(uint userId,
+                                               PMP::ClientRequestOrigin origin);
 
     private:
-        void createLastFmScrobbler(uint userId, LastFmScrobblingDataRecord const& data);
+        struct ScrobblerData {
+            ScrobblerData();
+
+            bool enabled;
+            ScrobblerStatus status;
+            Scrobbler* scrobbler;
+        };
+
+        static ScrobblerStatus convertToScrobblerStatus(ScrobblingBackendState state);
+
+        void doForAllProviders(std::function<void (ScrobblingProvider)> action);
+
+        void loadScrobblers(UserScrobblingDataRecord const& record);
+        void loadScrobbler(UserScrobblingDataRecord const& record,
+                           ScrobblingProvider provider, bool enabled);
+        void enableDisableScrobbler(uint userId, ScrobblingProvider provider,
+                                    bool enabled);
+        void createScrobblerIfNotExists(uint userId, ScrobblingProvider provider);
+        void destroyScrobblerIfExists(uint userId, ScrobblingProvider provider);
+        Scrobbler* createLastFmScrobbler(uint userId,
+                                         LastFmScrobblingDataRecord const& data);
         QString decodeToken(QString token) const;
 
         Resolver* _resolver;
-        QHash<uint, Scrobbler*> _scrobblers;
-        bool _enabled;
+        //QHash<uint, Scrobbler*> _lastFmScrobblers;
+        //QHash<uint, ScrobblerStatus> _lastFmScrobblerStatuses;
+        QHash<uint, QHash<ScrobblingProvider, ScrobblerData>> _scrobblersData;
+        bool _hostEnabled;
     };
 
 }

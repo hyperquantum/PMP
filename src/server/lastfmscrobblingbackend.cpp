@@ -642,7 +642,6 @@ namespace PMP {
 
         if (state() != ScrobblingBackendState::WaitingForUserCredentials) {
             setState(ScrobblingBackendState::WaitingForUserCredentials);
-            emit needUserCredentials(_username);
             return;
         }
     }

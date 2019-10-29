@@ -23,6 +23,8 @@
 #include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
+#include "common/scrobblerstatus.h"
+#include "common/scrobblingprovider.h"
 
 #include "clientrequestorigin.h"
 #include "playerstate.h"
@@ -43,6 +45,7 @@ namespace PMP {
     class Player;
     class QueueEntry;
     class Resolver;
+    class Scrobbling;
     class Server;
     class ServerHealthMonitor;
     class Users;
@@ -54,7 +57,7 @@ namespace PMP {
                         Server* server, Player* player,
                         Generator* generator, Users* users,
                         CollectionMonitor* collectionMonitor,
-                        ServerHealthMonitor* serverHealthMonitor);
+                        ServerHealthMonitor* serverHealthMonitor, Scrobbling* scrobbling);
 
         ~ConnectedClient();
 
@@ -103,11 +106,19 @@ namespace PMP {
                                              QVector<PMP::UserDataForHash> results,
                                              bool havePreviouslyHeard, bool haveScore);
 
+        void onScrobblingProviderInfo(ScrobblingProvider provider, ScrobblerStatus status,
+                                      bool enabled);
+        void onScrobblerStatusChanged(ScrobblingProvider provider,
+                                      ScrobblerStatus status);
+        void onScrobblingProviderEnabledChanged(ScrobblingProvider provider,
+                                                bool enabled);
+
     private:
         void enableEvents();
         void enableHealthEvents();
 
         bool isLoggedIn() const;
+        void connectSlotsAfterSuccessfulUserLogin();
 
         void readTextCommands();
         void readBinaryCommands();
@@ -160,6 +171,16 @@ namespace PMP {
         void sendServerNameMessage(quint8 type, QString name);
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
+        void fetchScrobblingProviderInfoForCurrentUser();
+        void sendScrobblingProviderInfoMessage(quint32 userId,
+                                               ScrobblingProvider provider,
+                                               ScrobblerStatus status, bool enabled);
+        void sendScrobblerStatusChangedMessage(quint32 userId,
+                                               ScrobblingProvider provider,
+                                               ScrobblerStatus newStatus);
+        void sendScrobblingProviderEnabledChangeMessage(quint32 userId,
+                                                        ScrobblingProvider provider,
+                                                        bool enabled);
 
         void handleBinaryMessage(QByteArray const& message);
         void handleSingleByteAction(quint8 action);
@@ -171,6 +192,7 @@ namespace PMP {
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
+        void parseUserScrobblingEnableDisableRequest(QByteArray const& message);
 
         void schedulePlayerStateNotification();
 
@@ -184,6 +206,7 @@ namespace PMP {
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;
+        Scrobbling* _scrobbling;
         QByteArray _textReadBuffer;
         int _clientProtocolNo;
         quint32 _lastSentNowPlayingID;

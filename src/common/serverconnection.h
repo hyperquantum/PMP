@@ -23,6 +23,7 @@
 #include "collectiontrackinfo.h"
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
+#include "scrobblingprovider.h"
 #include "serverhealthstatus.h"
 #include "simpleplayercontroller.h"
 #include "tribool.h"
@@ -179,6 +180,10 @@ namespace PMP {
         void switchToPersonalMode();
         void requestUserPlayingForMode();
 
+        void requestScrobblingProviderInfoForCurrentUser();
+        void enableScrobblingForCurrentUser(ScrobblingProvider provider);
+        void disableScrobblingForCurrentUser(ScrobblingProvider provider);
+
         void startFullIndexation();
         void requestFullIndexationRunningStatus();
 
@@ -242,6 +247,11 @@ namespace PMP {
                                                  QVector<PMP::FileHash> unavailable);
         void collectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
 
+        void scrobblingProviderInfoReceived(ScrobblingProvider provider,
+                                            ScrobblerStatus status, bool enabled);
+        void scrobblerStatusChanged(ScrobblingProvider provider, ScrobblerStatus status);
+        void scrobblingProviderEnabledChanged(ScrobblingProvider provider, bool enabled);
+
     private slots:
         void onConnected();
         void onReadyRead();
@@ -278,6 +288,9 @@ namespace PMP {
         void handleUserLoginResult(quint16 errorType, quint32 intData,
                                    QByteArray const& blobData);
 
+        void sendUserScrobblingEnableDisableRequest(ScrobblingProvider provider,
+                                                    bool enable);
+
         void onFullIndexationRunningStatusReceived(bool running);
 
         void parseTrackAvailabilityChangeBatchMessage(QByteArray const& message);
@@ -295,6 +308,10 @@ namespace PMP {
         void parseQueueEntryAdditionConfirmationMessage(QByteArray const& message);
 
         void parseServerHealthMessage(QByteArray const& message);
+
+        void parseScrobblingProviderInfoMessage(QByteArray const& message);
+        void parseScrobblerStatusChangeMessage(QByteArray const& message);
+        void parseScrobblingProviderEnabledChangeMessage(QByteArray const& message);
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 

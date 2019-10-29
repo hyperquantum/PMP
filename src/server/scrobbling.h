@@ -20,6 +20,9 @@
 #ifndef PMP_SCROBBLING_H
 #define PMP_SCROBBLING_H
 
+#include "common/scrobblerstatus.h"
+#include "common/scrobblingprovider.h"
+
 #include <QDateTime>
 #include <QHash>
 #include <QObject>
@@ -58,11 +61,22 @@ namespace PMP {
 
     public slots:
         void wakeUp();
-        void enableLastFm();
+        void setScrobblingProviderEnabled(PMP::ScrobblingProvider provider, bool enabled);
+        void requestScrobblingProviderInfo();
 
     Q_SIGNALS:
         void wakeUpRequested(uint userId);
-        void lastFmEnabledChanged(uint userId, bool enabled);
+        void providerEnableOrDisableRequested(uint userId,
+                                              PMP::ScrobblingProvider provider,
+                                              bool enabled);
+        void scrobblingProviderInfoRequested(uint userId);
+
+        void scrobblingProviderInfo(PMP::ScrobblingProvider provider,
+                                    PMP::ScrobblerStatus status, bool enabled);
+        void scrobblerStatusChanged(PMP::ScrobblingProvider provider,
+                                    PMP::ScrobblerStatus status);
+        void scrobblingProviderEnabledChanged(PMP::ScrobblingProvider provider,
+                                              bool enabled);
 
     private:
         uint _userId;
@@ -76,8 +90,6 @@ namespace PMP {
 
         ScrobblingController* getController();
         UserScrobblingController* getControllerForUser(uint userId);
-
-    Q_SIGNALS:
 
     private:
         Resolver* _resolver;

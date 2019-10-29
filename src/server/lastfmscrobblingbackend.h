@@ -144,7 +144,6 @@ namespace PMP {
                                          ClientRequestOrigin origin);
 
     Q_SIGNALS:
-        void needUserCredentials(QString suggestedUsername);
         void gotAuthenticationResult(bool success, ClientRequestOrigin origin);
         void errorOccurredDuringAuthentication(ClientRequestOrigin origin);
 

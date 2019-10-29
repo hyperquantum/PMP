@@ -60,9 +60,23 @@ namespace PMP {
         emit wakeUpRequested(_userId);
     }
 
-    void UserScrobblingController::enableLastFm() {
-        qDebug() << "UserScrobblingController::enableLastFm called for user" << _userId;
-        emit lastFmEnabledChanged(_userId, true);
+    void UserScrobblingController::setScrobblingProviderEnabled(
+                                                              ScrobblingProvider provider,
+                                                              bool enabled)
+    {
+        qDebug()
+            << "UserScrobblingController::setScrobblingProviderEnabled called for user"
+            << _userId << "and provider" << provider << "with enabled=" << enabled;
+
+        emit providerEnableOrDisableRequested(_userId, provider, enabled);
+    }
+
+    void UserScrobblingController::requestScrobblingProviderInfo() {
+        qDebug()
+            << "UserScrobblingController::requestScrobblingProviderInfo called for user"
+            << _userId;
+
+        emit scrobblingProviderInfoRequested(_userId);
     }
 
     /* ============================================================================ */
@@ -111,13 +125,54 @@ namespace PMP {
         controller->setParent(this);
 
         connect(
-            controller, &UserScrobblingController::lastFmEnabledChanged,
-            _host, &ScrobblingHost::setLastFmEnabledForUser
+            controller, &UserScrobblingController::providerEnableOrDisableRequested,
+            _host, &ScrobblingHost::setProviderEnabledForUser
         );
 
         connect(
             controller, &UserScrobblingController::wakeUpRequested,
             _host, &ScrobblingHost::wakeUpForUser
+        );
+
+        connect(
+            controller, &UserScrobblingController::scrobblingProviderInfoRequested,
+            _host, &ScrobblingHost::retrieveScrobblingProviderInfo
+        );
+
+        connect(
+            _host, &ScrobblingHost::scrobblingProviderInfoSignal,
+            controller,
+            [controller, userId](uint eventUserId, ScrobblingProvider provider,
+                                 bool enabled, ScrobblerStatus status)
+            {
+                if (eventUserId != userId) return; /* user does not match */
+
+                emit controller->scrobblingProviderInfo(provider, status, enabled);
+            }
+        );
+
+        connect(
+            _host, &ScrobblingHost::scrobblerStatusChanged,
+            controller,
+            [controller, userId](uint eventUserId, ScrobblingProvider provider,
+                                 ScrobblerStatus status)
+            {
+                if (eventUserId != userId) return; /* user does not match */
+
+                emit controller->scrobblerStatusChanged(provider, status);
+            }
+        );
+
+        connect(
+            _host, &ScrobblingHost::scrobblingProviderEnabledChanged,
+            controller,
+            [controller, userId](uint eventUserId, ScrobblingProvider provider,
+                                 bool enabled)
+            {
+                if (eventUserId != userId) return; /* user does not match */
+
+                emit controller->scrobblingProviderEnabledChanged(provider, enabled);
+            }
         );
 
         _userControllers.insert(userId, controller);

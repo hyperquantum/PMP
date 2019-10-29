@@ -33,6 +33,7 @@ namespace PMP {
     class CollectionMonitor;
     class Generator;
     class Player;
+    class Scrobbling;
     class ServerHealthMonitor;
     class Users;
 
@@ -44,6 +45,7 @@ namespace PMP {
         bool listen(Player* player, Generator* generator, Users* users,
                     CollectionMonitor* collectionMonitor,
                     ServerHealthMonitor* serverHealthMonitor,
+                    Scrobbling* scrobbling,
                     const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
 
         QString errorString() const;
@@ -78,6 +80,7 @@ namespace PMP {
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;
+        Scrobbling* _scrobbling;
         QTcpServer* _server;
         QUdpSocket* _udpSocket;
         QTimer* _broadcastTimer;

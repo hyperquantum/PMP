@@ -72,14 +72,14 @@ namespace PMP {
         virtual void initialize() = 0;
 
     Q_SIGNALS:
-        void stateChanged(ScrobblingBackendState newState,
-                                                         ScrobblingBackendState oldState);
+        void stateChanged(PMP::ScrobblingBackendState newState,
+                          PMP::ScrobblingBackendState oldState);
         void gotNowPlayingResult(bool success);
-        void gotScrobbleResult(ScrobbleResult result);
+        void gotScrobbleResult(PMP::ScrobbleResult result);
         void serviceTemporarilyUnavailable();
 
     protected slots:
-        void setState(ScrobblingBackendState newState);
+        void setState(PMP::ScrobblingBackendState newState);
         void setDelayInMillisecondsBetweenSubsequentScrobbles(int timeMilliseconds);
         void setInitialBackoffMillisecondsForUnavailability(int timeMilliseconds);
         void setInitialBackoffMillisecondsForErrorReply(int timeMilliseconds);

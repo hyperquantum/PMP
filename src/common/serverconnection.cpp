@@ -239,7 +239,7 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    const qint16 ServerConnection::ClientProtocolNo = 11;
+    const qint16 ServerConnection::ClientProtocolNo = 12;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -727,6 +727,22 @@ namespace PMP {
         sendSingleByteAction(14);
     }
 
+    void ServerConnection::requestScrobblingProviderInfoForCurrentUser() {
+        sendSingleByteAction(18);
+    }
+
+    void ServerConnection::enableScrobblingForCurrentUser(ScrobblingProvider provider) {
+        if (!isLoggedIn()) return;
+
+        sendUserScrobblingEnableDisableRequest(provider, true);
+    }
+
+    void ServerConnection::disableScrobblingForCurrentUser(ScrobblingProvider provider) {
+        if (!isLoggedIn()) return;
+
+        sendUserScrobblingEnableDisableRequest(provider, false);
+    }
+
     void ServerConnection::handleNewUserSalt(QString login, QByteArray salt) {
         if (login != _userAccountRegistrationLogin) return;
 
@@ -823,6 +839,20 @@ namespace PMP {
 
             emit userLoginError(login, error);
         }
+    }
+
+    void ServerConnection::sendUserScrobblingEnableDisableRequest(
+                                                              ScrobblingProvider provider,
+                                                              bool enable)
+    {
+        QByteArray message;
+        message.reserve(2 + 2);
+        NetworkUtil::append2Bytes(message,
+                              NetworkProtocol::UserScrobblingEnableDisableRequestMessage);
+        NetworkUtil::appendByte(message, NetworkProtocol::encode(provider));
+        NetworkUtil::appendByte(message, enable ? 1 : 0);
+
+        sendBinaryMessage(message);
     }
 
     void ServerConnection::onFullIndexationRunningStatusReceived(bool running) {
@@ -1608,6 +1638,15 @@ namespace PMP {
         case NetworkProtocol::CollectionAvailabilityChangeNotificationMessage:
             parseTrackAvailabilityChangeBatchMessage(message);
             break;
+        case NetworkProtocol::ScrobblerStatusChangeMessage:
+            parseScrobblerStatusChangeMessage(message);
+            break;
+        case NetworkProtocol::ScrobblingProviderEnabledChangeMessage:
+            parseScrobblingProviderEnabledChangeMessage(message);
+            break;
+        case NetworkProtocol::ScrobblingProviderInfoMessage:
+            parseScrobblingProviderInfoMessage(message);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
@@ -2056,6 +2095,72 @@ namespace PMP {
 
             emit serverHealthChanged(newServerHealthStatus);
         }
+    }
+
+    void ServerConnection::parseScrobblingProviderInfoMessage(QByteArray const& message) {
+        if (message.length() != 12) {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        auto provider =
+            NetworkProtocol::decodeScrobblingProvider(NetworkUtil::getByte(message, 4));
+        auto status =
+            NetworkProtocol::decodeScrobblerStatus(NetworkUtil::getByte(message, 5));
+        auto enabled = NetworkUtil::getByte(message, 6) != 0;
+        auto userId = NetworkUtil::get4Bytes(message, 8);
+
+        qDebug() << "received scrobbling provider info: provider" << provider
+                 << "- status" << status << "-" << (enabled ? "enabled" : "disabled")
+                 << "- user" << userId;
+
+        if (userId != _userLoggedInId)
+            return; /* not supposed to happen, and we're probably also not interested */
+
+        emit scrobblingProviderInfoReceived(provider, status, enabled);
+    }
+
+    void ServerConnection::parseScrobblerStatusChangeMessage(QByteArray const& message) {
+        if (message.length() != 8) {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        auto provider =
+            NetworkProtocol::decodeScrobblingProvider(NetworkUtil::getByte(message, 2));
+        auto status =
+            NetworkProtocol::decodeScrobblerStatus(NetworkUtil::getByte(message, 3));
+        auto userId = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "scrobbler status is now" << status << "for" << provider << "and user"
+                 << userId;
+
+        if (userId != _userLoggedInId)
+            return; /* not supposed to happen, and we're probably also not interested */
+
+        emit scrobblerStatusChanged(provider, status);
+    }
+
+    void ServerConnection::parseScrobblingProviderEnabledChangeMessage(
+                                                                QByteArray const& message)
+    {
+        if (message.length() != 8) {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        auto provider =
+            NetworkProtocol::decodeScrobblingProvider(NetworkUtil::getByte(message, 2));
+        auto enabled = NetworkUtil::getByte(message, 3) != 0;
+        auto userId = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "scrobbling provider" << provider << "is now"
+                 << (enabled ? "enabled" : "disabled") << "for user" << userId;
+
+        if (userId != _userLoggedInId)
+            return; /* not supposed to happen, and we're not interested anyway */
+
+        emit scrobblingProviderEnabledChanged(provider, enabled);
     }
 
     void ServerConnection::handleResultMessage(quint16 errorType, quint32 clientReference,

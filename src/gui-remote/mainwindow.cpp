@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -107,6 +107,14 @@ namespace PMP {
         _closeAction = new QAction(tr("&Close remote"), this);
         connect(_closeAction, &QAction::triggered, this, &MainWindow::close);
 
+        _lastFmEnabledAction = new QAction(tr("&Last.FM"), this);
+        _lastFmEnabledAction->setCheckable(true);
+        _lastFmEnabledAction->setEnabled(false); /* disable until Last.FM info received */
+        connect(
+            _lastFmEnabledAction, &QAction::triggered,
+            this, &MainWindow::onLastFmTriggered
+        );
+
         _aboutPmpAction = new QAction(tr("&About PMP..."), this);
         connect(
             _aboutPmpAction, &QAction::triggered, this, &MainWindow::onAboutPmpAction
@@ -128,6 +136,12 @@ namespace PMP {
 
         pmpMenu->addSeparator();
         pmpMenu->addAction(_closeAction);
+
+        auto userMenu = menuBar()->addMenu(tr("&User"));
+        _userMenuAction = userMenu->menuAction();
+        _userMenuAction->setVisible(false); /* will be made visible after login */
+        auto scrobblingMenu = userMenu->addMenu(tr("&Scrobbling"));
+        scrobblingMenu->addAction(_lastFmEnabledAction);
 
         _viewMenu = menuBar()->addMenu(tr("&View"));
         _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
@@ -281,6 +295,15 @@ namespace PMP {
         if (buttonClicked == QMessageBox::Cancel) return;
 
         _connection->shutdownServer();
+    }
+
+    void MainWindow::onLastFmTriggered() {
+        auto checked = _lastFmEnabledAction->isChecked();
+
+        if (checked)
+            _connection->enableScrobblingForCurrentUser(ScrobblingProvider::LastFm);
+        else
+            _connection->disableScrobblingForCurrentUser(ScrobblingProvider::LastFm);
     }
 
     void MainWindow::onAboutPmpAction() {
@@ -504,6 +527,33 @@ namespace PMP {
         _startFullIndexationAction->setEnabled(false);
         _startFullIndexationAction->setVisible(true);
         _serverAdminAction->setVisible(true);
+        _userMenuAction->setVisible(true);
+
+        connect(
+            _connection, &ServerConnection::scrobblingProviderInfoReceived,
+            this,
+            [this](ScrobblingProvider provider, ScrobblerStatus, bool enabled) {
+            if (provider != ScrobblingProvider::LastFm)
+                return;
+
+                _lastFmEnabledAction->setChecked(enabled);
+                _lastFmEnabledAction->setEnabled(true);
+            }
+        );
+
+        connect(
+            _connection, &ServerConnection::scrobblingProviderEnabledChanged,
+            this,
+            [this](ScrobblingProvider provider, bool enabled) {
+                if (provider != ScrobblingProvider::LastFm)
+                    return;
+
+                _lastFmEnabledAction->setChecked(enabled);
+                _lastFmEnabledAction->setEnabled(true);
+            }
+        );
+
+        _connection->requestScrobblingProviderInfoForCurrentUser();
     }
 
     void MainWindow::onLoginCancel() {

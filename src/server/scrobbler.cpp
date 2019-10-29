@@ -65,7 +65,7 @@ namespace PMP {
             _backoffTimer, &QTimer::timeout, this, &Scrobbler::backoffTimerTimedOut
         );
 
-        checkIfWeHaveSomethingToDo();
+        /* now wait for someone to call the wakeUp slot before doing anything */
     }
 
     void Scrobbler::wakeUp() {

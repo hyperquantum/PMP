@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -67,6 +67,7 @@ namespace PMP {
 
         void onStartFullIndexationTriggered();
         void onShutdownServerTriggered();
+        void onLastFmTriggered();
         void onAboutPmpAction();
         void onAboutQtAction();
 
@@ -100,6 +101,8 @@ namespace PMP {
         QAction* _shutdownServerAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
+        QAction* _userMenuAction;
+        QAction* _lastFmEnabledAction;
         QAction* _aboutPmpAction;
         QAction* _aboutQtAction;
 

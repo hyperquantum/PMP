@@ -32,6 +32,7 @@
 #include "queue.h"
 #include "queueentry.h"
 #include "resolver.h"
+#include "scrobbling.h"
 #include "server.h"
 #include "serverhealthmonitor.h"
 #include "users.h"
@@ -45,17 +46,18 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 11;
+    const qint16 ConnectedClient::ServerProtocolNo = 12;
 
     ConnectedClient::ConnectedClient(uint connectionReference, QTcpSocket* socket,
                                      Server* server, Player* player,
                                      Generator* generator, Users* users,
                                      CollectionMonitor* collectionMonitor,
-                                     ServerHealthMonitor* serverHealthMonitor)
+                                     ServerHealthMonitor* serverHealthMonitor,
+                                     Scrobbling* scrobbling)
      : QObject(server), _connectionReference(connectionReference),
        _socket(socket), _server(server), _player(player), _generator(generator),
        _users(users), _collectionMonitor(collectionMonitor),
-       _serverHealthMonitor(serverHealthMonitor),
+       _serverHealthMonitor(serverHealthMonitor), _scrobbling(scrobbling),
        _clientProtocolNo(-1),
        _lastSentNowPlayingID(0), _userLoggedIn(0),
        _terminated(false), _binaryMode(false),
@@ -208,6 +210,26 @@ namespace PMP {
 
     bool ConnectedClient::isLoggedIn() const {
         return _userLoggedIn > 0;
+    }
+
+    void ConnectedClient::connectSlotsAfterSuccessfulUserLogin() {
+        auto userScrobblingController = _scrobbling->getControllerForUser(_userLoggedIn);
+
+        connect(
+            userScrobblingController, &UserScrobblingController::scrobblingProviderInfo,
+            this, &ConnectedClient::onScrobblingProviderInfo
+        );
+
+        connect(
+            userScrobblingController, &UserScrobblingController::scrobblerStatusChanged,
+            this, &ConnectedClient::onScrobblerStatusChanged
+        );
+
+        connect(
+            userScrobblingController,
+            &UserScrobblingController::scrobblingProviderEnabledChanged,
+            this, &ConnectedClient::onScrobblingProviderEnabledChanged
+        );
     }
 
     void ConnectedClient::dataArrived() {
@@ -1172,6 +1194,24 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::onScrobblingProviderInfo(ScrobblingProvider provider,
+                                                   ScrobblerStatus status, bool enabled)
+    {
+        sendScrobblingProviderInfoMessage(_userLoggedIn, provider, status, enabled);
+    }
+
+    void ConnectedClient::onScrobblerStatusChanged(ScrobblingProvider provider,
+                                                   ScrobblerStatus status)
+    {
+        sendScrobblerStatusChangedMessage(_userLoggedIn, provider, status);
+    }
+
+    void ConnectedClient::onScrobblingProviderEnabledChanged(ScrobblingProvider provider,
+                                                             bool enabled)
+    {
+        sendScrobblingProviderEnabledChangeMessage(_userLoggedIn, provider, enabled);
+    }
+
     void ConnectedClient::onHashAvailabilityChanged(QVector<FileHash> available,
                                                     QVector<FileHash> unavailable)
     {
@@ -1217,6 +1257,65 @@ namespace PMP {
         message.reserve(2 + 2);
         NetworkUtil::append2Bytes(message, NetworkProtocol::ServerHealthMessage);
         NetworkUtil::append2Bytes(message, problems);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendScrobblingProviderInfoMessage(quint32 userId,
+                                                            ScrobblingProvider provider,
+                                                            ScrobblerStatus status,
+                                                            bool enabled)
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 12) return;
+
+        qDebug() << "sending scrobbling provider info message";
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::ScrobblingProviderInfoMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::appendByte(message, NetworkProtocol::encode(provider));
+        NetworkUtil::appendByte(message, NetworkProtocol::encode(status));
+        NetworkUtil::appendByte(message, enabled ? 1 : 0);
+        NetworkUtil::appendByte(message, 0); /* filler */
+        NetworkUtil::append4Bytes(message, userId);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendScrobblerStatusChangedMessage(quint32 userId,
+                                                            ScrobblingProvider provider,
+                                                            ScrobblerStatus newStatus)
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 12) return;
+
+        QByteArray message;
+        message.reserve(2 + 1 + 1 + 4);
+        NetworkUtil::append2Bytes(message, NetworkProtocol::ScrobblerStatusChangeMessage);
+        NetworkUtil::appendByte(message, NetworkProtocol::encode(provider));
+        NetworkUtil::appendByte(message, NetworkProtocol::encode(newStatus));
+        NetworkUtil::append4Bytes(message, userId);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendScrobblingProviderEnabledChangeMessage(quint32 userId,
+                                                              ScrobblingProvider provider,
+                                                              bool enabled)
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 12) return;
+
+        QByteArray message;
+        message.reserve(2 + 1 + 1 + 4);
+        NetworkUtil::append2Bytes(message,
+                                 NetworkProtocol::ScrobblingProviderEnabledChangeMessage);
+        NetworkUtil::appendByte(message, NetworkProtocol::encode(provider));
+        NetworkUtil::appendByte(message, enabled ? 1 : 0);
+        NetworkUtil::append4Bytes(message, userId);
 
         sendBinaryMessage(message);
     }
@@ -1916,6 +2015,7 @@ namespace PMP {
             if (loginSucceeded) {
                 _userLoggedIn = user.id;
                 _userLoggedInName = user.login;
+                connectSlotsAfterSuccessfulUserLogin();
                 sendSuccessMessage(clientReference, user.id);
             }
             else {
@@ -1957,6 +2057,9 @@ namespace PMP {
             break;
         case NetworkProtocol::QueueEntryDuplicationRequestMessage:
             parseQueueEntryDuplicationRequest(message);
+            break;
+        case NetworkProtocol::UserScrobblingEnableDisableRequestMessage:
+            parseUserScrobblingEnableDisableRequest(message);
             break;
         default:
             qDebug() << "received unknown binary message type" << messageType
@@ -2148,6 +2251,33 @@ namespace PMP {
         sendQueueHistoryMessage(limit);
     }
 
+    void ConnectedClient::fetchScrobblingProviderInfoForCurrentUser() {
+        auto controller = _scrobbling->getControllerForUser(_userLoggedIn);
+        controller->requestScrobblingProviderInfo();
+    }
+
+    void ConnectedClient::parseUserScrobblingEnableDisableRequest(
+                                                                QByteArray const& message)
+    {
+        qDebug() << "received user scrobbling enable/disable request";
+
+        if (message.length() != 2 + 2) {
+            return; /* invalid message */
+        }
+
+        if (!isLoggedIn()) { return; /* client needs to be authenticated for this */ }
+
+        auto provider =
+            NetworkProtocol::decodeScrobblingProvider(NetworkUtil::getByte(message, 2));
+        if (provider == ScrobblingProvider::Unknown)
+            return; /* provider invalid or not recognized */
+
+        auto enabled = NetworkUtil::getByte(message, 3) != 0;
+
+        auto controller = _scrobbling->getControllerForUser(_userLoggedIn);
+        controller->setScrobblingProviderEnabled(provider, enabled);
+    }
+
     void ConnectedClient::handleSingleByteAction(quint8 action) {
         /* actions 100-200 represent a SET VOLUME command */
         if (action >= 100 && action <= 200) {
@@ -2218,6 +2348,10 @@ namespace PMP {
         case 17:
             qDebug() << "received request for database UUID";
             sendDatabaseIdentifier();
+            break;
+        case 18:
+            qDebug() << "received request for info about scrobbling providers";
+            fetchScrobblingProviderInfoForCurrentUser();
             break;
         case 20: /* enable dynamic mode */
             qDebug() << "received ENABLE DYNAMIC MODE command";

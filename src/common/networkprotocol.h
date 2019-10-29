@@ -20,6 +20,9 @@
 #ifndef PMP_NETWORKPROTOCOL_H
 #define PMP_NETWORKPROTOCOL_H
 
+#include "common/scrobblerstatus.h"
+#include "common/scrobblingprovider.h"
+
 #include <QByteArray>
 #include <QString>
 
@@ -42,6 +45,7 @@ namespace PMP {
           9: client msg 21, server msg 27: queue entry duplication
          10: single byte request 51 & server msg 28: server health messages
          11: server msg 29: track availability change notifications
+         12: client msg 22, single byte request 18 and server msgs 30 & 31 & 32:scrobbling
 
     */
 
@@ -86,6 +90,9 @@ namespace PMP {
             QueueEntryAdditionConfirmationMessage = 27,
             ServerHealthMessage = 28,
             CollectionAvailabilityChangeNotificationMessage = 29,
+            ScrobblerStatusChangeMessage = 30,
+            ScrobblingProviderEnabledChangeMessage = 31,
+            ScrobblingProviderInfoMessage = 32,
         };
 
         enum ClientMessageType {
@@ -111,6 +118,7 @@ namespace PMP {
             InsertHashIntoQueueRequestMessage = 19,
             PlayerHistoryRequestMessage = 20,
             QueueEntryDuplicationRequestMessage = 21,
+            UserScrobblingEnableDisableRequestMessage = 22,
         };
 
         enum ErrorType {
@@ -144,6 +152,12 @@ namespace PMP {
         static bool isActive(StartStopEventStatus status);
         static bool isChange(StartStopEventStatus status);
         static StartStopEventStatus createAlreadyActiveStartStopEventStatus(bool active);
+
+        static quint8 encode(ScrobblingProvider provider);
+        static ScrobblingProvider decodeScrobblingProvider(quint8 provider);
+
+        static quint8 encode(ScrobblerStatus status);
+        static ScrobblerStatus decodeScrobblerStatus(quint8 status);
 
         static int ratePassword(QString password);
 

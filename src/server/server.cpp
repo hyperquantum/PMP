@@ -39,7 +39,7 @@ namespace PMP {
      : QObject(parent), _lastNewConnectionReference(0),
        _uuid(serverInstanceIdentifier),
        _player(nullptr), _generator(nullptr), _users(nullptr),
-       _collectionMonitor(nullptr), _serverHealthMonitor(nullptr),
+       _collectionMonitor(nullptr), _serverHealthMonitor(nullptr), _scrobbling(nullptr),
        _server(new QTcpServer(this)), _udpSocket(new QUdpSocket(this)),
        _broadcastTimer(new QTimer(this))
     {
@@ -103,7 +103,7 @@ namespace PMP {
 
     bool Server::listen(Player* player, Generator* generator, Users* users,
                         CollectionMonitor* collectionMonitor,
-                        ServerHealthMonitor* serverHealthMonitor,
+                        ServerHealthMonitor* serverHealthMonitor, Scrobbling* scrobbling,
                         const QHostAddress& address, quint16 port)
     {
         _player = player;
@@ -111,6 +111,7 @@ namespace PMP {
         _users = users;
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
+        _scrobbling = scrobbling;
 
         if (!_server->listen(QHostAddress::Any, port)) {
             return false;
@@ -153,7 +154,7 @@ namespace PMP {
         auto clientConnection =
             new ConnectedClient(
                 connectionReference, connection, this, _player, _generator, _users,
-                _collectionMonitor, _serverHealthMonitor
+                _collectionMonitor, _serverHealthMonitor, _scrobbling
             );
 
         connect(
