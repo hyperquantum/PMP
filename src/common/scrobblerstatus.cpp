@@ -29,6 +29,10 @@ namespace PMP {
                 debug << "ScrobblerStatus::Red";
                 return debug;
 
+            case ScrobblerStatus::Yellow:
+                debug << "ScrobblerStatus::Yellow";
+                return debug;
+
             case ScrobblerStatus::Green:
                 debug << "ScrobblerStatus::Green";
                 return debug;

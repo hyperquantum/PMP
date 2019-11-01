@@ -27,6 +27,7 @@ namespace PMP {
     enum class ScrobblerStatus {
         Unknown = 0,
         Green,
+        Yellow,
         Red,
         WaitingForUserCredentials,
     };

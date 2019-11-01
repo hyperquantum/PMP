@@ -79,14 +79,16 @@ namespace PMP {
 
     quint8 NetworkProtocol::encode(ScrobblerStatus status) {
         switch (status) {
-            case ScrobblerStatus::Unknown:
-                return 0;
             case ScrobblerStatus::Green:
                 return 1;
-            case ScrobblerStatus::Red:
+            case ScrobblerStatus::Yellow:
                 return 2;
-            case ScrobblerStatus::WaitingForUserCredentials:
+            case ScrobblerStatus::Red:
                 return 3;
+            case ScrobblerStatus::WaitingForUserCredentials:
+                return 4;
+            case ScrobblerStatus::Unknown:
+                return 0;
         }
 
         return 0;
@@ -97,8 +99,10 @@ namespace PMP {
             case 1:
                 return ScrobblerStatus::Green;
             case 2:
-                return ScrobblerStatus::Red;
+                return ScrobblerStatus::Yellow;
             case 3:
+                return ScrobblerStatus::Red;
+            case 4:
                 return ScrobblerStatus::WaitingForUserCredentials;
             case 0:
             default:
