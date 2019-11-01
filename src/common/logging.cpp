@@ -214,11 +214,9 @@ namespace PMP {
             case QtDebugMsg:
                 output = time % " [D] " % locationText % msg % "\n";
                 break;
-            /* QtInfoMsg is only available in Qt 5.5 and later
             case QtInfoMsg:
                 output = time % " [I] " % locationText % msg % "\n";
                 break;
-            */
             case QtWarningMsg:
                 output = time % " [Warning] " % locationText % msg % "\n";
                 break;
