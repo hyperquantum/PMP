@@ -30,6 +30,7 @@ namespace PMP {
     Scrobbler::Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,
                          ScrobblingBackend* backend)
      : QObject(parent), _dataProvider(dataProvider), _backend(backend),
+        _status(ScrobblerStatus::Unknown),
         _timeoutTimer(new QTimer(this)),
         _backoffTimer(new QTimer(this)), _backoffMilliseconds(0),
         _nowPlayingTrackDurationSeconds(-1), _nowPlayingPresent(false),
@@ -214,6 +215,9 @@ namespace PMP {
         }
 
         _nowPlayingDone = true;
+
+        reevaluateStatus(); /* status may need to become green after being yellow */
+
         checkIfWeHaveSomethingToDo();
     }
 
@@ -248,6 +252,8 @@ namespace PMP {
                 break;
         }
 
+        reevaluateStatus(); /* status may need to become green after being yellow */
+
         auto delayBetweenSubsequentScrobbles =
                 _backend->getDelayInMillisecondsBetweenSubsequentScrobbles();
 
@@ -260,6 +266,8 @@ namespace PMP {
         qDebug() << "backend state changed to:" << newState;
 
         _timeoutTimer->stop();
+
+        reevaluateStatus();
 
         /* not sure about this */
         if (oldState == ScrobblingBackendState::PermanentFatalError) {
@@ -284,6 +292,40 @@ namespace PMP {
         startBackoffTimer(_backend->getInitialBackoffMillisecondsForUnavailability());
     }
 
+    void Scrobbler::reevaluateStatus() {
+        auto oldStatus = _status;
+        auto newStatus = oldStatus;
+
+        auto backendState = _backend->state();
+        switch (backendState) {
+            case ScrobblingBackendState::NotInitialized:
+                newStatus = ScrobblerStatus::Unknown;
+                break;
+
+            case ScrobblingBackendState::ReadyForScrobbling:
+                newStatus = ScrobblerStatus::Green;
+                break;
+
+            case ScrobblingBackendState::PermanentFatalError:
+                newStatus = ScrobblerStatus::Red;
+                break;
+
+            case ScrobblingBackendState::WaitingForUserCredentials:
+                newStatus = ScrobblerStatus::WaitingForUserCredentials;
+                break;
+        }
+
+        if (newStatus == ScrobblerStatus::Green && _backoffTimer->isActive()
+                && _backoffMilliseconds >= 512)
+        {
+            newStatus = ScrobblerStatus::Yellow;
+        }
+
+        _status = newStatus;
+        if (oldStatus != newStatus)
+            emit statusChanged(newStatus);
+    }
+
     void Scrobbler::startBackoffTimer(int initialBackoffMilliseconds) {
         _backoffTimer->stop();
 
@@ -301,6 +343,8 @@ namespace PMP {
 
         qDebug() << "starting backoff timer with interval:" << _backoffMilliseconds;
         _backoffTimer->start(_backoffMilliseconds);
+
+        reevaluateStatus(); /* status may need to become yellow */
     }
 
     void Scrobbler::reinsertPendingScrobbleAtFrontOfQueue() {

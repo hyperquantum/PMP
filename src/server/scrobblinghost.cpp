@@ -213,12 +213,21 @@ namespace PMP {
                 break;
 
             case ScrobblingProvider::Unknown:
-                qWarning() << "Cannot create 'Unknown' scrobbling provider";
+                qWarning() << "cannot create 'Unknown' scrobbling provider";
                 break;
         }
 
-        if (data.scrobbler)
-            data.scrobbler->wakeUp();
+        auto scrobbler = data.scrobbler;
+
+        if (!scrobbler)
+        {
+            qWarning() << "failed to create scrobbler for user" << userId
+                       << "and provider" << provider;
+            return;
+        }
+
+        installScrobblerSignalHandlers(userId, provider, scrobbler);
+        scrobbler->wakeUp();
     }
 
     void ScrobblingHost::destroyScrobblerIfExists(uint userId,
@@ -241,20 +250,6 @@ namespace PMP {
         auto dataProvider = new LastFmScrobblingDataProvider(userId, _resolver);
         auto lastFmBackend = new LastFmScrobblingBackend();
 
-        connect(
-            lastFmBackend, &LastFmScrobblingBackend::stateChanged,
-            this,
-            [userId, this](ScrobblingBackendState newState) {
-                auto& data = _scrobblersData[userId][ScrobblingProvider::LastFm];
-                auto oldStatus = data.status;
-                auto newStatus = convertToScrobblerStatus(newState);
-                data.status = newStatus;
-
-                if (newStatus != oldStatus)
-                    emit scrobblerStatusChanged(userId, ScrobblingProvider::LastFm,
-                                                newStatus);
-            }
-        );
         connect(
             lastFmBackend, &LastFmScrobblingBackend::gotAuthenticationResult,
             this,
@@ -284,6 +279,26 @@ namespace PMP {
         return scrobbler;
     }
 
+    void ScrobblingHost::installScrobblerSignalHandlers(uint userId,
+                                                        ScrobblingProvider provider,
+                                                        Scrobbler* scrobbler)
+    {
+        connect(
+            scrobbler, &Scrobbler::statusChanged,
+            this,
+            [this, userId, provider](ScrobblerStatus status) {
+                auto& data = _scrobblersData[userId][provider];
+                if (data.status == status) return;
+
+                qDebug() << "status changing from" << data.status << "to" << status
+                         << "for user" << userId << "and provider" << provider;
+
+                data.status = status;
+                emit scrobblerStatusChanged(userId, provider, status);
+            }
+        );
+    }
+
     QString ScrobblingHost::decodeToken(QString token) const {
         if (token.isEmpty()) return QString();
 
@@ -294,25 +309,6 @@ namespace PMP {
         qWarning() << "decoding of encoded token not implemented yet";
 
         return QString();
-    }
-
-    ScrobblerStatus ScrobblingHost::convertToScrobblerStatus(ScrobblingBackendState state)
-    {
-        switch(state) {
-            case ScrobblingBackendState::NotInitialized:
-                return ScrobblerStatus::Unknown;
-
-            case ScrobblingBackendState::ReadyForScrobbling:
-                return ScrobblerStatus::Green;
-
-            case ScrobblingBackendState::PermanentFatalError:
-                return ScrobblerStatus::Red;
-
-            case ScrobblingBackendState::WaitingForUserCredentials:
-                return ScrobblerStatus::WaitingForUserCredentials;
-        }
-
-        return ScrobblerStatus::Unknown;
     }
 
     void ScrobblingHost::doForAllProviders(

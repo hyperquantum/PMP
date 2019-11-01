@@ -20,6 +20,8 @@
 #ifndef PMP_SCROBBLER_H
 #define PMP_SCROBBLER_H
 
+#include "common/scrobblerstatus.h"
+
 #include "scrobblingbackend.h"
 #include "tracktoscrobble.h"
 
@@ -40,6 +42,8 @@ namespace PMP {
         Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,
                   ScrobblingBackend* backend);
 
+        ScrobblerStatus status() const { return _status; }
+
     public slots:
         void wakeUp();
         void nowPlayingNothing();
@@ -49,6 +53,7 @@ namespace PMP {
                              int trackDurationSeconds = -1);
 
     Q_SIGNALS:
+        void statusChanged(PMP::ScrobblerStatus status);
 
     private slots:
         void timeoutTimerTimedOut();
@@ -58,6 +63,7 @@ namespace PMP {
         void backendStateChanged(PMP::ScrobblingBackendState newState,
                                  PMP::ScrobblingBackendState oldState);
         void serviceTemporarilyUnavailable();
+        void reevaluateStatus();
 
     private:
         void checkIfWeHaveSomethingToDo();
@@ -68,6 +74,7 @@ namespace PMP {
 
         ScrobblingDataProvider* _dataProvider;
         ScrobblingBackend* _backend;
+        ScrobblerStatus _status;
         QQueue<std::shared_ptr<TrackToScrobble>> _tracksToScrobble;
         std::shared_ptr<TrackToScrobble> _pendingScrobble;
         QTimer* _timeoutTimer;

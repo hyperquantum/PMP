@@ -81,8 +81,6 @@ namespace PMP {
             Scrobbler* scrobbler;
         };
 
-        static ScrobblerStatus convertToScrobblerStatus(ScrobblingBackendState state);
-
         void doForAllProviders(std::function<void (ScrobblingProvider)> action);
 
         void loadScrobblers(UserScrobblingDataRecord const& record);
@@ -94,6 +92,8 @@ namespace PMP {
         void destroyScrobblerIfExists(uint userId, ScrobblingProvider provider);
         Scrobbler* createLastFmScrobbler(uint userId,
                                          LastFmScrobblingDataRecord const& data);
+        void installScrobblerSignalHandlers(uint userId, ScrobblingProvider provider,
+                                            Scrobbler* scrobbler);
         QString decodeToken(QString token) const;
 
         Resolver* _resolver;
