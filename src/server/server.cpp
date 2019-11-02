@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -111,7 +111,7 @@ namespace PMP {
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
 
-        if (!_server->listen(QHostAddress::Any, port)) {
+        if (!_server->listen(address, port)) {
             return false;
         }
 
