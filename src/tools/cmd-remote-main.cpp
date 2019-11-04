@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -71,8 +71,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    const uint commandArgOffset = 4;
-    uint commandArgs = args.size() - commandArgOffset;
+    const int commandArgOffset = 4;
+    int commandArgs = args.size() - commandArgOffset;
 
     QString server = args[1];
     QString port = args[2];
