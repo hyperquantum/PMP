@@ -57,7 +57,7 @@ namespace PMP {
         (void)nowPlayingQID;
         (void)nowPlayingPosition;
 
-        _state = (ServerConnection::PlayState)s;
+        _state = static_cast<ServerConnection::PlayState>(s);
         check();
     }
 
