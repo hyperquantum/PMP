@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     /* Validate port number */
     bool ok = true;
     uint portNumber = port.toUInt(&ok);
-    if (!ok)  {
+    if (!ok || portNumber > 0xFFFFu)  {
         out << "Invalid port number: " << port << endl;
         return 1;
     }
