@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
     }
 
     QTcpSocket socket;
-    socket.connectToHost(server, (quint16)portNumber);
+    socket.connectToHost(server, static_cast<quint16>(portNumber));
 
     if (!socket.waitForConnected(2000)) {
         out << "Failed to connect to the server: code " << socket.error() << endl;
