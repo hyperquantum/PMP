@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -52,11 +52,18 @@ namespace PMP {
                                                      quint32 nowPlayingQID,
                                                      quint64 nowPlayingPosition)
     {
+        (void)volume;
+        (void)queueLength;
+        (void)nowPlayingQID;
+        (void)nowPlayingPosition;
+
         _state = (ServerConnection::PlayState)s;
         check();
     }
 
     void AutoPersonalModeAction::userPlayingForChanged(quint32 userId, QString login) {
+        (void)login;
+
         _publicMode = userId == 0;
         _knowUserPlayingFor = true;
         check();
