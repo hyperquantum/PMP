@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -82,22 +82,5 @@ namespace PMP {
 
         emit finishedWithResult(_userId, results, _previouslyHeard, _score);
     }
-
-    /* =========================== UserDataForHashInit =========================== */
-
-    /* utility object to automatically do the qRegisterMetaType call at program startup */
-    class UserDataForHashInit {
-    public:
-        UserDataForHashInit() {
-            //qDebug() << "UserDataForHashInit running";
-            qRegisterMetaType<PMP::UserDataForHash>("PMP::UserDataForHash");
-            qRegisterMetaType<QList<PMP::UserDataForHash> >(
-                                                           "QList<PMP::UserDataForHash>");
-            qRegisterMetaType<QVector<PMP::UserDataForHash> >(
-                                                         "QVector<PMP::UserDataForHash>");
-        }
-    };
-
-    static UserDataForHashInit userDataForHashInit;
 
 }
