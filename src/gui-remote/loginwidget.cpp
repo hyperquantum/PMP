@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -75,14 +75,14 @@ namespace PMP {
 
         if (accountName.size() == 0) {
             QMessageBox::warning(
-                this, "Missing username", "Please specify username!"
+                this, tr("Missing username"), tr("Please specify username!")
             );
             return;
         }
 
         if (accountName.size() > 63) {
             QMessageBox::warning(
-                this, "Invalid username", "Username is too long!"
+                this, tr("Invalid username"), tr("Username is too long!")
             );
             return;
         }
@@ -108,11 +108,11 @@ namespace PMP {
 
         switch (errorType) {
         case ServerConnection::UserLoginAuthenticationFailed:
-            message = "The specified user/password combination is not valid.";
+            message = tr("The specified user/password combination is not valid.");
             break;
         default:
             message =
-                "An unknown error occurred on the server while trying to login!";
+                tr("An unknown error occurred on the server while trying to login!");
             break;
         }
 

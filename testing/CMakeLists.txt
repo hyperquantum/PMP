@@ -70,17 +70,3 @@ add_executable(test_util test_util.cpp
 )
 target_link_libraries(test_util Qt5::Core Qt5::Test)
 add_test(test_util test_util)
-
-
-# TestScrobbler
-qt5_wrap_cpp(PMP_TestScrobbler_MOCS test_scrobbler.h
-    ${CMAKE_SOURCE_DIR}/src/server/scrobbler.h
-    ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.h
-)
-add_executable(test_scrobbler test_scrobbler.cpp
-    ${PMP_TestScrobbler_MOCS}
-    ${CMAKE_SOURCE_DIR}/src/server/scrobbler.cpp
-    ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.cpp
-)
-target_link_libraries(test_scrobbler Qt5::Core Qt5::Test)
-add_test(test_scrobbler test_scrobbler)

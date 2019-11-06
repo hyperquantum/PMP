@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -92,6 +92,10 @@ namespace PMP {
     }
 
     void SortedCollectionTableModel::setConnection(ServerConnection* connection) {
+        connect(
+            connection, &ServerConnection::collectionTracksAvailabilityChanged,
+            this, &SortedCollectionTableModel::onCollectionTracksAvailabilityChanged
+        );
         connect(
             connection, &ServerConnection::collectionTracksChanged,
             this, &SortedCollectionTableModel::onCollectionTracksChanged
@@ -285,7 +289,14 @@ namespace PMP {
             /* hash already present? */
             auto hashIterator = _hashesToInnerIndexes.find(track.hash());
             if (hashIterator != _hashesToInnerIndexes.end()) {
-                // TODO: update
+                qWarning() << "collection track update not handled:"
+                           << "title:" << track.title() << "; artist:" << track.artist()
+                           << "; album:" << track.album()
+                           << "; available:" << (track.isAvailable() ? "yes" : "no");
+                // TODO: update existing entry
+                //
+                //
+                //
                 continue;
             }
 
@@ -309,6 +320,14 @@ namespace PMP {
 
             endInsertRows();
         }
+    }
+
+    void SortedCollectionTableModel::onCollectionTracksAvailabilityChanged(
+                                                       QVector<PMP::FileHash> available,
+                                                       QVector<PMP::FileHash> unavailable)
+    {
+        updateTrackAvailability(available, true);
+        updateTrackAvailability(unavailable, false);
     }
 
     void SortedCollectionTableModel::onCollectionTracksChanged(
@@ -343,6 +362,32 @@ namespace PMP {
         }
         else {
             return findOuterIndexMapIndexForInsert(track, middleIndex, searchRangeEnd);
+        }
+    }
+
+    void SortedCollectionTableModel::updateTrackAvailability(QVector<FileHash> hashes,
+                                                             bool available)
+    {
+        for (int i = 0; i < hashes.size(); ++i) {
+            auto hashIterator = _hashesToInnerIndexes.find(hashes[i]);
+            if (hashIterator == _hashesToInnerIndexes.end()) {
+                if (!available) continue;
+
+                qWarning() << "hash became available but is not added to collection yet:"
+                           << hashes[i].dumpToString();
+                // TODO: add to the collection
+                //
+                //
+                //
+                //
+                continue;
+            }
+
+            int innerIndex = hashIterator.value();
+            int outerIndex = _innerToOuterIndexMap[innerIndex];
+
+            _tracks[innerIndex]->setAvailable(available);
+            emit dataChanged(createIndex(outerIndex, 0), createIndex(outerIndex, 4 - 1));
         }
     }
 
@@ -440,10 +485,12 @@ namespace PMP {
     }
 
     int SortedCollectionTableModel::rowCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent)
         return _outerToInnerIndexMap.size();
     }
 
     int SortedCollectionTableModel::columnCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent)
         return 4;
     }
 
@@ -497,6 +544,7 @@ namespace PMP {
     }
 
     Qt::ItemFlags SortedCollectionTableModel::flags(const QModelIndex& index) const {
+        Q_UNUSED(index)
         Qt::ItemFlags f(Qt::ItemIsSelectable | Qt::ItemIsEnabled
                         | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
         return f;
@@ -538,9 +586,9 @@ namespace PMP {
 
         if (hashes.empty()) return nullptr;
 
-        stream << (quint32)hashes.size();
+        stream << quint32(hashes.size());
         for (int i = 0; i < hashes.size(); ++i) {
-            stream << (quint64)hashes[i].length();
+            stream << quint64(hashes[i].length());
             stream << hashes[i].SHA1();
             stream << hashes[i].MD5();
         }
@@ -559,6 +607,7 @@ namespace PMP {
             SortedCollectionTableModel* source, QObject* parent)
      : _source(source)
     {
+        Q_UNUSED(parent)
         setFilterCaseSensitivity(Qt::CaseInsensitive);
 
         setSourceModel(source);
@@ -582,13 +631,16 @@ namespace PMP {
     bool FilteredCollectionTableModel::filterAcceptsRow(int sourceRow,
                                                     const QModelIndex& sourceParent) const
     {
+        (void)sourceParent;
+
         if (_searchParts.empty()) return true; /* not filtered */
 
         CollectionTrackInfo* track = _source->trackAt(sourceRow);
 
         Q_FOREACH(QString searchPart, _searchParts) {
             if (!track->title().contains(searchPart, Qt::CaseInsensitive)
-                    && !track->artist().contains(searchPart, Qt::CaseInsensitive))
+                    && !track->artist().contains(searchPart, Qt::CaseInsensitive)
+                    && !track->album().contains(searchPart, Qt::CaseInsensitive))
                 return false;
         }
 

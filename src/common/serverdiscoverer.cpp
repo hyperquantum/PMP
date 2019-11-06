@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,6 +34,7 @@ namespace PMP {
      : QObject(parent), _socket(new QUdpSocket(this))
     {
         _localHostNetworkAddresses = QNetworkInterface::allAddresses();
+        qDebug() << "all network addresses:" << _localHostNetworkAddresses;
 
         bool bound =
             _socket->bind(
@@ -105,48 +106,40 @@ namespace PMP {
          * situation, because we prefer connecting to the server through the host's
          * loopback interface. */
 
-        bool isLocalhostServer =
-            server == QHostAddress::LocalHost
-                || server == QHostAddress::LocalHostIPv6;
-        bool isLocalHostAlias =
-            !isLocalhostServer && _localHostNetworkAddresses.contains(server);
-        if (isLocalHostAlias) { isLocalhostServer = true; }
+        bool isFromLocalhost =
+            server == QHostAddress::LocalHost || server == QHostAddress::LocalHostIPv6;
 
-        ServerProbe* newProbe = nullptr;
-        if (!isLocalhostServer) {
-            newProbe = new ServerProbe(this, server, port);
-            _addresses[serverAndPort] = newProbe;
-        }
-        else {
-            qDebug() << " probe reply is from localhost";
-
-            auto localhostIpv4AndPort =
-                qMakePair(QHostAddress::LocalHost, port);
-            auto localhostIpv6AndPort =
-                qMakePair(QHostAddress::LocalHostIPv6, port);
-
-            auto localhostProbe =
-                _addresses.value(localhostIpv4AndPort, nullptr);
-            if (!localhostProbe)
-                localhostProbe = _addresses.value(localhostIpv6AndPort, nullptr);
-
-            if (!localhostProbe) {
-                qDebug() << "  creating ServerProbe for localhost";
-                localhostProbe = new ServerProbe(this, QHostAddress::LocalHost, port);
-                newProbe = localhostProbe;
-                _addresses[localhostIpv4AndPort] = localhostProbe;
-                _addresses[localhostIpv6AndPort] = localhostProbe;
+        if (!isFromLocalhost) {
+            Q_FOREACH(auto localAddress, _localHostNetworkAddresses) {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
+                if (localAddress.isEqual(server, QHostAddress::TolerantConversion))
+#else
+                if (localAddress == server)
+#endif
+                {
+                   isFromLocalhost = true;
+                   break;
+                }
             }
-
-            _addresses[serverAndPort] = localhostProbe;
         }
 
-        if (newProbe) {
-            connect(
-                newProbe, &ServerProbe::foundServer,
-                this, &ServerDiscoverer::onFoundServer
-            );
+        qDebug() << "Originated from localhost?" << (isFromLocalhost ? "Yes" : "No");
+
+        if (isFromLocalhost) {
+            auto addressToUse =
+                server.protocol() == QAbstractSocket::IPv4Protocol
+                    ? QHostAddress(QHostAddress::LocalHost)
+                    : QHostAddress(QHostAddress::LocalHostIPv6);
+
+            serverAndPort = qMakePair(addressToUse, port);
         }
+
+        if (_addresses.contains(serverAndPort))
+            return; /* already (being) handled */
+
+        auto probe = new ServerProbe(this, serverAndPort.first, serverAndPort.second);
+        connect(probe, &ServerProbe::foundServer, this, &ServerDiscoverer::onFoundServer);
+        _addresses[serverAndPort] = probe;
     }
 
     void ServerDiscoverer::onFoundServer(QHostAddress address, quint16 port,
@@ -181,10 +174,11 @@ namespace PMP {
     ServerProbe::ServerProbe(QObject* parent, QHostAddress const& address, quint16 port)
      : QObject(parent),
        _address(address), _port(port),
-       _connection(new ServerConnection(this, false)),
+       _connection(new ServerConnection(this,
+                                          ServerEventSubscription::ServerHealthMessages)),
        _serverNameType(0)
     {
-        qDebug() << "ServerProbe created for" << address << "port" << port;
+        qDebug() << "ServerProbe created for" << address << "and port" << port;
 
         connect(
             _connection, &ServerConnection::connected,
@@ -231,10 +225,7 @@ namespace PMP {
 
         qDebug() << "ServerProbe: TIMEOUT for" << _address << "port" << _port;
 
-        /* clean up */
-        _connection->reset();
-        _connection->deleteLater();
-        _connection = nullptr;
+        cleanupConnection();
 
         if (!_serverId.isNull()) { /* server found but did not receive a name? */
             /* send with empty name */
@@ -246,11 +237,13 @@ namespace PMP {
         if (_serverId.isNull() || _serverName == "")
             return; /* not yet complete */
 
-        /* clean up */
+        cleanupConnection();
+        emit foundServer(_address, _port, _serverId, _serverName);
+    }
+
+    void ServerProbe::cleanupConnection() {
         _connection->reset();
         _connection->deleteLater();
         _connection = nullptr;
-
-        emit foundServer(_address, _port, _serverId, _serverName);
     }
 }

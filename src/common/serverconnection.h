@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,7 @@
 #include "collectiontrackinfo.h"
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
+#include "serverhealthstatus.h"
 #include "simpleplayercontroller.h"
 #include "tribool.h"
 
@@ -64,16 +65,29 @@ namespace PMP {
         return requestId.rawId();
     }
 
+    enum class ServerEventSubscription {
+        None = 0,
+        AllEvents = 1,
+        ServerHealthMessages = 2,
+    };
+
     /**
         Represents a connection to a PMP server.
     */
     class ServerConnection : public QObject {
         Q_OBJECT
 
+    private:
         enum State {
             NotConnected, Connecting, Handshake, TextMode,
             HandshakeFailure, BinaryHandshake, BinaryMode
         };
+
+        class ResultHandler;
+        class CollectionFetchResultHandler;
+        class TrackInsertionResultHandler;
+        class DuplicationResultHandler;
+
     public:
         enum PlayState {
             UnknownState = 0, Stopped = 1, Playing = 2, Paused = 3
@@ -87,13 +101,17 @@ namespace PMP {
             UnknownUserLoginError, UserLoginAuthenticationFailed
         };
 
-        ServerConnection(QObject* parent = 0, bool subscribeToAllServerEvents = true);
+        ServerConnection(QObject* parent = nullptr,
+                         ServerEventSubscription eventSubscription =
+                                                      ServerEventSubscription::AllEvents);
 
         void reset();
         void connectToHost(QString const& host, quint16 port);
 
         bool isConnected() const { return _state == BinaryMode; }
         bool isLoggedIn() const { return userLoggedInId() > 0; }
+
+        ServerHealthStatus serverHealth() const { return _serverHealthStatus; }
 
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
@@ -105,6 +123,8 @@ namespace PMP {
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
 
         SimplePlayerController& simplePlayerController();
+
+        bool serverSupportsQueueEntryDuplication() const;
 
     public slots:
         void shutdownServer();
@@ -134,6 +154,7 @@ namespace PMP {
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
         void deleteQueueEntry(uint queueID);
+        void duplicateQueueEntry(uint queueID);
         void moveQueueEntry(uint queueID, qint16 offsetDiff);
 
         void insertQueueEntryAtFront(FileHash const& hash);
@@ -166,6 +187,7 @@ namespace PMP {
         void cannotConnect(QAbstractSocket::SocketError error);
         void invalidServer();
         void connectionBroken(QAbstractSocket::SocketError error);
+        void serverHealthChanged(ServerHealthStatus serverHealth);
 
         void receivedDatabaseIdentifier(QUuid uuid);
         void receivedServerInstanceIdentifier(QUuid uuid);
@@ -216,6 +238,8 @@ namespace PMP {
         void fullIndexationStarted();
         void fullIndexationFinished();
 
+        void collectionTracksAvailabilityChanged(QVector<PMP::FileHash> available,
+                                                 QVector<PMP::FileHash> unavailable);
         void collectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
 
     private slots:
@@ -256,6 +280,7 @@ namespace PMP {
 
         void onFullIndexationRunningStatusReceived(bool running);
 
+        void parseTrackAvailabilityChangeBatchMessage(QByteArray const& message);
         void parseTrackInfoBatchMessage(QByteArray const& message,
                                         NetworkProtocol::ServerMessageType messageType);
 
@@ -266,6 +291,11 @@ namespace PMP {
 
         void parseDynamicModeWaveStatusMessage(QByteArray const& message);
 
+        void parseQueueEntryAddedMessage(QByteArray const& message);
+        void parseQueueEntryAdditionConfirmationMessage(QByteArray const& message);
+
+        void parseServerHealthMessage(QByteArray const& message);
+
         void sendCollectionFetchRequestMessage(uint clientReference);
 
         void invalidMessageReceived(QByteArray const& message, QString messageType = "",
@@ -273,7 +303,7 @@ namespace PMP {
 
         static const qint16 ClientProtocolNo;
 
-        bool _autoSubscribeToEventsAfterConnect;
+        ServerEventSubscription _autoSubscribeToEventsAfterConnect;
         State _state;
         QTcpSocket _socket;
         QByteArray _readBuffer;
@@ -289,15 +319,16 @@ namespace PMP {
         quint32 _userLoggedInId;
         QString _userLoggedInName;
         TriBool _doingFullIndexation;
+        QHash<uint, ResultHandler*> _resultHandlers;
         QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
-        QHash<uint, quint32> _insertAtIndexRequests;
         SimplePlayerControllerImpl* _simplePlayerController;
+        ServerHealthStatus _serverHealthStatus;
     };
 
     class AbstractCollectionFetcher : public QObject {
         Q_OBJECT
     protected:
-        AbstractCollectionFetcher(QObject* parent = 0);
+        AbstractCollectionFetcher(QObject* parent = nullptr);
 
     public slots:
         virtual void receivedData(QList<CollectionTrackInfo> data) = 0;

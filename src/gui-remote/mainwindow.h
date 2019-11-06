@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,8 @@
 
 #ifndef PMP_MAINWINDOW_H
 #define PMP_MAINWINDOW_H
+
+#include "common/serverhealthstatus.h"
 
 #include <QAbstractSocket>
 #include <QMainWindow>
@@ -54,6 +56,7 @@ namespace PMP {
         void onCannotConnect(QAbstractSocket::SocketError error);
         void onInvalidServer();
         void onConnectionBroken(QAbstractSocket::SocketError error);
+        void onServerHealthChanged(ServerHealthStatus serverHealth);
 
         void onCreateAccountClicked();
         void onAccountCreated(QString login, QString password, quint32 accountId);

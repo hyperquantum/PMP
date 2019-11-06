@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -45,7 +45,10 @@ namespace PMP {
         }
 
         const FileHash& hash() const { return _hash; }
+
+        void setAvailable(bool available) { _isAvailable = available; }
         bool isAvailable() const { return _isAvailable; }
+
         const QString& title() const { return _title; }
         const QString& artist() const { return _artist; }
         const QString& album() const { return _album; }

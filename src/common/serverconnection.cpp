@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,11 +26,225 @@
 
 namespace PMP {
 
-    const qint16 ServerConnection::ClientProtocolNo = 8;
+    class ServerConnection::ResultHandler {
+    public:
+        virtual ~ResultHandler();
 
-    ServerConnection::ServerConnection(QObject* parent, bool subscribeToAllServerEvents)
+        virtual void handleResult(NetworkProtocol::ErrorType errorType,
+                                  quint32 clientReference, quint32 intData,
+                                  QByteArray const& blobData) = 0;
+
+        virtual void handleQueueEntryAdditionConfirmation(quint32 clientReference,
+                                                          quint32 index, quint32 queueID);
+
+    protected:
+        ResultHandler(ServerConnection* parent);
+
+        QString errorDescription(NetworkProtocol::ErrorType errorType,
+                                 quint32 clientReference, quint32 intData,
+                                 QByteArray const& blobData) const;
+
+        ServerConnection* const _parent;
+    };
+
+    ServerConnection::ResultHandler::~ResultHandler() {
+        //
+    }
+
+    ServerConnection::ResultHandler::ResultHandler(ServerConnection* parent)
+     : _parent(parent)
+    {
+        //
+    }
+
+    void ServerConnection::ResultHandler::handleQueueEntryAdditionConfirmation(
+                                quint32 clientReference, quint32 index, quint32 queueID)
+    {
+        qWarning() << "ResultHandler does not handle queue entry addition confirmation;"
+                   << " ref:" << clientReference << " index:" << index
+                   << " QID:" << queueID;
+    }
+
+    QString ServerConnection::ResultHandler::errorDescription(
+                                                    NetworkProtocol::ErrorType errorType,
+                                                    quint32 clientReference,
+                                                    quint32 intData,
+                                                    QByteArray const& blobData) const
+    {
+        QString text = "client-ref " + QString::number(clientReference) + ": ";
+
+        switch (errorType) {
+            case NetworkProtocol::NoError:
+                text += "no error";
+                break;
+
+            case NetworkProtocol::QueueIdNotFound:
+                text += "QID " + QString::number(intData) + " not found";
+                return text;
+
+            case NetworkProtocol::DatabaseProblem:
+                text += "database problem";
+                break;
+
+            case NetworkProtocol::NonFatalInternalServerError:
+                text += "non-fatal internal server error";
+                break;
+
+            case NetworkProtocol::UnknownError:
+                text += "unknown error";
+                break;
+
+            default:
+                text += "error code " + QString::number(int(errorType));
+                break;
+        }
+
+        /* nothing interesting to add? */
+        if (intData == 0 && blobData.size() == 0)
+            return text;
+
+        text +=
+            ": intData=" + QString::number(intData)
+                + ", blobData.size=" + QString::number(blobData.size());
+
+        return text;
+    }
+
+    /* ============================================================================ */
+
+    class ServerConnection::CollectionFetchResultHandler : public ResultHandler {
+    public:
+        CollectionFetchResultHandler(ServerConnection* parent,
+                                     AbstractCollectionFetcher* fetcher);
+
+        void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
+                          quint32 intData, QByteArray const& blobData) override;
+
+    private:
+        AbstractCollectionFetcher* _fetcher;
+    };
+
+    ServerConnection::CollectionFetchResultHandler::CollectionFetchResultHandler(
+                                                       ServerConnection* parent,
+                                                       AbstractCollectionFetcher* fetcher)
+     : ResultHandler(parent), _fetcher(fetcher)
+    {
+        //
+    }
+
+    void ServerConnection::CollectionFetchResultHandler::handleResult(
+                                                     NetworkProtocol::ErrorType errorType,
+                                                     quint32 clientReference,
+                                                     quint32 intData,
+                                                     QByteArray const& blobData)
+    {
+        _parent->_collectionFetchers.remove(clientReference);
+
+        if (errorType == NetworkProtocol::NoError) {
+            _fetcher->completed();
+        }
+        else {
+            qWarning() << "CollectionFetchResultHandler:"
+                       << errorDescription(errorType, clientReference, intData, blobData);
+            _fetcher->errorOccurred();
+        }
+    }
+
+    /* ============================================================================ */
+
+    class ServerConnection::TrackInsertionResultHandler : public ResultHandler {
+    public:
+        TrackInsertionResultHandler(ServerConnection* parent, quint32 index);
+
+        void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
+                          quint32 intData, QByteArray const& blobData) override;
+
+        void handleQueueEntryAdditionConfirmation(quint32 clientReference, quint32 index,
+                                                  quint32 queueID) override;
+
+    private:
+        quint32 _index;
+    };
+
+    ServerConnection::TrackInsertionResultHandler::TrackInsertionResultHandler(
+                                                  ServerConnection* parent, quint32 index)
+     : ResultHandler(parent), _index(index)
+    {
+        //
+    }
+
+    void ServerConnection::TrackInsertionResultHandler::handleResult(
+                                                     NetworkProtocol::ErrorType errorType,
+                                                     quint32 clientReference,
+                                                     quint32 intData,
+                                                     QByteArray const& blobData)
+    {
+        if (errorType == NetworkProtocol::NoError) {
+            /* this is how older servers report a successful insertion */
+            auto queueID = intData;
+            emit _parent->queueEntryAdded(_index, queueID, RequestID(clientReference));
+        }
+        else {
+            qWarning() << "TrackInsertionResultHandler:"
+                       << errorDescription(errorType, clientReference, intData, blobData);
+
+            // TODO: report error to the originator of the request
+        }
+    }
+
+    void
+    ServerConnection::TrackInsertionResultHandler::handleQueueEntryAdditionConfirmation(
+                                  quint32 clientReference, quint32 index, quint32 queueID)
+    {
+        emit _parent->queueEntryAdded(index, queueID, RequestID(clientReference));
+    }
+
+    /* ============================================================================ */
+
+    class ServerConnection::DuplicationResultHandler : public ResultHandler {
+    public:
+        DuplicationResultHandler(ServerConnection* parent);
+
+        void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
+                          quint32 intData, QByteArray const& blobData) override;
+
+        void handleQueueEntryAdditionConfirmation(quint32 clientReference, quint32 index,
+                                                  quint32 queueID) override;
+    };
+
+    ServerConnection::DuplicationResultHandler::DuplicationResultHandler(
+                                                                 ServerConnection* parent)
+     : ResultHandler(parent)
+    {
+        //
+    }
+
+    void ServerConnection::DuplicationResultHandler::handleResult(
+                                                     NetworkProtocol::ErrorType errorType,
+                                                     quint32 clientReference,
+                                                     quint32 intData,
+                                                     QByteArray const& blobData)
+    {
+        qWarning() << "DuplicationResultHandler:"
+                   << errorDescription(errorType, clientReference, intData, blobData);
+
+        // TODO: report error to the originator of the request
+    }
+
+    void ServerConnection::DuplicationResultHandler::handleQueueEntryAdditionConfirmation(
+                                  quint32 clientReference, quint32 index, quint32 queueID)
+    {
+        emit _parent->queueEntryAdded(index, queueID, RequestID(clientReference));
+    }
+
+    /* ============================================================================ */
+
+    const qint16 ServerConnection::ClientProtocolNo = 11;
+
+    ServerConnection::ServerConnection(QObject* parent,
+                                       ServerEventSubscription eventSubscription)
      : QObject(parent),
-       _autoSubscribeToEventsAfterConnect(subscribeToAllServerEvents),
+       _autoSubscribeToEventsAfterConnect(eventSubscription),
        _state(ServerConnection::NotConnected),
        _binarySendingMode(false),
        _serverProtocolNo(-1), _nextRef(1),
@@ -72,6 +286,10 @@ namespace PMP {
 
     SimplePlayerController& ServerConnection::simplePlayerController() {
         return *_simplePlayerController;
+    }
+
+    bool ServerConnection::serverSupportsQueueEntryDuplication() const {
+        return _serverProtocolNo >= 9;
     }
 
     void ServerConnection::onConnected() {
@@ -180,8 +398,18 @@ namespace PMP {
 
                 _state = BinaryMode;
 
-                if (_autoSubscribeToEventsAfterConnect) {
+                if (_autoSubscribeToEventsAfterConnect
+                        == ServerEventSubscription::AllEvents)
+                {
                     sendSingleByteAction(50); /* 50 = subscribe to all server events */
+                }
+                else if (_autoSubscribeToEventsAfterConnect
+                            == ServerEventSubscription::ServerHealthMessages)
+                {
+                    if (_serverProtocolNo >= 10) {
+                         /* 51 = subscribe to server health events */
+                        sendSingleByteAction(51);
+                    }
                 }
 
                 emit connected();
@@ -352,14 +580,16 @@ namespace PMP {
     {
         if (hash.empty()) return RequestID(); /* invalid */
 
+        auto handler = new TrackInsertionResultHandler(this, index);
         auto ref = getNewReference();
-        _insertAtIndexRequests.insert(ref, index);
+        _resultHandlers[ref] = handler;
 
         qDebug() << "sending request to add a track at index" << index << "; ref=" << ref;
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::InsertHashIntoQueueRequestMessage);
+        NetworkUtil::append2Bytes(
+                             message, NetworkProtocol::InsertHashIntoQueueRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkUtil::append4Bytes(message, ref);
         NetworkUtil::append4Bytes(message, index);
@@ -368,6 +598,24 @@ namespace PMP {
         sendBinaryMessage(message);
 
         return ref;
+    }
+
+    void ServerConnection::duplicateQueueEntry(quint32 queueID) {
+        auto handler = new DuplicationResultHandler(this);
+        auto ref = getNewReference();
+        _resultHandlers[ref] = handler;
+
+        qDebug() << "sending request to duplicate QID " << queueID;
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4);
+        NetworkUtil::append2Bytes(message,
+                                    NetworkProtocol::QueueEntryDuplicationRequestMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkUtil::append4Bytes(message, queueID);
+
+        sendBinaryMessage(message);
     }
 
     void ServerConnection::sendQueueEntryInfoRequest(uint queueID) {
@@ -708,7 +956,9 @@ namespace PMP {
     }
 
     void ServerConnection::fetchCollection(AbstractCollectionFetcher* fetcher) {
+        auto handler = new CollectionFetchResultHandler(this, fetcher);
         auto fetcherReference = getNewReference();
+        _resultHandlers[fetcherReference] = handler;
         _collectionFetchers[fetcherReference] = fetcher;
         sendCollectionFetchRequestMessage(fetcherReference);
     }
@@ -1115,19 +1365,7 @@ namespace PMP {
         }
             break;
         case NetworkProtocol::QueueEntryAddedMessage:
-        {
-            if (messageLength != 10) {
-                return; /* invalid message */
-            }
-
-            quint32 offset = NetworkUtil::get4Bytes(message, 2);
-            quint32 queueID = NetworkUtil::get4Bytes(message, 6);
-
-            qDebug() << "received queue track insertion event;  QID:" << queueID
-                     << " offset:" << offset;
-
-            emit queueEntryAdded(offset, queueID, RequestID());
-        }
+            parseQueueEntryAddedMessage(message);
             break;
         case NetworkProtocol::DynamicModeStatusMessage:
         {
@@ -1361,11 +1599,75 @@ namespace PMP {
         case NetworkProtocol::DynamicModeWaveStatusMessage:
             parseDynamicModeWaveStatusMessage(message);
             break;
+        case NetworkProtocol::QueueEntryAdditionConfirmationMessage:
+            parseQueueEntryAdditionConfirmationMessage(message);
+            break;
+        case NetworkProtocol::ServerHealthMessage:
+            parseServerHealthMessage(message);
+            break;
+        case NetworkProtocol::CollectionAvailabilityChangeNotificationMessage:
+            parseTrackAvailabilityChangeBatchMessage(message);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
             break; /* unknown message type */
         }
+    }
+
+    void ServerConnection::parseTrackAvailabilityChangeBatchMessage(
+                                                                QByteArray const& message)
+    {
+        qint32 messageLength = message.length();
+        if (messageLength < 8) {
+            qDebug() << "invalid message detected: length is too short";
+            return; /* invalid message */
+        }
+
+        int availableCount = int(uint(NetworkUtil::get2Bytes(message, 4)));
+        int unavailableCount = int(uint(NetworkUtil::get2Bytes(message, 6)));
+
+        int expectedMessageLength =
+            8 + (availableCount + unavailableCount) * NetworkProtocol::FILEHASH_BYTECOUNT;
+
+        if (messageLength != expectedMessageLength) {
+            qDebug() << "invalid message detected: length does not match expected length";
+            return; /* invalid message */
+        }
+
+        uint offset = 8;
+
+        QVector<FileHash> available(availableCount);
+        for (int i = 0; i < availableCount; ++i) {
+            bool ok;
+            FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
+            if (!ok || hash.empty()) {
+                qDebug() << "invalid message detected: did not read hash correctly;"
+                         << "  ok=" << (ok ? "true" : "false");
+                return; /* invalid message */
+            }
+
+            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+            available.append(hash);
+        }
+
+        QVector<FileHash> unavailable(unavailableCount);
+        for (int i = 0; i < unavailableCount; ++i) {
+            bool ok;
+            FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
+            if (!ok || hash.empty()) {
+                qDebug() << "invalid message detected: did not read hash correctly;"
+                         << "  ok=" << (ok ? "true" : "false");
+                return; /* invalid message */
+            }
+
+            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+            unavailable.append(hash);
+        }
+
+        qDebug() << "got track availability changes: " << available.size() << "available,"
+                 << unavailable.size() << "unavailable";
+        emit collectionTracksAvailabilityChanged(available, unavailable);
     }
 
     void ServerConnection::parseTrackInfoBatchMessage(QByteArray const& message,
@@ -1695,12 +1997,74 @@ namespace PMP {
         emit dynamicModeHighScoreWaveStatusReceived(statusActive, statusChanged);
     }
 
+    void ServerConnection::parseQueueEntryAddedMessage(QByteArray const& message) {
+        if (message.length() != 10) {
+            return; /* invalid message */
+        }
+
+        quint32 offset = NetworkUtil::get4Bytes(message, 2);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 6);
+
+        qDebug() << "received queue track insertion event;  QID:" << queueID
+                 << " offset:" << offset;
+
+        emit queueEntryAdded(offset, queueID, RequestID());
+    }
+
+    void ServerConnection::parseQueueEntryAdditionConfirmationMessage(
+                                                                QByteArray const& message)
+    {
+        if (message.length() != 16) {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        quint32 index = NetworkUtil::get4Bytes(message, 8);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 12);
+
+        auto resultHandler = _resultHandlers.take(clientReference);
+        if (resultHandler) {
+            resultHandler->handleQueueEntryAdditionConfirmation(
+                                                         clientReference, index, queueID);
+            delete resultHandler;
+        }
+        else {
+            qWarning() << "no result handler found for reference" << clientReference;
+            emit queueEntryAdded(index, queueID, RequestID(clientReference));
+        }
+    }
+
+    void ServerConnection::parseServerHealthMessage(QByteArray const& message) {
+        if (message.length() != 4) {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        quint16 problems = NetworkUtil::get2Bytes(message, 2);
+
+        bool databaseUnavailable = problems & 1u;
+
+        ServerHealthStatus newServerHealthStatus(databaseUnavailable);
+
+        bool healthStatusChanged = _serverHealthStatus != newServerHealthStatus;
+        _serverHealthStatus = newServerHealthStatus;
+
+        if (healthStatusChanged) {
+            if (databaseUnavailable)
+                qWarning() << "server reports that its database is unavailable";
+
+            emit serverHealthChanged(newServerHealthStatus);
+        }
+    }
+
     void ServerConnection::handleResultMessage(quint16 errorType, quint32 clientReference,
                                                quint32 intData,
                                                QByteArray const& blobData)
     {
-        if ((NetworkProtocol::ErrorType)errorType
-                == NetworkProtocol::InvalidMessageStructure)
+        auto errorTypeEnum = static_cast<NetworkProtocol::ErrorType>(errorType);
+
+        if (errorTypeEnum == NetworkProtocol::InvalidMessageStructure)
         {
             qWarning() << "errortype = InvalidMessageStructure !!";
         }
@@ -1715,46 +2079,16 @@ namespace PMP {
             return;
         }
 
-        auto collectionFetcher = _collectionFetchers.value(clientReference, nullptr);
-        if (collectionFetcher) {
-            if ((NetworkProtocol::ErrorType)errorType == NetworkProtocol::NoError) {
-                collectionFetcher->completed();
-            }
-            else {
-                qWarning() << "received ERROR code" << errorType
-                           << "from collection fetch";
-                collectionFetcher->errorOccurred();
-            }
-
-            _collectionFetchers.remove(clientReference);
+        auto resultHandler = _resultHandlers.take(clientReference);
+        if (resultHandler) {
+            resultHandler->handleResult(
+                                       errorTypeEnum, clientReference, intData, blobData);
+            delete resultHandler;
             return;
         }
 
-        auto insertRequestIterator = _insertAtIndexRequests.find(clientReference);
-        if (insertRequestIterator != _insertAtIndexRequests.end()) {
-            if ((NetworkProtocol::ErrorType)errorType == NetworkProtocol::NoError) {
-                RequestID request(clientReference);
-                auto insertedQueueID = intData;
-                auto insertedAtOffset = insertRequestIterator.value();
-                emit queueEntryAdded(insertedAtOffset, insertedQueueID, request);
-            }
-            else {
-                // TODO: report error to the originator of the request
-            }
-
-            _insertAtIndexRequests.erase(insertRequestIterator);
-            return;
-        }
-
-        qWarning() << " client reference is unknown:" << clientReference;
-
-        switch ((NetworkProtocol::ErrorType) errorType) {
-
-        default:
-            qWarning() << "error/result type is unknown/unhandled; intData:" << intData
-                       << "; blobdata-length:" << blobData.size();
-            break;
-        }
+        qWarning() << "error/result message cannot be handled; ref:" << clientReference
+                   << " intData:" << intData << "; blobdata-length:" << blobData.size();
     }
 
     void ServerConnection::invalidMessageReceived(QByteArray const& message,

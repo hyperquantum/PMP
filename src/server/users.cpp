@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -83,6 +83,7 @@ namespace PMP {
     QByteArray Users::generateSalt() {
         QByteArray buffer;
         do {
+            // FIXME : stop using qrand()
             buffer.append((char)(qrand() % 256));
         } while (buffer.size() < 24);
 
@@ -164,8 +165,8 @@ namespace PMP {
             return NetworkProtocol::UserAccountAlreadyExists;
         case DatabaseProblem:
             return NetworkProtocol::DatabaseProblem;
-        default:
-            return NetworkProtocol::UnknownError;
         }
+
+        return NetworkProtocol::UnknownError;
     }
 }

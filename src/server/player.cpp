@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -356,7 +356,7 @@ namespace PMP {
     void Player::addToHistory(QueueEntry* entry, int permillage, bool hadError,
                               bool hadSeek)
     {
-        _nowPlaying->setEndedNow(); /* register end time */
+        entry->setEndedNow(); /* register end time */
 
         if (!entry->isTrack())
             return; /* don't put breakpoints in the history */

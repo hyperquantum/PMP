@@ -43,6 +43,7 @@ namespace PMP {
     class QueueEntry;
     class Resolver;
     class Server;
+    class ServerHealthMonitor;
     class Users;
 
     class ConnectedClient : public QObject {
@@ -50,7 +51,8 @@ namespace PMP {
     public:
         ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                         Generator* generator, Users* users,
-                        CollectionMonitor* collectionMonitor);
+                        CollectionMonitor* collectionMonitor,
+                        ServerHealthMonitor* serverHealthMonitor);
 
         ~ConnectedClient();
 
@@ -61,6 +63,8 @@ namespace PMP {
         void terminateConnection();
         void dataArrived();
         void socketError(QAbstractSocket::SocketError error);
+
+        void serverHealthChanged(bool databaseUnavailable);
 
         void volumeChanged(int volume);
         void dynamicModeStatusChanged(bool enabled);
@@ -87,10 +91,11 @@ namespace PMP {
                                     QDateTime previouslyHeard, qint16 score);
         void onFullIndexationRunStatusChanged(bool running);
         void onCollectionTrackInfoBatchToSend(uint clientReference,
-                                              QList<CollectionTrackInfo> tracks);
+                                              QVector<CollectionTrackInfo> tracks);
         void onCollectionTrackInfoCompleted(uint clientReference);
-        void onHashAvailabilityChanged(QList<QPair<PMP::FileHash, bool> > changes);
-        void onHashInfoChanged(QList<PMP::CollectionTrackInfo> changes);
+        void onHashAvailabilityChanged(QVector<PMP::FileHash> available,
+                                       QVector<PMP::FileHash> unavailable);
+        void onHashInfoChanged(QVector<CollectionTrackInfo> changes);
 
         void userDataForHashesFetchCompleted(quint32 userId,
                                              QVector<PMP::UserDataForHash> results,
@@ -98,6 +103,7 @@ namespace PMP {
 
     private:
         void enableEvents();
+        void enableHealthEvents();
 
         bool isLoggedIn() const;
 
@@ -120,6 +126,8 @@ namespace PMP {
         void sendQueueContentMessage(quint32 startOffset, quint8 length);
         void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
         void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
+        void sendQueueEntryAdditionConfirmationMessage(quint32 clientReference,
+                                                       quint32 index, quint32 queueID);
         void sendQueueEntryMovedMessage(quint32 fromOffset, quint32 toOffset,
                                         quint32 queueID);
         void sendQueueEntryInfoMessage(quint32 queueID);
@@ -136,21 +144,29 @@ namespace PMP {
         void sendResultMessage(NetworkProtocol::ErrorType errorType,
                               quint32 clientReference, quint32 intData,
                               QByteArray const& blobData);
+        void sendNonFatalInternalErrorResultMessage(quint32 clientReference);
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
+        void sendTrackAvailabilityBatchMessage(QVector<FileHash> available,
+                                               QVector<FileHash> unavailable);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
-                                       QList<CollectionTrackInfo> tracks);
+                                       QVector<CollectionTrackInfo> tracks);
         void sendNewHistoryEntryMessage(uint queueID, QDateTime started, QDateTime ended,
                                         quint32 userPlayedFor, int permillagePlayed,
                                         bool hadError, bool hadSeek);
         void sendQueueHistoryMessage(int limit);
         void sendServerNameMessage(quint8 type, QString name);
+        void sendServerHealthMessageIfNotEverythingOkay();
+        void sendServerHealthMessage();
+
         void handleBinaryMessage(QByteArray const& message);
         void handleSingleByteAction(quint8 action);
         void handleCollectionFetchRequest(uint clientReference);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         NetworkProtocol::ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
+        void parseQueueEntryRemovalRequest(QByteArray const& message);
+        void parseQueueEntryDuplicationRequest(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
 
@@ -158,15 +174,13 @@ namespace PMP {
 
         static const qint16 ServerProtocolNo;
 
-        bool _terminated;
-        bool _binaryMode;
-        bool _eventsEnabled;
         QTcpSocket* _socket;
         Server* _server;
         Player* _player;
         Generator* _generator;
         Users* _users;
         CollectionMonitor* _collectionMonitor;
+        ServerHealthMonitor* _serverHealthMonitor;
         QByteArray _textReadBuffer;
         int _clientProtocolNo;
         quint32 _lastSentNowPlayingID;
@@ -176,8 +190,12 @@ namespace PMP {
         QByteArray _sessionSaltForUserLoggingIn;
         quint32 _userLoggedIn;
         QString _userLoggedInName;
-        bool _pendingPlayerStatus;
         QHash<quint32, quint32> _trackAdditionConfirmationsPending;
+        bool _terminated;
+        bool _binaryMode;
+        bool _eventsEnabled;
+        bool _healthEventsEnabled;
+        bool _pendingPlayerStatus;
     };
 
     class CollectionSender : public QObject {
@@ -187,7 +205,8 @@ namespace PMP {
                          Resolver* resolver);
 
     Q_SIGNALS:
-        void sendCollectionList(uint clientReference, QList<CollectionTrackInfo> tracks);
+        void sendCollectionList(uint clientReference,
+                                QVector<CollectionTrackInfo> tracks);
         void allSent(uint clientReference);
 
     private slots:
@@ -196,7 +215,7 @@ namespace PMP {
     private:
         uint _clientRef;
         Resolver* _resolver;
-        QList<FileHash> _hashes;
+        QVector<FileHash> _hashes;
         int _currentIndex;
     };
 

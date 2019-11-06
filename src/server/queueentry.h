@@ -43,6 +43,7 @@ namespace PMP {
         QueueEntry(Queue* parent, QString const& filename);
         QueueEntry(Queue* parent, const FileHash& hash, const TagData& tags);
         QueueEntry(Queue* parent, FileHash const& hash);
+        QueueEntry(Queue* parent, QueueEntry const* existing);
 
         static QueueEntry* createBreak(Queue* parent);
 

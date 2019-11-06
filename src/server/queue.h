@@ -51,10 +51,17 @@ namespace PMP {
 
         uint getNextQueueID();
 
-    public slots:
         bool empty() const;
         uint length() const;
 
+        QueueEntry* lookup(quint32 queueID);
+        int findIndex(quint32 queueID);
+        QueueEntry* entryAtIndex(int index);
+        QList<QueueEntry*> entries(int startoffset, int maxCount);
+
+        QList<QSharedPointer<const PlayerHistoryEntry>> recentHistory(int limit);
+
+    public slots:
         void clear(bool doNotifications);
         void trim(uint length);
 
@@ -74,12 +81,7 @@ namespace PMP {
         bool removeAtIndex(uint index);
         bool move(quint32 queueID, qint16 indexDiff);
 
-        QList<QueueEntry*> entries(int startoffset, int maxCount);
-
-        QueueEntry* lookup(quint32 queueID);
-
         void addToHistory(QSharedPointer<const PlayerHistoryEntry> entry);
-        QList<QSharedPointer<const PlayerHistoryEntry>> recentHistory(int limit);
 
     Q_SIGNALS:
         void entryAdded(quint32 offset, quint32 queueID);
@@ -90,8 +92,6 @@ namespace PMP {
         void checkFrontOfQueue();
 
     private:
-        int findIndex(quint32 queueID);
-
         uint _nextQueueID;
         QHash<quint32, QueueEntry*> _idLookup;
         QQueue<QueueEntry*> _queue;

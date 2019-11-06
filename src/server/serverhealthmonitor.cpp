@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,22 +17,28 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "userdataforhashesfetcher.h"
-
-#include <QMetaType>
+#include "serverhealthmonitor.h"
 
 namespace PMP {
 
-    /** Utility object to automatically do the qRegisterMetaType calls at program
-     *  startup */
-    class ServerMetatypesInit {
-    private:
-        ServerMetatypesInit() {
-            qRegisterMetaType<PMP::UserDataForHash>();
-        }
+    ServerHealthMonitor::ServerHealthMonitor(QObject* parent)
+     : QObject(parent), _databaseUnavailable(false)
+    {
+        //
+    }
 
-        static ServerMetatypesInit GlobalVariable;
-    };
+    bool ServerHealthMonitor::anyProblem() const {
+        return _databaseUnavailable;
+    }
 
-    ServerMetatypesInit ServerMetatypesInit::GlobalVariable;
+    bool ServerHealthMonitor::databaseUnavailable() const {
+        return _databaseUnavailable;
+    }
+
+    void ServerHealthMonitor::setDatabaseUnavailable() {
+        if (_databaseUnavailable) return;
+
+        _databaseUnavailable = true;
+        emit serverHealthChanged(_databaseUnavailable);
+    }
 }

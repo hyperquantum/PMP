@@ -45,6 +45,8 @@ namespace PMP {
         void moveTrackToEnd(int fromIndex, quint32 queueId);
 
         void insertFileAsync(int index, const FileHash& hash);
+        void duplicateEntryAsync(quint32 queueID);
+        bool canDuplicateEntry(quint32 queueID) const;
 
     private slots:
         void resetQueue(int queueLength);

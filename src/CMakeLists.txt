@@ -42,15 +42,13 @@ set(PMP_SERVER_SOURCES
     server/database.cpp
     server/generator.cpp
     server/history.cpp
-    server/lastfmscrobblingbackend.cpp
     server/player.cpp
     server/preloader.cpp
     server/queue.cpp
     server/queueentry.cpp
     server/resolver.cpp
-    server/scrobbler.cpp
-    server/scrobblingbackend.cpp
     server/server.cpp
+    server/serverhealthmonitor.cpp
     server/servermetatypes.cpp
     server/serversettings.cpp
     server/userdataforhashesfetcher.cpp
@@ -63,15 +61,13 @@ set(PMP_SERVER_HEADERS
     server/connectedclient.h
     server/generator.h
     server/history.h
-    server/lastfmscrobblingbackend.h
     server/player.h
     server/preloader.h
     server/queue.h
     server/queueentry.h
     server/resolver.h
-    server/scrobbler.h
-    server/scrobblingbackend.h
     server/server.h
+    server/serverhealthmonitor.h
     server/serversettings.h
     server/userdataforhashesfetcher.h
     server/userdatafortracksfetcher.h
@@ -141,9 +137,9 @@ qt5_add_resources(PMP_GUI_REMOTE_QRCS ${PMP_GUI_REMOTE_RESOURCES})
 
 configure_file(common/version.h.in common/version.h)
 
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT ENABLE_WIN32_CONSOLE)
+if (NOT ENABLE_WIN32_CONSOLE)
   set(PMP_WIN32_FLAG WIN32)
-endif (NOT CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT ENABLE_WIN32_CONSOLE)
+endif (NOT ENABLE_WIN32_CONSOLE)
 
 add_executable(PMP-HashTool
     tools/hash-main.cpp

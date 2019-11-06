@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -60,9 +60,12 @@ namespace PMP {
         QMimeData* mimeData(const QModelIndexList& indexes) const;
 
     private slots:
+        void onCollectionTracksAvailabilityChanged(QVector<PMP::FileHash> available,
+                                                   QVector<PMP::FileHash> unavailable);
         void onCollectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
 
     private:
+        void updateTrackAvailability(QVector<FileHash> hashes, bool available);
         void addWhenModelEmpty(QList<CollectionTrackInfo> tracks);
         void buildIndexMaps();
         void rebuildInnerMap(int outerStartIndex = 0);

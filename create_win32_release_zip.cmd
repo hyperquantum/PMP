@@ -4,12 +4,13 @@
 ::
 :: PREREQUISITES:
 ::  - Qt5 MinGW edition installed with same version Qt MinGW toolkit
+::  - Qt5 "bin" directory added to the Windows PATH variable
 ::  - CMake installed in Windows
 ::  - 7-Zip installed in Windows
 ::  - taglib and pkg-config installed as described in the README
 ::  - libmysql.dll copied into the build directory as described in the README
 ::
-:: The installation paths of Qt, MinGW, CMake and 7-Zip are configured below.
+:: The installation paths of MinGW, CMake and 7-Zip are configured below.
 ::
 :: ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
@@ -17,9 +18,8 @@
 SETLOCAL ENABLEEXTENSIONS
 
 :: Installation paths -- ADJUST AS NEEDED
-SET MINGW_BIN_DIR=C:\Qt\Tools\mingw482_32\bin
-SET QT_BIN_DIR=C:\Qt\5.3\mingw482_32\bin
-SET QT_PLUGINS_DIR=C:\Qt\5.3\mingw482_32\plugins
+SET MINGW_BASE_DIR=C:\Qt\Tools\mingw530_32
+SET MINGW_BIN_DIR="%MINGW_BASE_DIR%"\bin
 SET CMAKE_BIN_DIR=%programfiles%\CMake\bin
 SET TOOL_7Z_BIN_DIR=%programfiles%\7-Zip
 
@@ -49,14 +49,6 @@ IF NOT EXIST "%MINGW_BIN_DIR%\mingw32-make.exe" (
     ECHO Error: mingw32-make.exe not found in %MINGW_BIN_DIR%
     GOTO :EOF
 )
-IF NOT EXIST "%QT_BIN_DIR%" (
-    ECHO Error: QT_BIN_DIR not found: %QT_BIN_DIR%
-    GOTO :EOF
-)
-IF NOT EXIST "%QT_PLUGINS_DIR%" (
-    ECHO Error: QT_PLUGINS_DIR not found: %QT_PLUGINS_DIR%
-    GOTO :EOF
-)
 IF NOT EXIST "%CMAKE_BIN_DIR%" (
     ECHO Error: CMAKE_BIN_DIR not found: %CMAKE_BIN_DIR%
     GOTO :EOF
@@ -65,6 +57,7 @@ IF NOT EXIST "%CMAKE_BIN_DIR%\cmake.exe" (
     ECHO Error: cmake.exe not found in %CMAKE_BIN_DIR%
     GOTO :EOF
 )
+where /q windeployqt || ECHO Error: windeployqt tool not in PATH && GOTO :EOF
 
 :: cleanup from previous runs (if necessary)
 IF EXIST "%full_zip%" (
@@ -132,25 +125,14 @@ copy "%bin_dir%"\libmysql.dll "%dist_dir%" >NUL
 
 copy "%MINGW_BIN_DIR%"\libtag.dll "%dist_dir%" >NUL
 
-copy "%QT_BIN_DIR%"\libgcc_s_dw*.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\libstdc*.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\libwinpthread*.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\icu*.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\Qt5Concurrent.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\Qt5Core.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\Qt5Gui.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\Qt5Multimedia.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\Qt5MultimediaWidgets.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\Qt5Network.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\Qt5OpenGL.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\Qt5Sql.dll "%dist_dir%" >NUL
-copy "%QT_BIN_DIR%"\Qt5Widgets.dll "%dist_dir%" >NUL
+windeployqt --release ^
+    "%dist_dir%\PMP-HashTool.exe" ^
+    "%dist_dir%\PMP-Cmd-Remote.exe" ^
+    "%dist_dir%\PMP-GUI-Remote.exe" ^
+    "%dist_dir%\PMP-Server.exe" ^
+    || ECHO Error while copying Qt dependencies && GOTO :EOF
 
-robocopy "%QT_PLUGINS_DIR%"/iconengines "%dist_dir%"/iconengines >NUL
-robocopy "%QT_PLUGINS_DIR%"/imageformats "%dist_dir%"/imageformats >NUL
-robocopy "%QT_PLUGINS_DIR%"/mediaservice "%dist_dir%"/mediaservice >NUL
-robocopy "%QT_PLUGINS_DIR%"/platforms "%dist_dir%"/platforms >NUL
-robocopy "%QT_PLUGINS_DIR%"/sqldrivers "%dist_dir%"/sqldrivers >NUL
+ECHO(
 
 :: create ZIP file
 

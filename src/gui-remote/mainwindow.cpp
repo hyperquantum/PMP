@@ -335,6 +335,10 @@ namespace PMP {
             this, &MainWindow::onConnectionBroken
         );
         connect(
+            _connection, &ServerConnection::serverHealthChanged,
+            this, &MainWindow::onServerHealthChanged
+        );
+        connect(
             _connection, &ServerConnection::fullIndexationStatusReceived,
             [this](bool running) {
                 _startFullIndexationAction->setEnabled(
@@ -408,6 +412,23 @@ namespace PMP {
         this->close();
     }
 
+    void MainWindow::onServerHealthChanged(ServerHealthStatus serverHealth) {
+        if (!serverHealth.anyProblems()) return;
+
+        if (serverHealth.databaseUnavailable()) {
+            QMessageBox::warning(
+                this, tr("Server problem"),
+                tr("The server reports that its database is not working!")
+            );
+        }
+        else {
+            QMessageBox::warning(
+                this, tr("Server problem"),
+                tr("The server reports an unspecified problem!")
+            );
+        }
+    }
+
     void MainWindow::showMainWidget() {
         _mainWidget = new MainWidget(this);
         _mainWidget->setConnection(_connection);
@@ -448,12 +469,12 @@ namespace PMP {
 
     void MainWindow::onAccountCreated(QString login, QString password, quint32 accountId)
     {
-        _userAccountCreationWidget = 0;
+        _userAccountCreationWidget = nullptr;
         showUserAccountPicker();
     }
 
     void MainWindow::onAccountCreationCancel() {
-        _userAccountCreationWidget = 0;
+        _userAccountCreationWidget = nullptr;
         showUserAccountPicker();
     }
 
@@ -477,7 +498,7 @@ namespace PMP {
         updateRightStatus();
         _connection->requestFullIndexationRunningStatus();
 
-        _loginWidget = 0;
+        _loginWidget = nullptr;
         showMainWidget();
 
         _startFullIndexationAction->setEnabled(false);
@@ -486,7 +507,7 @@ namespace PMP {
     }
 
     void MainWindow::onLoginCancel() {
-        _loginWidget = 0;
+        _loginWidget = nullptr;
         showUserAccountPicker();
     }
 }

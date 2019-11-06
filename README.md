@@ -1,16 +1,12 @@
-﻿# Party Music Player
+﻿# Party Music Player [![license][license-badge]][LICENSE]
 
-Copyright (C) 2011-2018  Kevin André
-
-  *!! This project is still in an early stage of development !!*
+Copyright (C) 2011-2019  Kevin André
 
 Party Music Player, abbreviated as PMP, is a multi-user client-server music system. The server is responsible for playing music, and a separate program, a 'remote', is used to connect to the server and instruct it what to do. PMP has an advanced file tracking mechanism; it can deal with moved/renamed and duplicate files without any problems.
 
-PMP is designed to be portable software and should be compatible with most popular operating systems in use today. Only Windows and Linux have been tested, but others like Mac OS X, BSD... should be supported as well.
+PMP is designed to be portable software and should be compatible with most popular operating systems in use today. Only Windows has been tested recently. Linux has been tested in the past. Others like Mac OS X, BSD... have never been tested but should work as well.
 
-The software is licenced under [GPLv3](./LICENSE.GPLv3.txt).
-
-*This is (pre-)alpha quality software*. Important functionality is still missing. There are no official releases yet. Anyone interested in trying PMP will need to build it from source.
+*This is alpha quality software*. Existing features can still be incomplete. Certain 'essential' features that can be found in most music player software might (still) be missing. PMP might contain lots of bugs. Use at your own risk.
 
 ## Table of Contents
 Contents of this file:
@@ -241,7 +237,6 @@ Effort is a rough estimate. Priorities can still change.
 | Group song duplicates together and treat them as one      | High     | Large        |
 | Identify song duplicates which have different hash values | High     | Large        |
 | Keyboard shortcuts for adjusting volume                   | Medium   | Small        |
-| Queue contextmenu option to duplicate the entry           | Medium   | Small        |
 | Fuzzy matching when searching the music collection        | Medium   | Medium       |
 | Server to server remote music access                      | Medium   | Medium       |
 | Identify artist by something better than text             | Medium   | Large        |
@@ -263,3 +258,6 @@ Rudimentary project website:  http://hyperquantum.be/pmp/
 GitHub repository:  https://github.com/hyperquantum/PMP
 
 You can contact the developer here:   hyperquantum@gmail.com
+
+[LICENSE]: ./LICENSE
+[license-badge]: https://img.shields.io/badge/License-GPLv3-blue.svg

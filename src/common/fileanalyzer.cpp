@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -176,6 +176,7 @@ namespace PMP {
         QString artist = TStringToQString(tag->artist());
         QString title = TStringToQString(tag->title());
         QString album = TStringToQString(tag->album());
+        //QString albumArtist = TStringToQString(tag->)
         QString comment = TStringToQString(tag->comment());
 
         _tags = TagData(artist, title, album, comment);
