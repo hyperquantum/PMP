@@ -33,6 +33,9 @@ private slots:
     void get4Bytes();
     void append8Bytes();
     void get8Bytes();
+    void append2BytesSigned();
+    void append4BytesSigned();
+    void append8BytesSigned();
     void getUtf8String();
 };
 #endif

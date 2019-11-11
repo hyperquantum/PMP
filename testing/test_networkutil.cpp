@@ -323,6 +323,110 @@ void TestNetworkUtil::get8Bytes() {
     QCOMPARE(NetworkUtil::get8Bytes(array, 32), quint64(0xFE2A54BB12CF5415ull));
 }
 
+void TestNetworkUtil::append2BytesSigned() {
+    QByteArray array;
+    NetworkUtil::append2BytesSigned(array, qint16(-1));
+    NetworkUtil::append2BytesSigned(array, qint16(-1000));
+
+    QCOMPARE(array.size(), 2 * 2);
+
+    QCOMPARE(char(array[0]), '\xFF');
+    QCOMPARE(char(array[1]), '\xFF');
+
+    QCOMPARE(char(array[2]), '\xFC');
+    QCOMPARE(char(array[3]), '\x18');
+}
+
+void TestNetworkUtil::append4BytesSigned() {
+    QByteArray array;
+    NetworkUtil::append4BytesSigned(array, qint32(-1));
+    NetworkUtil::append4BytesSigned(array, qint32(-1000));
+    NetworkUtil::append4BytesSigned(array, qint32(-1000000000));
+
+    QCOMPARE(array.size(), 3 * 4);
+
+    QCOMPARE(char(array[0]), '\xFF');
+    QCOMPARE(char(array[1]), '\xFF');
+    QCOMPARE(char(array[2]), '\xFF');
+    QCOMPARE(char(array[3]), '\xFF');
+
+    QCOMPARE(char(array[4]), '\xFF');
+    QCOMPARE(char(array[5]), '\xFF');
+    QCOMPARE(char(array[6]), '\xFC');
+    QCOMPARE(char(array[7]), '\x18');
+
+    QCOMPARE(char(array[8]), '\xC4');
+    QCOMPARE(char(array[9]), '\x65');
+    QCOMPARE(char(array[10]), '\x36');
+    QCOMPARE(char(array[11]), '\x00');
+}
+
+void TestNetworkUtil::append8BytesSigned() {
+    QByteArray array;
+    NetworkUtil::append8BytesSigned(array, qint64(-1));
+    NetworkUtil::append8BytesSigned(array, qint64(-1000));
+    NetworkUtil::append8BytesSigned(array, qint64(-1000000000));
+    NetworkUtil::append8BytesSigned(array, qint64(-1000000000000LL));
+    NetworkUtil::append8BytesSigned(array, qint64(-1000000000000001LL));
+    NetworkUtil::append8BytesSigned(array, qint64(-100000000000559010LL));
+
+    QCOMPARE(array.size(), 6 * 8);
+
+    QCOMPARE(char(array[0]), '\xFF');
+    QCOMPARE(char(array[1]), '\xFF');
+    QCOMPARE(char(array[2]), '\xFF');
+    QCOMPARE(char(array[3]), '\xFF');
+    QCOMPARE(char(array[4]), '\xFF');
+    QCOMPARE(char(array[5]), '\xFF');
+    QCOMPARE(char(array[6]), '\xFF');
+    QCOMPARE(char(array[7]), '\xFF');
+
+    QCOMPARE(char(array[8]), '\xFF');
+    QCOMPARE(char(array[9]), '\xFF');
+    QCOMPARE(char(array[10]), '\xFF');
+    QCOMPARE(char(array[11]), '\xFF');
+    QCOMPARE(char(array[12]), '\xFF');
+    QCOMPARE(char(array[13]), '\xFF');
+    QCOMPARE(char(array[14]), '\xFC');
+    QCOMPARE(char(array[15]), '\x18');
+
+    QCOMPARE(char(array[16]), '\xFF');
+    QCOMPARE(char(array[17]), '\xFF');
+    QCOMPARE(char(array[18]), '\xFF');
+    QCOMPARE(char(array[19]), '\xFF');
+    QCOMPARE(char(array[20]), '\xC4');
+    QCOMPARE(char(array[21]), '\x65');
+    QCOMPARE(char(array[22]), '\x36');
+    QCOMPARE(char(array[23]), '\x00');
+
+    QCOMPARE(char(array[24]), '\xFF');
+    QCOMPARE(char(array[25]), '\xFF');
+    QCOMPARE(char(array[26]), '\xFF');
+    QCOMPARE(char(array[27]), '\x17');
+    QCOMPARE(char(array[28]), '\x2B');
+    QCOMPARE(char(array[29]), '\x5A');
+    QCOMPARE(char(array[30]), '\xF0');
+    QCOMPARE(char(array[31]), '\x00');
+
+    QCOMPARE(char(array[32]), '\xFF');
+    QCOMPARE(char(array[33]), '\xFC');
+    QCOMPARE(char(array[34]), '\x72');
+    QCOMPARE(char(array[35]), '\x81');
+    QCOMPARE(char(array[36]), '\x5B');
+    QCOMPARE(char(array[37]), '\x39');
+    QCOMPARE(char(array[38]), '\x7F');
+    QCOMPARE(char(array[39]), '\xFF');
+
+    QCOMPARE(char(array[40]), '\xFE');
+    QCOMPARE(char(array[41]), '\x9C');
+    QCOMPARE(char(array[42]), '\xBA');
+    QCOMPARE(char(array[43]), '\x87');
+    QCOMPARE(char(array[44]), '\xA2');
+    QCOMPARE(char(array[45]), '\x6D');
+    QCOMPARE(char(array[46]), '\x78');
+    QCOMPARE(char(array[47]), '\x5E');
+}
+
 void TestNetworkUtil::getUtf8String() {
     QByteArray array;
     array.append('p');

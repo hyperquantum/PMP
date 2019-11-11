@@ -239,7 +239,7 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    const qint16 ServerConnection::ClientProtocolNo = 11;
+    const quint16 ServerConnection::ClientProtocolNo = 11;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -357,14 +357,11 @@ namespace PMP {
                     sendTextCommand("binary");
 
                 /* send binary hello */
-                char binaryHeader[5];
-                binaryHeader[0] = 'P';
-                binaryHeader[1] = 'M';
-                binaryHeader[2] = 'P';
-                /* the next two bytes are the protocol version */
-                binaryHeader[3] = char(((unsigned)ClientProtocolNo >> 8) & 255);
-                binaryHeader[4] = char((unsigned)ClientProtocolNo & 255);
-                _socket.write(binaryHeader, sizeof(binaryHeader));
+                QByteArray binaryHeader;
+                binaryHeader.reserve(5);
+                binaryHeader.append("PMP", 3);
+                NetworkUtil::append2Bytes(binaryHeader, ClientProtocolNo);
+                _socket.write(binaryHeader);
                 _socket.flush();
 
                 _binarySendingMode = true;
@@ -380,12 +377,9 @@ namespace PMP {
                     break;
                 }
 
-                char heading[5];
-                _socket.read(heading, 5);
+                QByteArray heading = _socket.read(5);
 
-                if (heading[0] != 'P'
-                    || heading[1] != 'M'
-                    || heading[2] != 'P')
+                if (!heading.startsWith("PMP"))
                 {
                     _state = HandshakeFailure;
                     emit invalidServer();
@@ -393,7 +387,7 @@ namespace PMP {
                     return;
                 }
 
-                _serverProtocolNo = (uint(heading[3]) << 8) + uint(heading[4]);
+                _serverProtocolNo = NetworkUtil::get2Bytes(heading, 3);
                 qDebug() << "server protocol version:" << _serverProtocolNo;
 
                 _state = BinaryMode;
@@ -487,27 +481,29 @@ namespace PMP {
     }
 
     void ServerConnection::sendBinaryMessage(QByteArray const& message) {
-        quint32 length = message.length();
+        auto messageLength = message.length();
+        if (messageLength > std::numeric_limits<qint32>::max() - 1)
+        {
+            qWarning() << "Message too long for sending; length:" << messageLength;
+            return;
+        }
 
-        char lengthArr[4];
-        lengthArr[0] = (length >> 24) & 255;
-        lengthArr[1] = (length >> 16) & 255;
-        lengthArr[2] = (length >> 8) & 255;
-        lengthArr[3] = length & 255;
+        QByteArray lengthBytes;
+        NetworkUtil::append4BytesSigned(lengthBytes, messageLength);
 
-        _socket.write(lengthArr, sizeof(lengthArr));
-        _socket.write(message.data(), length);
+        _socket.write(lengthBytes);
+        _socket.write(message);
         _socket.flush();
     }
 
     void ServerConnection::sendSingleByteAction(quint8 action) {
         if (!_binarySendingMode) {
             qDebug() << "PROBLEM: cannot send single byte action yet; action:"
-                     << (int)action;
+                     << static_cast<uint>(action);
             return; /* too early for that */
         }
 
-        qDebug() << "sending single byte action" << (int)action;
+        qDebug() << "sending single byte action" << static_cast<uint>(action);
 
         QByteArray message;
         message.reserve(3);
@@ -518,7 +514,8 @@ namespace PMP {
     }
 
     void ServerConnection::sendQueueFetchRequest(uint startOffset, quint8 length) {
-        qDebug() << "sending queue fetch request, startOffset=" << startOffset << " length=" << (int)length;
+        qDebug() << "sending queue fetch request; startOffset=" << startOffset
+                 << "; length=" << static_cast<uint>(length);
 
         QByteArray message;
         message.reserve(7);
@@ -532,7 +529,8 @@ namespace PMP {
     void ServerConnection::deleteQueueEntry(uint queueID) {
         QByteArray message;
         message.reserve(6);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::QueueEntryRemovalRequestMessage);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::QueueEntryRemovalRequestMessage);
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
@@ -542,7 +540,7 @@ namespace PMP {
         QByteArray message;
         message.reserve(8);
         NetworkUtil::append2Bytes(message, NetworkProtocol::QueueEntryMoveRequestMessage);
-        NetworkUtil::append2Bytes(message, offsetDiff);
+        NetworkUtil::append2BytesSigned(message, offsetDiff);
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
@@ -551,7 +549,8 @@ namespace PMP {
     void ServerConnection::insertQueueEntryAtFront(FileHash const& hash) {
         QByteArray message;
         message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::AddHashToFrontOfQueueRequestMessage);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::AddHashToFrontOfQueueRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkProtocol::appendHash(message, hash);
 
@@ -561,7 +560,8 @@ namespace PMP {
     void ServerConnection::insertQueueEntryAtEnd(FileHash const& hash) {
         QByteArray message;
         message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::AddHashToEndOfQueueRequestMessage);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::AddHashToEndOfQueueRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkProtocol::appendHash(message, hash);
 
@@ -843,11 +843,13 @@ namespace PMP {
         if (limit < 0) limit = 0;
         if (limit > 255) { limit = 255; }
 
+        quint8 limitUnsigned = static_cast<quint8>(limit);
+
         QByteArray message;
         message.reserve(2 + 2);
         NetworkUtil::append2Bytes(message, NetworkProtocol::PlayerHistoryRequestMessage);
         NetworkUtil::appendByte(message, 0); /* filler */
-        NetworkUtil::appendByte(message, (uint)limit);
+        NetworkUtil::appendByte(message, limitUnsigned);
 
         sendBinaryMessage(message);
     }
@@ -897,17 +899,29 @@ namespace PMP {
             return; /* too early for that */
         }
 
+        if (position < 0) {
+            qWarning() << "Position out of range:" << position;
+            return;
+        }
+
         QByteArray message;
         message.reserve(14);
         NetworkUtil::append2Bytes(message, NetworkProtocol::PlayerSeekRequestMessage);
         NetworkUtil::append4Bytes(message, queueID);
-        NetworkUtil::append8Bytes(message, position);
+        NetworkUtil::append8BytesSigned(message, position);
 
         sendBinaryMessage(message);
     }
 
     void ServerConnection::setVolume(int percentage) {
-        sendSingleByteAction(100 + percentage); /* 100 to 200 = set volume */
+        if (percentage < 0 || percentage > 100) {
+            qWarning() << "Invalid percentage:" << percentage;
+            return;
+        }
+
+        quint8 percentageUnsigned = static_cast<quint8>(percentage);
+
+        sendSingleByteAction(100 + percentageUnsigned); /* 100 to 200 = set volume */
     }
 
     void ServerConnection::enableDynamicMode() {
@@ -935,10 +949,16 @@ namespace PMP {
             return; /* only supported in binary mode */
         }
 
+        if (seconds < 0 || seconds > std::numeric_limits<qint32>::max() - 1) {
+            qWarning() << "Repetition span out of range:" << seconds;
+            return;
+        }
+
         QByteArray message;
         message.reserve(6);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::GeneratorNonRepetitionChangeMessage);
-        NetworkUtil::append4Bytes(message, seconds);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::GeneratorNonRepetitionChangeMessage);
+        NetworkUtil::append4BytesSigned(message, seconds);
 
         sendBinaryMessage(message);
     }
@@ -1064,7 +1084,8 @@ namespace PMP {
 
         QByteArray message;
         message.reserve(4 + 4);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::CollectionFetchRequestMessage);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::CollectionFetchRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, clientReference);
 
@@ -2122,6 +2143,7 @@ namespace PMP {
     void SimplePlayerControllerImpl::receivedPlayerState(int state, quint8 volume,
                 quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition)
     {
+        (void)volume;
         (void)nowPlayingPosition;
         _state = ServerConnection::PlayState(state);
         _queueLength = queueLength;

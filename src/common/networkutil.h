@@ -34,11 +34,16 @@ namespace PMP {
         static int append4Bytes(QByteArray& buffer, quint32 number);
         static int append8Bytes(QByteArray& buffer, quint64 number);
 
+        static int append2BytesSigned(QByteArray& buffer, qint16 number);
+        static int append4BytesSigned(QByteArray& buffer, qint32 number);
+        static int append8BytesSigned(QByteArray& buffer, qint64 number);
+
         static int append8ByteQDateTimeMsSinceEpoch(QByteArray& buffer,
                                                     QDateTime dateTime);
         static int append8ByteMaybeEmptyQDateTimeMsSinceEpoch(QByteArray& buffer,
                                                               QDateTime dateTime);
 
+        static quint16 get2Bytes(char const* buffer);
         static quint32 get4Bytes(char const* buffer);
 
         static quint8 getByte(QByteArray const& buffer, uint position);

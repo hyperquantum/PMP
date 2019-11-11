@@ -301,7 +301,7 @@ namespace PMP {
         void invalidMessageReceived(QByteArray const& message, QString messageType = "",
                                     QString extraInfo = "");
 
-        static const qint16 ClientProtocolNo;
+        static const quint16 ClientProtocolNo;
 
         ServerEventSubscription _autoSubscribeToEventsAfterConnect;
         State _state;

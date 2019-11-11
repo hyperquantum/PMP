@@ -56,6 +56,18 @@ namespace PMP {
         return 8;
     }
 
+    int NetworkUtil::append2BytesSigned(QByteArray& buffer, qint16 number) {
+        return append2Bytes(buffer, static_cast<quint16>(number));
+    }
+
+    int NetworkUtil::append4BytesSigned(QByteArray& buffer, qint32 number) {
+        return append4Bytes(buffer, static_cast<quint32>(number));
+    }
+
+    int NetworkUtil::append8BytesSigned(QByteArray& buffer, qint64 number) {
+        return append8Bytes(buffer, static_cast<quint64>(number));
+    }
+
     int NetworkUtil::append8ByteQDateTimeMsSinceEpoch(QByteArray& buffer,
                                                       QDateTime dateTime)
     {
@@ -80,6 +92,14 @@ namespace PMP {
 
     quint8 NetworkUtil::getByte(QByteArray const& buffer, uint position) {
         return static_cast<quint8>(buffer[position]);
+    }
+
+    quint16 NetworkUtil::get2Bytes(char const* buffer) {
+        return
+            compose2Bytes(
+                static_cast<quint8>(buffer[0]),
+                static_cast<quint8>(buffer[1])
+            );
     }
 
     quint16 NetworkUtil::get2Bytes(QByteArray const& buffer, uint position) {
