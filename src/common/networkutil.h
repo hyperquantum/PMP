@@ -46,16 +46,16 @@ namespace PMP {
         static quint16 get2Bytes(char const* buffer);
         static quint32 get4Bytes(char const* buffer);
 
-        static quint8 getByte(QByteArray const& buffer, uint position);
-        static quint16 get2Bytes(QByteArray const& buffer, uint position);
-        static quint32 get4Bytes(QByteArray const& buffer, uint position);
-        static quint64 get8Bytes(QByteArray const& buffer, uint position);
+        static quint8 getByte(QByteArray const& buffer, int position);
+        static quint16 get2Bytes(QByteArray const& buffer, int position);
+        static quint32 get4Bytes(QByteArray const& buffer, int position);
+        static quint64 get8Bytes(QByteArray const& buffer, int position);
 
         static QDateTime getQDateTimeFrom8ByteMsSinceEpoch(QByteArray const& buffer,
-                                                           uint position);
+                                                           int position);
         static QDateTime getMaybeEmptyQDateTimeFrom8ByteMsSinceEpoch(
                                                            QByteArray const& buffer,
-                                                           uint position);
+                                                           int position);
 
         static QString getUtf8String(QByteArray const& buffer, int position, int length);
 

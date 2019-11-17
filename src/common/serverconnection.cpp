@@ -1847,7 +1847,7 @@ namespace PMP {
 
         qDebug() << "received bulk queue entry hash message; count:" << trackCount;
 
-        uint offset = 4;
+        int offset = 4;
         for (int i = 0; i < trackCount; ++i) {
             quint32 queueID = NetworkUtil::get4Bytes(message, offset);
             quint16 status = NetworkUtil::get2Bytes(message, offset + 4);

@@ -90,7 +90,7 @@ namespace PMP {
         return append8Bytes(buffer, static_cast<quint64>(milliSeconds));
     }
 
-    quint8 NetworkUtil::getByte(QByteArray const& buffer, uint position) {
+    quint8 NetworkUtil::getByte(QByteArray const& buffer, int position) {
         return static_cast<quint8>(buffer[position]);
     }
 
@@ -102,7 +102,7 @@ namespace PMP {
             );
     }
 
-    quint16 NetworkUtil::get2Bytes(QByteArray const& buffer, uint position) {
+    quint16 NetworkUtil::get2Bytes(QByteArray const& buffer, int position) {
         return
             compose2Bytes(
                 static_cast<quint8>(buffer[position]),
@@ -120,7 +120,7 @@ namespace PMP {
             );
     }
 
-    quint32 NetworkUtil::get4Bytes(QByteArray const& buffer, uint position) {
+    quint32 NetworkUtil::get4Bytes(QByteArray const& buffer, int position) {
         return
             compose4Bytes(
                 static_cast<quint8>(buffer[position]),
@@ -130,7 +130,7 @@ namespace PMP {
             );
     }
 
-    quint64 NetworkUtil::get8Bytes(QByteArray const& buffer, uint position) {
+    quint64 NetworkUtil::get8Bytes(QByteArray const& buffer, int position) {
         return
             compose8Bytes(
                 static_cast<quint8>(buffer[position]),
@@ -145,14 +145,14 @@ namespace PMP {
     }
 
     QDateTime NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(const QByteArray& buffer,
-                                                             uint position)
+                                                             int position)
     {
         auto msecs = asSigned(get8Bytes(buffer, position));
         return QDateTime::fromMSecsSinceEpoch(msecs, Qt::UTC);
     }
 
     QDateTime NetworkUtil::getMaybeEmptyQDateTimeFrom8ByteMsSinceEpoch(
-            const QByteArray& buffer, uint position)
+                                                   const QByteArray& buffer, int position)
     {
         auto msecs = asSigned(get8Bytes(buffer, position));
         if (msecs == std::numeric_limits<qint64>::min())

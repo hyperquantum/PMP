@@ -1542,7 +1542,7 @@ namespace PMP {
             QList<quint32> QIDs;
             QIDs.reserve((messageLength - 2) / 4);
 
-            qint32 offset = 2;
+            int offset = 2;
             while (offset <= messageLength - 4) {
                 quint32 queueID = NetworkUtil::get4Bytes(message, offset);
 
@@ -1567,7 +1567,7 @@ namespace PMP {
             QList<quint32> QIDs;
             QIDs.reserve((messageLength - 4) / 4);
 
-            qint32 offset = 4;
+            int offset = 4;
             while (offset <= messageLength - 4) {
                 quint32 queueID = NetworkUtil::get4Bytes(message, offset);
 
