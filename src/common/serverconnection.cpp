@@ -994,7 +994,8 @@ namespace PMP {
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + loginBytes.size());
-        NetworkUtil::append2Bytes(message, NetworkProtocol::InitiateNewUserAccountMessage);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::InitiateNewUserAccountMessage);
         NetworkUtil::appendByte(message, loginBytes.size());
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, clientReference);
@@ -1220,8 +1221,8 @@ namespace PMP {
             quint16 status = NetworkUtil::get2Bytes(message, 2);
             quint32 queueID = NetworkUtil::get4Bytes(message, 4);
             int lengthSeconds = (qint32)NetworkUtil::get4Bytes(message, 8);
-            int titleSize = (uint)NetworkUtil::get2Bytes(message, 12);
-            int artistSize = (uint)NetworkUtil::get2Bytes(message, 14);
+            int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, 12);
+            int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, 14);
 
             if (queueID == 0) {
                 return; /* invalid message */
@@ -1255,7 +1256,7 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            int trackCount = (uint)NetworkUtil::get2Bytes(message, 2);
+            int trackCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
             int statusBlockCount = trackCount + trackCount % 2;
             if (trackCount == 0
                 || messageLength < 4 + statusBlockCount * 2 + trackCount * 12)
@@ -1278,8 +1279,9 @@ namespace PMP {
             while (true) {
                 quint32 queueID = NetworkUtil::get4Bytes(message, offset);
                 //int lengthSeconds = (uint)NetworkUtil::get4Bytes(message, offset + 4);
-                int titleSize = (uint)NetworkUtil::get2Bytes(message, offset + 8);
-                int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 10);
+                int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 8);
+                int artistSize =
+                        NetworkUtil::get2BytesUnsignedToInt(message, offset + 10);
                 int titleArtistOffset = offset + 12;
 
                 if (queueID == 0) {
@@ -1319,8 +1321,9 @@ namespace PMP {
                 quint32 queueID = NetworkUtil::get4Bytes(message, offset);
                 quint16 status = statuses[i];
                 int lengthSeconds = (uint)NetworkUtil::get4Bytes(message, offset + 4);
-                int titleSize = (uint)NetworkUtil::get2Bytes(message, offset + 8);
-                int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 10);
+                int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 8);
+                int artistSize =
+                        NetworkUtil::get2BytesUnsignedToInt(message, offset + 10);
                 offset += 12;
 
                 auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
@@ -1464,7 +1467,7 @@ namespace PMP {
 
             QList<QPair<uint, QString> > users;
 
-            int userCount = (uint)NetworkUtil::get2Bytes(message, 2);
+            int userCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
 
             qDebug() << "received user account list; count:" << userCount;
             qDebug() << " message length=" << messageLength;
@@ -1709,7 +1712,7 @@ namespace PMP {
             NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2
                 + (withAlbumAndTrackLength ? 2 + 4 : 0);
 
-        int trackCount = (uint)NetworkUtil::get2Bytes(message, 2);
+        int trackCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         if (trackCount == 0 || messageLength < offset + fixedInfoLengthPerTrack)
         {
             return; /* irrelevant or invalid message */
@@ -1730,14 +1733,14 @@ namespace PMP {
         while (true) {
             /* set pointer past hash and availability */
             int current = offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1;
-            int titleSize = (uint)NetworkUtil::get2Bytes(message, current);
+            int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
             current += 2;
-            int artistSize = (uint)NetworkUtil::get2Bytes(message, current);
+            int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
             current += 2;
             int albumSize = 0;
             //qint32 trackLength = 0;
             if (withAlbumAndTrackLength) {
-                albumSize = (uint)NetworkUtil::get2Bytes(message, current);
+                albumSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
                 current += 2;
                 //trackLength = (qint32)NetworkUtil::get4Bytes(message, current);
                 current += 4;
@@ -1793,13 +1796,13 @@ namespace PMP {
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
 
             quint8 availabilityByte = NetworkUtil::getByte(message, offset);
-            int titleSize = (uint)NetworkUtil::get2Bytes(message, offset + 1);
-            int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 3);
+            int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 1);
+            int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 3);
             offset += 5;
             int albumSize = 0;
             qint32 trackLengthInMs = -1;
             if (withAlbumAndTrackLength) {
-                albumSize = (uint)NetworkUtil::get2Bytes(message, offset);
+                albumSize = NetworkUtil::get2BytesUnsignedToInt(message, offset);
                 trackLengthInMs = (qint32)NetworkUtil::get4Bytes(message, offset + 2);
                 offset += 6;
             }
@@ -1833,7 +1836,7 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        int trackCount = (uint)NetworkUtil::get2Bytes(message, 2);
+        int trackCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         if (trackCount == 0
             || messageLength
                 != 4 + trackCount * (8 + NetworkProtocol::FILEHASH_BYTECOUNT))
@@ -1875,7 +1878,7 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        int hashCount = (uint)NetworkUtil::get2Bytes(message, 2);
+        int hashCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         quint16 fields = NetworkUtil::get2Bytes(message, 6);
         quint32 userId = NetworkUtil::get4Bytes(message, 8);
         int offset = 12;

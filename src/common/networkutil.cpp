@@ -144,6 +144,10 @@ namespace PMP {
             );
     }
 
+    int NetworkUtil::get2BytesUnsignedToInt(QByteArray const& buffer, int position) {
+        return static_cast<int>(static_cast<uint>(get2Bytes(buffer, position)));
+    }
+
     QDateTime NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(const QByteArray& buffer,
                                                              int position)
     {

@@ -323,6 +323,20 @@ void TestNetworkUtil::get8Bytes() {
     QCOMPARE(NetworkUtil::get8Bytes(array, 32), quint64(0xFE2A54BB12CF5415ull));
 }
 
+void TestNetworkUtil::get2BytesUnsignedToInt() {
+    QByteArray array;
+    array.append('\xFF');
+    array.append('\xFF');
+
+    array.append('\0');
+    array.append(char(30));
+
+    QCOMPARE(array.size(), 2 * 2);
+
+    QCOMPARE(NetworkUtil::get2BytesUnsignedToInt(array, 0), 65535);
+    QCOMPARE(NetworkUtil::get2BytesUnsignedToInt(array, 2), 30);
+}
+
 void TestNetworkUtil::append2BytesSigned() {
     QByteArray array;
     NetworkUtil::append2BytesSigned(array, qint16(-1));
