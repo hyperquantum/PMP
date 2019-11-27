@@ -34,6 +34,7 @@ private slots:
     void append8Bytes();
     void get8Bytes();
     void get2BytesUnsignedToInt();
+    void appendByteUnsigned();
     void append2BytesSigned();
     void append4BytesSigned();
     void append8BytesSigned();

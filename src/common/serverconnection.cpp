@@ -996,7 +996,7 @@ namespace PMP {
         message.reserve(2 + 2 + 4 + loginBytes.size());
         NetworkUtil::append2Bytes(message,
                                   NetworkProtocol::InitiateNewUserAccountMessage);
-        NetworkUtil::appendByte(message, loginBytes.size());
+        NetworkUtil::appendByteUnsigned(message, loginBytes.size());
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, clientReference);
         message += loginBytes;
@@ -1016,7 +1016,7 @@ namespace PMP {
         QByteArray message;
         message.reserve(2 + 2 + 4 + loginBytes.size());
         NetworkUtil::append2Bytes(message, NetworkProtocol::InitiateLoginMessage);
-        NetworkUtil::appendByte(message, loginBytes.size());
+        NetworkUtil::appendByteUnsigned(message, loginBytes.size());
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, clientReference);
         message += loginBytes;
@@ -1037,8 +1037,8 @@ namespace PMP {
         QByteArray message;
         message.reserve(4 + 4 + loginBytes.size() + salt.size() + hashedPassword.size());
         NetworkUtil::append2Bytes(message, NetworkProtocol::FinishNewUserAccountMessage);
-        NetworkUtil::appendByte(message, loginBytes.size());
-        NetworkUtil::appendByte(message, salt.size());
+        NetworkUtil::appendByteUnsigned(message, loginBytes.size());
+        NetworkUtil::appendByteUnsigned(message, salt.size());
         NetworkUtil::append4Bytes(message, clientReference);
         message += loginBytes;
         message += salt;
@@ -1065,10 +1065,10 @@ namespace PMP {
         );
         NetworkUtil::append2Bytes(message, NetworkProtocol::FinishLoginMessage);
         NetworkUtil::append2Bytes(message, 0); /* unused */
-        NetworkUtil::appendByte(message, (quint8)loginBytes.size());
-        NetworkUtil::appendByte(message, (quint8)userSalt.size());
-        NetworkUtil::appendByte(message, (quint8)sessionSalt.size());
-        NetworkUtil::appendByte(message, (quint8)hashedPassword.size());
+        NetworkUtil::appendByteUnsigned(message, loginBytes.size());
+        NetworkUtil::appendByteUnsigned(message, userSalt.size());
+        NetworkUtil::appendByteUnsigned(message, sessionSalt.size());
+        NetworkUtil::appendByteUnsigned(message, hashedPassword.size());
         NetworkUtil::append4Bytes(message, clientReference);
         message += loginBytes;
         message += userSalt;
@@ -1244,7 +1244,7 @@ namespace PMP {
             }
 
             qDebug() << "received track info reply;  QID:" << queueID
-                     << " type:" << (int)type << " seconds:" << lengthSeconds
+                     << " type:" << int(type) << " seconds:" << lengthSeconds
                      << " title:" << title << " artist:" << artist;
 
             emit receivedTrackInfo(queueID, type, lengthSeconds, title, artist);

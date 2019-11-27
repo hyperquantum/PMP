@@ -21,7 +21,7 @@
 
 #include <limits>
 
-#include <QDebug>
+#include <QtDebug>
 
 namespace PMP {
 
@@ -54,6 +54,15 @@ namespace PMP {
         buffer.append(extractByte1(number));
         buffer.append(extractByte0(number));
         return 8;
+    }
+
+    int NetworkUtil::appendByteUnsigned(QByteArray& buffer, int number) {
+        if (number < 0 || number > 255) {
+            qWarning() << "cannot convert" << number << "to unsigned byte";
+            number = 0;
+        }
+
+        return appendByte(buffer, static_cast<quint8>(number));
     }
 
     int NetworkUtil::append2BytesSigned(QByteArray& buffer, qint16 number) {

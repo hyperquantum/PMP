@@ -34,6 +34,8 @@ namespace PMP {
         static int append4Bytes(QByteArray& buffer, quint32 number);
         static int append8Bytes(QByteArray& buffer, quint64 number);
 
+        static int appendByteUnsigned(QByteArray& buffer, int number);
+
         static int append2BytesSigned(QByteArray& buffer, qint16 number);
         static int append4BytesSigned(QByteArray& buffer, qint32 number);
         static int append8BytesSigned(QByteArray& buffer, qint64 number);
