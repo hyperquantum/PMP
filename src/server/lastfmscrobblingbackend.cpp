@@ -51,19 +51,22 @@ namespace PMP {
 
     void LastFmRequestHandler::requestFinished() {
         auto error = _reply->error();
+        auto replyData = _reply->readAll();
+        auto replyText = QString::fromUtf8(replyData);
+
         if (error != QNetworkReply::NoError) {
             qWarning() << "Last.Fm reply has network error " << error
                        << "with error text:" << _reply->errorString();
+        }
 
+        qDebug() << "Last.Fm reply consists of" << replyData.size() << "bytes,"
+                 << replyText.size() << "characters:\n"
+                 << replyText;
+
+        if (error != QNetworkReply::NoError && replyText.size() == 0) {
             onNetworkError(error, _reply->errorString());
             return;
         }
-
-        auto replyData = _reply->readAll();
-        qDebug() << "Last.Fm reply received. Byte count:" << replyData.size();
-
-        auto replyText = QString::fromUtf8(replyData);
-        qDebug() << "Last.Fm reply:\n" << replyText;
 
         parseReply(replyData);
 
