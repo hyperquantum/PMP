@@ -560,6 +560,7 @@ namespace PMP {
         auto parametersString = urlParameters.toEncoded();
         if (parametersString.startsWith('?'))
             parametersString = parametersString.mid(1);
+        parametersString.replace('+', "%2B"); /* '+' was not encoded yet */
 
         qDebug() << "parameters:" << parametersString;
         return _networkAccessManager->post(request, parametersString);
