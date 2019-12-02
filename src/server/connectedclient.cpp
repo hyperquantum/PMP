@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -792,7 +792,7 @@ namespace PMP {
         NetworkUtil::append2Bytes(message, NetworkProtocol::TrackInfoMessage);
         NetworkUtil::append2Bytes(message, trackStatus);
         NetworkUtil::append4Bytes(message, queueID);
-        NetworkUtil::append4Bytes(message, length); /* length in seconds, SIGNED */
+        NetworkUtil::append4BytesSigned(message, length); /* length in seconds */
         NetworkUtil::append2Bytes(message, titleData.size());
         NetworkUtil::append2Bytes(message, artistData.size());
         message += titleData;

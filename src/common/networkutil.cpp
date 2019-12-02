@@ -153,6 +153,10 @@ namespace PMP {
             );
     }
 
+    qint32 NetworkUtil::get4BytesSigned(QByteArray const& buffer, int position) {
+        return static_cast<qint32>(get4Bytes(buffer, position));
+    }
+
     int NetworkUtil::get2BytesUnsignedToInt(QByteArray const& buffer, int position) {
         return static_cast<int>(static_cast<uint>(get2Bytes(buffer, position)));
     }

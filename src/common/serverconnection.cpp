@@ -1126,7 +1126,8 @@ namespace PMP {
         }
 
         auto messageType =
-            (NetworkProtocol::ServerMessageType)NetworkUtil::get2Bytes(message, 0);
+            static_cast<NetworkProtocol::ServerMessageType>(
+                                                      NetworkUtil::get2Bytes(message, 0));
 
         switch (messageType) {
         case NetworkProtocol::ServerEventNotificationMessage:
@@ -1220,7 +1221,7 @@ namespace PMP {
 
             quint16 status = NetworkUtil::get2Bytes(message, 2);
             quint32 queueID = NetworkUtil::get4Bytes(message, 4);
-            int lengthSeconds = (qint32)NetworkUtil::get4Bytes(message, 8);
+            int lengthSeconds = NetworkUtil::get4BytesSigned(message, 8);
             int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, 12);
             int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, 14);
 
@@ -1278,7 +1279,7 @@ namespace PMP {
             offsets.append(offset);
             while (true) {
                 quint32 queueID = NetworkUtil::get4Bytes(message, offset);
-                //int lengthSeconds = (uint)NetworkUtil::get4Bytes(message, offset + 4);
+                //int lengthSeconds = NetworkUtil::get4BytesSigned(message, offset + 4);
                 int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 8);
                 int artistSize =
                         NetworkUtil::get2BytesUnsignedToInt(message, offset + 10);
@@ -1320,7 +1321,7 @@ namespace PMP {
                 offset = offsets[i];
                 quint32 queueID = NetworkUtil::get4Bytes(message, offset);
                 quint16 status = statuses[i];
-                int lengthSeconds = (uint)NetworkUtil::get4Bytes(message, offset + 4);
+                int lengthSeconds = NetworkUtil::get4BytesSigned(message, offset + 4);
                 int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 8);
                 int artistSize =
                         NetworkUtil::get2BytesUnsignedToInt(message, offset + 10);
