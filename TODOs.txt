@@ -59,6 +59,7 @@ IDEAS
  ** option for single track mode (vs. continuous play)
  * display time remaining during playback
  * save the contents of the queue on server shutdown and restore it at the next server startup
+ * 'play again next' action for the song that is currently playing
 
 
 USER FRIENDLINESS
