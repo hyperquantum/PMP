@@ -53,8 +53,10 @@ namespace PMP {
         static quint32 get4Bytes(QByteArray const& buffer, int position);
         static quint64 get8Bytes(QByteArray const& buffer, int position);
 
+        static qint16 get2BytesSigned(QByteArray const& buffer, int position);
         static qint32 get4BytesSigned(QByteArray const& buffer, int position);
 
+        static int getByteUnsignedToInt(QByteArray const& buffer, int position);
         static int get2BytesUnsignedToInt(QByteArray const& buffer, int position);
 
         static QDateTime getQDateTimeFrom8ByteMsSinceEpoch(QByteArray const& buffer,

@@ -544,13 +544,13 @@ namespace PMP {
 
     void ConnectedClient::sendDynamicModeStatusMessage() {
         quint8 enabled = _generator->enabled() ? 1 : 0;
-        quint32 noRepetitionSpan = quint32(_generator->noRepetitionSpan());
+        qint32 noRepetitionSpan = _generator->noRepetitionSpan();
 
         QByteArray message;
         message.reserve(7);
         NetworkUtil::append2Bytes(message, NetworkProtocol::DynamicModeStatusMessage);
         NetworkUtil::appendByte(message, enabled);
-        NetworkUtil::append4Bytes(message, noRepetitionSpan);
+        NetworkUtil::append4BytesSigned(message, noRepetitionSpan);
 
         sendBinaryMessage(message);
     }
@@ -702,7 +702,7 @@ namespace PMP {
             NetworkUtil::append4Bytes(message, entry->user());
             NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry->started());
             NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry->ended());
-            NetworkUtil::append2Bytes(message, (qint16)entry->permillage());
+            NetworkUtil::append2BytesSigned(message, (qint16)entry->permillage());
             NetworkUtil::append2Bytes(message, status);
         }
 
@@ -926,7 +926,7 @@ namespace PMP {
 
         Q_FOREACH(QString name, names) {
             QByteArray nameBytes = name.toUtf8();
-            NetworkUtil::append4Bytes(message, nameBytes.size());
+            NetworkUtil::append4BytesSigned(message, nameBytes.size());
             message += nameBytes;
         }
 
@@ -1079,7 +1079,7 @@ namespace PMP {
             NetworkUtil::append2Bytes(message, (uint)artistData.size());
             if (withAlbumAndTrackLength) {
                 NetworkUtil::append2Bytes(message, (uint)albumData.size());
-                NetworkUtil::append4Bytes(message, track.lengthInMilliseconds());
+                NetworkUtil::append4BytesSigned(message, track.lengthInMilliseconds());
             }
 
             message += titleData;
@@ -1108,7 +1108,7 @@ namespace PMP {
         NetworkUtil::append4Bytes(message, userPlayedFor);
         NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, started);
         NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, ended);
-        NetworkUtil::append2Bytes(message, (qint16)permillagePlayed);
+        NetworkUtil::append2BytesSigned(message, permillagePlayed);
         NetworkUtil::append2Bytes(message, status);
 
         sendBinaryMessage(message);

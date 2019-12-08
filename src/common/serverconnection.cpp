@@ -1397,7 +1397,7 @@ namespace PMP {
             if (messageLength != 7) return; /* invalid message */
 
             quint8 isEnabled = NetworkUtil::getByte(message, 2);
-            int noRepetitionSpan = (int)NetworkUtil::get4Bytes(message, 3);
+            int noRepetitionSpan = NetworkUtil::get4BytesSigned(message, 3);
 
             if (noRepetitionSpan < 0) return; /* invalid message */
 
@@ -1416,9 +1416,10 @@ namespace PMP {
             int offset = 6;
             while (offset < messageLength) {
                 if (offset > messageLength - 4) return; /* invalid message */
-                quint32 nameLength = NetworkUtil::get4Bytes(message, offset);
+                int nameLength = NetworkUtil::get4BytesSigned(message, offset);
+                if (nameLength <= 0) return; /* invalid message */
                 offset += 4;
-                if (nameLength + (uint)offset > (uint)messageLength) return; /* invalid message */
+                if (nameLength + offset > messageLength) return; /* invalid message */
                 QString name = NetworkUtil::getUtf8String(message, offset, nameLength);
                 offset += nameLength;
                 names.append(name);
@@ -1481,7 +1482,8 @@ namespace PMP {
 
                 quint32 userId = NetworkUtil::get4Bytes(message, offset);
                 offset += 4;
-                int loginNameByteCount = (uint)NetworkUtil::getByte(message, offset);
+                int loginNameByteCount =
+                        NetworkUtil::getByteUnsignedToInt(message, offset);
                 offset += 1;
                 if (messageLength - offset < loginNameByteCount) {
                     return; /* invalid message */
@@ -1507,8 +1509,8 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            int loginBytesSize = (uint)NetworkUtil::getByte(message, 2);
-            int saltBytesSize = (uint)NetworkUtil::getByte(message, 3);
+            int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 2);
+            int saltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 3);
 
             if (messageLength != 4 + loginBytesSize + saltBytesSize) {
                 return; /* invalid message */
@@ -1546,9 +1548,9 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            int loginBytesSize = (uint)NetworkUtil::getByte(message, 4);
-            int userSaltBytesSize = (uint)NetworkUtil::getByte(message, 5);
-            int sessionSaltBytesSize = (uint)NetworkUtil::getByte(message, 6);
+            int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 4);
+            int userSaltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 5);
+            int sessionSaltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 6);
 
             if (messageLength !=
                     8 + loginBytesSize + userSaltBytesSize + sessionSaltBytesSize)
@@ -1570,7 +1572,7 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            int loginBytesSize = (uint)NetworkUtil::getByte(message, 2);
+            int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 2);
             quint32 userId = NetworkUtil::get4Bytes(message, 4);
 
             if (messageLength != 8 + loginBytesSize) {
@@ -1804,7 +1806,7 @@ namespace PMP {
             qint32 trackLengthInMs = -1;
             if (withAlbumAndTrackLength) {
                 albumSize = NetworkUtil::get2BytesUnsignedToInt(message, offset);
-                trackLengthInMs = (qint32)NetworkUtil::get4Bytes(message, offset + 2);
+                trackLengthInMs = NetworkUtil::get4BytesSigned(message, offset + 2);
                 offset += 6;
             }
 
@@ -1922,7 +1924,7 @@ namespace PMP {
             }
 
             if (haveScore) {
-                score = (qint16)NetworkUtil::get2Bytes(message, offset);
+                score = NetworkUtil::get2BytesSigned(message, offset);
                 offset += 2;
             }
 
@@ -1942,7 +1944,7 @@ namespace PMP {
         quint32 user = NetworkUtil::get4Bytes(message, 8);
         QDateTime started = NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, 12);
         QDateTime ended = NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, 20);
-        int permillagePlayed = (qint16)NetworkUtil::get2Bytes(message, 28);
+        int permillagePlayed = NetworkUtil::get2BytesSigned(message, 28);
         quint16 status = NetworkUtil::get2Bytes(message, 30);
 
         bool hadError = status & 1;
@@ -1961,7 +1963,7 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        int entryCount = (uint)NetworkUtil::getByte(message, 3);
+        int entryCount = NetworkUtil::getByteUnsignedToInt(message, 3);
 
         if (message.length() != 4 + entryCount * 28) {
             return; /* invalid message */
@@ -1977,7 +1979,7 @@ namespace PMP {
                 NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 8);
             auto ended =
                 NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 16);
-            int permillagePlayed = (qint16)NetworkUtil::get2Bytes(message, offset + 24);
+            int permillagePlayed = NetworkUtil::get2BytesSigned(message, offset + 24);
             quint16 status = NetworkUtil::get2Bytes(message, offset + 26);
 
             bool hadError = status & 1;
