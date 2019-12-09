@@ -1662,7 +1662,7 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        uint offset = 8;
+        int offset = 8;
 
         QVector<FileHash> available(availableCount);
         for (int i = 0; i < availableCount; ++i) {
