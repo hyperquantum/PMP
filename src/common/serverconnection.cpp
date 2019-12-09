@@ -1131,87 +1131,13 @@ namespace PMP {
 
         switch (messageType) {
         case NetworkProtocol::ServerEventNotificationMessage:
-        {
-            if (messageLength != 4) {
-                return; /* invalid message */
-            }
-
-            quint8 event = NetworkUtil::getByte(message, 2);
-            quint8 eventArg = NetworkUtil::getByte(message, 3);
-
-            qDebug() << "received server event" << event << "with arg" << eventArg;
-
-            switch (event) {
-            case 1:
-                onFullIndexationRunningStatusReceived(true);
-                break;
-            case 2:
-                onFullIndexationRunningStatusReceived(false);
-                break;
-            default:
-                qDebug() << "received unknown server event:" << event;
-                break;
-            }
-        }
+            parseServerEventNotificationMessage(message);
             break;
         case NetworkProtocol::PlayerStateMessage:
-        {
-            if (messageLength != 20) {
-                return; /* invalid message */
-            }
-
-            quint8 playerState = NetworkUtil::getByte(message, 2);
-            quint8 volume = NetworkUtil::getByte(message, 3);
-            quint32 queueLength = NetworkUtil::get4Bytes(message, 4);
-            quint32 queueID = NetworkUtil::get4Bytes(message, 8);
-            quint64 position = NetworkUtil::get8Bytes(message, 12);
-
-            qDebug() << "received player state message";
-
-            /* FIXME: events too simplistic */
-
-            if (volume <= 100) { emit volumeChanged(volume); }
-
-            if (queueID > 0) {
-                emit nowPlayingTrack(queueID);
-            }
-            else {
-                emit noCurrentTrack();
-            }
-
-            PlayState s = UnknownState;
-            switch (playerState) {
-            case 1:
-                s = Stopped;
-                emit stopped();
-                break;
-            case 2:
-                s = Playing;
-                emit playing();
-                break;
-            case 3:
-                s = Paused;
-                emit paused();
-                break;
-            }
-
-            emit trackPositionChanged(position);
-            emit queueLengthChanged(queueLength);
-            emit receivedPlayerState(s, volume, queueLength, queueID, position);
-        }
+            parsePlayerStateMessage(message);
             break;
         case NetworkProtocol::VolumeChangedMessage:
-        {
-            if (messageLength != 3) {
-                return; /* invalid message */
-            }
-
-            quint8 volume = NetworkUtil::getByte(message, 2);
-
-            qDebug() << "received volume changed event;  volume:" << volume;
-
-            if (volume <= 100) { emit volumeChanged(volume); }
-        }
+            parseVolumeChangedMessage(message);
             break;
         case NetworkProtocol::TrackInfoMessage:
         {
@@ -1393,18 +1319,7 @@ namespace PMP {
             parseQueueEntryAddedMessage(message);
             break;
         case NetworkProtocol::DynamicModeStatusMessage:
-        {
-            if (messageLength != 7) return; /* invalid message */
-
-            quint8 isEnabled = NetworkUtil::getByte(message, 2);
-            int noRepetitionSpan = NetworkUtil::get4BytesSigned(message, 3);
-
-            if (noRepetitionSpan < 0) return; /* invalid message */
-
-            qDebug() << "received dynamic mode status:" << (isEnabled > 0 ? "ON" : "OFF");
-
-            emit dynamicModeStatusReceived(isEnabled > 0, noRepetitionSpan);
-        }
+            parseDynamicModeStatusMessage(message);
             break;
         case NetworkProtocol::PossibleFilenamesForQueueEntryMessage:
         {
@@ -1436,14 +1351,7 @@ namespace PMP {
         }
             break;
         case NetworkProtocol::ServerInstanceIdentifierMessage:
-        {
-            if (messageLength != (2 + 16)) return; /* invalid message */
-
-            QUuid uuid = QUuid::fromRfc4122(message.mid(2));
-            qDebug() << "received server instance identifier:" << uuid;
-
-            emit receivedServerInstanceIdentifier(uuid);
-        }
+            parseServerInstanceIdentifierMessage(message);
             break;
         case NetworkProtocol::QueueEntryMovedMessage:
         {
@@ -1462,147 +1370,26 @@ namespace PMP {
         }
             break;
         case NetworkProtocol::UsersListMessage:
-        {
-            if (messageLength < 4) {
-                return; /* invalid message */
-            }
-
-            QList<QPair<uint, QString> > users;
-
-            int userCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
-
-            qDebug() << "received user account list; count:" << userCount;
-            qDebug() << " message length=" << messageLength;
-
-            int offset = 4;
-            for (int i = 0; i < userCount; ++i) {
-                if (messageLength - offset < 5) {
-                    return; /* invalid message */
-                }
-
-                quint32 userId = NetworkUtil::get4Bytes(message, offset);
-                offset += 4;
-                int loginNameByteCount =
-                        NetworkUtil::getByteUnsignedToInt(message, offset);
-                offset += 1;
-                if (messageLength - offset < loginNameByteCount) {
-                    return; /* invalid message */
-                }
-
-                QString login =
-                    NetworkUtil::getUtf8String(message, offset, loginNameByteCount);
-                offset += loginNameByteCount;
-
-                users.append(QPair<uint, QString>(userId, login));
-            }
-
-            if (offset != messageLength) {
-                return; /* invalid message */
-            }
-
-            emit receivedUserAccounts(users);
-        }
+            parseUsersListMessage(message);
             break;
         case NetworkProtocol::NewUserAccountSaltMessage:
-        {
-            if (messageLength < 4) {
-                return; /* invalid message */
-            }
-
-            int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 2);
-            int saltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 3);
-
-            if (messageLength != 4 + loginBytesSize + saltBytesSize) {
-                return; /* invalid message */
-            }
-
-            qDebug() << "received salt for new user account";
-
-            QString login = NetworkUtil::getUtf8String(message, 4, loginBytesSize);
-            QByteArray salt = message.mid(4 + loginBytesSize, saltBytesSize);
-
-            handleNewUserSalt(login, salt);
-        }
+            parseNewUserAccountSaltMessage(message);
             break;
         case NetworkProtocol::SimpleResultMessage:
-        {
-            if (messageLength < 12) {
-                return; /* invalid message */
-            }
-
-            quint16 errorType = NetworkUtil::get2Bytes(message, 2);
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-            quint32 intData = NetworkUtil::get4Bytes(message, 8);
-
-            QByteArray blobData = message.mid(12);
-
-            qDebug() << "received result/error message; type:" << errorType
-                     << " client-ref:" << clientReference;
-
-            handleResultMessage(errorType, clientReference, intData, blobData);
-        }
+            parseSimpleResultMessage(message);
             break;
         case NetworkProtocol::UserLoginSaltMessage:
-        {
-            if (messageLength < 8) {
-                return; /* invalid message */
-            }
-
-            int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 4);
-            int userSaltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 5);
-            int sessionSaltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 6);
-
-            if (messageLength !=
-                    8 + loginBytesSize + userSaltBytesSize + sessionSaltBytesSize)
-            {
-                return; /* invalid message */
-            }
-
-            QString login = NetworkUtil::getUtf8String(message, 8, loginBytesSize);
-            QByteArray userSalt = message.mid(8 + loginBytesSize, userSaltBytesSize);
-            QByteArray sessionSalt =
-                message.mid(8 + loginBytesSize + userSaltBytesSize, sessionSaltBytesSize);
-
-            handleLoginSalt(login, userSalt, sessionSalt);
-        }
+            parseUserLoginSaltMessage(message);
             break;
         case NetworkProtocol::UserPlayingForModeMessage:
-        {
-            if (messageLength < 8) {
-                return; /* invalid message */
-            }
-
-            int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 2);
-            quint32 userId = NetworkUtil::get4Bytes(message, 4);
-
-            if (messageLength != 8 + loginBytesSize) {
-                return; /* invalid message */
-            }
-
-            QString login = NetworkUtil::getUtf8String(message, 8, loginBytesSize);
-
-            qDebug() << "received user playing for: id =" << userId
-                     << "; login =" << login;
-
-            emit receivedUserPlayingFor(userId, login);
-        }
+            parseUserPlayingForModeMessage(message);
             break;
         case NetworkProtocol::CollectionFetchResponseMessage:
         case NetworkProtocol::CollectionChangeNotificationMessage:
             parseTrackInfoBatchMessage(message, messageType);
             break;
         case NetworkProtocol::ServerNameMessage:
-        {
-            if (messageLength < 4) {
-                return; /* invalid message */
-            }
-
-            quint8 nameType = NetworkUtil::getByte(message, 3);
-            QString name = NetworkUtil::getUtf8String(message, 4, messageLength - 4);
-
-            qDebug() << "received server name; type:" << nameType << " name:" << name;
-            emit receivedServerName(nameType, name);
-        }
+            parseServerNameMessage(message);
             break;
         case NetworkProtocol::HashUserDataMessage:
             parseHashUserDataMessage(message);
@@ -1614,14 +1401,7 @@ namespace PMP {
             parsePlayerHistoryMessage(message);
             break;
         case NetworkProtocol::DatabaseIdentifierMessage:
-        {
-            if (messageLength != (2 + 16)) return; /* invalid message */
-
-            QUuid uuid = QUuid::fromRfc4122(message.mid(2));
-            qDebug() << "received database identifier:" << uuid;
-
-            emit receivedDatabaseIdentifier(uuid);
-        }
+            parseDatabaseIdentifierMessage(message);
             break;
         case NetworkProtocol::DynamicModeWaveStatusMessage:
             parseDynamicModeWaveStatusMessage(message);
@@ -1640,6 +1420,305 @@ namespace PMP {
                      << " with length" << messageLength;
             break; /* unknown message type */
         }
+    }
+
+    void ServerConnection::parseSimpleResultMessage(QByteArray const& message) {
+        if (message.length() < 12) {
+            return; /* invalid message */
+        }
+
+        quint16 errorType = NetworkUtil::get2Bytes(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        quint32 intData = NetworkUtil::get4Bytes(message, 8);
+
+        QByteArray blobData = message.mid(12);
+
+        qDebug() << "received result/error message; type:" << errorType
+                 << " client-ref:" << clientReference;
+
+        handleResultMessage(errorType, clientReference, intData, blobData);
+    }
+
+    void ServerConnection::parseServerEventNotificationMessage(QByteArray const& message)
+    {
+        if (message.length() != 4) {
+            return; /* invalid message */
+        }
+
+        quint8 event = NetworkUtil::getByte(message, 2);
+        quint8 eventArg = NetworkUtil::getByte(message, 3);
+
+        qDebug() << "received server event" << event << "with arg" << eventArg;
+
+        switch (event) {
+        case 1:
+            onFullIndexationRunningStatusReceived(true);
+            break;
+        case 2:
+            onFullIndexationRunningStatusReceived(false);
+            break;
+        default:
+            qDebug() << "received unknown server event:" << event;
+            break;
+        }
+    }
+
+    void ServerConnection::parseServerInstanceIdentifierMessage(QByteArray const& message)
+    {
+        if (message.length() != (2 + 16)) return; /* invalid message */
+
+        QUuid uuid = QUuid::fromRfc4122(message.mid(2));
+        qDebug() << "received server instance identifier:" << uuid;
+
+        emit receivedServerInstanceIdentifier(uuid);
+    }
+
+    void ServerConnection::parseServerNameMessage(QByteArray const& message) {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        quint8 nameType = NetworkUtil::getByte(message, 3);
+        QString name = NetworkUtil::getUtf8String(message, 4, message.length() - 4);
+
+        qDebug() << "received server name; type:" << nameType << " name:" << name;
+        emit receivedServerName(nameType, name);
+    }
+
+    void ServerConnection::parseDatabaseIdentifierMessage(QByteArray const& message) {
+        if (message.length() != (2 + 16)) {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        QUuid uuid = QUuid::fromRfc4122(message.mid(2));
+        qDebug() << "received database identifier:" << uuid;
+
+        emit receivedDatabaseIdentifier(uuid);
+    }
+
+    void ServerConnection::parseServerHealthMessage(QByteArray const& message) {
+        if (message.length() != 4) {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        quint16 problems = NetworkUtil::get2Bytes(message, 2);
+
+        bool databaseUnavailable = problems & 1u;
+
+        ServerHealthStatus newServerHealthStatus(databaseUnavailable);
+
+        bool healthStatusChanged = _serverHealthStatus != newServerHealthStatus;
+        _serverHealthStatus = newServerHealthStatus;
+
+        if (healthStatusChanged) {
+            if (databaseUnavailable)
+                qWarning() << "server reports that its database is unavailable";
+
+            emit serverHealthChanged(newServerHealthStatus);
+        }
+    }
+
+    void ServerConnection::parseUsersListMessage(QByteArray const& message) {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        QList<QPair<uint, QString> > users;
+
+        int userCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+
+        qDebug() << "received user account list; count:" << userCount;
+        qDebug() << " message length=" << message.length();
+
+        int offset = 4;
+        for (int i = 0; i < userCount; ++i) {
+            if (message.length() - offset < 5) {
+                return; /* invalid message */
+            }
+
+            quint32 userId = NetworkUtil::get4Bytes(message, offset);
+            offset += 4;
+            int loginNameByteCount =
+                    NetworkUtil::getByteUnsignedToInt(message, offset);
+            offset += 1;
+            if (message.length() - offset < loginNameByteCount) {
+                return; /* invalid message */
+            }
+
+            QString login =
+                NetworkUtil::getUtf8String(message, offset, loginNameByteCount);
+            offset += loginNameByteCount;
+
+            users.append(QPair<uint, QString>(userId, login));
+        }
+
+        if (offset != message.length()) {
+            return; /* invalid message */
+        }
+
+        emit receivedUserAccounts(users);
+    }
+
+    void ServerConnection::parseNewUserAccountSaltMessage(QByteArray const& message) {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 2);
+        int saltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 3);
+
+        if (message.length() != 4 + loginBytesSize + saltBytesSize) {
+            return; /* invalid message */
+        }
+
+        qDebug() << "received salt for new user account";
+
+        QString login = NetworkUtil::getUtf8String(message, 4, loginBytesSize);
+        QByteArray salt = message.mid(4 + loginBytesSize, saltBytesSize);
+
+        handleNewUserSalt(login, salt);
+    }
+
+    void ServerConnection::parseUserLoginSaltMessage(QByteArray const& message) {
+        if (message.length() < 8) {
+            return; /* invalid message */
+        }
+
+        int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 4);
+        int userSaltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 5);
+        int sessionSaltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 6);
+
+        if (message.length() !=
+                8 + loginBytesSize + userSaltBytesSize + sessionSaltBytesSize)
+        {
+            return; /* invalid message */
+        }
+
+        QString login = NetworkUtil::getUtf8String(message, 8, loginBytesSize);
+        QByteArray userSalt = message.mid(8 + loginBytesSize, userSaltBytesSize);
+        QByteArray sessionSalt =
+            message.mid(8 + loginBytesSize + userSaltBytesSize, sessionSaltBytesSize);
+
+        handleLoginSalt(login, userSalt, sessionSalt);
+    }
+
+    void ServerConnection::parsePlayerStateMessage(QByteArray const& message) {
+        if (message.length() != 20) {
+            return; /* invalid message */
+        }
+
+        quint8 playerState = NetworkUtil::getByte(message, 2);
+        quint8 volume = NetworkUtil::getByte(message, 3);
+        quint32 queueLength = NetworkUtil::get4Bytes(message, 4);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 8);
+        quint64 position = NetworkUtil::get8Bytes(message, 12);
+
+        qDebug() << "received player state message";
+
+        /* FIXME: events too simplistic */
+
+        if (volume <= 100) { emit volumeChanged(volume); }
+
+        if (queueID > 0) {
+            emit nowPlayingTrack(queueID);
+        }
+        else {
+            emit noCurrentTrack();
+        }
+
+        PlayState s = UnknownState;
+        switch (playerState) {
+        case 1:
+            s = Stopped;
+            emit stopped();
+            break;
+        case 2:
+            s = Playing;
+            emit playing();
+            break;
+        case 3:
+            s = Paused;
+            emit paused();
+            break;
+        }
+
+        emit trackPositionChanged(position);
+        emit queueLengthChanged(queueLength);
+        emit receivedPlayerState(s, volume, queueLength, queueID, position);
+    }
+
+    void ServerConnection::parseVolumeChangedMessage(QByteArray const& message) {
+        if (message.length() != 3) {
+            return; /* invalid message */
+        }
+
+        quint8 volume = NetworkUtil::getByte(message, 2);
+
+        qDebug() << "received volume changed event;  volume:" << volume;
+
+        if (volume <= 100) { emit volumeChanged(volume); }
+    }
+
+    void ServerConnection::parseUserPlayingForModeMessage(QByteArray const& message) {
+        if (message.length() < 8) {
+            return; /* invalid message */
+        }
+
+        int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 2);
+        quint32 userId = NetworkUtil::get4Bytes(message, 4);
+
+        if (message.length() != 8 + loginBytesSize) {
+            return; /* invalid message */
+        }
+
+        QString login = NetworkUtil::getUtf8String(message, 8, loginBytesSize);
+
+        qDebug() << "received user playing for: id =" << userId
+                 << "; login =" << login;
+
+        emit receivedUserPlayingFor(userId, login);
+    }
+
+    void ServerConnection::parseDynamicModeStatusMessage(QByteArray const& message) {
+        if (message.length() != 7) return; /* invalid message */
+
+        quint8 isEnabled = NetworkUtil::getByte(message, 2);
+        int noRepetitionSpan = NetworkUtil::get4BytesSigned(message, 3);
+
+        if (noRepetitionSpan < 0) return; /* invalid message */
+
+        qDebug() << "received dynamic mode status:" << (isEnabled > 0 ? "ON" : "OFF");
+
+        emit dynamicModeStatusReceived(isEnabled > 0, noRepetitionSpan);
+    }
+
+    void ServerConnection::parseDynamicModeWaveStatusMessage(QByteArray const& message) {
+        qDebug() << "parsing dynamic mode wave status message";
+
+        if (message.length() != 8) {
+            invalidMessageReceived(message, "dynamic-mode-status", "message length != 8");
+            return;
+        }
+
+        auto statusByte = NetworkUtil::getByte(message, 3);
+        if (!NetworkProtocol::isValidStartStopEventStatus(statusByte)) {
+            invalidMessageReceived(
+                message, "dynamic-mode-status",
+                "invalid status value: " + QString::number(statusByte)
+            );
+            return;
+        }
+
+        /* we have no use for the user yet */
+        //auto user = NetworkUtil::get4Bytes(message, 4);
+
+        auto status = NetworkProtocol::StartStopEventStatus(statusByte);
+        bool statusActive = NetworkProtocol::isActive(status);
+        bool statusChanged = NetworkProtocol::isChange(status);
+
+        emit dynamicModeHighScoreWaveStatusReceived(statusActive, statusChanged);
     }
 
     void ServerConnection::parseTrackAvailabilityChangeBatchMessage(
@@ -1997,33 +2076,6 @@ namespace PMP {
         emit receivedPlayerHistory(entries);
     }
 
-    void ServerConnection::parseDynamicModeWaveStatusMessage(QByteArray const& message) {
-        qDebug() << "parsing dynamic mode wave status message";
-
-        if (message.length() != 8) {
-            invalidMessageReceived(message, "dynamic-mode-status", "message length != 8");
-            return;
-        }
-
-        auto statusByte = NetworkUtil::getByte(message, 3);
-        if (!NetworkProtocol::isValidStartStopEventStatus(statusByte)) {
-            invalidMessageReceived(
-                message, "dynamic-mode-status",
-                "invalid status value: " + QString::number(statusByte)
-            );
-            return;
-        }
-
-        /* we have no use for the user yet */
-        //auto user = NetworkUtil::get4Bytes(message, 4);
-
-        auto status = NetworkProtocol::StartStopEventStatus(statusByte);
-        bool statusActive = NetworkProtocol::isActive(status);
-        bool statusChanged = NetworkProtocol::isChange(status);
-
-        emit dynamicModeHighScoreWaveStatusReceived(statusActive, statusChanged);
-    }
-
     void ServerConnection::parseQueueEntryAddedMessage(QByteArray const& message) {
         if (message.length() != 10) {
             return; /* invalid message */
@@ -2059,29 +2111,6 @@ namespace PMP {
         else {
             qWarning() << "no result handler found for reference" << clientReference;
             emit queueEntryAdded(index, queueID, RequestID(clientReference));
-        }
-    }
-
-    void ServerConnection::parseServerHealthMessage(QByteArray const& message) {
-        if (message.length() != 4) {
-            qWarning() << "invalid message; length incorrect";
-            return;
-        }
-
-        quint16 problems = NetworkUtil::get2Bytes(message, 2);
-
-        bool databaseUnavailable = problems & 1u;
-
-        ServerHealthStatus newServerHealthStatus(databaseUnavailable);
-
-        bool healthStatusChanged = _serverHealthStatus != newServerHealthStatus;
-        _serverHealthStatus = newServerHealthStatus;
-
-        if (healthStatusChanged) {
-            if (databaseUnavailable)
-                qWarning() << "server reports that its database is unavailable";
-
-            emit serverHealthChanged(newServerHealthStatus);
         }
     }
 

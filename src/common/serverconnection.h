@@ -280,6 +280,25 @@ namespace PMP {
 
         void onFullIndexationRunningStatusReceived(bool running);
 
+        void parseSimpleResultMessage(QByteArray const& message);
+
+        void parseServerEventNotificationMessage(QByteArray const& message);
+        void parseServerInstanceIdentifierMessage(QByteArray const& message);
+        void parseServerNameMessage(QByteArray const& message);
+        void parseDatabaseIdentifierMessage(QByteArray const& message);
+        void parseServerHealthMessage(QByteArray const& message);
+
+        void parseUsersListMessage(QByteArray const& message);
+        void parseNewUserAccountSaltMessage(QByteArray const& message);
+        void parseUserLoginSaltMessage(QByteArray const& message);
+
+        void parsePlayerStateMessage(QByteArray const& message);
+        void parseVolumeChangedMessage(QByteArray const& message);
+        void parseUserPlayingForModeMessage(QByteArray const& message);
+
+        void parseDynamicModeStatusMessage(QByteArray const& message);
+        void parseDynamicModeWaveStatusMessage(QByteArray const& message);
+
         void parseTrackAvailabilityChangeBatchMessage(QByteArray const& message);
         void parseTrackInfoBatchMessage(QByteArray const& message,
                                         NetworkProtocol::ServerMessageType messageType);
@@ -289,12 +308,8 @@ namespace PMP {
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);
 
-        void parseDynamicModeWaveStatusMessage(QByteArray const& message);
-
         void parseQueueEntryAddedMessage(QByteArray const& message);
         void parseQueueEntryAdditionConfirmationMessage(QByteArray const& message);
-
-        void parseServerHealthMessage(QByteArray const& message);
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 
