@@ -296,6 +296,16 @@ namespace PMP {
         void parseVolumeChangedMessage(QByteArray const& message);
         void parseUserPlayingForModeMessage(QByteArray const& message);
 
+        void parseQueueContentsMessage(QByteArray const& message);
+        void parseTrackInfoMessage(QByteArray const& message);
+        void parseBulkTrackInfoMessage(QByteArray const& message);
+        void parsePossibleFilenamesForQueueEntryMessage(QByteArray const& message);
+        void parseBulkQueueEntryHashMessage(QByteArray const& message);
+        void parseQueueEntryAddedMessage(QByteArray const& message);
+        void parseQueueEntryAdditionConfirmationMessage(QByteArray const& message);
+        void parseQueueEntryRemovedMessage(QByteArray const& message);
+        void parseQueueEntryMovedMessage(QByteArray const& message);
+
         void parseDynamicModeStatusMessage(QByteArray const& message);
         void parseDynamicModeWaveStatusMessage(QByteArray const& message);
 
@@ -303,13 +313,9 @@ namespace PMP {
         void parseTrackInfoBatchMessage(QByteArray const& message,
                                         NetworkProtocol::ServerMessageType messageType);
 
-        void parseBulkQueueEntryHashMessage(QByteArray const& message);
         void parseHashUserDataMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);
-
-        void parseQueueEntryAddedMessage(QByteArray const& message);
-        void parseQueueEntryAdditionConfirmationMessage(QByteArray const& message);
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 
