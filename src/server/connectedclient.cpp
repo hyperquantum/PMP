@@ -353,7 +353,7 @@ namespace PMP {
         else if (command == "volume") {
             /* 'volume' with one argument is a request to changes the current volume */
             bool ok;
-            uint volume = arg1.toUInt(&ok);
+            int volume = arg1.toInt(&ok);
             if (ok && volume >= 0 && volume <= 100) {
                 if (isLoggedIn()) { _player->setVolume(volume); }
             }
@@ -468,17 +468,18 @@ namespace PMP {
             return; /* only supported in binary mode */
         }
 
-        quint32 length = message.length();
-        //qDebug() << "   need to send a binary message of length" << length;
+        auto messageLength = message.length();
+        if (messageLength > std::numeric_limits<qint32>::max() - 1)
+        {
+            qWarning() << "Message too long for sending; length:" << messageLength;
+            return;
+        }
 
-        char lengthArr[4];
-        lengthArr[0] = (length >> 24) & 255;
-        lengthArr[1] = (length >> 16) & 255;
-        lengthArr[2] = (length >> 8) & 255;
-        lengthArr[3] = length & 255;
+        QByteArray lengthBytes;
+        NetworkUtil::append4BytesSigned(lengthBytes, messageLength);
 
-        _socket->write(lengthArr, sizeof(lengthArr));
-        _socket->write(message.data(), length);
+        _socket->write(lengthBytes);
+        _socket->write(message);
         _socket->flush();
     }
 
@@ -631,11 +632,16 @@ namespace PMP {
 
     void ConnectedClient::sendUsersList() {
         QList<UserIdAndLogin> users = _users->getUsers();
+        auto usersCount = users.size();
+        if (usersCount > std::numeric_limits<quint16>::max()) {
+            qWarning() << "users count exceeds limit, cannot send list";
+            return;
+        }
 
         QByteArray message;
         message.reserve(2 + 2 + users.size() * (4 + 1 + 20)); /* only an approximation */
         NetworkUtil::append2Bytes(message, NetworkProtocol::UsersListMessage);
-        NetworkUtil::append2Bytes(message, (quint16)users.size());
+        NetworkUtil::append2Bytes(message, static_cast<quint16>(usersCount));
 
         Q_FOREACH(UserIdAndLogin user, users) {
             NetworkUtil::append4Bytes(message, user.first); /* ID */
@@ -643,7 +649,7 @@ namespace PMP {
             QByteArray loginNameBytes = user.second.toUtf8();
             loginNameBytes.truncate(255);
 
-            NetworkUtil::appendByte(message, (quint8)loginNameBytes.size());
+            NetworkUtil::appendByte(message, static_cast<quint8>(loginNameBytes.size()));
             message += loginNameBytes;
         }
 
@@ -686,7 +692,7 @@ namespace PMP {
         if (limit <= 0 || limit > 255) { limit = 255; }
 
         auto entries = queue.recentHistory(limit);
-        uint entryCount = entries.length();
+        auto entryCount = static_cast<quint8>(entries.length());
 
         QByteArray message;
         message.reserve(2 + 1 + 1 + entryCount * 28);
@@ -698,11 +704,13 @@ namespace PMP {
             quint16 status =
                 (entry->hadError() ? 1 : 0) | (entry->hadSeek() ? 2 : 0);
 
+            qint16 permillage = static_cast<qint16>(entry->permillage());
+
             NetworkUtil::append4Bytes(message, entry->queueID());
             NetworkUtil::append4Bytes(message, entry->user());
             NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry->started());
             NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry->ended());
-            NetworkUtil::append2BytesSigned(message, (qint16)entry->permillage());
+            NetworkUtil::append2BytesSigned(message, permillage);
             NetworkUtil::append2Bytes(message, status);
         }
 
@@ -769,7 +777,7 @@ namespace PMP {
 
     void ConnectedClient::sendQueueEntryInfoMessage(quint32 queueID) {
         QueueEntry* track = _player->queue().lookup(queueID);
-        if (track == 0) { return; /* sorry, cannot send */ }
+        if (track == nullptr) { return; /* sorry, cannot send */ }
 
         track->checkTrackData(_player->resolver());
 
@@ -1261,14 +1269,20 @@ namespace PMP {
     }
 
     void ConnectedClient::serverHealthChanged(bool databaseUnavailable) {
+        (void)databaseUnavailable;
+
         sendServerHealthMessage();
     }
 
     void ConnectedClient::volumeChanged(int volume) {
+        (void)volume;
+
         sendVolumeMessage();
     }
 
     void ConnectedClient::dynamicModeStatusChanged(bool enabled) {
+        (void)enabled;
+
         sendDynamicModeStatusMessage();
     }
 
@@ -1285,10 +1299,14 @@ namespace PMP {
     }
 
     void ConnectedClient::dynamicModeNoRepetitionSpanChanged(int seconds) {
+        (void)seconds;
+
         sendDynamicModeStatusMessage();
     }
 
     void ConnectedClient::onUserPlayingForChanged(quint32 user) {
+        (void)user;
+
         sendUserPlayingForModeMessage();
     }
 
@@ -1340,12 +1358,12 @@ namespace PMP {
             return;
         }
 
-        if (entry == 0) {
+        if (entry == nullptr) {
             sendTextCommand("nowplaying nothing");
             return;
         }
 
-        int seconds = entry->lengthInMilliseconds() / 1000;
+        int seconds = static_cast<int>(entry->lengthInMilliseconds() / 1000);
         FileHash const* hash = entry->hash();
 
         sendTextCommand(
@@ -1354,9 +1372,9 @@ namespace PMP {
              + "\n title: " + entry->title()
              + "\n artist: " + entry->artist()
              + "\n length: " + (seconds < 0 ? "?" : QString::number(seconds)) + " sec"
-             + "\n hash length: " + (hash == 0 ? "?" : QString::number(hash->length()))
-             + "\n hash SHA-1: " + (hash == 0 ? "?" : hash->SHA1().toHex())
-             + "\n hash MD5: " + (hash == 0 ? "?" : hash->MD5().toHex())
+             + "\n hash length: " + (!hash ? "?" : QString::number(hash->length()))
+             + "\n hash SHA-1: " + (!hash ? "?" : hash->SHA1().toHex())
+             + "\n hash MD5: " + (!hash ? "?" : hash->MD5().toHex())
         );
     }
 
@@ -1373,6 +1391,8 @@ namespace PMP {
     }
 
     void ConnectedClient::trackPositionChanged(qint64 position) {
+        (void)position;
+
         if (_binaryMode) {
             sendStateInfo();
             return;
@@ -1398,7 +1418,8 @@ namespace PMP {
             ++index;
             entry->checkTrackData(resolver);
 
-            int lengthInSeconds = entry->lengthInMilliseconds() / 1000;
+            int lengthInSeconds =
+                static_cast<int>(entry->lengthInMilliseconds() / 1000);
 
             command += "\n";
             command += QString::number(index).rightJustified(5);
@@ -1503,7 +1524,8 @@ namespace PMP {
         }
 
         auto messageType =
-            (NetworkProtocol::ClientMessageType)NetworkUtil::get2Bytes(message, 0);
+            static_cast<NetworkProtocol::ClientMessageType>(
+                                                      NetworkUtil::get2Bytes(message, 0));
 
         switch (messageType) {
         case NetworkProtocol::SingleByteActionMessage:
@@ -1611,7 +1633,7 @@ namespace PMP {
 
             if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
-            qint32 intervalMinutes = (qint32)NetworkUtil::get4Bytes(message, 2);
+            qint32 intervalMinutes = NetworkUtil::get4BytesSigned(message, 2);
             qDebug() << "received change request for generator non-repetition interval;"
                      << "minutes:" << intervalMinutes;
 
@@ -1636,12 +1658,12 @@ namespace PMP {
             }
 
             QueueEntry* entry = _player->queue().lookup(queueID);
-            if (entry == 0) {
+            if (entry == nullptr) {
                 return; /* not found :-/ */
             }
 
             const FileHash* hash = entry->hash();
-            if (hash == 0) {
+            if (hash == nullptr) {
                 /* hash not found */
                 /* TODO: register callback to resume this once the hash becomes known */
                 return;
@@ -1670,7 +1692,7 @@ namespace PMP {
             if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
             quint32 queueID = NetworkUtil::get4Bytes(message, 2);
-            qint64 position = (qint64)NetworkUtil::get8Bytes(message, 6);
+            qint64 position = NetworkUtil::get8BytesSigned(message, 6);
 
             qDebug() << "received seek command; QID:" << queueID
                      << "  position:" << position;
@@ -1692,7 +1714,7 @@ namespace PMP {
 
             if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
-            qint16 move = NetworkUtil::get2Bytes(message, 2);
+            qint16 move = NetworkUtil::get2BytesSigned(message, 2);
             quint32 queueID = NetworkUtil::get4Bytes(message, 4);
 
             qDebug() << "received track move command; QID:" << queueID
@@ -1707,7 +1729,7 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            qint32 loginLength = (quint32)NetworkUtil::getByte(message, 2);
+            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
             quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
 
             if (messageLength - 8 != loginLength) {
@@ -1741,8 +1763,8 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            qint32 loginLength = (quint32)NetworkUtil::getByte(message, 2);
-            qint32 saltLength = (quint32)NetworkUtil::getByte(message, 3);
+            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
+            int saltLength = NetworkUtil::getByteUnsignedToInt(message, 3);
             quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
 
             qDebug() << "received finish-new-user-account request; clientRef:"
@@ -1805,7 +1827,7 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            qint32 loginLength = (quint32)NetworkUtil::getByte(message, 2);
+            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
             quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
 
             if (messageLength - 8 != loginLength) {
@@ -1849,10 +1871,10 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            qint32 loginLength = (quint32)NetworkUtil::getByte(message, 4);
-            qint32 userSaltLength = (quint32)NetworkUtil::getByte(message, 5);
-            qint32 sessionSaltLength = (quint32)NetworkUtil::getByte(message, 6);
-            qint32 hashedPasswordLength = (quint32)NetworkUtil::getByte(message, 7);
+            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 4);
+            int userSaltLength = NetworkUtil::getByteUnsignedToInt(message, 5);
+            int sessionSaltLength = NetworkUtil::getByteUnsignedToInt(message, 6);
+            int hashedPasswordLength = NetworkUtil::getByteUnsignedToInt(message, 7);
             quint32 clientReference = NetworkUtil::get4Bytes(message, 8);
 
             qDebug() << "received finish-login request; clientRef:"
@@ -2142,7 +2164,7 @@ namespace PMP {
 
         if (!isLoggedIn()) { return; /* client needs to be authenticated for this */ }
 
-        int limit = (uint)NetworkUtil::getByte(message, 3);
+        int limit = NetworkUtil::getByteUnsignedToInt(message, 3);
 
         sendQueueHistoryMessage(limit);
     }
@@ -2151,7 +2173,7 @@ namespace PMP {
         /* actions 100-200 represent a SET VOLUME command */
         if (action >= 100 && action <= 200) {
             qDebug() << "received CHANGE VOLUME command, volume"
-                     << ((uint)action - 100);
+                     << (uint(action - 100));
 
             if (isLoggedIn()) { _player->setVolume(action - 100); }
             return;
@@ -2269,7 +2291,7 @@ namespace PMP {
             break;
         default:
             qDebug() << "received unrecognized single-byte action type:"
-                     << (int)action;
+                     << int(action);
             break; /* unknown action type */
         }
     }

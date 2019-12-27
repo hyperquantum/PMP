@@ -55,6 +55,7 @@ namespace PMP {
 
         static qint16 get2BytesSigned(QByteArray const& buffer, int position);
         static qint32 get4BytesSigned(QByteArray const& buffer, int position);
+        static qint64 get8BytesSigned(QByteArray const& buffer, int position);
 
         static int getByteUnsignedToInt(QByteArray const& buffer, int position);
         static int get2BytesUnsignedToInt(QByteArray const& buffer, int position);
