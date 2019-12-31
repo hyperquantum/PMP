@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -125,6 +125,9 @@ namespace PMP {
 
         /* handling for non-track queue entries */
 
+        QColor specialBackgroundColor(50, 65, 75);
+        QColor specialForegroundColor(20, 140, 210);
+
         switch (role) {
             case Qt::DisplayRole:
                 if (info == 0) { return QString(); }
@@ -157,12 +160,12 @@ namespace PMP {
 
             case Qt::ForegroundRole:
                 if (info)
-                    return QBrush(QColor::fromRgb(30, 30, 30));
+                    return QBrush(specialForegroundColor);
                 break;
 
             case Qt::BackgroundRole:
                 if (info)
-                    return QBrush(QColor::fromRgb(220, 220, 220));
+                    return QBrush(specialBackgroundColor);
                 break;
         }
 
