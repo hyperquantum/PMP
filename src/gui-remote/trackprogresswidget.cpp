@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -56,6 +56,11 @@ namespace PMP {
     }
 
     void TrackProgressWidget::paintEvent(QPaintEvent* event) {
+        QColor emptyColor(50, 65, 75);
+        QColor backgroundColor(25, 35, 45);
+        QColor borderColor(50, 65, 75);
+        QColor progressColor(80, 95, 105);
+
         QPainter painter(this);
 
         painter.setRenderHint(QPainter::Antialiasing);
@@ -63,11 +68,11 @@ namespace PMP {
         QRect rect = this->rect().adjusted(+1, +1, -1, -1);
 
         if (_trackLength <= 0) {
-            painter.fillRect(rect, QBrush(QColor(220, 220, 220)));
+            painter.fillRect(rect, QBrush(emptyColor));
             return;
         }
 
-        painter.fillRect(rect, QBrush(QColor(210, 220, 255)));
+        painter.fillRect(rect, QBrush(backgroundColor));
 
         if (_trackPosition > 0) {
             auto position = qMin(_trackPosition, _trackLength);
@@ -76,10 +81,10 @@ namespace PMP {
             rect2.adjust(+2, +2, -2, -2);
             int w = (position * rect2.width() + _trackLength / 2) / _trackLength;
             rect2.setWidth(w);
-            painter.fillRect(rect2, QBrush(QColor(170, 190, 250)));
+            painter.fillRect(rect2, QBrush(progressColor));
         }
 
-        painter.setPen(QPen(QColor(170, 190, 250)));
+        painter.setPen(QPen(borderColor));
         painter.drawRect(rect);
     }
 
