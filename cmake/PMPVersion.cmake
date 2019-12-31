@@ -7,7 +7,7 @@ set(PMP_ORGANIZATION_NAME "Party Music Player")
 set(PMP_ORGANIZATION_DOMAIN "hyperquantum.be")
 set(PMP_WEBSITE "http://hyperquantum.be/pmp")
 set(PMP_BUGREPORT_LOCATION "https://github.com/hyperquantum/PMP/issues")
-set(PMP_COPYRIGHT_YEARS "2014-2019")
+set(PMP_COPYRIGHT_YEARS "2014-2020")
 
 # create derived info
 
