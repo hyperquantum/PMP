@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,7 @@
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
 
-#include "playerstate.h"
+#include "serverplayerstate.h"
 #include "userdataforhashesfetcher.h"
 
 #include <QByteArray>
@@ -71,7 +71,7 @@ namespace PMP {
         void dynamicModeWaveStarting(quint32 user);
         void dynamicModeWaveFinished(quint32 user);
         void dynamicModeNoRepetitionSpanChanged(int seconds);
-        void playerStateChanged(PlayerState state);
+        void playerStateChanged(ServerPlayerState state);
         void currentTrackChanged(QueueEntry const* entry);
         void trackHistoryEvent(uint queueID, QDateTime started, QDateTime ended,
                                quint32 userPlayedFor, int permillagePlayed, bool hadError,

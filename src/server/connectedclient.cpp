@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -491,16 +491,16 @@ namespace PMP {
     void ConnectedClient::sendStateInfo() {
         //qDebug() << "sending state info";
 
-        PlayerState state = _player->state();
+        ServerPlayerState state = _player->state();
         quint8 stateNum = 0;
         switch (state) {
-        case PlayerState::Stopped:
+        case ServerPlayerState::Stopped:
             stateNum = 1;
             break;
-        case PlayerState::Playing:
+        case ServerPlayerState::Playing:
             stateNum = 2;
             break;
-        case PlayerState::Paused:
+        case ServerPlayerState::Paused:
             stateNum = 3;
             break;
         }
@@ -1333,20 +1333,20 @@ namespace PMP {
         sendEventNotificationMessage(running ? 1 : 2);
     }
 
-    void ConnectedClient::playerStateChanged(PlayerState state) {
+    void ConnectedClient::playerStateChanged(ServerPlayerState state) {
         if (_binaryMode) {
             sendStateInfo();
             return;
         }
 
         switch (state) {
-        case PlayerState::Playing:
+        case ServerPlayerState::Playing:
             sendTextCommand("playing");
             break;
-        case PlayerState::Paused:
+        case ServerPlayerState::Paused:
             sendTextCommand("paused");
             break;
-        case PlayerState::Stopped:
+        case ServerPlayerState::Stopped:
             sendTextCommand("stopped");
             break;
         }
