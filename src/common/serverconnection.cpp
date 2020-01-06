@@ -249,7 +249,7 @@ namespace PMP {
        _binarySendingMode(false),
        _serverProtocolNo(-1), _nextRef(1),
        _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0),
-       _simplePlayerController(nullptr)
+       _simplePlayerController(nullptr), _simplePlayerStateMonitor(nullptr)
     {
         connect(&_socket, SIGNAL(connected()), this, SLOT(onConnected()));
         connect(&_socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
@@ -259,6 +259,7 @@ namespace PMP {
         );
 
         _simplePlayerController = new SimplePlayerControllerImpl(this);
+        _simplePlayerStateMonitor = new SimplePlayerStateMonitorImpl(this);
     }
 
     void ServerConnection::reset() {
@@ -286,6 +287,10 @@ namespace PMP {
 
     SimplePlayerController& ServerConnection::simplePlayerController() {
         return *_simplePlayerController;
+    }
+
+    SimplePlayerStateMonitor& ServerConnection::simplePlayerStateMonitor() {
+        return *_simplePlayerStateMonitor;
     }
 
     bool ServerConnection::serverSupportsQueueEntryDuplication() const {
@@ -2225,6 +2230,54 @@ namespace PMP {
             _trackNowPlaying != _trackJustSkipped
             && (_state == ServerConnection::Playing
                 || _state == ServerConnection::Paused);
+    }
+
+    // ============================================================================ //
+
+    SimplePlayerStateMonitorImpl::SimplePlayerStateMonitorImpl(
+                                                             ServerConnection* connection)
+     : SimplePlayerStateMonitor(connection),
+       _connection(connection), _state(PlayerState::Unknown)
+    {
+        connect(
+            _connection, &ServerConnection::receivedPlayerState,
+            this, &SimplePlayerStateMonitorImpl::receivedPlayerState
+        );
+    }
+
+    PlayerState SimplePlayerStateMonitorImpl::playerState() const {
+        return _state;
+    }
+
+    void SimplePlayerStateMonitorImpl::receivedPlayerState(int state, quint8 volume,
+                quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition)
+    {
+        (void)volume;
+        (void)queueLength;
+        (void)nowPlayingQID;
+        (void)nowPlayingPosition;
+
+        auto newState = PlayerState::Unknown;
+        switch (ServerConnection::PlayState(state)) {
+            case ServerConnection::UnknownState:
+                newState = PlayerState::Unknown;
+                break;
+            case ServerConnection::Stopped:
+                newState = PlayerState::Stopped;
+                break;
+            case ServerConnection::Playing:
+                newState = PlayerState::Playing;
+                break;
+            case ServerConnection::Paused:
+                newState = PlayerState::Paused;
+                break;
+        }
+
+        if (newState == _state)
+            return;
+
+        _state = newState;
+        emit playerStateChanged(newState);
     }
 
 }

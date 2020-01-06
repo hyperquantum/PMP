@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,8 +23,10 @@
 #include "collectiontrackinfo.h"
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
+#include "playerstate.h"
 #include "serverhealthstatus.h"
 #include "simpleplayercontroller.h"
+#include "simpleplayerstatemonitor.h"
 #include "tribool.h"
 
 #include <QByteArray>
@@ -40,6 +42,7 @@ namespace PMP {
 
     class AbstractCollectionFetcher;
     class SimplePlayerControllerImpl;
+    class SimplePlayerStateMonitorImpl;
 
     class RequestID {
     public:
@@ -89,7 +92,7 @@ namespace PMP {
         class DuplicationResultHandler;
 
     public:
-        enum PlayState {
+        enum PlayState { // TODO : eliminate this and use PlayerState instead
             UnknownState = 0, Stopped = 1, Playing = 2, Paused = 3
         };
 
@@ -123,6 +126,7 @@ namespace PMP {
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
 
         SimplePlayerController& simplePlayerController();
+        SimplePlayerStateMonitor& simplePlayerStateMonitor();
 
         bool serverSupportsQueueEntryDuplication() const;
 
@@ -343,6 +347,7 @@ namespace PMP {
         QHash<uint, ResultHandler*> _resultHandlers;
         QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
         SimplePlayerControllerImpl* _simplePlayerController;
+        SimplePlayerStateMonitorImpl* _simplePlayerStateMonitor;
         ServerHealthStatus _serverHealthStatus;
     };
 
@@ -382,6 +387,22 @@ namespace PMP {
         uint _queueLength;
         quint32 _trackNowPlaying;
         quint32 _trackJustSkipped;
+    };
+
+    class SimplePlayerStateMonitorImpl : public SimplePlayerStateMonitor {
+        Q_OBJECT
+    public:
+        SimplePlayerStateMonitorImpl(ServerConnection* connection);
+
+        PlayerState playerState() const;
+
+    private slots:
+        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
+                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
+
+    private:
+        ServerConnection* _connection;
+        PlayerState _state;
     };
 }
 #endif
