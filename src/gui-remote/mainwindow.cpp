@@ -560,8 +560,8 @@ namespace PMP {
             _connection, &ServerConnection::scrobblingProviderInfoReceived,
             this,
             [this](ScrobblingProvider provider, ScrobblerStatus, bool enabled) {
-            if (provider != ScrobblingProvider::LastFm)
-                return;
+                if (provider != ScrobblingProvider::LastFm)
+                    return;
 
                 _lastFmEnabledAction->setChecked(enabled);
                 _lastFmEnabledAction->setEnabled(true);
