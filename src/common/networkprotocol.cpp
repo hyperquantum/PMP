@@ -230,8 +230,8 @@ namespace PMP {
         // TODO: check if the length of what we added matches FILEHASH_BYTECOUNT
     }
 
-    FileHash NetworkProtocol::getHash(const QByteArray& buffer, uint position, bool* ok) {
-        if (uint(buffer.size()) - uint(FILEHASH_BYTECOUNT) < position) {
+    FileHash NetworkProtocol::getHash(const QByteArray& buffer, int position, bool* ok) {
+        if (position > buffer.size() - FILEHASH_BYTECOUNT) {
             /* not enough bytes to read */
             qDebug() << "NetworkProtocol::getHash: ERROR: not enough bytes to read";
             if (ok) *ok = false;

@@ -33,6 +33,7 @@ TECHNICAL TODO
  * associate a title and artist with each hash and save that information in the database (?)
  * when running an indexation, analyze the most recently created/updated files first
  * large file support (?)
+ * try to automate the build procedure on Windows
 
 
 IDEAS
@@ -59,6 +60,7 @@ IDEAS
  ** option for single track mode (vs. continuous play)
  * display time remaining during playback
  * save the contents of the queue on server shutdown and restore it at the next server startup
+ * 'play again next' action for the song that is currently playing
 
 
 USER FRIENDLINESS
@@ -69,7 +71,6 @@ USER FRIENDLINESS
  * GUI remote: after login it should show what server it is connected to somehow
  * display the title/artist of the track currently playing in the window title of the remote
  * the drop indicator in the queue needs to be drawn as a line between tracks
- ** GUI remote: disable screensaver while playing
 
 
 POLISHING

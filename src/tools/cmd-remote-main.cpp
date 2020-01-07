@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -71,8 +71,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    const uint commandArgOffset = 4;
-    uint commandArgs = args.size() - commandArgOffset;
+    const int commandArgOffset = 4;
+    int commandArgs = args.size() - commandArgOffset;
 
     QString server = args[1];
     QString port = args[2];
@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
     /* Validate port number */
     bool ok = true;
     uint portNumber = port.toUInt(&ok);
-    if (!ok)  {
+    if (!ok || portNumber > 0xFFFFu)  {
         out << "Invalid port number: " << port << endl;
         return 1;
     }
@@ -174,7 +174,7 @@ int main(int argc, char *argv[]) {
     }
 
     QTcpSocket socket;
-    socket.connectToHost(server, (quint16)portNumber);
+    socket.connectToHost(server, static_cast<quint16>(portNumber));
 
     if (!socket.waitForConnected(2000)) {
         out << "Failed to connect to the server: code " << socket.error() << endl;

@@ -178,7 +178,7 @@ namespace PMP {
 
         static const int FILEHASH_BYTECOUNT = 8 /*length*/ + 20 /*SHA-1*/ + 16 /*MD5*/;
         static void appendHash(QByteArray& buffer, const FileHash& hash);
-        static FileHash getHash(const QByteArray& buffer, uint position, bool* ok);
+        static FileHash getHash(const QByteArray& buffer, int position, bool* ok);
 
         static qint16 getHashUserDataFieldsMaskForProtocolVersion(int version);
     };

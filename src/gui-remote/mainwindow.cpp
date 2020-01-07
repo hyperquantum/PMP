@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,6 +27,7 @@
 #include "connectionwidget.h"
 #include "loginwidget.h"
 #include "mainwidget.h"
+#include "powermanagement.h"
 #include "useraccountcreationwidget.h"
 #include "userpickerwidget.h"
 
@@ -50,7 +51,8 @@ namespace PMP {
        _connectionWidget(new ConnectionWidget(this)),
        _connection(nullptr), _userPickerWidget(nullptr), _loginWidget(nullptr),
        _mainWidget(nullptr),
-       _musicCollectionDock(new QDockWidget(tr("Music collection"), this))
+       _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
+       _powerManagement(new PowerManagement(this))
     {
         setWindowTitle(
             QString(tr("Party Music Player ")) + Util::EnDash + tr(" Remote")
@@ -115,6 +117,15 @@ namespace PMP {
             this, &MainWindow::onLastFmTriggered
         );
 
+        _keepDisplayActiveAction =
+                new QAction(tr("Keep &display active during playback"), this);
+        _keepDisplayActiveAction->setCheckable(true);
+        _keepDisplayActiveAction->setEnabled(_powerManagement->isPlatformSupported());
+        connect(
+            _keepDisplayActiveAction, &QAction::toggled,
+            this, &MainWindow::updatePowerManagement
+        );
+
         _aboutPmpAction = new QAction(tr("&About PMP..."), this);
         connect(
             _aboutPmpAction, &QAction::triggered, this, &MainWindow::onAboutPmpAction
@@ -147,6 +158,8 @@ namespace PMP {
         _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
 
         _viewMenu->addAction(_musicCollectionDock->toggleViewAction());
+        _viewMenu->addSeparator();
+        _viewMenu->addAction(_keepDisplayActiveAction);
 
         QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
 
@@ -306,6 +319,15 @@ namespace PMP {
             _connection->disableScrobblingForCurrentUser(ScrobblingProvider::LastFm);
     }
 
+    void MainWindow::updatePowerManagement() {
+        bool isPlaying =
+            _connection->simplePlayerStateMonitor().playerState() == PlayerState::Playing;
+
+        bool keepDisplayActiveOption = _keepDisplayActiveAction->isChecked();
+
+        _powerManagement->setKeepDisplayActive(isPlaying && keepDisplayActiveOption);
+    }
+
     void MainWindow::onAboutPmpAction() {
         QString aboutText =
             tr(
@@ -382,6 +404,11 @@ namespace PMP {
             qDebug() << "fullIndexationFinished triggered";
                 setLeftStatus(5000, tr("Full indexation finished"));
             }
+        );
+        connect(
+            &_connection->simplePlayerStateMonitor(),
+            &SimplePlayerStateMonitor::playerStateChanged,
+            this, &MainWindow::updatePowerManagement
         );
 
         _connection->connectToHost(server, port);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,7 +33,7 @@ namespace PMP {
         _queue(resolver), _preloader(nullptr, &_queue, resolver),
         _nowPlaying(nullptr), _playPosition(0), _maxPosReachedInCurrent(0),
         _seekHappenedInCurrent(false),
-        _state(PlayerState::Stopped), _transitioningToNextTrack(false),
+        _state(ServerPlayerState::Stopped), _transitioningToNextTrack(false),
         _userPlayingFor(0)
     {
         setVolume((defaultVolume >= 0 && defaultVolume <= 100) ? defaultVolume : 75);
@@ -65,21 +65,21 @@ namespace PMP {
     }
 
     bool Player::playing() const {
-        return _state == PlayerState::Playing;
+        return _state == ServerPlayerState::Playing;
     }
 
-    PlayerState Player::state() const {
+    ServerPlayerState Player::state() const {
         return _state;
     }
 
-    void Player::changeStateTo(PlayerState state) {
+    void Player::changeStateTo(ServerPlayerState state) {
         if (_state == state) return;
 
         qDebug() << "Player: state changed from" << int(_state) << "to" << int(state);
         _state = state;
         emit stateChanged(state);
 
-        if (state == PlayerState::Playing) {
+        if (state == ServerPlayerState::Playing) {
             emitStartedPlaying(_nowPlaying);
         }
     }
@@ -110,7 +110,7 @@ namespace PMP {
     }
 
     void Player::playPause() {
-        if (_state == PlayerState::Playing) {
+        if (_state == ServerPlayerState::Playing) {
             pause();
         }
         else {
@@ -120,30 +120,30 @@ namespace PMP {
 
     void Player::play() {
         switch (_state) {
-            case PlayerState::Stopped:
+            case ServerPlayerState::Stopped:
                 startNext(true); /* we're not playing yet */
                 break;
-            case PlayerState::Paused:
+            case ServerPlayerState::Paused:
                 /* set start time if it hasn't been set yet */
                 if (_nowPlaying->started().isNull()) {
                     _nowPlaying->setStartedNow();
                 }
                 _player->play(); /* resume paused track */
-                changeStateTo(PlayerState::Playing);
+                changeStateTo(ServerPlayerState::Playing);
                 break;
-            case PlayerState::Playing:
+            case ServerPlayerState::Playing:
                 break; /* already playing */
         }
     }
 
     void Player::pause() {
         switch (_state) {
-            case PlayerState::Stopped:
-            case PlayerState::Paused:
+            case ServerPlayerState::Stopped:
+            case ServerPlayerState::Paused:
                 break; /* no effect */
-            case PlayerState::Playing:
+            case ServerPlayerState::Playing:
                 _player->pause();
-                changeStateTo(PlayerState::Paused);
+                changeStateTo(ServerPlayerState::Paused);
                 break;
         }
     }
@@ -152,13 +152,13 @@ namespace PMP {
         bool mustPlay;
 
         switch (_state) {
-            case PlayerState::Stopped:
+            case ServerPlayerState::Stopped:
             default:
                 return; /* do nothing */
-            case PlayerState::Paused:
+            case ServerPlayerState::Paused:
                 mustPlay = false;
                 break;
-            case PlayerState::Playing:
+            case ServerPlayerState::Playing:
                 mustPlay = true;
                 break;
         }
@@ -174,7 +174,8 @@ namespace PMP {
     }
 
     void Player::seekTo(qint64 position) {
-        if (_state != PlayerState::Playing && _state != PlayerState::Paused) return;
+        if (_state != ServerPlayerState::Playing && _state != ServerPlayerState::Paused)
+            return;
         //if (!_player->isSeekable()) return;
 
         _seekHappenedInCurrent = true;
@@ -218,13 +219,13 @@ namespace PMP {
                 }
 
                 switch (_state) {
-                    case PlayerState::Playing:
+                    case ServerPlayerState::Playing:
                         startNext(true);
                         break;
-                    case PlayerState::Paused:
+                    case ServerPlayerState::Paused:
                         startNext(false);
                         break;
-                    case PlayerState::Stopped:
+                    case ServerPlayerState::Stopped:
                         break;
                 }
             }
@@ -240,7 +241,7 @@ namespace PMP {
     }
 
     void Player::internalPositionChanged(qint64 position) {
-        if (_state == PlayerState::Stopped) { _playPosition = 0; return; }
+        if (_state == ServerPlayerState::Stopped) { _playPosition = 0; return; }
 
         _playPosition = position;
 
@@ -324,8 +325,8 @@ namespace PMP {
 
             if (play) {
                 _nowPlaying->setStartedNow();
-                if (_state != PlayerState::Playing) {
-                    changeStateTo(PlayerState::Playing);
+                if (_state != ServerPlayerState::Playing) {
+                    changeStateTo(ServerPlayerState::Playing);
                 }
                 else {
                     emitStartedPlaying(_nowPlaying);
@@ -333,7 +334,7 @@ namespace PMP {
                 _player->play();
             }
             else {
-                changeStateTo(PlayerState::Paused);
+                changeStateTo(ServerPlayerState::Paused);
             }
 
             return true;
@@ -342,7 +343,7 @@ namespace PMP {
         /* we stop because we have nothing left to play */
 
         _transitioningToNextTrack = true; /* to prevent duplicate history items */
-        changeStateTo(PlayerState::Stopped);
+        changeStateTo(ServerPlayerState::Stopped);
         _player->stop();
         _preloader.lockNone();
 

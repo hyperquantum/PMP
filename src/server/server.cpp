@@ -113,7 +113,7 @@ namespace PMP {
         _serverHealthMonitor = serverHealthMonitor;
         _scrobbling = scrobbling;
 
-        if (!_server->listen(QHostAddress::Any, port)) {
+        if (!_server->listen(address, port)) {
             return false;
         }
 

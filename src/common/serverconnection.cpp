@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -239,7 +239,7 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    const qint16 ServerConnection::ClientProtocolNo = 12;
+    const quint16 ServerConnection::ClientProtocolNo = 12;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -249,7 +249,7 @@ namespace PMP {
        _binarySendingMode(false),
        _serverProtocolNo(-1), _nextRef(1),
        _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0),
-       _simplePlayerController(nullptr)
+       _simplePlayerController(nullptr), _simplePlayerStateMonitor(nullptr)
     {
         connect(&_socket, SIGNAL(connected()), this, SLOT(onConnected()));
         connect(&_socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
@@ -259,6 +259,7 @@ namespace PMP {
         );
 
         _simplePlayerController = new SimplePlayerControllerImpl(this);
+        _simplePlayerStateMonitor = new SimplePlayerStateMonitorImpl(this);
     }
 
     void ServerConnection::reset() {
@@ -286,6 +287,10 @@ namespace PMP {
 
     SimplePlayerController& ServerConnection::simplePlayerController() {
         return *_simplePlayerController;
+    }
+
+    SimplePlayerStateMonitor& ServerConnection::simplePlayerStateMonitor() {
+        return *_simplePlayerStateMonitor;
     }
 
     bool ServerConnection::serverSupportsQueueEntryDuplication() const {
@@ -357,14 +362,11 @@ namespace PMP {
                     sendTextCommand("binary");
 
                 /* send binary hello */
-                char binaryHeader[5];
-                binaryHeader[0] = 'P';
-                binaryHeader[1] = 'M';
-                binaryHeader[2] = 'P';
-                /* the next two bytes are the protocol version */
-                binaryHeader[3] = char(((unsigned)ClientProtocolNo >> 8) & 255);
-                binaryHeader[4] = char((unsigned)ClientProtocolNo & 255);
-                _socket.write(binaryHeader, sizeof(binaryHeader));
+                QByteArray binaryHeader;
+                binaryHeader.reserve(5);
+                binaryHeader.append("PMP", 3);
+                NetworkUtil::append2Bytes(binaryHeader, ClientProtocolNo);
+                _socket.write(binaryHeader);
                 _socket.flush();
 
                 _binarySendingMode = true;
@@ -380,12 +382,9 @@ namespace PMP {
                     break;
                 }
 
-                char heading[5];
-                _socket.read(heading, 5);
+                QByteArray heading = _socket.read(5);
 
-                if (heading[0] != 'P'
-                    || heading[1] != 'M'
-                    || heading[2] != 'P')
+                if (!heading.startsWith("PMP"))
                 {
                     _state = HandshakeFailure;
                     emit invalidServer();
@@ -393,7 +392,7 @@ namespace PMP {
                     return;
                 }
 
-                _serverProtocolNo = (uint(heading[3]) << 8) + uint(heading[4]);
+                _serverProtocolNo = NetworkUtil::get2Bytes(heading, 3);
                 qDebug() << "server protocol version:" << _serverProtocolNo;
 
                 _state = BinaryMode;
@@ -487,27 +486,29 @@ namespace PMP {
     }
 
     void ServerConnection::sendBinaryMessage(QByteArray const& message) {
-        quint32 length = message.length();
+        auto messageLength = message.length();
+        if (messageLength > std::numeric_limits<qint32>::max() - 1)
+        {
+            qWarning() << "Message too long for sending; length:" << messageLength;
+            return;
+        }
 
-        char lengthArr[4];
-        lengthArr[0] = (length >> 24) & 255;
-        lengthArr[1] = (length >> 16) & 255;
-        lengthArr[2] = (length >> 8) & 255;
-        lengthArr[3] = length & 255;
+        QByteArray lengthBytes;
+        NetworkUtil::append4BytesSigned(lengthBytes, messageLength);
 
-        _socket.write(lengthArr, sizeof(lengthArr));
-        _socket.write(message.data(), length);
+        _socket.write(lengthBytes);
+        _socket.write(message);
         _socket.flush();
     }
 
     void ServerConnection::sendSingleByteAction(quint8 action) {
         if (!_binarySendingMode) {
             qDebug() << "PROBLEM: cannot send single byte action yet; action:"
-                     << (int)action;
+                     << static_cast<uint>(action);
             return; /* too early for that */
         }
 
-        qDebug() << "sending single byte action" << (int)action;
+        qDebug() << "sending single byte action" << static_cast<uint>(action);
 
         QByteArray message;
         message.reserve(3);
@@ -518,7 +519,8 @@ namespace PMP {
     }
 
     void ServerConnection::sendQueueFetchRequest(uint startOffset, quint8 length) {
-        qDebug() << "sending queue fetch request, startOffset=" << startOffset << " length=" << (int)length;
+        qDebug() << "sending queue fetch request; startOffset=" << startOffset
+                 << "; length=" << static_cast<uint>(length);
 
         QByteArray message;
         message.reserve(7);
@@ -532,7 +534,8 @@ namespace PMP {
     void ServerConnection::deleteQueueEntry(uint queueID) {
         QByteArray message;
         message.reserve(6);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::QueueEntryRemovalRequestMessage);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::QueueEntryRemovalRequestMessage);
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
@@ -542,7 +545,7 @@ namespace PMP {
         QByteArray message;
         message.reserve(8);
         NetworkUtil::append2Bytes(message, NetworkProtocol::QueueEntryMoveRequestMessage);
-        NetworkUtil::append2Bytes(message, offsetDiff);
+        NetworkUtil::append2BytesSigned(message, offsetDiff);
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
@@ -551,7 +554,8 @@ namespace PMP {
     void ServerConnection::insertQueueEntryAtFront(FileHash const& hash) {
         QByteArray message;
         message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::AddHashToFrontOfQueueRequestMessage);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::AddHashToFrontOfQueueRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkProtocol::appendHash(message, hash);
 
@@ -561,7 +565,8 @@ namespace PMP {
     void ServerConnection::insertQueueEntryAtEnd(FileHash const& hash) {
         QByteArray message;
         message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::AddHashToEndOfQueueRequestMessage);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::AddHashToEndOfQueueRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkProtocol::appendHash(message, hash);
 
@@ -873,11 +878,13 @@ namespace PMP {
         if (limit < 0) limit = 0;
         if (limit > 255) { limit = 255; }
 
+        quint8 limitUnsigned = static_cast<quint8>(limit);
+
         QByteArray message;
         message.reserve(2 + 2);
         NetworkUtil::append2Bytes(message, NetworkProtocol::PlayerHistoryRequestMessage);
         NetworkUtil::appendByte(message, 0); /* filler */
-        NetworkUtil::appendByte(message, (uint)limit);
+        NetworkUtil::appendByte(message, limitUnsigned);
 
         sendBinaryMessage(message);
     }
@@ -927,17 +934,29 @@ namespace PMP {
             return; /* too early for that */
         }
 
+        if (position < 0) {
+            qWarning() << "Position out of range:" << position;
+            return;
+        }
+
         QByteArray message;
         message.reserve(14);
         NetworkUtil::append2Bytes(message, NetworkProtocol::PlayerSeekRequestMessage);
         NetworkUtil::append4Bytes(message, queueID);
-        NetworkUtil::append8Bytes(message, position);
+        NetworkUtil::append8BytesSigned(message, position);
 
         sendBinaryMessage(message);
     }
 
     void ServerConnection::setVolume(int percentage) {
-        sendSingleByteAction(100 + percentage); /* 100 to 200 = set volume */
+        if (percentage < 0 || percentage > 100) {
+            qWarning() << "Invalid percentage:" << percentage;
+            return;
+        }
+
+        quint8 percentageUnsigned = static_cast<quint8>(percentage);
+
+        sendSingleByteAction(100 + percentageUnsigned); /* 100 to 200 = set volume */
     }
 
     void ServerConnection::enableDynamicMode() {
@@ -965,10 +984,16 @@ namespace PMP {
             return; /* only supported in binary mode */
         }
 
+        if (seconds < 0 || seconds > std::numeric_limits<qint32>::max() - 1) {
+            qWarning() << "Repetition span out of range:" << seconds;
+            return;
+        }
+
         QByteArray message;
         message.reserve(6);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::GeneratorNonRepetitionChangeMessage);
-        NetworkUtil::append4Bytes(message, seconds);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::GeneratorNonRepetitionChangeMessage);
+        NetworkUtil::append4BytesSigned(message, seconds);
 
         sendBinaryMessage(message);
     }
@@ -1004,8 +1029,9 @@ namespace PMP {
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + loginBytes.size());
-        NetworkUtil::append2Bytes(message, NetworkProtocol::InitiateNewUserAccountMessage);
-        NetworkUtil::appendByte(message, loginBytes.size());
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::InitiateNewUserAccountMessage);
+        NetworkUtil::appendByteUnsigned(message, loginBytes.size());
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, clientReference);
         message += loginBytes;
@@ -1025,7 +1051,7 @@ namespace PMP {
         QByteArray message;
         message.reserve(2 + 2 + 4 + loginBytes.size());
         NetworkUtil::append2Bytes(message, NetworkProtocol::InitiateLoginMessage);
-        NetworkUtil::appendByte(message, loginBytes.size());
+        NetworkUtil::appendByteUnsigned(message, loginBytes.size());
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, clientReference);
         message += loginBytes;
@@ -1046,8 +1072,8 @@ namespace PMP {
         QByteArray message;
         message.reserve(4 + 4 + loginBytes.size() + salt.size() + hashedPassword.size());
         NetworkUtil::append2Bytes(message, NetworkProtocol::FinishNewUserAccountMessage);
-        NetworkUtil::appendByte(message, loginBytes.size());
-        NetworkUtil::appendByte(message, salt.size());
+        NetworkUtil::appendByteUnsigned(message, loginBytes.size());
+        NetworkUtil::appendByteUnsigned(message, salt.size());
         NetworkUtil::append4Bytes(message, clientReference);
         message += loginBytes;
         message += salt;
@@ -1074,10 +1100,10 @@ namespace PMP {
         );
         NetworkUtil::append2Bytes(message, NetworkProtocol::FinishLoginMessage);
         NetworkUtil::append2Bytes(message, 0); /* unused */
-        NetworkUtil::appendByte(message, (quint8)loginBytes.size());
-        NetworkUtil::appendByte(message, (quint8)userSalt.size());
-        NetworkUtil::appendByte(message, (quint8)sessionSalt.size());
-        NetworkUtil::appendByte(message, (quint8)hashedPassword.size());
+        NetworkUtil::appendByteUnsigned(message, loginBytes.size());
+        NetworkUtil::appendByteUnsigned(message, userSalt.size());
+        NetworkUtil::appendByteUnsigned(message, sessionSalt.size());
+        NetworkUtil::appendByteUnsigned(message, hashedPassword.size());
         NetworkUtil::append4Bytes(message, clientReference);
         message += loginBytes;
         message += userSalt;
@@ -1094,7 +1120,8 @@ namespace PMP {
 
         QByteArray message;
         message.reserve(4 + 4);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::CollectionFetchRequestMessage);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::CollectionFetchRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, clientReference);
 
@@ -1126,486 +1153,76 @@ namespace PMP {
     }
 
     void ServerConnection::handleBinaryMessage(QByteArray const& message) {
-        qint32 messageLength = message.length();
-
-        if (messageLength < 2) {
+        if (message.length() < 2) {
             qDebug() << "received invalid binary message (less than 2 bytes)";
             return; /* invalid message */
         }
 
         auto messageType =
-            (NetworkProtocol::ServerMessageType)NetworkUtil::get2Bytes(message, 0);
+            static_cast<NetworkProtocol::ServerMessageType>(
+                                                      NetworkUtil::get2Bytes(message, 0));
 
         switch (messageType) {
         case NetworkProtocol::ServerEventNotificationMessage:
-        {
-            if (messageLength != 4) {
-                return; /* invalid message */
-            }
-
-            quint8 event = NetworkUtil::getByte(message, 2);
-            quint8 eventArg = NetworkUtil::getByte(message, 3);
-
-            qDebug() << "received server event" << event << "with arg" << eventArg;
-
-            switch (event) {
-            case 1:
-                onFullIndexationRunningStatusReceived(true);
-                break;
-            case 2:
-                onFullIndexationRunningStatusReceived(false);
-                break;
-            default:
-                qDebug() << "received unknown server event:" << event;
-                break;
-            }
-        }
+            parseServerEventNotificationMessage(message);
             break;
         case NetworkProtocol::PlayerStateMessage:
-        {
-            if (messageLength != 20) {
-                return; /* invalid message */
-            }
-
-            quint8 playerState = NetworkUtil::getByte(message, 2);
-            quint8 volume = NetworkUtil::getByte(message, 3);
-            quint32 queueLength = NetworkUtil::get4Bytes(message, 4);
-            quint32 queueID = NetworkUtil::get4Bytes(message, 8);
-            quint64 position = NetworkUtil::get8Bytes(message, 12);
-
-            qDebug() << "received player state message";
-
-            /* FIXME: events too simplistic */
-
-            if (volume <= 100) { emit volumeChanged(volume); }
-
-            if (queueID > 0) {
-                emit nowPlayingTrack(queueID);
-            }
-            else {
-                emit noCurrentTrack();
-            }
-
-            PlayState s = UnknownState;
-            switch (playerState) {
-            case 1:
-                s = Stopped;
-                emit stopped();
-                break;
-            case 2:
-                s = Playing;
-                emit playing();
-                break;
-            case 3:
-                s = Paused;
-                emit paused();
-                break;
-            }
-
-            emit trackPositionChanged(position);
-            emit queueLengthChanged(queueLength);
-            emit receivedPlayerState(s, volume, queueLength, queueID, position);
-        }
+            parsePlayerStateMessage(message);
             break;
         case NetworkProtocol::VolumeChangedMessage:
-        {
-            if (messageLength != 3) {
-                return; /* invalid message */
-            }
-
-            quint8 volume = NetworkUtil::getByte(message, 2);
-
-            qDebug() << "received volume changed event;  volume:" << volume;
-
-            if (volume <= 100) { emit volumeChanged(volume); }
-        }
+            parseVolumeChangedMessage(message);
             break;
         case NetworkProtocol::TrackInfoMessage:
-        {
-            if (messageLength < 16) {
-                return; /* invalid message */
-            }
-
-            quint16 status = NetworkUtil::get2Bytes(message, 2);
-            quint32 queueID = NetworkUtil::get4Bytes(message, 4);
-            int lengthSeconds = (qint32)NetworkUtil::get4Bytes(message, 8);
-            int titleSize = (uint)NetworkUtil::get2Bytes(message, 12);
-            int artistSize = (uint)NetworkUtil::get2Bytes(message, 14);
-
-            if (queueID == 0) {
-                return; /* invalid message */
-            }
-
-            if (messageLength != 16 + titleSize + artistSize) {
-                return; /* invalid message */
-            }
-
-            QueueEntryType type = NetworkProtocol::trackStatusToQueueEntryType(status);
-
-            QString title, artist;
-            if (NetworkProtocol::isTrackStatusFromRealTrack(status)) {
-                title = NetworkUtil::getUtf8String(message, 16, titleSize);
-                artist = NetworkUtil::getUtf8String(message, 16 + titleSize, artistSize);
-            }
-            else {
-                title = artist = NetworkProtocol::getPseudoTrackStatusText(status);
-            }
-
-            qDebug() << "received track info reply;  QID:" << queueID
-                     << " type:" << (int)type << " seconds:" << lengthSeconds
-                     << " title:" << title << " artist:" << artist;
-
-            emit receivedTrackInfo(queueID, type, lengthSeconds, title, artist);
-        }
+            parseTrackInfoMessage(message);
             break;
         case NetworkProtocol::BulkTrackInfoMessage:
-        {
-            if (messageLength < 4) {
-                return; /* invalid message */
-            }
-
-            int trackCount = (uint)NetworkUtil::get2Bytes(message, 2);
-            int statusBlockCount = trackCount + trackCount % 2;
-            if (trackCount == 0
-                || messageLength < 4 + statusBlockCount * 2 + trackCount * 12)
-            {
-                return; /* irrelevant or invalid message */
-            }
-
-            int offset = 4;
-            QList<quint16> statuses;
-            for (int i = 0; i < trackCount; ++i) {
-                statuses.append(NetworkUtil::get2Bytes(message, offset));
-                offset += 2;
-            }
-            if (trackCount % 2 != 0) {
-                offset += 2; /* skip filler */
-            }
-
-            QList<int> offsets;
-            offsets.append(offset);
-            while (true) {
-                quint32 queueID = NetworkUtil::get4Bytes(message, offset);
-                //int lengthSeconds = (uint)NetworkUtil::get4Bytes(message, offset + 4);
-                int titleSize = (uint)NetworkUtil::get2Bytes(message, offset + 8);
-                int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 10);
-                int titleArtistOffset = offset + 12;
-
-                if (queueID == 0) {
-                    return; /* invalid message */
-                }
-
-                if (titleSize > messageLength - titleArtistOffset
-                    || artistSize > messageLength - titleArtistOffset
-                    || (titleSize + artistSize) > messageLength - titleArtistOffset)
-                {
-                    return; /* invalid message */
-                }
-
-                if (titleArtistOffset + titleSize + artistSize == messageLength) {
-                    break; /* end of message */
-                }
-
-                /* at least one more track info follows */
-
-                offset = offset + 12 + titleSize + artistSize;
-                if (offset + 12 > messageLength) {
-                    return;  /* invalid message */
-                }
-
-                offsets.append(offset);
-            }
-
-            qDebug() << "received bulk track info reply;  count:" << trackCount;
-
-            if (trackCount != offsets.size()) {
-                return;  /* invalid message */
-            }
-
-            /* now read all track info's */
-            for (int i = 0; i < trackCount; ++i) {
-                offset = offsets[i];
-                quint32 queueID = NetworkUtil::get4Bytes(message, offset);
-                quint16 status = statuses[i];
-                int lengthSeconds = (uint)NetworkUtil::get4Bytes(message, offset + 4);
-                int titleSize = (uint)NetworkUtil::get2Bytes(message, offset + 8);
-                int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 10);
-                offset += 12;
-
-                auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
-
-                QString title, artist;
-                if (NetworkProtocol::isTrackStatusFromRealTrack(status)) {
-                    title = NetworkUtil::getUtf8String(message, offset, titleSize);
-                    artist =
-                        NetworkUtil::getUtf8String(
-                            message, offset + titleSize, artistSize
-                        );
-                }
-                else {
-                    title = artist = NetworkProtocol::getPseudoTrackStatusText(status);
-                }
-
-                emit receivedTrackInfo(queueID, type, lengthSeconds, title, artist);
-            }
-        }
+            parseBulkTrackInfoMessage(message);
             break;
         case NetworkProtocol::BulkQueueEntryHashMessage:
             parseBulkQueueEntryHashMessage(message);
             break;
         case NetworkProtocol::QueueContentsMessage:
-        {
-            if (messageLength < 14) {
-                return; /* invalid message */
-            }
-
-            quint32 queueLength = NetworkUtil::get4Bytes(message, 2);
-            quint32 startOffset = NetworkUtil::get4Bytes(message, 6);
-
-            QList<quint32> queueIDs;
-            queueIDs.reserve((messageLength - 10) / 4);
-
-            for (int offset = 10; offset < messageLength; offset += 4) {
-                queueIDs.append(NetworkUtil::get4Bytes(message, offset));
-            }
-
-            if (queueLength - queueIDs.size() < startOffset) {
-                return; /* invalid message */
-            }
-
-            qDebug() << "received queue contents;  Q-length:" << queueLength
-                     << " offset:" << startOffset << " count:" << queueIDs.size();
-
-            emit receivedQueueContents(queueLength, startOffset, queueIDs);
-        }
+            parseQueueContentsMessage(message);
             break;
         case NetworkProtocol::QueueEntryRemovedMessage:
-        {
-            if (messageLength != 10) {
-                return; /* invalid message */
-            }
-
-            quint32 offset = NetworkUtil::get4Bytes(message, 2);
-            quint32 queueID = NetworkUtil::get4Bytes(message, 6);
-
-            qDebug() << "received queue track removal event;  QID:" << queueID
-                     << " offset:" << offset;
-
-            emit queueEntryRemoved(offset, queueID);
-        }
+            parseQueueEntryRemovedMessage(message);
             break;
         case NetworkProtocol::QueueEntryAddedMessage:
             parseQueueEntryAddedMessage(message);
             break;
         case NetworkProtocol::DynamicModeStatusMessage:
-        {
-            if (messageLength != 7) return; /* invalid message */
-
-            quint8 isEnabled = NetworkUtil::getByte(message, 2);
-            int noRepetitionSpan = (int)NetworkUtil::get4Bytes(message, 3);
-
-            if (noRepetitionSpan < 0) return; /* invalid message */
-
-            qDebug() << "received dynamic mode status:" << (isEnabled > 0 ? "ON" : "OFF");
-
-            emit dynamicModeStatusReceived(isEnabled > 0, noRepetitionSpan);
-        }
+            parseDynamicModeStatusMessage(message);
             break;
         case NetworkProtocol::PossibleFilenamesForQueueEntryMessage:
-        {
-            if (messageLength < 6) return; /* invalid message */
-
-            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
-
-            QList<QString> names;
-            int offset = 6;
-            while (offset < messageLength) {
-                if (offset > messageLength - 4) return; /* invalid message */
-                quint32 nameLength = NetworkUtil::get4Bytes(message, offset);
-                offset += 4;
-                if (nameLength + (uint)offset > (uint)messageLength) return; /* invalid message */
-                QString name = NetworkUtil::getUtf8String(message, offset, nameLength);
-                offset += nameLength;
-                names.append(name);
-            }
-
-            qDebug() << "received a list of" << names.size()
-                     << "possible filenames for QID" << queueID;
-
-            if (names.size() == 1) {
-                qDebug() << " received name" << names[0];
-            }
-
-            emit receivedPossibleFilenames(queueID, names);
-        }
+            parsePossibleFilenamesForQueueEntryMessage(message);
             break;
         case NetworkProtocol::ServerInstanceIdentifierMessage:
-        {
-            if (messageLength != (2 + 16)) return; /* invalid message */
-
-            QUuid uuid = QUuid::fromRfc4122(message.mid(2));
-            qDebug() << "received server instance identifier:" << uuid;
-
-            emit receivedServerInstanceIdentifier(uuid);
-        }
+            parseServerInstanceIdentifierMessage(message);
             break;
         case NetworkProtocol::QueueEntryMovedMessage:
-        {
-            if (messageLength != 14) {
-                return; /* invalid message */
-            }
-
-            quint32 fromOffset = NetworkUtil::get4Bytes(message, 2);
-            quint32 toOffset = NetworkUtil::get4Bytes(message, 6);
-            quint32 queueID = NetworkUtil::get4Bytes(message, 10);
-
-            qDebug() << "received queue track moved event;  QID:" << queueID
-                     << " from-offset:" << fromOffset << " to-offset:" << toOffset;
-
-            emit queueEntryMoved(fromOffset, toOffset, queueID);
-        }
+            parseQueueEntryMovedMessage(message);
             break;
         case NetworkProtocol::UsersListMessage:
-        {
-            if (messageLength < 4) {
-                return; /* invalid message */
-            }
-
-            QList<QPair<uint, QString> > users;
-
-            int userCount = (uint)NetworkUtil::get2Bytes(message, 2);
-
-            qDebug() << "received user account list; count:" << userCount;
-            qDebug() << " message length=" << messageLength;
-
-            int offset = 4;
-            for (int i = 0; i < userCount; ++i) {
-                if (messageLength - offset < 5) {
-                    return; /* invalid message */
-                }
-
-                quint32 userId = NetworkUtil::get4Bytes(message, offset);
-                offset += 4;
-                int loginNameByteCount = (uint)NetworkUtil::getByte(message, offset);
-                offset += 1;
-                if (messageLength - offset < loginNameByteCount) {
-                    return; /* invalid message */
-                }
-
-                QString login =
-                    NetworkUtil::getUtf8String(message, offset, loginNameByteCount);
-                offset += loginNameByteCount;
-
-                users.append(QPair<uint, QString>(userId, login));
-            }
-
-            if (offset != messageLength) {
-                return; /* invalid message */
-            }
-
-            emit receivedUserAccounts(users);
-        }
+            parseUsersListMessage(message);
             break;
         case NetworkProtocol::NewUserAccountSaltMessage:
-        {
-            if (messageLength < 4) {
-                return; /* invalid message */
-            }
-
-            int loginBytesSize = (uint)NetworkUtil::getByte(message, 2);
-            int saltBytesSize = (uint)NetworkUtil::getByte(message, 3);
-
-            if (messageLength != 4 + loginBytesSize + saltBytesSize) {
-                return; /* invalid message */
-            }
-
-            qDebug() << "received salt for new user account";
-
-            QString login = NetworkUtil::getUtf8String(message, 4, loginBytesSize);
-            QByteArray salt = message.mid(4 + loginBytesSize, saltBytesSize);
-
-            handleNewUserSalt(login, salt);
-        }
+            parseNewUserAccountSaltMessage(message);
             break;
         case NetworkProtocol::SimpleResultMessage:
-        {
-            if (messageLength < 12) {
-                return; /* invalid message */
-            }
-
-            quint16 errorType = NetworkUtil::get2Bytes(message, 2);
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-            quint32 intData = NetworkUtil::get4Bytes(message, 8);
-
-            QByteArray blobData = message.mid(12);
-
-            qDebug() << "received result/error message; type:" << errorType
-                     << " client-ref:" << clientReference;
-
-            handleResultMessage(errorType, clientReference, intData, blobData);
-        }
+            parseSimpleResultMessage(message);
             break;
         case NetworkProtocol::UserLoginSaltMessage:
-        {
-            if (messageLength < 8) {
-                return; /* invalid message */
-            }
-
-            int loginBytesSize = (uint)NetworkUtil::getByte(message, 4);
-            int userSaltBytesSize = (uint)NetworkUtil::getByte(message, 5);
-            int sessionSaltBytesSize = (uint)NetworkUtil::getByte(message, 6);
-
-            if (messageLength !=
-                    8 + loginBytesSize + userSaltBytesSize + sessionSaltBytesSize)
-            {
-                return; /* invalid message */
-            }
-
-            QString login = NetworkUtil::getUtf8String(message, 8, loginBytesSize);
-            QByteArray userSalt = message.mid(8 + loginBytesSize, userSaltBytesSize);
-            QByteArray sessionSalt =
-                message.mid(8 + loginBytesSize + userSaltBytesSize, sessionSaltBytesSize);
-
-            handleLoginSalt(login, userSalt, sessionSalt);
-        }
+            parseUserLoginSaltMessage(message);
             break;
         case NetworkProtocol::UserPlayingForModeMessage:
-        {
-            if (messageLength < 8) {
-                return; /* invalid message */
-            }
-
-            int loginBytesSize = (uint)NetworkUtil::getByte(message, 2);
-            quint32 userId = NetworkUtil::get4Bytes(message, 4);
-
-            if (messageLength != 8 + loginBytesSize) {
-                return; /* invalid message */
-            }
-
-            QString login = NetworkUtil::getUtf8String(message, 8, loginBytesSize);
-
-            qDebug() << "received user playing for: id =" << userId
-                     << "; login =" << login;
-
-            emit receivedUserPlayingFor(userId, login);
-        }
+            parseUserPlayingForModeMessage(message);
             break;
         case NetworkProtocol::CollectionFetchResponseMessage:
         case NetworkProtocol::CollectionChangeNotificationMessage:
             parseTrackInfoBatchMessage(message, messageType);
             break;
         case NetworkProtocol::ServerNameMessage:
-        {
-            if (messageLength < 4) {
-                return; /* invalid message */
-            }
-
-            quint8 nameType = NetworkUtil::getByte(message, 3);
-            QString name = NetworkUtil::getUtf8String(message, 4, messageLength - 4);
-
-            qDebug() << "received server name; type:" << nameType << " name:" << name;
-            emit receivedServerName(nameType, name);
-        }
+            parseServerNameMessage(message);
             break;
         case NetworkProtocol::HashUserDataMessage:
             parseHashUserDataMessage(message);
@@ -1617,14 +1234,7 @@ namespace PMP {
             parsePlayerHistoryMessage(message);
             break;
         case NetworkProtocol::DatabaseIdentifierMessage:
-        {
-            if (messageLength != (2 + 16)) return; /* invalid message */
-
-            QUuid uuid = QUuid::fromRfc4122(message.mid(2));
-            qDebug() << "received database identifier:" << uuid;
-
-            emit receivedDatabaseIdentifier(uuid);
-        }
+            parseDatabaseIdentifierMessage(message);
             break;
         case NetworkProtocol::DynamicModeWaveStatusMessage:
             parseDynamicModeWaveStatusMessage(message);
@@ -1649,9 +1259,602 @@ namespace PMP {
             break;
         default:
             qDebug() << "received unknown binary message type" << messageType
-                     << " with length" << messageLength;
+                     << " with length" << message.length();
             break; /* unknown message type */
         }
+    }
+
+    void ServerConnection::parseSimpleResultMessage(QByteArray const& message) {
+        if (message.length() < 12) {
+            return; /* invalid message */
+        }
+
+        quint16 errorType = NetworkUtil::get2Bytes(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        quint32 intData = NetworkUtil::get4Bytes(message, 8);
+
+        QByteArray blobData = message.mid(12);
+
+        qDebug() << "received result/error message; type:" << errorType
+                 << " client-ref:" << clientReference;
+
+        handleResultMessage(errorType, clientReference, intData, blobData);
+    }
+
+    void ServerConnection::parseServerEventNotificationMessage(QByteArray const& message)
+    {
+        if (message.length() != 4) {
+            return; /* invalid message */
+        }
+
+        quint8 event = NetworkUtil::getByte(message, 2);
+        quint8 eventArg = NetworkUtil::getByte(message, 3);
+
+        qDebug() << "received server event" << event << "with arg" << eventArg;
+
+        switch (event) {
+        case 1:
+            onFullIndexationRunningStatusReceived(true);
+            break;
+        case 2:
+            onFullIndexationRunningStatusReceived(false);
+            break;
+        default:
+            qDebug() << "received unknown server event:" << event;
+            break;
+        }
+    }
+
+    void ServerConnection::parseServerInstanceIdentifierMessage(QByteArray const& message)
+    {
+        if (message.length() != (2 + 16)) return; /* invalid message */
+
+        QUuid uuid = QUuid::fromRfc4122(message.mid(2));
+        qDebug() << "received server instance identifier:" << uuid;
+
+        emit receivedServerInstanceIdentifier(uuid);
+    }
+
+    void ServerConnection::parseServerNameMessage(QByteArray const& message) {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        quint8 nameType = NetworkUtil::getByte(message, 3);
+        QString name = NetworkUtil::getUtf8String(message, 4, message.length() - 4);
+
+        qDebug() << "received server name; type:" << nameType << " name:" << name;
+        emit receivedServerName(nameType, name);
+    }
+
+    void ServerConnection::parseDatabaseIdentifierMessage(QByteArray const& message) {
+        if (message.length() != (2 + 16)) {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        QUuid uuid = QUuid::fromRfc4122(message.mid(2));
+        qDebug() << "received database identifier:" << uuid;
+
+        emit receivedDatabaseIdentifier(uuid);
+    }
+
+    void ServerConnection::parseServerHealthMessage(QByteArray const& message) {
+        if (message.length() != 4) {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        quint16 problems = NetworkUtil::get2Bytes(message, 2);
+
+        bool databaseUnavailable = problems & 1u;
+
+        ServerHealthStatus newServerHealthStatus(databaseUnavailable);
+
+        bool healthStatusChanged = _serverHealthStatus != newServerHealthStatus;
+        _serverHealthStatus = newServerHealthStatus;
+
+        if (healthStatusChanged) {
+            if (databaseUnavailable)
+                qWarning() << "server reports that its database is unavailable";
+
+            emit serverHealthChanged(newServerHealthStatus);
+        }
+    }
+
+    void ServerConnection::parseUsersListMessage(QByteArray const& message) {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        QList<QPair<uint, QString> > users;
+
+        int userCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+
+        qDebug() << "received user account list; count:" << userCount;
+        qDebug() << " message length=" << message.length();
+
+        int offset = 4;
+        for (int i = 0; i < userCount; ++i) {
+            if (message.length() - offset < 5) {
+                return; /* invalid message */
+            }
+
+            quint32 userId = NetworkUtil::get4Bytes(message, offset);
+            offset += 4;
+            int loginNameByteCount =
+                    NetworkUtil::getByteUnsignedToInt(message, offset);
+            offset += 1;
+            if (message.length() - offset < loginNameByteCount) {
+                return; /* invalid message */
+            }
+
+            QString login =
+                NetworkUtil::getUtf8String(message, offset, loginNameByteCount);
+            offset += loginNameByteCount;
+
+            users.append(QPair<uint, QString>(userId, login));
+        }
+
+        if (offset != message.length()) {
+            return; /* invalid message */
+        }
+
+        emit receivedUserAccounts(users);
+    }
+
+    void ServerConnection::parseNewUserAccountSaltMessage(QByteArray const& message) {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 2);
+        int saltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 3);
+
+        if (message.length() != 4 + loginBytesSize + saltBytesSize) {
+            return; /* invalid message */
+        }
+
+        qDebug() << "received salt for new user account";
+
+        QString login = NetworkUtil::getUtf8String(message, 4, loginBytesSize);
+        QByteArray salt = message.mid(4 + loginBytesSize, saltBytesSize);
+
+        handleNewUserSalt(login, salt);
+    }
+
+    void ServerConnection::parseUserLoginSaltMessage(QByteArray const& message) {
+        if (message.length() < 8) {
+            return; /* invalid message */
+        }
+
+        int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 4);
+        int userSaltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 5);
+        int sessionSaltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 6);
+
+        if (message.length() !=
+                8 + loginBytesSize + userSaltBytesSize + sessionSaltBytesSize)
+        {
+            return; /* invalid message */
+        }
+
+        QString login = NetworkUtil::getUtf8String(message, 8, loginBytesSize);
+        QByteArray userSalt = message.mid(8 + loginBytesSize, userSaltBytesSize);
+        QByteArray sessionSalt =
+            message.mid(8 + loginBytesSize + userSaltBytesSize, sessionSaltBytesSize);
+
+        handleLoginSalt(login, userSalt, sessionSalt);
+    }
+
+    void ServerConnection::parsePlayerStateMessage(QByteArray const& message) {
+        if (message.length() != 20) {
+            return; /* invalid message */
+        }
+
+        quint8 playerState = NetworkUtil::getByte(message, 2);
+        quint8 volume = NetworkUtil::getByte(message, 3);
+        quint32 queueLength = NetworkUtil::get4Bytes(message, 4);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 8);
+        quint64 position = NetworkUtil::get8Bytes(message, 12);
+
+        qDebug() << "received player state message";
+
+        /* FIXME: events too simplistic */
+
+        if (volume <= 100) { emit volumeChanged(volume); }
+
+        if (queueID > 0) {
+            emit nowPlayingTrack(queueID);
+        }
+        else {
+            emit noCurrentTrack();
+        }
+
+        PlayState s = UnknownState;
+        switch (playerState) {
+        case 1:
+            s = Stopped;
+            emit stopped();
+            break;
+        case 2:
+            s = Playing;
+            emit playing();
+            break;
+        case 3:
+            s = Paused;
+            emit paused();
+            break;
+        }
+
+        emit trackPositionChanged(position);
+        emit queueLengthChanged(queueLength);
+        emit receivedPlayerState(s, volume, queueLength, queueID, position);
+    }
+
+    void ServerConnection::parseVolumeChangedMessage(QByteArray const& message) {
+        if (message.length() != 3) {
+            return; /* invalid message */
+        }
+
+        quint8 volume = NetworkUtil::getByte(message, 2);
+
+        qDebug() << "received volume changed event;  volume:" << volume;
+
+        if (volume <= 100) { emit volumeChanged(volume); }
+    }
+
+    void ServerConnection::parseUserPlayingForModeMessage(QByteArray const& message) {
+        if (message.length() < 8) {
+            return; /* invalid message */
+        }
+
+        int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 2);
+        quint32 userId = NetworkUtil::get4Bytes(message, 4);
+
+        if (message.length() != 8 + loginBytesSize) {
+            return; /* invalid message */
+        }
+
+        QString login = NetworkUtil::getUtf8String(message, 8, loginBytesSize);
+
+        qDebug() << "received user playing for: id =" << userId
+                 << "; login =" << login;
+
+        emit receivedUserPlayingFor(userId, login);
+    }
+
+    void ServerConnection::parseQueueContentsMessage(QByteArray const& message) {
+        if (message.length() < 14) {
+            return; /* invalid message */
+        }
+
+        quint32 queueLength = NetworkUtil::get4Bytes(message, 2);
+        quint32 startOffset = NetworkUtil::get4Bytes(message, 6);
+
+        QList<quint32> queueIDs;
+        queueIDs.reserve((message.length() - 10) / 4);
+
+        for (int offset = 10; offset < message.length(); offset += 4) {
+            queueIDs.append(NetworkUtil::get4Bytes(message, offset));
+        }
+
+        if (queueLength - queueIDs.size() < startOffset) {
+            return; /* invalid message */
+        }
+
+        qDebug() << "received queue contents;  Q-length:" << queueLength
+                 << " offset:" << startOffset << " count:" << queueIDs.size();
+
+        emit receivedQueueContents(queueLength, startOffset, queueIDs);
+    }
+
+    void ServerConnection::parseTrackInfoMessage(QByteArray const& message) {
+        if (message.length() < 16) {
+            return; /* invalid message */
+        }
+
+        quint16 status = NetworkUtil::get2Bytes(message, 2);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 4);
+        int lengthSeconds = NetworkUtil::get4BytesSigned(message, 8);
+        int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, 12);
+        int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, 14);
+
+        if (queueID == 0) {
+            return; /* invalid message */
+        }
+
+        if (message.length() != 16 + titleSize + artistSize) {
+            return; /* invalid message */
+        }
+
+        QueueEntryType type = NetworkProtocol::trackStatusToQueueEntryType(status);
+
+        QString title, artist;
+        if (NetworkProtocol::isTrackStatusFromRealTrack(status)) {
+            title = NetworkUtil::getUtf8String(message, 16, titleSize);
+            artist = NetworkUtil::getUtf8String(message, 16 + titleSize, artistSize);
+        }
+        else {
+            title = artist = NetworkProtocol::getPseudoTrackStatusText(status);
+        }
+
+        qDebug() << "received track info reply;  QID:" << queueID
+                 << " type:" << int(type) << " seconds:" << lengthSeconds
+                 << " title:" << title << " artist:" << artist;
+
+        emit receivedTrackInfo(queueID, type, lengthSeconds, title, artist);
+    }
+
+    void ServerConnection::parseBulkTrackInfoMessage(QByteArray const& message) {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        int trackCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        int statusBlockCount = trackCount + trackCount % 2;
+        if (trackCount == 0
+            || message.length() < 4 + statusBlockCount * 2 + trackCount * 12)
+        {
+            return; /* irrelevant or invalid message */
+        }
+
+        int offset = 4;
+        QList<quint16> statuses;
+        for (int i = 0; i < trackCount; ++i) {
+            statuses.append(NetworkUtil::get2Bytes(message, offset));
+            offset += 2;
+        }
+        if (trackCount % 2 != 0) {
+            offset += 2; /* skip filler */
+        }
+
+        QList<int> offsets;
+        offsets.append(offset);
+        while (true) {
+            quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+            //int lengthSeconds = NetworkUtil::get4BytesSigned(message, offset + 4);
+            int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 8);
+            int artistSize =
+                    NetworkUtil::get2BytesUnsignedToInt(message, offset + 10);
+            int titleArtistOffset = offset + 12;
+
+            if (queueID == 0) {
+                return; /* invalid message */
+            }
+
+            if (titleSize > message.length() - titleArtistOffset
+                || artistSize > message.length() - titleArtistOffset
+                || (titleSize + artistSize) > message.length() - titleArtistOffset)
+            {
+                return; /* invalid message */
+            }
+
+            if (titleArtistOffset + titleSize + artistSize == message.length()) {
+                break; /* end of message */
+            }
+
+            /* at least one more track info follows */
+
+            offset = offset + 12 + titleSize + artistSize;
+            if (offset + 12 > message.length()) {
+                return;  /* invalid message */
+            }
+
+            offsets.append(offset);
+        }
+
+        qDebug() << "received bulk track info reply;  count:" << trackCount;
+
+        if (trackCount != offsets.size()) {
+            return;  /* invalid message */
+        }
+
+        /* now read all track info's */
+        for (int i = 0; i < trackCount; ++i) {
+            offset = offsets[i];
+            quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+            quint16 status = statuses[i];
+            int lengthSeconds = NetworkUtil::get4BytesSigned(message, offset + 4);
+            int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 8);
+            int artistSize =
+                    NetworkUtil::get2BytesUnsignedToInt(message, offset + 10);
+            offset += 12;
+
+            auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
+
+            QString title, artist;
+            if (NetworkProtocol::isTrackStatusFromRealTrack(status)) {
+                title = NetworkUtil::getUtf8String(message, offset, titleSize);
+                artist =
+                    NetworkUtil::getUtf8String(
+                        message, offset + titleSize, artistSize
+                    );
+            }
+            else {
+                title = artist = NetworkProtocol::getPseudoTrackStatusText(status);
+            }
+
+            emit receivedTrackInfo(queueID, type, lengthSeconds, title, artist);
+        }
+    }
+
+    void ServerConnection::parsePossibleFilenamesForQueueEntryMessage(
+                                                                QByteArray const& message)
+    {
+        if (message.length() < 6) return; /* invalid message */
+
+        quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+
+        QList<QString> names;
+        int offset = 6;
+        while (offset < message.length()) {
+            if (offset > message.length() - 4) return; /* invalid message */
+            int nameLength = NetworkUtil::get4BytesSigned(message, offset);
+            if (nameLength <= 0) return; /* invalid message */
+            offset += 4;
+            if (nameLength + offset > message.length()) return; /* invalid message */
+            QString name = NetworkUtil::getUtf8String(message, offset, nameLength);
+            offset += nameLength;
+            names.append(name);
+        }
+
+        qDebug() << "received a list of" << names.size()
+                 << "possible filenames for QID" << queueID;
+
+        if (names.size() == 1) {
+            qDebug() << " received name" << names[0];
+        }
+
+        emit receivedPossibleFilenames(queueID, names);
+    }
+
+    void ServerConnection::parseBulkQueueEntryHashMessage(const QByteArray& message) {
+        qint32 messageLength = message.length();
+        if (messageLength < 4) {
+            invalidMessageReceived(message, "bulk-queue-entry-hashes");
+            return; /* invalid message */
+        }
+
+        int trackCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        if (trackCount == 0
+            || messageLength
+                != 4 + trackCount * (8 + NetworkProtocol::FILEHASH_BYTECOUNT))
+        {
+            invalidMessageReceived(
+                message, "bulk-queue-entry-hashes",
+                "track count=" + QString::number(trackCount)
+            );
+            return; /* irrelevant or invalid message */
+        }
+
+        qDebug() << "received bulk queue entry hash message; count:" << trackCount;
+
+        int offset = 4;
+        for (int i = 0; i < trackCount; ++i) {
+            quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+            quint16 status = NetworkUtil::get2Bytes(message, offset + 4);
+            offset += 8;
+
+            bool ok;
+            FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
+            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+            if (!ok) {
+                qWarning() << "could not extract hash for QID" << queueID
+                           << "; track status=" << status;
+                continue;
+            }
+
+            auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
+
+            emit receivedQueueEntryHash(queueID, type, hash);
+        }
+    }
+
+    void ServerConnection::parseQueueEntryAddedMessage(QByteArray const& message) {
+        if (message.length() != 10) {
+            return; /* invalid message */
+        }
+
+        quint32 offset = NetworkUtil::get4Bytes(message, 2);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 6);
+
+        qDebug() << "received queue track insertion event;  QID:" << queueID
+                 << " offset:" << offset;
+
+        emit queueEntryAdded(offset, queueID, RequestID());
+    }
+
+    void ServerConnection::parseQueueEntryAdditionConfirmationMessage(
+                                                                QByteArray const& message)
+    {
+        if (message.length() != 16) {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        quint32 index = NetworkUtil::get4Bytes(message, 8);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 12);
+
+        auto resultHandler = _resultHandlers.take(clientReference);
+        if (resultHandler) {
+            resultHandler->handleQueueEntryAdditionConfirmation(
+                                                         clientReference, index, queueID);
+            delete resultHandler;
+        }
+        else {
+            qWarning() << "no result handler found for reference" << clientReference;
+            emit queueEntryAdded(index, queueID, RequestID(clientReference));
+        }
+    }
+
+    void ServerConnection::parseQueueEntryRemovedMessage(QByteArray const& message) {
+        if (message.length() != 10) {
+            return; /* invalid message */
+        }
+
+        quint32 offset = NetworkUtil::get4Bytes(message, 2);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 6);
+
+        qDebug() << "received queue track removal event;  QID:" << queueID
+                 << " offset:" << offset;
+
+        emit queueEntryRemoved(offset, queueID);
+    }
+
+    void ServerConnection::parseQueueEntryMovedMessage(QByteArray const& message) {
+        if (message.length() != 14) {
+            return; /* invalid message */
+        }
+
+        quint32 fromOffset = NetworkUtil::get4Bytes(message, 2);
+        quint32 toOffset = NetworkUtil::get4Bytes(message, 6);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 10);
+
+        qDebug() << "received queue track moved event;  QID:" << queueID
+                 << " from-offset:" << fromOffset << " to-offset:" << toOffset;
+
+        emit queueEntryMoved(fromOffset, toOffset, queueID);
+    }
+
+    void ServerConnection::parseDynamicModeStatusMessage(QByteArray const& message) {
+        if (message.length() != 7) return; /* invalid message */
+
+        quint8 isEnabled = NetworkUtil::getByte(message, 2);
+        int noRepetitionSpan = NetworkUtil::get4BytesSigned(message, 3);
+
+        if (noRepetitionSpan < 0) return; /* invalid message */
+
+        qDebug() << "received dynamic mode status:" << (isEnabled > 0 ? "ON" : "OFF");
+
+        emit dynamicModeStatusReceived(isEnabled > 0, noRepetitionSpan);
+    }
+
+    void ServerConnection::parseDynamicModeWaveStatusMessage(QByteArray const& message) {
+        qDebug() << "parsing dynamic mode wave status message";
+
+        if (message.length() != 8) {
+            invalidMessageReceived(message, "dynamic-mode-status", "message length != 8");
+            return;
+        }
+
+        auto statusByte = NetworkUtil::getByte(message, 3);
+        if (!NetworkProtocol::isValidStartStopEventStatus(statusByte)) {
+            invalidMessageReceived(
+                message, "dynamic-mode-status",
+                "invalid status value: " + QString::number(statusByte)
+            );
+            return;
+        }
+
+        /* we have no use for the user yet */
+        //auto user = NetworkUtil::get4Bytes(message, 4);
+
+        auto status = NetworkProtocol::StartStopEventStatus(statusByte);
+        bool statusActive = NetworkProtocol::isActive(status);
+        bool statusChanged = NetworkProtocol::isChange(status);
+
+        emit dynamicModeHighScoreWaveStatusReceived(statusActive, statusChanged);
     }
 
     void ServerConnection::parseTrackAvailabilityChangeBatchMessage(
@@ -1674,7 +1877,7 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        uint offset = 8;
+        int offset = 8;
 
         QVector<FileHash> available(availableCount);
         for (int i = 0; i < availableCount; ++i) {
@@ -1727,7 +1930,7 @@ namespace PMP {
             NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2
                 + (withAlbumAndTrackLength ? 2 + 4 : 0);
 
-        int trackCount = (uint)NetworkUtil::get2Bytes(message, 2);
+        int trackCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         if (trackCount == 0 || messageLength < offset + fixedInfoLengthPerTrack)
         {
             return; /* irrelevant or invalid message */
@@ -1748,14 +1951,14 @@ namespace PMP {
         while (true) {
             /* set pointer past hash and availability */
             int current = offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1;
-            int titleSize = (uint)NetworkUtil::get2Bytes(message, current);
+            int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
             current += 2;
-            int artistSize = (uint)NetworkUtil::get2Bytes(message, current);
+            int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
             current += 2;
             int albumSize = 0;
             //qint32 trackLength = 0;
             if (withAlbumAndTrackLength) {
-                albumSize = (uint)NetworkUtil::get2Bytes(message, current);
+                albumSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
                 current += 2;
                 //trackLength = (qint32)NetworkUtil::get4Bytes(message, current);
                 current += 4;
@@ -1811,14 +2014,14 @@ namespace PMP {
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
 
             quint8 availabilityByte = NetworkUtil::getByte(message, offset);
-            int titleSize = (uint)NetworkUtil::get2Bytes(message, offset + 1);
-            int artistSize = (uint)NetworkUtil::get2Bytes(message, offset + 3);
+            int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 1);
+            int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 3);
             offset += 5;
             int albumSize = 0;
             qint32 trackLengthInMs = -1;
             if (withAlbumAndTrackLength) {
-                albumSize = (uint)NetworkUtil::get2Bytes(message, offset);
-                trackLengthInMs = (qint32)NetworkUtil::get4Bytes(message, offset + 2);
+                albumSize = NetworkUtil::get2BytesUnsignedToInt(message, offset);
+                trackLengthInMs = NetworkUtil::get4BytesSigned(message, offset + 2);
                 offset += 6;
             }
 
@@ -1844,48 +2047,6 @@ namespace PMP {
         }
     }
 
-    void ServerConnection::parseBulkQueueEntryHashMessage(const QByteArray& message) {
-        qint32 messageLength = message.length();
-        if (messageLength < 4) {
-            invalidMessageReceived(message, "bulk-queue-entry-hashes");
-            return; /* invalid message */
-        }
-
-        int trackCount = (uint)NetworkUtil::get2Bytes(message, 2);
-        if (trackCount == 0
-            || messageLength
-                != 4 + trackCount * (8 + NetworkProtocol::FILEHASH_BYTECOUNT))
-        {
-            invalidMessageReceived(
-                message, "bulk-queue-entry-hashes",
-                "track count=" + QString::number(trackCount)
-            );
-            return; /* irrelevant or invalid message */
-        }
-
-        qDebug() << "received bulk queue entry hash message; count:" << trackCount;
-
-        uint offset = 4;
-        for (int i = 0; i < trackCount; ++i) {
-            quint32 queueID = NetworkUtil::get4Bytes(message, offset);
-            quint16 status = NetworkUtil::get2Bytes(message, offset + 4);
-            offset += 8;
-
-            bool ok;
-            FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
-            if (!ok) {
-                qWarning() << "could not extract hash for QID" << queueID
-                           << "; track status=" << status;
-                continue;
-            }
-
-            auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
-
-            emit receivedQueueEntryHash(queueID, type, hash);
-        }
-    }
-
     void ServerConnection::parseHashUserDataMessage(const QByteArray& message) {
         int messageLength = message.length();
         if (messageLength < 12) {
@@ -1893,7 +2054,7 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        int hashCount = (uint)NetworkUtil::get2Bytes(message, 2);
+        int hashCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         quint16 fields = NetworkUtil::get2Bytes(message, 6);
         quint32 userId = NetworkUtil::get4Bytes(message, 8);
         int offset = 12;
@@ -1936,7 +2097,7 @@ namespace PMP {
             }
 
             if (haveScore) {
-                score = (qint16)NetworkUtil::get2Bytes(message, offset);
+                score = NetworkUtil::get2BytesSigned(message, offset);
                 offset += 2;
             }
 
@@ -1956,7 +2117,7 @@ namespace PMP {
         quint32 user = NetworkUtil::get4Bytes(message, 8);
         QDateTime started = NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, 12);
         QDateTime ended = NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, 20);
-        int permillagePlayed = (qint16)NetworkUtil::get2Bytes(message, 28);
+        int permillagePlayed = NetworkUtil::get2BytesSigned(message, 28);
         quint16 status = NetworkUtil::get2Bytes(message, 30);
 
         bool hadError = status & 1;
@@ -1975,7 +2136,7 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        int entryCount = (uint)NetworkUtil::getByte(message, 3);
+        int entryCount = NetworkUtil::getByteUnsignedToInt(message, 3);
 
         if (message.length() != 4 + entryCount * 28) {
             return; /* invalid message */
@@ -1991,7 +2152,7 @@ namespace PMP {
                 NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 8);
             auto ended =
                 NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 16);
-            int permillagePlayed = (qint16)NetworkUtil::get2Bytes(message, offset + 24);
+            int permillagePlayed = NetworkUtil::get2BytesSigned(message, offset + 24);
             quint16 status = NetworkUtil::get2Bytes(message, offset + 26);
 
             bool hadError = status & 1;
@@ -2007,94 +2168,6 @@ namespace PMP {
         }
 
         emit receivedPlayerHistory(entries);
-    }
-
-    void ServerConnection::parseDynamicModeWaveStatusMessage(QByteArray const& message) {
-        qDebug() << "parsing dynamic mode wave status message";
-
-        if (message.length() != 8) {
-            invalidMessageReceived(message, "dynamic-mode-status", "message length != 8");
-            return;
-        }
-
-        auto statusByte = NetworkUtil::getByte(message, 3);
-        if (!NetworkProtocol::isValidStartStopEventStatus(statusByte)) {
-            invalidMessageReceived(
-                message, "dynamic-mode-status",
-                "invalid status value: " + QString::number(statusByte)
-            );
-            return;
-        }
-
-        /* we have no use for the user yet */
-        //auto user = NetworkUtil::get4Bytes(message, 4);
-
-        auto status = NetworkProtocol::StartStopEventStatus(statusByte);
-        bool statusActive = NetworkProtocol::isActive(status);
-        bool statusChanged = NetworkProtocol::isChange(status);
-
-        emit dynamicModeHighScoreWaveStatusReceived(statusActive, statusChanged);
-    }
-
-    void ServerConnection::parseQueueEntryAddedMessage(QByteArray const& message) {
-        if (message.length() != 10) {
-            return; /* invalid message */
-        }
-
-        quint32 offset = NetworkUtil::get4Bytes(message, 2);
-        quint32 queueID = NetworkUtil::get4Bytes(message, 6);
-
-        qDebug() << "received queue track insertion event;  QID:" << queueID
-                 << " offset:" << offset;
-
-        emit queueEntryAdded(offset, queueID, RequestID());
-    }
-
-    void ServerConnection::parseQueueEntryAdditionConfirmationMessage(
-                                                                QByteArray const& message)
-    {
-        if (message.length() != 16) {
-            qWarning() << "invalid message; length incorrect";
-            return;
-        }
-
-        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-        quint32 index = NetworkUtil::get4Bytes(message, 8);
-        quint32 queueID = NetworkUtil::get4Bytes(message, 12);
-
-        auto resultHandler = _resultHandlers.take(clientReference);
-        if (resultHandler) {
-            resultHandler->handleQueueEntryAdditionConfirmation(
-                                                         clientReference, index, queueID);
-            delete resultHandler;
-        }
-        else {
-            qWarning() << "no result handler found for reference" << clientReference;
-            emit queueEntryAdded(index, queueID, RequestID(clientReference));
-        }
-    }
-
-    void ServerConnection::parseServerHealthMessage(QByteArray const& message) {
-        if (message.length() != 4) {
-            qWarning() << "invalid message; length incorrect";
-            return;
-        }
-
-        quint16 problems = NetworkUtil::get2Bytes(message, 2);
-
-        bool databaseUnavailable = problems & 1u;
-
-        ServerHealthStatus newServerHealthStatus(databaseUnavailable);
-
-        bool healthStatusChanged = _serverHealthStatus != newServerHealthStatus;
-        _serverHealthStatus = newServerHealthStatus;
-
-        if (healthStatusChanged) {
-            if (databaseUnavailable)
-                qWarning() << "server reports that its database is unavailable";
-
-            emit serverHealthChanged(newServerHealthStatus);
-        }
     }
 
     void ServerConnection::parseScrobblingProviderInfoMessage(QByteArray const& message) {
@@ -2227,6 +2300,7 @@ namespace PMP {
     void SimplePlayerControllerImpl::receivedPlayerState(int state, quint8 volume,
                 quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition)
     {
+        (void)volume;
         (void)nowPlayingPosition;
         _state = ServerConnection::PlayState(state);
         _queueLength = queueLength;
@@ -2261,6 +2335,54 @@ namespace PMP {
             _trackNowPlaying != _trackJustSkipped
             && (_state == ServerConnection::Playing
                 || _state == ServerConnection::Paused);
+    }
+
+    // ============================================================================ //
+
+    SimplePlayerStateMonitorImpl::SimplePlayerStateMonitorImpl(
+                                                             ServerConnection* connection)
+     : SimplePlayerStateMonitor(connection),
+       _connection(connection), _state(PlayerState::Unknown)
+    {
+        connect(
+            _connection, &ServerConnection::receivedPlayerState,
+            this, &SimplePlayerStateMonitorImpl::receivedPlayerState
+        );
+    }
+
+    PlayerState SimplePlayerStateMonitorImpl::playerState() const {
+        return _state;
+    }
+
+    void SimplePlayerStateMonitorImpl::receivedPlayerState(int state, quint8 volume,
+                quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition)
+    {
+        (void)volume;
+        (void)queueLength;
+        (void)nowPlayingQID;
+        (void)nowPlayingPosition;
+
+        auto newState = PlayerState::Unknown;
+        switch (ServerConnection::PlayState(state)) {
+            case ServerConnection::UnknownState:
+                newState = PlayerState::Unknown;
+                break;
+            case ServerConnection::Stopped:
+                newState = PlayerState::Stopped;
+                break;
+            case ServerConnection::Playing:
+                newState = PlayerState::Playing;
+                break;
+            case ServerConnection::Paused:
+                newState = PlayerState::Paused;
+                break;
+        }
+
+        if (newState == _state)
+            return;
+
+        _state = newState;
+        emit playerStateChanged(newState);
     }
 
 }

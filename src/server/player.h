@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,9 +20,9 @@
 #ifndef PMP_PLAYER_H
 #define PMP_PLAYER_H
 
-#include "playerstate.h"
 #include "preloader.h"
 #include "queue.h"
+#include "serverplayerstate.h"
 
 #include <QDateTime>
 #include <QMediaPlayer>
@@ -39,7 +39,7 @@ namespace PMP {
         int volume() const;
 
         bool playing() const;
-        PlayerState state() const;
+        ServerPlayerState state() const;
         QueueEntry const* nowPlaying() const;
         uint nowPlayingQID() const;
         qint64 playPosition() const;
@@ -67,7 +67,7 @@ namespace PMP {
 
     Q_SIGNALS:
 
-        void stateChanged(PlayerState state);
+        void stateChanged(ServerPlayerState state);
         void currentTrackChanged(QueueEntry const* newTrack);
         void positionChanged(qint64 position);
         void volumeChanged(int volume);
@@ -86,7 +86,7 @@ namespace PMP {
         void finished();
 
     private slots:
-        void changeStateTo(PlayerState state);
+        void changeStateTo(ServerPlayerState state);
         void internalStateChanged(QMediaPlayer::State state);
         void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
         void internalPositionChanged(qint64 position);
@@ -108,7 +108,7 @@ namespace PMP {
         qint64 _playPosition;
         qint64 _maxPosReachedInCurrent;
         bool _seekHappenedInCurrent;
-        PlayerState _state;
+        ServerPlayerState _state;
         bool _transitioningToNextTrack;
         quint32 _userPlayingFor;
     };

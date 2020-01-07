@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -72,12 +72,25 @@ namespace PMP {
                         const QString& msg);
 
     private:
+        QString generateOutputText(QtMsgType type, const QMessageLogContext& context,
+                                   const QString& msg);
+
         QMutex _mutex;
         QTextStream _out;
     };
 
     void ConsoleLogger::logMessage(QtMsgType type, const QMessageLogContext& context,
                                    const QString& msg)
+    {
+        QString output = generateOutputText(type, context, msg);
+
+        QMutexLocker lock(&_mutex);
+        _out << output << flush;
+    }
+
+    QString ConsoleLogger::generateOutputText(QtMsgType type,
+                                              const QMessageLogContext& context,
+                                              const QString& msg)
     {
         QString time = QTime::currentTime().toString(Qt::ISODate); /* HH:mm:ss */
         QString sourcefile = stripSourcefilePath(context.file);
@@ -88,27 +101,22 @@ namespace PMP {
         QString output;
         switch (type) {
             case QtDebugMsg:
-                output = time % " [D] " % locationText % msg % "\n";
-                break;
+                return time % " [D] " % locationText % msg % "\n";
+
             case QtInfoMsg:
-                output = time % " [Info] " % locationText % msg % "\n";
-                break;
+                return time % " [Info] " % locationText % msg % "\n";
+
             case QtWarningMsg:
-                output = time % " [Warning] " % locationText % msg % "\n";
-                break;
+                return time % " [Warning] " % locationText % msg % "\n";
+
             case QtCriticalMsg:
-                output = time % " [CRITICAL] " % locationText % msg % "\n";
-                break;
+                return time % " [CRITICAL] " % locationText % msg % "\n";
+
             case QtFatalMsg:
-                output = time % " [FATAL] " % locationText % msg % "\n";
-                break;
-            default:
-                output = time % " [???] " % locationText % msg % "\n";
-                break;
+                return time % " [FATAL] " % locationText % msg % "\n";
         }
 
-        QMutexLocker lock(&_mutex);
-        _out << output << flush;
+        return time % " [???] " % locationText % msg % "\n";
     }
 
     /* ========================== TextFileLogger ========================== */
@@ -128,6 +136,9 @@ namespace PMP {
         void cleanupOldLogfiles();
 
     private:
+        QString generateOutputText(QtMsgType type, const QMessageLogContext& context,
+                                   const QString& msg);
+
         void writeToLogFile(QString const& output);
 
         QMutex _mutex;
@@ -203,6 +214,15 @@ namespace PMP {
     void TextFileLogger::logMessage(QtMsgType type, const QMessageLogContext& context,
                                     const QString& msg)
     {
+        QString output = generateOutputText(type, context, msg);
+
+        writeToLogFile(output);
+    }
+
+    QString TextFileLogger::generateOutputText(QtMsgType type,
+                                               const QMessageLogContext& context,
+                                               const QString& msg)
+    {
         QString time = QTime::currentTime().toString(Qt::ISODate); /* HH:mm:ss */
         QString sourcefile = stripSourcefilePath(context.file);
 
@@ -212,28 +232,22 @@ namespace PMP {
         QString output;
         switch (type) {
             case QtDebugMsg:
-                output = time % " [D] " % locationText % msg % "\n";
-                break;
-            /* QtInfoMsg is only available in Qt 5.5 and later
+                return time % " [D] " % locationText % msg % "\n";
+
             case QtInfoMsg:
-                output = time % " [I] " % locationText % msg % "\n";
-                break;
-            */
+                return time % " [I] " % locationText % msg % "\n";
+
             case QtWarningMsg:
-                output = time % " [Warning] " % locationText % msg % "\n";
-                break;
+                return time % " [Warning] " % locationText % msg % "\n";
+
             case QtCriticalMsg:
-                output = time % " [CRITICAL] " % locationText % msg % "\n";
-                break;
+                return time % " [CRITICAL] " % locationText % msg % "\n";
+
             case QtFatalMsg:
-                output = time % " [FATAL] " % locationText % msg % "\n";
-                break;
-            default:
-                output = time % " [???] " % locationText % msg % "\n";
-                break;
+                return time % " [FATAL] " % locationText % msg % "\n";
         }
 
-        writeToLogFile(output);
+        return time % " [???] " % locationText % msg % "\n";
     }
 
     void TextFileLogger::setFilenameSuffix(QString suffix) {
