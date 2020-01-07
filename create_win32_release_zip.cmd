@@ -18,7 +18,7 @@
 SETLOCAL ENABLEEXTENSIONS
 
 :: Installation paths -- ADJUST AS NEEDED
-SET MINGW_BASE_DIR=C:\Qt\Tools\mingw530_32
+SET MINGW_BASE_DIR=C:\Qt\Tools\mingw730_32
 SET MINGW_BIN_DIR="%MINGW_BASE_DIR%"\bin
 SET CMAKE_BIN_DIR=%programfiles%\CMake\bin
 SET TOOL_7Z_BIN_DIR=%programfiles%\7-Zip
