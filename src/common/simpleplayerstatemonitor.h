@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,24 +17,27 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "userdataforhashesfetcher.h"
+#include <QObject>
 
-#include <QMetaType>
-#include <QVector>
+#ifndef PMP_SIMPLEPLAYERSTATEMONITOR_H
+#define PMP_SIMPLEPLAYERSTATEMONITOR_H
+
+#include "playerstate.h"
 
 namespace PMP {
 
-    /** Utility object to automatically do the qRegisterMetaType calls at program
-     *  startup */
-    class ServerMetatypesInit {
-    private:
-        ServerMetatypesInit() {
-            qRegisterMetaType<PMP::UserDataForHash>();
-            qRegisterMetaType<QVector<PMP::UserDataForHash>>();
-        }
+    class SimplePlayerStateMonitor : public QObject {
+        Q_OBJECT
+    public:
+        explicit SimplePlayerStateMonitor(QObject* parent = nullptr) : QObject(parent) {}
+        virtual ~SimplePlayerStateMonitor() {}
 
-        static ServerMetatypesInit GlobalVariable;
+        virtual PlayerState playerState() const = 0;
+
+    Q_SIGNALS:
+        void playerStateChanged(PlayerState playerState);
+
     };
 
-    ServerMetatypesInit ServerMetatypesInit::GlobalVariable;
 }
+#endif

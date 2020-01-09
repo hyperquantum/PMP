@@ -1,6 +1,6 @@
 ﻿# Party Music Player [![license][license-badge]][LICENSE]
 
-Copyright (C) 2011-2019  Kevin André
+Copyright (C) 2011-2020  Kevin André
 
 Party Music Player, abbreviated as PMP, is a multi-user client-server music system. The server is responsible for playing music, and a separate program, a 'remote', is used to connect to the server and instruct it what to do. PMP has an advanced file tracking mechanism; it can deal with moved/renamed and duplicate files without any problems.
 
@@ -100,7 +100,7 @@ First make sure MySQL is running. Then start the PMP-Server executable, and fina
  * CMake 3.1 or higher
  * pkg-config
  * TagLib 1.11 or higher
- * Qt 5.7 or higher
+ * Qt 5.7 or higher, with plugin for MySQL
  * MySQL client library  (libmysql)
 
 The MySQL client library should be 32-bit if PMP was built for the x86 architecture (32-bit), and should be 64-bit if PMP was built for x64 (64-bit).
@@ -127,8 +127,10 @@ These instructions might need some tweaks, as they haven't been tested (at least
 
 Building PMP on Windows takes some effort.
 
+Please make sure to use a version of Qt that still has the sqldriver plugin for MySQL. The Qt company decided to drop the plugin from its binary distributions for Qt versions 5.12.4 and later.
+
 These steps describe how to do an x86 (32-bit) build of PMP on Windows, with
-Qt 5.7 and TagLib 1.11. For a 64-bit build, or for different versions of Qt and/or TagLib,
+Qt 5.12.3 and TagLib 1.11. For a 64-bit build, or for different versions of Qt and/or TagLib,
 the steps need to be modified accordingly.
 
 ### 1. Download and install CMake
@@ -140,12 +142,14 @@ the steps need to be modified accordingly.
 
   → http://qt-project.org/downloads  → Qt Online Installer for Windows  
   run installer, select the following components to install:  
-    Qt 5.7 MinGW 5.3.0 32 bit  
-    Tools/MinGW 5.3.0  
+    Qt 5.12.3/MinGW 7.3.0 32-bit  
+    Developer and Designer Tools/MinGW 7.3.0  
+    Developer and Designer Tools/OpenSSL 1.1.1d Toolkit/OpenSSL 32-bit binaries  
   edit Windows environment variables, add the following to 'Path':  
-    C:\Qt\5.7\mingw53_32\bin  
-    C:\Qt\Tools\mingw530_32  
-    C:\Qt\Tools\mingw530_32\bin  
+    C:\Qt\5.12.3\mingw73_32\bin  
+    C:\Qt\Tools\mingw730_32  
+    C:\Qt\Tools\mingw730_32\bin  
+  close and reopen all Command Prompt windows for the Path change to take effect  
 
 ### 3. Download and build taglib
 
@@ -157,7 +161,7 @@ the steps need to be modified accordingly.
   'where to build the binaries': the "bin" directory you created  
   before configuring, add the following CMake variables (not including the quotes):  
     name: "CMAKE_BUILD_TYPE"; type: "STRING"; value: "Release"  
-    name: "CMAKE_INSTALL_PREFIX"; type: "FILEPATH"; value: "C:/Qt/Tools/mingw530_32"  
+    name: "CMAKE_INSTALL_PREFIX"; type: "FILEPATH"; value: "C:/Qt/Tools/mingw730_32"  
     name: "BUILD_SHARED_LIBS"; type: BOOL; value: enabled (or "1")  
   press 'Configure', select a generator with "MinGW Makefiles"  
   press 'Generate'  
@@ -171,12 +175,12 @@ the steps need to be modified accordingly.
 
   → http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/  
   download file pkg-config_0.26-1_win32.zip  
-  extract pkg-config.exe to C:\Qt\Tools\mingw530_32\bin  
+  extract pkg-config.exe to C:\Qt\Tools\mingw730_32\bin  
   download file gettext-runtime_0.18.1.1-2_win32.zip  
-  extract intl.dll to C:\Qt\Tools\mingw530_32\bin  
+  extract intl.dll to C:\Qt\Tools\mingw730_32\bin  
   → http://ftp.gnome.org/pub/gnome/binaries/win32/glib/2.28  
   download file glib_2.28.8-1_win32.zip  
-  extract libglib-2.0-0.dll to C:\Qt\Tools\mingw530_32\bin  
+  extract libglib-2.0-0.dll to C:\Qt\Tools\mingw730_32\bin  
 
 ### 5. Get the MySQL client library
 
@@ -192,7 +196,7 @@ the steps need to be modified accordingly.
   Run CMake (cmake-gui)  
   'where is the sourcecode': select PMP sourcecode folder  
   'where to build the binaries': "bin" subdirectory of sourcecode folder  
-  add variable CMAKE_PREFIX_PATH and set it to "C:\Qt\5.7\mingw53_32"  
+  add variable CMAKE_PREFIX_PATH and set it to "C:\Qt\5.12.3\mingw73_32"  
   optional: add variable CMAKE_BUILD_TYPE and set it to "Debug" or "Release"  
   press 'Configure', select a generator with "MinGW Makefiles"  
   press 'Generate'  

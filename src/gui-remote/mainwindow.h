@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,6 +36,7 @@ namespace PMP {
     class ConnectionWidget;
     class LoginWidget;
     class MainWidget;
+    class PowerManagement;
     class ServerConnection;
     class UserAccountCreationWidget;
     class UserPickerWidget;
@@ -67,6 +68,7 @@ namespace PMP {
 
         void onStartFullIndexationTriggered();
         void onShutdownServerTriggered();
+        void updatePowerManagement();
         void onAboutPmpAction();
         void onAboutQtAction();
 
@@ -100,10 +102,13 @@ namespace PMP {
         QAction* _shutdownServerAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
+        QAction* _keepDisplayActiveAction;
         QAction* _aboutPmpAction;
         QAction* _aboutQtAction;
 
         QMenu* _viewMenu;
+
+        PowerManagement* _powerManagement;
     };
 }
 #endif

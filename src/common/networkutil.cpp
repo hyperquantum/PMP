@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,39 +21,60 @@
 
 #include <limits>
 
-#include <QDebug>
+#include <QtDebug>
 
 namespace PMP {
 
     int NetworkUtil::appendByte(QByteArray& buffer, quint8 b) {
-        buffer.append((char)b);
+        buffer.append(extractByte0(b));
         return 1;
     }
 
     int NetworkUtil::append2Bytes(QByteArray& buffer, quint16 number) {
-        buffer.append((char)((number >> 8) & 255));
-        buffer.append((char)(number & 255));
+        buffer.append(extractByte1(number));
+        buffer.append(extractByte0(number));
         return 2;
     }
 
     int NetworkUtil::append4Bytes(QByteArray& buffer, quint32 number) {
-        buffer.append((char)((number >> 24) & 255));
-        buffer.append((char)((number >> 16) & 255));
-        buffer.append((char)((number >> 8) & 255));
-        buffer.append((char)(number & 255));
+        buffer.append(extractByte3(number));
+        buffer.append(extractByte2(number));
+        buffer.append(extractByte1(number));
+        buffer.append(extractByte0(number));
         return 4;
     }
 
     int NetworkUtil::append8Bytes(QByteArray& buffer, quint64 number) {
-        buffer.append((char)((number >> 56) & 255));
-        buffer.append((char)((number >> 48) & 255));
-        buffer.append((char)((number >> 40) & 255));
-        buffer.append((char)((number >> 32) & 255));
-        buffer.append((char)((number >> 24) & 255));
-        buffer.append((char)((number >> 16) & 255));
-        buffer.append((char)((number >> 8) & 255));
-        buffer.append((char)(number & 255));
+        buffer.append(extractByte7(number));
+        buffer.append(extractByte6(number));
+        buffer.append(extractByte5(number));
+        buffer.append(extractByte4(number));
+        buffer.append(extractByte3(number));
+        buffer.append(extractByte2(number));
+        buffer.append(extractByte1(number));
+        buffer.append(extractByte0(number));
         return 8;
+    }
+
+    int NetworkUtil::appendByteUnsigned(QByteArray& buffer, int number) {
+        if (number < 0 || number > 255) {
+            qWarning() << "cannot convert" << number << "to unsigned byte";
+            number = 0;
+        }
+
+        return appendByte(buffer, static_cast<quint8>(number));
+    }
+
+    int NetworkUtil::append2BytesSigned(QByteArray& buffer, qint16 number) {
+        return append2Bytes(buffer, static_cast<quint16>(number));
+    }
+
+    int NetworkUtil::append4BytesSigned(QByteArray& buffer, qint32 number) {
+        return append4Bytes(buffer, static_cast<quint32>(number));
+    }
+
+    int NetworkUtil::append8BytesSigned(QByteArray& buffer, qint64 number) {
+        return append8Bytes(buffer, static_cast<quint64>(number));
     }
 
     int NetworkUtil::append8ByteQDateTimeMsSinceEpoch(QByteArray& buffer,
@@ -64,78 +85,173 @@ namespace PMP {
         }
 
         qint64 milliSeconds = dateTime.toUTC().toMSecsSinceEpoch();
-        return append8Bytes(buffer, milliSeconds);
+        return append8Bytes(buffer, static_cast<quint64>(milliSeconds));
     }
 
     int NetworkUtil::append8ByteMaybeEmptyQDateTimeMsSinceEpoch(QByteArray& buffer,
                                                                 QDateTime dateTime)
     {
         if (!dateTime.isValid())
-            return append8Bytes(buffer, std::numeric_limits<qint64>::min());
+            return append8Bytes(buffer,
+                                static_cast<quint64>(std::numeric_limits<qint64>::min()));
 
-        return append8Bytes(buffer, dateTime.toUTC().toMSecsSinceEpoch());
+        qint64 milliSeconds = dateTime.toUTC().toMSecsSinceEpoch();
+        return append8Bytes(buffer, static_cast<quint64>(milliSeconds));
     }
 
-    quint8 NetworkUtil::getByte(QByteArray const& buffer, uint position) {
-        return buffer[position];
+    quint8 NetworkUtil::getByte(QByteArray const& buffer, int position) {
+        return static_cast<quint8>(buffer[position]);
     }
 
-    quint16 NetworkUtil::get2Bytes(QByteArray const& buffer, uint position) {
-        return ((quint16)(quint8)buffer[position] << 8)
-            + (quint16)(quint8)buffer[position + 1];
+    quint16 NetworkUtil::get2Bytes(char const* buffer) {
+        return
+            compose2Bytes(
+                static_cast<quint8>(buffer[0]),
+                static_cast<quint8>(buffer[1])
+            );
+    }
+
+    quint16 NetworkUtil::get2Bytes(QByteArray const& buffer, int position) {
+        return
+            compose2Bytes(
+                static_cast<quint8>(buffer[position]),
+                static_cast<quint8>(buffer[position + 1])
+            );
     }
 
     quint32 NetworkUtil::get4Bytes(char const* buffer) {
-        return ((quint32)(quint8)buffer[0] << 24)
-            + ((quint32)(quint8)buffer[1] << 16)
-            + ((quint32)(quint8)buffer[2] << 8)
-            + (quint32)(quint8)buffer[3];
+        return
+            compose4Bytes(
+                static_cast<quint8>(buffer[0]),
+                static_cast<quint8>(buffer[1]),
+                static_cast<quint8>(buffer[2]),
+                static_cast<quint8>(buffer[3])
+            );
     }
 
-    quint32 NetworkUtil::get4Bytes(QByteArray const& buffer, uint position) {
-        return ((quint32)(quint8)buffer[position] << 24)
-            + ((quint32)(quint8)buffer[position + 1] << 16)
-            + ((quint32)(quint8)buffer[position + 2] << 8)
-            + (quint32)(quint8)buffer[position + 3];
+    quint32 NetworkUtil::get4Bytes(QByteArray const& buffer, int position) {
+        return
+            compose4Bytes(
+                static_cast<quint8>(buffer[position]),
+                static_cast<quint8>(buffer[position + 1]),
+                static_cast<quint8>(buffer[position + 2]),
+                static_cast<quint8>(buffer[position + 3])
+            );
     }
 
-    quint64 NetworkUtil::get8Bytes(QByteArray const& buffer, uint position) {
-        return ((quint64)(quint8)buffer[position] << 56)
-            + ((quint64)(quint8)buffer[position + 1] << 48)
-            + ((quint64)(quint8)buffer[position + 2] << 40)
-            + ((quint64)(quint8)buffer[position + 3] << 32)
-            + ((quint64)(quint8)buffer[position + 4] << 24)
-            + ((quint64)(quint8)buffer[position + 5] << 16)
-            + ((quint64)(quint8)buffer[position + 6] << 8)
-            + (quint64)(quint8)buffer[position + 7];
+    quint64 NetworkUtil::get8Bytes(QByteArray const& buffer, int position) {
+        return
+            compose8Bytes(
+                static_cast<quint8>(buffer[position]),
+                static_cast<quint8>(buffer[position + 1]),
+                static_cast<quint8>(buffer[position + 2]),
+                static_cast<quint8>(buffer[position + 3]),
+                static_cast<quint8>(buffer[position + 4]),
+                static_cast<quint8>(buffer[position + 5]),
+                static_cast<quint8>(buffer[position + 6]),
+                static_cast<quint8>(buffer[position + 7])
+            );
+    }
+
+    qint16 NetworkUtil::get2BytesSigned(QByteArray const& buffer, int position) {
+        return static_cast<qint16>(get2Bytes(buffer, position));
+    }
+
+    qint32 NetworkUtil::get4BytesSigned(QByteArray const& buffer, int position) {
+        return static_cast<qint32>(get4Bytes(buffer, position));
+    }
+
+    qint64 NetworkUtil::get8BytesSigned(QByteArray const& buffer, int position) {
+        return static_cast<qint64>(get8Bytes(buffer, position));
+    }
+
+    int NetworkUtil::getByteUnsignedToInt(QByteArray const& buffer, int position) {
+        return static_cast<int>(static_cast<uint>(getByte(buffer, position)));
+    }
+
+    int NetworkUtil::get2BytesUnsignedToInt(QByteArray const& buffer, int position) {
+        return static_cast<int>(static_cast<uint>(get2Bytes(buffer, position)));
     }
 
     QDateTime NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(const QByteArray& buffer,
-                                                             uint position)
+                                                             int position)
     {
-        return QDateTime::fromMSecsSinceEpoch(get8Bytes(buffer, position), Qt::UTC);
+        auto msecs = asSigned(get8Bytes(buffer, position));
+        return QDateTime::fromMSecsSinceEpoch(msecs, Qt::UTC);
     }
 
     QDateTime NetworkUtil::getMaybeEmptyQDateTimeFrom8ByteMsSinceEpoch(
-            const QByteArray& buffer, uint position)
+                                                   const QByteArray& buffer, int position)
     {
-        qint64 raw = get8Bytes(buffer, position);
-        if (raw == std::numeric_limits<qint64>::min())
+        auto msecs = asSigned(get8Bytes(buffer, position));
+        if (msecs == std::numeric_limits<qint64>::min())
             return QDateTime(); /* return invalid QDateTime */
 
-        return QDateTime::fromMSecsSinceEpoch(raw, Qt::UTC);
+        return QDateTime::fromMSecsSinceEpoch(msecs, Qt::UTC);
     }
 
-    QString NetworkUtil::getUtf8String(QByteArray const& buffer, uint position,
-                                       uint length)
+    QString NetworkUtil::getUtf8String(QByteArray const& buffer, int position,
+                                       int length)
     {
-        if (length > (uint)buffer.size() || position > (uint)buffer.size() - length) {
+        if (position < 0) {
+            qWarning() << "position < 0 !!";
+            return "";
+        }
+
+        if (length < 0) {
+            qWarning() << "length < 0 !!";
+            return "";
+        }
+
+        if (length > buffer.size() || position > buffer.size() - length) {
             qWarning() << "OVERFLOW when reading UTF-8 string; position:" << position
-                       << "length:" << length << "buffer size:" << buffer.size();
+                       << "; length:" << length << "; buffer size:" << buffer.size();
             return "";
         }
 
         return QString::fromUtf8(&buffer.data()[position], length);
+    }
+
+    quint16 NetworkUtil::compose2Bytes(quint8 b1, quint8 b0) {
+        auto sum =
+            (static_cast<quint16>(b1) << 8)
+            + static_cast<quint16>(b0);
+
+        return static_cast<quint16>(sum);
+    }
+
+    quint32 NetworkUtil::compose4Bytes(quint8 b3, quint8 b2, quint8 b1, quint8 b0) {
+        auto sum =
+            (static_cast<quint32>(b3) << 24)
+            + (static_cast<quint32>(b2) << 16)
+            + (static_cast<quint32>(b1) << 8)
+            + static_cast<quint32>(b0);
+
+        return static_cast<quint32>(sum);
+    }
+
+    quint64 NetworkUtil::compose8Bytes(quint8 b7, quint8 b6, quint8 b5, quint8 b4,
+                                       quint8 b3, quint8 b2, quint8 b1, quint8 b0)
+    {
+        auto sum =
+            (static_cast<quint64>(b7) << 56)
+            + (static_cast<quint64>(b6) << 48)
+            + (static_cast<quint64>(b5) << 40)
+            + (static_cast<quint64>(b4) << 32)
+            + (static_cast<quint64>(b3) << 24)
+            + (static_cast<quint64>(b2) << 16)
+            + (static_cast<quint64>(b1) << 8)
+            + static_cast<quint64>(b0);
+
+        return static_cast<quint64>(sum);
+    }
+
+    qint32 NetworkUtil::asSigned(quint32 number) {
+        return static_cast<qint32>(number);
+    }
+
+    qint64 NetworkUtil::asSigned(quint64 number) {
+        return static_cast<qint64>(number);
     }
 
 }

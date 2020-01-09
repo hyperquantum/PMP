@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,16 +17,28 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_PLAYERSTATE_H
-#define PMP_PLAYERSTATE_H
+#ifndef PMP_POWERMANAGEMENT_H
+#define PMP_POWERMANAGEMENT_H
+
+#include <QObject>
 
 namespace PMP {
 
-    enum class PlayerState {
-        Stopped = 0,
-        Playing,
-        Paused
-    };
+    class PowerManagement : public QObject {
+        Q_OBJECT
+    public:
+        explicit PowerManagement(QObject* parent = nullptr);
 
+        bool isPlatformSupported() const;
+
+        void setKeepDisplayActive(bool keepActive = true);
+        bool getKeepDisplayActive() const;
+
+    private slots:
+        void updateState();
+
+    private:
+        bool _keepDisplayActive;
+    };
 }
 #endif

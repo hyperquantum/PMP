@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,8 +23,10 @@
 #include "collectiontrackinfo.h"
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
+#include "playerstate.h"
 #include "serverhealthstatus.h"
 #include "simpleplayercontroller.h"
+#include "simpleplayerstatemonitor.h"
 #include "tribool.h"
 
 #include <QByteArray>
@@ -40,6 +42,7 @@ namespace PMP {
 
     class AbstractCollectionFetcher;
     class SimplePlayerControllerImpl;
+    class SimplePlayerStateMonitorImpl;
 
     class RequestID {
     public:
@@ -89,7 +92,7 @@ namespace PMP {
         class DuplicationResultHandler;
 
     public:
-        enum PlayState {
+        enum PlayState { // TODO : eliminate this and use PlayerState instead
             UnknownState = 0, Stopped = 1, Playing = 2, Paused = 3
         };
 
@@ -123,6 +126,7 @@ namespace PMP {
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
 
         SimplePlayerController& simplePlayerController();
+        SimplePlayerStateMonitor& simplePlayerStateMonitor();
 
         bool serverSupportsQueueEntryDuplication() const;
 
@@ -280,28 +284,49 @@ namespace PMP {
 
         void onFullIndexationRunningStatusReceived(bool running);
 
+        void parseSimpleResultMessage(QByteArray const& message);
+
+        void parseServerEventNotificationMessage(QByteArray const& message);
+        void parseServerInstanceIdentifierMessage(QByteArray const& message);
+        void parseServerNameMessage(QByteArray const& message);
+        void parseDatabaseIdentifierMessage(QByteArray const& message);
+        void parseServerHealthMessage(QByteArray const& message);
+
+        void parseUsersListMessage(QByteArray const& message);
+        void parseNewUserAccountSaltMessage(QByteArray const& message);
+        void parseUserLoginSaltMessage(QByteArray const& message);
+
+        void parsePlayerStateMessage(QByteArray const& message);
+        void parseVolumeChangedMessage(QByteArray const& message);
+        void parseUserPlayingForModeMessage(QByteArray const& message);
+
+        void parseQueueContentsMessage(QByteArray const& message);
+        void parseTrackInfoMessage(QByteArray const& message);
+        void parseBulkTrackInfoMessage(QByteArray const& message);
+        void parsePossibleFilenamesForQueueEntryMessage(QByteArray const& message);
+        void parseBulkQueueEntryHashMessage(QByteArray const& message);
+        void parseQueueEntryAddedMessage(QByteArray const& message);
+        void parseQueueEntryAdditionConfirmationMessage(QByteArray const& message);
+        void parseQueueEntryRemovedMessage(QByteArray const& message);
+        void parseQueueEntryMovedMessage(QByteArray const& message);
+
+        void parseDynamicModeStatusMessage(QByteArray const& message);
+        void parseDynamicModeWaveStatusMessage(QByteArray const& message);
+
         void parseTrackAvailabilityChangeBatchMessage(QByteArray const& message);
         void parseTrackInfoBatchMessage(QByteArray const& message,
                                         NetworkProtocol::ServerMessageType messageType);
 
-        void parseBulkQueueEntryHashMessage(QByteArray const& message);
         void parseHashUserDataMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);
-
-        void parseDynamicModeWaveStatusMessage(QByteArray const& message);
-
-        void parseQueueEntryAddedMessage(QByteArray const& message);
-        void parseQueueEntryAdditionConfirmationMessage(QByteArray const& message);
-
-        void parseServerHealthMessage(QByteArray const& message);
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 
         void invalidMessageReceived(QByteArray const& message, QString messageType = "",
                                     QString extraInfo = "");
 
-        static const qint16 ClientProtocolNo;
+        static const quint16 ClientProtocolNo;
 
         ServerEventSubscription _autoSubscribeToEventsAfterConnect;
         State _state;
@@ -322,6 +347,7 @@ namespace PMP {
         QHash<uint, ResultHandler*> _resultHandlers;
         QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
         SimplePlayerControllerImpl* _simplePlayerController;
+        SimplePlayerStateMonitorImpl* _simplePlayerStateMonitor;
         ServerHealthStatus _serverHealthStatus;
     };
 
@@ -361,6 +387,22 @@ namespace PMP {
         uint _queueLength;
         quint32 _trackNowPlaying;
         quint32 _trackJustSkipped;
+    };
+
+    class SimplePlayerStateMonitorImpl : public SimplePlayerStateMonitor {
+        Q_OBJECT
+    public:
+        SimplePlayerStateMonitorImpl(ServerConnection* connection);
+
+        PlayerState playerState() const;
+
+    private slots:
+        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
+                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
+
+    private:
+        ServerConnection* _connection;
+        PlayerState _state;
     };
 }
 #endif

@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2018, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2020, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -33,6 +33,7 @@ set(PMP_COMMON_SOURCES
 set(PMP_COMMON_HEADERS
     common/serverconnection.h
     common/serverdiscoverer.h
+    common/simpleplayerstatemonitor.h
 )
 
 set(PMP_SERVER_SOURCES
@@ -85,6 +86,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp
     gui-remote/playerhistorymodel.cpp
+    gui-remote/powermanagement.cpp
     gui-remote/queueentryinfofetcher.cpp
     gui-remote/queuemediator.cpp
     gui-remote/queuemodel.cpp
@@ -106,6 +108,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/mainwidget.h
     gui-remote/mainwindow.h
     gui-remote/playerhistorymodel.h
+    gui-remote/powermanagement.h
     gui-remote/queueentryinfofetcher.h
     gui-remote/queuemediator.h
     gui-remote/queuemodel.h
