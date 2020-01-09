@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,7 @@
 #include "userdataforhashesfetcher.h"
 
 #include <QMetaType>
+#include <QVector>
 
 namespace PMP {
 
@@ -29,6 +30,7 @@ namespace PMP {
     private:
         ServerMetatypesInit() {
             qRegisterMetaType<PMP::UserDataForHash>();
+            qRegisterMetaType<QVector<PMP::UserDataForHash>>();
         }
 
         static ServerMetatypesInit GlobalVariable;
