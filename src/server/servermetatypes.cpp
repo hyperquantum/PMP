@@ -22,6 +22,7 @@
 #include "userdataforhashesfetcher.h"
 
 #include <QMetaType>
+#include <QVector>
 
 namespace PMP {
 
@@ -33,7 +34,9 @@ namespace PMP {
             qRegisterMetaType<PMP::ClientRequestOrigin>();
             qRegisterMetaType<PMP::ScrobblingBackendState>();
             qRegisterMetaType<PMP::ScrobbleResult>();
+
             qRegisterMetaType<PMP::UserDataForHash>();
+            qRegisterMetaType<QVector<PMP::UserDataForHash>>();
         }
 
         static ServerMetatypesInit GlobalVariable;
