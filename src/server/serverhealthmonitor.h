@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,15 +32,18 @@ namespace PMP {
 
         bool anyProblem() const;
         bool databaseUnavailable() const;
+        bool sslLibrariesMissing() const;
 
     public slots:
         void setDatabaseUnavailable();
+        void setSslLibrariesMissing();
 
     Q_SIGNALS:
-        void serverHealthChanged(bool databaseUnavailable);
+        void serverHealthChanged(bool databaseUnavailable, bool sslLibrariesMissing);
 
     private:
         bool _databaseUnavailable;
+        bool _sslLibrariesMissing;
     };
 }
 #endif

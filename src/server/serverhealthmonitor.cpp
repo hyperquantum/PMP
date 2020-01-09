@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,23 +22,34 @@
 namespace PMP {
 
     ServerHealthMonitor::ServerHealthMonitor(QObject* parent)
-     : QObject(parent), _databaseUnavailable(false)
+     : QObject(parent), _databaseUnavailable(false), _sslLibrariesMissing(false)
     {
         //
     }
 
     bool ServerHealthMonitor::anyProblem() const {
-        return _databaseUnavailable;
+        return _databaseUnavailable || _sslLibrariesMissing;
     }
 
     bool ServerHealthMonitor::databaseUnavailable() const {
         return _databaseUnavailable;
     }
 
+    bool ServerHealthMonitor::sslLibrariesMissing() const {
+        return _sslLibrariesMissing;
+    }
+
     void ServerHealthMonitor::setDatabaseUnavailable() {
         if (_databaseUnavailable) return;
 
         _databaseUnavailable = true;
-        emit serverHealthChanged(_databaseUnavailable);
+        emit serverHealthChanged(_databaseUnavailable, _sslLibrariesMissing);
+    }
+
+    void ServerHealthMonitor::setSslLibrariesMissing() {
+        if (_sslLibrariesMissing) return;
+
+        _sslLibrariesMissing = true;
+        emit serverHealthChanged(_databaseUnavailable, _sslLibrariesMissing);
     }
 }

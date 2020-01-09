@@ -69,7 +69,7 @@ namespace PMP {
         void dataArrived();
         void socketError(QAbstractSocket::SocketError error);
 
-        void serverHealthChanged(bool databaseUnavailable);
+        void serverHealthChanged(bool databaseUnavailable, bool sslLibrariesMissing);
 
         void volumeChanged(int volume);
         void dynamicModeStatusChanged(bool enabled);

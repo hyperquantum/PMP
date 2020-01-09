@@ -471,6 +471,13 @@ namespace PMP {
                 tr("The server reports that its database is not working!")
             );
         }
+        else if (serverHealth.sslLibrariesMissing()) {
+            QMessageBox::warning(
+                this, tr("Server problem"),
+                tr("The server reports that it does not have SSL libraries available! "
+                   "This means that scrobbling will not work.")
+            );
+        }
         else {
             QMessageBox::warning(
                 this, tr("Server problem"),

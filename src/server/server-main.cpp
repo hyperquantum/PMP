@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,6 +31,7 @@
 #include "queueentry.h"
 #include "resolver.h"
 #include "scrobbling.h"
+#include "selftest.h"
 #include "server.h"
 #include "serverhealthmonitor.h"
 #include "serversettings.h"
@@ -150,6 +151,8 @@ int main(int argc, char *argv[]) {
     if (!databaseInitializationSucceeded) {
         serverHealthMonitor.setDatabaseUnavailable();
     }
+
+    SelfTest::runSelfTest(serverHealthMonitor);
 
     Resolver resolver;
 

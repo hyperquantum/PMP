@@ -58,6 +58,7 @@ set(PMP_SERVER_SOURCES
     server/scrobblingbackend.cpp
     server/scrobblingdataprovider.cpp
     server/scrobblinghost.cpp
+    server/selftest.cpp
     server/server.cpp
     server/serverhealthmonitor.cpp
     server/servermetatypes.cpp

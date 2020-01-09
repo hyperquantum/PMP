@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,27 +27,40 @@ namespace PMP {
     class ServerHealthStatus {
     public:
         ServerHealthStatus()
-         : _databaseUnavailable(false)
+         : _databaseUnavailable(false), _sslLibrariesMissing(false),
+           _unspecifiedProblems(false)
         {
             //
         }
 
-        ServerHealthStatus(bool databaseUnavailable)
-         : _databaseUnavailable(databaseUnavailable)
+        ServerHealthStatus(bool databaseUnavailable, bool sslLibrariesMissing,
+                           bool unspecifiedProblems)
+         : _databaseUnavailable(databaseUnavailable),
+           _sslLibrariesMissing(sslLibrariesMissing),
+           _unspecifiedProblems(unspecifiedProblems)
         {
             //
         }
 
-        bool anyProblems() const { return _databaseUnavailable; }
+        bool anyProblems() const {
+            return _databaseUnavailable || _sslLibrariesMissing || _unspecifiedProblems;
+        }
+
         bool databaseUnavailable() const { return _databaseUnavailable; }
+        bool sslLibrariesMissing() const { return _sslLibrariesMissing; }
+        bool unspecifiedProblems() const { return _unspecifiedProblems; }
 
     private:
         bool _databaseUnavailable;
+        bool _sslLibrariesMissing;
+        bool _unspecifiedProblems;
     };
 
     inline bool operator==(const ServerHealthStatus& me, const ServerHealthStatus& other)
     {
-        return me.databaseUnavailable() == other.databaseUnavailable();
+        return me.databaseUnavailable() == other.databaseUnavailable()
+                && me.sslLibrariesMissing() == other.sslLibrariesMissing()
+                && me.unspecifiedProblems() == other.unspecifiedProblems();
     }
 
     inline bool operator!=(const ServerHealthStatus& me, const ServerHealthStatus& other)

@@ -1260,6 +1260,10 @@ namespace PMP {
 
         quint16 problems = 0;
         problems |= _serverHealthMonitor->databaseUnavailable() ? 1u : 0u;
+        problems |= _serverHealthMonitor->sslLibrariesMissing() ? 2u : 0u;
+
+        qDebug() << "sending server health message with payload"
+                 << QString::number(problems, 16) << "(hex)";
 
         QByteArray message;
         message.reserve(2 + 2);
@@ -1368,8 +1372,11 @@ namespace PMP {
                         NetworkProtocol::NonFatalInternalServerError, clientReference, 0);
     }
 
-    void ConnectedClient::serverHealthChanged(bool databaseUnavailable) {
+    void ConnectedClient::serverHealthChanged(bool databaseUnavailable,
+                                              bool sslLibrariesMissing)
+    {
         (void)databaseUnavailable;
+        (void)sslLibrariesMissing;
 
         sendServerHealthMessage();
     }

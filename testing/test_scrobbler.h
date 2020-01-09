@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -51,6 +51,9 @@ public slots:
 
     void scrobbleTrack(QDateTime timestamp, QString title, QString artist, QString album,
                        int trackDurationSeconds = -1) override;
+
+protected:
+    bool needsSsl() const override { return false; }
 
 private slots:
     void pretendAuthenticationResultReceived();

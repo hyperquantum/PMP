@@ -76,15 +76,18 @@ add_test(test_util test_util)
 qt5_wrap_cpp(PMP_TestScrobbler_MOCS test_scrobbler.h
     ${CMAKE_SOURCE_DIR}/src/server/scrobbler.h
     ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.h
+    ${CMAKE_SOURCE_DIR}/src/server/serverhealthmonitor.h
 )
 add_executable(test_scrobbler test_scrobbler.cpp
     ${PMP_TestScrobbler_MOCS}
     ${CMAKE_SOURCE_DIR}/src/server/scrobbler.cpp
     ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.cpp
     ${CMAKE_SOURCE_DIR}/src/server/scrobblingdataprovider.cpp
+    ${CMAKE_SOURCE_DIR}/src/server/selftest.cpp
+    ${CMAKE_SOURCE_DIR}/src/server/serverhealthmonitor.cpp
     ${CMAKE_SOURCE_DIR}/src/server/tracktoscrobble.cpp
 )
-target_link_libraries(test_scrobbler Qt5::Core Qt5::Test)
+target_link_libraries(test_scrobbler Qt5::Core Qt5::Network Qt5::Test)
 add_test(test_scrobbler test_scrobbler)
 
 

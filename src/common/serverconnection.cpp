@@ -1347,9 +1347,17 @@ namespace PMP {
 
         quint16 problems = NetworkUtil::get2Bytes(message, 2);
 
-        bool databaseUnavailable = problems & 1u;
+        if (problems) {
+            qWarning() << "server reports health problems; details:"
+                       << QString::number(problems, 16) << "(hex)";
+        }
 
-        ServerHealthStatus newServerHealthStatus(databaseUnavailable);
+        bool databaseUnavailable = problems & 1u;
+        bool sslLibrariesMissing = problems & 2u;
+        bool unspecifiedProblems = problems & ~3u;
+
+        ServerHealthStatus newServerHealthStatus(databaseUnavailable, sslLibrariesMissing,
+                                                 unspecifiedProblems);
 
         bool healthStatusChanged = _serverHealthStatus != newServerHealthStatus;
         _serverHealthStatus = newServerHealthStatus;

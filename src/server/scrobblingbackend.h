@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -50,6 +50,8 @@ namespace PMP {
 
         ScrobblingBackendState state() const { return _state; }
 
+        virtual void initialize();
+
         virtual void updateNowPlaying(QString title, QString artist, QString album,
                                       int trackDurationSeconds = -1) = 0;
 
@@ -68,9 +70,6 @@ namespace PMP {
             return _initialBackoffMillisecondsForErrorReply;
         }
 
-    public slots:
-        virtual void initialize() = 0;
-
     Q_SIGNALS:
         void stateChanged(PMP::ScrobblingBackendState newState,
                           PMP::ScrobblingBackendState oldState);
@@ -83,6 +82,9 @@ namespace PMP {
         void setDelayInMillisecondsBetweenSubsequentScrobbles(int timeMilliseconds);
         void setInitialBackoffMillisecondsForUnavailability(int timeMilliseconds);
         void setInitialBackoffMillisecondsForErrorReply(int timeMilliseconds);
+
+    protected:
+        virtual bool needsSsl() const = 0;
 
     private:
         int _delayInMillisecondsBetweenSubsequentScrobbles;

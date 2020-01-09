@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -146,6 +146,9 @@ namespace PMP {
     Q_SIGNALS:
         void gotAuthenticationResult(bool success, ClientRequestOrigin origin);
         void errorOccurredDuringAuthentication(ClientRequestOrigin origin);
+
+    protected:
+        bool needsSsl() const override;
 
     private slots:
         void disposeOfNetworkAccessManager();

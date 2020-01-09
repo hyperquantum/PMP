@@ -1,5 +1,4 @@
 * add GUI for scrobbling: for enabling/disabling it and entering user credentials
 * don't store Last.FM session key in plain text in the database
 * handle timeouts
-* make sure OpenSSL is present
 * handle failed requests properly (OpenSSL missing or connection problem)
