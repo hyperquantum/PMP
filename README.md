@@ -127,8 +127,10 @@ These instructions might need some tweaks, as they haven't been tested (at least
 
 Building PMP on Windows takes some effort.
 
+Please make sure to use a version of Qt that still has the sqldriver plugin for MySQL. The Qt company decided to drop the plugin from its binary distributions for Qt versions 5.12.4 and later.
+
 These steps describe how to do an x86 (32-bit) build of PMP on Windows, with
-Qt 5.12.6 and TagLib 1.11. For a 64-bit build, or for different versions of Qt and/or TagLib,
+Qt 5.12.3 and TagLib 1.11. For a 64-bit build, or for different versions of Qt and/or TagLib,
 the steps need to be modified accordingly.
 
 ### 1. Download and install CMake
@@ -140,13 +142,14 @@ the steps need to be modified accordingly.
 
   → http://qt-project.org/downloads  → Qt Online Installer for Windows  
   run installer, select the following components to install:  
-    Qt 5.12.6/MinGW 7.3.0 32-bit  
+    Qt 5.12.3/MinGW 7.3.0 32-bit  
     Developer and Designer Tools/MinGW 7.3.0  
     Developer and Designer Tools/OpenSSL 1.1.1d Toolkit/OpenSSL 32-bit binaries  
   edit Windows environment variables, add the following to 'Path':  
-    C:\Qt\5.12.6\mingw73_32\bin  
+    C:\Qt\5.12.3\mingw73_32\bin  
     C:\Qt\Tools\mingw730_32  
     C:\Qt\Tools\mingw730_32\bin  
+  close and reopen all Command Prompt windows for the Path change to take effect  
 
 ### 3. Download and build taglib
 
@@ -193,7 +196,7 @@ the steps need to be modified accordingly.
   Run CMake (cmake-gui)  
   'where is the sourcecode': select PMP sourcecode folder  
   'where to build the binaries': "bin" subdirectory of sourcecode folder  
-  add variable CMAKE_PREFIX_PATH and set it to "C:\Qt\5.12.6\mingw73_32"  
+  add variable CMAKE_PREFIX_PATH and set it to "C:\Qt\5.12.3\mingw73_32"  
   optional: add variable CMAKE_BUILD_TYPE and set it to "Debug" or "Release"  
   press 'Configure', select a generator with "MinGW Makefiles"  
   press 'Generate'  
