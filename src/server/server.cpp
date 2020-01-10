@@ -84,14 +84,17 @@ namespace PMP {
         const QString chars =
             "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz123456789!@#%&*()+=:<>?/-";
 
+        const int passwordLength = 8;
+        const int consecutiveCharsDistance = 10;
+
         QString serverPassword;
-        serverPassword.reserve(8);
-        int prevIndex = 70;
-        for (int i = 0; i < 8; ++i) {
+        serverPassword.reserve(passwordLength);
+        int prevIndex = -consecutiveCharsDistance;
+        for (int i = 0; i < passwordLength; ++i) {
             int index;
             do {
                 index = qrand() % chars.length(); // FIXME : don't use qrand()
-            } while (qAbs(index - prevIndex) < 16);
+            } while (qAbs(index - prevIndex) < consecutiveCharsDistance);
             prevIndex = index;
             QChar c = chars[index];
             serverPassword += c;
