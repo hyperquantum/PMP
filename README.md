@@ -68,6 +68,10 @@ Contents of this file:
      
      Linux users may need to install a GStreamer plugin to get support for MP3 files.
 
+  3. OpenSSL
+
+     PMP needs OpenSSL for Last.fm scrobbling.
+
 
 ## 3. Running PMP
 
@@ -202,7 +206,13 @@ the steps need to be modified accordingly.
   press 'Generate'  
   open cmd.exe in the 'bin' directory of PMP and run "mingw32-make"  
 
-### 7. Running PMP
+### 7. Get the OpenSSL libraries
+
+  Go to C:\Qt\Tools\mingw730_32\opt\bin  
+  Copy the files libeay32.dll and ssleay32.dll  
+  Paste them in the 'bin\src' directory of PMP next to the EXEs  
+
+### 8. Running PMP
 
   First start the server:  
     open cmd.exe and cd into the PMP 'bin' directory  
