@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -42,6 +42,7 @@ namespace PMP {
           9: client msg 21, server msg 27: queue entry duplication
          10: single byte request 51 & server msg 28: server health messages
          11: server msg 29: track availability change notifications
+         12: clienst msg 22, server msg 30, single byte request 18: protocol extensions
 
     */
 
@@ -86,6 +87,7 @@ namespace PMP {
             QueueEntryAdditionConfirmationMessage = 27,
             ServerHealthMessage = 28,
             CollectionAvailabilityChangeNotificationMessage = 29,
+            ServerExtensionsMessage = 30,
         };
 
         enum ClientMessageType {
@@ -111,6 +113,7 @@ namespace PMP {
             InsertHashIntoQueueRequestMessage = 19,
             PlayerHistoryRequestMessage = 20,
             QueueEntryDuplicationRequestMessage = 21,
+            ClientExtensionsMessage = 22,
         };
 
         enum ErrorType {
@@ -138,6 +141,24 @@ namespace PMP {
             StatusActiveAlready = 2,
             EventActivatedNow = 3,
             EventDeactivatedNow = 4,
+        };
+
+        struct ProtocolExtension {
+            quint8 id;
+            quint8 version;
+            QString name;
+
+            ProtocolExtension()
+             : id(0)
+            {
+                //
+            }
+
+            ProtocolExtension(quint8 id, QString name, quint8 version = 1)
+             : id(id), name(name)
+            {
+                //
+            }
         };
 
         static bool isValidStartStopEventStatus(quint8 status);

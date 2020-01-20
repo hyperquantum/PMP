@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -239,7 +239,7 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 11;
+    const quint16 ServerConnection::ClientProtocolNo = 12;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -397,6 +397,10 @@ namespace PMP {
 
                 _state = BinaryMode;
 
+                /* if interested in protocol extensions... */
+                sendSingleByteAction(18); /* 18 = request list of protocol extensions */
+                sendProtocolExtensionsMessage();
+
                 if (_autoSubscribeToEventsAfterConnect
                         == ServerEventSubscription::AllEvents)
                 {
@@ -499,6 +503,28 @@ namespace PMP {
         _socket.write(lengthBytes);
         _socket.write(message);
         _socket.flush();
+    }
+
+    void ServerConnection::sendProtocolExtensionsMessage() {
+        if (_serverProtocolNo < 12) return; /* server will not understand this message */
+
+        quint8 extensionCount = 0;
+
+        QByteArray message;
+        message.reserve(4 + extensionCount * 16); /* estimate */
+        NetworkUtil::append2Bytes(message, NetworkProtocol::ClientExtensionsMessage);
+        NetworkUtil::appendByte(message, 0); /* filler */
+        NetworkUtil::appendByte(message, 0); /* extension count */
+
+        /* FOR EACH EXTENSION:
+            NetworkUtil::appendByte(message, extensionId);
+            NetworkUtil::appendByte(message, extensionVersion);
+            NetworkUtil::appendByte(message, extensionNameSize);
+            message += extensionName.toUtf8();
+
+        */
+
+        sendBinaryMessage(message);
     }
 
     void ServerConnection::sendSingleByteAction(quint8 action) {
@@ -1128,11 +1154,29 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        auto messageType =
-            static_cast<NetworkProtocol::ServerMessageType>(
-                                                      NetworkUtil::get2Bytes(message, 0));
+        quint16 messageType = NetworkUtil::get2Bytes(message, 0);
+        if (messageType & (1u << 15)) {
+            quint8 extensionMessageType = messageType & 0x7Fu;
+            quint8 extensionId = (messageType >> 7) & 0xFFu;
 
+            handleExtensionMessage(extensionId, extensionMessageType, message);
+        }
+        else {
+            auto serverMessageType =
+                static_cast<NetworkProtocol::ServerMessageType>(messageType);
+
+            handleStandardBinaryMessage(serverMessageType, message);
+        }
+    }
+
+    void ServerConnection::handleStandardBinaryMessage(
+                                           NetworkProtocol::ServerMessageType messageType,
+                                           QByteArray const& message)
+    {
         switch (messageType) {
+        case NetworkProtocol::ServerExtensionsMessage:
+            parseServerProtocolExtensionsMessage(message);
+            break;
         case NetworkProtocol::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
             break;
@@ -1225,6 +1269,26 @@ namespace PMP {
         }
     }
 
+    void ServerConnection::handleExtensionMessage(quint8 extensionId, quint8 messageType,
+                                                  QByteArray const& message)
+    {
+        /* parse extensions here */
+
+        //if (extensionId == _knownExtensionServerId) {
+        //    switch (messageType) {
+        //    case 1: parseExtensionMessage1(message); break;
+        //    case 2: parseExtensionMessage2(message); break;
+        //    case 3: parseExtensionMessage3(message); break;
+        //    }
+        //}
+
+        qWarning() << "unhandled extension message" << messageType
+                   << "for extension" << extensionId
+                   << "with length" << message.length()
+                   << "; extension name: "
+                   << _serverExtensionNames.value(extensionId, "?");
+    }
+
     void ServerConnection::parseSimpleResultMessage(QByteArray const& message) {
         if (message.length() < 12) {
             return; /* invalid message */
@@ -1240,6 +1304,65 @@ namespace PMP {
                  << " client-ref:" << clientReference;
 
         handleResultMessage(errorType, clientReference, intData, blobData);
+    }
+
+    void ServerConnection::parseServerProtocolExtensionsMessage(QByteArray const& message)
+    {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        /* be strict about reserved space */
+        int filler = NetworkUtil::getByteUnsignedToInt(message, 2);
+        if (filler != 0) {
+            return; /* invalid message */
+        }
+
+        int extensionCount = NetworkUtil::getByteUnsignedToInt(message, 3);
+        if (message.length() < 4 + extensionCount * 4) {
+            return; /* invalid message */
+        }
+
+        QVector<NetworkProtocol::ProtocolExtension> extensions(extensionCount);
+        QSet<quint8> ids;
+        QSet<QString> names;
+        ids.reserve(extensionCount);
+        names.reserve(extensionCount);
+
+        int offset = 4;
+        for (int i = 0; i < extensionCount; ++i) {
+            if (offset >= message.length() - 4) {
+                return; /* invalid message */
+            }
+
+            quint8 id = NetworkUtil::getByte(message, offset);
+            quint8 version = NetworkUtil::getByte(message, offset + 1);
+            quint8 byteCount = NetworkUtil::getByte(message, offset + 2);
+            offset += 3;
+
+            if (id == 0 || version == 0 || byteCount == 0
+                    || offset >= message.length() - byteCount)
+            {
+                return; /* invalid message */
+            }
+
+            QString name = NetworkUtil::getUtf8String(message, offset, byteCount);
+            offset += byteCount;
+
+            if (ids.contains(id) || names.contains(name)) {
+                return; /* invalid message */
+            }
+
+            ids << id;
+            names << name;
+            extensions << NetworkProtocol::ProtocolExtension(id, name, version);
+        }
+
+        if (offset != message.length()) {
+            return; /* invalid message */
+        }
+
+        registerServerProtocolExtensions(extensions);
     }
 
     void ServerConnection::parseServerEventNotificationMessage(QByteArray const& message)
@@ -2169,6 +2292,24 @@ namespace PMP {
     {
         qWarning() << "received invalid message; length=" << message.size()
                    << " type=" << messageType << " extra info=" << extraInfo;
+    }
+
+    void ServerConnection::registerServerProtocolExtensions(
+                            const QVector<NetworkProtocol::ProtocolExtension>& extensions)
+    {
+        /* handle extensions here */
+        for (auto extension : extensions) {
+            qDebug() << "server will use ID" << extension.id
+                     << "and version" << extension.version
+                     << "for protocol extension" << extension.name;
+
+            _serverExtensionNames[extension.id] = extension.name;
+
+            //if (extension.name == "known_extension_name") {
+            //    _knownExtensionServerId = extension.id;
+            //    _knownExtensionServerVersion = extension.version;
+            //}
+        }
     }
 
     // ============================================================================ //

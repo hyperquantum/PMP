@@ -45,7 +45,7 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 11;
+    const qint16 ConnectedClient::ServerProtocolNo = 12;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
                                      Generator* generator, Users* users,
@@ -481,6 +481,28 @@ namespace PMP {
         _socket->write(lengthBytes);
         _socket->write(message);
         _socket->flush();
+    }
+
+    void ConnectedClient::sendProtocolExtensionsMessage() {
+        if (_clientProtocolNo < 12) return; /* client will not understand this message */
+
+        quint8 extensionCount = 0;
+
+        QByteArray message;
+        message.reserve(4 + extensionCount * 16); /* estimate */
+        NetworkUtil::append2Bytes(message, NetworkProtocol::ServerExtensionsMessage);
+        NetworkUtil::appendByte(message, 0); /* filler */
+        NetworkUtil::appendByte(message, 0); /* extension count */
+
+        /* FOR EACH EXTENSION:
+            NetworkUtil::appendByte(message, extensionId);
+            NetworkUtil::appendByte(message, extensionVersion);
+            NetworkUtil::appendByte(message, extensionNameSize);
+            message += extensionName.toUtf8();
+
+        */
+
+        sendBinaryMessage(message);
     }
 
     void ConnectedClient::sendStateInfoAfterTimeout() {
@@ -1516,18 +1538,36 @@ namespace PMP {
     }
 
     void ConnectedClient::handleBinaryMessage(QByteArray const& message) {
-        qint32 messageLength = message.length();
-
-        if (messageLength < 2) {
+        if (message.length() < 2) {
             qDebug() << "received invalid binary message (less than 2 bytes)";
             return; /* invalid message */
         }
 
-        auto messageType =
-            static_cast<NetworkProtocol::ClientMessageType>(
-                                                      NetworkUtil::get2Bytes(message, 0));
+        quint16 messageType = NetworkUtil::get2Bytes(message, 0);
+        if (messageType & (1u << 15)) {
+            quint8 extensionMessageType = messageType & 0x7Fu;
+            quint8 extensionId = (messageType >> 7) & 0xFFu;
+
+            handleExtensionMessage(extensionId, extensionMessageType, message);
+        }
+        else {
+            auto clientMessageType =
+                static_cast<NetworkProtocol::ClientMessageType>(messageType);
+
+            handleStandardBinaryMessage(clientMessageType, message);
+        }
+    }
+
+    void ConnectedClient::handleStandardBinaryMessage(
+                                           NetworkProtocol::ClientMessageType messageType,
+                                           QByteArray const& message)
+    {
+        qint32 messageLength = message.length();
 
         switch (messageType) {
+        case NetworkProtocol::ClientExtensionsMessage:
+            parseClientProtocolExtensionsMessage(message);
+            break;
         case NetworkProtocol::SingleByteActionMessage:
         {
             if (messageLength != 3) {
@@ -1986,6 +2026,85 @@ namespace PMP {
         }
     }
 
+    void ConnectedClient::handleExtensionMessage(quint8 extensionId, quint8 messageType,
+                                                 QByteArray const& message)
+    {
+        /* parse extensions here */
+
+        //if (extensionId == _knownExtensionClientId) {
+        //    switch (messageType) {
+        //    case 1: parseExtensionMessage1(message); break;
+        //    case 2: parseExtensionMessage2(message); break;
+        //    case 3: parseExtensionMessage3(message); break;
+        //    }
+        //}
+
+        qWarning() << "unhandled extension message" << messageType
+                   << "for extension" << extensionId
+                   << "with length" << message.length()
+                   << "; extension name: "
+                   << _clientExtensionNames.value(extensionId, "?");
+    }
+
+    void ConnectedClient::parseClientProtocolExtensionsMessage(QByteArray const& message)
+    {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        /* be strict about reserved space */
+        int filler = NetworkUtil::getByteUnsignedToInt(message, 2);
+        if (filler != 0) {
+            return; /* invalid message */
+        }
+
+        int extensionCount = NetworkUtil::getByteUnsignedToInt(message, 3);
+        if (message.length() < 4 + extensionCount * 4) {
+            return; /* invalid message */
+        }
+
+        QVector<NetworkProtocol::ProtocolExtension> extensions(extensionCount);
+        QSet<quint8> ids;
+        QSet<QString> names;
+        ids.reserve(extensionCount);
+        names.reserve(extensionCount);
+
+        int offset = 4;
+        for (int i = 0; i < extensionCount; ++i) {
+            if (offset >= message.length() - 4) {
+                return; /* invalid message */
+            }
+
+            quint8 id = NetworkUtil::getByte(message, offset);
+            quint8 version = NetworkUtil::getByte(message, offset + 1);
+            quint8 byteCount = NetworkUtil::getByte(message, offset + 2);
+            offset += 3;
+
+            if (id == 0 || version == 0 || byteCount == 0
+                    || offset >= message.length() - byteCount)
+            {
+                return; /* invalid message */
+            }
+
+            QString name = NetworkUtil::getUtf8String(message, offset, byteCount);
+            offset += byteCount;
+
+            if (ids.contains(id) || names.contains(name)) {
+                return; /* invalid message */
+            }
+
+            ids << id;
+            names << name;
+            extensions << NetworkProtocol::ProtocolExtension(id, name, version);
+        }
+
+        if (offset != message.length()) {
+            return; /* invalid message */
+        }
+
+        registerClientProtocolExtensions(extensions);
+    }
+
     void ConnectedClient::parseAddHashToQueueRequest(const QByteArray& message,
                                            NetworkProtocol::ClientMessageType messageType)
     {
@@ -2240,6 +2359,10 @@ namespace PMP {
             qDebug() << "received request for database UUID";
             sendDatabaseIdentifier();
             break;
+        case 18:
+            qDebug() << "received request for list of protocol extensions";
+            sendProtocolExtensionsMessage();
+            break;
         case 20: /* enable dynamic mode */
             qDebug() << "received ENABLE DYNAMIC MODE command";
             if (isLoggedIn()) { _generator->enable(); }
@@ -2305,6 +2428,24 @@ namespace PMP {
 
         connect(sender, &CollectionSender::allSent,
                 this, &ConnectedClient::onCollectionTrackInfoCompleted);
+    }
+
+    void ConnectedClient::registerClientProtocolExtensions(
+                            const QVector<NetworkProtocol::ProtocolExtension>& extensions)
+    {
+        /* handle extensions here */
+        for (auto extension : extensions) {
+            qDebug() << "client will use ID" << extension.id
+                     << "and version" << extension.version
+                     << "for protocol extension" << extension.name;
+
+            _clientExtensionNames[extension.id] = extension.name;
+
+            //if (extension.name == "known_extension_name") {
+            //    _knownExtensionClientId = extension.id;
+            //    _knownExtensionClientVersion = extension.version;
+            //}
+        }
     }
 
     /* =============================== CollectionSender =============================== */

@@ -117,6 +117,7 @@ namespace PMP {
         void sendTextCommand(QString const& command);
         void handleBinaryModeSwitchRequest();
         void sendBinaryMessage(QByteArray const& message);
+        void sendProtocolExtensionsMessage();
         void sendEventNotificationMessage(quint8 event);
         void sendServerInstanceIdentifier();
         void sendDatabaseIdentifier();
@@ -160,8 +161,16 @@ namespace PMP {
         void sendServerHealthMessage();
 
         void handleBinaryMessage(QByteArray const& message);
+        void handleStandardBinaryMessage(NetworkProtocol::ClientMessageType messageType,
+                                         QByteArray const& message);
+        void handleExtensionMessage(quint8 extensionId, quint8 messageType,
+                                    QByteArray const& message);
+        void registerClientProtocolExtensions(
+                           const QVector<NetworkProtocol::ProtocolExtension>& extensions);
         void handleSingleByteAction(quint8 action);
         void handleCollectionFetchRequest(uint clientReference);
+
+        void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         NetworkProtocol::ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
@@ -183,6 +192,7 @@ namespace PMP {
         ServerHealthMonitor* _serverHealthMonitor;
         QByteArray _textReadBuffer;
         int _clientProtocolNo;
+        QHash<quint8, QString> _clientExtensionNames;
         quint32 _lastSentNowPlayingID;
         QString _userAccountRegistering;
         QByteArray _saltForUserAccountRegistering;
