@@ -520,6 +520,7 @@ namespace PMP {
         if (_clientProtocolNo < 12) return; /* client will not understand this message */
 
         QVector<const NetworkProtocol::ProtocolExtension*> extensions;
+        //extensions << &_knownExtensionThis;
         extensions << &_scrobblingSupportThis;
 
         quint8 extensionCount = static_cast<quint8>(extensions.size());
@@ -2155,7 +2156,7 @@ namespace PMP {
     {
         /* parse extensions here */
 
-        //if (extensionId == _knownExtensionClientId) {
+        //if (extensionId == _knownExtensionOther.id) {
         //    switch (messageType) {
         //    case 1: parseExtensionMessage1(message); break;
         //    case 2: parseExtensionMessage2(message); break;
@@ -2623,8 +2624,7 @@ namespace PMP {
             _clientExtensionNames[extension.id] = extension.name;
 
             //if (extension.name == "known_extension_name") {
-            //    _knownExtensionClientId = extension.id;
-            //    _knownExtensionClientVersion = extension.version;
+            //    _knownExtensionOther = extension;
             //}
             if (extension.name == "scrobbling") {
                 _scrobblingSupportOther = extension;
