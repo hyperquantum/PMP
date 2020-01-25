@@ -1399,15 +1399,16 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        QVector<NetworkProtocol::ProtocolExtension> extensions(extensionCount);
+        QVector<NetworkProtocol::ProtocolExtension> extensions;
         QSet<quint8> ids;
         QSet<QString> names;
+        extensions.reserve(extensionCount);
         ids.reserve(extensionCount);
         names.reserve(extensionCount);
 
         int offset = 4;
         for (int i = 0; i < extensionCount; ++i) {
-            if (offset >= message.length() - 4) {
+            if (offset > message.length() - 3) {
                 return; /* invalid message */
             }
 
@@ -1417,7 +1418,7 @@ namespace PMP {
             offset += 3;
 
             if (id == 0 || version == 0 || byteCount == 0
-                    || offset >= message.length() - byteCount)
+                    || offset > message.length() - byteCount)
             {
                 return; /* invalid message */
             }
