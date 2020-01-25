@@ -19,6 +19,8 @@
 
 #include "logging.h"
 
+#include "common/version.h"
+
 #include <QCoreApplication>
 #include <QDate>
 #include <QDir>
@@ -141,6 +143,8 @@ namespace PMP {
 
         void writeToLogFile(QString const& output);
 
+        void writeFileHeader(QFile& file);
+
         QMutex _mutex;
         bool _initialized;
         qint64 _appPid;
@@ -200,15 +204,26 @@ namespace PMP {
         }
 
         if (!existed) {
-#if defined(Q_OS_WIN)
-            file.write(_byteOrderMark); /* Windows needs a byte order mark */
-#endif
-            /* TODO: write PMP version */
-            file.write("\n", 1);
+            writeFileHeader(file);
         }
 
         file.write(output.toUtf8());
         file.close();
+    }
+
+    void TextFileLogger::writeFileHeader(QFile& file) {
+#if defined(Q_OS_WIN)
+         /* Windows needs a byte order mark */
+        file.write(_byteOrderMark);
+#endif
+
+        /* write PMP version */
+        QString firstLine =
+                "# "
+                "Party Music Player " PMP_VERSION_DISPLAY
+                "\n";
+
+        file.write(firstLine.toUtf8());
     }
 
     void TextFileLogger::logMessage(QtMsgType type, const QMessageLogContext& context,
