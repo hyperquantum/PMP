@@ -62,6 +62,7 @@ IDEAS
  * display time remaining during playback
  * save the contents of the queue on server shutdown and restore it at the next server startup
  * 'play again next' action for the song that is currently playing
+ * ability to insert a breakpoint directly before/after any entry in the queue
 
 
 USER FRIENDLINESS
