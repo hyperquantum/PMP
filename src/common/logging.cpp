@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -131,7 +131,7 @@ namespace PMP {
         void logMessage(QtMsgType type, const QMessageLogContext& context,
                         const QString& msg);
 
-        void setFilenameSuffix(QString suffix);
+        void setFilenameTag(QString tag);
 
         void cleanupOldLogfiles();
 
@@ -146,7 +146,7 @@ namespace PMP {
         qint64 _appPid;
         QByteArray _byteOrderMark;
         QString _logDir;
-        QString _suffix;
+        QString _tag;
     };
 
     bool TextFileLogger::initialized() {
@@ -184,8 +184,8 @@ namespace PMP {
         QDate today = QDate::currentDate();
         QString logFile =
             _logDir + "/" + today.toString(Qt::ISODate)
+                + (_tag.isEmpty() ? "" : ("-" + _tag))
                 + "-P" + QString::number(_appPid)
-                + (_suffix.isEmpty() ? "" : ("-" + _suffix))
                 + ".txt";
 
         QFile file(logFile);
@@ -250,14 +250,18 @@ namespace PMP {
         return time % " [???] " % locationText % msg % "\n";
     }
 
-    void TextFileLogger::setFilenameSuffix(QString suffix) {
+    void TextFileLogger::setFilenameTag(QString tag) {
         QMutexLocker lock(&_mutex);
 
         /* cut off an initial dash character, because we put one there automatically */
-        if (suffix.startsWith("-"))
-            suffix = suffix.mid(1);
+        if (tag.startsWith("-"))
+            tag = tag.mid(1);
 
-        _suffix = suffix;
+        /* cut off a dash character at the end, because we put one there automatically */
+        if (tag.endsWith("-"))
+            tag = tag.left(tag.size() - 1);
+
+        _tag = tag;
     }
 
     void TextFileLogger::cleanupOldLogfiles() {
@@ -344,8 +348,8 @@ namespace PMP {
         qInstallMessageHandler(logToConsole);
     }
 
-    void Logging::setFilenameSuffix(QString suffix) {
-        globalTextFileLogger.setFilenameSuffix(suffix);
+    void Logging::setFilenameTag(QString suffix) {
+        globalTextFileLogger.setFilenameTag(suffix);
     }
 
     void Logging::cleanupOldLogfiles() {

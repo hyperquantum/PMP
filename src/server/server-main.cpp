@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -86,7 +86,7 @@ int main(int argc, char *argv[]) {
 
     /* set up logging */
     Logging::enableConsoleAndTextFileLogging(true);
-    Logging::setFilenameSuffix("S"); /* S = Server */
+    Logging::setFilenameTag("S"); /* S = Server */
     Logging::cleanupOldLogfiles();
     /* TODO: do a log cleanup regularly, because a server is likely to be run for days,
      *       weeks, or months before being restarted. */
