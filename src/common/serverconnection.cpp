@@ -397,9 +397,11 @@ namespace PMP {
 
                 _state = BinaryMode;
 
-                /* if interested in protocol extensions... */
-                sendSingleByteAction(18); /* 18 = request list of protocol extensions */
-                sendProtocolExtensionsMessage();
+                if (_serverProtocolNo >= 12) {
+                    /* if interested in protocol extensions... */
+                    sendSingleByteAction(18); /*18 = request list of protocol extensions*/
+                    sendProtocolExtensionsMessage();
+                }
 
                 if (_autoSubscribeToEventsAfterConnect
                         == ServerEventSubscription::AllEvents)
@@ -508,21 +510,26 @@ namespace PMP {
     void ServerConnection::sendProtocolExtensionsMessage() {
         if (_serverProtocolNo < 12) return; /* server will not understand this message */
 
-        quint8 extensionCount = 0;
+        QVector<const NetworkProtocol::ProtocolExtension*> extensions;
+        //extensions << &_knownExtensionThis;
+
+        quint8 extensionCount = static_cast<quint8>(extensions.size());
 
         QByteArray message;
         message.reserve(4 + extensionCount * 16); /* estimate */
         NetworkUtil::append2Bytes(message, NetworkProtocol::ClientExtensionsMessage);
         NetworkUtil::appendByte(message, 0); /* filler */
-        NetworkUtil::appendByte(message, 0); /* extension count */
+        NetworkUtil::appendByte(message, extensionCount);
 
-        /* FOR EACH EXTENSION:
-            NetworkUtil::appendByte(message, extensionId);
-            NetworkUtil::appendByte(message, extensionVersion);
-            NetworkUtil::appendByte(message, extensionNameSize);
-            message += extensionName.toUtf8();
+        for(auto extension : extensions) {
+            QByteArray nameBytes = extension->name.toUtf8();
+            quint8 nameBytesCount = static_cast<quint8>(nameBytes.size());
 
-        */
+            NetworkUtil::appendByte(message, extension->id);
+            NetworkUtil::appendByte(message, extension->version);
+            NetworkUtil::appendByte(message, nameBytesCount);
+            message += nameBytes;
+        }
 
         sendBinaryMessage(message);
     }
@@ -1274,7 +1281,7 @@ namespace PMP {
     {
         /* parse extensions here */
 
-        //if (extensionId == _knownExtensionServerId) {
+        //if (extensionId == _knownExtensionOther.id) {
         //    switch (messageType) {
         //    case 1: parseExtensionMessage1(message); break;
         //    case 2: parseExtensionMessage2(message); break;
@@ -2307,8 +2314,7 @@ namespace PMP {
             _serverExtensionNames[extension.id] = extension.name;
 
             //if (extension.name == "known_extension_name") {
-            //    _knownExtensionServerId = extension.id;
-            //    _knownExtensionServerVersion = extension.version;
+            //    _knownExtensionOther = extension;
             //}
         }
     }

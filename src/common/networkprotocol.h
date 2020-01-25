@@ -143,23 +143,43 @@ namespace PMP {
             EventDeactivatedNow = 4,
         };
 
-        struct ProtocolExtension {
+        struct ProtocolExtensionSupport {
             quint8 id;
             quint8 version;
-            QString name;
 
-            ProtocolExtension()
+            ProtocolExtensionSupport()
              : id(0), version(0)
             {
                 //
             }
 
-            ProtocolExtension(quint8 id, QString name, quint8 version = 1)
-             : id(id), version(version), name(name)
+            explicit ProtocolExtensionSupport(quint8 id, quint8 version = 1)
+             : id(id), version(version)
             {
                 //
             }
         };
+
+        struct ProtocolExtension : ProtocolExtensionSupport {
+            QString name;
+
+            ProtocolExtension()
+             : ProtocolExtensionSupport()
+            {
+                //
+            }
+
+            ProtocolExtension(quint8 id, QString name, quint8 version = 1)
+             : ProtocolExtensionSupport(id, version), name(name)
+            {
+                //
+            }
+        };
+
+        static quint16 encodeMessageTypeForExtension(quint8 extensionId,
+                                                     quint8 messageType);
+        static void appendExtensionMessageStart(QByteArray& buffer, quint8 extensionId,
+                                                quint8 messageType);
 
         static bool isValidStartStopEventStatus(quint8 status);
         static bool isActive(StartStopEventStatus status);
