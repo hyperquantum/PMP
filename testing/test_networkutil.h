@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,6 +39,7 @@ private slots:
     void getByteUnsignedToInt();
     void get2BytesUnsignedToInt();
     void appendByteUnsigned();
+    void append2BytesUnsigned();
     void append2BytesSigned();
     void append4BytesSigned();
     void append8BytesSigned();
