@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -441,6 +441,25 @@ void TestNetworkUtil::appendByteUnsigned() {
     QCOMPARE(char(array[1]), char(128));
     QCOMPARE(char(array[2]), char(33));
     QCOMPARE(char(array[3]), char(0));
+}
+
+void TestNetworkUtil::append2BytesUnsigned() {
+    QByteArray array;
+    NetworkUtil::append2BytesUnsigned(array, 0xFFFF);
+    NetworkUtil::append2BytesUnsigned(array, 0xFF07);
+    NetworkUtil::append2BytesUnsigned(array, 256);
+    NetworkUtil::append2BytesUnsigned(array, 0);
+
+    QCOMPARE(array.size(), 4 * 2);
+
+    QCOMPARE(char(array[0]), '\xFF');
+    QCOMPARE(char(array[1]), '\xFF');
+    QCOMPARE(char(array[2]), '\xFF');
+    QCOMPARE(char(array[3]), '\x07');
+    QCOMPARE(char(array[4]), char(1));
+    QCOMPARE(char(array[5]), char(0));
+    QCOMPARE(char(array[6]), char(0));
+    QCOMPARE(char(array[7]), char(0));
 }
 
 void TestNetworkUtil::append2BytesSigned() {

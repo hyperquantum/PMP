@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -63,6 +63,15 @@ namespace PMP {
         }
 
         return appendByte(buffer, static_cast<quint8>(number));
+    }
+
+    int NetworkUtil::append2BytesUnsigned(QByteArray& buffer, int number) {
+        if (number < 0 || number > 0xFFFF) {
+            qWarning() << "cannot convert" << number << "to quint16";
+            number = 0;
+        }
+
+        return append2Bytes(buffer, static_cast<quint16>(number));
     }
 
     int NetworkUtil::append2BytesSigned(QByteArray& buffer, qint16 number) {

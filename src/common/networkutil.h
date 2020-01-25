@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,6 +35,7 @@ namespace PMP {
         static int append8Bytes(QByteArray& buffer, quint64 number);
 
         static int appendByteUnsigned(QByteArray& buffer, int number);
+        static int append2BytesUnsigned(QByteArray& buffer, int number);
 
         static int append2BytesSigned(QByteArray& buffer, qint16 number);
         static int append4BytesSigned(QByteArray& buffer, qint32 number);
