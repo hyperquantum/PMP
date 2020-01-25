@@ -149,13 +149,13 @@ namespace PMP {
             QString name;
 
             ProtocolExtension()
-             : id(0)
+             : id(0), version(0)
             {
                 //
             }
 
             ProtocolExtension(quint8 id, QString name, quint8 version = 1)
-             : id(id), name(name)
+             : id(id), version(version), name(name)
             {
                 //
             }
