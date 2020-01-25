@@ -265,15 +265,24 @@ namespace PMP {
         uint getNewReference();
 
         void sendTextCommand(QString const& command);
+        void appendScrobblingMessageStart(QByteArray& buffer,
+                                    NetworkProtocol::ScrobblingClientMessage messageType);
         void sendBinaryMessage(QByteArray const& message);
+        void sendProtocolExtensionsMessage();
         void sendSingleByteAction(quint8 action);
 
         void readTextCommands();
         void readBinaryCommands();
         void executeTextCommand(QString const& commandText);
         void handleBinaryMessage(QByteArray const& message);
+        void handleStandardBinaryMessage(NetworkProtocol::ServerMessageType messageType,
+                                         QByteArray const& message);
+        void handleExtensionMessage(quint8 extensionId, quint8 extensionMessageType,
+                                    QByteArray const& message);
         void handleResultMessage(quint16 errorType, quint32 clientReference,
                                  quint32 intData, QByteArray const& blobData);
+        void registerServerProtocolExtensions(
+                           const QVector<NetworkProtocol::ProtocolExtension>& extensions);
 
         void sendInitiateNewUserAccountMessage(QString login, quint32 clientReference);
         void sendFinishNewUserAccountMessage(QString login, QByteArray salt,
@@ -292,6 +301,7 @@ namespace PMP {
         void handleUserLoginResult(quint16 errorType, quint32 intData,
                                    QByteArray const& blobData);
 
+        void sendScrobblingProviderInfoRequest();
         void sendUserScrobblingEnableDisableRequest(ScrobblingProvider provider,
                                                     bool enable);
 
@@ -299,6 +309,7 @@ namespace PMP {
 
         void parseSimpleResultMessage(QByteArray const& message);
 
+        void parseServerProtocolExtensionsMessage(QByteArray const& message);
         void parseServerEventNotificationMessage(QByteArray const& message);
         void parseServerInstanceIdentifierMessage(QByteArray const& message);
         void parseServerNameMessage(QByteArray const& message);
@@ -351,6 +362,9 @@ namespace PMP {
         QByteArray _readBuffer;
         bool _binarySendingMode;
         int _serverProtocolNo;
+        QHash<quint8, QString> _serverExtensionNames;
+        const NetworkProtocol::ProtocolExtension _scrobblingSupportThis;
+        NetworkProtocol::ProtocolExtensionSupport _scrobblingSupportOther;
         uint _nextRef;
         uint _userAccountRegistrationRef;
         QString _userAccountRegistrationLogin;

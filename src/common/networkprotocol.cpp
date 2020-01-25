@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,6 +31,22 @@
 #include <QtDebug>
 
 namespace PMP {
+
+    quint16 NetworkProtocol::encodeMessageTypeForExtension(quint8 extensionId,
+                                                           quint8 messageType)
+    {
+        return (1u << 15) + (extensionId << 7) + (messageType & 0x7Fu);
+    }
+
+    void NetworkProtocol::appendExtensionMessageStart(QByteArray& buffer,
+                                                      quint8 extensionId,
+                                                      quint8 messageType)
+    {
+        quint16 encodedMessageType =
+                encodeMessageTypeForExtension(extensionId, messageType);
+
+        NetworkUtil::append2Bytes(buffer, encodedMessageType);
+    }
 
     bool NetworkProtocol::isValidStartStopEventStatus(quint8 status) {
         /* we consider 0 an invalid value because it does not represent a status */

@@ -129,7 +129,10 @@ namespace PMP {
                                         QString const& arg2);
         void sendTextCommand(QString const& command);
         void handleBinaryModeSwitchRequest();
+        void appendScrobblingMessageStart(QByteArray& buffer,
+                                    NetworkProtocol::ScrobblingServerMessage messageType);
         void sendBinaryMessage(QByteArray const& message);
+        void sendProtocolExtensionsMessage();
         void sendEventNotificationMessage(quint8 event);
         void sendServerInstanceIdentifier();
         void sendDatabaseIdentifier();
@@ -183,8 +186,16 @@ namespace PMP {
                                                         bool enabled);
 
         void handleBinaryMessage(QByteArray const& message);
+        void handleStandardBinaryMessage(NetworkProtocol::ClientMessageType messageType,
+                                         QByteArray const& message);
+        void handleExtensionMessage(quint8 extensionId, quint8 messageType,
+                                    QByteArray const& message);
+        void registerClientProtocolExtensions(
+                           const QVector<NetworkProtocol::ProtocolExtension>& extensions);
         void handleSingleByteAction(quint8 action);
         void handleCollectionFetchRequest(uint clientReference);
+
+        void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         NetworkProtocol::ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
@@ -192,6 +203,8 @@ namespace PMP {
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
+        void parseCurrentUserScrobblingProviderInfoRequestMessage(
+                                                               QByteArray const& message);
         void parseUserScrobblingEnableDisableRequest(QByteArray const& message);
 
         void schedulePlayerStateNotification();
@@ -209,6 +222,9 @@ namespace PMP {
         Scrobbling* _scrobbling;
         QByteArray _textReadBuffer;
         int _clientProtocolNo;
+        QHash<quint8, QString> _clientExtensionNames;
+        const NetworkProtocol::ProtocolExtension _scrobblingSupportThis;
+        NetworkProtocol::ProtocolExtensionSupport _scrobblingSupportOther;
         quint32 _lastSentNowPlayingID;
         QString _userAccountRegistering;
         QByteArray _saltForUserAccountRegistering;

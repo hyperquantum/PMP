@@ -247,8 +247,9 @@ namespace PMP {
        _autoSubscribeToEventsAfterConnect(eventSubscription),
        _state(ServerConnection::NotConnected),
        _binarySendingMode(false),
-       _serverProtocolNo(-1), _nextRef(1),
-       _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0),
+       _serverProtocolNo(-1),
+       _scrobblingSupportThis(255, "scrobbling"),
+       _nextRef(1), _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0),
        _simplePlayerController(nullptr), _simplePlayerStateMonitor(nullptr)
     {
         connect(&_socket, SIGNAL(connected()), this, SLOT(onConnected()));
@@ -397,6 +398,12 @@ namespace PMP {
 
                 _state = BinaryMode;
 
+                if (_serverProtocolNo >= 12) {
+                    /* if interested in protocol extensions... */
+                    sendSingleByteAction(18); /*18 = request list of protocol extensions*/
+                    sendProtocolExtensionsMessage();
+                }
+
                 if (_autoSubscribeToEventsAfterConnect
                         == ServerEventSubscription::AllEvents)
                 {
@@ -485,6 +492,15 @@ namespace PMP {
         _socket.flush();
     }
 
+    void ServerConnection::appendScrobblingMessageStart(QByteArray& buffer,
+                                     NetworkProtocol::ScrobblingClientMessage messageType)
+    {
+        auto id = _scrobblingSupportThis.id;
+        auto type = static_cast<quint8>(messageType);
+
+        NetworkProtocol::appendExtensionMessageStart(buffer, id, type);
+    }
+
     void ServerConnection::sendBinaryMessage(QByteArray const& message) {
         auto messageLength = message.length();
         if (messageLength > std::numeric_limits<qint32>::max() - 1)
@@ -499,6 +515,33 @@ namespace PMP {
         _socket.write(lengthBytes);
         _socket.write(message);
         _socket.flush();
+    }
+
+    void ServerConnection::sendProtocolExtensionsMessage() {
+        if (_serverProtocolNo < 12) return; /* server will not understand this message */
+
+        QVector<const NetworkProtocol::ProtocolExtension*> extensions;
+        extensions << &_scrobblingSupportThis;
+
+        quint8 extensionCount = static_cast<quint8>(extensions.size());
+
+        QByteArray message;
+        message.reserve(4 + extensionCount * 16); /* estimate */
+        NetworkUtil::append2Bytes(message, NetworkProtocol::ClientExtensionsMessage);
+        NetworkUtil::appendByte(message, 0); /* filler */
+        NetworkUtil::appendByte(message, extensionCount);
+
+        for(auto extension : extensions) {
+            QByteArray nameBytes = extension->name.toUtf8();
+            quint8 nameBytesCount = static_cast<quint8>(nameBytes.size());
+
+            NetworkUtil::appendByte(message, extension->id);
+            NetworkUtil::appendByte(message, extension->version);
+            NetworkUtil::appendByte(message, nameBytesCount);
+            message += nameBytes;
+        }
+
+        sendBinaryMessage(message);
     }
 
     void ServerConnection::sendSingleByteAction(quint8 action) {
@@ -733,7 +776,7 @@ namespace PMP {
     }
 
     void ServerConnection::requestScrobblingProviderInfoForCurrentUser() {
-        sendSingleByteAction(18);
+        sendScrobblingProviderInfoRequest();
     }
 
     void ServerConnection::enableScrobblingForCurrentUser(ScrobblingProvider provider) {
@@ -846,14 +889,30 @@ namespace PMP {
         }
     }
 
+    void ServerConnection::sendScrobblingProviderInfoRequest() {
+        /* only send it if the server will understand it */
+        if (_scrobblingSupportOther.version < 1) return;
+
+        QByteArray message;
+        message.reserve(2 + 2);
+        appendScrobblingMessageStart(message,
+                    NetworkProtocol::ScrobblingClientMessage::ProviderInfoRequestMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::sendUserScrobblingEnableDisableRequest(
                                                               ScrobblingProvider provider,
                                                               bool enable)
     {
+        /* only send it if the server will understand it */
+        if (_scrobblingSupportOther.version < 1) return;
+
         QByteArray message;
         message.reserve(2 + 2);
-        NetworkUtil::append2Bytes(message,
-                              NetworkProtocol::UserScrobblingEnableDisableRequestMessage);
+        appendScrobblingMessageStart(message,
+                   NetworkProtocol::ScrobblingClientMessage::EnableDisableRequestMessage);
         NetworkUtil::appendByte(message, NetworkProtocol::encode(provider));
         NetworkUtil::appendByte(message, enable ? 1 : 0);
 
@@ -1158,11 +1217,29 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        auto messageType =
-            static_cast<NetworkProtocol::ServerMessageType>(
-                                                      NetworkUtil::get2Bytes(message, 0));
+        quint16 messageType = NetworkUtil::get2Bytes(message, 0);
+        if (messageType & (1u << 15)) {
+            quint8 extensionMessageType = messageType & 0x7Fu;
+            quint8 extensionId = (messageType >> 7) & 0xFFu;
 
+            handleExtensionMessage(extensionId, extensionMessageType, message);
+        }
+        else {
+            auto serverMessageType =
+                static_cast<NetworkProtocol::ServerMessageType>(messageType);
+
+            handleStandardBinaryMessage(serverMessageType, message);
+        }
+    }
+
+    void ServerConnection::handleStandardBinaryMessage(
+                                           NetworkProtocol::ServerMessageType messageType,
+                                           QByteArray const& message)
+    {
         switch (messageType) {
+        case NetworkProtocol::ServerExtensionsMessage:
+            parseServerProtocolExtensionsMessage(message);
+            break;
         case NetworkProtocol::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
             break;
@@ -1248,20 +1325,44 @@ namespace PMP {
         case NetworkProtocol::CollectionAvailabilityChangeNotificationMessage:
             parseTrackAvailabilityChangeBatchMessage(message);
             break;
-        case NetworkProtocol::ScrobblerStatusChangeMessage:
-            parseScrobblerStatusChangeMessage(message);
-            break;
-        case NetworkProtocol::ScrobblingProviderEnabledChangeMessage:
-            parseScrobblingProviderEnabledChangeMessage(message);
-            break;
-        case NetworkProtocol::ScrobblingProviderInfoMessage:
-            parseScrobblingProviderInfoMessage(message);
-            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << message.length();
             break; /* unknown message type */
         }
+    }
+
+    void ServerConnection::handleExtensionMessage(quint8 extensionId, quint8 messageType,
+                                                  QByteArray const& message)
+    {
+        /* parse extensions here */
+
+        //if (extensionId == _knownExtensionServerId) {
+        //    switch (messageType) {
+        //    case 1: parseExtensionMessage1(message); break;
+        //    case 2: parseExtensionMessage2(message); break;
+        //    case 3: parseExtensionMessage3(message); break;
+        //    }
+        //}
+        if (extensionId == _scrobblingSupportOther.id) {
+            switch (static_cast<NetworkProtocol::ScrobblingServerMessage>(messageType)) {
+            case NetworkProtocol::ScrobblingServerMessage::StatusChangeMessage:
+                parseScrobblerStatusChangeMessage(message);
+                return;
+            case NetworkProtocol::ScrobblingServerMessage::ProviderEnabledChangeMessage:
+                parseScrobblingProviderEnabledChangeMessage(message);
+                return;
+            case NetworkProtocol::ScrobblingServerMessage::ProviderInfoMessage:
+                parseScrobblingProviderInfoMessage(message);
+                return;
+            }
+        }
+
+        qWarning() << "unhandled extension message" << messageType
+                   << "for extension" << extensionId
+                   << "with length" << message.length()
+                   << "; extension name: "
+                   << _serverExtensionNames.value(extensionId, "?");
     }
 
     void ServerConnection::parseSimpleResultMessage(QByteArray const& message) {
@@ -1279,6 +1380,65 @@ namespace PMP {
                  << " client-ref:" << clientReference;
 
         handleResultMessage(errorType, clientReference, intData, blobData);
+    }
+
+    void ServerConnection::parseServerProtocolExtensionsMessage(QByteArray const& message)
+    {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        /* be strict about reserved space */
+        int filler = NetworkUtil::getByteUnsignedToInt(message, 2);
+        if (filler != 0) {
+            return; /* invalid message */
+        }
+
+        int extensionCount = NetworkUtil::getByteUnsignedToInt(message, 3);
+        if (message.length() < 4 + extensionCount * 4) {
+            return; /* invalid message */
+        }
+
+        QVector<NetworkProtocol::ProtocolExtension> extensions(extensionCount);
+        QSet<quint8> ids;
+        QSet<QString> names;
+        ids.reserve(extensionCount);
+        names.reserve(extensionCount);
+
+        int offset = 4;
+        for (int i = 0; i < extensionCount; ++i) {
+            if (offset >= message.length() - 4) {
+                return; /* invalid message */
+            }
+
+            quint8 id = NetworkUtil::getByte(message, offset);
+            quint8 version = NetworkUtil::getByte(message, offset + 1);
+            quint8 byteCount = NetworkUtil::getByte(message, offset + 2);
+            offset += 3;
+
+            if (id == 0 || version == 0 || byteCount == 0
+                    || offset >= message.length() - byteCount)
+            {
+                return; /* invalid message */
+            }
+
+            QString name = NetworkUtil::getUtf8String(message, offset, byteCount);
+            offset += byteCount;
+
+            if (ids.contains(id) || names.contains(name)) {
+                return; /* invalid message */
+            }
+
+            ids << id;
+            names << name;
+            extensions << NetworkProtocol::ProtocolExtension(id, name, version);
+        }
+
+        if (offset != message.length()) {
+            return; /* invalid message */
+        }
+
+        registerServerProtocolExtensions(extensions);
     }
 
     void ServerConnection::parseServerEventNotificationMessage(QByteArray const& message)
@@ -2282,6 +2442,27 @@ namespace PMP {
     {
         qWarning() << "received invalid message; length=" << message.size()
                    << " type=" << messageType << " extra info=" << extraInfo;
+    }
+
+    void ServerConnection::registerServerProtocolExtensions(
+                            const QVector<NetworkProtocol::ProtocolExtension>& extensions)
+    {
+        /* handle extensions here */
+        for (auto extension : extensions) {
+            qDebug() << "server will use ID" << extension.id
+                     << "and version" << extension.version
+                     << "for protocol extension" << extension.name;
+
+            _serverExtensionNames[extension.id] = extension.name;
+
+            //if (extension.name == "known_extension_name") {
+            //    _knownExtensionServerId = extension.id;
+            //    _knownExtensionServerVersion = extension.version;
+            //}
+            if (extension.name == "scrobbling") {
+                _scrobblingSupportOther = extension;
+            }
+        }
     }
 
     // ============================================================================ //

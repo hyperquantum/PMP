@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -45,7 +45,7 @@ namespace PMP {
           9: client msg 21, server msg 27: queue entry duplication
          10: single byte request 51 & server msg 28: server health messages
          11: server msg 29: track availability change notifications
-         12: client msg 22, single byte request 18 and server msgs 30 & 31 & 32:scrobbling
+         12: clienst msg 22, server msg 30, single byte request 18: protocol extensions
 
     */
 
@@ -90,9 +90,7 @@ namespace PMP {
             QueueEntryAdditionConfirmationMessage = 27,
             ServerHealthMessage = 28,
             CollectionAvailabilityChangeNotificationMessage = 29,
-            ScrobblerStatusChangeMessage = 30,
-            ScrobblingProviderEnabledChangeMessage = 31,
-            ScrobblingProviderInfoMessage = 32,
+            ServerExtensionsMessage = 30,
         };
 
         enum ClientMessageType {
@@ -118,7 +116,7 @@ namespace PMP {
             InsertHashIntoQueueRequestMessage = 19,
             PlayerHistoryRequestMessage = 20,
             QueueEntryDuplicationRequestMessage = 21,
-            UserScrobblingEnableDisableRequestMessage = 22,
+            ClientExtensionsMessage = 22,
         };
 
         enum ErrorType {
@@ -147,6 +145,55 @@ namespace PMP {
             EventActivatedNow = 3,
             EventDeactivatedNow = 4,
         };
+
+        struct ProtocolExtensionSupport {
+            quint8 id;
+            quint8 version;
+
+            ProtocolExtensionSupport()
+             : id(0), version(0)
+            {
+                //
+            }
+
+            explicit ProtocolExtensionSupport(quint8 id, quint8 version = 1)
+             : id(id), version(version)
+            {
+                //
+            }
+        };
+
+        struct ProtocolExtension : ProtocolExtensionSupport {
+            QString name;
+
+            ProtocolExtension()
+             : ProtocolExtensionSupport()
+            {
+                //
+            }
+
+            ProtocolExtension(quint8 id, QString name, quint8 version = 1)
+             : ProtocolExtensionSupport(id, version), name(name)
+            {
+                //
+            }
+        };
+
+        enum class ScrobblingServerMessage : quint8 {
+            ProviderInfoMessage = 1,
+            StatusChangeMessage = 2,
+            ProviderEnabledChangeMessage = 3,
+        };
+
+        enum class ScrobblingClientMessage : quint8 {
+            ProviderInfoRequestMessage = 1,
+            EnableDisableRequestMessage = 2,
+        };
+
+        static quint16 encodeMessageTypeForExtension(quint8 extensionId,
+                                                     quint8 messageType);
+        static void appendExtensionMessageStart(QByteArray& buffer, quint8 extensionId,
+                                                quint8 messageType);
 
         static bool isValidStartStopEventStatus(quint8 status);
         static bool isActive(StartStopEventStatus status);
