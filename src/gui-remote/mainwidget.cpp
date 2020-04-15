@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -132,8 +132,8 @@ namespace PMP {
         );
 
         connect(
-            _ui->trackProgress, SIGNAL(seekRequested(qint64)),
-            _currentTrackMonitor, SLOT(seekTo(qint64))
+            _ui->trackProgress, &TrackProgressWidget::seekRequested,
+            _currentTrackMonitor, &CurrentTrackMonitor::seekTo
         );
 
         connect(
@@ -149,9 +149,18 @@ namespace PMP {
             _connection, &ServerConnection::switchToPersonalMode
         );
 
-        connect(_ui->playButton, SIGNAL(clicked()), _connection, SLOT(play()));
-        connect(_ui->pauseButton, SIGNAL(clicked()), _connection, SLOT(pause()));
-        connect(_ui->skipButton, SIGNAL(clicked()), _connection, SLOT(skip()));
+        connect(
+            _ui->playButton, &QPushButton::clicked,
+            _connection, &ServerConnection::play
+        );
+        connect(
+            _ui->pauseButton, &QPushButton::clicked,
+            _connection, &ServerConnection::pause
+        );
+        connect(
+            _ui->skipButton, &QPushButton::clicked,
+            _connection, &ServerConnection::skip
+        );
 
         connect(
             _ui->insertBreakButton, &QPushButton::clicked,
@@ -164,16 +173,16 @@ namespace PMP {
         );
 
         connect(
-            _ui->dynamicModeCheckBox, SIGNAL(stateChanged(int)),
-            this, SLOT(changeDynamicMode(int))
+            _ui->dynamicModeCheckBox, &QCheckBox::stateChanged,
+            this, &MainWidget::changeDynamicMode
         );
         connect(
             _ui->startHighScoredTracksWaveButton, &QPushButton::clicked,
             this, &MainWidget::startHighScoredTracksWave
         );
         connect(
-            _ui->noRepetitionComboBox, SIGNAL(currentIndexChanged(int)),
-            this, SLOT(noRepetitionIndexChanged(int))
+            _ui->noRepetitionComboBox, qOverload<int>(&QComboBox::currentIndexChanged),
+            this, &MainWidget::noRepetitionIndexChanged
         );
         connect(
             _connection, &ServerConnection::dynamicModeStatusReceived,
@@ -194,16 +203,16 @@ namespace PMP {
         );
 
         connect(
-            _currentTrackMonitor, SIGNAL(volumeChanged(int)),
-            this, SLOT(volumeChanged(int))
+            _currentTrackMonitor, &CurrentTrackMonitor::volumeChanged,
+            this, &MainWidget::volumeChanged
         );
         connect(
-            _ui->volumeIncreaseButton, SIGNAL(clicked()),
-            this, SLOT(increaseVolume())
+            _ui->volumeIncreaseButton, &QToolButton::clicked,
+            this, &MainWidget::increaseVolume
         );
         connect(
-            _ui->volumeDecreaseButton, SIGNAL(clicked()),
-            this, SLOT(decreaseVolume())
+            _ui->volumeDecreaseButton, &QToolButton::clicked,
+            this, &MainWidget::decreaseVolume
         );
 
         connect(
@@ -211,7 +220,8 @@ namespace PMP {
             this, &MainWidget::playing
         );
         connect(
-            _currentTrackMonitor, &CurrentTrackMonitor::paused, this, &MainWidget::paused
+            _currentTrackMonitor, &CurrentTrackMonitor::paused,
+            this, &MainWidget::paused
         );
         connect(
             _currentTrackMonitor, &CurrentTrackMonitor::stopped,
@@ -222,20 +232,21 @@ namespace PMP {
             this, &MainWidget::queueLengthChanged
         );
         connect(
-            _currentTrackMonitor, SIGNAL(trackProgress(quint32, quint64, int)),
-            this, SLOT(trackProgress(quint32, quint64, int))
+            _currentTrackMonitor,
+            qOverload<quint32, quint64, int>(&CurrentTrackMonitor::trackProgress),
+            this, qOverload<quint32, quint64, int>(&MainWidget::trackProgress)
         );
         connect(
-            _currentTrackMonitor, SIGNAL(trackProgress(quint64)),
-            this, SLOT(trackProgress(quint64))
+            _currentTrackMonitor, qOverload<quint64>(&CurrentTrackMonitor::trackProgress),
+            this, qOverload<quint64>(&MainWidget::trackProgress)
         );
         connect(
-            _currentTrackMonitor, SIGNAL(receivedTitleArtist(QString, QString)),
-            this, SLOT(receivedTitleArtist(QString, QString))
+            _currentTrackMonitor, &CurrentTrackMonitor::receivedTitleArtist,
+            this, &MainWidget::receivedTitleArtist
         );
         connect(
-            _currentTrackMonitor, SIGNAL(receivedPossibleFilename(QString)),
-            this, SLOT(receivedPossibleFilename(QString))
+            _currentTrackMonitor, &CurrentTrackMonitor::receivedPossibleFilename,
+            this, &MainWidget::receivedPossibleFilename
         );
 
         _connection->requestUserPlayingForMode();
