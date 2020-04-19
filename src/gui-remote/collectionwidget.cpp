@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 #include "ui_collectionwidget.h"
 
 #include "common/serverconnection.h"
+#include "common/util.h"
 
 #include "collectiontablemodel.h"
 
@@ -39,6 +40,21 @@ namespace PMP {
     {
         _ui->setupUi(this);
 
+        _ui->highlightTracksComboBox->addItem(tr("none"),
+                                           QVariant::fromValue(TrackHighlightMode::None));
+//      _ui->highlightTracksComboBox->addItem(tr("never heard"),
+//                                   QVariant::fromValue(TrackHighlightMode::NeverHeard));
+//      _ui->highlightTracksComboBox->addItem(
+//                              tr("score >= 85").replace(">=", Util::GreaterThanOrEqual),
+//                              QVariant::fromValue(TrackHighlightMode::ScoreAtLeast85));
+        _ui->highlightTracksComboBox->addItem(
+                        tr("length <= 1 min.").replace("<=", Util::LessThanOrEqual),
+                        QVariant::fromValue(TrackHighlightMode::LengthMaximumOneMinute));
+        _ui->highlightTracksComboBox->addItem(
+                       tr("length >= 5 min.").replace(">=", Util::GreaterThanOrEqual),
+                       QVariant::fromValue(TrackHighlightMode::LengthAtLeastFiveMinutes));
+        _ui->highlightTracksComboBox->setCurrentIndex(0);
+
         _ui->collectionTableView->setModel(_collectionDisplayModel);
         _ui->collectionTableView->setDragEnabled(true);
         _ui->collectionTableView->setSelectionMode(QAbstractItemView::SingleSelection);
@@ -48,7 +64,10 @@ namespace PMP {
             _ui->searchLineEdit, &QLineEdit::textChanged,
             _collectionDisplayModel, &FilteredCollectionTableModel::setSearchText
         );
-
+        connect(
+            _ui->highlightTracksComboBox, qOverload<int>(&QComboBox::currentIndexChanged),
+            this, &CollectionWidget::highlightTracksIndexChanged
+        );
         connect(
             _ui->collectionTableView, &QTableView::customContextMenuRequested,
             this, &CollectionWidget::collectionContextMenuRequested
@@ -96,6 +115,15 @@ namespace PMP {
     void CollectionWidget::setConnection(ServerConnection* connection) {
         _connection = connection;
         _collectionSourceModel->setConnection(connection);
+    }
+
+    void CollectionWidget::highlightTracksIndexChanged(int index) {
+        Q_UNUSED(index)
+
+        auto mode =
+                _ui->highlightTracksComboBox->currentData().value<TrackHighlightMode>();
+
+        _collectionSourceModel->setHighlightMode(mode);
     }
 
     void CollectionWidget::collectionContextMenuRequested(const QPoint& position) {

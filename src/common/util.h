@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -41,6 +41,12 @@ namespace PMP {
 
         /*! The LATIN SMALL LETTER E WITH DIAERESIS (U+00EB) */
         static const QChar EDiaeresis;
+
+        /*! The "GREATER-THAN OR EQUAL TO" symbol (U+2265) */
+        static const QChar GreaterThanOrEqual;
+
+        /*! The "LESS-THAN OR EQUAL TO" symbol (U+2264) */
+        static const QChar LessThanOrEqual;
 
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -52,9 +52,10 @@ namespace PMP {
         const QString& title() const { return _title; }
         const QString& artist() const { return _artist; }
         const QString& album() const { return _album; }
+        bool lengthIsKnown() const { return _lengthInMs >= 0; }
         qint32 lengthInMilliseconds() const { return _lengthInMs; }
         qint32 lengthInSeconds() const {
-            return (_lengthInMs >= 0) ? _lengthInMs / 1000 : -1;
+            return lengthIsKnown() ? _lengthInMs / 1000 : -1;
         }
 
         bool titleAndArtistUnknown() const {

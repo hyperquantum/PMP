@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,6 +32,32 @@
 #include <functional>
 
 namespace PMP {
+
+    TriBool TrackHighlighter::shouldHighlightTrack(CollectionTrackInfo const& track) const
+    {
+        switch (_mode) {
+            case TrackHighlightMode::None:
+                return false;
+
+            case TrackHighlightMode::NeverHeard:
+                break; // TODO: implement this
+
+            case TrackHighlightMode::ScoreAtLeast85:
+                break; // TODO: implement this
+
+            case TrackHighlightMode::LengthMaximumOneMinute:
+                if (!track.lengthIsKnown()) return TriBool();
+                return track.lengthInMilliseconds() <= 60 * 1000;
+
+            case TrackHighlightMode::LengthAtLeastFiveMinutes:
+                if (!track.lengthIsKnown()) return TriBool();
+                return track.lengthInMilliseconds() >= 5 * 60 * 1000;
+        }
+
+        return false;
+    }
+
+    // ============================================================================ //
 
     namespace {
 
@@ -103,6 +129,15 @@ namespace PMP {
 
         auto fetcher = new CollectionTableFetcher(this);
         connection->fetchCollection(fetcher);
+    }
+
+    void SortedCollectionTableModel::setHighlightMode(TrackHighlightMode mode) {
+        _highlighter.setMode(mode);
+
+        /* notify the outside world that potentially everything has changed */
+        emit dataChanged(
+            createIndex(0, 0), createIndex(rowCount() - 1, columnCount() - 1)
+        );
     }
 
     bool SortedCollectionTableModel::lessThan(int index1, int index2) const {
@@ -441,6 +476,7 @@ namespace PMP {
         /* construct inner map from outer map */
         rebuildInnerMap();
 
+        /* notify the outside world that potentially everything has changed */
         emit dataChanged(
             createIndex(0, 0), createIndex(rowCount() - 1, columnCount() - 1)
         );
@@ -535,7 +571,15 @@ namespace PMP {
                 break;
             case Qt::ForegroundRole:
                 if (index.row() < _tracks.size()) {
-                    if (!trackAt(index)->isAvailable()) return QBrush(Qt::gray);
+                    auto track = trackAt(index);
+                    if (!track->isAvailable()) return QBrush(Qt::gray);
+                }
+                break;
+            case Qt::BackgroundRole:
+                if (index.row() < _tracks.size()) {
+                    auto track = trackAt(index);
+                    if (_highlighter.shouldHighlightTrack(*track).isTrue())
+                        return QBrush(Qt::yellow);
                 }
                 break;
         }

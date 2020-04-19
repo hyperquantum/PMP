@@ -82,6 +82,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/collectionwidget.cpp
     gui-remote/connectionwidget.cpp
     gui-remote/currenttrackmonitor.cpp
+    gui-remote/gui-remote-metatypes.cpp
     gui-remote/loginwidget.cpp
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp

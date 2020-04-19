@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 #define PMP_COLLECTIONTABLEMODEL_H
 
 #include "common/serverconnection.h"
+#include "common/tribool.h"
 
 #include <QAbstractTableModel>
 #include <QCollator>
@@ -31,12 +32,35 @@
 
 namespace PMP {
 
+    enum class TrackHighlightMode {
+        None = 0,
+        NeverHeard,
+        ScoreAtLeast85,
+        LengthMaximumOneMinute,
+        LengthAtLeastFiveMinutes,
+    };
+
+    class TrackHighlighter {
+    public:
+        TrackHighlighter() : _mode(TrackHighlightMode::None) {}
+
+        void setMode(TrackHighlightMode mode) { _mode = mode; }
+        TrackHighlightMode getMode() { return _mode; }
+
+        TriBool shouldHighlightTrack(CollectionTrackInfo const& track) const;
+
+    private:
+        TrackHighlightMode _mode;
+    };
+
     class SortedCollectionTableModel : public QAbstractTableModel {
         Q_OBJECT
     public:
         SortedCollectionTableModel(QObject* parent = 0);
 
         void setConnection(ServerConnection* connection);
+
+        void setHighlightMode(TrackHighlightMode mode);
 
         void addOrUpdateTracks(QList<CollectionTrackInfo> tracks);
 
@@ -105,6 +129,7 @@ namespace PMP {
         QCollator _collator;
         int _sortBy;
         Qt::SortOrder _sortOrder;
+        TrackHighlighter _highlighter;
     };
 
     class FilteredCollectionTableModel : public QSortFilterProxyModel {
@@ -143,4 +168,7 @@ namespace PMP {
         QList<CollectionTrackInfo> _tracksReceived;
     };
 }
+
+Q_DECLARE_METATYPE(PMP::TrackHighlightMode)
+
 #endif

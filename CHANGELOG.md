@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - Server now sends a notification to the client when it detects that a track has disappeared or reappeared.
 - Option to prevent the display from being turned off after a period of user inactivity. (Windows-only for now)
+- Music collection view: track highlighting.
 
 ### Changed
 - Full indexation will now notice when tracks have disappeared from their previously known location.
