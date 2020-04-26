@@ -546,7 +546,7 @@ namespace PMP {
         qDebug() << "QueueModel::userDataReceivedForUser; user:" << userId;
 
         emit dataChanged(
-            createIndex(0, 3), createIndex(_modelRows, 3)
+            createIndex(0, 3), createIndex(_modelRows, 4)
         );
     }
 
