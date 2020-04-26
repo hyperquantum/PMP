@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -80,11 +80,15 @@ namespace PMP {
     }
 
     int QueueModel::rowCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent)
+
         //qDebug() << "QueueModel::rowCount returning" << _modelRows;
         return _modelRows;
     }
 
     int QueueModel::columnCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent)
+
         return 5;
     }
 
@@ -256,6 +260,8 @@ namespace PMP {
     }
 
     Qt::ItemFlags QueueModel::flags(const QModelIndex& index) const {
+        Q_UNUSED(index)
+
         return Qt::ItemIsSelectable | Qt::ItemIsEnabled
             | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
     }
@@ -321,6 +327,8 @@ namespace PMP {
     bool QueueModel::dropQueueItemMimeData(const QMimeData *data, Qt::DropAction action,
                                            int row)
     {
+        Q_UNUSED(action)
+
         QDataStream stream(data->data("application/x-pmp-queueitem"));
 
         QUuid serverUuid;
