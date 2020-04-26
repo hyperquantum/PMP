@@ -93,6 +93,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/queuemodel.cpp
     gui-remote/queuemonitor.cpp
     gui-remote/scoreformatdelegate.cpp
+    gui-remote/serverinterface.cpp
     gui-remote/trackprogresswidget.cpp
     gui-remote/useraccountcreationwidget.cpp
     gui-remote/userdatafetcher.cpp
@@ -115,6 +116,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/queuemodel.h
     gui-remote/queuemonitor.h
     gui-remote/scoreformatdelegate.h
+    gui-remote/serverinterface.h
     gui-remote/trackprogresswidget.h
     gui-remote/useraccountcreationwidget.h
     gui-remote/userdatafetcher.h

@@ -24,6 +24,7 @@
 #include "common/util.h"
 
 #include "collectiontablemodel.h"
+#include "serverinterface.h"
 
 #include <QMenu>
 #include <QtDebug>
@@ -42,11 +43,20 @@ namespace PMP {
 
         _ui->highlightTracksComboBox->addItem(tr("none"),
                                            QVariant::fromValue(TrackHighlightMode::None));
-//      _ui->highlightTracksComboBox->addItem(tr("never heard"),
-//                                   QVariant::fromValue(TrackHighlightMode::NeverHeard));
-//      _ui->highlightTracksComboBox->addItem(
-//                              tr("score >= 85").replace(">=", Util::GreaterThanOrEqual),
-//                              QVariant::fromValue(TrackHighlightMode::ScoreAtLeast85));
+        _ui->highlightTracksComboBox->addItem(tr("never heard"),
+                                     QVariant::fromValue(TrackHighlightMode::NeverHeard));
+        _ui->highlightTracksComboBox->addItem(
+                                tr("without score"),
+                                QVariant::fromValue(TrackHighlightMode::WithoutScore));
+        _ui->highlightTracksComboBox->addItem(
+                                tr("score >= 85").replace(">=", Util::GreaterThanOrEqual),
+                                QVariant::fromValue(TrackHighlightMode::ScoreAtLeast85));
+        _ui->highlightTracksComboBox->addItem(
+                                tr("score >= 90").replace(">=", Util::GreaterThanOrEqual),
+                                QVariant::fromValue(TrackHighlightMode::ScoreAtLeast90));
+        _ui->highlightTracksComboBox->addItem(
+                                tr("score >= 95").replace(">=", Util::GreaterThanOrEqual),
+                                QVariant::fromValue(TrackHighlightMode::ScoreAtLeast95));
         _ui->highlightTracksComboBox->addItem(
                         tr("length <= 1 min.").replace("<=", Util::LessThanOrEqual),
                         QVariant::fromValue(TrackHighlightMode::LengthMaximumOneMinute));
@@ -112,9 +122,11 @@ namespace PMP {
         delete _ui;
     }
 
-    void CollectionWidget::setConnection(ServerConnection* connection) {
+    void CollectionWidget::setConnection(ServerConnection* connection,
+                                         ServerInterface* serverInterface)
+    {
         _connection = connection;
-        _collectionSourceModel->setConnection(connection);
+        _collectionSourceModel->setConnection(connection, serverInterface);
     }
 
     void CollectionWidget::highlightTracksIndexChanged(int index) {

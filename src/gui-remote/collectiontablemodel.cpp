@@ -21,6 +21,9 @@
 
 #include "common/util.h"
 
+#include "serverinterface.h"
+#include "userdatafetcher.h"
+
 #include <QBrush>
 #include <QBuffer>
 #include <QDataStream>
@@ -40,11 +43,30 @@ namespace PMP {
                 return false;
 
             case TrackHighlightMode::NeverHeard:
-                break; // TODO: implement this
-
+            {
+                auto evaluator = [](QDateTime prevHeard) { return !prevHeard.isValid(); };
+                return shouldHighlightBasedOnHeardDate(track, evaluator);
+            }
+            case TrackHighlightMode::WithoutScore:
+            {
+                auto evaluator = [](int score) { return score < 0; };
+                return shouldHighlightBasedOnScore(track, evaluator);
+            }
             case TrackHighlightMode::ScoreAtLeast85:
-                break; // TODO: implement this
-
+            {
+                auto evaluator = [](int score) { return score >= 85; };
+                return shouldHighlightBasedOnScore(track, evaluator);
+            }
+            case TrackHighlightMode::ScoreAtLeast90:
+            {
+                auto evaluator = [](int score) { return score >= 90; };
+                return shouldHighlightBasedOnScore(track, evaluator);
+            }
+            case TrackHighlightMode::ScoreAtLeast95:
+            {
+                auto evaluator = [](int score) { return score >= 95; };
+                return shouldHighlightBasedOnScore(track, evaluator);
+            }
             case TrackHighlightMode::LengthMaximumOneMinute:
                 if (!track.lengthIsKnown()) return TriBool();
                 return track.lengthInMilliseconds() <= 60 * 1000;
@@ -55,6 +77,36 @@ namespace PMP {
         }
 
         return false;
+    }
+
+    TriBool TrackHighlighter::shouldHighlightBasedOnScore(
+                                         CollectionTrackInfo const& track,
+                                         std::function<TriBool(int)> scoreEvaluator) const
+    {
+        if (!_userDataFetcher || !_haveUserId) return TriBool();
+
+        auto hashDataForUser =
+                _userDataFetcher->getHashDataForUser(_userId, track.hash());
+
+        if (!hashDataForUser || !hashDataForUser->scoreReceived)
+            return TriBool();
+
+        return scoreEvaluator(hashDataForUser->score);
+    }
+
+    TriBool TrackHighlighter::shouldHighlightBasedOnHeardDate(
+                                    CollectionTrackInfo const& track,
+                                    std::function<TriBool(QDateTime)> dateEvaluator) const
+    {
+        if (!_userDataFetcher || !_haveUserId) return TriBool();
+
+        auto hashDataForUser =
+                _userDataFetcher->getHashDataForUser(_userId, track.hash());
+
+        if (!hashDataForUser || !hashDataForUser->previouslyHeardReceived)
+            return TriBool();
+
+        return dateEvaluator(hashDataForUser->previouslyHeard);
     }
 
     // ============================================================================ //
@@ -108,7 +160,8 @@ namespace PMP {
     // ============================================================================ //
 
     SortedCollectionTableModel::SortedCollectionTableModel(QObject* parent)
-     : QAbstractTableModel(parent), _sortBy(0), _sortOrder(Qt::AscendingOrder)
+     : QAbstractTableModel(parent), _sortBy(0), _sortOrder(Qt::AscendingOrder),
+       _userPlayingFor(0), _receivedUserPlayingFor(false)
     {
         _collator.setCaseSensitivity(Qt::CaseInsensitive);
         _collator.setNumericMode(true);
@@ -117,7 +170,9 @@ namespace PMP {
         _collator.setIgnorePunctuation(true);
     }
 
-    void SortedCollectionTableModel::setConnection(ServerConnection* connection) {
+    void SortedCollectionTableModel::setConnection(ServerConnection* connection,
+                                                   ServerInterface* serverInterface)
+    {
         connect(
             connection, &ServerConnection::collectionTracksAvailabilityChanged,
             this, &SortedCollectionTableModel::onCollectionTracksAvailabilityChanged
@@ -127,6 +182,20 @@ namespace PMP {
             this, &SortedCollectionTableModel::onCollectionTracksChanged
         );
 
+        auto userDataFetcher = serverInterface->getUserDataFetcher();
+
+        _highlighter.setUserDataFetcher(userDataFetcher);
+        connect(
+            userDataFetcher, &UserDataFetcher::dataReceivedForUser,
+            this, &SortedCollectionTableModel::onDataReceivedForUser
+        );
+
+        connect(
+            connection, &ServerConnection::receivedUserPlayingFor,
+            this, &SortedCollectionTableModel::onReceivedUserPlayingFor
+        );
+        // TODO : send request to receive the user being played for
+
         auto fetcher = new CollectionTableFetcher(this);
         connection->fetchCollection(fetcher);
     }
@@ -135,9 +204,25 @@ namespace PMP {
         _highlighter.setMode(mode);
 
         /* notify the outside world that potentially everything has changed */
-        emit dataChanged(
-            createIndex(0, 0), createIndex(rowCount() - 1, columnCount() - 1)
-        );
+        markEverythingAsChanged();
+    }
+
+    bool SortedCollectionTableModel::usesUserData(TrackHighlightMode mode) {
+        switch (mode) {
+            case TrackHighlightMode::NeverHeard:
+            case TrackHighlightMode::WithoutScore:
+            case TrackHighlightMode::ScoreAtLeast85:
+            case TrackHighlightMode::ScoreAtLeast90:
+            case TrackHighlightMode::ScoreAtLeast95:
+                return true;
+
+            case TrackHighlightMode::None:
+            case TrackHighlightMode::LengthMaximumOneMinute:
+            case TrackHighlightMode::LengthAtLeastFiveMinutes:
+                break;
+        }
+
+        return false;
     }
 
     bool SortedCollectionTableModel::lessThan(int index1, int index2) const {
@@ -371,6 +456,29 @@ namespace PMP {
         addOrUpdateTracks(changes);
     }
 
+    void SortedCollectionTableModel::onDataReceivedForUser(quint32 userId) {
+        if (!_receivedUserPlayingFor || userId != _userPlayingFor)
+            return; /* not relevant */
+
+        if (usesUserData(_highlighter.getMode())) {
+            markEverythingAsChanged();
+        }
+    }
+
+    void SortedCollectionTableModel::onReceivedUserPlayingFor(quint32 userId) {
+        if (_userPlayingFor == userId && _receivedUserPlayingFor)
+            return; /* no change */
+
+        _userPlayingFor = userId;
+        _receivedUserPlayingFor = true;
+
+        _highlighter.setUserId(userId);
+
+        if (usesUserData(_highlighter.getMode())) {
+            markEverythingAsChanged();
+        }
+    }
+
     int SortedCollectionTableModel::findOuterIndexMapIndexForInsert(
             const CollectionTrackInfo& track,
             int searchRangeBegin, int searchRangeEnd /* end is not part of the range */)
@@ -477,6 +585,10 @@ namespace PMP {
         rebuildInnerMap();
 
         /* notify the outside world that potentially everything has changed */
+        markEverythingAsChanged();
+    }
+
+    void SortedCollectionTableModel::markEverythingAsChanged() {
         emit dataChanged(
             createIndex(0, 0), createIndex(rowCount() - 1, columnCount() - 1)
         );

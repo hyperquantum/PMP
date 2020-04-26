@@ -30,19 +30,40 @@
 #include <QSortFilterProxyModel>
 #include <QVector>
 
+#include <functional>
+
 namespace PMP {
 
     enum class TrackHighlightMode {
         None = 0,
         NeverHeard,
+        WithoutScore,
         ScoreAtLeast85,
+        ScoreAtLeast90,
+        ScoreAtLeast95,
         LengthMaximumOneMinute,
         LengthAtLeastFiveMinutes,
     };
 
+    class UserDataFetcher;
+
     class TrackHighlighter {
     public:
-        TrackHighlighter() : _mode(TrackHighlightMode::None) {}
+        TrackHighlighter()
+         : _mode(TrackHighlightMode::None), _userId(0), _haveUserId(false),
+           _userDataFetcher(nullptr)
+        {
+            //
+        }
+
+        void setUserId(quint32 userId) {
+            _userId = userId;
+            _haveUserId = true;
+        }
+
+        void setUserDataFetcher(UserDataFetcher* userDataFetcher) {
+            _userDataFetcher = userDataFetcher;
+        }
 
         void setMode(TrackHighlightMode mode) { _mode = mode; }
         TrackHighlightMode getMode() { return _mode; }
@@ -50,15 +71,27 @@ namespace PMP {
         TriBool shouldHighlightTrack(CollectionTrackInfo const& track) const;
 
     private:
+        TriBool shouldHighlightBasedOnScore(CollectionTrackInfo const& track,
+                                        std::function<TriBool(int)> scoreEvaluator) const;
+
+        TriBool shouldHighlightBasedOnHeardDate(CollectionTrackInfo const& track,
+                                   std::function<TriBool(QDateTime)> dateEvaluator) const;
+
         TrackHighlightMode _mode;
+        quint32 _userId;
+        bool _haveUserId;
+        UserDataFetcher* _userDataFetcher;
     };
+
+    class ServerInterface;
 
     class SortedCollectionTableModel : public QAbstractTableModel {
         Q_OBJECT
     public:
         SortedCollectionTableModel(QObject* parent = 0);
 
-        void setConnection(ServerConnection* connection);
+        void setConnection(ServerConnection* connection,
+                           ServerInterface* serverInterface);
 
         void setHighlightMode(TrackHighlightMode mode);
 
@@ -87,6 +120,8 @@ namespace PMP {
         void onCollectionTracksAvailabilityChanged(QVector<PMP::FileHash> available,
                                                    QVector<PMP::FileHash> unavailable);
         void onCollectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
+        void onDataReceivedForUser(quint32 userId);
+        void onReceivedUserPlayingFor(quint32 userId);
 
     private:
         void updateTrackAvailability(QVector<FileHash> hashes, bool available);
@@ -95,6 +130,9 @@ namespace PMP {
         void rebuildInnerMap(int outerStartIndex = 0);
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track,
                                             int searchRangeBegin, int searchRangeEnd);
+        void markEverythingAsChanged();
+
+        static bool usesUserData(TrackHighlightMode mode);
 
         bool lessThan(int index1, int index2) const;
         bool lessThan(CollectionTrackInfo const& track1,
@@ -130,6 +168,8 @@ namespace PMP {
         int _sortBy;
         Qt::SortOrder _sortOrder;
         TrackHighlighter _highlighter;
+        quint32 _userPlayingFor;
+        bool _receivedUserPlayingFor;
     };
 
     class FilteredCollectionTableModel : public QSortFilterProxyModel {

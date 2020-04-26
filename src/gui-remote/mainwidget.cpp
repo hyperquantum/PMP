@@ -31,6 +31,7 @@
 #include "queuemodel.h"
 #include "queuemonitor.h"
 #include "scoreformatdelegate.h"
+#include "serverinterface.h"
 #include "userdatafetcher.h"
 
 #include <algorithm>
@@ -47,7 +48,7 @@ namespace PMP {
         _ui(new Ui::MainWidget),
         _connection(nullptr), _currentTrackMonitor(nullptr),
         _queueMonitor(nullptr), _queueMediator(nullptr),
-        _queueEntryInfoFetcher(nullptr), _userDataFetcher(nullptr),
+        _queueEntryInfoFetcher(nullptr),
         _queueModel(nullptr), _queueContextMenu(nullptr),
         _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1),
         _dynamicModeEnabled(false), _dynamicModeHighScoreWaveActive(false),
@@ -84,7 +85,9 @@ namespace PMP {
         delete _ui;
     }
 
-    void MainWidget::setConnection(ServerConnection* connection) {
+    void MainWidget::setConnection(ServerConnection* connection,
+                                   ServerInterface* serverInterface)
+    {
         _connection = connection;
         new AutoPersonalModeAction(connection); /* uses connection as parent */
         _currentTrackMonitor = new CurrentTrackMonitor(_connection);
@@ -92,10 +95,10 @@ namespace PMP {
         _queueMediator = new QueueMediator(_connection, _queueMonitor, _connection);
         _queueEntryInfoFetcher =
             new QueueEntryInfoFetcher(_connection, _queueMediator, _connection);
-        _userDataFetcher = new UserDataFetcher(_connection, _connection);
         _queueModel =
             new QueueModel(
-                _connection, _queueMediator, _queueEntryInfoFetcher, _userDataFetcher
+                _connection, _queueMediator, _queueEntryInfoFetcher,
+                serverInterface->getUserDataFetcher()
             );
         _historyModel = new PlayerHistoryModel(this, _queueEntryInfoFetcher);
         _historyModel->setConnection(connection);

@@ -28,6 +28,7 @@
 #include "loginwidget.h"
 #include "mainwidget.h"
 #include "powermanagement.h"
+#include "serverinterface.h"
 #include "useraccountcreationwidget.h"
 #include "userpickerwidget.h"
 
@@ -49,8 +50,8 @@ namespace PMP {
      : QMainWindow(parent),
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
-       _connection(nullptr), _userPickerWidget(nullptr), _loginWidget(nullptr),
-       _mainWidget(nullptr),
+       _connection(nullptr), _serverInterface(nullptr),
+       _userPickerWidget(nullptr), _loginWidget(nullptr), _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
        _powerManagement(new PowerManagement(this))
     {
@@ -458,11 +459,11 @@ namespace PMP {
 
     void MainWindow::showMainWidget() {
         _mainWidget = new MainWidget(this);
-        _mainWidget->setConnection(_connection);
+        _mainWidget->setConnection(_connection, _serverInterface);
         setCentralWidget(_mainWidget);
 
         auto collectionWidget = new CollectionWidget(_musicCollectionDock);
-        collectionWidget->setConnection(_connection);
+        collectionWidget->setConnection(_connection, _serverInterface);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 
@@ -522,6 +523,8 @@ namespace PMP {
     }
 
     void MainWindow::onLoggedIn(QString login) {
+        _serverInterface = new ServerInterface(this, _connection);
+
         updateRightStatus();
         _connection->requestFullIndexationRunningStatus();
 

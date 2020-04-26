@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -37,6 +37,7 @@ namespace PMP {
     class QueueModel;
     class QueueMonitor;
     class ServerConnection;
+    class ServerInterface;
     class UserDataFetcher;
 
     class MainWidget : public QWidget {
@@ -45,7 +46,8 @@ namespace PMP {
         explicit MainWidget(QWidget *parent = 0);
         ~MainWidget();
 
-        void setConnection(ServerConnection* connection);
+        void setConnection(ServerConnection* connection,
+                           ServerInterface* serverInterface);
 
     protected:
         bool eventFilter(QObject*, QEvent*);
@@ -88,7 +90,6 @@ namespace PMP {
         QueueMonitor* _queueMonitor;
         QueueMediator* _queueMediator;
         QueueEntryInfoFetcher* _queueEntryInfoFetcher;
-        UserDataFetcher* _userDataFetcher;
         QueueModel* _queueModel;
         QMenu* _queueContextMenu;
         int _volume;

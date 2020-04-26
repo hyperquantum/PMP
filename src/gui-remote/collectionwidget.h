@@ -32,6 +32,7 @@ namespace PMP {
 
     class FilteredCollectionTableModel;
     class ServerConnection;
+    class ServerInterface;
     class SortedCollectionTableModel;
 
     class CollectionWidget : public QWidget {
@@ -41,7 +42,8 @@ namespace PMP {
         explicit CollectionWidget(QWidget* parent = 0);
         ~CollectionWidget();
 
-        void setConnection(ServerConnection* connection);
+        void setConnection(ServerConnection* connection,
+                           ServerInterface* serverInterface);
 
     private slots:
         void highlightTracksIndexChanged(int index);
