@@ -43,14 +43,15 @@ namespace PMP {
     class QueueEntry;
     class Resolver;
     class Server;
+    class ServerInterface;
     class ServerHealthMonitor;
     class Users;
 
     class ConnectedClient : public QObject {
         Q_OBJECT
     public:
-        ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
-                        Generator* generator, Users* users,
+        ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
+                        Player* player, Generator* generator, Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor);
 
@@ -184,7 +185,7 @@ namespace PMP {
         static const qint16 ServerProtocolNo;
 
         QTcpSocket* _socket;
-        Server* _server;
+        ServerInterface* _serverInterface;
         Player* _player;
         Generator* _generator;
         Users* _users;
@@ -198,8 +199,6 @@ namespace PMP {
         QByteArray _saltForUserAccountRegistering;
         QString _userAccountLoggingIn;
         QByteArray _sessionSaltForUserLoggingIn;
-        quint32 _userLoggedIn;
-        QString _userLoggedInName;
         QHash<quint32, quint32> _trackAdditionConfirmationsPending;
         bool _terminated;
         bool _binaryMode;

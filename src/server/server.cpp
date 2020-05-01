@@ -22,6 +22,7 @@
 #include "common/networkutil.h"
 
 #include "connectedclient.h"
+#include "serverinterface.h"
 #include "serversettings.h"
 
 #include <QByteArray>
@@ -148,10 +149,15 @@ namespace PMP {
     void Server::newConnectionReceived() {
         QTcpSocket *connection = _server->nextPendingConnection();
 
-        new ConnectedClient(
-            connection, this, _player, _generator, _users, _collectionMonitor,
-            _serverHealthMonitor
-        );
+        auto serverInterface = new ServerInterface(this, _player, _generator);
+
+        auto connectedClient =
+            new ConnectedClient(
+                connection, serverInterface, _player, _generator, _users,
+                _collectionMonitor, _serverHealthMonitor
+            );
+
+        connectedClient->setParent(this);
     }
 
     void Server::sendBroadcast() {
