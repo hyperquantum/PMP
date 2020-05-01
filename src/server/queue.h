@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,8 @@
 
 #ifndef PMP_QUEUE_H
 #define PMP_QUEUE_H
+
+#include "common/filehash.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -45,7 +47,7 @@ namespace PMP {
 
         Queue(Resolver* resolver);
 
-        bool checkPotentialRepetitionByAdd(const FileHash& hash,
+        bool checkPotentialRepetitionByAdd(FileHash hash,
                                            int repetitionAvoidanceSeconds,
                                            int* nonRepetitionSpan = nullptr) const;
 
@@ -67,14 +69,14 @@ namespace PMP {
 
         void enqueue(QueueEntry* entry);
         QueueEntry* enqueue(QString const& filename);
-        QueueEntry* enqueue(FileHash const& hash);
+        QueueEntry* enqueue(FileHash hash);
 
         void insertAtFront(QueueEntry* entry);
-        QueueEntry* insertAtFront(FileHash const& hash);
+        QueueEntry* insertAtFront(FileHash hash);
         void insertBreakAtFront();
 
         void insertAtIndex(quint32 index, QueueEntry* entry);
-        QueueEntry* insertAtIndex(quint32 index, FileHash const& hash);
+        QueueEntry* insertAtIndex(quint32 index, FileHash hash);
 
         QueueEntry* dequeue();
         bool remove(quint32 queueID);

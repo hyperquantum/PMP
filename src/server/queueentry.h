@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -41,8 +41,8 @@ namespace PMP {
         Q_OBJECT
     public:
         QueueEntry(Queue* parent, QString const& filename);
-        QueueEntry(Queue* parent, const FileHash& hash, const TagData& tags);
-        QueueEntry(Queue* parent, FileHash const& hash);
+        QueueEntry(Queue* parent, FileHash hash, const TagData& tags);
+        QueueEntry(Queue* parent, FileHash hash);
         QueueEntry(Queue* parent, QueueEntry const* existing);
 
         static QueueEntry* createBreak(Queue* parent);

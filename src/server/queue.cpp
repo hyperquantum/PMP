@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -113,13 +113,13 @@ namespace PMP {
         return entry;
     }
 
-    QueueEntry* Queue::enqueue(FileHash const& hash) {
+    QueueEntry* Queue::enqueue(FileHash hash) {
         auto entry = new QueueEntry(this, hash);
         enqueue(entry);
         return entry;
     }
 
-    QueueEntry* Queue::insertAtFront(const FileHash& hash) {
+    QueueEntry* Queue::insertAtFront(FileHash hash) {
         auto entry = new QueueEntry(this, hash);
         insertAtFront(entry);
         return entry;
@@ -132,7 +132,7 @@ namespace PMP {
         insertAtFront(QueueEntry::createBreak(this));
     }
 
-    QueueEntry* Queue::insertAtIndex(quint32 index, const FileHash& hash)
+    QueueEntry* Queue::insertAtIndex(quint32 index, FileHash hash)
     {
         if (index > uint(_queue.size())) return nullptr;
 
@@ -296,7 +296,7 @@ namespace PMP {
         return -1; // not found
     }
 
-    bool Queue::checkPotentialRepetitionByAdd(const FileHash& hash,
+    bool Queue::checkPotentialRepetitionByAdd(FileHash hash,
                                               int repetitionAvoidanceSeconds,
                                               int* nonRepetitionSpan) const
     {
