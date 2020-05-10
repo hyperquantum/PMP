@@ -39,20 +39,20 @@ namespace PMP {
         setVolume((defaultVolume >= 0 && defaultVolume <= 100) ? defaultVolume : 75);
 
         connect(
-            _player, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)),
-            this, SLOT(internalMediaStatusChanged(QMediaPlayer::MediaStatus))
+            _player, &QMediaPlayer::mediaStatusChanged,
+            this, &Player::internalMediaStatusChanged
         );
         connect(
-            _player, SIGNAL(stateChanged(QMediaPlayer::State)),
-            this, SLOT(internalStateChanged(QMediaPlayer::State))
+            _player, &QMediaPlayer::stateChanged,
+            this, &Player::internalStateChanged
         );
         connect(
-            _player, SIGNAL(positionChanged(qint64)),
-            this, SLOT(internalPositionChanged(qint64))
+            _player, &QMediaPlayer::positionChanged,
+            this, &Player::internalPositionChanged
         );
         connect(
-            _player, SIGNAL(volumeChanged(int)),
-            this, SIGNAL(volumeChanged(int))
+            _player, &QMediaPlayer::volumeChanged,
+            this, &Player::volumeChanged
         );
         connect(
             _player, &QMediaPlayer::durationChanged,
