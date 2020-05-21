@@ -27,41 +27,235 @@
 
 namespace PMP {
 
-    Player::Player(QObject* parent, Resolver* resolver, int defaultVolume)
-     : QObject(parent), _resolver(resolver),
-        _player(new QMediaPlayer(this)),
-        _queue(resolver), _preloader(nullptr, &_queue, resolver),
-        _nowPlaying(nullptr), _playPosition(0), _maxPosReachedInCurrent(0),
-        _seekHappenedInCurrent(false),
-        _state(ServerPlayerState::Stopped), _transitioningToNextTrack(false),
-        _userPlayingFor(0)
+    PlayerInstance::PlayerInstance(QObject* parent, int identifier, Preloader* preloader,
+                                   Resolver* resolver)
+     : QObject(parent),
+       _player(new QMediaPlayer(this)),
+       _preloader(preloader),
+       _resolver(resolver),
+       _track(nullptr),
+       _positionWhenStopped(-1),
+       _identifier(identifier),
+       _mediaSet(false),
+       _endOfTrackComingUp(false),
+       _hadSeek(false),
+       _deleteAfterStopped(false)
     {
-        setVolume((defaultVolume >= 0 && defaultVolume <= 100) ? defaultVolume : 75);
-
         connect(
             _player, &QMediaPlayer::mediaStatusChanged,
-            this, &Player::internalMediaStatusChanged
+            this, &PlayerInstance::internalMediaStatusChanged
         );
         connect(
             _player, &QMediaPlayer::stateChanged,
-            this, &Player::internalStateChanged
+            this, &PlayerInstance::internalStateChanged
         );
         connect(
             _player, &QMediaPlayer::positionChanged,
-            this, &Player::internalPositionChanged
-        );
-        connect(
-            _player, &QMediaPlayer::volumeChanged,
-            this, &Player::volumeChanged
+            this, &PlayerInstance::internalPositionChanged
         );
         connect(
             _player, &QMediaPlayer::durationChanged,
-            this, &Player::internalDurationChanged
+            this, &PlayerInstance::internalDurationChanged
         );
     }
 
+    bool PlayerInstance::availableForNewTrack() const
+    {
+        return _player->state() != QMediaPlayer::PlayingState;
+    }
+
+    void PlayerInstance::setVolume(int volume)
+    {
+        qDebug() << "PlayerInstance" << _identifier
+                 << " setvolume(" << volume << ") called";
+        _player->setVolume(volume);
+    }
+
+    void PlayerInstance::setTrack(QueueEntry* queueEntry)
+    {
+        auto queueId = queueEntry->queueID();
+
+        qDebug() << "PlayerInstance" << _identifier
+                 << ": setTrack() called for queue ID" << queueId;
+
+        if (_player->state() == QMediaPlayer::PlayingState) {
+            qWarning() << "cannot set new track because we're still playing!";
+            return;
+        }
+
+        _mediaSet = false;
+        _endOfTrackComingUp = false;
+        _hadSeek = false;
+        _track = queueEntry;
+        _positionWhenStopped = -1;
+
+        if (!queueEntry || !queueEntry->isTrack())
+            return;
+
+        _preloadedFile = _preloader->getPreloadedCacheFile(queueId);
+        QString filename = _preloadedFile.getFilename();
+
+        if (filename.isEmpty()
+                && queueEntry->checkValidFilename(*_resolver, true, &filename))
+        {
+            qWarning() << "QID" << queueId << "was not preloaded; "
+                          "using unpreprocessed file that may be slow to access or "
+                          "may fail to play";
+        }
+
+        if (!filename.isEmpty()) {
+            qDebug() << "going to load media:" << filename;
+            _player->setMedia(QUrl::fromLocalFile(filename));
+            _mediaSet = true;
+        }
+    }
+
+    void PlayerInstance::play()
+    {
+        qDebug() << "PlayerInstance" << _identifier << " play() called";
+        _player->play();
+
+        /* set start time if it hasn't been set yet */
+        if (_track->started().isNull()) {
+            _track->setStartedNow();
+        }
+
+        updateEndOfTrackComingUpFlag();
+    }
+
+    void PlayerInstance::pause()
+    {
+        qDebug() << "PlayerInstance" << _identifier << " pause() called";
+        _player->pause();
+    }
+
+    void PlayerInstance::stop()
+    {
+        qDebug() << "PlayerInstance" << _identifier << " stop() called";
+        _positionWhenStopped = _player->position();
+        _player->stop();
+    }
+
+    void PlayerInstance::seekTo(qint64 position)
+    {
+        qDebug() << "PlayerInstance" << _identifier << " seek(" << position << ") called";
+
+        _hadSeek = true;
+        _player->setPosition(position);
+        Q_EMIT positionChanged(position); /* notify all listeners immediately */
+
+        updateEndOfTrackComingUpFlag();
+    }
+
+    void PlayerInstance::deleteAfterStopped()
+    {
+        _deleteAfterStopped = true;
+
+        if (_player->state() == QMediaPlayer::StoppedState)
+            this->deleteLater();
+    }
+
+    void PlayerInstance::internalStateChanged(QMediaPlayer::State state)
+    {
+        qDebug() << "PlayerInstance" << _identifier << ": state changed to" << state;
+
+        switch (state) {
+            case QMediaPlayer::StoppedState:
+                switch (_player->mediaStatus()) {
+                    case QMediaPlayer::EndOfMedia:
+                        Q_EMIT trackFinished();
+                        break;
+                    case QMediaPlayer::InvalidMedia:
+                        Q_EMIT playbackError();
+                        break;
+                    default:
+                        Q_EMIT stoppedEarly(_positionWhenStopped);
+                        break;
+                }
+
+                if (_deleteAfterStopped)
+                    this->deleteLater();
+
+                break;
+            case QMediaPlayer::PausedState:
+                Q_EMIT paused();
+                break;
+            case QMediaPlayer::PlayingState:
+                Q_EMIT playing();
+                break;
+        }
+    }
+
+    void PlayerInstance::internalMediaStatusChanged(QMediaPlayer::MediaStatus status)
+    {
+        qDebug() << "PlayerInstance" << _identifier
+                 << ": media state changed to" << status;
+    }
+
+    void PlayerInstance::internalPositionChanged(qint64 position)
+    {
+        Q_EMIT positionChanged(position);
+
+        updateEndOfTrackComingUpFlag();
+    }
+
+    void PlayerInstance::internalDurationChanged(qint64 duration) {
+        Q_UNUSED(duration)
+
+        updateEndOfTrackComingUpFlag();
+    }
+
+    void PlayerInstance::updateEndOfTrackComingUpFlag() {
+        auto lengthMilliseconds = _track->lengthInMilliseconds();
+        if (lengthMilliseconds < 0) {
+            qWarning() << "track duration not known, using backend duration";
+            lengthMilliseconds = _player->duration();
+            if (lengthMilliseconds <= 0) {
+                qWarning() << "track duration still unknown";
+                return;
+            }
+        }
+
+        const int endOfTrackSpanMilliseconds = 5 * 1000; /* 5 seconds */
+
+        auto positionMilliseconds = _player->position();
+
+        bool endOfTrackComingUp =
+                positionMilliseconds >= (lengthMilliseconds - endOfTrackSpanMilliseconds);
+
+        if (endOfTrackComingUp != _endOfTrackComingUp) {
+            _endOfTrackComingUp = endOfTrackComingUp;
+            Q_EMIT endOfTrackComingUpChanged(endOfTrackComingUp);
+        }
+    }
+
+
+    /* ================================================================================ */
+
+    Player::Player(QObject* parent, Resolver* resolver, int defaultVolume)
+     : QObject(parent),
+       _oldInstance(nullptr),
+       _currentInstance(nullptr),
+       _nextInstance(nullptr),
+       _resolver(resolver),
+       //_player(new QMediaPlayer(this)),
+       _queue(resolver), _preloader(nullptr, &_queue, resolver),
+       _nowPlaying(nullptr),
+       _instanceIdentifier(0),
+       _volume(-1),
+       _playPosition(0),
+       //_maxPosReachedInCurrent(0),
+       //_seekHappenedInCurrent(false),
+       _state(ServerPlayerState::Stopped),
+       //_transitioningToNextTrack(false),
+       _userPlayingFor(0)
+    {
+        auto volume = (defaultVolume >= 0 && defaultVolume <= 100) ? defaultVolume : 75;
+        setVolume(volume);
+    }
+
     int Player::volume() const {
-        return _player->volume();
+        return _volume;
     }
 
     bool Player::playing() const {
@@ -117,15 +311,13 @@ namespace PMP {
     void Player::play() {
         switch (_state) {
             case ServerPlayerState::Stopped:
-                startNext(true); /* we're not playing yet */
+                startNext(false, true);
                 break;
             case ServerPlayerState::Paused:
-                /* set start time if it hasn't been set yet */
-                if (_nowPlaying->started().isNull()) {
-                    _nowPlaying->setStartedNow();
+                if (_currentInstance) {
+                    _currentInstance->play(); /* resume paused track */
+                    changeState(ServerPlayerState::Playing);
                 }
-                _player->play(); /* resume paused track */
-                changeState(ServerPlayerState::Playing);
                 break;
             case ServerPlayerState::Playing:
                 break; /* already playing */
@@ -138,8 +330,10 @@ namespace PMP {
             case ServerPlayerState::Paused:
                 break; /* no effect */
             case ServerPlayerState::Playing:
-                _player->pause();
-                changeState(ServerPlayerState::Paused);
+                if (_currentInstance) {
+                    _currentInstance->pause();
+                    changeState(ServerPlayerState::Paused);
+                }
                 break;
         }
     }
@@ -159,28 +353,28 @@ namespace PMP {
                 break;
         }
 
-        /* add previous track to history */
-        if (_nowPlaying) {
-            bool hadSeek = _seekHappenedInCurrent;
-            addToHistory(_nowPlaying, calcPermillagePlayed(), false, hadSeek);
-        }
-
         /* start next track */
-        startNext(mustPlay);
+        startNext(true, mustPlay);
     }
 
     void Player::seekTo(qint64 position) {
         if (_state != ServerPlayerState::Playing && _state != ServerPlayerState::Paused)
             return;
-        //if (!_player->isSeekable()) return;
 
-        _seekHappenedInCurrent = true;
-        _player->setPosition(position);
-        positionChanged(position); /* notify all listeners immediately */
+        if (_currentInstance)
+            _currentInstance->seekTo(position);
     }
 
     void Player::setVolume(int volume) {
-        _player->setVolume(volume);
+        if (volume < 0 || volume > 100) return;
+        if (volume == _volume) return;
+
+        _volume = volume;
+
+        if (_currentInstance)
+            _currentInstance->setVolume(volume);
+
+        Q_EMIT volumeChanged(volume);
     }
 
     void Player::setUserPlayingFor(quint32 user) {
@@ -190,168 +384,259 @@ namespace PMP {
         emit userPlayingForChanged(user);
     }
 
-    void Player::internalMediaStatusChanged(QMediaPlayer::MediaStatus state) {
-        qDebug() << "Player::internalMediaStateChanged state:" << state;
-    }
+    bool Player::startNext(bool stopCurrent, bool playNext) {
+        qDebug() << "Player::startNext(" << stopCurrent << "," << playNext << ") called";
 
-    void Player::internalStateChanged(QMediaPlayer::State state) {
-        qDebug() << "Player::internalStateChanged state:" << state;
-
-        switch (state) {
-            case QMediaPlayer::StoppedState:
-            {
-                if (_transitioningToNextTrack) {
-                    /* this is the stop event from the track we are
-                       transitioning AWAY from, so we ignore it. */
-                    _transitioningToNextTrack = false;
-                    break;
-                }
-
-                /* add previous track to history */
-                if (_nowPlaying) {
-                    bool hadError = _player->mediaStatus() == QMediaPlayer::InvalidMedia;
-                    bool hadSeek = _seekHappenedInCurrent;
-                    addToHistory(_nowPlaying, calcPermillagePlayed(), hadError, hadSeek);
-                }
-
-                switch (_state) {
-                    case ServerPlayerState::Playing:
-                        startNext(true);
-                        break;
-                    case ServerPlayerState::Paused:
-                        startNext(false);
-                        break;
-                    case ServerPlayerState::Stopped:
-                        break;
-                }
+        /* move the previous old instance out of the way if necessary */
+        if (_oldInstance && _currentInstance) {
+            if (!_nextInstance && _oldInstance->availableForNewTrack()) {
+                qDebug() << "moving previous old player instance to next instance";
+                _nextInstance = _oldInstance;
             }
-                break;
-            case QMediaPlayer::PausedState:
-                break; /* do nothing */
-            case QMediaPlayer::PlayingState:
-            {
-                _transitioningToNextTrack = false;
+            else {
+                qDebug() << "previous old player instance will be deleted";
+                _oldInstance->deleteAfterStopped();
             }
-                break;
+            _oldInstance = nullptr;
         }
-    }
-
-    void Player::internalPositionChanged(qint64 position) {
-        if (_state == ServerPlayerState::Stopped) { _playPosition = 0; return; }
-
-        _playPosition = position;
-
-        if (position > _maxPosReachedInCurrent)
-            _maxPosReachedInCurrent = position;
-
-        emit positionChanged(position);
-    }
-
-    void Player::internalDurationChanged(qint64 duration) {
-        if (_nowPlaying == nullptr) return;
-
-        auto previouslyKnownLength = _nowPlaying->lengthInMilliseconds();
-        auto lengthFromPlayer = _player->duration();
-
-        if (lengthFromPlayer <= 0) {
-            qDebug() << "Player: don't know the actual track length yet";
-        }
-        else if (previouslyKnownLength != lengthFromPlayer
-            && previouslyKnownLength > 0)
-        {
-            qDebug() << "Player: actual track length differs from known length;"
-                     << AudioData::millisecondsToTimeString(previouslyKnownLength)
-                     << "before,"
-                     << AudioData::millisecondsToTimeString(lengthFromPlayer)
-                     << "now";
-        }
-    }
-
-    bool Player::startNext(bool play) {
-        qDebug() << "Player::startNext";
 
         QueueEntry* oldNowPlaying = _nowPlaying;
         uint oldQueueLength = _queue.length();
 
-        /* find next track to play */
-        QueueEntry* next = nullptr;
-        QString filename;
+        /* current instance becomes old instance */
+        if (_currentInstance) {
+            _oldInstance = _currentInstance;
+            _currentInstance = nullptr;
+        }
+
+        /* find next track to play and start it */
+        QueueEntry* nextTrack = nullptr;
         while (!_queue.empty()) {
             QueueEntry* entry = _queue.dequeue();
             if (!entry->isTrack()) {
                 if (entry->kind() == QueueEntryKind::Break) {
-                    break; /* this will cause playback to stop because next == 0 */
+                    break; /* this will cause playback to stop because next == nullptr */
                 }
-                continue;
+                else { /* unknown non-track thing, let's just ignore it */
+                    continue;
+                }
             }
 
-            filename = _preloader.getPreloadedCacheFileAndLock(entry->queueID());
-            if (!filename.isEmpty()) {
-                next = entry;
+            putInHistoryOrder(entry);
+            bool ok = tryStartNextTrack(entry, playNext);
+            if (ok) {
+                nextTrack = entry;
                 break;
-            }
-
-            if (entry->checkValidFilename(*_resolver, true, &filename)) {
-                next = entry;
-                qWarning() << "QID" << entry->queueID()
-                           << "was not preloaded; using unpreprocessed file that may be "
-                              "slow to access or may fail to play";
-                break;
-            }
-
-            /* error */
-            qDebug() << "Player: skipping unplayable track (could not get filename)";
-            addToHistory(entry, 0, true, false); /* register track as not played */
-        }
-
-        if (next) {
-            _transitioningToNextTrack = true;
-            _nowPlaying = next;
-            _playPosition = 0;
-            _maxPosReachedInCurrent = 0;
-            _seekHappenedInCurrent = false;
-
-            qDebug() << "Player: loading media " << filename;
-            _player->setMedia(QUrl::fromLocalFile(filename));
-
-            /* try to figure out track length, and if possible tag, artist... */
-            next->checkTrackData(*_resolver);
-
-            emit currentTrackChanged(next);
-
-            if (play) {
-                _nowPlaying->setStartedNow();
-                changeState(ServerPlayerState::Playing);
-                _player->play();
             }
             else {
-                changeState(ServerPlayerState::Paused);
+                qWarning() << "failed to load/start track with queue ID"
+                           << entry->queueID();
+
+                addToHistory(entry, 0, true, false); /* register track as not played */
             }
-
-            return true;
         }
 
-        /* we stop because we have nothing left to play */
+        if (stopCurrent && _oldInstance) {
+            _oldInstance->stop();
+        }
 
-        _transitioningToNextTrack = true; /* to prevent duplicate history items */
-        changeState(ServerPlayerState::Stopped);
-        _player->stop();
-        _preloader.lockNone();
+        ServerPlayerState newState;
+        if (nextTrack) {
+            newState = playNext ? ServerPlayerState::Playing : ServerPlayerState::Paused;
 
-        if (oldNowPlaying) {
-            _nowPlaying = nullptr;
+            /* try to figure out track length, and if possible tag, artist... */
+            nextTrack->checkTrackData(*_resolver);
+        }
+        else {
+            /* we stop because we have nothing left to play */
+            newState = ServerPlayerState::Stopped;
+        }
+
+        _nowPlaying = nextTrack;
+
+        if (!nextTrack)
             _playPosition = 0;
-            _maxPosReachedInCurrent = 0;
-            _seekHappenedInCurrent = false;
-            emit currentTrackChanged(nullptr);
-        }
 
-        if (_queue.empty() && oldQueueLength > 0) {
-            qDebug() << "Player: queue is finished";
+        if (oldNowPlaying || nextTrack)
+            Q_EMIT currentTrackChanged(nextTrack);
+
+        changeState(newState);
+
+        if (!nextTrack && _queue.empty() && oldQueueLength > 0) {
+            qDebug() << "queue is finished, nothing left to play";
             emit finished();
         }
 
-        return false;
+        return nextTrack;
+    }
+
+    void Player::instancePlaying(PlayerInstance* instance) {
+        if (instance != _currentInstance) return;
+
+        changeState(ServerPlayerState::Playing);
+    }
+
+    void Player::instancePaused(PlayerInstance* instance) {
+        if (instance != _currentInstance) return;
+
+        changeState(ServerPlayerState::Paused);
+    }
+
+    void Player::instancePositionChanged(PlayerInstance* instance, qint64 position) {
+        if (instance != _currentInstance) return;
+
+        if (_state == ServerPlayerState::Stopped) {
+            _playPosition = 0;
+            return;
+        }
+
+        _playPosition = position;
+
+        Q_EMIT positionChanged(position);
+    }
+
+    void Player::instanceEndOfTrackComingUpChanged(PlayerInstance* instance,
+                                                   bool endOfTrackComingUp)
+    {
+        if (instance != _currentInstance) return;
+
+        if (endOfTrackComingUp)
+            prepareNextTrack();
+    }
+
+    void Player::instancePlaybackError(PlayerInstance* instance) {
+        /* register track as not played */
+        addToHistory(instance->track(), 0, true, false);
+    }
+
+    void Player::instanceTrackFinished(PlayerInstance* instance) {
+        auto track = instance->track();
+        bool hadSeek = instance->hadSeek();
+        addToHistory(track, 1000, false, hadSeek);
+
+        if (instance != _currentInstance) return;
+
+        switch (_state) {
+            case ServerPlayerState::Playing:
+                startNext(false, true);
+                break;
+            case ServerPlayerState::Paused:
+                startNext(false, false);
+                break;
+            case ServerPlayerState::Stopped:
+                break;
+        }
+    }
+
+    void Player::instanceStoppedEarly(PlayerInstance* instance, qint64 position) {
+        auto track = instance->track();
+        bool hadSeek = instance->hadSeek();
+        auto permillage = calcPermillagePlayed(track, position, hadSeek);
+
+        addToHistory(instance->track(), permillage, false, hadSeek);
+    }
+
+    PlayerInstance* Player::createNewPlayerInstance()
+    {
+        auto* instance =
+                new PlayerInstance(this, ++_instanceIdentifier, &_preloader, _resolver);
+
+        connect(
+            instance, &PlayerInstance::playing,
+            this, [=]() { this->instancePlaying(instance); }
+        );
+        connect(
+            instance, &PlayerInstance::paused,
+            this, [=]() { this->instancePaused(instance); }
+        );
+        connect(
+            instance, &PlayerInstance::positionChanged,
+            this,
+            [=](qint64 position) { this->instancePositionChanged(instance, position); }
+        );
+        connect(
+            instance, &PlayerInstance::endOfTrackComingUpChanged,
+            this,
+            [=](bool endOfTrackComingUp) {
+                this->instanceEndOfTrackComingUpChanged(instance, endOfTrackComingUp);
+            }
+        );
+        connect(
+            instance, &PlayerInstance::playbackError,
+            this, [=]() { this->instancePlaybackError(instance); }
+        );
+        connect(
+            instance, &PlayerInstance::trackFinished,
+            this, [=]() { this->instanceTrackFinished(instance); }
+        );
+        connect(
+            instance, &PlayerInstance::stoppedEarly,
+            this, [=](qint64 position) { this->instanceStoppedEarly(instance, position); }
+        );
+
+        return instance;
+    }
+
+    void Player::prepareNextTrack()
+    {
+        QueueEntry* nextTrack = _queue.peekFirstTrackEntry(4);
+        if (!nextTrack) return; /* no next track to prepare for now */
+
+        tryPrepareTrack(nextTrack); /* ignore the result */
+    }
+
+    bool Player::tryPrepareTrack(QueueEntry* entry)
+    {
+        if (!entry || !entry->isTrack())
+            return false; /* argument should be a track */
+
+        if (!_nextInstance) {
+            if (_oldInstance && _oldInstance->availableForNewTrack()) {
+                _nextInstance = _oldInstance;
+                _oldInstance = nullptr;
+            }
+            else {
+                _nextInstance = createNewPlayerInstance();
+            }
+        }
+        else if (!_nextInstance->availableForNewTrack()) {
+            qWarning() << "next instance not available for new track!";
+            return false;
+        }
+        else if (_nextInstance->track() == entry) {
+            return true; /* already prepared */
+        }
+
+        _nextInstance->setTrack(entry);
+        return _nextInstance->trackSetSuccessfully();
+    }
+
+    bool Player::tryStartNextTrack(QueueEntry* entry, bool startPlaying)
+    {
+        if (!entry || !entry->isTrack())
+            return false; /* argument should be a track */
+
+        /* make sure we are prepared */
+        bool prepared = tryPrepareTrack(entry);
+        if (!prepared)
+            return false; /* preparation went wrong */
+
+        _currentInstance = _nextInstance;
+        _nextInstance = nullptr;
+
+        _playPosition = 0;
+
+        _currentInstance->setVolume(_volume);
+
+        if (startPlaying)
+            _currentInstance->play();
+
+        return true;
+    }
+
+    void Player::putInHistoryOrder(QueueEntry* entry)
+    {
+        _historyOrder.enqueue(entry->queueID());
     }
 
     void Player::addToHistory(QueueEntry* entry, int permillage, bool hadError,
@@ -361,6 +646,15 @@ namespace PMP {
 
         if (!entry->isTrack())
             return; /* don't put breakpoints in the history */
+
+        if (_historyOrder.isEmpty()) {
+            qWarning()
+                    << "history order is empty when adding a history entry for queue ID"
+                    << entry->queueID();
+        }
+
+        if (hadSeek)
+            permillage = -1;
 
         auto userPlayedFor = _userPlayingFor;
 
@@ -380,37 +674,35 @@ namespace PMP {
                 ended = started;
         }
 
+        auto* hash = entry->hash();
+
         auto historyEntry =
             QSharedPointer<PlayerHistoryEntry>::create(
-                queueID, userPlayedFor, started, ended, hadError, hadSeek, permillage
+                queueID, hash ? *hash : FileHash(), userPlayedFor, started, ended,
+                hadError, hadSeek, permillage
             );
 
-        _queue.addToHistory(historyEntry);
-
-        if (permillage <= 0 && hadError) {
-            emit failedToPlayTrack(entry);
-        }
-        else {
-            emit donePlayingTrack(entry, permillage, hadError, hadSeek);
+        if (_historyOrder.isEmpty() || _historyOrder.first() != queueID) {
+            _pendingHistory.insert(queueID, historyEntry);
+            return;
         }
 
-        emit trackHistoryEvent(
-            queueID, started, ended, userPlayedFor, permillage, hadError, hadSeek
-        );
+        _historyOrder.removeFirst();
+        performHistoryActions(historyEntry);
+
+        while (!_historyOrder.isEmpty()
+               && _pendingHistory.contains(_historyOrder.first()))
+        {
+            auto entry = _pendingHistory.take(_historyOrder.dequeue());
+            performHistoryActions(entry);
+        }
     }
 
-    int Player::calcPermillagePlayed() {
-        qint64 position = _player->position();
+    void Player::performHistoryActions(QSharedPointer<PlayerHistoryEntry> historyEntry)
+    {
+        _queue.addToHistory(historyEntry);
 
-        if (position > _maxPosReachedInCurrent) {
-            qDebug() << "adjusting maximum position reached from"
-                     << _maxPosReachedInCurrent << "to" << position;
-            _maxPosReachedInCurrent = position;
-        }
-
-        return calcPermillagePlayed(
-            _nowPlaying, _maxPosReachedInCurrent, _seekHappenedInCurrent
-        );
+        Q_EMIT newHistoryEntry(historyEntry);
     }
 
     /* permillage (for lack of a better name) is like percentage, but with factor 1000

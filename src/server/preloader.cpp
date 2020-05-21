@@ -127,6 +127,24 @@ namespace PMP {
                 + "-Q" + QString::number(queueID) + "." + extension;
     }
 
+    /* ======================== PreloadedFileLock ======================= */
+
+    PreloadedFile::PreloadedFile()
+    {
+        //
+    }
+
+    PreloadedFile::PreloadedFile(Preloader* preloader,
+                                 std::function<void (Preloader*)> cleaner,
+                                 QString filename)
+     : AbstractHandle<QObjectResourceKeeper<Preloader> >(
+        std::make_shared<QObjectResourceKeeper<Preloader> >(preloader, cleaner)
+       ),
+       _filename(filename)
+    {
+        //
+    }
+
     /* ========================== PreloadTrack ========================== */
 
     class Preloader::PreloadTrack {
@@ -205,7 +223,7 @@ namespace PMP {
 
     Preloader::Preloader(QObject* parent, Queue* queue, Resolver* resolver)
      : QObject(parent),
-       _doNotDeleteQueueID(0), _jobsRunning(0),
+       _jobsRunning(0),
        _preloadCheckTimerRunning(false), _cacheExpirationCheckTimerRunning(false),
        _queue(queue), _resolver(resolver)
     {
@@ -225,27 +243,29 @@ namespace PMP {
         }
     }
 
-    QString Preloader::getPreloadedCacheFileAndLock(uint queueID) {
-        _doNotDeleteQueueID = queueID; /* lock : prevent file getting cleaned up */
-
+    PreloadedFile Preloader::getPreloadedCacheFile(uint queueID) {
         auto track = _tracksByQueueID.value(queueID, nullptr);
-        if (!track) return "";
+        if (!track) return PreloadedFile();
 
         auto filename = track->getCachedFile();
-        if (filename.isEmpty() || QFileInfo::exists(filename))
-            return filename;
+        if (filename.isEmpty()) return PreloadedFile();
 
-        /* the file that was preloaded has disappeared */
-        _tracksByQueueID.remove(queueID);
-        delete track;
+        if (!QFileInfo::exists(filename)) {
+            /* the file that was preloaded has disappeared */
+            _tracksByQueueID.remove(queueID);
+            delete track;
+            return PreloadedFile();
+        }
 
-        return "";
-    }
+        doLock(queueID);
 
-    void Preloader::lockNone() {
-        _doNotDeleteQueueID = 0;
-
-        scheduleCheckForCacheEntriesToDelete();
+        return PreloadedFile(
+            this,
+            [queueID](Preloader* preloader) {
+                if (preloader) preloader->doUnlock(queueID);
+            },
+            filename
+        );
     }
 
     void Preloader::cleanupOldFiles() {
@@ -395,7 +415,7 @@ namespace PMP {
         for (int i = 0; i < max && i < _tracksRemoved.size(); ++i) {
             auto id = _tracksRemoved[i];
 
-            if (id == _doNotDeleteQueueID) continue;
+            if (_lockedQueueIds.contains(id)) continue;
 
             auto track = _tracksByQueueID.value(id, nullptr);
             if (track && track->status() == PreloadTrack::Status::Processing)
@@ -430,6 +450,34 @@ namespace PMP {
         if (track) track->setToFailed();
 
         checkForJobsToStart();
+    }
+
+    void Preloader::doLock(uint queueId)
+    {
+        _lockedQueueIds[queueId]++;
+    }
+
+    void Preloader::doUnlock(uint queueId)
+    {
+        auto lockIterator = _lockedQueueIds.find(queueId);
+        if (lockIterator == _lockedQueueIds.end()) {
+            qWarning() << "Preloader::doUnlock: no lock found for QID" << queueId << "!";
+            return;
+        }
+
+        auto& lockCount = lockIterator.value();
+        if (lockCount > 0) {
+            lockCount--;
+        }
+        else {
+            qWarning() << "Preloader::doUnlock: lock count for QID" << queueId
+                       << "already zero!";
+        }
+
+        if (lockCount > 0) return; /* not completely unlocked yet */
+
+        _lockedQueueIds.erase(lockIterator);
+        scheduleCheckForCacheEntriesToDelete();
     }
 
     void Preloader::preloadFinished(uint queueID, QString cacheFile) {

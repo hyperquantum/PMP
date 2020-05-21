@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,33 +17,28 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_ADDTOHISTORYTASK_H
-#define PMP_ADDTOHISTORYTASK_H
+#ifndef PMP_ABSTRACTHANDLE_H
+#define PMP_ABSTRACTHANDLE_H
 
-#include "playerhistoryentry.h"
-
-#include <QObject>
-#include <QRunnable>
-#include <QSharedPointer>
+#include <memory>
 
 namespace PMP {
 
-    class Resolver;
+    template <typename T>
+    class AbstractHandle {
+    protected:
+        AbstractHandle() {}
+        AbstractHandle(std::shared_ptr<T> pointer) : _ptr(pointer) {}
 
-    class AddToHistoryTask : public QObject, public QRunnable {
-        Q_OBJECT
-    public:
-        AddToHistoryTask(Resolver* resolver, QSharedPointer<PlayerHistoryEntry> entry);
+        T* getRawPointer() { return _ptr; }
 
-        void run();
+        bool isNull() const { return !_ptr; }
+        bool isValid() const { return _ptr; }
 
-    Q_SIGNALS:
-        void updatedHashUserStats(uint hashID, quint32 user,
-                                  QDateTime previouslyHeard, qint16 score);
+        void reset() { _ptr.reset(); }
 
     private:
-        Resolver* _resolver;
-        QSharedPointer<PlayerHistoryEntry> _entry;
+        std::shared_ptr<T> _ptr;
     };
 }
 #endif

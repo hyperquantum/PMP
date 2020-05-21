@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,9 @@
 #ifndef PMP_PRELOADER_H
 #define PMP_PRELOADER_H
 
+#include "common/abstracthandle.h"
 #include "common/filehash.h"
+#include "common/qobjectresourcekeeper.h"
 
 #include <QHash>
 #include <QMutex>
@@ -55,15 +57,34 @@ namespace PMP {
         QString _originalFilename;
     };
 
+    class Preloader;
+
+    class PreloadedFile
+        : private AbstractHandle<QObjectResourceKeeper<Preloader>>
+    {
+    public:
+        PreloadedFile();
+        PreloadedFile(Preloader* preloader, std::function<void (Preloader*)> cleaner,
+                      QString filename);
+
+        bool isEmpty() const { return _filename.isEmpty(); }
+        QString getFilename() const { return _filename; }
+
+    private:
+        QString _filename;
+    };
+
     class Preloader : public QObject {
         Q_OBJECT
+    private:
+        class PreloadTrack;
+
     public:
         Preloader(QObject* parent, Queue* queue, Resolver* resolver);
 
         ~Preloader();
 
-        QString getPreloadedCacheFileAndLock(uint queueID);
-        void lockNone();
+        PreloadedFile getPreloadedCacheFile(uint queueID);
 
         static void cleanupOldFiles();
 
@@ -85,9 +106,10 @@ namespace PMP {
     private:
         static const int PRELOAD_RANGE = 5;
 
-        class PreloadTrack;
+        void doLock(uint queueId);
+        void doUnlock(uint queueId);
 
-        uint _doNotDeleteQueueID;
+        QHash<uint, uint> _lockedQueueIds;
         uint _jobsRunning;
         bool _preloadCheckTimerRunning;
         bool _cacheExpirationCheckTimerRunning;

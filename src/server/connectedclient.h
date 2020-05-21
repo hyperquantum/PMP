@@ -24,6 +24,7 @@
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
 
+#include "playerhistoryentry.h"
 #include "serverplayerstate.h"
 #include "userdataforhashesfetcher.h"
 
@@ -31,6 +32,7 @@
 #include <QDateTime>
 #include <QHash>
 #include <QList>
+#include <QSharedPointer>
 #include <QTcpSocket>
 #include <QVector>
 
@@ -74,9 +76,7 @@ namespace PMP {
         void dynamicModeNoRepetitionSpanChanged(int seconds);
         void playerStateChanged(ServerPlayerState state);
         void currentTrackChanged(QueueEntry const* entry);
-        void trackHistoryEvent(uint queueID, QDateTime started, QDateTime ended,
-                               quint32 userPlayedFor, int permillagePlayed, bool hadError,
-                               bool hadSeek);
+        void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void trackPositionChanged(qint64 position);
         void sendStateInfo();
         void sendStateInfoAfterTimeout();
@@ -153,9 +153,7 @@ namespace PMP {
                                                QVector<FileHash> unavailable);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
                                        QVector<CollectionTrackInfo> tracks);
-        void sendNewHistoryEntryMessage(uint queueID, QDateTime started, QDateTime ended,
-                                        quint32 userPlayedFor, int permillagePlayed,
-                                        bool hadError, bool hadSeek);
+        void sendNewHistoryEntryMessage(QSharedPointer<PlayerHistoryEntry> entry);
         void sendQueueHistoryMessage(int limit);
         void sendServerNameMessage(quint8 type, QString name);
         void sendServerHealthMessageIfNotEverythingOkay();

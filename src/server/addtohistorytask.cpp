@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,14 +20,13 @@
 #include "addtohistorytask.h"
 
 #include "database.h"
+#include "resolver.h"
 
 namespace PMP {
 
-    AddToHistoryTask::AddToHistoryTask(uint hashID, quint32 user, QDateTime started,
-                                       QDateTime ended, int permillage,
-                                       bool validForScoring)
-     : _hashID(hashID), _user(user), _started(started), _ended(ended),
-       _permillage(permillage), _validForScoring(validForScoring)
+    AddToHistoryTask::AddToHistoryTask(Resolver* resolver,
+                                       QSharedPointer<PlayerHistoryEntry> entry)
+     : _resolver(resolver), _entry(entry)
     {
         //
     }
@@ -36,12 +35,16 @@ namespace PMP {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return; /* nothing we can do */
 
-        auto userId = _user;
-        auto hashId = _hashID;
+        auto& entry = *_entry;
+        uint hashId = _resolver->getID(entry.hash());
+        uint userId = entry.user();
+
+        bool validForScoring = !(entry.hadError() || entry.hadSeek());
 
         /* add to history */
         db->addToHistory(
-            hashId, userId, _started, _ended, _permillage, _validForScoring
+            hashId, userId, entry.started(), entry.ended(), entry.permillage(),
+            validForScoring
         );
 
         /* recalculate user stats */

@@ -141,8 +141,8 @@ namespace PMP {
             this, &ConnectedClient::currentTrackChanged
         );
         connect(
-            _player, &Player::trackHistoryEvent,
-            this, &ConnectedClient::trackHistoryEvent
+            _player, &Player::newHistoryEntry,
+            this, &ConnectedClient::newHistoryEntry
         );
         connect(
             _player, &Player::positionChanged,
@@ -1127,24 +1127,21 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendNewHistoryEntryMessage(uint queueID,
-                                                     QDateTime started, QDateTime ended,
-                                                     quint32 userPlayedFor,
-                                                     int permillagePlayed, bool hadError,
-                                                     bool hadSeek)
+    void ConnectedClient::sendNewHistoryEntryMessage(
+                                                 QSharedPointer<PlayerHistoryEntry> entry)
     {
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4 + 8 + 8 + 2 + 2);
 
-        quint16 status = (hadError ? 1 : 0) | (hadSeek ? 2 : 0);
+        quint16 status = (entry->hadError() ? 1 : 0) | (entry->hadSeek() ? 2 : 0);
 
         NetworkUtil::append2Bytes(message, NetworkProtocol::NewHistoryEntryMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
-        NetworkUtil::append4Bytes(message, queueID);
-        NetworkUtil::append4Bytes(message, userPlayedFor);
-        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, started);
-        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, ended);
-        NetworkUtil::append2BytesSigned(message, permillagePlayed);
+        NetworkUtil::append4Bytes(message, entry->queueID());
+        NetworkUtil::append4Bytes(message, entry->user());
+        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry->started());
+        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry->ended());
+        NetworkUtil::append2BytesSigned(message, entry->permillage());
         NetworkUtil::append2Bytes(message, status);
 
         sendBinaryMessage(message);
@@ -1406,16 +1403,10 @@ namespace PMP {
         );
     }
 
-    void ConnectedClient::trackHistoryEvent(uint queueID,
-                                            QDateTime started, QDateTime ended,
-                                            quint32 userPlayedFor, int permillagePlayed,
-                                            bool hadError, bool hadSeek)
+    void ConnectedClient::newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry)
     {
         if (_binaryMode)
-            sendNewHistoryEntryMessage(
-                queueID, started, ended, userPlayedFor, permillagePlayed,
-                hadError, hadSeek
-            );
+            sendNewHistoryEntryMessage(entry);
     }
 
     void ConnectedClient::trackPositionChanged(qint64 position) {

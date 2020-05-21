@@ -22,7 +22,8 @@
 
 #include "common/filehash.h"
 
-#include <QDateTime>
+#include "playerhistoryentry.h"
+
 #include <QHash>
 #include <QObject>
 #include <QQueue>
@@ -56,12 +57,13 @@ namespace PMP {
         bool empty() const;
         uint length() const;
 
+        QueueEntry* peekFirstTrackEntry(int maxIndex);
         QueueEntry* lookup(quint32 queueID);
         int findIndex(quint32 queueID);
         QueueEntry* entryAtIndex(int index);
         QList<QueueEntry*> entries(int startoffset, int maxCount);
 
-        QList<QSharedPointer<const PlayerHistoryEntry>> recentHistory(int limit);
+        QList<QSharedPointer<PlayerHistoryEntry> > recentHistory(int limit);
 
     public slots:
         void clear(bool doNotifications);
@@ -83,7 +85,7 @@ namespace PMP {
         bool removeAtIndex(uint index);
         bool move(quint32 queueID, qint16 indexDiff);
 
-        void addToHistory(QSharedPointer<const PlayerHistoryEntry> entry);
+        void addToHistory(QSharedPointer<PlayerHistoryEntry> entry);
 
     Q_SIGNALS:
         void entryAdded(quint32 offset, quint32 queueID);
@@ -97,38 +99,9 @@ namespace PMP {
         uint _nextQueueID;
         QHash<quint32, QueueEntry*> _idLookup;
         QQueue<QueueEntry*> _queue;
-        QQueue<QSharedPointer<const PlayerHistoryEntry>> _history;
+        QQueue<QSharedPointer<PlayerHistoryEntry>> _history;
         Resolver* _resolver;
         QTimer* _queueFrontChecker;
     };
-
-    class PlayerHistoryEntry {
-    public:
-        PlayerHistoryEntry(uint queueID, uint user, QDateTime started, QDateTime ended,
-                           bool hadError, bool hadSeek, int permillage)
-         : _queueID(queueID), _user(user), _started(started), _ended(ended),
-           _permillage(permillage), _error(hadError), _seek(hadSeek)
-        {
-            //
-        }
-
-        uint queueID() const { return _queueID; }
-        uint user() const { return _user; }
-        QDateTime started() const { return _started; }
-        QDateTime ended() const { return _ended; }
-        bool hadError() const { return _error; }
-        bool hadSeek() const { return _seek; }
-        int permillage() const { return _permillage; }
-
-    private:
-        uint _queueID;
-        uint _user;
-        QDateTime _started;
-        QDateTime _ended;
-        int _permillage;
-        bool _error;
-        bool _seek;
-    };
-
 }
 #endif
