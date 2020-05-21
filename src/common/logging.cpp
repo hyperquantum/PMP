@@ -94,7 +94,7 @@ namespace PMP {
                                               const QMessageLogContext& context,
                                               const QString& msg)
     {
-        QString time = QTime::currentTime().toString(Qt::ISODate); /* HH:mm:ss */
+        QString time = QTime::currentTime().toString(Qt::ISODateWithMs);/* HH:mm:ss.zzz */
         QString sourcefile = stripSourcefilePath(context.file);
 
         QString locationText =
@@ -238,7 +238,7 @@ namespace PMP {
                                                const QMessageLogContext& context,
                                                const QString& msg)
     {
-        QString time = QTime::currentTime().toString(Qt::ISODate); /* HH:mm:ss */
+        QString time = QTime::currentTime().toString(Qt::ISODateWithMs);/* HH:mm:ss.zzz */
         QString sourcefile = stripSourcefilePath(context.file);
 
         QString locationText =
