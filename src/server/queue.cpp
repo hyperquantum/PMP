@@ -31,7 +31,7 @@ namespace PMP {
      : _nextQueueID(1),
        _resolver(resolver), _queueFrontChecker(new QTimer(this))
     {
-        connect(_queueFrontChecker, SIGNAL(timeout()), this, SLOT(checkFrontOfQueue()));
+        connect(_queueFrontChecker, &QTimer::timeout, this, &Queue::checkFrontOfQueue);
         _queueFrontChecker->start(10 * 1000);
     }
 
