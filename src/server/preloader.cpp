@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -302,7 +302,7 @@ namespace PMP {
 
         _preloadCheckTimerRunning = true;
         qDebug() << "preload check triggered";
-        QTimer::singleShot(250, this, SLOT(checkForTracksToPreload()));
+        QTimer::singleShot(250, this, &Preloader::checkForTracksToPreload);
     }
 
     void Preloader::checkForTracksToPreload() {
@@ -385,7 +385,7 @@ namespace PMP {
         _cacheExpirationCheckTimerRunning = true;
 
         qDebug() << "preload-cache expiration check triggered";
-        QTimer::singleShot(500, this, SLOT(checkForCacheExpiration()));
+        QTimer::singleShot(500, this, &Preloader::checkForCacheExpiration);
     }
 
     void Preloader::checkForCacheExpiration() {
