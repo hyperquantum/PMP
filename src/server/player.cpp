@@ -291,7 +291,7 @@ namespace PMP {
         return _userPlayingFor;
     }
 
-    Queue& Player::queue() {
+    PlayerQueue& Player::queue() {
         return _queue;
     }
 

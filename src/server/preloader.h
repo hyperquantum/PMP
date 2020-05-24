@@ -33,7 +33,7 @@
 
 namespace PMP {
 
-    class Queue;
+    class PlayerQueue;
     class Resolver;
 
     class TrackPreloadTask : public QObject, public QRunnable {
@@ -80,7 +80,7 @@ namespace PMP {
         class PreloadTrack;
 
     public:
-        Preloader(QObject* parent, Queue* queue, Resolver* resolver);
+        Preloader(QObject* parent, PlayerQueue* queue, Resolver* resolver);
 
         ~Preloader();
 
@@ -113,7 +113,7 @@ namespace PMP {
         uint _jobsRunning;
         bool _preloadCheckTimerRunning;
         bool _cacheExpirationCheckTimerRunning;
-        Queue* _queue;
+        PlayerQueue* _queue;
         Resolver* _resolver;
         QHash<uint, PreloadTrack*> _tracksByQueueID;
         QList<uint> _tracksToPreload;

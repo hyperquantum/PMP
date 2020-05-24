@@ -39,14 +39,14 @@ namespace PMP {
     class QueueEntry;
     class Resolver;
 
-    class Queue : public QObject {
+    class PlayerQueue : public QObject {
         Q_OBJECT
     public:
         enum HistoryType {
             Played, Skipped, Error
         };
 
-        Queue(Resolver* resolver);
+        PlayerQueue(Resolver* resolver);
 
         bool checkPotentialRepetitionByAdd(FileHash hash,
                                            int repetitionAvoidanceSeconds,

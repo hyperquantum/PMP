@@ -221,15 +221,15 @@ namespace PMP {
 
     /* ========================== Preloader ========================== */
 
-    Preloader::Preloader(QObject* parent, Queue* queue, Resolver* resolver)
+    Preloader::Preloader(QObject* parent, PlayerQueue* queue, Resolver* resolver)
      : QObject(parent),
        _jobsRunning(0),
        _preloadCheckTimerRunning(false), _cacheExpirationCheckTimerRunning(false),
        _queue(queue), _resolver(resolver)
     {
-        connect(queue, &Queue::entryAdded, this, &Preloader::queueEntryAdded);
-        connect(queue, &Queue::entryRemoved, this, &Preloader::queueEntryRemoved);
-        connect(queue, &Queue::entryMoved, this, &Preloader::queueEntryMoved);
+        connect(queue, &PlayerQueue::entryAdded, this, &Preloader::queueEntryAdded);
+        connect(queue, &PlayerQueue::entryRemoved, this, &Preloader::queueEntryRemoved);
+        connect(queue, &PlayerQueue::entryMoved, this, &Preloader::queueEntryMoved);
 
         scheduleCheckForTracksToPreload();
     }

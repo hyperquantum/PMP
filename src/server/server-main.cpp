@@ -159,7 +159,7 @@ int main(int argc, char *argv[]) {
 
     Users users;
     Player player(nullptr, &resolver, defaultVolume);
-    Queue& queue = player.queue();
+    PlayerQueue& queue = player.queue();
     History history(&player);
 
     CollectionMonitor collectionMonitor;

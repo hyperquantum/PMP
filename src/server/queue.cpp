@@ -27,15 +27,19 @@
 
 namespace PMP {
 
-    Queue::Queue(Resolver* resolver)
+    PlayerQueue::PlayerQueue(Resolver* resolver)
      : _nextQueueID(1),
        _resolver(resolver), _queueFrontChecker(new QTimer(this))
     {
-        connect(_queueFrontChecker, &QTimer::timeout, this, &Queue::checkFrontOfQueue);
+        connect(
+            _queueFrontChecker, &QTimer::timeout,
+            this, &PlayerQueue::checkFrontOfQueue
+        );
+
         _queueFrontChecker->start(10 * 1000);
     }
 
-    void Queue::checkFrontOfQueue() {
+    void PlayerQueue::checkFrontOfQueue() {
         int length = _queue.length();
         uint operationsDone = 0;
 
@@ -80,7 +84,7 @@ namespace PMP {
         }
     }
 
-    void Queue::clear(bool doNotifications) {
+    void PlayerQueue::clear(bool doNotifications) {
         if (doNotifications) {
             trim(0);
             return;
@@ -89,50 +93,50 @@ namespace PMP {
         _queue.clear();
     }
 
-    bool Queue::empty() const {
+    bool PlayerQueue::empty() const {
         return _queue.empty();
     }
 
-    uint Queue::length() const {
+    uint PlayerQueue::length() const {
         return uint(_queue.length());
     }
 
-    uint Queue::getNextQueueID() {
+    uint PlayerQueue::getNextQueueID() {
         return _nextQueueID++;
     }
 
-    void Queue::trim(uint length) {
+    void PlayerQueue::trim(uint length) {
         while (uint(_queue.length()) > length) {
             removeAtIndex(_queue.length() - 1);
         }
     }
 
-    QueueEntry* Queue::enqueue(QString const& filename) {
+    QueueEntry* PlayerQueue::enqueue(QString const& filename) {
         auto entry = new QueueEntry(this, filename);
         enqueue(entry);
         return entry;
     }
 
-    QueueEntry* Queue::enqueue(FileHash hash) {
+    QueueEntry* PlayerQueue::enqueue(FileHash hash) {
         auto entry = new QueueEntry(this, hash);
         enqueue(entry);
         return entry;
     }
 
-    QueueEntry* Queue::insertAtFront(FileHash hash) {
+    QueueEntry* PlayerQueue::insertAtFront(FileHash hash) {
         auto entry = new QueueEntry(this, hash);
         insertAtFront(entry);
         return entry;
     }
 
-    void Queue::insertBreakAtFront() {
+    void PlayerQueue::insertBreakAtFront() {
         if (!_queue.empty() && _queue[0]->kind() == QueueEntryKind::Break)
             return;
 
         insertAtFront(QueueEntry::createBreak(this));
     }
 
-    QueueEntry* Queue::insertAtIndex(quint32 index, FileHash hash)
+    QueueEntry* PlayerQueue::insertAtIndex(quint32 index, FileHash hash)
     {
         if (index > uint(_queue.size())) return nullptr;
 
@@ -141,7 +145,7 @@ namespace PMP {
         return entry;
     }
 
-    void Queue::enqueue(QueueEntry* entry) {
+    void PlayerQueue::enqueue(QueueEntry* entry) {
         if (!entry->isNewlyCreated() || entry->parent() != this)
             return;
 
@@ -152,7 +156,7 @@ namespace PMP {
         emit entryAdded(uint(_queue.size()) - 1, entry->queueID());
     }
 
-    void Queue::insertAtFront(QueueEntry* entry) {
+    void PlayerQueue::insertAtFront(QueueEntry* entry) {
         if (!entry->isNewlyCreated() || entry->parent() != this)
             return;
 
@@ -163,7 +167,7 @@ namespace PMP {
         emit entryAdded(0, entry->queueID());
     }
 
-    void Queue::insertAtIndex(quint32 index, QueueEntry* entry) {
+    void PlayerQueue::insertAtIndex(quint32 index, QueueEntry* entry) {
         if (!entry->isNewlyCreated() || entry->parent() != this)
             return;
 
@@ -174,7 +178,7 @@ namespace PMP {
         emit entryAdded(index, entry->queueID());
     }
 
-    QueueEntry* Queue::dequeue() {
+    QueueEntry* PlayerQueue::dequeue() {
         if (_queue.empty()) { return nullptr; }
         QueueEntry* entry = _queue.dequeue();
 
@@ -183,14 +187,14 @@ namespace PMP {
         return entry;
     }
 
-    bool Queue::remove(quint32 queueID) {
+    bool PlayerQueue::remove(quint32 queueID) {
         int index = findIndex(queueID);
         if (index < 0) return false; // not found
 
         return removeAtIndex(index);
     }
 
-    bool Queue::removeAtIndex(uint index) {
+    bool PlayerQueue::removeAtIndex(uint index) {
         if (index >= (uint)_queue.length()) return false;
 
         QueueEntry* entry = _queue[index];
@@ -208,7 +212,7 @@ namespace PMP {
         return true;
     }
 
-    bool Queue::move(quint32 queueID, qint16 indexDiff) {
+    bool PlayerQueue::move(quint32 queueID, qint16 indexDiff) {
         int index = findIndex(queueID);
         if (index < 0) return false; // not found
 
@@ -240,11 +244,11 @@ namespace PMP {
         return true;
     }
 
-    QList<QueueEntry*> Queue::entries(int startoffset, int maxCount) {
+    QList<QueueEntry*> PlayerQueue::entries(int startoffset, int maxCount) {
         return _queue.mid(startoffset, maxCount);
     }
 
-    QueueEntry* Queue::peekFirstTrackEntry(int maxIndex) {
+    QueueEntry* PlayerQueue::peekFirstTrackEntry(int maxIndex) {
         for (int i = 0; i <= maxIndex && i < _queue.size(); ++i) {
             QueueEntry* entry = _queue.at(i);
             if (entry->isTrack())
@@ -254,21 +258,21 @@ namespace PMP {
         return nullptr;
     }
 
-    QueueEntry* Queue::lookup(quint32 queueID) {
+    QueueEntry* PlayerQueue::lookup(quint32 queueID) {
         QHash<quint32, QueueEntry*>::iterator it = _idLookup.find(queueID);
         if (it == _idLookup.end()) { return nullptr; }
 
         return it.value();
     }
 
-    QueueEntry* Queue::entryAtIndex(int index) {
+    QueueEntry* PlayerQueue::entryAtIndex(int index) {
         if (index < 0 || index >= _queue.size())
             return nullptr;
 
         return _queue.at(index);
     }
 
-    void Queue::addToHistory(QSharedPointer<PlayerHistoryEntry> entry)
+    void PlayerQueue::addToHistory(QSharedPointer<PlayerHistoryEntry> entry)
     {
         if (!entry) return;
 
@@ -289,14 +293,14 @@ namespace PMP {
         qDebug() << " history size now:" << _history.size();
     }
 
-    QList<QSharedPointer<PlayerHistoryEntry> > Queue::recentHistory(int limit) {
+    QList<QSharedPointer<PlayerHistoryEntry> > PlayerQueue::recentHistory(int limit) {
         if (limit <= 0 || limit > _history.size())
             return _history;
 
         return _history.mid(_history.size() - limit, limit);
     }
 
-    int Queue::findIndex(quint32 queueID) {
+    int PlayerQueue::findIndex(quint32 queueID) {
         // FIXME: find a more efficient way to get the index
         int length = _queue.length();
         for (int i = 0; i < length; ++i) {
@@ -306,7 +310,7 @@ namespace PMP {
         return -1; // not found
     }
 
-    bool Queue::checkPotentialRepetitionByAdd(FileHash hash,
+    bool PlayerQueue::checkPotentialRepetitionByAdd(FileHash hash,
                                               int repetitionAvoidanceSeconds,
                                               int* nonRepetitionSpan) const
     {

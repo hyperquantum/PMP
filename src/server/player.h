@@ -101,7 +101,7 @@ namespace PMP {
         qint64 playPosition() const;
         quint32 userPlayingFor() const;
 
-        Queue& queue();
+        PlayerQueue& queue();
 
         Resolver& resolver();
 
@@ -159,7 +159,7 @@ namespace PMP {
         PlayerInstance* _currentInstance;
         PlayerInstance* _nextInstance;
         Resolver* _resolver;
-        Queue _queue;
+        PlayerQueue _queue;
         Preloader _preloader;
         QueueEntry* _nowPlaying;
         QQueue<uint> _historyOrder;

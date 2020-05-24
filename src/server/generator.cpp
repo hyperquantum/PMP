@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -68,7 +68,7 @@ namespace PMP {
 
     /* ========================== Generator ========================== */
 
-    Generator::Generator(Queue* queue, Resolver* resolver, History* history)
+    Generator::Generator(PlayerQueue* queue, Resolver* resolver, History* history)
      : _randomEngine(Util::getRandomSeed()), _currentTrack(nullptr),
        _queue(queue), _resolver(resolver), _history(history),
        _upcomingTimer(new QTimer(this)), _upcomingRuntimeSeconds(0),
@@ -77,7 +77,7 @@ namespace PMP {
        _waveRising(false)
     {
         connect(
-            _queue, &Queue::entryRemoved,
+            _queue, &PlayerQueue::entryRemoved,
             this, &Generator::queueEntryRemoved
         );
         connect(
