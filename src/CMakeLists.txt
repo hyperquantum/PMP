@@ -44,8 +44,8 @@ set(PMP_SERVER_SOURCES
     server/generator.cpp
     server/history.cpp
     server/player.cpp
+    server/playerqueue.cpp
     server/preloader.cpp
-    server/queue.cpp
     server/queueentry.cpp
     server/resolver.cpp
     server/server.cpp
