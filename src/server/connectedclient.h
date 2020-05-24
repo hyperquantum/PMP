@@ -27,6 +27,7 @@
 #include "common/scrobblingprovider.h"
 
 #include "clientrequestorigin.h"
+#include "playerhistoryentry.h"
 #include "serverplayerstate.h"
 #include "userdataforhashesfetcher.h"
 
@@ -34,6 +35,7 @@
 #include <QDateTime>
 #include <QHash>
 #include <QList>
+#include <QSharedPointer>
 #include <QTcpSocket>
 #include <QVector>
 
@@ -47,15 +49,15 @@ namespace PMP {
     class Resolver;
     class Scrobbling;
     class Server;
+    class ServerInterface;
     class ServerHealthMonitor;
     class Users;
 
     class ConnectedClient : public QObject {
         Q_OBJECT
     public:
-        ConnectedClient(uint connectionReference, QTcpSocket* socket,
-                        Server* server, Player* player,
-                        Generator* generator, Users* users,
+        ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
+                        Player* player, Generator* generator, Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor, Scrobbling* scrobbling);
 
@@ -78,9 +80,7 @@ namespace PMP {
         void dynamicModeNoRepetitionSpanChanged(int seconds);
         void playerStateChanged(ServerPlayerState state);
         void currentTrackChanged(QueueEntry const* entry);
-        void trackHistoryEvent(uint queueID, QDateTime started, QDateTime ended,
-                               quint32 userPlayedFor, int permillagePlayed, bool hadError,
-                               bool hadSeek);
+        void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void trackPositionChanged(qint64 position);
         void sendStateInfo();
         void sendStateInfoAfterTimeout();
@@ -118,7 +118,7 @@ namespace PMP {
         void enableHealthEvents();
 
         bool isLoggedIn() const;
-        void connectSlotsAfterSuccessfulUserLogin();
+        void connectSlotsAfterSuccessfulUserLogin(quint32 userLoggedIn);
 
         void readTextCommands();
         void readBinaryCommands();
@@ -167,9 +167,7 @@ namespace PMP {
                                                QVector<FileHash> unavailable);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
                                        QVector<CollectionTrackInfo> tracks);
-        void sendNewHistoryEntryMessage(uint queueID, QDateTime started, QDateTime ended,
-                                        quint32 userPlayedFor, int permillagePlayed,
-                                        bool hadError, bool hadSeek);
+        void sendNewHistoryEntryMessage(QSharedPointer<PlayerHistoryEntry> entry);
         void sendQueueHistoryMessage(int limit);
         void sendServerNameMessage(quint8 type, QString name);
         void sendServerHealthMessageIfNotEverythingOkay();
@@ -211,9 +209,8 @@ namespace PMP {
 
         static const qint16 ServerProtocolNo;
 
-        const uint _connectionReference;
         QTcpSocket* _socket;
-        Server* _server;
+        ServerInterface* _serverInterface;
         Player* _player;
         Generator* _generator;
         Users* _users;
@@ -230,8 +227,6 @@ namespace PMP {
         QByteArray _saltForUserAccountRegistering;
         QString _userAccountLoggingIn;
         QByteArray _sessionSaltForUserLoggingIn;
-        quint32 _userLoggedIn;
-        QString _userLoggedInName;
         QHash<quint32, quint32> _trackAdditionConfirmationsPending;
         bool _terminated;
         bool _binaryMode;

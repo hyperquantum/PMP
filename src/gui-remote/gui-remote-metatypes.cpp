@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,33 +17,21 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_ADDTOHISTORYTASK_H
-#define PMP_ADDTOHISTORYTASK_H
-
-#include "playerhistoryentry.h"
-
-#include <QObject>
-#include <QRunnable>
-#include <QSharedPointer>
+#include "collectiontablemodel.h"
 
 namespace PMP {
 
-    class Resolver;
-
-    class AddToHistoryTask : public QObject, public QRunnable {
-        Q_OBJECT
-    public:
-        AddToHistoryTask(Resolver* resolver, QSharedPointer<PlayerHistoryEntry> entry);
-
-        void run();
-
-    Q_SIGNALS:
-        void updatedHashUserStats(uint hashID, quint32 user,
-                                  QDateTime previouslyHeard, qint16 score);
+    /** Utility object to automatically do the qRegisterMetaType calls at program
+     *  startup */
+    class GuiRemoteMetatypesInit {
+    protected:
+        GuiRemoteMetatypesInit() {
+            qRegisterMetaType<PMP::TrackHighlightMode>();
+        }
 
     private:
-        Resolver* _resolver;
-        QSharedPointer<PlayerHistoryEntry> _entry;
+        static GuiRemoteMetatypesInit GlobalVariable;
     };
+
+    GuiRemoteMetatypesInit GuiRemoteMetatypesInit::GlobalVariable;
 }
-#endif

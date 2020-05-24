@@ -38,6 +38,7 @@ namespace PMP {
     class MainWidget;
     class PowerManagement;
     class ServerConnection;
+    class ServerInterface;
     class UserAccountCreationWidget;
     class UserPickerWidget;
 
@@ -93,6 +94,7 @@ namespace PMP {
 
         ConnectionWidget* _connectionWidget;
         ServerConnection* _connection;
+        ServerInterface* _serverInterface;
         UserPickerWidget* _userPickerWidget;
         UserAccountCreationWidget* _userAccountCreationWidget;
         LoginWidget* _loginWidget;

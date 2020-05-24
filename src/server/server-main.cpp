@@ -197,12 +197,11 @@ int main(int argc, char *argv[]) {
         scrobblingController, &ScrobblingController::updateNowPlaying
     );
     QObject::connect(
-        &player, &Player::trackHistoryEvent,
+        &player, &Player::newHistoryEntry,
         scrobblingController,
-        [scrobblingController](uint, QDateTime, QDateTime, quint32 userPlayedFor, int,
-                               bool, bool)
+        [scrobblingController](QSharedPointer<PlayerHistoryEntry> entry)
         {
-            scrobblingController->wakeUp(userPlayedFor);
+            scrobblingController->wakeUp(entry->user());
         }
     );
     QObject::connect(

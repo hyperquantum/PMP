@@ -35,6 +35,7 @@
 #include "scrobbling.h"
 #include "server.h"
 #include "serverhealthmonitor.h"
+#include "serverinterface.h"
 #include "users.h"
 
 #include <QHostInfo>
@@ -48,25 +49,26 @@ namespace PMP {
 
     const qint16 ConnectedClient::ServerProtocolNo = 12;
 
-    ConnectedClient::ConnectedClient(uint connectionReference, QTcpSocket* socket,
-                                     Server* server, Player* player,
-                                     Generator* generator, Users* users,
+    ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
+                                     Player* player, Generator* generator, Users* users,
                                      CollectionMonitor* collectionMonitor,
                                      ServerHealthMonitor* serverHealthMonitor,
                                      Scrobbling* scrobbling)
-     : QObject(server), _connectionReference(connectionReference),
-       _socket(socket), _server(server), _player(player), _generator(generator),
+     : _socket(socket), _serverInterface(serverInterface),
+       _player(player), _generator(generator),
        _users(users), _collectionMonitor(collectionMonitor),
        _serverHealthMonitor(serverHealthMonitor), _scrobbling(scrobbling),
        _clientProtocolNo(-1),
        _scrobblingSupportThis(222, "scrobbling"),
-       _lastSentNowPlayingID(0), _userLoggedIn(0),
+       _lastSentNowPlayingID(0),
        _terminated(false), _binaryMode(false),
        _eventsEnabled(false), _healthEventsEnabled(false),
        _pendingPlayerStatus(false)
     {
+        _serverInterface->setParent(this);
+
         connect(
-            server, &Server::shuttingDown,
+            _serverInterface, &ServerInterface::serverShuttingDown,
             this, &ConnectedClient::terminateConnection
         );
 
@@ -142,8 +144,8 @@ namespace PMP {
             this, &ConnectedClient::currentTrackChanged
         );
         connect(
-            _player, &Player::trackHistoryEvent,
-            this, &ConnectedClient::trackHistoryEvent
+            _player, &Player::newHistoryEntry,
+            this, &ConnectedClient::newHistoryEntry
         );
         connect(
             _player, &Player::positionChanged,
@@ -210,11 +212,11 @@ namespace PMP {
     }
 
     bool ConnectedClient::isLoggedIn() const {
-        return _userLoggedIn > 0;
+        return _serverInterface->isLoggedIn();
     }
 
-    void ConnectedClient::connectSlotsAfterSuccessfulUserLogin() {
-        auto userScrobblingController = _scrobbling->getControllerForUser(_userLoggedIn);
+    void ConnectedClient::connectSlotsAfterSuccessfulUserLogin(quint32 userLoggedIn) {
+        auto userScrobblingController = _scrobbling->getControllerForUser(userLoggedIn);
 
         connect(
             userScrobblingController, &UserScrobblingController::scrobblingProviderInfo,
@@ -323,13 +325,13 @@ namespace PMP {
 
     void ConnectedClient::executeTextCommandWithoutArgs(const QString& command) {
         if (command == "play") {
-            if (isLoggedIn()) { _player->play(); }
+            _serverInterface->play();
         }
         else if (command == "pause") {
-            if (isLoggedIn()) { _player->pause(); }
+            _serverInterface->pause();
         }
         else if (command == "skip") {
-            if (isLoggedIn()) { _player->skip(); }
+            _serverInterface->skip();
         }
         else if (command == "volume") {
             /* 'volume' without arguments sends current volume */
@@ -347,7 +349,7 @@ namespace PMP {
             sendTextualQueueInfo();
         }
         else if (command == "shutdown") {
-            if (isLoggedIn()) { _server->shutdown(); }
+            _serverInterface->shutDownServer();
         }
         else if (command == "binary") {
             /* 'binary' command without argument is obsolete, but we need to continue
@@ -379,13 +381,11 @@ namespace PMP {
             bool ok;
             int volume = arg1.toInt(&ok);
             if (ok && volume >= 0 && volume <= 100) {
-                if (isLoggedIn()) { _player->setVolume(volume); }
+                _serverInterface->setVolume(volume);
             }
         }
         else if (command == "shutdown") {
-            if (arg1 == _server->serverPassword()) {
-                _server->shutdown();
-            }
+            _serverInterface->shutDownServer(arg1);
         }
         else {
             /* unknown command ???? */
@@ -406,7 +406,7 @@ namespace PMP {
             int moveDiff = arg2.toInt(&ok);
             if (!ok || moveDiff == 0) return;
 
-            if (isLoggedIn()) { _player->queue().move(queueID, moveDiff); }
+            _serverInterface->moveQueueEntry(queueID, moveDiff);
         }
         else {
             /* unknown command ???? */
@@ -663,7 +663,7 @@ namespace PMP {
     }
 
     void ConnectedClient::sendServerInstanceIdentifier() {
-        QUuid uuid = _server->uuid();
+        QUuid uuid = _serverInterface->getServerUuid();
 
         QByteArray message;
         message.reserve(2 + 16);
@@ -1160,24 +1160,21 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendNewHistoryEntryMessage(uint queueID,
-                                                     QDateTime started, QDateTime ended,
-                                                     quint32 userPlayedFor,
-                                                     int permillagePlayed, bool hadError,
-                                                     bool hadSeek)
+    void ConnectedClient::sendNewHistoryEntryMessage(
+                                                 QSharedPointer<PlayerHistoryEntry> entry)
     {
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4 + 8 + 8 + 2 + 2);
 
-        quint16 status = (hadError ? 1 : 0) | (hadSeek ? 2 : 0);
+        quint16 status = (entry->hadError() ? 1 : 0) | (entry->hadSeek() ? 2 : 0);
 
         NetworkUtil::append2Bytes(message, NetworkProtocol::NewHistoryEntryMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
-        NetworkUtil::append4Bytes(message, queueID);
-        NetworkUtil::append4Bytes(message, userPlayedFor);
-        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, started);
-        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, ended);
-        NetworkUtil::append2BytesSigned(message, permillagePlayed);
+        NetworkUtil::append4Bytes(message, entry->queueID());
+        NetworkUtil::append4Bytes(message, entry->user());
+        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry->started());
+        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry->ended());
+        NetworkUtil::append2BytesSigned(message, entry->permillage());
         NetworkUtil::append2Bytes(message, status);
 
         sendBinaryMessage(message);
@@ -1243,19 +1240,22 @@ namespace PMP {
     void ConnectedClient::onScrobblingProviderInfo(ScrobblingProvider provider,
                                                    ScrobblerStatus status, bool enabled)
     {
-        sendScrobblingProviderInfoMessage(_userLoggedIn, provider, status, enabled);
+        auto userId = _serverInterface->userLoggedIn();
+        sendScrobblingProviderInfoMessage(userId, provider, status, enabled);
     }
 
     void ConnectedClient::onScrobblerStatusChanged(ScrobblingProvider provider,
                                                    ScrobblerStatus status)
     {
-        sendScrobblerStatusChangedMessage(_userLoggedIn, provider, status);
+        auto userId = _serverInterface->userLoggedIn();
+        sendScrobblerStatusChangedMessage(userId, provider, status);
     }
 
     void ConnectedClient::onScrobblingProviderEnabledChanged(ScrobblingProvider provider,
                                                              bool enabled)
     {
-        sendScrobblingProviderEnabledChangeMessage(_userLoggedIn, provider, enabled);
+        auto userId = _serverInterface->userLoggedIn();
+        sendScrobblingProviderEnabledChangeMessage(userId, provider, enabled);
     }
 
     void ConnectedClient::onHashAvailabilityChanged(QVector<FileHash> available,
@@ -1524,16 +1524,10 @@ namespace PMP {
         );
     }
 
-    void ConnectedClient::trackHistoryEvent(uint queueID,
-                                            QDateTime started, QDateTime ended,
-                                            quint32 userPlayedFor, int permillagePlayed,
-                                            bool hadError, bool hadSeek)
+    void ConnectedClient::newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry)
     {
         if (_binaryMode)
-            sendNewHistoryEntryMessage(
-                queueID, started, ended, userPlayedFor, permillagePlayed,
-                hadError, hadSeek
-            );
+            sendNewHistoryEntryMessage(entry);
     }
 
     void ConnectedClient::trackPositionChanged(qint64 position) {
@@ -1805,7 +1799,7 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            _generator->setNoRepetitionSpan(intervalMinutes);
+            _serverInterface->setTrackRepetitionAvoidanceMinutes(intervalMinutes);
         }
             break;
         case NetworkProtocol::PossibleFilenamesForQueueEntryRequestMessage:
@@ -1867,7 +1861,7 @@ namespace PMP {
 
             if (position < 0) return; /* invalid position */
 
-            _player->seekTo(position);
+            _serverInterface->seekTo(position);
         }
             break;
         case NetworkProtocol::QueueEntryMoveRequestMessage:
@@ -1884,7 +1878,7 @@ namespace PMP {
             qDebug() << "received track move command; QID:" << queueID
                      << " move:" << move;
 
-            _player->queue().move(queueID, move);
+            _serverInterface->moveQueueEntry(queueID, move);
         }
             break;
         case NetworkProtocol::InitiateNewUserAccountMessage:
@@ -2099,9 +2093,8 @@ namespace PMP {
                 );
 
             if (loginSucceeded) {
-                _userLoggedIn = user.id;
-                _userLoggedInName = user.login;
-                connectSlotsAfterSuccessfulUserLogin();
+                _serverInterface->setLoggedIn(user.id, user.login);
+                connectSlotsAfterSuccessfulUserLogin(user.id);
                 sendSuccessMessage(clientReference, user.id);
             }
             else {
@@ -2261,13 +2254,11 @@ namespace PMP {
 
         qDebug() << " request contains hash:" << hash.dumpToString();
 
-        Queue& queue = _player->queue();
-
         if (messageType == NetworkProtocol::AddHashToEndOfQueueRequestMessage) {
-            queue.enqueue(hash);
+            _serverInterface->enqueue(hash);
         }
         else if (messageType == NetworkProtocol::AddHashToFrontOfQueueRequestMessage) {
-            queue.insertAtFront(hash);
+            _serverInterface->insertAtFront(hash);
         }
         else {
             return; /* invalid message */
@@ -2300,7 +2291,7 @@ namespace PMP {
         auto entry = new QueueEntry(&queue, hash);
 
         _trackAdditionConfirmationsPending[entry->queueID()] = clientReference;
-        queue.insertAtIndex(index, entry);
+        _serverInterface->insertAtIndex(index, entry);
     }
 
     void ConnectedClient::parseQueueEntryRemovalRequest(QByteArray const& message) {
@@ -2317,7 +2308,7 @@ namespace PMP {
             return; /* invalid queue ID */
         }
 
-        _player->queue().remove(queueID);
+        _serverInterface->removeQueueEntry(queueID);
     }
 
     void ConnectedClient::parseQueueEntryDuplicationRequest(QByteArray const& message) {
@@ -2359,7 +2350,7 @@ namespace PMP {
         auto entry = new QueueEntry(&queue, existing);
 
         _trackAdditionConfirmationsPending[entry->queueID()] = clientReference;
-        queue.insertAtIndex(index + 1, entry);
+        _serverInterface->insertAtIndex(index + 1, entry);
     }
 
     void ConnectedClient::parseHashUserDataRequest(const QByteArray& message) {
@@ -2425,7 +2416,9 @@ namespace PMP {
     }
 
     void ConnectedClient::fetchScrobblingProviderInfoForCurrentUser() {
-        auto controller = _scrobbling->getControllerForUser(_userLoggedIn);
+        auto controller =
+                _scrobbling->getControllerForUser(_serverInterface->userLoggedIn());
+
         controller->requestScrobblingProviderInfo();
     }
 
@@ -2466,7 +2459,9 @@ namespace PMP {
 
         auto enabled = NetworkUtil::getByte(message, 3) != 0;
 
-        auto controller = _scrobbling->getControllerForUser(_userLoggedIn);
+        auto controller =
+                _scrobbling->getControllerForUser(_serverInterface->userLoggedIn());
+
         controller->setScrobblingProviderEnabled(provider, enabled);
     }
 
@@ -2476,7 +2471,7 @@ namespace PMP {
             qDebug() << "received CHANGE VOLUME command, volume"
                      << (uint(action - 100));
 
-            if (isLoggedIn()) { _player->setVolume(action - 100); }
+            _serverInterface->setVolume(action - 100);
             return;
         }
 
@@ -2485,19 +2480,19 @@ namespace PMP {
         switch (action) {
         case 1:
             qDebug() << "received PLAY command";
-            if (isLoggedIn()) { _player->play(); }
+            _serverInterface->play();
             break;
         case 2:
             qDebug() << "received PAUSE command";
-            if (isLoggedIn()) { _player->pause(); }
+            _serverInterface->pause();
             break;
         case 3:
             qDebug() << "received SKIP command";
-            if (isLoggedIn()) { _player->skip(); }
+            _serverInterface->skip();
             break;
         case 4:
             qDebug() << "received INSERT BREAK AT FRONT command";
-            if (isLoggedIn()) { _player->queue().insertBreakAtFront(); }
+            _serverInterface->insertBreakAtFront();
             break;
         case 10: /* request for state info */
             qDebug() << "received request for player status";
@@ -2547,40 +2542,35 @@ namespace PMP {
             break;
         case 20: /* enable dynamic mode */
             qDebug() << "received ENABLE DYNAMIC MODE command";
-            if (isLoggedIn()) { _generator->enable(); }
+            _serverInterface->enableDynamicMode();
             break;
         case 21: /* disable dynamic mode */
             qDebug() << "received DISABLE DYNAMIC MODE command";
-            if (isLoggedIn()) { _generator->disable(); }
+            _serverInterface->disableDynamicMode();
             break;
         case 22: /* request queue expansion */
             qDebug() << "received QUEUE EXPANSION command";
-            if (isLoggedIn()) { _generator->requestQueueExpansion(); }
+            _serverInterface->requestQueueExpansion();
             break;
         case 23:
             qDebug() << "received TRIM QUEUE command";
-             /* TODO: get the '10' from elsewhere */
-            if (isLoggedIn()) { _player->queue().trim(10); }
+            _serverInterface->trimQueue();
             break;
         case 24:
             qDebug() << "received START WAVE command";
-            if (isLoggedIn() && !_generator->waveActive()) { _generator->startWave(); }
+            _serverInterface->startWave();
             break;
         case 30: /* switch to public mode */
             qDebug() << "received SWITCH TO PUBLIC MODE command";
-            _player->setUserPlayingFor(0);
+            _serverInterface->switchToPublicMode();
             break;
         case 31: /* switch to personal mode */
             qDebug() << "received SWITCH TO PERSONAL MODE command";
-            if (isLoggedIn()) {
-                qDebug() << " switching to personal mode for user "
-                         << _userLoggedInName;
-                _player->setUserPlayingFor(_userLoggedIn);
-            }
+            _serverInterface->switchToPersonalMode();
             break;
         case 40:
             qDebug() << "received START FULL INDEXATION command";
-            if (isLoggedIn()) { _player->resolver().startFullIndexation(); }
+            _serverInterface->startFullIndexation();
             break;
         case 50:
             qDebug() << "received SUBSCRIBE TO ALL EVENTS command";
@@ -2592,7 +2582,7 @@ namespace PMP {
             break;
         case 99:
             qDebug() << "received SHUTDOWN command";
-            if (isLoggedIn()) { _server->shutdown(); }
+            _serverInterface->shutDownServer();
             break;
         default:
             qDebug() << "received unrecognized single-byte action type:"

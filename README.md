@@ -100,7 +100,7 @@ First make sure MySQL is running. Then start the PMP-Server executable, and fina
 
 ## 4. Dependencies For Building
 
- * C++ compiler with support for C++ 2011
+ * C++ compiler with support for C++ 2014
  * CMake 3.1 or higher
  * pkg-config
  * TagLib 1.11 or higher

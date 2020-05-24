@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,7 +36,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, FileHash const& hash, TagData const& tags)
+    QueueEntry::QueueEntry(Queue* parent, FileHash hash, TagData const& tags)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
        _hash(hash), _haveFilename(false),
@@ -46,7 +46,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, FileHash const& hash)
+    QueueEntry::QueueEntry(Queue* parent, FileHash hash)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
        _hash(hash), _haveFilename(false),

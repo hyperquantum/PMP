@@ -25,11 +25,69 @@
 #include "serverplayerstate.h"
 
 #include <QDateTime>
+#include <QHash>
 #include <QMediaPlayer>
+#include <QQueue>
 
 namespace PMP {
 
     class Resolver;
+
+    class PlayerInstance : public QObject {
+        Q_OBJECT
+    public:
+        PlayerInstance(QObject* parent, int identifier, Preloader* preloader,
+                       Resolver* resolver);
+
+        QueueEntry* track() const { return _track; }
+        bool availableForNewTrack() const;
+
+        bool trackSetSuccessfully() const { return _mediaSet; }
+        bool endOfTrackComingUp() const { return _endOfTrackComingUp; }
+        bool hadSeek() const { return _hadSeek; }
+
+        qint64 position() const;
+
+    public Q_SLOTS:
+        void setVolume(int volume);
+        void setTrack(QueueEntry* queueEntry);
+        void play();
+        void pause();
+        void stop();
+        void seekTo(qint64 position);
+
+        void deleteAfterStopped();
+
+    Q_SIGNALS:
+        void playing();
+        void paused();
+        void positionChanged(qint64 position);
+        void endOfTrackComingUpChanged(bool endOfTrackComingUp);
+        void playbackError();
+        void trackFinished();
+        void stoppedEarly(qint64 position);
+
+    private Q_SLOTS:
+        void internalStateChanged(QMediaPlayer::State state);
+        void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
+        void internalPositionChanged(qint64 position);
+        void internalDurationChanged(qint64 duration);
+
+    private:
+        void updateEndOfTrackComingUpFlag();
+
+        QMediaPlayer* _player;
+        Preloader* _preloader;
+        Resolver* _resolver;
+        QueueEntry* _track;
+        PreloadedFile _preloadedFile;
+        qint64 _positionWhenStopped;
+        int _identifier;
+        bool _mediaSet;
+        bool _endOfTrackComingUp;
+        bool _hadSeek;
+        bool _deleteAfterStopped;
+    };
 
     class Player : public QObject {
         Q_OBJECT
@@ -66,50 +124,56 @@ namespace PMP {
         void setUserPlayingFor(quint32 user);
 
     Q_SIGNALS:
-
         void stateChanged(ServerPlayerState state);
         void currentTrackChanged(QueueEntry const* newTrack);
         void positionChanged(qint64 position);
         void volumeChanged(int volume);
         void userPlayingForChanged(quint32 user);
-        void failedToPlayTrack(QueueEntry const* track);
-        void donePlayingTrack(QueueEntry const* track, int permillage, bool hadError,
-                              bool hadSeek);
-        void trackHistoryEvent(uint queueID, QDateTime started, QDateTime ended,
-                               quint32 userPlayedFor, int permillagePlayed, bool hadError,
-                               bool hadSeek);
         void startedPlaying(uint userPlayingFor, QDateTime startTime,
                             QString title, QString artist, QString album,
                             int trackDurationSeconds);
+        void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
 
         /*! Emitted when the queue is empty and the current track is finished. */
         void finished();
 
     private slots:
         void changeStateTo(ServerPlayerState state);
-        void internalStateChanged(QMediaPlayer::State state);
-        void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
-        void internalPositionChanged(qint64 position);
-        void internalDurationChanged(qint64 duration);
-        bool startNext(bool play);
+        bool startNext(bool stopCurrent, bool playNext);
+        void instancePlaying(PlayerInstance* instance);
+        void instancePaused(PlayerInstance* instance);
+        void instancePositionChanged(PlayerInstance* instance, qint64 position);
+        void instanceEndOfTrackComingUpChanged(PlayerInstance* instance,
+                                               bool endOfTrackComingUp);
+        void instancePlaybackError(PlayerInstance* instance);
+        void instanceTrackFinished(PlayerInstance* instance);
+        void instanceStoppedEarly(PlayerInstance* instance, qint64 position);
 
     private:
+        PlayerInstance* createNewPlayerInstance();
+        void prepareNextTrack();
+        bool tryPrepareTrack(QueueEntry* entry);
+        bool tryStartNextTrack(QueueEntry* entry, bool startPlaying);
         void emitStartedPlaying(QueueEntry const* queueEntry);
+        void putInHistoryOrder(QueueEntry* entry);
         void addToHistory(QueueEntry* entry, int permillage, bool hadError, bool hadSeek);
-        int calcPermillagePlayed();
+        void performHistoryActions(QSharedPointer<PlayerHistoryEntry> historyEntry);
         static int calcPermillagePlayed(QueueEntry* track, qint64 positionReached,
                                         bool seeked);
 
+        PlayerInstance* _oldInstance;
+        PlayerInstance* _currentInstance;
+        PlayerInstance* _nextInstance;
         Resolver* _resolver;
-        QMediaPlayer* _player;
         Queue _queue;
         Preloader _preloader;
         QueueEntry* _nowPlaying;
+        QQueue<uint> _historyOrder;
+        QHash<uint, QSharedPointer<PlayerHistoryEntry>> _pendingHistory;
+        int _instanceIdentifier;
+        int _volume;
         qint64 _playPosition;
-        qint64 _maxPosReachedInCurrent;
-        bool _seekHappenedInCurrent;
         ServerPlayerState _state;
-        bool _transitioningToNextTrack;
         quint32 _userPlayingFor;
     };
 }

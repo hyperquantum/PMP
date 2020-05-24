@@ -61,6 +61,7 @@ set(PMP_SERVER_SOURCES
     server/selftest.cpp
     server/server.cpp
     server/serverhealthmonitor.cpp
+    server/serverinterface.cpp
     server/servermetatypes.cpp
     server/serversettings.cpp
     server/tracktoscrobble.cpp
@@ -86,6 +87,7 @@ set(PMP_SERVER_HEADERS
     server/scrobblinghost.h
     server/server.h
     server/serverhealthmonitor.h
+    server/serverinterface.h
     server/serversettings.h
     server/userdataforhashesfetcher.h
     server/userdatafortracksfetcher.h
@@ -99,6 +101,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/collectionwidget.cpp
     gui-remote/connectionwidget.cpp
     gui-remote/currenttrackmonitor.cpp
+    gui-remote/gui-remote-metatypes.cpp
     gui-remote/loginwidget.cpp
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp
@@ -109,6 +112,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/queuemodel.cpp
     gui-remote/queuemonitor.cpp
     gui-remote/scoreformatdelegate.cpp
+    gui-remote/serverinterface.cpp
     gui-remote/trackprogresswidget.cpp
     gui-remote/useraccountcreationwidget.cpp
     gui-remote/userdatafetcher.cpp
@@ -131,6 +135,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/queuemodel.h
     gui-remote/queuemonitor.h
     gui-remote/scoreformatdelegate.h
+    gui-remote/serverinterface.h
     gui-remote/trackprogresswidget.h
     gui-remote/useraccountcreationwidget.h
     gui-remote/userdatafetcher.h
