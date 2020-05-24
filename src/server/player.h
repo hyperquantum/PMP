@@ -20,8 +20,8 @@
 #ifndef PMP_PLAYER_H
 #define PMP_PLAYER_H
 
+#include "playerqueue.h"
 #include "preloader.h"
-#include "queue.h"
 #include "serverplayerstate.h"
 
 #include <QDateTime>

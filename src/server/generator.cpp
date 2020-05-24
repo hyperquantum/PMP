@@ -23,7 +23,7 @@
 
 #include "database.h"
 #include "history.h"
-#include "queue.h"
+#include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
 

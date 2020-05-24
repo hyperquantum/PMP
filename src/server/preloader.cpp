@@ -21,7 +21,7 @@
 
 #include "common/fileanalyzer.h"
 
-#include "queue.h"
+#include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
 

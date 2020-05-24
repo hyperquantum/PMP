@@ -64,8 +64,8 @@ set(PMP_SERVER_HEADERS
     server/generator.h
     server/history.h
     server/player.h
+    server/playerqueue.h
     server/preloader.h
-    server/queue.h
     server/queueentry.h
     server/resolver.h
     server/server.h

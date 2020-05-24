@@ -29,7 +29,7 @@
 #include "generator.h"
 #include "history.h"
 #include "player.h"
-#include "queue.h"
+#include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
 #include "server.h"

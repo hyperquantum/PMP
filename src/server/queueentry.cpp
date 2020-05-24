@@ -19,7 +19,7 @@
 
 #include "queueentry.h"
 
-#include "queue.h"
+#include "playerqueue.h"
 #include "resolver.h"
 
 #include <QFileInfo>

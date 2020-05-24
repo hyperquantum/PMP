@@ -17,7 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "queue.h"
+#include "playerqueue.h"
 
 #include "queueentry.h"
 #include "resolver.h"
