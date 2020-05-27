@@ -28,7 +28,7 @@
 namespace PMP {
 
     PlayerQueue::PlayerQueue(Resolver* resolver)
-     : _nextQueueID(1),
+     : _nextQueueID(1), _firstTrackIndex(-1), _firstTrackQueueId(0),
        _resolver(resolver), _queueFrontChecker(new QTimer(this))
     {
         connect(
@@ -84,6 +84,7 @@ namespace PMP {
         }
     }
 
+    /*
     void PlayerQueue::clear(bool doNotifications) {
         if (doNotifications) {
             trim(0);
@@ -91,7 +92,9 @@ namespace PMP {
         }
 
         _queue.clear();
+        resetFirstTrack();
     }
+    */
 
     bool PlayerQueue::empty() const {
         return _queue.empty();
@@ -103,6 +106,42 @@ namespace PMP {
 
     uint PlayerQueue::getNextQueueID() {
         return _nextQueueID++;
+    }
+
+    void PlayerQueue::resetFirstTrack()
+    {
+        _firstTrackIndex = -1;
+        _firstTrackQueueId = 0;
+    }
+
+    void PlayerQueue::setFirstTrackIndexAndId(int index, uint queueId)
+    {
+        _firstTrackIndex = index;
+        _firstTrackQueueId = queueId;
+    }
+
+    void PlayerQueue::findFirstTrackBetweenIndices(int start, int end,
+                                                   bool resetIfNoneFound)
+    {
+        for (int i = start; i < end && i < _queue.length(); ++i) {
+            auto entry = _queue[i];
+            if (!entry->isTrack())
+                continue;
+
+            setFirstTrackIndexAndId(i, entry->queueID());
+            return;
+        }
+
+        if (resetIfNoneFound)
+            resetFirstTrack();
+    }
+
+    void PlayerQueue::emitFirstTrackChanged()
+    {
+        qDebug() << "first track changed; index:" << _firstTrackIndex
+                 << " id:" << _firstTrackQueueId;
+
+        Q_EMIT firstTrackChanged(_firstTrackIndex, _firstTrackQueueId);
     }
 
     void PlayerQueue::trim(uint length) {
@@ -153,7 +192,14 @@ namespace PMP {
         _idLookup.insert(entry->queueID(), entry);
         _queue.enqueue(entry);
 
+        bool firstTrackChange = _firstTrackIndex < 0 && entry->isTrack();
+        if (firstTrackChange)
+            setFirstTrackIndexAndId(_queue.length() - 1, entry->queueID());
+
         emit entryAdded(uint(_queue.size()) - 1, entry->queueID());
+
+        if (firstTrackChange)
+            emitFirstTrackChanged();
     }
 
     void PlayerQueue::insertAtFront(QueueEntry* entry) {
@@ -164,7 +210,14 @@ namespace PMP {
         _idLookup.insert(entry->queueID(), entry);
         _queue.prepend(entry);
 
+        bool firstTrackChange = entry->isTrack();
+        if (firstTrackChange)
+            setFirstTrackIndexAndId(0, entry->queueID());
+
         emit entryAdded(0, entry->queueID());
+
+        if (firstTrackChange)
+            emitFirstTrackChanged();
     }
 
     void PlayerQueue::insertAtIndex(quint32 index, QueueEntry* entry) {
@@ -175,14 +228,36 @@ namespace PMP {
         _idLookup.insert(entry->queueID(), entry);
         _queue.insert(int(index), entry);
 
+        bool firstTrackChange = true;
+        if ((_firstTrackIndex < 0 || uint(_firstTrackIndex) >= index) && entry->isTrack())
+            setFirstTrackIndexAndId(index, entry->queueID());
+        else if (_firstTrackIndex >= 0 && uint(_firstTrackIndex) >= index)
+            _firstTrackIndex++;
+        else
+            firstTrackChange = false;
+
         emit entryAdded(index, entry->queueID());
+
+        if (firstTrackChange)
+            emitFirstTrackChanged();
     }
 
     QueueEntry* PlayerQueue::dequeue() {
         if (_queue.empty()) { return nullptr; }
         QueueEntry* entry = _queue.dequeue();
 
+        bool firstTrackChange = true;
+        if (_firstTrackIndex < 0)
+            firstTrackChange = false;
+        else if (_firstTrackIndex == 0)
+            findFirstTrackBetweenIndices(0, _queue.length(), true);
+        else
+            _firstTrackIndex--;
+
         emit entryRemoved(0, entry->queueID());
+
+        if (firstTrackChange)
+            emitFirstTrackChanged();
 
         return entry;
     }
@@ -201,6 +276,14 @@ namespace PMP {
         quint32 queueID = entry->queueID();
         _queue.removeAt(index);
 
+        bool firstTrackChange = true;
+        if (_firstTrackIndex < 0 || uint(_firstTrackIndex) < index)
+            firstTrackChange = false;
+        else if (uint(_firstTrackIndex) == index)
+            findFirstTrackBetweenIndices(index, _queue.length(), true);
+        else
+            _firstTrackIndex--;
+
         emit entryRemoved(index, queueID);
 
         qDebug() << "deleting QID" << queueID
@@ -209,30 +292,44 @@ namespace PMP {
         _idLookup.remove(queueID);
         delete entry;
 
+        if (firstTrackChange)
+            emitFirstTrackChanged();
+
         return true;
     }
 
-    bool PlayerQueue::move(quint32 queueID, qint16 indexDiff) {
+    bool PlayerQueue::moveById(quint32 queueID, qint16 indexDiff) {
         int index = findIndex(queueID);
         if (index < 0) return false; // not found
 
+        return moveByIndex(index, indexDiff);
+    }
+
+    bool PlayerQueue::moveByIndex(int index, qint16 indexDiff)
+    {
+        if (index < 0 || index >= _queue.length())
+            return false; /* invalid index */
+
         if (indexDiff == 0) return true; /* no-op */
+
+        auto entry = _queue[index];
+        auto queueId = entry->queueID();
 
         /* sanity checks */
         if (indexDiff < 0) {
             /* cannot move beyond first place */
             if (index < -indexDiff) {
-                qDebug() << "Queue::move: cannot move item" << queueID << "upwards"
-                    << -indexDiff << "places because its index is now" << index;
+                qDebug() << "Queue::move: cannot move item" << queueId << "upwards"
+                         << -indexDiff << "places because its index is now" << index;
                 return false;
             }
         }
         else { /* indexDiff > 0 */
             /* cannot move beyond last place */
             if (_queue.size() - indexDiff < index) {
-                qDebug() << "Queue::move: cannot move item" << queueID << "downwards"
-                    << indexDiff << "places because its index is now" << index
-                    << "and the queue only has" << _queue.size() << "items";
+                qDebug() << "Queue::move: cannot move item" << queueId << "downwards"
+                         << indexDiff << "places because its index is now" << index
+                         << "and the queue only has" << _queue.size() << "items";
                 return false;
             }
         }
@@ -240,7 +337,31 @@ namespace PMP {
         int newIndex = index + indexDiff;
         _queue.move(index, newIndex);
 
-        emit entryMoved(index, newIndex, queueID);
+        bool firstTrackChange = true;
+        if (_firstTrackIndex < index && _firstTrackIndex < newIndex)
+            firstTrackChange = false;
+        else if (_firstTrackIndex > index && _firstTrackIndex > newIndex)
+            firstTrackChange = false;
+        /* else if (_firstTrackIndex < 0)  this is already covered by the first if
+            firstTrackChange = false; */
+        else if (newIndex < index) /* -- track moved up */ {
+            if (entry->isTrack())
+                setFirstTrackIndexAndId(newIndex, queueId);
+            else
+                _firstTrackIndex++; /* moved down to make room */
+        }
+        else { /* newIndex > index -- track moved down */
+            if (_firstTrackIndex == index)
+                findFirstTrackBetweenIndices(index, newIndex + 1, true);
+            else
+                _firstTrackIndex--; /* moved up to make room */
+        }
+
+        emit entryMoved(index, newIndex, queueId);
+
+        if (firstTrackChange)
+            emitFirstTrackChanged();
+
         return true;
     }
 
@@ -248,14 +369,10 @@ namespace PMP {
         return _queue.mid(startoffset, maxCount);
     }
 
-    QueueEntry* PlayerQueue::peekFirstTrackEntry(int maxIndex) {
-        for (int i = 0; i <= maxIndex && i < _queue.size(); ++i) {
-            QueueEntry* entry = _queue.at(i);
-            if (entry->isTrack())
-                return entry;
-        }
+    QueueEntry* PlayerQueue::peekFirstTrackEntry() {
+        if (_firstTrackIndex < 0) return nullptr;
 
-        return nullptr;
+        return _queue[_firstTrackIndex];
     }
 
     QueueEntry* PlayerQueue::lookup(quint32 queueID) {

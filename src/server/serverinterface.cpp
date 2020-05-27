@@ -136,7 +136,7 @@ namespace PMP {
         if (!isLoggedIn()) return;
         if (id == 0) return;
 
-        _player->queue().move(id, upDownOffset);
+        _player->queue().moveById(id, upDownOffset);
     }
 
     void ServerInterface::removeQueueEntry(uint id)

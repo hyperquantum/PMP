@@ -48,7 +48,7 @@ namespace PMP {
 
     public Q_SLOTS:
         void setVolume(int volume);
-        void setTrack(QueueEntry* queueEntry);
+        void setTrack(QueueEntry* queueEntry, bool onlyIfPreloaded);
         void play();
         void pause();
         void stop();
@@ -105,7 +105,7 @@ namespace PMP {
 
         Resolver& resolver();
 
-    public slots:
+    public Q_SLOTS:
 
         void playPause();
         void play();
@@ -132,9 +132,9 @@ namespace PMP {
         /*! Emitted when the queue is empty and the current track is finished. */
         void finished();
 
-    private slots:
+    private Q_SLOTS:
         void changeState(ServerPlayerState state);
-        bool startNext(bool stopCurrent, bool playNext);
+
         void instancePlaying(PlayerInstance* instance);
         void instancePaused(PlayerInstance* instance);
         void instancePositionChanged(PlayerInstance* instance, qint64 position);
@@ -144,18 +144,28 @@ namespace PMP {
         void instanceTrackFinished(PlayerInstance* instance);
         void instanceStoppedEarly(PlayerInstance* instance, qint64 position);
 
+        void firstTrackInQueueChanged(int index, uint queueId);
+        void trackPreloaded(uint queueId);
+
     private:
+        void makeSureOneOldInstanceSlotIsFree();
+        void moveCurrentInstanceToOldInstanceSlot();
+        void moveToOldInstanceSlot(PlayerInstance* instance);
+        bool startNext(bool stopCurrent, bool playNext);
         PlayerInstance* createNewPlayerInstance();
-        void prepareNextTrack();
-        bool tryPrepareTrack(QueueEntry* entry);
-        bool tryStartNextTrack(QueueEntry* entry, bool startPlaying);
+        void prepareForFirstTrackFromQueue();
+        bool tryPrepareTrack(PlayerInstance* playerInstance, QueueEntry* entry,
+                             bool onlyIfPreloaded);
+        bool tryStartNextTrack(PlayerInstance* playerInstance, QueueEntry* entry,
+                               bool startPlaying);
         void putInHistoryOrder(QueueEntry* entry);
         void addToHistory(QueueEntry* entry, int permillage, bool hadError, bool hadSeek);
         void performHistoryActions(QSharedPointer<PlayerHistoryEntry> historyEntry);
         static int calcPermillagePlayed(QueueEntry* track, qint64 positionReached,
                                         bool seeked);
 
-        PlayerInstance* _oldInstance;
+        PlayerInstance* _oldInstance1;
+        PlayerInstance* _oldInstance2;
         PlayerInstance* _currentInstance;
         PlayerInstance* _nextInstance;
         Resolver* _resolver;
