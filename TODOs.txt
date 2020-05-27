@@ -35,6 +35,7 @@ TECHNICAL TODO
  * when running an indexation, analyze the most recently created/updated files first
  * large file support (?)
  * try to automate the build procedure on Windows
+ * switch to signed integer types for things like queue indices
 
 
 IDEAS
