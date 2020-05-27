@@ -26,8 +26,8 @@
 #include "generator.h"
 #include "history.h"
 #include "player.h"
+#include "playerqueue.h"
 #include "preloader.h"
-#include "queue.h"
 #include "queueentry.h"
 #include "resolver.h"
 #include "scrobbling.h"
@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
 
     Users users;
     Player player(nullptr, &resolver, defaultVolume);
-    Queue& queue = player.queue();
+    PlayerQueue& queue = player.queue();
     History history(&player);
 
     CollectionMonitor collectionMonitor;

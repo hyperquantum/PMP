@@ -21,7 +21,7 @@
 
 #include "generator.h"
 #include "player.h"
-#include "queue.h"
+#include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
 #include "server.h"
@@ -138,7 +138,7 @@ namespace PMP {
         if (!isLoggedIn()) return;
         if (id == 0) return;
 
-        _player->queue().move(id, upDownOffset);
+        _player->queue().moveById(id, upDownOffset);
     }
 
     void ServerInterface::removeQueueEntry(uint id)

@@ -76,7 +76,7 @@ namespace PMP {
         _player->setVolume(volume);
     }
 
-    void PlayerInstance::setTrack(QueueEntry* queueEntry)
+    void PlayerInstance::setTrack(QueueEntry* queueEntry, bool onlyIfPreloaded)
     {
         auto queueId = queueEntry->queueID();
 
@@ -100,12 +100,19 @@ namespace PMP {
         _preloadedFile = _preloader->getPreloadedCacheFile(queueId);
         QString filename = _preloadedFile.getFilename();
 
-        if (filename.isEmpty()
-                && queueEntry->checkValidFilename(*_resolver, true, &filename))
-        {
-            qWarning() << "QID" << queueId << "was not preloaded; "
-                          "using unpreprocessed file that may be slow to access or "
-                          "may fail to play";
+        if (filename.isEmpty()) {
+            if (onlyIfPreloaded) {
+                qDebug() << "queue ID" << queueId
+                         << "not preloaded yet, will not set media now";
+                return;
+            }
+
+            if (queueEntry->checkValidFilename(*_resolver, true, &filename))
+            {
+                qWarning() << "QID" << queueId << "was not preloaded; "
+                              "using unpreprocessed file that may be slow to access or "
+                              "may fail to play";
+            }
         }
 
         if (!filename.isEmpty()) {
@@ -239,24 +246,35 @@ namespace PMP {
 
     Player::Player(QObject* parent, Resolver* resolver, int defaultVolume)
      : QObject(parent),
-       _oldInstance(nullptr),
+       _oldInstance1(nullptr),
+       _oldInstance2(nullptr),
        _currentInstance(nullptr),
        _nextInstance(nullptr),
        _resolver(resolver),
-       //_player(new QMediaPlayer(this)),
        _queue(resolver), _preloader(nullptr, &_queue, resolver),
        _nowPlaying(nullptr),
        _instanceIdentifier(0),
        _volume(-1),
        _playPosition(0),
-       //_maxPosReachedInCurrent(0),
-       //_seekHappenedInCurrent(false),
        _state(ServerPlayerState::Stopped),
-       //_transitioningToNextTrack(false),
        _userPlayingFor(0)
     {
         auto volume = (defaultVolume >= 0 && defaultVolume <= 100) ? defaultVolume : 75;
         setVolume(volume);
+
+        connect(
+            &_queue, &PlayerQueue::firstTrackChanged,
+            this, &Player::firstTrackInQueueChanged
+        );
+        connect(
+            &_preloader, &Preloader::trackPreloaded,
+            this, &Player::trackPreloaded
+        );
+
+        /* speed up things by creating the player instances at startup */
+        _nextInstance = createNewPlayerInstance();
+        _oldInstance1 = createNewPlayerInstance();
+        _oldInstance2 = createNewPlayerInstance();
     }
 
     int Player::volume() const {
@@ -300,7 +318,7 @@ namespace PMP {
         return _userPlayingFor;
     }
 
-    Queue& Player::queue() {
+    PlayerQueue& Player::queue() {
         return _queue;
     }
 
@@ -401,27 +419,17 @@ namespace PMP {
     bool Player::startNext(bool stopCurrent, bool playNext) {
         qDebug() << "Player::startNext(" << stopCurrent << "," << playNext << ") called";
 
-        /* move the previous old instance out of the way if necessary */
-        if (_oldInstance && _currentInstance) {
-            if (!_nextInstance && _oldInstance->availableForNewTrack()) {
-                qDebug() << "moving previous old player instance to next instance";
-                _nextInstance = _oldInstance;
-            }
-            else {
-                qDebug() << "previous old player instance will be deleted";
-                _oldInstance->deleteAfterStopped();
-            }
-            _oldInstance = nullptr;
-        }
-
+        PlayerInstance* oldCurrentInstance = _currentInstance;
         QueueEntry* oldNowPlaying = _nowPlaying;
         uint oldQueueLength = _queue.length();
 
-        /* current instance becomes old instance */
-        if (_currentInstance) {
-            _oldInstance = _currentInstance;
-            _currentInstance = nullptr;
-        }
+        if (_currentInstance)
+            moveCurrentInstanceToOldInstanceSlot();
+
+        /* Take control of the next instance so it won't be used for preparing the next
+           track as soon as we dequeue the track we want to play right now */
+        PlayerInstance* nextInstance = _nextInstance;
+        _nextInstance = nullptr;
 
         /* find next track to play and start it */
         QueueEntry* nextTrack = nullptr;
@@ -437,7 +445,7 @@ namespace PMP {
             }
 
             putInHistoryOrder(entry);
-            bool ok = tryStartNextTrack(entry, playNext);
+            bool ok = tryStartNextTrack(nextInstance, entry, playNext);
             if (ok) {
                 nextTrack = entry;
                 break;
@@ -450,8 +458,8 @@ namespace PMP {
             }
         }
 
-        if (stopCurrent && _oldInstance) {
-            _oldInstance->stop();
+        if (stopCurrent && oldCurrentInstance) {
+            oldCurrentInstance->stop();
         }
 
         ServerPlayerState newState;
@@ -464,6 +472,9 @@ namespace PMP {
         else {
             /* we stop because we have nothing left to play */
             newState = ServerPlayerState::Stopped;
+
+            /* this instance ended up not being used for playing a track, don't lose it */
+            moveToOldInstanceSlot(nextInstance);
         }
 
         _nowPlaying = nextTrack;
@@ -518,7 +529,7 @@ namespace PMP {
         if (instance != _currentInstance) return;
 
         if (endOfTrackComingUp)
-            prepareNextTrack();
+            prepareForFirstTrackFromQueue();
     }
 
     void Player::instancePlaybackError(PlayerInstance* instance) {
@@ -551,6 +562,67 @@ namespace PMP {
         auto permillage = calcPermillagePlayed(track, position, hadSeek);
 
         addToHistory(instance->track(), permillage, false, hadSeek);
+    }
+
+    void Player::firstTrackInQueueChanged(int index, uint queueId)
+    {
+        if (index < 0) return;
+
+        if (_preloader.havePreloadedFileQuickCheck(queueId))
+            prepareForFirstTrackFromQueue();
+    }
+
+    void Player::trackPreloaded(uint queueId)
+    {
+        if (queueId == _queue.firstTrackQueueId())
+            prepareForFirstTrackFromQueue();
+    }
+
+    void Player::makeSureOneOldInstanceSlotIsFree()
+    {
+        if (!_oldInstance1 || !_oldInstance2)
+            return;
+
+        if (!_nextInstance && _oldInstance1->availableForNewTrack()) {
+            qDebug() << "moving old player instance 1 to next instance";
+            _nextInstance = _oldInstance1;
+            _oldInstance1 = nullptr;
+        }
+        else if (!_nextInstance && _oldInstance2->availableForNewTrack()) {
+            qDebug() << "moving old player instance 2 to next instance";
+            _nextInstance = _oldInstance2;
+            _oldInstance2 = nullptr;
+        }
+        else {
+            qDebug() << "old player instance 2 will be deleted";
+            _oldInstance2->deleteAfterStopped();
+            _oldInstance2 = nullptr;
+        }
+    }
+
+    void Player::moveCurrentInstanceToOldInstanceSlot()
+    {
+        moveToOldInstanceSlot(_currentInstance);
+        _currentInstance = nullptr;
+    }
+
+    void Player::moveToOldInstanceSlot(PlayerInstance* instance)
+    {
+        if (!instance)
+            return;
+
+        makeSureOneOldInstanceSlotIsFree();
+
+        if (!_oldInstance1) {
+            _oldInstance1 = instance;
+        }
+        else if (!_oldInstance2) {
+            _oldInstance2 = instance;
+        }
+        else {
+            qWarning() << "will have to delete instance because no slot is free";
+            instance->deleteAfterStopped();
+        }
     }
 
     PlayerInstance* Player::createNewPlayerInstance()
@@ -594,59 +666,64 @@ namespace PMP {
         return instance;
     }
 
-    void Player::prepareNextTrack()
+    void Player::prepareForFirstTrackFromQueue()
     {
-        QueueEntry* nextTrack = _queue.peekFirstTrackEntry(4);
-        if (!nextTrack) return; /* no next track to prepare for now */
-
-        tryPrepareTrack(nextTrack); /* ignore the result */
-    }
-
-    bool Player::tryPrepareTrack(QueueEntry* entry)
-    {
-        if (!entry || !entry->isTrack())
-            return false; /* argument should be a track */
+        QueueEntry* nextTrack = _queue.peekFirstTrackEntry();
+        if (!nextTrack || !nextTrack->isTrack())
+            return; /* no next track to prepare for now */
 
         if (!_nextInstance) {
-            if (_oldInstance && _oldInstance->availableForNewTrack()) {
-                _nextInstance = _oldInstance;
-                _oldInstance = nullptr;
+            if (_oldInstance1 && _oldInstance1->availableForNewTrack()) {
+                _nextInstance = _oldInstance1;
+                _oldInstance1 = nullptr;
+            }
+            else if (_oldInstance2 && _oldInstance2->availableForNewTrack()) {
+                _nextInstance = _oldInstance2;
+                _oldInstance2 = nullptr;
             }
             else {
                 _nextInstance = createNewPlayerInstance();
             }
         }
-        else if (!_nextInstance->availableForNewTrack()) {
-            qWarning() << "next instance not available for new track!";
-            return false;
-        }
-        else if (_nextInstance->track() == entry) {
-            return true; /* already prepared */
-        }
 
-        _nextInstance->setTrack(entry);
-        return _nextInstance->trackSetSuccessfully();
+        tryPrepareTrack(_nextInstance, nextTrack, true); /* ignore the result */
     }
 
-    bool Player::tryStartNextTrack(QueueEntry* entry, bool startPlaying)
+    bool Player::tryPrepareTrack(PlayerInstance* playerInstance, QueueEntry* entry,
+                                 bool onlyIfPreloaded)
+    {
+        if (!entry || !entry->isTrack())
+            return false; /* argument should be a track */
+
+        if (!playerInstance->availableForNewTrack()) {
+            qWarning() << "instance not available for new track!";
+            return false;
+        }
+
+        if (playerInstance->track() == entry && playerInstance->trackSetSuccessfully())
+            return true; /* already prepared */
+
+        playerInstance->setTrack(entry, onlyIfPreloaded);
+        return playerInstance->trackSetSuccessfully();
+    }
+
+    bool Player::tryStartNextTrack(PlayerInstance* playerInstance, QueueEntry* entry,
+                                   bool startPlaying)
     {
         if (!entry || !entry->isTrack())
             return false; /* argument should be a track */
 
         /* make sure we are prepared */
-        bool prepared = tryPrepareTrack(entry);
+        bool prepared = tryPrepareTrack(playerInstance, entry, false);
         if (!prepared)
             return false; /* preparation went wrong */
 
-        _currentInstance = _nextInstance;
-        _nextInstance = nullptr;
-
+        _currentInstance = playerInstance;
         _playPosition = 0;
-
-        _currentInstance->setVolume(_volume);
+        playerInstance->setVolume(_volume);
 
         if (startPlaying)
-            _currentInstance->play();
+            playerInstance->play();
 
         return true;
     }

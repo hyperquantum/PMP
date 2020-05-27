@@ -29,7 +29,7 @@
 #include "generator.h"
 #include "history.h"
 #include "player.h"
-#include "queue.h"
+#include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
 #include "scrobbling.h"
@@ -157,15 +157,15 @@ namespace PMP {
         );
 
         connect(
-            queue, &Queue::entryRemoved,
+            queue, &PlayerQueue::entryRemoved,
             this, &ConnectedClient::queueEntryRemoved
         );
         connect(
-            queue, &Queue::entryAdded,
+            queue, &PlayerQueue::entryAdded,
             this, &ConnectedClient::queueEntryAdded
         );
         connect(
-            queue, &Queue::entryMoved,
+            queue, &PlayerQueue::entryMoved,
             this, &ConnectedClient::queueEntryMoved
         );
 
@@ -718,7 +718,7 @@ namespace PMP {
     }
 
     void ConnectedClient::sendQueueContentMessage(quint32 startOffset, quint8 length) {
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
         uint queueLength = queue.length();
 
         if (startOffset >= queueLength) {
@@ -747,7 +747,7 @@ namespace PMP {
     }
 
     void ConnectedClient::sendQueueHistoryMessage(int limit) {
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
 
         /* keep a reasonable limit */
         if (limit <= 0 || limit > 255) { limit = 255; }
@@ -894,7 +894,7 @@ namespace PMP {
         NetworkUtil::append2Bytes(message, NetworkProtocol::BulkTrackInfoMessage);
         NetworkUtil::append2Bytes(message, (uint)queueIDs.size());
 
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
 
         /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
 
@@ -958,7 +958,7 @@ namespace PMP {
         NetworkUtil::append2Bytes(message, NetworkProtocol::BulkQueueEntryHashMessage);
         NetworkUtil::append2Bytes(message, (uint)queueIDs.size());
 
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
 
         /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
 
@@ -1542,7 +1542,7 @@ namespace PMP {
     }
 
     void ConnectedClient::sendTextualQueueInfo() {
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
         QList<QueueEntry*> queueContent = queue.entries(0, 10);
 
         QString command =
@@ -2287,7 +2287,7 @@ namespace PMP {
 
         qDebug() << " request contains hash:" << hash.dumpToString();
 
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
         auto entry = new QueueEntry(&queue, hash);
 
         _trackAdditionConfirmationsPending[entry->queueID()] = clientReference;

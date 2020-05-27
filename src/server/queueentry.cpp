@@ -19,7 +19,7 @@
 
 #include "queueentry.h"
 
-#include "queue.h"
+#include "playerqueue.h"
 #include "resolver.h"
 
 #include <QFileInfo>
@@ -27,7 +27,7 @@
 
 namespace PMP {
 
-    QueueEntry::QueueEntry(Queue* parent, QString const& filename)
+    QueueEntry::QueueEntry(PlayerQueue* parent, QString const& filename)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
        _filename(filename), _haveFilename(true),
@@ -36,7 +36,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, FileHash hash, TagData const& tags)
+    QueueEntry::QueueEntry(PlayerQueue* parent, FileHash hash, TagData const& tags)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
        _hash(hash), _haveFilename(false),
@@ -46,7 +46,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, FileHash hash)
+    QueueEntry::QueueEntry(PlayerQueue* parent, FileHash hash)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
        _hash(hash), _haveFilename(false),
@@ -56,7 +56,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, QueueEntry const* existing)
+    QueueEntry::QueueEntry(PlayerQueue* parent, QueueEntry const* existing)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(existing->_kind),
        _hash(existing->_hash), _audioInfo(existing->_audioInfo),
@@ -68,7 +68,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, QueueEntryKind kind)
+    QueueEntry::QueueEntry(PlayerQueue* parent, QueueEntryKind kind)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(kind),
        _haveFilename(false), _fetchedTagData(false),
@@ -77,7 +77,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry* QueueEntry::createBreak(Queue* parent) {
+    QueueEntry* QueueEntry::createBreak(PlayerQueue* parent) {
         return new QueueEntry(parent, QueueEntryKind::Break);
     }
 

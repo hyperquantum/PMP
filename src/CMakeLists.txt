@@ -49,8 +49,8 @@ set(PMP_SERVER_SOURCES
     server/lastfmscrobblingbackend.cpp
     server/lastfmscrobblingdataprovider.cpp
     server/player.cpp
+    server/playerqueue.cpp
     server/preloader.cpp
-    server/queue.cpp
     server/queueentry.cpp
     server/resolver.cpp
     server/scrobbler.cpp
@@ -77,8 +77,8 @@ set(PMP_SERVER_HEADERS
     server/history.h
     server/lastfmscrobblingbackend.h
     server/player.h
+    server/playerqueue.h
     server/preloader.h
-    server/queue.h
     server/queueentry.h
     server/resolver.h
     server/scrobbler.h

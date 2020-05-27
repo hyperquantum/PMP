@@ -33,7 +33,7 @@
 
 namespace PMP {
 
-    class Queue;
+    class PlayerQueue;
     class Resolver;
 
     class TrackPreloadTask : public QObject, public QRunnable {
@@ -74,26 +74,35 @@ namespace PMP {
         QString _filename;
     };
 
+    class QueueEntry;
+
     class Preloader : public QObject {
         Q_OBJECT
     private:
         class PreloadTrack;
 
     public:
-        Preloader(QObject* parent, Queue* queue, Resolver* resolver);
+        Preloader(QObject* parent, PlayerQueue* queue, Resolver* resolver);
 
         ~Preloader();
 
+        bool havePreloadedFileQuickCheck(uint queueId);
         PreloadedFile getPreloadedCacheFile(uint queueID);
 
         static void cleanupOldFiles();
+
+    Q_SIGNALS:
+        void trackPreloaded(uint queueId);
 
     private slots:
         void queueEntryAdded(quint32 offset, quint32 queueID);
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
+        void firstTrackInQueueChanged(int index, uint queueId);
 
+        void scheduleFirstTrackCheck();
         void scheduleCheckForTracksToPreload();
+        void checkFirstTrack();
         void checkForTracksToPreload();
         void scheduleCheckForCacheEntriesToDelete();
         void checkForCacheExpiration();
@@ -106,18 +115,21 @@ namespace PMP {
     private:
         static const int PRELOAD_RANGE = 5;
 
+        void checkToPreloadTrack(QueueEntry* entry);
+
         void doLock(uint queueId);
         void doUnlock(uint queueId);
 
         QHash<uint, uint> _lockedQueueIds;
-        uint _jobsRunning;
-        bool _preloadCheckTimerRunning;
-        bool _cacheExpirationCheckTimerRunning;
-        Queue* _queue;
+        PlayerQueue* _queue;
         Resolver* _resolver;
         QHash<uint, PreloadTrack*> _tracksByQueueID;
         QList<uint> _tracksToPreload;
         QList<uint> _tracksRemoved;
+        uint _jobsRunning;
+        bool _firstTrackCheckTimerRunning;
+        bool _preloadCheckTimerRunning;
+        bool _cacheExpirationCheckTimerRunning;
     };
 }
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,14 +32,14 @@
 namespace PMP {
 
     class History;
-    class Queue;
+    class PlayerQueue;
     class QueueEntry;
     class Resolver;
 
     class Generator : public QObject {
         Q_OBJECT
     public:
-        Generator(Queue* queue, Resolver* resolver, History* history);
+        Generator(PlayerQueue* queue, Resolver* resolver, History* history);
 
         bool enabled() const;
         bool waveActive() const;
@@ -100,7 +100,7 @@ namespace PMP {
         QSet<FileHash> _hashesInSource;
         QSet<FileHash> _hashesSpent;
         QueueEntry const* _currentTrack;
-        Queue* _queue;
+        PlayerQueue* _queue;
         Resolver* _resolver;
         History* _history;
         QQueue<Candidate*> _upcoming;

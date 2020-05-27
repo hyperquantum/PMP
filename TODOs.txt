@@ -20,6 +20,7 @@ KNOWN BUGS
  * server crashes when a server shutdown is performed while a full indexation is running
  * GUI remote: searching the music collection for "e" does not return results having "ë"
  * a "skip" operation should not affect the current track's score if performed by another player
+ * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
 
 
 PERFORMANCE ISSUES
@@ -34,6 +35,7 @@ TECHNICAL TODO
  * when running an indexation, analyze the most recently created/updated files first
  * large file support (?)
  * try to automate the build procedure on Windows
+ * switch to signed integer types for things like queue indices
 
 
 IDEAS

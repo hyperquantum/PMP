@@ -39,14 +39,14 @@ namespace PMP {
     class QueueEntry;
     class Resolver;
 
-    class Queue : public QObject {
+    class PlayerQueue : public QObject {
         Q_OBJECT
     public:
         enum HistoryType {
             Played, Skipped, Error
         };
 
-        Queue(Resolver* resolver);
+        PlayerQueue(Resolver* resolver);
 
         bool checkPotentialRepetitionByAdd(FileHash hash,
                                            int repetitionAvoidanceSeconds,
@@ -57,7 +57,10 @@ namespace PMP {
         bool empty() const;
         uint length() const;
 
-        QueueEntry* peekFirstTrackEntry(int maxIndex);
+        int firstTrackIndex() const { return _firstTrackIndex; }
+        uint firstTrackQueueId() const { return _firstTrackQueueId; }
+
+        QueueEntry* peekFirstTrackEntry();
         QueueEntry* lookup(quint32 queueID);
         int findIndex(quint32 queueID);
         QueueEntry* entryAtIndex(int index);
@@ -66,7 +69,7 @@ namespace PMP {
         QList<QSharedPointer<PlayerHistoryEntry> > recentHistory(int limit);
 
     public slots:
-        void clear(bool doNotifications);
+        //void clear(bool doNotifications);
         void trim(uint length);
 
         void enqueue(QueueEntry* entry);
@@ -83,7 +86,8 @@ namespace PMP {
         QueueEntry* dequeue();
         bool remove(quint32 queueID);
         bool removeAtIndex(uint index);
-        bool move(quint32 queueID, qint16 indexDiff);
+        bool moveById(quint32 queueID, qint16 indexDiff);
+        bool moveByIndex(int index, qint16 indexDiff);
 
         void addToHistory(QSharedPointer<PlayerHistoryEntry> entry);
 
@@ -92,11 +96,20 @@ namespace PMP {
         void entryRemoved(quint32 offset, quint32 queueID);
         void entryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
 
+        void firstTrackChanged(int index, uint queueId);
+
     private slots:
         void checkFrontOfQueue();
 
     private:
+        void resetFirstTrack();
+        void setFirstTrackIndexAndId(int index, uint queueId);
+        void findFirstTrackBetweenIndices(int start, int end, bool resetIfNoneFound);
+        void emitFirstTrackChanged();
+
         uint _nextQueueID;
+        int _firstTrackIndex;
+        uint _firstTrackQueueId;
         QHash<quint32, QueueEntry*> _idLookup;
         QQueue<QueueEntry*> _queue;
         QQueue<QSharedPointer<PlayerHistoryEntry>> _history;

@@ -21,7 +21,7 @@
 
 #include "common/fileanalyzer.h"
 
-#include "queue.h"
+#include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
 
@@ -221,15 +221,21 @@ namespace PMP {
 
     /* ========================== Preloader ========================== */
 
-    Preloader::Preloader(QObject* parent, Queue* queue, Resolver* resolver)
+    Preloader::Preloader(QObject* parent, PlayerQueue* queue, Resolver* resolver)
      : QObject(parent),
+       _queue(queue), _resolver(resolver),
        _jobsRunning(0),
-       _preloadCheckTimerRunning(false), _cacheExpirationCheckTimerRunning(false),
-       _queue(queue), _resolver(resolver)
+       _firstTrackCheckTimerRunning(false),
+       _preloadCheckTimerRunning(false),
+       _cacheExpirationCheckTimerRunning(false)
     {
-        connect(queue, &Queue::entryAdded, this, &Preloader::queueEntryAdded);
-        connect(queue, &Queue::entryRemoved, this, &Preloader::queueEntryRemoved);
-        connect(queue, &Queue::entryMoved, this, &Preloader::queueEntryMoved);
+        connect(queue, &PlayerQueue::entryAdded, this, &Preloader::queueEntryAdded);
+        connect(queue, &PlayerQueue::entryRemoved, this, &Preloader::queueEntryRemoved);
+        connect(queue, &PlayerQueue::entryMoved, this, &Preloader::queueEntryMoved);
+        connect(
+            queue, &PlayerQueue::firstTrackChanged,
+            this, &Preloader::firstTrackInQueueChanged
+        );
 
         scheduleCheckForTracksToPreload();
     }
@@ -241,6 +247,14 @@ namespace PMP {
 
             QFile::remove(track->getCachedFile());
         }
+    }
+
+    bool Preloader::havePreloadedFileQuickCheck(uint queueId)
+    {
+        auto track = _tracksByQueueID.value(queueId, nullptr);
+        if (!track) return false;
+
+        return track->status() == PreloadTrack::Preloaded;
     }
 
     PreloadedFile Preloader::getPreloadedCacheFile(uint queueID) {
@@ -317,6 +331,23 @@ namespace PMP {
         scheduleCheckForTracksToPreload();
     }
 
+    void Preloader::firstTrackInQueueChanged(int index, uint queueId)
+    {
+        Q_UNUSED(queueId)
+
+        if (index >= 0)
+            scheduleFirstTrackCheck();
+    }
+
+    void Preloader::scheduleFirstTrackCheck()
+    {
+        if (_firstTrackCheckTimerRunning) return;
+
+        _firstTrackCheckTimerRunning = true;
+        qDebug() << "first track check triggered";
+        QTimer::singleShot(25, this, &Preloader::checkFirstTrack);
+    }
+
     void Preloader::scheduleCheckForTracksToPreload() {
         if (_preloadCheckTimerRunning) return;
 
@@ -325,42 +356,59 @@ namespace PMP {
         QTimer::singleShot(250, this, &Preloader::checkForTracksToPreload);
     }
 
+    void Preloader::checkFirstTrack()
+    {
+        _firstTrackCheckTimerRunning = false;
+        qDebug() << "checking if first track needs preloading";
+
+        auto firstTrack = _queue->peekFirstTrackEntry();
+        if (!firstTrack) return;
+
+        checkToPreloadTrack(firstTrack);
+        checkForJobsToStart();
+    }
+
     void Preloader::checkForTracksToPreload() {
         _preloadCheckTimerRunning = false;
         qDebug() << "running preload check";
 
         QList<QueueEntry*> queueEntries = _queue->entries(0, PRELOAD_RANGE);
         Q_FOREACH(QueueEntry* entry, queueEntries) {
-            const FileHash* hash = entry->hash();
-            const QString* filename = entry->filename();
-            if (!hash && !filename) continue;
-
-            auto id = entry->queueID();
-            auto track = _tracksByQueueID.value(id, nullptr);
-
-            if (track && track->status() == PreloadTrack::Preloaded) {
-                if (QFileInfo::exists(track->getCachedFile()))
-                    continue; /* preloaded file is present */
-
-                /* file has gone missing (it was in a TEMP folder after all) */
-                qDebug() << "cached file has gone missing; QID:" << id;
-                _tracksByQueueID.remove(id);
-                delete track;
-                track = nullptr;
-            }
-
-            if (track) continue;
-
-            qDebug() << "putting QID" << id << "on the list for preloading";
-
-            track =
-                new PreloadTrack(hash ? *hash : FileHash(), filename ? *filename : "");
-
-            _tracksByQueueID.insert(id, track);
-            _tracksToPreload.append(id);
+            checkToPreloadTrack(entry);
         }
 
         checkForJobsToStart();
+    }
+
+    void Preloader::checkToPreloadTrack(QueueEntry* entry)
+    {
+        const FileHash* hash = entry->hash();
+        const QString* filename = entry->filename();
+        if (!hash && !filename) return;
+
+        auto id = entry->queueID();
+        auto track = _tracksByQueueID.value(id, nullptr);
+
+        if (track && track->status() == PreloadTrack::Preloaded) {
+            if (QFileInfo::exists(track->getCachedFile()))
+                return; /* preloaded file is present */
+
+            /* file has gone missing (it was in a TEMP folder after all) */
+            qDebug() << "cached file has gone missing for queue ID" << id;
+            _tracksByQueueID.remove(id);
+            delete track;
+            track = nullptr;
+        }
+
+        if (track) return;
+
+        qDebug() << "putting queue ID" << id << "on the list for preloading";
+
+        track =
+            new PreloadTrack(hash ? *hash : FileHash(), filename ? *filename : "");
+
+        _tracksByQueueID.insert(id, track);
+        _tracksToPreload.append(id);
     }
 
     void Preloader::checkForJobsToStart() {
@@ -498,6 +546,8 @@ namespace PMP {
 
         checkForJobsToStart();
         scheduleCheckForCacheEntriesToDelete();
+
+        Q_EMIT trackPreloaded(queueID);
     }
 
 }
