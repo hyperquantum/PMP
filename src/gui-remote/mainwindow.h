@@ -22,6 +22,9 @@
 
 #include "common/serverhealthstatus.h"
 
+#include "common/scrobblerstatus.h"
+#include "common/tribool.h"
+
 #include <QAbstractSocket>
 #include <QMainWindow>
 
@@ -83,6 +86,7 @@ namespace PMP {
         void createMenus();
         void createStatusbar();
         void updateRightStatus();
+        void updateScrobblingStatus();
         void setLeftStatus(int intervalMs, QString text);
         void showUserAccountPicker();
         void showLoginWidget(QString login);
@@ -90,6 +94,7 @@ namespace PMP {
 
         QLabel* _leftStatus;
         QLabel* _rightStatus;
+        QLabel* _scrobblingStatusLabel;
         QTimer* _leftStatusTimer;
 
         ConnectionWidget* _connectionWidget;
@@ -114,6 +119,9 @@ namespace PMP {
         QMenu* _viewMenu;
 
         PowerManagement* _powerManagement;
+
+        ScrobblerStatus _lastFmStatus;
+        TriBool _lastFmEnabled;
     };
 }
 #endif

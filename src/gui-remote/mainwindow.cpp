@@ -53,7 +53,8 @@ namespace PMP {
        _connection(nullptr), _serverInterface(nullptr),
        _userPickerWidget(nullptr), _loginWidget(nullptr), _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
-       _powerManagement(new PowerManagement(this))
+       _powerManagement(new PowerManagement(this)),
+       _lastFmStatus(ScrobblerStatus::Unknown)
     {
         setWindowTitle(
             QString(tr("Party Music Player ")) + Util::EnDash + tr(" Remote")
@@ -173,9 +174,13 @@ namespace PMP {
         _leftStatus->setFrameStyle(QFrame::Panel | QFrame::Sunken);
         _rightStatus = new QLabel("", this);
         _rightStatus->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+        _scrobblingStatusLabel = new QLabel("", this);
+        _scrobblingStatusLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+        _scrobblingStatusLabel->setVisible(false);
 
         statusBar()->addPermanentWidget(_leftStatus, 1);
         statusBar()->addPermanentWidget(_rightStatus, 1);
+        statusBar()->addPermanentWidget(_scrobblingStatusLabel, 0);
 
         connect(
             _leftStatusTimer, &QTimer::timeout, this, &MainWindow::onLeftStatusTimeout
@@ -274,6 +279,41 @@ namespace PMP {
                 QString(tr("Logged in as %1.")).arg(_connection->userLoggedInName())
             );
         }
+    }
+
+    void MainWindow::updateScrobblingStatus()
+    {
+        _lastFmEnabledAction->setChecked(_lastFmEnabled.isTrue());
+        _lastFmEnabledAction->setEnabled(true);
+
+        if (!_lastFmEnabled.isTrue()) {
+            _scrobblingStatusLabel->setVisible(false);
+            return;
+        }
+
+        switch (_lastFmStatus) {
+        case ScrobblerStatus::Unknown:
+            _scrobblingStatusLabel->setText(tr("Last.fm status: unknown"));
+            break;
+        case ScrobblerStatus::Green:
+            _scrobblingStatusLabel->setText(tr("Last.fm status: good"));
+            break;
+        case ScrobblerStatus::Yellow:
+            _scrobblingStatusLabel->setText(tr("Last.fm status: trying..."));
+            break;
+        case ScrobblerStatus::Red:
+            _scrobblingStatusLabel->setText(tr("Last.fm status: BROKEN"));
+            break;
+        case ScrobblerStatus::WaitingForUserCredentials:
+            _scrobblingStatusLabel->setText(tr("Last.fm status: NEED LOGIN"));
+            break;
+        default:
+            qWarning() << "Scrobbler status not recognized:" << _lastFmStatus;
+            _scrobblingStatusLabel->setText(tr("Last.fm status: unknown"));
+            break;
+        }
+
+        _scrobblingStatusLabel->setVisible(true);
     }
 
     void MainWindow::setLeftStatus(int intervalMs, QString text) {
@@ -569,12 +609,13 @@ namespace PMP {
         connect(
             _connection, &ServerConnection::scrobblingProviderInfoReceived,
             this,
-            [this](ScrobblingProvider provider, ScrobblerStatus, bool enabled) {
+            [this](ScrobblingProvider provider, ScrobblerStatus status, bool enabled) {
                 if (provider != ScrobblingProvider::LastFm)
                     return;
 
-                _lastFmEnabledAction->setChecked(enabled);
-                _lastFmEnabledAction->setEnabled(true);
+                _lastFmStatus = status;
+                _lastFmEnabled = enabled;
+                updateScrobblingStatus();
             }
         );
 
@@ -585,8 +626,20 @@ namespace PMP {
                 if (provider != ScrobblingProvider::LastFm)
                     return;
 
-                _lastFmEnabledAction->setChecked(enabled);
-                _lastFmEnabledAction->setEnabled(true);
+                _lastFmEnabled = enabled;
+                updateScrobblingStatus();
+            }
+        );
+
+        connect(
+            _connection, &ServerConnection::scrobblerStatusChanged,
+            this,
+            [this](ScrobblingProvider provider, ScrobblerStatus status) {
+                if (provider != ScrobblingProvider::LastFm)
+                    return;
+
+                _lastFmStatus = status;
+                updateScrobblingStatus();
             }
         );
 
