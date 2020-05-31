@@ -22,6 +22,7 @@
 #include "queueentry.h"
 #include "resolver.h"
 
+#include <QAudio>
 #include <QtDebug>
 #include <QtGlobal>
 
@@ -68,7 +69,13 @@ namespace PMP {
     {
         qDebug() << "PlayerInstance" << _identifier
                  << " setvolume(" << volume << ") called";
-        _player->setVolume(volume);
+
+        qreal linearVolume =
+                QAudio::convertVolume(volume / qreal(100.0),
+                                      QAudio::LogarithmicVolumeScale,
+                                      QAudio::LinearVolumeScale);
+
+        _player->setVolume(qRound(linearVolume * 100));
     }
 
     void PlayerInstance::setTrack(QueueEntry* queueEntry, bool onlyIfPreloaded)
