@@ -133,7 +133,7 @@ namespace PMP {
         void finished();
 
     private Q_SLOTS:
-        void changeState(ServerPlayerState state);
+        void changeStateTo(ServerPlayerState state);
 
         void instancePlaying(PlayerInstance* instance);
         void instancePaused(PlayerInstance* instance);

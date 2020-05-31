@@ -291,7 +291,7 @@ namespace PMP {
         return _state;
     }
 
-    void Player::changeState(ServerPlayerState state) {
+    void Player::changeStateTo(ServerPlayerState state) {
         if (_state == state) return;
 
         qDebug() << "Player: state changed from" << int(_state) << "to" << int(state);
@@ -341,7 +341,7 @@ namespace PMP {
             case ServerPlayerState::Paused:
                 if (_currentInstance) {
                     _currentInstance->play(); /* resume paused track */
-                    changeState(ServerPlayerState::Playing);
+                    changeStateTo(ServerPlayerState::Playing);
                 }
                 break;
             case ServerPlayerState::Playing:
@@ -357,7 +357,7 @@ namespace PMP {
             case ServerPlayerState::Playing:
                 if (_currentInstance) {
                     _currentInstance->pause();
-                    changeState(ServerPlayerState::Paused);
+                    changeStateTo(ServerPlayerState::Paused);
                 }
                 break;
         }
@@ -478,7 +478,7 @@ namespace PMP {
         if (oldNowPlaying || nextTrack)
             Q_EMIT currentTrackChanged(nextTrack);
 
-        changeState(newState);
+        changeStateTo(newState);
 
         if (!nextTrack && _queue.empty() && oldQueueLength > 0) {
             qDebug() << "queue is finished, nothing left to play";
@@ -491,13 +491,13 @@ namespace PMP {
     void Player::instancePlaying(PlayerInstance* instance) {
         if (instance != _currentInstance) return;
 
-        changeState(ServerPlayerState::Playing);
+        changeStateTo(ServerPlayerState::Playing);
     }
 
     void Player::instancePaused(PlayerInstance* instance) {
         if (instance != _currentInstance) return;
 
-        changeState(ServerPlayerState::Paused);
+        changeStateTo(ServerPlayerState::Paused);
     }
 
     void Player::instancePositionChanged(PlayerInstance* instance, qint64 position) {
