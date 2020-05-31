@@ -15,6 +15,7 @@ KNOWN BUGS
  * GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
  * GUI remote: after a breakpoint is hit, track length and play position are not cleared
  * hash calculation is wrong for MP3 files containing an APE tag
+ * the cache of preloaded tracks should be deleted at server exit
  * preloaded tracks are sometimes deleted before they are used because they are old
  * player fails to play preloaded entries of which the file has been deleted already
  * server crashes when a server shutdown is performed while a full indexation is running
@@ -63,6 +64,7 @@ IDEAS
  * save the contents of the queue on server shutdown and restore it at the next server startup
  * 'play again next' action for the song that is currently playing
  * ability to insert a breakpoint directly before/after any entry in the queue
+ * timer feature to make playback stop at or near a specified clock time
 
 
 USER FRIENDLINESS

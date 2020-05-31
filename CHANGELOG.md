@@ -7,13 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 - Server now sends a notification to the client when it detects that a track has disappeared or reappeared.
-- Option to prevent the display from being turned off after a period of user inactivity. (Windows-only for now)
+- Option to prevent the display from being turned off after a period of user inactivity. Windows-only for now.
 - Music collection view: track highlighting.
 
 ### Changed
+- Volume control now uses a logarithmic scale.
 - Full indexation will now notice when tracks have disappeared from their previously known location.
-- PMP now requires at least Qt version 5.8.
-- PMP now requires a C++14 compiler
+- Faster transitions between subsequent tracks.
+- Naming of log files was changed a bit to allow for better sorting.
+- Log files now start with a line that contains the PMP version number.
+- Timestamps in log files now have millisecond precision.
+- PMP now requires a C++14 compiler.
+- PMP now requires Qt 5.8 or later.
 
 ### Fixed
 - Tracks were sometimes wrongly marked as unavailable in the client.
