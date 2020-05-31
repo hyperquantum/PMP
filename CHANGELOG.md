@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Log files now start with a line that contains the PMP version number.
 - Timestamps in log files now have millisecond precision.
 - PMP now requires a C++14 compiler.
+- PMP now requires Qt 5.8 or later.
 
 ### Fixed
 - Tracks were sometimes wrongly marked as unavailable in the client.
