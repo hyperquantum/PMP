@@ -72,7 +72,7 @@ namespace PMP {
 
     private:
         TriBool shouldHighlightBasedOnScore(CollectionTrackInfo const& track,
-                                        std::function<TriBool(int)> scoreEvaluator) const;
+                              std::function<TriBool(int)> scorePermillageEvaluator) const;
 
         TriBool shouldHighlightBasedOnHeardDate(CollectionTrackInfo const& track,
                                    std::function<TriBool(QDateTime)> dateEvaluator) const;

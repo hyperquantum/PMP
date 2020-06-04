@@ -49,22 +49,22 @@ namespace PMP {
             }
             case TrackHighlightMode::WithoutScore:
             {
-                auto evaluator = [](int score) { return score < 0; };
+                auto evaluator = [](int permillage) { return permillage < 0; };
                 return shouldHighlightBasedOnScore(track, evaluator);
             }
             case TrackHighlightMode::ScoreAtLeast85:
             {
-                auto evaluator = [](int score) { return score >= 85; };
+                auto evaluator = [](int permillage) { return permillage >= 850; };
                 return shouldHighlightBasedOnScore(track, evaluator);
             }
             case TrackHighlightMode::ScoreAtLeast90:
             {
-                auto evaluator = [](int score) { return score >= 90; };
+                auto evaluator = [](int permillage) { return permillage >= 900; };
                 return shouldHighlightBasedOnScore(track, evaluator);
             }
             case TrackHighlightMode::ScoreAtLeast95:
             {
-                auto evaluator = [](int score) { return score >= 95; };
+                auto evaluator = [](int permillage) { return permillage >= 950; };
                 return shouldHighlightBasedOnScore(track, evaluator);
             }
             case TrackHighlightMode::LengthMaximumOneMinute:
@@ -80,8 +80,8 @@ namespace PMP {
     }
 
     TriBool TrackHighlighter::shouldHighlightBasedOnScore(
-                                         CollectionTrackInfo const& track,
-                                         std::function<TriBool(int)> scoreEvaluator) const
+                               CollectionTrackInfo const& track,
+                               std::function<TriBool(int)> scorePermillageEvaluator) const
     {
         if (!_userDataFetcher || !_haveUserId) return TriBool();
 
@@ -91,7 +91,7 @@ namespace PMP {
         if (!hashDataForUser || !hashDataForUser->scoreReceived)
             return TriBool();
 
-        return scoreEvaluator(hashDataForUser->score);
+        return scorePermillageEvaluator(hashDataForUser->scorePermillage);
     }
 
     TriBool TrackHighlighter::shouldHighlightBasedOnHeardDate(
