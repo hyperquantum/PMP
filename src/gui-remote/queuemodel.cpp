@@ -190,7 +190,7 @@ namespace PMP {
                         if (!hashData || !hashData->scoreReceived)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
-                        if (hashData->score >= 0)
+                        if (hashData->scorePermillage >= 0)
                             return Qt::AlignRight + Qt::AlignVCenter;
                         else
                             return Qt::AlignLeft + Qt::AlignVCenter;
@@ -249,10 +249,10 @@ namespace PMP {
                 if (!hashData || !hashData->scoreReceived)
                     return QVariant();
 
-                if (hashData->score < 0)
+                if (hashData->scorePermillage < 0)
                     return tr("N/A");
 
-                return hashData->score;
+                return hashData->scorePermillage;
             }
         }
 

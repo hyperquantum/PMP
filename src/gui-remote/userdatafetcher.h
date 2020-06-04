@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,7 +47,7 @@ namespace PMP {
     private slots:
         //void connected();
         void receivedHashUserData(FileHash hash, quint32 userId,
-                                  QDateTime previouslyHeard, qint16 score);
+                                  QDateTime previouslyHeard, qint16 scorePermillage);
         void sendPendingRequests();
         void sendPendingNotifications();
 
@@ -74,7 +74,7 @@ namespace PMP {
         QDateTime previouslyHeard;
 
         bool scoreReceived;
-        qint16 score;
+        qint16 scorePermillage;
     };
 
     class UserDataFetcher::UserData {

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -59,14 +59,15 @@ namespace PMP {
     }
 
     void UserDataFetcher::receivedHashUserData(FileHash hash, quint32 userId,
-                                               QDateTime previouslyHeard, qint16 score)
+                                               QDateTime previouslyHeard,
+                                               qint16 scorePermillage)
     {
         UserData* userData = getOrCreateUserData(userId);
 
         HashData& hashData = userData->getOrCreateHash(hash);
         hashData.previouslyHeard = previouslyHeard;
         hashData.previouslyHeardReceived = true;
-        hashData.score = score;
+        hashData.scorePermillage = scorePermillage;
         hashData.scoreReceived = true;
 
         bool first = _pendingNotificationsUsers.isEmpty();
