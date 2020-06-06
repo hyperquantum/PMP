@@ -19,7 +19,7 @@
 
 #include "userdatafetcher.h"
 
-#include "common/serverconnection.h"
+#include "serverconnection.h"
 
 #include <QTimer>
 

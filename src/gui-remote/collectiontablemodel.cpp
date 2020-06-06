@@ -19,10 +19,9 @@
 
 #include "collectiontablemodel.h"
 
+#include "common/clientserverinterface.h"
+#include "common/userdatafetcher.h"
 #include "common/util.h"
-
-#include "serverinterface.h"
-#include "userdatafetcher.h"
 
 #include <QBrush>
 #include <QBuffer>
@@ -171,7 +170,7 @@ namespace PMP {
     }
 
     void SortedCollectionTableModel::setConnection(ServerConnection* connection,
-                                                   ServerInterface* serverInterface)
+                                             ClientServerInterface* clientServerInterface)
     {
         connect(
             connection, &ServerConnection::collectionTracksAvailabilityChanged,
@@ -182,7 +181,7 @@ namespace PMP {
             this, &SortedCollectionTableModel::onCollectionTracksChanged
         );
 
-        auto userDataFetcher = serverInterface->getUserDataFetcher();
+        auto userDataFetcher = clientServerInterface->getUserDataFetcher();
 
         _highlighter.setUserDataFetcher(userDataFetcher);
         connect(

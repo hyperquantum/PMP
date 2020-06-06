@@ -21,7 +21,9 @@
 #include "ui_mainwidget.h"
 
 #include "common/audiodata.h"
+#include "common/clientserverinterface.h"
 #include "common/serverconnection.h"
+#include "common/userdatafetcher.h"
 
 #include "autopersonalmodeaction.h"
 #include "currenttrackmonitor.h"
@@ -31,8 +33,6 @@
 #include "queuemodel.h"
 #include "queuemonitor.h"
 #include "scoreformatdelegate.h"
-#include "serverinterface.h"
-#include "userdatafetcher.h"
 
 #include <algorithm>
 
@@ -86,7 +86,7 @@ namespace PMP {
     }
 
     void MainWidget::setConnection(ServerConnection* connection,
-                                   ServerInterface* serverInterface)
+                                   ClientServerInterface* clientServerInterface)
     {
         _connection = connection;
         new AutoPersonalModeAction(connection); /* uses connection as parent */
@@ -98,7 +98,7 @@ namespace PMP {
         _queueModel =
             new QueueModel(
                 _connection, _queueMediator, _queueEntryInfoFetcher,
-                serverInterface->getUserDataFetcher()
+                clientServerInterface->getUserDataFetcher()
             );
         _historyModel = new PlayerHistoryModel(this, _queueEntryInfoFetcher);
         _historyModel->setConnection(connection);

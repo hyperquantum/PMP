@@ -30,6 +30,7 @@ namespace Ui {
 
 namespace PMP {
 
+    class ClientServerInterface;
     class CurrentTrackMonitor;
     class PlayerHistoryModel;
     class QueueEntryInfoFetcher;
@@ -37,7 +38,6 @@ namespace PMP {
     class QueueModel;
     class QueueMonitor;
     class ServerConnection;
-    class ServerInterface;
     class UserDataFetcher;
 
     class MainWidget : public QWidget {
@@ -47,7 +47,7 @@ namespace PMP {
         ~MainWidget();
 
         void setConnection(ServerConnection* connection,
-                           ServerInterface* serverInterface);
+                           ClientServerInterface* clientServerInterface);
 
     protected:
         bool eventFilter(QObject*, QEvent*);

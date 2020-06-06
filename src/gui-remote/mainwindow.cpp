@@ -19,6 +19,7 @@
 
 #include "mainwindow.h"
 
+#include "common/clientserverinterface.h"
 #include "common/serverconnection.h"
 #include "common/util.h"
 #include "common/version.h"
@@ -28,7 +29,6 @@
 #include "loginwidget.h"
 #include "mainwidget.h"
 #include "powermanagement.h"
-#include "serverinterface.h"
 #include "useraccountcreationwidget.h"
 #include "userpickerwidget.h"
 
@@ -50,7 +50,7 @@ namespace PMP {
      : QMainWindow(parent),
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
-       _connection(nullptr), _serverInterface(nullptr),
+       _connection(nullptr), _clientServerInterface(nullptr),
        _userPickerWidget(nullptr), _loginWidget(nullptr), _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
        _powerManagement(new PowerManagement(this))
@@ -340,6 +340,7 @@ namespace PMP {
 
     void MainWindow::onDoConnect(QString server, uint port) {
         _connection = new ServerConnection();
+        _clientServerInterface = new ClientServerInterface(this, _connection);
 
         connect(
             _connection, &ServerConnection::connected,
@@ -459,11 +460,11 @@ namespace PMP {
 
     void MainWindow::showMainWidget() {
         _mainWidget = new MainWidget(this);
-        _mainWidget->setConnection(_connection, _serverInterface);
+        _mainWidget->setConnection(_connection, _clientServerInterface);
         setCentralWidget(_mainWidget);
 
         auto collectionWidget = new CollectionWidget(_musicCollectionDock);
-        collectionWidget->setConnection(_connection, _serverInterface);
+        collectionWidget->setConnection(_connection, _clientServerInterface);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 
@@ -523,8 +524,6 @@ namespace PMP {
     }
 
     void MainWindow::onLoggedIn(QString login) {
-        _serverInterface = new ServerInterface(this, _connection);
-
         updateRightStatus();
         _connection->requestFullIndexationRunningStatus();
 

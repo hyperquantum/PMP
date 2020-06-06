@@ -17,26 +17,36 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "serverinterface.h"
+#include "clientserverinterface.h"
 
-#include "common/serverconnection.h"
-
+#include "serverconnection.h"
 #include "userdatafetcher.h"
 
 namespace PMP {
 
-    ServerInterface::ServerInterface(QObject* parent, ServerConnection* connection)
+    ClientServerInterface::ClientServerInterface(QObject* parent,
+                                                 ServerConnection* connection)
      : QObject(parent), _connection(connection), _userDataFetcher(nullptr)
     {
         //
     }
 
-    UserDataFetcher* ServerInterface::getUserDataFetcher() {
+    SimplePlayerController& ClientServerInterface::simplePlayerController()
+    {
+        return _connection->simplePlayerController();
+    }
+
+    SimplePlayerStateMonitor& ClientServerInterface::simplePlayerStateMonitor()
+    {
+        return _connection->simplePlayerStateMonitor();
+    }
+
+    UserDataFetcher* ClientServerInterface::getUserDataFetcher()
+    {
         if (_userDataFetcher == nullptr) {
             _userDataFetcher = new UserDataFetcher(this, _connection);
         }
 
         return _userDataFetcher;
     }
-
 }

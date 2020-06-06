@@ -19,11 +19,11 @@
 
 #include "queuemodel.h"
 
+#include "common/userdatafetcher.h"
 #include "common/util.h"
 
 #include "queueentryinfofetcher.h"
 #include "queuemediator.h"
-#include "userdatafetcher.h"
 
 #include <QBuffer>
 #include <QBrush>

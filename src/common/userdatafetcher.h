@@ -20,7 +20,7 @@
 #ifndef PMP_USERDATAFETCHER_H
 #define PMP_USERDATAFETCHER_H
 
-#include "common/filehash.h"
+#include "filehash.h"
 
 #include <QDateTime>
 #include <QHash>

@@ -17,24 +17,33 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVERINTERFACE_H
-#define PMP_SERVERINTERFACE_H
+#ifndef PMP_CLIENTSERVERINTERFACE_H
+#define PMP_CLIENTSERVERINTERFACE_H
 
 #include <QObject>
 
 namespace PMP {
 
     class ServerConnection;
+    class SimplePlayerController;
+    class SimplePlayerStateMonitor;
     class UserDataFetcher;
 
-    class ServerInterface : public QObject {
+    class ClientServerInterface : public QObject {
         Q_OBJECT
     public:
-        ServerInterface(QObject* parent, ServerConnection* connection);
+        ClientServerInterface(QObject* parent, ServerConnection* connection);
+
+        SimplePlayerController& simplePlayerController();
+        SimplePlayerStateMonitor& simplePlayerStateMonitor();
 
         UserDataFetcher* getUserDataFetcher();
 
+    public Q_SLOTS:
+
+
     Q_SIGNALS:
+
 
     private:
         ServerConnection* _connection;
