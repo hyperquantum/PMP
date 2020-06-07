@@ -17,38 +17,43 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CLIENTSERVERINTERFACE_H
-#define PMP_CLIENTSERVERINTERFACE_H
+#ifndef PMP_SIMPLEPLAYERCONTROLLERIMPL_H
+#define PMP_SIMPLEPLAYERCONTROLLERIMPL_H
+
+#include "serverconnection.h"
+#include "simpleplayercontroller.h"
 
 #include <QObject>
 
 namespace PMP {
 
     class ServerConnection;
-    class SimplePlayerController;
-    class SimplePlayerStateMonitor;
-    class UserDataFetcher;
 
-    class ClientServerInterface : public QObject {
+    class SimplePlayerControllerImpl : public QObject, public SimplePlayerController {
         Q_OBJECT
     public:
-        ClientServerInterface(QObject* parent, ServerConnection* connection);
+        SimplePlayerControllerImpl(ServerConnection* connection);
 
-        SimplePlayerController& simplePlayerController();
-        SimplePlayerStateMonitor& simplePlayerStateMonitor();
+        ~SimplePlayerControllerImpl() {}
 
-        UserDataFetcher* getUserDataFetcher();
+        void play();
+        void pause();
+        void skip();
 
-    public Q_SLOTS:
+        bool canPlay();
+        bool canPause();
+        bool canSkip();
 
-
-    Q_SIGNALS:
-
+    private slots:
+        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
+                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
 
     private:
         ServerConnection* _connection;
-        SimplePlayerController* _simplePlayerController;
-        UserDataFetcher* _userDataFetcher;
+        ServerConnection::PlayState _state;
+        uint _queueLength;
+        quint32 _trackNowPlaying;
+        quint32 _trackJustSkipped;
     };
 }
 #endif

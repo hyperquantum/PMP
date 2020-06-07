@@ -21,6 +21,7 @@
 
 #include "common/clientserverinterface.h"
 #include "common/serverconnection.h"
+#include "common/simpleplayercontroller.h"
 #include "common/util.h"
 #include "common/version.h"
 
@@ -203,7 +204,7 @@ namespace PMP {
             case Qt::Key_MediaNext:
             {
                 qDebug() << "got Next button";
-                auto& controller = _connection->simplePlayerController();
+                auto& controller = _clientServerInterface->simplePlayerController();
 
                 if (controller.canSkip())
                     controller.skip();
@@ -212,7 +213,7 @@ namespace PMP {
             case Qt::Key_MediaPause:
             {
                 qDebug() << "got Pause button";
-                auto& controller = _connection->simplePlayerController();
+                auto& controller = _clientServerInterface->simplePlayerController();
 
                 if (controller.canPause())
                     controller.pause();
@@ -221,7 +222,7 @@ namespace PMP {
             case Qt::Key_MediaPlay:
             {
                 qDebug() << "got Play button";
-                auto& controller = _connection->simplePlayerController();
+                auto& controller = _clientServerInterface->simplePlayerController();
 
                 if (controller.canPlay())
                     controller.play();
@@ -232,7 +233,7 @@ namespace PMP {
             case Qt::Key_MediaTogglePlayPause:
             {
                 qDebug() << "got Play/Pause button";
-                auto& controller = _connection->simplePlayerController();
+                auto& controller = _clientServerInterface->simplePlayerController();
 
                 if (controller.canPlay())
                     controller.play();

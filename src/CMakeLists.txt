@@ -28,6 +28,7 @@ set(PMP_COMMON_SOURCES
     common/networkutil.cpp
     common/serverconnection.cpp
     common/serverdiscoverer.cpp
+    common/simpleplayercontrollerimpl.cpp
     common/tagdata.cpp
     common/userdatafetcher.cpp
     common/util.cpp
@@ -36,6 +37,7 @@ set(PMP_COMMON_HEADERS
     common/clientserverinterface.h
     common/serverconnection.h
     common/serverdiscoverer.h
+    common/simpleplayercontrollerimpl.h
     common/simpleplayerstatemonitor.h
     common/userdatafetcher.h
 )

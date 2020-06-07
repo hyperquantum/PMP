@@ -20,20 +20,26 @@
 #include "clientserverinterface.h"
 
 #include "serverconnection.h"
+#include "simpleplayercontrollerimpl.h"
 #include "userdatafetcher.h"
 
 namespace PMP {
 
     ClientServerInterface::ClientServerInterface(QObject* parent,
                                                  ServerConnection* connection)
-     : QObject(parent), _connection(connection), _userDataFetcher(nullptr)
+     : QObject(parent), _connection(connection),
+       _simplePlayerController(nullptr),
+       _userDataFetcher(nullptr)
     {
         //
     }
 
     SimplePlayerController& ClientServerInterface::simplePlayerController()
     {
-        return _connection->simplePlayerController();
+        if (!_simplePlayerController)
+            _simplePlayerController = new SimplePlayerControllerImpl(_connection);
+
+        return *_simplePlayerController;
     }
 
     SimplePlayerStateMonitor& ClientServerInterface::simplePlayerStateMonitor()

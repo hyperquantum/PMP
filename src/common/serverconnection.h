@@ -25,7 +25,6 @@
 #include "playerhistorytrackinfo.h"
 #include "playerstate.h"
 #include "serverhealthstatus.h"
-#include "simpleplayercontroller.h"
 #include "simpleplayerstatemonitor.h"
 #include "tribool.h"
 
@@ -41,7 +40,6 @@
 namespace PMP {
 
     class AbstractCollectionFetcher;
-    class SimplePlayerControllerImpl;
     class SimplePlayerStateMonitorImpl;
 
     class RequestID {
@@ -125,7 +123,6 @@ namespace PMP {
 
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
 
-        SimplePlayerController& simplePlayerController();
         SimplePlayerStateMonitor& simplePlayerStateMonitor();
 
         bool serverSupportsQueueEntryDuplication() const;
@@ -355,7 +352,6 @@ namespace PMP {
         TriBool _doingFullIndexation;
         QHash<uint, ResultHandler*> _resultHandlers;
         QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
-        SimplePlayerControllerImpl* _simplePlayerController;
         SimplePlayerStateMonitorImpl* _simplePlayerStateMonitor;
         ServerHealthStatus _serverHealthStatus;
     };
@@ -369,33 +365,6 @@ namespace PMP {
         virtual void receivedData(QList<CollectionTrackInfo> data) = 0;
         virtual void completed() = 0;
         virtual void errorOccurred() = 0;
-    };
-
-    class SimplePlayerControllerImpl : public QObject, public SimplePlayerController {
-        Q_OBJECT
-    public:
-        SimplePlayerControllerImpl(ServerConnection* connection);
-
-        ~SimplePlayerControllerImpl() {}
-
-        void play();
-        void pause();
-        void skip();
-
-        bool canPlay();
-        bool canPause();
-        bool canSkip();
-
-    private slots:
-        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
-                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
-
-    private:
-        ServerConnection* _connection;
-        ServerConnection::PlayState _state;
-        uint _queueLength;
-        quint32 _trackNowPlaying;
-        quint32 _trackJustSkipped;
     };
 
     class SimplePlayerStateMonitorImpl : public SimplePlayerStateMonitor {
