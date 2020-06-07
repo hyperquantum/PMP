@@ -40,7 +40,6 @@
 namespace PMP {
 
     class AbstractCollectionFetcher;
-    class SimplePlayerStateMonitorImpl;
 
     class RequestID {
     public:
@@ -122,8 +121,6 @@ namespace PMP {
         void fetchCollection(AbstractCollectionFetcher* fetcher);
 
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
-
-        SimplePlayerStateMonitor& simplePlayerStateMonitor();
 
         bool serverSupportsQueueEntryDuplication() const;
 
@@ -352,7 +349,6 @@ namespace PMP {
         TriBool _doingFullIndexation;
         QHash<uint, ResultHandler*> _resultHandlers;
         QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
-        SimplePlayerStateMonitorImpl* _simplePlayerStateMonitor;
         ServerHealthStatus _serverHealthStatus;
     };
 
@@ -367,20 +363,5 @@ namespace PMP {
         virtual void errorOccurred() = 0;
     };
 
-    class SimplePlayerStateMonitorImpl : public SimplePlayerStateMonitor {
-        Q_OBJECT
-    public:
-        SimplePlayerStateMonitorImpl(ServerConnection* connection);
-
-        PlayerState playerState() const;
-
-    private slots:
-        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
-                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
-
-    private:
-        ServerConnection* _connection;
-        PlayerState _state;
-    };
 }
 #endif

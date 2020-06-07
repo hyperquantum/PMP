@@ -299,8 +299,9 @@ namespace PMP {
     }
 
     void MainWindow::updatePowerManagement() {
-        bool isPlaying =
-            _connection->simplePlayerStateMonitor().playerState() == PlayerState::Playing;
+        auto playerState =
+                _clientServerInterface->simplePlayerStateMonitor().playerState();
+        bool isPlaying = playerState == PlayerState::Playing;
 
         bool keepDisplayActiveOption = _keepDisplayActiveAction->isChecked();
 
@@ -386,7 +387,7 @@ namespace PMP {
             }
         );
         connect(
-            &_connection->simplePlayerStateMonitor(),
+            &_clientServerInterface->simplePlayerStateMonitor(),
             &SimplePlayerStateMonitor::playerStateChanged,
             this, &MainWindow::updatePowerManagement
         );

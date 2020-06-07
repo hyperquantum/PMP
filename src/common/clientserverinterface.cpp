@@ -21,6 +21,7 @@
 
 #include "serverconnection.h"
 #include "simpleplayercontrollerimpl.h"
+#include "simpleplayerstatemonitorimpl.h"
 #include "userdatafetcher.h"
 
 namespace PMP {
@@ -29,6 +30,7 @@ namespace PMP {
                                                  ServerConnection* connection)
      : QObject(parent), _connection(connection),
        _simplePlayerController(nullptr),
+       _simplePlayerStateMonitor(nullptr),
        _userDataFetcher(nullptr)
     {
         //
@@ -44,7 +46,10 @@ namespace PMP {
 
     SimplePlayerStateMonitor& ClientServerInterface::simplePlayerStateMonitor()
     {
-        return _connection->simplePlayerStateMonitor();
+        if (!_simplePlayerStateMonitor)
+            _simplePlayerStateMonitor = new SimplePlayerStateMonitorImpl(_connection);
+
+        return *_simplePlayerStateMonitor;
     }
 
     UserDataFetcher* ClientServerInterface::getUserDataFetcher()
