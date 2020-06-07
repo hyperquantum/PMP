@@ -416,6 +416,8 @@ namespace PMP {
     }
 
     void MainWindow::onCannotConnect(QAbstractSocket::SocketError error) {
+        Q_UNUSED(error)
+
         QMessageBox::warning(
             this, tr("Connection failure"), tr("Failed to connect to that server.")
         );
@@ -434,6 +436,8 @@ namespace PMP {
     }
 
     void MainWindow::onConnectionBroken(QAbstractSocket::SocketError error) {
+        Q_UNUSED(error)
+
         updateRightStatus();
 
         QMessageBox::warning(
@@ -499,6 +503,10 @@ namespace PMP {
 
     void MainWindow::onAccountCreated(QString login, QString password, quint32 accountId)
     {
+        Q_UNUSED(login)
+        Q_UNUSED(password)
+        Q_UNUSED(accountId)
+
         _userAccountCreationWidget = nullptr;
         showUserAccountPicker();
     }
@@ -525,6 +533,8 @@ namespace PMP {
     }
 
     void MainWindow::onLoggedIn(QString login) {
+        Q_UNUSED(login)
+
         updateRightStatus();
         _connection->requestFullIndexationRunningStatus();
 
