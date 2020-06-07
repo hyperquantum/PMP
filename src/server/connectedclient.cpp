@@ -1474,7 +1474,7 @@ namespace PMP {
         if (_pendingPlayerStatus) return;
 
         _pendingPlayerStatus = true;
-        QTimer::singleShot(25, this, SLOT(sendStateInfoAfterTimeout()));
+        QTimer::singleShot(25, this, &ConnectedClient::sendStateInfoAfterTimeout);
     }
 
     void ConnectedClient::queueEntryRemoved(quint32 offset, quint32 queueID) {

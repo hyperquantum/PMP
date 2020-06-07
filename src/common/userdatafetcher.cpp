@@ -75,7 +75,7 @@ namespace PMP {
         _pendingNotificationsUsers << userId;
 
         if (first) {
-            QTimer::singleShot(100, this, SLOT(sendPendingNotifications()));
+            QTimer::singleShot(100, this, &UserDataFetcher::sendPendingNotifications);
         }
     }
 
@@ -117,7 +117,7 @@ namespace PMP {
         _hashesToFetchForUsers[userId] << hash;
 
         if (first) {
-            QTimer::singleShot(100, this, SLOT(sendPendingRequests()));
+            QTimer::singleShot(100, this, &UserDataFetcher::sendPendingRequests);
         }
     }
 }

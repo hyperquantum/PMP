@@ -251,11 +251,11 @@ namespace PMP {
        _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0),
        _simplePlayerStateMonitor(nullptr)
     {
-        connect(&_socket, SIGNAL(connected()), this, SLOT(onConnected()));
-        connect(&_socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
+        connect(&_socket, &QTcpSocket::connected, this, &ServerConnection::onConnected);
+        connect(&_socket, &QTcpSocket::readyRead, this, &ServerConnection::onReadyRead);
         connect(
-            &_socket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(onSocketError(QAbstractSocket::SocketError))
+            &_socket, qOverload<QAbstractSocket::SocketError>(&QTcpSocket::error),
+            this, &ServerConnection::onSocketError
         );
 
         _simplePlayerStateMonitor = new SimplePlayerStateMonitorImpl(this);

@@ -242,7 +242,7 @@ namespace PMP {
     void Generator::requestQueueRefill() {
         if (_refillPending) return;
         _refillPending = true;
-        QTimer::singleShot(100, this, SLOT(checkAndRefillQueue()));
+        QTimer::singleShot(100, this, &Generator::checkAndRefillQueue);
     }
 
     quint16 Generator::getRandomPermillage() {
