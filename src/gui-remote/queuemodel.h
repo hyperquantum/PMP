@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,7 +35,7 @@ namespace PMP {
     public:
         QueueModel(QObject* parent, QueueMediator* source,
                    QueueEntryInfoFetcher* trackInfoFetcher,
-                   UserDataFetcher* userDataFetcher);
+                   UserDataFetcher& userDataFetcher);
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -90,7 +90,7 @@ namespace PMP {
 
         QueueMediator* _source;
         QueueEntryInfoFetcher* _infoFetcher;
-        UserDataFetcher* _userDataFetcher;
+        UserDataFetcher& _userDataFetcher;
         bool _receivedUserPlayingFor;
         quint32 _userPlayingFor;
         int _modelRows;

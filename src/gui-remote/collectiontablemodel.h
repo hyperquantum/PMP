@@ -61,8 +61,8 @@ namespace PMP {
             _haveUserId = true;
         }
 
-        void setUserDataFetcher(UserDataFetcher* userDataFetcher) {
-            _userDataFetcher = userDataFetcher;
+        void setUserDataFetcher(UserDataFetcher& userDataFetcher) {
+            _userDataFetcher = &userDataFetcher;
         }
 
         void setMode(TrackHighlightMode mode) { _mode = mode; }

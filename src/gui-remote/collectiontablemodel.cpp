@@ -181,11 +181,11 @@ namespace PMP {
             this, &SortedCollectionTableModel::onCollectionTracksChanged
         );
 
-        auto userDataFetcher = clientServerInterface->getUserDataFetcher();
+        auto& userDataFetcher = clientServerInterface->getUserDataFetcher();
 
         _highlighter.setUserDataFetcher(userDataFetcher);
         connect(
-            userDataFetcher, &UserDataFetcher::dataReceivedForUser,
+            &userDataFetcher, &UserDataFetcher::dataReceivedForUser,
             this, &SortedCollectionTableModel::onDataReceivedForUser
         );
 

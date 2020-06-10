@@ -38,7 +38,7 @@ namespace PMP {
 
     QueueModel::QueueModel(QObject* parent, QueueMediator* source,
                            QueueEntryInfoFetcher* trackInfoFetcher,
-                           UserDataFetcher* userDataFetcher)
+                           UserDataFetcher& userDataFetcher)
      : QAbstractTableModel(parent), _source(source), _infoFetcher(trackInfoFetcher),
         _userDataFetcher(userDataFetcher),
         _receivedUserPlayingFor(false), _userPlayingFor(0), _modelRows(0)
@@ -62,7 +62,7 @@ namespace PMP {
             this, &QueueModel::tracksChanged
         );
         connect(
-            _userDataFetcher, &UserDataFetcher::dataReceivedForUser,
+            &_userDataFetcher, &UserDataFetcher::dataReceivedForUser,
             this, &QueueModel::userDataReceivedForUser
         );
         connect(
@@ -186,7 +186,7 @@ namespace PMP {
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
                         auto hashData =
-                            _userDataFetcher->getHashDataForUser(_userPlayingFor, hash);
+                            _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
                         if (!hashData || !hashData->scoreReceived)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
@@ -227,7 +227,7 @@ namespace PMP {
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                    _userDataFetcher->getHashDataForUser(_userPlayingFor, hash);
+                        _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
 
                 if (!hashData || !hashData->previouslyHeardReceived)
                     return QVariant();
@@ -245,7 +245,7 @@ namespace PMP {
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                    _userDataFetcher->getHashDataForUser(_userPlayingFor, hash);
+                        _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
                 if (!hashData || !hashData->scoreReceived)
                     return QVariant();
 

@@ -52,12 +52,12 @@ namespace PMP {
         return *_simplePlayerStateMonitor;
     }
 
-    UserDataFetcher* ClientServerInterface::getUserDataFetcher()
+    UserDataFetcher& ClientServerInterface::getUserDataFetcher()
     {
         if (_userDataFetcher == nullptr) {
             _userDataFetcher = new UserDataFetcher(this, _connection);
         }
 
-        return _userDataFetcher;
+        return *_userDataFetcher;
     }
 }
