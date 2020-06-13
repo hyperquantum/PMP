@@ -19,6 +19,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(PMP_COMMON_SOURCES
     common/audiodata.cpp
+    common/clientserverinterface.cpp
     common/commonmetatypes.cpp
     common/fileanalyzer.cpp
     common/filehash.cpp
@@ -29,13 +30,20 @@ set(PMP_COMMON_SOURCES
     common/scrobblingprovider.cpp
     common/serverconnection.cpp
     common/serverdiscoverer.cpp
+    common/simpleplayercontrollerimpl.cpp
+    common/simpleplayerstatemonitorimpl.cpp
     common/tagdata.cpp
+    common/userdatafetcher.cpp
     common/util.cpp
 )
 set(PMP_COMMON_HEADERS
+    common/clientserverinterface.h
     common/serverconnection.h
     common/serverdiscoverer.h
+    common/simpleplayercontrollerimpl.h
     common/simpleplayerstatemonitor.h
+    common/simpleplayerstatemonitorimpl.h
+    common/userdatafetcher.h
 )
 
 set(PMP_SERVER_SOURCES
@@ -112,10 +120,8 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/queuemodel.cpp
     gui-remote/queuemonitor.cpp
     gui-remote/scoreformatdelegate.cpp
-    gui-remote/serverinterface.cpp
     gui-remote/trackprogresswidget.cpp
     gui-remote/useraccountcreationwidget.cpp
-    gui-remote/userdatafetcher.cpp
     gui-remote/userpickerwidget.cpp
 )
 set(PMP_GUI_REMOTE_HEADERS
@@ -135,10 +141,8 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/queuemodel.h
     gui-remote/queuemonitor.h
     gui-remote/scoreformatdelegate.h
-    gui-remote/serverinterface.h
     gui-remote/trackprogresswidget.h
     gui-remote/useraccountcreationwidget.h
-    gui-remote/userdatafetcher.h
     gui-remote/userpickerwidget.h
 )
 set(PMP_GUI_REMOTE_UIS

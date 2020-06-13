@@ -37,6 +37,7 @@ namespace PMP {
        _track(nullptr),
        _positionWhenStopped(-1),
        _identifier(identifier),
+       _availableForNewTrack(true),
        _mediaSet(false),
        _endOfTrackComingUp(false),
        _hadSeek(false),
@@ -62,7 +63,7 @@ namespace PMP {
 
     bool PlayerInstance::availableForNewTrack() const
     {
-        return _player->state() != QMediaPlayer::PlayingState;
+        return _availableForNewTrack;
     }
 
     qint64 PlayerInstance::position() const {
@@ -90,8 +91,8 @@ namespace PMP {
         qDebug() << "PlayerInstance" << _identifier
                  << ": setTrack() called for queue ID" << queueId;
 
-        if (_player->state() == QMediaPlayer::PlayingState) {
-            qWarning() << "cannot set new track because we're still playing!";
+        if (!availableForNewTrack()) {
+            qWarning() << "cannot set new track because we're not available yet!";
             return;
         }
 
@@ -132,6 +133,7 @@ namespace PMP {
     void PlayerInstance::play()
     {
         qDebug() << "PlayerInstance" << _identifier << " play() called";
+        _availableForNewTrack = false;
         _player->play();
 
         /* set start time if it hasn't been set yet */
@@ -191,6 +193,8 @@ namespace PMP {
                         Q_EMIT stoppedEarly(_positionWhenStopped);
                         break;
                 }
+
+                _availableForNewTrack = true;
 
                 if (_deleteAfterStopped)
                     this->deleteLater();

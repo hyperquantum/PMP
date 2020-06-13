@@ -24,7 +24,6 @@
 #include "common/util.h"
 
 #include "collectiontablemodel.h"
-#include "serverinterface.h"
 
 #include <QMenu>
 #include <QtDebug>
@@ -123,10 +122,10 @@ namespace PMP {
     }
 
     void CollectionWidget::setConnection(ServerConnection* connection,
-                                         ServerInterface* serverInterface)
+                                         ClientServerInterface* clientServerInterface)
     {
         _connection = connection;
-        _collectionSourceModel->setConnection(connection, serverInterface);
+        _collectionSourceModel->setConnection(connection, clientServerInterface);
     }
 
     void CollectionWidget::highlightTracksIndexChanged(int index) {

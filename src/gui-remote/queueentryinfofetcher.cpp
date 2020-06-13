@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -166,6 +166,8 @@ namespace PMP {
 
     void QueueEntryInfoFetcher::receivedUserPlayingFor(quint32 userId, QString userLogin)
     {
+        Q_UNUSED(userLogin)
+
         if (_userPlayingFor == userId) return;
 
         _userPlayingFor = userId;
@@ -335,7 +337,8 @@ namespace PMP {
         _trackChangeNotificationsPending << queueID;
 
         if (first) {
-            QTimer::singleShot(100, this, SLOT(emitTracksChangedSignal()));
+            QTimer::singleShot(
+                              100, this, &QueueEntryInfoFetcher::emitTracksChangedSignal);
         }
     }
 

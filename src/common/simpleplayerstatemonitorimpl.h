@@ -17,26 +17,29 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "serverinterface.h"
+#ifndef PMP_SIMPLEPLAYERSTATEMONITORIMPL_H
+#define PMP_SIMPLEPLAYERSTATEMONITORIMPL_H
 
-#include "common/serverconnection.h"
-
-#include "userdatafetcher.h"
+#include "simpleplayerstatemonitor.h"
 
 namespace PMP {
 
-    ServerInterface::ServerInterface(QObject* parent, ServerConnection* connection)
-     : QObject(parent), _connection(connection), _userDataFetcher(nullptr)
-    {
-        //
-    }
+    class ServerConnection;
 
-    UserDataFetcher* ServerInterface::getUserDataFetcher() {
-        if (_userDataFetcher == nullptr) {
-            _userDataFetcher = new UserDataFetcher(this, _connection);
-        }
+    class SimplePlayerStateMonitorImpl : public SimplePlayerStateMonitor {
+        Q_OBJECT
+    public:
+        SimplePlayerStateMonitorImpl(ServerConnection* connection);
 
-        return _userDataFetcher;
-    }
+        PlayerState playerState() const;
 
+    private slots:
+        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
+                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
+
+    private:
+        ServerConnection* _connection;
+        PlayerState _state;
+    };
 }
+#endif

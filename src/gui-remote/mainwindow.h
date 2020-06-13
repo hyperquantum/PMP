@@ -36,12 +36,12 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP {
 
+    class ClientServerInterface;
     class ConnectionWidget;
     class LoginWidget;
     class MainWidget;
     class PowerManagement;
     class ServerConnection;
-    class ServerInterface;
     class UserAccountCreationWidget;
     class UserPickerWidget;
 
@@ -99,7 +99,7 @@ namespace PMP {
 
         ConnectionWidget* _connectionWidget;
         ServerConnection* _connection;
-        ServerInterface* _serverInterface;
+        ClientServerInterface* _clientServerInterface;
         UserPickerWidget* _userPickerWidget;
         UserAccountCreationWidget* _userAccountCreationWidget;
         LoginWidget* _loginWidget;

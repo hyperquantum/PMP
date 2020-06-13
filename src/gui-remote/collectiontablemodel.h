@@ -61,8 +61,8 @@ namespace PMP {
             _haveUserId = true;
         }
 
-        void setUserDataFetcher(UserDataFetcher* userDataFetcher) {
-            _userDataFetcher = userDataFetcher;
+        void setUserDataFetcher(UserDataFetcher& userDataFetcher) {
+            _userDataFetcher = &userDataFetcher;
         }
 
         void setMode(TrackHighlightMode mode) { _mode = mode; }
@@ -83,7 +83,7 @@ namespace PMP {
         UserDataFetcher* _userDataFetcher;
     };
 
-    class ServerInterface;
+    class ClientServerInterface;
 
     class SortedCollectionTableModel : public QAbstractTableModel {
         Q_OBJECT
@@ -91,7 +91,7 @@ namespace PMP {
         SortedCollectionTableModel(QObject* parent = 0);
 
         void setConnection(ServerConnection* connection,
-                           ServerInterface* serverInterface);
+                           ClientServerInterface* clientServerInterface);
 
         void setHighlightMode(TrackHighlightMode mode);
 

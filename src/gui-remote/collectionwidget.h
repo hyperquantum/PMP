@@ -30,9 +30,9 @@ namespace Ui {
 
 namespace PMP {
 
+    class ClientServerInterface;
     class FilteredCollectionTableModel;
     class ServerConnection;
-    class ServerInterface;
     class SortedCollectionTableModel;
 
     class CollectionWidget : public QWidget {
@@ -43,7 +43,7 @@ namespace PMP {
         ~CollectionWidget();
 
         void setConnection(ServerConnection* connection,
-                           ServerInterface* serverInterface);
+                           ClientServerInterface* clientServerInterface);
 
     private slots:
         void highlightTracksIndexChanged(int index);

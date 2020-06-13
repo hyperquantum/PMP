@@ -249,18 +249,15 @@ namespace PMP {
        _binarySendingMode(false),
        _serverProtocolNo(-1),
        _scrobblingSupportThis(255, "scrobbling"),
-       _nextRef(1), _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0),
-       _simplePlayerController(nullptr), _simplePlayerStateMonitor(nullptr)
+       _nextRef(1),
+       _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0)
     {
-        connect(&_socket, SIGNAL(connected()), this, SLOT(onConnected()));
-        connect(&_socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
+        connect(&_socket, &QTcpSocket::connected, this, &ServerConnection::onConnected);
+        connect(&_socket, &QTcpSocket::readyRead, this, &ServerConnection::onReadyRead);
         connect(
-            &_socket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(onSocketError(QAbstractSocket::SocketError))
+            &_socket, qOverload<QAbstractSocket::SocketError>(&QTcpSocket::error),
+            this, &ServerConnection::onSocketError
         );
-
-        _simplePlayerController = new SimplePlayerControllerImpl(this);
-        _simplePlayerStateMonitor = new SimplePlayerStateMonitorImpl(this);
     }
 
     void ServerConnection::reset() {
@@ -284,14 +281,6 @@ namespace PMP {
 
     QString ServerConnection::userLoggedInName() const {
         return _userLoggedInName;
-    }
-
-    SimplePlayerController& ServerConnection::simplePlayerController() {
-        return *_simplePlayerController;
-    }
-
-    SimplePlayerStateMonitor& ServerConnection::simplePlayerStateMonitor() {
-        return *_simplePlayerStateMonitor;
     }
 
     bool ServerConnection::serverSupportsQueueEntryDuplication() const {
@@ -2472,107 +2461,6 @@ namespace PMP {
      : QObject(parent)
     {
         //
-    }
-
-    // ============================================================================ //
-
-    SimplePlayerControllerImpl::SimplePlayerControllerImpl(ServerConnection* connection)
-     : QObject(connection),
-       _connection(connection), _state(ServerConnection::UnknownState), _queueLength(0),
-       _trackNowPlaying(0), _trackJustSkipped(0)
-    {
-        connect(
-            _connection, &ServerConnection::receivedPlayerState,
-            this, &SimplePlayerControllerImpl::receivedPlayerState
-        );
-    }
-
-    void SimplePlayerControllerImpl::receivedPlayerState(int state, quint8 volume,
-                quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition)
-    {
-        (void)volume;
-        (void)nowPlayingPosition;
-        _state = ServerConnection::PlayState(state);
-        _queueLength = queueLength;
-        _trackNowPlaying = nowPlayingQID;
-    }
-
-    void SimplePlayerControllerImpl::play() {
-        _connection->play();
-    }
-
-    void SimplePlayerControllerImpl::pause() {
-        _connection->pause();
-    }
-
-    void SimplePlayerControllerImpl::skip() {
-        _trackJustSkipped = _trackNowPlaying;
-        _connection->skip();
-    }
-
-    bool SimplePlayerControllerImpl::canPlay() {
-        return _queueLength > 0
-            && (_state == ServerConnection::Paused
-                || _state == ServerConnection::Stopped);
-    }
-
-    bool SimplePlayerControllerImpl::canPause() {
-        return _state == ServerConnection::Playing;
-    }
-
-    bool SimplePlayerControllerImpl::canSkip() {
-        return
-            _trackNowPlaying != _trackJustSkipped
-            && (_state == ServerConnection::Playing
-                || _state == ServerConnection::Paused);
-    }
-
-    // ============================================================================ //
-
-    SimplePlayerStateMonitorImpl::SimplePlayerStateMonitorImpl(
-                                                             ServerConnection* connection)
-     : SimplePlayerStateMonitor(connection),
-       _connection(connection), _state(PlayerState::Unknown)
-    {
-        connect(
-            _connection, &ServerConnection::receivedPlayerState,
-            this, &SimplePlayerStateMonitorImpl::receivedPlayerState
-        );
-    }
-
-    PlayerState SimplePlayerStateMonitorImpl::playerState() const {
-        return _state;
-    }
-
-    void SimplePlayerStateMonitorImpl::receivedPlayerState(int state, quint8 volume,
-                quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition)
-    {
-        (void)volume;
-        (void)queueLength;
-        (void)nowPlayingQID;
-        (void)nowPlayingPosition;
-
-        auto newState = PlayerState::Unknown;
-        switch (ServerConnection::PlayState(state)) {
-            case ServerConnection::UnknownState:
-                newState = PlayerState::Unknown;
-                break;
-            case ServerConnection::Stopped:
-                newState = PlayerState::Stopped;
-                break;
-            case ServerConnection::Playing:
-                newState = PlayerState::Playing;
-                break;
-            case ServerConnection::Paused:
-                newState = PlayerState::Paused;
-                break;
-        }
-
-        if (newState == _state)
-            return;
-
-        _state = newState;
-        emit playerStateChanged(newState);
     }
 
 }

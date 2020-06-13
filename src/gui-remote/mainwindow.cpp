@@ -19,7 +19,9 @@
 
 #include "mainwindow.h"
 
+#include "common/clientserverinterface.h"
 #include "common/serverconnection.h"
+#include "common/simpleplayercontroller.h"
 #include "common/util.h"
 #include "common/version.h"
 
@@ -28,7 +30,6 @@
 #include "loginwidget.h"
 #include "mainwidget.h"
 #include "powermanagement.h"
-#include "serverinterface.h"
 #include "useraccountcreationwidget.h"
 #include "userpickerwidget.h"
 
@@ -50,7 +51,7 @@ namespace PMP {
      : QMainWindow(parent),
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
-       _connection(nullptr), _serverInterface(nullptr),
+       _connection(nullptr), _clientServerInterface(nullptr),
        _userPickerWidget(nullptr), _loginWidget(nullptr), _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
        _powerManagement(new PowerManagement(this)),
@@ -222,7 +223,7 @@ namespace PMP {
             case Qt::Key_MediaNext:
             {
                 qDebug() << "got Next button";
-                auto& controller = _connection->simplePlayerController();
+                auto& controller = _clientServerInterface->simplePlayerController();
 
                 if (controller.canSkip())
                     controller.skip();
@@ -231,7 +232,7 @@ namespace PMP {
             case Qt::Key_MediaPause:
             {
                 qDebug() << "got Pause button";
-                auto& controller = _connection->simplePlayerController();
+                auto& controller = _clientServerInterface->simplePlayerController();
 
                 if (controller.canPause())
                     controller.pause();
@@ -240,7 +241,7 @@ namespace PMP {
             case Qt::Key_MediaPlay:
             {
                 qDebug() << "got Play button";
-                auto& controller = _connection->simplePlayerController();
+                auto& controller = _clientServerInterface->simplePlayerController();
 
                 if (controller.canPlay())
                     controller.play();
@@ -251,7 +252,7 @@ namespace PMP {
             case Qt::Key_MediaTogglePlayPause:
             {
                 qDebug() << "got Play/Pause button";
-                auto& controller = _connection->simplePlayerController();
+                auto& controller = _clientServerInterface->simplePlayerController();
 
                 if (controller.canPlay())
                     controller.play();
@@ -361,8 +362,9 @@ namespace PMP {
     }
 
     void MainWindow::updatePowerManagement() {
-        bool isPlaying =
-            _connection->simplePlayerStateMonitor().playerState() == PlayerState::Playing;
+        auto playerState =
+                _clientServerInterface->simplePlayerStateMonitor().playerState();
+        bool isPlaying = playerState == PlayerState::Playing;
 
         bool keepDisplayActiveOption = _keepDisplayActiveAction->isChecked();
 
@@ -403,6 +405,7 @@ namespace PMP {
 
     void MainWindow::onDoConnect(QString server, uint port) {
         _connection = new ServerConnection();
+        _clientServerInterface = new ClientServerInterface(this, _connection);
 
         connect(
             _connection, &ServerConnection::connected,
@@ -447,7 +450,7 @@ namespace PMP {
             }
         );
         connect(
-            &_connection->simplePlayerStateMonitor(),
+            &_clientServerInterface->simplePlayerStateMonitor(),
             &SimplePlayerStateMonitor::playerStateChanged,
             this, &MainWindow::updatePowerManagement
         );
@@ -477,6 +480,8 @@ namespace PMP {
     }
 
     void MainWindow::onCannotConnect(QAbstractSocket::SocketError error) {
+        Q_UNUSED(error)
+
         QMessageBox::warning(
             this, tr("Connection failure"), tr("Failed to connect to that server.")
         );
@@ -495,6 +500,8 @@ namespace PMP {
     }
 
     void MainWindow::onConnectionBroken(QAbstractSocket::SocketError error) {
+        Q_UNUSED(error)
+
         updateRightStatus();
 
         QMessageBox::warning(
@@ -529,11 +536,11 @@ namespace PMP {
 
     void MainWindow::showMainWidget() {
         _mainWidget = new MainWidget(this);
-        _mainWidget->setConnection(_connection, _serverInterface);
+        _mainWidget->setConnection(_connection, _clientServerInterface);
         setCentralWidget(_mainWidget);
 
         auto collectionWidget = new CollectionWidget(_musicCollectionDock);
-        collectionWidget->setConnection(_connection, _serverInterface);
+        collectionWidget->setConnection(_connection, _clientServerInterface);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 
@@ -567,6 +574,10 @@ namespace PMP {
 
     void MainWindow::onAccountCreated(QString login, QString password, quint32 accountId)
     {
+        Q_UNUSED(login)
+        Q_UNUSED(password)
+        Q_UNUSED(accountId)
+
         _userAccountCreationWidget = nullptr;
         showUserAccountPicker();
     }
@@ -593,7 +604,7 @@ namespace PMP {
     }
 
     void MainWindow::onLoggedIn(QString login) {
-        _serverInterface = new ServerInterface(this, _connection);
+        Q_UNUSED(login)
 
         updateRightStatus();
         _connection->requestFullIndexationRunningStatus();

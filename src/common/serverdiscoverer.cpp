@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -55,7 +55,7 @@ namespace PMP {
     void ServerDiscoverer::sendProbe() {
         /* first send to localhost and then broadcast */
         sendProbeToLocalhost();
-        QTimer::singleShot(100, this, SLOT(sendBroadcastProbe()));
+        QTimer::singleShot(100, this, &ServerDiscoverer::sendBroadcastProbe);
     }
 
     void ServerDiscoverer::sendProbeToLocalhost() {
@@ -111,11 +111,7 @@ namespace PMP {
 
         if (!isFromLocalhost) {
             Q_FOREACH(auto localAddress, _localHostNetworkAddresses) {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 8, 0)
                 if (localAddress.isEqual(server, QHostAddress::TolerantConversion))
-#else
-                if (localAddress == server)
-#endif
                 {
                    isFromLocalhost = true;
                    break;
@@ -196,7 +192,7 @@ namespace PMP {
         _connection->connectToHost(address.toString(), port);
 
         /* set a timer to avoid waiting indefinitely */
-        QTimer::singleShot(4000, this, SLOT(onTimeout()));
+        QTimer::singleShot(4000, this, &ServerProbe::onTimeout);
     }
 
     void ServerProbe::onConnected() {

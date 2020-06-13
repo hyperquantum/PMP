@@ -239,7 +239,7 @@ int main(int argc, char *argv[]) {
         << endl;
 
     // exit when the server instance signals it
-    QObject::connect(&server, SIGNAL(shuttingDown()), &app, SLOT(quit()));
+    QObject::connect(&server, &Server::shuttingDown, &app, &QCoreApplication::quit);
 
     out << endl << "Server initialization complete." << endl;
 
