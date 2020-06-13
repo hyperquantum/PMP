@@ -81,6 +81,7 @@ namespace PMP {
         PreloadedFile _preloadedFile;
         qint64 _positionWhenStopped;
         int _identifier;
+        bool _availableForNewTrack;
         bool _mediaSet;
         bool _endOfTrackComingUp;
         bool _hadSeek;
