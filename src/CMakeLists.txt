@@ -38,6 +38,7 @@ set(PMP_COMMON_HEADERS
     common/clientserverinterface.h
     common/serverconnection.h
     common/serverdiscoverer.h
+    common/simpleplayercontroller.h
     common/simpleplayercontrollerimpl.h
     common/simpleplayerstatemonitor.h
     common/simpleplayerstatemonitorimpl.h

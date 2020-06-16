@@ -22,7 +22,7 @@
 namespace PMP {
 
     SimplePlayerControllerImpl::SimplePlayerControllerImpl(ServerConnection* connection)
-     : QObject(connection),
+     : SimplePlayerController(connection),
        _connection(connection), _state(ServerConnection::UnknownState), _queueLength(0),
        _trackNowPlaying(0), _trackJustSkipped(0)
     {

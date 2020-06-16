@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,22 +20,26 @@
 #ifndef PMP_SIMPLEPLAYERCONTROLLER_H
 #define PMP_SIMPLEPLAYERCONTROLLER_H
 
+#include <QObject>
+
 namespace PMP {
 
-    class SimplePlayerController {
+    class SimplePlayerController : public QObject {
+        Q_OBJECT
     public:
         virtual ~SimplePlayerController() {}
-
-        virtual void play() = 0;
-        virtual void pause() = 0;
-        virtual void skip() = 0;
 
         virtual bool canPlay() = 0;
         virtual bool canPause() = 0;
         virtual bool canSkip() = 0;
 
+    public Q_SLOTS:
+        virtual void play() = 0;
+        virtual void pause() = 0;
+        virtual void skip() = 0;
+
     protected:
-        SimplePlayerController() {}
+        SimplePlayerController(QObject* parent) : QObject(parent) {}
     };
 
 }

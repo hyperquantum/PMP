@@ -23,6 +23,7 @@
 #include "common/audiodata.h"
 #include "common/clientserverinterface.h"
 #include "common/serverconnection.h"
+#include "common/simpleplayercontroller.h"
 #include "common/userdatafetcher.h"
 
 #include "autopersonalmodeaction.h"
@@ -152,17 +153,18 @@ namespace PMP {
             _connection, &ServerConnection::switchToPersonalMode
         );
 
+        auto* playerController = &clientServerInterface->simplePlayerController();
         connect(
             _ui->playButton, &QPushButton::clicked,
-            _connection, &ServerConnection::play
+            playerController, &SimplePlayerController::play
         );
         connect(
             _ui->pauseButton, &QPushButton::clicked,
-            _connection, &ServerConnection::pause
+            playerController, &SimplePlayerController::pause
         );
         connect(
             _ui->skipButton, &QPushButton::clicked,
-            _connection, &ServerConnection::skip
+            playerController, &SimplePlayerController::skip
         );
 
         connect(
