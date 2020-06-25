@@ -20,7 +20,6 @@ KNOWN BUGS
  * the commandline client does not support user authentication which is now required for most commands it supports
  * GUI remote: tracks can be dragged using the right mouse button (not just the left button)
  * GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
- * GUI remote: after a breakpoint is hit, track length and play position are not cleared
  * hash calculation is wrong for MP3 files containing an APE tag
  * the cache of preloaded tracks should be deleted at server exit
  * preloaded tracks are sometimes deleted before they are used because they are old
