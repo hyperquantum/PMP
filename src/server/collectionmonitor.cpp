@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -133,7 +133,7 @@ namespace PMP {
     void CollectionMonitor::emitFullNotifications(QVector<FileHash> hashes) {
         QVector<CollectionTrackInfo> notifications(hashes.size());
 
-        Q_FOREACH(FileHash h, hashes) {
+        for (FileHash h : hashes) {
             auto it = _collection.find(h);
             if (it == _collection.end()) continue; /* disappeared?? */
 
@@ -149,7 +149,7 @@ namespace PMP {
     void CollectionMonitor::emitAvailabilityNotifications(QVector<FileHash> hashes) {
         QVector<FileHash> available, unavailable;
 
-        Q_FOREACH(FileHash h, hashes) {
+        for (FileHash h : hashes) {
             auto it = _collection.find(h);
             if (it == _collection.end()) continue; /* disappeared?? */
 
