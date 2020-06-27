@@ -1963,13 +1963,17 @@ namespace PMP {
         for (int i = 0; i < availableCount; ++i) {
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok || hash.empty()) {
+            if (!ok) {
                 qDebug() << "invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
             }
 
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+
+            /* workaround for server bug; we shouldn't be receiving these */
+            if (hash.length() == 0) continue;
+
             available.append(hash);
         }
 
@@ -1977,18 +1981,26 @@ namespace PMP {
         for (int i = 0; i < unavailableCount; ++i) {
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok || hash.empty()) {
+            if (!ok) {
                 qDebug() << "invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
             }
 
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+
+            /* workaround for server bug; we shouldn't be receiving these */
+            if (hash.length() == 0) continue;
+
             unavailable.append(hash);
         }
 
         qDebug() << "got track availability changes: " << available.size() << "available,"
                  << unavailable.size() << "unavailable";
+
+        if (available.empty() && unavailable.empty())
+            return;
+
         emit collectionTracksAvailabilityChanged(available, unavailable);
     }
 
@@ -2086,7 +2098,7 @@ namespace PMP {
 
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok || hash.empty()) {
+            if (!ok) {
                 qDebug() << " invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
@@ -2114,10 +2126,15 @@ namespace PMP {
                 album = NetworkUtil::getUtf8String(message, offset, albumSize);
             }
 
+            /* workaround for server bug; we shouldn't be receiving these */
+            if (hash.length() == 0) continue;
+
             CollectionTrackInfo info(hash, availabilityByte & 1, title, artist, album,
                                      trackLengthInMs);
             infos.append(info);
         }
+
+        if (infos.empty()) return;
 
         if (isNotification) {
             emit collectionTracksChanged(infos);
