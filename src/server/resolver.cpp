@@ -145,13 +145,15 @@ namespace PMP {
             _audio.setFormat(audio.format());
         }
 
+        bool lengthChanged = false;
         auto newLength = audio.trackLengthMilliseconds();
         auto oldLength = _audio.trackLengthMilliseconds();
-        if (newLength >= 0 && newLength <= std::numeric_limits<qint32>::max()) {
+        if (newLength >= 0 && newLength <= std::numeric_limits<qint32>::max()
+                && newLength != oldLength)
+        {
             _audio.setTrackLengthMilliseconds(newLength);
+            lengthChanged = true;
         }
-
-        bool infoChanged = _audio.trackLengthMilliseconds() != oldLength;
 
         /* check for duplicate tags */
         bool tagIsNew = true;
@@ -165,6 +167,7 @@ namespace PMP {
             }
         }
 
+        bool quickTagsChanged = false;
         if (tagIsNew) {
             _tags.append(new TagData(t));
 
@@ -178,13 +181,21 @@ namespace PMP {
                 _quickArtist = tags->artist();
                 _quickAlbum = tags->album();
 
-                infoChanged |=
-                        oldQuickTitle != _quickTitle || oldQuickArtist != _quickArtist
+                quickTagsChanged =
+                        oldQuickTitle != _quickTitle
+                            || oldQuickArtist != _quickArtist
                             || oldQuickAlbum != _quickAlbum;
+
+                if (_tags.size() > 1 && !quickTagsChanged) {
+                    qDebug() << "extra tag added for track but not switching away from"
+                             << " old tag info: title:" << oldQuickTitle
+                             << "; artist:" << oldQuickArtist
+                             << "; album:" << oldQuickAlbum;
+                }
             }
         }
 
-        if (infoChanged) {
+        if (lengthChanged || quickTagsChanged) {
             Q_EMIT _parent->hashTagInfoChanged(_hash, _quickTitle, _quickArtist,
                                                _quickAlbum,
                                                _audio.trackLengthMilliseconds());
@@ -369,6 +380,8 @@ namespace PMP {
         if (_fullIndexationRunning) {
             return false; /* already running */
         }
+
+        // TODO : update list of music paths from settings file
 
         _fullIndexationRunning = true;
         Q_EMIT fullIndexationRunStatusChanged(true);

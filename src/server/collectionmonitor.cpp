@@ -54,9 +54,14 @@ namespace PMP {
                                                QString album, qint32 lengthInMilliseconds)
     {
         HashInfo& info = _collection[hash];
-        bool changed =
-                title != info.title || artist != info.artist || album != info.album;
-        if (!changed) return;
+
+        bool infoStillTheSame =
+                lengthInMilliseconds == info.lengthInMilliseconds
+                    && title == info.title
+                    && artist == info.artist
+                    && album == info.album;
+
+        if (infoStillTheSame) return;
 
         info.title = title;
         info.artist = artist;
