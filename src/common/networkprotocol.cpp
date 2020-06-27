@@ -178,9 +178,12 @@ namespace PMP {
         return QueueEntryType::Unknown;
     }
 
+    const QByteArray NetworkProtocol::_fileHashAllZeroes =
+            Util::generateZeroedMemory(FILEHASH_BYTECOUNT);
+
     void NetworkProtocol::appendHash(QByteArray& buffer, const FileHash& hash) {
         if (hash.empty()) {
-            buffer += Util::generateZeroedMemory(FILEHASH_BYTECOUNT);
+            buffer += _fileHashAllZeroes;
             return;
         }
 
@@ -199,6 +202,12 @@ namespace PMP {
         }
 
         quint64 lengthPart = NetworkUtil::get8Bytes(buffer, position);
+        if (lengthPart == 0
+                && buffer.mid(position, FILEHASH_BYTECOUNT) == _fileHashAllZeroes)
+        { /* this is how an empty hash is transmitted */
+            if (ok) *ok = true;
+            return FileHash();
+        }
         position += 8;
 
         if (lengthPart > std::numeric_limits<uint>::max()) {

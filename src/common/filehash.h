@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,9 +29,10 @@ namespace PMP {
 
     class FileHash {
     public:
-        FileHash();
-        FileHash(uint length, const QByteArray& sha1,
-            const QByteArray& md5);
+        FileHash() : _length(0) { }
+        FileHash(uint length, const QByteArray& sha1, const QByteArray& md5);
+
+        static FileHash create(const QByteArray& dataToHash);
 
         bool empty() const {
             return _length == 0 && _sha1.size() == 0 && _md5.size() == 0;
