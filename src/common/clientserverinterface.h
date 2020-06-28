@@ -24,6 +24,7 @@
 
 namespace PMP {
 
+    class CollectionWatcher;
     class ServerConnection;
     class SimplePlayerController;
     class SimplePlayerStateMonitor;
@@ -37,6 +38,7 @@ namespace PMP {
         SimplePlayerController& simplePlayerController();
         SimplePlayerStateMonitor& simplePlayerStateMonitor();
 
+        CollectionWatcher& collectionWatcher();
         UserDataFetcher& getUserDataFetcher();
 
     public Q_SLOTS:
@@ -49,6 +51,7 @@ namespace PMP {
         ServerConnection* _connection;
         SimplePlayerController* _simplePlayerController;
         SimplePlayerStateMonitor* _simplePlayerStateMonitor;
+        CollectionWatcher* _collectionWatcher;
         UserDataFetcher* _userDataFetcher;
     };
 }

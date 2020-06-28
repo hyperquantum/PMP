@@ -20,7 +20,8 @@
 #ifndef PMP_COLLECTIONTABLEMODEL_H
 #define PMP_COLLECTIONTABLEMODEL_H
 
-#include "common/serverconnection.h"
+#include "common/collectiontrackinfo.h"
+#include "common/playermode.h"
 #include "common/tribool.h"
 
 #include <QAbstractTableModel>
@@ -49,9 +50,9 @@ namespace PMP {
 
     class TrackHighlighter {
     public:
-        TrackHighlighter()
+        TrackHighlighter(UserDataFetcher& userDataFetcher)
          : _mode(TrackHighlightMode::None), _userId(0), _haveUserId(false),
-           _userDataFetcher(nullptr)
+           _userDataFetcher(userDataFetcher)
         {
             //
         }
@@ -61,8 +62,8 @@ namespace PMP {
             _haveUserId = true;
         }
 
-        void setUserDataFetcher(UserDataFetcher& userDataFetcher) {
-            _userDataFetcher = &userDataFetcher;
+        bool isUserIdSetTo(quint32 userId) {
+            return _userId == userId && _haveUserId;
         }
 
         void setMode(TrackHighlightMode mode) { _mode = mode; }
@@ -80,7 +81,7 @@ namespace PMP {
         TrackHighlightMode _mode;
         quint32 _userId;
         bool _haveUserId;
-        UserDataFetcher* _userDataFetcher;
+        UserDataFetcher& _userDataFetcher;
     };
 
     class ClientServerInterface;
@@ -88,14 +89,10 @@ namespace PMP {
     class SortedCollectionTableModel : public QAbstractTableModel {
         Q_OBJECT
     public:
-        SortedCollectionTableModel(QObject* parent = 0);
-
-        void setConnection(ServerConnection* connection,
-                           ClientServerInterface* clientServerInterface);
+        SortedCollectionTableModel(QObject* parent,
+                                   ClientServerInterface* clientServerInterface);
 
         void setHighlightMode(TrackHighlightMode mode);
-
-        void addOrUpdateTracks(QList<CollectionTrackInfo> tracks);
 
         void sortByTitle();
         void sortByArtist();
@@ -116,18 +113,23 @@ namespace PMP {
         Qt::DropActions supportedDropActions() const;
         QMimeData* mimeData(const QModelIndexList& indexes) const;
 
-    private slots:
-        void onCollectionTracksAvailabilityChanged(QVector<PMP::FileHash> available,
-                                                   QVector<PMP::FileHash> unavailable);
-        void onCollectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
+    private Q_SLOTS:
+        void onNewTrackReceived(CollectionTrackInfo track);
+        void onTrackAvailabilityChanged(FileHash hash, bool isAvailable);
+        void onTrackDataChanged(CollectionTrackInfo track);
         void onDataReceivedForUser(quint32 userId);
-        void onReceivedUserPlayingFor(quint32 userId);
+        void onPlayerModeChanged(PMP::PlayerMode playerMode, quint32 personalModeUserId,
+                                 QString personalModeUserLogin);
 
     private:
-        void updateTrackAvailability(QVector<FileHash> hashes, bool available);
-        void addWhenModelEmpty(QList<CollectionTrackInfo> tracks);
+        void updateTrackAvailability(FileHash hash, bool isAvailable);
+        template<class T> void addWhenModelEmpty(T trackCollection);
+        void addOrUpdateTrack(CollectionTrackInfo const& track);
+        void addTrack(CollectionTrackInfo const& track);
+        void updateTrack(CollectionTrackInfo const& track);
         void buildIndexMaps();
         void rebuildInnerMap(int outerStartIndex = 0);
+        int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track);
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track,
                                             int searchRangeBegin, int searchRangeEnd);
         void markEverythingAsChanged();
@@ -168,8 +170,6 @@ namespace PMP {
         int _sortBy;
         Qt::SortOrder _sortOrder;
         TrackHighlighter _highlighter;
-        quint32 _userPlayingFor;
-        bool _receivedUserPlayingFor;
     };
 
     class FilteredCollectionTableModel : public QSortFilterProxyModel {
@@ -191,21 +191,6 @@ namespace PMP {
     private:
         SortedCollectionTableModel* _source;
         QStringList _searchParts;
-    };
-
-    class CollectionTableFetcher : public AbstractCollectionFetcher {
-        Q_OBJECT
-    public:
-        CollectionTableFetcher(SortedCollectionTableModel* parent);
-
-    public slots:
-        void receivedData(QList<CollectionTrackInfo> data);
-        void completed();
-        void errorOccurred();
-
-    private:
-        SortedCollectionTableModel* _model;
-        QList<CollectionTrackInfo> _tracksReceived;
     };
 }
 

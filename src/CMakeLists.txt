@@ -20,6 +20,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 set(PMP_COMMON_SOURCES
     common/audiodata.cpp
     common/clientserverinterface.cpp
+    common/collectionwatcherimpl.cpp
     common/commonmetatypes.cpp
     common/fileanalyzer.cpp
     common/filehash.cpp
@@ -31,11 +32,15 @@ set(PMP_COMMON_SOURCES
     common/simpleplayercontrollerimpl.cpp
     common/simpleplayerstatemonitorimpl.cpp
     common/tagdata.cpp
+    common/tribool.cpp
     common/userdatafetcher.cpp
     common/util.cpp
 )
 set(PMP_COMMON_HEADERS
     common/clientserverinterface.h
+    common/collectionfetcher.h
+    common/collectionwatcher.h
+    common/collectionwatcherimpl.h
     common/serverconnection.h
     common/serverdiscoverer.h
     common/simpleplayercontroller.h

@@ -17,38 +17,30 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef PMP_COLLECTIONWATCHER_H
+#define PMP_COLLECTIONWATCHER_H
+
+#include "collectiontrackinfo.h"
+
+#include <QHash>
 #include <QObject>
-
-#ifndef PMP_SIMPLEPLAYERSTATEMONITOR_H
-#define PMP_SIMPLEPLAYERSTATEMONITOR_H
-
-#include "playermode.h"
-#include "playerstate.h"
-#include "tribool.h"
-
-#include <QString>
 
 namespace PMP {
 
-    class SimplePlayerStateMonitor : public QObject {
+    class CollectionWatcher : public QObject {
         Q_OBJECT
     public:
-        virtual ~SimplePlayerStateMonitor() {}
+        virtual ~CollectionWatcher() {}
 
-        virtual PlayerState playerState() const = 0;
-
-        virtual PlayerMode playerMode() const = 0;
-        virtual quint32 personalModeUserId() const = 0;
-        virtual QString personalModeUserLogin() const = 0;
+        virtual QHash<FileHash, CollectionTrackInfo> getCollection() = 0;
 
     Q_SIGNALS:
-        void playerStateChanged(PlayerState playerState);
-        void playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,
-                               QString personalModeUserLogin);
+        void newTrackReceived(CollectionTrackInfo track);
+        void trackAvailabilityChanged(FileHash hash, bool isAvailable);
+        void trackDataChanged(CollectionTrackInfo track);
 
     protected:
-        explicit SimplePlayerStateMonitor(QObject* parent) : QObject(parent) {}
+        explicit CollectionWatcher(QObject* parent) : QObject(parent) {}
     };
-
 }
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,30 +17,10 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SIMPLEPLAYERCONTROLLER_H
-#define PMP_SIMPLEPLAYERCONTROLLER_H
-
-#include <QObject>
+#include "tribool.h"
 
 namespace PMP {
 
-    class SimplePlayerController : public QObject {
-        Q_OBJECT
-    public:
-        virtual ~SimplePlayerController() {}
-
-        virtual bool canPlay() = 0;
-        virtual bool canPause() = 0;
-        virtual bool canSkip() = 0;
-
-    public Q_SLOTS:
-        virtual void play() = 0;
-        virtual void pause() = 0;
-        virtual void skip() = 0;
-
-    protected:
-        explicit SimplePlayerController(QObject* parent) : QObject(parent) {}
-    };
+    const TriBool TriBool::unknown = TriBool();
 
 }
-#endif

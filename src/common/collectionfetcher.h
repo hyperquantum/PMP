@@ -17,38 +17,26 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef PMP_COLLECTIONFETCHER_H
+#define PMP_COLLECTIONFETCHER_H
+
+#include "collectiontrackinfo.h"
+
 #include <QObject>
-
-#ifndef PMP_SIMPLEPLAYERSTATEMONITOR_H
-#define PMP_SIMPLEPLAYERSTATEMONITOR_H
-
-#include "playermode.h"
-#include "playerstate.h"
-#include "tribool.h"
-
-#include <QString>
+#include <QVector>
 
 namespace PMP {
 
-    class SimplePlayerStateMonitor : public QObject {
+    class CollectionFetcher : public QObject {
         Q_OBJECT
     public:
-        virtual ~SimplePlayerStateMonitor() {}
-
-        virtual PlayerState playerState() const = 0;
-
-        virtual PlayerMode playerMode() const = 0;
-        virtual quint32 personalModeUserId() const = 0;
-        virtual QString personalModeUserLogin() const = 0;
+        CollectionFetcher() {}
+        virtual ~CollectionFetcher() {}
 
     Q_SIGNALS:
-        void playerStateChanged(PlayerState playerState);
-        void playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,
-                               QString personalModeUserLogin);
-
-    protected:
-        explicit SimplePlayerStateMonitor(QObject* parent) : QObject(parent) {}
+        void receivedData(QVector<CollectionTrackInfo> data);
+        void completed();
+        void errorOccurred();
     };
-
 }
 #endif

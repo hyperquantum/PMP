@@ -31,15 +31,29 @@ namespace PMP {
     public:
         SimplePlayerStateMonitorImpl(ServerConnection* connection);
 
-        PlayerState playerState() const;
+        PlayerState playerState() const override;
+
+        PlayerMode playerMode() const override;
+        quint32 personalModeUserId() const override;
+        QString personalModeUserLogin() const override;
 
     private slots:
+        void connected();
+        void connectionBroken();
         void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition);
+        void receivedUserPlayingFor(quint32 userId, QString userLogin);
 
     private:
+        void changeCurrentState(PlayerState state);
+        void changeCurrentMode(PlayerMode mode, quint32 personalModeUserId,
+                               QString personalModeUserLogin);
+
         ServerConnection* _connection;
         PlayerState _state;
+        PlayerMode _mode;
+        quint32 _personalModeUserId;
+        QString _personalModeUserLogin;
     };
 }
 #endif

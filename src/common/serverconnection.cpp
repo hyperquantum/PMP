@@ -19,6 +19,7 @@
 
 #include "serverconnection.h"
 
+#include "common/collectionfetcher.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
 
@@ -115,18 +116,18 @@ namespace PMP {
     class ServerConnection::CollectionFetchResultHandler : public ResultHandler {
     public:
         CollectionFetchResultHandler(ServerConnection* parent,
-                                     AbstractCollectionFetcher* fetcher);
+                                     CollectionFetcher* fetcher);
 
         void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
                           quint32 intData, QByteArray const& blobData) override;
 
     private:
-        AbstractCollectionFetcher* _fetcher;
+        CollectionFetcher* _fetcher;
     };
 
     ServerConnection::CollectionFetchResultHandler::CollectionFetchResultHandler(
-                                                       ServerConnection* parent,
-                                                       AbstractCollectionFetcher* fetcher)
+                                                               ServerConnection* parent,
+                                                               CollectionFetcher* fetcher)
      : ResultHandler(parent), _fetcher(fetcher)
     {
         //
@@ -141,13 +142,15 @@ namespace PMP {
         _parent->_collectionFetchers.remove(clientReference);
 
         if (errorType == NetworkProtocol::NoError) {
-            _fetcher->completed();
+            Q_EMIT _fetcher->completed();
         }
         else {
             qWarning() << "CollectionFetchResultHandler:"
                        << errorDescription(errorType, clientReference, intData, blobData);
-            _fetcher->errorOccurred();
+            Q_EMIT _fetcher->errorOccurred();
         }
+
+        _fetcher->deleteLater();
     }
 
     /* ============================================================================ */
@@ -1001,7 +1004,9 @@ namespace PMP {
         sendSingleByteAction(15); /* 15 = request for full indexation running status */
     }
 
-    void ServerConnection::fetchCollection(AbstractCollectionFetcher* fetcher) {
+    void ServerConnection::fetchCollection(CollectionFetcher* fetcher) {
+        fetcher->setParent(this);
+
         auto handler = new CollectionFetchResultHandler(this, fetcher);
         auto fetcherReference = getNewReference();
         _resultHandlers[fetcherReference] = handler;
@@ -2028,7 +2033,7 @@ namespace PMP {
             return; /* irrelevant or invalid message */
         }
 
-        AbstractCollectionFetcher* collectionFetcher = nullptr;
+        CollectionFetcher* collectionFetcher = nullptr;
         if (!isNotification) {
             quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
             collectionFetcher = _collectionFetchers.value(clientReference, nullptr);
@@ -2091,7 +2096,7 @@ namespace PMP {
         }
 
         /* now read all track info's */
-        QList<CollectionTrackInfo> infos;
+        QVector<CollectionTrackInfo> infos;
         infos.reserve(trackCount);
         for (int i = 0; i < trackCount; ++i) {
             offset = offsets[i];
@@ -2137,10 +2142,10 @@ namespace PMP {
         if (infos.empty()) return;
 
         if (isNotification) {
-            emit collectionTracksChanged(infos);
+            Q_EMIT collectionTracksChanged(infos);
         }
         else {
-            collectionFetcher->receivedData(infos);
+            Q_EMIT collectionFetcher->receivedData(infos);
         }
     }
 
@@ -2322,14 +2327,6 @@ namespace PMP {
             //    _knownExtensionOther = extension;
             //}
         }
-    }
-
-    // ============================================================================ //
-
-    AbstractCollectionFetcher::AbstractCollectionFetcher(QObject* parent)
-     : QObject(parent)
-    {
-        //
     }
 
 }

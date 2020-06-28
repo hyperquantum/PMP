@@ -31,9 +31,12 @@
 
 namespace PMP {
 
-    CollectionWidget::CollectionWidget(QWidget* parent)
-     : QWidget(parent), _ui(new Ui::CollectionWidget), _connection(nullptr),
-       _collectionSourceModel(new SortedCollectionTableModel(this)),
+    CollectionWidget::CollectionWidget(QWidget* parent, ServerConnection* connection,
+                                       ClientServerInterface* clientServerInterface)
+     : QWidget(parent),
+       _ui(new Ui::CollectionWidget),
+       _connection(connection),
+       _collectionSourceModel(new SortedCollectionTableModel(this,clientServerInterface)),
        _collectionDisplayModel(
            new FilteredCollectionTableModel(_collectionSourceModel, this)),
        _collectionContextMenu(nullptr)
@@ -119,13 +122,6 @@ namespace PMP {
         );
 
         delete _ui;
-    }
-
-    void CollectionWidget::setConnection(ServerConnection* connection,
-                                         ClientServerInterface* clientServerInterface)
-    {
-        _connection = connection;
-        _collectionSourceModel->setConnection(connection, clientServerInterface);
     }
 
     void CollectionWidget::highlightTracksIndexChanged(int index) {
