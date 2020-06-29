@@ -99,7 +99,7 @@ namespace PMP {
         _queueModel =
             new QueueModel(
                 _connection, _queueMediator, _queueEntryInfoFetcher,
-                clientServerInterface->getUserDataFetcher()
+                clientServerInterface->userDataFetcher()
             );
         _historyModel = new PlayerHistoryModel(this, _queueEntryInfoFetcher);
         _historyModel->setConnection(connection);

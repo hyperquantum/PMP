@@ -62,7 +62,7 @@ namespace PMP {
         return *_collectionWatcher;
     }
 
-    UserDataFetcher& ClientServerInterface::getUserDataFetcher()
+    UserDataFetcher& ClientServerInterface::userDataFetcher()
     {
         if (_userDataFetcher == nullptr) {
             _userDataFetcher = new UserDataFetcher(this, _connection);

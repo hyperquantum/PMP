@@ -39,7 +39,7 @@ namespace PMP {
         SimplePlayerStateMonitor& simplePlayerStateMonitor();
 
         CollectionWatcher& collectionWatcher();
-        UserDataFetcher& getUserDataFetcher();
+        UserDataFetcher& userDataFetcher();
 
     public Q_SLOTS:
 

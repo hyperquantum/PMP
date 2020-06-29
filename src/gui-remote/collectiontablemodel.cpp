@@ -162,7 +162,7 @@ namespace PMP {
      : QAbstractTableModel(parent),
        _sortBy(0),
        _sortOrder(Qt::AscendingOrder),
-       _highlighter(clientServerInterface->getUserDataFetcher())
+       _highlighter(clientServerInterface->userDataFetcher())
     {
         _collator.setCaseSensitivity(Qt::CaseInsensitive);
         _collator.setNumericMode(true);
@@ -196,7 +196,7 @@ namespace PMP {
             this, &SortedCollectionTableModel::onTrackDataChanged
         );
 
-        auto& userDataFetcher = clientServerInterface->getUserDataFetcher();
+        auto& userDataFetcher = clientServerInterface->userDataFetcher();
 
         connect(
             &userDataFetcher, &UserDataFetcher::dataReceivedForUser,
