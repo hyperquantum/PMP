@@ -182,7 +182,7 @@ namespace PMP {
                     case 4:
                     {
                         auto& hash = info->hash();
-                        if (hash.empty() || !_receivedUserPlayingFor)
+                        if (hash.isNull() || !_receivedUserPlayingFor)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
                         auto hashData =
@@ -223,7 +223,7 @@ namespace PMP {
             case 3:
             {
                 auto& hash = info->hash();
-                if (hash.empty() || !_receivedUserPlayingFor)
+                if (hash.isNull() || !_receivedUserPlayingFor)
                     return QVariant(); /* unknown */
 
                 auto hashData =
@@ -241,7 +241,7 @@ namespace PMP {
             case 4:
             {
                 auto& hash = info->hash();
-                if (hash.empty() || !_receivedUserPlayingFor)
+                if (hash.isNull() || !_receivedUserPlayingFor)
                     return QVariant(); /* unknown */
 
                 auto hashData =
@@ -380,7 +380,7 @@ namespace PMP {
         stream >> md5;
 
         FileHash hash(hashLength, sha1, md5);
-        if (hash.empty()) return false;
+        if (hash.isNull()) return false;
 
         int newIndex = (row < 0) ? _modelRows : row;
 

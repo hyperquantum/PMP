@@ -102,7 +102,7 @@ namespace PMP {
     void ServerInterface::enqueue(FileHash hash)
     {
         if (!isLoggedIn()) return;
-        if (hash.empty()) return;
+        if (hash.isNull()) return;
 
         _player->queue().enqueue(hash);
     }
@@ -110,7 +110,7 @@ namespace PMP {
     void ServerInterface::insertAtFront(FileHash hash)
     {
         if (!isLoggedIn()) return;
-        if (hash.empty()) return;
+        if (hash.isNull()) return;
 
         _player->queue().insertAtFront(hash);
     }

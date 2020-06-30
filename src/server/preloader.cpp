@@ -52,7 +52,7 @@ namespace PMP {
     void TrackPreloadTask::run() {
         QString filename = _originalFilename;
 
-        if (!_hash.empty()) {
+        if (!_hash.isNull()) {
             if (filename.isEmpty() || !_resolver->pathStillValid(_hash, filename))
             {
                 filename = _resolver->findPath(_hash, false);

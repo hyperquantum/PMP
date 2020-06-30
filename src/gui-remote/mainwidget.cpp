@@ -322,7 +322,7 @@ namespace PMP {
 
         int row = index.row();
         auto hash = _historyModel->trackHashAt(row);
-        if (hash.empty()) {
+        if (hash.isNull()) {
             qDebug() << "history: no hash known for track at row" << row;
             return;
         }

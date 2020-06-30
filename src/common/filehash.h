@@ -34,7 +34,7 @@ namespace PMP {
 
         static FileHash create(const QByteArray& dataToHash);
 
-        bool empty() const {
+        bool isNull() const {
             return _length == 0 && _sha1.size() == 0 && _md5.size() == 0;
         }
 

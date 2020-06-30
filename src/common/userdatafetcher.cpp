@@ -47,7 +47,7 @@ namespace PMP {
     UserDataFetcher::HashData const* UserDataFetcher::getHashDataForUser(quint32 userId,
                                                                      const FileHash& hash)
     {
-        if (hash.empty()) return nullptr;
+        if (hash.isNull()) return nullptr;
 
         UserData* userData = getOrCreateUserData(userId);
         HashData const* hashData = userData->getHash(hash);

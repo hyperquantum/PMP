@@ -46,7 +46,7 @@ namespace PMP {
     }
 
     QString FileHash::dumpToString() const {
-        if (empty()) return "(empty)";
+        if (isNull()) return "(null)";
 
         return "(" + QString::number(_length) + "; "
             + _sha1.toHex() + "; "

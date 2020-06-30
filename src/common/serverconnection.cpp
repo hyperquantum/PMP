@@ -607,7 +607,7 @@ namespace PMP {
     RequestID ServerConnection::insertQueueEntryAtIndex(const FileHash& hash,
                                                         quint32 index)
     {
-        if (hash.empty()) return RequestID(); /* invalid */
+        if (hash.isNull()) return RequestID(); /* invalid */
 
         auto handler = new TrackInsertionResultHandler(this, index);
         auto ref = getNewReference();

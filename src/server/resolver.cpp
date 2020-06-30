@@ -424,7 +424,7 @@ namespace PMP {
             FileHash hash =
                     analyzeAndRegisterFileInternal(filePath, _fullIndexationNumber);
 
-            if (hash.empty()) {
+            if (hash.isNull()) {
                 qDebug() << "file analysis FAILED:" << filePath;
             }
         }
@@ -440,7 +440,7 @@ namespace PMP {
     }
 
     Resolver::HashKnowledge* Resolver::registerHash(const FileHash& hash) {
-        if (hash.empty()) return nullptr; /* invalid hash */
+        if (hash.isNull()) return nullptr; /* invalid hash */
 
         QMutexLocker lock(&_lock);
 
@@ -514,7 +514,7 @@ namespace PMP {
         QMutexLocker lock(&_lock);
 
         HashKnowledge* knowledge;
-        if (legacyHash.empty()) {
+        if (legacyHash.isNull()) {
             knowledge = registerHash(finalHash);
         }
         else if (!_hashKnowledge.value(legacyHash, nullptr)) {
@@ -640,7 +640,7 @@ namespace PMP {
 
                     FileHash candidateHash =
                             analyzeAndRegisterFileInternal(candidatePath, 0);
-                    if (candidateHash.empty()) continue; /* failed to analyze */
+                    if (candidateHash.isNull()) continue; /* failed to analyze */
 
                     if (candidateHash == hash) {
                         qDebug() << "   we have a MATCH!";
