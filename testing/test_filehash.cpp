@@ -25,6 +25,35 @@
 
 using namespace PMP;
 
+void TestFileHash::defaultConstructorCreatesNullHash()
+{
+    FileHash hash;
+    QCOMPARE(hash.isNull(), true);
+}
+
+void TestFileHash::realHashNotConsideredNull()
+{
+    auto hash = FileHash::create("PMP");
+    QCOMPARE(hash.isNull(), false);
+}
+
+void TestFileHash::hashOfEmptyDataNotConsideredNull()
+{
+    QByteArray emptyData;
+    auto hash = FileHash::create(emptyData);
+    QCOMPARE(hash.isNull(), false);
+}
+
+void TestFileHash::hashOfEmptyDataHasKnownValues()
+{
+    QByteArray emptyData;
+    auto hash = FileHash::create(emptyData);
+    QCOMPARE(hash.length(), 0);
+    QCOMPARE(hash.SHA1().toBase64(), "2jmj7l5rSw0yVb/vlWAYkK/YBwk=");
+    QCOMPARE(hash.MD5().toBase64(), "1B2M2Y8AsgTpgAmY7PhCfg==");
+    QCOMPARE(toString(hash), "0;2jmj7l5rSw0yVb/vlWAYkK/YBwk;1B2M2Y8AsgTpgAmY7PhCfg");
+}
+
 void TestFileHash::knownHash1() {
     auto hash = FileHash::create("PMP");
     QCOMPARE(hash.length(), 3);

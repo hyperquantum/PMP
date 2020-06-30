@@ -30,6 +30,10 @@ namespace PMP {
 class TestFileHash : public QObject {
     Q_OBJECT
 private Q_SLOTS:
+    void defaultConstructorCreatesNullHash();
+    void realHashNotConsideredNull();
+    void hashOfEmptyDataNotConsideredNull();
+    void hashOfEmptyDataHasKnownValues();
     void knownHash1();
     void knownHash2();
     void knownHash3();
