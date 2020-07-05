@@ -149,7 +149,7 @@ namespace PMP {
         _collectionContextMenu = new QMenu(this);
 
         auto enqueueFrontAction =
-            _collectionContextMenu->addAction("Add to front of queue");
+            _collectionContextMenu->addAction(tr("Add to front of queue"));
         connect(
             enqueueFrontAction, &QAction::triggered,
             [this, hash]() {
@@ -158,7 +158,8 @@ namespace PMP {
             }
         );
 
-        auto enqueueEndAction = _collectionContextMenu->addAction("Add to end of queue");
+        auto enqueueEndAction =
+                _collectionContextMenu->addAction(tr("Add to end of queue"));
         connect(
             enqueueEndAction, &QAction::triggered,
             [this, hash]() {
