@@ -24,6 +24,7 @@
 #include "common/util.h"
 
 #include "collectiontablemodel.h"
+#include "trackinfodialog.h"
 
 #include <QMenu>
 #include <QtDebug>
@@ -36,6 +37,7 @@ namespace PMP {
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
        _connection(connection),
+       _clientServerInterface(clientServerInterface),
        _collectionSourceModel(new SortedCollectionTableModel(this,clientServerInterface)),
        _collectionDisplayModel(
            new FilteredCollectionTableModel(_collectionSourceModel, this)),
@@ -139,10 +141,11 @@ namespace PMP {
         auto index = _ui->collectionTableView->indexAt(position);
         if (!index.isValid()) return;
 
-        auto track = _collectionDisplayModel->trackAt(index);
-        if (!track) return;
+        auto trackPointer = _collectionDisplayModel->trackAt(index);
+        if (!trackPointer) return;
 
-        FileHash hash = track->hash();
+        auto track = *trackPointer;
+        FileHash hash = track.hash();
 
         if (_collectionContextMenu)
             delete _collectionContextMenu;
@@ -165,6 +168,20 @@ namespace PMP {
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (end) triggered";
                 _connection->insertQueueEntryAtEnd(hash);
+            }
+        );
+
+        _collectionContextMenu->addSeparator();
+
+        auto trackInfoAction = _collectionContextMenu->addAction(tr("Track info"));
+        connect(
+            trackInfoAction, &QAction::triggered,
+            this,
+            [this, track]() {
+                qDebug() << "collection context menu: track info triggered";
+                auto dialog = new TrackInfoDialog(this, track, _clientServerInterface);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->open();
             }
         );
 

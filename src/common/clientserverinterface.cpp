@@ -70,4 +70,19 @@ namespace PMP {
 
         return *_userDataFetcher;
     }
+
+    bool ClientServerInterface::isLoggedIn() const
+    {
+        return _connection->isLoggedIn();
+    }
+
+    quint32 ClientServerInterface::userLoggedInId() const
+    {
+        return _connection->userLoggedInId();
+    }
+
+    QString ClientServerInterface::userLoggedInName() const
+    {
+        return _connection->userLoggedInName();
+    }
 }

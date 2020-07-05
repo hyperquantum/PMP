@@ -41,6 +41,10 @@ namespace PMP {
         CollectionWatcher& collectionWatcher();
         UserDataFetcher& userDataFetcher();
 
+        bool isLoggedIn() const;
+        quint32 userLoggedInId() const;
+        QString userLoggedInName() const;
+
     public Q_SLOTS:
 
 

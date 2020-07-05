@@ -32,6 +32,7 @@ namespace PMP {
     const QChar Util::EnDash = QChar(0x2013);
     const QChar Util::EAcute = QChar(0xE9);
     const QChar Util::EDiaeresis = QChar(0xEB);
+    const QChar Util::FigureDash = QChar(0x2012);
     const QChar Util::GreaterThanOrEqual = QChar(0x2265);
     const QChar Util::LessThanOrEqual = QChar(0x2264);
 

@@ -50,6 +50,7 @@ namespace PMP {
     private:
         Ui::CollectionWidget* _ui;
         ServerConnection* _connection;
+        ClientServerInterface* _clientServerInterface;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;
         QMenu* _collectionContextMenu;
