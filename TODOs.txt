@@ -28,6 +28,7 @@ KNOWN BUGS
  * GUI remote: searching the music collection for "e" does not return results having "ë"
  * a "skip" operation should not affect the current track's score if performed by another player
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
+ * GUI remote: music collection view: applying track metadata updates is not implemented yet
 
 
 PERFORMANCE ISSUES
