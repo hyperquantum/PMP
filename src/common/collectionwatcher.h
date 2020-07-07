@@ -33,6 +33,7 @@ namespace PMP {
         virtual ~CollectionWatcher() {}
 
         virtual QHash<FileHash, CollectionTrackInfo> getCollection() = 0;
+        virtual CollectionTrackInfo getTrack(FileHash const& hash) = 0;
 
     Q_SIGNALS:
         void newTrackReceived(CollectionTrackInfo track);

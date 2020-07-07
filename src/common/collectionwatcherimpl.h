@@ -35,6 +35,7 @@ namespace PMP {
         CollectionWatcherImpl(ServerConnection* connection);
 
         QHash<FileHash, CollectionTrackInfo> getCollection() override;
+        CollectionTrackInfo getTrack(FileHash const& hash) override;
 
     private Q_SLOTS:
         void onConnected();

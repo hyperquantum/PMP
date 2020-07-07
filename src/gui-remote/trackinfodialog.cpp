@@ -22,6 +22,7 @@
 
 #include "common/clientserverinterface.h"
 #include "common/collectiontrackinfo.h"
+#include "common/collectionwatcher.h"
 #include "common/simpleplayerstatemonitor.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
@@ -31,6 +32,29 @@
 
 namespace PMP {
 
+    TrackInfoDialog::TrackInfoDialog(QWidget* parent, const FileHash& hash,
+                                     ClientServerInterface* clientServerInterface)
+     : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
+        _ui(new Ui::TrackInfoDialog),
+        _clientServerInterface(clientServerInterface),
+        _trackHash(hash)
+    {
+        init();
+
+        auto trackInfo = clientServerInterface->collectionWatcher().getTrack(hash);
+
+        if (trackInfo.hash().isNull()) { /* not found? */
+            fillHash(hash);
+            clearTrackDetails();
+        }
+        else {
+            fillHash(trackInfo.hash());
+            fillTrackDetails(trackInfo);
+        }
+
+        fillUserData(_trackHash);
+    }
+
     TrackInfoDialog::TrackInfoDialog(QWidget* parent, const CollectionTrackInfo& track,
                                      ClientServerInterface* clientServerInterface)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
@@ -38,14 +62,9 @@ namespace PMP {
         _clientServerInterface(clientServerInterface),
         _trackHash(track.hash())
     {
-        _ui->setupUi(this);
+        init();
 
-        connect(
-            &_clientServerInterface->userDataFetcher(),
-            &UserDataFetcher::dataReceivedForUser,
-            this, &TrackInfoDialog::dataReceivedForUser
-        );
-
+        fillHash(track.hash());
         fillTrackDetails(track);
         fillUserData(_trackHash);
     }
@@ -56,12 +75,51 @@ namespace PMP {
         delete _ui;
     }
 
+    void TrackInfoDialog::newTrackReceived(CollectionTrackInfo track)
+    {
+        if (track.hash() != _trackHash)
+            return;
+
+        fillTrackDetails(track);
+    }
+
+    void TrackInfoDialog::trackDataChanged(CollectionTrackInfo track)
+    {
+        if (track.hash() != _trackHash)
+            return;
+
+        fillTrackDetails(track);
+    }
+
     void TrackInfoDialog::dataReceivedForUser(quint32 userId)
     {
         if (userId != _clientServerInterface->userLoggedInId())
             return;
 
         fillUserData(_trackHash);
+    }
+
+    void TrackInfoDialog::init()
+    {
+        _ui->setupUi(this);
+
+        connect(
+            &_clientServerInterface->collectionWatcher(),
+            &CollectionWatcher::newTrackReceived,
+            this, &TrackInfoDialog::newTrackReceived
+        );
+
+        connect(
+            &_clientServerInterface->collectionWatcher(),
+            &CollectionWatcher::trackDataChanged,
+            this, &TrackInfoDialog::trackDataChanged
+        );
+
+        connect(
+            &_clientServerInterface->userDataFetcher(),
+            &UserDataFetcher::dataReceivedForUser,
+            this, &TrackInfoDialog::dataReceivedForUser
+        );
     }
 
     void TrackInfoDialog::fillHash(const FileHash& hash)
@@ -90,8 +148,6 @@ namespace PMP {
         }
 
         _ui->lengthValueLabel->setText(lengthText);
-
-        fillHash(trackInfo.hash());
     }
 
     void TrackInfoDialog::fillUserData(const FileHash& hash)
@@ -140,6 +196,14 @@ namespace PMP {
         }
 
         _ui->scoreValueLabel->setText(scoreText);
+    }
+
+    void TrackInfoDialog::clearTrackDetails()
+    {
+        _ui->titleValueLabel->clear();
+        _ui->artistValueLabel->clear();
+        _ui->albumValueLabel->clear();
+        _ui->lengthValueLabel->clear();
     }
 
     void TrackInfoDialog::clearUserData()

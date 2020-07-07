@@ -49,6 +49,16 @@ namespace PMP {
         return _collectionHash;
     }
 
+    CollectionTrackInfo CollectionWatcherImpl::getTrack(const FileHash& hash)
+    {
+        auto it = _collectionHash.find(hash);
+
+        if (it == _collectionHash.end())
+            return CollectionTrackInfo();
+
+        return it.value();
+    }
+
     void CollectionWatcherImpl::onConnected()
     {
         startDownload();

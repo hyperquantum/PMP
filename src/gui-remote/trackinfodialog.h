@@ -20,6 +20,7 @@
 #ifndef PMP_TRACKINFODIALOG_H
 #define PMP_TRACKINFODIALOG_H
 
+#include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
 
 #include <QDialog>
@@ -31,23 +32,31 @@ namespace Ui {
 namespace PMP {
 
     class ClientServerInterface;
-    class CollectionTrackInfo;
     class FileHash;
 
     class TrackInfoDialog : public QDialog {
         Q_OBJECT
     public:
+        TrackInfoDialog(QWidget* parent, FileHash const& hash,
+                        ClientServerInterface* clientServerInterface);
+
         TrackInfoDialog(QWidget* parent, CollectionTrackInfo const& track,
                         ClientServerInterface* clientServerInterface);
+
         ~TrackInfoDialog();
 
     private Q_SLOTS:
+        void newTrackReceived(CollectionTrackInfo track);
+        void trackDataChanged(CollectionTrackInfo track);
         void dataReceivedForUser(quint32 userId);
 
     private:
+        void init();
+
         void fillHash(const FileHash& hash);
         void fillTrackDetails(CollectionTrackInfo const& trackInfo);
         void fillUserData(const FileHash& hash);
+        void clearTrackDetails();
         void clearUserData();
 
         Ui::TrackInfoDialog* _ui;

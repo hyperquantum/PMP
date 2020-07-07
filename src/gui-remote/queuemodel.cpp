@@ -457,9 +457,38 @@ namespace PMP {
         }
 
         Track* t = _tracks[row];
-        if (t == 0) return 0;
+        if (t == nullptr) return 0;
 
         return t->_queueID;
+    }
+
+    QueueTrack QueueModel::trackAt(const QModelIndex& index) const
+    {
+        int row = index.row();
+        if (row >= _tracks.size()) {
+            /* make sure the info will be fetched from the server */
+            (void)(_source->queueEntry(row));
+
+            /* but we HAVE TO return something here */
+            return QueueTrack();
+        }
+
+        Track* track = _tracks[row];
+        if (track == nullptr) return QueueTrack();
+
+        auto queueId = track->_queueID;
+
+        QueueEntryInfo* info = queueId ? _infoFetcher->entryInfoByQID(queueId) : nullptr;
+
+        if (info == nullptr)
+            return QueueTrack();
+
+        if (info->type() != QueueEntryType::Track)
+            return QueueTrack(queueId, false);
+
+        auto& hash = info->hash();
+
+        return QueueTrack(queueId, hash);
     }
 
     void QueueModel::onUserPlayingForChanged(quint32 userId) {
