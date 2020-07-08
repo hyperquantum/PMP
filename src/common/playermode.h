@@ -17,44 +17,39 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_PLAYERSTATE_H
-#define PMP_PLAYERSTATE_H
+#ifndef PMP_PLAYERMODE_H
+#define PMP_PLAYERMODE_H
 
 #include <QtDebug>
 
 namespace PMP {
 
-    enum class PlayerState {
+    enum class PlayerMode {
         Unknown = 0,
-        Stopped,
-        Playing,
-        Paused
+        Personal,
+        Public
     };
 
-    inline QDebug operator<<(QDebug debug, PlayerState state) {
-        switch (state) {
-            case PlayerState::Unknown:
-                debug << "PlayerState::Unknown";
+    inline QDebug operator<<(QDebug debug, PlayerMode mode) {
+        switch (mode) {
+            case PlayerMode::Unknown:
+                debug << "PlayerMode::Unknown";
                 return debug;
 
-            case PlayerState::Stopped:
-                debug << "PlayerState::Stopped";
+            case PlayerMode::Personal:
+                debug << "PlayerMode::Personal";
                 return debug;
 
-            case PlayerState::Playing:
-                debug << "PlayerState::Playing";
-                return debug;
-
-            case PlayerState::Paused:
-                debug << "PlayerState::Paused";
+            case PlayerMode::Public:
+                debug << "PlayerMode::Public";
                 return debug;
         }
 
-        debug << int(state);
+        debug << int(mode);
         return debug;
     }
 }
 
-Q_DECLARE_METATYPE(PMP::PlayerState)
+Q_DECLARE_METATYPE(PMP::PlayerMode)
 
 #endif

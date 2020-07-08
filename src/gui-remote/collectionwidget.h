@@ -39,11 +39,9 @@ namespace PMP {
         Q_OBJECT
 
     public:
-        explicit CollectionWidget(QWidget* parent = 0);
+        CollectionWidget(QWidget* parent, ServerConnection* connection,
+                         ClientServerInterface* clientServerInterface);
         ~CollectionWidget();
-
-        void setConnection(ServerConnection* connection,
-                           ClientServerInterface* clientServerInterface);
 
     private slots:
         void highlightTracksIndexChanged(int index);
@@ -52,6 +50,7 @@ namespace PMP {
     private:
         Ui::CollectionWidget* _ui;
         ServerConnection* _connection;
+        ClientServerInterface* _clientServerInterface;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;
         QMenu* _collectionContextMenu;

@@ -21,21 +21,68 @@
 
 #include "serverconnection.h"
 
+#include <QtDebug>
+
 namespace PMP {
 
     SimplePlayerStateMonitorImpl::SimplePlayerStateMonitorImpl(
                                                              ServerConnection* connection)
      : SimplePlayerStateMonitor(connection),
-       _connection(connection), _state(PlayerState::Unknown)
+       _connection(connection),
+       _state(PlayerState::Unknown),
+       _mode(PlayerMode::Unknown),
+       _personalModeUserId(0)
     {
+        connect(
+            _connection, &ServerConnection::connected,
+            this, &SimplePlayerStateMonitorImpl::connected
+        );
+        connect(
+            _connection, &ServerConnection::connectionBroken,
+            this, &SimplePlayerStateMonitorImpl::connectionBroken
+        );
         connect(
             _connection, &ServerConnection::receivedPlayerState,
             this, &SimplePlayerStateMonitorImpl::receivedPlayerState
         );
+        connect(
+            _connection, &ServerConnection::receivedUserPlayingFor,
+            this, &SimplePlayerStateMonitorImpl::receivedUserPlayingFor
+        );
+
+        if (_connection->isConnected())
+            connected();
     }
 
     PlayerState SimplePlayerStateMonitorImpl::playerState() const {
         return _state;
+    }
+
+    PlayerMode SimplePlayerStateMonitorImpl::playerMode() const
+    {
+        return _mode;
+    }
+
+    quint32 SimplePlayerStateMonitorImpl::personalModeUserId() const
+    {
+        return _personalModeUserId;
+    }
+
+    QString SimplePlayerStateMonitorImpl::personalModeUserLogin() const
+    {
+        return _personalModeUserLogin;
+    }
+
+    void SimplePlayerStateMonitorImpl::connected()
+    {
+        _connection->requestPlayerState();
+        _connection->requestUserPlayingForMode();
+    }
+
+    void SimplePlayerStateMonitorImpl::connectionBroken()
+    {
+        changeCurrentState(PlayerState::Unknown);
+        changeCurrentMode(PlayerMode::Unknown, 0, QString());
     }
 
     void SimplePlayerStateMonitorImpl::receivedPlayerState(int state, quint8 volume,
@@ -62,11 +109,43 @@ namespace PMP {
                 break;
         }
 
-        if (newState == _state)
+        changeCurrentState(newState);
+    }
+
+    void SimplePlayerStateMonitorImpl::receivedUserPlayingFor(quint32 userId,
+                                                              QString userLogin)
+    {
+        if (userId > 0)
+            changeCurrentMode(PlayerMode::Personal, userId, userLogin);
+        else
+            changeCurrentMode(PlayerMode::Public, 0, QString());
+    }
+
+    void SimplePlayerStateMonitorImpl::changeCurrentState(PlayerState state)
+    {
+        if (state == _state)
             return;
 
-        _state = newState;
-        emit playerStateChanged(newState);
+        _state = state;
+        Q_EMIT playerStateChanged(state);
+    }
+
+    void SimplePlayerStateMonitorImpl::changeCurrentMode(PlayerMode mode,
+                                                         quint32 personalModeUserId,
+                                                         QString personalModeUserLogin)
+    {
+        if (_mode == mode && _personalModeUserId == personalModeUserId
+                          && _personalModeUserLogin == personalModeUserLogin)
+        {
+            return; /* no change */
+        }
+
+        qDebug() << "player mode changed to:" << mode;
+        _mode = mode;
+        _personalModeUserId = personalModeUserId;
+        _personalModeUserLogin = personalModeUserLogin;
+
+        Q_EMIT playerModeChanged(mode, personalModeUserId, personalModeUserLogin);
     }
 
 }

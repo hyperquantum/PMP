@@ -20,6 +20,8 @@
 #include "collectiontablemodel.h"
 
 #include "common/clientserverinterface.h"
+#include "common/collectionwatcher.h"
+#include "common/simpleplayerstatemonitor.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 
@@ -28,7 +30,6 @@
 #include <QDataStream>
 #include <QMimeData>
 #include <QtDebug>
-#include <QVector>
 
 #include <algorithm>
 #include <functional>
@@ -82,13 +83,12 @@ namespace PMP {
                                CollectionTrackInfo const& track,
                                std::function<TriBool(int)> scorePermillageEvaluator) const
     {
-        if (!_userDataFetcher || !_haveUserId) return TriBool();
+        if (!_haveUserId) return TriBool::unknown;
 
-        auto hashDataForUser =
-                _userDataFetcher->getHashDataForUser(_userId, track.hash());
+        auto hashDataForUser = _userDataFetcher.getHashDataForUser(_userId, track.hash());
 
         if (!hashDataForUser || !hashDataForUser->scoreReceived)
-            return TriBool();
+            return TriBool::unknown;
 
         return scorePermillageEvaluator(hashDataForUser->scorePermillage);
     }
@@ -97,13 +97,12 @@ namespace PMP {
                                     CollectionTrackInfo const& track,
                                     std::function<TriBool(QDateTime)> dateEvaluator) const
     {
-        if (!_userDataFetcher || !_haveUserId) return TriBool();
+        if (!_haveUserId) return TriBool::unknown;
 
-        auto hashDataForUser =
-                _userDataFetcher->getHashDataForUser(_userId, track.hash());
+        auto hashDataForUser = _userDataFetcher.getHashDataForUser(_userId, track.hash());
 
         if (!hashDataForUser || !hashDataForUser->previouslyHeardReceived)
-            return TriBool();
+            return TriBool::unknown;
 
         return dateEvaluator(hashDataForUser->previouslyHeard);
     }
@@ -158,45 +157,53 @@ namespace PMP {
 
     // ============================================================================ //
 
-    SortedCollectionTableModel::SortedCollectionTableModel(QObject* parent)
-     : QAbstractTableModel(parent), _sortBy(0), _sortOrder(Qt::AscendingOrder),
-       _userPlayingFor(0), _receivedUserPlayingFor(false)
+    SortedCollectionTableModel::SortedCollectionTableModel(QObject* parent,
+                                             ClientServerInterface* clientServerInterface)
+     : QAbstractTableModel(parent),
+       _sortBy(0),
+       _sortOrder(Qt::AscendingOrder),
+       _highlighter(clientServerInterface->userDataFetcher())
     {
         _collator.setCaseSensitivity(Qt::CaseInsensitive);
         _collator.setNumericMode(true);
 
         /* we need to ignore symbols such as quotes, spaces and parentheses */
         _collator.setIgnorePunctuation(true);
-    }
 
-    void SortedCollectionTableModel::setConnection(ServerConnection* connection,
-                                             ClientServerInterface* clientServerInterface)
-    {
+        auto& playerStateMonitor = clientServerInterface->simplePlayerStateMonitor();
         connect(
-            connection, &ServerConnection::collectionTracksAvailabilityChanged,
-            this, &SortedCollectionTableModel::onCollectionTracksAvailabilityChanged
-        );
-        connect(
-            connection, &ServerConnection::collectionTracksChanged,
-            this, &SortedCollectionTableModel::onCollectionTracksChanged
+            &playerStateMonitor, &SimplePlayerStateMonitor::playerModeChanged,
+            this, &SortedCollectionTableModel::onPlayerModeChanged
         );
 
-        auto& userDataFetcher = clientServerInterface->getUserDataFetcher();
+        auto playerMode = playerStateMonitor.playerMode();
+        if (playerMode != PlayerMode::Unknown) {
+            _highlighter.setUserId(playerStateMonitor.personalModeUserId());
+        }
 
-        _highlighter.setUserDataFetcher(userDataFetcher);
+        auto& collectionWatcher = clientServerInterface->collectionWatcher();
+
+        connect(
+            &collectionWatcher, &CollectionWatcher::newTrackReceived,
+            this, &SortedCollectionTableModel::onNewTrackReceived
+        );
+        connect(
+            &collectionWatcher, &CollectionWatcher::trackAvailabilityChanged,
+            this, &SortedCollectionTableModel::onTrackAvailabilityChanged
+        );
+        connect(
+            &collectionWatcher, &CollectionWatcher::trackDataChanged,
+            this, &SortedCollectionTableModel::onTrackDataChanged
+        );
+
+        auto& userDataFetcher = clientServerInterface->userDataFetcher();
+
         connect(
             &userDataFetcher, &UserDataFetcher::dataReceivedForUser,
             this, &SortedCollectionTableModel::onDataReceivedForUser
         );
 
-        connect(
-            connection, &ServerConnection::receivedUserPlayingFor,
-            this, &SortedCollectionTableModel::onReceivedUserPlayingFor
-        );
-        // TODO : send request to receive the user being played for
-
-        auto fetcher = new CollectionTableFetcher(this);
-        connection->fetchCollection(fetcher);
+        addWhenModelEmpty(collectionWatcher.getCollection().values());
     }
 
     void SortedCollectionTableModel::setHighlightMode(TrackHighlightMode mode) {
@@ -395,68 +402,24 @@ namespace PMP {
         return PMP::compare(track1.hash(), track2.hash());
     }
 
-    void SortedCollectionTableModel::addOrUpdateTracks(QList<CollectionTrackInfo> tracks)
+    void SortedCollectionTableModel::onNewTrackReceived(CollectionTrackInfo track)
     {
-        qDebug() << "addOrUpdateTracks called for" << tracks.size() << "tracks";
-
-        if (_hashesToInnerIndexes.empty()) {
-            addWhenModelEmpty(tracks);
-            return;
-        }
-
-        Q_FOREACH(CollectionTrackInfo const& track, tracks) {
-            /* hash already present? */
-            auto hashIterator = _hashesToInnerIndexes.find(track.hash());
-            if (hashIterator != _hashesToInnerIndexes.end()) {
-                qWarning() << "collection track update not handled:"
-                           << "title:" << track.title() << "; artist:" << track.artist()
-                           << "; album:" << track.album()
-                           << "; available:" << (track.isAvailable() ? "yes" : "no");
-                // TODO: update existing entry
-                //
-                //
-                //
-                continue;
-            }
-
-            if (!track.isAvailable() && track.titleAndArtistUnknown())
-                continue; /* not interesting enough to add */
-
-            int indexToInsertAt =
-                findOuterIndexMapIndexForInsert(track, 0, _outerToInnerIndexMap.size());
-
-            beginInsertRows(QModelIndex(), indexToInsertAt, indexToInsertAt);
-            auto trackObj = new CollectionTrackInfo(track);
-            int innerIndex = _tracks.size();
-            _tracks.append(trackObj);
-            _hashesToInnerIndexes.insert(track.hash(), innerIndex);
-            _outerToInnerIndexMap.insert(indexToInsertAt, innerIndex);
-            _innerToOuterIndexMap.append(indexToInsertAt);
-
-            /* all elements that were pushed down by the insert got a new outer index;
-             * update the inner to outer map to reflect this. */
-            rebuildInnerMap(indexToInsertAt + 1);
-
-            endInsertRows();
-        }
+        addOrUpdateTrack(track);
     }
 
-    void SortedCollectionTableModel::onCollectionTracksAvailabilityChanged(
-                                                       QVector<PMP::FileHash> available,
-                                                       QVector<PMP::FileHash> unavailable)
+    void SortedCollectionTableModel::onTrackAvailabilityChanged(FileHash hash,
+                                                                bool isAvailable)
     {
-        updateTrackAvailability(available, true);
-        updateTrackAvailability(unavailable, false);
+        updateTrackAvailability(hash, isAvailable);
     }
 
-    void SortedCollectionTableModel::onCollectionTracksChanged(
-                                                       QList<CollectionTrackInfo> changes)
+    void SortedCollectionTableModel::onTrackDataChanged(CollectionTrackInfo track)
     {
-        addOrUpdateTracks(changes);
+        addOrUpdateTrack(track);
     }
 
     void SortedCollectionTableModel::onDataReceivedForUser(quint32 userId) {
-        if (!_receivedUserPlayingFor || userId != _userPlayingFor)
+        if (!_highlighter.isUserIdSetTo(userId))
             return; /* not relevant */
 
         if (usesUserData(_highlighter.getMode())) {
@@ -464,14 +427,17 @@ namespace PMP {
         }
     }
 
-    void SortedCollectionTableModel::onReceivedUserPlayingFor(quint32 userId) {
-        if (_userPlayingFor == userId && _receivedUserPlayingFor)
-            return; /* no change */
+    void SortedCollectionTableModel::onPlayerModeChanged(PlayerMode playerMode,
+                                                         quint32 personalModeUserId,
+                                                         QString personalModeUserLogin)
+    {
+        Q_UNUSED(personalModeUserLogin)
+        qDebug() << "collection model: received player mode:" << playerMode;
 
-        _userPlayingFor = userId;
-        _receivedUserPlayingFor = true;
+        if (playerMode == PlayerMode::Unknown)
+            return;
 
-        _highlighter.setUserId(userId);
+        _highlighter.setUserId(personalModeUserId);
 
         if (usesUserData(_highlighter.getMode())) {
             markEverythingAsChanged();
@@ -479,10 +445,16 @@ namespace PMP {
     }
 
     int SortedCollectionTableModel::findOuterIndexMapIndexForInsert(
+            const CollectionTrackInfo& track)
+    {
+        return findOuterIndexMapIndexForInsert(track, 0, _outerToInnerIndexMap.size());
+    }
+
+    int SortedCollectionTableModel::findOuterIndexMapIndexForInsert(
             const CollectionTrackInfo& track,
             int searchRangeBegin, int searchRangeEnd /* end is not part of the range */)
     {
-        if (searchRangeBegin >= searchRangeEnd) return -1 /* problem */;
+        if (searchRangeBegin > searchRangeEnd) return -1 /* problem */;
 
         if (searchRangeEnd - searchRangeBegin <= 50) { /* do linear search */
             for (int index = searchRangeBegin; index < searchRangeEnd; ++index) {
@@ -507,40 +479,34 @@ namespace PMP {
         }
     }
 
-    void SortedCollectionTableModel::updateTrackAvailability(QVector<FileHash> hashes,
-                                                             bool available)
+    void SortedCollectionTableModel::updateTrackAvailability(FileHash hash,
+                                                             bool isAvailable)
     {
-        for (int i = 0; i < hashes.size(); ++i) {
-            auto hashIterator = _hashesToInnerIndexes.find(hashes[i]);
-            if (hashIterator == _hashesToInnerIndexes.end()) {
-                if (!available) continue;
+        auto hashIterator = _hashesToInnerIndexes.find(hash);
+        if (hashIterator == _hashesToInnerIndexes.end())
+            return; /* not supposed to happen, ignore it */
 
-                qWarning() << "hash became available but is not added to collection yet:"
-                           << hashes[i].dumpToString();
-                // TODO: add to the collection
-                //
-                //
-                //
-                //
-                continue;
-            }
+        int innerIndex = hashIterator.value();
+        int outerIndex = _innerToOuterIndexMap[innerIndex];
 
-            int innerIndex = hashIterator.value();
-            int outerIndex = _innerToOuterIndexMap[innerIndex];
-
-            _tracks[innerIndex]->setAvailable(available);
-            emit dataChanged(createIndex(outerIndex, 0), createIndex(outerIndex, 4 - 1));
-        }
+        _tracks[innerIndex]->setAvailable(isAvailable);
+        emit dataChanged(createIndex(outerIndex, 0), createIndex(outerIndex, 4 - 1));
     }
 
-    void SortedCollectionTableModel::addWhenModelEmpty(QList<CollectionTrackInfo> tracks)
+    template <class T>
+    void SortedCollectionTableModel::addWhenModelEmpty(T trackCollection)
     {
+        if (trackCollection.size() == 0)
+            return;
+
         QVector<CollectionTrackInfo*> trackList;
         QHash<FileHash, int> hashIndexer;
-        trackList.reserve(tracks.size());
-        hashIndexer.reserve(tracks.size());
+        trackList.reserve(trackCollection.size());
+        hashIndexer.reserve(trackCollection.size());
 
-        Q_FOREACH(CollectionTrackInfo const& track, tracks) {
+        for (int i = 0; i < trackCollection.size(); ++i) {
+            CollectionTrackInfo const& track = trackCollection[i];
+
             if (hashIndexer.contains(track.hash()))
                 continue; /* already present */
 
@@ -552,7 +518,7 @@ namespace PMP {
             trackList.append(trackObj);
         }
 
-        qDebug() << " addFirstTime: inserting" << trackList.size() << "tracks";
+        qDebug() << " addWhenModelEmpty: inserting" << trackList.size() << "tracks";
 
         if (!trackList.empty()) {
             _outerToInnerIndexMap.reserve(trackList.size());
@@ -564,6 +530,53 @@ namespace PMP {
             buildIndexMaps();
             endInsertRows();
         }
+    }
+
+    void SortedCollectionTableModel::addOrUpdateTrack(CollectionTrackInfo const& track)
+    {
+        /* hash already present? */
+        auto hashIterator = _hashesToInnerIndexes.find(track.hash());
+        if (hashIterator != _hashesToInnerIndexes.end()) {
+            updateTrack(track);
+            return;
+        }
+
+        if (!track.isAvailable() && track.titleAndArtistUnknown())
+            return; /* not interesting enough to add */
+
+        addTrack(track);
+    }
+
+    void SortedCollectionTableModel::addTrack(const CollectionTrackInfo& track)
+    {
+        int indexToInsertAt = findOuterIndexMapIndexForInsert(track);
+
+        beginInsertRows(QModelIndex(), indexToInsertAt, indexToInsertAt);
+        auto trackObj = new CollectionTrackInfo(track);
+        int innerIndex = _tracks.size();
+        _tracks.append(trackObj);
+        _hashesToInnerIndexes.insert(track.hash(), innerIndex);
+        _outerToInnerIndexMap.insert(indexToInsertAt, innerIndex);
+        _innerToOuterIndexMap.append(indexToInsertAt);
+
+        /* all elements that were pushed down by the insert got a new outer index;
+         * update the inner to outer map to reflect this. */
+        rebuildInnerMap(indexToInsertAt + 1);
+
+        endInsertRows();
+    }
+
+    void SortedCollectionTableModel::updateTrack(const CollectionTrackInfo& track)
+    {
+        qWarning() << "collection track update not handled:"
+                   << "title:" << track.title() << "; artist:" << track.artist()
+                   << "; album:" << track.album()
+                   << "; available:" << (track.isAvailable() ? "yes" : "no");
+
+        // TODO: update existing entry
+        //
+        //
+        //
     }
 
     void SortedCollectionTableModel::sort(int column, Qt::SortOrder order) {
@@ -802,29 +815,4 @@ namespace PMP {
         return true;
     }
 
-    // ============================================================================ //
-
-    CollectionTableFetcher::CollectionTableFetcher(SortedCollectionTableModel* parent)
-     : AbstractCollectionFetcher(parent), _model(parent)//, _tracksReceivedCount(0)
-    {
-        //
-    }
-
-    void CollectionTableFetcher::receivedData(QList<CollectionTrackInfo> data) {
-        //_tracksReceivedCount += data.size();
-        _tracksReceived += data;
-        //_model->addFirstTime(data);
-    }
-
-    void CollectionTableFetcher::completed() {
-        qDebug() << "CollectionTableFetcher: fetch completed.  Tracks received:"
-                 << _tracksReceived.size(); //_tracksReceivedCount;
-        _model->addOrUpdateTracks(_tracksReceived);
-        this->deleteLater();
-    }
-
-    void CollectionTableFetcher::errorOccurred() {
-        qDebug() << "CollectionTableFetcher::errorOccurred() called!";
-        // TODO
-    }
 }

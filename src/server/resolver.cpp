@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -145,17 +145,19 @@ namespace PMP {
             _audio.setFormat(audio.format());
         }
 
+        bool lengthChanged = false;
         auto newLength = audio.trackLengthMilliseconds();
         auto oldLength = _audio.trackLengthMilliseconds();
-        if (newLength >= 0 && newLength <= std::numeric_limits<qint32>::max()) {
+        if (newLength >= 0 && newLength <= std::numeric_limits<qint32>::max()
+                && newLength != oldLength)
+        {
             _audio.setTrackLengthMilliseconds(newLength);
+            lengthChanged = true;
         }
-
-        bool infoChanged = _audio.trackLengthMilliseconds() != oldLength;
 
         /* check for duplicate tags */
         bool tagIsNew = true;
-        Q_FOREACH(const TagData* existing, _tags) {
+        for (const TagData* existing : _tags) {
             if (existing->title() == t.title()
                     && existing->artist() == t.artist()
                     && existing->album() == t.album())
@@ -165,6 +167,7 @@ namespace PMP {
             }
         }
 
+        bool quickTagsChanged = false;
         if (tagIsNew) {
             _tags.append(new TagData(t));
 
@@ -178,16 +181,24 @@ namespace PMP {
                 _quickArtist = tags->artist();
                 _quickAlbum = tags->album();
 
-                infoChanged |=
-                        oldQuickTitle != _quickTitle || oldQuickArtist != _quickArtist
+                quickTagsChanged =
+                        oldQuickTitle != _quickTitle
+                            || oldQuickArtist != _quickArtist
                             || oldQuickAlbum != _quickAlbum;
+
+                if (_tags.size() > 1 && !quickTagsChanged) {
+                    qDebug() << "extra tag added for track but not switching away from"
+                             << " old tag info: title:" << oldQuickTitle
+                             << "; artist:" << oldQuickArtist
+                             << "; album:" << oldQuickAlbum;
+                }
             }
         }
 
-        if (infoChanged) {
-            emit _parent->hashTagInfoChanged(_hash, _quickTitle, _quickArtist,
-                                             _quickAlbum,
-                                             _audio.trackLengthMilliseconds());
+        if (lengthChanged || quickTagsChanged) {
+            Q_EMIT _parent->hashTagInfoChanged(_hash, _quickTitle, _quickArtist,
+                                               _quickAlbum,
+                                               _audio.trackLengthMilliseconds());
         }
     }
 
@@ -195,7 +206,7 @@ namespace PMP {
         /* try to return a match with complete tags */
         const TagData* result = nullptr;
         int resultScore = -1;
-        Q_FOREACH (const TagData* tag, _tags) {
+        for (const TagData* tag : _tags) {
             int score = 0;
 
             int titleLength = tag->title().length();
@@ -266,7 +277,7 @@ namespace PMP {
         }
 
         if (_files.length() == 1) { /* count went from 0 to 1 */
-            emit _parent->hashBecameAvailable(_hash);
+            Q_EMIT _parent->hashBecameAvailable(_hash);
         }
     }
 
@@ -281,7 +292,7 @@ namespace PMP {
         delete file;
 
         if (_files.length() == 0) { /* count went from 1 to 0 */
-            emit _parent->hashBecameUnavailable(_hash);
+            Q_EMIT _parent->hashBecameUnavailable(_hash);
         }
     }
 
@@ -295,9 +306,7 @@ namespace PMP {
     }
 
     bool Resolver::HashKnowledge::isAvailable() {
-        Resolver::VerifiedFile* file = nullptr;
-
-        Q_FOREACH(file, _files) {
+        for (auto file : _files) {
             if (file->stillValid()) return true;
 
             removeInvalidPath(file);
@@ -307,9 +316,7 @@ namespace PMP {
     }
 
     QString Resolver::HashKnowledge::getFile() {
-        Resolver::VerifiedFile* file = nullptr;
-
-        Q_FOREACH(file, _files) {
+        for (auto file : _files) {
             if (file->stillValid()) return file->_path;
 
             removeInvalidPath(file);
@@ -374,8 +381,10 @@ namespace PMP {
             return false; /* already running */
         }
 
+        // TODO : update list of music paths from settings file
+
         _fullIndexationRunning = true;
-        emit fullIndexationRunStatusChanged(true);
+        Q_EMIT fullIndexationRunStatusChanged(true);
         QFuture<void> future = QtConcurrent::run(this, &Resolver::doFullIndexation);
         _fullIndexationWatcher.setFuture(future);
 
@@ -384,7 +393,7 @@ namespace PMP {
 
     void Resolver::onFullIndexationFinished() {
         _fullIndexationRunning = false;
-        emit fullIndexationRunStatusChanged(false);
+        Q_EMIT fullIndexationRunStatusChanged(false);
     }
 
     void Resolver::doFullIndexation() {
@@ -396,7 +405,7 @@ namespace PMP {
         QList<QString> filesToAnalyze;
 
         /* traverse filesystem to find music files */
-        Q_FOREACH(QString musicPath, musicPaths) {
+        for (QString musicPath : musicPaths) {
             QDirIterator it(musicPath, QDirIterator::Subdirectories); /* no symlinks */
 
             while (it.hasNext()) {
@@ -411,11 +420,11 @@ namespace PMP {
         qDebug() << "full indexation:" << filesToAnalyze.size() << "files to analyze";
 
         /* analyze the files we found */
-        Q_FOREACH(QString filePath, filesToAnalyze) {
+        for (QString filePath : filesToAnalyze) {
             FileHash hash =
                     analyzeAndRegisterFileInternal(filePath, _fullIndexationNumber);
 
-            if (hash.empty()) {
+            if (hash.isNull()) {
                 qDebug() << "file analysis FAILED:" << filePath;
             }
         }
@@ -431,7 +440,7 @@ namespace PMP {
     }
 
     Resolver::HashKnowledge* Resolver::registerHash(const FileHash& hash) {
-        if (hash.empty()) return nullptr; /* invalid hash */
+        if (hash.isNull()) return nullptr; /* invalid hash */
 
         QMutexLocker lock(&_lock);
 
@@ -505,7 +514,7 @@ namespace PMP {
         QMutexLocker lock(&_lock);
 
         HashKnowledge* knowledge;
-        if (legacyHash.empty()) {
+        if (legacyHash.isNull()) {
             knowledge = registerHash(finalHash);
         }
         else if (!_hashKnowledge.value(legacyHash, nullptr)) {
@@ -608,7 +617,7 @@ namespace PMP {
 
         qDebug() << " going to see if the file was moved somewhere else";
 
-        Q_FOREACH(QString musicPath, _musicPaths) {
+        for (QString musicPath : _musicPaths) {
             QDirIterator it(musicPath, QDir::Dirs | QDir::Readable | QDir::NoDotAndDotDot,
                             QDirIterator::Subdirectories);
 
@@ -618,7 +627,7 @@ namespace PMP {
 
                 QDir dir(entry.filePath());
 
-                Q_FOREACH(QString fileShort, filenames) {
+                for (QString fileShort : filenames) {
                     if (!dir.exists(fileShort)) continue;
 
                     QString candidatePath = dir.filePath(fileShort);
@@ -631,7 +640,7 @@ namespace PMP {
 
                     FileHash candidateHash =
                             analyzeAndRegisterFileInternal(candidatePath, 0);
-                    if (candidateHash.empty()) continue; /* failed to analyze */
+                    if (candidateHash.isNull()) continue; /* failed to analyze */
 
                     if (candidateHash == hash) {
                         qDebug() << "   we have a MATCH!";
@@ -686,7 +695,7 @@ namespace PMP {
         QVector<CollectionTrackInfo> result;
         result.reserve(hashes.size());
 
-        Q_FOREACH(auto hash, hashes) {
+        for (auto hash : hashes) {
             auto knowledge = _hashKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
 
@@ -753,7 +762,7 @@ namespace PMP {
         QList<QPair<uint, FileHash>> result;
         result.reserve(hashes.size());
 
-        Q_FOREACH(auto hash, hashes) {
+        for (auto hash : hashes) {
             auto knowledge = _hashKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
 
@@ -769,7 +778,7 @@ namespace PMP {
         QVector<QPair<uint, FileHash>> result;
         result.reserve(hashes.size());
 
-        Q_FOREACH(auto hash, hashes) {
+        for (auto hash : hashes) {
             auto knowledge = _hashKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
 

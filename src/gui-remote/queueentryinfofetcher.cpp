@@ -153,7 +153,7 @@ namespace PMP {
         if (!info) {
             sendRequest(queueID);
         }
-        else if (info->hash().empty() && !_hashRequestsSent.contains(queueID)) {
+        else if (info->hash().isNull() && !_hashRequestsSent.contains(queueID)) {
             sendHashRequest(queueID);
         }
 

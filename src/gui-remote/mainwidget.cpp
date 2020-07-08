@@ -23,6 +23,7 @@
 #include "common/audiodata.h"
 #include "common/clientserverinterface.h"
 #include "common/serverconnection.h"
+#include "common/simpleplayercontroller.h"
 #include "common/userdatafetcher.h"
 
 #include "autopersonalmodeaction.h"
@@ -33,6 +34,7 @@
 #include "queuemodel.h"
 #include "queuemonitor.h"
 #include "scoreformatdelegate.h"
+#include "trackinfodialog.h"
 
 #include <algorithm>
 
@@ -46,7 +48,9 @@ namespace PMP {
     MainWidget::MainWidget(QWidget *parent) :
         QWidget(parent),
         _ui(new Ui::MainWidget),
-        _connection(nullptr), _currentTrackMonitor(nullptr),
+        _connection(nullptr),
+        _clientServerInterface(nullptr),
+        _currentTrackMonitor(nullptr),
         _queueMonitor(nullptr), _queueMediator(nullptr),
         _queueEntryInfoFetcher(nullptr),
         _queueModel(nullptr), _queueContextMenu(nullptr),
@@ -89,6 +93,7 @@ namespace PMP {
                                    ClientServerInterface* clientServerInterface)
     {
         _connection = connection;
+        _clientServerInterface = clientServerInterface;
         new AutoPersonalModeAction(connection); /* uses connection as parent */
         _currentTrackMonitor = new CurrentTrackMonitor(_connection);
         _queueMonitor = new QueueMonitor(_connection, _connection);
@@ -98,7 +103,7 @@ namespace PMP {
         _queueModel =
             new QueueModel(
                 _connection, _queueMediator, _queueEntryInfoFetcher,
-                clientServerInterface->getUserDataFetcher()
+                clientServerInterface->userDataFetcher()
             );
         _historyModel = new PlayerHistoryModel(this, _queueEntryInfoFetcher);
         _historyModel->setConnection(connection);
@@ -152,17 +157,18 @@ namespace PMP {
             _connection, &ServerConnection::switchToPersonalMode
         );
 
+        auto* playerController = &clientServerInterface->simplePlayerController();
         connect(
             _ui->playButton, &QPushButton::clicked,
-            _connection, &ServerConnection::play
+            playerController, &SimplePlayerController::play
         );
         connect(
             _ui->pauseButton, &QPushButton::clicked,
-            _connection, &ServerConnection::pause
+            playerController, &SimplePlayerController::pause
         );
         connect(
             _ui->skipButton, &QPushButton::clicked,
-            _connection, &ServerConnection::skip
+            playerController, &SimplePlayerController::skip
         );
 
         connect(
@@ -320,7 +326,7 @@ namespace PMP {
 
         int row = index.row();
         auto hash = _historyModel->trackHashAt(row);
-        if (hash.empty()) {
+        if (hash.isNull()) {
             qDebug() << "history: no hash known for track at row" << row;
             return;
         }
@@ -359,8 +365,9 @@ namespace PMP {
         }
 
         int row = index.row();
-        quint32 queueID = _queueModel->trackIdAt(index);
-        qDebug() << "queue: context menu opening for Q-item" << queueID;
+        auto track = _queueModel->trackAt(index);
+        auto queueId = track.queueId();
+        qDebug() << "queue: context menu opening for Q-item" << queueId;
 
         if (_queueContextMenu)
             delete _queueContextMenu;
@@ -368,51 +375,93 @@ namespace PMP {
 
         QAction* removeAction = _queueContextMenu->addAction(tr("Remove"));
         removeAction->setShortcut(QKeySequence::Delete);
-        connect(
-            removeAction, &QAction::triggered,
-            [this, row, queueID]() {
-                qDebug() << "queue context menu: remove action triggered for item"
-                         << queueID;
-                _queueMediator->removeTrack(row, queueID);
-            }
-        );
+        if (track.isNull()) {
+            removeAction->setEnabled(false);
+        }
+        else {
+            connect(
+                removeAction, &QAction::triggered,
+                this,
+                [this, row, queueId]() {
+                    qDebug() << "queue context menu: remove action triggered for item"
+                             << queueId;
+                    _queueMediator->removeTrack(row, queueId);
+                }
+            );
+        }
 
         _queueContextMenu->addSeparator();
 
         QAction* duplicateAction = _queueContextMenu->addAction(tr("Duplicate"));
-        if (_queueMediator->canDuplicateEntry(queueID)) {
+        if (track.isNull() || !_queueMediator->canDuplicateEntry(queueId)) {
+            duplicateAction->setEnabled(false);
+        }
+        else {
             connect(
                 duplicateAction, &QAction::triggered,
-                [this, queueID]() {
+                this,
+                [this, queueId]() {
                     qDebug() << "queue context menu: duplicate action triggered for item"
-                             << queueID;
-                    _queueMediator->duplicateEntryAsync(queueID);
+                             << queueId;
+                    _queueMediator->duplicateEntryAsync(queueId);
                 }
             );
         }
-        else { duplicateAction->setEnabled(false); }
 
         _queueContextMenu->addSeparator();
 
         QAction* moveToFrontAction = _queueContextMenu->addAction(tr("Move to front"));
-        connect(
-            moveToFrontAction, &QAction::triggered,
-            [this, row, queueID]() {
-                qDebug() << "queue context menu: to-front action triggered for item"
-                         << queueID;
-                _queueMediator->moveTrack(row, 0, queueID);
-            }
-        );
+        if (track.isNull()) {
+            moveToFrontAction->setEnabled(false);
+        }
+        else {
+            connect(
+                moveToFrontAction, &QAction::triggered,
+                this,
+                [this, row, queueId]() {
+                    qDebug() << "queue context menu: to-front action triggered for item"
+                             << queueId;
+                    _queueMediator->moveTrack(row, 0, queueId);
+                }
+            );
+        }
 
         QAction* moveToEndAction = _queueContextMenu->addAction(tr("Move to end"));
-        connect(
-            moveToEndAction, &QAction::triggered,
-            [this, row, queueID]() {
-                qDebug() << "queue context menu: to-end action triggered for item"
-                         << queueID;
-                _queueMediator->moveTrackToEnd(row, queueID);
-            }
-        );
+        if (track.isNull()) {
+            moveToEndAction->setEnabled(false);
+        }
+        else {
+            connect(
+                moveToEndAction, &QAction::triggered,
+                this,
+                [this, row, queueId]() {
+                    qDebug() << "queue context menu: to-end action triggered for item"
+                             << queueId;
+                    _queueMediator->moveTrackToEnd(row, queueId);
+                }
+            );
+        }
+
+        _queueContextMenu->addSeparator();
+
+        QAction* trackInfoAction = _queueContextMenu->addAction(tr("Track info"));
+        if (track.hash().isNull()) {
+            trackInfoAction->setEnabled(false);
+        }
+        else {
+            connect(
+                trackInfoAction, &QAction::triggered,
+                this,
+                [this, track]() {
+                    qDebug() << "queue context menu: track info action triggered for item"
+                             << track.queueId();
+                    auto dialog =
+                        new TrackInfoDialog(this, track.hash(), _clientServerInterface);
+                    connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                    dialog->open();
+                }
+            );
+        }
 
         _queueContextMenu->popup(_ui->queueTableView->viewport()->mapToGlobal(position));
     }

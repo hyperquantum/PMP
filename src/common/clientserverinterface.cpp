@@ -19,6 +19,7 @@
 
 #include "clientserverinterface.h"
 
+#include "collectionwatcherimpl.h"
 #include "serverconnection.h"
 #include "simpleplayercontrollerimpl.h"
 #include "simpleplayerstatemonitorimpl.h"
@@ -31,6 +32,7 @@ namespace PMP {
      : QObject(parent), _connection(connection),
        _simplePlayerController(nullptr),
        _simplePlayerStateMonitor(nullptr),
+       _collectionWatcher(nullptr),
        _userDataFetcher(nullptr)
     {
         //
@@ -52,12 +54,35 @@ namespace PMP {
         return *_simplePlayerStateMonitor;
     }
 
-    UserDataFetcher& ClientServerInterface::getUserDataFetcher()
+    CollectionWatcher& ClientServerInterface::collectionWatcher()
+    {
+        if (!_collectionWatcher)
+            _collectionWatcher = new CollectionWatcherImpl(_connection);
+
+        return *_collectionWatcher;
+    }
+
+    UserDataFetcher& ClientServerInterface::userDataFetcher()
     {
         if (_userDataFetcher == nullptr) {
             _userDataFetcher = new UserDataFetcher(this, _connection);
         }
 
         return *_userDataFetcher;
+    }
+
+    bool ClientServerInterface::isLoggedIn() const
+    {
+        return _connection->isLoggedIn();
+    }
+
+    quint32 ClientServerInterface::userLoggedInId() const
+    {
+        return _connection->userLoggedInId();
+    }
+
+    QString ClientServerInterface::userLoggedInName() const
+    {
+        return _connection->userLoggedInName();
     }
 }

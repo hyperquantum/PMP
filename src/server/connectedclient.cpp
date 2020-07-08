@@ -1465,7 +1465,7 @@ namespace PMP {
 
         UserDataForHash data;
         data.hash = _player->resolver().getHashByID(hashID);
-        if (data.hash.empty()) return; /* invalid ID */
+        if (data.hash.isNull()) return; /* invalid ID */
 
         data.previouslyHeard = previouslyHeard;
         data.score = score;
@@ -2248,7 +2248,7 @@ namespace PMP {
 
         bool ok;
         FileHash hash = NetworkProtocol::getHash(message, 4, &ok);
-        if (!ok || hash.empty()) {
+        if (!ok || hash.isNull()) {
             return; /* invalid message */
         }
 
@@ -2281,7 +2281,7 @@ namespace PMP {
 
         bool ok;
         FileHash hash = NetworkProtocol::getHash(message, 12, &ok);
-        if (!ok || hash.empty()) {
+        if (!ok || hash.isNull()) {
             return; /* invalid message */
         }
 
@@ -2382,7 +2382,7 @@ namespace PMP {
         for (int i = 0; i < hashCount; ++i) {
             bool ok;
             auto hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok || hash.empty()) continue;
+            if (!ok || hash.isNull()) continue;
 
             hashes.append(hash);
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;

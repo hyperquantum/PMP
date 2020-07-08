@@ -40,7 +40,7 @@
 
 namespace PMP {
 
-    class AbstractCollectionFetcher;
+    class CollectionFetcher;
 
     class RequestID {
     public:
@@ -119,7 +119,7 @@ namespace PMP {
 
         TriBool doingFullIndexation() const { return _doingFullIndexation; }
 
-        void fetchCollection(AbstractCollectionFetcher* fetcher);
+        void fetchCollection(CollectionFetcher* fetcher);
 
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
 
@@ -243,7 +243,7 @@ namespace PMP {
 
         void collectionTracksAvailabilityChanged(QVector<PMP::FileHash> available,
                                                  QVector<PMP::FileHash> unavailable);
-        void collectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
+        void collectionTracksChanged(QVector<PMP::CollectionTrackInfo> changes);
 
         void scrobblingProviderInfoReceived(ScrobblingProvider provider,
                                             ScrobblerStatus status, bool enabled);
@@ -370,20 +370,8 @@ namespace PMP {
         QString _userLoggedInName;
         TriBool _doingFullIndexation;
         QHash<uint, ResultHandler*> _resultHandlers;
-        QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
+        QHash<uint, CollectionFetcher*> _collectionFetchers;
         ServerHealthStatus _serverHealthStatus;
     };
-
-    class AbstractCollectionFetcher : public QObject {
-        Q_OBJECT
-    protected:
-        AbstractCollectionFetcher(QObject* parent = nullptr);
-
-    public slots:
-        virtual void receivedData(QList<CollectionTrackInfo> data) = 0;
-        virtual void completed() = 0;
-        virtual void errorOccurred() = 0;
-    };
-
 }
 #endif

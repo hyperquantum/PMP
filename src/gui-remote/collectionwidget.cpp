@@ -24,6 +24,7 @@
 #include "common/util.h"
 
 #include "collectiontablemodel.h"
+#include "trackinfodialog.h"
 
 #include <QMenu>
 #include <QtDebug>
@@ -31,9 +32,13 @@
 
 namespace PMP {
 
-    CollectionWidget::CollectionWidget(QWidget* parent)
-     : QWidget(parent), _ui(new Ui::CollectionWidget), _connection(nullptr),
-       _collectionSourceModel(new SortedCollectionTableModel(this)),
+    CollectionWidget::CollectionWidget(QWidget* parent, ServerConnection* connection,
+                                       ClientServerInterface* clientServerInterface)
+     : QWidget(parent),
+       _ui(new Ui::CollectionWidget),
+       _connection(connection),
+       _clientServerInterface(clientServerInterface),
+       _collectionSourceModel(new SortedCollectionTableModel(this,clientServerInterface)),
        _collectionDisplayModel(
            new FilteredCollectionTableModel(_collectionSourceModel, this)),
        _collectionContextMenu(nullptr)
@@ -121,13 +126,6 @@ namespace PMP {
         delete _ui;
     }
 
-    void CollectionWidget::setConnection(ServerConnection* connection,
-                                         ClientServerInterface* clientServerInterface)
-    {
-        _connection = connection;
-        _collectionSourceModel->setConnection(connection, clientServerInterface);
-    }
-
     void CollectionWidget::highlightTracksIndexChanged(int index) {
         Q_UNUSED(index)
 
@@ -143,17 +141,18 @@ namespace PMP {
         auto index = _ui->collectionTableView->indexAt(position);
         if (!index.isValid()) return;
 
-        auto track = _collectionDisplayModel->trackAt(index);
-        if (!track) return;
+        auto trackPointer = _collectionDisplayModel->trackAt(index);
+        if (!trackPointer) return;
 
-        FileHash hash = track->hash();
+        auto track = *trackPointer;
+        FileHash hash = track.hash();
 
         if (_collectionContextMenu)
             delete _collectionContextMenu;
         _collectionContextMenu = new QMenu(this);
 
         auto enqueueFrontAction =
-            _collectionContextMenu->addAction("Add to front of queue");
+            _collectionContextMenu->addAction(tr("Add to front of queue"));
         connect(
             enqueueFrontAction, &QAction::triggered,
             [this, hash]() {
@@ -162,12 +161,27 @@ namespace PMP {
             }
         );
 
-        auto enqueueEndAction = _collectionContextMenu->addAction("Add to end of queue");
+        auto enqueueEndAction =
+                _collectionContextMenu->addAction(tr("Add to end of queue"));
         connect(
             enqueueEndAction, &QAction::triggered,
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (end) triggered";
                 _connection->insertQueueEntryAtEnd(hash);
+            }
+        );
+
+        _collectionContextMenu->addSeparator();
+
+        auto trackInfoAction = _collectionContextMenu->addAction(tr("Track info"));
+        connect(
+            trackInfoAction, &QAction::triggered,
+            this,
+            [this, track]() {
+                qDebug() << "collection context menu: track info triggered";
+                auto dialog = new TrackInfoDialog(this, track, _clientServerInterface);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->open();
             }
         );
 

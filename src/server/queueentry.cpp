@@ -90,13 +90,13 @@ namespace PMP {
     }
 
     FileHash const* QueueEntry::hash() const {
-        if (_hash.empty()) { return nullptr; }
+        if (_hash.isNull()) { return nullptr; }
 
         return &_hash;
     }
 
     bool QueueEntry::checkHash(Resolver& resolver) {
-        if (!_hash.empty()) return true; /* already got it */
+        if (!_hash.isNull()) return true; /* already got it */
 
         if (!_haveFilename) {
             qDebug() << "PROBLEM: QueueEntry" << _queueID
@@ -106,7 +106,7 @@ namespace PMP {
 
         _hash = resolver.analyzeAndRegisterFile(_filename);
 
-        if (_hash.empty()) {
+        if (_hash.isNull()) {
             qDebug() << "PROBLEM: QueueEntry" << _queueID
                      << ": analysis of file failed:" << _filename;
             return false;
@@ -193,7 +193,7 @@ namespace PMP {
     }
 
     void QueueEntry::checkAudioData(Resolver& resolver) {
-        if (_hash.empty()) return;
+        if (_hash.isNull()) return;
 
         if (!_audioInfo.isComplete()) {
             _audioInfo = resolver.findAudioData(_hash);
@@ -201,7 +201,7 @@ namespace PMP {
     }
 
     void QueueEntry::checkTrackData(Resolver& resolver) {
-        if (_hash.empty()) return;
+        if (_hash.isNull()) return;
 
         checkAudioData(resolver);
 

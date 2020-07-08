@@ -24,6 +24,7 @@
 
 namespace PMP {
 
+    class CollectionWatcher;
     class ServerConnection;
     class SimplePlayerController;
     class SimplePlayerStateMonitor;
@@ -37,7 +38,12 @@ namespace PMP {
         SimplePlayerController& simplePlayerController();
         SimplePlayerStateMonitor& simplePlayerStateMonitor();
 
-        UserDataFetcher& getUserDataFetcher();
+        CollectionWatcher& collectionWatcher();
+        UserDataFetcher& userDataFetcher();
+
+        bool isLoggedIn() const;
+        quint32 userLoggedInId() const;
+        QString userLoggedInName() const;
 
     public Q_SLOTS:
 
@@ -49,6 +55,7 @@ namespace PMP {
         ServerConnection* _connection;
         SimplePlayerController* _simplePlayerController;
         SimplePlayerStateMonitor* _simplePlayerStateMonitor;
+        CollectionWatcher* _collectionWatcher;
         UserDataFetcher* _userDataFetcher;
     };
 }

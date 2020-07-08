@@ -42,6 +42,9 @@ namespace PMP {
         /*! The LATIN SMALL LETTER E WITH DIAERESIS (U+00EB) */
         static const QChar EDiaeresis;
 
+        /*! The FIGURE DASH (U+2012) character */
+        static const QChar FigureDash;
+
         /*! The "GREATER-THAN OR EQUAL TO" symbol (U+2265) */
         static const QChar GreaterThanOrEqual;
 

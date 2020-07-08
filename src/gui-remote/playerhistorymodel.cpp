@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -209,8 +209,7 @@ namespace PMP {
         auto info = _infoFetcher->entryInfoByQID(queueID);
         if (!info) return FileHash();
 
-        auto& hash = info->hash();
-        return hash.empty() ? FileHash() : hash;
+        return info->hash();
     }
 
     QMimeData* PlayerHistoryModel::mimeData(const QModelIndexList& indexes) const {
@@ -238,7 +237,7 @@ namespace PMP {
             }
 
             auto& hash = info->hash();
-            if (hash.empty()) {
+            if (hash.isNull()) {
                 qDebug() << " ignoring empty hash";
                 continue;
             }

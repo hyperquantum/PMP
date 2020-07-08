@@ -132,7 +132,7 @@ namespace PMP {
             return;
 
         FileHash hash = entry->hash();
-        if (hash.empty()) {
+        if (hash.isNull()) {
             qWarning() << "cannot save history for queue ID" << entry->queueID()
                        << "because hash is unavailabe";
             return;

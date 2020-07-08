@@ -19,6 +19,7 @@
 
 #include "serverconnection.h"
 
+#include "common/collectionfetcher.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
 
@@ -115,18 +116,18 @@ namespace PMP {
     class ServerConnection::CollectionFetchResultHandler : public ResultHandler {
     public:
         CollectionFetchResultHandler(ServerConnection* parent,
-                                     AbstractCollectionFetcher* fetcher);
+                                     CollectionFetcher* fetcher);
 
         void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
                           quint32 intData, QByteArray const& blobData) override;
 
     private:
-        AbstractCollectionFetcher* _fetcher;
+        CollectionFetcher* _fetcher;
     };
 
     ServerConnection::CollectionFetchResultHandler::CollectionFetchResultHandler(
-                                                       ServerConnection* parent,
-                                                       AbstractCollectionFetcher* fetcher)
+                                                               ServerConnection* parent,
+                                                               CollectionFetcher* fetcher)
      : ResultHandler(parent), _fetcher(fetcher)
     {
         //
@@ -141,13 +142,15 @@ namespace PMP {
         _parent->_collectionFetchers.remove(clientReference);
 
         if (errorType == NetworkProtocol::NoError) {
-            _fetcher->completed();
+            Q_EMIT _fetcher->completed();
         }
         else {
             qWarning() << "CollectionFetchResultHandler:"
                        << errorDescription(errorType, clientReference, intData, blobData);
-            _fetcher->errorOccurred();
+            Q_EMIT _fetcher->errorOccurred();
         }
+
+        _fetcher->deleteLater();
     }
 
     /* ============================================================================ */
@@ -616,7 +619,7 @@ namespace PMP {
     RequestID ServerConnection::insertQueueEntryAtIndex(const FileHash& hash,
                                                         quint32 index)
     {
-        if (hash.empty()) return RequestID(); /* invalid */
+        if (hash.isNull()) return RequestID(); /* invalid */
 
         auto handler = new TrackInsertionResultHandler(this, index);
         auto ref = getNewReference();
@@ -1059,7 +1062,9 @@ namespace PMP {
         sendSingleByteAction(15); /* 15 = request for full indexation running status */
     }
 
-    void ServerConnection::fetchCollection(AbstractCollectionFetcher* fetcher) {
+    void ServerConnection::fetchCollection(CollectionFetcher* fetcher) {
+        fetcher->setParent(this);
+
         auto handler = new CollectionFetchResultHandler(this, fetcher);
         auto fetcherReference = getNewReference();
         _resultHandlers[fetcherReference] = handler;
@@ -2042,13 +2047,17 @@ namespace PMP {
         for (int i = 0; i < availableCount; ++i) {
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok || hash.empty()) {
+            if (!ok) {
                 qDebug() << "invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
             }
 
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+
+            /* workaround for server bug; we shouldn't be receiving these */
+            if (hash.length() == 0) continue;
+
             available.append(hash);
         }
 
@@ -2056,18 +2065,26 @@ namespace PMP {
         for (int i = 0; i < unavailableCount; ++i) {
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok || hash.empty()) {
+            if (!ok) {
                 qDebug() << "invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
             }
 
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+
+            /* workaround for server bug; we shouldn't be receiving these */
+            if (hash.length() == 0) continue;
+
             unavailable.append(hash);
         }
 
         qDebug() << "got track availability changes: " << available.size() << "available,"
                  << unavailable.size() << "unavailable";
+
+        if (available.empty() && unavailable.empty())
+            return;
+
         emit collectionTracksAvailabilityChanged(available, unavailable);
     }
 
@@ -2095,7 +2112,7 @@ namespace PMP {
             return; /* irrelevant or invalid message */
         }
 
-        AbstractCollectionFetcher* collectionFetcher = nullptr;
+        CollectionFetcher* collectionFetcher = nullptr;
         if (!isNotification) {
             quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
             collectionFetcher = _collectionFetchers.value(clientReference, nullptr);
@@ -2158,14 +2175,14 @@ namespace PMP {
         }
 
         /* now read all track info's */
-        QList<CollectionTrackInfo> infos;
+        QVector<CollectionTrackInfo> infos;
         infos.reserve(trackCount);
         for (int i = 0; i < trackCount; ++i) {
             offset = offsets[i];
 
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok || hash.empty()) {
+            if (!ok) {
                 qDebug() << " invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
@@ -2193,16 +2210,21 @@ namespace PMP {
                 album = NetworkUtil::getUtf8String(message, offset, albumSize);
             }
 
+            /* workaround for server bug; we shouldn't be receiving these */
+            if (hash.length() == 0) continue;
+
             CollectionTrackInfo info(hash, availabilityByte & 1, title, artist, album,
                                      trackLengthInMs);
             infos.append(info);
         }
 
+        if (infos.empty()) return;
+
         if (isNotification) {
-            emit collectionTracksChanged(infos);
+            Q_EMIT collectionTracksChanged(infos);
         }
         else {
-            collectionFetcher->receivedData(infos);
+            Q_EMIT collectionFetcher->receivedData(infos);
         }
     }
 
@@ -2453,14 +2475,6 @@ namespace PMP {
                 _scrobblingSupportOther = extension;
             }
         }
-    }
-
-    // ============================================================================ //
-
-    AbstractCollectionFetcher::AbstractCollectionFetcher(QObject* parent)
-     : QObject(parent)
-    {
-        //
     }
 
 }

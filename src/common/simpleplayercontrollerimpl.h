@@ -23,28 +23,27 @@
 #include "serverconnection.h"
 #include "simpleplayercontroller.h"
 
-#include <QObject>
-
 namespace PMP {
 
     class ServerConnection;
 
-    class SimplePlayerControllerImpl : public QObject, public SimplePlayerController {
+    class SimplePlayerControllerImpl : public SimplePlayerController {
         Q_OBJECT
     public:
         SimplePlayerControllerImpl(ServerConnection* connection);
 
         ~SimplePlayerControllerImpl() {}
 
-        void play();
-        void pause();
-        void skip();
+        bool canPlay() override;
+        bool canPause() override;
+        bool canSkip() override;
 
-        bool canPlay();
-        bool canPause();
-        bool canSkip();
+    public Q_SLOTS:
+        void play() override;
+        void pause() override;
+        void skip() override;
 
-    private slots:
+    private Q_SLOTS:
         void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition);
 

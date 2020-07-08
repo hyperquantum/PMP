@@ -1,19 +1,25 @@
-﻿
-PLANNED NEXT
+﻿           ----- LIST OF THINGS TO DO -----
 
- * keep track time in database; get the time from the player when a track is played until the end
+Disclaimer:
+  This file is in a constant state of flux.
+  Everything in here can change at any time, and nothing here is a promise for the future.
+
+
+IMPORTANT
+
+ * save track lengths to database
+ * save track artist/title/album to database
+ ** create Last.FM scrobbler
  * regular automatic cleanup of old log files while the server is running
- ** create Last.FM scrobbler  (but how/where are we going to keep user authentication data?)
 
 
 KNOWN BUGS
 
  * for some tracks we get the wrong length (caused by length estimation in TagLib)
  * when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
- * the commandline client does not support user authentication which is now required for some commands it supports
+ * the commandline client does not support user authentication which is now required for most commands it supports
  * GUI remote: tracks can be dragged using the right mouse button (not just the left button)
  * GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
- * GUI remote: after a breakpoint is hit, track length and play position are not cleared
  * hash calculation is wrong for MP3 files containing an APE tag
  * the cache of preloaded tracks should be deleted at server exit
  * preloaded tracks are sometimes deleted before they are used because they are old
@@ -22,6 +28,7 @@ KNOWN BUGS
  * GUI remote: searching the music collection for "e" does not return results having "ë"
  * a "skip" operation should not affect the current track's score if performed by another player
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
+ * GUI remote: music collection view: applying track metadata updates is not implemented yet
 
 
 PERFORMANCE ISSUES
@@ -32,7 +39,6 @@ PERFORMANCE ISSUES
 TECHNICAL TODO
 
  * keep track lengths in milliseconds, not seconds
- * associate a title and artist with each hash and save that information in the database (?)
  * when running an indexation, analyze the most recently created/updated files first
  * large file support (?)
  * try to automate the build procedure on Windows
@@ -41,7 +47,7 @@ TECHNICAL TODO
 
 IDEAS
 
- * 'like' button for the song that is playing, that will bump the score of the song a little bit
+ ** 'like' button for the song that is playing, that will bump the score of the song a little bit
  * 'love' & 'hate' button for the song that is playing
  * statistics view for the user; with things like "amount of tracks played in the last 7/30/... days"
  * 'about the remote' window; with client version and protocol version
@@ -65,6 +71,7 @@ IDEAS
  * 'play again next' action for the song that is currently playing
  * ability to insert a breakpoint directly before/after any entry in the queue
  * timer feature to make playback stop at or near a specified clock time
+ * track highlighting: highlighting of tracks not recently listened to (or the reverse)
 
 
 USER FRIENDLINESS

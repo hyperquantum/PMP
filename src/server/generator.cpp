@@ -261,7 +261,7 @@ namespace PMP {
         }
 
         FileHash randomHash = _hashesSource.takeLast();
-        if (!randomHash.empty()) { _hashesSpent.insert(randomHash); }
+        if (!randomHash.isNull()) { _hashesSpent.insert(randomHash); }
 
         auto sourceHashCount = _hashesSource.size();
         if (sourceHashCount % 10 == 0) {
@@ -288,7 +288,7 @@ namespace PMP {
             iterationsLeft--;
 
             FileHash randomHash = getNextRandomHash();
-            if (randomHash.empty()) { break; /* nothing available */ }
+            if (randomHash.isNull()) { break; /* nothing available */ }
 
             auto c =
                 new Candidate(randomHash, getRandomPermillage(), getRandomPermillage());
@@ -543,7 +543,7 @@ namespace PMP {
     bool Generator::satisfiesFilters(Candidate* candidate, bool strict) {
         /* do we have the hash? */
         const FileHash& hash = candidate->hash();
-        if (hash.empty()) return false;
+        if (hash.isNull()) return false;
 
         /* can we find a file for the track? */
         if (!_resolver->haveFileFor(hash)) return false;

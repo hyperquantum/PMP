@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -97,7 +97,7 @@ int main(int argc, char *argv[]) {
     out << "stripped MD5 Hash:  " << finalHash.MD5().toHex() << endl;
     out << "stripped SHA1 Hash: " << finalHash.SHA1().toHex() << endl;
 
-    if (!legacyHash.empty()) {
+    if (!legacyHash.isNull()) {
         out << "legacy file size: " << legacyHash.length() << endl;
         out << "legacy MD5 Hash:  " << legacyHash.MD5().toHex() << endl;
         out << "legacy SHA1 Hash: " << legacyHash.SHA1().toHex() << endl;

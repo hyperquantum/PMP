@@ -86,6 +86,7 @@ namespace PMP {
 
         Ui::MainWidget* _ui;
         ServerConnection* _connection;
+        ClientServerInterface* _clientServerInterface;
         CurrentTrackMonitor* _currentTrackMonitor;
         QueueMonitor* _queueMonitor;
         QueueMediator* _queueMediator;

@@ -228,6 +228,9 @@ namespace PMP {
         static FileHash getHash(const QByteArray& buffer, int position, bool* ok);
 
         static qint16 getHashUserDataFieldsMaskForProtocolVersion(int version);
+
+    private:
+        static const QByteArray _fileHashAllZeroes;
     };
 }
 #endif
