@@ -57,10 +57,7 @@ namespace PMP {
             //
         }
 
-        void setUserId(quint32 userId) {
-            _userId = userId;
-            _haveUserId = true;
-        }
+        void setUserId(quint32 userId);
 
         bool isUserIdSetTo(quint32 userId) {
             return _userId == userId && _haveUserId;

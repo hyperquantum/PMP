@@ -36,6 +36,13 @@
 
 namespace PMP {
 
+    void TrackHighlighter::setUserId(quint32 userId) {
+        _userId = userId;
+        _haveUserId = true;
+
+        _userDataFetcher.enableAutoFetchForUser(userId);
+    }
+
     TriBool TrackHighlighter::shouldHighlightTrack(CollectionTrackInfo const& track) const
     {
         switch (_mode) {
