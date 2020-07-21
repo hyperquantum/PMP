@@ -45,29 +45,7 @@ namespace PMP {
     {
         _ui->setupUi(this);
 
-        _ui->highlightTracksComboBox->addItem(tr("none"),
-                                           QVariant::fromValue(TrackHighlightMode::None));
-        _ui->highlightTracksComboBox->addItem(tr("never heard"),
-                                     QVariant::fromValue(TrackHighlightMode::NeverHeard));
-        _ui->highlightTracksComboBox->addItem(
-                                tr("without score"),
-                                QVariant::fromValue(TrackHighlightMode::WithoutScore));
-        _ui->highlightTracksComboBox->addItem(
-                                tr("score >= 85").replace(">=", Util::GreaterThanOrEqual),
-                                QVariant::fromValue(TrackHighlightMode::ScoreAtLeast85));
-        _ui->highlightTracksComboBox->addItem(
-                                tr("score >= 90").replace(">=", Util::GreaterThanOrEqual),
-                                QVariant::fromValue(TrackHighlightMode::ScoreAtLeast90));
-        _ui->highlightTracksComboBox->addItem(
-                                tr("score >= 95").replace(">=", Util::GreaterThanOrEqual),
-                                QVariant::fromValue(TrackHighlightMode::ScoreAtLeast95));
-        _ui->highlightTracksComboBox->addItem(
-                        tr("length <= 1 min.").replace("<=", Util::LessThanOrEqual),
-                        QVariant::fromValue(TrackHighlightMode::LengthMaximumOneMinute));
-        _ui->highlightTracksComboBox->addItem(
-                       tr("length >= 5 min.").replace(">=", Util::GreaterThanOrEqual),
-                       QVariant::fromValue(TrackHighlightMode::LengthAtLeastFiveMinutes));
-        _ui->highlightTracksComboBox->setCurrentIndex(0);
+        initTrackHighlightingComboBox();
 
         _ui->collectionTableView->setModel(_collectionDisplayModel);
         _ui->collectionTableView->setDragEnabled(true);
@@ -77,10 +55,6 @@ namespace PMP {
         connect(
             _ui->searchLineEdit, &QLineEdit::textChanged,
             _collectionDisplayModel, &FilteredCollectionTableModel::setSearchText
-        );
-        connect(
-            _ui->highlightTracksComboBox, qOverload<int>(&QComboBox::currentIndexChanged),
-            this, &CollectionWidget::highlightTracksIndexChanged
         );
         connect(
             _ui->collectionTableView, &QTableView::customContextMenuRequested,
@@ -187,6 +161,37 @@ namespace PMP {
 
         auto popupPosition = _ui->collectionTableView->viewport()->mapToGlobal(position);
         _collectionContextMenu->popup(popupPosition);
+    }
+
+    void CollectionWidget::initTrackHighlightingComboBox()
+    {
+        auto combo = _ui->highlightTracksComboBox;
+
+        auto addItem = [combo](QString text, TrackHighlightMode mode) {
+            text.replace(">=", Util::GreaterThanOrEqual)
+                .replace("<=", Util::LessThanOrEqual);
+
+            combo->addItem(text, QVariant::fromValue(mode));
+        };
+
+        addItem(tr("none"), TrackHighlightMode::None);
+
+        addItem(tr("never heard"), TrackHighlightMode::NeverHeard);
+
+        addItem(tr("without score"), TrackHighlightMode::WithoutScore);
+        addItem(tr("score >= 85"), TrackHighlightMode::ScoreAtLeast85);
+        addItem(tr("score >= 90"), TrackHighlightMode::ScoreAtLeast90);
+        addItem(tr("score >= 95"), TrackHighlightMode::ScoreAtLeast95);
+
+        addItem(tr("length <= 1 min."), TrackHighlightMode::LengthMaximumOneMinute);
+        addItem(tr("length >= 5 min."), TrackHighlightMode::LengthAtLeastFiveMinutes);
+
+        combo->setCurrentIndex(0);
+
+        connect(
+            combo, qOverload<int>(&QComboBox::currentIndexChanged),
+            this, &CollectionWidget::highlightTracksIndexChanged
+        );
     }
 
 }

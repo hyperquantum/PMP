@@ -48,6 +48,8 @@ namespace PMP {
         void collectionContextMenuRequested(const QPoint& position);
 
     private:
+        void initTrackHighlightingComboBox();
+
         Ui::CollectionWidget* _ui;
         ServerConnection* _connection;
         ClientServerInterface* _clientServerInterface;
