@@ -54,6 +54,21 @@ namespace PMP {
                 auto evaluator = [](QDateTime prevHeard) { return !prevHeard.isValid(); };
                 return shouldHighlightBasedOnHeardDate(track, evaluator);
             }
+            case TrackHighlightMode::LastHeardNotInLast365Days:
+                return shouldHighlightBasedOnNotHeardInTheLastXDays(track, 365);
+
+            case TrackHighlightMode::LastHeardNotInLast180Days:
+                return shouldHighlightBasedOnNotHeardInTheLastXDays(track, 180);
+
+            case TrackHighlightMode::LastHeardNotInLast90Days:
+                return shouldHighlightBasedOnNotHeardInTheLastXDays(track, 90);
+
+            case TrackHighlightMode::LastHeardNotInLast30Days:
+                return shouldHighlightBasedOnNotHeardInTheLastXDays(track, 30);
+
+            case TrackHighlightMode::LastHeardNotInLast10Days:
+                return shouldHighlightBasedOnNotHeardInTheLastXDays(track, 10);
+
             case TrackHighlightMode::WithoutScore:
             {
                 auto evaluator = [](int permillage) { return permillage < 0; };
@@ -75,11 +90,11 @@ namespace PMP {
                 return shouldHighlightBasedOnScore(track, evaluator);
             }
             case TrackHighlightMode::LengthMaximumOneMinute:
-                if (!track.lengthIsKnown()) return TriBool();
+                if (!track.lengthIsKnown()) return TriBool::unknown;
                 return track.lengthInMilliseconds() <= 60 * 1000;
 
             case TrackHighlightMode::LengthAtLeastFiveMinutes:
-                if (!track.lengthIsKnown()) return TriBool();
+                if (!track.lengthIsKnown()) return TriBool::unknown;
                 return track.lengthInMilliseconds() >= 5 * 60 * 1000;
         }
 
@@ -112,6 +127,18 @@ namespace PMP {
             return TriBool::unknown;
 
         return dateEvaluator(hashDataForUser->previouslyHeard);
+    }
+
+    TriBool TrackHighlighter::shouldHighlightBasedOnNotHeardInTheLastXDays(
+                                                         const CollectionTrackInfo& track,
+                                                         int days) const
+    {
+        auto evaluator = [days](QDateTime prevHeard) {
+            return !prevHeard.isValid()
+                    || prevHeard <= QDateTime::currentDateTimeUtc().addDays(-days);
+        };
+
+        return shouldHighlightBasedOnHeardDate(track, evaluator);
     }
 
     // ============================================================================ //
@@ -223,6 +250,11 @@ namespace PMP {
     bool SortedCollectionTableModel::usesUserData(TrackHighlightMode mode) {
         switch (mode) {
             case TrackHighlightMode::NeverHeard:
+            case TrackHighlightMode::LastHeardNotInLast365Days:
+            case TrackHighlightMode::LastHeardNotInLast180Days:
+            case TrackHighlightMode::LastHeardNotInLast90Days:
+            case TrackHighlightMode::LastHeardNotInLast30Days:
+            case TrackHighlightMode::LastHeardNotInLast10Days:
             case TrackHighlightMode::WithoutScore:
             case TrackHighlightMode::ScoreAtLeast85:
             case TrackHighlightMode::ScoreAtLeast90:

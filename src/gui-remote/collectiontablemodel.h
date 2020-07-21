@@ -38,6 +38,11 @@ namespace PMP {
     enum class TrackHighlightMode {
         None = 0,
         NeverHeard,
+        LastHeardNotInLast365Days,
+        LastHeardNotInLast180Days,
+        LastHeardNotInLast90Days,
+        LastHeardNotInLast30Days,
+        LastHeardNotInLast10Days,
         WithoutScore,
         ScoreAtLeast85,
         ScoreAtLeast90,
@@ -74,6 +79,10 @@ namespace PMP {
 
         TriBool shouldHighlightBasedOnHeardDate(CollectionTrackInfo const& track,
                                    std::function<TriBool(QDateTime)> dateEvaluator) const;
+
+        TriBool shouldHighlightBasedOnNotHeardInTheLastXDays(
+                                                         CollectionTrackInfo const& track,
+                                                         int days) const;
 
         TrackHighlightMode _mode;
         quint32 _userId;

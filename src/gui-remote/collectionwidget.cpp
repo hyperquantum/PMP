@@ -177,6 +177,16 @@ namespace PMP {
         addItem(tr("none"), TrackHighlightMode::None);
 
         addItem(tr("never heard"), TrackHighlightMode::NeverHeard);
+        addItem(tr("not heard in the last 365 days"),
+                TrackHighlightMode::LastHeardNotInLast365Days);
+        addItem(tr("not heard in the last 180 days"),
+                TrackHighlightMode::LastHeardNotInLast180Days);
+        addItem(tr("not heard in the last 90 days"),
+                TrackHighlightMode::LastHeardNotInLast90Days);
+        addItem(tr("not heard in the last 30 days"),
+                TrackHighlightMode::LastHeardNotInLast30Days);
+        addItem(tr("not heard in the last 10 days"),
+                TrackHighlightMode::LastHeardNotInLast10Days);
 
         addItem(tr("without score"), TrackHighlightMode::WithoutScore);
         addItem(tr("score >= 85"), TrackHighlightMode::ScoreAtLeast85);
