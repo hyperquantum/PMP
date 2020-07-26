@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,9 @@
 #ifndef PMP_PRELOADER_H
 #define PMP_PRELOADER_H
 
+#include "common/abstracthandle.h"
 #include "common/filehash.h"
+#include "common/qobjectresourcekeeper.h"
 
 #include <QHash>
 #include <QMutex>
@@ -31,7 +33,7 @@
 
 namespace PMP {
 
-    class Queue;
+    class PlayerQueue;
     class Resolver;
 
     class TrackPreloadTask : public QObject, public QRunnable {
@@ -55,24 +57,52 @@ namespace PMP {
         QString _originalFilename;
     };
 
+    class Preloader;
+
+    class PreloadedFile
+        : private AbstractHandle<QObjectResourceKeeper<Preloader>>
+    {
+    public:
+        PreloadedFile();
+        PreloadedFile(Preloader* preloader, std::function<void (Preloader*)> cleaner,
+                      QString filename);
+
+        bool isEmpty() const { return _filename.isEmpty(); }
+        QString getFilename() const { return _filename; }
+
+    private:
+        QString _filename;
+    };
+
+    class QueueEntry;
+
     class Preloader : public QObject {
         Q_OBJECT
+    private:
+        class PreloadTrack;
+
     public:
-        Preloader(QObject* parent, Queue* queue, Resolver* resolver);
+        Preloader(QObject* parent, PlayerQueue* queue, Resolver* resolver);
 
         ~Preloader();
 
-        QString getPreloadedCacheFileAndLock(uint queueID);
-        void lockNone();
+        bool havePreloadedFileQuickCheck(uint queueId);
+        PreloadedFile getPreloadedCacheFile(uint queueID);
 
         static void cleanupOldFiles();
+
+    Q_SIGNALS:
+        void trackPreloaded(uint queueId);
 
     private slots:
         void queueEntryAdded(quint32 offset, quint32 queueID);
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
+        void firstTrackInQueueChanged(int index, uint queueId);
 
+        void scheduleFirstTrackCheck();
         void scheduleCheckForTracksToPreload();
+        void checkFirstTrack();
         void checkForTracksToPreload();
         void scheduleCheckForCacheEntriesToDelete();
         void checkForCacheExpiration();
@@ -85,17 +115,21 @@ namespace PMP {
     private:
         static const int PRELOAD_RANGE = 5;
 
-        class PreloadTrack;
+        void checkToPreloadTrack(QueueEntry* entry);
 
-        uint _doNotDeleteQueueID;
-        uint _jobsRunning;
-        bool _preloadCheckTimerRunning;
-        bool _cacheExpirationCheckTimerRunning;
-        Queue* _queue;
+        void doLock(uint queueId);
+        void doUnlock(uint queueId);
+
+        QHash<uint, uint> _lockedQueueIds;
+        PlayerQueue* _queue;
         Resolver* _resolver;
         QHash<uint, PreloadTrack*> _tracksByQueueID;
         QList<uint> _tracksToPreload;
         QList<uint> _tracksRemoved;
+        uint _jobsRunning;
+        bool _firstTrackCheckTimerRunning;
+        bool _preloadCheckTimerRunning;
+        bool _cacheExpirationCheckTimerRunning;
     };
 }
 #endif

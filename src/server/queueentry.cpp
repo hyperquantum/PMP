@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,7 +19,7 @@
 
 #include "queueentry.h"
 
-#include "queue.h"
+#include "playerqueue.h"
 #include "resolver.h"
 
 #include <QFileInfo>
@@ -27,7 +27,7 @@
 
 namespace PMP {
 
-    QueueEntry::QueueEntry(Queue* parent, QString const& filename)
+    QueueEntry::QueueEntry(PlayerQueue* parent, QString const& filename)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
        _filename(filename), _haveFilename(true),
@@ -36,7 +36,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, FileHash const& hash, TagData const& tags)
+    QueueEntry::QueueEntry(PlayerQueue* parent, FileHash hash, TagData const& tags)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
        _hash(hash), _haveFilename(false),
@@ -46,7 +46,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, FileHash const& hash)
+    QueueEntry::QueueEntry(PlayerQueue* parent, FileHash hash)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
        _hash(hash), _haveFilename(false),
@@ -56,7 +56,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, QueueEntry const* existing)
+    QueueEntry::QueueEntry(PlayerQueue* parent, QueueEntry const* existing)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(existing->_kind),
        _hash(existing->_hash), _audioInfo(existing->_audioInfo),
@@ -68,7 +68,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry::QueueEntry(Queue* parent, QueueEntryKind kind)
+    QueueEntry::QueueEntry(PlayerQueue* parent, QueueEntryKind kind)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(kind),
        _haveFilename(false), _fetchedTagData(false),
@@ -77,7 +77,7 @@ namespace PMP {
         //
     }
 
-    QueueEntry* QueueEntry::createBreak(Queue* parent) {
+    QueueEntry* QueueEntry::createBreak(PlayerQueue* parent) {
         return new QueueEntry(parent, QueueEntryKind::Break);
     }
 
@@ -90,13 +90,13 @@ namespace PMP {
     }
 
     FileHash const* QueueEntry::hash() const {
-        if (_hash.empty()) { return nullptr; }
+        if (_hash.isNull()) { return nullptr; }
 
         return &_hash;
     }
 
     bool QueueEntry::checkHash(Resolver& resolver) {
-        if (!_hash.empty()) return true; /* already got it */
+        if (!_hash.isNull()) return true; /* already got it */
 
         if (!_haveFilename) {
             qDebug() << "PROBLEM: QueueEntry" << _queueID
@@ -106,7 +106,7 @@ namespace PMP {
 
         _hash = resolver.analyzeAndRegisterFile(_filename);
 
-        if (_hash.empty()) {
+        if (_hash.isNull()) {
             qDebug() << "PROBLEM: QueueEntry" << _queueID
                      << ": analysis of file failed:" << _filename;
             return false;
@@ -193,7 +193,7 @@ namespace PMP {
     }
 
     void QueueEntry::checkAudioData(Resolver& resolver) {
-        if (_hash.empty()) return;
+        if (_hash.isNull()) return;
 
         if (!_audioInfo.isComplete()) {
             _audioInfo = resolver.findAudioData(_hash);
@@ -201,7 +201,7 @@ namespace PMP {
     }
 
     void QueueEntry::checkTrackData(Resolver& resolver) {
-        if (_hash.empty()) return;
+        if (_hash.isNull()) return;
 
         checkAudioData(resolver);
 

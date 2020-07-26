@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -54,9 +54,14 @@ namespace PMP {
                                                QString album, qint32 lengthInMilliseconds)
     {
         HashInfo& info = _collection[hash];
-        bool changed =
-                title != info.title || artist != info.artist || album != info.album;
-        if (!changed) return;
+
+        bool infoStillTheSame =
+                lengthInMilliseconds == info.lengthInMilliseconds
+                    && title == info.title
+                    && artist == info.artist
+                    && album == info.album;
+
+        if (infoStillTheSame) return;
 
         info.title = title;
         info.artist = artist;
@@ -104,8 +109,10 @@ namespace PMP {
             auto availabilityNotificationCount =
                     _pendingNotifications.size() - _pendingTagNotificationCount;
 
-            QVector<FileHash> fullNotifications(_pendingTagNotificationCount);
-            QVector<FileHash> availabilityNotifications(availabilityNotificationCount);
+            QVector<FileHash> fullNotifications;
+            fullNotifications.reserve(_pendingTagNotificationCount);
+            QVector<FileHash> availabilityNotifications;
+            availabilityNotifications.reserve(availabilityNotificationCount);
 
             QHashIterator<FileHash, Changed> i(_pendingNotifications);
             while (i.hasNext()) {
@@ -131,9 +138,10 @@ namespace PMP {
     }
 
     void CollectionMonitor::emitFullNotifications(QVector<FileHash> hashes) {
-        QVector<CollectionTrackInfo> notifications(hashes.size());
+        QVector<CollectionTrackInfo> notifications;
+        notifications.reserve(hashes.size());
 
-        Q_FOREACH(FileHash h, hashes) {
+        for (FileHash h : hashes) {
             auto it = _collection.find(h);
             if (it == _collection.end()) continue; /* disappeared?? */
 
@@ -149,7 +157,7 @@ namespace PMP {
     void CollectionMonitor::emitAvailabilityNotifications(QVector<FileHash> hashes) {
         QVector<FileHash> available, unavailable;
 
-        Q_FOREACH(FileHash h, hashes) {
+        for (FileHash h : hashes) {
             auto it = _collection.find(h);
             if (it == _collection.end()) continue; /* disappeared?? */
 

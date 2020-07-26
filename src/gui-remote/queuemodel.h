@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,8 @@
 #ifndef PMP_QUEUEMODEL_H
 #define PMP_QUEUEMODEL_H
 
+#include "common/filehash.h"
+
 #include <QAbstractTableModel>
 #include <QList>
 
@@ -30,12 +32,40 @@ namespace PMP {
     class QueueMediator;
     class UserDataFetcher;
 
+    class QueueTrack {
+    public:
+        QueueTrack() : _id(0)/*, _real()*/ {}
+
+        QueueTrack(quint32 queueId, bool realTrack)
+         : _id(queueId), _real(realTrack)
+        {
+            //
+        }
+
+        QueueTrack(quint32 queueId, const FileHash& hash)
+         : _id(queueId), _hash(hash), _real(true)
+        {
+            //
+        }
+
+        quint32 queueId() const { return _id; }
+        FileHash hash() const { return _hash; }
+
+        bool isNull() const { return _id == 0; }
+        bool isRealTrack() const { return _real; }
+
+    private:
+        quint32 _id;
+        FileHash _hash;
+        bool _real;
+    };
+
     class QueueModel : public QAbstractTableModel {
         Q_OBJECT
     public:
         QueueModel(QObject* parent, QueueMediator* source,
                    QueueEntryInfoFetcher* trackInfoFetcher,
-                   UserDataFetcher* userDataFetcher);
+                   UserDataFetcher& userDataFetcher);
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -53,6 +83,7 @@ namespace PMP {
                              int row, int column, const QModelIndex& parent) const;
 
         quint32 trackIdAt(const QModelIndex& index) const;
+        QueueTrack trackAt(const QModelIndex& index) const;
 
     private slots:
         void onUserPlayingForChanged(quint32 userId);
@@ -90,7 +121,7 @@ namespace PMP {
 
         QueueMediator* _source;
         QueueEntryInfoFetcher* _infoFetcher;
-        UserDataFetcher* _userDataFetcher;
+        UserDataFetcher& _userDataFetcher;
         bool _receivedUserPlayingFor;
         quint32 _userPlayingFor;
         int _modelRows;

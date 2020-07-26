@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,11 +35,17 @@ namespace PMP {
             //
         }
 
+        CollectionTrackInfo(FileHash const& hash, bool isAvailable)
+         : _hash(hash), _isAvailable(isAvailable), _lengthInMs(-1)
+        {
+            //
+        }
+
         CollectionTrackInfo(FileHash const& hash, bool isAvailable,
                             QString const& title, QString const& artist,
                             QString const& album, qint32 lengthInMilliseconds)
-        : _hash(hash), _isAvailable(isAvailable), _lengthInMs(lengthInMilliseconds),
-          _title(title), _artist(artist), _album(album)
+         : _hash(hash), _isAvailable(isAvailable), _lengthInMs(lengthInMilliseconds),
+           _title(title), _artist(artist), _album(album)
         {
             //
         }
@@ -52,9 +58,10 @@ namespace PMP {
         const QString& title() const { return _title; }
         const QString& artist() const { return _artist; }
         const QString& album() const { return _album; }
+        bool lengthIsKnown() const { return _lengthInMs >= 0; }
         qint32 lengthInMilliseconds() const { return _lengthInMs; }
         qint32 lengthInSeconds() const {
-            return (_lengthInMs >= 0) ? _lengthInMs / 1000 : -1;
+            return lengthIsKnown() ? _lengthInMs / 1000 : -1;
         }
 
         bool titleAndArtistUnknown() const {
@@ -68,13 +75,15 @@ namespace PMP {
         QString _title, _artist, _album;
     };
 
-    /*
     inline bool operator==(const CollectionTrackInfo& me,
                            const CollectionTrackInfo& other)
     {
-        return me.title() == other.title()
-                && me.hash() == other.hash()
-                && me.artist() == other.artist();
+        return me.hash() == other.hash()
+            && me.isAvailable() == other.isAvailable()
+            && me.lengthInMilliseconds() == other.lengthInMilliseconds()
+            && me.title() == other.title()
+            && me.artist() == other.artist()
+            && me.album() == other.album();
     }
 
     inline bool operator!=(const CollectionTrackInfo& me,
@@ -82,7 +91,6 @@ namespace PMP {
     {
         return !(me == other);
     }
-    */
 }
 
 Q_DECLARE_METATYPE(PMP::CollectionTrackInfo)

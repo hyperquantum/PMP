@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,8 @@
 #ifndef PMP_USERDATAFETCHER_H
 #define PMP_USERDATAFETCHER_H
 
-#include "common/filehash.h"
+#include "collectiontrackinfo.h"
+#include "filehash.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -30,6 +31,7 @@
 
 namespace PMP {
 
+    class CollectionWatcher;
     class ServerConnection;
 
     class UserDataFetcher : public QObject {
@@ -37,7 +39,10 @@ namespace PMP {
     public:
         struct HashData;
 
-        UserDataFetcher(QObject* parent, ServerConnection* connection);
+        UserDataFetcher(QObject* parent, CollectionWatcher* collectionWatcher,
+                        ServerConnection* connection);
+
+        void enableAutoFetchForUser(quint32 userId);
 
         HashData const* getHashDataForUser(quint32 userId, FileHash const& hash);
 
@@ -46,19 +51,50 @@ namespace PMP {
 
     private slots:
         //void connected();
+        void onNewTrackReceived(CollectionTrackInfo track);
         void receivedHashUserData(FileHash hash, quint32 userId,
-                                  QDateTime previouslyHeard, qint16 score);
+                                  QDateTime previouslyHeard, qint16 scorePermillage);
         void sendPendingRequests();
         void sendPendingNotifications();
 
     private:
-        class UserData;
+        class UserData {
+        public:
+            UserData()
+             : _autoFetchEnabled(false)
+            {
+                //
+            }
 
-        UserData* getOrCreateUserData(quint32 userId);
+            bool isAutoFetchEnabled() const { return _autoFetchEnabled; }
+
+            void setAutoFetchEnabled(bool newValue) {
+                _autoFetchEnabled = newValue;
+            }
+
+            HashData& getOrCreateHash(FileHash const& hash) { return _hashes[hash]; }
+
+            bool haveHash(FileHash const& hash) const {
+                return _hashes.contains(hash);
+            }
+
+            HashData const* getHash(FileHash const& hash) const {
+                auto it = _hashes.find(hash);
+                if (it == _hashes.constEnd()) return nullptr;
+
+                return &it.value();
+            }
+
+        private:
+            QHash<FileHash, HashData> _hashes;
+            bool _autoFetchEnabled;
+        };
+
         void needToRequestData(quint32 userId, FileHash const& hash);
 
+        CollectionWatcher* _collectionWatcher;
         ServerConnection* _connection;
-        QHash<quint32, UserData*> _userData;
+        QHash<quint32, UserData> _userData;
         QHash<quint32, QSet<FileHash> > _hashesToFetchForUsers;
         QSet<quint32> _pendingNotificationsUsers;
     };
@@ -74,29 +110,7 @@ namespace PMP {
         QDateTime previouslyHeard;
 
         bool scoreReceived;
-        qint16 score;
-    };
-
-    class UserDataFetcher::UserData {
-    public:
-        UserData(quint32 userId)
-         : _user(userId)
-        {
-            //
-        }
-
-        HashData& getOrCreateHash(FileHash const& hash) { return _hashes[hash]; }
-
-        HashData const* getHash(FileHash const& hash) const {
-            auto it = _hashes.find(hash);
-            if (it == _hashes.constEnd()) return nullptr;
-
-            return &it.value();
-        }
-
-    private:
-        quint32 _user;
-        QHash<FileHash, HashData> _hashes;
+        qint16 scorePermillage;
     };
 }
 #endif

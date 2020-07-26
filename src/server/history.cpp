@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,6 +25,7 @@
 #include "resolver.h"
 #include "userdatafortracksfetcher.h"
 
+#include <QtDebug>
 #include <QThreadPool>
 
 namespace PMP {
@@ -36,17 +37,10 @@ namespace PMP {
             player, &Player::currentTrackChanged,
             this, &History::currentTrackChanged
         );
-
         connect(
-            player, &Player::failedToPlayTrack,
-            this, &History::failedToPlayTrack
+            player, &Player::newHistoryEntry,
+            this, &History::newHistoryEntry
         );
-
-        connect(
-            player, &Player::donePlayingTrack,
-            this, &History::donePlayingTrack
-        );
-
         connect(
             _fetchingTimer, &QTimer::timeout,
             this, &History::onFetchingTimerTimeout
@@ -133,22 +127,18 @@ namespace PMP {
         _nowPlaying = newTrack;
     }
 
-    void History::failedToPlayTrack(const QueueEntry *track) {
-        /* we don't use this yet */
-    }
+    void History::newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry) {
+        if (entry->permillage() <= 0 && entry->hadError())
+            return;
 
-    void History::donePlayingTrack(QueueEntry const* track, int permillage, bool hadError,
-                                   bool hadSeek)
-    {
-        const FileHash* hash = track->hash();
-        uint hashID = _player->resolver().getID(*hash);
-        quint32 user = _player->userPlayingFor();
+        FileHash hash = entry->hash();
+        if (hash.isNull()) {
+            qWarning() << "cannot save history for queue ID" << entry->queueID()
+                       << "because hash is unavailabe";
+            return;
+        }
 
-        auto task =
-            new AddToHistoryTask(
-                hashID, user, track->started(), track->ended(), permillage,
-                !(hadError || hadSeek)
-            );
+        auto task = new AddToHistoryTask(&_player->resolver(), entry);
 
         connect(
             task, &AddToHistoryTask::updatedHashUserStats,

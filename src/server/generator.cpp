@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,7 +23,7 @@
 
 #include "database.h"
 #include "history.h"
-#include "queue.h"
+#include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
 
@@ -68,7 +68,7 @@ namespace PMP {
 
     /* ========================== Generator ========================== */
 
-    Generator::Generator(Queue* queue, Resolver* resolver, History* history)
+    Generator::Generator(PlayerQueue* queue, Resolver* resolver, History* history)
      : _randomEngine(Util::getRandomSeed()), _currentTrack(nullptr),
        _queue(queue), _resolver(resolver), _history(history),
        _upcomingTimer(new QTimer(this)), _upcomingRuntimeSeconds(0),
@@ -77,7 +77,7 @@ namespace PMP {
        _waveRising(false)
     {
         connect(
-            _queue, &Queue::entryRemoved,
+            _queue, &PlayerQueue::entryRemoved,
             this, &Generator::queueEntryRemoved
         );
         connect(
@@ -242,7 +242,7 @@ namespace PMP {
     void Generator::requestQueueRefill() {
         if (_refillPending) return;
         _refillPending = true;
-        QTimer::singleShot(100, this, SLOT(checkAndRefillQueue()));
+        QTimer::singleShot(100, this, &Generator::checkAndRefillQueue);
     }
 
     quint16 Generator::getRandomPermillage() {
@@ -261,7 +261,7 @@ namespace PMP {
         }
 
         FileHash randomHash = _hashesSource.takeLast();
-        if (!randomHash.empty()) { _hashesSpent.insert(randomHash); }
+        if (!randomHash.isNull()) { _hashesSpent.insert(randomHash); }
 
         auto sourceHashCount = _hashesSource.size();
         if (sourceHashCount % 10 == 0) {
@@ -288,7 +288,7 @@ namespace PMP {
             iterationsLeft--;
 
             FileHash randomHash = getNextRandomHash();
-            if (randomHash.empty()) { break; /* nothing available */ }
+            if (randomHash.isNull()) { break; /* nothing available */ }
 
             auto c =
                 new Candidate(randomHash, getRandomPermillage(), getRandomPermillage());
@@ -543,7 +543,7 @@ namespace PMP {
     bool Generator::satisfiesFilters(Candidate* candidate, bool strict) {
         /* do we have the hash? */
         const FileHash& hash = candidate->hash();
-        if (hash.empty()) return false;
+        if (hash.isNull()) return false;
 
         /* can we find a file for the track? */
         if (!_resolver->haveFileFor(hash)) return false;

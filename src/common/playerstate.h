@@ -20,6 +20,8 @@
 #ifndef PMP_PLAYERSTATE_H
 #define PMP_PLAYERSTATE_H
 
+#include <QtDebug>
+
 namespace PMP {
 
     enum class PlayerState {
@@ -28,5 +30,31 @@ namespace PMP {
         Playing,
         Paused
     };
+
+    inline QDebug operator<<(QDebug debug, PlayerState state) {
+        switch (state) {
+            case PlayerState::Unknown:
+                debug << "PlayerState::Unknown";
+                return debug;
+
+            case PlayerState::Stopped:
+                debug << "PlayerState::Stopped";
+                return debug;
+
+            case PlayerState::Playing:
+                debug << "PlayerState::Playing";
+                return debug;
+
+            case PlayerState::Paused:
+                debug << "PlayerState::Paused";
+                return debug;
+        }
+
+        debug << int(state);
+        return debug;
+    }
 }
+
+Q_DECLARE_METATYPE(PMP::PlayerState)
+
 #endif

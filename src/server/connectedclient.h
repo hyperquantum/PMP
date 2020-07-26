@@ -24,6 +24,7 @@
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
 
+#include "playerhistoryentry.h"
 #include "serverplayerstate.h"
 #include "userdataforhashesfetcher.h"
 
@@ -31,6 +32,7 @@
 #include <QDateTime>
 #include <QHash>
 #include <QList>
+#include <QSharedPointer>
 #include <QTcpSocket>
 #include <QVector>
 
@@ -43,14 +45,15 @@ namespace PMP {
     class QueueEntry;
     class Resolver;
     class Server;
+    class ServerInterface;
     class ServerHealthMonitor;
     class Users;
 
     class ConnectedClient : public QObject {
         Q_OBJECT
     public:
-        ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
-                        Generator* generator, Users* users,
+        ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
+                        Player* player, Generator* generator, Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor);
 
@@ -73,9 +76,7 @@ namespace PMP {
         void dynamicModeNoRepetitionSpanChanged(int seconds);
         void playerStateChanged(ServerPlayerState state);
         void currentTrackChanged(QueueEntry const* entry);
-        void trackHistoryEvent(uint queueID, QDateTime started, QDateTime ended,
-                               quint32 userPlayedFor, int permillagePlayed, bool hadError,
-                               bool hadSeek);
+        void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void trackPositionChanged(qint64 position);
         void sendStateInfo();
         void sendStateInfoAfterTimeout();
@@ -117,6 +118,7 @@ namespace PMP {
         void sendTextCommand(QString const& command);
         void handleBinaryModeSwitchRequest();
         void sendBinaryMessage(QByteArray const& message);
+        void sendProtocolExtensionsMessage();
         void sendEventNotificationMessage(quint8 event);
         void sendServerInstanceIdentifier();
         void sendDatabaseIdentifier();
@@ -151,17 +153,23 @@ namespace PMP {
                                                QVector<FileHash> unavailable);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
                                        QVector<CollectionTrackInfo> tracks);
-        void sendNewHistoryEntryMessage(uint queueID, QDateTime started, QDateTime ended,
-                                        quint32 userPlayedFor, int permillagePlayed,
-                                        bool hadError, bool hadSeek);
+        void sendNewHistoryEntryMessage(QSharedPointer<PlayerHistoryEntry> entry);
         void sendQueueHistoryMessage(int limit);
         void sendServerNameMessage(quint8 type, QString name);
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
 
         void handleBinaryMessage(QByteArray const& message);
+        void handleStandardBinaryMessage(NetworkProtocol::ClientMessageType messageType,
+                                         QByteArray const& message);
+        void handleExtensionMessage(quint8 extensionId, quint8 messageType,
+                                    QByteArray const& message);
+        void registerClientProtocolExtensions(
+                           const QVector<NetworkProtocol::ProtocolExtension>& extensions);
         void handleSingleByteAction(quint8 action);
         void handleCollectionFetchRequest(uint clientReference);
+
+        void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         NetworkProtocol::ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
@@ -175,7 +183,7 @@ namespace PMP {
         static const qint16 ServerProtocolNo;
 
         QTcpSocket* _socket;
-        Server* _server;
+        ServerInterface* _serverInterface;
         Player* _player;
         Generator* _generator;
         Users* _users;
@@ -183,13 +191,12 @@ namespace PMP {
         ServerHealthMonitor* _serverHealthMonitor;
         QByteArray _textReadBuffer;
         int _clientProtocolNo;
+        QHash<quint8, QString> _clientExtensionNames;
         quint32 _lastSentNowPlayingID;
         QString _userAccountRegistering;
         QByteArray _saltForUserAccountRegistering;
         QString _userAccountLoggingIn;
         QByteArray _sessionSaltForUserLoggingIn;
-        quint32 _userLoggedIn;
-        QString _userLoggedInName;
         QHash<quint32, quint32> _trackAdditionConfirmationsPending;
         bool _terminated;
         bool _binaryMode;

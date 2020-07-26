@@ -40,7 +40,10 @@ namespace PMP {
         _ui->portLineEdit->setValidator(portValidator);
         _ui->portLineEdit->setText("23432");
 
-        connect(_ui->connectButton, SIGNAL(clicked()), this, SLOT(connectClicked()));
+        connect(
+            _ui->connectButton, &QPushButton::clicked,
+            this, &ConnectionWidget::connectClicked
+        );
 
         auto discoverer = new ServerDiscoverer(this);
 
@@ -65,6 +68,8 @@ namespace PMP {
     void ConnectionWidget::foundServer(QHostAddress address, quint16 port,
                                        QUuid id, QString name)
     {
+        Q_UNUSED(id)
+
         QCommandLinkButton* button =
             new QCommandLinkButton(_ui->serversFoundGroupBox);
 
@@ -100,16 +105,18 @@ namespace PMP {
 
         /* Validate server */
         if (server.length() == 0) {
-            msg.setText("You need to fill in the hostname or IP of the server!");
+            msg.setText(tr("You need to fill in the hostname or IP of the server!"));
             msg.exec();
             return;
         }
 
         /* Validate port number */
         int pos = 0;
-        if (_ui->portLineEdit->validator()->validate(portString, pos) != QValidator::Acceptable) {
-            msg.setText("Invalid port number!");
-            msg.setInformativeText("Port number must be in the range 1 to 65535.");
+        auto portValidationResult =
+                _ui->portLineEdit->validator()->validate(portString, pos);
+        if (portValidationResult != QValidator::Acceptable) {
+            msg.setText(tr("Invalid port number!"));
+            msg.setInformativeText(tr("Port number must be in the range 1 to 65535."));
             msg.exec();
             return;
         }

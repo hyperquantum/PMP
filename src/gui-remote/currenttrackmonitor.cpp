@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -57,7 +57,7 @@ namespace PMP {
         );
 
         _timer->setInterval(TIMER_INTERVAL);
-        connect(_timer, SIGNAL(timeout()), this, SLOT(onTimeout()));
+        connect(_timer, &QTimer::timeout, this, &CurrentTrackMonitor::onTimeout);
 
         if (_connection->isConnected()) {
             connected();
@@ -158,6 +158,8 @@ namespace PMP {
                                                 int lengthInSeconds,
                                                 QString title, QString artist)
     {
+        Q_UNUSED(type)
+
         if (queueID != _nowPlayingQID) return;
 
         bool alreadyReceivedInfo = _receivedTrackInfo;

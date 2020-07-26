@@ -29,11 +29,12 @@
 #include "generator.h"
 #include "history.h"
 #include "player.h"
-#include "queue.h"
+#include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
 #include "server.h"
 #include "serverhealthmonitor.h"
+#include "serverinterface.h"
 #include "users.h"
 
 #include <QHostInfo>
@@ -45,24 +46,26 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 11;
+    const qint16 ConnectedClient::ServerProtocolNo = 12;
 
-    ConnectedClient::ConnectedClient(QTcpSocket* socket, Server* server, Player* player,
-                                     Generator* generator, Users* users,
+    ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
+                                     Player* player, Generator* generator, Users* users,
                                      CollectionMonitor* collectionMonitor,
                                      ServerHealthMonitor* serverHealthMonitor)
-     : QObject(server),
-       _socket(socket), _server(server), _player(player), _generator(generator),
+     : _socket(socket), _serverInterface(serverInterface),
+       _player(player), _generator(generator),
        _users(users), _collectionMonitor(collectionMonitor),
        _serverHealthMonitor(serverHealthMonitor),
        _clientProtocolNo(-1),
-       _lastSentNowPlayingID(0), _userLoggedIn(0),
+       _lastSentNowPlayingID(0),
        _terminated(false), _binaryMode(false),
        _eventsEnabled(false), _healthEventsEnabled(false),
        _pendingPlayerStatus(false)
     {
+        _serverInterface->setParent(this);
+
         connect(
-            server, &Server::shuttingDown,
+            _serverInterface, &ServerInterface::serverShuttingDown,
             this, &ConnectedClient::terminateConnection
         );
 
@@ -138,8 +141,8 @@ namespace PMP {
             this, &ConnectedClient::currentTrackChanged
         );
         connect(
-            _player, &Player::trackHistoryEvent,
-            this, &ConnectedClient::trackHistoryEvent
+            _player, &Player::newHistoryEntry,
+            this, &ConnectedClient::newHistoryEntry
         );
         connect(
             _player, &Player::positionChanged,
@@ -151,15 +154,15 @@ namespace PMP {
         );
 
         connect(
-            queue, &Queue::entryRemoved,
+            queue, &PlayerQueue::entryRemoved,
             this, &ConnectedClient::queueEntryRemoved
         );
         connect(
-            queue, &Queue::entryAdded,
+            queue, &PlayerQueue::entryAdded,
             this, &ConnectedClient::queueEntryAdded
         );
         connect(
-            queue, &Queue::entryMoved,
+            queue, &PlayerQueue::entryMoved,
             this, &ConnectedClient::queueEntryMoved
         );
 
@@ -206,7 +209,7 @@ namespace PMP {
     }
 
     bool ConnectedClient::isLoggedIn() const {
-        return _userLoggedIn > 0;
+        return _serverInterface->isLoggedIn();
     }
 
     void ConnectedClient::dataArrived() {
@@ -299,13 +302,13 @@ namespace PMP {
 
     void ConnectedClient::executeTextCommandWithoutArgs(const QString& command) {
         if (command == "play") {
-            if (isLoggedIn()) { _player->play(); }
+            _serverInterface->play();
         }
         else if (command == "pause") {
-            if (isLoggedIn()) { _player->pause(); }
+            _serverInterface->pause();
         }
         else if (command == "skip") {
-            if (isLoggedIn()) { _player->skip(); }
+            _serverInterface->skip();
         }
         else if (command == "volume") {
             /* 'volume' without arguments sends current volume */
@@ -323,7 +326,7 @@ namespace PMP {
             sendTextualQueueInfo();
         }
         else if (command == "shutdown") {
-            if (isLoggedIn()) { _server->shutdown(); }
+            _serverInterface->shutDownServer();
         }
         else if (command == "binary") {
             /* 'binary' command without argument is obsolete, but we need to continue
@@ -355,13 +358,11 @@ namespace PMP {
             bool ok;
             int volume = arg1.toInt(&ok);
             if (ok && volume >= 0 && volume <= 100) {
-                if (isLoggedIn()) { _player->setVolume(volume); }
+                _serverInterface->setVolume(volume);
             }
         }
         else if (command == "shutdown") {
-            if (arg1 == _server->serverPassword()) {
-                _server->shutdown();
-            }
+            _serverInterface->shutDownServer(arg1);
         }
         else {
             /* unknown command ???? */
@@ -382,7 +383,7 @@ namespace PMP {
             int moveDiff = arg2.toInt(&ok);
             if (!ok || moveDiff == 0) return;
 
-            if (isLoggedIn()) { _player->queue().move(queueID, moveDiff); }
+            _serverInterface->moveQueueEntry(queueID, moveDiff);
         }
         else {
             /* unknown command ???? */
@@ -481,6 +482,33 @@ namespace PMP {
         _socket->write(lengthBytes);
         _socket->write(message);
         _socket->flush();
+    }
+
+    void ConnectedClient::sendProtocolExtensionsMessage() {
+        if (_clientProtocolNo < 12) return; /* client will not understand this message */
+
+        QVector<const NetworkProtocol::ProtocolExtension*> extensions;
+        //extensions << &_knownExtensionThis;
+
+        quint8 extensionCount = static_cast<quint8>(extensions.size());
+
+        QByteArray message;
+        message.reserve(4 + extensionCount * 16); /* estimate */
+        NetworkUtil::append2Bytes(message, NetworkProtocol::ServerExtensionsMessage);
+        NetworkUtil::appendByte(message, 0); /* filler */
+        NetworkUtil::appendByte(message, extensionCount);
+
+        for(auto extension : extensions) {
+            QByteArray nameBytes = extension->name.toUtf8();
+            quint8 nameBytesCount = static_cast<quint8>(nameBytes.size());
+
+            NetworkUtil::appendByte(message, extension->id);
+            NetworkUtil::appendByte(message, extension->version);
+            NetworkUtil::appendByte(message, nameBytesCount);
+            message += nameBytes;
+        }
+
+        sendBinaryMessage(message);
     }
 
     void ConnectedClient::sendStateInfoAfterTimeout() {
@@ -602,7 +630,7 @@ namespace PMP {
     }
 
     void ConnectedClient::sendServerInstanceIdentifier() {
-        QUuid uuid = _server->uuid();
+        QUuid uuid = _serverInterface->getServerUuid();
 
         QByteArray message;
         message.reserve(2 + 16);
@@ -657,7 +685,7 @@ namespace PMP {
     }
 
     void ConnectedClient::sendQueueContentMessage(quint32 startOffset, quint8 length) {
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
         uint queueLength = queue.length();
 
         if (startOffset >= queueLength) {
@@ -686,7 +714,7 @@ namespace PMP {
     }
 
     void ConnectedClient::sendQueueHistoryMessage(int limit) {
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
 
         /* keep a reasonable limit */
         if (limit <= 0 || limit > 255) { limit = 255; }
@@ -833,7 +861,7 @@ namespace PMP {
         NetworkUtil::append2Bytes(message, NetworkProtocol::BulkTrackInfoMessage);
         NetworkUtil::append2Bytes(message, (uint)queueIDs.size());
 
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
 
         /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
 
@@ -897,7 +925,7 @@ namespace PMP {
         NetworkUtil::append2Bytes(message, NetworkProtocol::BulkQueueEntryHashMessage);
         NetworkUtil::append2Bytes(message, (uint)queueIDs.size());
 
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
 
         /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
 
@@ -1099,24 +1127,21 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendNewHistoryEntryMessage(uint queueID,
-                                                     QDateTime started, QDateTime ended,
-                                                     quint32 userPlayedFor,
-                                                     int permillagePlayed, bool hadError,
-                                                     bool hadSeek)
+    void ConnectedClient::sendNewHistoryEntryMessage(
+                                                 QSharedPointer<PlayerHistoryEntry> entry)
     {
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4 + 8 + 8 + 2 + 2);
 
-        quint16 status = (hadError ? 1 : 0) | (hadSeek ? 2 : 0);
+        quint16 status = (entry->hadError() ? 1 : 0) | (entry->hadSeek() ? 2 : 0);
 
         NetworkUtil::append2Bytes(message, NetworkProtocol::NewHistoryEntryMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
-        NetworkUtil::append4Bytes(message, queueID);
-        NetworkUtil::append4Bytes(message, userPlayedFor);
-        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, started);
-        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, ended);
-        NetworkUtil::append2BytesSigned(message, permillagePlayed);
+        NetworkUtil::append4Bytes(message, entry->queueID());
+        NetworkUtil::append4Bytes(message, entry->user());
+        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry->started());
+        NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry->ended());
+        NetworkUtil::append2BytesSigned(message, entry->permillage());
         NetworkUtil::append2Bytes(message, status);
 
         sendBinaryMessage(message);
@@ -1319,7 +1344,7 @@ namespace PMP {
 
         UserDataForHash data;
         data.hash = _player->resolver().getHashByID(hashID);
-        if (data.hash.empty()) return; /* invalid ID */
+        if (data.hash.isNull()) return; /* invalid ID */
 
         data.previouslyHeard = previouslyHeard;
         data.score = score;
@@ -1378,16 +1403,10 @@ namespace PMP {
         );
     }
 
-    void ConnectedClient::trackHistoryEvent(uint queueID,
-                                            QDateTime started, QDateTime ended,
-                                            quint32 userPlayedFor, int permillagePlayed,
-                                            bool hadError, bool hadSeek)
+    void ConnectedClient::newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry)
     {
         if (_binaryMode)
-            sendNewHistoryEntryMessage(
-                queueID, started, ended, userPlayedFor, permillagePlayed,
-                hadError, hadSeek
-            );
+            sendNewHistoryEntryMessage(entry);
     }
 
     void ConnectedClient::trackPositionChanged(qint64 position) {
@@ -1402,7 +1421,7 @@ namespace PMP {
     }
 
     void ConnectedClient::sendTextualQueueInfo() {
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
         QList<QueueEntry*> queueContent = queue.entries(0, 10);
 
         QString command =
@@ -1455,7 +1474,7 @@ namespace PMP {
         if (_pendingPlayerStatus) return;
 
         _pendingPlayerStatus = true;
-        QTimer::singleShot(25, this, SLOT(sendStateInfoAfterTimeout()));
+        QTimer::singleShot(25, this, &ConnectedClient::sendStateInfoAfterTimeout);
     }
 
     void ConnectedClient::queueEntryRemoved(quint32 offset, quint32 queueID) {
@@ -1516,18 +1535,36 @@ namespace PMP {
     }
 
     void ConnectedClient::handleBinaryMessage(QByteArray const& message) {
-        qint32 messageLength = message.length();
-
-        if (messageLength < 2) {
+        if (message.length() < 2) {
             qDebug() << "received invalid binary message (less than 2 bytes)";
             return; /* invalid message */
         }
 
-        auto messageType =
-            static_cast<NetworkProtocol::ClientMessageType>(
-                                                      NetworkUtil::get2Bytes(message, 0));
+        quint16 messageType = NetworkUtil::get2Bytes(message, 0);
+        if (messageType & (1u << 15)) {
+            quint8 extensionMessageType = messageType & 0x7Fu;
+            quint8 extensionId = (messageType >> 7) & 0xFFu;
+
+            handleExtensionMessage(extensionId, extensionMessageType, message);
+        }
+        else {
+            auto clientMessageType =
+                static_cast<NetworkProtocol::ClientMessageType>(messageType);
+
+            handleStandardBinaryMessage(clientMessageType, message);
+        }
+    }
+
+    void ConnectedClient::handleStandardBinaryMessage(
+                                           NetworkProtocol::ClientMessageType messageType,
+                                           QByteArray const& message)
+    {
+        qint32 messageLength = message.length();
 
         switch (messageType) {
+        case NetworkProtocol::ClientExtensionsMessage:
+            parseClientProtocolExtensionsMessage(message);
+            break;
         case NetworkProtocol::SingleByteActionMessage:
         {
             if (messageLength != 3) {
@@ -1641,7 +1678,7 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            _generator->setNoRepetitionSpan(intervalMinutes);
+            _serverInterface->setTrackRepetitionAvoidanceMinutes(intervalMinutes);
         }
             break;
         case NetworkProtocol::PossibleFilenamesForQueueEntryRequestMessage:
@@ -1703,7 +1740,7 @@ namespace PMP {
 
             if (position < 0) return; /* invalid position */
 
-            _player->seekTo(position);
+            _serverInterface->seekTo(position);
         }
             break;
         case NetworkProtocol::QueueEntryMoveRequestMessage:
@@ -1720,7 +1757,7 @@ namespace PMP {
             qDebug() << "received track move command; QID:" << queueID
                      << " move:" << move;
 
-            _player->queue().move(queueID, move);
+            _serverInterface->moveQueueEntry(queueID, move);
         }
             break;
         case NetworkProtocol::InitiateNewUserAccountMessage:
@@ -1935,8 +1972,7 @@ namespace PMP {
                 );
 
             if (loginSucceeded) {
-                _userLoggedIn = user.id;
-                _userLoggedInName = user.login;
+                _serverInterface->setLoggedIn(user.id, user.login);
                 sendSuccessMessage(clientReference, user.id);
             }
             else {
@@ -1986,6 +2022,86 @@ namespace PMP {
         }
     }
 
+    void ConnectedClient::handleExtensionMessage(quint8 extensionId, quint8 messageType,
+                                                 QByteArray const& message)
+    {
+        /* parse extensions here */
+
+        //if (extensionId == _knownExtensionOther.id) {
+        //    switch (messageType) {
+        //    case 1: parseExtensionMessage1(message); break;
+        //    case 2: parseExtensionMessage2(message); break;
+        //    case 3: parseExtensionMessage3(message); break;
+        //    }
+        //}
+
+        qWarning() << "unhandled extension message" << messageType
+                   << "for extension" << extensionId
+                   << "with length" << message.length()
+                   << "; extension name: "
+                   << _clientExtensionNames.value(extensionId, "?");
+    }
+
+    void ConnectedClient::parseClientProtocolExtensionsMessage(QByteArray const& message)
+    {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        /* be strict about reserved space */
+        int filler = NetworkUtil::getByteUnsignedToInt(message, 2);
+        if (filler != 0) {
+            return; /* invalid message */
+        }
+
+        int extensionCount = NetworkUtil::getByteUnsignedToInt(message, 3);
+        if (message.length() < 4 + extensionCount * 4) {
+            return; /* invalid message */
+        }
+
+        QVector<NetworkProtocol::ProtocolExtension> extensions;
+        QSet<quint8> ids;
+        QSet<QString> names;
+        extensions.reserve(extensionCount);
+        ids.reserve(extensionCount);
+        names.reserve(extensionCount);
+
+        int offset = 4;
+        for (int i = 0; i < extensionCount; ++i) {
+            if (offset > message.length() - 3) {
+                return; /* invalid message */
+            }
+
+            quint8 id = NetworkUtil::getByte(message, offset);
+            quint8 version = NetworkUtil::getByte(message, offset + 1);
+            quint8 byteCount = NetworkUtil::getByte(message, offset + 2);
+            offset += 3;
+
+            if (id == 0 || version == 0 || byteCount == 0
+                    || offset > message.length() - byteCount)
+            {
+                return; /* invalid message */
+            }
+
+            QString name = NetworkUtil::getUtf8String(message, offset, byteCount);
+            offset += byteCount;
+
+            if (ids.contains(id) || names.contains(name)) {
+                return; /* invalid message */
+            }
+
+            ids << id;
+            names << name;
+            extensions << NetworkProtocol::ProtocolExtension(id, name, version);
+        }
+
+        if (offset != message.length()) {
+            return; /* invalid message */
+        }
+
+        registerClientProtocolExtensions(extensions);
+    }
+
     void ConnectedClient::parseAddHashToQueueRequest(const QByteArray& message,
                                            NetworkProtocol::ClientMessageType messageType)
     {
@@ -2000,19 +2116,17 @@ namespace PMP {
 
         bool ok;
         FileHash hash = NetworkProtocol::getHash(message, 4, &ok);
-        if (!ok || hash.empty()) {
+        if (!ok || hash.isNull()) {
             return; /* invalid message */
         }
 
         qDebug() << " request contains hash:" << hash.dumpToString();
 
-        Queue& queue = _player->queue();
-
         if (messageType == NetworkProtocol::AddHashToEndOfQueueRequestMessage) {
-            queue.enqueue(hash);
+            _serverInterface->enqueue(hash);
         }
         else if (messageType == NetworkProtocol::AddHashToFrontOfQueueRequestMessage) {
-            queue.insertAtFront(hash);
+            _serverInterface->insertAtFront(hash);
         }
         else {
             return; /* invalid message */
@@ -2035,17 +2149,17 @@ namespace PMP {
 
         bool ok;
         FileHash hash = NetworkProtocol::getHash(message, 12, &ok);
-        if (!ok || hash.empty()) {
+        if (!ok || hash.isNull()) {
             return; /* invalid message */
         }
 
         qDebug() << " request contains hash:" << hash.dumpToString();
 
-        Queue& queue = _player->queue();
+        PlayerQueue& queue = _player->queue();
         auto entry = new QueueEntry(&queue, hash);
 
         _trackAdditionConfirmationsPending[entry->queueID()] = clientReference;
-        queue.insertAtIndex(index, entry);
+        _serverInterface->insertAtIndex(index, entry);
     }
 
     void ConnectedClient::parseQueueEntryRemovalRequest(QByteArray const& message) {
@@ -2062,7 +2176,7 @@ namespace PMP {
             return; /* invalid queue ID */
         }
 
-        _player->queue().remove(queueID);
+        _serverInterface->removeQueueEntry(queueID);
     }
 
     void ConnectedClient::parseQueueEntryDuplicationRequest(QByteArray const& message) {
@@ -2104,7 +2218,7 @@ namespace PMP {
         auto entry = new QueueEntry(&queue, existing);
 
         _trackAdditionConfirmationsPending[entry->queueID()] = clientReference;
-        queue.insertAtIndex(index + 1, entry);
+        _serverInterface->insertAtIndex(index + 1, entry);
     }
 
     void ConnectedClient::parseHashUserDataRequest(const QByteArray& message) {
@@ -2136,7 +2250,7 @@ namespace PMP {
         for (int i = 0; i < hashCount; ++i) {
             bool ok;
             auto hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok || hash.empty()) continue;
+            if (!ok || hash.isNull()) continue;
 
             hashes.append(hash);
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
@@ -2175,7 +2289,7 @@ namespace PMP {
             qDebug() << "received CHANGE VOLUME command, volume"
                      << (uint(action - 100));
 
-            if (isLoggedIn()) { _player->setVolume(action - 100); }
+            _serverInterface->setVolume(action - 100);
             return;
         }
 
@@ -2184,19 +2298,19 @@ namespace PMP {
         switch (action) {
         case 1:
             qDebug() << "received PLAY command";
-            if (isLoggedIn()) { _player->play(); }
+            _serverInterface->play();
             break;
         case 2:
             qDebug() << "received PAUSE command";
-            if (isLoggedIn()) { _player->pause(); }
+            _serverInterface->pause();
             break;
         case 3:
             qDebug() << "received SKIP command";
-            if (isLoggedIn()) { _player->skip(); }
+            _serverInterface->skip();
             break;
         case 4:
             qDebug() << "received INSERT BREAK AT FRONT command";
-            if (isLoggedIn()) { _player->queue().insertBreakAtFront(); }
+            _serverInterface->insertBreakAtFront();
             break;
         case 10: /* request for state info */
             qDebug() << "received request for player status";
@@ -2240,42 +2354,41 @@ namespace PMP {
             qDebug() << "received request for database UUID";
             sendDatabaseIdentifier();
             break;
+        case 18:
+            qDebug() << "received request for list of protocol extensions";
+            sendProtocolExtensionsMessage();
+            break;
         case 20: /* enable dynamic mode */
             qDebug() << "received ENABLE DYNAMIC MODE command";
-            if (isLoggedIn()) { _generator->enable(); }
+            _serverInterface->enableDynamicMode();
             break;
         case 21: /* disable dynamic mode */
             qDebug() << "received DISABLE DYNAMIC MODE command";
-            if (isLoggedIn()) { _generator->disable(); }
+            _serverInterface->disableDynamicMode();
             break;
         case 22: /* request queue expansion */
             qDebug() << "received QUEUE EXPANSION command";
-            if (isLoggedIn()) { _generator->requestQueueExpansion(); }
+            _serverInterface->requestQueueExpansion();
             break;
         case 23:
             qDebug() << "received TRIM QUEUE command";
-             /* TODO: get the '10' from elsewhere */
-            if (isLoggedIn()) { _player->queue().trim(10); }
+            _serverInterface->trimQueue();
             break;
         case 24:
             qDebug() << "received START WAVE command";
-            if (isLoggedIn() && !_generator->waveActive()) { _generator->startWave(); }
+            _serverInterface->startWave();
             break;
         case 30: /* switch to public mode */
             qDebug() << "received SWITCH TO PUBLIC MODE command";
-            _player->setUserPlayingFor(0);
+            _serverInterface->switchToPublicMode();
             break;
         case 31: /* switch to personal mode */
             qDebug() << "received SWITCH TO PERSONAL MODE command";
-            if (isLoggedIn()) {
-                qDebug() << " switching to personal mode for user "
-                         << _userLoggedInName;
-                _player->setUserPlayingFor(_userLoggedIn);
-            }
+            _serverInterface->switchToPersonalMode();
             break;
         case 40:
             qDebug() << "received START FULL INDEXATION command";
-            if (isLoggedIn()) { _player->resolver().startFullIndexation(); }
+            _serverInterface->startFullIndexation();
             break;
         case 50:
             qDebug() << "received SUBSCRIBE TO ALL EVENTS command";
@@ -2287,7 +2400,7 @@ namespace PMP {
             break;
         case 99:
             qDebug() << "received SHUTDOWN command";
-            if (isLoggedIn()) { _server->shutdown(); }
+            _serverInterface->shutDownServer();
             break;
         default:
             qDebug() << "received unrecognized single-byte action type:"
@@ -2305,6 +2418,23 @@ namespace PMP {
 
         connect(sender, &CollectionSender::allSent,
                 this, &ConnectedClient::onCollectionTrackInfoCompleted);
+    }
+
+    void ConnectedClient::registerClientProtocolExtensions(
+                            const QVector<NetworkProtocol::ProtocolExtension>& extensions)
+    {
+        /* handle extensions here */
+        for (auto extension : extensions) {
+            qDebug() << "client will use ID" << extension.id
+                     << "and version" << extension.version
+                     << "for protocol extension" << extension.name;
+
+            _clientExtensionNames[extension.id] = extension.name;
+
+            //if (extension.name == "known_extension_name") {
+            //    _knownExtensionOther = extension;
+            //}
+        }
     }
 
     /* =============================== CollectionSender =============================== */

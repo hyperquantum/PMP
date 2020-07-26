@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -62,6 +62,16 @@ add_hashtest(
 )
 
 
+# TestFileHash
+qt5_wrap_cpp(PMP_TestFileHash_MOCS test_filehash.h)
+add_executable(test_filehash test_filehash.cpp
+    ${PMP_TestFileHash_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
+)
+target_link_libraries(test_filehash Qt5::Core Qt5::Test)
+add_test(test_filehash test_filehash)
+
+
 # TestUtil
 qt5_wrap_cpp(PMP_TestUtil_MOCS test_util.h)
 add_executable(test_util test_util.cpp
@@ -80,3 +90,16 @@ add_executable(test_networkutil test_networkutil.cpp
 )
 target_link_libraries(test_networkutil Qt5::Core Qt5::Test)
 add_test(test_networkutil test_networkutil)
+
+
+# TestNetworkProtocol
+qt5_wrap_cpp(PMP_TestNetworkProtocol_MOCS test_networkprotocol.h)
+add_executable(test_networkprotocol test_networkprotocol.cpp
+    ${PMP_TestNetworkProtocol_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/networkprotocol.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/networkutil.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/util.cpp
+)
+target_link_libraries(test_networkprotocol Qt5::Core Qt5::Test)
+add_test(test_networkprotocol test_networkprotocol)

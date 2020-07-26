@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,6 +30,22 @@
 #include <QtDebug>
 
 namespace PMP {
+
+    quint16 NetworkProtocol::encodeMessageTypeForExtension(quint8 extensionId,
+                                                           quint8 messageType)
+    {
+        return (1u << 15) + (extensionId << 7) + (messageType & 0x7Fu);
+    }
+
+    void NetworkProtocol::appendExtensionMessageStart(QByteArray& buffer,
+                                                      quint8 extensionId,
+                                                      quint8 messageType)
+    {
+        quint16 encodedMessageType =
+                encodeMessageTypeForExtension(extensionId, messageType);
+
+        NetworkUtil::append2Bytes(buffer, encodedMessageType);
+    }
 
     bool NetworkProtocol::isValidStartStopEventStatus(quint8 status) {
         /* we consider 0 an invalid value because it does not represent a status */
@@ -162,9 +178,12 @@ namespace PMP {
         return QueueEntryType::Unknown;
     }
 
+    const QByteArray NetworkProtocol::_fileHashAllZeroes =
+            Util::generateZeroedMemory(FILEHASH_BYTECOUNT);
+
     void NetworkProtocol::appendHash(QByteArray& buffer, const FileHash& hash) {
-        if (hash.empty()) {
-            buffer += Util::generateZeroedMemory(FILEHASH_BYTECOUNT);
+        if (hash.isNull()) {
+            buffer += _fileHashAllZeroes;
             return;
         }
 
@@ -183,6 +202,12 @@ namespace PMP {
         }
 
         quint64 lengthPart = NetworkUtil::get8Bytes(buffer, position);
+        if (lengthPart == 0
+                && buffer.mid(position, FILEHASH_BYTECOUNT) == _fileHashAllZeroes)
+        { /* this is how an empty hash is transmitted */
+            if (ok) *ok = true;
+            return FileHash();
+        }
         position += 8;
 
         if (lengthPart > std::numeric_limits<uint>::max()) {

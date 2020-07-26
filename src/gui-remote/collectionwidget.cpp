@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,8 +21,10 @@
 #include "ui_collectionwidget.h"
 
 #include "common/serverconnection.h"
+#include "common/util.h"
 
 #include "collectiontablemodel.h"
+#include "trackinfodialog.h"
 
 #include <QMenu>
 #include <QtDebug>
@@ -30,14 +32,20 @@
 
 namespace PMP {
 
-    CollectionWidget::CollectionWidget(QWidget* parent)
-     : QWidget(parent), _ui(new Ui::CollectionWidget), _connection(nullptr),
-       _collectionSourceModel(new SortedCollectionTableModel(this)),
+    CollectionWidget::CollectionWidget(QWidget* parent, ServerConnection* connection,
+                                       ClientServerInterface* clientServerInterface)
+     : QWidget(parent),
+       _ui(new Ui::CollectionWidget),
+       _connection(connection),
+       _clientServerInterface(clientServerInterface),
+       _collectionSourceModel(new SortedCollectionTableModel(this,clientServerInterface)),
        _collectionDisplayModel(
            new FilteredCollectionTableModel(_collectionSourceModel, this)),
        _collectionContextMenu(nullptr)
     {
         _ui->setupUi(this);
+
+        initTrackHighlightingComboBox();
 
         _ui->collectionTableView->setModel(_collectionDisplayModel);
         _ui->collectionTableView->setDragEnabled(true);
@@ -48,7 +56,6 @@ namespace PMP {
             _ui->searchLineEdit, &QLineEdit::textChanged,
             _collectionDisplayModel, &FilteredCollectionTableModel::setSearchText
         );
-
         connect(
             _ui->collectionTableView, &QTableView::customContextMenuRequested,
             this, &CollectionWidget::collectionContextMenuRequested
@@ -93,9 +100,13 @@ namespace PMP {
         delete _ui;
     }
 
-    void CollectionWidget::setConnection(ServerConnection* connection) {
-        _connection = connection;
-        _collectionSourceModel->setConnection(connection);
+    void CollectionWidget::highlightTracksIndexChanged(int index) {
+        Q_UNUSED(index)
+
+        auto mode =
+                _ui->highlightTracksComboBox->currentData().value<TrackHighlightMode>();
+
+        _collectionSourceModel->setHighlightMode(mode);
     }
 
     void CollectionWidget::collectionContextMenuRequested(const QPoint& position) {
@@ -104,17 +115,18 @@ namespace PMP {
         auto index = _ui->collectionTableView->indexAt(position);
         if (!index.isValid()) return;
 
-        auto track = _collectionDisplayModel->trackAt(index);
-        if (!track) return;
+        auto trackPointer = _collectionDisplayModel->trackAt(index);
+        if (!trackPointer) return;
 
-        FileHash hash = track->hash();
+        auto track = *trackPointer;
+        FileHash hash = track.hash();
 
         if (_collectionContextMenu)
             delete _collectionContextMenu;
         _collectionContextMenu = new QMenu(this);
 
         auto enqueueFrontAction =
-            _collectionContextMenu->addAction("Add to front of queue");
+            _collectionContextMenu->addAction(tr("Add to front of queue"));
         connect(
             enqueueFrontAction, &QAction::triggered,
             [this, hash]() {
@@ -123,7 +135,8 @@ namespace PMP {
             }
         );
 
-        auto enqueueEndAction = _collectionContextMenu->addAction("Add to end of queue");
+        auto enqueueEndAction =
+                _collectionContextMenu->addAction(tr("Add to end of queue"));
         connect(
             enqueueEndAction, &QAction::triggered,
             [this, hash]() {
@@ -132,8 +145,63 @@ namespace PMP {
             }
         );
 
+        _collectionContextMenu->addSeparator();
+
+        auto trackInfoAction = _collectionContextMenu->addAction(tr("Track info"));
+        connect(
+            trackInfoAction, &QAction::triggered,
+            this,
+            [this, track]() {
+                qDebug() << "collection context menu: track info triggered";
+                auto dialog = new TrackInfoDialog(this, track, _clientServerInterface);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->open();
+            }
+        );
+
         auto popupPosition = _ui->collectionTableView->viewport()->mapToGlobal(position);
         _collectionContextMenu->popup(popupPosition);
+    }
+
+    void CollectionWidget::initTrackHighlightingComboBox()
+    {
+        auto combo = _ui->highlightTracksComboBox;
+
+        auto addItem = [combo](QString text, TrackHighlightMode mode) {
+            text.replace(">=", Util::GreaterThanOrEqual)
+                .replace("<=", Util::LessThanOrEqual);
+
+            combo->addItem(text, QVariant::fromValue(mode));
+        };
+
+        addItem(tr("none"), TrackHighlightMode::None);
+
+        addItem(tr("never heard"), TrackHighlightMode::NeverHeard);
+        addItem(tr("not heard in the last 365 days"),
+                TrackHighlightMode::LastHeardNotInLast365Days);
+        addItem(tr("not heard in the last 180 days"),
+                TrackHighlightMode::LastHeardNotInLast180Days);
+        addItem(tr("not heard in the last 90 days"),
+                TrackHighlightMode::LastHeardNotInLast90Days);
+        addItem(tr("not heard in the last 30 days"),
+                TrackHighlightMode::LastHeardNotInLast30Days);
+        addItem(tr("not heard in the last 10 days"),
+                TrackHighlightMode::LastHeardNotInLast10Days);
+
+        addItem(tr("without score"), TrackHighlightMode::WithoutScore);
+        addItem(tr("score >= 85"), TrackHighlightMode::ScoreAtLeast85);
+        addItem(tr("score >= 90"), TrackHighlightMode::ScoreAtLeast90);
+        addItem(tr("score >= 95"), TrackHighlightMode::ScoreAtLeast95);
+
+        addItem(tr("length <= 1 min."), TrackHighlightMode::LengthMaximumOneMinute);
+        addItem(tr("length >= 5 min."), TrackHighlightMode::LengthAtLeastFiveMinutes);
+
+        combo->setCurrentIndex(0);
+
+        connect(
+            combo, qOverload<int>(&QComboBox::currentIndexChanged),
+            this, &CollectionWidget::highlightTracksIndexChanged
+        );
     }
 
 }

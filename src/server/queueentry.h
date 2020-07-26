@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,7 +29,7 @@
 
 namespace PMP {
 
-    class Queue;
+    class PlayerQueue;
     class Resolver;
 
     enum class QueueEntryKind {
@@ -40,12 +40,12 @@ namespace PMP {
     class QueueEntry : public QObject {
         Q_OBJECT
     public:
-        QueueEntry(Queue* parent, QString const& filename);
-        QueueEntry(Queue* parent, const FileHash& hash, const TagData& tags);
-        QueueEntry(Queue* parent, FileHash const& hash);
-        QueueEntry(Queue* parent, QueueEntry const* existing);
+        QueueEntry(PlayerQueue* parent, QString const& filename);
+        QueueEntry(PlayerQueue* parent, FileHash hash, const TagData& tags);
+        QueueEntry(PlayerQueue* parent, FileHash hash);
+        QueueEntry(PlayerQueue* parent, QueueEntry const* existing);
 
-        static QueueEntry* createBreak(Queue* parent);
+        static QueueEntry* createBreak(PlayerQueue* parent);
 
         ~QueueEntry();
 
@@ -82,7 +82,7 @@ namespace PMP {
         void setEndedNow();
 
     private:
-        QueueEntry(Queue* parent, QueueEntryKind kind);
+        QueueEntry(PlayerQueue* parent, QueueEntryKind kind);
 
         uint const _queueID;
         bool _new;

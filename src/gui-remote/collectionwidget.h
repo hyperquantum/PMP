@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,6 +30,7 @@ namespace Ui {
 
 namespace PMP {
 
+    class ClientServerInterface;
     class FilteredCollectionTableModel;
     class ServerConnection;
     class SortedCollectionTableModel;
@@ -38,17 +39,20 @@ namespace PMP {
         Q_OBJECT
 
     public:
-        explicit CollectionWidget(QWidget* parent = 0);
+        CollectionWidget(QWidget* parent, ServerConnection* connection,
+                         ClientServerInterface* clientServerInterface);
         ~CollectionWidget();
 
-        void setConnection(ServerConnection* connection);
-
     private slots:
+        void highlightTracksIndexChanged(int index);
         void collectionContextMenuRequested(const QPoint& position);
 
     private:
+        void initTrackHighlightingComboBox();
+
         Ui::CollectionWidget* _ui;
         ServerConnection* _connection;
+        ClientServerInterface* _clientServerInterface;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;
         QMenu* _collectionContextMenu;

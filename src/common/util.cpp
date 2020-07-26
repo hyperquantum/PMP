@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,6 +32,9 @@ namespace PMP {
     const QChar Util::EnDash = QChar(0x2013);
     const QChar Util::EAcute = QChar(0xE9);
     const QChar Util::EDiaeresis = QChar(0xEB);
+    const QChar Util::FigureDash = QChar(0x2012);
+    const QChar Util::GreaterThanOrEqual = QChar(0x2265);
+    const QChar Util::LessThanOrEqual = QChar(0x2264);
 
     unsigned Util::getRandomSeed() {
         /* Because std::random_device seems to be not random at all on MINGW 4.8, we use

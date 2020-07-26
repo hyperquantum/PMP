@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,7 @@
 
 #include "serverconnection.h"
 
+#include "common/collectionfetcher.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
 
@@ -115,18 +116,18 @@ namespace PMP {
     class ServerConnection::CollectionFetchResultHandler : public ResultHandler {
     public:
         CollectionFetchResultHandler(ServerConnection* parent,
-                                     AbstractCollectionFetcher* fetcher);
+                                     CollectionFetcher* fetcher);
 
         void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
                           quint32 intData, QByteArray const& blobData) override;
 
     private:
-        AbstractCollectionFetcher* _fetcher;
+        CollectionFetcher* _fetcher;
     };
 
     ServerConnection::CollectionFetchResultHandler::CollectionFetchResultHandler(
-                                                       ServerConnection* parent,
-                                                       AbstractCollectionFetcher* fetcher)
+                                                               ServerConnection* parent,
+                                                               CollectionFetcher* fetcher)
      : ResultHandler(parent), _fetcher(fetcher)
     {
         //
@@ -141,13 +142,15 @@ namespace PMP {
         _parent->_collectionFetchers.remove(clientReference);
 
         if (errorType == NetworkProtocol::NoError) {
-            _fetcher->completed();
+            Q_EMIT _fetcher->completed();
         }
         else {
             qWarning() << "CollectionFetchResultHandler:"
                        << errorDescription(errorType, clientReference, intData, blobData);
-            _fetcher->errorOccurred();
+            Q_EMIT _fetcher->errorOccurred();
         }
+
+        _fetcher->deleteLater();
     }
 
     /* ============================================================================ */
@@ -239,7 +242,7 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 11;
+    const quint16 ServerConnection::ClientProtocolNo = 12;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -248,18 +251,14 @@ namespace PMP {
        _state(ServerConnection::NotConnected),
        _binarySendingMode(false),
        _serverProtocolNo(-1), _nextRef(1),
-       _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0),
-       _simplePlayerController(nullptr), _simplePlayerStateMonitor(nullptr)
+       _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0)
     {
-        connect(&_socket, SIGNAL(connected()), this, SLOT(onConnected()));
-        connect(&_socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
+        connect(&_socket, &QTcpSocket::connected, this, &ServerConnection::onConnected);
+        connect(&_socket, &QTcpSocket::readyRead, this, &ServerConnection::onReadyRead);
         connect(
-            &_socket, SIGNAL(error(QAbstractSocket::SocketError)),
-            this, SLOT(onSocketError(QAbstractSocket::SocketError))
+            &_socket, qOverload<QAbstractSocket::SocketError>(&QTcpSocket::error),
+            this, &ServerConnection::onSocketError
         );
-
-        _simplePlayerController = new SimplePlayerControllerImpl(this);
-        _simplePlayerStateMonitor = new SimplePlayerStateMonitorImpl(this);
     }
 
     void ServerConnection::reset() {
@@ -283,14 +282,6 @@ namespace PMP {
 
     QString ServerConnection::userLoggedInName() const {
         return _userLoggedInName;
-    }
-
-    SimplePlayerController& ServerConnection::simplePlayerController() {
-        return *_simplePlayerController;
-    }
-
-    SimplePlayerStateMonitor& ServerConnection::simplePlayerStateMonitor() {
-        return *_simplePlayerStateMonitor;
     }
 
     bool ServerConnection::serverSupportsQueueEntryDuplication() const {
@@ -397,6 +388,12 @@ namespace PMP {
 
                 _state = BinaryMode;
 
+                if (_serverProtocolNo >= 12) {
+                    /* if interested in protocol extensions... */
+                    sendSingleByteAction(18); /*18 = request list of protocol extensions*/
+                    sendProtocolExtensionsMessage();
+                }
+
                 if (_autoSubscribeToEventsAfterConnect
                         == ServerEventSubscription::AllEvents)
                 {
@@ -501,6 +498,33 @@ namespace PMP {
         _socket.flush();
     }
 
+    void ServerConnection::sendProtocolExtensionsMessage() {
+        if (_serverProtocolNo < 12) return; /* server will not understand this message */
+
+        QVector<const NetworkProtocol::ProtocolExtension*> extensions;
+        //extensions << &_knownExtensionThis;
+
+        quint8 extensionCount = static_cast<quint8>(extensions.size());
+
+        QByteArray message;
+        message.reserve(4 + extensionCount * 16); /* estimate */
+        NetworkUtil::append2Bytes(message, NetworkProtocol::ClientExtensionsMessage);
+        NetworkUtil::appendByte(message, 0); /* filler */
+        NetworkUtil::appendByte(message, extensionCount);
+
+        for(auto extension : extensions) {
+            QByteArray nameBytes = extension->name.toUtf8();
+            quint8 nameBytesCount = static_cast<quint8>(nameBytes.size());
+
+            NetworkUtil::appendByte(message, extension->id);
+            NetworkUtil::appendByte(message, extension->version);
+            NetworkUtil::appendByte(message, nameBytesCount);
+            message += nameBytes;
+        }
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::sendSingleByteAction(quint8 action) {
         if (!_binarySendingMode) {
             qDebug() << "PROBLEM: cannot send single byte action yet; action:"
@@ -583,7 +607,7 @@ namespace PMP {
     RequestID ServerConnection::insertQueueEntryAtIndex(const FileHash& hash,
                                                         quint32 index)
     {
-        if (hash.empty()) return RequestID(); /* invalid */
+        if (hash.isNull()) return RequestID(); /* invalid */
 
         auto handler = new TrackInsertionResultHandler(this, index);
         auto ref = getNewReference();
@@ -980,7 +1004,9 @@ namespace PMP {
         sendSingleByteAction(15); /* 15 = request for full indexation running status */
     }
 
-    void ServerConnection::fetchCollection(AbstractCollectionFetcher* fetcher) {
+    void ServerConnection::fetchCollection(CollectionFetcher* fetcher) {
+        fetcher->setParent(this);
+
         auto handler = new CollectionFetchResultHandler(this, fetcher);
         auto fetcherReference = getNewReference();
         _resultHandlers[fetcherReference] = handler;
@@ -1128,11 +1154,29 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        auto messageType =
-            static_cast<NetworkProtocol::ServerMessageType>(
-                                                      NetworkUtil::get2Bytes(message, 0));
+        quint16 messageType = NetworkUtil::get2Bytes(message, 0);
+        if (messageType & (1u << 15)) {
+            quint8 extensionMessageType = messageType & 0x7Fu;
+            quint8 extensionId = (messageType >> 7) & 0xFFu;
 
+            handleExtensionMessage(extensionId, extensionMessageType, message);
+        }
+        else {
+            auto serverMessageType =
+                static_cast<NetworkProtocol::ServerMessageType>(messageType);
+
+            handleStandardBinaryMessage(serverMessageType, message);
+        }
+    }
+
+    void ServerConnection::handleStandardBinaryMessage(
+                                           NetworkProtocol::ServerMessageType messageType,
+                                           QByteArray const& message)
+    {
         switch (messageType) {
+        case NetworkProtocol::ServerExtensionsMessage:
+            parseServerProtocolExtensionsMessage(message);
+            break;
         case NetworkProtocol::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
             break;
@@ -1225,6 +1269,26 @@ namespace PMP {
         }
     }
 
+    void ServerConnection::handleExtensionMessage(quint8 extensionId, quint8 messageType,
+                                                  QByteArray const& message)
+    {
+        /* parse extensions here */
+
+        //if (extensionId == _knownExtensionOther.id) {
+        //    switch (messageType) {
+        //    case 1: parseExtensionMessage1(message); break;
+        //    case 2: parseExtensionMessage2(message); break;
+        //    case 3: parseExtensionMessage3(message); break;
+        //    }
+        //}
+
+        qWarning() << "unhandled extension message" << messageType
+                   << "for extension" << extensionId
+                   << "with length" << message.length()
+                   << "; extension name: "
+                   << _serverExtensionNames.value(extensionId, "?");
+    }
+
     void ServerConnection::parseSimpleResultMessage(QByteArray const& message) {
         if (message.length() < 12) {
             return; /* invalid message */
@@ -1240,6 +1304,66 @@ namespace PMP {
                  << " client-ref:" << clientReference;
 
         handleResultMessage(errorType, clientReference, intData, blobData);
+    }
+
+    void ServerConnection::parseServerProtocolExtensionsMessage(QByteArray const& message)
+    {
+        if (message.length() < 4) {
+            return; /* invalid message */
+        }
+
+        /* be strict about reserved space */
+        int filler = NetworkUtil::getByteUnsignedToInt(message, 2);
+        if (filler != 0) {
+            return; /* invalid message */
+        }
+
+        int extensionCount = NetworkUtil::getByteUnsignedToInt(message, 3);
+        if (message.length() < 4 + extensionCount * 4) {
+            return; /* invalid message */
+        }
+
+        QVector<NetworkProtocol::ProtocolExtension> extensions;
+        QSet<quint8> ids;
+        QSet<QString> names;
+        extensions.reserve(extensionCount);
+        ids.reserve(extensionCount);
+        names.reserve(extensionCount);
+
+        int offset = 4;
+        for (int i = 0; i < extensionCount; ++i) {
+            if (offset > message.length() - 3) {
+                return; /* invalid message */
+            }
+
+            quint8 id = NetworkUtil::getByte(message, offset);
+            quint8 version = NetworkUtil::getByte(message, offset + 1);
+            quint8 byteCount = NetworkUtil::getByte(message, offset + 2);
+            offset += 3;
+
+            if (id == 0 || version == 0 || byteCount == 0
+                    || offset > message.length() - byteCount)
+            {
+                return; /* invalid message */
+            }
+
+            QString name = NetworkUtil::getUtf8String(message, offset, byteCount);
+            offset += byteCount;
+
+            if (ids.contains(id) || names.contains(name)) {
+                return; /* invalid message */
+            }
+
+            ids << id;
+            names << name;
+            extensions << NetworkProtocol::ProtocolExtension(id, name, version);
+        }
+
+        if (offset != message.length()) {
+            return; /* invalid message */
+        }
+
+        registerServerProtocolExtensions(extensions);
     }
 
     void ServerConnection::parseServerEventNotificationMessage(QByteArray const& message)
@@ -1844,13 +1968,17 @@ namespace PMP {
         for (int i = 0; i < availableCount; ++i) {
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok || hash.empty()) {
+            if (!ok) {
                 qDebug() << "invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
             }
 
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+
+            /* workaround for server bug; we shouldn't be receiving these */
+            if (hash.length() == 0) continue;
+
             available.append(hash);
         }
 
@@ -1858,18 +1986,26 @@ namespace PMP {
         for (int i = 0; i < unavailableCount; ++i) {
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok || hash.empty()) {
+            if (!ok) {
                 qDebug() << "invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
             }
 
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+
+            /* workaround for server bug; we shouldn't be receiving these */
+            if (hash.length() == 0) continue;
+
             unavailable.append(hash);
         }
 
         qDebug() << "got track availability changes: " << available.size() << "available,"
                  << unavailable.size() << "unavailable";
+
+        if (available.empty() && unavailable.empty())
+            return;
+
         emit collectionTracksAvailabilityChanged(available, unavailable);
     }
 
@@ -1897,7 +2033,7 @@ namespace PMP {
             return; /* irrelevant or invalid message */
         }
 
-        AbstractCollectionFetcher* collectionFetcher = nullptr;
+        CollectionFetcher* collectionFetcher = nullptr;
         if (!isNotification) {
             quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
             collectionFetcher = _collectionFetchers.value(clientReference, nullptr);
@@ -1960,14 +2096,14 @@ namespace PMP {
         }
 
         /* now read all track info's */
-        QList<CollectionTrackInfo> infos;
+        QVector<CollectionTrackInfo> infos;
         infos.reserve(trackCount);
         for (int i = 0; i < trackCount; ++i) {
             offset = offsets[i];
 
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok || hash.empty()) {
+            if (!ok) {
                 qDebug() << " invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
@@ -1995,16 +2131,21 @@ namespace PMP {
                 album = NetworkUtil::getUtf8String(message, offset, albumSize);
             }
 
+            /* workaround for server bug; we shouldn't be receiving these */
+            if (hash.length() == 0) continue;
+
             CollectionTrackInfo info(hash, availabilityByte & 1, title, artist, album,
                                      trackLengthInMs);
             infos.append(info);
         }
 
+        if (infos.empty()) return;
+
         if (isNotification) {
-            emit collectionTracksChanged(infos);
+            Q_EMIT collectionTracksChanged(infos);
         }
         else {
-            collectionFetcher->receivedData(infos);
+            Q_EMIT collectionFetcher->receivedData(infos);
         }
     }
 
@@ -2171,113 +2312,21 @@ namespace PMP {
                    << " type=" << messageType << " extra info=" << extraInfo;
     }
 
-    // ============================================================================ //
-
-    AbstractCollectionFetcher::AbstractCollectionFetcher(QObject* parent)
-     : QObject(parent)
+    void ServerConnection::registerServerProtocolExtensions(
+                            const QVector<NetworkProtocol::ProtocolExtension>& extensions)
     {
-        //
-    }
+        /* handle extensions here */
+        for (auto extension : extensions) {
+            qDebug() << "server will use ID" << extension.id
+                     << "and version" << extension.version
+                     << "for protocol extension" << extension.name;
 
-    // ============================================================================ //
+            _serverExtensionNames[extension.id] = extension.name;
 
-    SimplePlayerControllerImpl::SimplePlayerControllerImpl(ServerConnection* connection)
-     : QObject(connection),
-       _connection(connection), _state(ServerConnection::UnknownState), _queueLength(0),
-       _trackNowPlaying(0), _trackJustSkipped(0)
-    {
-        connect(
-            _connection, &ServerConnection::receivedPlayerState,
-            this, &SimplePlayerControllerImpl::receivedPlayerState
-        );
-    }
-
-    void SimplePlayerControllerImpl::receivedPlayerState(int state, quint8 volume,
-                quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition)
-    {
-        (void)volume;
-        (void)nowPlayingPosition;
-        _state = ServerConnection::PlayState(state);
-        _queueLength = queueLength;
-        _trackNowPlaying = nowPlayingQID;
-    }
-
-    void SimplePlayerControllerImpl::play() {
-        _connection->play();
-    }
-
-    void SimplePlayerControllerImpl::pause() {
-        _connection->pause();
-    }
-
-    void SimplePlayerControllerImpl::skip() {
-        _trackJustSkipped = _trackNowPlaying;
-        _connection->skip();
-    }
-
-    bool SimplePlayerControllerImpl::canPlay() {
-        return _queueLength > 0
-            && (_state == ServerConnection::Paused
-                || _state == ServerConnection::Stopped);
-    }
-
-    bool SimplePlayerControllerImpl::canPause() {
-        return _state == ServerConnection::Playing;
-    }
-
-    bool SimplePlayerControllerImpl::canSkip() {
-        return
-            _trackNowPlaying != _trackJustSkipped
-            && (_state == ServerConnection::Playing
-                || _state == ServerConnection::Paused);
-    }
-
-    // ============================================================================ //
-
-    SimplePlayerStateMonitorImpl::SimplePlayerStateMonitorImpl(
-                                                             ServerConnection* connection)
-     : SimplePlayerStateMonitor(connection),
-       _connection(connection), _state(PlayerState::Unknown)
-    {
-        connect(
-            _connection, &ServerConnection::receivedPlayerState,
-            this, &SimplePlayerStateMonitorImpl::receivedPlayerState
-        );
-    }
-
-    PlayerState SimplePlayerStateMonitorImpl::playerState() const {
-        return _state;
-    }
-
-    void SimplePlayerStateMonitorImpl::receivedPlayerState(int state, quint8 volume,
-                quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition)
-    {
-        (void)volume;
-        (void)queueLength;
-        (void)nowPlayingQID;
-        (void)nowPlayingPosition;
-
-        auto newState = PlayerState::Unknown;
-        switch (ServerConnection::PlayState(state)) {
-            case ServerConnection::UnknownState:
-                newState = PlayerState::Unknown;
-                break;
-            case ServerConnection::Stopped:
-                newState = PlayerState::Stopped;
-                break;
-            case ServerConnection::Playing:
-                newState = PlayerState::Playing;
-                break;
-            case ServerConnection::Paused:
-                newState = PlayerState::Paused;
-                break;
+            //if (extension.name == "known_extension_name") {
+            //    _knownExtensionOther = extension;
+            //}
         }
-
-        if (newState == _state)
-            return;
-
-        _state = newState;
-        emit playerStateChanged(newState);
     }
 
 }

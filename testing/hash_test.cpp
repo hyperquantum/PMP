@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -52,7 +52,7 @@ QString checksum(TagLib::ByteVector const& data) {
 }
 
 QString getHashAsString(const FileHash& hash) {
-    if (hash.empty()) return "empty";
+    if (hash.isNull()) return "empty";
 
     return QString::number(hash.length())
             + "-" + hash.MD5().toHex() + "-" + hash.SHA1().toHex();

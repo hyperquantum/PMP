@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,10 @@
 #ifndef PMP_QUEUE_H
 #define PMP_QUEUE_H
 
-#include <QDateTime>
+#include "common/filehash.h"
+
+#include "playerhistoryentry.h"
+
 #include <QHash>
 #include <QObject>
 #include <QQueue>
@@ -36,16 +39,16 @@ namespace PMP {
     class QueueEntry;
     class Resolver;
 
-    class Queue : public QObject {
+    class PlayerQueue : public QObject {
         Q_OBJECT
     public:
         enum HistoryType {
             Played, Skipped, Error
         };
 
-        Queue(Resolver* resolver);
+        PlayerQueue(Resolver* resolver);
 
-        bool checkPotentialRepetitionByAdd(const FileHash& hash,
+        bool checkPotentialRepetitionByAdd(FileHash hash,
                                            int repetitionAvoidanceSeconds,
                                            int* nonRepetitionSpan = nullptr) const;
 
@@ -54,79 +57,64 @@ namespace PMP {
         bool empty() const;
         uint length() const;
 
+        int firstTrackIndex() const { return _firstTrackIndex; }
+        uint firstTrackQueueId() const { return _firstTrackQueueId; }
+
+        QueueEntry* peekFirstTrackEntry();
         QueueEntry* lookup(quint32 queueID);
         int findIndex(quint32 queueID);
         QueueEntry* entryAtIndex(int index);
         QList<QueueEntry*> entries(int startoffset, int maxCount);
 
-        QList<QSharedPointer<const PlayerHistoryEntry>> recentHistory(int limit);
+        QList<QSharedPointer<PlayerHistoryEntry> > recentHistory(int limit);
 
     public slots:
-        void clear(bool doNotifications);
+        //void clear(bool doNotifications);
         void trim(uint length);
 
         void enqueue(QueueEntry* entry);
         QueueEntry* enqueue(QString const& filename);
-        QueueEntry* enqueue(FileHash const& hash);
+        QueueEntry* enqueue(FileHash hash);
 
         void insertAtFront(QueueEntry* entry);
-        QueueEntry* insertAtFront(FileHash const& hash);
+        QueueEntry* insertAtFront(FileHash hash);
         void insertBreakAtFront();
 
         void insertAtIndex(quint32 index, QueueEntry* entry);
-        QueueEntry* insertAtIndex(quint32 index, FileHash const& hash);
+        QueueEntry* insertAtIndex(quint32 index, FileHash hash);
 
         QueueEntry* dequeue();
         bool remove(quint32 queueID);
         bool removeAtIndex(uint index);
-        bool move(quint32 queueID, qint16 indexDiff);
+        bool moveById(quint32 queueID, qint16 indexDiff);
+        bool moveByIndex(int index, qint16 indexDiff);
 
-        void addToHistory(QSharedPointer<const PlayerHistoryEntry> entry);
+        void addToHistory(QSharedPointer<PlayerHistoryEntry> entry);
 
     Q_SIGNALS:
         void entryAdded(quint32 offset, quint32 queueID);
         void entryRemoved(quint32 offset, quint32 queueID);
         void entryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
 
+        void firstTrackChanged(int index, uint queueId);
+
     private slots:
         void checkFrontOfQueue();
 
     private:
+        void resetFirstTrack();
+        void setFirstTrackIndexAndId(int index, uint queueId);
+        void findFirstTrackBetweenIndices(int start, int end, bool resetIfNoneFound);
+        void emitFirstTrackChanged();
+
         uint _nextQueueID;
+        int _firstTrackIndex;
+        uint _firstTrackQueueId;
         QHash<quint32, QueueEntry*> _idLookup;
         QQueue<QueueEntry*> _queue;
-        QQueue<QSharedPointer<const PlayerHistoryEntry>> _history;
+        QQueue<QSharedPointer<PlayerHistoryEntry>> _history;
         Resolver* _resolver;
         QTimer* _queueFrontChecker;
     };
-
-    class PlayerHistoryEntry {
-    public:
-        PlayerHistoryEntry(uint queueID, uint user, QDateTime started, QDateTime ended,
-                           bool hadError, bool hadSeek, int permillage)
-         : _queueID(queueID), _user(user), _started(started), _ended(ended),
-           _permillage(permillage), _error(hadError), _seek(hadSeek)
-        {
-            //
-        }
-
-        uint queueID() const { return _queueID; }
-        uint user() const { return _user; }
-        QDateTime started() const { return _started; }
-        QDateTime ended() const { return _ended; }
-        bool hadError() const { return _error; }
-        bool hadSeek() const { return _seek; }
-        int permillage() const { return _permillage; }
-
-    private:
-        uint _queueID;
-        uint _user;
-        QDateTime _started;
-        QDateTime _ended;
-        int _permillage;
-        bool _error;
-        bool _seek;
-    };
-
 }
 #endif

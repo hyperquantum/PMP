@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,11 +19,11 @@
 
 #include "queuemodel.h"
 
+#include "common/userdatafetcher.h"
 #include "common/util.h"
 
 #include "queueentryinfofetcher.h"
 #include "queuemediator.h"
-#include "userdatafetcher.h"
 
 #include <QBuffer>
 #include <QBrush>
@@ -38,7 +38,7 @@ namespace PMP {
 
     QueueModel::QueueModel(QObject* parent, QueueMediator* source,
                            QueueEntryInfoFetcher* trackInfoFetcher,
-                           UserDataFetcher* userDataFetcher)
+                           UserDataFetcher& userDataFetcher)
      : QAbstractTableModel(parent), _source(source), _infoFetcher(trackInfoFetcher),
         _userDataFetcher(userDataFetcher),
         _receivedUserPlayingFor(false), _userPlayingFor(0), _modelRows(0)
@@ -62,7 +62,7 @@ namespace PMP {
             this, &QueueModel::tracksChanged
         );
         connect(
-            _userDataFetcher, &UserDataFetcher::dataReceivedForUser,
+            &_userDataFetcher, &UserDataFetcher::dataReceivedForUser,
             this, &QueueModel::userDataReceivedForUser
         );
         connect(
@@ -80,11 +80,15 @@ namespace PMP {
     }
 
     int QueueModel::rowCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent)
+
         //qDebug() << "QueueModel::rowCount returning" << _modelRows;
         return _modelRows;
     }
 
     int QueueModel::columnCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent)
+
         return 5;
     }
 
@@ -181,15 +185,15 @@ namespace PMP {
                     case 4:
                     {
                         auto& hash = info->hash();
-                        if (hash.empty() || !_receivedUserPlayingFor)
+                        if (hash.isNull() || !_receivedUserPlayingFor)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
                         auto hashData =
-                            _userDataFetcher->getHashDataForUser(_userPlayingFor, hash);
+                            _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
                         if (!hashData || !hashData->scoreReceived)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
-                        if (hashData->score >= 0)
+                        if (hashData->scorePermillage >= 0)
                             return Qt::AlignRight + Qt::AlignVCenter;
                         else
                             return Qt::AlignLeft + Qt::AlignVCenter;
@@ -222,11 +226,11 @@ namespace PMP {
             case 3:
             {
                 auto& hash = info->hash();
-                if (hash.empty() || !_receivedUserPlayingFor)
+                if (hash.isNull() || !_receivedUserPlayingFor)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                    _userDataFetcher->getHashDataForUser(_userPlayingFor, hash);
+                        _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
 
                 if (!hashData || !hashData->previouslyHeardReceived)
                     return QVariant();
@@ -240,18 +244,18 @@ namespace PMP {
             case 4:
             {
                 auto& hash = info->hash();
-                if (hash.empty() || !_receivedUserPlayingFor)
+                if (hash.isNull() || !_receivedUserPlayingFor)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                    _userDataFetcher->getHashDataForUser(_userPlayingFor, hash);
+                        _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
                 if (!hashData || !hashData->scoreReceived)
                     return QVariant();
 
-                if (hashData->score < 0)
+                if (hashData->scorePermillage < 0)
                     return tr("N/A");
 
-                return hashData->score;
+                return hashData->scorePermillage;
             }
         }
 
@@ -259,6 +263,8 @@ namespace PMP {
     }
 
     Qt::ItemFlags QueueModel::flags(const QModelIndex& index) const {
+        Q_UNUSED(index)
+
         return Qt::ItemIsSelectable | Qt::ItemIsEnabled
             | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
     }
@@ -324,6 +330,8 @@ namespace PMP {
     bool QueueModel::dropQueueItemMimeData(const QMimeData *data, Qt::DropAction action,
                                            int row)
     {
+        Q_UNUSED(action)
+
         QDataStream stream(data->data("application/x-pmp-queueitem"));
 
         QUuid serverUuid;
@@ -375,7 +383,7 @@ namespace PMP {
         stream >> md5;
 
         FileHash hash(hashLength, sha1, md5);
-        if (hash.empty()) return false;
+        if (hash.isNull()) return false;
 
         int newIndex = (row < 0) ? _modelRows : row;
 
@@ -452,9 +460,38 @@ namespace PMP {
         }
 
         Track* t = _tracks[row];
-        if (t == 0) return 0;
+        if (t == nullptr) return 0;
 
         return t->_queueID;
+    }
+
+    QueueTrack QueueModel::trackAt(const QModelIndex& index) const
+    {
+        int row = index.row();
+        if (row >= _tracks.size()) {
+            /* make sure the info will be fetched from the server */
+            (void)(_source->queueEntry(row));
+
+            /* but we HAVE TO return something here */
+            return QueueTrack();
+        }
+
+        Track* track = _tracks[row];
+        if (track == nullptr) return QueueTrack();
+
+        auto queueId = track->_queueID;
+
+        QueueEntryInfo* info = queueId ? _infoFetcher->entryInfoByQID(queueId) : nullptr;
+
+        if (info == nullptr)
+            return QueueTrack();
+
+        if (info->type() != QueueEntryType::Track)
+            return QueueTrack(queueId, false);
+
+        auto& hash = info->hash();
+
+        return QueueTrack(queueId, hash);
     }
 
     void QueueModel::onUserPlayingForChanged(quint32 userId) {
@@ -541,7 +578,7 @@ namespace PMP {
         qDebug() << "QueueModel::userDataReceivedForUser; user:" << userId;
 
         emit dataChanged(
-            createIndex(0, 3), createIndex(_modelRows, 3)
+            createIndex(0, 3), createIndex(_modelRows, 4)
         );
     }
 

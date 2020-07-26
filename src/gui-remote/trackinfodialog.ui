@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TrackInfoDialog</class>
+ <widget class="QDialog" name="TrackInfoDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>563</width>
+    <height>300</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Track Info</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QGroupBox" name="trackMetadataGroupBox">
+     <property name="title">
+      <string>Track metadata</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="titleLabel">
+        <property name="styleSheet">
+         <string notr="true">font-weight: bold</string>
+        </property>
+        <property name="text">
+         <string>Title:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="titleValueLabel">
+        <property name="text">
+         <string>(title)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="artistLabel">
+        <property name="styleSheet">
+         <string notr="true">font-weight: bold</string>
+        </property>
+        <property name="text">
+         <string>Artist:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="artistValueLabel">
+        <property name="text">
+         <string>(artist)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="albumLabel">
+        <property name="styleSheet">
+         <string notr="true">font-weight: bold</string>
+        </property>
+        <property name="text">
+         <string>Album:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="albumValueLabel">
+        <property name="text">
+         <string>(album)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="lengthLabel">
+        <property name="styleSheet">
+         <string notr="true">font-weight: bold</string>
+        </property>
+        <property name="text">
+         <string>Length:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="lengthValueLabel">
+        <property name="text">
+         <string>(length)</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer_2">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="personalStatisticsGroupBox">
+     <property name="title">
+      <string>Personal statistics</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout_2">
+      <item row="0" column="0">
+       <widget class="QLabel" name="usernameLabel">
+        <property name="styleSheet">
+         <string notr="true">font-weight: bold</string>
+        </property>
+        <property name="text">
+         <string>Username:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="usernameValueLabel">
+        <property name="text">
+         <string>(username)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="lastHeardLabel">
+        <property name="styleSheet">
+         <string notr="true">font-weight: bold</string>
+        </property>
+        <property name="text">
+         <string>Last heard:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="lastHeardValueLabel">
+        <property name="text">
+         <string>(last heard)</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="scoreLabel">
+        <property name="styleSheet">
+         <string notr="true">font-weight: bold</string>
+        </property>
+        <property name="text">
+         <string>Score:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="scoreValueLabel">
+        <property name="text">
+         <string>(score)</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupBox">
+     <property name="title">
+      <string>File info</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout_3">
+      <item row="0" column="0">
+       <widget class="QLabel" name="hashLabel">
+        <property name="styleSheet">
+         <string notr="true">font-weight: bold</string>
+        </property>
+        <property name="text">
+         <string>Hash:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="hashValueLabel">
+        <property name="text">
+         <string>1234567 - 2fd4e1c67a2d28fced849ee1bb76e7391b93eb12 - 9e107d9d372bb6826bd81d3542a419d6</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

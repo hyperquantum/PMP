@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,11 +22,13 @@
 
 #include "common/filehash.h"
 
+#include "playerhistoryentry.h"
 #include "userdatafortracksfetcher.h" // for UserDataForHashId
 
 #include <QDateTime>
 #include <QHash>
 #include <QObject>
+#include <QSharedPointer>
 #include <QTimer>
 
 namespace PMP {
@@ -57,9 +59,7 @@ namespace PMP {
 
     private slots:
         void currentTrackChanged(QueueEntry const* newTrack);
-        void failedToPlayTrack(QueueEntry const* track);
-        void donePlayingTrack(QueueEntry const* track, int permillage, bool hadError,
-                              bool hadSeek);
+        void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void onUpdatedHashUserStats(uint hashID, quint32 user,
                                     QDateTime previouslyHeard, qint16 score);
         void onFetchingTimerTimeout();

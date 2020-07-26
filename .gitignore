@@ -1,6 +1,15 @@
-bin/
+# binaries
+bin/*
+!bin/.empty
+
+# CMake output
 CMakeLists.txt.user
+
+# test files
 *.mp3
+*.flac
+
+# output and temp files of Win32 release script
 PMP_win32.zip
 win32_archive_full/
 win32_bin_release/

@@ -22,21 +22,32 @@
 #ifndef PMP_SIMPLEPLAYERSTATEMONITOR_H
 #define PMP_SIMPLEPLAYERSTATEMONITOR_H
 
+#include "playermode.h"
 #include "playerstate.h"
+#include "tribool.h"
+
+#include <QString>
 
 namespace PMP {
 
     class SimplePlayerStateMonitor : public QObject {
         Q_OBJECT
     public:
-        explicit SimplePlayerStateMonitor(QObject* parent = nullptr) : QObject(parent) {}
         virtual ~SimplePlayerStateMonitor() {}
 
         virtual PlayerState playerState() const = 0;
 
+        virtual PlayerMode playerMode() const = 0;
+        virtual quint32 personalModeUserId() const = 0;
+        virtual QString personalModeUserLogin() const = 0;
+
     Q_SIGNALS:
         void playerStateChanged(PlayerState playerState);
+        void playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,
+                               QString personalModeUserLogin);
 
+    protected:
+        explicit SimplePlayerStateMonitor(QObject* parent) : QObject(parent) {}
     };
 
 }

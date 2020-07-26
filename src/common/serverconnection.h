@@ -25,7 +25,6 @@
 #include "playerhistorytrackinfo.h"
 #include "playerstate.h"
 #include "serverhealthstatus.h"
-#include "simpleplayercontroller.h"
 #include "simpleplayerstatemonitor.h"
 #include "tribool.h"
 
@@ -40,9 +39,7 @@
 
 namespace PMP {
 
-    class AbstractCollectionFetcher;
-    class SimplePlayerControllerImpl;
-    class SimplePlayerStateMonitorImpl;
+    class CollectionFetcher;
 
     class RequestID {
     public:
@@ -121,12 +118,9 @@ namespace PMP {
 
         TriBool doingFullIndexation() const { return _doingFullIndexation; }
 
-        void fetchCollection(AbstractCollectionFetcher* fetcher);
+        void fetchCollection(CollectionFetcher* fetcher);
 
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
-
-        SimplePlayerController& simplePlayerController();
-        SimplePlayerStateMonitor& simplePlayerStateMonitor();
 
         bool serverSupportsQueueEntryDuplication() const;
 
@@ -244,7 +238,7 @@ namespace PMP {
 
         void collectionTracksAvailabilityChanged(QVector<PMP::FileHash> available,
                                                  QVector<PMP::FileHash> unavailable);
-        void collectionTracksChanged(QList<PMP::CollectionTrackInfo> changes);
+        void collectionTracksChanged(QVector<PMP::CollectionTrackInfo> changes);
 
     private slots:
         void onConnected();
@@ -256,14 +250,21 @@ namespace PMP {
 
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
+        void sendProtocolExtensionsMessage();
         void sendSingleByteAction(quint8 action);
 
         void readTextCommands();
         void readBinaryCommands();
         void executeTextCommand(QString const& commandText);
         void handleBinaryMessage(QByteArray const& message);
+        void handleStandardBinaryMessage(NetworkProtocol::ServerMessageType messageType,
+                                         QByteArray const& message);
+        void handleExtensionMessage(quint8 extensionId, quint8 extensionMessageType,
+                                    QByteArray const& message);
         void handleResultMessage(quint16 errorType, quint32 clientReference,
                                  quint32 intData, QByteArray const& blobData);
+        void registerServerProtocolExtensions(
+                           const QVector<NetworkProtocol::ProtocolExtension>& extensions);
 
         void sendInitiateNewUserAccountMessage(QString login, quint32 clientReference);
         void sendFinishNewUserAccountMessage(QString login, QByteArray salt,
@@ -286,6 +287,7 @@ namespace PMP {
 
         void parseSimpleResultMessage(QByteArray const& message);
 
+        void parseServerProtocolExtensionsMessage(QByteArray const& message);
         void parseServerEventNotificationMessage(QByteArray const& message);
         void parseServerInstanceIdentifierMessage(QByteArray const& message);
         void parseServerNameMessage(QByteArray const& message);
@@ -334,6 +336,7 @@ namespace PMP {
         QByteArray _readBuffer;
         bool _binarySendingMode;
         int _serverProtocolNo;
+        QHash<quint8, QString> _serverExtensionNames;
         uint _nextRef;
         uint _userAccountRegistrationRef;
         QString _userAccountRegistrationLogin;
@@ -345,64 +348,8 @@ namespace PMP {
         QString _userLoggedInName;
         TriBool _doingFullIndexation;
         QHash<uint, ResultHandler*> _resultHandlers;
-        QHash<uint, AbstractCollectionFetcher*> _collectionFetchers;
-        SimplePlayerControllerImpl* _simplePlayerController;
-        SimplePlayerStateMonitorImpl* _simplePlayerStateMonitor;
+        QHash<uint, CollectionFetcher*> _collectionFetchers;
         ServerHealthStatus _serverHealthStatus;
-    };
-
-    class AbstractCollectionFetcher : public QObject {
-        Q_OBJECT
-    protected:
-        AbstractCollectionFetcher(QObject* parent = nullptr);
-
-    public slots:
-        virtual void receivedData(QList<CollectionTrackInfo> data) = 0;
-        virtual void completed() = 0;
-        virtual void errorOccurred() = 0;
-    };
-
-    class SimplePlayerControllerImpl : public QObject, public SimplePlayerController {
-        Q_OBJECT
-    public:
-        SimplePlayerControllerImpl(ServerConnection* connection);
-
-        ~SimplePlayerControllerImpl() {}
-
-        void play();
-        void pause();
-        void skip();
-
-        bool canPlay();
-        bool canPause();
-        bool canSkip();
-
-    private slots:
-        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
-                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
-
-    private:
-        ServerConnection* _connection;
-        ServerConnection::PlayState _state;
-        uint _queueLength;
-        quint32 _trackNowPlaying;
-        quint32 _trackJustSkipped;
-    };
-
-    class SimplePlayerStateMonitorImpl : public SimplePlayerStateMonitor {
-        Q_OBJECT
-    public:
-        SimplePlayerStateMonitorImpl(ServerConnection* connection);
-
-        PlayerState playerState() const;
-
-    private slots:
-        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
-                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
-
-    private:
-        ServerConnection* _connection;
-        PlayerState _state;
     };
 }
 #endif
