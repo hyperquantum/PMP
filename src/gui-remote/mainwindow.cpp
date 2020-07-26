@@ -34,7 +34,9 @@
 #include "userpickerwidget.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QCoreApplication>
+#include <QDesktopWidget>
 #include <QDockWidget>
 #include <QKeyEvent>
 #include <QLabel>
@@ -78,9 +80,26 @@ namespace PMP {
             QSettings settings(QCoreApplication::organizationName(),
                                QCoreApplication::applicationName());
 
+            qDebug() << "Before restore:" << this->pos() << " size:" << this->size();
+
             settings.beginGroup("mainwindow");
             restoreGeometry(settings.value("geometry").toByteArray());
+
+            // QTBUG-77385
+            if (!this->geometry().intersects(
+                        QApplication::desktop()->screenGeometry(
+                            QApplication::desktop()->screenNumber(this))))
+            {
+                qWarning() << "Need to apply workaround for QTBUG-77385";
+                auto availableGeometry = QApplication::desktop()->availableGeometry(this);
+                resize(availableGeometry.width() / 2, availableGeometry.height() / 2);
+                move((availableGeometry.width() - width()) / 2,
+                     (availableGeometry.height() - height()) / 2);
+            }
+
             restoreState(settings.value("windowstate").toByteArray());
+
+            qDebug() << "After restore:" << this->pos() << " size:" << this->size();
 
             _musicCollectionDock->setVisible(false); /* because of restoreState above */
         }
