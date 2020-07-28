@@ -25,6 +25,8 @@
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 
+#include "colors.h"
+
 #include <QBrush>
 #include <QBuffer>
 #include <QDataStream>
@@ -194,6 +196,7 @@ namespace PMP {
     SortedCollectionTableModel::SortedCollectionTableModel(QObject* parent,
                                              ClientServerInterface* clientServerInterface)
      : QAbstractTableModel(parent),
+       _highlightColorIndex(0),
        _sortBy(0),
        _sortOrder(Qt::AscendingOrder),
        _highlighter(clientServerInterface->userDataFetcher())
@@ -245,6 +248,10 @@ namespace PMP {
 
         /* notify the outside world that potentially everything has changed */
         markEverythingAsChanged();
+    }
+
+    int SortedCollectionTableModel::highlightColorIndex() const {
+        return _highlightColorIndex;
     }
 
     bool SortedCollectionTableModel::usesUserData(TrackHighlightMode mode) {
@@ -741,8 +748,16 @@ namespace PMP {
             case Qt::BackgroundRole:
                 if (index.row() < _tracks.size()) {
                     auto track = trackAt(index);
-                    if (_highlighter.shouldHighlightTrack(*track).isTrue())
-                        return QBrush(Qt::yellow);
+                    if (_highlighter.shouldHighlightTrack(*track).isTrue()) {
+                        auto& colors = Colors::instance().itemBackgroundHighlightColors;
+
+                        auto colorIndex =
+                                qBound(0, _highlightColorIndex, colors.size() - 1);
+
+                        auto color = colors[colorIndex];
+
+                        return QBrush(color);
+                    }
                 }
                 break;
         }
@@ -806,6 +821,16 @@ namespace PMP {
 
         data->setData("application/x-pmp-filehash", buffer.data());
         return data;
+    }
+
+    void SortedCollectionTableModel::setHighlightColorIndex(int colorIndex) {
+        if (_highlightColorIndex == colorIndex)
+            return;
+
+        _highlightColorIndex = colorIndex;
+
+        /* ensure that the model is repainted */
+        markEverythingAsChanged();
     }
 
     // ============================================================================ //

@@ -31,9 +31,11 @@ namespace Ui {
 namespace PMP {
 
     class ClientServerInterface;
+    class ColorSwitcher;
     class FilteredCollectionTableModel;
     class ServerConnection;
     class SortedCollectionTableModel;
+    enum class TrackHighlightMode;
 
     class CollectionWidget : public QWidget {
         Q_OBJECT
@@ -45,12 +47,17 @@ namespace PMP {
 
     private slots:
         void highlightTracksIndexChanged(int index);
+        void highlightColorIndexChanged();
         void collectionContextMenuRequested(const QPoint& position);
 
     private:
         void initTrackHighlightingComboBox();
+        void initTrackHighlightingColorSwitcher();
+
+        TrackHighlightMode getCurrentHighlightMode() const;
 
         Ui::CollectionWidget* _ui;
+        ColorSwitcher* _colorSwitcher;
         ServerConnection* _connection;
         ClientServerInterface* _clientServerInterface;
         SortedCollectionTableModel* _collectionSourceModel;

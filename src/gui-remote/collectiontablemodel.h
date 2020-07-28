@@ -99,6 +99,7 @@ namespace PMP {
                                    ClientServerInterface* clientServerInterface);
 
         void setHighlightMode(TrackHighlightMode mode);
+        int highlightColorIndex() const;
 
         void sortByTitle();
         void sortByArtist();
@@ -118,6 +119,9 @@ namespace PMP {
         Qt::DropActions supportedDragActions() const;
         Qt::DropActions supportedDropActions() const;
         QMimeData* mimeData(const QModelIndexList& indexes) const;
+
+    public Q_SLOTS:
+        void setHighlightColorIndex(int colorIndex);
 
     private Q_SLOTS:
         void onNewTrackReceived(CollectionTrackInfo track);
@@ -173,6 +177,7 @@ namespace PMP {
         QVector<int> _innerToOuterIndexMap;
         QVector<int> _outerToInnerIndexMap;
         QCollator _collator;
+        int _highlightColorIndex;
         int _sortBy;
         Qt::SortOrder _sortOrder;
         TrackHighlighter _highlighter;

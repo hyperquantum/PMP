@@ -44,7 +44,14 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QComboBox" name="highlightTracksComboBox"/>
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QComboBox" name="highlightTracksComboBox"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="highlightColorButton"/>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>

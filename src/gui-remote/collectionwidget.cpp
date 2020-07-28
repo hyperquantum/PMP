@@ -24,6 +24,8 @@
 #include "common/util.h"
 
 #include "collectiontablemodel.h"
+#include "colors.h"
+#include "colorswitcher.h"
 #include "trackinfodialog.h"
 
 #include <QMenu>
@@ -36,6 +38,7 @@ namespace PMP {
                                        ClientServerInterface* clientServerInterface)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
+       _colorSwitcher(nullptr),
        _connection(connection),
        _clientServerInterface(clientServerInterface),
        _collectionSourceModel(new SortedCollectionTableModel(this,clientServerInterface)),
@@ -46,6 +49,7 @@ namespace PMP {
         _ui->setupUi(this);
 
         initTrackHighlightingComboBox();
+        initTrackHighlightingColorSwitcher();
 
         _ui->collectionTableView->setModel(_collectionDisplayModel);
         _ui->collectionTableView->setDragEnabled(true);
@@ -103,10 +107,15 @@ namespace PMP {
     void CollectionWidget::highlightTracksIndexChanged(int index) {
         Q_UNUSED(index)
 
-        auto mode =
-                _ui->highlightTracksComboBox->currentData().value<TrackHighlightMode>();
+        auto mode = getCurrentHighlightMode();
+
+        _colorSwitcher->setVisible(mode != TrackHighlightMode::None);
 
         _collectionSourceModel->setHighlightMode(mode);
+    }
+
+    void CollectionWidget::highlightColorIndexChanged() {
+        _collectionSourceModel->setHighlightColorIndex(_colorSwitcher->colorIndex());
     }
 
     void CollectionWidget::collectionContextMenuRequested(const QPoint& position) {
@@ -163,8 +172,7 @@ namespace PMP {
         _collectionContextMenu->popup(popupPosition);
     }
 
-    void CollectionWidget::initTrackHighlightingComboBox()
-    {
+    void CollectionWidget::initTrackHighlightingComboBox() {
         auto combo = _ui->highlightTracksComboBox;
 
         auto addItem = [combo](QString text, TrackHighlightMode mode) {
@@ -202,6 +210,30 @@ namespace PMP {
             combo, qOverload<int>(&QComboBox::currentIndexChanged),
             this, &CollectionWidget::highlightTracksIndexChanged
         );
+    }
+
+    void CollectionWidget::initTrackHighlightingColorSwitcher() {
+        auto& colors = Colors::instance();
+
+        _colorSwitcher = new ColorSwitcher();
+        _colorSwitcher->setColors(colors.itemBackgroundHighlightColors);
+        _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackHighlightMode::None);
+
+        connect(
+            _colorSwitcher, &ColorSwitcher::colorIndexChanged,
+            this, &CollectionWidget::highlightColorIndexChanged
+        );
+
+        auto layoutItem =
+            this->layout()->replaceWidget(_ui->highlightColorButton, _colorSwitcher);
+
+        delete layoutItem;
+        delete _ui->highlightColorButton;
+        _ui->highlightColorButton = nullptr;
+    }
+
+    TrackHighlightMode CollectionWidget::getCurrentHighlightMode() const {
+        return _ui->highlightTracksComboBox->currentData().value<TrackHighlightMode>();
     }
 
 }
