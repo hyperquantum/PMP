@@ -47,7 +47,7 @@ TECHNICAL TODO
 
 IDEAS
 
- ** 'like' button for the song that is playing, that will bump the score of the song a little bit
+ *** 'like' button for the song that is playing, that will bump the score of the song a little bit
  * 'love' & 'hate' button for the song that is playing
  * statistics view for the user; with things like "amount of tracks played in the last 7/30/... days"
  * 'about the remote' window; with client version and protocol version
@@ -71,7 +71,7 @@ IDEAS
  * 'play again next' action for the song that is currently playing
  * ability to insert a breakpoint directly before/after any entry in the queue
  * timer feature to make playback stop at or near a specified clock time
- * track highlighting: highlighting of tracks not recently listened to (or the reverse)
+ * alternative display of "prev. heard" as a time span, e.g. "5 days ago" or "9 weeks ago"
 
 
 USER FRIENDLINESS
