@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -56,6 +56,8 @@ namespace PMP {
     }
 
     void TrackProgressWidget::paintEvent(QPaintEvent* event) {
+        Q_UNUSED(event)
+
         QPainter painter(this);
 
         painter.setRenderHint(QPainter::Antialiasing);
