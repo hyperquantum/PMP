@@ -71,6 +71,7 @@ IDEAS
  * 'play again next' action for the song that is currently playing
  * ability to insert a breakpoint directly before/after any entry in the queue
  * timer feature to make playback stop at or near a specified clock time
+ * delayed start: e.g. being able to press Play and then have 5 seconds before PMP actually starts playing
  * alternative display of "prev. heard" as a time span, e.g. "5 days ago" or "9 weeks ago"
 
 
