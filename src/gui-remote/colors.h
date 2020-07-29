@@ -28,12 +28,16 @@ namespace PMP {
     class Colors {
     public:
         Colors(const QColor& widgetBorder,
-               QVector<QColor> itemBackgroundHighlightColors);
+               QVector<QColor> itemBackgroundHighlightColors,
+               const QColor& specialQueueItemBackground,
+               const QColor& specialQueueItemForeground);
 
         static const Colors& instance();
 
         const QColor widgetBorder;
         const QVector<QColor> itemBackgroundHighlightColors;
+        const QColor specialQueueItemBackground;
+        const QColor specialQueueItemForeground;
 
     private:
         static const Colors _lightScheme;

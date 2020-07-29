@@ -22,6 +22,7 @@
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 
+#include "colors.h"
 #include "queueentryinfofetcher.h"
 #include "queuemediator.h"
 
@@ -161,12 +162,12 @@ namespace PMP {
 
             case Qt::ForegroundRole:
                 if (info)
-                    return QBrush(QColor::fromRgb(30, 30, 30));
+                    return QBrush(Colors::instance().specialQueueItemForeground);
                 break;
 
             case Qt::BackgroundRole:
                 if (info)
-                    return QBrush(QColor::fromRgb(220, 220, 220));
+                    return QBrush(Colors::instance().specialQueueItemBackground);
                 break;
         }
 

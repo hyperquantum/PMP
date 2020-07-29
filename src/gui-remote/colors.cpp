@@ -22,9 +22,13 @@
 namespace PMP {
 
     Colors::Colors(const QColor& widgetBorder,
-                   QVector<QColor> itemBackgroundHighlightColors)
+                   QVector<QColor> itemBackgroundHighlightColors,
+                   const QColor& specialQueueItemBackground,
+                   const QColor& specialQueueItemForeground)
      : widgetBorder(widgetBorder),
-       itemBackgroundHighlightColors(itemBackgroundHighlightColors)
+       itemBackgroundHighlightColors(itemBackgroundHighlightColors),
+       specialQueueItemBackground(specialQueueItemBackground),
+       specialQueueItemForeground(specialQueueItemForeground)
     {
         //
     }
@@ -40,7 +44,9 @@ namespace PMP {
                 Qt::yellow,
                 QColor(0xAF, 0xEE, 0xEE), // paleturquoise
                 QColor(0xFF, 0x69, 0xB4)  // hotpink
-            }
+            },
+            /* specialQueueItemBackground */ QColor::fromRgb(0xFF, 0xC4, 0x73),
+            /* specialQueueItemForeground */ Qt::black
         );
 
 }
