@@ -29,6 +29,7 @@
 namespace PMP {
 
     const QChar Util::Copyright = QChar(0xA9);
+    const QChar Util::EmDash = QChar(0x2014);
     const QChar Util::EnDash = QChar(0x2013);
     const QChar Util::EAcute = QChar(0xE9);
     const QChar Util::EDiaeresis = QChar(0xEB);

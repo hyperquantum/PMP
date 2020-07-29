@@ -136,13 +136,18 @@ namespace PMP {
 
                 switch (info->type()) {
                     case QueueEntryType::Unknown:
-                        break; /* default: empty */
+                        if (col <= 1)
+                            return Util::EmDash + QString(" ????? ") + Util::EmDash;
+
+                        return "";
 
                     case QueueEntryType::Track:
                         break; /* unreachable, see above */
 
                     case QueueEntryType::BreakPoint:
-                        if (col <= 1) return "--- BREAK ---";
+                        if (col <= 1)
+                            return Util::EmDash + QString(" BREAK ") + Util::EmDash;
+
                         return "";
                 }
                 break;
