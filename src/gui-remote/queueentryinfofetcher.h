@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,7 @@
 #define PMP_QUEUEENTRYINFOFETCHER_H
 
 #include "common/filehash.h"
-#include "common/networkprotocol.h"
+#include "common/queueentrytype.h"
 
 #include "abstractqueuemonitor.h"
 

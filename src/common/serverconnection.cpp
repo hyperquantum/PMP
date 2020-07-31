@@ -1664,7 +1664,7 @@ namespace PMP {
         }
 
         qDebug() << "received track info reply;  QID:" << queueID
-                 << " type:" << int(type) << " seconds:" << lengthSeconds
+                 << " type:" << type << " seconds:" << lengthSeconds
                  << " title:" << title << " artist:" << artist;
 
         emit receivedTrackInfo(queueID, type, lengthSeconds, title, artist);
