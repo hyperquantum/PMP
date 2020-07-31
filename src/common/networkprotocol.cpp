@@ -175,7 +175,7 @@ namespace PMP {
         auto type = status - (1u << 15);
         if (type == 1) return QueueEntryType::BreakPoint;
 
-        return QueueEntryType::Unknown;
+        return QueueEntryType::UnknownSpecialType;
     }
 
     const QByteArray NetworkProtocol::_fileHashAllZeroes =

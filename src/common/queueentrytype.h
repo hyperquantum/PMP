@@ -28,6 +28,7 @@ namespace PMP {
         Unknown = 0,
         Track = 1,
         BreakPoint = 10,
+        UnknownSpecialType = 127
     };
 
     inline QDebug operator<<(QDebug debug, QueueEntryType type) {
@@ -42,6 +43,10 @@ namespace PMP {
 
             case QueueEntryType::BreakPoint:
                 debug << "QueueEntryType::BreakPoint";
+                return debug;
+
+            case QueueEntryType::UnknownSpecialType:
+                debug << "QueueEntryType::UnknownSpecialType";
                 return debug;
         }
 
