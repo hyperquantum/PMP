@@ -39,7 +39,7 @@ namespace PMP {
 
     const Colors Colors::_lightScheme =
         Colors(
-            /* widgetBorder */ Qt::black,
+            /* widgetBorder */ QColor::fromRgb(0x7A, 0x7A, 0x7A),
             /* itemBackgroundHighlightColors */ {
                 Qt::yellow,
                 QColor(0xAF, 0xEE, 0xEE), // paleturquoise
