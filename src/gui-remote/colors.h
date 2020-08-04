@@ -30,7 +30,11 @@ namespace PMP {
         Colors(const QColor& widgetBorder,
                QVector<QColor> itemBackgroundHighlightColors,
                const QColor& specialQueueItemBackground,
-               const QColor& specialQueueItemForeground);
+               const QColor& specialQueueItemForeground,
+               const QColor& trackProgressWidgetEmpty,
+               const QColor& trackProgressWidgetBackground,
+               const QColor& trackProgressWidgetBorder,
+               const QColor& trackProgressWidgetProgress);
 
         static const Colors& instance();
 
@@ -38,6 +42,10 @@ namespace PMP {
         const QVector<QColor> itemBackgroundHighlightColors;
         const QColor specialQueueItemBackground;
         const QColor specialQueueItemForeground;
+        const QColor trackProgressWidgetEmpty;
+        const QColor trackProgressWidgetBackground;
+        const QColor trackProgressWidgetBorder;
+        const QColor trackProgressWidgetProgress;
 
     private:
         static const Colors _lightScheme;
