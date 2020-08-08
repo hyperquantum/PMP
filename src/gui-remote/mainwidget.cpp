@@ -353,6 +353,20 @@ namespace PMP {
             }
         );
 
+        _historyContextMenu->addSeparator();
+
+        auto trackInfoAction = _historyContextMenu->addAction(tr("Track info"));
+        connect(
+            trackInfoAction, &QAction::triggered,
+            this,
+            [this, hash]() {
+                qDebug() << "history context menu: track info triggered";
+                auto dialog = new TrackInfoDialog(this, hash, _clientServerInterface);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->open();
+            }
+        );
+
         auto popupPosition = _ui->historyTableView->viewport()->mapToGlobal(position);
         _historyContextMenu->popup(popupPosition);
     }
