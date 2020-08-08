@@ -335,7 +335,8 @@ namespace PMP {
             delete _historyContextMenu;
         _historyContextMenu = new QMenu(this);
 
-        auto enqueueFrontAction = _historyContextMenu->addAction("Add to front of queue");
+        auto enqueueFrontAction =
+                _historyContextMenu->addAction(tr("Add to front of queue"));
         connect(
             enqueueFrontAction, &QAction::triggered,
             [this, hash]() {
@@ -344,7 +345,7 @@ namespace PMP {
             }
         );
 
-        auto enqueueEndAction = _historyContextMenu->addAction("Add to end of queue");
+        auto enqueueEndAction = _historyContextMenu->addAction(tr("Add to end of queue"));
         connect(
             enqueueEndAction, &QAction::triggered,
             [this, hash]() {
