@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -38,11 +38,14 @@ namespace PMP {
         CurrentTrackMonitor(ServerConnection* connection);
 
         ServerConnection::PlayState state() const { return _state; }
+        FileHash currentTrackHash() const { return _nowPlayingHash; }
 
     public slots:
         void seekTo(qint64 position);
 
     Q_SIGNALS:
+        void currentTrackChanged();
+
         void playing(quint32 queueID, quint32 queueLength);
         void paused(quint32 queueID, quint32 queueLength);
         void stopped(quint32 queueLength);
@@ -52,17 +55,19 @@ namespace PMP {
         void trackProgress(quint32 queueID, quint64 position, int lengthSeconds);
         void trackProgress(quint64 position);
 
+        void receivedHash();
         void receivedTitleArtist(QString title, QString artist);
         void receivedPossibleFilename(QString name);
 
         void volumeChanged(int percentage);
 
-    private slots:
+    private Q_SLOTS:
         void connected();
 
         void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition);
 
+        void receivedQueueEntryHash(quint32 queueId, QueueEntryType type, FileHash hash);
         void receivedTrackInfo(quint32 queueID, QueueEntryType type, int lengthInSeconds,
                                QString title, QString artist);
 
@@ -75,6 +80,8 @@ namespace PMP {
     private:
         static const int TIMER_INTERVAL = 40; /* 25 times per second */
 
+        void clearTrackInfo();
+
         ServerConnection* _connection;
         ServerConnection::PlayState _state;
         int _volume;
@@ -84,6 +91,7 @@ namespace PMP {
         bool _receivedTrackInfo;
         bool _receivedPossibleFilenames;
         int _nowPlayingLengthSeconds;
+        FileHash _nowPlayingHash;
         QString _nowPlayingTitle;
         QString _nowPlayingArtist;
         QString _nowPlayingFilename;

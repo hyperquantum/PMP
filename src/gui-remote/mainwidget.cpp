@@ -108,6 +108,7 @@ namespace PMP {
         _historyModel = new PlayerHistoryModel(this, _queueEntryInfoFetcher);
         _historyModel->setConnection(connection);
 
+        _ui->trackInfoButton->setEnabled(false);
         _ui->userPlayingForLabel->setText("");
         _ui->toPersonalModeButton->setText(_connection->userLoggedInName());
         _ui->toPublicModeButton->setEnabled(false);
@@ -142,6 +143,11 @@ namespace PMP {
         connect(
             _ui->trackProgress, &TrackProgressWidget::seekRequested,
             _currentTrackMonitor, &CurrentTrackMonitor::seekTo
+        );
+
+        connect(
+            _ui->trackInfoButton, &QPushButton::clicked,
+            this, &MainWidget::trackInfoButtonClicked
         );
 
         connect(
@@ -225,6 +231,10 @@ namespace PMP {
         );
 
         connect(
+            _currentTrackMonitor, &CurrentTrackMonitor::currentTrackChanged,
+            this, &MainWidget::currentTrackChanged
+        );
+        connect(
             _currentTrackMonitor, &CurrentTrackMonitor::playing,
             this, &MainWidget::playing
         );
@@ -248,6 +258,10 @@ namespace PMP {
         connect(
             _currentTrackMonitor, qOverload<quint64>(&CurrentTrackMonitor::trackProgress),
             this, qOverload<quint64>(&MainWidget::trackProgress)
+        );
+        connect(
+            _currentTrackMonitor, &CurrentTrackMonitor::receivedHash,
+            this, &MainWidget::receivedCurrentTrackHash
         );
         connect(
             _currentTrackMonitor, &CurrentTrackMonitor::receivedTitleArtist,
@@ -362,9 +376,8 @@ namespace PMP {
             this,
             [this, hash]() {
                 qDebug() << "history context menu: track info triggered";
-                auto dialog = new TrackInfoDialog(this, hash, _clientServerInterface);
-                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
-                dialog->open();
+
+                showTrackInfoDialog(hash);
             }
         );
 
@@ -470,10 +483,8 @@ namespace PMP {
                 [this, track]() {
                     qDebug() << "queue context menu: track info action triggered for item"
                              << track.queueId();
-                    auto dialog =
-                        new TrackInfoDialog(this, track.hash(), _clientServerInterface);
-                    connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
-                    dialog->open();
+
+                    showTrackInfoDialog(track.hash());
                 }
             );
         }
@@ -534,6 +545,11 @@ namespace PMP {
         _ui->playStateLabel->setText("stopped");
     }
 
+    void MainWidget::currentTrackChanged()
+    {
+        enableDisableTrackInfoButton();
+    }
+
     void MainWidget::queueLengthChanged(quint32 queueLength, int state)
     {
         _ui->queueLengthValueLabel->setText(QString::number(queueLength));
@@ -577,6 +593,11 @@ namespace PMP {
         _ui->trackProgress->setTrackPosition(position);
     }
 
+    void MainWidget::receivedCurrentTrackHash()
+    {
+        enableDisableTrackInfoButton();
+    }
+
     void MainWidget::receivedTitleArtist(QString title, QString artist) {
         _nowPlayingTitle = title;
         _nowPlayingArtist = artist;
@@ -595,6 +616,14 @@ namespace PMP {
         if (_nowPlayingTitle.trimmed() == "") {
             _ui->artistTitleLabel->setText(name);
         }
+    }
+
+    void MainWidget::trackInfoButtonClicked()
+    {
+        auto hash = _currentTrackMonitor->currentTrackHash();
+        if (hash.isNull()) return;
+
+        showTrackInfoDialog(hash);
     }
 
     void MainWidget::volumeChanged(int percentage) {
@@ -787,6 +816,20 @@ namespace PMP {
 
         _ui->toPersonalModeButton->setEnabled(userId != _connection->userLoggedInId());
         _ui->toPublicModeButton->setEnabled(userId != 0);
+    }
+
+    void MainWidget::enableDisableTrackInfoButton()
+    {
+        bool haveTrackHash = !_currentTrackMonitor->currentTrackHash().isNull();
+
+        _ui->trackInfoButton->setEnabled(haveTrackHash);
+    }
+
+    void MainWidget::showTrackInfoDialog(FileHash hash)
+    {
+        auto dialog = new TrackInfoDialog(this, hash, _clientServerInterface);
+        connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+        dialog->open();
     }
 
 }

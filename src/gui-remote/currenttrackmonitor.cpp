@@ -44,6 +44,10 @@ namespace PMP {
             this, &CurrentTrackMonitor::receivedPlayerState
         );
         connect(
+            _connection, &ServerConnection::receivedQueueEntryHash,
+            this, &CurrentTrackMonitor::receivedQueueEntryHash
+        );
+        connect(
             _connection, &ServerConnection::receivedTrackInfo,
             this, &CurrentTrackMonitor::receivedTrackInfo
         );
@@ -70,12 +74,7 @@ namespace PMP {
         _queueLength = 0;
         _nowPlayingQID = 0;
         _nowPlayingPosition = 0;
-        _receivedTrackInfo = false;
-        _receivedPossibleFilenames = false;
-        _nowPlayingLengthSeconds = -1;
-        _nowPlayingTitle = "";
-        _nowPlayingArtist = "";
-        _nowPlayingFilename = "";
+        clearTrackInfo();
         _timerPosition = 0;
 
         _connection->requestPlayerState();
@@ -96,26 +95,27 @@ namespace PMP {
         bool trackChanged = nowPlayingQID != _nowPlayingQID;
         bool positionChanged = nowPlayingPosition != _nowPlayingPosition;
 
-        if (trackChanged && nowPlayingQID > 0) {
-            _receivedTrackInfo = false;
-            _receivedPossibleFilenames = false;
-            _nowPlayingLengthSeconds = -1;
-            _nowPlayingTitle = "";
-            _nowPlayingArtist = "";
-            _nowPlayingFilename = "";
-            _connection->sendQueueEntryInfoRequest(nowPlayingQID);
+        _state = state;
+        _nowPlayingQID = nowPlayingQID;
+        _nowPlayingPosition = nowPlayingPosition;
+
+        if (trackChanged) {
+            clearTrackInfo();
+
+            if (nowPlayingQID > 0) {
+                _connection->sendQueueEntryInfoRequest(nowPlayingQID);
+
+                QList<uint> ids { nowPlayingQID };
+                _connection->sendQueueEntryHashRequest(ids);
+            }
         }
 
         if (state == ServerConnection::Playing) {
-            _state = state;
-            _nowPlayingQID = nowPlayingQID;
-            emit playing(nowPlayingQID, queueLength);
+            Q_EMIT playing(nowPlayingQID, queueLength);
         }
 
         if (state == ServerConnection::Paused) {
-            _state = state;
-            _nowPlayingQID = nowPlayingQID;
-            emit paused(nowPlayingQID, queueLength);
+            Q_EMIT paused(nowPlayingQID, queueLength);
         }
 
         if (positionChanged || stateChanged) {
@@ -125,24 +125,25 @@ namespace PMP {
         }
 
         if (positionChanged) {
-            _nowPlayingPosition = nowPlayingPosition;
-            emit trackProgress(nowPlayingPosition);
+            Q_EMIT trackProgress(nowPlayingPosition);
         }
 
         if (state == ServerConnection::Stopped) {
-            _state = state;
-            _nowPlayingQID = 0;
-            emit stopped(queueLength);
+            Q_EMIT stopped(queueLength);
+        }
+
+        if (trackChanged) {
+            Q_EMIT currentTrackChanged();
         }
 
         if (queueLength != _queueLength) {
             _queueLength = queueLength;
-            emit queueLengthChanged(queueLength, state);
+            Q_EMIT queueLengthChanged(queueLength, state);
         }
 
         if (volume != _volume) {
             _volume = volume;
-            emit volumeChanged(_volume);
+            Q_EMIT volumeChanged(_volume);
         }
 
         /* start or stop the elapsed timer */
@@ -151,6 +152,21 @@ namespace PMP {
         }
         else { /* not playing */
             if (_timer->isActive()) _timer->stop();
+        }
+    }
+
+    void CurrentTrackMonitor::receivedQueueEntryHash(quint32 queueId, QueueEntryType type,
+                                                     FileHash hash)
+    {
+        if (queueId != _nowPlayingQID) return;
+
+        if (type != QueueEntryType::Track) return;
+
+        qDebug() << "received hash for current track (QID" << queueId << "):" << hash;
+
+        if (_nowPlayingHash != hash) {
+            _nowPlayingHash = hash;
+            Q_EMIT receivedHash();
         }
     }
 
@@ -170,7 +186,7 @@ namespace PMP {
         if (/*!alreadyReceivedInfo || */lengthInSeconds != _nowPlayingLengthSeconds) {
             _nowPlayingLengthSeconds = lengthInSeconds;
             if (lengthInSeconds >= 0) {
-                emit trackProgress(queueID, _timerPosition, lengthInSeconds);
+                Q_EMIT trackProgress(queueID, _timerPosition, lengthInSeconds);
             }
         }
 
@@ -179,7 +195,7 @@ namespace PMP {
         {
             _nowPlayingTitle = title;
             _nowPlayingArtist = artist;
-            emit receivedTitleArtist(title, artist);
+            Q_EMIT receivedTitleArtist(title, artist);
 
             if (!alreadyReceivedInfo && title.trimmed() == ""
                 && !_receivedPossibleFilenames)
@@ -201,14 +217,14 @@ namespace PMP {
 
         if (_nowPlayingFilename != longest) {
             _nowPlayingFilename = longest;
-            emit receivedPossibleFilename(longest);
+            Q_EMIT receivedPossibleFilename(longest);
         }
     }
 
     void CurrentTrackMonitor::onVolumeChanged(int percentage) {
         if (percentage != _volume) {
             _volume = percentage;
-            emit volumeChanged(_volume);
+            Q_EMIT volumeChanged(_volume);
         }
     }
 
@@ -219,6 +235,17 @@ namespace PMP {
         }
 
         _timerPosition = _nowPlayingPosition + _elapsedTimer->elapsed();
-        emit trackProgress(_timerPosition);
+        Q_EMIT trackProgress(_timerPosition);
+    }
+
+    void CurrentTrackMonitor::clearTrackInfo()
+    {
+        _receivedTrackInfo = false;
+        _receivedPossibleFilenames = false;
+        _nowPlayingLengthSeconds = -1;
+        _nowPlayingHash = FileHash();
+        _nowPlayingTitle = "";
+        _nowPlayingArtist = "";
+        _nowPlayingFilename = "";
     }
 }

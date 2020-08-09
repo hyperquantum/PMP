@@ -20,6 +20,8 @@
 #ifndef PMP_MAINWIDGET_H
 #define PMP_MAINWIDGET_H
 
+#include "common/filehash.h"
+
 #include <QWidget>
 
 QT_FORWARD_DECLARE_CLASS(QMenu)
@@ -52,16 +54,21 @@ namespace PMP {
     protected:
         bool eventFilter(QObject*, QEvent*);
 
-    private slots:
+    private Q_SLOTS:
         void playing(quint32 queueID);
         void paused(quint32 queueID);
         void stopped(quint32 queueLength);
-        void queueLengthChanged(quint32 queueLength, int state);
 
         void trackProgress(quint32 queueID, quint64 position, int lengthSeconds);
         void trackProgress(quint64 position);
+
+        void currentTrackChanged();
+        void receivedCurrentTrackHash();
         void receivedTitleArtist(QString title, QString artist);
         void receivedPossibleFilename(QString name);
+        void trackInfoButtonClicked();
+
+        void queueLengthChanged(quint32 queueLength, int state);
 
         void volumeChanged(int percentage);
         void decreaseVolume();
@@ -79,6 +86,10 @@ namespace PMP {
         void userPlayingForChanged(quint32 userId, QString login);
 
     private:
+        void enableDisableTrackInfoButton();
+
+        void showTrackInfoDialog(FileHash hash);
+
         bool keyEventFilter(QKeyEvent* event);
 
         void buildNoRepetitionList(int spanToSelect);
