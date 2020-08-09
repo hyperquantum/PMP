@@ -1544,35 +1544,22 @@ namespace PMP {
 
         qDebug() << "received player state message";
 
-        /* FIXME: events too simplistic */
-
+        // TODO : rename volumeChanged signal or get rid of it
         if (volume <= 100) { emit volumeChanged(volume); }
-
-        if (queueID > 0) {
-            emit nowPlayingTrack(queueID);
-        }
-        else {
-            emit noCurrentTrack();
-        }
 
         PlayState s = UnknownState;
         switch (playerState) {
         case 1:
             s = Stopped;
-            emit stopped();
             break;
         case 2:
             s = Playing;
-            emit playing();
             break;
         case 3:
             s = Paused;
-            emit paused();
             break;
         }
 
-        emit trackPositionChanged(position);
-        emit queueLengthChanged(queueLength);
         emit receivedPlayerState(s, volume, queueLength, queueID, position);
     }
 

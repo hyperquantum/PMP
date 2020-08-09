@@ -124,7 +124,7 @@ namespace PMP {
 
         bool serverSupportsQueueEntryDuplication() const;
 
-    public slots:
+    public Q_SLOTS:
         void shutdownServer();
 
         void sendDatabaseIdentifierRequest();
@@ -191,9 +191,6 @@ namespace PMP {
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedServerName(quint8 nameType, QString name);
 
-        void playing();
-        void paused();
-        void stopped();
         void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition);
 
@@ -202,15 +199,9 @@ namespace PMP {
         void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
         void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
 
-        void noCurrentTrack();
-        void nowPlayingTrack(quint32 queueID);
-        void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
-        void trackPositionChanged(quint64 position);
-
         void receivedPlayerHistoryEntry(PMP::PlayerHistoryTrackInfo track);
         void receivedPlayerHistory(QVector<PMP::PlayerHistoryTrackInfo> tracks);
 
-        void queueLengthChanged(int length);
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);
         void queueEntryAdded(quint32 offset, quint32 queueID, RequestID requestID);
@@ -240,7 +231,7 @@ namespace PMP {
                                                  QVector<PMP::FileHash> unavailable);
         void collectionTracksChanged(QVector<PMP::CollectionTrackInfo> changes);
 
-    private slots:
+    private Q_SLOTS:
         void onConnected();
         void onReadyRead();
         void onSocketError(QAbstractSocket::SocketError error);
