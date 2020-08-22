@@ -54,6 +54,12 @@ namespace PMP {
         /*! The "LESS-THAN OR EQUAL TO" symbol (U+2264) */
         static const QChar LessThanOrEqual;
 
+        /*! Pause symbol (U+23F8) */
+        static const QChar PauseSymbol;
+
+        /*! Play symbol (U+25B6) */
+        static const QChar PlaySymbol;
+
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
 
         static QString getCopyrightLine(bool mustBeAscii = true);

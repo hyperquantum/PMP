@@ -36,6 +36,8 @@ namespace PMP {
     const QChar Util::FigureDash = QChar(0x2012);
     const QChar Util::GreaterThanOrEqual = QChar(0x2265);
     const QChar Util::LessThanOrEqual = QChar(0x2264);
+    const QChar Util::PauseSymbol = QChar(0x23F8);
+    const QChar Util::PlaySymbol = QChar(0x25B6);
 
     unsigned Util::getRandomSeed() {
         /* Because std::random_device seems to be not random at all on MINGW 4.8, we use

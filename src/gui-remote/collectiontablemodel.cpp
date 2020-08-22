@@ -21,6 +21,7 @@
 
 #include "common/clientserverinterface.h"
 #include "common/collectionwatcher.h"
+#include "common/currenttrackmonitor.h"
 #include "common/playercontroller.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
@@ -207,15 +208,27 @@ namespace PMP {
         /* we need to ignore symbols such as quotes, spaces and parentheses */
         _collator.setIgnorePunctuation(true);
 
-        auto& playerController = clientServerInterface->playerController();
+        auto* playerController = &clientServerInterface->playerController();
+        _playerState = playerController->playerState();
         connect(
-            &playerController, &PlayerController::playerModeChanged,
+            playerController, &PlayerController::playerStateChanged,
+            this,
+            [this, playerController]() {
+                _playerState = playerController->playerState();
+
+                if (!_currentTrackHash.isNull())
+                    markLeftColumnAsChanged();
+            }
+        );
+
+        connect(
+            playerController, &PlayerController::playerModeChanged,
             this, &SortedCollectionTableModel::onPlayerModeChanged
         );
 
-        auto playerMode = playerController.playerMode();
+        auto playerMode = playerController->playerMode();
         if (playerMode != PlayerMode::Unknown) {
-            _highlighter.setUserId(playerController.personalModeUserId());
+            _highlighter.setUserId(playerController->personalModeUserId());
         }
 
         auto& collectionWatcher = clientServerInterface->collectionWatcher();
@@ -238,6 +251,16 @@ namespace PMP {
         connect(
             &userDataFetcher, &UserDataFetcher::dataReceivedForUser,
             this, &SortedCollectionTableModel::onDataReceivedForUser
+        );
+
+        auto* currentTrackMonitor = &clientServerInterface->currentTrackMonitor();
+        _currentTrackHash = currentTrackMonitor->currentTrackHash();
+        connect(
+            currentTrackMonitor, &CurrentTrackMonitor::currentTrackInfoChanged,
+            this,
+            [this, currentTrackMonitor]() {
+                currentTrackInfoChanged(currentTrackMonitor->currentTrackHash());
+            }
         );
 
         addWhenModelEmpty(collectionWatcher.getCollection().values());
@@ -490,6 +513,15 @@ namespace PMP {
         }
     }
 
+    void SortedCollectionTableModel::currentTrackInfoChanged(FileHash hash)
+    {
+        if (_currentTrackHash == hash)
+            return;
+
+        _currentTrackHash = hash;
+        markLeftColumnAsChanged();
+    }
+
     int SortedCollectionTableModel::findOuterIndexMapIndexForInsert(
             const CollectionTrackInfo& track)
     {
@@ -523,6 +555,13 @@ namespace PMP {
         else {
             return findOuterIndexMapIndexForInsert(track, middleIndex, searchRangeEnd);
         }
+    }
+
+    void SortedCollectionTableModel::markLeftColumnAsChanged()
+    {
+        emit dataChanged(
+            createIndex(0, 0), createIndex(rowCount() - 1, 0)
+        );
     }
 
     void SortedCollectionTableModel::updateTrackAvailability(FileHash hash,
@@ -725,17 +764,37 @@ namespace PMP {
                 break;
             case Qt::DisplayRole:
                 if (index.row() < _tracks.size()) {
+                    auto track = trackAt(index);
+
                     switch (index.column()) {
-                        case 0: return trackAt(index)->title();
-                        case 1: return trackAt(index)->artist();
+                        case 0:
+                        {
+                            auto text = track->title();
+
+                            if (track->hash() == _currentTrackHash) {
+                                switch (_playerState) {
+                                    case PlayerState::Playing:
+                                        text = Util::PlaySymbol + QString(" ") + text;
+                                        break;
+                                    case PlayerState::Paused:
+                                        text = Util::PauseSymbol + QString(" ") + text;
+                                        break;
+                                    default:
+                                        break;
+                                }
+                            }
+
+                            return text;
+                        }
+                        case 1: return track->artist();
                         case 2:
                         {
-                            int lengthInSeconds = trackAt(index)->lengthInSeconds();
+                            int lengthInSeconds = track->lengthInSeconds();
 
                             if (lengthInSeconds < 0) { return "?"; }
                             return Util::secondsToHoursMinuteSecondsText(lengthInSeconds);
                         }
-                        case 3: return trackAt(index)->album();
+                        case 3: return track->album();
                     }
                 }
                 break;

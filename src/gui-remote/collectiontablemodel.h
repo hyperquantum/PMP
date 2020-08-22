@@ -22,6 +22,7 @@
 
 #include "common/collectiontrackinfo.h"
 #include "common/playermode.h"
+#include "common/playerstate.h"
 #include "common/tribool.h"
 
 #include <QAbstractTableModel>
@@ -130,6 +131,7 @@ namespace PMP {
         void onDataReceivedForUser(quint32 userId);
         void onPlayerModeChanged(PMP::PlayerMode playerMode, quint32 personalModeUserId,
                                  QString personalModeUserLogin);
+        void currentTrackInfoChanged(FileHash hash);
 
     private:
         void updateTrackAvailability(FileHash hash, bool isAvailable);
@@ -142,6 +144,7 @@ namespace PMP {
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track);
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track,
                                             int searchRangeBegin, int searchRangeEnd);
+        void markLeftColumnAsChanged();
         void markEverythingAsChanged();
 
         static bool usesUserData(TrackHighlightMode mode);
@@ -181,6 +184,8 @@ namespace PMP {
         int _sortBy;
         Qt::SortOrder _sortOrder;
         TrackHighlighter _highlighter;
+        FileHash _currentTrackHash;
+        PlayerState _playerState;
     };
 
     class FilteredCollectionTableModel : public QSortFilterProxyModel {
