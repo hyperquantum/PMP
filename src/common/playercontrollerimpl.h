@@ -17,43 +17,64 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SIMPLEPLAYERSTATEMONITORIMPL_H
-#define PMP_SIMPLEPLAYERSTATEMONITORIMPL_H
+#ifndef PMP_PLAYERCONTROLLERIMPL_H
+#define PMP_PLAYERCONTROLLERIMPL_H
 
-#include "simpleplayerstatemonitor.h"
+#include "playercontroller.h"
 
 namespace PMP {
 
     class ServerConnection;
 
-    class SimplePlayerStateMonitorImpl : public SimplePlayerStateMonitor {
+    class PlayerControllerImpl : public PlayerController {
         Q_OBJECT
     public:
-        SimplePlayerStateMonitorImpl(ServerConnection* connection);
+        PlayerControllerImpl(ServerConnection* connection);
+
+        ~PlayerControllerImpl() {}
 
         PlayerState playerState() const override;
+        uint queueLength() const override;
+        bool canPlay() const override;
+        bool canPause() const override;
+        bool canSkip() const override;
 
         PlayerMode playerMode() const override;
         quint32 personalModeUserId() const override;
         QString personalModeUserLogin() const override;
 
-    private slots:
+        int volume() const override;
+
+    public Q_SLOTS:
+        void play() override;
+        void pause() override;
+        void skip() override;
+
+        void setVolume(int volume) override;
+
+    private Q_SLOTS:
         void connected();
         void connectionBroken();
-        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
+        void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition);
         void receivedUserPlayingFor(quint32 userId, QString userLogin);
+        void receivedVolume(int volume);
 
     private:
-        void changeCurrentState(PlayerState state);
-        void changeCurrentMode(PlayerMode mode, quint32 personalModeUserId,
-                               QString personalModeUserLogin);
+        void updateState(PlayerState state, int volume, quint32 queueLength,
+                         quint32 nowPlayingQueueId, qint64 nowPlayingPosition);
+        void updateMode(PlayerMode mode, quint32 personalModeUserId,
+                        QString personalModeUserLogin);
 
         ServerConnection* _connection;
         PlayerState _state;
+        uint _queueLength;
+        quint32 _trackNowPlaying;
+        quint32 _trackJustSkipped;
         PlayerMode _mode;
         quint32 _personalModeUserId;
         QString _personalModeUserLogin;
+        int _volume;
     };
 }
 #endif

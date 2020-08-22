@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,7 @@ namespace PMP {
     AutoPersonalModeAction::AutoPersonalModeAction(ServerConnection* connection)
      : QObject(connection),
        _connection(connection), _needToCheck(true),
-       _state(ServerConnection::UnknownState),
+       _state(PlayerState::Unknown),
        _knowUserPlayingFor(false), _publicMode(false)
     {
         connect(
@@ -42,12 +42,12 @@ namespace PMP {
     }
 
     void AutoPersonalModeAction::connected() {
-        _state = ServerConnection::UnknownState;
+        _state = PlayerState::Unknown;
         _knowUserPlayingFor = false;
         _needToCheck = true;
     }
 
-    void AutoPersonalModeAction::receivedPlayerState(int s, quint8 volume,
+    void AutoPersonalModeAction::receivedPlayerState(PlayerState state, quint8 volume,
                                                      quint32 queueLength,
                                                      quint32 nowPlayingQID,
                                                      quint64 nowPlayingPosition)
@@ -57,7 +57,7 @@ namespace PMP {
         (void)nowPlayingQID;
         (void)nowPlayingPosition;
 
-        _state = static_cast<ServerConnection::PlayState>(s);
+        _state = state;
         check();
     }
 
@@ -72,11 +72,11 @@ namespace PMP {
     void AutoPersonalModeAction::check() {
         if (!_needToCheck) return;
 
-        if (_state == ServerConnection::UnknownState || !_knowUserPlayingFor) return;
+        if (_state == PlayerState::Unknown || !_knowUserPlayingFor) return;
 
         _needToCheck = false;
 
-        if (_state == ServerConnection::Stopped && _publicMode) {
+        if (_state == PlayerState::Stopped && _publicMode) {
             _connection->switchToPersonalMode();
             _connection->enableDynamicMode();
         }

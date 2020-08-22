@@ -47,6 +47,9 @@ namespace PMP {
     }
 
     void TrackProgressWidget::setCurrentTrack(/*uint ID,*/ qint64 length) {
+        if (_trackLength == length)
+            return; /* no change */
+
         //_trackID = ID;
         _trackLength = length;
         update();

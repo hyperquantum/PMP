@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,6 @@
 
 #include <QObject>
 #include <QString>
-//#include <QtGlobal>
 
 namespace PMP {
 
@@ -33,10 +32,10 @@ namespace PMP {
     public:
         AutoPersonalModeAction(ServerConnection* connection);
 
-    private slots:
+    private Q_SLOTS:
         void connected();
 
-        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
+        void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition);
 
         void userPlayingForChanged(quint32 userId, QString login);
@@ -46,9 +45,9 @@ namespace PMP {
 
         ServerConnection* _connection;
         bool _needToCheck;
-        ServerConnection::PlayState _state;
+        PlayerState _state;
         bool _knowUserPlayingFor;
         bool _publicMode;
     };
 }
-#endif // PMP_AUTOPERSONALMODEACTION_H
+#endif

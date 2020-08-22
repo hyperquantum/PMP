@@ -1542,25 +1542,28 @@ namespace PMP {
         quint32 queueID = NetworkUtil::get4Bytes(message, 8);
         quint64 position = NetworkUtil::get8Bytes(message, 12);
 
-        qDebug() << "received player state message";
+        //qDebug() << "received player state message";
 
         // TODO : rename volumeChanged signal or get rid of it
         if (volume <= 100) { emit volumeChanged(volume); }
 
-        PlayState s = UnknownState;
+        auto state = PlayerState::Unknown;
         switch (playerState) {
-        case 1:
-            s = Stopped;
-            break;
-        case 2:
-            s = Playing;
-            break;
-        case 3:
-            s = Paused;
-            break;
+            case 1:
+                state = PlayerState::Stopped;
+                break;
+            case 2:
+                state = PlayerState::Playing;
+                break;
+            case 3:
+                state = PlayerState::Paused;
+                break;
+            default:
+                qWarning() << "received unknown player state:" << playerState;
+                break;
         }
 
-        emit receivedPlayerState(s, volume, queueLength, queueID, position);
+        Q_EMIT receivedPlayerState(state, volume, queueLength, queueID, position);
     }
 
     void ServerConnection::parseVolumeChangedMessage(QByteArray const& message) {

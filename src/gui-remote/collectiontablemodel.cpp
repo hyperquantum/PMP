@@ -21,7 +21,7 @@
 
 #include "common/clientserverinterface.h"
 #include "common/collectionwatcher.h"
-#include "common/simpleplayerstatemonitor.h"
+#include "common/playercontroller.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 
@@ -207,15 +207,15 @@ namespace PMP {
         /* we need to ignore symbols such as quotes, spaces and parentheses */
         _collator.setIgnorePunctuation(true);
 
-        auto& playerStateMonitor = clientServerInterface->simplePlayerStateMonitor();
+        auto& playerController = clientServerInterface->playerController();
         connect(
-            &playerStateMonitor, &SimplePlayerStateMonitor::playerModeChanged,
+            &playerController, &PlayerController::playerModeChanged,
             this, &SortedCollectionTableModel::onPlayerModeChanged
         );
 
-        auto playerMode = playerStateMonitor.playerMode();
+        auto playerMode = playerController.playerMode();
         if (playerMode != PlayerMode::Unknown) {
-            _highlighter.setUserId(playerStateMonitor.personalModeUserId());
+            _highlighter.setUserId(playerController.personalModeUserId());
         }
 
         auto& collectionWatcher = clientServerInterface->collectionWatcher();

@@ -25,7 +25,6 @@
 #include "playerhistorytrackinfo.h"
 #include "playerstate.h"
 #include "serverhealthstatus.h"
-#include "simpleplayerstatemonitor.h"
 #include "tribool.h"
 
 #include <QByteArray>
@@ -191,7 +190,7 @@ namespace PMP {
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedServerName(quint8 nameType, QString name);
 
-        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
+        void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition);
 
         void volumeChanged(int percentage);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,37 +17,50 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <QObject>
-
-#ifndef PMP_SIMPLEPLAYERSTATEMONITOR_H
-#define PMP_SIMPLEPLAYERSTATEMONITOR_H
+#ifndef PMP_PLAYERCONTROLLER_H
+#define PMP_PLAYERCONTROLLER_H
 
 #include "playermode.h"
 #include "playerstate.h"
-#include "tribool.h"
 
+#include <QObject>
 #include <QString>
 
 namespace PMP {
 
-    class SimplePlayerStateMonitor : public QObject {
+    class PlayerController : public QObject {
         Q_OBJECT
     public:
-        virtual ~SimplePlayerStateMonitor() {}
+        virtual ~PlayerController() {}
 
         virtual PlayerState playerState() const = 0;
+        virtual uint queueLength() const = 0;
+        virtual bool canPlay() const = 0;
+        virtual bool canPause() const = 0;
+        virtual bool canSkip() const = 0;
 
         virtual PlayerMode playerMode() const = 0;
         virtual quint32 personalModeUserId() const = 0;
         virtual QString personalModeUserLogin() const = 0;
 
+        virtual int volume() const = 0;
+
+    public Q_SLOTS:
+        virtual void play() = 0;
+        virtual void pause() = 0;
+        virtual void skip() = 0;
+
+        virtual void setVolume(int volume) = 0;
+
     Q_SIGNALS:
         void playerStateChanged(PlayerState playerState);
         void playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,
                                QString personalModeUserLogin);
+        void volumeChanged();
+        void queueLengthChanged();
 
     protected:
-        explicit SimplePlayerStateMonitor(QObject* parent) : QObject(parent) {}
+        explicit PlayerController(QObject* parent) : QObject(parent) {}
     };
 
 }
