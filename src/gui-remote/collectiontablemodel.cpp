@@ -31,6 +31,7 @@
 #include <QBrush>
 #include <QBuffer>
 #include <QDataStream>
+#include <QIcon>
 #include <QMimeData>
 #include <QtDebug>
 
@@ -767,25 +768,7 @@ namespace PMP {
                     auto track = trackAt(index);
 
                     switch (index.column()) {
-                        case 0:
-                        {
-                            auto text = track->title();
-
-                            if (track->hash() == _currentTrackHash) {
-                                switch (_playerState) {
-                                    case PlayerState::Playing:
-                                        text = Util::PlaySymbol + QString(" ") + text;
-                                        break;
-                                    case PlayerState::Paused:
-                                        text = Util::PauseSymbol + QString(" ") + text;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            }
-
-                            return text;
-                        }
+                        case 0: return track->title();
                         case 1: return track->artist();
                         case 2:
                         {
@@ -795,6 +778,24 @@ namespace PMP {
                             return Util::secondsToHoursMinuteSecondsText(lengthInSeconds);
                         }
                         case 3: return track->album();
+                    }
+                }
+                break;
+            case Qt::DecorationRole:
+                if (index.column() == 0 && index.row() < _tracks.size()) {
+                    auto track = trackAt(index);
+
+                    if (track->hash() == _currentTrackHash) {
+                        switch (_playerState) {
+                            case PlayerState::Playing:
+                                return QIcon(":/mediabuttons/Play.png");
+
+                            case PlayerState::Paused:
+                                return QIcon(":/mediabuttons/Pause.png");
+
+                            default:
+                                break;
+                        }
                     }
                 }
                 break;
