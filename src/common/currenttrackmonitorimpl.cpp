@@ -247,6 +247,7 @@ namespace PMP {
         }
 
         Q_EMIT currentTrackChanged();
+        Q_EMIT currentTrackInfoChanged();
     }
 
     void CurrentTrackMonitorImpl::changeCurrentTrackPosition(qint64 positionMilliseconds)
