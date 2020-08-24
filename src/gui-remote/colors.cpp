@@ -22,6 +22,7 @@
 namespace PMP {
 
     Colors::Colors(const QColor& widgetBorder,
+                   const QColor& inactiveItemForeground,
                    QVector<QColor> itemBackgroundHighlightColors,
                    const QColor& specialQueueItemBackground,
                    const QColor& specialQueueItemForeground,
@@ -30,6 +31,7 @@ namespace PMP {
                    const QColor& trackProgressWidgetBorder,
                    const QColor& trackProgressWidgetProgress)
      : widgetBorder(widgetBorder),
+       inactiveItemForeground(inactiveItemForeground),
        itemBackgroundHighlightColors(itemBackgroundHighlightColors),
        specialQueueItemBackground(specialQueueItemBackground),
        specialQueueItemForeground(specialQueueItemForeground),
@@ -48,6 +50,7 @@ namespace PMP {
     const Colors Colors::_lightScheme =
         Colors(
             /* widgetBorder */ QColor::fromRgb(0x7A, 0x7A, 0x7A),
+            /* inactiveItemForeground */ Qt::gray,
             /* itemBackgroundHighlightColors */ {
                 Qt::yellow,
                 QColor(0xAF, 0xEE, 0xEE), // paleturquoise

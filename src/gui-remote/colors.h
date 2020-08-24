@@ -28,6 +28,7 @@ namespace PMP {
     class Colors {
     public:
         Colors(const QColor& widgetBorder,
+               const QColor& inactiveItemForeground,
                QVector<QColor> itemBackgroundHighlightColors,
                const QColor& specialQueueItemBackground,
                const QColor& specialQueueItemForeground,
@@ -39,6 +40,7 @@ namespace PMP {
         static const Colors& instance();
 
         const QColor widgetBorder;
+        const QColor inactiveItemForeground;
         const QVector<QColor> itemBackgroundHighlightColors;
         const QColor specialQueueItemBackground;
         const QColor specialQueueItemForeground;

@@ -802,7 +802,8 @@ namespace PMP {
             case Qt::ForegroundRole:
                 if (index.row() < _tracks.size()) {
                     auto track = trackAt(index);
-                    if (!track->isAvailable()) return QBrush(Qt::gray);
+                    if (!track->isAvailable())
+                        return QBrush(Colors::instance().inactiveItemForeground);
                 }
                 break;
             case Qt::BackgroundRole:
