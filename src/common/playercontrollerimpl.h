@@ -52,6 +52,9 @@ namespace PMP {
 
         void setVolume(int volume) override;
 
+        void switchToPublicMode() override;
+        void switchToPersonalMode() override;
+
     private Q_SLOTS:
         void connected();
         void connectionBroken();

@@ -125,6 +125,16 @@ namespace PMP {
         _connection->setVolume(qBound(0, volume, 100));
     }
 
+    void PlayerControllerImpl::switchToPublicMode()
+    {
+        _connection->switchToPublicMode();
+    }
+
+    void PlayerControllerImpl::switchToPersonalMode()
+    {
+        _connection->switchToPersonalMode();
+    }
+
     void PlayerControllerImpl::connected()
     {
         _connection->requestPlayerState();

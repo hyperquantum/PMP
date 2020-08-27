@@ -52,6 +52,9 @@ namespace PMP {
 
         virtual void setVolume(int volume) = 0;
 
+        virtual void switchToPublicMode() = 0;
+        virtual void switchToPersonalMode() = 0;
+
     Q_SIGNALS:
         void playerStateChanged(PlayerState playerState);
         void playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,

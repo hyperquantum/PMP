@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,26 +17,27 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_AUTOPERSONALMODEACTION_H
-#define PMP_AUTOPERSONALMODEACTION_H
+#ifndef PMP_DYNAMICMODECONTROLLER_H
+#define PMP_DYNAMICMODECONTROLLER_H
 
 #include <QObject>
-#include <QString>
 
 namespace PMP {
 
-    class ClientServerInterface;
-
-    class AutoPersonalModeAction : public QObject {
+    class DynamicModeController : public QObject {
         Q_OBJECT
     public:
-        AutoPersonalModeAction(ClientServerInterface* clientServerInterface);
+        virtual ~DynamicModeController() {}
 
-    private:
-        void check();
+    public Q_SLOTS:
+        virtual void enableDynamicMode() = 0;
+        virtual void disableDynamicMode() = 0;
 
-        ClientServerInterface* _clientServerInterface;
-        bool _needToCheck;
+    Q_SIGNALS:
+
+
+    protected:
+        DynamicModeController(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

@@ -26,6 +26,7 @@ namespace PMP {
 
     class CollectionWatcher;
     class CurrentTrackMonitor;
+    class DynamicModeController;
     class ServerConnection;
     class PlayerController;
     class UserDataFetcher;
@@ -37,6 +38,8 @@ namespace PMP {
 
         PlayerController& playerController();
         CurrentTrackMonitor& currentTrackMonitor();
+
+        DynamicModeController& dynamicModeController();
 
         CollectionWatcher& collectionWatcher();
         UserDataFetcher& userDataFetcher();
@@ -55,6 +58,7 @@ namespace PMP {
         ServerConnection* _connection;
         PlayerController* _simplePlayerController;
         CurrentTrackMonitor* _currentTrackMonitor;
+        DynamicModeController* _dynamicModeController;
         CollectionWatcher* _collectionWatcher;
         UserDataFetcher* _userDataFetcher;
     };

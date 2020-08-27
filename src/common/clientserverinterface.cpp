@@ -21,6 +21,7 @@
 
 #include "collectionwatcherimpl.h"
 #include "currenttrackmonitorimpl.h"
+#include "dynamicmodecontrollerimpl.h"
 #include "serverconnection.h"
 #include "playercontrollerimpl.h"
 #include "userdatafetcher.h"
@@ -32,6 +33,7 @@ namespace PMP {
      : QObject(parent), _connection(connection),
        _simplePlayerController(nullptr),
        _currentTrackMonitor(nullptr),
+       _dynamicModeController(nullptr),
        _collectionWatcher(nullptr),
        _userDataFetcher(nullptr)
     {
@@ -52,6 +54,14 @@ namespace PMP {
             _currentTrackMonitor = new CurrentTrackMonitorImpl(_connection);
 
         return *_currentTrackMonitor;
+    }
+
+    DynamicModeController& ClientServerInterface::dynamicModeController()
+    {
+        if (!_dynamicModeController)
+            _dynamicModeController = new DynamicModeControllerImpl(_connection);
+
+        return *_dynamicModeController;
     }
 
     CollectionWatcher& ClientServerInterface::collectionWatcher()

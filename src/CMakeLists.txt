@@ -23,6 +23,7 @@ set(PMP_COMMON_SOURCES
     common/collectionwatcherimpl.cpp
     common/commonmetatypes.cpp
     common/currenttrackmonitorimpl.cpp
+    common/dynamicmodecontrollerimpl.cpp
     common/fileanalyzer.cpp
     common/filehash.cpp
     common/logging.cpp
@@ -43,6 +44,8 @@ set(PMP_COMMON_HEADERS
     common/collectionwatcherimpl.h
     common/currenttrackmonitor.h
     common/currenttrackmonitorimpl.h
+    common/dynamicmodecontroller.h
+    common/dynamicmodecontrollerimpl.h
     common/playercontroller.h
     common/playercontrollerimpl.h
     common/serverconnection.h

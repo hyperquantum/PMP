@@ -23,7 +23,9 @@
 #include "common/audiodata.h"
 #include "common/clientserverinterface.h"
 #include "common/currenttrackmonitor.h"
+#include "common/dynamicmodecontroller.h"
 #include "common/playercontroller.h"
+#include "common/serverconnection.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 
@@ -94,7 +96,7 @@ namespace PMP {
     {
         _connection = connection;
         _clientServerInterface = clientServerInterface;
-        new AutoPersonalModeAction(connection); /* uses connection as parent */
+        new AutoPersonalModeAction(clientServerInterface);
         _queueMonitor = new QueueMonitor(_connection, _connection);
         _queueMediator = new QueueMediator(_connection, _queueMonitor, _connection);
         _queueEntryInfoFetcher =
@@ -154,11 +156,11 @@ namespace PMP {
 
         connect(
             _ui->toPublicModeButton, &QPushButton::clicked,
-            _connection, &ServerConnection::switchToPublicMode
+            playerController, &PlayerController::switchToPublicMode
         );
         connect(
             _ui->toPersonalModeButton, &QPushButton::clicked,
-            _connection, &ServerConnection::switchToPersonalMode
+            playerController, &PlayerController::switchToPersonalMode
         );
 
         connect(
@@ -678,13 +680,13 @@ namespace PMP {
     void MainWidget::changeDynamicMode(int checkState) {
         if (checkState == Qt::Checked) {
             if (!_dynamicModeEnabled) {
-                _connection->enableDynamicMode();
+                _clientServerInterface->dynamicModeController().enableDynamicMode();
                 _dynamicModeEnabled = true;
             }
         }
         else {
-            if (_dynamicModeEnabled)  {
-                _connection->disableDynamicMode();
+            if (_dynamicModeEnabled) {
+                _clientServerInterface->dynamicModeController().disableDynamicMode();
                 _dynamicModeEnabled = false;
             }
         }
