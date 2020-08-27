@@ -76,6 +76,7 @@ IDEAS
  * detect and prevent track repetition with different hash values
  * avoid accidental multiple clicks on "skip" affecting track score unnecessarily
  * provide fast partial indexation that only detects new files
+ * track info dialog: add buttons for adding the track to the queue
 
 
 USER FRIENDLINESS
