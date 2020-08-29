@@ -69,7 +69,8 @@ IDEAS
  * save the contents of the queue on server shutdown and restore it at the next server startup
  * 'play again next' action for the song that is currently playing
  * ability to insert a breakpoint directly before/after any entry in the queue
- * timer feature to make playback stop at or near a specified clock time
+ * auto-stop timer: make playback stop at or near a specified clock time
+ * auto-start timer: make playback start at a specified clock time
  * delayed start: e.g. being able to press Play and then have 5 seconds before PMP actually starts playing
  * alternative display of "prev. heard" as a time span, e.g. "5 days ago" or "9 weeks ago"
  * music collection: show a "loading collection" indicator while downloading the list from the server
@@ -77,6 +78,11 @@ IDEAS
  * avoid accidental multiple clicks on "skip" affecting track score unnecessarily
  * provide fast partial indexation that only detects new files
  * track info dialog: add buttons for adding the track to the queue
+ * track info dialog: show indication if file is available or not
+ * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time
+ * track info dialog: ability to pick the user whose personal stats are shown
+ * queue: show error marker for a track that has no known file
+ * add a button for seeking back to the start of the current track
 
 
 USER FRIENDLINESS
