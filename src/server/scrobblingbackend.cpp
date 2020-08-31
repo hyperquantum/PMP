@@ -84,12 +84,6 @@ namespace PMP {
             case ScrobblingBackendState::NotInitialized:
                 debug << "ScrobblingBackendState::NotInitialized";
                 break;
-            /*case ScrobblingBackendState::WaitingForAuthenticationResult:
-                debug << "ScrobblingBackendState::WaitingForAuthenticationResult";
-                break;
-            case ScrobblingBackendState::WaitingForScrobbleResult:
-                debug << "ScrobblingBackendState::WaitingForScrobbleResult";
-                break;*/
             case ScrobblingBackendState::WaitingForUserCredentials:
                 debug << "ScrobblingBackendState::WaitingForUserCredentials";
                 break;
