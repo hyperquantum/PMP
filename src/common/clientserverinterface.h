@@ -25,9 +25,10 @@
 namespace PMP {
 
     class CollectionWatcher;
+    class CurrentTrackMonitor;
+    class DynamicModeController;
     class ServerConnection;
-    class SimplePlayerController;
-    class SimplePlayerStateMonitor;
+    class PlayerController;
     class UserDataFetcher;
 
     class ClientServerInterface : public QObject {
@@ -35,8 +36,10 @@ namespace PMP {
     public:
         ClientServerInterface(QObject* parent, ServerConnection* connection);
 
-        SimplePlayerController& simplePlayerController();
-        SimplePlayerStateMonitor& simplePlayerStateMonitor();
+        PlayerController& playerController();
+        CurrentTrackMonitor& currentTrackMonitor();
+
+        DynamicModeController& dynamicModeController();
 
         CollectionWatcher& collectionWatcher();
         UserDataFetcher& userDataFetcher();
@@ -53,8 +56,9 @@ namespace PMP {
 
     private:
         ServerConnection* _connection;
-        SimplePlayerController* _simplePlayerController;
-        SimplePlayerStateMonitor* _simplePlayerStateMonitor;
+        PlayerController* _simplePlayerController;
+        CurrentTrackMonitor* _currentTrackMonitor;
+        DynamicModeController* _dynamicModeController;
         CollectionWatcher* _collectionWatcher;
         UserDataFetcher* _userDataFetcher;
     };

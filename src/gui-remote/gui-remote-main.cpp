@@ -23,6 +23,7 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QtDebug>
 
 using namespace PMP;
 
@@ -44,5 +45,9 @@ int main(int argc, char *argv[]) {
     MainWindow window;
     window.show();
 
-    return app.exec();
+    auto exitCode = app.exec();
+
+    qDebug() << "Exiting with code" << exitCode;
+
+    return exitCode;
 }

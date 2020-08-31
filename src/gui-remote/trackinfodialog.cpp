@@ -23,7 +23,6 @@
 #include "common/clientserverinterface.h"
 #include "common/collectiontrackinfo.h"
 #include "common/collectionwatcher.h"
-#include "common/simpleplayerstatemonitor.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 

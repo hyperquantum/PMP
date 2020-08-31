@@ -20,8 +20,8 @@
 #include "mainwindow.h"
 
 #include "common/clientserverinterface.h"
+#include "common/playercontroller.h"
 #include "common/serverconnection.h"
-#include "common/simpleplayercontroller.h"
 #include "common/util.h"
 #include "common/version.h"
 
@@ -34,7 +34,9 @@
 #include "userpickerwidget.h"
 
 #include <QAction>
+#include <QApplication>
 #include <QCoreApplication>
+#include <QDesktopWidget>
 #include <QDockWidget>
 #include <QKeyEvent>
 #include <QLabel>
@@ -79,9 +81,26 @@ namespace PMP {
             QSettings settings(QCoreApplication::organizationName(),
                                QCoreApplication::applicationName());
 
+            qDebug() << "Before restore:" << this->pos() << " size:" << this->size();
+
             settings.beginGroup("mainwindow");
             restoreGeometry(settings.value("geometry").toByteArray());
+
+            // QTBUG-77385
+            if (!this->geometry().intersects(
+                        QApplication::desktop()->screenGeometry(
+                            QApplication::desktop()->screenNumber(this))))
+            {
+                qWarning() << "Need to apply workaround for QTBUG-77385";
+                auto availableGeometry = QApplication::desktop()->availableGeometry(this);
+                resize(availableGeometry.width() / 2, availableGeometry.height() / 2);
+                move((availableGeometry.width() - width()) / 2,
+                     (availableGeometry.height() - height()) / 2);
+            }
+
             restoreState(settings.value("windowstate").toByteArray());
+
+            qDebug() << "After restore:" << this->pos() << " size:" << this->size();
 
             _musicCollectionDock->setVisible(false); /* because of restoreState above */
         }
@@ -223,7 +242,7 @@ namespace PMP {
             case Qt::Key_MediaNext:
             {
                 qDebug() << "got Next button";
-                auto& controller = _clientServerInterface->simplePlayerController();
+                auto& controller = _clientServerInterface->playerController();
 
                 if (controller.canSkip())
                     controller.skip();
@@ -232,7 +251,7 @@ namespace PMP {
             case Qt::Key_MediaPause:
             {
                 qDebug() << "got Pause button";
-                auto& controller = _clientServerInterface->simplePlayerController();
+                auto& controller = _clientServerInterface->playerController();
 
                 if (controller.canPause())
                     controller.pause();
@@ -241,7 +260,7 @@ namespace PMP {
             case Qt::Key_MediaPlay:
             {
                 qDebug() << "got Play button";
-                auto& controller = _clientServerInterface->simplePlayerController();
+                auto& controller = _clientServerInterface->playerController();
 
                 if (controller.canPlay())
                     controller.play();
@@ -252,7 +271,7 @@ namespace PMP {
             case Qt::Key_MediaTogglePlayPause:
             {
                 qDebug() << "got Play/Pause button";
-                auto& controller = _clientServerInterface->simplePlayerController();
+                auto& controller = _clientServerInterface->playerController();
 
                 if (controller.canPlay())
                     controller.play();
@@ -363,7 +382,7 @@ namespace PMP {
 
     void MainWindow::updatePowerManagement() {
         auto playerState =
-                _clientServerInterface->simplePlayerStateMonitor().playerState();
+                _clientServerInterface->playerController().playerState();
         bool isPlaying = playerState == PlayerState::Playing;
 
         bool keepDisplayActiveOption = _keepDisplayActiveAction->isChecked();
@@ -450,8 +469,8 @@ namespace PMP {
             }
         );
         connect(
-            &_clientServerInterface->simplePlayerStateMonitor(),
-            &SimplePlayerStateMonitor::playerStateChanged,
+            &_clientServerInterface->playerController(),
+            &PlayerController::playerStateChanged,
             this, &MainWindow::updatePowerManagement
         );
 

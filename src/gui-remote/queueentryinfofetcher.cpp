@@ -92,15 +92,11 @@ namespace PMP {
     QueueEntryInfoFetcher::QueueEntryInfoFetcher(QObject* parent,
                                                  AbstractQueueMonitor* monitor,
                                                  ServerConnection* connection)
-     : QObject(parent), _monitor(monitor), _connection(connection), _userPlayingFor(0)
+     : QObject(parent), _monitor(monitor), _connection(connection)
     {
         connect(
             _connection, &ServerConnection::connected,
             this, &QueueEntryInfoFetcher::connected
-        );
-        connect(
-            _connection, &ServerConnection::receivedUserPlayingFor,
-            this, &QueueEntryInfoFetcher::receivedUserPlayingFor
         );
         connect(
             _connection, &ServerConnection::receivedQueueEntryHash,
@@ -162,16 +158,6 @@ namespace PMP {
 
     void QueueEntryInfoFetcher::connected() {
         queueResetted(0);
-    }
-
-    void QueueEntryInfoFetcher::receivedUserPlayingFor(quint32 userId, QString userLogin)
-    {
-        Q_UNUSED(userLogin)
-
-        if (_userPlayingFor == userId) return;
-
-        _userPlayingFor = userId;
-        emit userPlayingForChanged(userId);
     }
 
     void QueueEntryInfoFetcher::receivedQueueEntryHash(quint32 queueID,

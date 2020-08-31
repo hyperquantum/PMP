@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,6 +18,8 @@
 */
 
 #include "trackprogresswidget.h"
+
+#include "colors.h"
 
 #include <QMouseEvent>
 #include <QPainter>
@@ -45,6 +47,9 @@ namespace PMP {
     }
 
     void TrackProgressWidget::setCurrentTrack(/*uint ID,*/ qint64 length) {
+        if (_trackLength == length)
+            return; /* no change */
+
         //_trackID = ID;
         _trackLength = length;
         update();
@@ -56,30 +61,34 @@ namespace PMP {
     }
 
     void TrackProgressWidget::paintEvent(QPaintEvent* event) {
+        Q_UNUSED(event)
+
         QPainter painter(this);
 
-        painter.setRenderHint(QPainter::Antialiasing);
+        //painter.setRenderHint(QPainter::Antialiasing);
 
         QRect rect = this->rect().adjusted(+1, +1, -1, -1);
 
         if (_trackLength <= 0) {
-            painter.fillRect(rect, QBrush(QColor(220, 220, 220)));
+            painter.fillRect(rect, QBrush(Colors::instance().trackProgressWidgetEmpty));
             return;
         }
 
-        painter.fillRect(rect, QBrush(QColor(210, 220, 255)));
+        painter.fillRect(rect, QBrush(Colors::instance().trackProgressWidgetBackground));
 
         if (_trackPosition > 0) {
             auto position = qMin(_trackPosition, _trackLength);
 
-            QRectF rect2(rect);
-            rect2.adjust(+2, +2, -2, -2);
+            QRect rect2(rect);
+            rect2.adjust(+2, +2, -1, -1);
             int w = (position * rect2.width() + _trackLength / 2) / _trackLength;
             rect2.setWidth(w);
-            painter.fillRect(rect2, QBrush(QColor(170, 190, 250)));
+
+            painter.fillRect(rect2,
+                             QBrush(Colors::instance().trackProgressWidgetProgress));
         }
 
-        painter.setPen(QPen(QColor(170, 190, 250)));
+        painter.setPen(QPen(Colors::instance().trackProgressWidgetBorder));
         painter.drawRect(rect);
     }
 

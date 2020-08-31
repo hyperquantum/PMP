@@ -68,6 +68,13 @@
        <item>
         <layout class="QHBoxLayout" name="currentPositionAndPersonalModeLayout">
          <item>
+          <widget class="QPushButton" name="trackInfoButton">
+           <property name="text">
+            <string>Track info</string>
+           </property>
+          </widget>
+         </item>
+         <item>
           <layout class="QFormLayout" name="formLayout">
            <property name="fieldGrowthPolicy">
             <enum>QFormLayout::AllNonFixedFieldsGrow</enum>

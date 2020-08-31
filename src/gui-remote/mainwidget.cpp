@@ -22,13 +22,16 @@
 
 #include "common/audiodata.h"
 #include "common/clientserverinterface.h"
+#include "common/currenttrackmonitor.h"
+#include "common/dynamicmodecontroller.h"
+#include "common/playercontroller.h"
 #include "common/serverconnection.h"
-#include "common/simpleplayercontroller.h"
 #include "common/userdatafetcher.h"
+#include "common/util.h"
 
 #include "autopersonalmodeaction.h"
-#include "currenttrackmonitor.h"
 #include "playerhistorymodel.h"
+#include "precisetrackprogressmonitor.h"
 #include "queueentryinfofetcher.h"
 #include "queuemediator.h"
 #include "queuemodel.h"
@@ -50,11 +53,10 @@ namespace PMP {
         _ui(new Ui::MainWidget),
         _connection(nullptr),
         _clientServerInterface(nullptr),
-        _currentTrackMonitor(nullptr),
+        _trackProgressMonitor(nullptr),
         _queueMonitor(nullptr), _queueMediator(nullptr),
         _queueEntryInfoFetcher(nullptr),
         _queueModel(nullptr), _queueContextMenu(nullptr),
-        _volume(-1), _nowPlayingQID(0), _nowPlayingLength(-1),
         _dynamicModeEnabled(false), _dynamicModeHighScoreWaveActive(false),
         _noRepetitionUpdating(0),
         _historyModel(nullptr), _historyContextMenu(nullptr)
@@ -94,22 +96,21 @@ namespace PMP {
     {
         _connection = connection;
         _clientServerInterface = clientServerInterface;
-        new AutoPersonalModeAction(connection); /* uses connection as parent */
-        _currentTrackMonitor = new CurrentTrackMonitor(_connection);
+        new AutoPersonalModeAction(clientServerInterface);
         _queueMonitor = new QueueMonitor(_connection, _connection);
         _queueMediator = new QueueMediator(_connection, _queueMonitor, _connection);
         _queueEntryInfoFetcher =
             new QueueEntryInfoFetcher(_connection, _queueMediator, _connection);
         _queueModel =
             new QueueModel(
-                _connection, _queueMediator, _queueEntryInfoFetcher,
-                clientServerInterface->userDataFetcher()
+                _connection, clientServerInterface, _queueMediator, _queueEntryInfoFetcher
             );
         _historyModel = new PlayerHistoryModel(this, _queueEntryInfoFetcher);
         _historyModel->setConnection(connection);
 
+        _ui->trackInfoButton->setEnabled(false);
         _ui->userPlayingForLabel->setText("");
-        _ui->toPersonalModeButton->setText(_connection->userLoggedInName());
+        _ui->toPersonalModeButton->setText(_clientServerInterface->userLoggedInName());
         _ui->toPublicModeButton->setEnabled(false);
         _ui->toPersonalModeButton->setEnabled(false);
         _ui->playButton->setEnabled(false);
@@ -128,6 +129,10 @@ namespace PMP {
         _ui->historyTableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _ui->historyTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
+        auto* playerController = &clientServerInterface->playerController();
+        auto* currentTrackMonitor = &clientServerInterface->currentTrackMonitor();
+        _trackProgressMonitor = new PreciseTrackProgressMonitor(currentTrackMonitor);
+
         connect(
             _historyModel, &PlayerHistoryModel::rowsInserted,
             _ui->historyTableView, &QTableView::scrollToBottom,
@@ -141,34 +146,34 @@ namespace PMP {
 
         connect(
             _ui->trackProgress, &TrackProgressWidget::seekRequested,
-            _currentTrackMonitor, &CurrentTrackMonitor::seekTo
+            currentTrackMonitor, &CurrentTrackMonitor::seekTo
         );
 
         connect(
-            _connection, &ServerConnection::receivedUserPlayingFor,
-            this, &MainWidget::userPlayingForChanged
+            _ui->trackInfoButton, &QPushButton::clicked,
+            this, &MainWidget::trackInfoButtonClicked
         );
+
         connect(
             _ui->toPublicModeButton, &QPushButton::clicked,
-            _connection, &ServerConnection::switchToPublicMode
+            playerController, &PlayerController::switchToPublicMode
         );
         connect(
             _ui->toPersonalModeButton, &QPushButton::clicked,
-            _connection, &ServerConnection::switchToPersonalMode
+            playerController, &PlayerController::switchToPersonalMode
         );
 
-        auto* playerController = &clientServerInterface->simplePlayerController();
         connect(
             _ui->playButton, &QPushButton::clicked,
-            playerController, &SimplePlayerController::play
+            playerController, &PlayerController::play
         );
         connect(
             _ui->pauseButton, &QPushButton::clicked,
-            playerController, &SimplePlayerController::pause
+            playerController, &PlayerController::pause
         );
         connect(
             _ui->skipButton, &QPushButton::clicked,
-            playerController, &SimplePlayerController::skip
+            playerController, &PlayerController::skip
         );
 
         connect(
@@ -212,7 +217,7 @@ namespace PMP {
         );
 
         connect(
-            _currentTrackMonitor, &CurrentTrackMonitor::volumeChanged,
+            playerController, &PlayerController::volumeChanged,
             this, &MainWidget::volumeChanged
         );
         connect(
@@ -225,41 +230,31 @@ namespace PMP {
         );
 
         connect(
-            _currentTrackMonitor, &CurrentTrackMonitor::playing,
-            this, &MainWidget::playing
+            currentTrackMonitor, &CurrentTrackMonitor::currentTrackChanged,
+            this, &MainWidget::currentTrackChanged
         );
         connect(
-            _currentTrackMonitor, &CurrentTrackMonitor::paused,
-            this, &MainWidget::paused
+            currentTrackMonitor, &CurrentTrackMonitor::currentTrackInfoChanged,
+            this, &MainWidget::currentTrackInfoChanged
         );
         connect(
-            _currentTrackMonitor, &CurrentTrackMonitor::stopped,
-            this, &MainWidget::stopped
+            _trackProgressMonitor, &PreciseTrackProgressMonitor::trackProgressChanged,
+            this, &MainWidget::trackProgressChanged
         );
         connect(
-            _currentTrackMonitor, &CurrentTrackMonitor::queueLengthChanged,
+            playerController, &PlayerController::playerModeChanged,
+            this, &MainWidget::playerModeChanged
+        );
+        connect(
+            playerController, &PlayerController::playerStateChanged,
+            this, &MainWidget::playerStateChanged
+        );
+        connect(
+            playerController, &PlayerController::queueLengthChanged,
             this, &MainWidget::queueLengthChanged
         );
-        connect(
-            _currentTrackMonitor,
-            qOverload<quint32, quint64, int>(&CurrentTrackMonitor::trackProgress),
-            this, qOverload<quint32, quint64, int>(&MainWidget::trackProgress)
-        );
-        connect(
-            _currentTrackMonitor, qOverload<quint64>(&CurrentTrackMonitor::trackProgress),
-            this, qOverload<quint64>(&MainWidget::trackProgress)
-        );
-        connect(
-            _currentTrackMonitor, &CurrentTrackMonitor::receivedTitleArtist,
-            this, &MainWidget::receivedTitleArtist
-        );
-        connect(
-            _currentTrackMonitor, &CurrentTrackMonitor::receivedPossibleFilename,
-            this, &MainWidget::receivedPossibleFilename
-        );
 
-        _connection->requestUserPlayingForMode();
-        _connection->requestDynamicModeStatus();
+        _connection->requestDynamicModeStatus(); // TODO : move this?
 
         {
             QSettings settings(QCoreApplication::organizationName(),
@@ -281,6 +276,17 @@ namespace PMP {
             _ui->splitter->restoreState(settings.value("state").toByteArray());
             settings.endGroup();
         }
+
+        /* synchronize UI with initial state */
+        playerModeChanged();
+        playerStateChanged();
+        queueLengthChanged();
+        currentTrackInfoChanged();
+        trackProgressChanged(currentTrackMonitor->playerState(),
+                             currentTrackMonitor->currentQueueId(),
+                             currentTrackMonitor->currentTrackProgressMilliseconds(),
+                             currentTrackMonitor->currentTrackLengthMilliseconds());
+        volumeChanged();
     }
 
     bool MainWidget::eventFilter(QObject* object, QEvent* event) {
@@ -292,6 +298,43 @@ namespace PMP {
         }
 
         return QWidget::eventFilter(object, event);
+    }
+
+    void MainWidget::playerModeChanged()
+    {
+        auto& playerController = _clientServerInterface->playerController();
+
+        auto mode = playerController.playerMode();
+        auto userId = playerController.personalModeUserId();
+        auto userLogin = playerController.personalModeUserLogin();
+
+        switch (mode) {
+            case PlayerMode::Public:
+                _ui->playingModeLabel->setText(tr("PUBLIC mode"));
+                _ui->userPlayingForLabel->setText("~~~");
+                _ui->toPersonalModeButton->setEnabled(true);
+                _ui->toPublicModeButton->setEnabled(false);
+                break;
+
+            case PlayerMode::Personal:
+                _ui->playingModeLabel->setText(tr("PERSONAL mode"));
+                _ui->userPlayingForLabel->setText(
+                    QString(Util::EnDash) + " " + userLogin + " " + Util::EnDash
+                );
+
+                _ui->toPersonalModeButton->setEnabled(
+                            userId != _clientServerInterface->userLoggedInId());
+
+                _ui->toPublicModeButton->setEnabled(true);
+                break;
+
+            case PlayerMode::Unknown:
+                _ui->playingModeLabel->setText(tr("mode unknown"));
+                _ui->userPlayingForLabel->setText("???");
+                _ui->toPersonalModeButton->setEnabled(false);
+                _ui->toPublicModeButton->setEnabled(false);
+                break;
+        }
     }
 
     bool MainWidget::keyEventFilter(QKeyEvent* event) {
@@ -335,7 +378,8 @@ namespace PMP {
             delete _historyContextMenu;
         _historyContextMenu = new QMenu(this);
 
-        auto enqueueFrontAction = _historyContextMenu->addAction("Add to front of queue");
+        auto enqueueFrontAction =
+                _historyContextMenu->addAction(tr("Add to front of queue"));
         connect(
             enqueueFrontAction, &QAction::triggered,
             [this, hash]() {
@@ -344,12 +388,25 @@ namespace PMP {
             }
         );
 
-        auto enqueueEndAction = _historyContextMenu->addAction("Add to end of queue");
+        auto enqueueEndAction = _historyContextMenu->addAction(tr("Add to end of queue"));
         connect(
             enqueueEndAction, &QAction::triggered,
             [this, hash]() {
                 qDebug() << "history context menu: enqueue (end) triggered";
                 _connection->insertQueueEntryAtEnd(hash);
+            }
+        );
+
+        _historyContextMenu->addSeparator();
+
+        auto trackInfoAction = _historyContextMenu->addAction(tr("Track info"));
+        connect(
+            trackInfoAction, &QAction::triggered,
+            this,
+            [this, hash]() {
+                qDebug() << "history context menu: track info triggered";
+
+                showTrackInfoDialog(hash);
             }
         );
 
@@ -455,10 +512,8 @@ namespace PMP {
                 [this, track]() {
                     qDebug() << "queue context menu: track info action triggered for item"
                              << track.queueId();
-                    auto dialog =
-                        new TrackInfoDialog(this, track.hash(), _clientServerInterface);
-                    connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
-                    dialog->open();
+
+                    showTrackInfoDialog(track.hash());
                 }
             );
         }
@@ -466,152 +521,172 @@ namespace PMP {
         _queueContextMenu->popup(_ui->queueTableView->viewport()->mapToGlobal(position));
     }
 
-    void MainWidget::playing(quint32 queueID) {
-        if (_nowPlayingQID != queueID) {
-            _nowPlayingQID = queueID;
-            _nowPlayingArtist = "";
-            _nowPlayingTitle = "";
-            _nowPlayingLength = -1;
-            _ui->artistTitleLabel->setText("");
-            _ui->trackProgress->setCurrentTrack(-1);
-            _ui->lengthValueLabel->setText("");
-            _ui->positionValueLabel->setText("");
+    void MainWidget::playerStateChanged() {
+        auto& playerController = _clientServerInterface->playerController();
+
+        enableDisablePlayerControlButtons();
+
+        QString playStateText;
+        switch (playerController.playerState()) {
+            case PlayerState::Playing:
+                playStateText = tr("playing");
+                break;
+            case PlayerState::Paused:
+                playStateText = tr("paused");
+                break;
+            case PlayerState::Stopped:
+                playStateText = tr("stopped");
+                break;
+            default:
+                qWarning() << "Unhandled PlayerState:" << playerController.playerState();
+                // fall through
+            case PlayerState::Unknown:
+                break; /* leave text empty */
         }
 
-        _ui->playButton->setEnabled(false);
-        _ui->pauseButton->setEnabled(true);
-        _ui->skipButton->setEnabled(true);
-        _ui->playStateLabel->setText("playing");
+        _ui->playStateLabel->setText(playStateText);
     }
 
-    void MainWidget::paused(quint32 queueID) {
-        if (_nowPlayingQID != queueID) {
-            _nowPlayingQID = queueID;
-            _nowPlayingArtist = "";
-            _nowPlayingTitle = "";
-            _nowPlayingLength = -1;
-            _ui->artistTitleLabel->setText("");
-            _ui->trackProgress->setCurrentTrack(-1);
-            _ui->lengthValueLabel->setText("");
-            _ui->positionValueLabel->setText("");
-        }
-
-        _ui->playButton->setEnabled(true);
-        _ui->pauseButton->setEnabled(false);
-        _ui->skipButton->setEnabled(true);
-        _ui->playStateLabel->setText("paused");
-    }
-
-    void MainWidget::stopped(quint32 queueLength) {
-        _nowPlayingQID = 0;
-        _nowPlayingArtist = "";
-        _nowPlayingTitle = "";
-        _nowPlayingLength = -1;
-
-        _ui->artistTitleLabel->setText("<no current track>");
-        _ui->trackProgress->setCurrentTrack(-1);
-        _ui->lengthValueLabel->setText("");
-        _ui->positionValueLabel->setText("");
-
-        _ui->playButton->setEnabled(queueLength > 0);
-        _ui->pauseButton->setEnabled(false);
-        _ui->skipButton->setEnabled(false);
-        _ui->playStateLabel->setText("stopped");
-    }
-
-    void MainWidget::queueLengthChanged(quint32 queueLength, int state)
+    void MainWidget::queueLengthChanged()
     {
-        _ui->queueLengthValueLabel->setText(QString::number(queueLength));
+        auto& playerController = _clientServerInterface->playerController();
 
-        _ui->playButton->setEnabled(
-            state == (int)ServerConnection::Paused
-                || (state == (int)ServerConnection::Stopped && queueLength > 0)
-        );
+        /* the "play" and "skip" buttons depend on the presence of a next track */
+        enableDisablePlayerControlButtons();
+
+        _ui->queueLengthValueLabel->setText(
+                    QString::number(playerController.queueLength()));
     }
 
-    void MainWidget::trackProgress(quint32 queueID, quint64 position, int lengthSeconds) {
-        if (queueID != _nowPlayingQID) return;
+    void MainWidget::currentTrackChanged()
+    {
+        currentTrackInfoChanged();
+    }
 
-        //qDebug() << "DISPLAY: nowPlayingTrack, track length (secs):" << lengthInSeconds;
+    void MainWidget::currentTrackInfoChanged()
+    {
+        auto& currentTrackMonitor = _clientServerInterface->currentTrackMonitor();
 
-        if (lengthSeconds != _nowPlayingLength) {
-            _nowPlayingLength = lengthSeconds;
+        if (currentTrackMonitor.isTrackPresent().isUnknown()) {
+            _ui->artistTitleLabel->clear();
+            _ui->trackProgress->setCurrentTrack(-1);
+            _ui->lengthValueLabel->clear();
+        }
+        else if (currentTrackMonitor.currentQueueId() <= 0) {
+            _ui->artistTitleLabel->setText(tr("<no current track>"));
+            _ui->trackProgress->setCurrentTrack(-1);
+            _ui->lengthValueLabel->clear();
+        }
+        else {
+            auto title = currentTrackMonitor.currentTrackTitle();
+            auto artist = currentTrackMonitor.currentTrackArtist();
 
-            if (lengthSeconds < 0) {
-                _ui->lengthValueLabel->setText("?");
-                _ui->trackProgress->setCurrentTrack(-1);
+            if (title.isEmpty() && artist.isEmpty()) {
+                auto filename = currentTrackMonitor.currentTrackPossibleFilename();
+                if (!filename.isEmpty()) {
+                    _ui->artistTitleLabel->setText(filename);
+                }
+                else {
+                    _ui->artistTitleLabel->setText(tr("<unknown artist/title>"));
+                }
             }
             else {
-                quint64 lengthInMilliseconds = (quint64)lengthSeconds * 1000;
+                if (title.isEmpty())
+                    title = tr("<unknown title>");
 
+                if (artist.isEmpty())
+                    artist = tr("<unknown artist>");
+
+                auto artistTitleText = artist + " " + Util::EnDash + " " + title;
+                _ui->artistTitleLabel->setText(artistTitleText);
+            }
+
+            auto trackLength = currentTrackMonitor.currentTrackLengthMilliseconds();
+            if (trackLength < 0) {
+                _ui->lengthValueLabel->setText(tr("?"));
+            }
+            else {
                 _ui->lengthValueLabel->setText(
-                    AudioData::millisecondsToTimeString(lengthInMilliseconds)
+                    AudioData::millisecondsToTimeString(trackLength)
                 );
-
-                _ui->trackProgress->setCurrentTrack(lengthInMilliseconds);
             }
         }
 
-        trackProgress(position);
+        enableDisableTrackInfoButton();
     }
 
-    void MainWidget::trackProgress(quint64 position) {
-        //qDebug() << "DISPLAY: trackPositionChanged" << position;
+    void MainWidget::trackProgressChanged(PlayerState state, quint32 queueId,
+                                          qint64 progressInMilliseconds,
+                                          qint64 trackLengthInMilliseconds)
+    {
+        Q_UNUSED(state)
+        Q_UNUSED(queueId)
 
-        _ui->positionValueLabel->setText(AudioData::millisecondsToTimeString(position));
-        _ui->trackProgress->setTrackPosition(position);
-    }
+        if (trackLengthInMilliseconds < 0) {
+            _ui->trackProgress->setCurrentTrack(-1);
+        }
+        else {
+            _ui->trackProgress->setCurrentTrack(trackLengthInMilliseconds);
+        }
 
-    void MainWidget::receivedTitleArtist(QString title, QString artist) {
-        _nowPlayingTitle = title;
-        _nowPlayingArtist = artist;
+        if (progressInMilliseconds < 0) {
+            _ui->positionValueLabel->clear();
+            _ui->trackProgress->setCurrentTrack(-1);
+        }
+        else {
+            auto text = AudioData::millisecondsToTimeString(progressInMilliseconds);
+            _ui->positionValueLabel->setText(text);
 
-        QString artistToShow = (artist == "") ? "<unknown artist>" : artist;
-        QString titleToShow = (title == "") ? "<unknown title>" : title;
-        QString artistTitleToShow =
-            (artist == "" && title == "")
-             ? "<unknown artist/title>"
-             : artistToShow + " " + QChar(0x2013) /* <- EN DASH */ + " " + titleToShow;
-
-        _ui->artistTitleLabel->setText(artistTitleToShow);
-    }
-
-    void MainWidget::receivedPossibleFilename(QString name) {
-        if (_nowPlayingTitle.trimmed() == "") {
-            _ui->artistTitleLabel->setText(name);
+            _ui->trackProgress->setTrackPosition(progressInMilliseconds);
         }
     }
 
-    void MainWidget::volumeChanged(int percentage) {
-        _volume = percentage;
-        _ui->volumeValueLabel->setText(QString::number(percentage));
+    void MainWidget::trackInfoButtonClicked()
+    {
+        auto hash = _clientServerInterface->currentTrackMonitor().currentTrackHash();
+        if (hash.isNull()) return;
 
-        _ui->volumeDecreaseButton->setEnabled(percentage > 0);
-        _ui->volumeIncreaseButton->setEnabled(percentage < 100);
+        showTrackInfoDialog(hash);
+    }
+
+    void MainWidget::volumeChanged() {
+        auto volume = _clientServerInterface->playerController().volume();
+        _ui->volumeValueLabel->setText(QString::number(volume));
+
+        _ui->volumeDecreaseButton->setEnabled(volume > 0);
+        _ui->volumeIncreaseButton->setEnabled(volume >= 0 && volume < 100);
     }
 
     void MainWidget::decreaseVolume() {
-        if (_volume > 0) {
-            _connection->setVolume(_volume > 5 ? _volume - 5 : 0);
+        auto volume = _clientServerInterface->playerController().volume();
+
+        if (volume > 0) {
+            auto newVolume = volume > 5 ? volume - 5 : 0;
+
+            _clientServerInterface->playerController().setVolume(newVolume);
         }
     }
 
     void MainWidget::increaseVolume() {
-        if (_volume >= 0) {
-            _connection->setVolume(_volume < 95 ? _volume + 5 : 100);
+        auto volume = _clientServerInterface->playerController().volume();
+
+        if (volume >= 0) {
+            auto newVolume = volume < 95 ? volume + 5 : 100;
+
+            _clientServerInterface->playerController().setVolume(newVolume);
         }
     }
 
     void MainWidget::changeDynamicMode(int checkState) {
         if (checkState == Qt::Checked) {
             if (!_dynamicModeEnabled) {
-                _connection->enableDynamicMode();
+                _clientServerInterface->dynamicModeController().enableDynamicMode();
                 _dynamicModeEnabled = true;
             }
         }
         else {
-            if (_dynamicModeEnabled)  {
-                _connection->disableDynamicMode();
+            if (_dynamicModeEnabled) {
+                _clientServerInterface->dynamicModeController().disableDynamicMode();
                 _dynamicModeEnabled = false;
             }
         }
@@ -758,20 +833,28 @@ namespace PMP {
         _ui->startHighScoredTracksWaveButton->setEnabled(!active);
     }
 
-    void MainWidget::userPlayingForChanged(quint32 userId, QString login) {
-        if (userId == 0) {
-            _ui->playingModeLabel->setText(tr("PUBLIC mode"));
-            _ui->userPlayingForLabel->setText("~~~");
-        }
-        else {
-            _ui->playingModeLabel->setText(tr("PERSONAL mode"));
-            _ui->userPlayingForLabel->setText(
-                QString(QChar(0x2013)) + " " + login + " " + QChar(0x2013)
-            );
-        }
+    void MainWidget::enableDisableTrackInfoButton()
+    {
+        bool haveTrackHash =
+               !_clientServerInterface->currentTrackMonitor().currentTrackHash().isNull();
 
-        _ui->toPersonalModeButton->setEnabled(userId != _connection->userLoggedInId());
-        _ui->toPublicModeButton->setEnabled(userId != 0);
+        _ui->trackInfoButton->setEnabled(haveTrackHash);
+    }
+
+    void MainWidget::enableDisablePlayerControlButtons()
+    {
+        auto& playerController = _clientServerInterface->playerController();
+
+        _ui->playButton->setEnabled(playerController.canPlay());
+        _ui->pauseButton->setEnabled(playerController.canPause());
+        _ui->skipButton->setEnabled(playerController.canSkip());
+    }
+
+    void MainWidget::showTrackInfoDialog(FileHash hash)
+    {
+        auto dialog = new TrackInfoDialog(this, hash, _clientServerInterface);
+        connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+        dialog->open();
     }
 
 }

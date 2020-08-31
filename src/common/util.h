@@ -33,7 +33,10 @@ namespace PMP {
         /*! The copyright symbol */
         static const QChar Copyright;
 
-        /*! The EN DASH (U+2013) character. */
+        /*! The EM DASH (U+2014) character */
+        static const QChar EmDash;
+
+        /*! The EN DASH (U+2013) character */
         static const QChar EnDash;
 
         /*! The LATIN SMALL LETTER E WITH ACUTE (U+E9) */
@@ -50,6 +53,12 @@ namespace PMP {
 
         /*! The "LESS-THAN OR EQUAL TO" symbol (U+2264) */
         static const QChar LessThanOrEqual;
+
+        /*! Pause symbol (U+23F8) */
+        static const QChar PauseSymbol;
+
+        /*! Play symbol (U+25B6) */
+        static const QChar PlaySymbol;
 
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
 

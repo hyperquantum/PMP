@@ -20,6 +20,9 @@
 #ifndef PMP_MAINWIDGET_H
 #define PMP_MAINWIDGET_H
 
+#include "common/filehash.h"
+#include "common/playerstate.h"
+
 #include <QWidget>
 
 QT_FORWARD_DECLARE_CLASS(QMenu)
@@ -31,8 +34,8 @@ namespace Ui {
 namespace PMP {
 
     class ClientServerInterface;
-    class CurrentTrackMonitor;
     class PlayerHistoryModel;
+    class PreciseTrackProgressMonitor;
     class QueueEntryInfoFetcher;
     class QueueMediator;
     class QueueModel;
@@ -52,18 +55,19 @@ namespace PMP {
     protected:
         bool eventFilter(QObject*, QEvent*);
 
-    private slots:
-        void playing(quint32 queueID);
-        void paused(quint32 queueID);
-        void stopped(quint32 queueLength);
-        void queueLengthChanged(quint32 queueLength, int state);
+    private Q_SLOTS:
+        void playerModeChanged();
+        void playerStateChanged();
+        void queueLengthChanged();
+        void currentTrackChanged();
+        void currentTrackInfoChanged();
+        void trackProgressChanged(PlayerState state, quint32 queueId,
+                                  qint64 progressInMilliseconds,
+                                  qint64 trackLengthInMilliseconds);
 
-        void trackProgress(quint32 queueID, quint64 position, int lengthSeconds);
-        void trackProgress(quint64 position);
-        void receivedTitleArtist(QString title, QString artist);
-        void receivedPossibleFilename(QString name);
+        void trackInfoButtonClicked();
 
-        void volumeChanged(int percentage);
+        void volumeChanged();
         void decreaseVolume();
         void increaseVolume();
 
@@ -76,9 +80,12 @@ namespace PMP {
         void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
         void startHighScoredTracksWave();
 
-        void userPlayingForChanged(quint32 userId, QString login);
-
     private:
+        void enableDisableTrackInfoButton();
+        void enableDisablePlayerControlButtons();
+
+        void showTrackInfoDialog(FileHash hash);
+
         bool keyEventFilter(QKeyEvent* event);
 
         void buildNoRepetitionList(int spanToSelect);
@@ -87,17 +94,12 @@ namespace PMP {
         Ui::MainWidget* _ui;
         ServerConnection* _connection;
         ClientServerInterface* _clientServerInterface;
-        CurrentTrackMonitor* _currentTrackMonitor;
+        PreciseTrackProgressMonitor* _trackProgressMonitor;
         QueueMonitor* _queueMonitor;
         QueueMediator* _queueMediator;
         QueueEntryInfoFetcher* _queueEntryInfoFetcher;
         QueueModel* _queueModel;
         QMenu* _queueContextMenu;
-        int _volume;
-        quint32 _nowPlayingQID;
-        QString _nowPlayingTitle;
-        QString _nowPlayingArtist;
-        int _nowPlayingLength;
         bool _dynamicModeEnabled;
         bool _dynamicModeHighScoreWaveActive;
         QList<int> _noRepetitionList;

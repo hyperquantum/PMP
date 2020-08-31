@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,30 +17,39 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SIMPLEPLAYERCONTROLLER_H
-#define PMP_SIMPLEPLAYERCONTROLLER_H
+#ifndef PMP_COLORSWITCHER_H
+#define PMP_COLORSWITCHER_H
 
-#include <QObject>
+#include <QColor>
+#include <QVector>
+#include <QWidget>
 
 namespace PMP {
 
-    class SimplePlayerController : public QObject {
+    class ColorSwitcher : public QWidget {
         Q_OBJECT
     public:
-        virtual ~SimplePlayerController() {}
+        ColorSwitcher();
 
-        virtual bool canPlay() = 0;
-        virtual bool canPause() = 0;
-        virtual bool canSkip() = 0;
+        void setColors(QVector<QColor> colors);
+        void setColors(QVector<QColor> colors, int colorIndex);
 
-    public Q_SLOTS:
-        virtual void play() = 0;
-        virtual void pause() = 0;
-        virtual void skip() = 0;
+        int colorIndex() const;
+        void setColorIndex(int colorIndex);
+
+        QSize minimumSizeHint() const override;
+        QSize sizeHint() const override;
+
+    Q_SIGNALS:
+        void colorIndexChanged();
 
     protected:
-        explicit SimplePlayerController(QObject* parent) : QObject(parent) {}
-    };
+        void paintEvent(QPaintEvent* event) override;
+        void mousePressEvent(QMouseEvent* event) override;
 
+    private:
+        QVector<QColor> _colors;
+        int _colorIndex;
+    };
 }
 #endif

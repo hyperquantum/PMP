@@ -20,9 +20,10 @@
 #include "clientserverinterface.h"
 
 #include "collectionwatcherimpl.h"
+#include "currenttrackmonitorimpl.h"
+#include "dynamicmodecontrollerimpl.h"
 #include "serverconnection.h"
-#include "simpleplayercontrollerimpl.h"
-#include "simpleplayerstatemonitorimpl.h"
+#include "playercontrollerimpl.h"
 #include "userdatafetcher.h"
 
 namespace PMP {
@@ -31,27 +32,36 @@ namespace PMP {
                                                  ServerConnection* connection)
      : QObject(parent), _connection(connection),
        _simplePlayerController(nullptr),
-       _simplePlayerStateMonitor(nullptr),
+       _currentTrackMonitor(nullptr),
+       _dynamicModeController(nullptr),
        _collectionWatcher(nullptr),
        _userDataFetcher(nullptr)
     {
         //
     }
 
-    SimplePlayerController& ClientServerInterface::simplePlayerController()
+    PlayerController& ClientServerInterface::playerController()
     {
         if (!_simplePlayerController)
-            _simplePlayerController = new SimplePlayerControllerImpl(_connection);
+            _simplePlayerController = new PlayerControllerImpl(_connection);
 
         return *_simplePlayerController;
     }
 
-    SimplePlayerStateMonitor& ClientServerInterface::simplePlayerStateMonitor()
+    CurrentTrackMonitor& ClientServerInterface::currentTrackMonitor()
     {
-        if (!_simplePlayerStateMonitor)
-            _simplePlayerStateMonitor = new SimplePlayerStateMonitorImpl(_connection);
+        if (!_currentTrackMonitor)
+            _currentTrackMonitor = new CurrentTrackMonitorImpl(_connection);
 
-        return *_simplePlayerStateMonitor;
+        return *_currentTrackMonitor;
+    }
+
+    DynamicModeController& ClientServerInterface::dynamicModeController()
+    {
+        if (!_dynamicModeController)
+            _dynamicModeController = new DynamicModeControllerImpl(_connection);
+
+        return *_dynamicModeController;
     }
 
     CollectionWatcher& ClientServerInterface::collectionWatcher()
@@ -65,7 +75,8 @@ namespace PMP {
     UserDataFetcher& ClientServerInterface::userDataFetcher()
     {
         if (_userDataFetcher == nullptr) {
-            _userDataFetcher = new UserDataFetcher(this, _connection);
+            _userDataFetcher =
+                    new UserDataFetcher(this, &collectionWatcher(), _connection);
         }
 
         return *_userDataFetcher;

@@ -1621,38 +1621,28 @@ namespace PMP {
         quint32 queueID = NetworkUtil::get4Bytes(message, 8);
         quint64 position = NetworkUtil::get8Bytes(message, 12);
 
-        qDebug() << "received player state message";
+        //qDebug() << "received player state message";
 
-        /* FIXME: events too simplistic */
-
+        // TODO : rename volumeChanged signal or get rid of it
         if (volume <= 100) { emit volumeChanged(volume); }
 
-        if (queueID > 0) {
-            emit nowPlayingTrack(queueID);
-        }
-        else {
-            emit noCurrentTrack();
-        }
-
-        PlayState s = UnknownState;
+        auto state = PlayerState::Unknown;
         switch (playerState) {
-        case 1:
-            s = Stopped;
-            emit stopped();
-            break;
-        case 2:
-            s = Playing;
-            emit playing();
-            break;
-        case 3:
-            s = Paused;
-            emit paused();
-            break;
+            case 1:
+                state = PlayerState::Stopped;
+                break;
+            case 2:
+                state = PlayerState::Playing;
+                break;
+            case 3:
+                state = PlayerState::Paused;
+                break;
+            default:
+                qWarning() << "received unknown player state:" << playerState;
+                break;
         }
 
-        emit trackPositionChanged(position);
-        emit queueLengthChanged(queueLength);
-        emit receivedPlayerState(s, volume, queueLength, queueID, position);
+        Q_EMIT receivedPlayerState(state, volume, queueLength, queueID, position);
     }
 
     void ServerConnection::parseVolumeChangedMessage(QByteArray const& message) {
@@ -1743,7 +1733,7 @@ namespace PMP {
         }
 
         qDebug() << "received track info reply;  QID:" << queueID
-                 << " type:" << int(type) << " seconds:" << lengthSeconds
+                 << " type:" << type << " seconds:" << lengthSeconds
                  << " title:" << title << " artist:" << artist;
 
         emit receivedTrackInfo(queueID, type, lengthSeconds, title, artist);

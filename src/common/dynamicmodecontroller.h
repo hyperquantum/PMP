@@ -17,38 +17,27 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#ifndef PMP_DYNAMICMODECONTROLLER_H
+#define PMP_DYNAMICMODECONTROLLER_H
+
 #include <QObject>
-
-#ifndef PMP_SIMPLEPLAYERSTATEMONITOR_H
-#define PMP_SIMPLEPLAYERSTATEMONITOR_H
-
-#include "playermode.h"
-#include "playerstate.h"
-#include "tribool.h"
-
-#include <QString>
 
 namespace PMP {
 
-    class SimplePlayerStateMonitor : public QObject {
+    class DynamicModeController : public QObject {
         Q_OBJECT
     public:
-        virtual ~SimplePlayerStateMonitor() {}
+        virtual ~DynamicModeController() {}
 
-        virtual PlayerState playerState() const = 0;
-
-        virtual PlayerMode playerMode() const = 0;
-        virtual quint32 personalModeUserId() const = 0;
-        virtual QString personalModeUserLogin() const = 0;
+    public Q_SLOTS:
+        virtual void enableDynamicMode() = 0;
+        virtual void disableDynamicMode() = 0;
 
     Q_SIGNALS:
-        void playerStateChanged(PlayerState playerState);
-        void playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,
-                               QString personalModeUserLogin);
+
 
     protected:
-        explicit SimplePlayerStateMonitor(QObject* parent) : QObject(parent) {}
+        DynamicModeController(QObject* parent) : QObject(parent) {}
     };
-
 }
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,35 +20,23 @@
 #ifndef PMP_AUTOPERSONALMODEACTION_H
 #define PMP_AUTOPERSONALMODEACTION_H
 
-#include "common/serverconnection.h"
-
 #include <QObject>
 #include <QString>
-//#include <QtGlobal>
 
 namespace PMP {
+
+    class ClientServerInterface;
 
     class AutoPersonalModeAction : public QObject {
         Q_OBJECT
     public:
-        AutoPersonalModeAction(ServerConnection* connection);
-
-    private slots:
-        void connected();
-
-        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
-                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
-
-        void userPlayingForChanged(quint32 userId, QString login);
+        AutoPersonalModeAction(ClientServerInterface* clientServerInterface);
 
     private:
         void check();
 
-        ServerConnection* _connection;
+        ClientServerInterface* _clientServerInterface;
         bool _needToCheck;
-        ServerConnection::PlayState _state;
-        bool _knowUserPlayingFor;
-        bool _publicMode;
     };
 }
-#endif // PMP_AUTOPERSONALMODEACTION_H
+#endif

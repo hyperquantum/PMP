@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,66 +19,47 @@
 
 #include "autopersonalmodeaction.h"
 
+#include "common/clientserverinterface.h"
+#include "common/dynamicmodecontroller.h"
+#include "common/playercontroller.h"
+
 namespace PMP {
 
-    AutoPersonalModeAction::AutoPersonalModeAction(ServerConnection* connection)
-     : QObject(connection),
-       _connection(connection), _needToCheck(true),
-       _state(ServerConnection::UnknownState),
-       _knowUserPlayingFor(false), _publicMode(false)
+    AutoPersonalModeAction::AutoPersonalModeAction(
+            ClientServerInterface* clientServerInterface)
+     : QObject(clientServerInterface),
+       _clientServerInterface(clientServerInterface),
+       _needToCheck(true)
     {
+        auto playerController = &_clientServerInterface->playerController();
+
         connect(
-            _connection, &ServerConnection::connected,
-            this, &AutoPersonalModeAction::connected
+            playerController, &PlayerController::playerStateChanged,
+            this, [this]() { check(); }
         );
         connect(
-            _connection, &ServerConnection::receivedPlayerState,
-            this, &AutoPersonalModeAction::receivedPlayerState
+            playerController, &PlayerController::playerModeChanged,
+            this, [this]() { check(); }
         );
-        connect(
-            _connection, &ServerConnection::receivedUserPlayingFor,
-            this, &AutoPersonalModeAction::userPlayingForChanged
-        );
-    }
 
-    void AutoPersonalModeAction::connected() {
-        _state = ServerConnection::UnknownState;
-        _knowUserPlayingFor = false;
-        _needToCheck = true;
-    }
-
-    void AutoPersonalModeAction::receivedPlayerState(int s, quint8 volume,
-                                                     quint32 queueLength,
-                                                     quint32 nowPlayingQID,
-                                                     quint64 nowPlayingPosition)
-    {
-        (void)volume;
-        (void)queueLength;
-        (void)nowPlayingQID;
-        (void)nowPlayingPosition;
-
-        _state = static_cast<ServerConnection::PlayState>(s);
-        check();
-    }
-
-    void AutoPersonalModeAction::userPlayingForChanged(quint32 userId, QString login) {
-        (void)login;
-
-        _publicMode = userId == 0;
-        _knowUserPlayingFor = true;
         check();
     }
 
     void AutoPersonalModeAction::check() {
         if (!_needToCheck) return;
 
-        if (_state == ServerConnection::UnknownState || !_knowUserPlayingFor) return;
+        auto& playerController = _clientServerInterface->playerController();
+        auto playerState = playerController.playerState();
+        auto playerMode = playerController.playerMode();
+
+        if (playerState == PlayerState::Unknown || playerMode == PlayerMode::Unknown)
+            return;
 
         _needToCheck = false;
 
-        if (_state == ServerConnection::Stopped && _publicMode) {
-            _connection->switchToPersonalMode();
-            _connection->enableDynamicMode();
+        if (playerState == PlayerState::Stopped && playerMode == PlayerMode::Public) {
+            playerController.switchToPersonalMode();
+            _clientServerInterface->dynamicModeController().enableDynamicMode();
         }
     }
 }

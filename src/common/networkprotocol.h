@@ -20,6 +20,7 @@
 #ifndef PMP_NETWORKPROTOCOL_H
 #define PMP_NETWORKPROTOCOL_H
 
+#include "common/queueentrytype.h"
 #include "common/scrobblerstatus.h"
 #include "common/scrobblingprovider.h"
 
@@ -50,12 +51,6 @@ namespace PMP {
     */
 
     class FileHash;
-
-    enum class QueueEntryType : quint8 {
-        Unknown = 0,
-        Track = 1,
-        BreakPoint = 10,
-    };
 
     class NetworkProtocol {
     public:

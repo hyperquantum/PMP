@@ -19,9 +19,12 @@
 
 #include "queuemodel.h"
 
+#include "common/clientserverinterface.h"
+#include "common/playercontroller.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 
+#include "colors.h"
 #include "queueentryinfofetcher.h"
 #include "queuemediator.h"
 
@@ -36,18 +39,24 @@
 
 namespace PMP {
 
-    QueueModel::QueueModel(QObject* parent, QueueMediator* source,
-                           QueueEntryInfoFetcher* trackInfoFetcher,
-                           UserDataFetcher& userDataFetcher)
-     : QAbstractTableModel(parent), _source(source), _infoFetcher(trackInfoFetcher),
-        _userDataFetcher(userDataFetcher),
-        _receivedUserPlayingFor(false), _userPlayingFor(0), _modelRows(0)
+    QueueModel::QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
+                           QueueMediator* source, QueueEntryInfoFetcher* trackInfoFetcher)
+     : QAbstractTableModel(parent),
+       _clientServerInterface(clientServerInterface),
+       _source(source),
+       _infoFetcher(trackInfoFetcher),
+       _playerMode(PlayerMode::Unknown),
+       _personalModeUserId(0),
+       _modelRows(0)
     {
         _modelRows = _source->queueLength();
 
+        auto playerController = &clientServerInterface->playerController();
+        auto userDataFetcher = &_clientServerInterface->userDataFetcher();
+
         connect(
-            _infoFetcher, &QueueEntryInfoFetcher::userPlayingForChanged,
-            this, &QueueModel::onUserPlayingForChanged
+            playerController, &PlayerController::playerModeChanged,
+            this, &QueueModel::playerModeChanged
         );
         connect(
             _source, &AbstractQueueMonitor::queueResetted,
@@ -62,7 +71,7 @@ namespace PMP {
             this, &QueueModel::tracksChanged
         );
         connect(
-            &_userDataFetcher, &UserDataFetcher::dataReceivedForUser,
+            userDataFetcher, &UserDataFetcher::dataReceivedForUser,
             this, &QueueModel::userDataReceivedForUser
         );
         connect(
@@ -77,6 +86,9 @@ namespace PMP {
             _source, &AbstractQueueMonitor::trackMoved,
             this, &QueueModel::trackMoved
         );
+
+        _playerMode = playerController->playerMode();
+        _personalModeUserId = playerController->personalModeUserId();
     }
 
     int QueueModel::rowCount(const QModelIndex& parent) const {
@@ -131,18 +143,26 @@ namespace PMP {
 
         switch (role) {
             case Qt::DisplayRole:
-                if (info == 0) { return QString(); }
+                if (info == nullptr) { return QString(); }
 
                 switch (info->type()) {
                     case QueueEntryType::Unknown:
-                        break; /* default: empty */
+                        break; /* could be anything */
 
                     case QueueEntryType::Track:
                         break; /* unreachable, see above */
 
                     case QueueEntryType::BreakPoint:
-                        if (col <= 1) return "--- BREAK ---";
-                        return "";
+                        if (col <= 1)
+                            return Util::EmDash + QString(" BREAK ") + Util::EmDash;
+
+                        return QString();
+
+                    case QueueEntryType::UnknownSpecialType:
+                        if (col <= 1)
+                            return Util::EmDash + QString(" ????? ") + Util::EmDash;
+
+                        return QString();
                 }
                 break;
 
@@ -160,13 +180,13 @@ namespace PMP {
                 break;
 
             case Qt::ForegroundRole:
-                if (info)
-                    return QBrush(QColor::fromRgb(30, 30, 30));
+                if (info && info->type() != QueueEntryType::Unknown)
+                    return QBrush(Colors::instance().specialQueueItemForeground);
                 break;
 
             case Qt::BackgroundRole:
-                if (info)
-                    return QBrush(QColor::fromRgb(220, 220, 220));
+                if (info && info->type() != QueueEntryType::Unknown)
+                    return QBrush(Colors::instance().specialQueueItemBackground);
                 break;
         }
 
@@ -182,11 +202,14 @@ namespace PMP {
                     case 4:
                     {
                         auto& hash = info->hash();
-                        if (hash.isNull() || !_receivedUserPlayingFor)
+                        if (hash.isNull() || _playerMode == PlayerMode::Unknown)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
                         auto hashData =
-                            _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
+                            _clientServerInterface->userDataFetcher().getHashDataForUser(
+                                _personalModeUserId, hash
+                            );
+
                         if (!hashData || !hashData->scoreReceived)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
@@ -223,11 +246,13 @@ namespace PMP {
             case 3:
             {
                 auto& hash = info->hash();
-                if (hash.isNull() || !_receivedUserPlayingFor)
+                if (hash.isNull() || _playerMode == PlayerMode::Unknown)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
+                        _clientServerInterface->userDataFetcher().getHashDataForUser(
+                            _personalModeUserId, hash
+                        );
 
                 if (!hashData || !hashData->previouslyHeardReceived)
                     return QVariant();
@@ -241,11 +266,14 @@ namespace PMP {
             case 4:
             {
                 auto& hash = info->hash();
-                if (hash.isNull() || !_receivedUserPlayingFor)
+                if (hash.isNull() || _playerMode == PlayerMode::Unknown)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
+                        _clientServerInterface->userDataFetcher().getHashDataForUser(
+                            _personalModeUserId, hash
+                        );
+
                 if (!hashData || !hashData->scoreReceived)
                     return QVariant();
 
@@ -256,7 +284,7 @@ namespace PMP {
             }
         }
 
-        return QString("Foobar");
+        return QVariant();
     }
 
     Qt::ItemFlags QueueModel::flags(const QModelIndex& index) const {
@@ -491,14 +519,16 @@ namespace PMP {
         return QueueTrack(queueId, hash);
     }
 
-    void QueueModel::onUserPlayingForChanged(quint32 userId) {
-        _userPlayingFor = userId;
-        _receivedUserPlayingFor = true;
+    void QueueModel::playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,
+                                       QString personalModeUserLogin)
+    {
+        Q_UNUSED(personalModeUserLogin)
+
+        _playerMode = playerMode;
+        _personalModeUserId = personalModeUserId;
 
         /* the columns with user-bound data need to be refreshed */
-        emit dataChanged(
-            createIndex(0, 3), createIndex(_modelRows, 3)
-        );
+        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 3));
     }
 
     void QueueModel::queueResetted(int queueLength) {

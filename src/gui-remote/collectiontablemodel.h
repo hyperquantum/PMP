@@ -22,6 +22,7 @@
 
 #include "common/collectiontrackinfo.h"
 #include "common/playermode.h"
+#include "common/playerstate.h"
 #include "common/tribool.h"
 
 #include <QAbstractTableModel>
@@ -38,6 +39,11 @@ namespace PMP {
     enum class TrackHighlightMode {
         None = 0,
         NeverHeard,
+        LastHeardNotInLast365Days,
+        LastHeardNotInLast180Days,
+        LastHeardNotInLast90Days,
+        LastHeardNotInLast30Days,
+        LastHeardNotInLast10Days,
         WithoutScore,
         ScoreAtLeast85,
         ScoreAtLeast90,
@@ -57,10 +63,7 @@ namespace PMP {
             //
         }
 
-        void setUserId(quint32 userId) {
-            _userId = userId;
-            _haveUserId = true;
-        }
+        void setUserId(quint32 userId);
 
         bool isUserIdSetTo(quint32 userId) {
             return _userId == userId && _haveUserId;
@@ -78,6 +81,10 @@ namespace PMP {
         TriBool shouldHighlightBasedOnHeardDate(CollectionTrackInfo const& track,
                                    std::function<TriBool(QDateTime)> dateEvaluator) const;
 
+        TriBool shouldHighlightBasedOnNotHeardInTheLastXDays(
+                                                         CollectionTrackInfo const& track,
+                                                         int days) const;
+
         TrackHighlightMode _mode;
         quint32 _userId;
         bool _haveUserId;
@@ -93,6 +100,7 @@ namespace PMP {
                                    ClientServerInterface* clientServerInterface);
 
         void setHighlightMode(TrackHighlightMode mode);
+        int highlightColorIndex() const;
 
         void sortByTitle();
         void sortByArtist();
@@ -113,6 +121,9 @@ namespace PMP {
         Qt::DropActions supportedDropActions() const;
         QMimeData* mimeData(const QModelIndexList& indexes) const;
 
+    public Q_SLOTS:
+        void setHighlightColorIndex(int colorIndex);
+
     private Q_SLOTS:
         void onNewTrackReceived(CollectionTrackInfo track);
         void onTrackAvailabilityChanged(FileHash hash, bool isAvailable);
@@ -120,6 +131,7 @@ namespace PMP {
         void onDataReceivedForUser(quint32 userId);
         void onPlayerModeChanged(PMP::PlayerMode playerMode, quint32 personalModeUserId,
                                  QString personalModeUserLogin);
+        void currentTrackInfoChanged(FileHash hash);
 
     private:
         void updateTrackAvailability(FileHash hash, bool isAvailable);
@@ -132,6 +144,7 @@ namespace PMP {
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track);
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track,
                                             int searchRangeBegin, int searchRangeEnd);
+        void markLeftColumnAsChanged();
         void markEverythingAsChanged();
 
         static bool usesUserData(TrackHighlightMode mode);
@@ -167,9 +180,12 @@ namespace PMP {
         QVector<int> _innerToOuterIndexMap;
         QVector<int> _outerToInnerIndexMap;
         QCollator _collator;
+        int _highlightColorIndex;
         int _sortBy;
         Qt::SortOrder _sortOrder;
         TrackHighlighter _highlighter;
+        FileHash _currentTrackHash;
+        PlayerState _playerState;
     };
 
     class FilteredCollectionTableModel : public QSortFilterProxyModel {

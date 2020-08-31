@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,7 @@
 #define PMP_QUEUEENTRYINFOFETCHER_H
 
 #include "common/filehash.h"
-#include "common/networkprotocol.h"
+#include "common/queueentrytype.h"
 
 #include "abstractqueuemonitor.h"
 
@@ -72,17 +72,14 @@ namespace PMP {
 
         QueueEntryInfo* entryInfoByQID(quint32 queueID);
 
-    public slots:
+    public Q_SLOTS:
         void dropInfoFor(quint32 queueId);
 
     Q_SIGNALS:
-        void userPlayingForChanged(quint32 userId);
         void tracksChanged(QList<quint32> queueIDs);
 
-    private slots:
+    private Q_SLOTS:
         void connected();
-
-        void receivedUserPlayingFor(quint32 userId, QString userLogin);
 
         void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
         void receivedTrackInfo(quint32 queueID, QueueEntryType type, int lengthInSeconds,
@@ -105,7 +102,6 @@ namespace PMP {
 
         AbstractQueueMonitor* _monitor;
         ServerConnection* _connection;
-        quint32 _userPlayingFor;
         QHash<quint32, QueueEntryInfo*> _entries;
         QSet<quint32> _trackChangeNotificationsPending;
         QSet<quint32> _infoRequestsSent;

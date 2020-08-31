@@ -17,42 +17,30 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SIMPLEPLAYERCONTROLLERIMPL_H
-#define PMP_SIMPLEPLAYERCONTROLLERIMPL_H
+#ifndef PMP_DYNAMICMODECONTROLLERIMPL_H
+#define PMP_DYNAMICMODECONTROLLERIMPL_H
 
-#include "serverconnection.h"
-#include "simpleplayercontroller.h"
+#include "dynamicmodecontroller.h"
 
 namespace PMP {
 
     class ServerConnection;
 
-    class SimplePlayerControllerImpl : public SimplePlayerController {
+    class DynamicModeControllerImpl : public DynamicModeController {
         Q_OBJECT
     public:
-        SimplePlayerControllerImpl(ServerConnection* connection);
-
-        ~SimplePlayerControllerImpl() {}
-
-        bool canPlay() override;
-        bool canPause() override;
-        bool canSkip() override;
+        DynamicModeControllerImpl(ServerConnection* connection);
 
     public Q_SLOTS:
-        void play() override;
-        void pause() override;
-        void skip() override;
+        void enableDynamicMode() override;
+        void disableDynamicMode() override;
 
     private Q_SLOTS:
-        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
-                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
+        void connected();
+        void connectionBroken();
 
     private:
         ServerConnection* _connection;
-        ServerConnection::PlayState _state;
-        uint _queueLength;
-        quint32 _trackNowPlaying;
-        quint32 _trackJustSkipped;
     };
 }
 #endif

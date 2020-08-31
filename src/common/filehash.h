@@ -24,6 +24,7 @@
 #include <QHash>
 #include <QMetaType>
 #include <QString>
+#include <QtDebug>
 
 namespace PMP {
 
@@ -93,6 +94,16 @@ namespace PMP {
 
     inline bool operator>=(const FileHash& me, const FileHash& other) {
         return compare(me, other) >= 0;
+    }
+
+    inline QDebug operator<<(QDebug debug, const FileHash& hash) {
+        QString hashText =
+                QString::number(hash.length())
+                    + "-" + hash.SHA1().toHex()
+                    + "-" + hash.MD5().toHex();
+
+        debug << hashText;
+        return debug;
     }
 }
 
