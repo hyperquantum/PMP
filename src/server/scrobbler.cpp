@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -151,7 +151,7 @@ namespace PMP {
         switch (_backend->state()) {
             case ScrobblingBackendState::NotInitialized:
                 _backend->initialize();
-                QTimer::singleShot(0, this, SLOT(wakeUp()));
+                QTimer::singleShot(0, this, &Scrobbler::wakeUp);
                 break;
             case ScrobblingBackendState::ReadyForScrobbling:
                 if (haveTracksToScrobble)
@@ -257,7 +257,7 @@ namespace PMP {
         auto delayBetweenSubsequentScrobbles =
                 _backend->getDelayInMillisecondsBetweenSubsequentScrobbles();
 
-        QTimer::singleShot(delayBetweenSubsequentScrobbles, this, SLOT(wakeUp()));
+        QTimer::singleShot(delayBetweenSubsequentScrobbles, this, &Scrobbler::wakeUp);
     }
 
     void Scrobbler::backendStateChanged(ScrobblingBackendState newState,
