@@ -29,6 +29,7 @@ set(PMP_COMMON_SOURCES
     common/logging.cpp
     common/networkprotocol.cpp
     common/networkutil.cpp
+    common/obfuscator.cpp
     common/playercontrollerimpl.cpp
     common/scrobblerstatus.cpp
     common/scrobblingprovider.cpp
