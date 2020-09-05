@@ -219,5 +219,9 @@ int main(int argc, char *argv[]) {
     if (databaseInitializationSucceeded && doIndexation)
         resolver.startFullIndexation();
 
-    return app.exec();
+    auto exitCode = app.exec();
+
+    qDebug() << "Exiting with code" << exitCode;
+
+    return exitCode;
 }
