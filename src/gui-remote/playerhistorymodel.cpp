@@ -99,15 +99,21 @@ namespace PMP {
     }
 
     void PlayerHistoryModel::onTracksChanged(QList<quint32> queueIDs) {
+        Q_UNUSED(queueIDs);
+
         /* we don't know the indexes, so we say everything changed */
         emit dataChanged(createIndex(0, 0), createIndex(_list.size() - 1, 2));
     }
 
     int PlayerHistoryModel::rowCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent);
+
         return _list.size();
     }
 
     int PlayerHistoryModel::columnCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent);
+
         /* Title, Artist, Length, Started, Ended */
         return 5;
     }
@@ -187,6 +193,8 @@ namespace PMP {
     }
 
     Qt::ItemFlags PlayerHistoryModel::flags(const QModelIndex& index) const {
+        Q_UNUSED(index);
+
         Qt::ItemFlags f(Qt::ItemIsSelectable | Qt::ItemIsEnabled
                         | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
         return f;
