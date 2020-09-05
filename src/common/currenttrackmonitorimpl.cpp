@@ -177,8 +177,8 @@ namespace PMP {
     }
 
     void CurrentTrackMonitorImpl::receivedTrackInfo(quint32 queueId, QueueEntryType type,
-                                                    int lengthInSeconds, QString title,
-                                                    QString artist)
+                                                    qint64 lengthMilliseconds,
+                                                    QString title, QString artist)
     {
         if (queueId != _currentQueueId)
             return;
@@ -186,14 +186,13 @@ namespace PMP {
         if (type != QueueEntryType::Track)
             return;
 
-        qint64 lengthInMilliseconds = lengthInSeconds * qint64(1000);
-        bool lengthChanged = lengthInMilliseconds != _currentTrackLengthMilliseconds;
+        bool lengthChanged = lengthMilliseconds != _currentTrackLengthMilliseconds;
         bool tagsChanged = title != _currentTrackTitle || artist != _currentTrackArtist;
 
         if (!lengthChanged && !tagsChanged)
             return;
 
-        _currentTrackLengthMilliseconds = lengthInSeconds * 1000;
+        _currentTrackLengthMilliseconds = lengthMilliseconds;
         _currentTrackTitle = title;
         _currentTrackArtist = artist;
 

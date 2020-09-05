@@ -206,8 +206,8 @@ namespace PMP {
         void queueEntryAdded(quint32 offset, quint32 queueID, RequestID requestID);
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
-        void receivedTrackInfo(quint32 queueID, QueueEntryType type, int lengthInSeconds,
-                               QString title, QString artist);
+        void receivedTrackInfo(quint32 queueID, QueueEntryType type,
+                               qint64 lengthMilliseconds, QString title, QString artist);
         void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
         void receivedHashUserData(FileHash hash, quint32 userId,
                                   QDateTime previouslyHeard, qint16 scorePermillage);

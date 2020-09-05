@@ -29,7 +29,7 @@ namespace PMP {
     /* ========================== QueueEntryInfo ========================== */
 
     QueueEntryInfo::QueueEntryInfo(quint32 queueID)
-     : _queueID(queueID), _type(QueueEntryType::Unknown), _lengthSeconds(-1)
+     : _queueID(queueID), _type(QueueEntryType::Unknown), _lengthMilliseconds(-1)
     {
         //
     }
@@ -39,11 +39,11 @@ namespace PMP {
         _hash = hash;
     }
 
-    void QueueEntryInfo::setInfo(QueueEntryType type, int lengthInSeconds,
+    void QueueEntryInfo::setInfo(QueueEntryType type, qint64 lengthInMilliseconds,
                                  QString const& title, QString const& artist)
     {
         _type = type;
-        _lengthSeconds = lengthInSeconds;
+        _lengthMilliseconds = lengthInMilliseconds;
         _title = title;
         _artist = artist;
     }
@@ -184,7 +184,7 @@ namespace PMP {
     }
 
     void QueueEntryInfoFetcher::receivedTrackInfo(quint32 queueID, QueueEntryType type,
-                                                  int lengthInSeconds,
+                                                  qint64 lengthMilliseconds,
                                                   QString title, QString artist)
     {
         qDebug() << "received queue entry info for QID" << queueID;
@@ -197,14 +197,16 @@ namespace PMP {
             info = new QueueEntryInfo(queueID);
         }
         else {
-            if (info->type() == type && info->lengthInSeconds() == lengthInSeconds
-                && info->artist() == artist && info->title() == title)
+            if (info->type() == type
+                    && info->lengthInMilliseconds() == lengthMilliseconds
+                    && info->artist() == artist
+                    && info->title() == title)
             {
                 return; /* no change */
             }
         }
 
-        info->setInfo(type, lengthInSeconds, title, artist);
+        info->setInfo(type, lengthMilliseconds, title, artist);
 
         if ((title.trimmed().isEmpty() || artist.trimmed().isEmpty())
             && info->informativeFilename().isEmpty())

@@ -242,7 +242,7 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 12;
+    const quint16 ServerConnection::ClientProtocolNo = 13;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -1623,22 +1623,42 @@ namespace PMP {
         emit receivedQueueContents(queueLength, startOffset, queueIDs);
     }
 
-    void ServerConnection::parseTrackInfoMessage(QByteArray const& message) {
-        if (message.length() < 16) {
+    void ServerConnection::parseTrackInfoMessage(QByteArray const& message)
+    {
+        bool preciseLength = _serverProtocolNo >= 13;
+
+        if (message.length() < 12 + (preciseLength ? 8 : 4)) {
             return; /* invalid message */
         }
 
         quint16 status = NetworkUtil::get2Bytes(message, 2);
         quint32 queueID = NetworkUtil::get4Bytes(message, 4);
-        int lengthSeconds = NetworkUtil::get4BytesSigned(message, 8);
-        int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, 12);
-        int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, 14);
+
+        qint64 lengthMilliseconds;
+        int offset = 8;
+        if (preciseLength) {
+            lengthMilliseconds = NetworkUtil::get8BytesSigned(message, 8);
+            offset += 8;
+        }
+        else {
+            lengthMilliseconds = NetworkUtil::get4BytesSigned(message, 8);
+            if (lengthMilliseconds > 0) lengthMilliseconds *= 1000;
+            offset += 4;
+        }
+
+        int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset);
+        int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 2);
+        offset += 4;
+
+        qDebug() << "received queue track info message; QID:" << queueID
+                 << "; status:" << status
+                 << "; length (ms):" << lengthMilliseconds;
 
         if (queueID == 0) {
             return; /* invalid message */
         }
 
-        if (message.length() != 16 + titleSize + artistSize) {
+        if (message.length() != offset + titleSize + artistSize) {
             return; /* invalid message */
         }
 
@@ -1646,18 +1666,18 @@ namespace PMP {
 
         QString title, artist;
         if (NetworkProtocol::isTrackStatusFromRealTrack(status)) {
-            title = NetworkUtil::getUtf8String(message, 16, titleSize);
-            artist = NetworkUtil::getUtf8String(message, 16 + titleSize, artistSize);
+            title = NetworkUtil::getUtf8String(message, offset, titleSize);
+            artist = NetworkUtil::getUtf8String(message, offset + titleSize, artistSize);
         }
         else {
             title = artist = NetworkProtocol::getPseudoTrackStatusText(status);
         }
 
         qDebug() << "received track info reply;  QID:" << queueID
-                 << " type:" << type << " seconds:" << lengthSeconds
+                 << " type:" << type << " milliseconds:" << lengthMilliseconds
                  << " title:" << title << " artist:" << artist;
 
-        emit receivedTrackInfo(queueID, type, lengthSeconds, title, artist);
+        Q_EMIT receivedTrackInfo(queueID, type, lengthMilliseconds, title, artist);
     }
 
     void ServerConnection::parseBulkTrackInfoMessage(QByteArray const& message) {
@@ -1665,13 +1685,19 @@ namespace PMP {
             return; /* invalid message */
         }
 
+        bool preciseLength = _serverProtocolNo >= 13;
+        int trackInfoBlockByteCount = preciseLength ? 16 : 12;
+
         int trackCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         int statusBlockCount = trackCount + trackCount % 2;
         if (trackCount == 0
-            || message.length() < 4 + statusBlockCount * 2 + trackCount * 12)
+            || message.length() <
+                4 + statusBlockCount * 2 + trackCount * trackInfoBlockByteCount)
         {
             return; /* irrelevant or invalid message */
         }
+
+        qDebug() << "received queue track info message; track count:" << trackCount;
 
         int offset = 4;
         QList<quint16> statuses;
@@ -1684,14 +1710,16 @@ namespace PMP {
         }
 
         QList<int> offsets;
-        offsets.append(offset);
         while (true) {
+            offsets.append(offset);
+
             quint32 queueID = NetworkUtil::get4Bytes(message, offset);
-            //int lengthSeconds = NetworkUtil::get4BytesSigned(message, offset + 4);
-            int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 8);
-            int artistSize =
-                    NetworkUtil::get2BytesUnsignedToInt(message, offset + 10);
-            int titleArtistOffset = offset + 12;
+            offset += 4;
+            offset += preciseLength ? 8 : 4; /* length field */
+            int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset);
+            int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 2);
+            offset += 4;
+            int titleArtistOffset = offset;
 
             if (queueID == 0) {
                 return; /* invalid message */
@@ -1704,18 +1732,17 @@ namespace PMP {
                 return; /* invalid message */
             }
 
-            if (titleArtistOffset + titleSize + artistSize == message.length()) {
+            offset += titleSize + artistSize;
+
+            if (offset == message.length()) {
                 break; /* end of message */
             }
 
             /* at least one more track info follows */
 
-            offset = offset + 12 + titleSize + artistSize;
-            if (offset + 12 > message.length()) {
+            if (offset + trackInfoBlockByteCount > message.length()) {
                 return;  /* invalid message */
             }
-
-            offsets.append(offset);
         }
 
         qDebug() << "received bulk track info reply;  count:" << trackCount;
@@ -1728,12 +1755,23 @@ namespace PMP {
         for (int i = 0; i < trackCount; ++i) {
             offset = offsets[i];
             quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+            offset += 4;
             quint16 status = statuses[i];
-            int lengthSeconds = NetworkUtil::get4BytesSigned(message, offset + 4);
-            int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 8);
-            int artistSize =
-                    NetworkUtil::get2BytesUnsignedToInt(message, offset + 10);
-            offset += 12;
+
+            qint64 lengthMilliseconds;
+            if (preciseLength) {
+                lengthMilliseconds = NetworkUtil::get8BytesSigned(message, offset);
+                offset += 8;
+            }
+            else {
+                lengthMilliseconds = NetworkUtil::get4BytesSigned(message, offset);
+                if (lengthMilliseconds > 0) lengthMilliseconds *= 1000;
+                offset += 4;
+            }
+
+            int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, offset);
+            int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 2);
+            offset += 4;
 
             auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
 
@@ -1741,15 +1779,13 @@ namespace PMP {
             if (NetworkProtocol::isTrackStatusFromRealTrack(status)) {
                 title = NetworkUtil::getUtf8String(message, offset, titleSize);
                 artist =
-                    NetworkUtil::getUtf8String(
-                        message, offset + titleSize, artistSize
-                    );
+                    NetworkUtil::getUtf8String(message, offset + titleSize, artistSize);
             }
             else {
                 title = artist = NetworkProtocol::getPseudoTrackStatusText(status);
             }
 
-            emit receivedTrackInfo(queueID, type, lengthSeconds, title, artist);
+            Q_EMIT receivedTrackInfo(queueID, type, lengthMilliseconds, title, artist);
         }
     }
 

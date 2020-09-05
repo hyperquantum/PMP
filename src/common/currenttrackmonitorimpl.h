@@ -57,8 +57,8 @@ namespace PMP {
         void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQueueId, quint64 nowPlayingPosition);
         void receivedQueueEntryHash(quint32 queueId, QueueEntryType type, FileHash hash);
-        void receivedTrackInfo(quint32 queueId, QueueEntryType type, int lengthInSeconds,
-                               QString title, QString artist);
+        void receivedTrackInfo(quint32 queueId, QueueEntryType type,
+                               qint64 lengthMilliseconds, QString title, QString artist);
         void receivedPossibleFilenames(quint32 queueId, QList<QString> names);
 
     private:

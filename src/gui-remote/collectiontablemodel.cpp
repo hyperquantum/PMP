@@ -772,10 +772,11 @@ namespace PMP {
                         case 1: return track->artist();
                         case 2:
                         {
-                            int lengthInSeconds = track->lengthInSeconds();
+                            qint64 lengthInMilliseconds = track->lengthInMilliseconds();
+                            if (lengthInMilliseconds < 0) { return "?"; }
 
-                            if (lengthInSeconds < 0) { return "?"; }
-                            return Util::secondsToHoursMinuteSecondsText(lengthInSeconds);
+                            return Util::millisecondsToShortDisplayTimeText(
+                                                                    lengthInMilliseconds);
                         }
                         case 3: return track->album();
                     }

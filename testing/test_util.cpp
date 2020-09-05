@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,6 +28,40 @@ using namespace PMP;
 void TestUtil::secondsToHoursMinuteSecondsText() {
     QCOMPARE(Util::secondsToHoursMinuteSecondsText(30), QString("00:00:30"));
     QCOMPARE(Util::secondsToHoursMinuteSecondsText(60), QString("00:01:00"));
+}
+
+void TestUtil::millisecondsToShortDisplayTimeText()
+{
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(30000), QString("00:30.0"));
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(30001), QString("00:30.0"));
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(30099), QString("00:30.0"));
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(30100), QString("00:30.1"));
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(45000), QString("00:45.0"));
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(59999), QString("00:59.9"));
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(60000), QString("01:00.0"));
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(60099), QString("01:00.0"));
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(60100), QString("01:00.1"));
+
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(3599999), QString("59:59.9"));
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(3600000), QString("01:00:00.0"));
+    QCOMPARE(Util::millisecondsToShortDisplayTimeText(3644500), QString("01:00:44.5"));
+}
+
+void TestUtil::millisecondsToLongDisplayTimeText()
+{
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(30000), QString("00:00:30.000"));
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(30001), QString("00:00:30.001"));
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(30099), QString("00:00:30.099"));
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(30100), QString("00:00:30.100"));
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(45000), QString("00:00:45.000"));
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(59999), QString("00:00:59.999"));
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(60000), QString("00:01:00.000"));
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(60099), QString("00:01:00.099"));
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(60100), QString("00:01:00.100"));
+
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(3599999), QString("00:59:59.999"));
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(3600000), QString("01:00:00.000"));
+    QCOMPARE(Util::millisecondsToLongDisplayTimeText(3644500), QString("01:00:44.500"));
 }
 
 void TestUtil::getCopyrightLine() {

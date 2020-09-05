@@ -20,6 +20,7 @@
 #include "playerhistorymodel.h"
 
 #include "common/serverconnection.h"
+#include "common/util.h"
 
 #include "queueentryinfofetcher.h"
 
@@ -173,16 +174,10 @@ namespace PMP {
                 {
                     if (!info) return QVariant();
 
-                    int lengthInSeconds = info->lengthInSeconds();
-                    if (lengthInSeconds < 0) { return "?"; }
+                    int lengthInMilliseconds = info->lengthInMilliseconds();
+                    if (lengthInMilliseconds < 0) { return "?"; }
 
-                    int sec = lengthInSeconds % 60;
-                    int min = (lengthInSeconds / 60) % 60;
-                    int hrs = lengthInSeconds / 3600;
-
-                    return QString::number(hrs).rightJustified(2, '0')
-                        + ":" + QString::number(min).rightJustified(2, '0')
-                        + ":" + QString::number(sec).rightJustified(2, '0');
+                    return Util::millisecondsToShortDisplayTimeText(lengthInMilliseconds);
                 }
                 case 3: return _list[index.row()]->started().toLocalTime();
                 case 4: return _list[index.row()]->ended().toLocalTime();
