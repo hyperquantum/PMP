@@ -47,7 +47,7 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 12;
+    const qint16 ConnectedClient::ServerProtocolNo = 13;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player, Generator* generator, Users* users,
@@ -842,10 +842,12 @@ namespace PMP {
 
         track->checkTrackData(_player->resolver());
 
+        bool preciseLength = _clientProtocolNo >= 13;
+
         auto trackStatus = createTrackStatusFor(track);
         QString title = track->title();
         QString artist = track->artist();
-        qint32 length = track->lengthInMilliseconds() / 1000; /* SIGNED NUMBER!! */
+        qint64 lengthMilliseconds = track->lengthInMilliseconds();
 
         const int maxSize = (1 << 16) - 1;
 
@@ -857,11 +859,20 @@ namespace PMP {
         QByteArray artistData = artist.toUtf8();
 
         QByteArray message;
-        message.reserve((2 + 1 + 1 + 4 * 3) + titleData.size() + artistData.size());
+        message.reserve(2 + 2 + 4 + 8 + 2 + 2 + titleData.size() + artistData.size());
         NetworkUtil::append2Bytes(message, NetworkProtocol::TrackInfoMessage);
         NetworkUtil::append2Bytes(message, trackStatus);
         NetworkUtil::append4Bytes(message, queueID);
-        NetworkUtil::append4BytesSigned(message, length); /* length in seconds */
+
+        if (preciseLength)
+            NetworkUtil::append8BytesSigned(message, lengthMilliseconds);
+        else
+            NetworkUtil::append4BytesSigned(
+                        message,
+                        lengthMilliseconds < 0
+                            ? -1
+                            : lengthMilliseconds / 1000);
+
         NetworkUtil::append2Bytes(message, titleData.size());
         NetworkUtil::append2Bytes(message, artistData.size());
         message += titleData;
@@ -885,10 +896,12 @@ namespace PMP {
             return;
         }
 
+        bool preciseLength = _clientProtocolNo >= 13;
+
         QByteArray message;
         /* reserve some memory, take a guess at how much space we will probably need */
         message.reserve(
-            4 + queueIDs.size() * (2 + 12 + /*title*/20 + /*artist*/15)
+            4 + queueIDs.size() * (2 + 8 + 8 + /*title*/20 + /*artist*/15)
         );
 
         NetworkUtil::append2Bytes(message, NetworkProtocol::BulkTrackInfoMessage);
@@ -898,7 +911,8 @@ namespace PMP {
 
         /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
 
-        Q_FOREACH(quint32 queueID, queueIDs) {
+        for(quint32 queueID : queueIDs)
+        {
             QueueEntry* track = queue.lookup(queueID);
             auto trackStatus =
                 track ? createTrackStatusFor(track)
@@ -909,7 +923,8 @@ namespace PMP {
             NetworkUtil::append2Bytes(message, 0); /* filler */
         }
 
-        Q_FOREACH(quint32 queueID, queueIDs) {
+        for(quint32 queueID : queueIDs)
+        {
             QueueEntry* track = queue.lookup(queueID);
             if (track == 0) { continue; /* ID not found */ }
 
@@ -917,7 +932,7 @@ namespace PMP {
 
             QString title = track->title();
             QString artist = track->artist();
-            qint32 length = track->lengthInMilliseconds() / 1000; /* SIGNED NUMBER!! */
+            qint64 lengthMilliseconds = track->lengthInMilliseconds();
 
             /* worst case: 4 bytes in UTF-8 for each char */
             title.truncate(maxSize / 4);
@@ -927,7 +942,16 @@ namespace PMP {
             QByteArray artistData = artist.toUtf8();
 
             NetworkUtil::append4Bytes(message, queueID);
-            NetworkUtil::append4Bytes(message, length); /* length in seconds, SIGNED */
+
+            if (preciseLength)
+                NetworkUtil::append8BytesSigned(message, lengthMilliseconds);
+            else
+                NetworkUtil::append4BytesSigned(
+                            message,
+                            lengthMilliseconds < 0
+                                ? -1
+                                : lengthMilliseconds / 1000);
+
             NetworkUtil::append2Bytes(message, (uint)titleData.size());
             NetworkUtil::append2Bytes(message, (uint)artistData.size());
             message += titleData;

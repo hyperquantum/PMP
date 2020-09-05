@@ -20,6 +20,7 @@
 #include "playerhistorymodel.h"
 
 #include "common/serverconnection.h"
+#include "common/util.h"
 
 #include "queueentryinfofetcher.h"
 
@@ -99,15 +100,21 @@ namespace PMP {
     }
 
     void PlayerHistoryModel::onTracksChanged(QList<quint32> queueIDs) {
+        Q_UNUSED(queueIDs);
+
         /* we don't know the indexes, so we say everything changed */
         emit dataChanged(createIndex(0, 0), createIndex(_list.size() - 1, 2));
     }
 
     int PlayerHistoryModel::rowCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent);
+
         return _list.size();
     }
 
     int PlayerHistoryModel::columnCount(const QModelIndex& parent) const {
+        Q_UNUSED(parent);
+
         /* Title, Artist, Length, Started, Ended */
         return 5;
     }
@@ -167,16 +174,10 @@ namespace PMP {
                 {
                     if (!info) return QVariant();
 
-                    int lengthInSeconds = info->lengthInSeconds();
-                    if (lengthInSeconds < 0) { return "?"; }
+                    int lengthInMilliseconds = info->lengthInMilliseconds();
+                    if (lengthInMilliseconds < 0) { return "?"; }
 
-                    int sec = lengthInSeconds % 60;
-                    int min = (lengthInSeconds / 60) % 60;
-                    int hrs = lengthInSeconds / 3600;
-
-                    return QString::number(hrs).rightJustified(2, '0')
-                        + ":" + QString::number(min).rightJustified(2, '0')
-                        + ":" + QString::number(sec).rightJustified(2, '0');
+                    return Util::millisecondsToShortDisplayTimeText(lengthInMilliseconds);
                 }
                 case 3: return _list[index.row()]->started().toLocalTime();
                 case 4: return _list[index.row()]->ended().toLocalTime();
@@ -187,6 +188,8 @@ namespace PMP {
     }
 
     Qt::ItemFlags PlayerHistoryModel::flags(const QModelIndex& index) const {
+        Q_UNUSED(index);
+
         Qt::ItemFlags f(Qt::ItemIsSelectable | Qt::ItemIsEnabled
                         | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);
         return f;

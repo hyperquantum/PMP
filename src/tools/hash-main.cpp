@@ -28,6 +28,12 @@
 
 using namespace PMP;
 
+QString hashToString(const FileHash& hash) {
+    return QString::number(hash.length())
+            + "-" + hash.SHA1().toHex()
+            + "-" + hash.MD5().toHex();
+}
+
 int main(int argc, char *argv[]) {
 
     QCoreApplication a(argc, argv);
@@ -93,14 +99,11 @@ int main(int argc, char *argv[]) {
     out << "title:   " << analyzer.tagData().title() << endl;
     out << "artist:  " << analyzer.tagData().artist() << endl;
     out << "comment: " << analyzer.tagData().comment() << endl;
-    out << "stripped file size: " << finalHash.length() << endl;
-    out << "stripped MD5 Hash:  " << finalHash.MD5().toHex() << endl;
-    out << "stripped SHA1 Hash: " << finalHash.SHA1().toHex() << endl;
+
+    out << "track hash: " << hashToString(finalHash) << endl;
 
     if (!legacyHash.isNull()) {
-        out << "legacy file size: " << legacyHash.length() << endl;
-        out << "legacy MD5 Hash:  " << legacyHash.MD5().toHex() << endl;
-        out << "legacy SHA1 Hash: " << legacyHash.SHA1().toHex() << endl;
+        out << "legacy hash: " << hashToString(legacyHash) << endl;
     }
 
     return 0;

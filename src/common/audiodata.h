@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -53,8 +53,6 @@ namespace PMP {
         void setTrackLengthSeconds(int length) {
             _trackLengthMilliseconds = length * 1000;
         }
-
-        static QString millisecondsToTimeString(qint64 lengthMilliseconds);
 
     private:
         FileFormat _format;

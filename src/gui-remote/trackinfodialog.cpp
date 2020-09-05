@@ -139,8 +139,8 @@ namespace PMP {
 
         QString lengthText;
         if (trackInfo.lengthIsKnown()) {
-            lengthText =
-                    Util::secondsToHoursMinuteSecondsText(trackInfo.lengthInSeconds());
+            auto length = trackInfo.lengthInMilliseconds();
+            lengthText = Util::millisecondsToLongDisplayTimeText(length);
         }
         else {
             lengthText = tr("unknown");

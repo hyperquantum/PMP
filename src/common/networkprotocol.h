@@ -47,6 +47,7 @@ namespace PMP {
          10: single byte request 51 & server msg 28: server health messages
          11: server msg 29: track availability change notifications
          12: clienst msg 22, server msg 30, single byte request 18: protocol extensions
+         13: server msgs 3 & 4: change track length to milliseconds
 
     */
 

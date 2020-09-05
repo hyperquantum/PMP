@@ -607,7 +607,7 @@ namespace PMP {
             }
             else {
                 _ui->lengthValueLabel->setText(
-                    AudioData::millisecondsToTimeString(trackLength)
+                    Util::millisecondsToLongDisplayTimeText(trackLength)
                 );
             }
         }
@@ -634,7 +634,7 @@ namespace PMP {
             _ui->trackProgress->setCurrentTrack(-1);
         }
         else {
-            auto text = AudioData::millisecondsToTimeString(progressInMilliseconds);
+            auto text = Util::millisecondsToLongDisplayTimeText(progressInMilliseconds);
             _ui->positionValueLabel->setText(text);
 
             _ui->trackProgress->setTrackPosition(progressInMilliseconds);

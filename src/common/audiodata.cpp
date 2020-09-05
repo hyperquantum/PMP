@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,19 +31,5 @@ namespace PMP {
      : _format(format), _trackLengthMilliseconds(trackLengthMilliseconds)
     {
         //
-    }
-
-    QString AudioData::millisecondsToTimeString(qint64 lengthMilliseconds) {
-        int partialSeconds = lengthMilliseconds % 1000;
-        int totalSeconds = int(lengthMilliseconds / 1000);
-
-        int sec = totalSeconds % 60;
-        int min = (totalSeconds / 60) % 60;
-        int hrs = totalSeconds / 3600;
-
-        return QString::number(hrs).rightJustified(2, '0')
-                + ":" + QString::number(min).rightJustified(2, '0')
-                + ":" + QString::number(sec).rightJustified(2, '0')
-                + "." + QString::number(partialSeconds).rightJustified(3, '0');
     }
 }

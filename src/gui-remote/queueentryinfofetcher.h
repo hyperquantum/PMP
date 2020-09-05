@@ -43,14 +43,14 @@ namespace PMP {
 
         QueueEntryType type() const { return _type; }
         const FileHash& hash() const { return _hash; }
-        int lengthInSeconds() const { return _lengthSeconds; }
+        int lengthInMilliseconds() const { return _lengthMilliseconds; }
         QString artist() const { return _artist; }
         QString title() const { return _title; }
 
         QString informativeFilename() const { return _informativeFilename; }
 
         void setHash(QueueEntryType type, const FileHash& hash);
-        void setInfo(QueueEntryType type, int lengthInSeconds,
+        void setInfo(QueueEntryType type, qint64 lengthInMilliseconds,
                      QString const& title, QString const& artist);
         bool setPossibleFilenames(QList<QString> const& names);
 
@@ -58,7 +58,7 @@ namespace PMP {
         quint32 _queueID;
         QueueEntryType _type;
         FileHash _hash;
-        int _lengthSeconds;
+        qint64 _lengthMilliseconds;
         QString _title;
         QString _artist;
         QString _informativeFilename;
@@ -82,8 +82,8 @@ namespace PMP {
         void connected();
 
         void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
-        void receivedTrackInfo(quint32 queueID, QueueEntryType type, int lengthInSeconds,
-                               QString title, QString artist);
+        void receivedTrackInfo(quint32 queueID, QueueEntryType type,
+                               qint64 lengthMilliseconds, QString title, QString artist);
         void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
 
         void queueResetted(int queueLength);

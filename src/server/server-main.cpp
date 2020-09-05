@@ -248,6 +248,9 @@ int main(int argc, char *argv[]) {
         resolver.startFullIndexation();
 
     auto exitCode = app.exec();
+    
+    qDebug() << "Exiting with code" << exitCode;
     out << endl << "Server exiting with code " << exitCode << "." << endl;
+    
     return exitCode;
 }

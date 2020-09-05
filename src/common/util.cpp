@@ -69,8 +69,46 @@ namespace PMP {
         int hrs = (totalSeconds / 60) / 60;
 
         return QString::number(hrs).rightJustified(2, '0')
-            + ":" + QString::number(min).rightJustified(2, '0')
-            + ":" + QString::number(sec).rightJustified(2, '0');
+                + ":" + QString::number(min).rightJustified(2, '0')
+                + ":" + QString::number(sec).rightJustified(2, '0');
+    }
+
+    QString Util::millisecondsToShortDisplayTimeText(qint64 milliseconds)
+    {
+        int partialSeconds = milliseconds % 1000;
+        int totalSeconds = int(milliseconds / 1000);
+
+        int sec = totalSeconds % 60;
+        int totalMinutes = totalSeconds / 60;
+        int min = totalMinutes % 60;
+        int hrs = totalMinutes / 60;
+
+        if (hrs != 0) {
+            return QString::number(hrs).rightJustified(2, '0')
+                    + ":" + QString::number(min).rightJustified(2, '0')
+                    + ":" + QString::number(sec).rightJustified(2, '0')
+                    + "." + QString::number(partialSeconds / 100);
+        }
+
+        return QString::number(min).rightJustified(2, '0')
+                + ":" + QString::number(sec).rightJustified(2, '0')
+                + "." + QString::number(partialSeconds / 100);
+    }
+
+    QString Util::millisecondsToLongDisplayTimeText(qint64 milliseconds)
+    {
+        int partialSeconds = milliseconds % 1000;
+        int totalSeconds = int(milliseconds / 1000);
+
+        int sec = totalSeconds % 60;
+        int totalMinutes = totalSeconds / 60;
+        int min = totalMinutes % 60;
+        int hrs = totalMinutes / 60;
+
+        return QString::number(hrs).rightJustified(2, '0')
+                + ":" + QString::number(min).rightJustified(2, '0')
+                + ":" + QString::number(sec).rightJustified(2, '0')
+                + "." + QString::number(partialSeconds).rightJustified(3, '0');
     }
 
     QString Util::getCopyrightLine(bool mustBeAscii) {

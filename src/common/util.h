@@ -61,6 +61,8 @@ namespace PMP {
         static const QChar PlaySymbol;
 
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
+        static QString millisecondsToShortDisplayTimeText(qint64 milliseconds);
+        static QString millisecondsToLongDisplayTimeText(qint64 milliseconds);
 
         static QString getCopyrightLine(bool mustBeAscii = true);
 

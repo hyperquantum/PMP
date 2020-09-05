@@ -239,9 +239,9 @@ namespace PMP {
             case 1: return info->artist();
             case 2:
             {
-                int lengthInSeconds = info->lengthInSeconds();
-                if (lengthInSeconds < 0) { return "?"; }
-                return Util::secondsToHoursMinuteSecondsText(lengthInSeconds);
+                int lengthInMilliseconds = info->lengthInMilliseconds();
+                if (lengthInMilliseconds < 0) { return "?"; }
+                return Util::millisecondsToShortDisplayTimeText(lengthInMilliseconds);
             }
             case 3:
             {
