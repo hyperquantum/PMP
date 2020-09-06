@@ -2,3 +2,11 @@
 * don't store Last.FM session key in plain text in the database
 * handle timeouts
 * handle failed requests properly (OpenSSL missing or connection problem)
+* make sure OpenSSL libraries are included in binary releases
+
+
+
+When merging the branch:
+
+* delete "scrobbling" protocol extension and put its content into the main network protocol
+* change User Agent version for our Last.fm scrobbling back end
