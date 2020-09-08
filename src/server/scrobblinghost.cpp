@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,7 @@
 #include "lastfmscrobblingbackend.h"
 #include "lastfmscrobblingdataprovider.h"
 #include "scrobbler.h"
+#include "tokenencoder.h"
 
 #include <QtDebug>
 #include <QTimer>
@@ -299,16 +300,9 @@ namespace PMP {
         );
     }
 
-    QString ScrobblingHost::decodeToken(QString token) const {
-        if (token.isEmpty()) return QString();
-
-        if (!token.startsWith('?'))
-            return token; /* token in plain text */
-
-        // TODO : decode token
-        qWarning() << "decoding of encoded token not implemented yet";
-
-        return QString();
+    QString ScrobblingHost::decodeToken(QString token) const
+    {
+        return TokenEncoder::decodeToken(token);
     }
 
     void ScrobblingHost::doForAllProviders(

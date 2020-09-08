@@ -82,6 +82,7 @@ set(PMP_SERVER_SOURCES
     server/serverinterface.cpp
     server/servermetatypes.cpp
     server/serversettings.cpp
+    server/tokenencoder.cpp
     server/tracktoscrobble.cpp
     server/userdataforhashesfetcher.cpp
     server/userdatafortracksfetcher.cpp
