@@ -695,8 +695,6 @@ namespace PMP {
             length = queueLength - startOffset;
         }
 
-        if (length > 255) { length = 255; }
-
         QList<QueueEntry*> entries =
             queue.entries(startOffset, (length == 0) ? -1 : length);
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -64,7 +64,10 @@ namespace PMP {
         delete _ui;
     }
 
-    void UserAccountCreationWidget::passwordTextChanged(const QString &text) {
+    void UserAccountCreationWidget::passwordTextChanged(const QString& text)
+    {
+        Q_UNUSED(text)
+
         QString password = _ui->newPasswordLineEdit->text();
 
         QString feedback;
@@ -156,6 +159,8 @@ namespace PMP {
     void UserAccountCreationWidget::userAccountCreationError(QString login,
                                         ServerConnection::UserRegistrationError errorType)
     {
+        Q_UNUSED(login)
+
         QString message;
 
         switch (errorType) {

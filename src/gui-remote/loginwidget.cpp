@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -104,6 +104,8 @@ namespace PMP {
     void LoginWidget::userLoginError(QString login,
                                      ServerConnection::UserLoginError errorType)
     {
+        Q_UNUSED(login)
+
         QString message;
 
         switch (errorType) {
