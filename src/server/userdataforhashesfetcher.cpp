@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -62,7 +62,7 @@ namespace PMP {
                 data.previouslyHeard = stat.lastHeard;
                 data.score = stat.score;
 
-                qDebug() << "FETCHED: HashID" << stat.hashId
+                qDebug() << "FETCHED: User" << _userId << " HashID" << stat.hashId
                          << " PrevHeard" << stat.lastHeard << " Score" << stat.score;
 
                 results.append(data);
@@ -80,7 +80,7 @@ namespace PMP {
             }
         }
 
-        emit finishedWithResult(_userId, results, _previouslyHeard, _score);
+        Q_EMIT finishedWithResult(_userId, results, _previouslyHeard, _score);
     }
 
 }
