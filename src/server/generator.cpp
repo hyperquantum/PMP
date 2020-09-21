@@ -25,6 +25,7 @@
 #include "history.h"
 #include "playerqueue.h"
 #include "queueentry.h"
+#include "randomtrackssource.h"
 #include "resolver.h"
 
 #include <QtDebug>
@@ -69,13 +70,19 @@ namespace PMP {
     /* ========================== Generator ========================== */
 
     Generator::Generator(PlayerQueue* queue, Resolver* resolver, History* history)
-     : _randomEngine(Util::getRandomSeed()), _currentTrack(nullptr),
+     : _randomTracksSource(new RandomTracksSource(this, resolver)),
+       _randomEngine(Util::getRandomSeed()),
+       _currentTrack(nullptr),
        _queue(queue), _resolver(resolver), _history(history),
        _upcomingTimer(new QTimer(this)), _upcomingRuntimeSeconds(0),
        _noRepetitionSpan(60 * 60 /* one hour */), _minimumPermillageByWave(0),
        _userPlayingFor(0), _enabled(false), _refillPending(false), _waveActive(false),
        _waveRising(false)
     {
+        connect(
+            _randomTracksSource, &RandomTracksSource::upcomingTrackNotification,
+            this, &Generator::upcomingTrackNotification
+        );
         connect(
             _queue, &PlayerQueue::entryRemoved,
             this, &Generator::queueEntryRemoved
@@ -84,19 +91,6 @@ namespace PMP {
             _upcomingTimer, &QTimer::timeout,
             this, &Generator::checkRefillUpcomingBuffer
         );
-        connect(
-            _resolver, &Resolver::hashBecameAvailable,
-            this, &Generator::hashBecameAvailable
-        );
-        connect(
-            _resolver, &Resolver::hashBecameUnavailable,
-            this, &Generator::hashBecameUnavailable
-        );
-
-        _hashesSource = _resolver->getAllHashes().toList();
-        _hashesInSource = _hashesSource.toSet();
-        std::shuffle(_hashesSource.begin(), _hashesSource.end(), _randomEngine);
-        qDebug() << "Generator: starting with source of size" << _hashesSource.size();
     }
 
     bool Generator::enabled() const {
@@ -192,6 +186,9 @@ namespace PMP {
         auto oldUser = _userPlayingFor;
         _userPlayingFor = user;
 
+        /* make sure to prefetch track stats for the new user */
+        _randomTracksSource->resetUpcomingTrackNotifications();
+
         /* if a wave is active, terminate it */
         if (_waveActive) {
             _waveActive = false;
@@ -203,40 +200,15 @@ namespace PMP {
         checkFirstUpcomingAgainAfterFiltersChanged();
     }
 
+    void Generator::upcomingTrackNotification(FileHash hash)
+    {
+        /* fetch user stats for this track that will soon enter our picture */
+        uint id = _resolver->getID(hash);
+        _history->fetchMissingUserStats(id, _userPlayingFor);
+    }
+
     void Generator::queueEntryRemoved(quint32, quint32) {
         requestQueueRefill();
-    }
-
-    void Generator::hashBecameAvailable(FileHash hash) {
-        if (_hashesInSource.contains(hash)
-            || _hashesSpent.contains(hash))
-        {
-            return; /* already known */
-        }
-
-        _hashesInSource.insert(hash);
-
-        /* put it at a random index in the source list */
-        int endIndex = _hashesSource.size();
-        std::uniform_int_distribution<int> range(0, endIndex);
-        int randomIndex = range(_randomEngine);
-
-        /* Avoid shifting the list with 'insert()'; we append and then use swap.
-           We can do this because the list is in random order anyway. */
-        _hashesSource.append(hash); /* append is at endIndex */
-        if (randomIndex < endIndex) {
-            std::swap(_hashesSource[randomIndex], _hashesSource[endIndex]);
-        }
-    }
-
-    void Generator::hashBecameUnavailable(PMP::FileHash hash) {
-        /* We don't remove it from the source because that is expensive. We will simply
-           leave it inside the source, because unavailable tracks are filtered when tracks
-           are taken from the source list.
-
-           We don't remove it from the spent list, because doing that could make the track
-           reappear in the source too soon if it becomes available again. */
-        (void)hash;
     }
 
     void Generator::requestQueueRefill() {
@@ -250,33 +222,11 @@ namespace PMP {
         return quint16(range(_randomEngine));
     }
 
-    FileHash Generator::getNextRandomHash() {
-        if (_hashesSource.isEmpty()) {
-            if (_hashesSpent.isEmpty()) { return FileHash(); /* nothing available */ }
+    FileHash Generator::getNextRandomHash()
+    {
+        auto hash = _randomTracksSource->takeTrack();
 
-            /* rebuild source */
-            qDebug() << "Generator: rebuilding source list";
-            _hashesSource = _hashesSpent.toList();
-            std::shuffle(_hashesSource.begin(), _hashesSource.end(), _randomEngine);
-        }
-
-        FileHash randomHash = _hashesSource.takeLast();
-        if (!randomHash.isNull()) { _hashesSpent.insert(randomHash); }
-
-        auto sourceHashCount = _hashesSource.size();
-        if (sourceHashCount % 10 == 0) {
-            qDebug() << "Generator: source list down to" << sourceHashCount
-                     << " ; spent list count:" << _hashesSpent.size();
-        }
-
-        if (sourceHashCount >= 11) {
-            /* fetch some user stats in advance, for the next calls to this function */
-            auto index = qBound(0, sourceHashCount - 11, sourceHashCount);
-            uint id = _resolver->getID(_hashesSource[index]);
-            _history->fetchMissingUserStats(id, _userPlayingFor);
-        }
-
-        return randomHash;
+        return hash;
     }
 
     void Generator::checkRefillUpcomingBuffer() {
@@ -415,6 +365,10 @@ namespace PMP {
 
                 advanceWave();
             }
+
+            /* the track is marked as 'used' even when it has been deemed unsuitable, so
+               that it won't come back again for a long time */
+            _randomTracksSource->putBackUsedTrack(c->hash());
 
             delete c;
         }

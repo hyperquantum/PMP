@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,7 +36,8 @@ namespace PMP {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return; /* problem */
 
-        qDebug() << "FETCHING TRACK USERDATA for" << _hashIds.size() << "tracks";
+        qDebug() << "FETCHING TRACK USERDATA for" << _hashIds.size()
+                 << "tracks for user" << _userId;
 
         QVector<UserDataForHashId> results;
         results.reserve(_hashIds.size());
@@ -55,13 +56,13 @@ namespace PMP {
             data.previouslyHeard = stat.lastHeard;
             data.score = stat.score;
 
-            qDebug() << " FETCHED: HashID" << stat.hashId << " Score" << stat.score
-                     << " PrevHeard" << stat.lastHeard;
+            qDebug() << " FETCHED: hash ID:" << stat.hashId << " Score:" << stat.score
+                     << " PrevHeard:" << stat.lastHeard;
 
             results.append(data);
         }
 
-        emit finishedWithResult(_userId, results);
+        Q_EMIT finishedWithResult(_userId, results);
     }
 
     /* =========================== UserDataForHashInit =========================== */

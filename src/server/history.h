@@ -29,7 +29,6 @@
 #include <QHash>
 #include <QObject>
 #include <QSharedPointer>
-#include <QTimer>
 
 namespace PMP {
 
@@ -60,9 +59,9 @@ namespace PMP {
     private slots:
         void currentTrackChanged(QueueEntry const* newTrack);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
-        void onUpdatedHashUserStats(uint hashID, quint32 user,
+        void onHashUserStatsUpdated(uint hashID, quint32 user,
                                     QDateTime previouslyHeard, qint16 score);
-        void onFetchingTimerTimeout();
+        void sendFetchRequests();
         void onFetchCompleted(quint32 userId, QVector<PMP::UserDataForHashId> results);
 
     private:
@@ -75,7 +74,8 @@ namespace PMP {
         QueueEntry const* _nowPlaying;
         QHash<quint32, QHash<uint, HashStats>> _userStats;
         QHash<quint32, QHash<uint, bool>> _userStatsFetching;
-        QTimer* _fetchingTimer;
+        int _fetchRequestsScheduledCount;
+        bool _fetchTimerRunning;
     };
 }
 #endif

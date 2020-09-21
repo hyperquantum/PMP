@@ -34,6 +34,7 @@ namespace PMP {
     class History;
     class PlayerQueue;
     class QueueEntry;
+    class RandomTracksSource;
     class Resolver;
 
     class Generator : public QObject {
@@ -68,10 +69,9 @@ namespace PMP {
         void waveStarting(quint32 user);
         void waveFinished(quint32 user);
 
-    private slots:
+    private Q_SLOTS:
+        void upcomingTrackNotification(FileHash hash);
         void queueEntryRemoved(quint32, quint32);
-        void hashBecameAvailable(PMP::FileHash hash);
-        void hashBecameUnavailable(PMP::FileHash hash);
 
         void checkRefillUpcomingBuffer();
         void checkAndRefillQueue();
@@ -95,10 +95,8 @@ namespace PMP {
         bool satisfiesFilters(Candidate* candidate, bool strict);
         bool satisfiesWaveFilter(Candidate* candidate);
 
+        RandomTracksSource* _randomTracksSource;
         std::mt19937 _randomEngine;
-        QList<FileHash> _hashesSource;
-        QSet<FileHash> _hashesInSource;
-        QSet<FileHash> _hashesSpent;
         QueueEntry const* _currentTrack;
         PlayerQueue* _queue;
         Resolver* _resolver;

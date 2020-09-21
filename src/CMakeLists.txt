@@ -64,6 +64,7 @@ set(PMP_SERVER_SOURCES
     server/playerqueue.cpp
     server/preloader.cpp
     server/queueentry.cpp
+    server/randomtrackssource.cpp
     server/resolver.cpp
     server/server.cpp
     server/serverhealthmonitor.cpp
@@ -84,6 +85,7 @@ set(PMP_SERVER_HEADERS
     server/playerqueue.h
     server/preloader.h
     server/queueentry.h
+    server/randomtrackssource.h
     server/resolver.h
     server/server.h
     server/serverhealthmonitor.h

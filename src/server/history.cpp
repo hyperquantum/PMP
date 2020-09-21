@@ -27,11 +27,15 @@
 
 #include <QtDebug>
 #include <QThreadPool>
+#include <QTimer>
 
 namespace PMP {
 
     History::History(Player* player)
-     : _player(player), _nowPlaying(0), _fetchingTimer(new QTimer(this))
+     : _player(player),
+       _nowPlaying(0),
+       _fetchRequestsScheduledCount(0),
+       _fetchTimerRunning(false)
     {
         connect(
             player, &Player::currentTrackChanged,
@@ -40,10 +44,6 @@ namespace PMP {
         connect(
             player, &Player::newHistoryEntry,
             this, &History::newHistoryEntry
-        );
-        connect(
-            _fetchingTimer, &QTimer::timeout,
-            this, &History::onFetchingTimerTimeout
         );
     }
 
@@ -74,7 +74,10 @@ namespace PMP {
         return nullptr;
     }
 
-    void History::scheduleFetch(uint hashID, quint32 user) {
+    void History::scheduleFetch(uint hashID, quint32 user)
+    {
+        _fetchRequestsScheduledCount++;
+
         QHash<uint, bool>& hashes = _userStatsFetching[user];
 
         auto hashDataIterator = hashes.find(hashID);
@@ -82,12 +85,25 @@ namespace PMP {
             hashes[hashID] = false; /* add as not yet fetched */
         }
 
-        if (!_fetchingTimer->isActive()) {
-            _fetchingTimer->start(fetchingTimerFreqMs);
+        /*if (_fetchRequestsScheduledCount >= 10) {
+            // don't wait, start right now
+            sendFetchRequests();
+        }
+        else */
+        if (!_fetchTimerRunning) {
+            _fetchTimerRunning = true;
+            QTimer::singleShot(
+                fetchingTimerFreqMs,
+                this,
+                [this]() {
+                    _fetchTimerRunning = false;
+                    sendFetchRequests();
+                }
+            );
         }
     }
 
-    void History::onFetchingTimerTimeout() {
+    void History::sendFetchRequests() {
         Q_FOREACH(auto user, _userStatsFetching.keys()) {
             QHash<uint, bool>& hashes = _userStatsFetching[user];
 
@@ -113,13 +129,15 @@ namespace PMP {
             );
             QThreadPool::globalInstance()->start(fetcher);
         }
+
+        _fetchRequestsScheduledCount = 0;
     }
 
     void History::currentTrackChanged(QueueEntry const* newTrack) {
         if (_nowPlaying != 0 && newTrack != _nowPlaying) {
             const FileHash* hash = _nowPlaying->hash();
             /* TODO: make sure hash is known, so history won't get lost */
-            if (hash != 0) {
+            if (hash) {
                 _lastPlayHash[*hash] = QDateTime::currentDateTimeUtc();
             }
         }
@@ -142,13 +160,13 @@ namespace PMP {
 
         connect(
             task, &AddToHistoryTask::updatedHashUserStats,
-            this, &History::onUpdatedHashUserStats
+            this, &History::onHashUserStatsUpdated
         );
 
         QThreadPool::globalInstance()->start(task);
     }
 
-    void History::onUpdatedHashUserStats(uint hashID, quint32 user,
+    void History::onHashUserStatsUpdated(uint hashID, quint32 user,
                                          QDateTime previouslyHeard, qint16 score)
     {
         HashStats& existingStats = _userStats[user][hashID];
@@ -162,7 +180,7 @@ namespace PMP {
         existingStats.lastHeard = previouslyHeard;
         existingStats.score = score;
 
-        emit updatedHashUserStats(hashID, user, previouslyHeard, score);
+        Q_EMIT updatedHashUserStats(hashID, user, previouslyHeard, score);
     }
 
     void History::onFetchCompleted(quint32 userId, QVector<UserDataForHashId> results)
@@ -183,7 +201,7 @@ namespace PMP {
                 stats.lastHeard = hashData.previouslyHeard;
                 stats.score = hashData.score;
 
-                emit updatedHashUserStats(hashId, userId, stats.lastHeard, stats.score);
+                Q_EMIT updatedHashUserStats(hashId, userId, stats.lastHeard, stats.score);
             }
         }
     }
