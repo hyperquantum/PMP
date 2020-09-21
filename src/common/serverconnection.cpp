@@ -710,6 +710,9 @@ namespace PMP {
         NetworkUtil::append4Bytes(message, userId); /* user ID */
 
         foreach (FileHash hash, hashes) {
+            if (hash.isNull())
+                qWarning() << "request contains null hash";
+
             NetworkProtocol::appendHash(message, hash);
         }
 
