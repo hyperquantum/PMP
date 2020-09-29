@@ -39,15 +39,18 @@ namespace PMP {
 
     class Generator::Candidate {
     public:
-        Candidate(const FileHash& hashID, quint16 randomPermillageNumber1,
+        Candidate(uint id, const FileHash& hash, quint16 randomPermillageNumber1,
                   quint16 randomPermillageNumber2)
-         : _hash(hashID), _lengthMilliseconds(0),
+         : _id(id),
+           _hash(hash),
+           _lengthMilliseconds(0),
            _randomPermillageNumber1(randomPermillageNumber1),
            _randomPermillageNumber2(randomPermillageNumber2)
         {
             //
         }
 
+        uint id() const { return _id; }
         const FileHash& hash() const { return _hash; }
 
         void setLengthMilliseconds(uint milliseconds) {
@@ -61,6 +64,7 @@ namespace PMP {
         quint16 randomPermillageNumber2() const { return _randomPermillageNumber2; }
 
     private:
+        uint _id;
         FileHash _hash;
         uint _lengthMilliseconds;
         quint16 _randomPermillageNumber1;
@@ -73,7 +77,9 @@ namespace PMP {
      : _randomTracksSource(new RandomTracksSource(this, resolver)),
        _randomEngine(Util::getRandomSeed()),
        _currentTrack(nullptr),
-       _queue(queue), _resolver(resolver), _history(history),
+       _queue(queue),
+       _resolver(resolver),
+       _history(history),
        _upcomingTimer(new QTimer(this)),
        _upcomingRuntimeMilliseconds(0),
        _noRepetitionSpan(60 * 60 /* one hour */), _minimumPermillageByWave(0),
@@ -241,8 +247,12 @@ namespace PMP {
             FileHash randomHash = getNextRandomHash();
             if (randomHash.isNull()) { break; /* nothing available */ }
 
+            uint id = _resolver->getID(randomHash);
+
             auto c =
-                new Candidate(randomHash, getRandomPermillage(), getRandomPermillage());
+                new Candidate(
+                    id, randomHash, getRandomPermillage(), getRandomPermillage()
+                );
 
             if (satisfiesFilters(c, false)) {
                 _upcoming.enqueue(c);
@@ -409,7 +419,7 @@ namespace PMP {
     bool Generator::satisfiesWaveFilter(Candidate* candidate) {
         if (_minimumPermillageByWave <= 0) return true;
 
-        uint id = _resolver->getID(candidate->hash());
+        uint id = candidate->id();
         auto userStats = _history->getUserStats(id, _userPlayingFor);
         if (!userStats) return false; /* score data not loaded --> reject */
 
@@ -488,8 +498,7 @@ namespace PMP {
             return false;
         }
 
-        uint id = _resolver->getID(hash);
-        auto userStats = _history->getUserStats(id, _userPlayingFor);
+        auto userStats = _history->getUserStats(candidate->id(), _userPlayingFor);
         if (!userStats) {
             return false;
         }
@@ -518,7 +527,7 @@ namespace PMP {
         if (msLength < 15000 && msLength >= 0) return false;
 
         /* is score within tolerance? */
-        uint id = _resolver->getID(candidate->hash());
+        uint id = candidate->id();
         auto userStats = _history->getUserStats(id, _userPlayingFor);
         if (!userStats) {
             if (strict) {
