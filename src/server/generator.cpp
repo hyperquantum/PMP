@@ -74,7 +74,8 @@ namespace PMP {
        _randomEngine(Util::getRandomSeed()),
        _currentTrack(nullptr),
        _queue(queue), _resolver(resolver), _history(history),
-       _upcomingTimer(new QTimer(this)), _upcomingRuntimeSeconds(0),
+       _upcomingTimer(new QTimer(this)),
+       _upcomingRuntimeMilliseconds(0),
        _noRepetitionSpan(60 * 60 /* one hour */), _minimumPermillageByWave(0),
        _userPlayingFor(0), _enabled(false), _refillPending(false), _waveActive(false),
        _waveRising(false)
@@ -233,7 +234,7 @@ namespace PMP {
         int iterationsLeft = 8;
         while (iterationsLeft > 0
                && (_upcoming.length() < maximalUpcomingCount
-                    || _upcomingRuntimeSeconds < desiredUpcomingRuntimeSeconds))
+                    || _upcomingRuntimeMilliseconds < desiredUpcomingRuntimeMilliseconds))
         {
             iterationsLeft--;
 
@@ -245,7 +246,7 @@ namespace PMP {
 
             if (satisfiesFilters(c, false)) {
                 _upcoming.enqueue(c);
-                _upcomingRuntimeSeconds += c->lengthMilliseconds() / 1000;
+                _upcomingRuntimeMilliseconds += c->lengthMilliseconds();
             }
             else {
                 delete c;
@@ -270,8 +271,8 @@ namespace PMP {
         }
 
         qDebug() << "Generator: buffer length:" << _upcoming.length()
-                 << "; runtime:" << (_upcomingRuntimeSeconds / 60) << "min"
-                 << (_upcomingRuntimeSeconds % 60) << "sec";
+                 << "; runtime:"
+                 << Util::millisecondsToLongDisplayTimeText(_upcomingRuntimeMilliseconds);
 
         if (_upcoming.length() >= maximalUpcomingCount
             && !(_enabled && _queue->length() < desiredQueueLength))
@@ -305,7 +306,7 @@ namespace PMP {
             iterationsLeft--;
 
             Candidate* c = _upcoming.dequeue();
-            _upcomingRuntimeSeconds -= c->lengthMilliseconds() / 1000;
+            _upcomingRuntimeMilliseconds -= c->lengthMilliseconds();
 
             /* check filters again */
             bool ok =
@@ -354,7 +355,7 @@ namespace PMP {
                  << "filters anymore after a filter change";
 
         auto candidate = _upcoming.dequeue();
-        _upcomingRuntimeSeconds -= candidate->lengthMilliseconds() / 1000;
+        _upcomingRuntimeMilliseconds -= candidate->lengthMilliseconds();
         delete candidate;
 
         if (!_upcomingTimer->isActive())

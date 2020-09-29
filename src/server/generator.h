@@ -84,7 +84,7 @@ namespace PMP {
         static const int expandCount = 5;
         static const int minimalUpcomingCount = 2 * desiredQueueLength;
         static const int maximalUpcomingCount = 3 * desiredQueueLength + 3 * expandCount;
-        static const int desiredUpcomingRuntimeSeconds = 3600; /* 1 hour */
+        static const int desiredUpcomingRuntimeMilliseconds = 60 * 60 * 1000; /* 1 hour */
 
         quint16 getRandomPermillage();
         FileHash getNextRandomHash();
@@ -104,7 +104,7 @@ namespace PMP {
         History* _history;
         QQueue<Candidate*> _upcoming;
         QTimer* _upcomingTimer;
-        uint _upcomingRuntimeSeconds;
+        qint64 _upcomingRuntimeMilliseconds;
         int _noRepetitionSpan;
         int _minimumPermillageByWave;
         quint32 _userPlayingFor;
