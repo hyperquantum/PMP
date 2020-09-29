@@ -427,11 +427,10 @@ namespace PMP {
         return -1; // not found
     }
 
-    bool PlayerQueue::checkPotentialRepetitionByAdd(FileHash hash,
-                                              int repetitionAvoidanceSeconds,
-                                              int* nonRepetitionSpan) const
+    TrackRepetitionInfo PlayerQueue::checkPotentialRepetitionByAdd(FileHash hash,
+                                                     int repetitionAvoidanceSeconds) const
     {
-        int span = 0;
+        qint64 millisecondsCounted = 0;
 
         for (int i = _queue.length() - 1; i >= 0; --i) {
             QueueEntry* entry = _queue[i];
@@ -455,21 +454,22 @@ namespace PMP {
             const FileHash& entryHash = *entry->hash();
 
             if (entryHash == hash) {
-                if (nonRepetitionSpan) { *nonRepetitionSpan = span; }
-                return true; /* potential repetition */
+                return TrackRepetitionInfo(true, millisecondsCounted);
             }
 
             entry->checkAudioData(*_resolver);
-            int entryLength = entry->lengthInMilliseconds() / 1000;
+            qint64 entryLengthMilliseconds = entry->lengthInMilliseconds();
 
-            if (entryLength > 0) {
-                span += entryLength;
-                if (span >= repetitionAvoidanceSeconds) { break; }
+            if (entryLengthMilliseconds > 0) {
+                millisecondsCounted += entryLengthMilliseconds;
+
+                if (millisecondsCounted >= repetitionAvoidanceSeconds * qint64(1000)) {
+                    break; /* time between the tracks is large enough */
+                }
             }
         }
 
-        if (nonRepetitionSpan) { *nonRepetitionSpan = span; }
-        return false;
+        return TrackRepetitionInfo(false, millisecondsCounted);
     }
 
 }

@@ -308,56 +308,10 @@ namespace PMP {
             _upcomingRuntimeSeconds -= c->lengthMilliseconds() / 1000;
 
             /* check filters again */
-            bool ok = satisfiesFilters(c, true);
-
-            /* check score for wave (if active) */
-            if (ok && !satisfiesWaveFilter(c)) {
-                ok = false;
-            }
-
-            /* check occurrence in queue */
-            int nonRepetitionSpan = 0;
-            if (ok) {
-                if (_queue->checkPotentialRepetitionByAdd(c->hash(), _noRepetitionSpan,
-                                                          &nonRepetitionSpan))
-                {
-                    ok = false;
-                }
-            }
-
-            /* check occurrence in 'now playing' */
-            if (ok && nonRepetitionSpan < _noRepetitionSpan) {
-                QueueEntry const* current = _currentTrack;
-                if (current) {
-                    FileHash const* currentHash = current->hash();
-                    if (currentHash && c->hash() == *currentHash) {
-                        ok = false;
-                    }
-                }
-            }
-
-            /* check last play time, taking the future queue position into account */
-            if (ok) {
-                QDateTime maxLastPlay =
-                    QDateTime::currentDateTimeUtc().addSecs(nonRepetitionSpan)
-                                                   .addSecs(-_noRepetitionSpan);
-
-                QDateTime lastPlay = _history->lastPlayed(c->hash());
-
-                if (lastPlay.isValid() && lastPlay > maxLastPlay)
-                {
-                    ok = false;
-                }
-                else {
-                    uint id = _resolver->getID(c->hash());
-                    auto userStats = _history->getUserStats(id, _userPlayingFor);
-                    if (!userStats) { ok = false; }
-                    else {
-                        lastPlay = userStats->lastHeard;
-                        if (lastPlay.isValid() && lastPlay > maxLastPlay) { ok = false; }
-                    }
-                }
-            }
+            bool ok =
+                    satisfiesFilters(c, true)
+                        && satisfiesWaveFilter(c) /* check wave filter if wave active */
+                        && satisfiesNonRepetition(c);
 
             if (ok) {
                 _queue->enqueue(c->hash());
@@ -489,6 +443,59 @@ namespace PMP {
                          << _minimumPermillageByWave << ")";
                 return false;
             }
+        }
+
+        return true;
+    }
+
+    bool Generator::satisfiesNonRepetition(Generator::Candidate* candidate)
+    {
+        FileHash const& hash = candidate->hash();
+
+        /* check occurrence in queue */
+
+        auto repetition = _queue->checkPotentialRepetitionByAdd(hash, _noRepetitionSpan);
+
+        if (repetition.isRepetition())
+        {
+            return false;
+        }
+
+        qint64 millisecondsCounted = repetition.millisecondsCounted();
+        if (millisecondsCounted >= _noRepetitionSpan * qint64(1000)) {
+            return true;
+        }
+
+        /* check occurrence in 'now playing' */
+        QueueEntry const* trackNowPlaying = _currentTrack;
+        if (trackNowPlaying) {
+            FileHash const* currentHash = trackNowPlaying->hash();
+            if (currentHash && hash == *currentHash) {
+                return false;
+            }
+        }
+
+        /* check last play time, taking the future queue position into account */
+
+        QDateTime maxLastPlay =
+                QDateTime::currentDateTimeUtc().addMSecs(millisecondsCounted)
+                                               .addSecs(-_noRepetitionSpan);
+
+        QDateTime lastPlay = _history->lastPlayed(hash);
+        if (lastPlay.isValid() && lastPlay > maxLastPlay)
+        {
+            return false;
+        }
+
+        uint id = _resolver->getID(hash);
+        auto userStats = _history->getUserStats(id, _userPlayingFor);
+        if (!userStats) {
+            return false;
+        }
+
+        lastPlay = userStats->lastHeard;
+        if (lastPlay.isValid() && lastPlay > maxLastPlay) {
+            return false;
         }
 
         return true;

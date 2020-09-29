@@ -94,6 +94,7 @@ namespace PMP {
         void advanceWave();
         bool satisfiesFilters(Candidate* candidate, bool strict);
         bool satisfiesWaveFilter(Candidate* candidate);
+        bool satisfiesNonRepetition(Candidate* candidate);
 
         RandomTracksSource* _randomTracksSource;
         std::mt19937 _randomEngine;
