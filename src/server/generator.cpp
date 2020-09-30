@@ -19,6 +19,7 @@
 
 #include "generator.h"
 
+#include "common/audiodata.h"
 #include "common/util.h"
 
 #include "database.h"
@@ -39,11 +40,11 @@ namespace PMP {
 
     class Generator::Candidate {
     public:
-        Candidate(uint id, const FileHash& hash, quint16 randomPermillageNumber1,
-                  quint16 randomPermillageNumber2)
+        Candidate(uint id, FileHash const& hash, AudioData const& audioData,
+                  quint16 randomPermillageNumber1, quint16 randomPermillageNumber2)
          : _id(id),
            _hash(hash),
-           _lengthMilliseconds(0),
+           _audioData(audioData),
            _randomPermillageNumber1(randomPermillageNumber1),
            _randomPermillageNumber2(randomPermillageNumber2)
         {
@@ -53,11 +54,7 @@ namespace PMP {
         uint id() const { return _id; }
         const FileHash& hash() const { return _hash; }
 
-        void setLengthMilliseconds(uint milliseconds) {
-            _lengthMilliseconds = milliseconds;
-        }
-
-        uint lengthMilliseconds() const { return _lengthMilliseconds; }
+        qint64 lengthMilliseconds() const { return _audioData.trackLengthMilliseconds(); }
 
         quint16 randomPermillageNumber() const { return _randomPermillageNumber1; }
 
@@ -66,7 +63,7 @@ namespace PMP {
     private:
         uint _id;
         FileHash _hash;
-        uint _lengthMilliseconds;
+        AudioData _audioData;
         quint16 _randomPermillageNumber1;
         quint16 _randomPermillageNumber2;
     };
@@ -236,6 +233,32 @@ namespace PMP {
         return hash;
     }
 
+    Generator::Candidate* Generator::createCandidate(const FileHash& hash)
+    {
+        if (hash.isNull()) {
+            qWarning() << "the null hash turned up as a potential candidate";
+            return nullptr;
+        }
+
+        if (!_resolver->haveFileFor(hash)) {
+            qDebug() << "cannot use hash" << hash
+                     << "as a candidate because we don't have a file for it";
+            return nullptr;
+        }
+
+        uint id = _resolver->getID(hash);
+        if (id <= 0) {
+            qDebug() << "cannot use hash" << hash
+                     << "as a candidate because it hasn't been registered";
+            return nullptr;
+        }
+
+        const AudioData& audioData = _resolver->findAudioData(hash);
+
+        return new Candidate(id, hash, audioData,
+                             getRandomPermillage(), getRandomPermillage());
+    }
+
     void Generator::checkRefillUpcomingBuffer() {
         int iterationsLeft = 8;
         while (iterationsLeft > 0
@@ -247,16 +270,13 @@ namespace PMP {
             FileHash randomHash = getNextRandomHash();
             if (randomHash.isNull()) { break; /* nothing available */ }
 
-            uint id = _resolver->getID(randomHash);
-
-            auto c =
-                new Candidate(
-                    id, randomHash, getRandomPermillage(), getRandomPermillage()
-                );
+            auto c = createCandidate(randomHash);
+            if (!c) continue; /* could not create a valid candidate */
 
             if (satisfiesFilters(c, false)) {
                 _upcoming.enqueue(c);
-                _upcomingRuntimeMilliseconds += c->lengthMilliseconds();
+                if (c->lengthMilliseconds() > 0)
+                    _upcomingRuntimeMilliseconds += c->lengthMilliseconds();
             }
             else {
                 delete c;
@@ -316,7 +336,8 @@ namespace PMP {
             iterationsLeft--;
 
             Candidate* c = _upcoming.dequeue();
-            _upcomingRuntimeMilliseconds -= c->lengthMilliseconds();
+            if (c->lengthMilliseconds() > 0)
+                _upcomingRuntimeMilliseconds -= c->lengthMilliseconds();
 
             /* check filters again */
             bool ok =
@@ -365,7 +386,8 @@ namespace PMP {
                  << "filters anymore after a filter change";
 
         auto candidate = _upcoming.dequeue();
-        _upcomingRuntimeMilliseconds -= candidate->lengthMilliseconds();
+        if (candidate->lengthMilliseconds() > 0)
+            _upcomingRuntimeMilliseconds -= candidate->lengthMilliseconds();
         delete candidate;
 
         if (!_upcomingTimer->isActive())
@@ -459,7 +481,7 @@ namespace PMP {
         return true;
     }
 
-    bool Generator::satisfiesNonRepetition(Generator::Candidate* candidate)
+    bool Generator::satisfiesNonRepetition(Candidate* candidate)
     {
         FileHash const& hash = candidate->hash();
 
@@ -512,19 +534,10 @@ namespace PMP {
     }
 
     bool Generator::satisfiesFilters(Candidate* candidate, bool strict) {
-        /* do we have the hash? */
-        const FileHash& hash = candidate->hash();
-        if (hash.isNull()) return false;
-
-        /* can we find a file for the track? */
-        if (!_resolver->haveFileFor(hash)) return false;
-
-        /* get audio info */
-        const AudioData& audioData = _resolver->findAudioData(hash);
-        auto msLength = audioData.trackLengthMilliseconds();
-
         /* is it a real track, not a short sound file? */
-        if (msLength < 15000 && msLength >= 0) return false;
+        auto lengthMilliseconds = candidate->lengthMilliseconds();
+        if (lengthMilliseconds < 15000 && lengthMilliseconds >= 0)
+            return false;
 
         /* is score within tolerance? */
         uint id = candidate->id();
@@ -545,10 +558,6 @@ namespace PMP {
                 return false;
             }
         }
-
-        /* save length if known */
-        if (msLength >= 0)
-            candidate->setLengthMilliseconds(uint(msLength));
 
         return true;
     }

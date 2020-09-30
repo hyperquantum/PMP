@@ -88,6 +88,7 @@ namespace PMP {
 
         quint16 getRandomPermillage();
         FileHash getNextRandomHash();
+        Candidate* createCandidate(FileHash const& hash);
         void checkFirstUpcomingAgainAfterFiltersChanged();
         void requestQueueRefill();
         int expandQueue(int howManyTracksToAdd, int maxIterations);
