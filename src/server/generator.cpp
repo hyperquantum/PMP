@@ -408,7 +408,12 @@ namespace PMP {
             return;
         }
 
-        if (!_waveActive && _minimumPermillageByWave > 0) {
+        if (_minimumPermillageByWave <= 0)
+            return;
+
+        /* wave is descending */
+
+        if (!_waveActive) {
             _minimumPermillageByWave--; /* subtract 0.1% */
 
             if (_minimumPermillageByWave >= 10) {
