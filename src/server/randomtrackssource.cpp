@@ -30,7 +30,7 @@
 namespace PMP {
 
     const int RandomTracksSource::UPCOMING_NOTIFY_BATCH_COUNT = 10;
-    const int RandomTracksSource::UPCOMING_NOTIFY_TARGET_COUNT = 50;
+    const int RandomTracksSource::UPCOMING_NOTIFY_TARGET_COUNT = 250;
 
     RandomTracksSource::RandomTracksSource(QObject* parent, Resolver* resolver)
      : QObject(parent),
