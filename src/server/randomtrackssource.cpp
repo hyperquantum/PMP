@@ -74,14 +74,16 @@ namespace PMP {
         _hashesTaken.insert(hash);
 
         auto unusedHashCount = _unusedHashes.size();
-        if (unusedHashCount % 10 == 0) {
-            qDebug() << "unused tracks list down to" << unusedHashCount
-                     << "elements; taken/used count:"
-                     << (_hashesStatus.size() - unusedHashCount);
-        }
 
         if (_notifiedCount > 0) {
             _notifiedCount--;
+        }
+
+        if (unusedHashCount % 10 == 0) {
+            qDebug() << "unused tracks list down to" << unusedHashCount
+                     << "elements; taken/used count:"
+                     << (_hashesStatus.size() - unusedHashCount)
+                     << "; notified count:" << _notifiedCount;
         }
 
         scheduleNotificationsCheck();
@@ -130,6 +132,7 @@ namespace PMP {
 
     void RandomTracksSource::resetUpcomingTrackNotifications()
     {
+        qDebug() << "resetting notified count";
         _notifiedCount = 0;
         scheduleNotificationsCheck();
     }
@@ -162,6 +165,8 @@ namespace PMP {
             _notifiedCount++;
             Q_EMIT upcomingTrackNotification(_unusedHashes[index]);
         }
+
+        qDebug() << "notified count has reached" << _notifiedCount;
 
         scheduleNotificationsCheck();
     }

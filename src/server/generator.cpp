@@ -173,7 +173,7 @@ namespace PMP {
 
     void Generator::requestQueueExpansion() {
         if (_upcoming.size() < minimalUpcomingCount) {
-            qDebug() << "Generator: no queue expansion because upcoming buffer is low";
+            qWarning() << "Generator: no queue expansion because upcoming buffer is low";
             return;
         }
 
@@ -189,6 +189,8 @@ namespace PMP {
 
         auto oldUser = _userPlayingFor;
         _userPlayingFor = user;
+
+        qDebug() << "changing user from" << oldUser << "to" << user;
 
         /* make sure to prefetch track stats for the new user */
         _randomTracksSource->resetUpcomingTrackNotifications();

@@ -2259,8 +2259,8 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        qDebug() << "received request for user data (fields="<< fields
-                 << ") on" << hashCount << "hashes";
+        qDebug() << "received request for user track data; user:" << userId
+                 << " track count:" << hashCount << " fields:" << fields;
 
         fields = fields & 3; /* filter non-supported fields */
 

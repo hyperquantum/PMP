@@ -40,8 +40,9 @@ namespace PMP {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return; /* problem */
 
-        qDebug() << "FETCHING USERDATA; PrevHeard" << _previouslyHeard
-                 << ", Score" << _score;
+        qDebug() << "fetching user data for" << _hashes.size()
+                 << "hashes; user:" << _userId << " prevHeard:" << _previouslyHeard
+                 << " score:" << _score;
 
         QVector<UserDataForHash> results;
         results.reserve(_hashes.size());
@@ -62,8 +63,8 @@ namespace PMP {
                 data.previouslyHeard = stat.lastHeard;
                 data.score = stat.score;
 
-                qDebug() << "FETCHED: User" << _userId << " HashID" << stat.hashId
-                         << " PrevHeard" << stat.lastHeard << " Score" << stat.score;
+                qDebug() << "fetched: user" << _userId << " hashID" << stat.hashId
+                         << " prevHeard" << stat.lastHeard << " score" << stat.score;
 
                 results.append(data);
             }
