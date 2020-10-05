@@ -52,7 +52,8 @@ IDEAS
  * 'about the server' window; with server name, UUID and protocol version
  * ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * ability to view statistics such as 'previously heard' and 'score' for the song currently playing
- * add other statistics relevant for scoring (e.g. was the track manually added to the queue) to the play history
+ * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
+ * play history: add context: was there no user interaction for a long time?
  * provide play/pause buttons in Windows taskbar popup
  * use libgroove for playback (?)
  ** support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
