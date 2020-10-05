@@ -97,6 +97,11 @@ namespace PMP {
     }
 
     inline QDebug operator<<(QDebug debug, const FileHash& hash) {
+        if (hash.isNull()) {
+            debug << "(null hash)";
+            return debug;
+        }
+
         QString hashText =
                 QString::number(hash.length())
                     + "-" + hash.SHA1().toHex()

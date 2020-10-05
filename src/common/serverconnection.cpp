@@ -22,6 +22,7 @@
 #include "common/collectionfetcher.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
+#include "common/util.h"
 
 #include <QtDebug>
 
@@ -663,7 +664,13 @@ namespace PMP {
     void ServerConnection::sendQueueEntryInfoRequest(QList<uint> const& queueIDs) {
         if (queueIDs.empty()) return;
 
-        qDebug() << "sending bulk request for track info of" << queueIDs.size() << "QIDs";
+        if (queueIDs.size() == 1) {
+            qDebug() << "sending bulk request for track info of QID" << queueIDs[0];
+        }
+        else {
+            qDebug() << "sending bulk request for track info of"
+                     << queueIDs.size() << "QIDs";
+        }
 
         QByteArray message;
         message.reserve(2 + 4 * queueIDs.size());
@@ -680,7 +687,13 @@ namespace PMP {
     void ServerConnection::sendQueueEntryHashRequest(QList<uint> const& queueIDs) {
         if (queueIDs.empty()) return;
 
-        qDebug() << "sending bulk request for hash info of" << queueIDs.size() << "QIDs";
+        if (queueIDs.size() == 1) {
+            qDebug() << "sending bulk request for hash info of QID" << queueIDs[0];
+        }
+        else {
+            qDebug() << "sending bulk request for hash info of"
+                     << queueIDs.size() << "QIDs";
+        }
 
         QByteArray message;
         message.reserve(2 + 2 + 4 * queueIDs.size());
@@ -700,8 +713,14 @@ namespace PMP {
     {
         if (hashes.empty()) return;
 
-        qDebug() << "sending bulk request for" << hashes.size()
-                 << "hashes for user" << userId;
+        if (hashes.size() == 1) {
+            qDebug() << "sending bulk user data request for hash" << hashes[0]
+                     << "for user" << userId;
+        }
+        else {
+            qDebug() << "sending bulk user data request for" << hashes.size()
+                     << "hashes for user" << userId;
+        }
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + hashes.size() * NetworkProtocol::FILEHASH_BYTECOUNT);
@@ -1993,7 +2012,8 @@ namespace PMP {
 
         int offset = 8;
 
-        QVector<FileHash> available(availableCount);
+        QVector<FileHash> available;
+        available.reserve(availableCount);
         for (int i = 0; i < availableCount; ++i) {
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
@@ -2011,7 +2031,8 @@ namespace PMP {
             available.append(hash);
         }
 
-        QVector<FileHash> unavailable(unavailableCount);
+        QVector<FileHash> unavailable;
+        unavailable.reserve(unavailableCount);
         for (int i = 0; i < unavailableCount; ++i) {
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
@@ -2035,7 +2056,18 @@ namespace PMP {
         if (available.empty() && unavailable.empty())
             return;
 
-        emit collectionTracksAvailabilityChanged(available, unavailable);
+        if (available.size() <= 3) {
+            for (auto const& hash : available) {
+                qDebug() << " available:" << hash;
+            }
+        }
+        if (unavailable.size() <= 3) {
+            for (auto const& hash : unavailable) {
+                qDebug() << " unavailable:" << hash;
+            }
+        }
+
+        Q_EMIT collectionTracksAvailabilityChanged(available, unavailable);
     }
 
     void ServerConnection::parseTrackInfoBatchMessage(QByteArray const& message,
@@ -2170,6 +2202,17 @@ namespace PMP {
 
         if (infos.empty()) return;
 
+        if (infos.size() <= 3) {
+            for (auto const& info : infos) {
+                auto length = info.lengthInMilliseconds();
+                qDebug() << " track: hash:" << info.hash() << "; title:" << info.title()
+                         << "; artist:" << info.artist()
+                         << "; length:"
+                         << Util::millisecondsToShortDisplayTimeText(length)
+                         << "; available:" << info.isAvailable();
+            }
+        }
+
         if (isNotification) {
             Q_EMIT collectionTracksChanged(infos);
         }
@@ -2208,7 +2251,7 @@ namespace PMP {
         }
 
         qDebug() << "received hash user data message; count:" << hashCount
-                 << "; fields:" << fields;
+                 << "; user:" << userId << "; fields:" << fields;
 
         bool ok;
         for (int i = 0; i < hashCount; ++i) {
@@ -2232,8 +2275,13 @@ namespace PMP {
                 offset += 2;
             }
 
+            if (hash.isNull()) {
+                qWarning() << "received user data for null hash; ignoring";
+                continue;
+            }
+
             // TODO: fixme: receiver cannot know which fields were not received now
-            emit receivedHashUserData(hash, userId, previouslyHeard, score);
+            Q_EMIT receivedHashUserData(hash, userId, previouslyHeard, score);
         }
     }
 

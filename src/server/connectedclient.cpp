@@ -1058,6 +1058,10 @@ namespace PMP {
             return;
         }
 
+        qDebug() << "sending track availability notification batch message;"
+                 << "available count:" << available.size()
+                 << "unavailable count:" << unavailable.size();
+
         QByteArray message;
         message.reserve(2 + 2 + 4
                         + NetworkProtocol::FILEHASH_BYTECOUNT * available.size()

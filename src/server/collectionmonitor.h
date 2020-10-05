@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -61,7 +61,7 @@ namespace PMP {
             qint32 lengthInMilliseconds;
 
             HashInfo()
-             : isAvailable(false), lengthInMilliseconds(0)
+             : isAvailable(false), lengthInMilliseconds(-1)
             {
                 //
             }

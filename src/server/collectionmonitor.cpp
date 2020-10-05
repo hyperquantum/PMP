@@ -41,7 +41,11 @@ namespace PMP {
     }
 
     void CollectionMonitor::hashBecameUnavailable(FileHash hash) {
-        HashInfo& info = _collection[hash];
+        auto it = _collection.find(hash);
+        if (it == _collection.end())
+            return; /* nothing to announce */
+
+        HashInfo& info = it.value();
         if (!info.isAvailable) return; /* no change */
 
         info.isAvailable = false;

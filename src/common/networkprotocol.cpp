@@ -196,7 +196,7 @@ namespace PMP {
     FileHash NetworkProtocol::getHash(const QByteArray& buffer, int position, bool* ok) {
         if (position > buffer.size() - FILEHASH_BYTECOUNT) {
             /* not enough bytes to read */
-            qDebug() << "NetworkProtocol::getHash: ERROR: not enough bytes to read";
+            qWarning() << "NetworkProtocol::getHash: ERROR: not enough bytes to read";
             if (ok) *ok = false;
             return FileHash();
         }
@@ -212,7 +212,7 @@ namespace PMP {
 
         if (lengthPart > std::numeric_limits<uint>::max()) {
             /* conversion of 64-bit number to platform-specific uint would truncate */
-            qDebug() << "NetworkProtocol::getHash: ERROR: length overflow";
+            qWarning() << "NetworkProtocol::getHash: ERROR: length overflow";
             if (ok) *ok = false;
             return FileHash();
         }
