@@ -70,6 +70,7 @@ set(PMP_SERVER_SOURCES
     server/playerqueue.cpp
     server/preloader.cpp
     server/queueentry.cpp
+    server/randomtrackssource.cpp
     server/resolver.cpp
     server/scrobbler.cpp
     server/scrobbling.cpp
@@ -99,6 +100,7 @@ set(PMP_SERVER_HEADERS
     server/playerqueue.h
     server/preloader.h
     server/queueentry.h
+    server/randomtrackssource.h
     server/resolver.h
     server/scrobbler.h
     server/scrobbling.h

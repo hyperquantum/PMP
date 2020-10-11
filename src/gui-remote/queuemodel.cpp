@@ -422,6 +422,8 @@ namespace PMP {
     bool QueueModel::dropMimeData(const QMimeData* data, Qt::DropAction action,
                                   int row, int column, const QModelIndex& parent)
     {
+        Q_UNUSED(column)
+
         qDebug() << "QueueModel::dropMimeData called; action=" << action
                  << "; row=" << row;
 

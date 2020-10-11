@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,11 +36,11 @@ namespace PMP {
         virtual bool execute(QueueMediator& mediator, bool sendToServer) = 0;
         virtual bool rollback(QueueMediator& mediator) = 0;
 
-        virtual bool equals(Operation* op) { return false; }
-        virtual bool equals(InfoOperation* op) { return false; }
-        virtual bool equals(DeleteOperation* op) { return false; }
-        virtual bool equals(AddOperation* op) { return false; }
-        virtual bool equals(MoveOperation* op) { return false; }
+        virtual bool equals(Operation* op) { Q_UNUSED(op) return false; }
+        virtual bool equals(InfoOperation* op) { Q_UNUSED(op) return false; }
+        virtual bool equals(DeleteOperation* op) { Q_UNUSED(op) return false; }
+        virtual bool equals(AddOperation* op) { Q_UNUSED(op) return false; }
+        virtual bool equals(MoveOperation* op) { Q_UNUSED(op) return false; }
 
     };
 
@@ -158,6 +158,8 @@ namespace PMP {
     }
 
     bool QueueMediator::AddOperation::rollback(QueueMediator& mediator) {
+        Q_UNUSED(mediator)
+
         /* Rollback support for AddOperation is not needed, as this is
            only a server-side operation. */
         return false;
@@ -321,6 +323,8 @@ namespace PMP {
     }
 
     bool QueueMediator::InfoOperation::rollback(QueueMediator& mediator) {
+        Q_UNUSED(mediator)
+
         /* NOT NECESSARY */
         return false;
     }

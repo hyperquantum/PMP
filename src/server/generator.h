@@ -34,6 +34,7 @@ namespace PMP {
     class History;
     class PlayerQueue;
     class QueueEntry;
+    class RandomTracksSource;
     class Resolver;
 
     class Generator : public QObject {
@@ -68,10 +69,9 @@ namespace PMP {
         void waveStarting(quint32 user);
         void waveFinished(quint32 user);
 
-    private slots:
+    private Q_SLOTS:
+        void upcomingTrackNotification(FileHash hash);
         void queueEntryRemoved(quint32, quint32);
-        void hashBecameAvailable(PMP::FileHash hash);
-        void hashBecameUnavailable(PMP::FileHash hash);
 
         void checkRefillUpcomingBuffer();
         void checkAndRefillQueue();
@@ -84,28 +84,28 @@ namespace PMP {
         static const int expandCount = 5;
         static const int minimalUpcomingCount = 2 * desiredQueueLength;
         static const int maximalUpcomingCount = 3 * desiredQueueLength + 3 * expandCount;
-        static const int desiredUpcomingRuntimeSeconds = 3600; /* 1 hour */
+        static const int desiredUpcomingRuntimeMilliseconds = 60 * 60 * 1000; /* 1 hour */
 
         quint16 getRandomPermillage();
         FileHash getNextRandomHash();
+        Candidate* createCandidate(FileHash const& hash);
         void checkFirstUpcomingAgainAfterFiltersChanged();
         void requestQueueRefill();
         int expandQueue(int howManyTracksToAdd, int maxIterations);
         void advanceWave();
         bool satisfiesFilters(Candidate* candidate, bool strict);
         bool satisfiesWaveFilter(Candidate* candidate);
+        bool satisfiesNonRepetition(Candidate* candidate);
 
+        RandomTracksSource* _randomTracksSource;
         std::mt19937 _randomEngine;
-        QList<FileHash> _hashesSource;
-        QSet<FileHash> _hashesInSource;
-        QSet<FileHash> _hashesSpent;
         QueueEntry const* _currentTrack;
         PlayerQueue* _queue;
         Resolver* _resolver;
         History* _history;
         QQueue<Candidate*> _upcoming;
         QTimer* _upcomingTimer;
-        uint _upcomingRuntimeSeconds;
+        qint64 _upcomingRuntimeMilliseconds;
         int _noRepetitionSpan;
         int _minimumPermillageByWave;
         quint32 _userPlayingFor;

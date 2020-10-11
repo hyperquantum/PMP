@@ -9,20 +9,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Server now sends a notification to the client when it detects that a track has disappeared or reappeared.
 - Option to prevent the display from being turned off after a period of user inactivity. Windows-only for now.
 - Music collection view: track highlighting.
+- Track info dialog. Available as an option in context menus of the queue, the history, and the music collection.
+- "Track info" button for the current track.
+- The current track is now marked in the collection view.
 
 ### Changed
 - Volume control now uses a logarithmic scale.
 - Full indexation will now notice when tracks have disappeared from their previously known location.
 - Faster transitions between subsequent tracks.
+- Breakpoints look better now.
+- The track progress bar uses different colors now.
+- Switched to millisecond precision for track lengths.
+- Track lengths are now usually displayed like "03:44.7" instead of "00:03:44".
 - Naming of log files was changed a bit to allow for better sorting.
 - Log files now start with a line that contains the PMP version number.
 - Timestamps in log files now have millisecond precision.
+- Exit code is now written to the log.
 - PMP now requires a C++14 compiler.
 - PMP now requires Qt 5.8 or later.
 
 ### Fixed
 - Tracks were sometimes wrongly marked as unavailable in the client.
 - Server crashed when trying to play a track marked as unavailable while being in 'stopped' mode.
+- Music collection change notifications were not transmitted correctly.
+- The client was not always notified when the known length of a track changed.
+- When starting the client its main window sometimes appeared outside the visible screen area.
 
 ## 0.0.6 - 2018-12-26
 ### Added

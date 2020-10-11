@@ -728,8 +728,6 @@ namespace PMP {
             length = queueLength - startOffset;
         }
 
-        if (length > 255) { length = 255; }
-
         QList<QueueEntry*> entries =
             queue.entries(startOffset, (length == 0) ? -1 : length);
 
@@ -1092,6 +1090,10 @@ namespace PMP {
             sendTrackAvailabilityBatchMessage(available, unavailable.mid(maxSize));
             return;
         }
+
+        qDebug() << "sending track availability notification batch message;"
+                 << "available count:" << available.size()
+                 << "unavailable count:" << unavailable.size();
 
         QByteArray message;
         message.reserve(2 + 2 + 4
@@ -2393,8 +2395,8 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        qDebug() << "received request for user data (fields="<< fields
-                 << ") on" << hashCount << "hashes";
+        qDebug() << "received request for user track data; user:" << userId
+                 << " track count:" << hashCount << " fields:" << fields;
 
         fields = fields & 3; /* filter non-supported fields */
 

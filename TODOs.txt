@@ -45,17 +45,18 @@ TECHNICAL TODO
 
 IDEAS
 
- *** 'like' button for the song that is playing, that will bump the score of the song a little bit
+ *** thumbs up/down buttons for the song that is playing and for the history, to affect the score a little bit
  * 'love' & 'hate' button for the song that is playing
  * statistics view for the user; with things like "amount of tracks played in the last 7/30/... days"
  * 'about the remote' window; with client version and protocol version
  * 'about the server' window; with server name, UUID and protocol version
  * ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * ability to view statistics such as 'previously heard' and 'score' for the song currently playing
- * add other statistics relevant for scoring (e.g. was the track manually added to the queue) to the play history
+ * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
+ * play history: add context: was there no user interaction for a long time?
  * provide play/pause buttons in Windows taskbar popup
  * use libgroove for playback (?)
- * support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
+ ** support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
  * display PMP server version in the client 'About' dialog
  * interactive editing of the list of directories to scan for music
  * ability to ban a track permanently or temporarily; this will also hide it in the music collection
@@ -81,7 +82,11 @@ IDEAS
  * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time
  * track info dialog: ability to pick the user whose personal stats are shown
  * queue: show error marker for a track that has no known file
+ * queue: join title and artist columns when displaying filename
  * add a button for seeking back to the start of the current track
+ * provide list of all artists/albums in the collection
+ * guest account for party guests; probably without personal mode
+ * giant "now playing" screen banner
 
 
 USER FRIENDLINESS

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -671,6 +671,9 @@ namespace PMP {
     QList<QPair<quint32, QDateTime>> Database::getLastHeard(quint32 userId,
                                                             QList<quint32> hashIds)
     {
+        if (hashIds.isEmpty())
+            return {};
+
         QSqlQuery q(_db);
         q.prepare(
             "SELECT ha.HashID, hi.PrevHeard "
@@ -708,6 +711,9 @@ namespace PMP {
     QVector<Database::HashHistoryStats> Database::getHashHistoryStats(quint32 userId,
                                                                    QList<quint32> hashIds)
     {
+        if (hashIds.isEmpty())
+            return {};
+
         QSqlQuery q(_db);
         q.prepare(
             "SELECT ha.HashID, hi.PrevHeard, hi2.ScoreHeardCount, hi2.ScorePermillage "
