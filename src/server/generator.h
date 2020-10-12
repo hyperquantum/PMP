@@ -93,7 +93,8 @@ namespace PMP {
         void requestQueueRefill();
         int expandQueue(int howManyTracksToAdd, int maxIterations);
         void advanceWave();
-        bool satisfiesFilters(Candidate* candidate, bool strict);
+        bool satisfiesBasicFilter(Candidate* candidate, bool strict);
+        bool satisfiesNonWaveFilter(Candidate* candidate);
         bool satisfiesWaveFilter(Candidate* candidate);
         bool satisfiesNonRepetition(Candidate* candidate);
 

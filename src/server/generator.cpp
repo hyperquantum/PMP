@@ -275,7 +275,7 @@ namespace PMP {
             auto c = createCandidate(randomHash);
             if (!c) continue; /* could not create a valid candidate */
 
-            if (satisfiesFilters(c, false)) {
+            if (satisfiesBasicFilter(c, false)) {
                 _upcoming.enqueue(c);
                 if (c->lengthMilliseconds() > 0)
                     _upcomingRuntimeMilliseconds += c->lengthMilliseconds();
@@ -343,9 +343,9 @@ namespace PMP {
 
             /* check filters again */
             bool ok =
-                    satisfiesFilters(c, true)
-                        && satisfiesWaveFilter(c) /* check wave filter if wave active */
-                        && satisfiesNonRepetition(c);
+                satisfiesBasicFilter(c, true)
+                    && (_waveActive ? satisfiesWaveFilter(c) : satisfiesNonWaveFilter(c))
+                    && satisfiesNonRepetition(c);
 
             if (ok) {
                 _queue->enqueue(c->hash());
@@ -381,8 +381,13 @@ namespace PMP {
 
         auto firstUpcoming = _upcoming.head();
 
-        if (satisfiesFilters(firstUpcoming, true) && satisfiesWaveFilter(firstUpcoming))
+        if (satisfiesBasicFilter(firstUpcoming, true)
+            && (_waveActive
+                ? satisfiesWaveFilter(firstUpcoming)
+                : satisfiesNonWaveFilter(firstUpcoming)))
+        {
             return; /* OK */
+        }
 
         qDebug() << "removing first track from buffer because it does not pass the"
                  << "filters anymore after a filter change";
@@ -443,6 +448,50 @@ namespace PMP {
         }
 
         qDebug() << "wave has descended to" << _minimumPermillageByWave;
+    }
+
+    bool Generator::satisfiesBasicFilter(Candidate* candidate, bool strict)
+    {
+        /* is it a real track, not a short sound file? */
+        auto lengthMilliseconds = candidate->lengthMilliseconds();
+        if (lengthMilliseconds < 15000 && lengthMilliseconds >= 0)
+            return false;
+
+        /* are track stats available? */
+        uint id = candidate->id();
+        auto userStats = _history->getUserStats(id, _userPlayingFor);
+        if (!userStats) {
+            if (strict) {
+                qDebug() << "rejecting candidate" << id
+                         << "because we don't have its user data yet";
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    bool Generator::satisfiesNonWaveFilter(Candidate* candidate)
+    {
+        if (_waveActive)
+            return true;
+
+        /* is score within tolerance? */
+        uint id = candidate->id();
+        auto userStats = _history->getUserStats(id, _userPlayingFor);
+
+        if (!userStats)
+            return false;
+
+        auto score = userStats->score;
+        if (score >= 0 && score < candidate->randomPermillageNumber() - 100) {
+            qDebug() << "rejecting candidate" << id
+                     << "because it has score" << score << " (threshhold="
+                     << (candidate->randomPermillageNumber() - 100) << ")";
+            return false;
+        }
+
+        return true;
     }
 
     bool Generator::satisfiesWaveFilter(Candidate* candidate) {
@@ -535,35 +584,6 @@ namespace PMP {
         lastPlay = userStats->lastHeard;
         if (lastPlay.isValid() && lastPlay > maxLastPlay) {
             return false;
-        }
-
-        return true;
-    }
-
-    bool Generator::satisfiesFilters(Candidate* candidate, bool strict) {
-        /* is it a real track, not a short sound file? */
-        auto lengthMilliseconds = candidate->lengthMilliseconds();
-        if (lengthMilliseconds < 15000 && lengthMilliseconds >= 0)
-            return false;
-
-        /* is score within tolerance? */
-        uint id = candidate->id();
-        auto userStats = _history->getUserStats(id, _userPlayingFor);
-        if (!userStats) {
-            if (strict) {
-                qDebug() << "rejecting candidate" << id
-                         << "because its score is still unknown";
-                return false;
-            }
-        }
-        else if (!_waveActive) {
-            auto score = userStats->score;
-            if (score >= 0 && score < candidate->randomPermillageNumber() - 100) {
-                qDebug() << "rejecting candidate" << id
-                         << "because it has score" << score << " (threshhold="
-                         << (candidate->randomPermillageNumber() - 100) << ")";
-                return false;
-            }
         }
 
         return true;
