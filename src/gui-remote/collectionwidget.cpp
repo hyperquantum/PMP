@@ -197,6 +197,7 @@ namespace PMP {
                 TrackHighlightMode::LastHeardNotInLast10Days);
 
         addItem(tr("without score"), TrackHighlightMode::WithoutScore);
+        addItem(tr("score <= 30"), TrackHighlightMode::ScoreMaximum30);
         addItem(tr("score >= 85"), TrackHighlightMode::ScoreAtLeast85);
         addItem(tr("score >= 90"), TrackHighlightMode::ScoreAtLeast90);
         addItem(tr("score >= 95"), TrackHighlightMode::ScoreAtLeast95);

@@ -78,6 +78,12 @@ namespace PMP {
                 auto evaluator = [](int permillage) { return permillage < 0; };
                 return shouldHighlightBasedOnScore(track, evaluator);
             }
+            case TrackHighlightMode::ScoreMaximum30:
+            {
+                auto evaluator =
+                    [](int permillage) { return permillage >= 0 && permillage <= 300; };
+                return shouldHighlightBasedOnScore(track, evaluator);
+            }
             case TrackHighlightMode::ScoreAtLeast85:
             {
                 auto evaluator = [](int permillage) { return permillage >= 850; };
@@ -287,6 +293,7 @@ namespace PMP {
             case TrackHighlightMode::LastHeardNotInLast30Days:
             case TrackHighlightMode::LastHeardNotInLast10Days:
             case TrackHighlightMode::WithoutScore:
+            case TrackHighlightMode::ScoreMaximum30:
             case TrackHighlightMode::ScoreAtLeast85:
             case TrackHighlightMode::ScoreAtLeast90:
             case TrackHighlightMode::ScoreAtLeast95:

@@ -45,6 +45,7 @@ namespace PMP {
         LastHeardNotInLast30Days,
         LastHeardNotInLast10Days,
         WithoutScore,
+        ScoreMaximum30,
         ScoreAtLeast85,
         ScoreAtLeast90,
         ScoreAtLeast95,
