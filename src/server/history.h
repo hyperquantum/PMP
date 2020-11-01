@@ -67,8 +67,6 @@ namespace PMP {
     private:
         void scheduleFetch(uint hashID, quint32 user);
 
-        static const int fetchingTimerFreqMs = 100;
-
         Player* _player;
         QHash<FileHash, QDateTime> _lastPlayHash;
         QueueEntry const* _nowPlaying;
