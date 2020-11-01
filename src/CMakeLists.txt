@@ -58,6 +58,8 @@ set(PMP_SERVER_SOURCES
     server/collectionmonitor.cpp
     server/connectedclient.cpp
     server/database.cpp
+    server/dynamicmodecriteria.cpp
+    server/dynamictrackgenerator.cpp
     server/generator.cpp
     server/history.cpp
     server/player.cpp
@@ -71,14 +73,18 @@ set(PMP_SERVER_SOURCES
     server/serverinterface.cpp
     server/servermetatypes.cpp
     server/serversettings.cpp
+    server/trackgeneratorbase.cpp
+    server/trackrepetitionchecker.cpp
     server/userdataforhashesfetcher.cpp
     server/userdatafortracksfetcher.cpp
     server/users.cpp
+    server/wavetrackgenerator.cpp
 )
 set(PMP_SERVER_HEADERS
     server/addtohistorytask.h
     server/collectionmonitor.h
     server/connectedclient.h
+    server/dynamictrackgenerator.h
     server/generator.h
     server/history.h
     server/player.h
@@ -91,9 +97,12 @@ set(PMP_SERVER_HEADERS
     server/serverhealthmonitor.h
     server/serverinterface.h
     server/serversettings.h
+    server/trackgeneratorbase.h
+    server/trackrepetitionchecker.h
     server/userdataforhashesfetcher.h
     server/userdatafortracksfetcher.h
     server/users.h
+    server/wavetrackgenerator.h
 )
 
 set(PMP_GUI_REMOTE_SOURCES

@@ -186,7 +186,7 @@ namespace PMP {
         if (!isLoggedIn()) return;
         if (minutes < 0) return;
 
-        _generator->setNoRepetitionSpan(minutes);
+        _generator->setNoRepetitionSpanSeconds(minutes);
     }
 
     void ServerInterface::startFullIndexation()

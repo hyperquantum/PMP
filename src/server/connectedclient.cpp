@@ -573,7 +573,7 @@ namespace PMP {
 
     void ConnectedClient::sendDynamicModeStatusMessage() {
         quint8 enabled = _generator->enabled() ? 1 : 0;
-        qint32 noRepetitionSpan = _generator->noRepetitionSpan();
+        qint32 noRepetitionSpan = _generator->noRepetitionSpanSeconds();
 
         QByteArray message;
         message.reserve(7);

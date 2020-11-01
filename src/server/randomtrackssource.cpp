@@ -73,7 +73,9 @@ namespace PMP {
         _hashesStatus.insert(hash, TrackStatus::Taken);
         _hashesTaken.insert(hash);
 
+        auto takenCount = _hashesTaken.size();
         auto unusedHashCount = _unusedHashes.size();
+        auto usedHashCount = _hashesStatus.size() - unusedHashCount - takenCount;
 
         if (_notifiedCount > 0) {
             _notifiedCount--;
@@ -81,8 +83,8 @@ namespace PMP {
 
         if (unusedHashCount % 10 == 0) {
             qDebug() << "unused tracks list down to" << unusedHashCount
-                     << "elements; taken/used count:"
-                     << (_hashesStatus.size() - unusedHashCount)
+                     << "elements; taken count:" << takenCount
+                     << "; used count:" << usedHashCount
                      << "; notified count:" << _notifiedCount;
         }
 

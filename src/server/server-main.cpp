@@ -87,6 +87,7 @@ int main(int argc, char *argv[]) {
     /* set up logging */
     Logging::enableConsoleAndTextFileLogging(true);
     Logging::setFilenameTag("S"); /* S = Server */
+    qDebug() << "PMP server started"; // initial log message
     Logging::cleanupOldLogfiles();
     /* TODO: do a log cleanup regularly, because a server is likely to be run for days,
      *       weeks, or months before being restarted. */
@@ -183,7 +184,7 @@ int main(int argc, char *argv[]) {
     );
     QObject::connect(
         &player, &Player::userPlayingForChanged,
-        &generator, &Generator::setUserPlayingFor
+        &generator, &Generator::setUserGeneratingFor
     );
 
     resolver.setMusicPaths(musicPaths);

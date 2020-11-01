@@ -42,6 +42,17 @@ namespace PMP {
         struct HashStats {
             QDateTime lastHeard;
             qint16 score;
+
+            bool haveScore() const { return score >= 0; }
+
+            bool scoreLessThanXPercent(int percent) const
+            {
+                if (!haveScore())
+                    return false; // unknown score doesn't count
+
+                // remember that score is per 1000
+                return score < 10 * percent;
+            }
         };
 
         History(Player* player);
