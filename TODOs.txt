@@ -28,6 +28,7 @@ KNOWN BUGS
  * a "skip" operation should not affect the current track's score if performed by another player
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
  * GUI remote: music collection view: applying track metadata updates is not implemented yet
+ * GUI remote: skip button sometimes disabled when it should be enabled instead
 
 
 PERFORMANCE ISSUES
@@ -75,12 +76,14 @@ IDEAS
  * alternative display of "prev. heard" as a time span, e.g. "5 days ago" or "9 weeks ago"
  * music collection: show a "loading collection" indicator while downloading the list from the server
  * detect and prevent track repetition with different hash values
+ ** artist repetition avoidance
  * avoid accidental multiple clicks on "skip" affecting track score unnecessarily
  * provide fast partial indexation that only detects new files
  * track info dialog: add buttons for adding the track to the queue
  * track info dialog: show indication if file is available or not
  * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time
  * track info dialog: ability to pick the user whose personal stats are shown
+ * track info dialog: show personal play history for that track
  * queue: show error marker for a track that has no known file
  * queue: join title and artist columns when displaying filename
  * add a button for seeking back to the start of the current track
