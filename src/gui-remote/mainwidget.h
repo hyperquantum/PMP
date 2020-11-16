@@ -76,7 +76,7 @@ namespace PMP {
 
         void changeDynamicMode(int checkState);
         void noRepetitionIndexChanged(int index);
-        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
+        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpanSeconds);
         void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
         void startHighScoredTracksWave();
 

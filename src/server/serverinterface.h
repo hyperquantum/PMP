@@ -66,7 +66,7 @@ namespace PMP {
         void enableDynamicMode();
         void disableDynamicMode();
         void startWave();
-        void setTrackRepetitionAvoidanceMinutes(int minutes);
+        void setTrackRepetitionAvoidanceSeconds(int seconds);
 
         void startFullIndexation();
 

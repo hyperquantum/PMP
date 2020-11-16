@@ -181,12 +181,12 @@ namespace PMP {
         _generator->startWave();
     }
 
-    void ServerInterface::setTrackRepetitionAvoidanceMinutes(int minutes)
+    void ServerInterface::setTrackRepetitionAvoidanceSeconds(int seconds)
     {
         if (!isLoggedIn()) return;
-        if (minutes < 0) return;
+        if (seconds < 0) return;
 
-        _generator->setNoRepetitionSpanSeconds(minutes);
+        _generator->setNoRepetitionSpanSeconds(seconds);
     }
 
     void ServerInterface::startFullIndexation()

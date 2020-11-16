@@ -1954,13 +1954,13 @@ namespace PMP {
         if (message.length() != 7) return; /* invalid message */
 
         quint8 isEnabled = NetworkUtil::getByte(message, 2);
-        int noRepetitionSpan = NetworkUtil::get4BytesSigned(message, 3);
+        int noRepetitionSpanSeconds = NetworkUtil::get4BytesSigned(message, 3);
 
-        if (noRepetitionSpan < 0) return; /* invalid message */
+        if (noRepetitionSpanSeconds < 0) return; /* invalid message */
 
         qDebug() << "received dynamic mode status:" << (isEnabled > 0 ? "ON" : "OFF");
 
-        emit dynamicModeStatusReceived(isEnabled > 0, noRepetitionSpan);
+        Q_EMIT dynamicModeStatusReceived(isEnabled > 0, noRepetitionSpanSeconds);
     }
 
     void ServerConnection::parseDynamicModeWaveStatusMessage(QByteArray const& message) {

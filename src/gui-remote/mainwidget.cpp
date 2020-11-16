@@ -797,18 +797,19 @@ namespace PMP {
         _connection->setDynamicModeNoRepetitionSpan(newSpan);
     }
 
-    void MainWidget::dynamicModeStatusReceived(bool enabled, int noRepetitionSpan) {
+    void MainWidget::dynamicModeStatusReceived(bool enabled, int noRepetitionSpanSeconds)
+    {
         _dynamicModeEnabled = enabled;
         _ui->dynamicModeCheckBox->setChecked(enabled);
 
         int noRepetitionIndex = _ui->noRepetitionComboBox->currentIndex();
         if (noRepetitionIndex < 0
-            || _noRepetitionList[noRepetitionIndex] != noRepetitionSpan)
+            || _noRepetitionList[noRepetitionIndex] != noRepetitionSpanSeconds)
         {
             /* search for non-repetition span in list of choices */
             noRepetitionIndex = -1;
             for (int i = 0; i < _noRepetitionList.size(); ++i) {
-                if (_noRepetitionList[i] == noRepetitionSpan) {
+                if (_noRepetitionList[i] == noRepetitionSpanSeconds) {
                     noRepetitionIndex = i;
                     break;
                 }
@@ -820,7 +821,7 @@ namespace PMP {
                 _noRepetitionUpdating--;
             }
             else { /* not found in list */
-                buildNoRepetitionList(noRepetitionSpan);
+                buildNoRepetitionList(noRepetitionSpanSeconds);
             }
         }
     }

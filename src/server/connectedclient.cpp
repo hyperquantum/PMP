@@ -1696,15 +1696,15 @@ namespace PMP {
 
             if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
-            qint32 intervalMinutes = NetworkUtil::get4BytesSigned(message, 2);
+            qint32 intervalSeconds = NetworkUtil::get4BytesSigned(message, 2);
             qDebug() << "received change request for generator non-repetition interval;"
-                     << "minutes:" << intervalMinutes;
+                     << "seconds:" << intervalSeconds;
 
-            if (intervalMinutes < 0) {
+            if (intervalSeconds < 0) {
                 return; /* invalid message */
             }
 
-            _serverInterface->setTrackRepetitionAvoidanceMinutes(intervalMinutes);
+            _serverInterface->setTrackRepetitionAvoidanceSeconds(intervalSeconds);
         }
             break;
         case NetworkProtocol::PossibleFilenamesForQueueEntryRequestMessage:

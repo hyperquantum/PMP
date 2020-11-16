@@ -195,7 +195,7 @@ namespace PMP {
 
         void volumeChanged(int percentage);
 
-        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
+        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpanSeconds);
         void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
 
         void receivedPlayerHistoryEntry(PMP::PlayerHistoryTrackInfo track);
