@@ -130,43 +130,12 @@ namespace PMP {
         if (!_waveActive)
             return;
 
-        int tracksToTakeFromSource = selectionFilterTakeCount - _buffer.size();
-
-        if (tracksToTakeFromSource > 0)
+        if (_trackGenerationProgress < generationCountGoal)
         {
-            auto tracks =
-                    takeFromSourceAndApplyBasicFilter(tracksToTakeFromSource,
-                                                      selectionFilterTakeCount,
-                                                      false);
+            growBuffer();
 
-            _buffer.append(tracks);
-
-            qDebug() << "tried to get" << tracksToTakeFromSource
-                     << "tracks from source, got" << tracks.size()
-                     << "after filtering, buffer size is now" << _buffer.size();
-        }
-
-        if (_buffer.size() >= selectionFilterTakeCount)
-        {
-            int oldBufferSize = _buffer.size();
-
-            auto tracks =
-                    applySelectionFilter(_buffer, selectionFilterKeepCount,
-                                         [this](auto& a, auto& b) {
-                                             return selectionFilterCompare(a, b);
-                                         });
-
-            qDebug() << "applied selection filter to buffer; reduced size from"
-                     << oldBufferSize << "to" << tracks.size();
-
-            for (auto track : tracks) {
-                _upcoming.append(track);
-                _trackGenerationProgress++;
-            }
-
-            _buffer.clear();
-
-            qDebug() << "generation progress is now" << _trackGenerationProgress;
+            if (_buffer.size() >= selectionFilterTakeCount)
+                applySelectionFilterToBufferAndAppendToUpcoming();
         }
 
         if (_trackGenerationProgress >= generationCountGoal)
@@ -176,6 +145,60 @@ namespace PMP {
         }
         else
             QTimer::singleShot(40, this, &WaveTrackGenerator::upcomingRefillTimerAction);
+    }
+
+    void WaveTrackGenerator::growBuffer()
+    {
+        int tracksToTakeFromSource = selectionFilterTakeCount - _buffer.size();
+
+        if (tracksToTakeFromSource <= 0)
+            return;
+
+        int upcomingDurationEstimate =
+                _upcoming.size() * 3 * 60 * 1000; // estimate 3 minutes per track
+
+        auto filter =
+                [this, upcomingDurationEstimate](const Candidate& c)
+                {
+                    return satisfiesBasicFilter(c)
+                        && satisfiesNonRepetition(c, upcomingDurationEstimate);
+                };
+
+        auto tracks =
+                takeFromSourceAndApplyFilter(tracksToTakeFromSource,
+                                             selectionFilterTakeCount,
+                                             false, filter);
+
+        auto fromSourceCount = tracks.size();
+
+        _buffer.append(tracks);
+
+        qDebug() << "tried to get" << tracksToTakeFromSource
+                 << "tracks from source, got" << fromSourceCount
+                 << "after filtering, buffer size is now" << _buffer.size();
+    }
+
+    void WaveTrackGenerator::applySelectionFilterToBufferAndAppendToUpcoming()
+    {
+        int oldBufferSize = _buffer.size();
+
+        auto tracks =
+                applySelectionFilter(_buffer, selectionFilterKeepCount,
+                                     [this](auto& a, auto& b) {
+                                         return selectionFilterCompare(a, b);
+                                     });
+
+        qDebug() << "applied selection filter to buffer; reduced size from"
+                 << oldBufferSize << "to" << tracks.size();
+
+        for (auto track : tracks) {
+            _upcoming.append(track);
+            _trackGenerationProgress++;
+        }
+
+        _buffer.clear();
+
+        qDebug() << "generation progress is now" << _trackGenerationProgress;
     }
 
     void WaveTrackGenerator::criteriaChanged()
@@ -210,7 +233,7 @@ namespace PMP {
         return 0; // we consider them equal
     }
 
-    bool WaveTrackGenerator::satisfiesBasicFilter(Candidate& candidate)
+    bool WaveTrackGenerator::satisfiesBasicFilter(Candidate const& candidate)
     {
         // is it a real track, not a short sound file?
         if (candidate.lengthIsLessThanXSeconds(30))

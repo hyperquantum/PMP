@@ -109,6 +109,11 @@ namespace PMP {
         RandomTracksSource& source() const { return *_source; }
         History& history() const { return *_history; }
 
+        QVector<QSharedPointer<Candidate>> takeFromSourceAndApplyFilter(
+                                           int trackCount,
+                                           int maxAttempts,
+                                           bool allOrNothing,
+                                           std::function<bool (const Candidate&)> filter);
         QVector<QSharedPointer<Candidate>> takeFromSourceAndApplyBasicFilter(
                                                                        int trackCount,
                                                                        int maxAttempts,
@@ -117,9 +122,13 @@ namespace PMP {
         void applyBasicFilterToQueue(QQueue<QSharedPointer<Candidate>>& queue,
                                      int reserveSpaceForAtLeastXElements = 0);
 
-        virtual bool satisfiesBasicFilter(Candidate& candidate) = 0;
-        bool satisfiesNonRepetition(Candidate& candidate);
+        virtual bool satisfiesBasicFilter(Candidate const& candidate) = 0;
+        bool satisfiesNonRepetition(Candidate const& candidate,
+                                    qint64 extraMarginMilliseconds = 0);
 
+        QVector<QSharedPointer<Candidate>> applyFilter(
+                                           QVector<QSharedPointer<Candidate>> tracks,
+                                           std::function<bool (const Candidate&)> filter);
         QVector<QSharedPointer<Candidate>> applySelectionFilter(
                                 QVector<QSharedPointer<Candidate>> tracks, int keepCount,
              std::function<int (Candidate const&, Candidate const&)> candidateComparison);

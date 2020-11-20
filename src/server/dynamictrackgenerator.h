@@ -52,7 +52,7 @@ namespace PMP {
         int selectionFilterCompare(Candidate const& t1, Candidate const& t2);
         bool satisfiesFilters(Candidate& candidate);
 
-        bool satisfiesBasicFilter(Candidate& candidate) override;
+        bool satisfiesBasicFilter(Candidate const& candidate) override;
 
         QQueue<QSharedPointer<Candidate>> _upcoming;
         bool _enabled;

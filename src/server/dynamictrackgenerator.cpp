@@ -246,7 +246,7 @@ namespace PMP {
         return true;
     }
 
-    bool DynamicTrackGenerator::satisfiesBasicFilter(Candidate& candidate)
+    bool DynamicTrackGenerator::satisfiesBasicFilter(Candidate const& candidate)
     {
         // is it a real track, not a short sound file?
         if (candidate.lengthIsLessThanXSeconds(15))

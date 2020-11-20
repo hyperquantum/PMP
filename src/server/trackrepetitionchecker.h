@@ -37,7 +37,8 @@ namespace PMP {
 
         int noRepetitionSpanSeconds() const;
 
-        bool isRepetitionWhenQueued(uint id, FileHash const& hash);
+        bool isRepetitionWhenQueued(uint id, FileHash const& hash,
+                                    qint64 extraMarginMilliseconds = 0);
 
     public Q_SLOTS:
         void setUserGeneratingFor(quint32 user);
@@ -52,7 +53,7 @@ namespace PMP {
         QueueEntry const* _currentTrack;
         PlayerQueue* _queue;
         History* _history;
-        int _noRepetitionSpan;
+        int _noRepetitionSpanSeconds;
         quint32 _userPlayingFor;
     };
 }

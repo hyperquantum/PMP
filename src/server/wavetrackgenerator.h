@@ -47,12 +47,15 @@ namespace PMP {
         void upcomingRefillTimerAction();
 
     private:
+        void growBuffer();
+        void applySelectionFilterToBufferAndAppendToUpcoming();
+
         void criteriaChanged() override;
         void desiredUpcomingCountChanged() override;
 
         int selectionFilterCompare(Candidate const& t1, Candidate const& t2);
 
-        bool satisfiesBasicFilter(Candidate& candidate) override;
+        bool satisfiesBasicFilter(Candidate const& candidate) override;
 
         QQueue<QSharedPointer<Candidate>> _upcoming;
         QVector<QSharedPointer<Candidate>> _buffer;

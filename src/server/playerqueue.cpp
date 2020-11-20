@@ -428,11 +428,13 @@ namespace PMP {
     }
 
     TrackRepetitionInfo PlayerQueue::checkPotentialRepetitionByAdd(FileHash hash,
-                                                     int repetitionAvoidanceSeconds) const
+                                                     int repetitionAvoidanceSeconds,
+                                                     qint64 extraMarginMilliseconds) const
     {
-        qint64 millisecondsCounted = 0;
+        qint64 millisecondsCounted = extraMarginMilliseconds;
 
-        for (int i = _queue.length() - 1; i >= 0; --i) {
+        for (int i = _queue.length() - 1; i >= 0; --i)
+        {
             QueueEntry* entry = _queue[i];
             if (!entry->isTrack()) continue;
 

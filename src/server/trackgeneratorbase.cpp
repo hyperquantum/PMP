@@ -102,9 +102,11 @@ namespace PMP {
     }
 
     QVector<QSharedPointer<TrackGeneratorBase::Candidate>>
-        TrackGeneratorBase::takeFromSourceAndApplyBasicFilter(int trackCount,
-                                                              int maxAttempts,
-                                                              bool allOrNothing)
+        TrackGeneratorBase::takeFromSourceAndApplyFilter(
+                                            int trackCount,
+                                            int maxAttempts,
+                                            bool allOrNothing,
+                                            std::function<bool (const Candidate&)> filter)
     {
         QVector<QSharedPointer<Candidate>> tracks;
         tracks.reserve(trackCount);
@@ -117,7 +119,7 @@ namespace PMP {
             auto hash = source().takeTrack();
             auto candidate = createCandidate(hash);
 
-            if (!candidate || !satisfiesBasicFilter(*candidate)) {
+            if (!candidate || !filter(*candidate)) {
                 source().putBackUsedTrack(hash); // "used", so it won't come back soon
                 continue;
             }
@@ -148,6 +150,17 @@ namespace PMP {
         }
     }
 
+    QVector<QSharedPointer<TrackGeneratorBase::Candidate>>
+        TrackGeneratorBase::takeFromSourceAndApplyBasicFilter(int trackCount,
+                                                              int maxAttempts,
+                                                              bool allOrNothing)
+    {
+        return takeFromSourceAndApplyFilter(trackCount, maxAttempts, allOrNothing,
+                                            [this](Candidate const& c) {
+                                                return satisfiesBasicFilter(c);
+                                            });
+    }
+
     void TrackGeneratorBase::applyBasicFilterToQueue(
                                                  QQueue<QSharedPointer<Candidate>>& queue,
                                                  int reserveSpaceForAtLeastXElements)
@@ -167,10 +180,30 @@ namespace PMP {
         queue = filtered;
     }
 
-    bool TrackGeneratorBase::satisfiesNonRepetition(Candidate& candidate)
+    bool TrackGeneratorBase::satisfiesNonRepetition(Candidate const& candidate,
+                                                    qint64 extraMarginMilliseconds)
     {
         return !_repetitionChecker->isRepetitionWhenQueued(candidate.id(),
-                                                           candidate.hash());
+                                                           candidate.hash(),
+                                                           extraMarginMilliseconds);
+    }
+
+    QVector<QSharedPointer<TrackGeneratorBase::Candidate>>
+        TrackGeneratorBase::applyFilter(QVector<QSharedPointer<Candidate>> tracks,
+                                        std::function<bool (const Candidate&)> filter)
+    {
+        QVector<QSharedPointer<Candidate>> result;
+        result.reserve(tracks.size());
+
+        for (auto track : tracks)
+        {
+            if (filter(*track))
+                result.append(track);
+            else
+                source().putBackUsedTrack(track->hash());
+        }
+
+        return result;
     }
 
     QVector<QSharedPointer<TrackGeneratorBase::Candidate>>

@@ -65,7 +65,8 @@ namespace PMP {
         PlayerQueue(Resolver* resolver);
 
         TrackRepetitionInfo checkPotentialRepetitionByAdd(FileHash hash,
-                                                          int repetitionAvoidanceSeconds
+                                                          int repetitionAvoidanceSeconds,
+                                                          qint64 extraMarginMilliseconds
                                                           ) const;
 
         uint getNextQueueID();

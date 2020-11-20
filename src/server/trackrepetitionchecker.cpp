@@ -31,7 +31,7 @@ namespace PMP {
        _currentTrack(nullptr),
        _queue(queue),
        _history(history),
-       _noRepetitionSpan(0),
+       _noRepetitionSpanSeconds(0),
        _userPlayingFor(0)
     {
         //
@@ -39,27 +39,27 @@ namespace PMP {
 
     int TrackRepetitionChecker::noRepetitionSpanSeconds() const
     {
-        return _noRepetitionSpan;
+        return _noRepetitionSpanSeconds;
     }
 
-    bool TrackRepetitionChecker::isRepetitionWhenQueued(uint id, const FileHash& hash)
+    bool TrackRepetitionChecker::isRepetitionWhenQueued(uint id, const FileHash& hash,
+                                                        qint64 extraMarginMilliseconds)
     {
-        if (_noRepetitionSpan < 0)
+        if (_noRepetitionSpanSeconds < 0)
             return false; // repetition check disabled
 
         // check occurrence in queue
 
-        auto repetition = _queue->checkPotentialRepetitionByAdd(hash, _noRepetitionSpan);
+        auto repetition =
+                _queue->checkPotentialRepetitionByAdd(hash, _noRepetitionSpanSeconds,
+                                                      extraMarginMilliseconds);
 
         if (repetition.isRepetition())
-        {
             return true;
-        }
 
         qint64 millisecondsCounted = repetition.millisecondsCounted();
-        if (millisecondsCounted >= _noRepetitionSpan * qint64(1000)) {
+        if (millisecondsCounted >= _noRepetitionSpanSeconds * qint64(1000))
             return false;
-        }
 
         // check occurrence in 'now playing'
         QueueEntry const* trackNowPlaying = _currentTrack;
@@ -74,23 +74,19 @@ namespace PMP {
 
         QDateTime maxLastPlay =
                 QDateTime::currentDateTimeUtc().addMSecs(millisecondsCounted)
-                                               .addSecs(-_noRepetitionSpan);
+                                               .addSecs(-_noRepetitionSpanSeconds);
 
         QDateTime lastPlay = _history->lastPlayed(hash);
         if (lastPlay.isValid() && lastPlay > maxLastPlay)
-        {
             return true;
-        }
 
         auto userStats = _history->getUserStats(id, _userPlayingFor);
-        if (!userStats) {
+        if (!userStats)
             return true;
-        }
 
         lastPlay = userStats->lastHeard;
-        if (lastPlay.isValid() && lastPlay > maxLastPlay) {
+        if (lastPlay.isValid() && lastPlay > maxLastPlay)
             return true;
-        }
 
         return false;
     }
@@ -102,10 +98,10 @@ namespace PMP {
 
     void TrackRepetitionChecker::setNoRepetitionSpanSeconds(int seconds)
     {
-        if (_noRepetitionSpan == seconds)
+        if (_noRepetitionSpanSeconds == seconds)
             return;
 
-        _noRepetitionSpan = seconds;
+        _noRepetitionSpanSeconds = seconds;
 
         Q_EMIT noRepetitionSpanSecondsChanged();
     }
