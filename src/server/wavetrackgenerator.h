@@ -60,6 +60,7 @@ namespace PMP {
         QQueue<QSharedPointer<Candidate>> _upcoming;
         QVector<QSharedPointer<Candidate>> _buffer;
         int _trackGenerationProgress;
+        int _tracksDeliveredCount;
         bool _waveActive;
         bool _waveGenerationCompleted;
     };

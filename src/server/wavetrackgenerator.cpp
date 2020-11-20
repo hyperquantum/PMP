@@ -37,6 +37,7 @@ namespace PMP {
                                            TrackRepetitionChecker* repetitionChecker)
      : TrackGeneratorBase(parent, source, resolver, history, repetitionChecker),
        _trackGenerationProgress(0),
+       _tracksDeliveredCount(0),
        _waveActive(false),
        _waveGenerationCompleted(false)
     {
@@ -64,23 +65,31 @@ namespace PMP {
 
             if (trackIsSuitable)
                 tracks.append(track->hash());
-
-            if (_upcoming.size() % 5 == 0)
-            {
-                qDebug() << "upcoming tracks list down to" << _upcoming.size()
-                         << "elements";
-            }
         }
 
-        /* end of wave reached? */
-        if (_upcoming.isEmpty() && _waveGenerationCompleted)
+        _tracksDeliveredCount += tracks.size();
+
+        if (!_waveGenerationCompleted) /* final size not known yet */
         {
-            qDebug() << "wave has completed";
+            qDebug() << "wave progress: delivered" << _tracksDeliveredCount
+                     << "of an unknown total";
+        }
+        else if (!_upcoming.isEmpty())
+        {
+            int total = _tracksDeliveredCount + _upcoming.size();
+            qDebug() << "wave progress: delivered" << _tracksDeliveredCount
+                     << "of" << total;
+        }
+        else /* wave completed */
+        {
+            qDebug() << "wave is now complete; delivered" << _tracksDeliveredCount
+                     << "tracks";
+
             _waveActive = false;
             Q_EMIT waveEnded();
         }
 
-        qDebug() << "returning" << tracks.size() << "tracks";
+        qDebug() << "delivering" << tracks.size() << "tracks now";
         return tracks;
     }
 
@@ -94,6 +103,7 @@ namespace PMP {
         _waveActive = true;
         _waveGenerationCompleted = false;
         _trackGenerationProgress = 0;
+        _tracksDeliveredCount = 0;
         QTimer::singleShot(0, this, &WaveTrackGenerator::upcomingRefillTimerAction);
 
         Q_EMIT waveStarted();
@@ -203,7 +213,7 @@ namespace PMP {
 
     void WaveTrackGenerator::criteriaChanged()
     {
-        // TODO
+        // TODO : filter upcoming list and recalculate wave progress
 
 
 
@@ -211,10 +221,7 @@ namespace PMP {
 
     void WaveTrackGenerator::desiredUpcomingCountChanged()
     {
-        // TODO
-
-
-
+        // irrelevant
     }
 
     int WaveTrackGenerator::selectionFilterCompare(const Candidate& t1,
