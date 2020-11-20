@@ -37,6 +37,7 @@
 
 #include <QCoreApplication>
 #include <QStandardPaths>
+#include <QtDebug>
 #include <QThreadPool>
 
 using namespace PMP;
@@ -59,6 +60,17 @@ QStringList generateDefaultScanPaths() {
     }
 
     return paths;
+}
+
+void reportStartupError(int exitCode, QString message)
+{
+    QTextStream err(stderr);
+    err << message << endl
+        << "Exiting." << endl;
+
+    // write to log file
+    qDebug() << "Startup error:" << message;
+    qDebug() << "Will exit with code" << exitCode;
 }
 
 int main(int argc, char *argv[]) {
@@ -201,12 +213,13 @@ int main(int argc, char *argv[]) {
             QHostAddress::Any, 23432
         );
 
-    if (!listening) {
-        out << "Could not start TCP listener: " << server.errorString() << endl;
-        out << "Exiting." << endl;
+    if (!listening)
+    {
+        reportStartupError(1, "Could not start TCP listener: " + server.errorString());
         return 1;
     }
 
+    qDebug() << "Started listening to TCP port:" << server.port();
     out << "Now listening on port " << server.port() << endl
         << "Server password is " << server.serverPassword() << endl
         << endl;
