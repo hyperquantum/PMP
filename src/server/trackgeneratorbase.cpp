@@ -31,6 +31,34 @@
 
 namespace PMP {
 
+    /* ==== TrackGeneratorBase::Candidate ==== */
+
+    TrackGeneratorBase::Candidate::Candidate(RandomTracksSource* source,
+                                             uint id, const FileHash& hash,
+                                             const AudioData& audioData,
+                                             quint16 randomPermillageNumber1,
+                                             quint16 randomPermillageNumber2)
+        : _source(source),
+          _id(id),
+          _hash(hash),
+          _audioData(audioData),
+          _randomPermillageNumber1(randomPermillageNumber1),
+          _randomPermillageNumber2(randomPermillageNumber2),
+          _unused(false)
+    {
+        //
+    }
+
+    TrackGeneratorBase::Candidate::~Candidate()
+    {
+        if (_unused)
+            _source->putBackUnusedTrack(_hash);
+        else
+            _source->putBackUsedTrack(_hash);
+    }
+
+    /* ==== TrackGeneratorBase ==== */
+
     void TrackGeneratorBase::setCriteria(const DynamicModeCriteria& criteria)
     {
         if (criteria == _criteria)
@@ -73,17 +101,20 @@ namespace PMP {
         return quint16(range(_randomEngine));
     }
 
-    QSharedPointer<TrackGeneratorBase::Candidate> TrackGeneratorBase::createCandidate(
-                                                                    const FileHash& hash)
+    QSharedPointer<TrackGeneratorBase::Candidate> TrackGeneratorBase::createCandidate()
     {
+        auto hash = _source->takeTrack();
+
         if (hash.isNull()) {
             qWarning() << "the null hash turned up as a potential candidate";
+            _source->putBackUsedTrack(hash);
             return nullptr;
         }
 
         if (!_resolver->haveFileFor(hash)) {
             qDebug() << "cannot use hash" << hash
                      << "as a candidate because we don't have a file for it";
+            _source->putBackUsedTrack(hash);
             return nullptr;
         }
 
@@ -91,12 +122,13 @@ namespace PMP {
         if (id <= 0) {
             qDebug() << "cannot use hash" << hash
                      << "as a candidate because it hasn't been registered";
+            _source->putBackUsedTrack(hash);
             return nullptr;
         }
 
         const AudioData& audioData = _resolver->findAudioData(hash);
 
-        return QSharedPointer<Candidate>::create(id, hash, audioData,
+        return QSharedPointer<Candidate>::create(_source, id, hash, audioData,
                                                  getRandomPermillage(),
                                                  getRandomPermillage());
     }
@@ -116,13 +148,10 @@ namespace PMP {
         while (tries > 0 && tracks.size() < trackCount) {
             tries--;
 
-            auto hash = source().takeTrack();
-            auto candidate = createCandidate(hash);
+            auto candidate = createCandidate();
 
-            if (!candidate || !filter(*candidate)) {
-                source().putBackUsedTrack(hash); // "used", so it won't come back soon
+            if (!candidate || !filter(*candidate))
                 continue;
-            }
 
             tracks.append(candidate);
         }
@@ -136,9 +165,8 @@ namespace PMP {
                      << "out of" << trackCount << "; giving them back to the source";
 
             // ran out of attempts, put everything back for the next attempt
-            for (auto track : tracks) {
-                source().putBackUnusedTrack(track->hash());
-            }
+            for (auto track : tracks)
+                track->setUnused();
 
             return {};
         }
@@ -199,8 +227,6 @@ namespace PMP {
         {
             if (filter(*track))
                 result.append(track);
-            else
-                source().putBackUsedTrack(track->hash());
         }
 
         return result;
@@ -245,13 +271,7 @@ namespace PMP {
         for (int i = 0; i < tracks.size(); ++i)
         {
             if (included[i])
-            {
                 result.append(tracks[i]);
-            }
-            else
-            {
-                source().putBackUsedTrack(tracks[i]->hash());
-            }
         }
 
         return result;

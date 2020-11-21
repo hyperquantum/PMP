@@ -58,16 +58,16 @@ namespace PMP {
 
         class Candidate {
         public:
-            Candidate(uint id, FileHash const& hash, AudioData const& audioData,
-                      quint16 randomPermillageNumber1, quint16 randomPermillageNumber2)
-             : _id(id),
-               _hash(hash),
-               _audioData(audioData),
-               _randomPermillageNumber1(randomPermillageNumber1),
-               _randomPermillageNumber2(randomPermillageNumber2)
-            {
-                //
-            }
+            Candidate(RandomTracksSource* source, uint id, FileHash const& hash,
+                      AudioData const& audioData,
+                      quint16 randomPermillageNumber1, quint16 randomPermillageNumber2);
+
+            ~Candidate();
+
+            Candidate(Candidate const&) = delete;
+            Candidate& operator=(Candidate const&) = delete;
+
+            void setUnused() { _unused = true; }
 
             uint id() const { return _id; }
             const FileHash& hash() const { return _hash; }
@@ -90,15 +90,17 @@ namespace PMP {
             quint16 randomPermillageNumber2() const { return _randomPermillageNumber2; }
 
         private:
+            RandomTracksSource* _source;
             uint _id;
             FileHash _hash;
             AudioData _audioData;
             quint16 _randomPermillageNumber1;
             quint16 _randomPermillageNumber2;
+            bool _unused;
         };
 
         quint16 getRandomPermillage();
-        QSharedPointer<Candidate> createCandidate(FileHash const& hash);
+        QSharedPointer<Candidate> createCandidate();
 
         DynamicModeCriteria const& criteria() const { return _criteria; }
         virtual void criteriaChanged() = 0;
@@ -106,7 +108,6 @@ namespace PMP {
         int desiredUpcomingCount() const { return _desiredUpcomingTrackCount; }
         virtual void desiredUpcomingCountChanged() = 0;
 
-        RandomTracksSource& source() const { return *_source; }
         History& history() const { return *_history; }
 
         QVector<QSharedPointer<Candidate>> takeFromSourceAndApplyFilter(

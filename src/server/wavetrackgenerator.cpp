@@ -59,10 +59,6 @@ namespace PMP {
             bool trackIsSuitable =
                     satisfiesBasicFilter(*track) && satisfiesNonRepetition(*track);
 
-            /* the track is marked as 'used' even when it has been deemed unsuitable, so
-               that it won't come back again for a long time */
-            source().putBackUsedTrack(track->hash());
-
             if (trackIsSuitable)
                 tracks.append(track->hash());
         }
@@ -118,17 +114,7 @@ namespace PMP {
 
         _waveActive = false;
 
-        /* put all tracks back in the source as "used", so they won't immediately
-           return as tracks for the regular dynamic mode */
-        for (auto track : _upcoming)
-        {
-            source().putBackUsedTrack(track->hash());
-        }
-        for (auto track : _buffer)
-        {
-            source().putBackUsedTrack(track->hash());
-        }
-
+        /* all tracks will be marked as used and put back in the source */
         _upcoming.clear();
         _buffer.clear();
 

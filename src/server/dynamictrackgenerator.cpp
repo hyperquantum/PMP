@@ -58,10 +58,6 @@ namespace PMP {
             bool trackIsSuitable =
                     satisfiesFilters(*track) && satisfiesNonRepetition(*track);
 
-            /* the track is marked as 'used' even when it has been deemed unsuitable, so
-               that it won't come back again for a long time */
-            source().putBackUsedTrack(track->hash());
-
             if (trackIsSuitable)
                 tracks.append(track->hash());
         }
