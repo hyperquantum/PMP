@@ -83,8 +83,6 @@ namespace PMP {
     private:
         void checkQueueRefillNeeded();
         void setDesiredUpcomingCount();
-        void advanceWave();
-//        bool satisfiesWaveFilter(Candidate* candidate);
 
         RandomTracksSource* _randomTracksSource;
         TrackRepetitionChecker* _repetitionChecker;
@@ -93,13 +91,10 @@ namespace PMP {
         PlayerQueue* _queue;
         Resolver* _resolver;
         History* _history;
-        //int _minimumPermillageByWave;
         DynamicModeCriteria _criteria;
         bool _enabled;
         bool _refillPending;
         bool _waveActive;
-        //bool _waveRising;
     };
-
 }
 #endif
