@@ -122,6 +122,9 @@ namespace PMP {
         {
             qDebug() << "generation complete";
             _waveGenerationCompleted = true;
+
+            /* emit a zero progress signal */
+            calculateProgressAndEmitSignal();
         }
         else
             QTimer::singleShot(40, this, &WaveTrackGenerator::upcomingRefillTimerAction);
@@ -212,6 +215,9 @@ namespace PMP {
 
     void WaveTrackGenerator::criteriaChanged()
     {
+        if (!_waveActive)
+            return;
+
         // filter upcoming list and recalculate wave progress
 
         auto oldUpcomingSize = _upcoming.size();
