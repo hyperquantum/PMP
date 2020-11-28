@@ -26,6 +26,7 @@
 #include "dynamicmodecriteria.h"
 
 #include <QObject>
+#include <QPointer>
 #include <QQueue>
 #include <QSharedPointer>
 
@@ -90,7 +91,7 @@ namespace PMP {
             quint16 randomPermillageNumber2() const { return _randomPermillageNumber2; }
 
         private:
-            RandomTracksSource* _source;
+            QPointer<RandomTracksSource> _source;
             uint _id;
             FileHash _hash;
             AudioData _audioData;

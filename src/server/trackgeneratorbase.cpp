@@ -51,10 +51,18 @@ namespace PMP {
 
     TrackGeneratorBase::Candidate::~Candidate()
     {
-        if (_unused)
+        if (!_source)
+        {
+            /* cannot return candidate to the source */
+        }
+        else if (_unused)
+        {
             _source->putBackUnusedTrack(_hash);
+        }
         else
+        {
             _source->putBackUsedTrack(_hash);
+        }
     }
 
     /* ==== TrackGeneratorBase ==== */
