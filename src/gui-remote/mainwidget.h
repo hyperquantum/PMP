@@ -74,11 +74,15 @@ namespace PMP {
         void historyContextMenuRequested(const QPoint& position);
         void queueContextMenuRequested(const QPoint& position);
 
+        void dynamicModeEnabledChanged();
+        void noRepetitionSpanSecondsChanged();
         void changeDynamicMode(int checkState);
         void noRepetitionIndexChanged(int index);
-        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpanSeconds);
-        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
+
+        void waveActiveChanged();
+        void waveProgressChanged();
         void startHighScoredTracksWave();
+        void terminateHighScoredTracksWave();
 
     private:
         void enableDisableTrackInfoButton();
@@ -100,8 +104,6 @@ namespace PMP {
         QueueEntryInfoFetcher* _queueEntryInfoFetcher;
         QueueModel* _queueModel;
         QMenu* _queueContextMenu;
-        bool _dynamicModeEnabled;
-        bool _dynamicModeHighScoreWaveActive;
         QList<int> _noRepetitionList;
         int _noRepetitionUpdating;
         PlayerHistoryModel* _historyModel;

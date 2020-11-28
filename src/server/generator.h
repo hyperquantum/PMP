@@ -48,6 +48,8 @@ namespace PMP {
 
         bool enabled() const;
         bool waveActive() const;
+        int waveProgress() const;
+        int waveProgressTotal() const;
 
         quint32 userPlayingFor() const;
 
@@ -71,8 +73,9 @@ namespace PMP {
     Q_SIGNALS:
         void enabledChanged(bool enabled);
         void noRepetitionSpanChanged(int seconds);
-        void waveStarting(quint32 user);
-        void waveFinished(quint32 user);
+        void waveStarting();
+        void waveProgressChanged(int tracksDelivered, int tracksTotal);
+        void waveFinished(bool completed);
 
     private Q_SLOTS:
         void upcomingTrackNotification(FileHash hash);
@@ -91,6 +94,8 @@ namespace PMP {
         PlayerQueue* _queue;
         Resolver* _resolver;
         History* _history;
+        int _waveProgress;
+        int _waveProgressTotal;
         DynamicModeCriteria _criteria;
         bool _enabled;
         bool _refillPending;

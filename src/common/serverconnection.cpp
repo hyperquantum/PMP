@@ -243,7 +243,7 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 13;
+    const quint16 ServerConnection::ClientProtocolNo = 14;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -285,8 +285,14 @@ namespace PMP {
         return _userLoggedInName;
     }
 
-    bool ServerConnection::serverSupportsQueueEntryDuplication() const {
+    bool ServerConnection::serverSupportsQueueEntryDuplication() const
+    {
         return _serverProtocolNo >= 9;
+    }
+
+    bool ServerConnection::serverSupportsDynamicModeWaveTermination() const
+    {
+        return _serverProtocolNo >= 14;
     }
 
     void ServerConnection::onConnected() {
@@ -1014,8 +1020,14 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::startDynamicModeWave() {
+    void ServerConnection::startDynamicModeWave()
+    {
         sendSingleByteAction(24); /* 24 = start dynamic mode wave */
+    }
+
+    void ServerConnection::terminateDynamicModeWave()
+    {
+        sendSingleByteAction(25); /* 25 = terminate dynamic mode wave */
     }
 
     void ServerConnection::startFullIndexation() {
@@ -1963,18 +1975,24 @@ namespace PMP {
         Q_EMIT dynamicModeStatusReceived(isEnabled > 0, noRepetitionSpanSeconds);
     }
 
-    void ServerConnection::parseDynamicModeWaveStatusMessage(QByteArray const& message) {
+    void ServerConnection::parseDynamicModeWaveStatusMessage(QByteArray const& message)
+    {
         qDebug() << "parsing dynamic mode wave status message";
 
-        if (message.length() != 8) {
-            invalidMessageReceived(message, "dynamic-mode-status", "message length != 8");
+        auto expectedMessageLength = _serverProtocolNo >= 14 ? 12 : 8;
+
+        if (message.length() != expectedMessageLength)
+        {
+            invalidMessageReceived(message, "dynamic-mode-wave-status",
+                                   "wrong message length");
             return;
         }
 
         auto statusByte = NetworkUtil::getByte(message, 3);
-        if (!NetworkProtocol::isValidStartStopEventStatus(statusByte)) {
+        if (!Common::isValidStartStopEventStatus(statusByte))
+        {
             invalidMessageReceived(
-                message, "dynamic-mode-status",
+                message, "dynamic-mode-wave-status",
                 "invalid status value: " + QString::number(statusByte)
             );
             return;
@@ -1983,11 +2001,20 @@ namespace PMP {
         /* we have no use for the user yet */
         //auto user = NetworkUtil::get4Bytes(message, 4);
 
-        auto status = NetworkProtocol::StartStopEventStatus(statusByte);
-        bool statusActive = NetworkProtocol::isActive(status);
-        bool statusChanged = NetworkProtocol::isChange(status);
+        auto status = StartStopEventStatus(statusByte);
+        bool statusActive = Common::isActive(status);
+        bool statusChanged = Common::isChange(status);
 
-        emit dynamicModeHighScoreWaveStatusReceived(statusActive, statusChanged);
+        int progress = -1;
+        int progressTotal = -1;
+        if (_serverProtocolNo >= 14)
+        {
+            progress = NetworkUtil::get2BytesSigned(message, 8);
+            progressTotal = NetworkUtil::get2BytesSigned(message, 10);
+        }
+
+        Q_EMIT dynamicModeHighScoreWaveStatusReceived(statusActive, statusChanged,
+                                                      progress, progressTotal);
     }
 
     void ServerConnection::parseTrackAvailabilityChangeBatchMessage(

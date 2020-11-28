@@ -208,10 +208,8 @@ int main(int argc, char *argv[]) {
 
     Server server(nullptr, serverInstanceIdentifier);
     bool listening =
-        server.listen(
-            &player, &generator, &users, &collectionMonitor, &serverHealthMonitor,
-            QHostAddress::Any, 23432
-        );
+        server.listen(&player, &generator, &history, &users, &collectionMonitor,
+                      &serverHealthMonitor, QHostAddress::Any, 23432);
 
     if (!listening)
     {

@@ -29,6 +29,11 @@ namespace PMP {
     class NetworkUtil {
     public:
 
+        static int fitsIn2BytesSigned(int number);
+
+        static qint16 to2BytesSigned(int number, bool& errorFlag,
+                                     const char* whatIsConverted);
+
         static int appendByte(QByteArray& buffer, quint8 b);
         static int append2Bytes(QByteArray& buffer, quint16 number);
         static int append4Bytes(QByteArray& buffer, quint32 number);

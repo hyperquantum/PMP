@@ -41,7 +41,8 @@ namespace PMP {
 
     Q_SIGNALS:
         void waveStarted();
-        void waveEnded();
+        void waveProgress(int tracksDelivered, int tracksTotal);
+        void waveEnded(bool completed);
 
     private Q_SLOTS:
         void upcomingRefillTimerAction();
@@ -49,6 +50,7 @@ namespace PMP {
     private:
         void growBuffer();
         void applySelectionFilterToBufferAndAppendToUpcoming();
+        void calculateProgressAndEmitSignal();
 
         void criteriaChanged() override;
         void desiredUpcomingCountChanged() override;

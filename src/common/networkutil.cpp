@@ -25,6 +25,24 @@
 
 namespace PMP {
 
+    int NetworkUtil::fitsIn2BytesSigned(int number)
+    {
+        return number <= std::numeric_limits<qint16>::max()
+                && number >= std::numeric_limits<qint16>::min();
+    }
+
+    qint16 NetworkUtil::to2BytesSigned(int number, bool& errorFlag,
+                                       const char* whatIsConverted)
+    {
+        if (fitsIn2BytesSigned(number))
+            return static_cast<qint16>(number);
+
+        errorFlag = true;
+        qWarning() << whatIsConverted << "value" << number
+                   << "does not fit in 16-bit int";
+        return 0;
+    }
+
     int NetworkUtil::appendByte(QByteArray& buffer, quint8 b) {
         buffer.append(extractByte0(b));
         return 1;

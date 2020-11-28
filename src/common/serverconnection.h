@@ -122,6 +122,7 @@ namespace PMP {
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
 
         bool serverSupportsQueueEntryDuplication() const;
+        bool serverSupportsDynamicModeWaveTermination() const;
 
     public Q_SLOTS:
         void shutdownServer();
@@ -148,6 +149,7 @@ namespace PMP {
         void requestDynamicModeStatus();
         void setDynamicModeNoRepetitionSpan(int seconds);
         void startDynamicModeWave();
+        void terminateDynamicModeWave();
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
         void deleteQueueEntry(uint queueID);
@@ -196,7 +198,8 @@ namespace PMP {
         void volumeChanged(int percentage);
 
         void dynamicModeStatusReceived(bool enabled, int noRepetitionSpanSeconds);
-        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
+        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged,
+                                                    int progress, int progressTotal);
 
         void receivedPlayerHistoryEntry(PMP::PlayerHistoryTrackInfo track);
         void receivedPlayerHistory(QVector<PMP::PlayerHistoryTrackInfo> tracks);

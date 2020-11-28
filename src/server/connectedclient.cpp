@@ -26,7 +26,6 @@
 
 #include "collectionmonitor.h"
 #include "database.h"
-#include "generator.h"
 #include "history.h"
 #include "player.h"
 #include "playerqueue.h"
@@ -46,14 +45,16 @@ namespace PMP {
 
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 13;
+    const qint16 ConnectedClient::ServerProtocolNo = 14;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
-                                     Player* player, Generator* generator, Users* users,
+                                     Player* player,
+                                     History* history,
+                                     Users* users,
                                      CollectionMonitor* collectionMonitor,
                                      ServerHealthMonitor* serverHealthMonitor)
      : _socket(socket), _serverInterface(serverInterface),
-       _player(player), _generator(generator),
+       _player(player), _history(history),
        _users(users), _collectionMonitor(collectionMonitor),
        _serverHealthMonitor(serverHealthMonitor),
        _clientProtocolNo(-1),
@@ -117,22 +118,6 @@ namespace PMP {
 
         connect(_player, &Player::volumeChanged, this, &ConnectedClient::volumeChanged);
         connect(
-            _generator, &Generator::enabledChanged,
-            this, &ConnectedClient::dynamicModeStatusChanged
-        );
-        connect(
-            _generator, &Generator::noRepetitionSpanChanged,
-            this, &ConnectedClient::dynamicModeNoRepetitionSpanChanged
-        );
-        connect(
-            _generator, &Generator::waveStarting,
-            this, &ConnectedClient::dynamicModeWaveStarting
-        );
-        connect(
-            _generator, &Generator::waveFinished,
-            this, &ConnectedClient::dynamicModeWaveFinished
-        );
-        connect(
             _player, &Player::stateChanged,
             this, &ConnectedClient::playerStateChanged
         );
@@ -151,6 +136,15 @@ namespace PMP {
         connect(
             _player, &Player::userPlayingForChanged,
             this, &ConnectedClient::onUserPlayingForChanged
+        );
+
+        connect(
+            _serverInterface, &ServerInterface::dynamicModeStatusEvent,
+            this, &ConnectedClient::onDynamicModeStatusEvent
+        );
+        connect(
+            _serverInterface, &ServerInterface::dynamicModeWaveStatusEvent,
+            this, &ConnectedClient::onDynamicModeWaveStatusEvent
         );
 
         connect(
@@ -181,7 +175,7 @@ namespace PMP {
         );
 
         connect(
-            &_generator->history(), &History::updatedHashUserStats,
+            _history, &History::updatedHashUserStats,
             this, &ConnectedClient::onUserHashStatsUpdated
         );
 
@@ -571,9 +565,11 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendDynamicModeStatusMessage() {
-        quint8 enabled = _generator->enabled() ? 1 : 0;
-        qint32 noRepetitionSpan = _generator->noRepetitionSpanSeconds();
+    void ConnectedClient::sendDynamicModeStatusMessage(StartStopEventStatus enabledStatus,
+                                                       int noRepetitionSpanSeconds)
+    {
+        quint8 enabled = Common::isActive(enabledStatus) ? 1 : 0;
+        qint32 noRepetitionSpan = noRepetitionSpanSeconds;
 
         QByteArray message;
         message.reserve(7);
@@ -600,17 +596,30 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendGeneratorWaveStatusMessage(
-            NetworkProtocol::StartStopEventStatus status, quint32 user)
+    void ConnectedClient::sendGeneratorWaveStatusMessage(StartStopEventStatus status,
+                                                         quint32 user,
+                                                         int waveDeliveredCount,
+                                                         int waveTotalCount)
     {
         if (_clientProtocolNo < 8) return; /* client will not understand this message */
 
         QByteArray message;
-        message.reserve(8);
+        message.reserve(8 + 4);
         NetworkUtil::append2Bytes(message, NetworkProtocol::DynamicModeWaveStatusMessage);
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::appendByte(message, quint8(status));
         NetworkUtil::append4Bytes(message, user);
+        if (_clientProtocolNo >= 14)
+        {
+            bool error = false;
+            qint16 progress =
+                NetworkUtil::to2BytesSigned(waveDeliveredCount, error, "wave progress");
+            qint16 progressTotal =
+                NetworkUtil::to2BytesSigned(waveTotalCount, error, "wave progress total");
+
+            NetworkUtil::append2BytesSigned(message, progress);
+            NetworkUtil::append2BytesSigned(message, progressTotal);
+        }
 
         sendBinaryMessage(message);
     }
@@ -1331,28 +1340,19 @@ namespace PMP {
         sendVolumeMessage();
     }
 
-    void ConnectedClient::dynamicModeStatusChanged(bool enabled) {
-        (void)enabled;
-
-        sendDynamicModeStatusMessage();
+    void ConnectedClient::onDynamicModeStatusEvent(StartStopEventStatus dynamicModeStatus,
+                                                   int noRepetitionSpanSeconds)
+    {
+        sendDynamicModeStatusMessage(dynamicModeStatus, noRepetitionSpanSeconds);
     }
 
-    void ConnectedClient::dynamicModeWaveStarting(quint32 user) {
-        sendGeneratorWaveStatusMessage(
-            NetworkProtocol::StartStopEventStatus::EventActivatedNow, user
-        );
-    }
-
-    void ConnectedClient::dynamicModeWaveFinished(quint32 user) {
-        sendGeneratorWaveStatusMessage(
-            NetworkProtocol::StartStopEventStatus::EventDeactivatedNow, user
-        );
-    }
-
-    void ConnectedClient::dynamicModeNoRepetitionSpanChanged(int seconds) {
-        (void)seconds;
-
-        sendDynamicModeStatusMessage();
+    void ConnectedClient::onDynamicModeWaveStatusEvent(StartStopEventStatus waveStatus,
+                                                       quint32 user,
+                                                       int waveDeliveredCount,
+                                                       int waveTotalCount)
+    {
+        sendGeneratorWaveStatusMessage(waveStatus, user,
+                                       waveDeliveredCount, waveTotalCount);
     }
 
     void ConnectedClient::onUserPlayingForChanged(quint32 user) {
@@ -2344,15 +2344,7 @@ namespace PMP {
             break;
         case 11: /* request for status of dynamic mode */
             qDebug() << "received request for dynamic mode status";
-            sendDynamicModeStatusMessage();
-
-            sendGeneratorWaveStatusMessage(
-                NetworkProtocol::createAlreadyActiveStartStopEventStatus(
-                    _generator->waveActive()
-                ),
-                _generator->userPlayingFor()
-            );
-
+            _serverInterface->requestDynamicModeStatus();
             break;
         case 12:
             qDebug() << "received request for server instance UUID";
@@ -2402,7 +2394,11 @@ namespace PMP {
             break;
         case 24:
             qDebug() << "received START WAVE command";
-            _serverInterface->startWave();
+            _serverInterface->startDynamicModeWave();
+            break;
+        case 25:
+            qDebug() << "received TERMINATE WAVE command";
+            _serverInterface->terminateDynamicModeWave();
             break;
         case 30: /* switch to public mode */
             qDebug() << "received SWITCH TO PUBLIC MODE command";

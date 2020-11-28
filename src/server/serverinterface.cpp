@@ -37,6 +37,27 @@ namespace PMP {
             _server, &Server::shuttingDown,
             this, &ServerInterface::serverShuttingDown
         );
+
+        connect(
+            _generator, &Generator::enabledChanged,
+            this, &ServerInterface::onDynamicModeStatusChanged
+        );
+        connect(
+            _generator, &Generator::noRepetitionSpanChanged,
+            this, &ServerInterface::onDynamicModeNoRepetitionSpanChanged
+        );
+        connect(
+            _generator, &Generator::waveStarting,
+            this, &ServerInterface::onDynamicModeWaveStarted
+        );
+        connect(
+            _generator, &Generator::waveProgressChanged,
+            this, &ServerInterface::onDynamicModeWaveProgress
+        );
+        connect(
+            _generator, &Generator::waveFinished,
+            this, &ServerInterface::onDynamicModeWaveEnded
+        );
     }
 
     QUuid ServerInterface::getServerUuid() const
@@ -161,6 +182,27 @@ namespace PMP {
         _generator->requestQueueExpansion();
     }
 
+    void ServerInterface::requestDynamicModeStatus()
+    {
+        auto enabledStatus =
+                Common::createUnchangedStartStopEventStatus(_generator->enabled());
+
+        auto noRepetitionSpanSeconds = _generator->noRepetitionSpanSeconds();
+
+        auto user = _generator->userPlayingFor();
+
+        auto waveStatus =
+                Common::createUnchangedStartStopEventStatus(_generator->waveActive());
+
+        auto waveProgress = _generator->waveProgress();
+        auto waveProgressTotal = _generator->waveProgressTotal();
+
+        Q_EMIT dynamicModeStatusEvent(enabledStatus, noRepetitionSpanSeconds);
+
+        Q_EMIT dynamicModeWaveStatusEvent(waveStatus, user,
+                                          waveProgress, waveProgressTotal);
+    }
+
     void ServerInterface::enableDynamicMode()
     {
         if (!isLoggedIn()) return;
@@ -173,12 +215,20 @@ namespace PMP {
         _generator->disable();
     }
 
-    void ServerInterface::startWave()
+    void ServerInterface::startDynamicModeWave()
     {
         if (!isLoggedIn()) return;
         if (_generator->waveActive()) return;
 
         _generator->startWave();
+    }
+
+    void ServerInterface::terminateDynamicModeWave()
+    {
+        if (!isLoggedIn()) return;
+        if (!_generator->waveActive()) return;
+
+        _generator->terminateWave();
     }
 
     void ServerInterface::setTrackRepetitionAvoidanceSeconds(int seconds)
@@ -205,6 +255,65 @@ namespace PMP {
     {
         if (serverPassword != _server->serverPassword()) return;
         _server->shutdown();
+    }
+
+    void ServerInterface::onDynamicModeStatusChanged()
+    {
+        auto enabledStatus =
+                Common::createChangedStartStopEventStatus(_generator->enabled());
+
+        auto noRepetitionSpanSeconds = _generator->noRepetitionSpanSeconds();
+
+        Q_EMIT dynamicModeStatusEvent(enabledStatus, noRepetitionSpanSeconds);
+    }
+
+    void ServerInterface::onDynamicModeNoRepetitionSpanChanged()
+    {
+        auto enabledStatus =
+                Common::createUnchangedStartStopEventStatus(_generator->enabled());
+
+        auto noRepetitionSpanSeconds = _generator->noRepetitionSpanSeconds();
+
+        Q_EMIT dynamicModeStatusEvent(enabledStatus, noRepetitionSpanSeconds);
+    }
+
+    void ServerInterface::onDynamicModeWaveStarted()
+    {
+        auto user = _generator->userPlayingFor();
+
+        auto waveStatus =
+                Common::createChangedStartStopEventStatus(_generator->waveActive());
+
+        auto waveProgress = _generator->waveProgress();
+        auto waveProgressTotal = _generator->waveProgressTotal();
+
+        Q_EMIT dynamicModeWaveStatusEvent(waveStatus, user,
+                                          waveProgress, waveProgressTotal);
+    }
+
+    void ServerInterface::onDynamicModeWaveProgress(int tracksDelivered, int tracksTotal)
+    {
+        auto user = _generator->userPlayingFor();
+
+        auto waveStatus =
+                Common::createUnchangedStartStopEventStatus(_generator->waveActive());
+
+        Q_EMIT dynamicModeWaveStatusEvent(waveStatus, user,
+                                          tracksDelivered, tracksTotal);
+    }
+
+    void ServerInterface::onDynamicModeWaveEnded()
+    {
+        auto user = _generator->userPlayingFor();
+
+        auto waveStatus =
+                Common::createChangedStartStopEventStatus(_generator->waveActive());
+
+        auto waveProgress = _generator->waveProgress();
+        auto waveProgressTotal = _generator->waveProgressTotal();
+
+        Q_EMIT dynamicModeWaveStatusEvent(waveStatus, user,
+                                          waveProgress, waveProgressTotal);
     }
 
 }

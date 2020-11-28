@@ -120,6 +120,9 @@ namespace PMP {
                                                                        int maxAttempts,
                                                                        bool allOrNothing);
 
+        static void applyFilterToQueue(QQueue<QSharedPointer<Candidate>>& queue,
+                                std::function<bool (const Candidate&)> filter,
+                                int reserveSpaceForAtLeastXElements = 0);
         void applyBasicFilterToQueue(QQueue<QSharedPointer<Candidate>>& queue,
                                      int reserveSpaceForAtLeastXElements = 0);
 
@@ -127,7 +130,7 @@ namespace PMP {
         bool satisfiesNonRepetition(Candidate const& candidate,
                                     qint64 extraMarginMilliseconds = 0);
 
-        QVector<QSharedPointer<Candidate>> applyFilter(
+        static QVector<QSharedPointer<Candidate>> applyFilter(
                                            QVector<QSharedPointer<Candidate>> tracks,
                                            std::function<bool (const Candidate&)> filter);
         QVector<QSharedPointer<Candidate>> applySelectionFilter(

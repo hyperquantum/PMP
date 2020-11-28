@@ -25,7 +25,10 @@ namespace PMP {
 
     DynamicModeControllerImpl::DynamicModeControllerImpl(ServerConnection* connection)
      : DynamicModeController(connection),
-       _connection(connection)
+       _connection(connection),
+       _noRepetitionSpanSeconds(-1),
+       _waveProgress(-1),
+       _waveProgressTotal(-1)
     {
         connect(
             _connection, &ServerConnection::connected,
@@ -34,7 +37,54 @@ namespace PMP {
         connect(
             _connection, &ServerConnection::connectionBroken,
             this, &DynamicModeControllerImpl::connectionBroken
-                    );
+        );
+        connect(
+            _connection, &ServerConnection::dynamicModeStatusReceived,
+            this, &DynamicModeControllerImpl::dynamicModeStatusReceived
+        );
+        connect(
+            _connection, &ServerConnection::dynamicModeHighScoreWaveStatusReceived,
+            this, &DynamicModeControllerImpl::dynamicModeHighScoreWaveStatusReceived
+        );
+
+        if (_connection->isConnected())
+            connected();
+    }
+
+    TriBool DynamicModeControllerImpl::dynamicModeEnabled() const
+    {
+        return _dynamicModeEnabled;
+    }
+
+    int DynamicModeControllerImpl::noRepetitionSpanSeconds() const
+    {
+        return _noRepetitionSpanSeconds;
+    }
+
+    TriBool DynamicModeControllerImpl::waveActive() const
+    {
+        return _waveActive;
+    }
+
+    bool DynamicModeControllerImpl::canStartWave() const
+    {
+        return _waveActive.isFalse();
+    }
+
+    bool DynamicModeControllerImpl::canTerminateWave() const
+    {
+        return _waveActive.isTrue()
+                && _connection->serverSupportsDynamicModeWaveTermination();
+    }
+
+    int DynamicModeControllerImpl::waveProgress() const
+    {
+        return _waveProgress;
+    }
+
+    int DynamicModeControllerImpl::waveProgressTotal() const
+    {
+        return _waveProgressTotal;
     }
 
     void DynamicModeControllerImpl::enableDynamicMode()
@@ -47,13 +97,87 @@ namespace PMP {
         _connection->disableDynamicMode();
     }
 
+    void DynamicModeControllerImpl::setNoRepetitionSpan(int noRepetitionSpanSeconds)
+    {
+        _connection->setDynamicModeNoRepetitionSpan(noRepetitionSpanSeconds);
+    }
+
+    void DynamicModeControllerImpl::startHighScoredTracksWave()
+    {
+        _connection->startDynamicModeWave();
+    }
+
+    void DynamicModeControllerImpl::terminateHighScoredTracksWave()
+    {
+        _connection->terminateDynamicModeWave();
+    }
+
     void DynamicModeControllerImpl::connected()
     {
-        // TODO
+        _connection->requestDynamicModeStatus();
     }
 
     void DynamicModeControllerImpl::connectionBroken()
     {
-        // TODO
+        updateStatus(TriBool::unknown, -1);
+        updateWaveStatus(TriBool::unknown, -1, 0);
+    }
+
+    void DynamicModeControllerImpl::dynamicModeStatusReceived(bool enabled,
+                                                              int noRepetitionSpanSeconds)
+    {
+        updateStatus(enabled, noRepetitionSpanSeconds);
+    }
+
+    void DynamicModeControllerImpl::dynamicModeHighScoreWaveStatusReceived(bool active,
+                                                                       bool statusChanged,
+                                                                       int progress,
+                                                                       int progressTotal)
+    {
+        Q_UNUSED(statusChanged)
+
+        updateWaveStatus(active, progress, progressTotal);
+    }
+
+    void DynamicModeControllerImpl::updateStatus(TriBool enabled,
+                                                 int noRepetitionSpanSeconds)
+    {
+        bool enabledChanged = !_dynamicModeEnabled.isIdenticalTo(enabled);
+        bool spanChanged = _noRepetitionSpanSeconds != noRepetitionSpanSeconds;
+
+        _dynamicModeEnabled = enabled;
+        _noRepetitionSpanSeconds = noRepetitionSpanSeconds;
+
+        if (enabledChanged)
+        {
+            Q_EMIT dynamicModeEnabledChanged();
+        }
+
+        if (spanChanged)
+        {
+            Q_EMIT noRepetitionSpanSecondsChanged();
+        }
+    }
+
+    void DynamicModeControllerImpl::updateWaveStatus(TriBool active,
+                                                     int progress, int progressTotal)
+    {
+        bool activeChanged = !_waveActive.isIdenticalTo(active);
+        bool progressChanged =
+                _waveProgress != progress || _waveProgressTotal != progressTotal;
+
+        _waveActive = active;
+        _waveProgress = progress;
+        _waveProgressTotal = progressTotal;
+
+        if (activeChanged)
+        {
+            Q_EMIT waveActiveChanged();
+        }
+
+        if (progressChanged)
+        {
+            Q_EMIT waveProgressChanged();
+        }
     }
 }

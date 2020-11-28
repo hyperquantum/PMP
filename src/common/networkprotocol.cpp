@@ -47,29 +47,6 @@ namespace PMP {
         NetworkUtil::append2Bytes(buffer, encodedMessageType);
     }
 
-    bool NetworkProtocol::isValidStartStopEventStatus(quint8 status) {
-        /* we consider 0 an invalid value because it does not represent a status */
-        return status >= 1 && status <= 4;
-    }
-
-    bool NetworkProtocol::isActive(StartStopEventStatus status) {
-        return status == StartStopEventStatus::EventActivatedNow
-                || status == StartStopEventStatus::StatusActiveAlready;
-    }
-
-    bool NetworkProtocol::isChange(StartStopEventStatus status) {
-        return status == StartStopEventStatus::EventActivatedNow
-                || status == StartStopEventStatus::EventDeactivatedNow;
-    }
-
-    NetworkProtocol::StartStopEventStatus
-    NetworkProtocol::createAlreadyActiveStartStopEventStatus(bool active)
-    {
-        return active
-                ? StartStopEventStatus::StatusActiveAlready
-                : StartStopEventStatus::StatusNotActive;
-    }
-
     int NetworkProtocol::ratePassword(QString password) {
         int rating = 0;
         for (int i = 0; i < password.size(); ++i) {

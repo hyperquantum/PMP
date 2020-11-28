@@ -189,9 +189,9 @@ namespace PMP {
                                             });
     }
 
-    void TrackGeneratorBase::applyBasicFilterToQueue(
-                                                 QQueue<QSharedPointer<Candidate>>& queue,
-                                                 int reserveSpaceForAtLeastXElements)
+    void TrackGeneratorBase::applyFilterToQueue(QQueue<QSharedPointer<Candidate>>& queue,
+                                            std::function<bool (const Candidate&)> filter,
+                                                int reserveSpaceForAtLeastXElements)
     {
         if (queue.isEmpty())
             return;
@@ -201,11 +201,20 @@ namespace PMP {
 
         for (auto track : queue)
         {
-            if (satisfiesBasicFilter(*track))
+            if (filter(*track))
                 filtered.append(track);
         }
 
         queue = filtered;
+    }
+
+    void TrackGeneratorBase::applyBasicFilterToQueue(
+                                                 QQueue<QSharedPointer<Candidate>>& queue,
+                                                 int reserveSpaceForAtLeastXElements)
+    {
+        applyFilterToQueue(queue,
+                           [this](const Candidate& c) { return satisfiesBasicFilter(c); },
+                           reserveSpaceForAtLeastXElements);
     }
 
     bool TrackGeneratorBase::satisfiesNonRepetition(Candidate const& candidate,

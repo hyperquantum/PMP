@@ -57,7 +57,6 @@ namespace PMP {
         _queueMonitor(nullptr), _queueMediator(nullptr),
         _queueEntryInfoFetcher(nullptr),
         _queueModel(nullptr), _queueContextMenu(nullptr),
-        _dynamicModeEnabled(false), _dynamicModeHighScoreWaveActive(false),
         _noRepetitionUpdating(0),
         _historyModel(nullptr), _historyContextMenu(nullptr)
     {
@@ -132,6 +131,7 @@ namespace PMP {
         auto* playerController = &clientServerInterface->playerController();
         auto* currentTrackMonitor = &clientServerInterface->currentTrackMonitor();
         _trackProgressMonitor = new PreciseTrackProgressMonitor(currentTrackMonitor);
+        auto* dynamicModeController = &clientServerInterface->dynamicModeController();
 
         connect(
             _historyModel, &PlayerHistoryModel::rowsInserted,
@@ -191,20 +191,32 @@ namespace PMP {
             this, &MainWidget::changeDynamicMode
         );
         connect(
-            _ui->startHighScoredTracksWaveButton, &QPushButton::clicked,
+            _ui->startWaveButton, &QPushButton::clicked,
             this, &MainWidget::startHighScoredTracksWave
+        );
+        connect(
+            _ui->terminateWaveButton, &QPushButton::clicked,
+            this, &MainWidget::terminateHighScoredTracksWave
         );
         connect(
             _ui->noRepetitionComboBox, qOverload<int>(&QComboBox::currentIndexChanged),
             this, &MainWidget::noRepetitionIndexChanged
         );
         connect(
-            _connection, &ServerConnection::dynamicModeStatusReceived,
-            this, &MainWidget::dynamicModeStatusReceived
+            dynamicModeController, &DynamicModeController::dynamicModeEnabledChanged,
+            this, &MainWidget::dynamicModeEnabledChanged
         );
         connect(
-            _connection, &ServerConnection::dynamicModeHighScoreWaveStatusReceived,
-            this, &MainWidget::dynamicModeHighScoreWaveStatusReceived
+            dynamicModeController, &DynamicModeController::noRepetitionSpanSecondsChanged,
+            this, &MainWidget::noRepetitionSpanSecondsChanged
+        );
+        connect(
+            dynamicModeController, &DynamicModeController::waveActiveChanged,
+            this, &MainWidget::waveActiveChanged
+        );
+        connect(
+            dynamicModeController, &DynamicModeController::waveProgressChanged,
+            this, &MainWidget::waveProgressChanged
         );
 
         connect(
@@ -254,8 +266,6 @@ namespace PMP {
             this, &MainWidget::queueLengthChanged
         );
 
-        _connection->requestDynamicModeStatus(); // TODO : move this?
-
         {
             QSettings settings(QCoreApplication::organizationName(),
                                QCoreApplication::applicationName());
@@ -287,6 +297,10 @@ namespace PMP {
                              currentTrackMonitor->currentTrackProgressMilliseconds(),
                              currentTrackMonitor->currentTrackLengthMilliseconds());
         volumeChanged();
+        dynamicModeEnabledChanged();
+        noRepetitionSpanSecondsChanged();
+        waveActiveChanged();
+        waveProgressChanged();
     }
 
     bool MainWidget::eventFilter(QObject* object, QEvent* event) {
@@ -521,6 +535,62 @@ namespace PMP {
         _queueContextMenu->popup(_ui->queueTableView->viewport()->mapToGlobal(position));
     }
 
+    void MainWidget::dynamicModeEnabledChanged()
+    {
+        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
+
+        auto enabled = dynamicModeController.dynamicModeEnabled();
+        _ui->dynamicModeCheckBox->setEnabled(enabled.isKnown());
+        _ui->dynamicModeCheckBox->setChecked(enabled.isTrue());
+    }
+
+    void MainWidget::noRepetitionSpanSecondsChanged()
+    {
+        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
+
+        auto noRepetitionSpanSeconds = dynamicModeController.noRepetitionSpanSeconds();
+
+        _ui->noRepetitionComboBox->setEnabled(noRepetitionSpanSeconds >= 0);
+
+        if (noRepetitionSpanSeconds < 0)
+        {
+            _noRepetitionUpdating++;
+            _ui->noRepetitionComboBox->setCurrentIndex(-1);
+            _noRepetitionUpdating--;
+            return;
+        }
+
+        int noRepetitionIndex = _ui->noRepetitionComboBox->currentIndex();
+
+        if (noRepetitionIndex >= 0
+                && _noRepetitionList[noRepetitionIndex] == noRepetitionSpanSeconds)
+        {
+            return; /* the right item is selected already */
+        }
+
+        /* search for non-repetition span in list of choices */
+        noRepetitionIndex = -1;
+        for (int i = 0; i < _noRepetitionList.size(); ++i)
+        {
+            if (_noRepetitionList[i] == noRepetitionSpanSeconds)
+            {
+                noRepetitionIndex = i;
+                break;
+            }
+        }
+
+        if (noRepetitionIndex >= 0)
+        { /* found in list */
+            _noRepetitionUpdating++;
+            _ui->noRepetitionComboBox->setCurrentIndex(noRepetitionIndex);
+            _noRepetitionUpdating--;
+        }
+        else
+        { /* not found in list */
+            buildNoRepetitionList(noRepetitionSpanSeconds);
+        }
+    }
+
     void MainWidget::playerStateChanged() {
         auto& playerController = _clientServerInterface->playerController();
 
@@ -677,23 +747,34 @@ namespace PMP {
         }
     }
 
-    void MainWidget::changeDynamicMode(int checkState) {
-        if (checkState == Qt::Checked) {
-            if (!_dynamicModeEnabled) {
-                _clientServerInterface->dynamicModeController().enableDynamicMode();
-                _dynamicModeEnabled = true;
+    void MainWidget::changeDynamicMode(int checkState)
+    {
+        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
+
+        if (checkState == Qt::Checked)
+        {
+            if (!dynamicModeController.dynamicModeEnabled().isTrue())
+            {
+                dynamicModeController.enableDynamicMode();
             }
         }
-        else {
-            if (_dynamicModeEnabled) {
-                _clientServerInterface->dynamicModeController().disableDynamicMode();
-                _dynamicModeEnabled = false;
+        else
+        {
+            if (!dynamicModeController.dynamicModeEnabled().isFalse())
+            {
+                dynamicModeController.disableDynamicMode();
             }
         }
     }
 
-    void MainWidget::startHighScoredTracksWave() {
-        _connection->startDynamicModeWave();
+    void MainWidget::startHighScoredTracksWave()
+    {
+        _clientServerInterface->dynamicModeController().startHighScoredTracksWave();
+    }
+
+    void MainWidget::terminateHighScoredTracksWave()
+    {
+        _clientServerInterface->dynamicModeController().terminateHighScoredTracksWave();
     }
 
     void MainWidget::buildNoRepetitionList(int spanToSelect) {
@@ -794,44 +875,36 @@ namespace PMP {
 
         qDebug() << "noRepetitionIndexChanged: index" << index << "  value" << newSpan;
 
-        _connection->setDynamicModeNoRepetitionSpan(newSpan);
+        _clientServerInterface->dynamicModeController().setNoRepetitionSpan(newSpan);
     }
 
-    void MainWidget::dynamicModeStatusReceived(bool enabled, int noRepetitionSpanSeconds)
+    void MainWidget::waveActiveChanged()
     {
-        _dynamicModeEnabled = enabled;
-        _ui->dynamicModeCheckBox->setChecked(enabled);
+        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
 
-        int noRepetitionIndex = _ui->noRepetitionComboBox->currentIndex();
-        if (noRepetitionIndex < 0
-            || _noRepetitionList[noRepetitionIndex] != noRepetitionSpanSeconds)
+        _ui->startWaveButton->setEnabled(dynamicModeController.canStartWave());
+        _ui->terminateWaveButton->setVisible(dynamicModeController.canTerminateWave());
+    }
+
+    void MainWidget::waveProgressChanged()
+    {
+        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
+
+        int progress = dynamicModeController.waveProgress();
+        int progressTotal = dynamicModeController.waveProgressTotal();
+
+        if (progress < 0 || progressTotal <= 0)
         {
-            /* search for non-repetition span in list of choices */
-            noRepetitionIndex = -1;
-            for (int i = 0; i < _noRepetitionList.size(); ++i) {
-                if (_noRepetitionList[i] == noRepetitionSpanSeconds) {
-                    noRepetitionIndex = i;
-                    break;
-                }
-            }
-
-            if (noRepetitionIndex >= 0) { /* found in list */
-                _noRepetitionUpdating++;
-                _ui->noRepetitionComboBox->setCurrentIndex(noRepetitionIndex);
-                _noRepetitionUpdating--;
-            }
-            else { /* not found in list */
-                buildNoRepetitionList(noRepetitionSpanSeconds);
-            }
+            _ui->waveProgressValueLabel->setVisible(false);
         }
-    }
+        else
+        {
+            auto text =
+                    QString::number(progress) + " / " + QString::number(progressTotal);
 
-    void MainWidget::dynamicModeHighScoreWaveStatusReceived(bool active,
-                                                            bool statusChanged)
-    {
-        (void)statusChanged;
-
-        _ui->startHighScoredTracksWaveButton->setEnabled(!active);
+            _ui->waveProgressValueLabel->setText(text);
+            _ui->waveProgressValueLabel->setVisible(true);
+        }
     }
 
     void MainWidget::enableDisableTrackInfoButton()

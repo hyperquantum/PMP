@@ -25,6 +25,44 @@
 
 using namespace PMP;
 
+void TestNetworkUtil::fitsIn2BytesSigned()
+{
+    QVERIFY(NetworkUtil::fitsIn2BytesSigned(0));
+    QVERIFY(NetworkUtil::fitsIn2BytesSigned(32767));
+    QVERIFY(NetworkUtil::fitsIn2BytesSigned(-32768));
+
+    QVERIFY(!NetworkUtil::fitsIn2BytesSigned(32768));
+    QVERIFY(!NetworkUtil::fitsIn2BytesSigned(-32769));
+}
+
+void TestNetworkUtil::to2BytesSigned()
+{
+    {
+        bool error = false;
+        qint16 result = NetworkUtil::to2BytesSigned(32767, error, "test1");
+        QCOMPARE(result, 32767);
+        QCOMPARE(error, false);
+    }
+    {
+        bool error = false;
+        qint16 result = NetworkUtil::to2BytesSigned(-32768, error, "test1");
+        QCOMPARE(result, -32768);
+        QCOMPARE(error, false);
+    }
+    {
+        bool error = false;
+        qint16 result = NetworkUtil::to2BytesSigned(32768, error, "test1");
+        QCOMPARE(result, 0);
+        QCOMPARE(error, true);
+    }
+    {
+        bool error = false;
+        qint16 result = NetworkUtil::to2BytesSigned(-32769, error, "test1");
+        QCOMPARE(result, 0);
+        QCOMPARE(error, true);
+    }
+}
+
 void TestNetworkUtil::appendByte() {
     QByteArray array;
     NetworkUtil::appendByte(array, '\0');

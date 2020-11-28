@@ -52,6 +52,8 @@ namespace PMP {
        _queue(queue),
        _resolver(resolver),
        _history(history),
+       _waveProgress(-1),
+       _waveProgressTotal(0),
        _enabled(false),
        _refillPending(false),
        _waveActive(false)
@@ -73,30 +75,57 @@ namespace PMP {
         connect(
             _waveTrackGenerator, &WaveTrackGenerator::waveStarted,
             this,
-            [this]() {
+            [this]()
+            {
                 _waveActive = true;
-                Q_EMIT waveStarting(_criteria.user());
+                _waveProgress = -1;
+                _waveProgressTotal = 0;
+                Q_EMIT waveStarting();
+            }
+        );
+        connect(
+            _waveTrackGenerator, &WaveTrackGenerator::waveProgress,
+            this,
+            [this](int tracksDelivered, int tracksTotal)
+            {
+                _waveProgress = tracksDelivered;
+                _waveProgressTotal = tracksTotal;
+                Q_EMIT waveProgressChanged(tracksDelivered, tracksTotal);
             }
         );
         connect(
             _waveTrackGenerator, &WaveTrackGenerator::waveEnded,
             this,
-            [this]() {
+            [this](bool completed)
+            {
                 _waveActive = false;
-                Q_EMIT waveFinished(_criteria.user());
+                Q_EMIT waveFinished(completed);
             }
         );
     }
 
-    bool Generator::enabled() const {
+    bool Generator::enabled() const
+    {
         return _enabled;
     }
 
-    bool Generator::waveActive() const {
+    bool Generator::waveActive() const
+    {
         return _waveActive;
     }
 
-    quint32 Generator::userPlayingFor() const {
+    int Generator::waveProgress() const
+    {
+        return _waveProgress;
+    }
+
+    int Generator::waveProgressTotal() const
+    {
+        return _waveProgressTotal;
+    }
+
+    quint32 Generator::userPlayingFor() const
+    {
         return _criteria.user();
     }
 
@@ -105,7 +134,8 @@ namespace PMP {
         return _criteria.noRepetitionSpanSeconds();
     }
 
-    History& Generator::history() {
+    History& Generator::history()
+    {
         return *_history;
     }
 

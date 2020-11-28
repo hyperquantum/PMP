@@ -65,25 +65,7 @@ namespace PMP {
 
         _tracksDeliveredCount += tracks.size();
 
-        if (!_waveGenerationCompleted) /* final size not known yet */
-        {
-            qDebug() << "wave progress: delivered" << _tracksDeliveredCount
-                     << "of an unknown total";
-        }
-        else if (!_upcoming.isEmpty())
-        {
-            int total = _tracksDeliveredCount + _upcoming.size();
-            qDebug() << "wave progress: delivered" << _tracksDeliveredCount
-                     << "of" << total;
-        }
-        else /* wave completed */
-        {
-            qDebug() << "wave is now complete; delivered" << _tracksDeliveredCount
-                     << "tracks";
-
-            _waveActive = false;
-            Q_EMIT waveEnded();
-        }
+        calculateProgressAndEmitSignal();
 
         qDebug() << "delivering" << tracks.size() << "tracks now";
         return tracks;
@@ -100,6 +82,8 @@ namespace PMP {
         _waveGenerationCompleted = false;
         _trackGenerationProgress = 0;
         _tracksDeliveredCount = 0;
+        _upcoming.reserve(generationCountGoal);
+        _buffer.reserve(selectionFilterKeepCount);
         QTimer::singleShot(0, this, &WaveTrackGenerator::upcomingRefillTimerAction);
 
         Q_EMIT waveStarted();
@@ -118,7 +102,7 @@ namespace PMP {
         _upcoming.clear();
         _buffer.clear();
 
-        Q_EMIT waveEnded();
+        Q_EMIT waveEnded(false);
     }
 
     void WaveTrackGenerator::upcomingRefillTimerAction()
@@ -197,12 +181,56 @@ namespace PMP {
         qDebug() << "generation progress is now" << _trackGenerationProgress;
     }
 
+    void WaveTrackGenerator::calculateProgressAndEmitSignal()
+    {
+        if (!_waveGenerationCompleted) /* final size not known yet */
+        {
+            qDebug() << "wave progress: delivered" << _tracksDeliveredCount
+                     << "of an unknown total";
+        }
+        else if (!_upcoming.isEmpty())
+        {
+            int total = _tracksDeliveredCount + _upcoming.size();
+            qDebug() << "wave progress: delivered" << _tracksDeliveredCount
+                     << "of" << total;
+
+            Q_EMIT waveProgress(_tracksDeliveredCount, total);
+        }
+        else /* wave completed */
+        {
+            qDebug() << "wave is now complete; delivered" << _tracksDeliveredCount
+                     << "tracks";
+
+            _waveActive = false;
+
+            /* Deliver a final progress update, this confirms that the wave really has
+               finished and was not cancelled. */
+            Q_EMIT waveProgress(_tracksDeliveredCount, _tracksDeliveredCount);
+            Q_EMIT waveEnded(true);
+        }
+    }
+
     void WaveTrackGenerator::criteriaChanged()
     {
-        // TODO : filter upcoming list and recalculate wave progress
+        // filter upcoming list and recalculate wave progress
 
+        auto oldUpcomingSize = _upcoming.size();
 
+        auto filter =
+                [this](Candidate const& c) {
+                    return satisfiesBasicFilter(c) && satisfiesNonRepetition(c);
+                };
 
+        applyFilterToQueue(_upcoming, filter, generationCountGoal);
+
+        auto newUpcomingSize = _upcoming.size();
+
+        qDebug() << "dynamic mode wave criteria changed; removed"
+                 << (oldUpcomingSize - newUpcomingSize)
+                 << "tracks from the upcoming list,"
+                 << newUpcomingSize << "tracks are remaining";
+
+        calculateProgressAndEmitSignal();
     }
 
     void WaveTrackGenerator::desiredUpcomingCountChanged()

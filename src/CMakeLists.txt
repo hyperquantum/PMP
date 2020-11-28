@@ -32,6 +32,7 @@ set(PMP_COMMON_SOURCES
     common/playercontrollerimpl.cpp
     common/serverconnection.cpp
     common/serverdiscoverer.cpp
+    common/startstopeventstatus.cpp
     common/tagdata.cpp
     common/tribool.cpp
     common/userdatafetcher.cpp

@@ -24,6 +24,7 @@
 #include "playerstate.h"
 #include "queueentrytype.h"
 #include "serverhealthstatus.h"
+#include "startstopeventstatus.h"
 
 namespace PMP {
 
@@ -39,6 +40,7 @@ namespace PMP {
             qRegisterMetaType<PMP::PlayerState>();
             qRegisterMetaType<PMP::QueueEntryType>();
             qRegisterMetaType<PMP::ServerHealthStatus>();
+            qRegisterMetaType<PMP::StartStopEventStatus>();
         }
 
     private:
