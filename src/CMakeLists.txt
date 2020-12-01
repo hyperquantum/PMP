@@ -187,7 +187,7 @@ add_executable(PMP-HashTool
     common/filehash.cpp
     common/tagdata.cpp
 )
-add_executable(PMP-Cmd-Remote tools/cmd-remote-main.cpp)
+add_executable(PMP-Cmd-Remote cmd-remote/cmd-remote-main.cpp)
 add_executable(quicktest
     tools/quicktest.cpp
     ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS}
