@@ -27,8 +27,8 @@
 namespace PMP {
 
     namespace {
-        static const int selectionFilterTakeCount = 30;
-        static const int selectionFilterKeepCount = 15;
+        static const int selectionFilterTakeCount = 22;
+        static const int selectionFilterKeepCount = 10;
         static const int generationCountGoal = selectionFilterKeepCount * 2;
     }
 
