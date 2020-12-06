@@ -106,6 +106,10 @@ set(PMP_SERVER_HEADERS
     server/wavetrackgenerator.h
 )
 
+set(PMP_CMD_REMOTE_SOURCES
+    cmd-remote/commandparser.cpp
+)
+
 set(PMP_GUI_REMOTE_SOURCES
     gui-remote/abstractqueuemonitor.cpp
     gui-remote/autopersonalmodeaction.cpp
@@ -187,7 +191,7 @@ add_executable(PMP-HashTool
     common/filehash.cpp
     common/tagdata.cpp
 )
-add_executable(PMP-Cmd-Remote cmd-remote/cmd-remote-main.cpp)
+
 add_executable(quicktest
     tools/quicktest.cpp
     ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS}
@@ -197,6 +201,11 @@ add_executable(quicktest
 add_executable(PMP-Server
     server/server-main.cpp
     ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS}
+    ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
+)
+add_executable(PMP-Cmd-Remote
+    cmd-remote/cmd-remote-main.cpp
+    ${PMP_CMD_REMOTE_SOURCES}
     ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 add_executable(PMP-GUI-Remote
@@ -219,4 +228,5 @@ target_link_libraries(PMP-GUI-Remote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widget
 target_link_libraries(PMP-HashTool ${TAGLIB_LIBRARIES})
 target_link_libraries(quicktest ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-Server ${TAGLIB_LIBRARIES})
+target_link_libraries(PMP-Cmd-Remote ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-GUI-Remote ${TAGLIB_LIBRARIES})

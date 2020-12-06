@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,13 +17,18 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "commandparser.h"
+
 #include "common/version.h"
 
 #include <QByteArray>
 #include <QtCore>
 #include <QTcpSocket>
 
-void printUsage(QTextStream& out, QString const& programName) {
+using namespace PMP;
+
+void printUsage(QTextStream& out, QString const& programName)
+{
     out << "usage: " << programName
                 << " <server-name-or-ip> <server-port> <command> [<command args>]" << endl
         << endl
@@ -52,8 +57,8 @@ void printUsage(QTextStream& out, QString const& programName) {
         << endl;
 }
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
     QCoreApplication app(argc, argv);
 
     QCoreApplication::setApplicationName("Party Music Player - Remote");
@@ -62,128 +67,53 @@ int main(int argc, char *argv[]) {
     QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
 
     QTextStream out(stdout);
+    QTextStream err(stderr);
 
     QStringList args = QCoreApplication::arguments();
 
-    if (args.size() < 4) {
-        out << "Not enough arguments specified!" << endl;
-        printUsage(out, QFileInfo(QCoreApplication::applicationFilePath()).fileName());
+    if (args.size() < 4)
+    {
+        err << "Not enough arguments specified!" << endl;
+        printUsage(err, QFileInfo(QCoreApplication::applicationFilePath()).fileName());
         return 1;
     }
 
-    const int commandArgOffset = 4;
-    int commandArgs = args.size() - commandArgOffset;
-
     QString server = args[1];
     QString port = args[2];
-    QString command = args[3];
+    auto commandWithArgs = args.mid(3).toVector();
 
     /* Validate port number */
     bool ok = true;
     uint portNumber = port.toUInt(&ok);
-    if (!ok || portNumber > 0xFFFFu)  {
-        out << "Invalid port number: " << port << endl;
+    if (!ok || portNumber > 0xFFFFu)
+    {
+        err << "Invalid port number: " << port << endl;
         return 1;
     }
 
-    bool waitForResponse = false;
+    CommandParser commandParser;
+    commandParser.parse(commandWithArgs);
 
-    /* Validate command */
-    QString commandToSend;
-    if (command == "pause" || command == "play" || command == "skip"
-        || command == "nowplaying" || command == "queue")
+    if (!commandParser.parsedSuccessfully())
     {
-        if (commandArgs > 0) {
-            out << "Command '" << command << "' does not accept arguments!" << endl;
-            return 1;
-        }
-
-        /* OK */
-        commandToSend = command;
-        waitForResponse = (command == "nowplaying" || command == "queue");
-    }
-    else if (command == "shutdown") {
-        if (commandArgs > 1) {
-            out << "Command 'shutdown' requires exactly one argument!" << endl;
-            return 1;
-        }
-        else if (commandArgs == 0) {
-            out << "Command 'shutdown' now requires the server password!" << endl;
-            return 1;
-        }
-
-        /* OK */
-        commandToSend = command + " " + args[commandArgOffset];
-        waitForResponse = false;
-    }
-    else if (command == "volume") {
-        if (commandArgs > 1) {
-            out << "Command 'volume' cannot have more than one argument!" << endl;
-            return 1;
-        }
-        else if (commandArgs == 1) {
-            bool ok;
-            uint volume = args[commandArgOffset].toUInt(&ok);
-            if (!ok || volume > 100) {
-                out << "Command 'volume' requires a volume argument in the range 0-100!" << endl;
-                return 1;
-            }
-
-            /* OK */
-            commandToSend = command + " " + args[commandArgOffset];
-            waitForResponse = true;
-        }
-        else { /* zero args */
-            /* OK */
-            commandToSend = command;
-            waitForResponse = true;
-        }
-    }
-    else if (command == "qmove") {
-        if (commandArgs != 2) {
-            out << "Command 'qmove' requires two arguments!" << endl;
-            return 1;
-        }
-
-        bool ok;
-        uint queueID = args[commandArgOffset].toUInt(&ok);
-        if (!ok || queueID == 0) {
-            out << "Command 'qmove' requires a valid QID as its first argument!" << endl;
-            return 1;
-        }
-
-        if (!args[commandArgOffset + 1].startsWith("+")
-            && !args[commandArgOffset + 1].startsWith("-"))
-        {
-            out << "Second argument of command 'qmove' must start with \"+\" or \"-\"!" << endl;
-            return 1;
-        }
-        int moveDiff = args[commandArgOffset + 1].toInt(&ok);
-        if (!ok || moveDiff == 0) {
-            out << "Second argument of command 'qmove' must be a positive or negative number!" << endl;
-            return 1;
-        }
-
-        /* OK */
-        commandToSend = command + " " + args[commandArgOffset] + " " + args[commandArgOffset + 1];
-        waitForResponse = false;
-    }
-    else {
-        out << "Command not recognized: " << command << endl;
+        err << commandParser.errorMessage() << endl;
         return 1;
     }
 
     QTcpSocket socket;
     socket.connectToHost(server, static_cast<quint16>(portNumber));
 
-    if (!socket.waitForConnected(2000)) {
-        out << "Failed to connect to the server: code " << socket.error() << endl;
+    if (!socket.waitForConnected(2000))
+    {
+        err << "Failed to connect to the server: code " << socket.error() << endl;
         return 2;
     }
 
-    while (socket.bytesAvailable() < 3) {
-        if (!socket.waitForReadyRead(2000)) {
-            out << "No timely response from the server!" << endl;
+    while (socket.bytesAvailable() < 3)
+    {
+        if (!socket.waitForReadyRead(2000))
+        {
+            err << "No timely response from the server!" << endl;
             return 2;
         }
     }
@@ -195,14 +125,16 @@ int main(int argc, char *argv[]) {
         || dataReceived.at(1) != 'M'
         || dataReceived.at(2) != 'P')
     {
-        out << "This is not a PMP server!" << endl;
+        err << "This is not a PMP server!" << endl;
         return 2;
     }
 
     int semicolonIndex = -1;
-    while ((semicolonIndex = dataReceived.indexOf(';')) < 0) {
-        if (!socket.waitForReadyRead(2000)) {
-            out << "Server handshake not complete!" << endl;
+    while ((semicolonIndex = dataReceived.indexOf(';')) < 0)
+    {
+        if (!socket.waitForReadyRead(2000))
+        {
+            err << "Server handshake not complete!" << endl;
             return 2;
         }
 
@@ -213,20 +145,24 @@ int main(int argc, char *argv[]) {
     dataReceived.remove(0, semicolonIndex + 1); /* +1 to remove the semicolon too */
 
     out << " server greeting: " << serverHelloString << endl;
-    out << " sending command: " << command << endl;
+    out << " sending command: " << commandParser.commandStringToSend() << endl;
 
-    socket.write((commandToSend + ";").toUtf8());
+    socket.write((commandParser.commandStringToSend() + ";").toUtf8());
 
-    if (!socket.waitForBytesWritten(5000)) {
-        out << "Failed to send data to the server." << endl;
+    if (!socket.waitForBytesWritten(5000))
+    {
+        err << "Failed to send data to the server." << endl;
         return 2;
     }
 
-    if (waitForResponse) {
+    if (commandParser.mustWaitForResponseAfterSending())
+    {
         semicolonIndex = -1;
-        while ((semicolonIndex = dataReceived.indexOf(';')) < 0) {
-            if (!socket.waitForReadyRead(2000)) {
-                out << "Server sent incomplete response!" << endl;
+        while ((semicolonIndex = dataReceived.indexOf(';')) < 0)
+        {
+            if (!socket.waitForReadyRead(2000))
+            {
+                err << "Server sent incomplete response!" << endl;
                 return 2;
             }
 
@@ -236,8 +172,9 @@ int main(int argc, char *argv[]) {
         QString response = QString::fromUtf8(dataReceived.data(), semicolonIndex);
         out << " server response: " << response << endl;
     }
-    else {
-        /* Wait a little bit before closing the socket. This allows the server to cleanup
+    else
+    {
+        /* Wait a little bit before closing the socket. This allows the server to clean up
            the connection properly after we exit. */
         socket.waitForReadyRead(100);
     }
