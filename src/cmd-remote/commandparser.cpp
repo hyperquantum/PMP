@@ -19,36 +19,60 @@
 
 #include "commandparser.h"
 
+#include "commands.h"
+
 namespace PMP {
 
     CommandParser::CommandParser()
-     : _waitForResponse(false)
+     : _command(nullptr)
     {
         //
     }
 
+    template <class SomeCommand>
+    void CommandParser::handleCommandNotRequiringArguments(
+                                                         QVector<QString> commandWithArgs)
+    {
+        auto argumentsCount = commandWithArgs.size() - 1;
+
+        if (argumentsCount > 0)
+        {
+            _errorMessage =
+                    "Command '" + commandWithArgs[0] + "' does not accept arguments!";
+            return;
+        }
+
+        _command = new SomeCommand();
+    }
+
     void CommandParser::parse(QVector<QString> commandWithArgs)
     {
+        _command = nullptr;
         _errorMessage.clear();
-        _commandToSend.clear();
-        _waitForResponse = false;
 
         auto command = commandWithArgs[0];
         auto args = commandWithArgs.mid(1);
         auto argsCount = args.size();
 
-        if (command == "pause" || command == "play" || command == "skip"
-            || command == "nowplaying" || command == "queue")
+        if (command == "play")
         {
-            if (argsCount > 0)
-            {
-                _errorMessage = "Command '" + command + "' does not accept arguments!";
-                return;
-            }
-
-            /* OK */
-            _commandToSend = command;
-            _waitForResponse = (command == "nowplaying" || command == "queue");
+            handleCommandNotRequiringArguments<PlayCommand>(commandWithArgs);
+        }
+        else if (command == "pause")
+        {
+            handleCommandNotRequiringArguments<PauseCommand>(commandWithArgs);
+        }
+        else if (command == "skip")
+        {
+            handleCommandNotRequiringArguments<SkipCommand>(commandWithArgs);
+        }
+        else if (command == "nowplaying")
+        {
+            handleCommandNotRequiringArguments<NowPlayingCommand>(commandWithArgs);
+        }
+        else if (command == "queue")
+        {
+            handleCommandNotRequiringArguments<QueueCommand>(commandWithArgs);
         }
         else if (command == "shutdown")
         {
@@ -63,18 +87,20 @@ namespace PMP {
                 return;
             }
 
-            /* OK */
-            _commandToSend = command + " " + args[0];
-            _waitForResponse = false;
+            _command = new ShutdownCommand(args[0]);
         }
         else if (command == "volume")
         {
-            if (argsCount > 1)
+            if (argsCount == 0)
+            {
+                _command = new GetVolumeCommand();
+            }
+            else if (argsCount > 1)
             {
                 _errorMessage = "Command 'volume' cannot have more than one argument!";
                 return;
             }
-            else if (argsCount == 1)
+            else /* one argument */
             {
                 bool ok;
                 uint volume = args[0].toUInt(&ok);
@@ -85,14 +111,7 @@ namespace PMP {
                     return;
                 }
 
-                /* OK */
-                _commandToSend = command + " " + args[0];
-                _waitForResponse = true;
-            }
-            else
-            { /* zero args */
-                _commandToSend = command;
-                _waitForResponse = true;
+                _command = new SetVolumeCommand(volume);
             }
         }
         else if (command == "qmove")
@@ -104,8 +123,8 @@ namespace PMP {
             }
 
             bool ok;
-            uint queueID = args[0].toUInt(&ok);
-            if (!ok || queueID == 0)
+            int queueId = args[0].toInt(&ok);
+            if (!ok || queueId <= 0)
             {
                 _errorMessage =
                         "Command 'qmove' requires a valid QID as its first argument!";
@@ -126,9 +145,7 @@ namespace PMP {
                 return;
             }
 
-            /* OK */
-            _commandToSend = command + " " + args[0] + " " + args[1];
-            _waitForResponse = false;
+            _command = new QueueMoveCommand(queueId, moveDiff);
         }
         else
         {

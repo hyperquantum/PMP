@@ -17,32 +17,18 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COMMANDPARSER_H
-#define PMP_COMMANDPARSER_H
-
-#include <QString>
-#include <QVector>
+#include "command.h"
 
 namespace PMP {
 
-    class Command;
+    Command::~Command()
+    {
+        //
+    }
 
-    class CommandParser {
-    public:
-        CommandParser();
+    Command::Command(QObject* parent) : QObject(parent)
+    {
+        //
+    }
 
-        void parse(QVector<QString> commandWithArgs);
-
-        Command* command() { return _command; }
-        bool parsedSuccessfully() const { return _command != nullptr; }
-        QString errorMessage() const { return _errorMessage; }
-
-    private:
-        template <class SomeCommand>
-        void handleCommandNotRequiringArguments(QVector<QString> commandWithArgs);
-
-        Command* _command;
-        QString _errorMessage;
-    };
 }
-#endif

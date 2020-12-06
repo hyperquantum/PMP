@@ -107,7 +107,13 @@ set(PMP_SERVER_HEADERS
 )
 
 set(PMP_CMD_REMOTE_SOURCES
+    cmd-remote/command.cpp
     cmd-remote/commandparser.cpp
+    cmd-remote/commands.cpp
+)
+set(PMP_CMD_REMOTE_HEADERS
+    cmd-remote/command.h
+    cmd-remote/commands.h
 )
 
 set(PMP_GUI_REMOTE_SOURCES
@@ -173,6 +179,7 @@ set(PMP_GUI_REMOTE_RESOURCES
 
 qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
 qt5_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
+qt5_wrap_cpp(PMP_CMD_REMOTE_MOCS ${PMP_CMD_REMOTE_HEADERS})
 qt5_wrap_cpp(PMP_GUI_REMOTE_MOCS ${PMP_GUI_REMOTE_HEADERS})
 qt5_wrap_ui(PMP_GUI_REMOTE_UICS ${PMP_GUI_REMOTE_UIS})
 qt5_add_resources(PMP_GUI_REMOTE_QRCS ${PMP_GUI_REMOTE_RESOURCES})
@@ -205,7 +212,7 @@ add_executable(PMP-Server
 )
 add_executable(PMP-Cmd-Remote
     cmd-remote/cmd-remote-main.cpp
-    ${PMP_CMD_REMOTE_SOURCES}
+    ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS}
     ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 add_executable(PMP-GUI-Remote

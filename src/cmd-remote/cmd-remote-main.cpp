@@ -17,6 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "command.h"
 #include "commandparser.h"
 
 #include "common/version.h"
@@ -100,6 +101,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    Command* command = commandParser.command();
+
     QTcpSocket socket;
     socket.connectToHost(server, static_cast<quint16>(portNumber));
 
@@ -145,9 +148,9 @@ int main(int argc, char *argv[])
     dataReceived.remove(0, semicolonIndex + 1); /* +1 to remove the semicolon too */
 
     out << " server greeting: " << serverHelloString << endl;
-    out << " sending command: " << commandParser.commandStringToSend() << endl;
+    out << " sending command: " << command->commandStringToSend() << endl;
 
-    socket.write((commandParser.commandStringToSend() + ";").toUtf8());
+    socket.write((command->commandStringToSend() + ";").toUtf8());
 
     if (!socket.waitForBytesWritten(5000))
     {
@@ -155,7 +158,7 @@ int main(int argc, char *argv[])
         return 2;
     }
 
-    if (commandParser.mustWaitForResponseAfterSending())
+    if (command->mustWaitForResponseAfterSending())
     {
         semicolonIndex = -1;
         while ((semicolonIndex = dataReceived.indexOf(';')) < 0)
