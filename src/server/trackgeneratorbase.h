@@ -61,7 +61,7 @@ namespace PMP {
         public:
             Candidate(RandomTracksSource* source, uint id, FileHash const& hash,
                       AudioData const& audioData,
-                      quint16 randomPermillageNumber1, quint16 randomPermillageNumber2);
+                      quint16 randomPermillageNumber);
 
             ~Candidate();
 
@@ -86,17 +86,14 @@ namespace PMP {
                 return lengthMilliseconds() < qint64(1000) * seconds;
             }
 
-            quint16 randomPermillageNumber() const { return _randomPermillageNumber1; }
-
-            quint16 randomPermillageNumber2() const { return _randomPermillageNumber2; }
+            quint16 randomPermillageNumber() const { return _randomPermillageNumber; }
 
         private:
             QPointer<RandomTracksSource> _source;
             uint _id;
             FileHash _hash;
             AudioData _audioData;
-            quint16 _randomPermillageNumber1;
-            quint16 _randomPermillageNumber2;
+            quint16 _randomPermillageNumber;
             bool _unused;
         };
 

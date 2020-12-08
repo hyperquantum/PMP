@@ -36,14 +36,12 @@ namespace PMP {
     TrackGeneratorBase::Candidate::Candidate(RandomTracksSource* source,
                                              uint id, const FileHash& hash,
                                              const AudioData& audioData,
-                                             quint16 randomPermillageNumber1,
-                                             quint16 randomPermillageNumber2)
+                                             quint16 randomPermillageNumber)
         : _source(source),
           _id(id),
           _hash(hash),
           _audioData(audioData),
-          _randomPermillageNumber1(randomPermillageNumber1),
-          _randomPermillageNumber2(randomPermillageNumber2),
+          _randomPermillageNumber(randomPermillageNumber),
           _unused(false)
     {
         //
@@ -137,7 +135,6 @@ namespace PMP {
         const AudioData& audioData = _resolver->findAudioData(hash);
 
         return QSharedPointer<Candidate>::create(_source, id, hash, audioData,
-                                                 getRandomPermillage(),
                                                  getRandomPermillage());
     }
 
