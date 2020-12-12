@@ -947,8 +947,9 @@ namespace PMP {
         sendSingleByteAction(3); /* 3 = skip */
     }
 
-    void ServerConnection::insertPauseAtFront() {
-        sendSingleByteAction(4); /* 4 = insert pause at front */
+    void ServerConnection::insertBreakAtFront()
+    {
+        sendSingleByteAction(4); /* 4 = insert break at front */
     }
 
     void ServerConnection::seekTo(uint queueID, qint64 position) {

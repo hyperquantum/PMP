@@ -138,7 +138,7 @@ namespace PMP {
 
         void seekTo(uint queueID, qint64 position);
 
-        void insertPauseAtFront();
+        void insertBreakAtFront();
 
         void setVolume(int percentage);
 

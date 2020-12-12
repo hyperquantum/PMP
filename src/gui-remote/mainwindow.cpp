@@ -489,9 +489,7 @@ namespace PMP {
         setCentralWidget(_mainWidget);
 
         auto collectionWidget =
-                new CollectionWidget(
-                    _musicCollectionDock, _connection, _clientServerInterface
-                );
+                new CollectionWidget(_musicCollectionDock, _clientServerInterface);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 

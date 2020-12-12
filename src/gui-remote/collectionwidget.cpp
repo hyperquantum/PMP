@@ -20,6 +20,8 @@
 #include "collectionwidget.h"
 #include "ui_collectionwidget.h"
 
+#include "common/clientserverinterface.h"
+#include "common/queuecontroller.h"
 #include "common/serverconnection.h"
 #include "common/util.h"
 
@@ -34,12 +36,11 @@
 
 namespace PMP {
 
-    CollectionWidget::CollectionWidget(QWidget* parent, ServerConnection* connection,
+    CollectionWidget::CollectionWidget(QWidget* parent,
                                        ClientServerInterface* clientServerInterface)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
        _colorSwitcher(nullptr),
-       _connection(connection),
        _clientServerInterface(clientServerInterface),
        _collectionSourceModel(new SortedCollectionTableModel(this,clientServerInterface)),
        _collectionDisplayModel(
@@ -140,7 +141,7 @@ namespace PMP {
             enqueueFrontAction, &QAction::triggered,
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (front) triggered";
-                _connection->insertQueueEntryAtFront(hash);
+                _clientServerInterface->queueController().insertQueueEntryAtFront(hash);
             }
         );
 
@@ -150,7 +151,7 @@ namespace PMP {
             enqueueEndAction, &QAction::triggered,
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (end) triggered";
-                _connection->insertQueueEntryAtEnd(hash);
+                _clientServerInterface->queueController().insertQueueEntryAtEnd(hash);
             }
         );
 

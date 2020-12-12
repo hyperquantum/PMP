@@ -96,7 +96,6 @@ namespace PMP {
         QString noRepetitionTimeString(int seconds);
 
         Ui::MainWidget* _ui;
-        ServerConnection* _connection;
         ClientServerInterface* _clientServerInterface;
         PreciseTrackProgressMonitor* _trackProgressMonitor;
         QueueMonitor* _queueMonitor;

@@ -19,6 +19,8 @@
 
 #include "queuemediator.h"
 
+#include "common/clientserverinterface.h"
+#include "common/queuecontroller.h"
 #include "common/serverconnection.h"
 
 #include "queuemonitor.h"
@@ -81,7 +83,7 @@ namespace PMP {
         }
 
         if (sendToServer) {
-            mediator._connection->deleteQueueEntry(_queueID);
+            mediator.queueController().deleteQueueEntry(_queueID);
         }
 
         if (_index < mediator._myQueue.size()) {
@@ -208,7 +210,7 @@ namespace PMP {
         }
 
         if (sendToServer) {
-            mediator._connection->moveQueueEntry(_queueID, _toIndex - _fromIndex);
+            mediator.queueController().moveQueueEntry(_queueID, _toIndex - _fromIndex);
         }
 
         if (_fromIndex < mediator._myQueue.size()) {
@@ -332,8 +334,10 @@ namespace PMP {
     /* ========================== QueueMediator ========================== */
 
     QueueMediator::QueueMediator(QObject* parent, QueueMonitor* monitor,
-                                 ServerConnection* connection)
-     : AbstractQueueMonitor(parent), _sourceMonitor(monitor), _connection(connection)
+                                 ClientServerInterface* clientServerInterface)
+     : AbstractQueueMonitor(parent),
+       _sourceMonitor(monitor),
+       _clientServerInterface(clientServerInterface)
     {
         _myQueue = monitor->knownQueuePart();
         _queueLength = monitor->queueLength();
@@ -389,20 +393,19 @@ namespace PMP {
         moveTrack(fromIndex, toIndex, queueId);
     }
 
-    void QueueMediator::insertFileAsync(int index, const FileHash& hash) {
-        _connection->insertQueueEntryAtIndex(hash, index);
+    void QueueMediator::insertFileAsync(int index, const FileHash& hash)
+    {
+        queueController().insertQueueEntryAtIndex(hash, index);
     }
 
-    void QueueMediator::duplicateEntryAsync(quint32 queueID) {
-        _connection->duplicateQueueEntry(queueID);
+    void QueueMediator::duplicateEntryAsync(quint32 queueID)
+    {
+        queueController().duplicateQueueEntry(queueID);
     }
 
-    bool QueueMediator::canDuplicateEntry(quint32 queueID) const {
-        (void)queueID;
-
-        /* we COULD simulate duplication for tracks on older servers, with a regular
-         * insert operation, but there is no reason to put in the effort at this time */
-        return _connection->serverSupportsQueueEntryDuplication();
+    bool QueueMediator::canDuplicateEntry(quint32 queueID) const
+    {
+        return queueController().canDuplicateEntry(queueID);
     }
 
     void QueueMediator::resetQueue(int queueLength) {
@@ -441,6 +444,11 @@ namespace PMP {
 
     void QueueMediator::trackMovedAtServer(int fromIndex, int toIndex, quint32 queueID) {
         handleServerOperation(new MoveOperation(fromIndex, toIndex, queueID));
+    }
+
+    QueueController& QueueMediator::queueController() const
+    {
+        return _clientServerInterface->queueController();
     }
 
     bool QueueMediator::doLocalOperation(Operation* op) {

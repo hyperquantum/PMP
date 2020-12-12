@@ -30,6 +30,7 @@ set(PMP_COMMON_SOURCES
     common/networkprotocol.cpp
     common/networkutil.cpp
     common/playercontrollerimpl.cpp
+    common/queuecontrollerimpl.cpp
     common/serverconnection.cpp
     common/serverdiscoverer.cpp
     common/startstopeventstatus.cpp
@@ -49,6 +50,8 @@ set(PMP_COMMON_HEADERS
     common/dynamicmodecontrollerimpl.h
     common/playercontroller.h
     common/playercontrollerimpl.h
+    common/queuecontroller.h
+    common/queuecontrollerimpl.h
     common/serverconnection.h
     common/serverdiscoverer.h
     common/userdatafetcher.h

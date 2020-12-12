@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,15 +24,16 @@
 
 namespace PMP {
 
+    class ClientServerInterface;
     class FileHash;
+    class QueueController;
     class QueueMonitor;
-    class ServerConnection;
 
     class QueueMediator : public AbstractQueueMonitor {
         Q_OBJECT
     public:
         QueueMediator(QObject* parent, QueueMonitor* monitor,
-                      ServerConnection* connection);
+                      ClientServerInterface* clientServerInterface);
 
         QUuid serverUuid() const;
 
@@ -56,6 +57,8 @@ namespace PMP {
         void trackMovedAtServer(int fromIndex, int toIndex, quint32 queueID);
 
     private:
+        QueueController& queueController() const;
+
         class Operation;
         class InfoOperation;
         class DeleteOperation;
@@ -67,7 +70,7 @@ namespace PMP {
         bool handleServerOperation(Operation* op);
 
         QueueMonitor* _sourceMonitor;
-        ServerConnection* _connection;
+        ClientServerInterface* _clientServerInterface;
         int _queueLength;
         QList<quint32> _myQueue;
         QList<Operation*> _pendingOperations;

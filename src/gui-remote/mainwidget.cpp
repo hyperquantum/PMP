@@ -25,6 +25,7 @@
 #include "common/currenttrackmonitor.h"
 #include "common/dynamicmodecontroller.h"
 #include "common/playercontroller.h"
+#include "common/queuecontroller.h"
 #include "common/serverconnection.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
@@ -51,7 +52,6 @@ namespace PMP {
     MainWidget::MainWidget(QWidget *parent) :
         QWidget(parent),
         _ui(new Ui::MainWidget),
-        _connection(nullptr),
         _clientServerInterface(nullptr),
         _trackProgressMonitor(nullptr),
         _queueMonitor(nullptr), _queueMediator(nullptr),
@@ -93,16 +93,16 @@ namespace PMP {
     void MainWidget::setConnection(ServerConnection* connection,
                                    ClientServerInterface* clientServerInterface)
     {
-        _connection = connection;
         _clientServerInterface = clientServerInterface;
         new AutoPersonalModeAction(clientServerInterface);
-        _queueMonitor = new QueueMonitor(_connection, _connection);
-        _queueMediator = new QueueMediator(_connection, _queueMonitor, _connection);
+        _queueMonitor = new QueueMonitor(connection, connection);
+        _queueMediator =
+                new QueueMediator(connection, _queueMonitor, clientServerInterface);
         _queueEntryInfoFetcher =
-            new QueueEntryInfoFetcher(_connection, _queueMediator, _connection);
+            new QueueEntryInfoFetcher(connection, _queueMediator, connection);
         _queueModel =
             new QueueModel(
-                _connection, clientServerInterface, _queueMediator, _queueEntryInfoFetcher
+                connection, clientServerInterface, _queueMediator, _queueEntryInfoFetcher
             );
         _historyModel = new PlayerHistoryModel(this, _queueEntryInfoFetcher);
         _historyModel->setConnection(connection);
@@ -131,6 +131,7 @@ namespace PMP {
         auto* playerController = &clientServerInterface->playerController();
         auto* currentTrackMonitor = &clientServerInterface->currentTrackMonitor();
         _trackProgressMonitor = new PreciseTrackProgressMonitor(currentTrackMonitor);
+        auto* queueController = &clientServerInterface->queueController();
         auto* dynamicModeController = &clientServerInterface->dynamicModeController();
 
         connect(
@@ -178,7 +179,7 @@ namespace PMP {
 
         connect(
             _ui->insertBreakButton, &QPushButton::clicked,
-            _connection, &ServerConnection::insertPauseAtFront
+            queueController, &QueueController::insertBreakAtFront
         );
 
         connect(
@@ -221,11 +222,11 @@ namespace PMP {
 
         connect(
             _ui->expandButton, &QPushButton::clicked,
-            _connection, &ServerConnection::expandQueue
+            connection, &ServerConnection::expandQueue
         );
         connect(
             _ui->trimButton, &QPushButton::clicked,
-            _connection, &ServerConnection::trimQueue
+            connection, &ServerConnection::trimQueue
         );
 
         connect(
@@ -361,8 +362,10 @@ namespace PMP {
                 if (index.isValid()) {
                     quint32 queueID = _queueModel->trackIdAt(index);
 
-                    if (queueID > 0) {
-                        _connection->deleteQueueEntry(queueID);
+                    if (queueID > 0)
+                    {
+                        _clientServerInterface->queueController().deleteQueueEntry(
+                                                                                 queueID);
                         return true;
                     }
                 }
@@ -398,7 +401,7 @@ namespace PMP {
             enqueueFrontAction, &QAction::triggered,
             [this, hash]() {
                 qDebug() << "history context menu: enqueue (front) triggered";
-                _connection->insertQueueEntryAtFront(hash);
+                _clientServerInterface->queueController().insertQueueEntryAtFront(hash);
             }
         );
 
@@ -407,7 +410,7 @@ namespace PMP {
             enqueueEndAction, &QAction::triggered,
             [this, hash]() {
                 qDebug() << "history context menu: enqueue (end) triggered";
-                _connection->insertQueueEntryAtEnd(hash);
+                _clientServerInterface->queueController().insertQueueEntryAtEnd(hash);
             }
         );
 
