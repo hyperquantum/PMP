@@ -26,7 +26,86 @@
 #include <QtCore>
 #include <QTcpSocket>
 
+#ifdef Q_OS_WIN32
+#include <windows.h>
+#else
+#include <termios.h>
+#include <unistd.h>
+#endif
+
 using namespace PMP;
+
+void enableConsoleEcho(bool enable)
+{
+#ifdef Q_OS_WIN32
+
+    HANDLE stdinHandle = GetStdHandle(STD_INPUT_HANDLE);
+    DWORD mode;
+
+    GetConsoleMode(stdinHandle, &mode);
+
+    if (!enable)
+    {
+        mode &= ~ENABLE_ECHO_INPUT;
+    }
+    else
+    {
+        mode |= ENABLE_ECHO_INPUT;
+    }
+
+    SetConsoleMode(stdinHandle, mode);
+
+#else
+
+    struct termios tty;
+
+    tcgetattr(STDIN_FILENO, &tty);
+
+    if (!enable)
+    {
+        tty.c_lflag &= ~ECHO;
+    }
+    else
+    {
+        tty.c_lflag |= ECHO;
+    }
+
+    (void) tcsetattr(STDIN_FILENO, TCSANOW, &tty);
+
+#endif
+}
+
+QString promptForPassword(QString prompt)
+{
+    QTextStream out(stdout);
+    QTextStream in(stdin);
+
+    out << prompt;
+    out.flush();
+
+    enableConsoleEcho(false);
+    QString password = in.readLine();
+    enableConsoleEcho(true);
+
+    /* The newline that was typed by the user was not printed because we turned off echo
+       to the console, so we have to write a newline ourselves now */
+    out << endl;
+
+    return password;
+}
+
+QString prompt(QString prompt)
+{
+    QTextStream out(stdout);
+    QTextStream in(stdin);
+
+    out << prompt;
+    out.flush();
+
+    QString input = in.readLine();
+
+    return input;
+}
 
 void printUsage(QTextStream& out, QString const& programName)
 {
@@ -69,6 +148,14 @@ int main(int argc, char *argv[])
 
     QTextStream out(stdout);
     QTextStream err(stderr);
+
+    /*
+    auto username = prompt("username: ");
+    auto fakePassword = promptForPassword("fake password: ");
+
+    out << "Hi " << username << ", your fake password is " << fakePassword << endl;
+    return 0;
+    */
 
     QStringList args = QCoreApplication::arguments();
 
