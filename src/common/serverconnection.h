@@ -88,10 +88,6 @@ namespace PMP {
         class DuplicationResultHandler;
 
     public:
-        enum PlayState { // TODO : eliminate this and use PlayerState instead
-            UnknownState = 0, Stopped = 1, Playing = 2, Paused = 3
-        };
-
         enum UserRegistrationError {
             UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
         };
