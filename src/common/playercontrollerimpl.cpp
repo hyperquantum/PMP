@@ -65,6 +65,19 @@ namespace PMP {
         return _state;
     }
 
+    TriBool PlayerControllerImpl::isTrackPresent() const
+    {
+        if (_state == PlayerState::Unknown)
+            return TriBool::unknown;
+
+        return _trackNowPlaying > 0;
+    }
+
+    quint32 PlayerControllerImpl::currentQueueId() const
+    {
+        return _trackNowPlaying;
+    }
+
     uint PlayerControllerImpl::queueLength() const
     {
         return _queueLength;
@@ -179,6 +192,7 @@ namespace PMP {
 
         bool stateChanged = _state != state;
         bool queueLengthChanged = _queueLength != queueLength;
+        bool currentQueueIdChanged = _trackNowPlaying != nowPlayingQueueId;
         bool volumeChanged = _volume != volume;
 
         _state = state;
@@ -190,6 +204,9 @@ namespace PMP {
             qDebug() << "player state changed to" << state;
             Q_EMIT playerStateChanged(state);
         }
+
+        if (currentQueueIdChanged)
+            Q_EMIT currentTrackChanged();
 
         if (queueLengthChanged)
             Q_EMIT this->queueLengthChanged();

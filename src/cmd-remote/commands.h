@@ -20,38 +20,81 @@
 #ifndef PMP_COMMANDS_H
 #define PMP_COMMANDS_H
 
+#include "common/playerstate.h"
+
 #include "command.h"
+
+#include <QVector>
+
+#include <functional>
 
 namespace PMP {
 
-    class PlayCommand : public Command
+    class CommandBase : public Command
+    {
+        Q_OBJECT
+    public:
+        virtual void execute(ClientServerInterface* clientServerInterface) override;
+
+    protected:
+        CommandBase();
+
+        void addStep(std::function<bool ()> step);
+        void setCommandExecutionSuccessful(QString output = "");
+        void setCommandExecutionFailed(int resultCode, QString errorOutput);
+
+        virtual void setUp(ClientServerInterface* clientServerInterface) = 0;
+        virtual void start(ClientServerInterface* clientServerInterface) = 0;
+
+    protected Q_SLOTS:
+        void listenerSlot();
+
+    private:
+        int _currentStep;
+        QVector<std::function<bool ()>> _steps;
+        bool _finishedOrFailed;
+    };
+
+    class PlayCommand : public CommandBase
     {
         Q_OBJECT
     public:
         PlayCommand();
 
-        QString commandStringToSend() const override;
-        bool mustWaitForResponseAfterSending() const override;
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
     };
 
-    class PauseCommand : public Command
+    class PauseCommand : public CommandBase
     {
         Q_OBJECT
     public:
         PauseCommand();
 
-        QString commandStringToSend() const override;
-        bool mustWaitForResponseAfterSending() const override;
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
     };
 
-    class SkipCommand : public Command
+    class SkipCommand : public CommandBase
     {
         Q_OBJECT
     public:
         SkipCommand();
 
-        QString commandStringToSend() const override;
-        bool mustWaitForResponseAfterSending() const override;
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        quint32 _currentQueueId;
     };
 
     class NowPlayingCommand : public Command
@@ -60,69 +103,75 @@ namespace PMP {
     public:
         NowPlayingCommand();
 
-        QString commandStringToSend() const override;
-        bool mustWaitForResponseAfterSending() const override;
+        bool requiresAuthentication() const override;
+        void execute(ClientServerInterface* clientServerInterface) override;
     };
 
+    /*
     class QueueCommand : public Command
     {
         Q_OBJECT
     public:
         QueueCommand();
 
-        QString commandStringToSend() const override;
-        bool mustWaitForResponseAfterSending() const override;
+        void execute(ClientServerInterface* clientServerInterface) override;
     };
+    */
 
     class ShutdownCommand : public Command
     {
         Q_OBJECT
     public:
-        ShutdownCommand(QString serverPassword);
+        ShutdownCommand(/*QString serverPassword*/);
 
-        QString commandStringToSend() const override;
-        bool mustWaitForResponseAfterSending() const override;
+        bool requiresAuthentication() const override;
+        void execute(ClientServerInterface* clientServerInterface) override;
 
     private:
-        QString _serverPassword;
+        //QString _serverPassword;
     };
 
+    /*
     class GetVolumeCommand : public Command
     {
         Q_OBJECT
     public:
         GetVolumeCommand();
 
-        QString commandStringToSend() const override;
-        bool mustWaitForResponseAfterSending() const override;
+        void execute(ClientServerInterface* clientServerInterface) override;
     };
+    */
 
-    class SetVolumeCommand : public Command
+    class SetVolumeCommand : public CommandBase
     {
         Q_OBJECT
     public:
         SetVolumeCommand(int volume);
 
-        QString commandStringToSend() const override;
-        bool mustWaitForResponseAfterSending() const override;
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
 
     private:
         int _volume;
     };
 
+    /*
     class QueueMoveCommand : public Command
     {
         Q_OBJECT
     public:
         QueueMoveCommand(int queueId, int moveOffset);
 
-        QString commandStringToSend() const override;
-        bool mustWaitForResponseAfterSending() const override;
+        void execute(ClientServerInterface* clientServerInterface) override;
 
     private:
         int _queueId;
         int _moveOffset;
     };
+    */
 
 }
 #endif

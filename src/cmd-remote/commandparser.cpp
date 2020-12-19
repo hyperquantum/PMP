@@ -66,6 +66,7 @@ namespace PMP {
         {
             handleCommandNotRequiringArguments<SkipCommand>(commandWithArgs);
         }
+        /*
         else if (command == "nowplaying")
         {
             handleCommandNotRequiringArguments<NowPlayingCommand>(commandWithArgs);
@@ -74,26 +75,32 @@ namespace PMP {
         {
             handleCommandNotRequiringArguments<QueueCommand>(commandWithArgs);
         }
+        */
         else if (command == "shutdown")
         {
-            if (argsCount > 1)
+            if (argsCount == 0)
             {
-                _errorMessage = "Command 'shutdown' requires exactly one argument!";
+                _command = new ShutdownCommand();
+            }
+            /*
+            else if (argsCount == 1)
+            {
+                _command = new ShutdownCommand(args[0]);
+            }
+            */
+            else
+            {
+                _errorMessage = "Command 'shutdown' requires zero arguments!";
                 return;
             }
-            else if (argsCount == 0)
-            {
-                _errorMessage = "Command 'shutdown' now requires the server password!";
-                return;
-            }
-
-            _command = new ShutdownCommand(args[0]);
         }
         else if (command == "volume")
         {
             if (argsCount == 0)
             {
-                _command = new GetVolumeCommand();
+                //_command = new GetVolumeCommand();
+                _errorMessage = "Command 'volume' without arguments is currently broken!";
+                return;
             }
             else if (argsCount > 1)
             {
@@ -114,6 +121,7 @@ namespace PMP {
                 _command = new SetVolumeCommand(volume);
             }
         }
+        /*
         else if (command == "qmove")
         {
             if (argsCount != 2)
@@ -147,6 +155,7 @@ namespace PMP {
 
             _command = new QueueMoveCommand(queueId, moveDiff);
         }
+        */
         else
         {
             _errorMessage = "Command not recognized: " + command;

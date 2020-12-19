@@ -26,7 +26,8 @@ namespace PMP {
         //
     }
 
-    Command::Command(QObject* parent) : QObject(parent)
+    Command::Command(QObject* parent)
+     : QObject(parent)
     {
         //
     }

@@ -870,11 +870,12 @@ namespace PMP {
             UserLoginError error;
 
             switch (errorType) {
+            case NetworkProtocol::InvalidUserAccountName:
             case NetworkProtocol::UserLoginAuthenticationFailed:
-                error = UserLoginAuthenticationFailed;
+                error = UserLoginError::AuthenticationFailed;
                 break;
             default:
-                error = UnknownUserLoginError;
+                error = UserLoginError::UnknownError;
                 break;
             }
 

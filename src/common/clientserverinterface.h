@@ -35,7 +35,7 @@ namespace PMP {
     class ClientServerInterface : public QObject {
         Q_OBJECT
     public:
-        ClientServerInterface(QObject* parent, ServerConnection* connection);
+        ClientServerInterface(ServerConnection* connection);
 
         PlayerController& playerController();
         CurrentTrackMonitor& currentTrackMonitor();
@@ -52,7 +52,7 @@ namespace PMP {
         QString userLoggedInName() const;
 
     public Q_SLOTS:
-
+        void shutdownServer();
 
     Q_SIGNALS:
 

@@ -17,30 +17,35 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COMMAND_H
-#define PMP_COMMAND_H
+#ifndef PMP_USERLOGINERROR_H
+#define PMP_USERLOGINERROR_H
 
-#include <QObject>
+#include <QtDebug>
 
 namespace PMP {
 
-    class ClientServerInterface;
-
-    class Command : public QObject
+    enum class UserLoginError
     {
-        Q_OBJECT
-    public:
-        ~Command();
-
-        virtual bool requiresAuthentication() const = 0;
-        virtual void execute(ClientServerInterface* clientServerInterface) = 0;
-
-    Q_SIGNALS:
-        void executionSuccessful(QString output = "");
-        void executionFailed(int resultCode, QString errorOutput);
-
-    protected:
-        explicit Command(QObject* parent = nullptr);
+        UnknownError,
+        AuthenticationFailed
     };
+
+    inline QDebug operator<<(QDebug debug, UserLoginError error)
+    {
+        switch (error)
+        {
+            case UserLoginError::UnknownError:
+                return debug << "UserLoginError::UnknownError";
+
+            case UserLoginError::AuthenticationFailed:
+                return debug << "UserLoginError::AuthenticationFailed";
+        }
+
+        return debug << int(error);
+    }
+
 }
+
+Q_DECLARE_METATYPE(PMP::UserLoginError)
+
 #endif

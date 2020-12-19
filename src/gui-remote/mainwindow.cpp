@@ -314,7 +314,7 @@ namespace PMP {
 
         if (buttonClicked == QMessageBox::Cancel) return;
 
-        _connection->shutdownServer();
+        _clientServerInterface->shutdownServer();
     }
 
     void MainWindow::updatePowerManagement() {
@@ -360,8 +360,8 @@ namespace PMP {
     }
 
     void MainWindow::onDoConnect(QString server, uint port) {
-        _connection = new ServerConnection();
-        _clientServerInterface = new ClientServerInterface(this, _connection);
+        _connection = new ServerConnection(this);
+        _clientServerInterface = new ClientServerInterface(_connection);
 
         connect(
             _connection, &ServerConnection::connected,

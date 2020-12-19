@@ -29,9 +29,9 @@
 
 namespace PMP {
 
-    ClientServerInterface::ClientServerInterface(QObject* parent,
-                                                 ServerConnection* connection)
-     : QObject(parent), _connection(connection),
+    ClientServerInterface::ClientServerInterface(ServerConnection* connection)
+     : QObject(connection),
+       _connection(connection),
        _simplePlayerController(nullptr),
        _currentTrackMonitor(nullptr),
        _queueController(nullptr),
@@ -105,5 +105,10 @@ namespace PMP {
     QString ClientServerInterface::userLoggedInName() const
     {
         return _connection->userLoggedInName();
+    }
+
+    void ClientServerInterface::shutdownServer()
+    {
+        _connection->shutdownServer();
     }
 }

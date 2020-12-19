@@ -19,7 +19,93 @@
 
 #include "commands.h"
 
+#include "common/clientserverinterface.h"
+#include "common/currenttrackmonitor.h"
+#include "common/playercontroller.h"
+
+#include <QtDebug>
+#include <QTimer>
+
 namespace PMP {
+
+    /* ===== CommandBase ===== */
+
+    void CommandBase::execute(ClientServerInterface* clientServerInterface)
+    {
+        setUp(clientServerInterface);
+
+        start(clientServerInterface);
+        qDebug() << "CommandBase: called start()";
+
+        // initial quick check
+        QTimer::singleShot(0, this, &CommandBase::listenerSlot);
+
+        // set up timeout timer
+        QTimer::singleShot(
+            1000, this,
+            [this]()
+            {
+                if (!_finishedOrFailed)
+                {
+                    qWarning() << "CommandBase: timeout triggered";
+                    setCommandExecutionFailed(3, "command timed out");
+                }
+            }
+        );
+    }
+
+    CommandBase::CommandBase()
+     : _currentStep(0),
+       _finishedOrFailed(false)
+    {
+        //
+    }
+
+    void CommandBase::addStep(std::function<bool ()> step)
+    {
+        _steps.append(step);
+    }
+
+    void CommandBase::setCommandExecutionSuccessful(QString output)
+    {
+        qDebug() << "CommandBase: command reported success";
+        _finishedOrFailed = true;
+        Q_EMIT executionSuccessful(output);
+    }
+
+    void CommandBase::setCommandExecutionFailed(int resultCode, QString errorOutput)
+    {
+        qDebug() << "CommandBase: command reported failure, code:" << resultCode;
+        _finishedOrFailed = true;
+        Q_EMIT executionFailed(resultCode, errorOutput);
+    }
+
+    void CommandBase::listenerSlot()
+    {
+        if (_finishedOrFailed)
+            return;
+
+        bool canAdvance = _steps[_currentStep]();
+
+        if (_finishedOrFailed)
+            return;
+
+        if (!canAdvance)
+            return;
+
+        _currentStep++;
+
+        if (_currentStep >= _steps.size())
+        {
+            qWarning() << "Step number" << _currentStep
+                       << "should be less than" << _steps.size();
+            executionFailed(3, "internal error");
+            return;
+        }
+
+        // we advanced, so try the next step right now, don't wait for signals
+        QTimer::singleShot(0, this, &CommandBase::listenerSlot);
+    }
 
     /* ===== PlayCommand ===== */
 
@@ -28,14 +114,32 @@ namespace PMP {
         //
     }
 
-    QString PlayCommand::commandStringToSend() const
+    bool PlayCommand::requiresAuthentication() const
     {
-        return "play";
+        return true;
     }
 
-    bool PlayCommand::mustWaitForResponseAfterSending() const
+    void PlayCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        return false;
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(playerController, &PlayerController::playerStateChanged,
+                this, &PlayCommand::listenerSlot);
+
+        addStep(
+            [this, playerController]() -> bool
+            {
+                if (playerController->playerState() == PlayerState::Playing)
+                    setCommandExecutionSuccessful();
+
+                return false;
+            }
+        );
+    }
+
+    void PlayCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        clientServerInterface->playerController().play();
     }
 
     /* ===== PauseCommand ===== */
@@ -45,31 +149,88 @@ namespace PMP {
         //
     }
 
-    QString PauseCommand::commandStringToSend() const
+    bool PauseCommand::requiresAuthentication() const
     {
-        return "pause";
+        return true;
     }
 
-    bool PauseCommand::mustWaitForResponseAfterSending() const
+    void PauseCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        return false;
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(playerController, &PlayerController::playerStateChanged,
+                this, &PauseCommand::listenerSlot);
+
+        addStep(
+            [this, playerController]() -> bool
+            {
+                if (playerController->playerState() == PlayerState::Paused)
+                    setCommandExecutionSuccessful();
+
+                return false;
+            }
+        );
+    }
+
+    void PauseCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        clientServerInterface->playerController().pause();
     }
 
     /* ===== SkipCommand ===== */
 
     SkipCommand::SkipCommand()
+     : _currentQueueId(0)
     {
         //
     }
 
-    QString SkipCommand::commandStringToSend() const
+    bool SkipCommand::requiresAuthentication() const
     {
-        return "skip";
+        return true;
     }
 
-    bool SkipCommand::mustWaitForResponseAfterSending() const
+    void SkipCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        return false;
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(playerController, &PlayerController::playerStateChanged,
+                this, &SkipCommand::listenerSlot);
+        connect(playerController, &PlayerController::currentTrackChanged,
+                this, &SkipCommand::listenerSlot);
+
+        addStep(
+            [this, playerController]() -> bool
+            {
+                if (playerController->playerState() == PlayerState::Unknown)
+                    return false;
+
+                if (playerController->canSkip())
+                {
+                    _currentQueueId = playerController->currentQueueId();
+                    playerController->skip();
+                }
+                else
+                    setCommandExecutionFailed(3, "player cannot skip now");
+
+                return true;
+            }
+        );
+        addStep(
+            [this, playerController]() -> bool
+            {
+                if (playerController->currentQueueId() != _currentQueueId)
+                    setCommandExecutionSuccessful();
+
+                return false;
+            }
+        );
+    }
+
+    void SkipCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        Q_UNUSED(clientServerInterface)
+        // no specific start action needed
     }
 
     /* ===== NowPlayingCommand ===== */
@@ -79,18 +240,27 @@ namespace PMP {
         //
     }
 
-    QString NowPlayingCommand::commandStringToSend() const
+    bool NowPlayingCommand::requiresAuthentication() const
     {
-        return "nowplaying";
+        return false;
     }
 
-    bool NowPlayingCommand::mustWaitForResponseAfterSending() const
+    void NowPlayingCommand::execute(ClientServerInterface* clientServerInterface)
     {
-        return true;
+        auto& currentTrackMonitor = clientServerInterface->currentTrackMonitor();
+
+        if (currentTrackMonitor.currentQueueId() == 0)
+        {
+            Q_EMIT executionSuccessful("now playing: nothing");
+            return;
+        }
+
+        // TODO
     }
 
     /* ===== QueueCommand ===== */
 
+    /*
     QueueCommand::QueueCommand()
     {
         //
@@ -105,27 +275,30 @@ namespace PMP {
     {
         return true;
     }
+    */
 
     /* ===== ShutdownCommand ===== */
 
-    ShutdownCommand::ShutdownCommand(QString serverPassword)
-     : _serverPassword(serverPassword)
+    ShutdownCommand::ShutdownCommand(/*QString serverPassword*/)
+    // : _serverPassword(serverPassword)
     {
         //
     }
 
-    QString ShutdownCommand::commandStringToSend() const
+    bool ShutdownCommand::requiresAuthentication() const
     {
-        return "shutdown " + _serverPassword;
+        return true;
     }
 
-    bool ShutdownCommand::mustWaitForResponseAfterSending() const
+    void ShutdownCommand::execute(ClientServerInterface* clientServerInterface)
     {
-        return false;
+        clientServerInterface->shutdownServer();
+        Q_EMIT executionSuccessful();
     }
 
     /* ===== GetVolumeCommand ===== */
 
+    /*
     GetVolumeCommand::GetVolumeCommand()
     {
         //
@@ -140,6 +313,7 @@ namespace PMP {
     {
         return true;
     }
+    */
 
     /* ===== SetVolumeCommand ===== */
 
@@ -149,18 +323,37 @@ namespace PMP {
         //
     }
 
-    QString SetVolumeCommand::commandStringToSend() const
+    bool SetVolumeCommand::requiresAuthentication() const
     {
-        return "volume " + QString::number(_volume);
+        return true;
     }
 
-    bool SetVolumeCommand::mustWaitForResponseAfterSending() const
+    void SetVolumeCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        return false;
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(playerController, &PlayerController::volumeChanged,
+                this, &SetVolumeCommand::listenerSlot);
+
+        addStep(
+            [this, playerController]() -> bool
+            {
+                if (playerController->volume() == _volume)
+                    setCommandExecutionSuccessful();
+
+                return false;
+            }
+        );
+    }
+
+    void SetVolumeCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        clientServerInterface->playerController().setVolume(_volume);
     }
 
     /* ===== QueueMoveCommand ===== */
 
+    /*
     QueueMoveCommand::QueueMoveCommand(int queueId, int moveOffset)
      : _queueId(queueId),
        _moveOffset(moveOffset)
@@ -180,5 +373,6 @@ namespace PMP {
     {
         return false;
     }
+    */
 
 }

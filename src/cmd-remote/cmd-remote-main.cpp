@@ -17,10 +17,12 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "common/logging.h"
+#include "common/version.h"
+
+#include "client.h"
 #include "command.h"
 #include "commandparser.h"
-
-#include "common/version.h"
 
 #include <QByteArray>
 #include <QtCore>
@@ -146,16 +148,12 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName(PMP_ORGANIZATION_NAME);
     QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
 
+    /* make sure that log messages do not go to stdout/stderr */
+    Logging::enableTextFileOnlyLogging();
+    Logging::setFilenameTag("CR"); /* CR = CMD-Remote */
+
     QTextStream out(stdout);
     QTextStream err(stderr);
-
-    /*
-    auto username = prompt("username: ");
-    auto fakePassword = promptForPassword("fake password: ");
-
-    out << "Hi " << username << ", your fake password is " << fakePassword << endl;
-    return 0;
-    */
 
     QStringList args = QCoreApplication::arguments();
 
@@ -190,84 +188,21 @@ int main(int argc, char *argv[])
 
     Command* command = commandParser.command();
 
-    QTcpSocket socket;
-    socket.connectToHost(server, static_cast<quint16>(portNumber));
-
-    if (!socket.waitForConnected(2000))
+    QString username;
+    QString password;
+    if (command->requiresAuthentication())
     {
-        err << "Failed to connect to the server: code " << socket.error() << endl;
-        return 2;
+        username = prompt("PMP username: ");
+        password = promptForPassword("password: ");
     }
 
-    while (socket.bytesAvailable() < 3)
-    {
-        if (!socket.waitForReadyRead(2000))
-        {
-            err << "No timely response from the server!" << endl;
-            return 2;
-        }
-    }
+    Client client(nullptr, &out, &err, server, portNumber, username, password, command);
+    QObject::connect(
+        &client, &Client::exitClient,
+        &app, &QCoreApplication::exit
+    );
 
-    QByteArray dataReceived;
-    dataReceived.append(socket.readAll());
+    client.start();
 
-    if (dataReceived.at(0) != 'P'
-        || dataReceived.at(1) != 'M'
-        || dataReceived.at(2) != 'P')
-    {
-        err << "This is not a PMP server!" << endl;
-        return 2;
-    }
-
-    int semicolonIndex = -1;
-    while ((semicolonIndex = dataReceived.indexOf(';')) < 0)
-    {
-        if (!socket.waitForReadyRead(2000))
-        {
-            err << "Server handshake not complete!" << endl;
-            return 2;
-        }
-
-        dataReceived.append(socket.readAll());
-    }
-
-    QString serverHelloString = QString::fromUtf8(dataReceived.data(), semicolonIndex);
-    dataReceived.remove(0, semicolonIndex + 1); /* +1 to remove the semicolon too */
-
-    out << " server greeting: " << serverHelloString << endl;
-    out << " sending command: " << command->commandStringToSend() << endl;
-
-    socket.write((command->commandStringToSend() + ";").toUtf8());
-
-    if (!socket.waitForBytesWritten(5000))
-    {
-        err << "Failed to send data to the server." << endl;
-        return 2;
-    }
-
-    if (command->mustWaitForResponseAfterSending())
-    {
-        semicolonIndex = -1;
-        while ((semicolonIndex = dataReceived.indexOf(';')) < 0)
-        {
-            if (!socket.waitForReadyRead(2000))
-            {
-                err << "Server sent incomplete response!" << endl;
-                return 2;
-            }
-
-            dataReceived.append(socket.readAll());
-        }
-
-        QString response = QString::fromUtf8(dataReceived.data(), semicolonIndex);
-        out << " server response: " << response << endl;
-    }
-    else
-    {
-        /* Wait a little bit before closing the socket. This allows the server to clean up
-           the connection properly after we exit. */
-        socket.waitForReadyRead(100);
-    }
-
-    return 0;
+    return app.exec();
 }

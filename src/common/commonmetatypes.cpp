@@ -25,6 +25,7 @@
 #include "queueentrytype.h"
 #include "serverhealthstatus.h"
 #include "startstopeventstatus.h"
+#include "userloginerror.h"
 
 namespace PMP {
 
@@ -41,6 +42,7 @@ namespace PMP {
             qRegisterMetaType<PMP::QueueEntryType>();
             qRegisterMetaType<PMP::ServerHealthStatus>();
             qRegisterMetaType<PMP::StartStopEventStatus>();
+            qRegisterMetaType<PMP::UserLoginError>();
         }
 
     private:

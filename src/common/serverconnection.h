@@ -26,6 +26,7 @@
 #include "playerstate.h"
 #include "serverhealthstatus.h"
 #include "tribool.h"
+#include "userloginerror.h"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -90,10 +91,6 @@ namespace PMP {
     public:
         enum UserRegistrationError {
             UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
-        };
-
-        enum UserLoginError {
-            UnknownUserLoginError, UserLoginAuthenticationFailed
         };
 
         ServerConnection(QObject* parent = nullptr,

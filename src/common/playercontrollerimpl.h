@@ -34,6 +34,8 @@ namespace PMP {
         ~PlayerControllerImpl() {}
 
         PlayerState playerState() const override;
+        TriBool isTrackPresent() const override;
+        quint32 currentQueueId() const override;
         uint queueLength() const override;
         bool canPlay() const override;
         bool canPause() const override;
