@@ -31,6 +31,7 @@ KNOWN BUGS
  * GUI remote: skip button sometimes disabled when it should be enabled instead
  * GUI remote: multimedia keys don't work when a popup dialog is open (like track info)
  * CMD remote mostly doesn't work because it lacks user authentication
+ * unknown error at login because of username case (in)sensitivity
 
 
 PERFORMANCE ISSUES
@@ -67,7 +68,7 @@ IDEAS
  * dark theme for the client
  * require the server password when registering a new user account
  ** option for single track mode (vs. continuous play)
- * display time remaining during playback
+ ** display time remaining during playback
  * save the contents of the queue on server shutdown and restore it at the next server startup
  * 'play again next' action for the song that is currently playing
  * ability to insert a breakpoint directly before/after any entry in the queue
@@ -76,8 +77,8 @@ IDEAS
  * delayed start: e.g. being able to press Play and then have 5 seconds before PMP actually starts playing
  * alternative display of "prev. heard" as a time span, e.g. "5 days ago" or "9 weeks ago"
  * music collection: show a "loading collection" indicator while downloading the list from the server
- * dynamic mode: save & restore preferences for each user
- * detect and prevent track repetition with different hash values
+ ** dynamic mode: save & restore preferences for each user
+ ** detect and prevent track repetition with different hash values
  ** artist repetition avoidance
  * avoid accidental multiple clicks on "skip" affecting track score unnecessarily
  * provide fast partial indexation that only detects new files
