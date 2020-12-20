@@ -97,14 +97,17 @@ namespace PMP {
         quint32 _currentQueueId;
     };
 
-    class NowPlayingCommand : public Command
+    class NowPlayingCommand : public CommandBase
     {
         Q_OBJECT
     public:
         NowPlayingCommand();
 
         bool requiresAuthentication() const override;
-        void execute(ClientServerInterface* clientServerInterface) override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
     };
 
     /*

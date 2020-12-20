@@ -66,11 +66,11 @@ namespace PMP {
         {
             handleCommandNotRequiringArguments<SkipCommand>(commandWithArgs);
         }
-        /*
         else if (command == "nowplaying")
         {
             handleCommandNotRequiringArguments<NowPlayingCommand>(commandWithArgs);
         }
+        /*
         else if (command == "queue")
         {
             handleCommandNotRequiringArguments<QueueCommand>(commandWithArgs);

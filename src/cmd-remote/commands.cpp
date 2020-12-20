@@ -22,6 +22,7 @@
 #include "common/clientserverinterface.h"
 #include "common/currenttrackmonitor.h"
 #include "common/playercontroller.h"
+#include "common/util.h"
 
 #include <QtDebug>
 #include <QTimer>
@@ -245,17 +246,70 @@ namespace PMP {
         return false;
     }
 
-    void NowPlayingCommand::execute(ClientServerInterface* clientServerInterface)
+    void NowPlayingCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        auto& currentTrackMonitor = clientServerInterface->currentTrackMonitor();
+        auto* currentTrackMonitor = &clientServerInterface->currentTrackMonitor();
 
-        if (currentTrackMonitor.currentQueueId() == 0)
-        {
-            Q_EMIT executionSuccessful("now playing: nothing");
-            return;
-        }
+        connect(currentTrackMonitor, &CurrentTrackMonitor::currentTrackChanged,
+                this, &NowPlayingCommand::listenerSlot);
+        connect(currentTrackMonitor, &CurrentTrackMonitor::currentTrackInfoChanged,
+                this, &NowPlayingCommand::listenerSlot);
 
-        // TODO
+        addStep(
+            [this, currentTrackMonitor]() -> bool
+            {
+                auto isTrackPresent = currentTrackMonitor->isTrackPresent();
+
+                if (isTrackPresent.isFalse())
+                {
+                    setCommandExecutionSuccessful("Now playing: nothing");
+                    return false;
+                }
+
+                if (isTrackPresent.isUnknown()
+                        || currentTrackMonitor->currentTrackHash().isNull())
+                    return false;
+
+                auto title = currentTrackMonitor->currentTrackTitle();
+                auto artist = currentTrackMonitor->currentTrackArtist();
+                auto possibleFileName =
+                        currentTrackMonitor->currentTrackPossibleFilename();
+
+                if (title.isEmpty() && artist.isEmpty() && possibleFileName.isEmpty())
+                    return false;
+
+                auto queueId = currentTrackMonitor->currentQueueId();
+                auto lengthMilliseconds =
+                        currentTrackMonitor->currentTrackLengthMilliseconds();
+                auto lengthString =
+                        lengthMilliseconds < 0
+                            ? ""
+                            : Util::millisecondsToLongDisplayTimeText(lengthMilliseconds);
+                auto hashString = currentTrackMonitor->currentTrackHash().toString();
+
+                QString output;
+                output.reserve(100);
+                output += "Now playing: track\n";
+                output += " QID: " + QString::number(queueId) + "\n";
+                output += " title: " + title + "\n";
+                output += " artist: " + artist + "\n";
+                output += " length: " + lengthString + "\n";
+
+                if (title.isEmpty() && artist.isEmpty())
+                    output += " possible filename: " + possibleFileName + "\n";
+
+                output += " hash: " + hashString; // no newline at the end here
+
+                setCommandExecutionSuccessful(output);
+                return false;
+            }
+        );
+    }
+
+    void NowPlayingCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        Q_UNUSED(clientServerInterface)
+        // no specific start action needed
     }
 
     /* ===== QueueCommand ===== */
