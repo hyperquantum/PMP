@@ -352,22 +352,41 @@ namespace PMP {
 
     /* ===== GetVolumeCommand ===== */
 
-    /*
     GetVolumeCommand::GetVolumeCommand()
     {
         //
     }
 
-    QString GetVolumeCommand::commandStringToSend() const
+    bool GetVolumeCommand::requiresAuthentication() const
     {
-        return "volume";
+        return false;
     }
 
-    bool GetVolumeCommand::mustWaitForResponseAfterSending() const
+    void GetVolumeCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        return true;
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(playerController, &PlayerController::volumeChanged,
+                this, &GetVolumeCommand::listenerSlot);
+
+        addStep(
+            [this, playerController]() -> bool
+            {
+                auto volume = playerController->volume();
+
+                if (volume >= 0)
+                    setCommandExecutionSuccessful("Volume: " + QString::number(volume));
+
+                return false;
+            }
+        );
     }
-    */
+
+    void GetVolumeCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        Q_UNUSED(clientServerInterface)
+        // no specific start action needed
+    }
 
     /* ===== SetVolumeCommand ===== */
 

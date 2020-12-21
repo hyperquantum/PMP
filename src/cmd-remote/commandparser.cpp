@@ -98,14 +98,11 @@ namespace PMP {
         {
             if (argsCount == 0)
             {
-                //_command = new GetVolumeCommand();
-                _errorMessage = "Command 'volume' without arguments is currently broken!";
-                return;
+                _command = new GetVolumeCommand();
             }
             else if (argsCount > 1)
             {
                 _errorMessage = "Command 'volume' cannot have more than one argument!";
-                return;
             }
             else /* one argument */
             {

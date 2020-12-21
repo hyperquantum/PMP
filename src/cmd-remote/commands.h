@@ -134,16 +134,18 @@ namespace PMP {
         //QString _serverPassword;
     };
 
-    /*
-    class GetVolumeCommand : public Command
+    class GetVolumeCommand : public CommandBase
     {
         Q_OBJECT
     public:
         GetVolumeCommand();
 
-        void execute(ClientServerInterface* clientServerInterface) override;
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
     };
-    */
 
     class SetVolumeCommand : public CommandBase
     {
