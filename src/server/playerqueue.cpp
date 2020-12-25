@@ -196,7 +196,7 @@ namespace PMP {
         if (firstTrackChange)
             setFirstTrackIndexAndId(_queue.length() - 1, entry->queueID());
 
-        emit entryAdded(uint(_queue.size()) - 1, entry->queueID());
+        Q_EMIT entryAdded(uint(_queue.size()) - 1, entry->queueID());
 
         if (firstTrackChange)
             emitFirstTrackChanged();
@@ -214,7 +214,7 @@ namespace PMP {
         if (firstTrackChange)
             setFirstTrackIndexAndId(0, entry->queueID());
 
-        emit entryAdded(0, entry->queueID());
+        Q_EMIT entryAdded(0, entry->queueID());
 
         if (firstTrackChange)
             emitFirstTrackChanged();
@@ -236,7 +236,7 @@ namespace PMP {
         else
             firstTrackChange = false;
 
-        emit entryAdded(index, entry->queueID());
+        Q_EMIT entryAdded(index, entry->queueID());
 
         if (firstTrackChange)
             emitFirstTrackChanged();
@@ -254,7 +254,7 @@ namespace PMP {
         else
             _firstTrackIndex--;
 
-        emit entryRemoved(0, entry->queueID());
+        Q_EMIT entryRemoved(0, entry->queueID());
 
         if (firstTrackChange)
             emitFirstTrackChanged();
@@ -284,7 +284,7 @@ namespace PMP {
         else
             _firstTrackIndex--;
 
-        emit entryRemoved(index, queueID);
+        Q_EMIT entryRemoved(index, queueID);
 
         qDebug() << "deleting QID" << queueID
                  << "from lookup table because it was deleted from the queue";
@@ -357,7 +357,7 @@ namespace PMP {
                 _firstTrackIndex--; /* moved up to make room */
         }
 
-        emit entryMoved(index, newIndex, queueId);
+        Q_EMIT entryMoved(index, newIndex, queueId);
 
         if (firstTrackChange)
             emitFirstTrackChanged();

@@ -145,7 +145,7 @@ namespace PMP {
 
     void Server::shutdown() {
         _broadcastTimer->stop();
-        emit shuttingDown();
+        Q_EMIT shuttingDown();
     }
 
     void Server::newConnectionReceived() {

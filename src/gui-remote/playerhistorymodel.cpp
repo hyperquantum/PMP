@@ -103,7 +103,7 @@ namespace PMP {
         Q_UNUSED(queueIDs);
 
         /* we don't know the indexes, so we say everything changed */
-        emit dataChanged(createIndex(0, 0), createIndex(_list.size() - 1, 2));
+        Q_EMIT dataChanged(createIndex(0, 0), createIndex(_list.size() - 1, 2));
     }
 
     int PlayerHistoryModel::rowCount(const QModelIndex& parent) const {

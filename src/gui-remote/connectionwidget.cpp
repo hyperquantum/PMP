@@ -88,7 +88,7 @@ namespace PMP {
                 _ui->portLineEdit->setEnabled(false);
                 _ui->connectButton->setEnabled(false);
 
-                emit doConnect(address.toString(), port);
+                Q_EMIT doConnect(address.toString(), port);
             }
         );
 
@@ -126,7 +126,7 @@ namespace PMP {
         _ui->portLineEdit->setEnabled(false);
         _ui->connectButton->setEnabled(false);
 
-        emit doConnect(server, portNumber);
+        Q_EMIT doConnect(server, portNumber);
     }
 
 }

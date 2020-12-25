@@ -98,7 +98,7 @@ namespace PMP {
     }
 
     void LoginWidget::userLoggedInSuccessfully(QString login, quint32 id) {
-        emit loggedIn(login, id);
+        Q_EMIT loggedIn(login, id);
     }
 
     void LoginWidget::userLoginError(QString login,

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -87,7 +87,7 @@ namespace PMP {
         _queueRequestedUpTo = initialQueueFetchLength;
         _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
 
-        emit queueResetted(queueLength);
+        Q_EMIT queueResetted(queueLength);
     }
 
     void QueueMonitor::receivedServerInstanceIdentifier(QUuid uuid) {
@@ -142,7 +142,7 @@ namespace PMP {
             _waitingForVeryFirstQueueInfo = false;
             _queueLength = queueLength;
             _queue.clear();
-            emit queueResetted(queueLength);
+            Q_EMIT queueResetted(queueLength);
         }
 
         if (_queueLength != queueLength) {
@@ -157,7 +157,7 @@ namespace PMP {
         if (startOffset == _queue.size()) {
             qDebug() << " queue contents to be appended to our list";
             _queue.append(queueIDs);
-            emit entriesReceived(startOffset, queueIDs);
+            Q_EMIT entriesReceived(startOffset, queueIDs);
         }
         else if (startOffset < _queue.size()
                  && startOffset > _queue.size() - queueIDs.size())
@@ -180,7 +180,7 @@ namespace PMP {
                 _queue.append(queueIDs[i]);
             }
 
-            emit entriesReceived(_queue.size() - changed.size(), changed);
+            Q_EMIT entriesReceived(_queue.size() - changed.size(), changed);
         }
         else {
             /* no new information received, just check the entries we already have */
@@ -234,7 +234,7 @@ namespace PMP {
             _queueRequestedUpTo++;
         }
 
-        emit trackAdded((int)offset, queueID);
+        Q_EMIT trackAdded((int)offset, queueID);
     }
 
     void QueueMonitor::queueEntryRemoved(quint32 offset, quint32 queueID) {
@@ -275,7 +275,7 @@ namespace PMP {
             sendNextSlotBatchRequest(queueFetchBatchSize);
         }
 
-        emit trackRemoved(index, queueID);
+        Q_EMIT trackRemoved(index, queueID);
     }
 
     void QueueMonitor::queueEntryMoved(quint32 fromOffset, quint32 toOffset,
@@ -336,7 +336,7 @@ namespace PMP {
             _queueRequestedUpTo++;
         }
 
-        emit trackMoved(fromIndex, toIndex, queueID);
+        Q_EMIT trackMoved(fromIndex, toIndex, queueID);
     }
 
 }

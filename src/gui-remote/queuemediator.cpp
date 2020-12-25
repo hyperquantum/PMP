@@ -92,7 +92,7 @@ namespace PMP {
 
         mediator._queueLength--;
 
-        emit mediator.trackRemoved(_index, _queueID);
+        Q_EMIT mediator.trackRemoved(_index, _queueID);
         return true;
     }
 
@@ -105,7 +105,7 @@ namespace PMP {
         mediator._myQueue.insert(_index, _queueID);
         mediator._queueLength++;
 
-        emit mediator.trackAdded(_index, _queueID);
+        Q_EMIT mediator.trackAdded(_index, _queueID);
         return true;
     }
 
@@ -155,7 +155,7 @@ namespace PMP {
 
         mediator._queueLength++;
 
-        emit mediator.trackAdded(_index, _queueID);
+        Q_EMIT mediator.trackAdded(_index, _queueID);
         return true;
     }
 
@@ -221,7 +221,7 @@ namespace PMP {
             mediator._myQueue.insert(_toIndex, _queueID);
         }
 
-        emit mediator.trackMoved(_fromIndex, _toIndex, _queueID);
+        Q_EMIT mediator.trackMoved(_fromIndex, _toIndex, _queueID);
         return true;
     }
 
@@ -244,7 +244,7 @@ namespace PMP {
             mediator._myQueue.insert(_fromIndex, _queueID);
         }
 
-        emit mediator.trackMoved(_toIndex, _fromIndex, _queueID);
+        Q_EMIT mediator.trackMoved(_toIndex, _fromIndex, _queueID);
         return true;
     }
 
@@ -318,7 +318,7 @@ namespace PMP {
         }
 
         if (change) {
-            emit mediator.entriesReceived(_index, _entries);
+            Q_EMIT mediator.entriesReceived(_index, _entries);
         }
 
         return true;
@@ -416,7 +416,7 @@ namespace PMP {
         qDeleteAll(_pendingOperations);
         _pendingOperations.clear();
 
-        emit queueResetted(queueLength);
+        Q_EMIT queueResetted(queueLength);
     }
 
     void QueueMediator::doResetQueue() {
@@ -427,7 +427,7 @@ namespace PMP {
         qDeleteAll(_pendingOperations);
         _pendingOperations.clear();
 
-        emit queueResetted(_queueLength);
+        Q_EMIT queueResetted(_queueLength);
     }
 
     void QueueMediator::entriesReceivedAtServer(int index, QList<quint32> entries) {

@@ -2475,7 +2475,7 @@ namespace PMP {
     void CollectionSender::sendNextBatch() {
         if (_currentIndex >= _hashes.size()) {
             qDebug() << "CollectionSender: all completed.  ref=" << _clientRef;
-            emit allSent(_clientRef);
+            Q_EMIT allSent(_clientRef);
             return;
         }
 
@@ -2494,7 +2494,7 @@ namespace PMP {
 
         /* send this batch if it is not empty */
         if (!infoToSend.isEmpty()) {
-            emit sendCollectionList(_clientRef, infoToSend);
+            Q_EMIT sendCollectionList(_clientRef, infoToSend);
         }
     }
 

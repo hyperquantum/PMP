@@ -155,7 +155,7 @@ namespace PMP {
             notifications.append(info);
         }
 
-        emit hashInfoChanged(notifications);
+        Q_EMIT hashInfoChanged(notifications);
     }
 
     void CollectionMonitor::emitAvailabilityNotifications(QVector<FileHash> hashes) {
@@ -171,6 +171,6 @@ namespace PMP {
                 unavailable.append(h);
         }
 
-        emit hashAvailabilityChanged(available, unavailable);
+        Q_EMIT hashAvailabilityChanged(available, unavailable);
     }
 }

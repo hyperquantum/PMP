@@ -186,7 +186,7 @@ namespace PMP {
         if (errorType == NetworkProtocol::NoError) {
             /* this is how older servers report a successful insertion */
             auto queueID = intData;
-            emit _parent->queueEntryAdded(_index, queueID, RequestID(clientReference));
+            Q_EMIT _parent->queueEntryAdded(_index, queueID, RequestID(clientReference));
         }
         else {
             qWarning() << "TrackInsertionResultHandler:"
@@ -200,7 +200,7 @@ namespace PMP {
     ServerConnection::TrackInsertionResultHandler::handleQueueEntryAdditionConfirmation(
                                   quint32 clientReference, quint32 index, quint32 queueID)
     {
-        emit _parent->queueEntryAdded(index, queueID, RequestID(clientReference));
+        Q_EMIT _parent->queueEntryAdded(index, queueID, RequestID(clientReference));
     }
 
     /* ============================================================================ */
@@ -238,7 +238,7 @@ namespace PMP {
     void ServerConnection::DuplicationResultHandler::handleQueueEntryAdditionConfirmation(
                                   quint32 clientReference, quint32 index, quint32 queueID)
     {
-        emit _parent->queueEntryAdded(index, queueID, RequestID(clientReference));
+        Q_EMIT _parent->queueEntryAdded(index, queueID, RequestID(clientReference));
     }
 
     /* ============================================================================ */
@@ -323,7 +323,7 @@ namespace PMP {
                     || heading[2] != 'P')
                 {
                     _state = HandshakeFailure;
-                    emit invalidServer();
+                    Q_EMIT invalidServer();
                     reset();
                     return;
                 }
@@ -385,7 +385,7 @@ namespace PMP {
                 if (!heading.startsWith("PMP"))
                 {
                     _state = HandshakeFailure;
-                    emit invalidServer();
+                    Q_EMIT invalidServer();
                     reset();
                     return;
                 }
@@ -415,7 +415,7 @@ namespace PMP {
                     }
                 }
 
-                emit connected();
+                Q_EMIT connected();
             }
                 break;
             case BinaryMode:
@@ -439,14 +439,14 @@ namespace PMP {
         case Connecting:
         case Handshake:
         case HandshakeFailure: /* just in case this one here too */
-            emit cannotConnect(error);
+            Q_EMIT cannotConnect(error);
             reset();
             break;
         case TextMode:
         case BinaryHandshake:
         case BinaryMode:
             _state = NotConnected;
-            emit connectionBroken(error);
+            Q_EMIT connectionBroken(error);
             reset();
             break;
         }
@@ -823,7 +823,7 @@ namespace PMP {
         _userAccountRegistrationPassword = "";
 
         if (errorType == 0) {
-            emit userAccountCreatedSuccessfully(login, intData);
+            Q_EMIT userAccountCreatedSuccessfully(login, intData);
         }
         else {
             UserRegistrationError error;
@@ -840,7 +840,7 @@ namespace PMP {
                 break;
             }
 
-            emit userAccountCreationError(login, error);
+            Q_EMIT userAccountCreationError(login, error);
         }
     }
 
@@ -862,7 +862,7 @@ namespace PMP {
             _userLoggedInId = userId;
             _userLoggedInName = _userLoggingIn;
             _userLoggingIn = "";
-            emit userLoggedInSuccessfully(login, intData);
+            Q_EMIT userLoggedInSuccessfully(login, intData);
         }
         else {
             _userLoggingIn = "";
@@ -879,7 +879,7 @@ namespace PMP {
                 break;
             }
 
-            emit userLoginError(login, error);
+            Q_EMIT userLoginError(login, error);
         }
     }
 
@@ -887,13 +887,13 @@ namespace PMP {
         auto oldValue = _doingFullIndexation;
         _doingFullIndexation = running;
 
-        emit fullIndexationStatusReceived(running);
+        Q_EMIT fullIndexationStatusReceived(running);
 
         if (oldValue.isKnown()) {
             if (running)
-                emit fullIndexationStarted();
+                Q_EMIT fullIndexationStarted();
             else
-                emit fullIndexationFinished();
+                Q_EMIT fullIndexationFinished();
         }
     }
 
@@ -1433,7 +1433,7 @@ namespace PMP {
         QUuid uuid = QUuid::fromRfc4122(message.mid(2));
         qDebug() << "received server instance identifier:" << uuid;
 
-        emit receivedServerInstanceIdentifier(uuid);
+        Q_EMIT receivedServerInstanceIdentifier(uuid);
     }
 
     void ServerConnection::parseServerNameMessage(QByteArray const& message) {
@@ -1445,7 +1445,7 @@ namespace PMP {
         QString name = NetworkUtil::getUtf8String(message, 4, message.length() - 4);
 
         qDebug() << "received server name; type:" << nameType << " name:" << name;
-        emit receivedServerName(nameType, name);
+        Q_EMIT receivedServerName(nameType, name);
     }
 
     void ServerConnection::parseDatabaseIdentifierMessage(QByteArray const& message) {
@@ -1457,7 +1457,7 @@ namespace PMP {
         QUuid uuid = QUuid::fromRfc4122(message.mid(2));
         qDebug() << "received database identifier:" << uuid;
 
-        emit receivedDatabaseIdentifier(uuid);
+        Q_EMIT receivedDatabaseIdentifier(uuid);
     }
 
     void ServerConnection::parseServerHealthMessage(QByteArray const& message) {
@@ -1479,7 +1479,7 @@ namespace PMP {
             if (databaseUnavailable)
                 qWarning() << "server reports that its database is unavailable";
 
-            emit serverHealthChanged(newServerHealthStatus);
+            Q_EMIT serverHealthChanged(newServerHealthStatus);
         }
     }
 
@@ -1521,7 +1521,7 @@ namespace PMP {
             return; /* invalid message */
         }
 
-        emit receivedUserAccounts(users);
+        Q_EMIT receivedUserAccounts(users);
     }
 
     void ServerConnection::parseNewUserAccountSaltMessage(QByteArray const& message) {
@@ -1581,7 +1581,7 @@ namespace PMP {
         //qDebug() << "received player state message";
 
         // TODO : rename volumeChanged signal or get rid of it
-        if (volume <= 100) { emit volumeChanged(volume); }
+        if (volume <= 100) { Q_EMIT volumeChanged(volume); }
 
         auto state = PlayerState::Unknown;
         switch (playerState) {
@@ -1611,7 +1611,7 @@ namespace PMP {
 
         qDebug() << "received volume changed event;  volume:" << volume;
 
-        if (volume <= 100) { emit volumeChanged(volume); }
+        if (volume <= 100) { Q_EMIT volumeChanged(volume); }
     }
 
     void ServerConnection::parseUserPlayingForModeMessage(QByteArray const& message) {
@@ -1631,7 +1631,7 @@ namespace PMP {
         qDebug() << "received user playing for: id =" << userId
                  << "; login =" << login;
 
-        emit receivedUserPlayingFor(userId, login);
+        Q_EMIT receivedUserPlayingFor(userId, login);
     }
 
     void ServerConnection::parseQueueContentsMessage(QByteArray const& message) {
@@ -1656,7 +1656,7 @@ namespace PMP {
         qDebug() << "received queue contents;  Q-length:" << queueLength
                  << " offset:" << startOffset << " count:" << queueIDs.size();
 
-        emit receivedQueueContents(queueLength, startOffset, queueIDs);
+        Q_EMIT receivedQueueContents(queueLength, startOffset, queueIDs);
     }
 
     void ServerConnection::parseTrackInfoMessage(QByteArray const& message)
@@ -1852,7 +1852,7 @@ namespace PMP {
             qDebug() << " received name" << names[0];
         }
 
-        emit receivedPossibleFilenames(queueID, names);
+        Q_EMIT receivedPossibleFilenames(queueID, names);
     }
 
     void ServerConnection::parseBulkQueueEntryHashMessage(const QByteArray& message) {
@@ -1893,7 +1893,7 @@ namespace PMP {
 
             auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
 
-            emit receivedQueueEntryHash(queueID, type, hash);
+            Q_EMIT receivedQueueEntryHash(queueID, type, hash);
         }
     }
 
@@ -1908,7 +1908,7 @@ namespace PMP {
         qDebug() << "received queue track insertion event;  QID:" << queueID
                  << " offset:" << offset;
 
-        emit queueEntryAdded(offset, queueID, RequestID());
+        Q_EMIT queueEntryAdded(offset, queueID, RequestID());
     }
 
     void ServerConnection::parseQueueEntryAdditionConfirmationMessage(
@@ -1931,7 +1931,7 @@ namespace PMP {
         }
         else {
             qWarning() << "no result handler found for reference" << clientReference;
-            emit queueEntryAdded(index, queueID, RequestID(clientReference));
+            Q_EMIT queueEntryAdded(index, queueID, RequestID(clientReference));
         }
     }
 
@@ -1946,7 +1946,7 @@ namespace PMP {
         qDebug() << "received queue track removal event;  QID:" << queueID
                  << " offset:" << offset;
 
-        emit queueEntryRemoved(offset, queueID);
+        Q_EMIT queueEntryRemoved(offset, queueID);
     }
 
     void ServerConnection::parseQueueEntryMovedMessage(QByteArray const& message) {
@@ -1961,7 +1961,7 @@ namespace PMP {
         qDebug() << "received queue track moved event;  QID:" << queueID
                  << " from-offset:" << fromOffset << " to-offset:" << toOffset;
 
-        emit queueEntryMoved(fromOffset, toOffset, queueID);
+        Q_EMIT queueEntryMoved(fromOffset, toOffset, queueID);
     }
 
     void ServerConnection::parseDynamicModeStatusMessage(QByteArray const& message) {
@@ -2334,7 +2334,7 @@ namespace PMP {
         PlayerHistoryTrackInfo info(queueID, user, started, ended, hadError, hadSeek,
                                     permillagePlayed);
 
-        emit receivedPlayerHistoryEntry(info);
+        Q_EMIT receivedPlayerHistoryEntry(info);
     }
 
     void ServerConnection::parsePlayerHistoryMessage(const QByteArray& message) {
@@ -2375,7 +2375,7 @@ namespace PMP {
             offset += 28;
         }
 
-        emit receivedPlayerHistory(entries);
+        Q_EMIT receivedPlayerHistory(entries);
     }
 
     void ServerConnection::handleResultMessage(quint16 errorType, quint32 clientReference,

@@ -567,7 +567,7 @@ namespace PMP {
 
     void SortedCollectionTableModel::markLeftColumnAsChanged()
     {
-        emit dataChanged(
+        Q_EMIT dataChanged(
             createIndex(0, 0), createIndex(rowCount() - 1, 0)
         );
     }
@@ -583,7 +583,7 @@ namespace PMP {
         int outerIndex = _innerToOuterIndexMap[innerIndex];
 
         _tracks[innerIndex]->setAvailable(isAvailable);
-        emit dataChanged(createIndex(outerIndex, 0), createIndex(outerIndex, 4 - 1));
+        Q_EMIT dataChanged(createIndex(outerIndex, 0), createIndex(outerIndex, 4 - 1));
     }
 
     template <class T>
@@ -694,7 +694,7 @@ namespace PMP {
     }
 
     void SortedCollectionTableModel::markEverythingAsChanged() {
-        emit dataChanged(
+        Q_EMIT dataChanged(
             createIndex(0, 0), createIndex(rowCount() - 1, columnCount() - 1)
         );
     }

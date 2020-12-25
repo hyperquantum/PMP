@@ -60,13 +60,13 @@ namespace PMP {
         }
 
         if (filename.isEmpty()) {
-            emit preloadFailed(_queueID, 123);
+            Q_EMIT preloadFailed(_queueID, 123);
             return;
         }
 
         QFileInfo fileInfo(filename);
         if (!fileInfo.isFile() || !fileInfo.isReadable()) {
-            emit preloadFailed(_queueID, 234);
+            Q_EMIT preloadFailed(_queueID, 234);
             return;
         }
 
@@ -74,7 +74,7 @@ namespace PMP {
 
         QFile file(filename);
         if (!file.open(QIODevice::ReadOnly)) {
-            emit preloadFailed(_queueID, 456);
+            Q_EMIT preloadFailed(_queueID, 456);
             return;
         }
 
@@ -85,7 +85,7 @@ namespace PMP {
                  << filename;
 
         if (!FileAnalyzer::preprocessFileForPlayback(contents, extension)) {
-            emit preloadFailed(_queueID, 678);
+            Q_EMIT preloadFailed(_queueID, 678);
             return;
         }
 
@@ -101,25 +101,25 @@ namespace PMP {
         QFileInfo saveFileInfo(saveName);
         if (saveFileInfo.exists()) {
             /* name collision, give up */
-            emit preloadFailed(_queueID, 789);
+            Q_EMIT preloadFailed(_queueID, 789);
             return;
         }
 
         QSaveFile saveFile(saveName);
         if (!saveFile.open(QIODevice::WriteOnly)){
-            emit preloadFailed(_queueID, 987);
+            Q_EMIT preloadFailed(_queueID, 987);
             return;
         }
 
         saveFile.write(contents);
         if (!saveFile.commit()) {
             QFile::remove(saveName);
-            emit preloadFailed(_queueID, 876);
+            Q_EMIT preloadFailed(_queueID, 876);
             return;
         }
 
         /* success */
-        emit preloadFinished(_queueID, saveName);
+        Q_EMIT preloadFinished(_queueID, saveName);
     }
 
     QString TrackPreloadTask::tempFilename(uint queueID, QString extension) {

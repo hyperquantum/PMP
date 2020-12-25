@@ -131,7 +131,7 @@ namespace PMP {
         if (_pendingNotificationsUsers.isEmpty()) return;
 
         Q_FOREACH(quint32 userId, _pendingNotificationsUsers) {
-            emit dataReceivedForUser(userId);
+            Q_EMIT dataReceivedForUser(userId);
         }
 
         _pendingNotificationsUsers.clear();
