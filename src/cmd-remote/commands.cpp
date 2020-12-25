@@ -100,7 +100,7 @@ namespace PMP {
         {
             qWarning() << "Step number" << _currentStep
                        << "should be less than" << _steps.size();
-            executionFailed(3, "internal error");
+            Q_EMIT executionFailed(3, "internal error");
             return;
         }
 
