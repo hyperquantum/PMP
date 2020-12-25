@@ -34,7 +34,7 @@ namespace PMP {
         void setKeepDisplayActive(bool keepActive = true);
         bool getKeepDisplayActive() const;
 
-    private slots:
+    private Q_SLOTS:
         void updateState();
 
     private:

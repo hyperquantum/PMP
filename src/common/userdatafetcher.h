@@ -49,7 +49,7 @@ namespace PMP {
     Q_SIGNALS:
         void dataReceivedForUser(quint32 userId);
 
-    private slots:
+    private Q_SLOTS:
         //void connected();
         void onNewTrackReceived(CollectionTrackInfo track);
         void receivedHashUserData(FileHash hash, quint32 userId,

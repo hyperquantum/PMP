@@ -54,13 +54,13 @@ namespace PMP {
         QUuid uuid() const { return _uuid; }
         QString serverPassword() { return _serverPassword; }
 
-    public slots:
+    public Q_SLOTS:
         void shutdown();
 
     Q_SIGNALS:
         void shuttingDown();
 
-    private slots:
+    private Q_SLOTS:
         void newConnectionReceived();
         void sendBroadcast();
         void readPendingDatagrams();

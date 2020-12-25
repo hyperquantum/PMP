@@ -44,7 +44,7 @@ namespace PMP {
         void loggedIn(QString login, quint32 accountId);
         void cancelClicked();
 
-    private slots:
+    private Q_SLOTS:
         void loginClicked();
 
         void userLoggedInSuccessfully(QString login, quint32 id);

@@ -49,7 +49,7 @@ namespace PMP {
         void duplicateEntryAsync(quint32 queueID);
         bool canDuplicateEntry(quint32 queueID) const;
 
-    private slots:
+    private Q_SLOTS:
         void resetQueue(int queueLength);
         void entriesReceivedAtServer(int index, QList<quint32> entries);
         void trackAddedAtServer(int index, quint32 queueID);

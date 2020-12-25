@@ -43,7 +43,7 @@ namespace PMP {
         CollectionWidget(QWidget* parent, ClientServerInterface* clientServerInterface);
         ~CollectionWidget();
 
-    private slots:
+    private Q_SLOTS:
         void highlightTracksIndexChanged(int index);
         void highlightColorIndexChanged();
         void collectionContextMenuRequested(const QPoint& position);

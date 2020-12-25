@@ -34,7 +34,7 @@ namespace PMP {
         QSize minimumSizeHint() const override;
         QSize sizeHint() const override;
 
-    public slots:
+    public Q_SLOTS:
         void setCurrentTrack(/*uint ID,*/ qint64 length);
         void setTrackPosition(qint64 position);
 
@@ -45,7 +45,7 @@ namespace PMP {
         void paintEvent(QPaintEvent* event) override;
         void mousePressEvent(QMouseEvent* event) override;
 
-    private slots:
+    private Q_SLOTS:
 
 
     private:

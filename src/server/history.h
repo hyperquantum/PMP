@@ -67,7 +67,7 @@ namespace PMP {
         void updatedHashUserStats(uint hashID, quint32 user,
                                   QDateTime previouslyHeard, qint16 score);
 
-    private slots:
+    private Q_SLOTS:
         void currentTrackChanged(QueueEntry const* newTrack);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void onHashUserStatsUpdated(uint hashID, quint32 user,

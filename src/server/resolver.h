@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -66,7 +66,7 @@ namespace PMP {
         QList<QPair<uint, FileHash>> getIDs(QList<FileHash> hashes);
         QVector<QPair<uint, FileHash>> getIDs(QVector<FileHash> hashes);
 
-    private slots:
+    private Q_SLOTS:
         void onFullIndexationFinished();
 
     Q_SIGNALS:

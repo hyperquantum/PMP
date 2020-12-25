@@ -24,7 +24,7 @@
 
 class TestNetworkUtil : public QObject {
     Q_OBJECT
-private slots:
+private Q_SLOTS:
     void fitsIn2BytesSigned();
     void to2BytesSigned();
     void appendByte();

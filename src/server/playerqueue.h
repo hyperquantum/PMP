@@ -85,7 +85,7 @@ namespace PMP {
 
         QList<QSharedPointer<PlayerHistoryEntry> > recentHistory(int limit);
 
-    public slots:
+    public Q_SLOTS:
         //void clear(bool doNotifications);
         void trim(uint length);
 
@@ -115,7 +115,7 @@ namespace PMP {
 
         void firstTrackChanged(int index, uint queueId);
 
-    private slots:
+    private Q_SLOTS:
         void checkFrontOfQueue();
 
     private:

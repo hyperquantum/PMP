@@ -221,7 +221,7 @@ namespace PMP {
                                 QVector<CollectionTrackInfo> tracks);
         void allSent(uint clientReference);
 
-    private slots:
+    private Q_SLOTS:
         void sendNextBatch();
 
     private:

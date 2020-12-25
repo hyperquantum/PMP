@@ -199,7 +199,7 @@ namespace PMP {
 
         CollectionTrackInfo* trackAt(const QModelIndex& index) const;
 
-    public slots:
+    public Q_SLOTS:
         void setSearchText(QString search);
 
     protected:

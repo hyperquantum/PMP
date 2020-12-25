@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -38,7 +38,7 @@ namespace PMP {
         quint32 queueEntry(int index);
         QList<quint32> knownQueuePart() const { return _queue; }
 
-    private slots:
+    private Q_SLOTS:
         void connected();
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedQueueContents(int queueLength, int startOffset,
