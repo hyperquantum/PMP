@@ -168,6 +168,9 @@ namespace PMP {
 
     void Generator::requestQueueExpansion()
     {
+        if (!_queue->canAddMoreEntries(expandCount))
+            return;
+
         int generatedCount = 0;
 
         if (_waveActive) {

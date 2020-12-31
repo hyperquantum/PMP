@@ -125,7 +125,12 @@ namespace PMP {
         if (!isLoggedIn()) return;
         if (hash.isNull()) return;
 
-        _player->queue().enqueue(hash);
+        auto& queue = _player->queue();
+
+        if (!queue.canAddMoreEntries())
+            return;
+
+        queue.enqueue(hash);
     }
 
     void ServerInterface::insertAtFront(FileHash hash)
@@ -133,12 +138,24 @@ namespace PMP {
         if (!isLoggedIn()) return;
         if (hash.isNull()) return;
 
-        _player->queue().insertAtFront(hash);
+        auto& queue = _player->queue();
+
+        if (!queue.canAddMoreEntries())
+            return;
+
+        queue.insertAtFront(hash);
     }
 
     void ServerInterface::insertBreakAtFront()
     {
         if (!isLoggedIn()) return;
+
+        auto& queue = _player->queue();
+
+        // TODO : if a break is already present, there is no need to bail out here
+        if (!queue.canAddMoreEntries())
+            return;
+
         _player->queue().insertBreakAtFront();
     }
 
@@ -149,7 +166,12 @@ namespace PMP {
             return;
         }
 
-        _player->queue().insertAtIndex(index, entry);
+        auto& queue = _player->queue();
+
+        if (!queue.canAddMoreEntries())
+            return;
+
+        queue.insertAtIndex(index, entry);
     }
 
     void ServerInterface::moveQueueEntry(uint id, int upDownOffset)

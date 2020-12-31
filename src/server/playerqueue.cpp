@@ -27,6 +27,12 @@
 
 namespace PMP {
 
+    namespace
+    {
+         /* this limit could be increased or decreased in the future */
+        const int maximumQueueLength = 2'000'000;
+    }
+
     PlayerQueue::PlayerQueue(Resolver* resolver)
      : _nextQueueID(1), _firstTrackIndex(-1), _firstTrackQueueId(0),
        _resolver(resolver), _queueFrontChecker(new QTimer(this))
@@ -39,7 +45,8 @@ namespace PMP {
         _queueFrontChecker->start(10 * 1000);
     }
 
-    void PlayerQueue::checkFrontOfQueue() {
+    void PlayerQueue::checkFrontOfQueue()
+    {
         int length = _queue.length();
         uint operationsDone = 0;
 
@@ -84,27 +91,26 @@ namespace PMP {
         }
     }
 
-    /*
-    void PlayerQueue::clear(bool doNotifications) {
-        if (doNotifications) {
-            trim(0);
-            return;
-        }
-
-        _queue.clear();
-        resetFirstTrack();
-    }
-    */
-
-    bool PlayerQueue::empty() const {
+    bool PlayerQueue::empty() const
+    {
         return _queue.empty();
     }
 
-    uint PlayerQueue::length() const {
+    uint PlayerQueue::length() const
+    {
         return uint(_queue.length());
     }
 
-    uint PlayerQueue::getNextQueueID() {
+    bool PlayerQueue::canAddMoreEntries(int count) const
+    {
+        if (count < 0) return false;
+        if (count == 0) return true;
+
+        return _queue.length() <= maximumQueueLength - count;
+    }
+
+    uint PlayerQueue::getNextQueueID()
+    {
         return _nextQueueID++;
     }
 
@@ -144,33 +150,63 @@ namespace PMP {
         Q_EMIT firstTrackChanged(_firstTrackIndex, _firstTrackQueueId);
     }
 
-    void PlayerQueue::trim(uint length) {
-        while (uint(_queue.length()) > length) {
+    void PlayerQueue::trim(uint length)
+    {
+        while (uint(_queue.length()) > length)
+        {
             removeAtIndex(_queue.length() - 1);
         }
     }
 
-    QueueEntry* PlayerQueue::enqueue(QString const& filename) {
+    QueueEntry* PlayerQueue::enqueue(QString const& filename)
+    {
+        if (!canAddMoreEntries())
+        {
+            qWarning() << "queue does not allow adding another entry";
+            return nullptr;
+        }
+
         auto entry = new QueueEntry(this, filename);
         enqueue(entry);
         return entry;
     }
 
-    QueueEntry* PlayerQueue::enqueue(FileHash hash) {
+    QueueEntry* PlayerQueue::enqueue(FileHash hash)
+    {
+        if (!canAddMoreEntries())
+        {
+            qWarning() << "queue does not allow adding another entry";
+            return nullptr;
+        }
+
         auto entry = new QueueEntry(this, hash);
         enqueue(entry);
         return entry;
     }
 
-    QueueEntry* PlayerQueue::insertAtFront(FileHash hash) {
+    QueueEntry* PlayerQueue::insertAtFront(FileHash hash)
+    {
+        if (!canAddMoreEntries())
+        {
+            qWarning() << "queue does not allow adding another entry";
+            return nullptr;
+        }
+
         auto entry = new QueueEntry(this, hash);
         insertAtFront(entry);
         return entry;
     }
 
-    void PlayerQueue::insertBreakAtFront() {
+    void PlayerQueue::insertBreakAtFront()
+    {
         if (!_queue.empty() && _queue[0]->kind() == QueueEntryKind::Break)
             return;
+
+        if (!canAddMoreEntries())
+        {
+            qWarning() << "queue does not allow adding another entry";
+            return;
+        }
 
         insertAtFront(QueueEntry::createBreak(this));
     }
@@ -179,14 +215,27 @@ namespace PMP {
     {
         if (index > uint(_queue.size())) return nullptr;
 
+        if (!canAddMoreEntries())
+        {
+            qWarning() << "queue does not allow adding another entry";
+            return nullptr;
+        }
+
         auto entry = new QueueEntry(this, hash);
         insertAtIndex(index, entry);
         return entry;
     }
 
-    void PlayerQueue::enqueue(QueueEntry* entry) {
+    void PlayerQueue::enqueue(QueueEntry* entry)
+    {
         if (!entry->isNewlyCreated() || entry->parent() != this)
             return;
+
+        if (!canAddMoreEntries())
+        {
+            qWarning() << "queue does not allow adding another entry";
+            return;
+        }
 
         entry->markAsNotNewAnymore();
         _idLookup.insert(entry->queueID(), entry);
@@ -202,9 +251,16 @@ namespace PMP {
             emitFirstTrackChanged();
     }
 
-    void PlayerQueue::insertAtFront(QueueEntry* entry) {
+    void PlayerQueue::insertAtFront(QueueEntry* entry)
+    {
         if (!entry->isNewlyCreated() || entry->parent() != this)
             return;
+
+        if (!canAddMoreEntries())
+        {
+            qWarning() << "queue does not allow adding another entry";
+            return;
+        }
 
         entry->markAsNotNewAnymore();
         _idLookup.insert(entry->queueID(), entry);
@@ -220,9 +276,16 @@ namespace PMP {
             emitFirstTrackChanged();
     }
 
-    void PlayerQueue::insertAtIndex(quint32 index, QueueEntry* entry) {
+    void PlayerQueue::insertAtIndex(quint32 index, QueueEntry* entry)
+    {
         if (!entry->isNewlyCreated() || entry->parent() != this)
             return;
+
+        if (!canAddMoreEntries())
+        {
+            qWarning() << "queue does not allow adding another entry";
+            return;
+        }
 
         entry->markAsNotNewAnymore();
         _idLookup.insert(entry->queueID(), entry);
@@ -242,7 +305,8 @@ namespace PMP {
             emitFirstTrackChanged();
     }
 
-    QueueEntry* PlayerQueue::dequeue() {
+    QueueEntry* PlayerQueue::dequeue()
+    {
         if (_queue.empty()) { return nullptr; }
         QueueEntry* entry = _queue.dequeue();
 
@@ -262,14 +326,16 @@ namespace PMP {
         return entry;
     }
 
-    bool PlayerQueue::remove(quint32 queueID) {
+    bool PlayerQueue::remove(quint32 queueID)
+    {
         int index = findIndex(queueID);
         if (index < 0) return false; // not found
 
         return removeAtIndex(index);
     }
 
-    bool PlayerQueue::removeAtIndex(uint index) {
+    bool PlayerQueue::removeAtIndex(uint index)
+    {
         if (index >= (uint)_queue.length()) return false;
 
         QueueEntry* entry = _queue[index];
@@ -298,7 +364,8 @@ namespace PMP {
         return true;
     }
 
-    bool PlayerQueue::moveById(quint32 queueID, qint16 indexDiff) {
+    bool PlayerQueue::moveById(quint32 queueID, qint16 indexDiff)
+    {
         int index = findIndex(queueID);
         if (index < 0) return false; // not found
 
@@ -365,24 +432,28 @@ namespace PMP {
         return true;
     }
 
-    QList<QueueEntry*> PlayerQueue::entries(int startoffset, int maxCount) {
+    QList<QueueEntry*> PlayerQueue::entries(int startoffset, int maxCount)
+    {
         return _queue.mid(startoffset, maxCount);
     }
 
-    QueueEntry* PlayerQueue::peekFirstTrackEntry() {
+    QueueEntry* PlayerQueue::peekFirstTrackEntry()
+    {
         if (_firstTrackIndex < 0) return nullptr;
 
         return _queue[_firstTrackIndex];
     }
 
-    QueueEntry* PlayerQueue::lookup(quint32 queueID) {
+    QueueEntry* PlayerQueue::lookup(quint32 queueID)
+    {
         QHash<quint32, QueueEntry*>::iterator it = _idLookup.find(queueID);
         if (it == _idLookup.end()) { return nullptr; }
 
         return it.value();
     }
 
-    QueueEntry* PlayerQueue::entryAtIndex(int index) {
+    QueueEntry* PlayerQueue::entryAtIndex(int index)
+    {
         if (index < 0 || index >= _queue.size())
             return nullptr;
 
@@ -410,14 +481,16 @@ namespace PMP {
         qDebug() << " history size now:" << _history.size();
     }
 
-    QList<QSharedPointer<PlayerHistoryEntry> > PlayerQueue::recentHistory(int limit) {
+    QList<QSharedPointer<PlayerHistoryEntry> > PlayerQueue::recentHistory(int limit)
+    {
         if (limit <= 0 || limit > _history.size())
             return _history;
 
         return _history.mid(_history.size() - limit, limit);
     }
 
-    int PlayerQueue::findIndex(quint32 queueID) {
+    int PlayerQueue::findIndex(quint32 queueID)
+    {
         // FIXME: find a more efficient way to get the index
         int length = _queue.length();
         for (int i = 0; i < length; ++i) {
