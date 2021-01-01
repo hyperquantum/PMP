@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,7 +28,7 @@ namespace PMP {
 
         TriBool() : _value(0) { /* <-- default constructed value is 'unknown' */ }
         TriBool(bool initialValue) : _value(1 + (initialValue ? 1 : 0)) { /* */ }
-        TriBool(TriBool const& other) : _value(other._value) { /* */ }
+        TriBool(TriBool const& other) = default;
 
         explicit TriBool(int number) : _value(1 + (number != 0 ? 1 : 0)) { /* */ }
 
@@ -52,6 +52,8 @@ namespace PMP {
         }
 
         bool isIdenticalTo(TriBool other) const { return _value == other._value; }
+
+        TriBool& operator=(TriBool const& other) = default;
 
         TriBool operator ! () const {
             /*  0 -> 0
