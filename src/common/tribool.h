@@ -22,7 +22,8 @@
 
 namespace PMP {
 
-    class TriBool {
+    class TriBool
+    {
     public:
         static const TriBool unknown;
 
@@ -38,7 +39,8 @@ namespace PMP {
             //
         }
 
-        void reset() {
+        void reset()
+        {
             _value = 0;
         }
 
@@ -47,7 +49,8 @@ namespace PMP {
         bool isTrue() const { return _value >= 2; }
         bool isFalse() const { return _value == 1; }
 
-        bool toBool(bool resultIfUnknown = false) const {
+        bool toBool(bool resultIfUnknown = false) const
+        {
             return (_value == 0) ? resultIfUnknown : (_value - 1);
         }
 
@@ -55,7 +58,8 @@ namespace PMP {
 
         TriBool& operator=(TriBool const& other) = default;
 
-        TriBool operator ! () const {
+        TriBool operator ! () const
+        {
             /*  0 -> 0
                 1 -> 2
                 2 -> 1 */
@@ -71,12 +75,14 @@ namespace PMP {
         unsigned char _value; /* 0=unknown, 1=false, 2=true */
     };
 
-    inline TriBool operator == (TriBool a, TriBool b) {
+    inline TriBool operator == (TriBool a, TriBool b)
+    {
         if ((a._value | b._value) == 0) return TriBool();
         return a._value == b._value;
     }
 
-    inline TriBool operator != (TriBool a, TriBool b) {
+    inline TriBool operator != (TriBool a, TriBool b)
+    {
         if ((a._value | b._value) == 0) return TriBool();
         return a._value != b._value;
     }
@@ -116,12 +122,14 @@ namespace PMP {
        ---+---+---+---'       ---+---+---+---'
     */
 
-    inline TriBool operator & (TriBool a, TriBool b) {
+    inline TriBool operator & (TriBool a, TriBool b)
+    {
         if ((a._value | b._value) & 1) return false;
         return (a._value & b._value) ? true : TriBool();
     }
 
-    inline TriBool operator | (TriBool a, TriBool b) {
+    inline TriBool operator | (TriBool a, TriBool b)
+    {
         if ((a._value | b._value) & 2) return true;
         return (a._value & b._value) ? false : TriBool();
     }
