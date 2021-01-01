@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,7 +34,20 @@ namespace PMP {
         connect(
             _connection, &ServerConnection::connectionBroken,
             this, &QueueControllerImpl::connectionBroken
-                    );
+        );
+
+        connect(
+            _connection, &ServerConnection::queueEntryAdded,
+            this, &QueueControllerImpl::queueEntryAdded
+        );
+        connect(
+            _connection, &ServerConnection::queueEntryRemoved,
+            this, &QueueControllerImpl::queueEntryRemoved
+        );
+        connect(
+            _connection, &ServerConnection::queueEntryMoved,
+            this, &QueueControllerImpl::queueEntryMoved
+        );
     }
 
     bool QueueControllerImpl::canDuplicateEntry(quint32 queueId) const

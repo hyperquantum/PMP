@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,6 +44,9 @@ namespace PMP {
         virtual void moveQueueEntry(uint queueId, qint16 offsetDiff) = 0;
 
     Q_SIGNALS:
+        void queueEntryAdded(qint32 index, quint32 queueId);
+        void queueEntryRemoved(qint32 index, quint32 queueId);
+        void queueEntryMoved(qint32 fromIndex, qint32 toIndex, quint32 queueId);
 
     protected:
         explicit QueueController(QObject* parent) : QObject(parent) {}

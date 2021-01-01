@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -199,15 +199,15 @@ namespace PMP {
 
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);
-        void queueEntryAdded(quint32 offset, quint32 queueID, RequestID requestID);
-        void queueEntryRemoved(quint32 offset, quint32 queueID);
-        void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
-        void receivedTrackInfo(quint32 queueID, QueueEntryType type,
+        void queueEntryAdded(qint32 offset, quint32 queueId, RequestID requestId);
+        void queueEntryRemoved(qint32 offset, quint32 queueId);
+        void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueId);
+        void receivedTrackInfo(quint32 queueId, QueueEntryType type,
                                qint64 lengthMilliseconds, QString title, QString artist);
-        void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
+        void receivedQueueEntryHash(quint32 queueId, QueueEntryType type, FileHash hash);
         void receivedHashUserData(FileHash hash, quint32 userId,
                                   QDateTime previouslyHeard, qint16 scorePermillage);
-        void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
+        void receivedPossibleFilenames(quint32 queueId, QList<QString> names);
 
         void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
         void userAccountCreatedSuccessfully(QString login, quint32 id);

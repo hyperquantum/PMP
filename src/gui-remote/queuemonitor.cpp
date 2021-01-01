@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -209,7 +209,8 @@ namespace PMP {
         }
     }
 
-    void QueueMonitor::queueEntryAdded(quint32 offset, quint32 queueID) {
+    void QueueMonitor::queueEntryAdded(qint32 offset, quint32 queueID)
+    {
         int index = (int)offset;
 
         if (index < 0 || index > _queueLength) {
@@ -237,7 +238,8 @@ namespace PMP {
         Q_EMIT trackAdded((int)offset, queueID);
     }
 
-    void QueueMonitor::queueEntryRemoved(quint32 offset, quint32 queueID) {
+    void QueueMonitor::queueEntryRemoved(qint32 offset, quint32 queueID)
+    {
         int index = (int)offset;
 
         if (index < 0 || index >= _queueLength) {
@@ -278,7 +280,7 @@ namespace PMP {
         Q_EMIT trackRemoved(index, queueID);
     }
 
-    void QueueMonitor::queueEntryMoved(quint32 fromOffset, quint32 toOffset,
+    void QueueMonitor::queueEntryMoved(qint32 fromOffset, qint32 toOffset,
                                        quint32 queueID)
     {
         int fromIndex = (int)fromOffset;
