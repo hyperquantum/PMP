@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -161,6 +161,23 @@ namespace PMP {
 
     private:
         int _volume;
+    };
+
+    class QueueDeleteCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        QueueDeleteCommand(quint32 queueId);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        quint32 _queueId;
+        bool _wasDeleted;
     };
 
     /*

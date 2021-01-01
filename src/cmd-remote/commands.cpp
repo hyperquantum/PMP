@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,6 +22,7 @@
 #include "common/clientserverinterface.h"
 #include "common/currenttrackmonitor.h"
 #include "common/playercontroller.h"
+#include "common/queuecontroller.h"
 #include "common/util.h"
 
 #include <QtDebug>
@@ -49,7 +50,7 @@ namespace PMP {
                 if (!_finishedOrFailed)
                 {
                     qWarning() << "CommandBase: timeout triggered";
-                    setCommandExecutionFailed(3, "command timed out");
+                    setCommandExecutionFailed(3, "Command timed out");
                 }
             }
         );
@@ -422,6 +423,55 @@ namespace PMP {
     void SetVolumeCommand::start(ClientServerInterface* clientServerInterface)
     {
         clientServerInterface->playerController().setVolume(_volume);
+    }
+
+    /* ===== QueueDeleteCommand ===== */
+
+    QueueDeleteCommand::QueueDeleteCommand(quint32 queueId)
+     : _queueId(queueId),
+       _wasDeleted(false)
+    {
+        //
+    }
+
+    bool QueueDeleteCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void QueueDeleteCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* queueController = &clientServerInterface->queueController();
+
+        connect(
+            queueController, &QueueController::queueEntryRemoved,
+            this,
+            [this](qint32 index, quint32 queueId)
+            {
+                Q_UNUSED(index)
+
+                if (queueId != _queueId)
+                    return; /* not the one we deleted */
+
+                _wasDeleted = true;
+                listenerSlot();
+            }
+        );
+
+        addStep(
+            [this]() -> bool
+            {
+                if (_wasDeleted)
+                    setCommandExecutionSuccessful();
+
+                return false;
+            }
+        );
+    }
+
+    void QueueDeleteCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        clientServerInterface->queueController().deleteQueueEntry(_queueId);
     }
 
     /* ===== QueueMoveCommand ===== */

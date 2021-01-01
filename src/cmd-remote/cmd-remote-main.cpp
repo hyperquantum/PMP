@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -123,19 +123,26 @@ void printUsage(QTextStream& out, QString const& programName)
         << "    volume <number>: set volume percentage (0-100)" << endl
         << "    nowplaying: get info about the track currently playing" << endl
         << "    queue: get queue length and the first tracks waiting in the queue" << endl
+        << "    qdel <QID>: delete an entry from the queue" << endl
         << "    qmove <QID> <-diff>: move a track up in the queue (e.g. -3)" << endl
         << "    qmove <QID> <+diff>: move a track down in the queue (eg. +2)" << endl
-        << "    shutdown <server password>: shutdown the server program" << endl
+        << "    shutdown: shut down the server program" << endl
         << endl
-        << "  NOTICE: most commands are broken because the command line remote" << endl
-        << "    does not support user authentication yet, and all commands having" << endl
-        << "    side-effects are ignored by the server as long as no successful" << endl
-        << "    authentication has taken place. The only exception is the new" << endl
-        << "    'shutdown' command because it requires the server password." << endl
+        << "  NOTICE:" << endl
+        << "     - the 'qmove' command is currently unavailable" << endl
+        << "     - the 'shutdown' command no longer supports arguments" << endl
+        << endl
+        << "  Authentication:" << endl
+        << "    All commands that have side-effects require authentication. They will" << endl
+        << "    prompt for username and password in the console." << endl
+        << "    It used to be possible to run the 'shutdown' command with the " << endl
+        << "    server password as its argument and without logging in as a PMP user," << endl
+        << "    but that is no longer possible. Support for this could be added again" << endl
+        << "    in the future, but that would not be compatible with older PMP servers." << endl
         << endl
         << "  Server Password:" << endl
         << "    This is a global password for the server, printed to stdout at" << endl
-        << "    server startup."
+        << "    server startup. It is no longer relevant for the PMP command-line client."
         << endl;
 }
 

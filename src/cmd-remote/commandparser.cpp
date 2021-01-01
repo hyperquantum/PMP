@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,8 @@
 #include "commandparser.h"
 
 #include "commands.h"
+
+#include <limits>
 
 namespace PMP {
 
@@ -117,6 +119,25 @@ namespace PMP {
 
                 _command = new SetVolumeCommand(volume);
             }
+        }
+        else if (command == "qdel")
+        {
+            if (argsCount != 1)
+            {
+                _errorMessage = "Command 'qdel' requires one argument, a queue ID";
+                return;
+            }
+
+            bool ok;
+            uint queueId = args[0].toUInt(&ok);
+            if (!ok || queueId > std::numeric_limits<quint32>::max())
+            {
+                _errorMessage =
+                        "Command 'qdel' requires a valid queue ID as its first argument!";
+                return;
+            }
+
+            _command = new QueueDeleteCommand(queueId);
         }
         /*
         else if (command == "qmove")
