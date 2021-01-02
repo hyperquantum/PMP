@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -393,7 +393,7 @@ namespace PMP {
         }
         else { /* indexDiff > 0 */
             /* cannot move beyond last place */
-            if (_queue.size() - indexDiff < index) {
+            if (_queue.size() - 1 - indexDiff < index) {
                 qDebug() << "Queue::move: cannot move item" << queueId << "downwards"
                          << indexDiff << "places because its index is now" << index
                          << "and the queue only has" << _queue.size() << "items";
