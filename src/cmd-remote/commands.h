@@ -180,20 +180,23 @@ namespace PMP {
         bool _wasDeleted;
     };
 
-    /*
-    class QueueMoveCommand : public Command
+    class QueueMoveCommand : public CommandBase
     {
         Q_OBJECT
     public:
-        QueueMoveCommand(int queueId, int moveOffset);
+        QueueMoveCommand(quint32 queueId, qint16 moveOffset);
 
-        void execute(ClientServerInterface* clientServerInterface) override;
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
 
     private:
-        int _queueId;
-        int _moveOffset;
+        quint32 _queueId;
+        qint16 _moveOffset;
+        bool _wasMoved;
     };
-    */
 
 }
 #endif

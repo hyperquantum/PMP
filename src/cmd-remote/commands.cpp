@@ -476,26 +476,52 @@ namespace PMP {
 
     /* ===== QueueMoveCommand ===== */
 
-    /*
-    QueueMoveCommand::QueueMoveCommand(int queueId, int moveOffset)
+    QueueMoveCommand::QueueMoveCommand(quint32 queueId, qint16 moveOffset)
      : _queueId(queueId),
-       _moveOffset(moveOffset)
+       _moveOffset(moveOffset),
+       _wasMoved(false)
     {
         //
     }
 
-    QString QueueMoveCommand::commandStringToSend() const
+    bool QueueMoveCommand::requiresAuthentication() const
     {
-        return "qmove " + QString::number(_queueId)
-                + " "
-                + (_moveOffset > 0 ? "+" : "")
-                + QString::number(_moveOffset);
+        return true;
     }
 
-    bool QueueMoveCommand::mustWaitForResponseAfterSending() const
+    void QueueMoveCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        return false;
+        auto* queueController = &clientServerInterface->queueController();
+
+        connect(
+            queueController, &QueueController::queueEntryMoved,
+            this,
+            [this](qint32 fromIndex, qint32 toIndex, quint32 queueId)
+            {
+                int movedOffset = toIndex - fromIndex;
+
+                if (queueId != _queueId || movedOffset != _moveOffset)
+                    return; /* not the move we asked for */
+
+                _wasMoved = true;
+                listenerSlot();
+            }
+        );
+
+        addStep(
+            [this]() -> bool
+            {
+                if (_wasMoved)
+                    setCommandExecutionSuccessful();
+
+                return false;
+            }
+        );
     }
-    */
+
+    void QueueMoveCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        clientServerInterface->queueController().moveQueueEntry(_queueId, _moveOffset);
+    }
 
 }

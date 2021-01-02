@@ -129,8 +129,7 @@ void printUsage(QTextStream& out, QString const& programName)
         << "    shutdown: shut down the server program" << endl
         << endl
         << "  NOTICE:" << endl
-        << "     - the 'qmove' command is currently unavailable" << endl
-        << "     - the 'shutdown' command no longer supports arguments" << endl
+        << "    The 'shutdown' command no longer supports arguments." << endl
         << endl
         << "  Authentication:" << endl
         << "    All commands that have side-effects require authentication. They will" << endl

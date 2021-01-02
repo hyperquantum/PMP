@@ -139,7 +139,6 @@ namespace PMP {
 
             _command = new QueueDeleteCommand(queueId);
         }
-        /*
         else if (command == "qmove")
         {
             if (argsCount != 2)
@@ -149,11 +148,11 @@ namespace PMP {
             }
 
             bool ok;
-            int queueId = args[0].toInt(&ok);
-            if (!ok || queueId <= 0)
+            uint queueId = args[0].toUInt(&ok);
+            if (!ok || queueId > std::numeric_limits<quint32>::max())
             {
                 _errorMessage =
-                        "Command 'qmove' requires a valid QID as its first argument!";
+                    "Command 'qmove' requires a valid queue ID as its first argument!";
                 return;
             }
 
@@ -170,10 +169,16 @@ namespace PMP {
                     "Second argument of command 'qmove' must be a positive or negative number!";
                 return;
             }
+            else if (moveDiff < std::numeric_limits<qint16>::min()
+                     || moveDiff > std::numeric_limits<qint16>::max())
+            {
+                _errorMessage =
+                    "Second argument of command 'qmove' must be in the range -32768 to +32767!";
+                return;
+            }
 
             _command = new QueueMoveCommand(queueId, moveDiff);
         }
-        */
         else
         {
             _errorMessage = "Command not recognized: " + command;
