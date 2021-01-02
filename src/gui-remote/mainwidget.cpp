@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -530,7 +530,7 @@ namespace PMP {
                     qDebug() << "queue context menu: track info action triggered for item"
                              << track.queueId();
 
-                    showTrackInfoDialog(track.hash());
+                    showTrackInfoDialog(track.hash(), track.queueId());
                 }
             );
         }
@@ -716,10 +716,12 @@ namespace PMP {
 
     void MainWidget::trackInfoButtonClicked()
     {
-        auto hash = _clientServerInterface->currentTrackMonitor().currentTrackHash();
+        auto& currentTrackMonitor = _clientServerInterface->currentTrackMonitor();
+
+        auto hash = currentTrackMonitor.currentTrackHash();
         if (hash.isNull()) return;
 
-        showTrackInfoDialog(hash);
+        showTrackInfoDialog(hash, currentTrackMonitor.currentQueueId());
     }
 
     void MainWidget::volumeChanged() {
@@ -927,9 +929,9 @@ namespace PMP {
         _ui->skipButton->setEnabled(playerController.canSkip());
     }
 
-    void MainWidget::showTrackInfoDialog(FileHash hash)
+    void MainWidget::showTrackInfoDialog(FileHash hash, quint32 queueId)
     {
-        auto dialog = new TrackInfoDialog(this, hash, _clientServerInterface);
+        auto dialog = new TrackInfoDialog(this, _clientServerInterface, hash, queueId);
         connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
         dialog->open();
     }

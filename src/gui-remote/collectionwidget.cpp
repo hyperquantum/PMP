@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -139,6 +139,7 @@ namespace PMP {
             _collectionContextMenu->addAction(tr("Add to front of queue"));
         connect(
             enqueueFrontAction, &QAction::triggered,
+            this,
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (front) triggered";
                 _clientServerInterface->queueController().insertQueueEntryAtFront(hash);
@@ -149,6 +150,7 @@ namespace PMP {
                 _collectionContextMenu->addAction(tr("Add to end of queue"));
         connect(
             enqueueEndAction, &QAction::triggered,
+            this,
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (end) triggered";
                 _clientServerInterface->queueController().insertQueueEntryAtEnd(hash);
@@ -163,7 +165,7 @@ namespace PMP {
             this,
             [this, track]() {
                 qDebug() << "collection context menu: track info triggered";
-                auto dialog = new TrackInfoDialog(this, track, _clientServerInterface);
+                auto dialog = new TrackInfoDialog(this, _clientServerInterface, track);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
                 dialog->open();
             }
