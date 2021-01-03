@@ -24,16 +24,16 @@
 
 namespace PMP {
 
+    class AbstractQueueMonitor;
     class ClientServerInterface;
     class FileHash;
     class QueueController;
-    class QueueMonitor;
 
     class QueueMediator : public AbstractQueueMonitor
     {
         Q_OBJECT
     public:
-        QueueMediator(QObject* parent, QueueMonitor* monitor,
+        QueueMediator(QObject* parent, AbstractQueueMonitor* monitor,
                       ClientServerInterface* clientServerInterface);
 
         QUuid serverUuid() const override;
@@ -70,7 +70,7 @@ namespace PMP {
         bool doLocalOperation(Operation* op);
         bool handleServerOperation(Operation* op);
 
-        QueueMonitor* _sourceMonitor;
+        AbstractQueueMonitor* _sourceMonitor;
         ClientServerInterface* _clientServerInterface;
         int _queueLength;
         QList<quint32> _myQueue;

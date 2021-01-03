@@ -332,7 +332,7 @@ namespace PMP {
 
     /* ========================== QueueMediator ========================== */
 
-    QueueMediator::QueueMediator(QObject* parent, QueueMonitor* monitor,
+    QueueMediator::QueueMediator(QObject* parent, AbstractQueueMonitor* monitor,
                                  ClientServerInterface* clientServerInterface)
      : AbstractQueueMonitor(parent),
        _sourceMonitor(monitor),
