@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,10 +20,9 @@
 #ifndef PMP_QUEUEENTRYINFOFETCHER_H
 #define PMP_QUEUEENTRYINFOFETCHER_H
 
+#include "common/abstractqueuemonitor.h"
 #include "common/filehash.h"
 #include "common/queueentrytype.h"
-
-#include "abstractqueuemonitor.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -34,7 +33,8 @@ namespace PMP {
     class AbstractQueueMonitor;
     class ServerConnection;
 
-    class QueueEntryInfo : public QObject {
+    class QueueEntryInfo : public QObject
+    {
         Q_OBJECT
     public:
         QueueEntryInfo(quint32 queueID);
@@ -64,7 +64,8 @@ namespace PMP {
         QString _informativeFilename;
     };
 
-    class QueueEntryInfoFetcher : public QObject {
+    class QueueEntryInfoFetcher : public QObject
+    {
         Q_OBJECT
     public:
         QueueEntryInfoFetcher(QObject* parent, AbstractQueueMonitor* monitor,

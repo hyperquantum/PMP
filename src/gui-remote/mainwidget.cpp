@@ -26,6 +26,7 @@
 #include "common/dynamicmodecontroller.h"
 #include "common/playercontroller.h"
 #include "common/queuecontroller.h"
+#include "common/queuemonitor.h"
 #include "common/serverconnection.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
@@ -36,7 +37,6 @@
 #include "queueentryinfofetcher.h"
 #include "queuemediator.h"
 #include "queuemodel.h"
-#include "queuemonitor.h"
 #include "scoreformatdelegate.h"
 #include "trackinfodialog.h"
 
@@ -95,7 +95,7 @@ namespace PMP {
     {
         _clientServerInterface = clientServerInterface;
         new AutoPersonalModeAction(clientServerInterface);
-        _queueMonitor = new QueueMonitor(connection, connection);
+        _queueMonitor = new QueueMonitor(connection);
         _queueMediator =
                 new QueueMediator(connection, _queueMonitor, clientServerInterface);
         _queueEntryInfoFetcher =

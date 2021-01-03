@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_QUEUEMEDIATOR_H
 #define PMP_QUEUEMEDIATOR_H
 
-#include "abstractqueuemonitor.h"
+#include "common/abstractqueuemonitor.h"
 
 namespace PMP {
 
@@ -29,17 +29,18 @@ namespace PMP {
     class QueueController;
     class QueueMonitor;
 
-    class QueueMediator : public AbstractQueueMonitor {
+    class QueueMediator : public AbstractQueueMonitor
+    {
         Q_OBJECT
     public:
         QueueMediator(QObject* parent, QueueMonitor* monitor,
                       ClientServerInterface* clientServerInterface);
 
-        QUuid serverUuid() const;
+        QUuid serverUuid() const override;
 
-        int queueLength() const { return _queueLength; }
-        quint32 queueEntry(int index);
-        QList<quint32> knownQueuePart() const { return _myQueue; }
+        int queueLength() const override { return _queueLength; }
+        quint32 queueEntry(int index) override;
+        QList<quint32> knownQueuePart() const override { return _myQueue; }
 
         void removeTrack(int index, quint32 queueID);
         void moveTrack(int fromIndex, int toIndex, quint32 queueID);

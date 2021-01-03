@@ -26,20 +26,22 @@ namespace PMP {
 
     class ServerConnection;
 
-    class QueueMonitor : public AbstractQueueMonitor {
+    class QueueMonitor : public AbstractQueueMonitor
+    {
         Q_OBJECT
-
     public:
-        QueueMonitor(QObject* parent, ServerConnection* connection);
+        QueueMonitor(ServerConnection* connection);
 
-        QUuid serverUuid() const { return _serverUuid; }
+        QUuid serverUuid() const override { return _serverUuid; }
 
-        int queueLength() const { return _queueLength; }
-        quint32 queueEntry(int index);
-        QList<quint32> knownQueuePart() const { return _queue; }
+        int queueLength() const override { return _queueLength; }
+        quint32 queueEntry(int index) override;
+        QList<quint32> knownQueuePart() const override { return _queue; }
 
     private Q_SLOTS:
         void connected();
+        void connectionBroken();
+
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);

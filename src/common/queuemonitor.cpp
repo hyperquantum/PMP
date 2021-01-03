@@ -19,7 +19,7 @@
 
 #include "queuemonitor.h"
 
-#include "common/serverconnection.h"
+#include "serverconnection.h"
 
 #include <cstdlib>
 #include <QDebug>
@@ -28,15 +28,22 @@
 
 namespace PMP {
 
-    QueueMonitor::QueueMonitor(QObject* parent, ServerConnection* connection)
-     : AbstractQueueMonitor(parent), _connection(connection),
+    QueueMonitor::QueueMonitor(ServerConnection* connection)
+     : AbstractQueueMonitor(connection),
+       _connection(connection),
        _waitingForVeryFirstQueueInfo(true),
-       _queueLength(0), // _queueLengthSent(0),
-       _requestQueueUpTo(5), _queueRequestedUpTo(0)
+       _queueLength(0),
+       // _queueLengthSent(0),
+       _requestQueueUpTo(5),
+       _queueRequestedUpTo(0)
     {
         connect(
             _connection, &ServerConnection::connected,
             this, &QueueMonitor::connected
+        );
+        connect(
+            _connection, &ServerConnection::connectionBroken,
+            this, &QueueMonitor::connectionBroken
         );
         connect(
             _connection, &ServerConnection::receivedServerInstanceIdentifier,
@@ -64,7 +71,8 @@ namespace PMP {
         }
     }
 
-    void QueueMonitor::connected() {
+    void QueueMonitor::connected()
+    {
         _connection->sendServerInstanceIdentifierRequest();
 
         _waitingForVeryFirstQueueInfo = true;
@@ -74,6 +82,11 @@ namespace PMP {
 
         _queueRequestedUpTo = initialQueueFetchLength;
         _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
+    }
+
+    void QueueMonitor::connectionBroken()
+    {
+        // TODO
     }
 
     void QueueMonitor::doReset(int queueLength) {

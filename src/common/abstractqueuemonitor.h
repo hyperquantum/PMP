@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,10 +26,11 @@
 
 namespace PMP {
 
-    class AbstractQueueMonitor : public QObject {
+    class AbstractQueueMonitor : public QObject
+    {
         Q_OBJECT
     public:
-        AbstractQueueMonitor(QObject* parent = 0);
+        virtual ~AbstractQueueMonitor() {}
 
         virtual QUuid serverUuid() const = 0;
 
@@ -44,6 +45,8 @@ namespace PMP {
         void trackRemoved(int index, quint32 queueID);
         void trackMoved(int fromIndex, int toIndex, quint32 queueID);
 
+    protected:
+        AbstractQueueMonitor(QObject* parent) : QObject(parent) {}
     };
 }
 #endif
