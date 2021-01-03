@@ -399,7 +399,9 @@ namespace PMP {
                 _historyContextMenu->addAction(tr("Add to front of queue"));
         connect(
             enqueueFrontAction, &QAction::triggered,
-            [this, hash]() {
+            this,
+            [this, hash]()
+            {
                 qDebug() << "history context menu: enqueue (front) triggered";
                 _clientServerInterface->queueController().insertQueueEntryAtFront(hash);
             }
@@ -408,7 +410,9 @@ namespace PMP {
         auto enqueueEndAction = _historyContextMenu->addAction(tr("Add to end of queue"));
         connect(
             enqueueEndAction, &QAction::triggered,
-            [this, hash]() {
+            this,
+            [this, hash]()
+            {
                 qDebug() << "history context menu: enqueue (end) triggered";
                 _clientServerInterface->queueController().insertQueueEntryAtEnd(hash);
             }
