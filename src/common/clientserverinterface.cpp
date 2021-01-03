@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,6 +25,7 @@
 #include "serverconnection.h"
 #include "playercontrollerimpl.h"
 #include "queuecontrollerimpl.h"
+#include "queuemonitor.h"
 #include "userdatafetcher.h"
 
 namespace PMP {
@@ -35,6 +36,7 @@ namespace PMP {
        _simplePlayerController(nullptr),
        _currentTrackMonitor(nullptr),
        _queueController(nullptr),
+       _queueMonitor(nullptr),
        _dynamicModeController(nullptr),
        _collectionWatcher(nullptr),
        _userDataFetcher(nullptr)
@@ -64,6 +66,14 @@ namespace PMP {
             _queueController = new QueueControllerImpl(_connection);
 
         return *_queueController;
+    }
+
+    AbstractQueueMonitor& ClientServerInterface::queueMonitor()
+    {
+        if (!_queueMonitor)
+            _queueMonitor = new QueueMonitor(_connection);
+
+        return *_queueMonitor;
     }
 
     DynamicModeController& ClientServerInterface::dynamicModeController()

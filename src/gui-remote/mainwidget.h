@@ -98,7 +98,6 @@ namespace PMP {
         Ui::MainWidget* _ui;
         ClientServerInterface* _clientServerInterface;
         PreciseTrackProgressMonitor* _trackProgressMonitor;
-        QueueMonitor* _queueMonitor;
         QueueMediator* _queueMediator;
         QueueEntryInfoFetcher* _queueEntryInfoFetcher;
         QueueModel* _queueModel;

@@ -54,7 +54,7 @@ namespace PMP {
         _ui(new Ui::MainWidget),
         _clientServerInterface(nullptr),
         _trackProgressMonitor(nullptr),
-        _queueMonitor(nullptr), _queueMediator(nullptr),
+        _queueMediator(nullptr),
         _queueEntryInfoFetcher(nullptr),
         _queueModel(nullptr), _queueContextMenu(nullptr),
         _noRepetitionUpdating(0),
@@ -95,9 +95,9 @@ namespace PMP {
     {
         _clientServerInterface = clientServerInterface;
         new AutoPersonalModeAction(clientServerInterface);
-        _queueMonitor = new QueueMonitor(connection);
-        _queueMediator =
-                new QueueMediator(connection, _queueMonitor, clientServerInterface);
+        _queueMediator = new QueueMediator(connection,
+                                           &clientServerInterface->queueMonitor(),
+                                           clientServerInterface);
         _queueEntryInfoFetcher =
             new QueueEntryInfoFetcher(connection, _queueMediator, connection);
         _queueModel =

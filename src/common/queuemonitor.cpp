@@ -66,9 +66,8 @@ namespace PMP {
             this, &QueueMonitor::queueEntryMoved
         );
 
-        if (_connection->isConnected()) {
+        if (_connection->isConnected())
             connected();
-        }
     }
 
     void QueueMonitor::connected()
@@ -89,7 +88,8 @@ namespace PMP {
         // TODO
     }
 
-    void QueueMonitor::doReset(int queueLength) {
+    void QueueMonitor::doReset(int queueLength)
+    {
         qDebug() << "QueueMonitor: resetting queue to length" << queueLength;
 
         _waitingForVeryFirstQueueInfo = false;
@@ -103,11 +103,13 @@ namespace PMP {
         Q_EMIT queueResetted(queueLength);
     }
 
-    void QueueMonitor::receivedServerInstanceIdentifier(QUuid uuid) {
+    void QueueMonitor::receivedServerInstanceIdentifier(QUuid uuid)
+    {
         _serverUuid = uuid;
     }
 
-    quint32 QueueMonitor::queueEntry(int index) {
+    quint32 QueueMonitor::queueEntry(int index)
+    {
         if (index < 0 || index >= _queueLength) return 0;
 
         /* see if we need to fetch more of the queue */
@@ -130,7 +132,8 @@ namespace PMP {
         return 0;
     }
 
-    void QueueMonitor::sendNextSlotBatchRequest(int size) {
+    void QueueMonitor::sendNextSlotBatchRequest(int size)
+    {
         if (size <= 0) { return; }
 
         int requestCount = size;
