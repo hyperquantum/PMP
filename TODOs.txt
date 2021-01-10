@@ -28,7 +28,6 @@ KNOWN BUGS
  * a "skip" operation should not affect the current track's score if performed by another user
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
  * GUI remote: music collection view: applying track metadata updates is not implemented yet
- * GUI remote: skip button sometimes disabled when it should be enabled instead
  * GUI remote: multimedia keys don't work when a popup dialog is open (like track info)
  * CMD remote mostly doesn't work because it lacks user authentication
  * unknown error at login because of username case (in)sensitivity

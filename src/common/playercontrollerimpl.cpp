@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -93,11 +93,16 @@ namespace PMP {
         return _state == PlayerState::Playing;
     }
 
-    bool PlayerControllerImpl::canSkip() const {
-        return
-            _trackNowPlaying != _trackJustSkipped
-            && (_state == PlayerState::Playing
-                || _state == PlayerState::Paused);
+    bool PlayerControllerImpl::canSkip() const
+    {
+        /* avoid repeating the skip command */
+        if (_trackJustSkipped > 0 && _trackJustSkipped == _trackNowPlaying)
+            return false;
+
+        if (_state == PlayerState::Playing || _state == PlayerState::Paused)
+            return true;
+
+        return false;
     }
 
     PlayerMode PlayerControllerImpl::playerMode() const
