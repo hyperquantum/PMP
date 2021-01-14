@@ -588,7 +588,7 @@ namespace PMP {
             }
         }
 
-        emit dataChanged(
+        Q_EMIT dataChanged(
             createIndex(index, 0),
             createIndex(index + entries.size() - 1, 2)
         );
@@ -598,7 +598,7 @@ namespace PMP {
         qDebug() << "QueueModel::tracksChanged; count=" << queueIDs.size();
 
         /* we don't know the indexes, so we say everything changed */
-        emit dataChanged(
+        Q_EMIT dataChanged(
             createIndex(0, 0), createIndex(_modelRows, 2)
         );
     }
@@ -606,7 +606,7 @@ namespace PMP {
     void QueueModel::userDataReceivedForUser(quint32 userId) {
         qDebug() << "QueueModel::userDataReceivedForUser; user:" << userId;
 
-        emit dataChanged(
+        Q_EMIT dataChanged(
             createIndex(0, 3), createIndex(_modelRows, 4)
         );
     }

@@ -153,7 +153,7 @@ namespace PMP {
                                                                    quint32 id)
     {
         QString password = _ui->newPasswordLineEdit->text();
-        emit accountCreated(login, password, id);
+        Q_EMIT accountCreated(login, password, id);
     }
 
     void UserAccountCreationWidget::userAccountCreationError(QString login,

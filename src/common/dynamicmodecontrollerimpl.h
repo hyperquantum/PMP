@@ -31,16 +31,41 @@ namespace PMP {
     public:
         DynamicModeControllerImpl(ServerConnection* connection);
 
+        TriBool dynamicModeEnabled() const override;
+        int noRepetitionSpanSeconds() const override;
+
+        TriBool waveActive() const override;
+        bool canStartWave() const override;
+        bool canTerminateWave() const override;
+        int waveProgress() const override;
+        int waveProgressTotal() const override;
+
     public Q_SLOTS:
         void enableDynamicMode() override;
         void disableDynamicMode() override;
 
+        void setNoRepetitionSpan(int noRepetitionSpanSeconds) override;
+
+        void startHighScoredTracksWave() override;
+        void terminateHighScoredTracksWave() override;
+
     private Q_SLOTS:
         void connected();
         void connectionBroken();
+        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpanSeconds);
+        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged,
+                                                    int progress, int progressTotal);
 
     private:
+        void updateStatus(TriBool enabled, int noRepetitionSpanSeconds);
+        void updateWaveStatus(TriBool active, int progress, int progressTotal);
+
         ServerConnection* _connection;
+        TriBool _dynamicModeEnabled;
+        TriBool _waveActive;
+        int _noRepetitionSpanSeconds;
+        int _waveProgress;
+        int _waveProgressTotal;
     };
 }
 #endif

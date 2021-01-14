@@ -55,7 +55,7 @@ namespace PMP {
     protected:
         bool eventFilter(QObject*, QEvent*);
 
-    private slots:
+    private Q_SLOTS:
         void onDoConnect(QString server, uint port);
         void onConnected();
         void onCannotConnect(QAbstractSocket::SocketError error);

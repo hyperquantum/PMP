@@ -20,6 +20,8 @@
 #ifndef PMP_DYNAMICMODECONTROLLER_H
 #define PMP_DYNAMICMODECONTROLLER_H
 
+#include "tribool.h"
+
 #include <QObject>
 
 namespace PMP {
@@ -29,12 +31,30 @@ namespace PMP {
     public:
         virtual ~DynamicModeController() {}
 
+        virtual TriBool dynamicModeEnabled() const = 0;
+        virtual int noRepetitionSpanSeconds() const = 0;
+
+        virtual TriBool waveActive() const = 0;
+        virtual bool canStartWave() const = 0;
+        virtual bool canTerminateWave() const = 0;
+        virtual int waveProgress() const = 0;
+        virtual int waveProgressTotal() const = 0;
+
     public Q_SLOTS:
         virtual void enableDynamicMode() = 0;
         virtual void disableDynamicMode() = 0;
 
-    Q_SIGNALS:
+        virtual void setNoRepetitionSpan(int noRepetitionSpanSeconds) = 0;
 
+        virtual void startHighScoredTracksWave() = 0;
+        virtual void terminateHighScoredTracksWave() = 0;
+
+    Q_SIGNALS:
+        void dynamicModeEnabledChanged();
+        void noRepetitionSpanSecondsChanged();
+
+        void waveActiveChanged();
+        void waveProgressChanged();
 
     protected:
         DynamicModeController(QObject* parent) : QObject(parent) {}

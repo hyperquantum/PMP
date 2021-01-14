@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,7 +47,7 @@ namespace PMP {
         void accountClicked(QString login);
         void createAccountClicked();
 
-    private slots:
+    private Q_SLOTS:
         void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
         void serverHealthChanged(ServerHealthStatus serverHealth);
 

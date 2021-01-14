@@ -43,7 +43,7 @@ namespace PMP {
 
     class CollectionMonitor;
     class CollectionSender;
-    class Generator;
+    class History;
     class Player;
     class QueueEntry;
     class Resolver;
@@ -57,7 +57,7 @@ namespace PMP {
         Q_OBJECT
     public:
         ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
-                        Player* player, Generator* generator, Users* users,
+                        Player* player, History* history, Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor, Scrobbling* scrobbling);
 
@@ -65,7 +65,7 @@ namespace PMP {
 
     Q_SIGNALS:
 
-    private slots:
+    private Q_SLOTS:
 
         void terminateConnection();
         void dataArrived();
@@ -74,10 +74,12 @@ namespace PMP {
         void serverHealthChanged(bool databaseUnavailable, bool sslLibrariesMissing);
 
         void volumeChanged(int volume);
-        void dynamicModeStatusChanged(bool enabled);
-        void dynamicModeWaveStarting(quint32 user);
-        void dynamicModeWaveFinished(quint32 user);
-        void dynamicModeNoRepetitionSpanChanged(int seconds);
+        void onDynamicModeStatusEvent(StartStopEventStatus dynamicModeStatus,
+                                      int noRepetitionSpanSeconds);
+        void onDynamicModeWaveStatusEvent(StartStopEventStatus waveStatus,
+                                          quint32 user,
+                                          int waveDeliveredCount,
+                                          int waveTotalCount);
         void playerStateChanged(ServerPlayerState state);
         void currentTrackChanged(QueueEntry const* entry);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
@@ -85,7 +87,8 @@ namespace PMP {
         void sendStateInfo();
         void sendStateInfoAfterTimeout();
         void sendVolumeMessage();
-        void sendDynamicModeStatusMessage();
+        void sendDynamicModeStatusMessage(StartStopEventStatus enabledStatus,
+                                          int noRepetitionSpanSeconds);
         void sendUserPlayingForModeMessage();
         void sendTextualQueueInfo();
         void queueEntryRemoved(quint32 offset, quint32 queueID);
@@ -137,8 +140,10 @@ namespace PMP {
         void sendServerInstanceIdentifier();
         void sendDatabaseIdentifier();
         void sendUsersList();
-        void sendGeneratorWaveStatusMessage(NetworkProtocol::StartStopEventStatus status,
-                                            quint32 user);
+        void sendGeneratorWaveStatusMessage(StartStopEventStatus status,
+                                            quint32 user,
+                                            int waveDeliveredCount,
+                                            int waveTotalCount);
         void sendQueueContentMessage(quint32 startOffset, quint8 length);
         void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
         void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
@@ -212,7 +217,7 @@ namespace PMP {
         QTcpSocket* _socket;
         ServerInterface* _serverInterface;
         Player* _player;
-        Generator* _generator;
+        History* _history;
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;
@@ -246,7 +251,7 @@ namespace PMP {
                                 QVector<CollectionTrackInfo> tracks);
         void allSent(uint clientReference);
 
-    private slots:
+    private Q_SLOTS:
         void sendNextBatch();
 
     private:

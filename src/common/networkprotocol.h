@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,7 @@
 #include "common/queueentrytype.h"
 #include "common/scrobblerstatus.h"
 #include "common/scrobblingprovider.h"
+#include "common/startstopeventstatus.h"
 
 #include <QByteArray>
 #include <QString>
@@ -48,6 +49,7 @@ namespace PMP {
          11: server msg 29: track availability change notifications
          12: clienst msg 22, server msg 30, single byte request 18: protocol extensions
          13: server msgs 3 & 4: change track length to milliseconds
+         14: single byte request 25 & server msg 26: wave termination & progress
 
     */
 
@@ -134,14 +136,6 @@ namespace PMP {
             UnknownError = 255
         };
 
-        enum class StartStopEventStatus : quint8 {
-            Undefined = 0,
-            StatusNotActive = 1,
-            StatusActiveAlready = 2,
-            EventActivatedNow = 3,
-            EventDeactivatedNow = 4,
-        };
-
         struct ProtocolExtensionSupport {
             quint8 id;
             quint8 version;
@@ -190,11 +184,6 @@ namespace PMP {
                                                      quint8 messageType);
         static void appendExtensionMessageStart(QByteArray& buffer, quint8 extensionId,
                                                 quint8 messageType);
-
-        static bool isValidStartStopEventStatus(quint8 status);
-        static bool isActive(StartStopEventStatus status);
-        static bool isChange(StartStopEventStatus status);
-        static StartStopEventStatus createAlreadyActiveStartStopEventStatus(bool active);
 
         static quint8 encode(ScrobblingProvider provider);
         static ScrobblingProvider decodeScrobblingProvider(quint8 provider);

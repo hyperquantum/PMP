@@ -20,6 +20,8 @@
 #ifndef PMP_PLAYERCONTROLLER_H
 #define PMP_PLAYERCONTROLLER_H
 
+#include "common/tribool.h"
+
 #include "playermode.h"
 #include "playerstate.h"
 
@@ -34,6 +36,8 @@ namespace PMP {
         virtual ~PlayerController() {}
 
         virtual PlayerState playerState() const = 0;
+        virtual TriBool isTrackPresent() const = 0;
+        virtual quint32 currentQueueId() const = 0;
         virtual uint queueLength() const = 0;
         virtual bool canPlay() const = 0;
         virtual bool canPause() const = 0;
@@ -57,6 +61,7 @@ namespace PMP {
 
     Q_SIGNALS:
         void playerStateChanged(PlayerState playerState);
+        void currentTrackChanged();
         void playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,
                                QString personalModeUserLogin);
         void volumeChanged();

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,20 +24,26 @@
 
 namespace PMP {
 
+    class AbstractQueueMonitor;
     class CollectionWatcher;
     class CurrentTrackMonitor;
     class DynamicModeController;
     class ServerConnection;
     class PlayerController;
+    class QueueController;
     class UserDataFetcher;
 
-    class ClientServerInterface : public QObject {
+    class ClientServerInterface : public QObject
+    {
         Q_OBJECT
     public:
-        ClientServerInterface(QObject* parent, ServerConnection* connection);
+        ClientServerInterface(ServerConnection* connection);
 
         PlayerController& playerController();
         CurrentTrackMonitor& currentTrackMonitor();
+
+        QueueController& queueController();
+        AbstractQueueMonitor& queueMonitor();
 
         DynamicModeController& dynamicModeController();
 
@@ -49,7 +55,7 @@ namespace PMP {
         QString userLoggedInName() const;
 
     public Q_SLOTS:
-
+        void shutdownServer();
 
     Q_SIGNALS:
 
@@ -58,6 +64,8 @@ namespace PMP {
         ServerConnection* _connection;
         PlayerController* _simplePlayerController;
         CurrentTrackMonitor* _currentTrackMonitor;
+        QueueController* _queueController;
+        AbstractQueueMonitor* _queueMonitor;
         DynamicModeController* _dynamicModeController;
         CollectionWatcher* _collectionWatcher;
         UserDataFetcher* _userDataFetcher;

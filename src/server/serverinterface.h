@@ -21,6 +21,7 @@
 #define PMP_SERVERINTERFACE_H
 
 #include "common/filehash.h"
+#include "common/startstopeventstatus.h"
 
 #include <QObject>
 #include <QString>
@@ -65,10 +66,12 @@ namespace PMP {
         void trimQueue();
         void requestQueueExpansion();
 
+        void requestDynamicModeStatus();
         void enableDynamicMode();
         void disableDynamicMode();
-        void startWave();
-        void setTrackRepetitionAvoidanceMinutes(int minutes);
+        void startDynamicModeWave();
+        void terminateDynamicModeWave();
+        void setTrackRepetitionAvoidanceSeconds(int seconds);
 
         void startFullIndexation();
 
@@ -77,6 +80,21 @@ namespace PMP {
 
     Q_SIGNALS:
         void serverShuttingDown();
+
+        void dynamicModeStatusEvent(StartStopEventStatus dynamicModeStatus,
+                                    int noRepetitionSpanSeconds);
+
+        void dynamicModeWaveStatusEvent(StartStopEventStatus waveStatus,
+                                        quint32 user,
+                                        int waveDeliveredCount,
+                                        int waveTotalCount);
+
+    private Q_SLOTS:
+        void onDynamicModeStatusChanged();
+        void onDynamicModeNoRepetitionSpanChanged();
+        void onDynamicModeWaveStarted();
+        void onDynamicModeWaveProgress(int tracksDelivered, int tracksTotal);
+        void onDynamicModeWaveEnded();
 
     private:
         const uint _connectionReference;

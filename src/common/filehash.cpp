@@ -45,6 +45,14 @@ namespace PMP {
         return FileHash(size, sha1, md5);
     }
 
+    QString FileHash::toString()
+    {
+        if (isNull())
+            return "(null)";
+
+        return QString::number(length()) + "-" + SHA1().toHex() + "-" + MD5().toHex();
+    }
+
     QString FileHash::dumpToString() const {
         if (isNull()) return "(null)";
 

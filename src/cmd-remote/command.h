@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,33 +17,30 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_ABSTRACTQUEUEMONITOR_H
-#define PMP_ABSTRACTQUEUEMONITOR_H
+#ifndef PMP_COMMAND_H
+#define PMP_COMMAND_H
 
-#include <QList>
 #include <QObject>
-#include <QUuid>
 
 namespace PMP {
 
-    class AbstractQueueMonitor : public QObject {
+    class ClientServerInterface;
+
+    class Command : public QObject
+    {
         Q_OBJECT
     public:
-        AbstractQueueMonitor(QObject* parent = 0);
+        ~Command();
 
-        virtual QUuid serverUuid() const = 0;
-
-        virtual int queueLength() const = 0;
-        virtual quint32 queueEntry(int index) = 0;
-        virtual QList<quint32> knownQueuePart() const = 0;
+        virtual bool requiresAuthentication() const = 0;
+        virtual void execute(ClientServerInterface* clientServerInterface) = 0;
 
     Q_SIGNALS:
-        void queueResetted(int queueLength);
-        void entriesReceived(int index, QList<quint32> entries);
-        void trackAdded(int index, quint32 queueID);
-        void trackRemoved(int index, quint32 queueID);
-        void trackMoved(int fromIndex, int toIndex, quint32 queueID);
+        void executionSuccessful(QString output = "");
+        void executionFailed(int resultCode, QString errorOutput);
 
+    protected:
+        explicit Command(QObject* parent = nullptr);
     };
 }
 #endif

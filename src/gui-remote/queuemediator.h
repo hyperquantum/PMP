@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,25 +20,27 @@
 #ifndef PMP_QUEUEMEDIATOR_H
 #define PMP_QUEUEMEDIATOR_H
 
-#include "abstractqueuemonitor.h"
+#include "common/abstractqueuemonitor.h"
 
 namespace PMP {
 
+    class AbstractQueueMonitor;
+    class ClientServerInterface;
     class FileHash;
-    class QueueMonitor;
-    class ServerConnection;
+    class QueueController;
 
-    class QueueMediator : public AbstractQueueMonitor {
+    class QueueMediator : public AbstractQueueMonitor
+    {
         Q_OBJECT
     public:
-        QueueMediator(QObject* parent, QueueMonitor* monitor,
-                      ServerConnection* connection);
+        QueueMediator(QObject* parent, AbstractQueueMonitor* monitor,
+                      ClientServerInterface* clientServerInterface);
 
-        QUuid serverUuid() const;
+        QUuid serverUuid() const override;
 
-        int queueLength() const { return _queueLength; }
-        quint32 queueEntry(int index);
-        QList<quint32> knownQueuePart() const { return _myQueue; }
+        int queueLength() const override { return _queueLength; }
+        quint32 queueEntry(int index) override;
+        QList<quint32> knownQueuePart() const override { return _myQueue; }
 
         void removeTrack(int index, quint32 queueID);
         void moveTrack(int fromIndex, int toIndex, quint32 queueID);
@@ -48,7 +50,7 @@ namespace PMP {
         void duplicateEntryAsync(quint32 queueID);
         bool canDuplicateEntry(quint32 queueID) const;
 
-    private slots:
+    private Q_SLOTS:
         void resetQueue(int queueLength);
         void entriesReceivedAtServer(int index, QList<quint32> entries);
         void trackAddedAtServer(int index, quint32 queueID);
@@ -56,6 +58,8 @@ namespace PMP {
         void trackMovedAtServer(int fromIndex, int toIndex, quint32 queueID);
 
     private:
+        QueueController& queueController() const;
+
         class Operation;
         class InfoOperation;
         class DeleteOperation;
@@ -66,8 +70,8 @@ namespace PMP {
         bool doLocalOperation(Operation* op);
         bool handleServerOperation(Operation* op);
 
-        QueueMonitor* _sourceMonitor;
-        ServerConnection* _connection;
+        AbstractQueueMonitor* _sourceMonitor;
+        ClientServerInterface* _clientServerInterface;
         int _queueLength;
         QList<quint32> _myQueue;
         QList<Operation*> _pendingOperations;

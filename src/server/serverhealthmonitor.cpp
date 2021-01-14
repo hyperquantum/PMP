@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -43,13 +43,13 @@ namespace PMP {
         if (_databaseUnavailable) return;
 
         _databaseUnavailable = true;
-        emit serverHealthChanged(_databaseUnavailable, _sslLibrariesMissing);
+        Q_EMIT serverHealthChanged(_databaseUnavailable, _sslLibrariesMissing);
     }
 
     void ServerHealthMonitor::setSslLibrariesMissing() {
         if (_sslLibrariesMissing) return;
 
         _sslLibrariesMissing = true;
-        emit serverHealthChanged(_databaseUnavailable, _sslLibrariesMissing);
+        Q_EMIT serverHealthChanged(_databaseUnavailable, _sslLibrariesMissing);
     }
 }

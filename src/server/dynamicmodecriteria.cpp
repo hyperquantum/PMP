@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,12 +17,13 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "abstractqueuemonitor.h"
+#include "dynamicmodecriteria.h"
 
 namespace PMP {
 
-    AbstractQueueMonitor::AbstractQueueMonitor(QObject* parent)
-     : QObject(parent)
+    DynamicModeCriteria::DynamicModeCriteria()
+     : _noRepetitionSpan(0),
+       _user(0)
     {
         //
     }

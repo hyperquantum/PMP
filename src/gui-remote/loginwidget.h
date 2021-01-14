@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_LOGINWIDGET_H
 #define PMP_LOGINWIDGET_H
 
-#include "common/serverconnection.h" // for the enum :-/
+#include "common/userloginerror.h"
 
 #include <QWidget>
 
@@ -44,11 +44,11 @@ namespace PMP {
         void loggedIn(QString login, quint32 accountId);
         void cancelClicked();
 
-    private slots:
+    private Q_SLOTS:
         void loginClicked();
 
         void userLoggedInSuccessfully(QString login, quint32 id);
-        void userLoginError(QString login, ServerConnection::UserLoginError errorType);
+        void userLoginError(QString login, UserLoginError errorType);
 
     private:
         Ui::LoginWidget* _ui;

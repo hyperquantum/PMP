@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -52,7 +52,7 @@ namespace PMP {
         Qt::DropActions supportedDropActions() const;
         QMimeData* mimeData(const QModelIndexList& indexes) const;
 
-    private slots:
+    private Q_SLOTS:
         void onReceivedPlayerHistoryEntry(PMP::PlayerHistoryTrackInfo track);
         void onReceivedPlayerHistory(QVector<PMP::PlayerHistoryTrackInfo> tracks);
 

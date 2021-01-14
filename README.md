@@ -1,6 +1,6 @@
 ﻿# Party Music Player [![license][license-badge]][LICENSE]
 
-Copyright (C) 2011-2020  Kevin André
+Copyright (C) 2011-2021  Kevin André
 
 Party Music Player, abbreviated as PMP, is a multi-user client-server music system. The server is responsible for playing music, and a separate program, a 'remote', is used to connect to the server and instruct it what to do. PMP has an advanced file tracking mechanism; it can deal with moved/renamed and duplicate files without any problems.
 
@@ -11,14 +11,13 @@ PMP is designed to be portable software and should be compatible with most popul
 ## Table of Contents
 Contents of this file:
   1. [Features](#1-features)
-  2. [Dependencies for running PMP](#2-dependencies-for-running-pmp)
+  2. [Dependencies](#2-dependencies)
   3. [Running PMP](#3-running-pmp)
-  4. [Dependencies for building](#4-dependencies-for-building)
-  5. [Building on Linux](#5-building-on-linux)
-  6. [Building on Windows](#6-building-on-windows)
-  7. [Caveats / limitations](#7-caveats--limitations)
-  8. [Planned features](#8-planned-features--to-dos)
-  9. [More information](#9-more-information)
+  4. [Building on Linux](#4-building-on-linux)
+  5. [Building on Windows](#5-building-on-windows)
+  6. [Caveats / limitations](#6-caveats--limitations)
+  7. [Planned features](#7-planned-features--to-dos)
+  8. [More information](#8-more-information)
 
 
 ## 1. Features
@@ -48,25 +47,35 @@ Contents of this file:
    * *Public* mode allows playing music for someone else without affecting your personal track scores
 
 
-## 2. Dependencies For Running PMP
+## 2. Dependencies
 
-  1. MySQL
+### Common Dependencies
 
-     You need to run a MySQL server instance. PMP currently uses MySQL to store its data. It may be possible to use MariaDB instead of MySQL, but I have not verified if that really works.
+ * Qt 5 (at least 5.8)
+   * modules: Core, Gui, Multimedia, Network, Sql, Test, Widgets, Xml
+   * database driver for MySQL/MariaDB
+ * TagLib 1.11 or higher
 
-     Linux users can install MySQL server using their distribution's package manager.
+### Build-time Dependencies
 
-     Windows users can get an installer here:  http://dev.mysql.com/downloads/mysql/
+ * C++ compiler with support for C++ 2014
+ * CMake 3.1 or higher
+ * pkg-config
 
-     One can pick the 32-bit or 64-bit version of MySQL server, PMP should work with both.
+When building on Windows, there is no need to install MinGW by itself. The Qt installer provides an option to install a MinGW toolchain that is compatible with the version of Qt you wish to install.
 
-     MySQL should be configured as a developer installation (it uses less memory that way) and should be set to use Unicode (UTF-8) by default. Default storage engine should be InnoDB.
+### Runtime Dependencies
 
-  2. Codecs / Plugins
+ * MySQL/MariaDB client library (libmysql/libmariadb)
+ * Codecs
 
-     Windows users will need to install the [Xiph codecs](https://xiph.org/dshow/downloads/) or some other more generic codec pack if they need support for FLAC audio.
-     
-     Linux users may need to install a GStreamer plugin to get support for MP3 files.
+PMP currently uses MySQL for storing its data. MariaDB is probably a valid replacement, but this has not been tested yet. The MySQL server should be configured as a developer installation (it uses less memory that way) and should be set to use Unicode (UTF-8) by default. Default storage engine should be InnoDB.
+
+The MySQL client library that is required by the Qt database driver should be 32-bit if Qt was built for a 32-bit architecture or 64-bit if Qt was built for a 64-bit architecture.
+
+Windows users will need to install the [Xiph codecs](https://xiph.org/dshow/downloads/) or some other more generic codec pack if they need support for FLAC audio.
+
+Linux users may need to install a GStreamer plugin to get support for MP3 files.
 
   3. OpenSSL
 
@@ -98,21 +107,7 @@ An example configuration:
 First make sure MySQL is running. Then start the PMP-Server executable, and finally start the PMP-GUI-Remote executable.
 
 
-## 4. Dependencies For Building
-
- * C++ compiler with support for C++ 2014
- * CMake 3.1 or higher
- * pkg-config
- * TagLib 1.11 or higher
- * Qt 5.8 or higher, with plugin for MySQL
- * MySQL client library  (libmysql)
-
-The MySQL client library should be 32-bit if PMP was built for the x86 architecture (32-bit), and should be 64-bit if PMP was built for x64 (64-bit).
-
-When building on Windows, there is no need to install MinGW by itself. The Qt installer provides an option to install a MinGW toolchain that is compatible with the version of Qt you wish to install.
-
-
-## 5. Building On Linux
+## 4. Building On Linux
 
 Building PMP on Linux and other Unix-like operating systems should be relatively simple:
 
@@ -127,7 +122,7 @@ Building PMP on Linux and other Unix-like operating systems should be relatively
 These instructions might need some tweaks, as they haven't been tested (at least not recently).
 
 
-## 6. Building On Windows
+## 5. Building On Windows
 
 Building PMP on Windows takes some effort.
 
@@ -223,7 +218,7 @@ the steps need to be modified accordingly.
     OR alternatively, start it in a cmd window like the server  
 
 
-## 7. Caveats / Limitations
+## 6. Caveats / Limitations
 
 Since this project is in a very early stage of development, you can expect a few things to be missing or not working correctly ;)
 
@@ -236,7 +231,7 @@ Since this project is in a very early stage of development, you can expect a few
  * Etc.
 
 
-## 8. Planned Features / To-Do's
+## 7. Planned Features / To-Do's
 
 Only a list of ideas.  **No promises!**
 
@@ -265,7 +260,7 @@ Effort is a rough estimate. Priorities can still change.
 | ReplayGain support                                        | Low      | Large(?)     |
 
 
-## 9. More information
+## 8. More information
 
 Rudimentary project website:  http://hyperquantum.be/pmp/
 

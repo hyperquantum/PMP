@@ -65,13 +65,15 @@ namespace PMP {
         PlayerQueue(Resolver* resolver);
 
         TrackRepetitionInfo checkPotentialRepetitionByAdd(FileHash hash,
-                                                          int repetitionAvoidanceSeconds
+                                                          int repetitionAvoidanceSeconds,
+                                                          qint64 extraMarginMilliseconds
                                                           ) const;
 
         uint getNextQueueID();
 
         bool empty() const;
         uint length() const;
+        bool canAddMoreEntries(int count = 1) const;
 
         int firstTrackIndex() const { return _firstTrackIndex; }
         uint firstTrackQueueId() const { return _firstTrackQueueId; }
@@ -84,7 +86,7 @@ namespace PMP {
 
         QList<QSharedPointer<PlayerHistoryEntry> > recentHistory(int limit);
 
-    public slots:
+    public Q_SLOTS:
         //void clear(bool doNotifications);
         void trim(uint length);
 
@@ -114,7 +116,7 @@ namespace PMP {
 
         void firstTrackChanged(int index, uint queueId);
 
-    private slots:
+    private Q_SLOTS:
         void checkFrontOfQueue();
 
     private:

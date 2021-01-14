@@ -113,7 +113,7 @@ namespace PMP {
                     (position * rect.width() + _trackLength / 2) / _trackLength + rect.x();
                 qDebug() << " calculated x from calculated position would be:" << x_r;
 
-                emit seekRequested(position);
+                Q_EMIT seekRequested(position);
             }
         }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,9 +23,11 @@
 #include "playermode.h"
 #include "playerstate.h"
 #include "queueentrytype.h"
-#include "serverhealthstatus.h"
 #include "scrobblerstatus.h"
 #include "scrobblingprovider.h"
+#include "serverhealthstatus.h"
+#include "startstopeventstatus.h"
+#include "userloginerror.h"
 
 namespace PMP {
 
@@ -40,9 +42,11 @@ namespace PMP {
             qRegisterMetaType<PMP::PlayerMode>();
             qRegisterMetaType<PMP::PlayerState>();
             qRegisterMetaType<PMP::QueueEntryType>();
-            qRegisterMetaType<PMP::ServerHealthStatus>();
             qRegisterMetaType<PMP::ScrobblerStatus>();
             qRegisterMetaType<PMP::ScrobblingProvider>();
+            qRegisterMetaType<PMP::ServerHealthStatus>();
+            qRegisterMetaType<PMP::StartStopEventStatus>();
+            qRegisterMetaType<PMP::UserLoginError>();
         }
 
     private:

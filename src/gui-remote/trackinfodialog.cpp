@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,22 +31,29 @@
 
 namespace PMP {
 
-    TrackInfoDialog::TrackInfoDialog(QWidget* parent, const FileHash& hash,
-                                     ClientServerInterface* clientServerInterface)
+    TrackInfoDialog::TrackInfoDialog(QWidget* parent,
+                                     ClientServerInterface* clientServerInterface,
+                                     const FileHash& hash,
+                                     quint32 queueId)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
         _ui(new Ui::TrackInfoDialog),
         _clientServerInterface(clientServerInterface),
-        _trackHash(hash)
+        _trackHash(hash),
+        _queueId(queueId)
     {
         init();
 
+        fillQueueId();
+
         auto trackInfo = clientServerInterface->collectionWatcher().getTrack(hash);
 
-        if (trackInfo.hash().isNull()) { /* not found? */
+        if (trackInfo.hash().isNull())
+        { /* not found? */
             fillHash(hash);
             clearTrackDetails();
         }
-        else {
+        else
+        {
             fillHash(trackInfo.hash());
             fillTrackDetails(trackInfo);
         }
@@ -54,12 +61,14 @@ namespace PMP {
         fillUserData(_trackHash);
     }
 
-    TrackInfoDialog::TrackInfoDialog(QWidget* parent, const CollectionTrackInfo& track,
-                                     ClientServerInterface* clientServerInterface)
+    TrackInfoDialog::TrackInfoDialog(QWidget* parent,
+                                     ClientServerInterface* clientServerInterface,
+                                     const CollectionTrackInfo& track)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
         _ui(new Ui::TrackInfoDialog),
         _clientServerInterface(clientServerInterface),
-        _trackHash(track.hash())
+        _trackHash(track.hash()),
+        _queueId(0)
     {
         init();
 
@@ -102,6 +111,14 @@ namespace PMP {
     {
         _ui->setupUi(this);
 
+        if (_queueId == 0)
+        {
+            _ui->queueIdLabel->setVisible(false);
+            _ui->queueIdValueLabel->setVisible(false);
+            _ui->fileInfoFormLayout->removeWidget(_ui->queueIdLabel);
+            _ui->fileInfoFormLayout->removeWidget(_ui->queueIdValueLabel);
+        }
+
         connect(
             &_clientServerInterface->collectionWatcher(),
             &CollectionWatcher::newTrackReceived,
@@ -119,6 +136,14 @@ namespace PMP {
             &UserDataFetcher::dataReceivedForUser,
             this, &TrackInfoDialog::dataReceivedForUser
         );
+    }
+
+    void TrackInfoDialog::fillQueueId()
+    {
+        if (_queueId != 0)
+        {
+            _ui->queueIdValueLabel->setText(QString::number(_queueId));
+        }
     }
 
     void TrackInfoDialog::fillHash(const FileHash& hash)

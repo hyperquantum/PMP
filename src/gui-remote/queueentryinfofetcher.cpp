@@ -338,7 +338,7 @@ namespace PMP {
 
         qDebug() << "QueueEntryInfoFetcher: going to emit tracksChanged signal for"
                  << list.size() << "tracks";
-        emit tracksChanged(list);
+        Q_EMIT tracksChanged(list);
     }
 
     void QueueEntryInfoFetcher::sendRequest(quint32 queueID) {

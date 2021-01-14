@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,7 +39,7 @@ namespace PMP {
     Server::Server(QObject* parent, const QUuid& serverInstanceIdentifier)
      : QObject(parent), _lastNewConnectionReference(0),
        _uuid(serverInstanceIdentifier),
-       _player(nullptr), _generator(nullptr), _users(nullptr),
+       _player(nullptr), _generator(nullptr), _history(nullptr), _users(nullptr),
        _collectionMonitor(nullptr), _serverHealthMonitor(nullptr), _scrobbling(nullptr),
        _server(new QTcpServer(this)), _udpSocket(new QUdpSocket(this)),
        _broadcastTimer(new QTimer(this))
@@ -105,13 +105,15 @@ namespace PMP {
         return serverPassword;
     }
 
-    bool Server::listen(Player* player, Generator* generator, Users* users,
+    bool Server::listen(Player* player, Generator* generator, History* history,
+                        Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor, Scrobbling* scrobbling,
                         const QHostAddress& address, quint16 port)
     {
         _player = player;
         _generator = generator;
+        _history = history;
         _users = users;
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
@@ -145,7 +147,7 @@ namespace PMP {
 
     void Server::shutdown() {
         _broadcastTimer->stop();
-        emit shuttingDown();
+        Q_EMIT shuttingDown();
     }
 
     void Server::newConnectionReceived() {
@@ -168,7 +170,7 @@ namespace PMP {
 
         auto connectedClient =
             new ConnectedClient(
-                connection, serverInterface, _player, _generator, _users,
+                connection, serverInterface, _player, _history, _users,
                 _collectionMonitor, _serverHealthMonitor, _scrobbling
             );
 

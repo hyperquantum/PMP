@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -74,17 +74,21 @@ namespace PMP {
         void historyContextMenuRequested(const QPoint& position);
         void queueContextMenuRequested(const QPoint& position);
 
+        void dynamicModeEnabledChanged();
+        void noRepetitionSpanSecondsChanged();
         void changeDynamicMode(int checkState);
         void noRepetitionIndexChanged(int index);
-        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
-        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
+
+        void waveActiveChanged();
+        void waveProgressChanged();
         void startHighScoredTracksWave();
+        void terminateHighScoredTracksWave();
 
     private:
         void enableDisableTrackInfoButton();
         void enableDisablePlayerControlButtons();
 
-        void showTrackInfoDialog(FileHash hash);
+        void showTrackInfoDialog(FileHash hash, quint32 queueId = 0);
 
         bool keyEventFilter(QKeyEvent* event);
 
@@ -92,16 +96,12 @@ namespace PMP {
         QString noRepetitionTimeString(int seconds);
 
         Ui::MainWidget* _ui;
-        ServerConnection* _connection;
         ClientServerInterface* _clientServerInterface;
         PreciseTrackProgressMonitor* _trackProgressMonitor;
-        QueueMonitor* _queueMonitor;
         QueueMediator* _queueMediator;
         QueueEntryInfoFetcher* _queueEntryInfoFetcher;
         QueueModel* _queueModel;
         QMenu* _queueContextMenu;
-        bool _dynamicModeEnabled;
-        bool _dynamicModeHighScoreWaveActive;
         QList<int> _noRepetitionList;
         int _noRepetitionUpdating;
         PlayerHistoryModel* _historyModel;

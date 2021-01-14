@@ -45,6 +45,7 @@ namespace PMP {
         LastHeardNotInLast30Days,
         LastHeardNotInLast10Days,
         WithoutScore,
+        ScoreMaximum30,
         ScoreAtLeast85,
         ScoreAtLeast90,
         ScoreAtLeast95,
@@ -198,7 +199,7 @@ namespace PMP {
 
         CollectionTrackInfo* trackAt(const QModelIndex& index) const;
 
-    public slots:
+    public Q_SLOTS:
         void setSearchText(QString search);
 
     protected:

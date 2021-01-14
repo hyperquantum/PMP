@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,7 +19,7 @@
 
 #include "queuemonitor.h"
 
-#include "common/serverconnection.h"
+#include "serverconnection.h"
 
 #include <cstdlib>
 #include <QDebug>
@@ -28,15 +28,22 @@
 
 namespace PMP {
 
-    QueueMonitor::QueueMonitor(QObject* parent, ServerConnection* connection)
-     : AbstractQueueMonitor(parent), _connection(connection),
+    QueueMonitor::QueueMonitor(ServerConnection* connection)
+     : AbstractQueueMonitor(connection),
+       _connection(connection),
        _waitingForVeryFirstQueueInfo(true),
-       _queueLength(0), // _queueLengthSent(0),
-       _requestQueueUpTo(5), _queueRequestedUpTo(0)
+       _queueLength(0),
+       // _queueLengthSent(0),
+       _requestQueueUpTo(5),
+       _queueRequestedUpTo(0)
     {
         connect(
             _connection, &ServerConnection::connected,
             this, &QueueMonitor::connected
+        );
+        connect(
+            _connection, &ServerConnection::connectionBroken,
+            this, &QueueMonitor::connectionBroken
         );
         connect(
             _connection, &ServerConnection::receivedServerInstanceIdentifier,
@@ -59,12 +66,12 @@ namespace PMP {
             this, &QueueMonitor::queueEntryMoved
         );
 
-        if (_connection->isConnected()) {
+        if (_connection->isConnected())
             connected();
-        }
     }
 
-    void QueueMonitor::connected() {
+    void QueueMonitor::connected()
+    {
         _connection->sendServerInstanceIdentifierRequest();
 
         _waitingForVeryFirstQueueInfo = true;
@@ -76,7 +83,13 @@ namespace PMP {
         _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
     }
 
-    void QueueMonitor::doReset(int queueLength) {
+    void QueueMonitor::connectionBroken()
+    {
+        // TODO
+    }
+
+    void QueueMonitor::doReset(int queueLength)
+    {
         qDebug() << "QueueMonitor: resetting queue to length" << queueLength;
 
         _waitingForVeryFirstQueueInfo = false;
@@ -87,14 +100,16 @@ namespace PMP {
         _queueRequestedUpTo = initialQueueFetchLength;
         _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
 
-        emit queueResetted(queueLength);
+        Q_EMIT queueResetted(queueLength);
     }
 
-    void QueueMonitor::receivedServerInstanceIdentifier(QUuid uuid) {
+    void QueueMonitor::receivedServerInstanceIdentifier(QUuid uuid)
+    {
         _serverUuid = uuid;
     }
 
-    quint32 QueueMonitor::queueEntry(int index) {
+    quint32 QueueMonitor::queueEntry(int index)
+    {
         if (index < 0 || index >= _queueLength) return 0;
 
         /* see if we need to fetch more of the queue */
@@ -117,7 +132,8 @@ namespace PMP {
         return 0;
     }
 
-    void QueueMonitor::sendNextSlotBatchRequest(int size) {
+    void QueueMonitor::sendNextSlotBatchRequest(int size)
+    {
         if (size <= 0) { return; }
 
         int requestCount = size;
@@ -142,7 +158,7 @@ namespace PMP {
             _waitingForVeryFirstQueueInfo = false;
             _queueLength = queueLength;
             _queue.clear();
-            emit queueResetted(queueLength);
+            Q_EMIT queueResetted(queueLength);
         }
 
         if (_queueLength != queueLength) {
@@ -157,7 +173,7 @@ namespace PMP {
         if (startOffset == _queue.size()) {
             qDebug() << " queue contents to be appended to our list";
             _queue.append(queueIDs);
-            emit entriesReceived(startOffset, queueIDs);
+            Q_EMIT entriesReceived(startOffset, queueIDs);
         }
         else if (startOffset < _queue.size()
                  && startOffset > _queue.size() - queueIDs.size())
@@ -180,7 +196,7 @@ namespace PMP {
                 _queue.append(queueIDs[i]);
             }
 
-            emit entriesReceived(_queue.size() - changed.size(), changed);
+            Q_EMIT entriesReceived(_queue.size() - changed.size(), changed);
         }
         else {
             /* no new information received, just check the entries we already have */
@@ -209,7 +225,8 @@ namespace PMP {
         }
     }
 
-    void QueueMonitor::queueEntryAdded(quint32 offset, quint32 queueID) {
+    void QueueMonitor::queueEntryAdded(qint32 offset, quint32 queueID)
+    {
         int index = (int)offset;
 
         if (index < 0 || index > _queueLength) {
@@ -234,10 +251,11 @@ namespace PMP {
             _queueRequestedUpTo++;
         }
 
-        emit trackAdded((int)offset, queueID);
+        Q_EMIT trackAdded((int)offset, queueID);
     }
 
-    void QueueMonitor::queueEntryRemoved(quint32 offset, quint32 queueID) {
+    void QueueMonitor::queueEntryRemoved(qint32 offset, quint32 queueID)
+    {
         int index = (int)offset;
 
         if (index < 0 || index >= _queueLength) {
@@ -275,10 +293,10 @@ namespace PMP {
             sendNextSlotBatchRequest(queueFetchBatchSize);
         }
 
-        emit trackRemoved(index, queueID);
+        Q_EMIT trackRemoved(index, queueID);
     }
 
-    void QueueMonitor::queueEntryMoved(quint32 fromOffset, quint32 toOffset,
+    void QueueMonitor::queueEntryMoved(qint32 fromOffset, qint32 toOffset,
                                        quint32 queueID)
     {
         int fromIndex = (int)fromOffset;
@@ -336,7 +354,7 @@ namespace PMP {
             _queueRequestedUpTo++;
         }
 
-        emit trackMoved(fromIndex, toIndex, queueID);
+        Q_EMIT trackMoved(fromIndex, toIndex, queueID);
     }
 
 }

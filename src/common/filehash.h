@@ -43,6 +43,7 @@ namespace PMP {
         const QByteArray& SHA1() const { return _sha1; }
         const QByteArray& MD5() const { return _md5; }
 
+        QString toString();
         QString dumpToString() const;
 
     private:

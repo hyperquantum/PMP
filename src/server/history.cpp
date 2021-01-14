@@ -31,6 +31,10 @@
 
 namespace PMP {
 
+    namespace {
+        static const int fetchingTimerFreqMs = 20;
+    }
+
     History::History(Player* player)
      : _player(player),
        _nowPlaying(0),

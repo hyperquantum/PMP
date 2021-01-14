@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2020, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -31,16 +31,20 @@ set(PMP_COMMON_SOURCES
     common/networkutil.cpp
     common/obfuscator.cpp
     common/playercontrollerimpl.cpp
+    common/queuecontrollerimpl.cpp
+    common/queuemonitor.cpp
     common/scrobblerstatus.cpp
     common/scrobblingprovider.cpp
     common/serverconnection.cpp
     common/serverdiscoverer.cpp
+    common/startstopeventstatus.cpp
     common/tagdata.cpp
     common/tribool.cpp
     common/userdatafetcher.cpp
     common/util.cpp
 )
 set(PMP_COMMON_HEADERS
+    common/abstractqueuemonitor.h
     common/clientserverinterface.h
     common/collectionfetcher.h
     common/collectionwatcher.h
@@ -51,6 +55,9 @@ set(PMP_COMMON_HEADERS
     common/dynamicmodecontrollerimpl.h
     common/playercontroller.h
     common/playercontrollerimpl.h
+    common/queuecontroller.h
+    common/queuecontrollerimpl.h
+    common/queuemonitor.h
     common/serverconnection.h
     common/serverdiscoverer.h
     common/userdatafetcher.h
@@ -62,6 +69,8 @@ set(PMP_SERVER_SOURCES
     server/collectionmonitor.cpp
     server/connectedclient.cpp
     server/database.cpp
+    server/dynamicmodecriteria.cpp
+    server/dynamictrackgenerator.cpp
     server/generator.cpp
     server/history.cpp
     server/lastfmscrobblingbackend.cpp
@@ -84,15 +93,19 @@ set(PMP_SERVER_SOURCES
     server/servermetatypes.cpp
     server/serversettings.cpp
     server/tokenencoder.cpp
+    server/trackgeneratorbase.cpp
+    server/trackrepetitionchecker.cpp
     server/tracktoscrobble.cpp
     server/userdataforhashesfetcher.cpp
     server/userdatafortracksfetcher.cpp
     server/users.cpp
+    server/wavetrackgenerator.cpp
 )
 set(PMP_SERVER_HEADERS
     server/addtohistorytask.h
     server/collectionmonitor.h
     server/connectedclient.h
+    server/dynamictrackgenerator.h
     server/generator.h
     server/history.h
     server/lastfmscrobblingbackend.h
@@ -110,13 +123,27 @@ set(PMP_SERVER_HEADERS
     server/serverhealthmonitor.h
     server/serverinterface.h
     server/serversettings.h
+    server/trackgeneratorbase.h
+    server/trackrepetitionchecker.h
     server/userdataforhashesfetcher.h
     server/userdatafortracksfetcher.h
     server/users.h
+    server/wavetrackgenerator.h
+)
+
+set(PMP_CMD_REMOTE_SOURCES
+    cmd-remote/client.cpp
+    cmd-remote/command.cpp
+    cmd-remote/commandparser.cpp
+    cmd-remote/commands.cpp
+)
+set(PMP_CMD_REMOTE_HEADERS
+    cmd-remote/client.h
+    cmd-remote/command.h
+    cmd-remote/commands.h
 )
 
 set(PMP_GUI_REMOTE_SOURCES
-    gui-remote/abstractqueuemonitor.cpp
     gui-remote/autopersonalmodeaction.cpp
     gui-remote/collectiontablemodel.cpp
     gui-remote/collectionwidget.cpp
@@ -133,7 +160,6 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/queueentryinfofetcher.cpp
     gui-remote/queuemediator.cpp
     gui-remote/queuemodel.cpp
-    gui-remote/queuemonitor.cpp
     gui-remote/scoreformatdelegate.cpp
     gui-remote/trackinfodialog.cpp
     gui-remote/trackprogresswidget.cpp
@@ -141,7 +167,6 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/userpickerwidget.cpp
 )
 set(PMP_GUI_REMOTE_HEADERS
-    gui-remote/abstractqueuemonitor.h
     gui-remote/autopersonalmodeaction.h
     gui-remote/collectiontablemodel.h
     gui-remote/collectionwidget.h
@@ -156,7 +181,6 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/queueentryinfofetcher.h
     gui-remote/queuemediator.h
     gui-remote/queuemodel.h
-    gui-remote/queuemonitor.h
     gui-remote/scoreformatdelegate.h
     gui-remote/trackinfodialog.h
     gui-remote/trackprogresswidget.h
@@ -178,6 +202,7 @@ set(PMP_GUI_REMOTE_RESOURCES
 
 qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
 qt5_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
+qt5_wrap_cpp(PMP_CMD_REMOTE_MOCS ${PMP_CMD_REMOTE_HEADERS})
 qt5_wrap_cpp(PMP_GUI_REMOTE_MOCS ${PMP_GUI_REMOTE_HEADERS})
 qt5_wrap_ui(PMP_GUI_REMOTE_UICS ${PMP_GUI_REMOTE_UIS})
 qt5_add_resources(PMP_GUI_REMOTE_QRCS ${PMP_GUI_REMOTE_RESOURCES})
@@ -196,7 +221,7 @@ add_executable(PMP-HashTool
     common/filehash.cpp
     common/tagdata.cpp
 )
-add_executable(PMP-Cmd-Remote tools/cmd-remote-main.cpp)
+
 add_executable(quicktest
     tools/quicktest.cpp
     ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS}
@@ -206,6 +231,11 @@ add_executable(quicktest
 add_executable(PMP-Server
     server/server-main.cpp
     ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS}
+    ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
+)
+add_executable(PMP-Cmd-Remote
+    cmd-remote/cmd-remote-main.cpp
+    ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS}
     ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 add_executable(PMP-GUI-Remote
@@ -228,4 +258,5 @@ target_link_libraries(PMP-GUI-Remote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widget
 target_link_libraries(PMP-HashTool ${TAGLIB_LIBRARIES})
 target_link_libraries(quicktest ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-Server ${TAGLIB_LIBRARIES})
+target_link_libraries(PMP-Cmd-Remote ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-GUI-Remote ${TAGLIB_LIBRARIES})

@@ -68,6 +68,18 @@ namespace PMP {
 
         static QByteArray generateZeroedMemory(int byteCount);
 
+        static int compare(uint i1, uint i2) {
+            if (i1 < i2) return -1;
+            if (i1 > i2) return 1;
+            return 0;
+        }
+
+        static int compare(int i1, int i2) {
+            if (i1 < i2) return -1;
+            if (i1 > i2) return 1;
+            return 0;
+        }
+
     private:
         Util();
     };

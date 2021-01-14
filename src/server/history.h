@@ -42,6 +42,17 @@ namespace PMP {
         struct HashStats {
             QDateTime lastHeard;
             qint16 score;
+
+            bool haveScore() const { return score >= 0; }
+
+            bool scoreLessThanXPercent(int percent) const
+            {
+                if (!haveScore())
+                    return false; // unknown score doesn't count
+
+                // remember that score is per 1000
+                return score < 10 * percent;
+            }
         };
 
         History(Player* player);
@@ -56,7 +67,7 @@ namespace PMP {
         void updatedHashUserStats(uint hashID, quint32 user,
                                   QDateTime previouslyHeard, qint16 score);
 
-    private slots:
+    private Q_SLOTS:
         void currentTrackChanged(QueueEntry const* newTrack);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void onHashUserStatsUpdated(uint hashID, quint32 user,
@@ -66,8 +77,6 @@ namespace PMP {
 
     private:
         void scheduleFetch(uint hashID, quint32 user);
-
-        static const int fetchingTimerFreqMs = 100;
 
         Player* _player;
         QHash<FileHash, QDateTime> _lastPlayHash;

@@ -33,7 +33,6 @@ namespace PMP {
     class ClientServerInterface;
     class ColorSwitcher;
     class FilteredCollectionTableModel;
-    class ServerConnection;
     class SortedCollectionTableModel;
     enum class TrackHighlightMode;
 
@@ -41,11 +40,10 @@ namespace PMP {
         Q_OBJECT
 
     public:
-        CollectionWidget(QWidget* parent, ServerConnection* connection,
-                         ClientServerInterface* clientServerInterface);
+        CollectionWidget(QWidget* parent, ClientServerInterface* clientServerInterface);
         ~CollectionWidget();
 
-    private slots:
+    private Q_SLOTS:
         void highlightTracksIndexChanged(int index);
         void highlightColorIndexChanged();
         void collectionContextMenuRequested(const QPoint& position);
@@ -58,7 +56,6 @@ namespace PMP {
 
         Ui::CollectionWidget* _ui;
         ColorSwitcher* _colorSwitcher;
-        ServerConnection* _connection;
         ClientServerInterface* _clientServerInterface;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;

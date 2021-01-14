@@ -78,6 +78,12 @@ namespace PMP {
                 auto evaluator = [](int permillage) { return permillage < 0; };
                 return shouldHighlightBasedOnScore(track, evaluator);
             }
+            case TrackHighlightMode::ScoreMaximum30:
+            {
+                auto evaluator =
+                    [](int permillage) { return permillage >= 0 && permillage <= 300; };
+                return shouldHighlightBasedOnScore(track, evaluator);
+            }
             case TrackHighlightMode::ScoreAtLeast85:
             {
                 auto evaluator = [](int permillage) { return permillage >= 850; };
@@ -287,6 +293,7 @@ namespace PMP {
             case TrackHighlightMode::LastHeardNotInLast30Days:
             case TrackHighlightMode::LastHeardNotInLast10Days:
             case TrackHighlightMode::WithoutScore:
+            case TrackHighlightMode::ScoreMaximum30:
             case TrackHighlightMode::ScoreAtLeast85:
             case TrackHighlightMode::ScoreAtLeast90:
             case TrackHighlightMode::ScoreAtLeast95:
@@ -560,7 +567,7 @@ namespace PMP {
 
     void SortedCollectionTableModel::markLeftColumnAsChanged()
     {
-        emit dataChanged(
+        Q_EMIT dataChanged(
             createIndex(0, 0), createIndex(rowCount() - 1, 0)
         );
     }
@@ -576,7 +583,7 @@ namespace PMP {
         int outerIndex = _innerToOuterIndexMap[innerIndex];
 
         _tracks[innerIndex]->setAvailable(isAvailable);
-        emit dataChanged(createIndex(outerIndex, 0), createIndex(outerIndex, 4 - 1));
+        Q_EMIT dataChanged(createIndex(outerIndex, 0), createIndex(outerIndex, 4 - 1));
     }
 
     template <class T>
@@ -687,7 +694,7 @@ namespace PMP {
     }
 
     void SortedCollectionTableModel::markEverythingAsChanged() {
-        emit dataChanged(
+        Q_EMIT dataChanged(
             createIndex(0, 0), createIndex(rowCount() - 1, columnCount() - 1)
         );
     }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,6 +27,7 @@
 #include "scrobblingprovider.h"
 #include "serverhealthstatus.h"
 #include "tribool.h"
+#include "userloginerror.h"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -89,16 +90,8 @@ namespace PMP {
         class DuplicationResultHandler;
 
     public:
-        enum PlayState { // TODO : eliminate this and use PlayerState instead
-            UnknownState = 0, Stopped = 1, Playing = 2, Paused = 3
-        };
-
         enum UserRegistrationError {
             UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
-        };
-
-        enum UserLoginError {
-            UnknownUserLoginError, UserLoginAuthenticationFailed
         };
 
         ServerConnection(QObject* parent = nullptr,
@@ -123,6 +116,7 @@ namespace PMP {
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
 
         bool serverSupportsQueueEntryDuplication() const;
+        bool serverSupportsDynamicModeWaveTermination() const;
 
     public Q_SLOTS:
         void shutdownServer();
@@ -138,7 +132,7 @@ namespace PMP {
 
         void seekTo(uint queueID, qint64 position);
 
-        void insertPauseAtFront();
+        void insertBreakAtFront();
 
         void setVolume(int percentage);
 
@@ -149,6 +143,7 @@ namespace PMP {
         void requestDynamicModeStatus();
         void setDynamicModeNoRepetitionSpan(int seconds);
         void startDynamicModeWave();
+        void terminateDynamicModeWave();
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
         void deleteQueueEntry(uint queueID);
@@ -200,23 +195,24 @@ namespace PMP {
 
         void volumeChanged(int percentage);
 
-        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
-        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
+        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpanSeconds);
+        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged,
+                                                    int progress, int progressTotal);
 
         void receivedPlayerHistoryEntry(PMP::PlayerHistoryTrackInfo track);
         void receivedPlayerHistory(QVector<PMP::PlayerHistoryTrackInfo> tracks);
 
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);
-        void queueEntryAdded(quint32 offset, quint32 queueID, RequestID requestID);
-        void queueEntryRemoved(quint32 offset, quint32 queueID);
-        void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
-        void receivedTrackInfo(quint32 queueID, QueueEntryType type,
+        void queueEntryAdded(qint32 offset, quint32 queueId, RequestID requestId);
+        void queueEntryRemoved(qint32 offset, quint32 queueId);
+        void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueId);
+        void receivedTrackInfo(quint32 queueId, QueueEntryType type,
                                qint64 lengthMilliseconds, QString title, QString artist);
-        void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
+        void receivedQueueEntryHash(quint32 queueId, QueueEntryType type, FileHash hash);
         void receivedHashUserData(FileHash hash, quint32 userId,
                                   QDateTime previouslyHeard, qint16 scorePermillage);
-        void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
+        void receivedPossibleFilenames(quint32 queueId, QList<QString> names);
 
         void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
         void userAccountCreatedSuccessfully(QString login, quint32 id);

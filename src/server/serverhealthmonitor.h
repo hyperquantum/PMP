@@ -34,7 +34,7 @@ namespace PMP {
         bool databaseUnavailable() const;
         bool sslLibrariesMissing() const;
 
-    public slots:
+    public Q_SLOTS:
         void setDatabaseUnavailable();
         void setSslLibrariesMissing();
 

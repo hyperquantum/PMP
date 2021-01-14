@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -305,7 +305,7 @@ namespace PMP {
 
         qDebug() << "Player: state changed from" << int(_state) << "to" << int(state);
         _state = state;
-        emit stateChanged(state);
+        Q_EMIT stateChanged(state);
 
         if (state == ServerPlayerState::Playing) {
             emitStartedPlaying(_nowPlaying);
@@ -424,7 +424,7 @@ namespace PMP {
         if (_userPlayingFor == user) return; /* no change */
 
         _userPlayingFor = user;
-        emit userPlayingForChanged(user);
+        Q_EMIT userPlayingForChanged(user);
     }
 
     bool Player::startNext(bool stopCurrent, bool playNext) {
@@ -503,7 +503,7 @@ namespace PMP {
 
         if (!nextTrack && _queue.empty() && oldQueueLength > 0) {
             qDebug() << "queue is finished, nothing left to play";
-            emit finished();
+            Q_EMIT finished();
         }
 
         return nextTrack;

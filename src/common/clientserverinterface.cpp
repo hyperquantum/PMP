@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,15 +24,19 @@
 #include "dynamicmodecontrollerimpl.h"
 #include "serverconnection.h"
 #include "playercontrollerimpl.h"
+#include "queuecontrollerimpl.h"
+#include "queuemonitor.h"
 #include "userdatafetcher.h"
 
 namespace PMP {
 
-    ClientServerInterface::ClientServerInterface(QObject* parent,
-                                                 ServerConnection* connection)
-     : QObject(parent), _connection(connection),
+    ClientServerInterface::ClientServerInterface(ServerConnection* connection)
+     : QObject(connection),
+       _connection(connection),
        _simplePlayerController(nullptr),
        _currentTrackMonitor(nullptr),
+       _queueController(nullptr),
+       _queueMonitor(nullptr),
        _dynamicModeController(nullptr),
        _collectionWatcher(nullptr),
        _userDataFetcher(nullptr)
@@ -54,6 +58,22 @@ namespace PMP {
             _currentTrackMonitor = new CurrentTrackMonitorImpl(_connection);
 
         return *_currentTrackMonitor;
+    }
+
+    QueueController& ClientServerInterface::queueController()
+    {
+        if (!_queueController)
+            _queueController = new QueueControllerImpl(_connection);
+
+        return *_queueController;
+    }
+
+    AbstractQueueMonitor& ClientServerInterface::queueMonitor()
+    {
+        if (!_queueMonitor)
+            _queueMonitor = new QueueMonitor(_connection);
+
+        return *_queueMonitor;
     }
 
     DynamicModeController& ClientServerInterface::dynamicModeController()
@@ -95,5 +115,10 @@ namespace PMP {
     QString ClientServerInterface::userLoggedInName() const
     {
         return _connection->userLoggedInName();
+    }
+
+    void ClientServerInterface::shutdownServer()
+    {
+        _connection->shutdownServer();
     }
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,8 @@
 #include "collectionwidget.h"
 #include "ui_collectionwidget.h"
 
+#include "common/clientserverinterface.h"
+#include "common/queuecontroller.h"
 #include "common/serverconnection.h"
 #include "common/util.h"
 
@@ -34,12 +36,11 @@
 
 namespace PMP {
 
-    CollectionWidget::CollectionWidget(QWidget* parent, ServerConnection* connection,
+    CollectionWidget::CollectionWidget(QWidget* parent,
                                        ClientServerInterface* clientServerInterface)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
        _colorSwitcher(nullptr),
-       _connection(connection),
        _clientServerInterface(clientServerInterface),
        _collectionSourceModel(new SortedCollectionTableModel(this,clientServerInterface)),
        _collectionDisplayModel(
@@ -138,9 +139,10 @@ namespace PMP {
             _collectionContextMenu->addAction(tr("Add to front of queue"));
         connect(
             enqueueFrontAction, &QAction::triggered,
+            this,
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (front) triggered";
-                _connection->insertQueueEntryAtFront(hash);
+                _clientServerInterface->queueController().insertQueueEntryAtFront(hash);
             }
         );
 
@@ -148,9 +150,10 @@ namespace PMP {
                 _collectionContextMenu->addAction(tr("Add to end of queue"));
         connect(
             enqueueEndAction, &QAction::triggered,
+            this,
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (end) triggered";
-                _connection->insertQueueEntryAtEnd(hash);
+                _clientServerInterface->queueController().insertQueueEntryAtEnd(hash);
             }
         );
 
@@ -162,7 +165,7 @@ namespace PMP {
             this,
             [this, track]() {
                 qDebug() << "collection context menu: track info triggered";
-                auto dialog = new TrackInfoDialog(this, track, _clientServerInterface);
+                auto dialog = new TrackInfoDialog(this, _clientServerInterface, track);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
                 dialog->open();
             }
@@ -197,6 +200,7 @@ namespace PMP {
                 TrackHighlightMode::LastHeardNotInLast10Days);
 
         addItem(tr("without score"), TrackHighlightMode::WithoutScore);
+        addItem(tr("score <= 30"), TrackHighlightMode::ScoreMaximum30);
         addItem(tr("score >= 85"), TrackHighlightMode::ScoreAtLeast85);
         addItem(tr("score >= 90"), TrackHighlightMode::ScoreAtLeast90);
         addItem(tr("score >= 95"), TrackHighlightMode::ScoreAtLeast95);
