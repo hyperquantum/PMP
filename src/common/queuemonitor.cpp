@@ -25,8 +25,6 @@
 #include <QtGlobal>
 #include <QTimer>
 
-
-
 namespace PMP {
 
     namespace
@@ -42,8 +40,8 @@ namespace PMP {
        _connection(connection),
        _waitingForVeryFirstQueueInfo(true),
        _queueLength(0),
-       // _queueLengthSent(0),
-       _requestQueueUpTo(initialQueueFetchLength),
+       _queueFetchTargetCount(initialQueueFetchLength),
+       _queueFetchLimit(-1),
        _queueRequestedEntryCount(0)
     {
         connect(
@@ -77,6 +75,15 @@ namespace PMP {
 
         if (_connection->isConnected())
             connected();
+    }
+
+    void QueueMonitor::setFetchLimit(int count)
+    {
+        qDebug() << "QueueMonitor: fetch limit set to" << count;
+        _queueFetchLimit = count;
+
+        if (_queueFetchTargetCount > _queueFetchLimit)
+            _queueFetchTargetCount = _queueFetchLimit;
     }
 
     void QueueMonitor::connected()
@@ -119,19 +126,25 @@ namespace PMP {
 
     void QueueMonitor::gotRequestForEntryAtIndex(int index)
     {
-        /* do we need to fetch more of the queue? */
+        /* do we need to raise the queue fetch target? */
 
-        if (index < _requestQueueUpTo - indexMarginForQueueFetch)
+        if (index < _queueFetchTargetCount - indexMarginForQueueFetch)
             return; /* no, not yet */
 
-        /* we need more of the queue */
+        if (_queueFetchLimit >= 0 && _queueFetchTargetCount >= _queueFetchLimit)
+            return; /* no, we have reached the fetch limit */
 
-        int newFetchUpTo = (index + indexMarginForQueueFetch) + 1 + extraRaiseFetchUpTo;
+        int newFetchCount = _queueFetchTargetCount + extraRaiseFetchUpTo;
 
-        qDebug() << "QueueMonitor::queueEntry: will raise up-to from"
-            << _requestQueueUpTo << "to" << newFetchUpTo;
+        /* don't cross the fetch limit */
+        if (_queueFetchLimit >= 0 && newFetchCount > _queueFetchLimit)
+            newFetchCount = _queueFetchLimit;
 
-        _requestQueueUpTo = newFetchUpTo;
+        qDebug() << "QueueMonitor: will raise fetch target count from"
+            << _queueFetchTargetCount << "to" << newFetchCount
+            << "because index" << index << "was requested";
+
+        _queueFetchTargetCount = newFetchCount;
         checkIfWeNeedToFetchMore();
     }
 
@@ -151,8 +164,10 @@ namespace PMP {
     void QueueMonitor::receivedQueueContents(int queueLength, int startOffset,
                                              QList<quint32> queueIDs)
     {
-        qDebug() << "QueueMonitor::received queue contents; q-len=" << queueLength
-                 << "; startoffset=" << startOffset << "; batch-size=" << queueIDs.size();
+        qDebug() << "QueueMonitor: received queue contents:"
+                 << " queue length:" << queueLength
+                 << "; offset:" << startOffset
+                 << "; batch-size:" << queueIDs.size();
 
         /* is this the first info about the queue we receive? */
         if (_waitingForVeryFirstQueueInfo)
@@ -367,22 +382,24 @@ namespace PMP {
 
     void QueueMonitor::checkIfWeNeedToFetchMore()
     {
-        if (_queueRequestedEntryCount >= _queueLength - 1)
+        /* no need to fetch any more if we got the entire queue already */
+        if (_queueRequestedEntryCount >= _queueLength)
         {
-            _queueRequestedEntryCount = _queueLength - 1;
+            _queueRequestedEntryCount = _queueLength;
             return;
         }
 
-        /* take fetch limit into account */
-        if (_queueRequestedEntryCount >= _requestQueueUpTo)
+        /* we can stop fetching as soon as we have reached the target count */
+        if (_queueRequestedEntryCount >= _queueFetchTargetCount)
             return;
 
         /* wait until all previous fetch requests have been answered */
         if (_queueRequestedEntryCount > _queue.size())
             return;
 
-        qDebug() << "QueueMonitor: sending next auto queue fetch request -- will request up to"
-                 << _requestQueueUpTo;
+        qDebug() << "QueueMonitor: sending queue fetch request:"
+                 << " index:" << _queueRequestedEntryCount
+                 << "; count:" << queueFetchBatchSize;
 
         _connection->sendQueueFetchRequest(_queueRequestedEntryCount, queueFetchBatchSize);
         _queueRequestedEntryCount += queueFetchBatchSize;

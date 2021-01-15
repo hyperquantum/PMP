@@ -32,6 +32,8 @@ namespace PMP {
     public:
         QueueMonitor(ServerConnection* connection);
 
+        void setFetchLimit(int count) override;
+
         QUuid serverUuid() const override { return _serverUuid; }
 
         int queueLength() const override { return _queueLength; }
@@ -60,7 +62,8 @@ namespace PMP {
         QUuid _serverUuid;
         bool _waitingForVeryFirstQueueInfo;
         int _queueLength;
-        int _requestQueueUpTo;
+        int _queueFetchTargetCount;
+        int _queueFetchLimit;
         int _queueRequestedEntryCount;
         QList<quint32> _queue; // no need for a QQueue, a QList will suffice
     };

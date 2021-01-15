@@ -363,6 +363,11 @@ namespace PMP {
         );
     }
 
+    void QueueMediator::setFetchLimit(int count)
+    {
+        _sourceMonitor->setFetchLimit(count);
+    }
+
     QUuid QueueMediator::serverUuid() const {
         return _sourceMonitor->serverUuid();
     }

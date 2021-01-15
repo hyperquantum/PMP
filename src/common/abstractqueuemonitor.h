@@ -32,6 +32,8 @@ namespace PMP {
     public:
         virtual ~AbstractQueueMonitor() {}
 
+        virtual void setFetchLimit(int count) = 0;
+
         virtual QUuid serverUuid() const = 0;
 
         virtual int queueLength() const = 0;

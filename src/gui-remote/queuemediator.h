@@ -36,6 +36,8 @@ namespace PMP {
         QueueMediator(QObject* parent, AbstractQueueMonitor* monitor,
                       ClientServerInterface* clientServerInterface);
 
+        void setFetchLimit(int count) override;
+
         QUuid serverUuid() const override;
 
         int queueLength() const override { return _queueLength; }
