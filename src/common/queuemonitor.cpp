@@ -154,15 +154,17 @@ namespace PMP {
                  << "; startoffset=" << startOffset << "; batch-size=" << queueIDs.size();
 
         /* is this the first info about the queue we receive? */
-        if (_waitingForVeryFirstQueueInfo) {
+        if (_waitingForVeryFirstQueueInfo)
+        {
             _waitingForVeryFirstQueueInfo = false;
             _queueLength = queueLength;
             _queue.clear();
             Q_EMIT queueResetted(queueLength);
         }
 
-        if (_queueLength != queueLength) {
-            qWarning() << "QueueMonitor: Q-len inconsistent with what we have ("
+        if (_queueLength != queueLength)
+        {
+            qWarning() << "QueueMonitor: queue length inconsistent with what we have ("
                        << _queueLength << "); did we miss queue events?";
             doReset(queueLength);
             return;
@@ -170,7 +172,8 @@ namespace PMP {
 
         if (queueIDs.size() == 0) { return; }
 
-        if (startOffset == _queue.size()) {
+        if (startOffset == _queue.size())
+        {
             qDebug() << " queue contents to be appended to our list";
             _queue.append(queueIDs);
             Q_EMIT entriesReceived(startOffset, queueIDs);
@@ -198,7 +201,8 @@ namespace PMP {
 
             Q_EMIT entriesReceived(_queue.size() - changed.size(), changed);
         }
-        else {
+        else
+        {
             /* no new information received, just check the entries we already have */
             for (int i = 0; i < queueIDs.size(); ++i) {
                 if (_queue[startOffset + i] == queueIDs[i]) continue;
@@ -229,12 +233,14 @@ namespace PMP {
     {
         int index = (int)offset;
 
-        if (index < 0 || index > _queueLength) {
+        if (index < 0 || index > _queueLength)
+        {
             /* problem */
             qWarning() << "QueueMonitor: queueEntryAdded: index out of range: index="
                        << index << "; Q-len=" << _queueLength;
 
-            if (index > 0) {
+            if (index > 0)
+            {
                 /* find out what's going on, this will trigger a reset */
                 _connection->sendQueueFetchRequest(_queueLength, 1);
             }
@@ -243,9 +249,8 @@ namespace PMP {
 
         _queueLength++;
 
-        if (index <= _queue.size()) {
+        if (index <= _queue.size())
             _queue.insert(index, queueID);
-        }
 
         if (index < _queueRequestedUpTo) {
             _queueRequestedUpTo++;
@@ -258,12 +263,14 @@ namespace PMP {
     {
         int index = (int)offset;
 
-        if (index < 0 || index >= _queueLength) {
+        if (index < 0 || index >= _queueLength)
+        {
             /* problem */
             qWarning() << "QueueMonitor: queueEntryRemoved: index out of range: index="
                        << index << "; Q-len=" << _queueLength;
 
-            if (index > 0) {
+            if (index > 0)
+            {
                 /* find out what's going on, this will trigger a reset */
                 _connection->sendQueueFetchRequest(_queueLength, 1);
             }
@@ -272,11 +279,14 @@ namespace PMP {
 
         _queueLength--;
 
-        if (index < _queue.size()) {
-            if (_queue[index] == queueID || _queue[index] == 0) {
+        if (index < _queue.size())
+        {
+            if (_queue[index] == queueID || _queue[index] == 0)
+            {
                 _queue.removeAt(index);
             }
-            else {
+            else
+            {
                 /* TODO: error recovery */
                 qWarning() << "QueueMonitor: queueEntryRemoved: ID does not match;"
                            << "offset=" << offset << "; received ID=" << queueID
@@ -302,23 +312,27 @@ namespace PMP {
         int fromIndex = (int)fromOffset;
         int toIndex = (int)toOffset;
 
-        if (fromIndex < 0 || fromIndex >= _queueLength) {
+        if (fromIndex < 0 || fromIndex >= _queueLength)
+        {
             /* problem */
             qWarning() << "QueueMonitor: queueEntryMoved: fromIndex out of range:"
                        << "fromIndex=" << fromIndex << "; Q-len=" << _queueLength;
 
-            if (fromIndex > 0) {
+            if (fromIndex > 0)
+            {
                 /* find out what's going on, this will trigger a reset */
                 _connection->sendQueueFetchRequest(_queueLength, 1);
             }
             return;
         }
-        if (toIndex < 0 || toIndex >= _queueLength) {
+        if (toIndex < 0 || toIndex >= _queueLength)
+        {
             /* problem */
             qWarning() << "QueueMonitor: queueEntryMoved: toIndex out of range:"
                        << "toIndex=" << toIndex << "; Q-len=" << _queueLength;
 
-            if (toIndex > 0) {
+            if (toIndex > 0)
+            {
                 /* find out what's going on, this will trigger a reset */
                 _connection->sendQueueFetchRequest(_queueLength, 1);
             }
@@ -327,11 +341,14 @@ namespace PMP {
 
         int oldMyQueueSize = _queue.size();
 
-        if (fromIndex < _queue.size()) {
-            if (_queue[fromIndex] == queueID || _queue[fromIndex] == 0) {
+        if (fromIndex < _queue.size())
+        {
+            if (_queue[fromIndex] == queueID || _queue[fromIndex] == 0)
+            {
                 _queue.removeAt(fromIndex);
             }
-            else {
+            else
+            {
                 qWarning() << "QueueMonitor: queueEntryMoved: ID does not match;"
                            << "fromIndex=" << fromIndex << "; received ID=" << queueID
                            << "; found ID=" << _queue[fromIndex];
@@ -342,9 +359,8 @@ namespace PMP {
             }
         }
 
-        if (toIndex <= _queue.size()) {
+        if (toIndex <= _queue.size())
             _queue.insert(toIndex, queueID);
-        }
 
         if (oldMyQueueSize > _queue.size()) {
             _queueRequestedUpTo--;
