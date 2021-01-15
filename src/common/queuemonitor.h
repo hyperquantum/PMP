@@ -49,22 +49,19 @@ namespace PMP {
         void queueEntryRemoved(qint32 offset, quint32 queueID);
         void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueID);
 
-        void sendNextSlotBatchRequest(int size);
+        void checkIfWeNeedToFetchMore();
 
         void doReset(int queueLength);
 
     private:
-        static const int initialQueueFetchLength = 10;
-        static const int indexMarginForQueueFetch = 3;
-        static const int extraRaiseFetchUpTo = 4;
-        static const int queueFetchBatchSize = 4;
+        void gotRequestForEntryAtIndex(int index);
 
         ServerConnection* _connection;
         QUuid _serverUuid;
         bool _waitingForVeryFirstQueueInfo;
         int _queueLength;
         int _requestQueueUpTo;
-        int _queueRequestedUpTo;
+        int _queueRequestedEntryCount;
         QList<quint32> _queue; // no need for a QQueue, a QList will suffice
     };
 }
