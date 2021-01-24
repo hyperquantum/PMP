@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,14 +31,15 @@
 
 #include "tbytevector.h"
 
-namespace TagLib {
+namespace TagLib
+{
     class ByteVector;
     class ByteVectorStream;
     class Tag;
 }
 
-namespace PMP {
-
+namespace PMP
+{
     class FileAnalyzer {
     public:
         FileAnalyzer(const QString& filename);
@@ -66,7 +67,8 @@ namespace PMP {
         TagData const& tagData() const;
 
     private:
-        enum class Extension {
+        enum class Extension
+        {
             None = 0,
             MP3, FLAC
         };
