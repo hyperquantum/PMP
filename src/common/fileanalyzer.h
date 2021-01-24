@@ -73,6 +73,8 @@ namespace PMP
             MP3, FLAC
         };
 
+        static void logTagLibVersionOnce();
+
         static Extension getExtension(QString extension);
         static FileHash getHashFrom(TagLib::ByteVector const& data);
 

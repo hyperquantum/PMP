@@ -20,11 +20,13 @@
 #include "fileanalyzer.h"
 
 #include <QCryptographicHash>
+#include <QVersionNumber>
 
 /* TagLib includes */
 #include "flacfile.h"
 #include "id3v2framefactory.h"
 #include "mpegfile.h"
+#include "taglib.h"
 //#include "tbytevector.h"
 #include "tbytevectorstream.h"
 
@@ -33,7 +35,7 @@ namespace PMP {
     FileAnalyzer::FileAnalyzer(const QString& filename)
      : FileAnalyzer(QFileInfo(filename))
     {
-        //
+        logTagLibVersionOnce();
     }
 
     FileAnalyzer::FileAnalyzer(const QFileInfo& file)
@@ -41,6 +43,8 @@ namespace PMP {
        _file(file.filePath()), _haveReadFile(false), _error(false), _analyzed(false)
     {
         _error |= _extension == Extension::None;
+
+        logTagLibVersionOnce();
     }
 
     FileAnalyzer::FileAnalyzer(const QByteArray& fileContents,
@@ -50,6 +54,8 @@ namespace PMP {
        _haveReadFile(true), _error(false), _analyzed(false)
     {
         _error |= _extension == Extension::None;
+
+        logTagLibVersionOnce();
     }
 
     FileAnalyzer::FileAnalyzer(const TagLib::ByteVector& fileContents,
@@ -58,6 +64,8 @@ namespace PMP {
        _haveReadFile(true), _error(false), _analyzed(false)
     {
         _error |= _extension == Extension::None;
+
+        logTagLibVersionOnce();
     }
 
     void FileAnalyzer::analyze()
@@ -132,6 +140,21 @@ namespace PMP {
     TagData const& FileAnalyzer::tagData() const
     {
         return _tags;
+    }
+
+    void FileAnalyzer::logTagLibVersionOnce()
+    {
+        static bool tagLibVersionLogged = false;
+
+        if (tagLibVersionLogged)
+            return;
+
+        tagLibVersionLogged = true;
+
+        QVersionNumber tagLibVersion { TAGLIB_MAJOR_VERSION, TAGLIB_MINOR_VERSION,
+                                       TAGLIB_PATCH_VERSION };
+
+        qDebug() << "compiled with TagLib version" << tagLibVersion;
     }
 
     bool FileAnalyzer::isExtensionSupported(QString const& extension,
