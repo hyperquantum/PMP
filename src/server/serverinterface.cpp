@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -75,13 +75,17 @@ namespace PMP {
     {
         if (!isLoggedIn()) return;
 
-        qDebug() << "switching to personal mode for user " << _userLoggedInName;
+        qDebug() << "ServerInterface: switching to personal mode for user "
+                 << _userLoggedInName;
+
         _player->setUserPlayingFor(_userLoggedIn);
     }
 
     void ServerInterface::switchToPublicMode()
     {
         if (!isLoggedIn()) return;
+
+        qDebug() << "ServerInterface: switching to public mode";
 
         _player->setUserPlayingFor(0);
     }
@@ -228,12 +232,18 @@ namespace PMP {
     void ServerInterface::enableDynamicMode()
     {
         if (!isLoggedIn()) return;
+
+        qDebug() << "ServerInterface: enabling dynamic mode";
+
         _generator->enable();
     }
 
     void ServerInterface::disableDynamicMode()
     {
         if (!isLoggedIn()) return;
+
+        qDebug() << "ServerInterface: disabling dynamic mode";
+
         _generator->disable();
     }
 
@@ -241,6 +251,8 @@ namespace PMP {
     {
         if (!isLoggedIn()) return;
         if (_generator->waveActive()) return;
+
+        qDebug() << "ServerInterface: starting dynamic mode wave";
 
         _generator->startWave();
     }
@@ -250,6 +262,8 @@ namespace PMP {
         if (!isLoggedIn()) return;
         if (!_generator->waveActive()) return;
 
+        qDebug() << "ServerInterface: terminating dynamic mode wave";
+
         _generator->terminateWave();
     }
 
@@ -257,6 +271,9 @@ namespace PMP {
     {
         if (!isLoggedIn()) return;
         if (seconds < 0) return;
+
+        qDebug() << "ServerInterface: changing track repetition avoidance interval to"
+                 << seconds << "seconds";
 
         _generator->setNoRepetitionSpanSeconds(seconds);
     }

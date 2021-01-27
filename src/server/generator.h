@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -71,8 +71,8 @@ namespace PMP {
         void setNoRepetitionSpanSeconds(int seconds);
 
     Q_SIGNALS:
-        void enabledChanged(bool enabled);
-        void noRepetitionSpanChanged(int seconds);
+        void enabledChanged();
+        void noRepetitionSpanChanged();
         void waveStarting();
         void waveProgressChanged(int tracksDelivered, int tracksTotal);
         void waveFinished(bool completed);
@@ -86,6 +86,8 @@ namespace PMP {
     private:
         void checkQueueRefillNeeded();
         void setDesiredUpcomingCount();
+        void loadAndApplyUserPreferences(quint32 user);
+        void saveUserPreferences();
 
         RandomTracksSource* _randomTracksSource;
         TrackRepetitionChecker* _repetitionChecker;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,11 +23,12 @@
 #include <QObject>
 #include <QString>
 
-namespace PMP {
-
+namespace PMP
+{
     class ClientServerInterface;
 
-    class AutoPersonalModeAction : public QObject {
+    class AutoPersonalModeAction : public QObject
+    {
         Q_OBJECT
     public:
         AutoPersonalModeAction(ClientServerInterface* clientServerInterface);

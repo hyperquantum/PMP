@@ -65,7 +65,6 @@ IDEAS
  * music collection: show a "loading collection" indicator while downloading the list from the server
  * music collection: provide a filtering mechanism based on the existing track highlighting mechanism
  * music collection: provide fast partial indexation that only detects new files
- *** dynamic mode: save & restore preferences for each user
  ** dynamic mode: detect and prevent track repetition with different hash values
  ** dynamic mode: artist repetition avoidance
  *** thumbs up/down buttons for the song that is playing and for the history, to affect the score a little bit
