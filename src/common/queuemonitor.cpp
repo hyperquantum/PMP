@@ -38,7 +38,6 @@ namespace PMP {
     QueueMonitor::QueueMonitor(ServerConnection* connection)
      : AbstractQueueMonitor(connection),
        _connection(connection),
-       _waitingForVeryFirstQueueInfo(true),
        _queueLength(0),
        _queueFetchTargetCount(initialQueueFetchLength),
        _queueFetchLimit(-1),
@@ -90,62 +89,24 @@ namespace PMP {
     {
         _connection->sendServerInstanceIdentifierRequest();
 
-        _waitingForVeryFirstQueueInfo = true;
-        _queueLength = 0;
-        _queueRequestedEntryCount = 0;
-        _queue.clear();
-
-        _queueRequestedEntryCount = initialQueueFetchLength;
-        _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
+        updateQueueLength(0, true);
     }
 
     void QueueMonitor::connectionBroken()
     {
-        doReset(0);
+        updateQueueLength(0, false);
     }
 
     void QueueMonitor::doReset(int queueLength)
     {
         qDebug() << "QueueMonitor: resetting queue to length" << queueLength;
 
-        _waitingForVeryFirstQueueInfo = false;
-        _queueLength = queueLength;
-        _queueRequestedEntryCount = 0;
-        _queue.clear();
-
-        _queueRequestedEntryCount = initialQueueFetchLength;
-        _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
-
-        Q_EMIT queueResetted(queueLength);
+        updateQueueLength(queueLength, true);
     }
 
     void QueueMonitor::receivedServerInstanceIdentifier(QUuid uuid)
     {
         _serverUuid = uuid;
-    }
-
-    void QueueMonitor::gotRequestForEntryAtIndex(int index)
-    {
-        /* do we need to raise the queue fetch target? */
-
-        if (index < _queueFetchTargetCount - indexMarginForQueueFetch)
-            return; /* no, not yet */
-
-        if (_queueFetchLimit >= 0 && _queueFetchTargetCount >= _queueFetchLimit)
-            return; /* no, we have reached the fetch limit */
-
-        int newFetchCount = _queueFetchTargetCount + extraRaiseFetchUpTo;
-
-        /* don't cross the fetch limit */
-        if (_queueFetchLimit >= 0 && newFetchCount > _queueFetchLimit)
-            newFetchCount = _queueFetchLimit;
-
-        qDebug() << "QueueMonitor: will raise fetch target count from"
-            << _queueFetchTargetCount << "to" << newFetchCount
-            << "because index" << index << "was requested";
-
-        _queueFetchTargetCount = newFetchCount;
-        checkIfWeNeedToFetchMore();
     }
 
     quint32 QueueMonitor::queueEntry(int index)
@@ -169,74 +130,50 @@ namespace PMP {
                  << "; offset:" << startOffset
                  << "; batch-size:" << queueIDs.size();
 
-        /* is this the first info about the queue we receive? */
-        if (_waitingForVeryFirstQueueInfo)
-        {
-            _waitingForVeryFirstQueueInfo = false;
-            _queueLength = queueLength;
-            _queue.clear();
-            Q_EMIT queueResetted(queueLength);
-        }
-
-        if (_queueLength != queueLength)
-        {
-            qWarning() << "QueueMonitor: queue length inconsistent with what we have ("
-                       << _queueLength << "); did we miss queue events?";
-            doReset(queueLength);
-            return;
-        }
+        /* See if queue length has changed; this happens at first load or when
+         * inconsistencies are discovered. */
+        updateQueueLength(queueLength, false);
 
         if (queueIDs.size() == 0) { return; }
 
         if (startOffset == _queue.size())
         {
-            qDebug() << " queue contents to be appended to our list";
-            _queue.append(queueIDs);
-            Q_EMIT entriesReceived(startOffset, queueIDs);
+            qDebug() << "QueueMonitor: appending queue contents to our list";
+            appendNewQueueContentsAndEmitEntriesReceivedSignal(queueIDs);
         }
-        else if (startOffset < _queue.size()
-                 && startOffset > _queue.size() - queueIDs.size())
+        else if (startOffset > _queue.size())
         {
-            QList<quint32> changed;
-            changed.reserve(queueIDs.size());
+            qDebug() << "QueueMonitor: queue contents is beyond our list";
 
-            for(int i = 0; i < queueIDs.size(); ++i) {
-                int index = startOffset + i;
-                if (index < _queue.size()) {
-                    if (_queue[index] == queueIDs[i]) continue;
-
-                    qWarning() << "QueueMonitor: unexpected QID change at index" << index
-                               <<": old=" << _queue[index] << "; new=" << queueIDs[i];
-                    doReset(queueLength);
-                    return;
-                }
-
-                changed.append(queueIDs[i]);
-                _queue.append(queueIDs[i]);
-            }
-
-            Q_EMIT entriesReceived(_queue.size() - changed.size(), changed);
+            /* will need to fetch again */
+            _queueRequestedEntryCount = _queue.size();
         }
-        else
+        else /* startOffset < _queue.size() */
         {
-            /* no new information received, just check the entries we already have */
-            for (int i = 0; i < queueIDs.size(); ++i) {
-                if (_queue[startOffset + i] == queueIDs[i]) continue;
+            qDebug() << "QueueMonitor: doing merge of queue contents";
 
-                qWarning() << "QueueMonitor: unexpected QID change at index"
-                           << (startOffset + i) << ": old=" << _queue[startOffset + i]
-                           << "; new=" << queueIDs[i];
+            if (!verifyQueueContentsOldAndNew(startOffset, queueIDs))
+            {
                 doReset(queueLength);
                 return;
+            }
+
+            /* append the rest */
+            int newContentIndex = _queue.size() - startOffset;
+            if (newContentIndex < queueIDs.size())
+            {
+                auto toAppend = queueIDs.mid(newContentIndex);
+                appendNewQueueContentsAndEmitEntriesReceivedSignal(toAppend);
             }
         }
 
         checkIfWeNeedToFetchMore();
     }
 
-    void QueueMonitor::queueEntryAdded(qint32 offset, quint32 queueID)
+    void QueueMonitor::queueEntryAdded(qint32 offset, quint32 queueId)
     {
         int index = (int)offset;
+        qDebug() << "QueueMonitor: QID " << queueId << "was added at index" << index;
 
         if (index < 0 || index > _queueLength)
         {
@@ -255,17 +192,18 @@ namespace PMP {
         _queueLength++;
 
         if (index <= _queue.size())
-            _queue.insert(index, queueID);
+            _queue.insert(index, queueId);
 
         if (index < _queueRequestedEntryCount)
             _queueRequestedEntryCount++;
 
-        Q_EMIT trackAdded((int)offset, queueID);
+        Q_EMIT trackAdded((int)offset, queueId);
     }
 
-    void QueueMonitor::queueEntryRemoved(qint32 offset, quint32 queueID)
+    void QueueMonitor::queueEntryRemoved(qint32 offset, quint32 queueId)
     {
         int index = (int)offset;
+        qDebug() << "QueueMonitor: QID " << queueId << "was removed at index" << index;
 
         if (index < 0 || index >= _queueLength)
         {
@@ -285,7 +223,7 @@ namespace PMP {
 
         if (index < _queue.size())
         {
-            if (_queue[index] == queueID || _queue[index] == 0)
+            if (_queue[index] == queueId || _queue[index] == 0)
             {
                 _queue.removeAt(index);
             }
@@ -293,7 +231,7 @@ namespace PMP {
             {
                 /* TODO: error recovery */
                 qWarning() << "QueueMonitor: queueEntryRemoved: ID does not match;"
-                           << "offset=" << offset << "; received ID=" << queueID
+                           << "offset=" << offset << "; received ID=" << queueId
                            << "; found ID=" << _queue[offset];
 
                 /* find out what's going on, this will trigger a reset */
@@ -308,14 +246,16 @@ namespace PMP {
             checkIfWeNeedToFetchMore();
         }
 
-        Q_EMIT trackRemoved(index, queueID);
+        Q_EMIT trackRemoved(index, queueId);
     }
 
     void QueueMonitor::queueEntryMoved(qint32 fromOffset, qint32 toOffset,
-                                       quint32 queueID)
+                                       quint32 queueId)
     {
         int fromIndex = (int)fromOffset;
         int toIndex = (int)toOffset;
+        qDebug() << "QueueMonitor: QID " << queueId << "was moved from index" << fromIndex
+                 << "to index" << toIndex;
 
         if (fromIndex < 0 || fromIndex >= _queueLength)
         {
@@ -348,14 +288,14 @@ namespace PMP {
 
         if (fromIndex < _queue.size())
         {
-            if (_queue[fromIndex] == queueID || _queue[fromIndex] == 0)
+            if (_queue[fromIndex] == queueId || _queue[fromIndex] == 0)
             {
                 _queue.removeAt(fromIndex);
             }
             else
             {
                 qWarning() << "QueueMonitor: queueEntryMoved: ID does not match;"
-                           << "fromIndex=" << fromIndex << "; received ID=" << queueID
+                           << "fromIndex=" << fromIndex << "; received ID=" << queueId
                            << "; found ID=" << _queue[fromIndex];
 
                 /* find out what's going on, this will trigger a reset */
@@ -365,7 +305,7 @@ namespace PMP {
         }
 
         if (toIndex <= _queue.size())
-            _queue.insert(toIndex, queueID);
+            _queue.insert(toIndex, queueId);
 
         if (oldMyQueueSize > _queue.size())
         {
@@ -377,7 +317,7 @@ namespace PMP {
             _queueRequestedEntryCount++;
         }
 
-        Q_EMIT trackMoved(fromIndex, toIndex, queueID);
+        Q_EMIT trackMoved(fromIndex, toIndex, queueId);
     }
 
     void QueueMonitor::checkIfWeNeedToFetchMore()
@@ -403,6 +343,81 @@ namespace PMP {
 
         _connection->sendQueueFetchRequest(_queueRequestedEntryCount, queueFetchBatchSize);
         _queueRequestedEntryCount += queueFetchBatchSize;
+    }
+
+    void QueueMonitor::gotRequestForEntryAtIndex(int index)
+    {
+        /* do we need to raise the queue fetch target? */
+
+        if (index < _queueFetchTargetCount - indexMarginForQueueFetch)
+            return; /* no, not yet */
+
+        if (_queueFetchLimit >= 0 && _queueFetchTargetCount >= _queueFetchLimit)
+            return; /* no, we have reached the fetch limit */
+
+        int newFetchCount = _queueFetchTargetCount + extraRaiseFetchUpTo;
+
+        /* don't cross the fetch limit */
+        if (_queueFetchLimit >= 0 && newFetchCount > _queueFetchLimit)
+            newFetchCount = _queueFetchLimit;
+
+        qDebug() << "QueueMonitor: will raise fetch target count from"
+            << _queueFetchTargetCount << "to" << newFetchCount
+            << "because index" << index << "was requested";
+
+        _queueFetchTargetCount = newFetchCount;
+        checkIfWeNeedToFetchMore();
+    }
+
+    void QueueMonitor::updateQueueLength(int queueLength, bool force)
+    {
+        if (queueLength == _queueLength && !force)
+            return; /* no change */
+
+        qDebug() << "QueueMonitor: queue length changing from" << _queueLength
+                 << "to" << queueLength << ", will need to (re)load the queue";
+
+        _queueLength = queueLength;
+        _queueRequestedEntryCount = 0;
+        _queue.clear();
+
+        _queueRequestedEntryCount = initialQueueFetchLength;
+        _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
+
+        Q_EMIT queueResetted(queueLength);
+    }
+
+    bool QueueMonitor::verifyQueueContentsOldAndNew(int startIndex,
+                                                    const QList<quint32>& newContent)
+    {
+        for(int newContentIndex = 0;
+            newContentIndex < newContent.size();
+            ++newContentIndex)
+        {
+            int queueIndex = startIndex + newContentIndex;
+            if (queueIndex >= _queue.size())
+                return true;
+
+            if (_queue[queueIndex] == newContent[newContentIndex])
+                continue;
+
+            qWarning() << "QueueMonitor: unexpected QID change at index" << queueIndex
+                       << ": old=" << _queue[queueIndex]
+                       << "; new=" << newContent[newContentIndex];
+
+
+            return false;
+        }
+
+        return true;
+    }
+
+    void QueueMonitor::appendNewQueueContentsAndEmitEntriesReceivedSignal(
+                                                         const QList<quint32>& newContent)
+    {
+        auto previousQueueSize = _queue.size();
+        _queue.append(newContent);
+        Q_EMIT entriesReceived(previousQueueSize, newContent);
     }
 
 }

@@ -47,9 +47,9 @@ namespace PMP {
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);
-        void queueEntryAdded(qint32 offset, quint32 queueID);
-        void queueEntryRemoved(qint32 offset, quint32 queueID);
-        void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueID);
+        void queueEntryAdded(qint32 offset, quint32 queueId);
+        void queueEntryRemoved(qint32 offset, quint32 queueId);
+        void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueId);
 
         void checkIfWeNeedToFetchMore();
 
@@ -57,10 +57,14 @@ namespace PMP {
 
     private:
         void gotRequestForEntryAtIndex(int index);
+        void updateQueueLength(int queueLength, bool force);
+        bool verifyQueueContentsOldAndNew(int startIndex,
+                                          const QList<quint32>& newContent);
+        void appendNewQueueContentsAndEmitEntriesReceivedSignal(
+                                                        const QList<quint32>& newContent);
 
         ServerConnection* _connection;
         QUuid _serverUuid;
-        bool _waitingForVeryFirstQueueInfo;
         int _queueLength;
         int _queueFetchTargetCount;
         int _queueFetchLimit;
