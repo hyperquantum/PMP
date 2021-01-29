@@ -89,7 +89,7 @@ namespace PMP {
     {
         _connection->sendServerInstanceIdentifierRequest();
 
-        updateQueueLength(0, true);
+        sendInitialQueueFetchRequest();
     }
 
     void QueueMonitor::connectionBroken()
@@ -126,7 +126,7 @@ namespace PMP {
                                              QList<quint32> queueIDs)
     {
         qDebug() << "QueueMonitor: received queue contents:"
-                 << " queue length:" << queueLength
+                 << "queue length:" << queueLength
                  << "; offset:" << startOffset
                  << "; batch-size:" << queueIDs.size();
 
@@ -173,7 +173,7 @@ namespace PMP {
     void QueueMonitor::queueEntryAdded(qint32 offset, quint32 queueId)
     {
         int index = (int)offset;
-        qDebug() << "QueueMonitor: QID " << queueId << "was added at index" << index;
+        qDebug() << "QueueMonitor: QID" << queueId << "was added at index" << index;
 
         if (index < 0 || index > _queueLength)
         {
@@ -203,7 +203,7 @@ namespace PMP {
     void QueueMonitor::queueEntryRemoved(qint32 offset, quint32 queueId)
     {
         int index = (int)offset;
-        qDebug() << "QueueMonitor: QID " << queueId << "was removed at index" << index;
+        qDebug() << "QueueMonitor: QID" << queueId << "was removed at index" << index;
 
         if (index < 0 || index >= _queueLength)
         {
@@ -254,7 +254,7 @@ namespace PMP {
     {
         int fromIndex = (int)fromOffset;
         int toIndex = (int)toOffset;
-        qDebug() << "QueueMonitor: QID " << queueId << "was moved from index" << fromIndex
+        qDebug() << "QueueMonitor: QID" << queueId << "was moved from index" << fromIndex
                  << "to index" << toIndex;
 
         if (fromIndex < 0 || fromIndex >= _queueLength)
@@ -369,22 +369,31 @@ namespace PMP {
         checkIfWeNeedToFetchMore();
     }
 
-    void QueueMonitor::updateQueueLength(int queueLength, bool force)
+    void QueueMonitor::updateQueueLength(int queueLength, bool forceReload)
     {
-        if (queueLength == _queueLength && !force)
+        if (queueLength == _queueLength && !forceReload)
             return; /* no change */
 
         qDebug() << "QueueMonitor: queue length changing from" << _queueLength
-                 << "to" << queueLength << ", will need to (re)load the queue";
+                 << "to" << queueLength;
 
         _queueLength = queueLength;
-        _queueRequestedEntryCount = 0;
-        _queue.clear();
 
-        _queueRequestedEntryCount = initialQueueFetchLength;
-        _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
+        if (forceReload || _queue.size() > 0)
+        {
+            qDebug() << "QueueMonitor: going to reload the queue";
+            _queueRequestedEntryCount = 0;
+            _queue.clear();
+            sendInitialQueueFetchRequest();
+        }
 
         Q_EMIT queueResetted(queueLength);
+    }
+
+    void QueueMonitor::sendInitialQueueFetchRequest()
+    {
+        _queueRequestedEntryCount = initialQueueFetchLength;
+        _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
     }
 
     bool QueueMonitor::verifyQueueContentsOldAndNew(int startIndex,

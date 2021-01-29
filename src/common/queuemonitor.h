@@ -57,7 +57,8 @@ namespace PMP {
 
     private:
         void gotRequestForEntryAtIndex(int index);
-        void updateQueueLength(int queueLength, bool force);
+        void updateQueueLength(int queueLength, bool forceReload);
+        void sendInitialQueueFetchRequest();
         bool verifyQueueContentsOldAndNew(int startIndex,
                                           const QList<quint32>& newContent);
         void appendNewQueueContentsAndEmitEntriesReceivedSignal(
