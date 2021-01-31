@@ -28,8 +28,8 @@
 #include <QHash>
 #include <QSet>
 
-namespace PMP {
-
+namespace PMP
+{
     class AbstractQueueMonitor;
     class ServerConnection;
 
