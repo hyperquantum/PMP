@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,27 +26,31 @@
 #include <QPaintEvent>
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     TrackProgressWidget::TrackProgressWidget(QWidget* parent)
      : QWidget(parent), /*_trackID(0),*/ _trackLength(-1), _trackPosition(-1)
     {
         //
     }
 
-    TrackProgressWidget::~TrackProgressWidget() {
+    TrackProgressWidget::~TrackProgressWidget()
+    {
         //
     }
 
-    QSize TrackProgressWidget::minimumSizeHint() const {
+    QSize TrackProgressWidget::minimumSizeHint() const
+    {
         return QSize(0, 18);
     }
 
-    QSize TrackProgressWidget::sizeHint() const {
+    QSize TrackProgressWidget::sizeHint() const
+    {
         return QSize(256, 18);
     }
 
-    void TrackProgressWidget::setCurrentTrack(/*uint ID,*/ qint64 length) {
+    void TrackProgressWidget::setCurrentTrack(/*uint ID,*/ qint64 length)
+    {
         if (_trackLength == length)
             return; /* no change */
 
@@ -55,12 +59,14 @@ namespace PMP {
         update();
     }
 
-    void TrackProgressWidget::setTrackPosition(qint64 position) {
+    void TrackProgressWidget::setTrackPosition(qint64 position)
+    {
         _trackPosition = position;
         update();
     }
 
-    void TrackProgressWidget::paintEvent(QPaintEvent* event) {
+    void TrackProgressWidget::paintEvent(QPaintEvent* event)
+    {
         Q_UNUSED(event)
 
         QPainter painter(this);
@@ -69,14 +75,16 @@ namespace PMP {
 
         QRect rect = this->rect().adjusted(+1, +1, -1, -1);
 
-        if (_trackLength <= 0) {
+        if (_trackLength <= 0)
+        {
             painter.fillRect(rect, QBrush(Colors::instance().trackProgressWidgetEmpty));
             return;
         }
 
         painter.fillRect(rect, QBrush(Colors::instance().trackProgressWidgetBackground));
 
-        if (_trackPosition > 0) {
+        if (_trackPosition > 0)
+        {
             auto position = qMin(_trackPosition, _trackLength);
 
             QRect rect2(rect);
@@ -92,13 +100,17 @@ namespace PMP {
         painter.drawRect(rect);
     }
 
-    void TrackProgressWidget::mousePressEvent(QMouseEvent* event) {
-        if (_trackLength > 0 && event->button() == Qt::LeftButton) {
+    void TrackProgressWidget::mousePressEvent(QMouseEvent* event)
+    {
+        if (_trackLength > 0 && event->button() == Qt::LeftButton)
+        {
             QRect rect = this->rect().adjusted(+1+2, +1+2, -1-2, -1-2);
 
-            if (rect.contains(event->pos())) {
+            if (rect.contains(event->pos()))
+            {
                 int x = event->x();
-                if (x < rect.left() || x > rect.x() + rect.width()) {
+                if (x < rect.left() || x > rect.x() + rect.width())
+                {
                     return;
                 }
 
