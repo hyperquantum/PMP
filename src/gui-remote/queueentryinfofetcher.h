@@ -81,6 +81,7 @@ namespace PMP
 
     private Q_SLOTS:
         void connected();
+        void connectionBroken();
 
         void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
         void receivedTrackInfo(quint32 queueID, QueueEntryType type,
@@ -89,17 +90,15 @@ namespace PMP
 
         void queueResetted(int queueLength);
         void entriesReceived(int index, QList<quint32> entries);
-        void trackAdded(int index, quint32 queueID);
-        void trackMoved(int fromIndex, int toIndex, quint32 queueID);
+        void trackAdded(int index, quint32 queueId);
+        void trackMoved(int fromIndex, int toIndex, quint32 queueId);
 
         void enqueueTrackChangeNotification(quint32 queueID);
         void emitTracksChangedSignal();
 
     private:
-        void sendRequest(quint32 queueID);
+        void sendInfoRequest(quint32 queueId);
         void sendHashRequest(quint32 queueId);
-
-        static const int initialQueueFetchLength = 10;
 
         AbstractQueueMonitor* _monitor;
         ServerConnection* _connection;
