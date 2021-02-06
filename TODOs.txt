@@ -93,6 +93,7 @@ IDEAS
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner
+ * visualize sound wave
 
 
 USER FRIENDLINESS
