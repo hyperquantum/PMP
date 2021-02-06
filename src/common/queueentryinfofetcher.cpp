@@ -19,7 +19,7 @@
 
 #include "queueentryinfofetcher.h"
 
-#include "common/serverconnection.h"
+#include "serverconnection.h"
 
 #include <QtDebug>
 #include <QTimer>

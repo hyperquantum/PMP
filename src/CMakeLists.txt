@@ -31,6 +31,7 @@ set(PMP_COMMON_SOURCES
     common/networkutil.cpp
     common/playercontrollerimpl.cpp
     common/queuecontrollerimpl.cpp
+    common/queueentryinfofetcher.cpp
     common/queuemonitor.cpp
     common/serverconnection.cpp
     common/serverdiscoverer.cpp
@@ -54,6 +55,7 @@ set(PMP_COMMON_HEADERS
     common/playercontrollerimpl.h
     common/queuecontroller.h
     common/queuecontrollerimpl.h
+    common/queueentryinfofetcher.h
     common/queuemonitor.h
     common/serverconnection.h
     common/serverdiscoverer.h
@@ -138,7 +140,6 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/playerhistorymodel.cpp
     gui-remote/powermanagement.cpp
     gui-remote/precisetrackprogressmonitor.cpp
-    gui-remote/queueentryinfofetcher.cpp
     gui-remote/queuemediator.cpp
     gui-remote/queuemodel.cpp
     gui-remote/scoreformatdelegate.cpp
@@ -159,7 +160,6 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/playerhistorymodel.h
     gui-remote/powermanagement.h
     gui-remote/precisetrackprogressmonitor.h
-    gui-remote/queueentryinfofetcher.h
     gui-remote/queuemediator.h
     gui-remote/queuemodel.h
     gui-remote/scoreformatdelegate.h

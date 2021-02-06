@@ -20,9 +20,9 @@
 #ifndef PMP_QUEUEENTRYINFOFETCHER_H
 #define PMP_QUEUEENTRYINFOFETCHER_H
 
-#include "common/abstractqueuemonitor.h"
-#include "common/filehash.h"
-#include "common/queueentrytype.h"
+#include "abstractqueuemonitor.h"
+#include "filehash.h"
+#include "queueentrytype.h"
 
 #include <QDateTime>
 #include <QHash>
