@@ -31,6 +31,7 @@ namespace PMP {
     class ServerConnection;
     class PlayerController;
     class QueueController;
+    class QueueEntryInfoFetcher;
     class UserDataFetcher;
 
     class ClientServerInterface : public QObject
@@ -44,6 +45,7 @@ namespace PMP {
 
         QueueController& queueController();
         AbstractQueueMonitor& queueMonitor();
+        QueueEntryInfoFetcher& queueEntryInfoFetcher();
 
         DynamicModeController& dynamicModeController();
 
@@ -66,6 +68,7 @@ namespace PMP {
         CurrentTrackMonitor* _currentTrackMonitor;
         QueueController* _queueController;
         AbstractQueueMonitor* _queueMonitor;
+        QueueEntryInfoFetcher* _queueEntryInfoFetcher;
         DynamicModeController* _dynamicModeController;
         CollectionWatcher* _collectionWatcher;
         UserDataFetcher* _userDataFetcher;

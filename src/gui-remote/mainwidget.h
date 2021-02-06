@@ -99,7 +99,6 @@ namespace PMP {
         ClientServerInterface* _clientServerInterface;
         PreciseTrackProgressMonitor* _trackProgressMonitor;
         QueueMediator* _queueMediator;
-        QueueEntryInfoFetcher* _queueEntryInfoFetcher;
         QueueModel* _queueModel;
         QMenu* _queueContextMenu;
         QList<int> _noRepetitionList;

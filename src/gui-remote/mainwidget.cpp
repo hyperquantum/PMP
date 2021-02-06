@@ -26,7 +26,6 @@
 #include "common/dynamicmodecontroller.h"
 #include "common/playercontroller.h"
 #include "common/queuecontroller.h"
-#include "common/queueentryinfofetcher.h"
 #include "common/queuemonitor.h"
 #include "common/serverconnection.h"
 #include "common/userdatafetcher.h"
@@ -55,7 +54,6 @@ namespace PMP {
         _clientServerInterface(nullptr),
         _trackProgressMonitor(nullptr),
         _queueMediator(nullptr),
-        _queueEntryInfoFetcher(nullptr),
         _queueModel(nullptr), _queueContextMenu(nullptr),
         _noRepetitionUpdating(0),
         _historyModel(nullptr), _historyContextMenu(nullptr)
@@ -98,13 +96,12 @@ namespace PMP {
         _queueMediator = new QueueMediator(connection,
                                            &clientServerInterface->queueMonitor(),
                                            clientServerInterface);
-        _queueEntryInfoFetcher =
-            new QueueEntryInfoFetcher(connection, _queueMediator, connection);
+        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
         _queueModel =
             new QueueModel(
-                connection, clientServerInterface, _queueMediator, _queueEntryInfoFetcher
+                connection, clientServerInterface, _queueMediator, queueEntryInfoFetcher
             );
-        _historyModel = new PlayerHistoryModel(this, _queueEntryInfoFetcher);
+        _historyModel = new PlayerHistoryModel(this, queueEntryInfoFetcher);
         _historyModel->setConnection(connection);
 
         _ui->trackInfoButton->setEnabled(false);

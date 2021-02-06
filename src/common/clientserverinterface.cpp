@@ -25,6 +25,7 @@
 #include "serverconnection.h"
 #include "playercontrollerimpl.h"
 #include "queuecontrollerimpl.h"
+#include "queueentryinfofetcher.h"
 #include "queuemonitor.h"
 #include "userdatafetcher.h"
 
@@ -37,6 +38,7 @@ namespace PMP {
        _currentTrackMonitor(nullptr),
        _queueController(nullptr),
        _queueMonitor(nullptr),
+       _queueEntryInfoFetcher(nullptr),
        _dynamicModeController(nullptr),
        _collectionWatcher(nullptr),
        _userDataFetcher(nullptr)
@@ -76,6 +78,17 @@ namespace PMP {
         return *_queueMonitor;
     }
 
+    QueueEntryInfoFetcher& ClientServerInterface::queueEntryInfoFetcher()
+    {
+        if (!_queueEntryInfoFetcher)
+        {
+            _queueEntryInfoFetcher =
+                    new QueueEntryInfoFetcher(this, &queueMonitor(), _connection);
+        }
+
+        return *_queueEntryInfoFetcher;
+    }
+
     DynamicModeController& ClientServerInterface::dynamicModeController()
     {
         if (!_dynamicModeController)
@@ -94,7 +107,8 @@ namespace PMP {
 
     UserDataFetcher& ClientServerInterface::userDataFetcher()
     {
-        if (_userDataFetcher == nullptr) {
+        if (!_userDataFetcher)
+        {
             _userDataFetcher =
                     new UserDataFetcher(this, &collectionWatcher(), _connection);
         }
