@@ -41,7 +41,8 @@ namespace PMP {
        _queueLength(0),
        _queueFetchTargetCount(initialQueueFetchLength),
        _queueFetchLimit(-1),
-       _queueRequestedEntryCount(0)
+       _queueRequestedEntryCount(0),
+       _fetchCompletedEmitted(false)
     {
         connect(
             _connection, &ServerConnection::connected,
@@ -101,6 +102,7 @@ namespace PMP {
     {
         qDebug() << "QueueMonitor: resetting queue to length" << queueLength;
 
+        _fetchCompletedEmitted = false;
         updateQueueLength(queueLength, true);
     }
 
@@ -134,7 +136,11 @@ namespace PMP {
          * inconsistencies are discovered. */
         updateQueueLength(queueLength, false);
 
-        if (queueIDs.size() == 0) { return; }
+        if (queueIDs.size() == 0)
+        {
+            checkFetchCompletedState();
+            return;
+        }
 
         if (startOffset == _queue.size())
         {
@@ -322,6 +328,8 @@ namespace PMP {
 
     void QueueMonitor::checkIfWeNeedToFetchMore()
     {
+        checkFetchCompletedState();
+
         /* no need to fetch any more if we got the entire queue already */
         if (_queueRequestedEntryCount >= _queueLength)
         {
@@ -427,6 +435,19 @@ namespace PMP {
         auto previousQueueSize = _queue.size();
         _queue.append(newContent);
         Q_EMIT entriesReceived(previousQueueSize, newContent);
+    }
+
+    void QueueMonitor::checkFetchCompletedState()
+    {
+        if (_fetchCompletedEmitted)
+            return;
+
+        if (_queue.size() == _queueLength
+                || _queue.size() >= _queueFetchLimit)
+        {
+            _fetchCompletedEmitted = true;
+            Q_EMIT fetchCompleted();
+        }
     }
 
 }

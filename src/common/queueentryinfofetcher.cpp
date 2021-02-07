@@ -39,6 +39,11 @@ namespace PMP
         //
     }
 
+    bool QueueEntryInfo::needFilename() const
+    {
+        return title().trimmed().isEmpty() || artist().trimmed().isEmpty();
+    }
+
     void QueueEntryInfo::setHash(QueueEntryType type, const FileHash& hash)
     {
         _type = type;
@@ -239,8 +244,7 @@ namespace PMP
 
         info->setInfo(type, lengthMilliseconds, title, artist);
 
-        if ((title.trimmed().isEmpty() || artist.trimmed().isEmpty())
-            && info->informativeFilename().isEmpty())
+        if (info->needFilename())
         {
             /* no title/artist info available, so we want to display a filename instead */
             _connection->sendPossibleFilenamesRequest(queueID);

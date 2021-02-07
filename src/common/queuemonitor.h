@@ -39,6 +39,7 @@ namespace PMP {
         int queueLength() const override { return _queueLength; }
         quint32 queueEntry(int index) override;
         QList<quint32> knownQueuePart() const override { return _queue; }
+        bool isFetchCompleted() const override { return _fetchCompletedEmitted; }
 
     private Q_SLOTS:
         void connected();
@@ -63,6 +64,7 @@ namespace PMP {
                                           const QList<quint32>& newContent);
         void appendNewQueueContentsAndEmitEntriesReceivedSignal(
                                                         const QList<quint32>& newContent);
+        void checkFetchCompletedState();
 
         ServerConnection* _connection;
         QUuid _serverUuid;
@@ -71,6 +73,7 @@ namespace PMP {
         int _queueFetchLimit;
         int _queueRequestedEntryCount;
         QList<quint32> _queue; // no need for a QQueue, a QList will suffice
+        bool _fetchCompletedEmitted;
     };
 }
 #endif

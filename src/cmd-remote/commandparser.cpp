@@ -72,12 +72,10 @@ namespace PMP {
         {
             handleCommandNotRequiringArguments<NowPlayingCommand>(commandWithArgs);
         }
-        /*
         else if (command == "queue")
         {
             handleCommandNotRequiringArguments<QueueCommand>(commandWithArgs);
         }
-        */
         else if (command == "shutdown")
         {
             if (argsCount == 0)

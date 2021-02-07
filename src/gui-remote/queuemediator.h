@@ -43,6 +43,7 @@ namespace PMP {
         int queueLength() const override { return _queueLength; }
         quint32 queueEntry(int index) override;
         QList<quint32> knownQueuePart() const override { return _myQueue; }
+        bool isFetchCompleted() const override;
 
         void removeTrack(int index, quint32 queueID);
         void moveTrack(int fromIndex, int toIndex, quint32 queueID);

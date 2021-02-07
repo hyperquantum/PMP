@@ -23,6 +23,7 @@
 #include "abstractqueuemonitor.h"
 #include "filehash.h"
 #include "queueentrytype.h"
+#include "tribool.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -41,12 +42,24 @@ namespace PMP
 
         quint32 queueID() const { return _queueID; }
 
+        TriBool isTrack() const
+        {
+            if (_type == QueueEntryType::Track)
+                return true;
+
+            if (_type == QueueEntryType::Unknown)
+                return TriBool::unknown;
+
+            return false;
+        }
+
         QueueEntryType type() const { return _type; }
         const FileHash& hash() const { return _hash; }
         int lengthInMilliseconds() const { return _lengthMilliseconds; }
         QString artist() const { return _artist; }
         QString title() const { return _title; }
 
+        bool needFilename() const;
         QString informativeFilename() const { return _informativeFilename; }
 
         void setHash(QueueEntryType type, const FileHash& hash);
