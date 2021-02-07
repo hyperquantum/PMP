@@ -49,6 +49,8 @@ namespace PMP
 
 
     private:
+        qreal desiredHeight() const;
+
         //uint _trackID;
         qint64 _trackLength;
         qint64 _trackPosition;

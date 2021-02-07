@@ -21,6 +21,7 @@
 
 #include "colors.h"
 
+#include <QFontMetricsF>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
@@ -41,12 +42,16 @@ namespace PMP
 
     QSize TrackProgressWidget::minimumSizeHint() const
     {
-        return QSize(0, 18);
+        auto height = desiredHeight();
+
+        return QSize(0, height);
     }
 
     QSize TrackProgressWidget::sizeHint() const
     {
-        return QSize(256, 18);
+        auto height = desiredHeight();
+
+        return QSize(10 * height, height);
     }
 
     void TrackProgressWidget::setCurrentTrack(/*uint ID,*/ qint64 length)
@@ -131,6 +136,13 @@ namespace PMP
 
         /* call default implementation */
         QWidget::mousePressEvent(event);
+    }
+
+    qreal TrackProgressWidget::desiredHeight() const
+    {
+        QFontMetricsF metrics { font() };
+
+        return metrics.height();
     }
 
 }
