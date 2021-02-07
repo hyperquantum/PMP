@@ -17,7 +17,6 @@ KNOWN BUGS
 
  * for some tracks we get the wrong length (caused by length estimation in TagLib)
  * when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
- * the commandline client does not support user authentication which is now required for most commands it supports
  * GUI remote: tracks can be dragged using the right mouse button (not just the left button)
  * GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
  * hash calculation is wrong for MP3 files containing an APE tag
@@ -29,7 +28,6 @@ KNOWN BUGS
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
  * GUI remote: music collection view: applying track metadata updates is not implemented yet
  * GUI remote: multimedia keys don't work when a popup dialog is open (like track info)
- * CMD remote mostly doesn't work because it lacks user authentication
  * unknown error at login because of username case (in)sensitivity
 
 
