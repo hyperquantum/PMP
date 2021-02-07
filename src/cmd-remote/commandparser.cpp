@@ -68,6 +68,10 @@ namespace PMP {
         {
             handleCommandNotRequiringArguments<SkipCommand>(commandWithArgs);
         }
+        else if (command == "break")
+        {
+            handleCommandNotRequiringArguments<BreakCommand>(commandWithArgs);
+        }
         else if (command == "nowplaying")
         {
             handleCommandNotRequiringArguments<NowPlayingCommand>(commandWithArgs);

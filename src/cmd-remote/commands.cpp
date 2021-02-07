@@ -580,6 +580,61 @@ namespace PMP {
         clientServerInterface->playerController().setVolume(_volume);
     }
 
+    /* ===== BreakCommand =====*/
+
+    BreakCommand::BreakCommand()
+    {
+        //
+    }
+
+    bool BreakCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void BreakCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* queueMonitor = &clientServerInterface->queueMonitor();
+        queueMonitor->setFetchLimit(1);
+
+        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+
+        connect(queueMonitor, &QueueMonitor::fetchCompleted,
+                this, &BreakCommand::listenerSlot);
+        connect(queueEntryInfoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+                this, &BreakCommand::listenerSlot);
+
+        addStep(
+            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            {
+                if (!queueMonitor->isFetchCompleted())
+                    return false;
+
+                if (queueMonitor->queueLength() == 0)
+                    return false;
+
+                auto firstEntryId = queueMonitor->queueEntry(0);
+                if (firstEntryId == 0)
+                    return false; /* shouldn't happen */
+
+                auto firstEntry = queueEntryInfoFetcher->entryInfoByQID(firstEntryId);
+                if (!firstEntry)
+                    return false;
+
+                if (firstEntry->type() != QueueEntryType::BreakPoint)
+                    return false;
+
+                setCommandExecutionSuccessful();
+                return false;
+            }
+        );
+    }
+
+    void BreakCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        clientServerInterface->queueController().insertBreakAtFront();
+    }
+
     /* ===== QueueDeleteCommand ===== */
 
     QueueDeleteCommand::QueueDeleteCommand(quint32 queueId)

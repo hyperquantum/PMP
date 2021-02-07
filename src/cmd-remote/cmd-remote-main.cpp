@@ -123,6 +123,7 @@ void printUsage(QTextStream& out, QString const& programName)
         << "    volume <number>: set volume percentage (0-100)" << endl
         << "    nowplaying: get info about the track currently playing" << endl
         << "    queue: get queue length and the first tracks waiting in the queue" << endl
+        << "    break: insert a break at the front of the queue if not present there yet" << endl
         << "    qdel <QID>: delete an entry from the queue" << endl
         << "    qmove <QID> <-diff>: move a track up in the queue (e.g. -3)" << endl
         << "    qmove <QID> <+diff>: move a track down in the queue (eg. +2)" << endl

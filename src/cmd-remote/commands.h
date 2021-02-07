@@ -178,6 +178,19 @@ namespace PMP {
         int _volume;
     };
 
+    class BreakCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        BreakCommand();
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+    };
+
     class QueueDeleteCommand : public CommandBase
     {
         Q_OBJECT
