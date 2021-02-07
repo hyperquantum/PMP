@@ -133,7 +133,9 @@ void printUsage(QTextStream& out, QString const& programName)
         << endl
         << "  Authentication:" << endl
         << "    All commands that have side-effects require authentication. They will" << endl
-        << "    prompt for username and password in the console." << endl
+        << "    prompt for username and password in the console. One exception to this" << endl
+        << "    principle is the 'queue' command; it requires authentication although it" << endl
+        << "    has no side-effects. This may change in the future." << endl
         << "    It used to be possible to run the 'shutdown' command with the " << endl
         << "    server password as its argument and without logging in as a PMP user," << endl
         << "    but that is no longer possible. Support for this could be added again" << endl
