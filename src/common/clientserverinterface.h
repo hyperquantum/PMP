@@ -56,11 +56,13 @@ namespace PMP {
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
 
+        bool connected() const { return _connected; }
+
     public Q_SLOTS:
         void shutdownServer();
 
     Q_SIGNALS:
-
+        void connectedChanged();
 
     private:
         ServerConnection* _connection;
@@ -72,6 +74,7 @@ namespace PMP {
         DynamicModeController* _dynamicModeController;
         CollectionWatcher* _collectionWatcher;
         UserDataFetcher* _userDataFetcher;
+        bool _connected;
     };
 }
 #endif

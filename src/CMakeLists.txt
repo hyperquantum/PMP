@@ -201,6 +201,7 @@ add_executable(PMP-HashTool
     common/fileanalyzer.cpp
     common/filehash.cpp
     common/tagdata.cpp
+    common/util.cpp
 )
 
 add_executable(quicktest

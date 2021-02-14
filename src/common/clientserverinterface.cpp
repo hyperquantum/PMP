@@ -41,9 +41,33 @@ namespace PMP {
        _queueEntryInfoFetcher(nullptr),
        _dynamicModeController(nullptr),
        _collectionWatcher(nullptr),
-       _userDataFetcher(nullptr)
+       _userDataFetcher(nullptr),
+       _connected(connection->isConnected())
     {
-        //
+        connect(
+            connection, &ServerConnection::connected,
+            this,
+            [this]()
+            {
+                if (_connected) return;
+
+                _connected = true;
+                Q_EMIT connectedChanged();
+            },
+            Qt::QueuedConnection
+        );
+        connect(
+            connection, &ServerConnection::connectionBroken,
+            this,
+            [this]()
+            {
+                if (!_connected) return;
+
+                _connected = false;
+                Q_EMIT connectedChanged();
+            },
+            Qt::QueuedConnection
+        );
     }
 
     PlayerController& ClientServerInterface::playerController()
