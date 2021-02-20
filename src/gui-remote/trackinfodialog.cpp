@@ -177,6 +177,8 @@ namespace PMP {
         );
 
         enableDisableButtons();
+
+        _ui->closeButton->setFocus();
     }
 
     void TrackInfoDialog::enableDisableButtons()
