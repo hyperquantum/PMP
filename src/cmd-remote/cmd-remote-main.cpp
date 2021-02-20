@@ -112,7 +112,7 @@ QString prompt(QString prompt)
 void printUsage(QTextStream& out, QString const& programName)
 {
     out << "usage: " << programName
-                << " <server-name-or-ip> <server-port> <command> [<command args>]" << endl
+              << " <server-name-or-ip> [<server-port>] <command> [<command args>]" << endl
         << endl
         << "  commands:" << endl
         << endl
@@ -148,6 +148,11 @@ void printUsage(QTextStream& out, QString const& programName)
         << endl;
 }
 
+bool looksLikePortNumber(QString const& string)
+{
+    return string.size() > 0 && string[0].isDigit();
+}
+
 int main(int argc, char *argv[])
 {
     QCoreApplication app(argc, argv);
@@ -166,23 +171,43 @@ int main(int argc, char *argv[])
 
     QStringList args = QCoreApplication::arguments();
 
-    if (args.size() < 4)
+    if (args.size() < 3)
     {
         err << "Not enough arguments specified!" << endl;
         printUsage(err, QFileInfo(QCoreApplication::applicationFilePath()).fileName());
         return 1;
     }
 
-    QString server = args[1];
-    QString port = args[2];
-    auto commandWithArgs = args.mid(3).toVector();
+    QVector<QString> commandWithArgs;
 
-    /* Validate port number */
-    bool ok = true;
-    uint portNumber = port.toUInt(&ok);
-    if (!ok || portNumber > 0xFFFFu)
+    QString server = args[1];
+
+    quint16 portNumber;
+    QString maybePortArg = args[2];
+    if (looksLikePortNumber(maybePortArg))
     {
-        err << "Invalid port number: " << port << endl;
+        /* Validate port number */
+        bool ok = true;
+        uint number = maybePortArg.toUInt(&ok);
+        if (!ok || number > 0xFFFFu)
+        {
+            err << "Invalid port number: " << maybePortArg << endl;
+            return 1;
+        }
+
+        portNumber = number;
+        commandWithArgs = args.mid(3).toVector();
+    }
+    else
+    {
+        portNumber = 23432;
+        commandWithArgs = args.mid(2).toVector();
+    }
+
+    if (commandWithArgs.size() == 0)
+    {
+        err << "Not enough arguments specified!" << endl;
+        printUsage(err, QFileInfo(QCoreApplication::applicationFilePath()).fileName());
         return 1;
     }
 
