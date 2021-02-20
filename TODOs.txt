@@ -42,6 +42,7 @@ TECHNICAL TODO
  * large file support (?)
  * try to automate the build procedure on Windows
  * switch to signed integer types for things like queue indices
+ * add logging for all server messages that are deemed corrupt or invalid by the client
 
 
 IDEAS
