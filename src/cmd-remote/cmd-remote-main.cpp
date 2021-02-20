@@ -144,8 +144,14 @@ void printUsage(QTextStream& out, QString const& programName)
         << endl
         << "  Server Password:" << endl
         << "    This is a global password for the server, printed to stdout at" << endl
-        << "    server startup. It is no longer relevant for the PMP command-line client."
-        << endl;
+        << "    server startup. It is no longer relevant for the PMP command-line client." << endl
+        << endl
+        << "  Examples:" << endl
+        << "    " << programName << " localhost queue" << endl
+        << "    " << programName << " ::1 volume 100" << endl
+        << "    " << programName << " 127.0.0.1 play" << endl
+        << "    " << programName << " localhost qmove 42 +3" << endl
+        ;
 }
 
 bool looksLikePortNumber(QString const& string)
