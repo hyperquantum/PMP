@@ -1641,10 +1641,10 @@ namespace PMP {
         Q_EMIT receivedUserPlayingFor(userId, login);
     }
 
-    void ServerConnection::parseQueueContentsMessage(QByteArray const& message) {
-        if (message.length() < 14) {
+    void ServerConnection::parseQueueContentsMessage(QByteArray const& message)
+    {
+        if (message.length() < 10)
             return; /* invalid message */
-        }
 
         quint32 queueLength = NetworkUtil::get4Bytes(message, 2);
         quint32 startOffset = NetworkUtil::get4Bytes(message, 6);
@@ -1652,13 +1652,13 @@ namespace PMP {
         QList<quint32> queueIDs;
         queueIDs.reserve((message.length() - 10) / 4);
 
-        for (int offset = 10; offset < message.length(); offset += 4) {
+        for (int offset = 10; offset <= message.length() - 4; offset += 4)
+        {
             queueIDs.append(NetworkUtil::get4Bytes(message, offset));
         }
 
-        if (queueLength - queueIDs.size() < startOffset) {
+        if (queueLength - queueIDs.size() < startOffset)
             return; /* invalid message */
-        }
 
         qDebug() << "received queue contents;  Q-length:" << queueLength
                  << " offset:" << startOffset << " count:" << queueIDs.size();

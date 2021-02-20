@@ -422,7 +422,6 @@ namespace PMP {
                        << ": old=" << _queue[queueIndex]
                        << "; new=" << newContent[newContentIndex];
 
-
             return false;
         }
 
@@ -446,6 +445,8 @@ namespace PMP {
                 || _queue.size() >= _queueFetchLimit)
         {
             _fetchCompletedEmitted = true;
+
+            qDebug() << "QueueMonitor: going to emit fetchCompleted signal";
             Q_EMIT fetchCompleted();
         }
     }
