@@ -119,6 +119,7 @@ set(PMP_CMD_REMOTE_SOURCES
     cmd-remote/command.cpp
     cmd-remote/commandparser.cpp
     cmd-remote/commands.cpp
+    cmd-remote/console.cpp
 )
 set(PMP_CMD_REMOTE_HEADERS
     cmd-remote/client.h
