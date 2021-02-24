@@ -19,6 +19,7 @@
 
 #include "common/logging.h"
 #include "common/version.h"
+#include "common/util.h"
 
 #include "client.h"
 #include "command.h"
@@ -31,10 +32,22 @@
 
 using namespace PMP;
 
-void printUsage(QTextStream& out, QString const& programName)
+void printVersion(QTextStream& out)
 {
-    out << "usage: " << programName
-              << " <server-name-or-ip> [<server-port>] <command> [<command args>]" << endl
+    out << "Party Music Player " PMP_VERSION_DISPLAY << endl
+        << Util::getCopyrightLine(true) << endl
+        << "This is free software; see the source for copying conditions.  There is NO" << endl
+        << "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << endl;
+}
+
+void printUsage(QTextStream& out)
+{
+    auto programName = QFileInfo(QCoreApplication::applicationFilePath()).fileName();
+
+    out << "usage: " << endl
+        << "  " << programName << " help|--help|version|--version" << endl
+        << "  " << programName
+            << " <server-name-or-ip> [<server-port>] <command> [<command args>]" << endl
         << endl
         << "  commands:" << endl
         << endl
@@ -98,20 +111,36 @@ int main(int argc, char *argv[])
     QTextStream err(stderr);
 
     QStringList args = QCoreApplication::arguments();
+    /* args[0] is the name of the program, throw that away */
+    args = args.mid(1);
 
-    if (args.size() < 3)
+    if (args.size() > 0)
+    {
+        if (args[0] == "version" || args[0] == "--version")
+        {
+            printVersion(out);
+            return 0;
+        }
+        if (args[0] == "help" || args[0] == "--help")
+        {
+            printUsage(out);
+            return 0;
+        }
+    }
+
+    if (args.size() < 2)
     {
         err << "Not enough arguments specified!" << endl;
-        printUsage(err, QFileInfo(QCoreApplication::applicationFilePath()).fileName());
+        printUsage(err);
         return 1;
     }
 
     QVector<QString> commandWithArgs;
 
-    QString server = args[1];
+    QString server = args[0];
 
     quint16 portNumber;
-    QString maybePortArg = args[2];
+    QString maybePortArg = args[1];
     if (looksLikePortNumber(maybePortArg))
     {
         /* Validate port number */
@@ -124,18 +153,18 @@ int main(int argc, char *argv[])
         }
 
         portNumber = number;
-        commandWithArgs = args.mid(3).toVector();
+        commandWithArgs = args.mid(2).toVector();
     }
     else
     {
         portNumber = 23432;
-        commandWithArgs = args.mid(2).toVector();
+        commandWithArgs = args.mid(1).toVector();
     }
 
     if (commandWithArgs.size() == 0)
     {
         err << "Not enough arguments specified!" << endl;
-        printUsage(err, QFileInfo(QCoreApplication::applicationFilePath()).fileName());
+        printUsage(err);
         return 1;
     }
 
