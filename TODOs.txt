@@ -92,6 +92,7 @@ IDEAS
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner
  * visualize sound wave
+ * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
 
 
 USER FRIENDLINESS
