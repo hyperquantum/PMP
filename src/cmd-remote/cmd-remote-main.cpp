@@ -46,8 +46,9 @@ void printUsage(QTextStream& out)
 
     out << "usage: " << endl
         << "  " << programName << " help|--help|version|--version" << endl
+        << "  " << programName << " <server-name-or-ip> [<server-port>] <command>" << endl
         << "  " << programName
-            << " <server-name-or-ip> [<server-port>] <command> [<command args>]" << endl
+           << " <server-name-or-ip> [<server-port>] <login-command> : <command>" << endl
         << endl
         << "  commands:" << endl
         << endl
@@ -63,6 +64,9 @@ void printUsage(QTextStream& out)
         << "    qmove <QID> <-diff>: move a track up in the queue (e.g. -3)" << endl
         << "    qmove <QID> <+diff>: move a track down in the queue (eg. +2)" << endl
         << "    shutdown: shut down the server program" << endl
+        << endl
+        << "  login command:"<< endl
+        << "    login: forces authentication to occur"<< endl
         << endl
         << "  NOTICE:" << endl
         << "    The 'shutdown' command no longer supports arguments." << endl
@@ -83,9 +87,12 @@ void printUsage(QTextStream& out)
         << endl
         << "  Examples:" << endl
         << "    " << programName << " localhost queue" << endl
-        << "    " << programName << " ::1 volume 100" << endl
+        << "    " << programName << " ::1 volume" << endl
+        << "    " << programName << " localhost volume 100" << endl
         << "    " << programName << " 127.0.0.1 play" << endl
         << "    " << programName << " localhost qmove 42 +3" << endl
+        << "    " << programName << " localhost nowplaying" << endl
+        << "    " << programName << " localhost login : nowplaying" << endl
         ;
 }
 
@@ -181,7 +188,7 @@ int main(int argc, char *argv[])
 
     QString username;
     QString password;
-    if (command->requiresAuthentication())
+    if (commandParser.hasExplicitInitialLogin() || command->requiresAuthentication())
     {
         username = Console::prompt("PMP username: ");
         password = Console::promptForPassword("password: ");

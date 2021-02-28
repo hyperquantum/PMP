@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,16 +33,27 @@ namespace PMP {
 
         void parse(QVector<QString> commandWithArgs);
 
-        Command* command() { return _command; }
+        Command* command() const { return _command; }
+        bool hasExplicitInitialLogin() const { return _explicitInitialLogin; }
+
         bool parsedSuccessfully() const { return _command != nullptr; }
         QString errorMessage() const { return _errorMessage; }
 
     private:
+        void reset();
+
+        bool gotParseError() const { return !_errorMessage.isEmpty(); }
+
+        void splitMultipleCommandsInOne(QVector<QString>& commandWithArgs);
+        void parseExplicitLoginAndSeparator(QVector<QString>& commandWithArgs);
+        void parseCommand(QVector<QString> commandWithArgs);
+
         template <class SomeCommand>
         void handleCommandNotRequiringArguments(QVector<QString> commandWithArgs);
 
         Command* _command;
         QString _errorMessage;
+        bool _explicitInitialLogin;
     };
 }
 #endif
