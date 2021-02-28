@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,11 +21,12 @@
 
 #include "common/clientserverinterface.h"
 #include "common/playercontroller.h"
+#include "common/queueentryinfofetcher.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 
 #include "colors.h"
-#include "queueentryinfofetcher.h"
+
 #include "queuemediator.h"
 
 #include <QBuffer>

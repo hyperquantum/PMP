@@ -342,6 +342,10 @@ namespace PMP {
         _queueLength = monitor->queueLength();
 
         connect(
+            monitor, &AbstractQueueMonitor::fetchCompleted,
+            this, &QueueMediator::fetchCompleted
+        );
+        connect(
             monitor, &AbstractQueueMonitor::queueResetted,
             this, &QueueMediator::resetQueue
         );
@@ -363,6 +367,11 @@ namespace PMP {
         );
     }
 
+    void QueueMediator::setFetchLimit(int count)
+    {
+        _sourceMonitor->setFetchLimit(count);
+    }
+
     QUuid QueueMediator::serverUuid() const {
         return _sourceMonitor->serverUuid();
     }
@@ -377,6 +386,11 @@ namespace PMP {
         }
 
         return _myQueue[index];
+    }
+
+    bool QueueMediator::isFetchCompleted() const
+    {
+        return _sourceMonitor->isFetchCompleted();
     }
 
     void QueueMediator::removeTrack(int index, quint32 queueID) {

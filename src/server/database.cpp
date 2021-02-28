@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,10 +39,8 @@ namespace PMP {
     QThreadStorage<QSharedPointer<Database>> Database::_threadLocalDatabases;
     QAtomicInt Database::_nextDbNameNumber;
 
-    bool Database::init(QTextStream& out) {
-        out << "initializing database" << endl;
-        _initDoneSuccessfully = false;
-
+    bool Database::init(QTextStream& out)
+    {
         ServerSettings serversettings;
         QSettings& settings = serversettings.getSettings();
 
@@ -72,14 +70,30 @@ namespace PMP {
     //        incompleteDbSettings = true;
     //    }
 
-        if (incompleteDbSettings) {
+        if (incompleteDbSettings)
+        {
+            /* delegate the error */
+            return init(out, "", "", "");
+        }
+
+        return init(out, hostname.toString(), user.toString(), password.toString());
+    }
+
+    bool Database::init(QTextStream& out, QString hostname, QString username,
+                        QString password)
+    {
+        out << "initializing database" << endl;
+        _initDoneSuccessfully = false;
+
+        if (hostname.isEmpty() || username.isEmpty() || password.isEmpty())
+        {
             out << " incomplete database settings!" << endl << endl;
             return false;
         }
 
-        _hostname = hostname.toString();
-        _username = user.toString();
-        _password = password.toString();
+        _hostname = hostname;
+        _username = username;
+        _password = password;
 
         /* open connection */
         QSqlDatabase db = createDatabaseConnection("PMP_main_dbconn", false);
@@ -92,9 +106,9 @@ namespace PMP {
         /* create schema if needed */
         QSqlQuery q(db);
         q.prepare("CREATE DATABASE IF NOT EXISTS pmp; USE pmp;");
-        if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl
-                << endl;
+        if (!q.exec())
+        {
+            printInitializationError(out, db);
             return false;
         }
 
@@ -108,9 +122,9 @@ namespace PMP {
             "ENGINE = InnoDB "
             "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
         );
-        if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl
-                << endl;
+        if (!q.exec())
+        {
+            printInitializationError(out, db);
             return false;
         }
 
@@ -149,9 +163,9 @@ namespace PMP {
             " UNIQUE INDEX `IDX_pmphash` (`InputLength` ASC, `SHA1` ASC, `MD5` ASC) "
             ") ENGINE = InnoDB"
         );
-        if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl
-                << endl;
+        if (!q.exec())
+        {
+            printInitializationError(out, db);
             return false;
         }
 
@@ -168,14 +182,15 @@ namespace PMP {
             "ENGINE = InnoDB "
             "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
         );
-        if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl
-                << endl;
+        if (!q.exec())
+        {
+            printInitializationError(out, db);
             return false;
         }
 
         /* create table 'pmp_user' if needed */
-        if (!initUsersTable(q)) {
+        if (!initUsersTable(q))
+        {
             printInitializationError(out, db);
             return false;
         }
@@ -205,9 +220,9 @@ namespace PMP {
             "ENGINE = InnoDB "
             "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
         );
-        if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl
-                << endl;
+        if (!q.exec())
+        {
+            printInitializationError(out, db);
             return false;
         }
 
@@ -223,9 +238,9 @@ namespace PMP {
             " UNIQUE INDEX `IDX_pmpfilesize` (`FileSize` ASC, `HashID` ASC) "
             ") ENGINE = InnoDB"
         );
-        if (!q.exec()) {
-            out << " database initialization problem: " << db.lastError().text() << endl
-                << endl;
+        if (!q.exec())
+        {
+            printInitializationError(out, db);
             return false;
         }
 
@@ -235,7 +250,8 @@ namespace PMP {
         return true;
     }
 
-    bool Database::initUsersTable(QSqlQuery& q) {
+    bool Database::initUsersTable(QSqlQuery& q)
+    {
         q.prepare(
             "CREATE TABLE IF NOT EXISTS pmp_user("
             " `UserID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
@@ -248,11 +264,20 @@ namespace PMP {
             "ENGINE = InnoDB "
             "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
         );
-        if (!q.exec()) {
+        if (!q.exec())
+        {
             return false;
         }
 
         const auto tableName = "pmp_user";
+
+        /* add columns for dynamic mode preferences */
+        if (!addColumnIfNotExists(q, tableName, "DynamicModeEnabled", "BIT")
+            || !addColumnIfNotExists(q, tableName,
+                                     "TrackRepetitionAvoidanceIntervalSeconds", "INT"))
+        {
+            return false;
+        }
 
         /* extra columns for Last.Fm scrobbling */
         if (!addColumnIfNotExists(q, tableName, "EnableLastFmScrobbling", "BIT")
@@ -615,6 +640,74 @@ namespace PMP {
         }
 
         return result;
+    }
+
+    UserDynamicModePreferencesRecord Database::getUserDynamicModePreferences(
+                                                                           quint32 userId,
+                                                                           bool* ok)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q) {
+                q.prepare(
+                    "SELECT DynamicModeEnabled, TrackRepetitionAvoidanceIntervalSeconds "
+                    "FROM pmp_user "
+                    "WHERE UserId=?"
+                );
+                q.addBindValue(userId);
+            };
+
+        UserDynamicModePreferencesRecord result;
+
+        auto resultGetter =
+            [&result] (QSqlQuery& q)
+            {
+                if (q.next())
+                {
+                    result.dynamicModeEnabled = getBool(q.value(0), true);
+                    result.trackRepetitionAvoidanceIntervalSeconds =
+                                                                 getInt(q.value(1), 3600);
+                }
+            };
+
+        if (!executeQuery(preparer, true, resultGetter))
+        {
+            qWarning() << "Database::getUserDynamicModePreferences : could not execute";
+
+            if (ok)
+                *ok = false;
+
+            return {};
+        }
+
+        if (ok)
+            *ok = true;
+
+        return result;
+    }
+
+    bool Database::setUserDynamicModePreferences(quint32 userId,
+                                      UserDynamicModePreferencesRecord const& preferences)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "UPDATE pmp_user "
+                    "SET DynamicModeEnabled=?, TrackRepetitionAvoidanceIntervalSeconds=? "
+                    "WHERE UserId=?"
+                );
+                q.addBindValue(preferences.dynamicModeEnabled);
+                q.addBindValue(preferences.trackRepetitionAvoidanceIntervalSeconds);
+                q.addBindValue(userId);
+            };
+
+        if (!executeVoid(preparer))
+        {
+            qWarning() << "Database::setUserDynamicModePreferences : could not execute";
+            return false;
+        }
+
+        return true;
     }
 
     void Database::addToHistory(quint32 hashId, quint32 userId, QDateTime start,
@@ -1172,8 +1265,15 @@ namespace PMP {
         return q.exec();
     }
 
-    bool Database::getBool(QVariant v, bool nullValue) {
-        if (v.isNull()) return nullValue;
+    bool Database::getBool(QVariant v, bool nullValue)
+    {
+        if (v.isNull())
+            return nullValue;
+
+        /* workaround for zero BIT value being loaded as "\0" instead of "0" */
+        if (v == QVariant(QChar(0)))
+            return false;
+
         return v.toBool();
     }
 
@@ -1187,14 +1287,16 @@ namespace PMP {
         return v.toUInt();
     }
 
-    QDateTime Database::getUtcDateTime(QVariant v) {
+    QDateTime Database::getUtcDateTime(QVariant v)
+    {
         /* assuming that it is not null */
         auto dateTime = v.toDateTime();
         dateTime.setTimeSpec(Qt::UTC);
         return dateTime;
     }
 
-    QString Database::getString(QVariant v, const char* nullValue) {
+    QString Database::getString(QVariant v, const char* nullValue)
+    {
         if (v.isNull()) return nullValue;
         return v.toString();
     }

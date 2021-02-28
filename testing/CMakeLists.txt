@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -27,6 +27,7 @@ add_executable(PMP_hash_test
     ${CMAKE_SOURCE_DIR}/src/common/fileanalyzer.cpp
     ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
     ${CMAKE_SOURCE_DIR}/src/common/tagdata.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/util.cpp
 )
 target_link_libraries(PMP_hash_test Qt5::Core)
 target_link_libraries(PMP_hash_test ${TAGLIB_LIBRARIES})
@@ -67,6 +68,7 @@ qt5_wrap_cpp(PMP_TestFileHash_MOCS test_filehash.h)
 add_executable(test_filehash test_filehash.cpp
     ${PMP_TestFileHash_MOCS}
     ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/util.cpp
 )
 target_link_libraries(test_filehash Qt5::Core Qt5::Test)
 add_test(test_filehash test_filehash)

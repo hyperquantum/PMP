@@ -20,16 +20,17 @@
 #ifndef PMP_QUEUEENTRYINFOFETCHER_H
 #define PMP_QUEUEENTRYINFOFETCHER_H
 
-#include "common/abstractqueuemonitor.h"
-#include "common/filehash.h"
-#include "common/queueentrytype.h"
+#include "abstractqueuemonitor.h"
+#include "filehash.h"
+#include "queueentrytype.h"
+#include "tribool.h"
 
 #include <QDateTime>
 #include <QHash>
 #include <QSet>
 
-namespace PMP {
-
+namespace PMP
+{
     class AbstractQueueMonitor;
     class ServerConnection;
 
@@ -41,12 +42,24 @@ namespace PMP {
 
         quint32 queueID() const { return _queueID; }
 
+        TriBool isTrack() const
+        {
+            if (_type == QueueEntryType::Track)
+                return true;
+
+            if (_type == QueueEntryType::Unknown)
+                return TriBool::unknown;
+
+            return false;
+        }
+
         QueueEntryType type() const { return _type; }
         const FileHash& hash() const { return _hash; }
         int lengthInMilliseconds() const { return _lengthMilliseconds; }
         QString artist() const { return _artist; }
         QString title() const { return _title; }
 
+        bool needFilename() const;
         QString informativeFilename() const { return _informativeFilename; }
 
         void setHash(QueueEntryType type, const FileHash& hash);
@@ -81,6 +94,7 @@ namespace PMP {
 
     private Q_SLOTS:
         void connected();
+        void connectionBroken();
 
         void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
         void receivedTrackInfo(quint32 queueID, QueueEntryType type,
@@ -89,17 +103,15 @@ namespace PMP {
 
         void queueResetted(int queueLength);
         void entriesReceived(int index, QList<quint32> entries);
-        void trackAdded(int index, quint32 queueID);
-        void trackMoved(int fromIndex, int toIndex, quint32 queueID);
+        void trackAdded(int index, quint32 queueId);
+        void trackMoved(int fromIndex, int toIndex, quint32 queueId);
 
         void enqueueTrackChangeNotification(quint32 queueID);
         void emitTracksChangedSignal();
 
     private:
-        void sendRequest(quint32 queueID);
+        void sendInfoRequest(quint32 queueId);
         void sendHashRequest(quint32 queueId);
-
-        static const int initialQueueFetchLength = 10;
 
         AbstractQueueMonitor* _monitor;
         ServerConnection* _connection;

@@ -53,8 +53,10 @@ namespace PMP {
     private:
         void init();
 
+        void enableDisableButtons();
+
         void fillQueueId();
-        void fillHash(const FileHash& hash);
+        void fillHash();
         void fillTrackDetails(CollectionTrackInfo const& trackInfo);
         void fillUserData(const FileHash& hash);
         void clearTrackDetails();

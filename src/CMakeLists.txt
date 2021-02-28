@@ -32,6 +32,7 @@ set(PMP_COMMON_SOURCES
     common/obfuscator.cpp
     common/playercontrollerimpl.cpp
     common/queuecontrollerimpl.cpp
+    common/queueentryinfofetcher.cpp
     common/queuemonitor.cpp
     common/scrobblerstatus.cpp
     common/scrobblingprovider.cpp
@@ -57,6 +58,7 @@ set(PMP_COMMON_HEADERS
     common/playercontrollerimpl.h
     common/queuecontroller.h
     common/queuecontrollerimpl.h
+    common/queueentryinfofetcher.h
     common/queuemonitor.h
     common/serverconnection.h
     common/serverdiscoverer.h
@@ -136,6 +138,7 @@ set(PMP_CMD_REMOTE_SOURCES
     cmd-remote/command.cpp
     cmd-remote/commandparser.cpp
     cmd-remote/commands.cpp
+    cmd-remote/console.cpp
 )
 set(PMP_CMD_REMOTE_HEADERS
     cmd-remote/client.h
@@ -157,7 +160,6 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/playerhistorymodel.cpp
     gui-remote/powermanagement.cpp
     gui-remote/precisetrackprogressmonitor.cpp
-    gui-remote/queueentryinfofetcher.cpp
     gui-remote/queuemediator.cpp
     gui-remote/queuemodel.cpp
     gui-remote/scoreformatdelegate.cpp
@@ -178,7 +180,6 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/playerhistorymodel.h
     gui-remote/powermanagement.h
     gui-remote/precisetrackprogressmonitor.h
-    gui-remote/queueentryinfofetcher.h
     gui-remote/queuemediator.h
     gui-remote/queuemodel.h
     gui-remote/scoreformatdelegate.h
@@ -220,6 +221,7 @@ add_executable(PMP-HashTool
     common/fileanalyzer.cpp
     common/filehash.cpp
     common/tagdata.cpp
+    common/util.cpp
 )
 
 add_executable(quicktest

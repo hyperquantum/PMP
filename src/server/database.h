@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -112,6 +112,19 @@ namespace PMP {
         bool validForScoring;
     };
 
+    class UserDynamicModePreferencesRecord
+    {
+    public:
+        UserDynamicModePreferencesRecord()
+         : dynamicModeEnabled(true), trackRepetitionAvoidanceIntervalSeconds(3600 /*1hr*/)
+        {
+            //
+        }
+
+        bool dynamicModeEnabled;
+        qint32 trackRepetitionAvoidanceIntervalSeconds;
+    };
+
     class Database {
     public:
         struct HashHistoryStats {
@@ -122,6 +135,8 @@ namespace PMP {
         };
 
         static bool init(QTextStream& out);
+        static bool init(QTextStream& out, QString hostname, QString username,
+                         QString password);
 
         bool isConnectionOpen() const;
 
@@ -145,6 +160,11 @@ namespace PMP {
         bool setLastFmScrobblingEnabled(quint32 userId, bool enabled = true);
         quint32 getLastFmScrobbledUpTo(quint32 userId, bool* ok);
         bool updateLastFmScrobbledUpTo(quint32 userId, quint32 newValue);
+
+        UserDynamicModePreferencesRecord getUserDynamicModePreferences(quint32 userId,
+                                                                       bool* ok);
+        bool setUserDynamicModePreferences(quint32 userId,
+                                     UserDynamicModePreferencesRecord const& preferences);
 
         void addToHistory(quint32 hashId, quint32 userId, QDateTime start, QDateTime end,
                           int permillage, bool validForScoring);

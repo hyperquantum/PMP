@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -43,10 +43,13 @@ namespace PMP {
         const QByteArray& SHA1() const { return _sha1; }
         const QByteArray& MD5() const { return _md5; }
 
-        QString toString();
+        QString toString() const;
+        QString toFancyString() const;
         QString dumpToString() const;
 
     private:
+        QString toStringInternal(QChar dash) const;
+
         uint _length;
         QByteArray _sha1;
         QByteArray _md5;

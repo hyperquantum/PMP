@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,27 +17,24 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_AUTOPERSONALMODEACTION_H
-#define PMP_AUTOPERSONALMODEACTION_H
+#ifndef PMP_CONSOLE_H
+#define PMP_CONSOLE_H
 
-#include <QObject>
 #include <QString>
 
 namespace PMP
 {
-    class ClientServerInterface;
 
-    class AutoPersonalModeAction : public QObject
+    class Console
     {
-        Q_OBJECT
     public:
-        AutoPersonalModeAction(ClientServerInterface* clientServerInterface);
+        static QString promptForPassword(QString prompt);
+        static QString prompt(QString prompt);
 
     private:
-        void check();
+        static void enableConsoleEcho(bool enable);
 
-        ClientServerInterface* _clientServerInterface;
-        bool _needToCheck;
+        Console();
     };
 }
 #endif

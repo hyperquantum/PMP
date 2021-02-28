@@ -40,6 +40,7 @@ namespace PMP {
         CommandBase();
 
         void addStep(std::function<bool ()> step);
+        void setStepDelay(int milliseconds);
         void setCommandExecutionSuccessful(QString output = "");
         void setCommandExecutionFailed(int resultCode, QString errorOutput);
 
@@ -51,6 +52,7 @@ namespace PMP {
 
     private:
         int _currentStep;
+        int _stepDelayMilliseconds;
         QVector<std::function<bool ()>> _steps;
         bool _finishedOrFailed;
     };
@@ -110,16 +112,29 @@ namespace PMP {
         void start(ClientServerInterface* clientServerInterface) override;
     };
 
-    /*
-    class QueueCommand : public Command
+    class AbstractQueueMonitor;
+    class QueueEntryInfo;
+    class QueueEntryInfoFetcher;
+
+    class QueueCommand : public CommandBase
     {
         Q_OBJECT
     public:
         QueueCommand();
 
-        void execute(ClientServerInterface* clientServerInterface) override;
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        void printQueue(AbstractQueueMonitor* queueMonitor,
+                        QueueEntryInfoFetcher* queueEntryInfoFetcher);
+        QString getSpecialEntryText(QueueEntryInfo const* entry) const;
+
+        int _fetchLimit;
     };
-    */
 
     class ShutdownCommand : public Command
     {
@@ -161,6 +176,19 @@ namespace PMP {
 
     private:
         int _volume;
+    };
+
+    class BreakCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        BreakCommand();
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
     };
 
     class QueueDeleteCommand : public CommandBase

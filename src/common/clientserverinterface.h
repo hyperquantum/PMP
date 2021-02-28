@@ -31,6 +31,7 @@ namespace PMP {
     class ServerConnection;
     class PlayerController;
     class QueueController;
+    class QueueEntryInfoFetcher;
     class UserDataFetcher;
 
     class ClientServerInterface : public QObject
@@ -44,6 +45,7 @@ namespace PMP {
 
         QueueController& queueController();
         AbstractQueueMonitor& queueMonitor();
+        QueueEntryInfoFetcher& queueEntryInfoFetcher();
 
         DynamicModeController& dynamicModeController();
 
@@ -54,11 +56,13 @@ namespace PMP {
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
 
+        bool connected() const { return _connected; }
+
     public Q_SLOTS:
         void shutdownServer();
 
     Q_SIGNALS:
-
+        void connectedChanged();
 
     private:
         ServerConnection* _connection;
@@ -66,9 +70,11 @@ namespace PMP {
         CurrentTrackMonitor* _currentTrackMonitor;
         QueueController* _queueController;
         AbstractQueueMonitor* _queueMonitor;
+        QueueEntryInfoFetcher* _queueEntryInfoFetcher;
         DynamicModeController* _dynamicModeController;
         CollectionWatcher* _collectionWatcher;
         UserDataFetcher* _userDataFetcher;
+        bool _connected;
     };
 }
 #endif

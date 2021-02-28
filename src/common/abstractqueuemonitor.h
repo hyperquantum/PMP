@@ -32,13 +32,17 @@ namespace PMP {
     public:
         virtual ~AbstractQueueMonitor() {}
 
+        virtual void setFetchLimit(int count) = 0;
+
         virtual QUuid serverUuid() const = 0;
 
         virtual int queueLength() const = 0;
         virtual quint32 queueEntry(int index) = 0;
         virtual QList<quint32> knownQueuePart() const = 0;
+        virtual bool isFetchCompleted() const = 0;
 
     Q_SIGNALS:
+        void fetchCompleted();
         void queueResetted(int queueLength);
         void entriesReceived(int index, QList<quint32> entries);
         void trackAdded(int index, quint32 queueID);

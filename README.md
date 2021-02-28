@@ -239,7 +239,6 @@ Effort is a rough estimate. Priorities can still change.
 
 | Feature                                                   | Priority | Effort       |
 | --------------------------------------------------------- | -------- | ------------ |
-| Save/restore dynamic mode settings for each user          | High     | Medium       |
 | Artist-based track repetition avoidance                   | High     | Medium       |
 | Scrobbling to Last.fm                                     | High     | Large        |
 | Server to server database synchronization                 | High     | Large        |

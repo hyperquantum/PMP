@@ -26,7 +26,8 @@
 namespace PMP {
 
     CommandParser::CommandParser()
-     : _command(nullptr)
+     : _command(nullptr),
+       _explicitInitialLogin(false)
     {
         //
     }
@@ -49,8 +50,82 @@ namespace PMP {
 
     void CommandParser::parse(QVector<QString> commandWithArgs)
     {
+        reset();
+
+        splitMultipleCommandsInOne(commandWithArgs);
+
+        if (commandWithArgs[0] == "login")
+        {
+            parseExplicitLoginAndSeparator(commandWithArgs);
+        }
+
+        if (gotParseError()) return;
+
+        parseCommand(commandWithArgs);
+    }
+
+    void CommandParser::reset()
+    {
         _command = nullptr;
+        _explicitInitialLogin = false;
         _errorMessage.clear();
+    }
+
+    void CommandParser::splitMultipleCommandsInOne(QVector<QString>& commandWithArgs)
+    {
+        if (commandWithArgs.isEmpty())
+            return;
+
+        auto command = commandWithArgs[0];
+
+        auto colonIndex = command.indexOf(':');
+        if (colonIndex < 0)
+            return;
+
+        auto firstPart = command.left(colonIndex);
+        if (firstPart.contains('"') || firstPart.contains('\''))
+            return;
+
+        auto remainingPart = command.mid(colonIndex + 1);
+        QVector<QString> newCommandWithArgs;
+
+        if (!firstPart.isEmpty())
+            newCommandWithArgs.append(firstPart);
+
+        newCommandWithArgs.append(":");
+
+        if (!remainingPart.isEmpty())
+            newCommandWithArgs.append(remainingPart);
+
+        newCommandWithArgs.append(commandWithArgs.mid(1));
+
+        commandWithArgs = newCommandWithArgs;
+    }
+
+    void CommandParser::parseExplicitLoginAndSeparator(QVector<QString>& commandWithArgs)
+    {
+        auto command = commandWithArgs[0];
+        /* we already know that the command is "login" */
+
+        _explicitInitialLogin = true;
+
+        if (commandWithArgs.size() < 2 || commandWithArgs[1] != ":")
+        {
+            _errorMessage =
+                QString("Expected \"%1\" separator after \"%2\"").arg(":", command);
+            return;
+        }
+
+        commandWithArgs = commandWithArgs.mid(2);
+    }
+
+    void CommandParser::parseCommand(QVector<QString> commandWithArgs)
+    {
+        if (commandWithArgs.isEmpty())
+        {
+            _errorMessage = "No command specified";
+            return;
+        }
 
         auto command = commandWithArgs[0];
         auto args = commandWithArgs.mid(1);
@@ -68,16 +143,18 @@ namespace PMP {
         {
             handleCommandNotRequiringArguments<SkipCommand>(commandWithArgs);
         }
+        else if (command == "break")
+        {
+            handleCommandNotRequiringArguments<BreakCommand>(commandWithArgs);
+        }
         else if (command == "nowplaying")
         {
             handleCommandNotRequiringArguments<NowPlayingCommand>(commandWithArgs);
         }
-        /*
         else if (command == "queue")
         {
             handleCommandNotRequiringArguments<QueueCommand>(commandWithArgs);
         }
-        */
         else if (command == "shutdown")
         {
             if (argsCount == 0)
@@ -93,7 +170,6 @@ namespace PMP {
             else
             {
                 _errorMessage = "Command 'shutdown' requires zero arguments!";
-                return;
             }
         }
         else if (command == "volume")
@@ -179,10 +255,17 @@ namespace PMP {
 
             _command = new QueueMoveCommand(queueId, moveDiff);
         }
+        else if (command == ":")
+        {
+            _errorMessage = "Expected command before \":\" separator";
+        }
         else
         {
-            _errorMessage = "Command not recognized: " + command;
-            return;
+            _errorMessage = QString("Command not recognized: \"%1\"").arg(command);
+
+            if (command.contains(':'))
+                _errorMessage +=
+                        " (did you forget to put spaces around the \":\" separator?)";
         }
     }
 

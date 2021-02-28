@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,10 +20,10 @@
 #include "autopersonalmodeaction.h"
 
 #include "common/clientserverinterface.h"
-#include "common/dynamicmodecontroller.h"
 #include "common/playercontroller.h"
 
-namespace PMP {
+namespace PMP
+{
 
     AutoPersonalModeAction::AutoPersonalModeAction(
             ClientServerInterface* clientServerInterface)
@@ -45,8 +45,10 @@ namespace PMP {
         check();
     }
 
-    void AutoPersonalModeAction::check() {
-        if (!_needToCheck) return;
+    void AutoPersonalModeAction::check()
+    {
+        if (!_needToCheck)
+            return;
 
         auto& playerController = _clientServerInterface->playerController();
         auto playerState = playerController.playerState();
@@ -57,9 +59,9 @@ namespace PMP {
 
         _needToCheck = false;
 
-        if (playerState == PlayerState::Stopped && playerMode == PlayerMode::Public) {
+        if (playerState == PlayerState::Stopped && playerMode == PlayerMode::Public)
+        {
             playerController.switchToPersonalMode();
-            _clientServerInterface->dynamicModeController().enableDynamicMode();
         }
     }
 }

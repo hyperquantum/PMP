@@ -32,11 +32,14 @@ namespace PMP {
     public:
         QueueMonitor(ServerConnection* connection);
 
+        void setFetchLimit(int count) override;
+
         QUuid serverUuid() const override { return _serverUuid; }
 
         int queueLength() const override { return _queueLength; }
         quint32 queueEntry(int index) override;
         QList<quint32> knownQueuePart() const override { return _queue; }
+        bool isFetchCompleted() const override { return _fetchCompletedEmitted; }
 
     private Q_SLOTS:
         void connected();
@@ -45,27 +48,32 @@ namespace PMP {
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);
-        void queueEntryAdded(qint32 offset, quint32 queueID);
-        void queueEntryRemoved(qint32 offset, quint32 queueID);
-        void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueID);
+        void queueEntryAdded(qint32 offset, quint32 queueId);
+        void queueEntryRemoved(qint32 offset, quint32 queueId);
+        void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueId);
 
-        void sendNextSlotBatchRequest(int size);
+        void checkIfWeNeedToFetchMore();
 
         void doReset(int queueLength);
 
     private:
-        static const int initialQueueFetchLength = 10;
-        static const int indexMarginForQueueFetch = 3;
-        static const int extraRaiseFetchUpTo = 4;
-        static const int queueFetchBatchSize = 4;
+        void gotRequestForEntryAtIndex(int index);
+        void updateQueueLength(int queueLength, bool forceReload);
+        void sendInitialQueueFetchRequest();
+        bool verifyQueueContentsOldAndNew(int startIndex,
+                                          const QList<quint32>& newContent);
+        void appendNewQueueContentsAndEmitEntriesReceivedSignal(
+                                                        const QList<quint32>& newContent);
+        void checkFetchCompletedState();
 
         ServerConnection* _connection;
         QUuid _serverUuid;
-        bool _waitingForVeryFirstQueueInfo;
         int _queueLength;
-        int _requestQueueUpTo;
-        int _queueRequestedUpTo;
+        int _queueFetchTargetCount;
+        int _queueFetchLimit;
+        int _queueRequestedEntryCount;
         QList<quint32> _queue; // no need for a QQueue, a QList will suffice
+        bool _fetchCompletedEmitted;
     };
 }
 #endif

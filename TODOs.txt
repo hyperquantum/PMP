@@ -17,7 +17,6 @@ KNOWN BUGS
 
  * for some tracks we get the wrong length (caused by length estimation in TagLib)
  * when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
- * the commandline client does not support user authentication which is now required for most commands it supports
  * GUI remote: tracks can be dragged using the right mouse button (not just the left button)
  * GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
  * hash calculation is wrong for MP3 files containing an APE tag
@@ -29,7 +28,6 @@ KNOWN BUGS
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
  * GUI remote: music collection view: applying track metadata updates is not implemented yet
  * GUI remote: multimedia keys don't work when a popup dialog is open (like track info)
- * CMD remote mostly doesn't work because it lacks user authentication
  * unknown error at login because of username case (in)sensitivity
 
 
@@ -44,6 +42,7 @@ TECHNICAL TODO
  * large file support (?)
  * try to automate the build procedure on Windows
  * switch to signed integer types for things like queue indices
+ * add logging for all server messages that are deemed corrupt or invalid by the client
 
 
 IDEAS
@@ -65,7 +64,6 @@ IDEAS
  * music collection: show a "loading collection" indicator while downloading the list from the server
  * music collection: provide a filtering mechanism based on the existing track highlighting mechanism
  * music collection: provide fast partial indexation that only detects new files
- ** dynamic mode: save & restore preferences for each user
  ** dynamic mode: detect and prevent track repetition with different hash values
  ** dynamic mode: artist repetition avoidance
  *** thumbs up/down buttons for the song that is playing and for the history, to affect the score a little bit
@@ -85,15 +83,16 @@ IDEAS
  * require the server password when registering a new user account
  ** display time remaining during playback
  * alternative display of "prev. heard" as a time span, e.g. "5 days ago" or "9 weeks ago"
- * track info dialog: add buttons for adding the track to the queue
  * track info dialog: show indication if file is available or not
  * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time
  * track info dialog: ability to pick the user whose personal stats are shown
- * track info dialog: show personal play history for that track
+ ** track info dialog: show personal play history for that track
  * add a button for seeking back to the start of the current track
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner
+ * visualize sound wave
+ * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
 
 
 USER FRIENDLINESS

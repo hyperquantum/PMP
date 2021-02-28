@@ -19,100 +19,36 @@
 
 #include "common/logging.h"
 #include "common/version.h"
+#include "common/util.h"
 
 #include "client.h"
 #include "command.h"
 #include "commandparser.h"
+#include "console.h"
 
 #include <QByteArray>
 #include <QtCore>
 #include <QTcpSocket>
 
-#ifdef Q_OS_WIN32
-#include <windows.h>
-#else
-#include <termios.h>
-#include <unistd.h>
-#endif
-
 using namespace PMP;
 
-void enableConsoleEcho(bool enable)
+void printVersion(QTextStream& out)
 {
-#ifdef Q_OS_WIN32
-
-    HANDLE stdinHandle = GetStdHandle(STD_INPUT_HANDLE);
-    DWORD mode;
-
-    GetConsoleMode(stdinHandle, &mode);
-
-    if (!enable)
-    {
-        mode &= ~ENABLE_ECHO_INPUT;
-    }
-    else
-    {
-        mode |= ENABLE_ECHO_INPUT;
-    }
-
-    SetConsoleMode(stdinHandle, mode);
-
-#else
-
-    struct termios tty;
-
-    tcgetattr(STDIN_FILENO, &tty);
-
-    if (!enable)
-    {
-        tty.c_lflag &= ~ECHO;
-    }
-    else
-    {
-        tty.c_lflag |= ECHO;
-    }
-
-    (void) tcsetattr(STDIN_FILENO, TCSANOW, &tty);
-
-#endif
+    out << "Party Music Player " PMP_VERSION_DISPLAY << endl
+        << Util::getCopyrightLine(true) << endl
+        << "This is free software; see the source for copying conditions.  There is NO" << endl
+        << "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << endl;
 }
 
-QString promptForPassword(QString prompt)
+void printUsage(QTextStream& out)
 {
-    QTextStream out(stdout);
-    QTextStream in(stdin);
+    auto programName = QFileInfo(QCoreApplication::applicationFilePath()).fileName();
 
-    out << prompt;
-    out.flush();
-
-    enableConsoleEcho(false);
-    QString password = in.readLine();
-    enableConsoleEcho(true);
-
-    /* The newline that was typed by the user was not printed because we turned off echo
-       to the console, so we have to write a newline ourselves now */
-    out << endl;
-
-    return password;
-}
-
-QString prompt(QString prompt)
-{
-    QTextStream out(stdout);
-    QTextStream in(stdin);
-
-    out << prompt;
-    out.flush();
-
-    QString input = in.readLine();
-
-    return input;
-}
-
-void printUsage(QTextStream& out, QString const& programName)
-{
-    out << "usage: " << programName
-                << " <server-name-or-ip> <server-port> <command> [<command args>]" << endl
+    out << "usage: " << endl
+        << "  " << programName << " help|--help|version|--version" << endl
+        << "  " << programName << " <server-name-or-ip> [<server-port>] <command>" << endl
+        << "  " << programName
+           << " <server-name-or-ip> [<server-port>] <login-command> : <command>" << endl
         << endl
         << "  commands:" << endl
         << endl
@@ -123,17 +59,23 @@ void printUsage(QTextStream& out, QString const& programName)
         << "    volume <number>: set volume percentage (0-100)" << endl
         << "    nowplaying: get info about the track currently playing" << endl
         << "    queue: get queue length and the first tracks waiting in the queue" << endl
+        << "    break: insert a break at the front of the queue if not present there yet" << endl
         << "    qdel <QID>: delete an entry from the queue" << endl
         << "    qmove <QID> <-diff>: move a track up in the queue (e.g. -3)" << endl
         << "    qmove <QID> <+diff>: move a track down in the queue (eg. +2)" << endl
         << "    shutdown: shut down the server program" << endl
+        << endl
+        << "  login command:"<< endl
+        << "    login: forces authentication to occur"<< endl
         << endl
         << "  NOTICE:" << endl
         << "    The 'shutdown' command no longer supports arguments." << endl
         << endl
         << "  Authentication:" << endl
         << "    All commands that have side-effects require authentication. They will" << endl
-        << "    prompt for username and password in the console." << endl
+        << "    prompt for username and password in the console. One exception to this" << endl
+        << "    principle is the 'queue' command; it requires authentication although it" << endl
+        << "    has no side-effects. This may change in the future." << endl
         << "    It used to be possible to run the 'shutdown' command with the " << endl
         << "    server password as its argument and without logging in as a PMP user," << endl
         << "    but that is no longer possible. Support for this could be added again" << endl
@@ -141,8 +83,22 @@ void printUsage(QTextStream& out, QString const& programName)
         << endl
         << "  Server Password:" << endl
         << "    This is a global password for the server, printed to stdout at" << endl
-        << "    server startup. It is no longer relevant for the PMP command-line client."
-        << endl;
+        << "    server startup. It is no longer relevant for the PMP command-line client." << endl
+        << endl
+        << "  Examples:" << endl
+        << "    " << programName << " localhost queue" << endl
+        << "    " << programName << " ::1 volume" << endl
+        << "    " << programName << " localhost volume 100" << endl
+        << "    " << programName << " 127.0.0.1 play" << endl
+        << "    " << programName << " localhost qmove 42 +3" << endl
+        << "    " << programName << " localhost nowplaying" << endl
+        << "    " << programName << " localhost login : nowplaying" << endl
+        ;
+}
+
+bool looksLikePortNumber(QString const& string)
+{
+    return string.size() > 0 && string[0].isDigit();
 }
 
 int main(int argc, char *argv[])
@@ -162,24 +118,60 @@ int main(int argc, char *argv[])
     QTextStream err(stderr);
 
     QStringList args = QCoreApplication::arguments();
+    /* args[0] is the name of the program, throw that away */
+    args = args.mid(1);
 
-    if (args.size() < 4)
+    if (args.size() > 0)
+    {
+        if (args[0] == "version" || args[0] == "--version")
+        {
+            printVersion(out);
+            return 0;
+        }
+        if (args[0] == "help" || args[0] == "--help")
+        {
+            printUsage(out);
+            return 0;
+        }
+    }
+
+    if (args.size() < 2)
     {
         err << "Not enough arguments specified!" << endl;
-        printUsage(err, QFileInfo(QCoreApplication::applicationFilePath()).fileName());
+        printUsage(err);
         return 1;
     }
 
-    QString server = args[1];
-    QString port = args[2];
-    auto commandWithArgs = args.mid(3).toVector();
+    QVector<QString> commandWithArgs;
 
-    /* Validate port number */
-    bool ok = true;
-    uint portNumber = port.toUInt(&ok);
-    if (!ok || portNumber > 0xFFFFu)
+    QString server = args[0];
+
+    quint16 portNumber;
+    QString maybePortArg = args[1];
+    if (looksLikePortNumber(maybePortArg))
     {
-        err << "Invalid port number: " << port << endl;
+        /* Validate port number */
+        bool ok = true;
+        uint number = maybePortArg.toUInt(&ok);
+        if (!ok || number > 0xFFFFu)
+        {
+            err << "Invalid port number: " << maybePortArg << endl;
+            return 1;
+        }
+
+        portNumber = number;
+        commandWithArgs = args.mid(2).toVector();
+    }
+    else
+    {
+        portNumber = 23432;
+        commandWithArgs = args.mid(1).toVector();
+    }
+
+    if (commandWithArgs.size() == 0)
+    {
+        err << "Not enough arguments specified!" << endl;
+        printUsage(err);
         return 1;
     }
 
@@ -196,10 +188,10 @@ int main(int argc, char *argv[])
 
     QString username;
     QString password;
-    if (command->requiresAuthentication())
+    if (commandParser.hasExplicitInitialLogin() || command->requiresAuthentication())
     {
-        username = prompt("PMP username: ");
-        password = promptForPassword("password: ");
+        username = Console::prompt("PMP username: ");
+        password = Console::promptForPassword("password: ");
     }
 
     Client client(nullptr, &out, &err, server, portNumber, username, password, command);

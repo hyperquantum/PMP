@@ -23,6 +23,8 @@
 #include "common/currenttrackmonitor.h"
 #include "common/playercontroller.h"
 #include "common/queuecontroller.h"
+#include "common/queueentryinfofetcher.h"
+#include "common/queuemonitor.h"
 #include "common/util.h"
 
 #include <QtDebug>
@@ -58,6 +60,7 @@ namespace PMP {
 
     CommandBase::CommandBase()
      : _currentStep(0),
+       _stepDelayMilliseconds(0),
        _finishedOrFailed(false)
     {
         //
@@ -66,6 +69,11 @@ namespace PMP {
     void CommandBase::addStep(std::function<bool ()> step)
     {
         _steps.append(step);
+    }
+
+    void CommandBase::setStepDelay(int milliseconds)
+    {
+        _stepDelayMilliseconds = milliseconds;
     }
 
     void CommandBase::setCommandExecutionSuccessful(QString output)
@@ -106,7 +114,7 @@ namespace PMP {
         }
 
         // we advanced, so try the next step right now, don't wait for signals
-        QTimer::singleShot(0, this, &CommandBase::listenerSlot);
+        QTimer::singleShot(_stepDelayMilliseconds, this, &CommandBase::listenerSlot);
     }
 
     /* ===== PlayCommand ===== */
@@ -315,22 +323,169 @@ namespace PMP {
 
     /* ===== QueueCommand ===== */
 
-    /*
     QueueCommand::QueueCommand()
+     : _fetchLimit(10)
     {
         //
     }
 
-    QString QueueCommand::commandStringToSend() const
-    {
-        return "queue";
-    }
-
-    bool QueueCommand::mustWaitForResponseAfterSending() const
+    bool QueueCommand::requiresAuthentication() const
     {
         return true;
     }
-    */
+
+    void QueueCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* queueMonitor = &clientServerInterface->queueMonitor();
+        queueMonitor->setFetchLimit(_fetchLimit);
+
+        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+
+        connect(queueMonitor, &QueueMonitor::fetchCompleted,
+                this, &QueueCommand::listenerSlot);
+        connect(queueEntryInfoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+                this, &QueueCommand::listenerSlot);
+
+        addStep(
+            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            {
+                if (!queueMonitor->isFetchCompleted())
+                    return false;
+
+                bool needToWaitForFilename = false;
+                for (int i = 0; i < queueMonitor->queueLength() && i < _fetchLimit; ++i)
+                {
+                    auto queueId = queueMonitor->queueEntry(i);
+                    if (queueId == 0)
+                        return false; /* download incomplete, shouldn't happen */
+
+                    auto entry = queueEntryInfoFetcher->entryInfoByQID(queueId);
+                    if (!entry)
+                        return false; /* info not available yet */
+
+                    if (entry->needFilename())
+                        needToWaitForFilename = true;
+                }
+
+                if (needToWaitForFilename)
+                    setStepDelay(50);
+
+                return true;
+            }
+        );
+        addStep(
+            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            {
+                printQueue(queueMonitor, queueEntryInfoFetcher);
+                return false;
+            }
+        );
+    }
+
+    void QueueCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        Q_UNUSED(clientServerInterface)
+        // no specific start action needed
+    }
+
+    void QueueCommand::printQueue(AbstractQueueMonitor* queueMonitor,
+                                  QueueEntryInfoFetcher* queueEntryInfoFetcher)
+    {
+        QString output;
+        output.reserve(80 + 80 + 80 * _fetchLimit);
+
+        output += "queue length " + QString::number(queueMonitor->queueLength()) + "\n";
+        output += "Index|  QID  | Length | Title                          | Artist";
+
+        for (int index = 0;
+             index < queueMonitor->queueLength() && index < _fetchLimit;
+             ++index)
+        {
+            output += "\n";
+            output += QString::number(index).rightJustified(5);
+            output += "|";
+
+            auto queueId = queueMonitor->queueEntry(index);
+            if (queueId == 0)
+            {
+                output += "??????????"; /* shouldn't happen */
+                continue;
+            }
+
+            output += QString::number(queueId).rightJustified(7);
+            output += "|";
+
+            auto entry = queueEntryInfoFetcher->entryInfoByQID(queueId);
+            if (!entry)
+            {
+                output += "??????????"; /* info not available yet, unlikely but possible*/
+                continue;
+            }
+
+            auto lengthMilliseconds = entry->lengthInMilliseconds();
+            if (lengthMilliseconds >= 0)
+            {
+                auto lengthString =
+                        Util::millisecondsToShortDisplayTimeText(lengthMilliseconds);
+                output += lengthString.rightJustified(8);
+            }
+            else if (entry->isTrack().toBool(true))
+            {
+                output += "   ??   ";
+            }
+            else
+            {
+                output += "        ";
+            }
+
+            output += "|";
+
+            if (entry->isTrack().toBool(false) == false)
+            {
+                output += "    ";
+                output += getSpecialEntryText(entry);
+            }
+            else if (entry->needFilename() && !entry->informativeFilename().isEmpty())
+            {
+                output += entry->informativeFilename();
+            }
+            else
+            {
+                output += entry->title().leftJustified(32);
+                output += "|";
+                output += entry->artist();
+            }
+        }
+
+        if (_fetchLimit < queueMonitor->queueLength())
+        {
+            output += "\n...";
+        }
+
+        setCommandExecutionSuccessful(output);
+    }
+
+    QString QueueCommand::getSpecialEntryText(const QueueEntryInfo* entry) const
+    {
+        switch (entry->type())
+        {
+            case QueueEntryType::Track:
+                /* shouldn't happen */
+                return "";
+
+            case QueueEntryType::BreakPoint:
+                return "---------- BREAK ----------";
+
+            case QueueEntryType::UnknownSpecialType:
+                return "<<<< UNKNOWN ENTITY >>>>";
+
+            case QueueEntryType::Unknown:
+                return "???????????";
+        }
+
+        /* shouldn't happen */
+        return "";
+    }
 
     /* ===== ShutdownCommand ===== */
 
@@ -423,6 +578,61 @@ namespace PMP {
     void SetVolumeCommand::start(ClientServerInterface* clientServerInterface)
     {
         clientServerInterface->playerController().setVolume(_volume);
+    }
+
+    /* ===== BreakCommand =====*/
+
+    BreakCommand::BreakCommand()
+    {
+        //
+    }
+
+    bool BreakCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void BreakCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* queueMonitor = &clientServerInterface->queueMonitor();
+        queueMonitor->setFetchLimit(1);
+
+        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+
+        connect(queueMonitor, &QueueMonitor::fetchCompleted,
+                this, &BreakCommand::listenerSlot);
+        connect(queueEntryInfoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+                this, &BreakCommand::listenerSlot);
+
+        addStep(
+            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            {
+                if (!queueMonitor->isFetchCompleted())
+                    return false;
+
+                if (queueMonitor->queueLength() == 0)
+                    return false;
+
+                auto firstEntryId = queueMonitor->queueEntry(0);
+                if (firstEntryId == 0)
+                    return false; /* shouldn't happen */
+
+                auto firstEntry = queueEntryInfoFetcher->entryInfoByQID(firstEntryId);
+                if (!firstEntry)
+                    return false;
+
+                if (firstEntry->type() != QueueEntryType::BreakPoint)
+                    return false;
+
+                setCommandExecutionSuccessful();
+                return false;
+            }
+        );
+    }
+
+    void BreakCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        clientServerInterface->queueController().insertBreakAtFront();
     }
 
     /* ===== QueueDeleteCommand ===== */

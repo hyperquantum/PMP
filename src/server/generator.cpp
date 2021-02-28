@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -139,23 +139,28 @@ namespace PMP {
         return *_history;
     }
 
-    void Generator::enable() {
-        if (_enabled) return; /* enabled already */
+    void Generator::enable()
+    {
+        if (_enabled)
+            return; /* enabled already */
 
         qDebug() << "Generator enabled";
         _enabled = true;
-
-        Q_EMIT enabledChanged(true);
 
         setDesiredUpcomingCount();
 
         _trackGenerator->enable();
 
         checkQueueRefillNeeded();
+        saveUserPreferences();
+
+        Q_EMIT enabledChanged();
     }
 
-    void Generator::disable() {
-        if (!_enabled) return; /* disabled already */
+    void Generator::disable()
+    {
+        if (!_enabled)
+            return; /* disabled already */
 
         qDebug() << "Generator disabled";
         _enabled = false;
@@ -163,7 +168,9 @@ namespace PMP {
         _trackGenerator->disable();
         _waveTrackGenerator->terminateWave();
 
-        Q_EMIT enabledChanged(false);
+        saveUserPreferences();
+
+        Q_EMIT enabledChanged();
     }
 
     void Generator::requestQueueExpansion()
@@ -177,7 +184,7 @@ namespace PMP {
             auto tracks = _waveTrackGenerator->getTracks(expandCount);
             generatedCount += tracks.size();
 
-            for (auto const& track : tracks)
+            for (auto const& track : qAsConst(tracks))
             {
                 _queue->enqueue(track);
             }
@@ -191,7 +198,7 @@ namespace PMP {
             auto tracks = _trackGenerator->getTracks(expandCount - generatedCount);
             generatedCount += tracks.size();
 
-            for (auto const& track : tracks)
+            for (auto const& track : qAsConst(tracks))
             {
                 _queue->enqueue(track);
             }
@@ -235,31 +242,22 @@ namespace PMP {
         _repetitionChecker->currentTrackChanged(newTrack);
     }
 
-    void Generator::setUserGeneratingFor(quint32 user) {
+    void Generator::setUserGeneratingFor(quint32 user)
+    {
         if (_criteria.user() == user)
             return; /* no change */
 
         auto oldUser = _criteria.user();
-        qDebug() << "changing user from" << oldUser << "to" << user;
+        qDebug() << "Generator: changing user from" << oldUser << "to" << user;
 
         /* if a wave is active, terminate it because a wave is bound to a user */
-        terminateWave();
+        _waveTrackGenerator->terminateWave();
 
-        /* apply new user */
-        _criteria.setUser(user);
-
-        /* make sure to prefetch track stats for the new user */
-        _randomTracksSource->resetUpcomingTrackNotifications();
-
-        /* give us some time to fetch track stats for the new user */
-        _trackGenerator->freezeTemporarily();
-
-        _repetitionChecker->setUserGeneratingFor(user);
-        _trackGenerator->setCriteria(_criteria);
-        _waveTrackGenerator->setCriteria(_criteria);
+        loadAndApplyUserPreferences(user);
     }
 
-    void Generator::setNoRepetitionSpanSeconds(int seconds) {
+    void Generator::setNoRepetitionSpanSeconds(int seconds)
+    {
         if (_criteria.noRepetitionSpanSeconds() == seconds)
             return; /* no change */
 
@@ -273,7 +271,9 @@ namespace PMP {
         _trackGenerator->setCriteria(_criteria);
         _waveTrackGenerator->setCriteria(_criteria);
 
-        Q_EMIT noRepetitionSpanChanged(seconds);
+        saveUserPreferences();
+
+        Q_EMIT noRepetitionSpanChanged();
     }
 
     void Generator::upcomingTrackNotification(FileHash hash)
@@ -304,7 +304,8 @@ namespace PMP {
                     ? _waveTrackGenerator->getTracks(tracksToGenerate)
                     : _trackGenerator->getTracks(tracksToGenerate);
 
-        for (auto const& track : tracks) {
+        for (auto const& track : qAsConst(tracks))
+        {
             _queue->enqueue(track);
         }
 
@@ -330,6 +331,66 @@ namespace PMP {
 
         _trackGenerator->setDesiredUpcomingCount(count);
         _waveTrackGenerator->setDesiredUpcomingCount(count);
+    }
+
+    void Generator::loadAndApplyUserPreferences(quint32 user)
+    {
+        qDebug() << "Generator: loading preferences for user" << user;
+
+        DynamicModeCriteria oldCriteria { _criteria };
+
+        bool prefersDynamicModeEnabled = _enabled;
+        _criteria.setUser(user);
+
+        auto database = Database::getDatabaseForCurrentThread();
+        if (database)
+        {
+            bool ok;
+            auto preferences = database->getUserDynamicModePreferences(user, &ok);
+
+            if (ok)
+            {
+                prefersDynamicModeEnabled = preferences.dynamicModeEnabled;
+                _criteria.setNoRepetitionSpanSeconds(
+                                     preferences.trackRepetitionAvoidanceIntervalSeconds);
+            }
+        }
+
+        /* make sure to prefetch track stats for the new user */
+        _randomTracksSource->resetUpcomingTrackNotifications();
+
+        /* give us some time to fetch track stats for the new user */
+        _trackGenerator->freezeTemporarily();
+
+        _repetitionChecker->setUserGeneratingFor(user);
+        _repetitionChecker->setNoRepetitionSpanSeconds(
+                                                     _criteria.noRepetitionSpanSeconds());
+        _trackGenerator->setCriteria(_criteria);
+        _waveTrackGenerator->setCriteria(_criteria);
+
+        if (oldCriteria.noRepetitionSpanSeconds() != _criteria.noRepetitionSpanSeconds())
+            Q_EMIT noRepetitionSpanChanged();
+
+        if (prefersDynamicModeEnabled)
+            enable();
+        else
+            disable();
+    }
+
+    void Generator::saveUserPreferences()
+    {
+        qDebug() << "Generator: saving preferences for user" << _criteria.user();
+
+        auto database = Database::getDatabaseForCurrentThread();
+        if (!database)
+            return; /* problem */
+
+        UserDynamicModePreferencesRecord preferences;
+        preferences.dynamicModeEnabled = _enabled;
+        preferences.trackRepetitionAvoidanceIntervalSeconds =
+                                                      _criteria.noRepetitionSpanSeconds();
+
+        database->setUserDynamicModePreferences(_criteria.user(), preferences);
     }
 
 }

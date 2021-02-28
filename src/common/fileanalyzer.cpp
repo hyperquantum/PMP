@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,11 +20,13 @@
 #include "fileanalyzer.h"
 
 #include <QCryptographicHash>
+#include <QVersionNumber>
 
 /* TagLib includes */
 #include "flacfile.h"
 #include "id3v2framefactory.h"
 #include "mpegfile.h"
+#include "taglib.h"
 //#include "tbytevector.h"
 #include "tbytevectorstream.h"
 
@@ -33,7 +35,7 @@ namespace PMP {
     FileAnalyzer::FileAnalyzer(const QString& filename)
      : FileAnalyzer(QFileInfo(filename))
     {
-        //
+        logTagLibVersionOnce();
     }
 
     FileAnalyzer::FileAnalyzer(const QFileInfo& file)
@@ -41,6 +43,8 @@ namespace PMP {
        _file(file.filePath()), _haveReadFile(false), _error(false), _analyzed(false)
     {
         _error |= _extension == Extension::None;
+
+        logTagLibVersionOnce();
     }
 
     FileAnalyzer::FileAnalyzer(const QByteArray& fileContents,
@@ -50,6 +54,8 @@ namespace PMP {
        _haveReadFile(true), _error(false), _analyzed(false)
     {
         _error |= _extension == Extension::None;
+
+        logTagLibVersionOnce();
     }
 
     FileAnalyzer::FileAnalyzer(const TagLib::ByteVector& fileContents,
@@ -58,13 +64,18 @@ namespace PMP {
        _haveReadFile(true), _error(false), _analyzed(false)
     {
         _error |= _extension == Extension::None;
+
+        logTagLibVersionOnce();
     }
 
-    void FileAnalyzer::analyze() {
+    void FileAnalyzer::analyze()
+    {
         if (_error || _analyzed) return;
 
-        if (!_haveReadFile) {
-            if (!_file.open(QIODevice::ReadOnly)) {
+        if (!_haveReadFile)
+        {
+            if (!_file.open(QIODevice::ReadOnly))
+            {
                 _error = true;
                 return;
             }
@@ -72,13 +83,15 @@ namespace PMP {
             QByteArray contents = _file.readAll();
             _fileContents.setData(contents.data(), uint(contents.length()));
             _haveReadFile = true;
-            if (_fileContents.isEmpty()) {
+            if (_fileContents.isEmpty())
+            {
                 _error = true;
                 return;
             }
         }
 
-        switch (_extension) {
+        switch (_extension)
+        {
             case Extension::MP3:
                 analyzeMp3();
                 break;
@@ -93,33 +106,55 @@ namespace PMP {
                 break;
         }
 
-        if (!_error) {
+        if (!_error)
+        {
             _analyzed = true;
         }
     }
 
-    bool FileAnalyzer::hadError() const {
+    bool FileAnalyzer::hadError() const
+    {
         return _error;
     }
 
-    bool FileAnalyzer::analysisDone() const {
+    bool FileAnalyzer::analysisDone() const
+    {
         return _analyzed;
     }
 
-    FileHash FileAnalyzer::hash() const {
+    FileHash FileAnalyzer::hash() const
+    {
         return _hash;
     }
 
-    FileHash FileAnalyzer::legacyHash() const {
+    FileHash FileAnalyzer::legacyHash() const
+    {
         return _legacyHash;
     }
 
-    AudioData const& FileAnalyzer::audioData() const {
+    AudioData const& FileAnalyzer::audioData() const
+    {
         return _audio;
     }
 
-    TagData const& FileAnalyzer::tagData() const {
+    TagData const& FileAnalyzer::tagData() const
+    {
         return _tags;
+    }
+
+    void FileAnalyzer::logTagLibVersionOnce()
+    {
+        static bool tagLibVersionLogged = false;
+
+        if (tagLibVersionLogged)
+            return;
+
+        tagLibVersionLogged = true;
+
+        QVersionNumber tagLibVersion { TAGLIB_MAJOR_VERSION, TAGLIB_MINOR_VERSION,
+                                       TAGLIB_PATCH_VERSION };
+
+        qDebug() << "compiled with TagLib version" << tagLibVersion;
     }
 
     bool FileAnalyzer::isExtensionSupported(QString const& extension,
@@ -148,7 +183,8 @@ namespace PMP {
         TagLib::ByteVector scratch(fileContents.data(), uint(fileContents.length()));
         TagLib::ByteVectorStream stream(scratch);
         TagLib::MPEG::File tagFile(&stream, TagLib::ID3v2::FrameFactory::instance());
-        if (!tagFile.isValid()) {
+        if (!tagFile.isValid())
+        {
             return false;
         }
 
@@ -161,7 +197,8 @@ namespace PMP {
         return true; /* success */
     }
 
-    FileAnalyzer::Extension FileAnalyzer::getExtension(QString extension) {
+    FileAnalyzer::Extension FileAnalyzer::getExtension(QString extension)
+    {
         auto lower = extension.toLower();
         if (lower == "mp3") return Extension::MP3;
         if (lower == "flac") return Extension::FLAC;
@@ -182,7 +219,8 @@ namespace PMP {
         _tags = TagData(artist, title, album, comment);
     }
 
-    FileHash FileAnalyzer::getHashFrom(TagLib::ByteVector const& data) {
+    FileHash FileAnalyzer::getHashFrom(TagLib::ByteVector const& data)
+    {
         uint size = data.size();
 
         QCryptographicHash md5Hasher(QCryptographicHash::Md5);
@@ -194,7 +232,8 @@ namespace PMP {
         return FileHash(size, sha1Hasher.result(), md5Hasher.result());
     }
 
-    bool FileAnalyzer::stripID3v1(TagLib::ByteVector& data) {
+    bool FileAnalyzer::stripID3v1(TagLib::ByteVector& data)
+    {
         auto length = data.size();
         if (length < 128U) return false;
 
@@ -210,14 +249,16 @@ namespace PMP {
         return true;
     }
 
-    bool FileAnalyzer::stripAPE(TagLib::ByteVector& data) {
+    bool FileAnalyzer::stripAPE(TagLib::ByteVector& data)
+    {
         // TODO FIXME : this does not work (correctly)
 
         auto length = data.size();
         if (length < 32U) return false;
 
         auto position = length - 32;
-        if (data.mid(position, 8) != "APETAGEX") {
+        if (data.mid(position, 8) != "APETAGEX")
+        {
             return false; /* APE not found */
         }
 
@@ -262,12 +303,14 @@ namespace PMP {
         return false;
     }
 
-    void FileAnalyzer::analyzeMp3() {
+    void FileAnalyzer::analyzeMp3()
+    {
         TagLib::ByteVector scratch = _fileContents;
         TagLib::ByteVectorStream stream(scratch);
 
         TagLib::MPEG::File tagFile(&stream, TagLib::ID3v2::FrameFactory::instance());
-        if (!tagFile.isValid()) {
+        if (!tagFile.isValid())
+        {
             _error = true;
             return;
         }
@@ -277,7 +320,8 @@ namespace PMP {
         getDataFromTag(tagFile.tag());
 
         auto* audioProperties = tagFile.audioProperties();
-        if (audioProperties) {
+        if (audioProperties)
+        {
             _audio.setTrackLengthMilliseconds(audioProperties->lengthInMilliseconds());
         }
 
@@ -294,23 +338,27 @@ namespace PMP {
         finalDifferentFromLegacy |= stripAPE(scratch);
 
         /* get the final hash */
-        if (finalDifferentFromLegacy) {
+        if (finalDifferentFromLegacy)
+        {
             _hash = getHashFrom(scratch);
             _legacyHash = legacyHash;
         }
-        else {
+        else
+        {
             _hash = legacyHash;
             /* no 'legacy' hash */
         }
     }
 
-    void FileAnalyzer::analyzeFlac() {
+    void FileAnalyzer::analyzeFlac()
+    {
         TagLib::ByteVector scratch = _fileContents;
         TagLib::ByteVectorStream stream(scratch);
 
         TagLib::FLAC::File tagFile(&stream, TagLib::ID3v2::FrameFactory::instance());
 
-        if (!tagFile.isValid()) {
+        if (!tagFile.isValid())
+        {
             _error = true;
             return;
         }
@@ -320,7 +368,8 @@ namespace PMP {
         getDataFromTag(tagFile.tag());
 
         auto* audioProperties = tagFile.audioProperties();
-        if (audioProperties) {
+        if (audioProperties)
+        {
             _audio.setTrackLengthMilliseconds(audioProperties->lengthInMilliseconds());
         }
 
@@ -334,7 +383,8 @@ namespace PMP {
         stripID3v1(scratch); /* ID3v1 might occur twice */
 
         /* strip the header and metadata blocks */
-        if (!stripFlacHeaders(scratch)) {
+        if (!stripFlacHeaders(scratch))
+        {
             _error = true;
             return;
         }
@@ -342,7 +392,8 @@ namespace PMP {
         _hash = getHashFrom(scratch);
     }
 
-    bool FileAnalyzer::stripFlacHeaders(TagLib::ByteVector& flacData) {
+    bool FileAnalyzer::stripFlacHeaders(TagLib::ByteVector& flacData)
+    {
         const int metadataBlockHeaderSize = 4;
 
         if (flacData.size() < 4 /* fLaC */ + metadataBlockHeaderSize
@@ -354,7 +405,8 @@ namespace PMP {
         TagLib::ByteVectorStream stream(flacData);
         stream.seek(4); /* skip "fLaC" */
 
-        while (true) {
+        while (true)
+        {
             /* https://xiph.org/flac/format.html
 
                METADATA_BLOCK_HEADER:
