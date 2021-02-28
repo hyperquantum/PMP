@@ -4,6 +4,7 @@
 * handle failed requests properly (OpenSSL missing or connection problem)
 * make sure OpenSSL libraries are included in binary releases
 * the scrobbling machinery currently has to wait for the first full indexation to finish, fix this
+* race condition after track finished playing, between history insert and check for something to scrobble
 
 
 

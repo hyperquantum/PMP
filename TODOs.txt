@@ -51,7 +51,7 @@ IDEAS
  ** player: option for single track mode (vs. continuous play)
  * player: 'load track' action that loads a track but does not start playing; this allows seek before playing
  * player: 'play again next' action for the song that is currently playing
- * player: auto-stop timer to make playback stop at or near a specified clock time
+ ** player: auto-stop timer to make playback stop at or near a specified clock time
  * player: auto-start timer to make playback start at a specified clock time
  * player: delayed start: e.g. being able to press Play and then have 5 seconds before PMP actually starts playing
  * player: avoid accidental multiple clicks on "skip" affecting track score unnecessarily
