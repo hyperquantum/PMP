@@ -170,7 +170,6 @@ namespace PMP {
             else
             {
                 _errorMessage = "Command 'shutdown' requires zero arguments!";
-                return;
             }
         }
         else if (command == "volume")
@@ -259,7 +258,6 @@ namespace PMP {
         else if (command == ":")
         {
             _errorMessage = "Expected command before \":\" separator";
-            return;
         }
         else
         {
@@ -268,8 +266,6 @@ namespace PMP {
             if (command.contains(':'))
                 _errorMessage +=
                         " (did you forget to put spaces around the \":\" separator?)";
-
-            return;
         }
     }
 
