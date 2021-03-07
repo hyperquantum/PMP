@@ -27,9 +27,17 @@ namespace PMP {
 
     CommandParser::CommandParser()
      : _command(nullptr),
-       _explicitInitialLogin(false)
+       _authenticationMode(AuthenticationMode::Implicit)
     {
         //
+    }
+
+    void CommandParser::reset()
+    {
+        _command = nullptr;
+        _authenticationMode = AuthenticationMode::Implicit;
+        _errorMessage.clear();
+        _username.clear();
     }
 
     template <class SomeCommand>
@@ -62,13 +70,6 @@ namespace PMP {
         if (gotParseError()) return;
 
         parseCommand(commandWithArgs);
-    }
-
-    void CommandParser::reset()
-    {
-        _command = nullptr;
-        _explicitInitialLogin = false;
-        _errorMessage.clear();
     }
 
     void CommandParser::splitMultipleCommandsInOne(QVector<QString>& commandWithArgs)
@@ -104,19 +105,70 @@ namespace PMP {
 
     void CommandParser::parseExplicitLoginAndSeparator(QVector<QString>& commandWithArgs)
     {
-        auto command = commandWithArgs[0];
+        //auto command = commandWithArgs[0];
         /* we already know that the command is "login" */
 
-        _explicitInitialLogin = true;
+        bool allCredentialsFromStdIn = false;
 
-        if (commandWithArgs.size() < 2 || commandWithArgs[1] != ":")
+        int separatorIndex = -1;
+        for (int argIndex = 1; argIndex < commandWithArgs.size(); ++argIndex)
         {
-            _errorMessage =
-                QString("Expected \"%1\" separator after \"%2\"").arg(":", command);
+            auto arg = commandWithArgs[argIndex];
+            if (arg == ":")
+            {
+                separatorIndex = argIndex;
+                break;
+            }
+
+            switch (argIndex)
+            {
+                case 1:
+                    if (arg == "-")
+                        allCredentialsFromStdIn = true;
+                    else
+                        _username = arg;
+                    break;
+                case 2:
+                    if (arg != "-")
+                    {
+                        _errorMessage =
+                            "Password for \"login\" command must be specified as \"-\"";
+                        return;
+                    }
+                    break;
+                case 3:
+                    _errorMessage =
+                        "\"login\" command has too many arguments,"
+                        " or a \":\" separator is missing";
+                    return;
+            }
+        }
+
+        if (separatorIndex < 0)
+        {
+            _errorMessage = "There must be a \":\" separator after the \"login command\"";
             return;
         }
 
-        commandWithArgs = commandWithArgs.mid(2);
+        auto argCount = separatorIndex - 1;
+        if (argCount == 0)
+        {
+            _authenticationMode = AuthenticationMode::ExplicitAllInteractive;
+        }
+        else if (argCount == 1)
+        {
+            _authenticationMode =
+                allCredentialsFromStdIn ? AuthenticationMode::ExplicitAllFromStdIn
+                                        : AuthenticationMode::ExplicitPasswordInteractive;
+        }
+        else if (argCount == 2)
+        {
+            _authenticationMode =
+                allCredentialsFromStdIn ? AuthenticationMode::ExplicitAllFromStdIn
+                                        : AuthenticationMode::ExplicitPasswordFromStdIn;
+        }
+
+        commandWithArgs = commandWithArgs.mid(separatorIndex + 1);
     }
 
     void CommandParser::parseCommand(QVector<QString> commandWithArgs)

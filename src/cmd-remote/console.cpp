@@ -63,6 +63,28 @@ namespace PMP
         return input;
     }
 
+    QVector<QString> Console::readLinesFromStdIn(int lineCount)
+    {
+        if (lineCount < 1)
+            return {};
+
+        QTextStream in(stdin);
+
+        QVector<QString> lines;
+        lines.reserve(lineCount);
+
+        for (int i = 0; i < lineCount; ++i)
+        {
+            QString line = in.readLine();
+            if (line.isNull())
+                return lines; /* result is incomplete */
+
+            lines << line;
+        }
+
+        return lines;
+    }
+
     void Console::enableConsoleEcho(bool enable)
     {
 #ifdef Q_OS_WIN32

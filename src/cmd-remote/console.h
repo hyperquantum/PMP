@@ -21,6 +21,7 @@
 #define PMP_CONSOLE_H
 
 #include <QString>
+#include <QVector>
 
 namespace PMP
 {
@@ -30,6 +31,8 @@ namespace PMP
     public:
         static QString promptForPassword(QString prompt);
         static QString prompt(QString prompt);
+
+        static QVector<QString> readLinesFromStdIn(int lineCount);
 
     private:
         static void enableConsoleEcho(bool enable);

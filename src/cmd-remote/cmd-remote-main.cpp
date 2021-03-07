@@ -51,7 +51,6 @@ void printUsage(QTextStream& out)
            << " <server-name-or-ip> [<server-port>] <login-command> : <command>" << endl
         << endl
         << "  commands:" << endl
-        << endl
         << "    play: start/resume playback" << endl
         << "    pause: pause playback" << endl
         << "    skip: jump to next track in the queue" << endl
@@ -66,7 +65,16 @@ void printUsage(QTextStream& out)
         << "    shutdown: shut down the server program" << endl
         << endl
         << "  login command:"<< endl
-        << "    login: forces authentication to occur"<< endl
+        << "    login: forces authentication to occur; prompts for username and password" << endl
+        << "    login <username>: forces authentication to occur; prompts for password" << endl
+        << "    login <username> -: forces authentication to occur; reads password from" << endl
+        << "                        standard input" << endl
+        << "    login - [-]: forces authentication to occur; reads username and password" << endl
+        << "                 from standard input" << endl
+        << endl
+        << "    When reading username and password from standard input, it is assumed that" << endl
+        << "    the first line of the input is the username and the second line is the" << endl
+        << "    password." << endl
         << endl
         << "  NOTICE:" << endl
         << "    The 'shutdown' command no longer supports arguments." << endl
@@ -93,12 +101,87 @@ void printUsage(QTextStream& out)
         << "    " << programName << " localhost qmove 42 +3" << endl
         << "    " << programName << " localhost nowplaying" << endl
         << "    " << programName << " localhost login : nowplaying" << endl
+        << "    " << programName << " localhost login MyUsername : play" << endl
+        << "    " << programName << " localhost login MyUsername - : play <passwordfile" << endl
+        << "    " << programName << " localhost login - : play <credentialsfile" << endl
         ;
 }
 
 bool looksLikePortNumber(QString const& string)
 {
     return string.size() > 0 && string[0].isDigit();
+}
+
+struct AuthenticationData
+{
+    QString username;
+    QString password;
+    QString error;
+
+    bool haveError() const { return !error.isEmpty(); }
+};
+
+AuthenticationData handleAuthentication(CommandParser const& commandParser,
+                                        bool commandRequiresAuthentication)
+{
+    AuthenticationData result;
+
+    auto authenticationMode = commandParser.authenticationMode();
+
+    switch (authenticationMode)
+    {
+        case AuthenticationMode::Implicit:
+            if (!commandRequiresAuthentication)
+                return result; /* no authentication */
+
+            // fall through
+        case AuthenticationMode::ExplicitAllInteractive:
+            result.username = Console::prompt("PMP username: ");
+            result.password = Console::promptForPassword("password: ");
+            break;
+
+        case AuthenticationMode::ExplicitPasswordInteractive:
+            result.username = commandParser.explicitLoginUsername();
+            result.password = Console::promptForPassword("password: ");
+            break;
+        case AuthenticationMode::ExplicitPasswordFromStdIn:
+        {
+            auto lines = Console::readLinesFromStdIn(1);
+            if (lines.size() < 1)
+            {
+                result.error = "Could not read password from stdin";
+                return result;
+            }
+
+            result.username = commandParser.explicitLoginUsername();
+            result.password = lines[0];
+            break;
+        }
+        case AuthenticationMode::ExplicitAllFromStdIn:
+        {
+            auto lines = Console::readLinesFromStdIn(2);
+            if (lines.size() < 2)
+            {
+                result.error = "Could not read username and password from stdin";
+                return result;
+            }
+
+            result.username = lines[0];
+            result.password = lines[1];
+            break;
+        }
+    }
+
+    if (result.username.isEmpty())
+    {
+        result.error = "Username must not be empty";
+    }
+    else if (result.password.isEmpty())
+    {
+        result.error = "Password must not be empty";
+    }
+
+    return result;
 }
 
 int main(int argc, char *argv[])
@@ -186,15 +269,17 @@ int main(int argc, char *argv[])
 
     Command* command = commandParser.command();
 
-    QString username;
-    QString password;
-    if (commandParser.hasExplicitInitialLogin() || command->requiresAuthentication())
+    auto authentication =
+            handleAuthentication(commandParser, command->requiresAuthentication());
+
+    if (authentication.haveError())
     {
-        username = Console::prompt("PMP username: ");
-        password = Console::promptForPassword("password: ");
+        err << authentication.error << endl;
+        return 1;
     }
 
-    Client client(nullptr, &out, &err, server, portNumber, username, password, command);
+    Client client(nullptr, &out, &err, server, portNumber,
+                  authentication.username, authentication.password, command);
     QObject::connect(
         &client, &Client::exitClient,
         &app, &QCoreApplication::exit

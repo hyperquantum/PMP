@@ -27,6 +27,15 @@ namespace PMP {
 
     class Command;
 
+    enum class AuthenticationMode
+    {
+        Implicit,
+        ExplicitAllInteractive,
+        ExplicitPasswordInteractive,
+        ExplicitPasswordFromStdIn,
+        ExplicitAllFromStdIn,
+    };
+
     class CommandParser {
     public:
         CommandParser();
@@ -34,7 +43,8 @@ namespace PMP {
         void parse(QVector<QString> commandWithArgs);
 
         Command* command() const { return _command; }
-        bool hasExplicitInitialLogin() const { return _explicitInitialLogin; }
+        AuthenticationMode authenticationMode() const { return _authenticationMode; }
+        QString explicitLoginUsername() const { return _username; }
 
         bool parsedSuccessfully() const { return _command != nullptr; }
         QString errorMessage() const { return _errorMessage; }
@@ -53,7 +63,8 @@ namespace PMP {
 
         Command* _command;
         QString _errorMessage;
-        bool _explicitInitialLogin;
+        QString _username;
+        AuthenticationMode _authenticationMode;
     };
 }
 #endif
