@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -202,39 +202,46 @@ namespace PMP {
         }
     }
 
-    TagData const* Resolver::HashKnowledge::findBestTag() {
+    TagData const* Resolver::HashKnowledge::findBestTag()
+    {
         /* try to return a match with complete tags */
-        const TagData* result = nullptr;
-        int resultScore = -1;
-        for (const TagData* tag : _tags) {
+        const TagData* bestTag = nullptr;
+        int bestScore = -1;
+        for (const TagData* tag : qAsConst(_tags))
+        {
             int score = 0;
 
             int titleLength = tag->title().length();
             int artistLength = tag->artist().length();
             int albumLength = tag->album().length();
 
-            if (titleLength > 0) {
+            if (titleLength > 0)
+            {
                 score += 100000;
                 score += 8 * std::min(titleLength, 256);
             }
 
-            if (artistLength > 0) {
+            if (artistLength > 0)
+            {
                 score += 80000;
                 score += std::min(artistLength, 256);
             }
 
-            if (albumLength > 0) {
+            if (albumLength > 0)
+            {
                 score += 6000;
                 score += std::min(albumLength, 256);
             }
 
-            if (score <= resultScore) { continue; }
-
-            result = tag;
-            resultScore = score;
+            /* for equal scores we'll use the latest tag */
+            if (score >= bestScore)
+            {
+                bestTag = tag;
+                bestScore = score;
+            }
         }
 
-        return result;
+        return bestTag;
     }
 
     void Resolver::HashKnowledge::addPath(const QString& filename,

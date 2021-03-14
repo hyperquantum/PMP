@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -139,9 +139,10 @@ namespace PMP {
         template<class T> void addWhenModelEmpty(T trackCollection);
         void addOrUpdateTrack(CollectionTrackInfo const& track);
         void addTrack(CollectionTrackInfo const& track);
-        void updateTrack(CollectionTrackInfo const& track);
+        void updateTrack(int innerIndex, CollectionTrackInfo const& newTrackData);
         void buildIndexMaps();
         void rebuildInnerMap(int outerStartIndex = 0);
+        void rebuildInnerMap(int outerStartIndex, int outerEndIndex);
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track);
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track,
                                             int searchRangeBegin, int searchRangeEnd);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -629,8 +629,10 @@ namespace PMP {
     {
         /* hash already present? */
         auto hashIterator = _hashesToInnerIndexes.find(track.hash());
-        if (hashIterator != _hashesToInnerIndexes.end()) {
-            updateTrack(track);
+        if (hashIterator != _hashesToInnerIndexes.end())
+        {
+            auto innerIndex = hashIterator.value();
+            updateTrack(innerIndex, track);
             return;
         }
 
@@ -659,17 +661,45 @@ namespace PMP {
         endInsertRows();
     }
 
-    void SortedCollectionTableModel::updateTrack(const CollectionTrackInfo& track)
+    void SortedCollectionTableModel::updateTrack(int innerIndex,
+                                                 const CollectionTrackInfo& newTrackData)
     {
-        qWarning() << "collection track update not handled:"
-                   << "title:" << track.title() << "; artist:" << track.artist()
-                   << "; album:" << track.album()
-                   << "; available:" << (track.isAvailable() ? "yes" : "no");
+        auto& track = *_tracks[innerIndex];
 
-        // TODO: update existing entry
-        //
-        //
-        //
+        qDebug() << "collection track update:"
+                   << "title:" << newTrackData.title()
+                   << "; artist:" << newTrackData.artist()
+                   << "; album:" << newTrackData.album()
+                   << "; available:" << (newTrackData.isAvailable() ? "yes" : "no")
+                   << "; hash:" << newTrackData.hash();
+
+        int oldOuterIndex = _innerToOuterIndexMap[innerIndex];
+        int newOuterIndex = findOuterIndexMapIndexForInsert(newTrackData);
+
+        /* moving the track after itself means we need to subtract one from the
+           destination index */
+        if (newOuterIndex > oldOuterIndex)
+            newOuterIndex--;
+
+        if (newOuterIndex != oldOuterIndex)
+        {
+            beginMoveRows(QModelIndex(), oldOuterIndex, oldOuterIndex,
+                          QModelIndex(), newOuterIndex);
+
+            _outerToInnerIndexMap.move(oldOuterIndex, newOuterIndex);
+
+            /* elements between the old and new index got a new outer index;
+               update the inner to outer map to reflect this */
+            rebuildInnerMap(qMin(oldOuterIndex, newOuterIndex),
+                            qMax(oldOuterIndex, newOuterIndex) + 1);
+
+            endMoveRows();
+        }
+
+        track = newTrackData;
+
+        Q_EMIT dataChanged(createIndex(newOuterIndex, 0),
+                           createIndex(newOuterIndex, 4 - 1));
     }
 
     void SortedCollectionTableModel::sort(int column, Qt::SortOrder order) {
@@ -718,9 +748,17 @@ namespace PMP {
         rebuildInnerMap();
     }
 
-    void SortedCollectionTableModel::rebuildInnerMap(int outerStartIndex) {
+    void SortedCollectionTableModel::rebuildInnerMap(int outerStartIndex)
+    {
+        rebuildInnerMap(outerStartIndex, _outerToInnerIndexMap.size());
+    }
+
+    void SortedCollectionTableModel::rebuildInnerMap(int outerStartIndex,
+                                                     int outerEndIndex)
+    {
         /* (re)construct inner map from outer map */
-        for (int i = outerStartIndex; i < _outerToInnerIndexMap.size(); ++i) {
+        for (int i = outerStartIndex; i < outerEndIndex; ++i)
+        {
             _innerToOuterIndexMap[_outerToInnerIndexMap[i]] = i;
         }
     }
