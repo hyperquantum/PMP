@@ -605,7 +605,7 @@ namespace PMP
         return knowledge->hash();
     }
 
-    bool Resolver::haveFileFor(const FileHash& hash)
+    bool Resolver::haveFileForHash(const FileHash& hash)
     {
         QMutexLocker lock(&_lock);
 
@@ -637,7 +637,7 @@ namespace PMP
         (void)knowledge->isStillValid(file);
     }
 
-    QString Resolver::findPath(const FileHash& hash, bool fast)
+    QString Resolver::findPathForHash(const FileHash& hash, bool fast)
     {
         QMutexLocker lock(&_lock);
 

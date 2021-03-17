@@ -52,8 +52,8 @@ namespace PMP
 
         FileHash analyzeAndRegisterFile(const QString& filename);
 
-        bool haveFileFor(const FileHash& hash);
-        QString findPath(const FileHash& hash, bool fast);
+        bool haveFileForHash(const FileHash& hash);
+        QString findPathForHash(const FileHash& hash, bool fast);
         bool pathStillValid(const FileHash& hash, QString path);
 
         const AudioData& findAudioData(const FileHash& hash);
