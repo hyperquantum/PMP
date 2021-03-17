@@ -362,7 +362,6 @@ namespace PMP
 
     Resolver::Resolver()
      : _lock(QMutex::Recursive),
-       //_randomEngine(Util::getRandomSeed()),
        _fullIndexationNumber(1), _fullIndexationRunning(false),
        _fullIndexationWatcher(this)
     {
@@ -746,18 +745,6 @@ namespace PMP
 
         return nullptr;
     }
-
-    /*
-    FileHash Resolver::getRandom()
-    {
-        QMutexLocker lock(&_lock);
-        if (_hashList.empty()) return FileHash();
-
-        std::uniform_int_distribution<int> uniformDistr(0, _hashList.size() - 1);
-        int randomIndex = uniformDistr(_randomEngine);
-        return _hashList[randomIndex];
-    }
-    */
 
     QVector<FileHash> Resolver::getAllHashes()
     {
