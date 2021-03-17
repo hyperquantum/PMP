@@ -641,7 +641,7 @@ namespace PMP
     {
         QMutexLocker lock(&_lock);
 
-        qDebug() << "Resolver::findPath for hash " << hash.dumpToString();
+        qDebug() << "Resolver::findPathForHash called for hash" << hash;
 
         auto knowledge = _hashKnowledge.value(hash, nullptr);
         if (knowledge)
@@ -654,37 +654,48 @@ namespace PMP
             }
         }
 
-        /* stop here if we had to get a result fast */
+        /* stop here if we had to get a result quickly */
         if (fast)
         {
             qDebug() << " no precomputed path available; we give up because no time left";
-            return "";
+            return {};
         }
 
         auto db = Database::getDatabaseForCurrentThread();
         if (!db)
         {
             qDebug() << " database not available";
-            return ""; /* database unusable */
+            return {}; /* database unusable */
         }
 
-        uint hashID = getID(hash);
-        if (!hashID)
+        uint hashId = getID(hash);
+        if (!hashId)
         {
             qDebug() << " hash not in database, cannot find path.";
-            return "";
-        }
-
-        QList<QString> filenames = db->getFilenames(hashID);
-        if (filenames.empty())
-        {
-            qDebug() << " no known filenames, cannot find path.";
-            return "";
+            return {};
         }
 
         qDebug() << " going to see if the file was moved somewhere else";
 
-        for (QString musicPath : _musicPaths)
+        auto path = findPathForHashByLikelyFilename(*db, hash, hashId);
+        if (!path.isEmpty())
+        {
+            qDebug() << " found match:" << path;
+            return path;
+        }
+
+        qDebug() << " could not easily locate a file that matches the hash; giving up";
+        return {}; /* not found */
+    }
+
+    QString Resolver::findPathForHashByLikelyFilename(Database& db, const FileHash& hash,
+                                                      uint hashId)
+    {
+        QList<QString> filenames = db.getFilenames(hashId);
+        if (filenames.empty()) /* no known filenames */
+            return {};
+
+        for (QString const& musicPath : qAsConst(_musicPaths))
         {
             QDirIterator it(musicPath, QDir::Dirs | QDir::Readable | QDir::NoDotAndDotDot,
                             QDirIterator::Subdirectories);
@@ -696,7 +707,7 @@ namespace PMP
 
                 QDir dir(entry.filePath());
 
-                for (QString fileShort : filenames)
+                for (QString const& fileShort : qAsConst(filenames))
                 {
                     if (!dir.exists(fileShort)) continue;
 
@@ -706,6 +717,7 @@ namespace PMP
 
                     if (_paths.contains(candidatePath))
                     {
+                        qDebug() << "  ignoring:" << candidatePath;
                         continue; /* this one will have a different hash */
                     }
 
@@ -714,16 +726,12 @@ namespace PMP
                     if (candidateHash.isNull()) continue; /* failed to analyze */
 
                     if (candidateHash == hash)
-                    {
-                        qDebug() << "   we have a MATCH!";
                         return candidatePath;
-                    }
                 }
             }
         }
 
-        qDebug() << " could not find the file in another location";
-        return ""; /* not found */
+        return {}; /* cannot find a matching file based on name alone */
     }
 
     const AudioData& Resolver::findAudioData(const FileHash& hash)

@@ -36,6 +36,7 @@
 
 namespace PMP
 {
+    class Database;
     class TagData;
 
     class Resolver : public QObject
@@ -87,6 +88,9 @@ namespace PMP
         HashKnowledge* registerHash(const FileHash& hash);
         QVector<QString> getPathsThatDontMatchCurrentFullIndexationNumber();
         void checkFileStillExistsAndIsValid(QString path);
+
+        QString findPathForHashByLikelyFilename(Database& db, const FileHash& hash,
+                                                uint hashId);
 
         void doFullIndexation();
 
