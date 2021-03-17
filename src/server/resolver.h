@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,11 +34,12 @@
 #include <QString>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class TagData;
 
-    class Resolver : public QObject {
+    class Resolver : public QObject
+    {
         Q_OBJECT
     public:
         Resolver();
