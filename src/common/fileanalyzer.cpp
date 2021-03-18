@@ -68,6 +68,13 @@ namespace PMP {
         logTagLibVersionOnce();
     }
 
+    bool FileAnalyzer::isFileSupported(QFileInfo& fileInfo,
+                                       bool enableExperimentalFileFormats)
+    {
+        return fileInfo.isFile()
+               && isExtensionSupported(fileInfo.suffix(), enableExperimentalFileFormats);
+    }
+
     void FileAnalyzer::analyze()
     {
         if (_error || _analyzed) return;

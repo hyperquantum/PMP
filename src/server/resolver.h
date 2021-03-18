@@ -91,6 +91,10 @@ namespace PMP
 
         QString findPathForHashByLikelyFilename(Database& db, const FileHash& hash,
                                                 uint hashId);
+        QString findPathByQuickScanForNewFiles(Database& db, const FileHash& hash,
+                                               uint hashId);
+        QString findPathByQuickScanOfNewFiles(QVector<QString> newFiles,
+                                              const FileHash& hash);
 
         void doFullIndexation();
 

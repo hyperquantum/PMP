@@ -25,6 +25,7 @@
 
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QSet>
 #include <QtConcurrent/QtConcurrent>
 #include <QtDebug>
 #include <QThreadPool>
@@ -440,20 +441,19 @@ namespace PMP
         qDebug() << "full indexation started";
         _fullIndexationNumber += 2; /* add 2 so it will never become zero */
 
-        QList<QString> musicPaths = this->musicPaths();
+        auto musicPaths = this->musicPaths();
 
         QList<QString> filesToAnalyze;
 
         /* traverse filesystem to find music files */
-        for (QString musicPath : musicPaths)
+        for (QString const& musicPath : qAsConst(musicPaths))
         {
             QDirIterator it(musicPath, QDirIterator::Subdirectories); /* no symlinks */
 
             while (it.hasNext())
             {
                 QFileInfo entry(it.next());
-                if (!entry.isFile()) continue;
-                if (!FileAnalyzer::isExtensionSupported(entry.suffix())) continue;
+                if (!FileAnalyzer::isFileSupported(entry)) continue;
 
                 filesToAnalyze.append(entry.absoluteFilePath());
             }
@@ -462,7 +462,7 @@ namespace PMP
         qDebug() << "full indexation:" << filesToAnalyze.size() << "files to analyze";
 
         /* analyze the files we found */
-        for (QString filePath : filesToAnalyze)
+        for (QString const& filePath : qAsConst(filesToAnalyze))
         {
             FileHash hash =
                     analyzeAndRegisterFileInternal(filePath, _fullIndexationNumber);
@@ -476,7 +476,7 @@ namespace PMP
         qDebug() << "full indexation: going to check for files that are now gone";
 
         auto pathsToCheck = getPathsThatDontMatchCurrentFullIndexationNumber();
-        for (const auto& path : pathsToCheck)
+        for (QString const& path : qAsConst(pathsToCheck))
         {
             checkFileStillExistsAndIsValid(path);
         }
@@ -647,9 +647,9 @@ namespace PMP
         if (knowledge)
         {
             QString path = knowledge->getFile();
-            if (path.length() > 0)
+            if (!path.isEmpty())
             {
-                qDebug() << " found path directly.";
+                qDebug() << " returning path that was already known:" << path;
                 return path;
             }
         }
@@ -680,7 +680,14 @@ namespace PMP
         auto path = findPathForHashByLikelyFilename(*db, hash, hashId);
         if (!path.isEmpty())
         {
-            qDebug() << " found match:" << path;
+            qDebug() << " found match by filename heuristic:" << path;
+            return path;
+        }
+
+        path = findPathByQuickScanForNewFiles(*db, hash, hashId);
+        if (!path.isEmpty())
+        {
+            qDebug() << " found match by quick scan for new files:" << path;
             return path;
         }
 
@@ -691,9 +698,11 @@ namespace PMP
     QString Resolver::findPathForHashByLikelyFilename(Database& db, const FileHash& hash,
                                                       uint hashId)
     {
-        QList<QString> filenames = db.getFilenames(hashId);
+        auto filenames = db.getFilenames(hashId).toSet();
         if (filenames.empty()) /* no known filenames */
             return {};
+
+        qDebug() << " going to look for a matching file using a filename-based heuristic";
 
         for (QString const& musicPath : qAsConst(_musicPaths))
         {
@@ -732,6 +741,77 @@ namespace PMP
         }
 
         return {}; /* cannot find a matching file based on name alone */
+    }
+
+    QString Resolver::findPathByQuickScanForNewFiles(Database& db, const FileHash& hash,
+                                                     uint hashId)
+    {
+        /* get likely file sizes */
+        QSet<qint64> previousFileSizes = db.getFileSizes(hashId).toSet();
+
+        auto musicPaths = this->musicPaths();
+
+        QVector<QString> newFilesToScan;
+
+        qDebug() << " going to look for a matching file using a filesize-based heuristic";
+
+        /* traverse filesystem to find music files */
+        for (QString const& musicPath : qAsConst(musicPaths))
+        {
+            QDirIterator it(musicPath, QDirIterator::Subdirectories); /* no symlinks */
+
+            while (it.hasNext())
+            {
+                QFileInfo entry(it.next());
+                if (!FileAnalyzer::isFileSupported(entry)) continue;
+
+                auto candidatePath = entry.absoluteFilePath();
+
+                if (_paths.contains(candidatePath))
+                    continue; /* this file is already indexed */
+
+                if (!previousFileSizes.contains(entry.size()))
+                {   /* file size does not indicate a match */
+                    newFilesToScan.append(candidatePath);
+                    continue;
+                }
+
+                qDebug() << "  checking out file with matching size:" << candidatePath;
+
+                auto candidateHash = analyzeAndRegisterFileInternal(candidatePath, 0);
+                if (candidateHash == hash)
+                    return candidatePath;
+            }
+        }
+
+        return findPathByQuickScanOfNewFiles(newFilesToScan, hash);
+    }
+
+    QString Resolver::findPathByQuickScanOfNewFiles(QVector<QString> newFiles,
+                                                    const FileHash& hash)
+    {
+        const int maxNewFilesToScan = 3;
+
+        qDebug() << " going to look for a matching file by examining new files";
+
+        for (int i = 0; i < newFiles.size(); ++i)
+        {
+            if (i >= maxNewFilesToScan)
+            {
+                qDebug() << "  reached maximum number of new files to scan; stopping now";
+                // TODO: put indexation of the remaining files in some kind of work queue
+                break;
+            }
+
+            auto newFilePath = newFiles[i];
+            qDebug() << "  checking out new file:" << newFilePath;
+
+            auto candidateHash = analyzeAndRegisterFileInternal(newFilePath, 0);
+            if (candidateHash == hash)
+                return newFilePath;
+        }
+
+        return {}; /* found nothing */
     }
 
     const AudioData& Resolver::findAudioData(const FileHash& hash)
