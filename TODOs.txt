@@ -28,6 +28,7 @@ KNOWN BUGS
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
  * GUI remote: multimedia keys don't work when a popup dialog is open (like track info)
  * unknown error at login because of username case (in)sensitivity
+ * track title/artist/length update in the music collection does not trigger an update of queue entries referencing that track
 
 
 PERFORMANCE ISSUES
