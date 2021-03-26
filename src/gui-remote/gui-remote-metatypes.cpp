@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,8 +25,9 @@ namespace PMP {
      *  startup */
     class GuiRemoteMetatypesInit {
     protected:
-        GuiRemoteMetatypesInit() {
-            qRegisterMetaType<PMP::TrackHighlightMode>();
+        GuiRemoteMetatypesInit()
+        {
+            qRegisterMetaType<PMP::TrackCriterium>();
         }
 
     private:

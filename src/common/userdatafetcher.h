@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -48,6 +48,7 @@ namespace PMP {
 
     Q_SIGNALS:
         void dataReceivedForUser(quint32 userId);
+        void userTrackDataChanged(quint32 userId, FileHash hash);
 
     private Q_SLOTS:
         //void connected();

@@ -42,13 +42,19 @@ namespace PMP {
        _ui(new Ui::CollectionWidget),
        _colorSwitcher(nullptr),
        _clientServerInterface(clientServerInterface),
-       _collectionSourceModel(new SortedCollectionTableModel(this,clientServerInterface)),
-       _collectionDisplayModel(
-           new FilteredCollectionTableModel(_collectionSourceModel, this)),
+       _collectionViewContext(new CollectionViewContext(this, clientServerInterface)),
+       _collectionSourceModel(new SortedCollectionTableModel(this,
+                                                             clientServerInterface,
+                                                             _collectionViewContext)),
+       _collectionDisplayModel(new FilteredCollectionTableModel(this,
+                                                                _collectionSourceModel,
+                                                                clientServerInterface,
+                                                                _collectionViewContext)),
        _collectionContextMenu(nullptr)
     {
         _ui->setupUi(this);
 
+        initTrackFilterComboBox();
         initTrackHighlightingComboBox();
         initTrackHighlightingColorSwitcher();
 
@@ -89,7 +95,8 @@ namespace PMP {
         _ui->collectionTableView->horizontalHeader()->setSortIndicatorShown(true);
     }
 
-    CollectionWidget::~CollectionWidget() {
+    CollectionWidget::~CollectionWidget()
+    {
         QSettings settings(QCoreApplication::organizationName(),
                            QCoreApplication::applicationName());
 
@@ -105,21 +112,33 @@ namespace PMP {
         delete _ui;
     }
 
-    void CollectionWidget::highlightTracksIndexChanged(int index) {
+    void CollectionWidget::filterTracksIndexChanged(int index)
+    {
+        Q_UNUSED(index)
+
+        auto filter = getCurrentTrackFilter();
+
+        _collectionDisplayModel->setTrackFilter(filter);
+    }
+
+    void CollectionWidget::highlightTracksIndexChanged(int index)
+    {
         Q_UNUSED(index)
 
         auto mode = getCurrentHighlightMode();
 
-        _colorSwitcher->setVisible(mode != TrackHighlightMode::None);
+        _colorSwitcher->setVisible(mode != TrackCriterium::None);
 
-        _collectionSourceModel->setHighlightMode(mode);
+        _collectionSourceModel->setHighlightCriterium(mode);
     }
 
-    void CollectionWidget::highlightColorIndexChanged() {
+    void CollectionWidget::highlightColorIndexChanged()
+    {
         _collectionSourceModel->setHighlightColorIndex(_colorSwitcher->colorIndex());
     }
 
-    void CollectionWidget::collectionContextMenuRequested(const QPoint& position) {
+    void CollectionWidget::collectionContextMenuRequested(const QPoint& position)
+    {
         qDebug() << "CollectionWidget: contextmenu requested";
 
         auto index = _ui->collectionTableView->indexAt(position);
@@ -175,40 +194,23 @@ namespace PMP {
         _collectionContextMenu->popup(popupPosition);
     }
 
-    void CollectionWidget::initTrackHighlightingComboBox() {
+    void CollectionWidget::initTrackFilterComboBox()
+    {
+        auto combo = _ui->filterTracksComboBox;
+
+        fillTrackCriteriaComboBox(combo);
+
+        connect(
+            combo, qOverload<int>(&QComboBox::currentIndexChanged),
+            this, &CollectionWidget::filterTracksIndexChanged
+        );
+    }
+
+    void CollectionWidget::initTrackHighlightingComboBox()
+    {
         auto combo = _ui->highlightTracksComboBox;
 
-        auto addItem = [combo](QString text, TrackHighlightMode mode) {
-            text.replace(">=", Util::GreaterThanOrEqual)
-                .replace("<=", Util::LessThanOrEqual);
-
-            combo->addItem(text, QVariant::fromValue(mode));
-        };
-
-        addItem(tr("none"), TrackHighlightMode::None);
-
-        addItem(tr("never heard"), TrackHighlightMode::NeverHeard);
-        addItem(tr("not heard in the last 365 days"),
-                TrackHighlightMode::LastHeardNotInLast365Days);
-        addItem(tr("not heard in the last 180 days"),
-                TrackHighlightMode::LastHeardNotInLast180Days);
-        addItem(tr("not heard in the last 90 days"),
-                TrackHighlightMode::LastHeardNotInLast90Days);
-        addItem(tr("not heard in the last 30 days"),
-                TrackHighlightMode::LastHeardNotInLast30Days);
-        addItem(tr("not heard in the last 10 days"),
-                TrackHighlightMode::LastHeardNotInLast10Days);
-
-        addItem(tr("without score"), TrackHighlightMode::WithoutScore);
-        addItem(tr("score <= 30"), TrackHighlightMode::ScoreMaximum30);
-        addItem(tr("score >= 85"), TrackHighlightMode::ScoreAtLeast85);
-        addItem(tr("score >= 90"), TrackHighlightMode::ScoreAtLeast90);
-        addItem(tr("score >= 95"), TrackHighlightMode::ScoreAtLeast95);
-
-        addItem(tr("length <= 1 min."), TrackHighlightMode::LengthMaximumOneMinute);
-        addItem(tr("length >= 5 min."), TrackHighlightMode::LengthAtLeastFiveMinutes);
-
-        combo->setCurrentIndex(0);
+        fillTrackCriteriaComboBox(combo);
 
         connect(
             combo, qOverload<int>(&QComboBox::currentIndexChanged),
@@ -216,12 +218,50 @@ namespace PMP {
         );
     }
 
-    void CollectionWidget::initTrackHighlightingColorSwitcher() {
+    void CollectionWidget::fillTrackCriteriaComboBox(QComboBox* comboBox)
+    {
+        auto addItem =
+            [comboBox](QString text, TrackCriterium mode)
+            {
+                text.replace(">=", Util::GreaterThanOrEqual)
+                    .replace("<=", Util::LessThanOrEqual);
+
+                comboBox->addItem(text, QVariant::fromValue(mode));
+            };
+
+        addItem(tr("none"), TrackCriterium::None);
+
+        addItem(tr("never heard"), TrackCriterium::NeverHeard);
+        addItem(tr("not heard in the last 365 days"),
+                TrackCriterium::LastHeardNotInLast365Days);
+        addItem(tr("not heard in the last 180 days"),
+                TrackCriterium::LastHeardNotInLast180Days);
+        addItem(tr("not heard in the last 90 days"),
+                TrackCriterium::LastHeardNotInLast90Days);
+        addItem(tr("not heard in the last 30 days"),
+                TrackCriterium::LastHeardNotInLast30Days);
+        addItem(tr("not heard in the last 10 days"),
+                TrackCriterium::LastHeardNotInLast10Days);
+
+        addItem(tr("without score"), TrackCriterium::WithoutScore);
+        addItem(tr("score <= 30"), TrackCriterium::ScoreMaximum30);
+        addItem(tr("score >= 85"), TrackCriterium::ScoreAtLeast85);
+        addItem(tr("score >= 90"), TrackCriterium::ScoreAtLeast90);
+        addItem(tr("score >= 95"), TrackCriterium::ScoreAtLeast95);
+
+        addItem(tr("length <= 1 min."), TrackCriterium::LengthMaximumOneMinute);
+        addItem(tr("length >= 5 min."), TrackCriterium::LengthAtLeastFiveMinutes);
+
+        comboBox->setCurrentIndex(0);
+    }
+
+    void CollectionWidget::initTrackHighlightingColorSwitcher()
+    {
         auto& colors = Colors::instance();
 
         _colorSwitcher = new ColorSwitcher();
         _colorSwitcher->setColors(colors.itemBackgroundHighlightColors);
-        _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackHighlightMode::None);
+        _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackCriterium::None);
 
         connect(
             _colorSwitcher, &ColorSwitcher::colorIndexChanged,
@@ -236,8 +276,20 @@ namespace PMP {
         _ui->highlightColorButton = nullptr;
     }
 
-    TrackHighlightMode CollectionWidget::getCurrentHighlightMode() const {
-        return _ui->highlightTracksComboBox->currentData().value<TrackHighlightMode>();
+    TrackCriterium CollectionWidget::getCurrentTrackFilter() const
+    {
+        return getTrackCriteriumFromComboBox(_ui->filterTracksComboBox);
+    }
+
+    TrackCriterium CollectionWidget::getCurrentHighlightMode() const
+    {
+        return getTrackCriteriumFromComboBox(_ui->highlightTracksComboBox);
+    }
+
+    TrackCriterium CollectionWidget::getTrackCriteriumFromComboBox(
+                                                                QComboBox* comboBox) const
+    {
+        return comboBox->currentData().value<TrackCriterium>();
     }
 
 }
