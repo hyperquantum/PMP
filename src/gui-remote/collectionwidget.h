@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,19 +22,22 @@
 
 #include <QWidget>
 
+QT_FORWARD_DECLARE_CLASS(QComboBox)
 QT_FORWARD_DECLARE_CLASS(QMenu)
 
-namespace Ui {
+namespace Ui
+{
     class CollectionWidget;
 }
 
-namespace PMP {
-
+namespace PMP
+{
     class ClientServerInterface;
+    class CollectionViewContext;
     class ColorSwitcher;
     class FilteredCollectionTableModel;
     class SortedCollectionTableModel;
-    enum class TrackHighlightMode;
+    enum class TrackCriterium;
 
     class CollectionWidget : public QWidget {
         Q_OBJECT
@@ -44,19 +47,25 @@ namespace PMP {
         ~CollectionWidget();
 
     private Q_SLOTS:
+        void filterTracksIndexChanged(int index);
         void highlightTracksIndexChanged(int index);
         void highlightColorIndexChanged();
         void collectionContextMenuRequested(const QPoint& position);
 
     private:
+        void initTrackFilterComboBox();
         void initTrackHighlightingComboBox();
+        void fillTrackCriteriaComboBox(QComboBox* comboBox);
         void initTrackHighlightingColorSwitcher();
 
-        TrackHighlightMode getCurrentHighlightMode() const;
+        TrackCriterium getCurrentTrackFilter() const;
+        TrackCriterium getCurrentHighlightMode() const;
+        TrackCriterium getTrackCriteriumFromComboBox(QComboBox* comboBox) const;
 
         Ui::CollectionWidget* _ui;
         ColorSwitcher* _colorSwitcher;
         ClientServerInterface* _clientServerInterface;
+        CollectionViewContext* _collectionViewContext;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;
         QMenu* _collectionContextMenu;

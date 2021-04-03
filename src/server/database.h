@@ -150,6 +150,7 @@ namespace PMP {
         QList<QString> getFilenames(uint hashID);
 
         void registerFileSize(uint hashId, qint64 size);
+        QList<qint64> getFileSizes(uint hashID);
 
         QList<User> getUsers();
         bool checkUserExists(QString userName);

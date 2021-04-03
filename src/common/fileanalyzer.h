@@ -49,6 +49,8 @@ namespace PMP
         FileAnalyzer(const TagLib::ByteVector& fileContents,
                      const QString& fileExtension);
 
+        static bool isFileSupported(QFileInfo& fileInfo,
+                                    bool enableExperimentalFileFormats = false);
         static bool isExtensionSupported(QString const& extension,
                                          bool enableExperimentalFileFormats = false);
 

@@ -507,6 +507,33 @@ namespace PMP {
         }
     }
 
+    QList<qint64> Database::getFileSizes(uint hashID)
+    {
+        QSqlQuery q(_db);
+        q.prepare(
+            "SELECT `FileSize` FROM pmp_filesize"
+            " WHERE HashID=?"
+        );
+        q.addBindValue(hashID);
+
+        QList<qint64> result;
+
+        if (!executeQuery(q)) /* error */
+        {
+            qDebug() << "Database::getFileSizes : could not execute; "
+                     << q.lastError().text() << endl;
+            return result;
+        }
+
+        while (q.next())
+        {
+            qint64 fileSize = q.value(0).toLongLong();
+            result.append(fileSize);
+        }
+
+        return result;
+    }
+
     QList<User> Database::getUsers() {
         QSqlQuery q(_db);
         q.prepare("SELECT `UserID`,`Login`,`Salt`,`Password` FROM pmp_user");

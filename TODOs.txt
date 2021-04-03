@@ -28,6 +28,7 @@ KNOWN BUGS
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
  * GUI remote: multimedia keys don't work when a popup dialog is open (like track info)
  * unknown error at login because of username case (in)sensitivity
+ * track title/artist/length update in the music collection does not trigger an update of queue entries referencing that track
 
 
 PERFORMANCE ISSUES
@@ -61,7 +62,6 @@ IDEAS
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
  * music collection: show a "loading collection" indicator while downloading the list from the server
- * music collection: provide a filtering mechanism based on the existing track highlighting mechanism
  * music collection: provide fast partial indexation that only detects new files
  ** dynamic mode: detect and prevent track repetition with different hash values
  ** dynamic mode: artist repetition avoidance

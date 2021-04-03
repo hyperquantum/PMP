@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,11 +34,13 @@
 #include <QString>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
+    class Database;
     class TagData;
 
-    class Resolver : public QObject {
+    class Resolver : public QObject
+    {
         Q_OBJECT
     public:
         Resolver();
@@ -51,8 +53,8 @@ namespace PMP {
 
         FileHash analyzeAndRegisterFile(const QString& filename);
 
-        bool haveFileFor(const FileHash& hash);
-        QString findPath(const FileHash& hash, bool fast);
+        bool haveFileForHash(const FileHash& hash);
+        QString findPathForHash(const FileHash& hash, bool fast);
         bool pathStillValid(const FileHash& hash, QString path);
 
         const AudioData& findAudioData(const FileHash& hash);
@@ -87,6 +89,13 @@ namespace PMP {
         HashKnowledge* registerHash(const FileHash& hash);
         QVector<QString> getPathsThatDontMatchCurrentFullIndexationNumber();
         void checkFileStillExistsAndIsValid(QString path);
+
+        QString findPathForHashByLikelyFilename(Database& db, const FileHash& hash,
+                                                uint hashId);
+        QString findPathByQuickScanForNewFiles(Database& db, const FileHash& hash,
+                                               uint hashId);
+        QString findPathByQuickScanOfNewFiles(QVector<QString> newFiles,
+                                              const FileHash& hash);
 
         void doFullIndexation();
 

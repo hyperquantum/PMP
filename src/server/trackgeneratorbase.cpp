@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -117,7 +117,7 @@ namespace PMP {
             return nullptr;
         }
 
-        if (!_resolver->haveFileFor(hash)) {
+        if (!_resolver->haveFileForHash(hash)) {
             qDebug() << "cannot use hash" << hash
                      << "as a candidate because we don't have a file for it";
             _source->putBackUsedTrack(hash);
