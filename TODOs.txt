@@ -101,7 +101,6 @@ USER FRIENDLINESS
  * when creating a new account, explain the meaning of the password score
  * GUI remote: after login it should show what server it is connected to somehow
  * display the title/artist of the track currently playing in the window title of the remote
- * the drop indicator in the queue needs to be drawn as a line between tracks
 
 
 POLISHING

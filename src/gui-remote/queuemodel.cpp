@@ -288,11 +288,15 @@ namespace PMP {
         return QVariant();
     }
 
-    Qt::ItemFlags QueueModel::flags(const QModelIndex& index) const {
-        Q_UNUSED(index)
+    Qt::ItemFlags QueueModel::flags(const QModelIndex& index) const
+    {
+        auto f = Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsDragEnabled;
 
-        return Qt::ItemIsSelectable | Qt::ItemIsEnabled
-            | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
+        /* only allow drop BETWEEN items, not on top of items */
+        if (!index.isValid())
+            f |= Qt::ItemIsDropEnabled;
+
+        return f;
     }
 
     Qt::DropActions QueueModel::supportedDragActions() const {
@@ -428,20 +432,19 @@ namespace PMP {
         qDebug() << "QueueModel::dropMimeData called; action=" << action
                  << "; row=" << row;
 
-        if (row == -1) {
+        if (row == -1)
+        {
             row = parent.row();
-            column = parent.column();
+            //column = parent.column();
             //parent = parent.parent();
             qDebug() << " went up one level: row=" << row;
         }
 
-        if (data->hasFormat("application/x-pmp-queueitem")) {
+        if (data->hasFormat("application/x-pmp-queueitem"))
             return dropQueueItemMimeData(data, action, row);
-        }
 
-        if (data->hasFormat("application/x-pmp-filehash")) {
+        if (data->hasFormat("application/x-pmp-filehash"))
             return dropFileHashMimeData(data, row);
-        }
 
         return false; /* format not supported */
     }

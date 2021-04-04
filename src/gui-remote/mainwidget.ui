@@ -324,6 +324,9 @@
          <property name="contextMenuPolicy">
           <enum>Qt::CustomContextMenu</enum>
          </property>
+         <property name="dragDropOverwriteMode">
+          <bool>false</bool>
+         </property>
          <property name="alternatingRowColors">
           <bool>true</bool>
          </property>
