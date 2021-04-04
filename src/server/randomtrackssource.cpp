@@ -48,7 +48,8 @@ namespace PMP {
         std::shuffle(_unusedHashes.begin(), _unusedHashes.end(), _randomEngine);
 
         _hashesStatus.reserve(_unusedHashes.size());
-        for (auto hash : _unusedHashes) {
+        for (auto const& hash : qAsConst(_unusedHashes))
+        {
             _hashesStatus.insert(hash, TrackStatus::Unused);
         }
 
@@ -123,7 +124,8 @@ namespace PMP {
 
     void RandomTracksSource::putBackAllTracksTakenAsUnused()
     {
-        for (auto hash : _hashesTaken) {
+        for (auto const& hash : qAsConst(_hashesTaken))
+        {
             _notifiedCount++;
             _unusedHashes.append(hash);
             _hashesStatus.insert(hash, TrackStatus::Unused);
