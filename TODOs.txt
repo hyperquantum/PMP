@@ -2,7 +2,7 @@
 
 Disclaimer:
   This file is in a constant state of flux.
-  Everything in here can change at any time, and nothing here is a promise for the future.
+  Anything in here can change at any time, and nothing here is a promise for the future.
 
 
 IMPORTANT
@@ -80,7 +80,6 @@ IDEAS
  *** 'play now' option in the context menus of the music collection, the history, and maybe the queue
  * dark theme for the client
  * require the server password when registering a new user account
- ** display time remaining during playback
  * alternative display of "prev. heard" as a time span, e.g. "5 days ago" or "9 weeks ago"
  * track info dialog: show indication if file is available or not
  * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time

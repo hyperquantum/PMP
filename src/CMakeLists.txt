@@ -129,6 +129,7 @@ set(PMP_CMD_REMOTE_HEADERS
 
 set(PMP_GUI_REMOTE_SOURCES
     gui-remote/autopersonalmodeaction.cpp
+    gui-remote/clickablelabel.cpp
     gui-remote/collectiontablemodel.cpp
     gui-remote/collectionwidget.cpp
     gui-remote/colors.cpp
@@ -151,6 +152,7 @@ set(PMP_GUI_REMOTE_SOURCES
 )
 set(PMP_GUI_REMOTE_HEADERS
     gui-remote/autopersonalmodeaction.h
+    gui-remote/clickablelabel.h
     gui-remote/collectiontablemodel.h
     gui-remote/collectionwidget.h
     gui-remote/colorswitcher.h

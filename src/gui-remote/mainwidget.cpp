@@ -32,6 +32,7 @@
 #include "common/util.h"
 
 #include "autopersonalmodeaction.h"
+#include "clickablelabel.h"
 #include "playerhistorymodel.h"
 #include "precisetrackprogressmonitor.h"
 #include "queuemediator.h"
@@ -56,12 +57,22 @@ namespace PMP {
         _queueMediator(nullptr),
         _queueModel(nullptr), _queueContextMenu(nullptr),
         _noRepetitionUpdating(0),
-        _historyModel(nullptr), _historyContextMenu(nullptr)
+        _historyModel(nullptr),
+        _historyContextMenu(nullptr),
+        _showingTimeRemaining(false)
     {
         _ui->setupUi(this);
 
         _ui->splitter->setStretchFactor(0, 4);
         _ui->splitter->setStretchFactor(1, 8);
+
+        auto trackTimeLabel = ClickableLabel::replace(_ui->positionLabel);
+        auto trackTimeValueLabel = ClickableLabel::replace(_ui->positionValueLabel);
+
+        connect(trackTimeLabel, &ClickableLabel::clicked,
+                this, &MainWidget::switchTrackTimeDisplayMode);
+        connect(trackTimeValueLabel, &ClickableLabel::clicked,
+                this, &MainWidget::switchTrackTimeDisplayMode);
     }
 
     MainWidget::~MainWidget()
@@ -301,7 +312,8 @@ namespace PMP {
         waveProgressChanged();
     }
 
-    bool MainWidget::eventFilter(QObject* object, QEvent* event) {
+    bool MainWidget::eventFilter(QObject* object, QEvent* event)
+    {
         if (event->type() == QEvent::KeyPress) {
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
 
@@ -696,23 +708,41 @@ namespace PMP {
         Q_UNUSED(state)
         Q_UNUSED(queueId)
 
-        if (trackLengthInMilliseconds < 0) {
+        if (trackLengthInMilliseconds < 0)
+        {
             _ui->trackProgress->setCurrentTrack(-1);
         }
-        else {
+        else
+        {
             _ui->trackProgress->setCurrentTrack(trackLengthInMilliseconds);
         }
 
-        if (progressInMilliseconds < 0) {
-            _ui->positionValueLabel->clear();
+        if (progressInMilliseconds < 0)
+        {
             _ui->trackProgress->setCurrentTrack(-1);
         }
-        else {
-            auto text = Util::millisecondsToLongDisplayTimeText(progressInMilliseconds);
-            _ui->positionValueLabel->setText(text);
-
+        else
+        {
             _ui->trackProgress->setTrackPosition(progressInMilliseconds);
         }
+
+        updateTrackTimeDisplay(progressInMilliseconds, trackLengthInMilliseconds);
+    }
+
+    void MainWidget::switchTrackTimeDisplayMode()
+    {
+        _showingTimeRemaining = !_showingTimeRemaining;
+
+        if (_showingTimeRemaining)
+        {
+            _ui->positionLabel->setText(tr("Remaining:"));
+        }
+        else
+        {
+            _ui->positionLabel->setText(tr("Position:"));
+        }
+
+        updateTrackTimeDisplay();
     }
 
     void MainWidget::trackInfoButtonClicked()
@@ -928,6 +958,46 @@ namespace PMP {
         _ui->playButton->setEnabled(playerController.canPlay());
         _ui->pauseButton->setEnabled(playerController.canPause());
         _ui->skipButton->setEnabled(playerController.canSkip());
+    }
+
+    void MainWidget::updateTrackTimeDisplay()
+    {
+        auto* currentTrackMonitor = &_clientServerInterface->currentTrackMonitor();
+
+        auto position = currentTrackMonitor->currentTrackProgressMilliseconds();
+        auto trackLength = currentTrackMonitor->currentTrackLengthMilliseconds();
+
+        updateTrackTimeDisplay(position, trackLength);
+    }
+
+    void MainWidget::updateTrackTimeDisplay(qint64 positionInMilliseconds,
+                                            qint64 trackLengthInMilliseconds)
+    {
+        if (positionInMilliseconds < 0)
+        {
+            _ui->positionValueLabel->clear();
+            return;
+        }
+
+        qint64 timeToDisplay = -1;
+
+        if (_showingTimeRemaining)
+        {
+            if (trackLengthInMilliseconds < 0)
+            {
+                _ui->positionValueLabel->clear();
+                return;
+            }
+
+            timeToDisplay = trackLengthInMilliseconds - positionInMilliseconds;
+        }
+        else /* show position */
+        {
+            timeToDisplay = positionInMilliseconds;
+        }
+
+        auto text = Util::millisecondsToLongDisplayTimeText(timeToDisplay);
+        _ui->positionValueLabel->setText(text);
     }
 
     void MainWidget::showTrackInfoDialog(FileHash hash, quint32 queueId)
