@@ -58,6 +58,13 @@ namespace PMP {
             _generator, &Generator::waveFinished,
             this, &ServerInterface::onDynamicModeWaveEnded
         );
+
+        auto* resolver = &player->resolver();
+
+        connect(
+            resolver, &Resolver::fullIndexationRunStatusChanged,
+            this, &ServerInterface::fullIndexationRunStatusChanged
+        );
     }
 
     QUuid ServerInterface::getServerUuid() const
@@ -282,6 +289,11 @@ namespace PMP {
     {
         if (!isLoggedIn()) return;
         _player->resolver().startFullIndexation();
+    }
+
+    bool ServerInterface::isFullIndexationRunning()
+    {
+        return _player->resolver().fullIndexationRunning();
     }
 
     void ServerInterface::shutDownServer()

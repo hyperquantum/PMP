@@ -311,6 +311,16 @@ namespace PMP {
 
         void sendCollectionFetchRequestMessage(uint clientReference);
 
+        void parseCompatibilityInterfaceAnnouncement(QByteArray const& message);
+        void parseCompatibilityInterfaceDefinition(QByteArray const& message);
+        void parseCompatibilityInterfaceStateUpdate(QByteArray const& message);
+        void parseCompatibilityInterfaceActionStateUpdate(QByteArray const& message);
+        void parseCompatibilityInterfaceTextUpdate(QByteArray const& message);
+        void parseCompatibilityInterfaceActionTextUpdate(QByteArray const& message);
+        void sendCompatibilityInterfaceDefinitionsRequest(QVector<int> interfaceIds);
+        void sendCompatibilityInterfaceTriggerActionRequest(int interfaceId,
+                                                            int actionId);
+
         void invalidMessageReceived(QByteArray const& message, QString messageType = "",
                                     QString extraInfo = "");
 

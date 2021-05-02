@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -72,6 +72,7 @@ namespace PMP {
         void setTrackRepetitionAvoidanceSeconds(int seconds);
 
         void startFullIndexation();
+        bool isFullIndexationRunning();
 
         void shutDownServer();
         void shutDownServer(QString serverPassword);
@@ -86,6 +87,8 @@ namespace PMP {
                                         quint32 user,
                                         int waveDeliveredCount,
                                         int waveTotalCount);
+
+        void fullIndexationRunStatusChanged(bool running);
 
     private Q_SLOTS:
         void onDynamicModeStatusChanged();

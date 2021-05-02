@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,7 @@
 #include "test_networkutil.h"
 
 #include "common/networkutil.h"
+#include "common/util.h"
 
 #include <QtTest/QTest>
 
@@ -604,7 +605,8 @@ void TestNetworkUtil::append8BytesSigned() {
     QCOMPARE(char(array[47]), '\x5E');
 }
 
-void TestNetworkUtil::getUtf8String() {
+void TestNetworkUtil::getUtf8String()
+{
     QByteArray array;
     array.append('p');
     array.append('i');
@@ -617,6 +619,49 @@ void TestNetworkUtil::getUtf8String() {
 
     //array.clear();
     // TODO : test with non-ascii characters
+}
+
+void TestNetworkUtil::getUtf8Bytes()
+{
+    QByteArray array = NetworkUtil::getUtf8Bytes("pizza", 100);
+
+    QCOMPARE(array.size(), 5);
+    QCOMPARE(array[0], 'p');
+    QCOMPARE(array[1], 'i');
+    QCOMPARE(array[2], 'z');
+    QCOMPARE(array[3], 'z');
+    QCOMPARE(array[4], 'a');
+
+    array = NetworkUtil::getUtf8Bytes("abcdefghijklm", 12);
+
+    QCOMPARE(array.size(), 12);
+    QCOMPARE(array[0], 'a');
+    QCOMPARE(array[1], 'b');
+    QCOMPARE(array[2], 'c');
+    QCOMPARE(array[3], 'd');
+    QCOMPARE(array[4], 'e');
+    QCOMPARE(array[5], 'f');
+    QCOMPARE(array[6], 'g');
+    QCOMPARE(array[7], 'h');
+    QCOMPARE(array[8], 'i');
+    QCOMPARE(array[9], 'j');
+    QCOMPARE(array[10], 'k');
+    QCOMPARE(array[11], 'l');
+
+    array = NetworkUtil::getUtf8Bytes(QString("abcdefghijk") + Util::PlaySymbol, 12);
+
+    QCOMPARE(array.size(), 11);
+    QCOMPARE(array[0], 'a');
+    QCOMPARE(array[1], 'b');
+    QCOMPARE(array[2], 'c');
+    QCOMPARE(array[3], 'd');
+    QCOMPARE(array[4], 'e');
+    QCOMPARE(array[5], 'f');
+    QCOMPARE(array[6], 'g');
+    QCOMPARE(array[7], 'h');
+    QCOMPARE(array[8], 'i');
+    QCOMPARE(array[9], 'j');
+    QCOMPARE(array[10], 'k');
 }
 
 QTEST_MAIN(TestNetworkUtil)

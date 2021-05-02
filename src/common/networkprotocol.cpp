@@ -19,10 +19,9 @@
 
 #include "networkprotocol.h"
 
-#include "common/util.h"
-
 #include "filehash.h"
 #include "networkutil.h"
+#include "util.h"
 
 #include <limits>
 
@@ -45,6 +44,112 @@ namespace PMP {
                 encodeMessageTypeForExtension(extensionId, messageType);
 
         NetworkUtil::append2Bytes(buffer, encodedMessageType);
+    }
+
+    QByteArray NetworkProtocol::encodeLanguage(UserInterfaceLanguage language)
+    {
+        if (language == UserInterfaceLanguage::English)
+            return "eng";
+
+        qWarning() << "encodeLanguage: invalid language enum value:" << language;
+        return "???";
+    }
+
+    UserInterfaceLanguage NetworkProtocol::decodeLanguage(QByteArray isoCode)
+    {
+        if (isoCode.size() != 3)
+        {
+            qWarning() << "decodeLanguage: language code does not have size 3";
+            return UserInterfaceLanguage::Invalid;
+        }
+
+        if ((isoCode[0] == 'e' || isoCode[0] == 'E')
+            && (isoCode[1] == 'n' || isoCode[1] == 'N')
+            && (isoCode[2] == 'g' || isoCode[2] == 'G'))
+        {
+            return UserInterfaceLanguage::English;
+        }
+
+        qWarning() << "decodeLanguage: invalid language code:" << isoCode;
+        return UserInterfaceLanguage::Invalid;
+    }
+
+    quint16 NetworkProtocol::encodeCompatibilityUiState(const CompatibilityUiState& state)
+    {
+        auto priority = state.priority();
+        quint8 encodedPriority;
+        switch (priority)
+        {
+            case CompatibilityUiPriority::Optional:
+                encodedPriority = 2;
+                break;
+            case CompatibilityUiPriority::Informational:
+                encodedPriority = 4;
+                break;
+            case CompatibilityUiPriority::Important:
+                encodedPriority = 6;
+                break;
+            case CompatibilityUiPriority::Urgent:
+                encodedPriority = 8;
+                break;
+            case CompatibilityUiPriority::Undefined:
+            default:
+                qWarning() << "encodeCompatibilityUiState: invalid priority:"
+                           << int(priority);
+                encodedPriority = 4;
+                break;
+        }
+
+        return encodedPriority;
+    }
+
+    CompatibilityUiState NetworkProtocol::decodeCompatibilityUiState(quint16 state)
+    {
+        quint8 priorityBits = state & 31;
+        CompatibilityUiPriority decodedPriority;
+        switch (priorityBits)
+        {
+        case 2:
+            decodedPriority = CompatibilityUiPriority::Optional;
+            break;
+        case 4:
+            decodedPriority = CompatibilityUiPriority::Informational;
+            break;
+        case 6:
+            decodedPriority = CompatibilityUiPriority::Important;
+            break;
+        case 8:
+            decodedPriority = CompatibilityUiPriority::Urgent;
+            break;
+        default:
+            qWarning() << "decodeCompatibilityUiState: priority value not recognized:"
+                       << int(priorityBits);
+            decodedPriority = CompatibilityUiPriority::Undefined;
+            break;
+        }
+
+        return CompatibilityUiState(decodedPriority);
+    }
+
+    quint8 NetworkProtocol::encodeCompatibilityUiActionState(
+                                                  const CompatibilityUiActionState& state)
+    {
+        quint8 stateBits = 0;
+        stateBits |= state.visible() ? 1 : 0;
+        stateBits |= state.enabled() ? 2 : 0;
+        stateBits |= state.disableWhenTriggered() ? 4 : 0;
+
+        return stateBits;
+    }
+
+    CompatibilityUiActionState NetworkProtocol::decodeCompatibilityUiActionState(
+                                                                             quint8 state)
+    {
+        bool visible = (state & 1);
+        bool enabled = (state & 2);
+        bool disableWhenTriggered = (state & 4);
+
+        return CompatibilityUiActionState(visible, enabled, disableWhenTriggered);
     }
 
     int NetworkProtocol::ratePassword(QString password) {

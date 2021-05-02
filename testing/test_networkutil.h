@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -46,5 +46,6 @@ private Q_SLOTS:
     void append4BytesSigned();
     void append8BytesSigned();
     void getUtf8String();
+    void getUtf8Bytes();
 };
 #endif

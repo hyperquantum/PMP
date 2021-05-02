@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,8 +20,9 @@
 #ifndef PMP_NETWORKPROTOCOL_H
 #define PMP_NETWORKPROTOCOL_H
 
-#include "common/queueentrytype.h"
-#include "common/startstopeventstatus.h"
+#include "compatibilityui.h"
+#include "queueentrytype.h"
+#include "startstopeventstatus.h"
 
 #include <QByteArray>
 #include <QString>
@@ -48,14 +49,18 @@ namespace PMP {
          12: clienst msg 22, server msg 30, single byte request 18: protocol extensions
          13: server msgs 3 & 4: change track length to milliseconds
          14: single byte request 25 & server msg 26: wave termination & progress
+         15: single byte request 52, server msgs 31-36, client msgs 23-24: compatibility interfaces
 
     */
 
+    class CompatibilityUiState;
     class FileHash;
 
-    class NetworkProtocol {
+    class NetworkProtocol
+    {
     public:
-        enum ServerMessageType {
+        enum ServerMessageType
+        {
             ServerMessageTypeNone = 0,
             PlayerStateMessage = 1,
             VolumeChangedMessage = 2,
@@ -87,9 +92,16 @@ namespace PMP {
             ServerHealthMessage = 28,
             CollectionAvailabilityChangeNotificationMessage = 29,
             ServerExtensionsMessage = 30,
+            CompatibilityInterfaceAnnouncement = 31,
+            CompatibilityInterfaceDefinition = 32,
+            CompatibilityInterfaceStateUpdate = 33,
+            CompatibilityInterfaceActionStateUpdate = 34,
+            CompatibilityInterfaceTextUpdate = 35,
+            CompatibilityInterfaceActionTextUpdate = 36,
         };
 
-        enum ClientMessageType {
+        enum ClientMessageType
+        {
             ClientMessageTypeNone = 0,
             SingleByteActionMessage = 1,
             TrackInfoRequestMessage = 2,
@@ -113,9 +125,12 @@ namespace PMP {
             PlayerHistoryRequestMessage = 20,
             QueueEntryDuplicationRequestMessage = 21,
             ClientExtensionsMessage = 22,
+            CompatibilityInterfaceDefinitionsRequest = 23,
+            CompatibilityInterfaceTriggerActionRequest = 24,
         };
 
-        enum ErrorType {
+        enum ErrorType
+        {
             NoError = 0,
             InvalidMessageStructure = 1,
             NotLoggedIn = 10,
@@ -167,10 +182,91 @@ namespace PMP {
             }
         };
 
+        class CompatibilityUserInterfaceAction
+        {
+        public:
+            CompatibilityUserInterfaceAction()
+             : _id(-1),
+               _visible(false),
+               _enabled(false),
+               _disableWhenTriggered(false)
+            {
+                //
+            }
+
+            CompatibilityUserInterfaceAction(int id, QString caption, bool visible,
+                                             bool enabled, bool disableWhenTriggered)
+             : _id(id),
+               _caption(caption),
+               _visible(visible),
+               _enabled(enabled),
+               _disableWhenTriggered(disableWhenTriggered)
+            {
+                //
+            }
+
+            int id() const { return _id; }
+            QString caption() const { return _caption; }
+            bool visible() const { return _visible; }
+            bool enabled() const { return _enabled; }
+            bool disableWhenTriggered() const { return _disableWhenTriggered; }
+
+        private:
+            int _id;
+            QString _caption;
+            bool _visible;
+            bool _enabled;
+            bool _disableWhenTriggered;
+        };
+
+        class CompatibilityUserInterface
+        {
+        public:
+            CompatibilityUserInterface(int id, UserInterfaceLanguage language,
+                                       QString title, QString caption,
+                                       QString description,
+                                       QVector<CompatibilityUserInterfaceAction> actions)
+             : _id(id),
+               _language(language),
+               _title(title),
+               _caption(caption),
+               _description(description),
+               _actions(actions)
+            {
+                //
+            }
+
+            int id() const { return _id; }
+            UserInterfaceLanguage language() const { return _language; }
+            QString title() const { return _title; }
+            QString caption() const { return _caption; }
+            QString description() const { return _description; }
+            QVector<CompatibilityUserInterfaceAction> const& actions() const {
+                                                                        return _actions; }
+
+        private:
+            int _id;
+            UserInterfaceLanguage _language;
+            QString _title;
+            QString _caption;
+            QString _description;
+            QVector<CompatibilityUserInterfaceAction> _actions;
+        };
+
         static quint16 encodeMessageTypeForExtension(quint8 extensionId,
                                                      quint8 messageType);
         static void appendExtensionMessageStart(QByteArray& buffer, quint8 extensionId,
                                                 quint8 messageType);
+
+        static QByteArray encodeLanguage(UserInterfaceLanguage language);
+        static UserInterfaceLanguage decodeLanguage(QByteArray isoCode);
+
+        static quint16 encodeCompatibilityUiState(CompatibilityUiState const& state);
+        static CompatibilityUiState decodeCompatibilityUiState(quint16 state);
+
+        static quint8 encodeCompatibilityUiActionState(
+                                                 CompatibilityUiActionState const& state);
+        static CompatibilityUiActionState decodeCompatibilityUiActionState(quint8 state);
 
         static int ratePassword(QString password);
 

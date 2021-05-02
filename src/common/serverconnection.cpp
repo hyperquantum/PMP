@@ -25,6 +25,7 @@
 #include "common/util.h"
 
 #include <QtDebug>
+#include <QTimer>
 
 namespace PMP {
 
@@ -250,7 +251,7 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 14;
+    const quint16 ServerConnection::ClientProtocolNo = 15;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -611,7 +612,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    uint ServerConnection::getNewReference() {
+    uint ServerConnection::getNewReference()
+    {
         // don't use: return _nextRef++;
         auto ref = _nextRef;
         _nextRef++;
@@ -1152,10 +1154,10 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::sendCollectionFetchRequestMessage(uint clientReference) {
-        if (!_binarySendingMode) {
+    void ServerConnection::sendCollectionFetchRequestMessage(uint clientReference)
+    {
+        if (!_binarySendingMode)
             return; /* only supported in binary mode */
-        }
 
         QByteArray message;
         message.reserve(4 + 4);
@@ -1167,7 +1169,330 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::readBinaryCommands() {
+    void ServerConnection::parseCompatibilityInterfaceAnnouncement(
+                                                                const QByteArray& message)
+    {
+        qDebug() << "received compatibility interfaces announcement";
+
+        if (message.length() < 4)
+            return; /* invalid message */
+
+        int interfaceCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+
+        int countWithPaddingIncluded =
+                (interfaceCount % 2 == 1) ? (interfaceCount + 1) : interfaceCount;
+
+        if (message.length() != 4 + 2 * countWithPaddingIncluded)
+            return; /* invalid message */
+
+        QVector<int> ids;
+        ids.reserve(interfaceCount);
+
+        int offset = 4;
+        for (int i = 0; i < interfaceCount; ++i)
+        {
+            int interfaceId = NetworkUtil::get2BytesUnsignedToInt(message, offset);
+            offset += 2;
+
+            ids.append(interfaceId);
+        }
+
+        QTimer::singleShot(
+            0, this,
+            [this, ids]() { sendCompatibilityInterfaceDefinitionsRequest(ids); }
+        );
+    }
+
+    void ServerConnection::parseCompatibilityInterfaceDefinition(
+                                                                const QByteArray& message)
+    {
+        qDebug() << "received compatibility interface definition";
+
+        if (message.length() < 16)
+            return; /* invalid message */
+
+        int interfaceId = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        quint16 interfaceStateEncoded = NetworkUtil::get2Bytes(message, 4);
+        int actionCount = NetworkUtil::get2BytesUnsignedToInt(message, 6);
+        int interfaceCaptionByteCount = NetworkUtil::get2BytesUnsignedToInt(message, 8);
+        int interfaceDescriptionByteCount =
+                NetworkUtil::get2BytesUnsignedToInt(message, 10);
+        int interfaceTitleByteCount = NetworkUtil::getByteUnsignedToInt(message, 12);
+        auto languageEncoded = message.mid(13, 3);
+
+        qDebug() << "Compatibility interface" << interfaceId
+                 << "has encoded state" << int(interfaceStateEncoded)
+                 << "and has" << actionCount << "actions";
+
+        auto interfaceState =
+                NetworkProtocol::decodeCompatibilityUiState(interfaceStateEncoded);
+        qDebug() << "Compatibility interface" << interfaceId
+                 << "has priority:" << interfaceState.priority();
+
+        auto language = NetworkProtocol::decodeLanguage(languageEncoded);
+        qDebug() << "Compatibility interface" << interfaceId
+                 << "text is provided in language:" << language;
+
+        int offset = 16;
+        if (message.length() < offset + interfaceTitleByteCount
+                                      + interfaceCaptionByteCount
+                                      + interfaceDescriptionByteCount)
+        {
+            return; /* invalid message */
+        }
+
+        auto interfaceTitle =
+                NetworkUtil::getUtf8String(message, offset, interfaceTitleByteCount);
+        offset += interfaceTitleByteCount;
+        qDebug() << "Compatibility interface" << interfaceId
+                 << "has title:" << interfaceTitle;
+
+        auto interfaceCaption =
+                NetworkUtil::getUtf8String(message, offset, interfaceCaptionByteCount);
+        offset += interfaceCaptionByteCount;
+        qDebug() << "Compatibility interface" << interfaceId
+                 << "has caption:" << interfaceCaption;
+
+        auto interfaceDescription =
+               NetworkUtil::getUtf8String(message, offset, interfaceDescriptionByteCount);
+        offset += interfaceDescriptionByteCount;
+        qDebug() << "Compatibility interface" << interfaceId
+                 << "has description:" << interfaceDescription;
+
+        QVector<NetworkProtocol::CompatibilityUserInterfaceAction> actions;
+        actions.reserve(actionCount);
+
+        for (int i = 0; i < actionCount; ++i)
+        {
+            if (offset + 6 > message.size())
+                return; /* invalid message */
+
+            int actionId = NetworkUtil::get2BytesUnsignedToInt(message, offset);
+            quint8 actionStateEncoded = NetworkUtil::getByte(message, offset + 3);
+            int actionCaptionByteCount =
+                    NetworkUtil::get2BytesUnsignedToInt(message, offset + 4);
+            offset += 6;
+
+            auto actionState =
+                    NetworkProtocol::decodeCompatibilityUiActionState(actionStateEncoded);
+
+            qDebug() << " Compatibility action with ID" << actionId << "has:"
+                     << "visible:" << (actionState.visible() ? "Y" : "N")
+                     << "enabled:" << (actionState.enabled() ? "Y" : "N")
+                     << "disable-when-triggered:"
+                     << (actionState.disableWhenTriggered() ? "Y" : "N");
+
+            if (offset > message.size() - actionCaptionByteCount)
+                return; /* invalid message */
+
+            auto actionCaption =
+                    NetworkUtil::getUtf8String(message, offset, actionCaptionByteCount);
+            offset += actionCaptionByteCount;
+
+            qDebug() << " Compatibility action with ID" << actionId
+                     << "has caption:" << actionCaption;
+
+            NetworkProtocol::CompatibilityUserInterfaceAction action(
+                                                      actionId,
+                                                      actionCaption,
+                                                      actionState.visible(),
+                                                      actionState.enabled(),
+                                                      actionState.disableWhenTriggered());
+
+            actions.append(action);
+        }
+
+        if (offset != message.size())
+            return; /* invalid message */
+
+        NetworkProtocol::CompatibilityUserInterface interface(interfaceId,
+                                                              language,
+                                                              interfaceTitle,
+                                                              interfaceCaption,
+                                                              interfaceDescription,
+                                                              actions);
+
+        // TODO : do something with the information
+    }
+
+    void ServerConnection::parseCompatibilityInterfaceStateUpdate(
+                                                                const QByteArray& message)
+    {
+        qDebug() << "received compatibility interface state update";
+
+        if (message.length() != 8)
+            return; /* invalid message */
+
+        int interfaceId = NetworkUtil::get2BytesUnsignedToInt(message, 4);
+        quint16 encodedState = NetworkUtil::get2Bytes(message, 6);
+
+        auto interfaceState = NetworkProtocol::decodeCompatibilityUiState(encodedState);
+        qDebug() << "Compatibility interface" << interfaceId
+                 << "now has priority:" << interfaceState.priority();
+
+        // TODO : do something with the information
+    }
+
+    void ServerConnection::parseCompatibilityInterfaceActionStateUpdate(
+                                                                const QByteArray& message)
+    {
+        qDebug() << "received compatibility interface action state update";
+
+        if (message.length() != 8)
+            return; /* invalid message */
+
+        int interfaceId = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        int actionId = NetworkUtil::get2BytesUnsignedToInt(message, 4);
+        quint8 actionStateEncoded = NetworkUtil::getByte(message, 7);
+
+        auto actionState =
+                NetworkProtocol::decodeCompatibilityUiActionState(actionStateEncoded);
+
+        qDebug() << "Compatibility interface" << interfaceId << "action" << actionId
+                 << "now has:"
+                 << "visible:" << (actionState.visible() ? "Y" : "N")
+                 << "enabled:" << (actionState.enabled() ? "Y" : "N")
+                 << "disable-when-triggered:"
+                 << (actionState.disableWhenTriggered() ? "Y" : "N");
+
+        // TODO : do something with the information
+    }
+
+    void ServerConnection::parseCompatibilityInterfaceTextUpdate(
+                                                                const QByteArray& message)
+    {
+        qDebug() << "received compatibility interface text update";
+
+        if (message.length() < 12)
+            return; /* invalid message */
+
+        int interfaceId = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        int interfaceCaptionByteCount = NetworkUtil::get2BytesUnsignedToInt(message, 4);
+        int interfaceDescriptionByteCount =
+                NetworkUtil::get2BytesUnsignedToInt(message, 6);
+        auto languageEncoded = message.mid(9, 3);
+
+        auto language = NetworkProtocol::decodeLanguage(languageEncoded);
+        qDebug() << "Compatibility interface" << interfaceId
+                 << "text update is provided in language:" << language;
+
+        if (message.size() != 12 + interfaceCaptionByteCount
+                                 + interfaceDescriptionByteCount)
+        {
+            return; /* invalid message */
+        }
+
+        int offset = 12;
+
+        auto interfaceCaption =
+                NetworkUtil::getUtf8String(message, offset, interfaceCaptionByteCount);
+        offset += interfaceCaptionByteCount;
+        qDebug() << "Compatibility interface" << interfaceId
+                 << "now has caption:" << interfaceCaption;
+
+        auto interfaceDescription =
+               NetworkUtil::getUtf8String(message, offset, interfaceDescriptionByteCount);
+        qDebug() << "Compatibility interface" << interfaceId
+                 << "now has description:" << interfaceDescription;
+
+        // TODO : do something with the information
+    }
+
+    void ServerConnection::parseCompatibilityInterfaceActionTextUpdate(
+                                                                const QByteArray& message)
+    {
+        qDebug() << "received compatibility interface action text update";
+
+        if (message.length() < 12)
+            return; /* invalid message */
+
+        int interfaceId = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        int actionId = NetworkUtil::get2BytesUnsignedToInt(message, 4);
+        int actionCaptionByteCount = NetworkUtil::get2BytesUnsignedToInt(message, 6);
+        auto languageEncoded = message.mid(9, 3);
+
+        auto language = NetworkProtocol::decodeLanguage(languageEncoded);
+        qDebug() << "Compatibility interface" << interfaceId << "action" << actionId
+                 << "text update is provided in language:" << language;
+
+        if (message.size() != 12 + actionCaptionByteCount)
+            return; /* invalid message */
+
+        auto actionCaption =
+                NetworkUtil::getUtf8String(message, 12, actionCaptionByteCount);
+
+        qDebug() << "Compatibility interface" << interfaceId << "action" << actionId
+                 << "now has caption:" << actionCaption;
+
+        // TODO : do something with the information
+    }
+
+    void ServerConnection::sendCompatibilityInterfaceDefinitionsRequest(
+                                                                QVector<int> interfaceIds)
+    {
+        if (!_binarySendingMode)
+            return; /* only supported in binary mode */
+
+        if (interfaceIds.isEmpty())
+            return;
+
+        qDebug() << "sending compatibility interfaces definitions request for"
+                 << interfaceIds.size() << "interface(s)";
+
+        const char primaryLanguage[3] {'e', 'n', 'g'};
+        const char secondaryLanguage[3] {'e', 'n', 'g'};
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4 + 2 * interfaceIds.size() + 2);
+        NetworkUtil::append2Bytes(message,
+                               NetworkProtocol::CompatibilityInterfaceDefinitionsRequest);
+        NetworkUtil::append2BytesUnsigned(message, interfaceIds.size());
+        NetworkUtil::appendByte(message, 0); /* unused */
+        NetworkUtil::appendByte(message, primaryLanguage[0]);
+        NetworkUtil::appendByte(message, primaryLanguage[1]);
+        NetworkUtil::appendByte(message, primaryLanguage[2]);
+        NetworkUtil::appendByte(message, 0); /* unused */
+        NetworkUtil::appendByte(message, secondaryLanguage[0]);
+        NetworkUtil::appendByte(message, secondaryLanguage[1]);
+        NetworkUtil::appendByte(message, secondaryLanguage[2]);
+
+        for (auto interfaceId : qAsConst(interfaceIds))
+        {
+            NetworkUtil::append2BytesUnsigned(message, interfaceId);
+        }
+
+        if (interfaceIds.size() % 2 != 0) // padding
+        {
+            NetworkUtil::append2Bytes(message, 0);
+        }
+
+        sendBinaryMessage(message);
+    }
+
+    void ServerConnection::sendCompatibilityInterfaceTriggerActionRequest(int interfaceId,
+                                                                          int actionId)
+    {
+        if (!_binarySendingMode)
+            return; /* only supported in binary mode */
+
+        auto ref = getNewReference();
+
+        qDebug() << "sending compatibility interface action trigger request; ref:" << ref;
+
+        QByteArray message;
+        message.reserve(2 + 2 + 2 + 2 + 4);
+        NetworkUtil::append2Bytes(message,
+                             NetworkProtocol::CompatibilityInterfaceTriggerActionRequest);
+        NetworkUtil::append2Bytes(message, 0); /* unused */
+        NetworkUtil::append2BytesUnsigned(message, interfaceId);
+        NetworkUtil::append2BytesUnsigned(message, actionId);
+        NetworkUtil::append4Bytes(message, ref);
+
+        sendBinaryMessage(message);
+    }
+
+    void ServerConnection::readBinaryCommands()
+    {
         char lengthBytes[4];
 
         while
@@ -1304,6 +1629,24 @@ namespace PMP {
             break;
         case NetworkProtocol::CollectionAvailabilityChangeNotificationMessage:
             parseTrackAvailabilityChangeBatchMessage(message);
+            break;
+        case NetworkProtocol::CompatibilityInterfaceAnnouncement:
+            parseCompatibilityInterfaceAnnouncement(message);
+            break;
+        case NetworkProtocol::CompatibilityInterfaceDefinition:
+            parseCompatibilityInterfaceDefinition(message);
+            break;
+        case NetworkProtocol::CompatibilityInterfaceStateUpdate:
+            parseCompatibilityInterfaceStateUpdate(message);
+            break;
+        case NetworkProtocol::CompatibilityInterfaceActionStateUpdate:
+            parseCompatibilityInterfaceActionStateUpdate(message);
+            break;
+        case NetworkProtocol::CompatibilityInterfaceTextUpdate:
+            parseCompatibilityInterfaceTextUpdate(message);
+            break;
+        case NetworkProtocol::CompatibilityInterfaceActionTextUpdate:
+            parseCompatibilityInterfaceActionTextUpdate(message);
             break;
         default:
             qDebug() << "received unknown binary message type" << messageType

@@ -65,6 +65,8 @@ set(PMP_COMMON_HEADERS
 set(PMP_SERVER_SOURCES
     server/addtohistorytask.cpp
     server/collectionmonitor.cpp
+    server/compatibilityuicontroller.cpp
+    server/compatibilityuicontrollers.cpp
     server/connectedclient.cpp
     server/database.cpp
     server/dynamicmodecriteria.cpp
@@ -92,6 +94,8 @@ set(PMP_SERVER_SOURCES
 set(PMP_SERVER_HEADERS
     server/addtohistorytask.h
     server/collectionmonitor.h
+    server/compatibilityuicontroller.h
+    server/compatibilityuicontrollers.h
     server/connectedclient.h
     server/dynamictrackgenerator.h
     server/generator.h

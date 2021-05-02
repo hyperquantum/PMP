@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 #define PMP_CONNECTEDCLIENT_H
 
 #include "common/collectiontrackinfo.h"
+#include "common/compatibilityui.h"
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
 
@@ -40,6 +41,7 @@ namespace PMP {
 
     class CollectionMonitor;
     class CollectionSender;
+    class CompatibilityUiControllerCollection;
     class History;
     class Player;
     class QueueEntry;
@@ -106,8 +108,12 @@ namespace PMP {
                                              bool havePreviouslyHeard, bool haveScore);
 
     private:
+        enum class GeneralOrSpecific { General, Specific };
+
         void enableEvents();
-        void enableHealthEvents();
+        void enableHealthEvents(GeneralOrSpecific howEnabled);
+        void enableCompatibilityInterfaceEvents(GeneralOrSpecific howEnabled);
+        void activateCompatibilityInterfaces();
 
         bool isLoggedIn() const;
 
@@ -163,6 +169,15 @@ namespace PMP {
         void sendServerNameMessage(quint8 type, QString name);
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
+        void sendCompatibilityInterfacesAnnouncement();
+        void sendCompatibilityInterfaceDefinition(int interfaceId,
+                                                  UserInterfaceLanguage language);
+        void sendCompatibilityInterfaceStateUpdate(int interfaceId);
+        void sendCompatibilityInterfaceActionStateUpdate(int interfaceId, int actionId);
+        void sendCompatibilityInterfaceTextUpdate(int interfaceId,
+                                                  UserInterfaceLanguage language);
+        void sendCompatibilityInterfaceActionTextUpdate(int interfaceId, int actionId,
+                                                        UserInterfaceLanguage language);
 
         void handleBinaryMessage(QByteArray const& message);
         void handleStandardBinaryMessage(NetworkProtocol::ClientMessageType messageType,
@@ -182,6 +197,8 @@ namespace PMP {
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
+        void parseCompatibilityInterfaceDefinitionsRequest(QByteArray const& message);
+        void parseCompatibilityInterfaceTriggerActionRequest(QByteArray const& message);
 
         void schedulePlayerStateNotification();
 
@@ -194,6 +211,7 @@ namespace PMP {
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;
+        CompatibilityUiControllerCollection* _compatibilityUis;
         QByteArray _textReadBuffer;
         int _clientProtocolNo;
         QHash<quint8, QString> _clientExtensionNames;
@@ -207,6 +225,7 @@ namespace PMP {
         bool _binaryMode;
         bool _eventsEnabled;
         bool _healthEventsEnabled;
+        bool _compatibilityUiEventsEnabled;
         bool _pendingPlayerStatus;
     };
 

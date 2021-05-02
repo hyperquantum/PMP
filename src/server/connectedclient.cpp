@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,6 +25,7 @@
 #include "common/version.h"
 
 #include "collectionmonitor.h"
+#include "compatibilityuicontrollers.h"
 #include "database.h"
 #include "history.h"
 #include "player.h"
@@ -41,11 +42,11 @@
 #include <QThreadPool>
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 14;
+    const qint16 ConnectedClient::ServerProtocolNo = 15;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -57,10 +58,13 @@ namespace PMP {
        _player(player), _history(history),
        _users(users), _collectionMonitor(collectionMonitor),
        _serverHealthMonitor(serverHealthMonitor),
+       _compatibilityUis(new CompatibilityUiControllerCollection(this, serverInterface)),
        _clientProtocolNo(-1),
        _lastSentNowPlayingID(0),
        _terminated(false), _binaryMode(false),
-       _eventsEnabled(false), _healthEventsEnabled(false),
+       _eventsEnabled(false),
+       _healthEventsEnabled(false),
+       _compatibilityUiEventsEnabled(false),
        _pendingPlayerStatus(false)
     {
         _serverInterface->setParent(this);
@@ -107,14 +111,19 @@ namespace PMP {
         this->deleteLater();
     }
 
-    void ConnectedClient::enableEvents() {
-        if (_eventsEnabled) return;
+    void ConnectedClient::enableEvents()
+    {
+        if (_eventsEnabled)
+            return;
 
-        qDebug() << "enabling event notifications";
+        qDebug() << "ConnectedClient: enabling event notifications";
+
+        enableHealthEvents(GeneralOrSpecific::General);
+        enableCompatibilityInterfaceEvents(GeneralOrSpecific::General);
+
         _eventsEnabled = true;
 
         auto queue = &_player->queue();
-        auto resolver = &_player->resolver();
 
         connect(_player, &Player::volumeChanged, this, &ConnectedClient::volumeChanged);
         connect(
@@ -161,7 +170,7 @@ namespace PMP {
         );
 
         connect(
-            resolver, &Resolver::fullIndexationRunStatusChanged,
+            _serverInterface, &ServerInterface::fullIndexationRunStatusChanged,
             this, &ConnectedClient::onFullIndexationRunStatusChanged
         );
 
@@ -178,21 +187,17 @@ namespace PMP {
             _history, &History::updatedHashUserStats,
             this, &ConnectedClient::onUserHashStatsUpdated
         );
-
-        if (!_healthEventsEnabled) {
-            connect(
-                _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
-                this, &ConnectedClient::serverHealthChanged
-            );
-
-            sendServerHealthMessageIfNotEverythingOkay();
-        }
     }
 
-    void ConnectedClient::enableHealthEvents() {
-        auto healthEventsWereAlreadyEnabled = _eventsEnabled | _healthEventsEnabled;
-        _healthEventsEnabled = true;
-        if (healthEventsWereAlreadyEnabled) return; /* nothing to do */
+    void ConnectedClient::enableHealthEvents(GeneralOrSpecific howEnabled)
+    {
+        auto healthEventsWereEnabledAlready = _eventsEnabled | _healthEventsEnabled;
+
+        if (howEnabled == GeneralOrSpecific::Specific)
+            _healthEventsEnabled = true;
+
+        if (healthEventsWereEnabledAlready)
+            return; /* nothing to do */
 
         connect(
             _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
@@ -202,11 +207,77 @@ namespace PMP {
         sendServerHealthMessageIfNotEverythingOkay();
     }
 
-    bool ConnectedClient::isLoggedIn() const {
+    void ConnectedClient::enableCompatibilityInterfaceEvents(GeneralOrSpecific howEnabled)
+    {
+        auto theseEventsWereEnabledAlready =
+                _eventsEnabled | _compatibilityUiEventsEnabled;
+
+        if (howEnabled == GeneralOrSpecific::Specific)
+            _compatibilityUiEventsEnabled = true;
+
+        if (theseEventsWereEnabledAlready)
+            return; /* nothing to do */
+
+        connect(
+            _compatibilityUis,
+            &CompatibilityUiControllerCollection::captionOrDescriptionChanged,
+            this,
+            [this](int interfaceId)
+            {
+                auto language = UserInterfaceLanguage::English; // FIXME
+                sendCompatibilityInterfaceTextUpdate(interfaceId, language);
+            }
+        );
+        connect(
+            _compatibilityUis, &CompatibilityUiControllerCollection::stateChanged,
+            this,
+            [this](int interfaceId)
+            {
+                sendCompatibilityInterfaceStateUpdate(interfaceId);
+            }
+        );
+        connect(
+            _compatibilityUis, &CompatibilityUiControllerCollection::actionCaptionChanged,
+            this,
+            [this](int interfaceId, int actionId)
+            {
+                auto language = UserInterfaceLanguage::English; // FIXME
+                sendCompatibilityInterfaceActionTextUpdate(interfaceId, actionId,
+                                                           language);
+            }
+        );
+        connect(
+            _compatibilityUis, &CompatibilityUiControllerCollection::actionStateChanged,
+            this,
+            [this](int interfaceId, int actionId)
+            {
+                sendCompatibilityInterfaceActionStateUpdate(interfaceId, actionId);
+            }
+        );
+
+        activateCompatibilityInterfaces();
+        sendCompatibilityInterfacesAnnouncement();
+    }
+
+    void ConnectedClient::activateCompatibilityInterfaces()
+    {
+        if (_clientProtocolNo < 15)
+            return; /* client does not know about compatibility user interfaces */
+
+        /* for test purposes, activate this unconditionally */
+        _compatibilityUis->activateIndexationController();
+
+        /* for debugging */
+        _compatibilityUis->activateTestController();
+    }
+
+    bool ConnectedClient::isLoggedIn() const
+    {
         return _serverInterface->isLoggedIn();
     }
 
-    void ConnectedClient::dataArrived() {
+    void ConnectedClient::dataArrived()
+    {
         if (_terminated) {
             qDebug() << "dataArrived called on a terminated connection???";
             return;
@@ -1288,6 +1359,235 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendCompatibilityInterfacesAnnouncement()
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 15) return;
+
+        auto const ids = _compatibilityUis->getControllerIds();
+        if (ids.isEmpty())
+            return; /* nothing to announce */
+
+        qDebug() << "sending compatibility interfaces announcement";
+
+        QByteArray message;
+        message.reserve(2 + 2 + 2 * ids.size() + 2);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::CompatibilityInterfaceAnnouncement);
+        NetworkUtil::append2BytesUnsigned(message, ids.size());
+
+        for (auto id : ids)
+        {
+            NetworkUtil::append2BytesUnsigned(message, id);
+        }
+
+        if (ids.size() % 2 != 0) // padding
+        {
+            NetworkUtil::append2Bytes(message, 0);
+        }
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendCompatibilityInterfaceDefinition(int interfaceId,
+                                                           UserInterfaceLanguage language)
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 15) return;
+
+        auto* controller = _compatibilityUis->getControllerById(interfaceId);
+        if (!controller)
+            return;
+
+        qDebug() << "sending compatibility interface definition for ID" << interfaceId;
+
+        quint16 encodedState =
+                NetworkProtocol::encodeCompatibilityUiState(controller->getState());
+
+        auto const actionIds = controller->getActionIds();
+
+        auto interfaceTitle = controller->getTitle(language);
+        auto interfaceText = controller->getText(language);
+        auto languageCode = NetworkProtocol::encodeLanguage(language);
+
+        auto interfaceTitleBytes = NetworkUtil::getUtf8Bytes(interfaceTitle, 255);
+        auto interfaceCaptionBytes =
+                NetworkUtil::getUtf8Bytes(interfaceText.caption, 1023);
+        auto interfaceDescriptionBytes =
+                NetworkUtil::getUtf8Bytes(interfaceText.description, 0xFFFF);
+
+        QByteArray message;
+        message.reserve(2 + 2 + 2 + 2 + 2 + 2 + 4
+                        + interfaceTitleBytes.size()
+                        + interfaceCaptionBytes.size()
+                        + interfaceDescriptionBytes.size()
+                        + actionIds.size() * (6 + 26 /*estimate*/));
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::CompatibilityInterfaceDefinition);
+        NetworkUtil::append2BytesUnsigned(message, interfaceId);
+        NetworkUtil::append2BytesUnsigned(message, encodedState);
+        NetworkUtil::append2BytesUnsigned(message, actionIds.size());
+        NetworkUtil::append2BytesUnsigned(message, interfaceCaptionBytes.size());
+        NetworkUtil::append2BytesUnsigned(message, interfaceDescriptionBytes.size());
+        NetworkUtil::appendByteUnsigned(message, interfaceTitleBytes.size());
+        NetworkUtil::appendByte(message, languageCode[0]);
+        NetworkUtil::appendByte(message, languageCode[1]);
+        NetworkUtil::appendByte(message, languageCode[2]);
+
+        message.append(interfaceTitleBytes);
+        message.append(interfaceCaptionBytes);
+        message.append(interfaceDescriptionBytes);
+
+        for (auto actionId : actionIds)
+        {
+            auto actionState = controller->getActionState(actionId);
+            auto actionCaption = controller->getActionCaption(actionId, language);
+
+            quint8 encodedActionState =
+                    NetworkProtocol::encodeCompatibilityUiActionState(actionState);
+
+            auto actionCaptionBytes = NetworkUtil::getUtf8Bytes(actionCaption, 255);
+
+            NetworkUtil::append2BytesUnsigned(message, actionId);
+            NetworkUtil::appendByte(message, 0); // filler
+            NetworkUtil::appendByte(message, encodedActionState);
+            NetworkUtil::append2BytesUnsigned(message, actionCaptionBytes.size());
+
+            message.append(actionCaptionBytes);
+        }
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendCompatibilityInterfaceStateUpdate(int interfaceId)
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 15) return;
+
+        auto* controller = _compatibilityUis->getControllerById(interfaceId);
+        if (!controller)
+            return;
+
+        qDebug() << "sending compatibility interface state update for ID" << interfaceId;
+
+        quint16 encodedState =
+                NetworkProtocol::encodeCompatibilityUiState(controller->getState());
+
+        QByteArray message;
+        message.reserve(2 + 2 + 2 + 2);
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::CompatibilityInterfaceStateUpdate);
+        NetworkUtil::append2Bytes(message, 0); // padding
+        NetworkUtil::append2BytesUnsigned(message, interfaceId);
+        NetworkUtil::append2Bytes(message, encodedState);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendCompatibilityInterfaceActionStateUpdate(int interfaceId,
+                                                                      int actionId)
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 15) return;
+
+        auto* controller = _compatibilityUis->getControllerById(interfaceId);
+        if (!controller)
+            return;
+
+        qDebug() << "sending compatibility interface action state update for interface"
+                 << interfaceId << "and action" << actionId;
+
+        auto actionState = controller->getActionState(actionId);
+        quint8 encodedActionState =
+                NetworkProtocol::encodeCompatibilityUiActionState(actionState);
+
+        QByteArray message;
+        message.reserve(2 + 2 + 2 + 1 + 1);
+        NetworkUtil::append2Bytes(message,
+                                NetworkProtocol::CompatibilityInterfaceActionStateUpdate);
+        NetworkUtil::append2BytesUnsigned(message, interfaceId);
+        NetworkUtil::append2BytesUnsigned(message, actionId);
+        NetworkUtil::appendByte(message, 0); // filler
+        NetworkUtil::appendByte(message, encodedActionState);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendCompatibilityInterfaceTextUpdate(int interfaceId,
+                                                           UserInterfaceLanguage language)
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 15) return;
+
+        auto* controller = _compatibilityUis->getControllerById(interfaceId);
+        if (!controller)
+            return;
+
+        qDebug() << "sending compatibility interface text update for ID" << interfaceId;
+
+        auto interfaceText = controller->getText(language);
+        auto languageCode = NetworkProtocol::encodeLanguage(language);
+
+        auto interfaceCaptionBytes =
+                NetworkUtil::getUtf8Bytes(interfaceText.caption, 1023);
+        auto interfaceDescriptionBytes =
+                NetworkUtil::getUtf8Bytes(interfaceText.description, 0xFFFF);
+
+        QByteArray message;
+        message.reserve(2 + 2 + 2 + 2 + 4 + interfaceCaptionBytes.size()
+                                          + interfaceDescriptionBytes.size());
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::CompatibilityInterfaceTextUpdate);
+        NetworkUtil::append2BytesUnsigned(message, interfaceId);
+        NetworkUtil::append2BytesUnsigned(message, interfaceCaptionBytes.size());
+        NetworkUtil::append2BytesUnsigned(message, interfaceDescriptionBytes.size());
+        NetworkUtil::appendByte(message, 0); // filler
+        NetworkUtil::appendByte(message, languageCode[0]);
+        NetworkUtil::appendByte(message, languageCode[1]);
+        NetworkUtil::appendByte(message, languageCode[2]);
+
+        message.append(interfaceCaptionBytes);
+        message.append(interfaceDescriptionBytes);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendCompatibilityInterfaceActionTextUpdate(int interfaceId,
+                                                                     int actionId,
+                                                           UserInterfaceLanguage language)
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 15) return;
+
+        auto* controller = _compatibilityUis->getControllerById(interfaceId);
+        if (!controller)
+            return;
+
+        qDebug() << "sending compatibility interface action text update for interface"
+                 << interfaceId << "and action" << actionId;
+
+        auto actionCaption = controller->getActionCaption(actionId, language);
+        auto languageCode = NetworkProtocol::encodeLanguage(language);
+
+        auto actionCaptionBytes = NetworkUtil::getUtf8Bytes(actionCaption, 255);
+
+        QByteArray message;
+        message.reserve(2 + 2 + 2 + 2 + 4 + actionCaptionBytes.size());
+        NetworkUtil::append2Bytes(message,
+                                  NetworkProtocol::CompatibilityInterfaceActionTextUpdate);
+        NetworkUtil::append2BytesUnsigned(message, interfaceId);
+        NetworkUtil::append2BytesUnsigned(message, actionId);
+        NetworkUtil::append2BytesUnsigned(message, actionCaptionBytes.size());
+        NetworkUtil::appendByte(message, 0); // filler
+        NetworkUtil::appendByte(message, languageCode[0]);
+        NetworkUtil::appendByte(message, languageCode[1]);
+        NetworkUtil::appendByte(message, languageCode[2]);
+
+        message.append(actionCaptionBytes);
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
         sendResultMessage(NetworkProtocol::NoError, clientReference, intData);
@@ -2041,6 +2341,12 @@ namespace PMP {
         case NetworkProtocol::QueueEntryDuplicationRequestMessage:
             parseQueueEntryDuplicationRequest(message);
             break;
+        case NetworkProtocol::CompatibilityInterfaceDefinitionsRequest:
+            parseCompatibilityInterfaceDefinitionsRequest(message);
+            break;
+        case NetworkProtocol::CompatibilityInterfaceTriggerActionRequest:
+            parseCompatibilityInterfaceTriggerActionRequest(message);
+            break;
         default:
             qDebug() << "received unknown binary message type" << messageType
                      << " with length" << messageLength;
@@ -2295,12 +2601,12 @@ namespace PMP {
         QThreadPool::globalInstance()->start(fetcher);
     }
 
-    void ConnectedClient::parsePlayerHistoryRequest(const QByteArray& message) {
+    void ConnectedClient::parsePlayerHistoryRequest(const QByteArray& message)
+    {
         qDebug() << "received player history list request";
 
-        if (message.length() != 2 + 2) {
+        if (message.length() != 2 + 2)
             return; /* invalid message */
-        }
 
         if (!isLoggedIn()) { return; /* client needs to be authenticated for this */ }
 
@@ -2309,7 +2615,75 @@ namespace PMP {
         sendQueueHistoryMessage(limit);
     }
 
-    void ConnectedClient::handleSingleByteAction(quint8 action) {
+    void ConnectedClient::parseCompatibilityInterfaceDefinitionsRequest(
+                                                                const QByteArray& message)
+    {
+        qDebug() << "received compatibility interface definitions request";
+
+        if (message.size() < 14)
+            return; /* invalid message */
+
+        int interfaceCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        auto primaryLanguageEncoded = message.mid(5, 3);
+        auto alternativeLanguageEncoded = message.mid(9, 3);
+
+        auto primaryLanguage = NetworkProtocol::decodeLanguage(primaryLanguageEncoded);
+        auto alternativeLanguage =
+                NetworkProtocol::decodeLanguage(alternativeLanguageEncoded);
+
+        qDebug() << "compatibility interface definition request has primary language"
+                 << primaryLanguage << "and alternative language" << alternativeLanguage;
+
+        int countWithPaddingIncluded =
+                (interfaceCount % 2 == 1) ? (interfaceCount + 1) : interfaceCount;
+
+        if (message.size() != 12 + 2 * countWithPaddingIncluded)
+            return; /* invalid message */
+
+        QVector<int> ids;
+        ids.reserve(interfaceCount);
+
+        int offset = 12;
+        for (int i = 0; i < interfaceCount; ++i)
+        {
+            int interfaceId = NetworkUtil::get2BytesUnsignedToInt(message, offset);
+            offset += 2;
+
+            ids.append(interfaceId);
+        }
+
+        auto language =
+                CompatibilityUiController::getSupportedLanguage(primaryLanguage,
+                                                                alternativeLanguage);
+
+        qDebug() << "compatibility interface definitions will be sent with language:"
+                 << language;
+
+        for (int id : ids)
+        {
+            QTimer::singleShot(
+                0, this,
+                [this, id, language]()
+                {
+                    sendCompatibilityInterfaceDefinition(id, language);
+                }
+            );
+        }
+    }
+
+    void ConnectedClient::parseCompatibilityInterfaceTriggerActionRequest(
+                                                                const QByteArray& message)
+    {
+        qDebug() << "received compatibility interface action trigger request";
+
+        if (message.length() < 160) // FIXME
+            return; /* invalid message */
+
+        // TODO
+    }
+
+    void ConnectedClient::handleSingleByteAction(quint8 action)
+    {
         /* actions 100-200 represent a SET VOLUME command */
         if (action >= 100 && action <= 200) {
             qDebug() << "received CHANGE VOLUME command, volume"
@@ -2418,7 +2792,11 @@ namespace PMP {
             break;
         case 51:
             qDebug() << "received SUBSCRIBE TO SERVER HEALTH UPDATES command";
-            enableHealthEvents();
+            enableHealthEvents(GeneralOrSpecific::Specific);
+            break;
+        case 52:
+            qDebug() << "received SUBSCRIBE TO COMPATIBILITY INTERFACES command";
+            enableCompatibilityInterfaceEvents(GeneralOrSpecific::Specific);
             break;
         case 99:
             qDebug() << "received SHUTDOWN command";
@@ -2446,7 +2824,8 @@ namespace PMP {
                             const QVector<NetworkProtocol::ProtocolExtension>& extensions)
     {
         /* handle extensions here */
-        for (auto extension : extensions) {
+        for (auto const& extension : extensions)
+        {
             qDebug() << "client will use ID" << extension.id
                      << "and version" << extension.version
                      << "for protocol extension" << extension.name;

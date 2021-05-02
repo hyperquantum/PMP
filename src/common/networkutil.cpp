@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -237,6 +237,34 @@ namespace PMP {
         }
 
         return QString::fromUtf8(&buffer.data()[position], length);
+    }
+
+    QByteArray NetworkUtil::getUtf8Bytes(QString text, int maxByteCount)
+    {
+        if (maxByteCount < 0)
+        {
+            qWarning() << "getUtf8Bytes: maxByteCount < 0 !!";
+            return {};
+        }
+
+        auto bytes = text.toUtf8();
+        if (bytes.size() <= maxByteCount)
+            return bytes;
+
+        /* we have to cut off the string, find the right spot */
+        int cutOff = maxByteCount;
+        for (int i = 0; i < 4; ++i)
+        {
+            if ((bytes[cutOff] & 0b11000000) != 0b10000000)
+            {
+                return bytes.left(cutOff);
+            }
+
+            --cutOff;
+        }
+
+        qWarning() << "getUtf8Bytes: invalid UTF-8 detected!!";
+        return {};
     }
 
     quint16 NetworkUtil::compose2Bytes(quint8 b1, quint8 b0) {

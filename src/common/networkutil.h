@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -73,6 +73,7 @@ namespace PMP {
                                                            int position);
 
         static QString getUtf8String(QByteArray const& buffer, int position, int length);
+        static QByteArray getUtf8Bytes(QString text, int maxByteCount);
 
     private:
         template<typename T>

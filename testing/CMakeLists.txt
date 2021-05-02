@@ -89,6 +89,7 @@ qt5_wrap_cpp(PMP_TestNetworkUtil_MOCS test_networkutil.h)
 add_executable(test_networkutil test_networkutil.cpp
     ${PMP_TestNetworkUtil_MOCS}
     ${CMAKE_SOURCE_DIR}/src/common/networkutil.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/util.cpp
 )
 target_link_libraries(test_networkutil Qt5::Core Qt5::Test)
 add_test(test_networkutil test_networkutil)
