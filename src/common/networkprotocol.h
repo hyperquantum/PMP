@@ -186,42 +186,40 @@ namespace PMP {
         {
         public:
             CompatibilityUserInterfaceAction()
-             : _id(-1),
-               _visible(false),
-               _enabled(false),
-               _disableWhenTriggered(false)
+             : _id(-1)
             {
                 //
             }
 
-            CompatibilityUserInterfaceAction(int id, QString caption, bool visible,
-                                             bool enabled, bool disableWhenTriggered)
+            CompatibilityUserInterfaceAction(int id, CompatibilityUiActionState state,
+                                             QString caption)
              : _id(id),
-               _caption(caption),
-               _visible(visible),
-               _enabled(enabled),
-               _disableWhenTriggered(disableWhenTriggered)
+               _state(state),
+               _caption(caption)
             {
                 //
             }
 
             int id() const { return _id; }
+            CompatibilityUiActionState state() const { return _state; }
             QString caption() const { return _caption; }
-            bool visible() const { return _visible; }
-            bool enabled() const { return _enabled; }
-            bool disableWhenTriggered() const { return _disableWhenTriggered; }
 
         private:
             int _id;
+            CompatibilityUiActionState _state;
             QString _caption;
-            bool _visible;
-            bool _enabled;
-            bool _disableWhenTriggered;
         };
 
         class CompatibilityUserInterface
         {
         public:
+            CompatibilityUserInterface()
+             : _id(-1),
+               _language(UserInterfaceLanguage::Invalid)
+            {
+                //
+            }
+
             CompatibilityUserInterface(int id, UserInterfaceLanguage language,
                                        QString title, QString caption,
                                        QString description,

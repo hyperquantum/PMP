@@ -161,4 +161,9 @@ namespace PMP
     }
 
 }
+
+Q_DECLARE_METATYPE(PMP::CompatibilityUiActionState)
+Q_DECLARE_METATYPE(PMP::CompatibilityUiState)
+Q_DECLARE_METATYPE(PMP::UserInterfaceLanguage)
+
 #endif

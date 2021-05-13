@@ -21,6 +21,7 @@
 #define PMP_SERVERCONNECTION_H
 
 #include "collectiontrackinfo.h"
+#include "compatibilityui.h"
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
 #include "playerstate.h"
@@ -225,6 +226,27 @@ namespace PMP {
         void collectionTracksAvailabilityChanged(QVector<PMP::FileHash> available,
                                                  QVector<PMP::FileHash> unavailable);
         void collectionTracksChanged(QVector<PMP::CollectionTrackInfo> changes);
+
+        void compatibilityInterfaceDefinitionReceived(int interfaceId,
+                                                      CompatibilityUiState state,
+                                                      UserInterfaceLanguage language,
+                                                      QString title, QString caption,
+                                                      QString description,
+                                                      QVector<int> actionIds);
+        void compatibilityInterfaceActionDefinitionReceived(int interfaceId, int actionId,
+                                                         CompatibilityUiActionState state,
+                                                         UserInterfaceLanguage language,
+                                                         QString caption);
+        void compatibilityInterfaceStateChanged(int interfaceId,
+                                                CompatibilityUiState state);
+        void compatibilityInterfaceTextChanged(int interfaceId,
+                                               UserInterfaceLanguage language,
+                                               QString caption, QString description);
+        void compatibilityInterfaceActionStateChanged(int interfaceId, int actionId,
+                                                      CompatibilityUiActionState state);
+        void compatibilityInterfaceActionTextChanged(int interfaceId, int actionId,
+                                                     UserInterfaceLanguage language,
+                                                     QString caption);
 
     private Q_SLOTS:
         void onConnected();

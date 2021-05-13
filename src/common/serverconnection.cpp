@@ -1194,6 +1194,8 @@ namespace PMP {
             int interfaceId = NetworkUtil::get2BytesUnsignedToInt(message, offset);
             offset += 2;
 
+            qDebug() << "compatibility interface:" << interfaceId;
+
             ids.append(interfaceId);
         }
 
@@ -1259,7 +1261,9 @@ namespace PMP {
         qDebug() << "Compatibility interface" << interfaceId
                  << "has description:" << interfaceDescription;
 
+        QVector<int> actionIds;
         QVector<NetworkProtocol::CompatibilityUserInterfaceAction> actions;
+        actionIds.reserve(actionCount);
         actions.reserve(actionCount);
 
         for (int i = 0; i < actionCount; ++i)
@@ -1292,13 +1296,11 @@ namespace PMP {
             qDebug() << " Compatibility action with ID" << actionId
                      << "has caption:" << actionCaption;
 
-            NetworkProtocol::CompatibilityUserInterfaceAction action(
-                                                      actionId,
-                                                      actionCaption,
-                                                      actionState.visible(),
-                                                      actionState.enabled(),
-                                                      actionState.disableWhenTriggered());
+            NetworkProtocol::CompatibilityUserInterfaceAction action(actionId,
+                                                                     actionState,
+                                                                     actionCaption);
 
+            actionIds.append(actionId);
             actions.append(action);
         }
 
@@ -1312,7 +1314,20 @@ namespace PMP {
                                                               interfaceDescription,
                                                               actions);
 
-        // TODO : do something with the information
+        Q_EMIT compatibilityInterfaceDefinitionReceived(interfaceId, interfaceState,
+                                                        language, interfaceTitle,
+                                                        interfaceCaption,
+                                                        interfaceDescription,
+                                                        actionIds);
+
+        for (auto const& action : qAsConst(actions))
+        {
+            Q_EMIT compatibilityInterfaceActionDefinitionReceived(interfaceId,
+                                                                  action.id(),
+                                                                  action.state(),
+                                                                  language,
+                                                                  action.caption());
+        }
     }
 
     void ServerConnection::parseCompatibilityInterfaceStateUpdate(
@@ -1330,7 +1345,7 @@ namespace PMP {
         qDebug() << "Compatibility interface" << interfaceId
                  << "now has priority:" << interfaceState.priority();
 
-        // TODO : do something with the information
+        Q_EMIT compatibilityInterfaceStateChanged(interfaceId, interfaceState);
     }
 
     void ServerConnection::parseCompatibilityInterfaceActionStateUpdate(
@@ -1355,7 +1370,8 @@ namespace PMP {
                  << "disable-when-triggered:"
                  << (actionState.disableWhenTriggered() ? "Y" : "N");
 
-        // TODO : do something with the information
+        Q_EMIT compatibilityInterfaceActionStateChanged(interfaceId, actionId,
+                                                        actionState);
     }
 
     void ServerConnection::parseCompatibilityInterfaceTextUpdate(
@@ -1395,7 +1411,8 @@ namespace PMP {
         qDebug() << "Compatibility interface" << interfaceId
                  << "now has description:" << interfaceDescription;
 
-        // TODO : do something with the information
+        Q_EMIT compatibilityInterfaceTextChanged(interfaceId, language, interfaceCaption,
+                                                 interfaceDescription);
     }
 
     void ServerConnection::parseCompatibilityInterfaceActionTextUpdate(
@@ -1424,7 +1441,8 @@ namespace PMP {
         qDebug() << "Compatibility interface" << interfaceId << "action" << actionId
                  << "now has caption:" << actionCaption;
 
-        // TODO : do something with the information
+        Q_EMIT compatibilityInterfaceActionTextChanged(interfaceId, actionId, language,
+                                                       actionCaption);
     }
 
     void ServerConnection::sendCompatibilityInterfaceDefinitionsRequest(
