@@ -2676,8 +2676,15 @@ namespace PMP
     {
         qDebug() << "received compatibility interface action trigger request";
 
-        if (message.length() < 160) // FIXME
+        if (message.length() != 12)
             return; /* invalid message */
+
+        int interfaceId = NetworkUtil::get2BytesUnsignedToInt(message, 4);
+        int actionId = NetworkUtil::get2BytesUnsignedToInt(message, 6);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 8);
+
+        qDebug() << "action trigger request is for interface" << interfaceId
+                 << "and action" << actionId << "; client reference:" << clientReference;
 
         // TODO
     }
