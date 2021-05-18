@@ -29,22 +29,9 @@ namespace PMP
 {
     struct CompatibilityUiControllerText
     {
-        //UserInterfaceLanguage language;
         QString caption;
         QString description;
-
-        CompatibilityUiControllerText() /*: language(UserInterfaceLanguage::Invalid)*/ {}
     };
-
-    /*
-    struct TextWithLanguage
-    {
-        UserInterfaceLanguage language;
-        QString text;
-
-        TextWithLanguage() : language(UserInterfaceLanguage::Invalid) {}
-    };
-    */
 
     class CompatibilityUiController : public QObject
     {
@@ -52,8 +39,8 @@ namespace PMP
     public:
 
         static UserInterfaceLanguage getSupportedLanguage(
-                                                        UserInterfaceLanguage firstChoice,
-                                                        UserInterfaceLanguage alternative);
+                                                       UserInterfaceLanguage firstChoice,
+                                                       UserInterfaceLanguage alternative);
 
         CompatibilityUiController(QObject* parent, int id,
                                   CompatibilityUiPriority priority);
