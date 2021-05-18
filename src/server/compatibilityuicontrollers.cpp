@@ -56,7 +56,7 @@ namespace PMP
                 else
                     setPriority(CompatibilityUiPriority::Optional);
 
-                Q_EMIT captionOrDescriptionChanged();
+                Q_EMIT textChanged();
                 Q_EMIT actionStateChanged(startFullIndexationActionId);
             }
         );
@@ -276,11 +276,11 @@ namespace PMP
         auto interfaceId = controller->id();
 
         connect(
-            controller, &CompatibilityUiController::captionOrDescriptionChanged,
+            controller, &CompatibilityUiController::textChanged,
             this,
             [this, interfaceId]()
             {
-                Q_EMIT captionOrDescriptionChanged(interfaceId);
+                Q_EMIT textChanged(interfaceId);
             }
         );
         connect(

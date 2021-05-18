@@ -71,7 +71,7 @@ namespace PMP
         virtual CompatibilityUiActionState getActionState(int actionId) const = 0;
 
     Q_SIGNALS:
-        void captionOrDescriptionChanged();
+        void textChanged();
         void stateChanged();
         void actionCaptionChanged(int actionId);
         void actionStateChanged(int actionId);

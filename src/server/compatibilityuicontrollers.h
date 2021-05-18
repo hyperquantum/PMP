@@ -85,7 +85,7 @@ namespace PMP
         }
 
     Q_SIGNALS:
-        void captionOrDescriptionChanged(int interfaceId);
+        void textChanged(int interfaceId);
         void stateChanged(int interfaceId);
         void actionCaptionChanged(int interfaceId, int actionId);
         void actionStateChanged(int interfaceId, int actionId);

@@ -220,7 +220,7 @@ namespace PMP
 
         connect(
             _compatibilityUis,
-            &CompatibilityUiControllerCollection::captionOrDescriptionChanged,
+            &CompatibilityUiControllerCollection::textChanged,
             this,
             [this](int interfaceId)
             {
