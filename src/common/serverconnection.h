@@ -34,6 +34,7 @@
 #include <QHash>
 #include <QList>
 #include <QObject>
+#include <QSet>
 #include <QTcpSocket>
 #include <QUuid>
 #include <QVector>
@@ -105,6 +106,10 @@ namespace PMP {
         bool isLoggedIn() const { return userLoggedInId() > 0; }
 
         ServerHealthStatus serverHealth() const { return _serverHealthStatus; }
+
+        QVector<int> getCompatibilityInterfaceIds();
+        void sendCompatibilityInterfaceDefinitionsRequest(UserInterfaceLanguage language,
+                                                          QVector<int> interfaceIds);
 
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
@@ -227,6 +232,7 @@ namespace PMP {
                                                  QVector<PMP::FileHash> unavailable);
         void collectionTracksChanged(QVector<PMP::CollectionTrackInfo> changes);
 
+        void compatibilityInterfaceAnnouncementReceived(QVector<int> interfaceIds);
         void compatibilityInterfaceDefinitionReceived(int interfaceId,
                                                       CompatibilityUiState state,
                                                       UserInterfaceLanguage language,
@@ -339,7 +345,6 @@ namespace PMP {
         void parseCompatibilityInterfaceActionStateUpdate(QByteArray const& message);
         void parseCompatibilityInterfaceTextUpdate(QByteArray const& message);
         void parseCompatibilityInterfaceActionTextUpdate(QByteArray const& message);
-        void sendCompatibilityInterfaceDefinitionsRequest(QVector<int> interfaceIds);
         void sendCompatibilityInterfaceTriggerActionRequest(int interfaceId,
                                                             int actionId);
 
@@ -368,6 +373,7 @@ namespace PMP {
         QHash<uint, ResultHandler*> _resultHandlers;
         QHash<uint, CollectionFetcher*> _collectionFetchers;
         ServerHealthStatus _serverHealthStatus;
+        QSet<int> _compatibilityInterfaceIds;
     };
 }
 #endif

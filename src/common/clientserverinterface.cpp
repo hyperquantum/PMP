@@ -20,6 +20,7 @@
 #include "clientserverinterface.h"
 
 #include "collectionwatcherimpl.h"
+#include "compatibilityinterfacecontrollerimpl.h"
 #include "currenttrackmonitorimpl.h"
 #include "dynamicmodecontrollerimpl.h"
 #include "serverconnection.h"
@@ -42,6 +43,7 @@ namespace PMP {
        _dynamicModeController(nullptr),
        _collectionWatcher(nullptr),
        _userDataFetcher(nullptr),
+       _compatibilityUiController(nullptr),
        _connected(connection->isConnected())
     {
         connect(
@@ -138,6 +140,18 @@ namespace PMP {
         }
 
         return *_userDataFetcher;
+    }
+
+    CompatibilityInterfaceController* ClientServerInterface::compatibilityUiController()
+    {
+        if (!_compatibilityUiController)
+        {
+            _compatibilityUiController =
+                    new CompatibilityInterfaceControllerImpl(_connection,
+                                                          UserInterfaceLanguage::English);
+        }
+
+        return _compatibilityUiController;
     }
 
     bool ClientServerInterface::isLoggedIn() const

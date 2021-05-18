@@ -26,6 +26,7 @@ namespace PMP {
 
     class AbstractQueueMonitor;
     class CollectionWatcher;
+    class CompatibilityInterfaceController;
     class CurrentTrackMonitor;
     class DynamicModeController;
     class ServerConnection;
@@ -52,6 +53,8 @@ namespace PMP {
         CollectionWatcher& collectionWatcher();
         UserDataFetcher& userDataFetcher();
 
+        CompatibilityInterfaceController* compatibilityUiController();
+
         bool isLoggedIn() const;
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
@@ -74,6 +77,7 @@ namespace PMP {
         DynamicModeController* _dynamicModeController;
         CollectionWatcher* _collectionWatcher;
         UserDataFetcher* _userDataFetcher;
+        CompatibilityInterfaceController* _compatibilityUiController;
         bool _connected;
     };
 }

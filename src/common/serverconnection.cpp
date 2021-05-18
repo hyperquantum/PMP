@@ -270,19 +270,28 @@ namespace PMP {
         );
     }
 
-    void ServerConnection::reset() {
+    void ServerConnection::reset()
+    {
         _state = NotConnected;
         _socket.abort();
         _readBuffer.clear();
         _binarySendingMode = false;
         _serverProtocolNo = -1;
+
+        _compatibilityInterfaceIds.clear();
     }
 
-    void ServerConnection::connectToHost(QString const& host, quint16 port) {
+    void ServerConnection::connectToHost(QString const& host, quint16 port)
+    {
         qDebug() << "connecting to" << host << "on port" << port;
         _state = Connecting;
         _readBuffer.clear();
         _socket.connectToHost(host, port);
+    }
+
+    QVector<int> ServerConnection::getCompatibilityInterfaceIds()
+    {
+        return _compatibilityInterfaceIds.toList().toVector();
     }
 
     quint32 ServerConnection::userLoggedInId() const {
@@ -438,10 +447,12 @@ namespace PMP {
         } while (_state != state && _socket.bytesAvailable() > 0);
     }
 
-    void ServerConnection::onSocketError(QAbstractSocket::SocketError error) {
-        qDebug() << "socket error" << error;
+    void ServerConnection::onSocketError(QAbstractSocket::SocketError error)
+    {
+        qDebug() << "socket error:" << error;
 
-        switch (_state) {
+        switch (_state)
+        {
         case NotConnected:
             break; /* ignore error */
         case Connecting:
@@ -1197,12 +1208,10 @@ namespace PMP {
             qDebug() << "compatibility interface:" << interfaceId;
 
             ids.append(interfaceId);
+            _compatibilityInterfaceIds << interfaceId;
         }
 
-        QTimer::singleShot(
-            0, this,
-            [this, ids]() { sendCompatibilityInterfaceDefinitionsRequest(ids); }
-        );
+        Q_EMIT compatibilityInterfaceAnnouncementReceived(ids);
     }
 
     void ServerConnection::parseCompatibilityInterfaceDefinition(
@@ -1446,6 +1455,7 @@ namespace PMP {
     }
 
     void ServerConnection::sendCompatibilityInterfaceDefinitionsRequest(
+                                                           UserInterfaceLanguage language,
                                                                 QVector<int> interfaceIds)
     {
         if (!_binarySendingMode)
@@ -1457,8 +1467,8 @@ namespace PMP {
         qDebug() << "sending compatibility interfaces definitions request for"
                  << interfaceIds.size() << "interface(s)";
 
-        const char primaryLanguage[3] {'e', 'n', 'g'};
-        const char secondaryLanguage[3] {'e', 'n', 'g'};
+        auto primaryLanguage = NetworkProtocol::encodeLanguage(language);
+        auto secondaryLanguage = QByteArray("eng");
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4 + 2 * interfaceIds.size() + 2);

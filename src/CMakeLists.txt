@@ -22,6 +22,8 @@ set(PMP_COMMON_SOURCES
     common/clientserverinterface.cpp
     common/collectionwatcherimpl.cpp
     common/commonmetatypes.cpp
+    common/compatibilityinterfacecontrollerimpl.cpp
+    common/compatibilityinterfaceimpl.cpp
     common/currenttrackmonitorimpl.cpp
     common/dynamicmodecontrollerimpl.cpp
     common/fileanalyzer.cpp
@@ -47,6 +49,10 @@ set(PMP_COMMON_HEADERS
     common/collectionfetcher.h
     common/collectionwatcher.h
     common/collectionwatcherimpl.h
+    common/compatibilityinterface.h
+    common/compatibilityinterfacecontroller.h
+    common/compatibilityinterfacecontrollerimpl.h
+    common/compatibilityinterfaceimpl.h
     common/currenttrackmonitor.h
     common/currenttrackmonitorimpl.h
     common/dynamicmodecontroller.h
