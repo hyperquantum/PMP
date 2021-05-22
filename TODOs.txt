@@ -5,6 +5,12 @@ Disclaimer:
   Anything in here can change at any time, and nothing here is a promise for the future.
 
 
+WORK IN PROGRESS (LONG RUNNING - on different branches in git)
+
+ * Last.fm scrobbling support: mostly working, still lacks UI for authentication (branch "feature-scrobbling")
+ * Compatibility UI (branch "compatibility-ui")
+
+
 IMPORTANT
 
  * save track lengths to database
@@ -49,11 +55,12 @@ IDEAS
 
  ** player: option for single track mode (vs. continuous play)
  * player: 'load track' action that loads a track but does not start playing; this allows seek before playing
- * player: 'play again next' action for the song that is currently playing
+ ** player: 'play again next' action for the song that is currently playing
  * player: auto-stop timer to make playback stop at or near a specified clock time
  * player: auto-start timer to make playback start at a specified clock time
  * player: delayed start: e.g. being able to press Play and then have 5 seconds before PMP actually starts playing
  * player: avoid accidental multiple clicks on "skip" affecting track score unnecessarily
+ * player: 'seek to start of track' action or button
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * queue: ability to insert a breakpoint directly before/after any entry in the queue
  * queue: show error marker for a track that has no known file
@@ -65,6 +72,7 @@ IDEAS
  * music collection: provide fast partial indexation that only detects new files
  ** dynamic mode: detect and prevent track repetition with different hash values
  ** dynamic mode: artist repetition avoidance
+ * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
  *** thumbs up/down buttons for the song that is playing and for the history, to affect the score a little bit
  * 'love' & 'hate' button for the song that is playing
  * statistics view for the user; with things like "amount of tracks played in the last 7/30/... days"
@@ -74,6 +82,7 @@ IDEAS
  * use libgroove for playback (?)
  ** support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
  * display PMP server version in the client 'About' dialog
+ * ability to view server uptime
  * interactive editing of the list of directories to scan for music
  * ability to ban a track permanently or temporarily; this will also hide it in the music collection
  * ability to set track property "play this less often" or "play this again soon"
@@ -85,7 +94,6 @@ IDEAS
  * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time
  * track info dialog: ability to pick the user whose personal stats are shown
  ** track info dialog: show personal play history for that track
- * add a button for seeking back to the start of the current track
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner
