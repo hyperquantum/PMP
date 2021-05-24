@@ -170,14 +170,14 @@ namespace PMP {
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
         void sendCompatibilityInterfacesAnnouncement();
-        void sendCompatibilityInterfaceDefinition(int interfaceId,
-                                                  UserInterfaceLanguage language);
+        void sendCompatibilityInterfaceLanguageSelectionConfirmation(
+                                                          quint32 clientReference,
+                                                          UserInterfaceLanguage language);
+        void sendCompatibilityInterfaceDefinition(int interfaceId);
         void sendCompatibilityInterfaceStateUpdate(int interfaceId);
         void sendCompatibilityInterfaceActionStateUpdate(int interfaceId, int actionId);
-        void sendCompatibilityInterfaceTextUpdate(int interfaceId,
-                                                  UserInterfaceLanguage language);
-        void sendCompatibilityInterfaceActionTextUpdate(int interfaceId, int actionId,
-                                                        UserInterfaceLanguage language);
+        void sendCompatibilityInterfaceTextUpdate(int interfaceId);
+        void sendCompatibilityInterfaceActionTextUpdate(int interfaceId, int actionId);
 
         void handleBinaryMessage(QByteArray const& message);
         void handleStandardBinaryMessage(NetworkProtocol::ClientMessageType messageType,
@@ -197,6 +197,8 @@ namespace PMP {
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
+        void parseCompatibilityInterfaceLanguageSelectionRequest(
+                                                               QByteArray const& message);
         void parseCompatibilityInterfaceDefinitionsRequest(QByteArray const& message);
         void parseCompatibilityInterfaceTriggerActionRequest(QByteArray const& message);
 
@@ -212,6 +214,7 @@ namespace PMP {
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;
         CompatibilityUiControllerCollection* _compatibilityUis;
+        UserInterfaceLanguage _compatibilityUiLanguage;
         QByteArray _textReadBuffer;
         int _clientProtocolNo;
         QHash<quint8, QString> _clientExtensionNames;

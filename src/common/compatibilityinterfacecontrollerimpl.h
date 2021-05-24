@@ -24,6 +24,7 @@
 #include "compatibilityui.h"
 
 #include <QHash>
+#include <QSet>
 #include <QVector>
 
 namespace PMP
@@ -48,6 +49,8 @@ namespace PMP
         void connectionBroken();
 
         void compatibilityInterfaceAnnouncementReceived(QVector<int> interfaceIds);
+        void compatibilityInterfaceLanguageSelectionSucceeded(
+                                                          UserInterfaceLanguage language);
         void compatibilityInterfaceDefinitionReceived(int interfaceId,
                                                       CompatibilityUiState state,
                                                       UserInterfaceLanguage language,
@@ -69,10 +72,15 @@ namespace PMP
                                                      UserInterfaceLanguage language,
                                                      QString caption);
 
+        void fetchDefinitionsPending();
+
     private:
         ServerConnection* _connection;
-        UserInterfaceLanguage _language;
+        UserInterfaceLanguage _languagePreferred;
+        UserInterfaceLanguage _languageConfirmed;
         QHash<int, CompatibilityInterfaceImpl*> _interfaces;
+        QSet<int> _interfaceDefinitionsToFetch;
+        bool _canFetchDefinitions;
     };
 
 }

@@ -89,6 +89,7 @@ namespace PMP {
         class CollectionFetchResultHandler;
         class TrackInsertionResultHandler;
         class DuplicationResultHandler;
+        class CompatibilityInterfaceLanguageSelectionResultHandler;
 
     public:
         enum UserRegistrationError {
@@ -108,8 +109,9 @@ namespace PMP {
         ServerHealthStatus serverHealth() const { return _serverHealthStatus; }
 
         QVector<int> getCompatibilityInterfaceIds();
-        void sendCompatibilityInterfaceDefinitionsRequest(UserInterfaceLanguage language,
-                                                          QVector<int> interfaceIds);
+        void sendCompatibilityInterfaceLanguageSelectionRequest(
+                                                          UserInterfaceLanguage language);
+        void sendCompatibilityInterfaceDefinitionsRequest(QVector<int> interfaceIds);
 
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
@@ -233,6 +235,8 @@ namespace PMP {
         void collectionTracksChanged(QVector<PMP::CollectionTrackInfo> changes);
 
         void compatibilityInterfaceAnnouncementReceived(QVector<int> interfaceIds);
+        void compatibilityInterfaceLanguageSelectionSucceeded(
+                                                          UserInterfaceLanguage language);
         void compatibilityInterfaceDefinitionReceived(int interfaceId,
                                                       CompatibilityUiState state,
                                                       UserInterfaceLanguage language,
@@ -277,6 +281,8 @@ namespace PMP {
                                     QByteArray const& message);
         void handleResultMessage(quint16 errorType, quint32 clientReference,
                                  quint32 intData, QByteArray const& blobData);
+        quint32 registerResultHandler(ResultHandler* handler);
+        void discardResultHandler(quint32 clientReference);
         void registerServerProtocolExtensions(
                            const QVector<NetworkProtocol::ProtocolExtension>& extensions);
 
@@ -340,6 +346,8 @@ namespace PMP {
         void sendCollectionFetchRequestMessage(uint clientReference);
 
         void parseCompatibilityInterfaceAnnouncement(QByteArray const& message);
+        void parseCompatibilityInterfaceLanguageSelectionConfirmation(
+                                                               QByteArray const& message);
         void parseCompatibilityInterfaceDefinition(QByteArray const& message);
         void parseCompatibilityInterfaceStateUpdate(QByteArray const& message);
         void parseCompatibilityInterfaceActionStateUpdate(QByteArray const& message);

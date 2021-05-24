@@ -20,6 +20,7 @@
 #include "serverconnection.h"
 
 #include "common/collectionfetcher.h"
+#include "common/containerutil.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
 #include "common/util.h"
@@ -251,6 +252,38 @@ namespace PMP {
 
     /* ============================================================================ */
 
+    class ServerConnection::CompatibilityInterfaceLanguageSelectionResultHandler
+        : public ResultHandler
+    {
+    public:
+        CompatibilityInterfaceLanguageSelectionResultHandler(ServerConnection* parent);
+
+        void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
+                          quint32 intData, const QByteArray &blobData) override;
+
+    };
+
+    ServerConnection::CompatibilityInterfaceLanguageSelectionResultHandler
+                    ::CompatibilityInterfaceLanguageSelectionResultHandler(
+                                                                 ServerConnection* parent)
+     : ResultHandler(parent)
+    {
+        //
+    }
+
+    void ServerConnection::CompatibilityInterfaceLanguageSelectionResultHandler
+                         ::handleResult(NetworkProtocol::ErrorType errorType,
+                                        quint32 clientReference, quint32 intData,
+                                        const QByteArray& blobData)
+    {
+        qWarning() << "CompatibilityInterfaceLanguageSelectionResultHandler:"
+                   << errorDescription(errorType, clientReference, intData, blobData);
+
+        // TODO: report error to the originator of the request
+    }
+
+    /* ============================================================================ */
+
     const quint16 ServerConnection::ClientProtocolNo = 15;
 
     ServerConnection::ServerConnection(QObject* parent,
@@ -291,7 +324,7 @@ namespace PMP {
 
     QVector<int> ServerConnection::getCompatibilityInterfaceIds()
     {
-        return _compatibilityInterfaceIds.toList().toVector();
+        return ContainerUtil::toVector(_compatibilityInterfaceIds);
     }
 
     quint32 ServerConnection::userLoggedInId() const {
@@ -636,9 +669,7 @@ namespace PMP {
     {
         if (hash.isNull()) return RequestID(); /* invalid */
 
-        auto handler = new TrackInsertionResultHandler(this, index);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto ref = registerResultHandler(new TrackInsertionResultHandler(this, index));
 
         qDebug() << "sending request to add a track at index" << index << "; ref=" << ref;
 
@@ -656,10 +687,9 @@ namespace PMP {
         return ref;
     }
 
-    void ServerConnection::duplicateQueueEntry(quint32 queueID) {
-        auto handler = new DuplicationResultHandler(this);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+    void ServerConnection::duplicateQueueEntry(quint32 queueID)
+    {
+        auto ref = registerResultHandler(new DuplicationResultHandler(this));
 
         qDebug() << "sending request to duplicate QID " << queueID;
 
@@ -1064,8 +1094,7 @@ namespace PMP {
         fetcher->setParent(this);
 
         auto handler = new CollectionFetchResultHandler(this, fetcher);
-        auto fetcherReference = getNewReference();
-        _resultHandlers[fetcherReference] = handler;
+        auto fetcherReference = registerResultHandler(handler);
         _collectionFetchers[fetcherReference] = fetcher;
         sendCollectionFetchRequestMessage(fetcherReference);
     }
@@ -1212,6 +1241,27 @@ namespace PMP {
         }
 
         Q_EMIT compatibilityInterfaceAnnouncementReceived(ids);
+    }
+
+    void ServerConnection::parseCompatibilityInterfaceLanguageSelectionConfirmation(
+                                                                const QByteArray& message)
+    {
+        qDebug() << "received compatibility interface language selection confirmation";
+
+        if (message.length() != 12)
+            return; /* invalid message */
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        auto languageEncoded = message.mid(9, 3);
+
+        auto language = NetworkProtocol::decodeLanguage(languageEncoded);
+
+        qDebug() << "language confirmation: language:" << language
+                 << " reference:" << clientReference;
+
+        discardResultHandler(clientReference);
+
+        Q_EMIT compatibilityInterfaceLanguageSelectionSucceeded(language);
     }
 
     void ServerConnection::parseCompatibilityInterfaceDefinition(
@@ -1454,8 +1504,41 @@ namespace PMP {
                                                        actionCaption);
     }
 
+    void ServerConnection::sendCompatibilityInterfaceLanguageSelectionRequest(
+                                                           UserInterfaceLanguage language)
+    {
+        if (!_binarySendingMode)
+            return; /* only supported in binary mode */
+
+        auto ref =
+            registerResultHandler(
+                          new CompatibilityInterfaceLanguageSelectionResultHandler(this));
+
+        qDebug() << "sending compatibility interface language selection request:"
+                 << "language:" << language << " reference:" << ref;
+
+        auto primaryLanguage = NetworkProtocol::encodeLanguage(language);
+        auto secondaryLanguage = QByteArray("eng");
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4 + 4);
+        NetworkUtil::append2Bytes(message,
+                         NetworkProtocol::CompatibilityInterfaceLanguageSelectionRequest);
+        NetworkUtil::append2Bytes(message, 0); /* unused */
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkUtil::appendByte(message, 0); /* unused */
+        NetworkUtil::appendByte(message, primaryLanguage[0]);
+        NetworkUtil::appendByte(message, primaryLanguage[1]);
+        NetworkUtil::appendByte(message, primaryLanguage[2]);
+        NetworkUtil::appendByte(message, 0); /* unused */
+        NetworkUtil::appendByte(message, secondaryLanguage[0]);
+        NetworkUtil::appendByte(message, secondaryLanguage[1]);
+        NetworkUtil::appendByte(message, secondaryLanguage[2]);
+
+        sendBinaryMessage(message);
+    }
+
     void ServerConnection::sendCompatibilityInterfaceDefinitionsRequest(
-                                                           UserInterfaceLanguage language,
                                                                 QVector<int> interfaceIds)
     {
         if (!_binarySendingMode)
@@ -1467,22 +1550,11 @@ namespace PMP {
         qDebug() << "sending compatibility interfaces definitions request for"
                  << interfaceIds.size() << "interface(s)";
 
-        auto primaryLanguage = NetworkProtocol::encodeLanguage(language);
-        auto secondaryLanguage = QByteArray("eng");
-
         QByteArray message;
-        message.reserve(2 + 2 + 4 + 4 + 2 * interfaceIds.size() + 2);
+        message.reserve(2 + 2 + 2 * interfaceIds.size() + 2);
         NetworkUtil::append2Bytes(message,
                                NetworkProtocol::CompatibilityInterfaceDefinitionsRequest);
         NetworkUtil::append2BytesUnsigned(message, interfaceIds.size());
-        NetworkUtil::appendByte(message, 0); /* unused */
-        NetworkUtil::appendByte(message, primaryLanguage[0]);
-        NetworkUtil::appendByte(message, primaryLanguage[1]);
-        NetworkUtil::appendByte(message, primaryLanguage[2]);
-        NetworkUtil::appendByte(message, 0); /* unused */
-        NetworkUtil::appendByte(message, secondaryLanguage[0]);
-        NetworkUtil::appendByte(message, secondaryLanguage[1]);
-        NetworkUtil::appendByte(message, secondaryLanguage[2]);
 
         for (auto interfaceId : qAsConst(interfaceIds))
         {
@@ -1503,6 +1575,7 @@ namespace PMP {
         if (!_binarySendingMode)
             return; /* only supported in binary mode */
 
+        // TODO : install result handler for handling the reply
         auto ref = getNewReference();
 
         qDebug() << "sending compatibility interface action trigger request; ref:" << ref;
@@ -1660,6 +1733,9 @@ namespace PMP {
             break;
         case NetworkProtocol::CompatibilityInterfaceAnnouncement:
             parseCompatibilityInterfaceAnnouncement(message);
+            break;
+        case NetworkProtocol::CompatibilityInterfaceLanguageSelectionConfirmation:
+            parseCompatibilityInterfaceLanguageSelectionConfirmation(message);
             break;
         case NetworkProtocol::CompatibilityInterfaceDefinition:
             parseCompatibilityInterfaceDefinition(message);
@@ -2821,6 +2897,22 @@ namespace PMP {
 
         qWarning() << "error/result message cannot be handled; ref:" << clientReference
                    << " intData:" << intData << "; blobdata-length:" << blobData.size();
+    }
+
+    quint32 ServerConnection::registerResultHandler(ResultHandler* handler)
+    {
+        auto ref = getNewReference();
+        _resultHandlers[ref] = handler;
+        return ref;
+    }
+
+    void ServerConnection::discardResultHandler(quint32 clientReference)
+    {
+        auto resultHandler = _resultHandlers.take(clientReference);
+        if (!resultHandler)
+            return;
+
+        delete resultHandler;
     }
 
     void ServerConnection::invalidMessageReceived(QByteArray const& message,

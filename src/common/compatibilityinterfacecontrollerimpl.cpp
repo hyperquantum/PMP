@@ -20,7 +20,10 @@
 #include "compatibilityinterfacecontrollerimpl.h"
 
 #include "compatibilityinterfaceimpl.h"
+#include "containerutil.h"
 #include "serverconnection.h"
+
+#include <QTimer>
 
 namespace PMP
 {
@@ -28,7 +31,10 @@ namespace PMP
                                                            ServerConnection* connection,
                                                            UserInterfaceLanguage language)
      : CompatibilityInterfaceController(connection),
-       _language(language)
+       _connection(connection),
+       _languagePreferred(language),
+       _languageConfirmed(UserInterfaceLanguage::Invalid),
+       _canFetchDefinitions(false)
     {
         connect(
             _connection, &ServerConnection::connected,
@@ -43,6 +49,12 @@ namespace PMP
             _connection, &ServerConnection::compatibilityInterfaceAnnouncementReceived,
             this,
             &CompatibilityInterfaceControllerImpl::compatibilityInterfaceAnnouncementReceived
+        );
+        connect(
+            _connection,
+            &ServerConnection::compatibilityInterfaceLanguageSelectionSucceeded,
+            this,
+            &CompatibilityInterfaceControllerImpl::compatibilityInterfaceLanguageSelectionSucceeded
         );
         connect(
             _connection, &ServerConnection::compatibilityInterfaceDefinitionReceived,
@@ -92,25 +104,50 @@ namespace PMP
 
     void CompatibilityInterfaceControllerImpl::connected()
     {
+        _connection->sendCompatibilityInterfaceLanguageSelectionRequest(
+                                                                      _languagePreferred);
+
         auto interfaceIds = _connection->getCompatibilityInterfaceIds();
 
-        _connection->sendCompatibilityInterfaceDefinitionsRequest(_language,
-                                                                  interfaceIds);
+        for (auto interfaceId : qAsConst(interfaceIds))
+            _interfaceDefinitionsToFetch.insert(interfaceId);
+
+        /* this is a failsafe in case language selection is never confirmed */
+        QTimer::singleShot(
+            500, this,
+            [this]()
+            {
+                _canFetchDefinitions = true;
+                fetchDefinitionsPending();
+            }
+        );
     }
 
     void CompatibilityInterfaceControllerImpl::connectionBroken()
     {
+        _canFetchDefinitions = false;
+
         auto interfaces = _interfaces.values();
         _interfaces.clear();
-
         qDeleteAll(interfaces);
     }
 
     void CompatibilityInterfaceControllerImpl::compatibilityInterfaceAnnouncementReceived(
                                                                 QVector<int> interfaceIds)
     {
-        _connection->sendCompatibilityInterfaceDefinitionsRequest(_language,
-                                                                  interfaceIds);
+        ContainerUtil::addToSet(interfaceIds, _interfaceDefinitionsToFetch);
+
+        fetchDefinitionsPending();
+    }
+
+    void CompatibilityInterfaceControllerImpl::compatibilityInterfaceLanguageSelectionSucceeded(
+                                                           UserInterfaceLanguage language)
+    {
+        _languageConfirmed = language;
+        qDebug() << "compatibility interface language successfully set to" << language;
+
+        _canFetchDefinitions = true;
+        fetchDefinitionsPending();
     }
 
     void CompatibilityInterfaceControllerImpl::compatibilityInterfaceDefinitionReceived(
@@ -121,6 +158,20 @@ namespace PMP
                                                            QString description,
                                                            QVector<int> actionIds)
     {
+        if (_languageConfirmed == UserInterfaceLanguage::Invalid
+                && language != UserInterfaceLanguage::Invalid)
+        {
+            _languageConfirmed = language;
+            qDebug() << "confirmed language set to" << language
+                     << "upon receiving compatibility interface definition";
+        }
+
+        if (language != _languageConfirmed)
+        {
+            qWarning() << "compatibility interface definition language wrong:"
+                       << "expecting" << _languageConfirmed << "but received" << language;
+        }
+
         auto* interface = _interfaces.value(interfaceId, nullptr);
         if (!interface)
         {
@@ -174,6 +225,12 @@ namespace PMP
                                                            QString caption,
                                                            QString description)
     {
+        if (language != _languageConfirmed)
+        {
+            qWarning() << "compatibility interface definition language wrong:"
+                       << "expecting" << _languageConfirmed << "but received" << language;
+        }
+
         auto* interface = _interfaces.value(interfaceId, nullptr);
         if (!interface)
             return;
@@ -201,6 +258,12 @@ namespace PMP
                                                            UserInterfaceLanguage language,
                                                            QString caption)
     {
+        if (language != _languageConfirmed)
+        {
+            qWarning() << "compatibility interface definition language wrong:"
+                       << "expecting" << _languageConfirmed << "but received" << language;
+        }
+
         auto* interface = _interfaces.value(interfaceId, nullptr);
         if (!interface)
             return;
@@ -210,6 +273,19 @@ namespace PMP
             return;
 
         action->setCaption(language, caption);
+    }
+
+    void CompatibilityInterfaceControllerImpl::fetchDefinitionsPending()
+    {
+        if (!_canFetchDefinitions)
+            return;
+
+        if (_interfaceDefinitionsToFetch.isEmpty())
+            return;
+
+        auto interfaceIds = ContainerUtil::flushIntoVector(_interfaceDefinitionsToFetch);
+
+        _connection->sendCompatibilityInterfaceDefinitionsRequest(interfaceIds);
     }
 
 }

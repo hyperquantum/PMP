@@ -59,6 +59,7 @@ namespace PMP
        _users(users), _collectionMonitor(collectionMonitor),
        _serverHealthMonitor(serverHealthMonitor),
        _compatibilityUis(new CompatibilityUiControllerCollection(this, serverInterface)),
+       _compatibilityUiLanguage(UserInterfaceLanguage::Invalid),
        _clientProtocolNo(-1),
        _lastSentNowPlayingID(0),
        _terminated(false), _binaryMode(false),
@@ -224,8 +225,7 @@ namespace PMP
             this,
             [this](int interfaceId)
             {
-                auto language = UserInterfaceLanguage::English; // FIXME
-                sendCompatibilityInterfaceTextUpdate(interfaceId, language);
+                sendCompatibilityInterfaceTextUpdate(interfaceId);
             }
         );
         connect(
@@ -241,9 +241,7 @@ namespace PMP
             this,
             [this](int interfaceId, int actionId)
             {
-                auto language = UserInterfaceLanguage::English; // FIXME
-                sendCompatibilityInterfaceActionTextUpdate(interfaceId, actionId,
-                                                           language);
+                sendCompatibilityInterfaceActionTextUpdate(interfaceId, actionId);
             }
         );
         connect(
@@ -1389,11 +1387,39 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendCompatibilityInterfaceDefinition(int interfaceId,
+    void ConnectedClient::sendCompatibilityInterfaceLanguageSelectionConfirmation(
+                                                           quint32 clientReference,
                                                            UserInterfaceLanguage language)
     {
         /* only send it if the client will understand it */
         if (_clientProtocolNo < 15) return;
+
+        qDebug() << "sending compatibility interface language selection confirmation:"
+                 << "client-ref:" << clientReference << " language:" << language;
+
+        auto languageCode = NetworkProtocol::encodeLanguage(language);
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4);
+        NetworkUtil::append2Bytes(message,
+                    NetworkProtocol::CompatibilityInterfaceLanguageSelectionConfirmation);
+        NetworkUtil::append2Bytes(message, 0); /* unused */
+        NetworkUtil::append4Bytes(message, clientReference);
+        NetworkUtil::appendByte(message, 0); /* unused */
+        NetworkUtil::appendByte(message, languageCode[0]);
+        NetworkUtil::appendByte(message, languageCode[1]);
+        NetworkUtil::appendByte(message, languageCode[2]);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendCompatibilityInterfaceDefinition(int interfaceId)
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 15) return;
+
+        if (_compatibilityUiLanguage == UserInterfaceLanguage::Invalid)
+            return; /* don't send text updates if language hasn't been selected yet */
 
         auto* controller = _compatibilityUis->getControllerById(interfaceId);
         if (!controller)
@@ -1406,6 +1432,7 @@ namespace PMP
 
         auto const actionIds = controller->getActionIds();
 
+        auto language = _compatibilityUiLanguage;
         auto interfaceTitle = controller->getTitle(language);
         auto interfaceText = controller->getText(language);
         auto languageCode = NetworkProtocol::encodeLanguage(language);
@@ -1513,11 +1540,13 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendCompatibilityInterfaceTextUpdate(int interfaceId,
-                                                           UserInterfaceLanguage language)
+    void ConnectedClient::sendCompatibilityInterfaceTextUpdate(int interfaceId)
     {
         /* only send it if the client will understand it */
         if (_clientProtocolNo < 15) return;
+
+        if (_compatibilityUiLanguage == UserInterfaceLanguage::Invalid)
+            return; /* don't send text updates if language hasn't been selected yet */
 
         auto* controller = _compatibilityUis->getControllerById(interfaceId);
         if (!controller)
@@ -1525,8 +1554,8 @@ namespace PMP
 
         qDebug() << "sending compatibility interface text update for ID" << interfaceId;
 
-        auto interfaceText = controller->getText(language);
-        auto languageCode = NetworkProtocol::encodeLanguage(language);
+        auto interfaceText = controller->getText(_compatibilityUiLanguage);
+        auto languageCode = NetworkProtocol::encodeLanguage(_compatibilityUiLanguage);
 
         auto interfaceCaptionBytes =
                 NetworkUtil::getUtf8Bytes(interfaceText.caption, 1023);
@@ -1553,11 +1582,13 @@ namespace PMP
     }
 
     void ConnectedClient::sendCompatibilityInterfaceActionTextUpdate(int interfaceId,
-                                                                     int actionId,
-                                                           UserInterfaceLanguage language)
+                                                                     int actionId)
     {
         /* only send it if the client will understand it */
         if (_clientProtocolNo < 15) return;
+
+        if (_compatibilityUiLanguage == UserInterfaceLanguage::Invalid)
+            return; /* don't send text updates if language hasn't been selected yet */
 
         auto* controller = _compatibilityUis->getControllerById(interfaceId);
         if (!controller)
@@ -1566,8 +1597,9 @@ namespace PMP
         qDebug() << "sending compatibility interface action text update for interface"
                  << interfaceId << "and action" << actionId;
 
-        auto actionCaption = controller->getActionCaption(actionId, language);
-        auto languageCode = NetworkProtocol::encodeLanguage(language);
+        auto actionCaption =
+                controller->getActionCaption(actionId, _compatibilityUiLanguage);
+        auto languageCode = NetworkProtocol::encodeLanguage(_compatibilityUiLanguage);
 
         auto actionCaptionBytes = NetworkUtil::getUtf8Bytes(actionCaption, 255);
 
@@ -2341,6 +2373,9 @@ namespace PMP
         case NetworkProtocol::QueueEntryDuplicationRequestMessage:
             parseQueueEntryDuplicationRequest(message);
             break;
+        case NetworkProtocol::CompatibilityInterfaceLanguageSelectionRequest:
+            parseCompatibilityInterfaceLanguageSelectionRequest(message);
+            break;
         case NetworkProtocol::CompatibilityInterfaceDefinitionsRequest:
             parseCompatibilityInterfaceDefinitionsRequest(message);
             break;
@@ -2615,35 +2650,65 @@ namespace PMP
         sendQueueHistoryMessage(limit);
     }
 
-    void ConnectedClient::parseCompatibilityInterfaceDefinitionsRequest(
-                                                                const QByteArray& message)
+    void ConnectedClient::parseCompatibilityInterfaceLanguageSelectionRequest(
+                                                                QByteArray const& message)
     {
-        qDebug() << "received compatibility interface definitions request";
+        qDebug() << "received compatibility interface language selection request";
 
-        if (message.size() < 14)
+        if (message.size() != 16)
             return; /* invalid message */
 
-        int interfaceCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
-        auto primaryLanguageEncoded = message.mid(5, 3);
-        auto alternativeLanguageEncoded = message.mid(9, 3);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        auto primaryLanguageEncoded = message.mid(9, 3);
+        auto alternativeLanguageEncoded = message.mid(13, 3);
 
         auto primaryLanguage = NetworkProtocol::decodeLanguage(primaryLanguageEncoded);
         auto alternativeLanguage =
                 NetworkProtocol::decodeLanguage(alternativeLanguageEncoded);
 
-        qDebug() << "compatibility interface definition request has primary language"
-                 << primaryLanguage << "and alternative language" << alternativeLanguage;
+        qDebug() << "compatibility interface language selection request has"
+                 << "primary language" << primaryLanguage
+                 << "and alternative language" << alternativeLanguage;
+
+        auto language =
+                CompatibilityUiController::getSupportedLanguage(primaryLanguage,
+                                                                alternativeLanguage);
+
+        if (language != UserInterfaceLanguage::Invalid)
+        {
+            qDebug() << "setting language to supported language:" << language;
+
+            _compatibilityUiLanguage = language;
+            sendCompatibilityInterfaceLanguageSelectionConfirmation(clientReference,
+                                                                    language);
+        }
+        else
+        {
+            qDebug() << "sending error because no language could be selected";
+            sendResultMessage(NetworkProtocol::InvalidLanguage, clientReference, 0);
+        }
+    }
+
+    void ConnectedClient::parseCompatibilityInterfaceDefinitionsRequest(
+                                                                const QByteArray& message)
+    {
+        qDebug() << "received compatibility interface definitions request";
+
+        if (message.size() < 6)
+            return; /* invalid message */
+
+        int interfaceCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
 
         int countWithPaddingIncluded =
-                (interfaceCount % 2 == 1) ? (interfaceCount + 1) : interfaceCount;
+                (interfaceCount % 2 != 0) ? (interfaceCount + 1) : interfaceCount;
 
-        if (message.size() != 12 + 2 * countWithPaddingIncluded)
+        if (message.size() != 4 + 2 * countWithPaddingIncluded)
             return; /* invalid message */
 
         QVector<int> ids;
         ids.reserve(interfaceCount);
 
-        int offset = 12;
+        int offset = 4;
         for (int i = 0; i < interfaceCount; ++i)
         {
             int interfaceId = NetworkUtil::get2BytesUnsignedToInt(message, offset);
@@ -2652,20 +2717,23 @@ namespace PMP
             ids.append(interfaceId);
         }
 
-        auto language =
-                CompatibilityUiController::getSupportedLanguage(primaryLanguage,
-                                                                alternativeLanguage);
+        if (_compatibilityUiLanguage == UserInterfaceLanguage::Invalid)
+        {
+            qDebug() << "no language selected before this compatibility interface"
+                     << "definition request was received; setting a default";
+            _compatibilityUiLanguage = UserInterfaceLanguage::English;
+        }
 
         qDebug() << "compatibility interface definitions will be sent with language:"
-                 << language;
+                 << _compatibilityUiLanguage;
 
         for (int id : ids)
         {
             QTimer::singleShot(
                 0, this,
-                [this, id, language]()
+                [this, id]()
                 {
-                    sendCompatibilityInterfaceDefinition(id, language);
+                    sendCompatibilityInterfaceDefinition(id);
                 }
             );
         }

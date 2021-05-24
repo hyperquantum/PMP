@@ -267,7 +267,8 @@ namespace PMP
 
         qDebug() << "activated compatibility UI controller:"
                  << "ID:" << controller->id() << ";"
-                 << "title:" << controller->getTitle(UserInterfaceLanguage::English);
+                 << "title in English:"
+                 << controller->getTitle(UserInterfaceLanguage::English);
     }
 
     void CompatibilityUiControllerCollection::connectSignals(

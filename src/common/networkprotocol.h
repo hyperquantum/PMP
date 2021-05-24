@@ -93,11 +93,12 @@ namespace PMP {
             CollectionAvailabilityChangeNotificationMessage = 29,
             ServerExtensionsMessage = 30,
             CompatibilityInterfaceAnnouncement = 31,
-            CompatibilityInterfaceDefinition = 32,
-            CompatibilityInterfaceStateUpdate = 33,
-            CompatibilityInterfaceActionStateUpdate = 34,
-            CompatibilityInterfaceTextUpdate = 35,
-            CompatibilityInterfaceActionTextUpdate = 36,
+            CompatibilityInterfaceLanguageSelectionConfirmation = 32,
+            CompatibilityInterfaceDefinition = 33,
+            CompatibilityInterfaceStateUpdate = 34,
+            CompatibilityInterfaceActionStateUpdate = 35,
+            CompatibilityInterfaceTextUpdate = 36,
+            CompatibilityInterfaceActionTextUpdate = 37,
         };
 
         enum ClientMessageType
@@ -125,8 +126,9 @@ namespace PMP {
             PlayerHistoryRequestMessage = 20,
             QueueEntryDuplicationRequestMessage = 21,
             ClientExtensionsMessage = 22,
-            CompatibilityInterfaceDefinitionsRequest = 23,
-            CompatibilityInterfaceTriggerActionRequest = 24,
+            CompatibilityInterfaceLanguageSelectionRequest = 23,
+            CompatibilityInterfaceDefinitionsRequest = 24,
+            CompatibilityInterfaceTriggerActionRequest = 25,
         };
 
         enum ErrorType
@@ -143,6 +145,7 @@ namespace PMP {
             AlreadyLoggedIn = 16,
 
             QueueIdNotFound = 20,
+            InvalidLanguage = 21,
 
             DatabaseProblem = 90,
             NonFatalInternalServerError = 254,

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -359,7 +359,8 @@ namespace PMP {
         QMessageBox::aboutQt(this);
     }
 
-    void MainWindow::onDoConnect(QString server, uint port) {
+    void MainWindow::onDoConnect(QString server, uint port)
+    {
         _connection = new ServerConnection(this);
         _clientServerInterface = new ClientServerInterface(_connection);
 
@@ -414,7 +415,11 @@ namespace PMP {
         _connection->connectToHost(server, port);
     }
 
-    void MainWindow::onConnected() {
+    void MainWindow::onConnected()
+    {
+        // TEST
+        (void)_clientServerInterface->compatibilityUiController();
+
         showUserAccountPicker();
         updateRightStatus();
     }
