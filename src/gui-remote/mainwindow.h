@@ -34,6 +34,7 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 namespace PMP {
 
     class ClientServerInterface;
+    class CompatibilityInterfaceViewCreatorImpl;
     class ConnectionWidget;
     class LoginWidget;
     class MainWidget;
@@ -104,13 +105,16 @@ namespace PMP {
         QAction* _shutdownServerAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
+        QAction* _compatibilityInterfacesListEmptyAction;
         QAction* _keepDisplayActiveAction;
         QAction* _aboutPmpAction;
         QAction* _aboutQtAction;
 
         QMenu* _viewMenu;
+        QMenu* _compatibilityInterfacesMenu;
 
         PowerManagement* _powerManagement;
+        CompatibilityInterfaceViewCreatorImpl* _compatibilityInterfaceViewCreator;
     };
 }
 #endif

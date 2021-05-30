@@ -17,31 +17,25 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COMPATIBILITYINTERFACECONTROLLER_H
-#define PMP_COMPATIBILITYINTERFACECONTROLLER_H
+#ifndef PMP_COMPATIBILITYINTERFACEVIEWCREATOR_H
+#define PMP_COMPATIBILITYINTERFACEVIEWCREATOR_H
 
 #include <QObject>
 
 namespace PMP
 {
     class CompatibilityInterface;
-    class CompatibilityInterfaceViewCreator;
 
-    class CompatibilityInterfaceController : public QObject
+    class CompatibilityInterfaceViewCreator : public QObject
     {
         Q_OBJECT
     public:
-        virtual ~CompatibilityInterfaceController() {}
+        ~CompatibilityInterfaceViewCreator() {}
 
-        virtual CompatibilityInterface* getInterface(int interfaceId) const = 0;
-
-        virtual void registerViewCreator(CompatibilityInterfaceViewCreator* creator) = 0;
-
-    Q_SIGNALS:
-        void newInterfaceNowAvailable(int interfaceId);
+        virtual void createViewForInterface(CompatibilityInterface* interface) = 0;
 
     protected:
-        explicit CompatibilityInterfaceController(QObject* parent) : QObject(parent) {}
+        CompatibilityInterfaceViewCreator(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

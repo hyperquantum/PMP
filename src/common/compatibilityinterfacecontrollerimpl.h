@@ -44,6 +44,8 @@ namespace PMP
         QVector<int> interfaceIds() const;
         CompatibilityInterface* getInterface(int interfaceId) const override;
 
+        void registerViewCreator(CompatibilityInterfaceViewCreator *creator) override;
+
     private Q_SLOTS:
         void connected();
         void connectionBroken();

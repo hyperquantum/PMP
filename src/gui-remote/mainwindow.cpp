@@ -20,12 +20,14 @@
 #include "mainwindow.h"
 
 #include "common/clientserverinterface.h"
+#include "common/compatibilityinterfacecontroller.h"
 #include "common/playercontroller.h"
 #include "common/serverconnection.h"
 #include "common/util.h"
 #include "common/version.h"
 
 #include "collectionwidget.h"
+#include "compatibilityinterfaceview.h"
 #include "connectionwidget.h"
 #include "loginwidget.h"
 #include "mainwidget.h"
@@ -56,7 +58,18 @@ namespace PMP
        _connection(nullptr), _clientServerInterface(nullptr),
        _userPickerWidget(nullptr), _loginWidget(nullptr), _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
-       _powerManagement(new PowerManagement(this))
+       _serverAdminAction(nullptr),
+       _shutdownServerAction(nullptr),
+       _startFullIndexationAction(nullptr),
+       _closeAction(nullptr),
+       _compatibilityInterfacesListEmptyAction(nullptr),
+       _keepDisplayActiveAction(nullptr),
+       _aboutPmpAction(nullptr),
+       _aboutQtAction(nullptr),
+       _viewMenu(nullptr),
+       _compatibilityInterfacesMenu(nullptr),
+       _powerManagement(new PowerManagement(this)),
+       _compatibilityInterfaceViewCreator(nullptr)
     {
         setWindowTitle(
             QString(tr("Party Music Player ")) + Util::EnDash + tr(" Remote")
@@ -74,6 +87,15 @@ namespace PMP
         connect(
             _connectionWidget, &ConnectionWidget::doConnect,
             this, &MainWindow::onDoConnect
+        );
+
+        _compatibilityInterfaceViewCreator =
+                new CompatibilityInterfaceViewCreatorImpl(this,
+                                                          _compatibilityInterfacesMenu);
+        connect(
+            _compatibilityInterfaceViewCreator,
+            &CompatibilityInterfaceViewCreatorImpl::interfaceMenuActionAdded,
+            this, [this]() { _compatibilityInterfacesListEmptyAction->setVisible(false); }
         );
 
         {
@@ -131,6 +153,9 @@ namespace PMP
         _closeAction = new QAction(tr("&Close remote"), this);
         connect(_closeAction, &QAction::triggered, this, &MainWindow::close);
 
+        _compatibilityInterfacesListEmptyAction = new QAction(tr("(none)"), this);
+        _compatibilityInterfacesListEmptyAction->setEnabled(false);
+
         _keepDisplayActiveAction =
                 new QAction(tr("Keep &display active during playback"), this);
         _keepDisplayActiveAction->setCheckable(true);
@@ -166,6 +191,12 @@ namespace PMP
         _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
 
         _viewMenu->addAction(_musicCollectionDock->toggleViewAction());
+        _viewMenu->addSeparator();
+
+        _compatibilityInterfacesMenu =
+                _viewMenu->addMenu(tr("Additional server controls"));
+        _compatibilityInterfacesMenu->addAction(_compatibilityInterfacesListEmptyAction);
+
         _viewMenu->addSeparator();
         _viewMenu->addAction(_keepDisplayActiveAction);
 
@@ -421,8 +452,11 @@ namespace PMP
 
     void MainWindow::onConnected()
     {
-        // TEST
-        (void)_clientServerInterface->compatibilityUiController();
+        auto* compatibilityInterfacesController =
+                _clientServerInterface->compatibilityUiController();
+
+        compatibilityInterfacesController->registerViewCreator(
+                                                      _compatibilityInterfaceViewCreator);
 
         showUserAccountPicker();
         updateRightStatus();

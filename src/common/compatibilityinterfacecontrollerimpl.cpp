@@ -20,6 +20,7 @@
 #include "compatibilityinterfacecontrollerimpl.h"
 
 #include "compatibilityinterfaceimpl.h"
+#include "compatibilityinterfaceviewcreator.h"
 #include "containerutil.h"
 #include "serverconnection.h"
 
@@ -100,6 +101,32 @@ namespace PMP
                                                                     int interfaceId) const
     {
         return _interfaces.value(interfaceId, nullptr);
+    }
+
+    void CompatibilityInterfaceControllerImpl::registerViewCreator(
+                                               CompatibilityInterfaceViewCreator* creator)
+    {
+        connect(
+            this, &CompatibilityInterfaceControllerImpl::newInterfaceNowAvailable,
+            this,
+            [this, creator](int interfaceId)
+            {
+                auto* interface = _interfaces[interfaceId];
+
+                QTimer::singleShot(
+                    0, creator,
+                    [creator, interface]() { creator->createViewForInterface(interface); }
+                );
+            }
+        );
+
+        for (auto interface : qAsConst(_interfaces))
+        {
+            QTimer::singleShot(
+                0, creator,
+                [creator, interface]() { creator->createViewForInterface(interface); }
+            );
+        }
     }
 
     void CompatibilityInterfaceControllerImpl::connected()

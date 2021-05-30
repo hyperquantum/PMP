@@ -53,6 +53,7 @@ set(PMP_COMMON_HEADERS
     common/compatibilityinterfacecontroller.h
     common/compatibilityinterfacecontrollerimpl.h
     common/compatibilityinterfaceimpl.h
+    common/compatibilityinterfaceviewcreator.h
     common/currenttrackmonitor.h
     common/currenttrackmonitorimpl.h
     common/dynamicmodecontroller.h
@@ -143,6 +144,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/collectionwidget.cpp
     gui-remote/colors.cpp
     gui-remote/colorswitcher.cpp
+    gui-remote/compatibilityinterfaceview.cpp
     gui-remote/connectionwidget.cpp
     gui-remote/gui-remote-metatypes.cpp
     gui-remote/loginwidget.cpp
@@ -164,6 +166,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/collectiontablemodel.h
     gui-remote/collectionwidget.h
     gui-remote/colorswitcher.h
+    gui-remote/compatibilityinterfaceview.h
     gui-remote/connectionwidget.h
     gui-remote/loginwidget.h
     gui-remote/mainwidget.h
