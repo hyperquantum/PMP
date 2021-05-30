@@ -92,7 +92,8 @@ namespace PMP {
             {
                 qWarning() << "Need to apply workaround for QTBUG-77385";
                 auto availableGeometry = QApplication::desktop()->availableGeometry(this);
-                resize(availableGeometry.width() / 2, availableGeometry.height() / 2);
+                resize(availableGeometry.width() * 2 / 3,
+                       availableGeometry.height() * 2 / 3);
                 move((availableGeometry.width() - width()) / 2,
                      (availableGeometry.height() - height()) / 2);
             }
