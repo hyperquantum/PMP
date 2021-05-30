@@ -47,8 +47,8 @@
 #include <QStatusBar>
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     MainWindow::MainWindow(QWidget* parent)
      : QMainWindow(parent),
        _leftStatusTimer(new QTimer(this)),
@@ -387,7 +387,9 @@ namespace PMP {
         );
         connect(
             _connection, &ServerConnection::fullIndexationStatusReceived,
-            [this](bool running) {
+            this,
+            [this](bool running)
+            {
                 _startFullIndexationAction->setEnabled(
                     !running && _connection->isLoggedIn()
                 );
@@ -396,14 +398,15 @@ namespace PMP {
         );
         connect(
             _connection, &ServerConnection::fullIndexationStarted,
-            [this] {
-                setLeftStatus(3000, tr("Full indexation started"));
-            }
+            this,
+            [this] { setLeftStatus(3000, tr("Full indexation started")); }
         );
         connect(
             _connection, &ServerConnection::fullIndexationFinished,
-            [this] {
-            qDebug() << "fullIndexationFinished triggered";
+            this,
+            [this]
+            {
+                qDebug() << "fullIndexationFinished triggered";
                 setLeftStatus(5000, tr("Full indexation finished"));
             }
         );
