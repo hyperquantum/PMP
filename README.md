@@ -251,7 +251,7 @@ Effort is a rough estimate. Priorities can still change.
 
 ## 8. More information
 
-Rudimentary project website:  http://hyperquantum.be/pmp/
+Rudimentary project website:  https://hyperquantum.be/pmp/
 
 GitHub repository:  https://github.com/hyperquantum/PMP
 

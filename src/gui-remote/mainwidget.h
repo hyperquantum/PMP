@@ -64,6 +64,7 @@ namespace PMP {
         void trackProgressChanged(PlayerState state, quint32 queueId,
                                   qint64 progressInMilliseconds,
                                   qint64 trackLengthInMilliseconds);
+        void switchTrackTimeDisplayMode();
 
         void trackInfoButtonClicked();
 
@@ -88,6 +89,10 @@ namespace PMP {
         void enableDisableTrackInfoButton();
         void enableDisablePlayerControlButtons();
 
+        void updateTrackTimeDisplay();
+        void updateTrackTimeDisplay(qint64 positionInMilliseconds,
+                                    qint64 trackLengthInMilliseconds);
+
         void showTrackInfoDialog(FileHash hash, quint32 queueId = 0);
 
         bool keyEventFilter(QKeyEvent* event);
@@ -105,6 +110,7 @@ namespace PMP {
         int _noRepetitionUpdating;
         PlayerHistoryModel* _historyModel;
         QMenu* _historyContextMenu;
+        bool _showingTimeRemaining;
     };
 }
 #endif
