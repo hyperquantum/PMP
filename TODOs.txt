@@ -66,10 +66,12 @@ IDEAS
  * queue: show error marker for a track that has no known file
  * queue: join title and artist columns when displaying filename
  * queue: save the contents of the queue on server shutdown and restore it at the next server startup
+ * queue: "persistent breakpoint": a new kind of breakpoint that is never consumed ("barrier"?)
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
  * music collection: show a "loading collection" indicator while downloading the list from the server
  * music collection: provide fast partial indexation that only detects new files
+ * music collection: show some kind of indicator for a track that is already present in the queue
  ** dynamic mode: detect and prevent track repetition with different hash values
  ** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
