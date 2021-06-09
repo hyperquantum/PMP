@@ -22,11 +22,15 @@
 #include "common/compatibilityinterface.h"
 
 #include <QAction>
+#include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
+#include <QVBoxLayout>
 
 namespace PMP
 {
+
+    /* ======= CompatibilityInterfaceViewCreatorImpl =======*/
 
     CompatibilityInterfaceViewCreatorImpl::CompatibilityInterfaceViewCreatorImpl(
                                                                           QWidget* parent,
@@ -45,31 +49,82 @@ namespace PMP
         Q_EMIT interfaceMenuActionAdded();
     }
 
+    /* ======= CompatibilityInterfaceView =======*/
+
     CompatibilityInterfaceView::CompatibilityInterfaceView(QWidget* parent,
                                                         CompatibilityInterface* interface,
                                                         QMenu* menu)
      : QObject(parent),
-       _parent(parent)
+       _parent(parent),
+       _interface(interface)
     {
         QAction* titleAction = new QAction(interface->title(), this);
         connect(
             titleAction, &QAction::triggered,
-            this,
-            [this, interface]()
-            {
-                menuActionTriggered(interface);
-            }
+            this, &CompatibilityInterfaceView::menuActionTriggered
         );
 
         menu->addAction(titleAction);
     }
 
-    void CompatibilityInterfaceView::menuActionTriggered(
-                                                        CompatibilityInterface* interface)
+    void CompatibilityInterfaceView::menuActionTriggered()
     {
+        /*
         QMessageBox::information(_parent,
                                  "CompatibilityInterfaceView",
                                  "Clicked on menu action: " + interface->title());
+        */
+
+        if (!_window)
+            createWindow();
+        else
+            focusWindow();
+    }
+
+    void CompatibilityInterfaceView::createWindow()
+    {
+        QWidget* window = new QWidget(nullptr, Qt::Tool | Qt::WindowStaysOnTopHint);
+        window->setAttribute(Qt::WA_DeleteOnClose);
+        window->setWindowTitle(_interface->title());
+
+        QLabel* captionLabel = new QLabel();
+        captionLabel->setTextFormat(Qt::PlainText);
+        captionLabel->setText(_interface->caption());
+
+        QLabel* descriptionLabel = new QLabel();
+        descriptionLabel->setTextFormat(Qt::PlainText);
+        descriptionLabel->setText(_interface->description());
+        descriptionLabel->setWordWrap(true);
+
+        QVBoxLayout* verticalLayout = new QVBoxLayout(window);
+        verticalLayout->addWidget(captionLabel);
+        verticalLayout->addWidget(descriptionLabel);
+
+        connect(
+            _interface, &CompatibilityInterface::textChanged,
+            window,
+            [this, captionLabel, descriptionLabel]()
+            {
+                captionLabel->setText(_interface->caption());
+                descriptionLabel->setText(_interface->description());
+            }
+        );
+
+        _window = window;
+
+        window->show();
+    }
+
+    void CompatibilityInterfaceView::focusWindow()
+    {
+        if (_window->isMinimized())
+        {
+            auto oldState = _window->windowState();
+            _window->setWindowState((oldState & ~Qt::WindowMinimized) | Qt::WindowActive);
+        }
+
+        _window->activateWindow();
+        _window->raise();
     }
 
 }

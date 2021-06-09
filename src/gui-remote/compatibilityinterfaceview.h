@@ -23,6 +23,7 @@
 #include "common/compatibilityinterfaceviewcreator.h"
 
 #include <QObject>
+#include <QPointer>
 #include <QWidget>
 
 QT_FORWARD_DECLARE_CLASS(QMenu)
@@ -58,11 +59,15 @@ namespace PMP
 
 
     private Q_SLOTS:
-        void menuActionTriggered(CompatibilityInterface* interface);
+        void menuActionTriggered();
 
     private:
-        QWidget* _parent;
+        void createWindow();
+        void focusWindow();
 
+        QWidget* _parent;
+        CompatibilityInterface* _interface;
+        QPointer<QWidget> _window;
     };
 }
 #endif
