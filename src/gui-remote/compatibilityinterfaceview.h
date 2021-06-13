@@ -27,10 +27,12 @@
 #include <QWidget>
 
 QT_FORWARD_DECLARE_CLASS(QMenu)
+QT_FORWARD_DECLARE_CLASS(QPushButton)
 
 namespace PMP
 {
     class CompatibilityInterface;
+    class CompatibilityInterfaceAction;
 
     class CompatibilityInterfaceViewCreatorImpl : public CompatibilityInterfaceViewCreator
     {
@@ -64,6 +66,8 @@ namespace PMP
     private:
         void createWindow();
         void focusWindow();
+        void triggerInterfaceAction(CompatibilityInterfaceAction* action,
+                                    QPushButton* button);
 
         QWidget* _parent;
         CompatibilityInterface* _interface;

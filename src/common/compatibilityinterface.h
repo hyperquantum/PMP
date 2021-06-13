@@ -23,6 +23,7 @@
 #include "compatibilityui.h"
 
 #include <QObject>
+#include <QVector>
 
 namespace PMP
 {
@@ -57,6 +58,7 @@ namespace PMP
         virtual QString caption() const = 0;
         virtual QString description() const = 0;
 
+        virtual QVector<int> getActionIds() const = 0;
         virtual CompatibilityInterfaceAction* getAction(int actionId) const = 0;
 
     Q_SIGNALS:

@@ -75,6 +75,7 @@ namespace PMP
         void setText(UserInterfaceLanguage language, QString title, QString caption,
                      QString description);
 
+        QVector<int> getActionIds() const override;
         CompatibilityInterfaceActionImpl* getAction(int actionId) const override;
 
     private:

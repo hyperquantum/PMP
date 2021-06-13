@@ -146,6 +146,11 @@ namespace PMP
         Q_EMIT textChanged();
     }
 
+    QVector<int> CompatibilityInterfaceImpl::getActionIds() const
+    {
+        return _actions.keys().toVector();
+    }
+
     CompatibilityInterfaceActionImpl* CompatibilityInterfaceImpl::getAction(
                                                                        int actionId) const
     {

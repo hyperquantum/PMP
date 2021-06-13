@@ -25,6 +25,7 @@
 #include <QLabel>
 #include <QMenu>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QVBoxLayout>
 
 namespace PMP
@@ -69,12 +70,6 @@ namespace PMP
 
     void CompatibilityInterfaceView::menuActionTriggered()
     {
-        /*
-        QMessageBox::information(_parent,
-                                 "CompatibilityInterfaceView",
-                                 "Clicked on menu action: " + interface->title());
-        */
-
         if (!_window)
             createWindow();
         else
@@ -110,6 +105,37 @@ namespace PMP
             }
         );
 
+        auto actionIds = _interface->getActionIds();
+        for (auto actionId : qAsConst(actionIds))
+        {
+            auto* action = _interface->getAction(actionId);
+            auto state = action->state();
+            auto* button = new QPushButton(action->caption());
+            button->setEnabled(state.enabled());
+            button->setVisible(state.visible());
+
+            verticalLayout->addWidget(button);
+
+            connect(
+                action, &CompatibilityInterfaceAction::captionChanged,
+                button, [action, button]() { button->setText(action->caption()); }
+            );
+            connect(
+                action, &CompatibilityInterfaceAction::stateChanged,
+                button,
+                [action, button]()
+                {
+                    auto state = action->state();
+                    button->setEnabled(state.enabled());
+                    button->setVisible(state.visible());
+                }
+            );
+            connect(
+                button, &QPushButton::clicked,
+                this, [this, action, button]() { triggerInterfaceAction(action, button); }
+            );
+        }
+
         _window = window;
 
         window->show();
@@ -125,6 +151,16 @@ namespace PMP
 
         _window->activateWindow();
         _window->raise();
+    }
+
+    void CompatibilityInterfaceView::triggerInterfaceAction(
+                                                     CompatibilityInterfaceAction* action,
+                                                     QPushButton* button)
+    {
+        if (action->state().disableWhenTriggered())
+            button->setEnabled(false);
+
+        // TODO
     }
 
 }
