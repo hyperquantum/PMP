@@ -85,6 +85,7 @@ namespace PMP
         QLabel* captionLabel = new QLabel();
         captionLabel->setTextFormat(Qt::PlainText);
         captionLabel->setText(_interface->caption());
+        captionLabel->setAlignment(Qt::AlignHCenter | Qt::AlignTop);
 
         QLabel* descriptionLabel = new QLabel();
         descriptionLabel->setTextFormat(Qt::PlainText);
