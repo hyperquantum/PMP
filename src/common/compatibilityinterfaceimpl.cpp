@@ -19,6 +19,8 @@
 
 #include "compatibilityinterfaceimpl.h"
 
+#include "containerutil.h"
+
 namespace PMP
 {
 
@@ -148,7 +150,7 @@ namespace PMP
 
     QVector<int> CompatibilityInterfaceImpl::getActionIds() const
     {
-        return _actions.keys().toVector();
+        return ContainerUtil::keysToVector(_actions);
     }
 
     CompatibilityInterfaceActionImpl* CompatibilityInterfaceImpl::getAction(

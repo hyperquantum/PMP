@@ -20,6 +20,7 @@
 #ifndef PMP_CONTAINERUTIL_H
 #define PMP_CONTAINERUTIL_H
 
+#include <QHash>
 #include <QSet>
 #include <QVector>
 
@@ -28,6 +29,18 @@ namespace PMP
     class ContainerUtil
     {
     public:
+        template<typename K, typename V> static QVector<K> keysToVector(
+                                                                   QHash<K,V> const& hash)
+        {
+            QVector<K> v;
+            v.reserve(hash.size());
+
+            for (auto it = hash.keyBegin(); it != hash.keyEnd(); ++it)
+                v.append(*it);
+
+            return v;
+        }
+
         template<typename T> static QVector<T> toVector(QSet<T> const& set)
         {
             QVector<T> v;

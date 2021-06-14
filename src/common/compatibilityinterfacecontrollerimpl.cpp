@@ -94,7 +94,7 @@ namespace PMP
 
     QVector<int> CompatibilityInterfaceControllerImpl::interfaceIds() const
     {
-        return _interfaces.keys().toVector();
+        return ContainerUtil::keysToVector(_interfaces);
     }
 
     CompatibilityInterface* CompatibilityInterfaceControllerImpl::getInterface(
