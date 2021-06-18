@@ -232,6 +232,8 @@ namespace PMP {
         addItem(tr("none"), TrackCriterium::None);
 
         addItem(tr("never heard"), TrackCriterium::NeverHeard);
+        addItem(tr("not heard in the last 1000 days"),
+                TrackCriterium::LastHeardNotInLast1000Days);
         addItem(tr("not heard in the last 365 days"),
                 TrackCriterium::LastHeardNotInLast365Days);
         addItem(tr("not heard in the last 180 days"),
