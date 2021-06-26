@@ -37,8 +37,8 @@
 #include <QTcpSocket>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class CollectionMonitor;
     class CollectionSender;
     class CompatibilityUiControllerCollection;
@@ -51,7 +51,8 @@ namespace PMP {
     class ServerHealthMonitor;
     class Users;
 
-    class ConnectedClient : public QObject {
+    class ConnectedClient : public QObject
+    {
         Q_OBJECT
     public:
         ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
@@ -232,7 +233,8 @@ namespace PMP {
         bool _pendingPlayerStatus;
     };
 
-    class CollectionSender : public QObject {
+    class CollectionSender : public QObject
+    {
         Q_OBJECT
     public:
         CollectionSender(ConnectedClient* connection, uint clientReference,
@@ -252,6 +254,5 @@ namespace PMP {
         QVector<FileHash> _hashes;
         int _currentIndex;
     };
-
 }
 #endif
