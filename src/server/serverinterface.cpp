@@ -28,10 +28,13 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     ServerInterface::ServerInterface(Server* server, Player* player, Generator* generator)
-     : _userLoggedIn(0), _server(server), _player(player), _generator(generator)
+     : _userLoggedIn(0),
+       _server(server),
+       _player(player),
+       _generator(generator)
     {
         connect(
             _server, &Server::shuttingDown,

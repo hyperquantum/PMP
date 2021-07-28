@@ -27,8 +27,8 @@
 #include <QString>
 #include <QUuid>
 
-namespace PMP {
-
+namespace PMP
+{
     class FileHash;
     class Generator;
     class Player;
@@ -42,6 +42,7 @@ namespace PMP {
 
         QUuid getServerUuid() const;
 
+        quint32 userLoggedIn() const { return _userLoggedIn; }
         bool isLoggedIn() const { return _userLoggedIn > 0; }
         void setLoggedIn(quint32 userId, QString userLogin);
 

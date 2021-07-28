@@ -68,6 +68,11 @@ namespace PMP
         Q_EMIT captionChanged();
     }
 
+    void CompatibilityInterfaceActionImpl::triggerAction()
+    {
+        Q_EMIT actionTriggerRequested();
+    }
+
     CompatibilityInterfaceImpl::CompatibilityInterfaceImpl(QObject* parent, int id,
                                                         CompatibilityUiState const& state,
                                                         UserInterfaceLanguage language,
@@ -86,6 +91,11 @@ namespace PMP
         {
             auto* action = new CompatibilityInterfaceActionImpl(this, actionId);
             _actions.insert(actionId, action);
+
+            connect(
+                action, &CompatibilityInterfaceActionImpl::actionTriggerRequested,
+                this, [this, actionId]() { Q_EMIT actionTriggerRequested(actionId); }
+            );
         }
     }
 

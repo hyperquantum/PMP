@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,13 +28,14 @@
 #include <QByteArray>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QtDebug>
 #include <QTimer>
 #include <QUdpSocket>
 
 #define QT_USE_QSTRINGBUILDER
 
-namespace PMP {
-
+namespace PMP
+{
     Server::Server(QObject* parent, const QUuid& serverInstanceIdentifier)
      : QObject(parent),
        _uuid(serverInstanceIdentifier),
@@ -148,7 +149,8 @@ namespace PMP {
         Q_EMIT shuttingDown();
     }
 
-    void Server::newConnectionReceived() {
+    void Server::newConnectionReceived()
+    {
         QTcpSocket *connection = _server->nextPendingConnection();
 
         auto serverInterface = new ServerInterface(this, _player, _generator);

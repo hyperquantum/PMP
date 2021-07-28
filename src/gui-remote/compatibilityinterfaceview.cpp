@@ -161,7 +161,7 @@ namespace PMP
         if (action->state().disableWhenTriggered())
             button->setEnabled(false);
 
-        // TODO
+        action->triggerAction();
     }
 
 }

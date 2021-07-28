@@ -62,15 +62,17 @@ namespace PMP
 
         ~ConnectedClient();
 
-    Q_SIGNALS:
-
     private Q_SLOTS:
-
         void terminateConnection();
         void dataArrived();
         void socketError(QAbstractSocket::SocketError error);
 
         void serverHealthChanged(bool databaseUnavailable);
+
+        void compatibilityInterfaceActionSucceeded(int interfaceId, int actionId,
+                                                   uint clientReference);
+        void compatibilityInterfaceActionFailed(int interfaceId, int actionId,
+                                                uint clientReference);
 
         void volumeChanged(int volume);
         void onDynamicModeStatusEvent(StartStopEventStatus dynamicModeStatus,

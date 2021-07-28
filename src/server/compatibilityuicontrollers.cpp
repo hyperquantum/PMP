@@ -122,6 +122,21 @@ namespace PMP
         return CompatibilityUiActionState(visible, enabled, disableWhenTriggered);
     }
 
+    void IndexationUiController::runActionAsync(int actionId, uint clientReference)
+    {
+        if (actionId != startFullIndexationActionId)
+            return; // TODO : report error
+
+        if (_fullIndexationRunning)
+        {
+            Q_EMIT actionFailed(actionId, clientReference);
+            return;
+        }
+
+        _serverInterface->startFullIndexation();
+        Q_EMIT actionSuccessful(actionId, clientReference);
+    }
+
     /* ======== TestUiController ======== */
 
     TestUiController::TestUiController(int id, ServerInterface* serverInterface)
@@ -227,6 +242,13 @@ namespace PMP
         return CompatibilityUiActionState(visible, enabled, disableWhenTriggered);
     }
 
+    void TestUiController::runActionAsync(int actionId, uint clientReference)
+    {
+        Q_UNUSED(actionId)
+        Q_UNUSED(clientReference)
+        // TODO
+    }
+
     /* ======== CompatibilityUiControllerCollection ======== */
 
     CompatibilityUiControllerCollection::CompatibilityUiControllerCollection(
@@ -306,6 +328,22 @@ namespace PMP
             [this, interfaceId](int actionId)
             {
                 Q_EMIT actionStateChanged(interfaceId, actionId);
+            }
+        );
+        connect(
+            controller, &CompatibilityUiController::actionSuccessful,
+            this,
+            [this, interfaceId](int actionId, uint clientReference)
+            {
+                Q_EMIT actionSuccessful(interfaceId, actionId, clientReference);
+            }
+        );
+        connect(
+            controller, &CompatibilityUiController::actionFailed,
+            this,
+            [this, interfaceId](int actionId, uint clientReference)
+            {
+                Q_EMIT actionFailed(interfaceId, actionId, clientReference);
             }
         );
     }

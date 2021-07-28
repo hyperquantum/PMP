@@ -76,6 +76,15 @@ namespace PMP
         );
 
         connect(
+            _compatibilityUis, &CompatibilityUiControllerCollection::actionSuccessful,
+            this, &ConnectedClient::compatibilityInterfaceActionSucceeded
+        );
+        connect(
+            _compatibilityUis, &CompatibilityUiControllerCollection::actionFailed,
+            this, &ConnectedClient::compatibilityInterfaceActionFailed
+        );
+
+        connect(
             socket, &QTcpSocket::disconnected,
             this, &ConnectedClient::terminateConnection
         );
@@ -1698,6 +1707,27 @@ namespace PMP
         sendServerHealthMessage();
     }
 
+    void ConnectedClient::compatibilityInterfaceActionSucceeded(int interfaceId,
+                                                                int actionId,
+                                                                uint clientReference)
+    {
+        Q_UNUSED(interfaceId)
+        Q_UNUSED(actionId)
+
+        sendSuccessMessage(clientReference, 0);
+    }
+
+    void ConnectedClient::compatibilityInterfaceActionFailed(int interfaceId,
+                                                             int actionId,
+                                                             uint clientReference)
+    {
+        Q_UNUSED(interfaceId)
+        Q_UNUSED(actionId)
+
+        // TODO : make the error more specific
+        sendResultMessage(NetworkProtocol::UnknownError, clientReference, 0);
+    }
+
     void ConnectedClient::volumeChanged(int volume)
     {
         Q_UNUSED(volume)
@@ -2801,7 +2831,11 @@ namespace PMP
         qDebug() << "action trigger request is for interface" << interfaceId
                  << "and action" << actionId << "; client reference:" << clientReference;
 
-        // TODO
+        auto* controller = _compatibilityUis->getControllerById(interfaceId);
+        if (!controller)
+            return; // TODO : return error
+
+        controller->runActionAsync(actionId, clientReference);
     }
 
     void ConnectedClient::handleSingleByteAction(quint8 action)

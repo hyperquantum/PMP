@@ -46,7 +46,7 @@ namespace PMP {
     class RequestID {
     public:
         RequestID() : _rawId(0) {}
-        RequestID(uint rawId) : _rawId(rawId) {}
+        explicit RequestID(uint rawId) : _rawId(rawId) {}
 
         bool isValid() const { return _rawId > 0; }
         uint rawId() const { return _rawId; }
@@ -90,6 +90,7 @@ namespace PMP {
         class TrackInsertionResultHandler;
         class DuplicationResultHandler;
         class CompatibilityInterfaceLanguageSelectionResultHandler;
+        class CompatibilityInterfaceActionTriggerResultHandler;
 
     public:
         enum UserRegistrationError {
@@ -112,6 +113,8 @@ namespace PMP {
         void sendCompatibilityInterfaceLanguageSelectionRequest(
                                                           UserInterfaceLanguage language);
         void sendCompatibilityInterfaceDefinitionsRequest(QVector<int> interfaceIds);
+        RequestID sendCompatibilityInterfaceTriggerActionRequest(int interfaceId,
+                                                                 int actionId);
 
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
@@ -257,6 +260,10 @@ namespace PMP {
         void compatibilityInterfaceActionTextChanged(int interfaceId, int actionId,
                                                      UserInterfaceLanguage language,
                                                      QString caption);
+        void compatibilityInterfaceActionSucceeded(int interfaceId, int actionId,
+                                                   RequestID requestId);
+        void compatibilityInterfaceActionFailed(int interfaceId, int actionId,
+                                                RequestID requestId);
 
     private Q_SLOTS:
         void onConnected();
@@ -353,8 +360,6 @@ namespace PMP {
         void parseCompatibilityInterfaceActionStateUpdate(QByteArray const& message);
         void parseCompatibilityInterfaceTextUpdate(QByteArray const& message);
         void parseCompatibilityInterfaceActionTextUpdate(QByteArray const& message);
-        void sendCompatibilityInterfaceTriggerActionRequest(int interfaceId,
-                                                            int actionId);
 
         void invalidMessageReceived(QByteArray const& message, QString messageType = "",
                                     QString extraInfo = "");

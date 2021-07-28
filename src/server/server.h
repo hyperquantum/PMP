@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,8 +27,8 @@ QT_FORWARD_DECLARE_CLASS(QTcpServer)
 QT_FORWARD_DECLARE_CLASS(QTimer)
 QT_FORWARD_DECLARE_CLASS(QUdpSocket)
 
-namespace PMP {
-
+namespace PMP
+{
     class CollectionMonitor;
     class Generator;
     class History;

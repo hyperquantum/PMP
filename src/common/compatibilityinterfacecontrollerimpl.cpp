@@ -208,6 +208,20 @@ namespace PMP
 
             _interfaces.insert(interfaceId, interface);
 
+            connect(
+                interface, &CompatibilityInterfaceImpl::actionTriggerRequested,
+                _connection,
+                [this, interfaceId](int actionId)
+                {
+                    auto requestId =
+                            _connection->sendCompatibilityInterfaceTriggerActionRequest(
+                                                                              interfaceId,
+                                                                              actionId);
+                    // TODO : use the request ID to track the result of the request
+                    Q_UNUSED(requestId)
+                }
+            );
+
             Q_EMIT newInterfaceNowAvailable(interfaceId);
         }
         else

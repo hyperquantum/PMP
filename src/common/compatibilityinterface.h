@@ -38,6 +38,9 @@ namespace PMP
         virtual CompatibilityUiActionState state() const = 0;
         virtual QString caption() const = 0;
 
+    public Q_SLOTS:
+        virtual void triggerAction() = 0;
+
     Q_SIGNALS:
         void stateChanged();
         void captionChanged();

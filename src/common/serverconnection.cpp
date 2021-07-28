@@ -260,7 +260,6 @@ namespace PMP {
 
         void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
                           quint32 intData, const QByteArray &blobData) override;
-
     };
 
     ServerConnection::CompatibilityInterfaceLanguageSelectionResultHandler
@@ -280,6 +279,60 @@ namespace PMP {
                    << errorDescription(errorType, clientReference, intData, blobData);
 
         // TODO: report error to the originator of the request
+    }
+
+    /* ============================================================================ */
+
+    class ServerConnection::CompatibilityInterfaceActionTriggerResultHandler
+        : public ResultHandler
+    {
+    public:
+        CompatibilityInterfaceActionTriggerResultHandler(ServerConnection* parent,
+                                                         int interfaceId, int actionId);
+
+        void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
+                          quint32 intData, const QByteArray &blobData) override;
+
+    private:
+        int _interfaceId;
+        int _actionId;
+    };
+
+    ServerConnection::CompatibilityInterfaceActionTriggerResultHandler
+                    ::CompatibilityInterfaceActionTriggerResultHandler(
+                                                                 ServerConnection* parent,
+                                                                 int interfaceId,
+                                                                 int actionId)
+     : ResultHandler(parent),
+       _interfaceId(interfaceId),
+       _actionId(actionId)
+    {
+        //
+    }
+
+    void ServerConnection::CompatibilityInterfaceActionTriggerResultHandler
+                         ::handleResult(NetworkProtocol::ErrorType errorType,
+                                        quint32 clientReference, quint32 intData,
+                                        const QByteArray& blobData)
+    {
+        RequestID requestId(clientReference);
+
+        if (errorType == NetworkProtocol::NoError)
+        {
+            qDebug() << "Compatibility action reported success; interface:"
+                     << _interfaceId << " action:" << _actionId;
+
+            Q_EMIT _parent->compatibilityInterfaceActionSucceeded(_interfaceId,
+                                                                  _actionId, requestId);
+            return;
+        }
+
+        qWarning() << "Compatibility interface" << _interfaceId << "action" << _actionId
+                   << "reported failure:"
+                   << errorDescription(errorType, clientReference, intData, blobData);
+
+        Q_EMIT _parent->compatibilityInterfaceActionFailed(_interfaceId, _actionId,
+                                                           requestId);
     }
 
     /* ============================================================================ */
@@ -684,7 +737,7 @@ namespace PMP {
 
         sendBinaryMessage(message);
 
-        return ref;
+        return RequestID(ref);
     }
 
     void ServerConnection::duplicateQueueEntry(quint32 queueID)
@@ -1569,14 +1622,17 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::sendCompatibilityInterfaceTriggerActionRequest(int interfaceId,
+    RequestID ServerConnection::sendCompatibilityInterfaceTriggerActionRequest(
+                                                                          int interfaceId,
                                                                           int actionId)
     {
         if (!_binarySendingMode)
-            return; /* only supported in binary mode */
+            return {}; /* only supported in binary mode */
 
-        // TODO : install result handler for handling the reply
-        auto ref = getNewReference();
+        auto* resultHandler =
+            new CompatibilityInterfaceActionTriggerResultHandler(this, interfaceId,
+                                                                 actionId);
+        auto ref = registerResultHandler(resultHandler);
 
         qDebug() << "sending compatibility interface action trigger request; ref:" << ref;
 
@@ -1590,6 +1646,8 @@ namespace PMP {
         NetworkUtil::append4Bytes(message, ref);
 
         sendBinaryMessage(message);
+
+        return RequestID(ref);
     }
 
     void ServerConnection::readBinaryCommands()

@@ -44,6 +44,12 @@ namespace PMP
         QString caption() const override;
         void setCaption(UserInterfaceLanguage language, QString caption);
 
+    public Q_SLOTS:
+        void triggerAction() override;
+
+    Q_SIGNALS:
+        void actionTriggerRequested();
+
     private:
         CompatibilityInterfaceImpl* _parent;
         int _id;
@@ -77,6 +83,9 @@ namespace PMP
 
         QVector<int> getActionIds() const override;
         CompatibilityInterfaceActionImpl* getAction(int actionId) const override;
+
+    Q_SIGNALS:
+        void actionTriggerRequested(int actionId);
 
     private:
         int _id;

@@ -42,6 +42,7 @@ namespace PMP
         QString getActionCaption(int actionId,
                                  UserInterfaceLanguage language) const override;
         CompatibilityUiActionState getActionState(int actionId) const override;
+        void runActionAsync(int actionId, uint clientReference) override;
 
     private:
         ServerInterface* _serverInterface;
@@ -62,6 +63,7 @@ namespace PMP
         QString getActionCaption(int actionId,
                                  UserInterfaceLanguage language) const override;
         CompatibilityUiActionState getActionState(int actionId) const override;
+        void runActionAsync(int actionId, uint clientReference) override;
 
     private:
         bool _actionState;
@@ -89,6 +91,8 @@ namespace PMP
         void stateChanged(int interfaceId);
         void actionCaptionChanged(int interfaceId, int actionId);
         void actionStateChanged(int interfaceId, int actionId);
+        void actionSuccessful(int interfaceId, int actionId, uint clientReference);
+        void actionFailed(int interfaceId, int actionId, uint clientReference);
 
     private:
         void activateController(CompatibilityUiController* controller);
