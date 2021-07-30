@@ -25,7 +25,8 @@
 #include "common/version.h"
 
 #include "collectionmonitor.h"
-#include "compatibilityuicontrollers.h"
+#include "compatibilityuicontroller.h"
+#include "compatibilityuicontrollercollection.h"
 #include "database.h"
 #include "history.h"
 #include "player.h"

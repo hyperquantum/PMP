@@ -22,8 +22,6 @@
 
 #include "compatibilityuicontroller.h"
 
-#include <QHash>
-
 namespace PMP
 {
     class ServerInterface;
@@ -68,41 +66,5 @@ namespace PMP
     private:
         bool _actionState;
     };
-
-    class CompatibilityUiControllerCollection : public QObject
-    {
-        Q_OBJECT
-    public:
-        CompatibilityUiControllerCollection(QObject* parent,
-                                            ServerInterface* serverInterface);
-
-        void activateIndexationController();
-        void activateTestController();
-
-        QList<int> getControllerIds() const { return _controllersById.keys(); }
-
-        CompatibilityUiController* getControllerById(int id) const
-        {
-            return _controllersById.value(id, nullptr);
-        }
-
-    Q_SIGNALS:
-        void textChanged(int interfaceId);
-        void stateChanged(int interfaceId);
-        void actionCaptionChanged(int interfaceId, int actionId);
-        void actionStateChanged(int interfaceId, int actionId);
-        void actionSuccessful(int interfaceId, int actionId, uint clientReference);
-        void actionFailed(int interfaceId, int actionId, uint clientReference);
-
-    private:
-        void activateController(CompatibilityUiController* controller);
-        void connectSignals(CompatibilityUiController* controller);
-
-        ServerInterface* _serverInterface;
-        IndexationUiController* _indexationController;
-        TestUiController* _testController;
-        QHash<int, CompatibilityUiController*> _controllersById;
-    };
-
 }
 #endif
