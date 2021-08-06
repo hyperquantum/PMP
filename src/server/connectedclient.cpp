@@ -2834,7 +2834,11 @@ namespace PMP
 
         auto* controller = _compatibilityUis->getControllerById(interfaceId);
         if (!controller)
-            return; // TODO : return error
+        {
+            sendResultMessage(NetworkProtocol::InvalidCompatibilityInterfaceId,
+                              clientReference, interfaceId);
+            return;
+        }
 
         controller->runActionAsync(actionId, clientReference);
     }

@@ -101,6 +101,10 @@ namespace PMP {
                 text += "invalid language";
                 break;
 
+            case NetworkProtocol::InvalidCompatibilityInterfaceId:
+                text += "invalid compatibility interface ID: " + QString::number(intData);
+                return text;
+
             case NetworkProtocol::DatabaseProblem:
                 text += "database problem";
                 break;

@@ -146,6 +146,7 @@ namespace PMP {
 
             QueueIdNotFound = 20,
             InvalidLanguage = 21,
+            InvalidCompatibilityInterfaceId = 22,
 
             DatabaseProblem = 90,
             NonFatalInternalServerError = 254,
