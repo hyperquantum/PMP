@@ -122,8 +122,12 @@ namespace PMP
         return CompatibilityUiActionState(visible, enabled, disableWhenTriggered);
     }
 
-    void IndexationUiController::runActionAsync(int actionId, uint clientReference)
+    void IndexationUiController::runActionAsync(int actionId,
+                                                UserInterfaceLanguage language,
+                                                uint clientReference)
     {
+        Q_UNUSED(language)
+
         if (actionId != startFullIndexationActionId)
             return; // TODO : report error
 
@@ -242,9 +246,11 @@ namespace PMP
         return CompatibilityUiActionState(visible, enabled, disableWhenTriggered);
     }
 
-    void TestUiController::runActionAsync(int actionId, uint clientReference)
+    void TestUiController::runActionAsync(int actionId, UserInterfaceLanguage language,
+                                          uint clientReference)
     {
         Q_UNUSED(actionId)
+        Q_UNUSED(language)
         Q_UNUSED(clientReference)
         // TODO
     }

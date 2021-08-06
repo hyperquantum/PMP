@@ -56,7 +56,8 @@ namespace PMP
         virtual QString getActionCaption(int actionId,
                                          UserInterfaceLanguage language) const = 0;
         virtual CompatibilityUiActionState getActionState(int actionId) const = 0;
-        virtual void runActionAsync(int actionId, uint clientReference) = 0;
+        virtual void runActionAsync(int actionId, UserInterfaceLanguage language,
+                                    uint clientReference) = 0;
 
     Q_SIGNALS:
         void textChanged();

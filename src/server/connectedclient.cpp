@@ -2847,7 +2847,7 @@ namespace PMP
             return;
         }
 
-        controller->runActionAsync(actionId, clientReference);
+        controller->runActionAsync(actionId, _compatibilityUiLanguage, clientReference);
     }
 
     void ConnectedClient::handleSingleByteAction(quint8 action)
