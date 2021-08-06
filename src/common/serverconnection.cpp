@@ -79,14 +79,27 @@ namespace PMP {
     {
         QString text = "client-ref " + QString::number(clientReference) + ": ";
 
-        switch (errorType) {
+        switch (errorType)
+        {
             case NetworkProtocol::NoError:
                 text += "no error";
+                break;
+
+            case NetworkProtocol::InvalidMessageStructure:
+                text += "invalid message structure";
+                break;
+
+            case NetworkProtocol::NotLoggedIn:
+                text += "not logged in";
                 break;
 
             case NetworkProtocol::QueueIdNotFound:
                 text += "QID " + QString::number(intData) + " not found";
                 return text;
+
+            case NetworkProtocol::InvalidLanguage:
+                text += "invalid language";
+                break;
 
             case NetworkProtocol::DatabaseProblem:
                 text += "database problem";
@@ -109,9 +122,8 @@ namespace PMP {
         if (intData == 0 && blobData.size() == 0)
             return text;
 
-        text +=
-            ": intData=" + QString::number(intData)
-                + ", blobData.size=" + QString::number(blobData.size());
+        text += "; intData=" + QString::number(intData) +
+                "; blobData.size=" + QString::number(blobData.size());
 
         return text;
     }
