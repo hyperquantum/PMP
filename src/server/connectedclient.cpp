@@ -2832,6 +2832,13 @@ namespace PMP
         qDebug() << "action trigger request is for interface" << interfaceId
                  << "and action" << actionId << "; client reference:" << clientReference;
 
+        if (_compatibilityUiLanguage == UserInterfaceLanguage::Invalid)
+        {
+            qDebug() << "cannot trigger the action because language is not set";
+            sendResultMessage(NetworkProtocol::LanguageNotSet, clientReference, 0);
+            return;
+        }
+
         auto* controller = _compatibilityUis->getControllerById(interfaceId);
         if (!controller)
         {

@@ -148,6 +148,8 @@ namespace PMP {
             InvalidLanguage = 21,
             InvalidCompatibilityInterfaceId = 22,
 
+            LanguageNotSet = 30,
+
             DatabaseProblem = 90,
             NonFatalInternalServerError = 254,
             UnknownError = 255
