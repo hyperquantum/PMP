@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,8 +26,8 @@
 #include <QByteArray>
 #include <QString>
 
-namespace PMP {
-
+namespace PMP
+{
     /*
         Network protocol versions
         =========================
@@ -53,9 +53,11 @@ namespace PMP {
 
     class FileHash;
 
-    class NetworkProtocol {
+    class NetworkProtocol
+    {
     public:
-        enum ServerMessageType {
+        enum ServerMessageType
+        {
             ServerMessageTypeNone = 0,
             PlayerStateMessage = 1,
             VolumeChangedMessage = 2,
@@ -89,7 +91,8 @@ namespace PMP {
             ServerExtensionsMessage = 30,
         };
 
-        enum ClientMessageType {
+        enum ClientMessageType
+        {
             ClientMessageTypeNone = 0,
             SingleByteActionMessage = 1,
             TrackInfoRequestMessage = 2,
@@ -115,7 +118,8 @@ namespace PMP {
             ClientExtensionsMessage = 22,
         };
 
-        enum ErrorType {
+        enum ErrorType
+        {
             NoError = 0,
             InvalidMessageStructure = 1,
             NotLoggedIn = 10,
@@ -134,7 +138,8 @@ namespace PMP {
             UnknownError = 255
         };
 
-        struct ProtocolExtensionSupport {
+        struct ProtocolExtensionSupport
+        {
             quint8 id;
             quint8 version;
 
@@ -151,7 +156,8 @@ namespace PMP {
             }
         };
 
-        struct ProtocolExtension : ProtocolExtensionSupport {
+        struct ProtocolExtension : ProtocolExtensionSupport
+        {
             QString name;
 
             ProtocolExtension()
