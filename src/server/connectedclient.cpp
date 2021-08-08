@@ -1625,24 +1625,22 @@ namespace PMP
             handleExtensionMessage(extensionId, extensionMessageType, message);
         }
         else {
-            auto clientMessageType =
-                static_cast<NetworkProtocol::ClientMessageType>(messageType);
+            auto clientMessageType = static_cast<ClientMessageType>(messageType);
 
             handleStandardBinaryMessage(clientMessageType, message);
         }
     }
 
-    void ConnectedClient::handleStandardBinaryMessage(
-                                           NetworkProtocol::ClientMessageType messageType,
-                                           QByteArray const& message)
+    void ConnectedClient::handleStandardBinaryMessage(ClientMessageType messageType,
+                                                      QByteArray const& message)
     {
         qint32 messageLength = message.length();
 
         switch (messageType) {
-        case NetworkProtocol::ClientExtensionsMessage:
+        case ClientMessageType::ClientExtensionsMessage:
             parseClientProtocolExtensionsMessage(message);
             break;
-        case NetworkProtocol::SingleByteActionMessage:
+        case ClientMessageType::SingleByteActionMessage:
         {
             if (messageLength != 3) {
                 return; /* invalid message */
@@ -1652,7 +1650,7 @@ namespace PMP
             handleSingleByteAction(actionType);
         }
             break;
-        case NetworkProtocol::TrackInfoRequestMessage:
+        case ClientMessageType::TrackInfoRequestMessage:
         {
             if (messageLength != 6) {
                 return; /* invalid message */
@@ -1669,7 +1667,7 @@ namespace PMP
             sendQueueEntryInfoMessage(queueID);
         }
             break;
-        case NetworkProtocol::BulkTrackInfoRequestMessage:
+        case ClientMessageType::BulkTrackInfoRequestMessage:
         {
             if (messageLength < 6 || (messageLength - 2) % 4 != 0) {
                 return; /* invalid message */
@@ -1694,7 +1692,7 @@ namespace PMP
             sendQueueEntryInfoMessage(QIDs);
         }
             break;
-        case NetworkProtocol::BulkQueueEntryHashRequestMessage:
+        case ClientMessageType::BulkQueueEntryHashRequestMessage:
         {
             if (messageLength < 8 || (messageLength - 4) % 4 != 0) {
                 return; /* invalid message */
@@ -1719,7 +1717,7 @@ namespace PMP
             sendQueueEntryHashMessage(QIDs);
         }
             break;
-        case NetworkProtocol::QueueFetchRequestMessage:
+        case ClientMessageType::QueueFetchRequestMessage:
         {
             if (messageLength != 7) {
                 return; /* invalid message */
@@ -1736,10 +1734,10 @@ namespace PMP
             sendQueueContentMessage(startOffset, length);
         }
             break;
-        case NetworkProtocol::QueueEntryRemovalRequestMessage:
+        case ClientMessageType::QueueEntryRemovalRequestMessage:
             parseQueueEntryRemovalRequest(message);
             break;
-        case NetworkProtocol::GeneratorNonRepetitionChangeMessage:
+        case ClientMessageType::GeneratorNonRepetitionChangeMessage:
         {
             if (messageLength != 6) {
                 return; /* invalid message */
@@ -1758,7 +1756,7 @@ namespace PMP
             _serverInterface->setTrackRepetitionAvoidanceSeconds(intervalSeconds);
         }
             break;
-        case NetworkProtocol::PossibleFilenamesForQueueEntryRequestMessage:
+        case ClientMessageType::PossibleFilenamesForQueueEntryRequestMessage:
         {
             if (messageLength != 6) {
                 return; /* invalid message */
@@ -1797,7 +1795,7 @@ namespace PMP
             sendPossibleTrackFilenames(queueID, filenames);
         }
             break;
-        case NetworkProtocol::PlayerSeekRequestMessage:
+        case ClientMessageType::PlayerSeekRequestMessage:
         {
             if (messageLength != 14) {
                 return; /* invalid message */
@@ -1820,7 +1818,7 @@ namespace PMP
             _serverInterface->seekTo(position);
         }
             break;
-        case NetworkProtocol::QueueEntryMoveRequestMessage:
+        case ClientMessageType::QueueEntryMoveRequestMessage:
         {
             if (messageLength != 8) {
                 return; /* invalid message */
@@ -1837,7 +1835,7 @@ namespace PMP
             _serverInterface->moveQueueEntry(queueID, move);
         }
             break;
-        case NetworkProtocol::InitiateNewUserAccountMessage:
+        case ClientMessageType::InitiateNewUserAccountMessage:
         {
             if (messageLength <= 8) {
                 return; /* invalid message */
@@ -1871,7 +1869,7 @@ namespace PMP
             }
         }
             break;
-        case NetworkProtocol::FinishNewUserAccountMessage:
+        case ClientMessageType::FinishNewUserAccountMessage:
         {
             if (messageLength <= 8) {
                 return; /* invalid message */
@@ -1935,7 +1933,7 @@ namespace PMP
             );
         }
             break;
-        case NetworkProtocol::InitiateLoginMessage:
+        case ClientMessageType::InitiateLoginMessage:
         {
             if (messageLength <= 8) {
                 return; /* invalid message */
@@ -1979,7 +1977,7 @@ namespace PMP
             sendUserLoginSaltMessage(login, userSalt, sessionSalt);
         }
             break;
-        case NetworkProtocol::FinishLoginMessage:
+        case ClientMessageType::FinishLoginMessage:
         {
             if (messageLength <= 12) {
                 return; /* invalid message */
@@ -2059,7 +2057,7 @@ namespace PMP
             }
         }
             break;
-        case NetworkProtocol::CollectionFetchRequestMessage:
+        case ClientMessageType::CollectionFetchRequestMessage:
         {
             if (messageLength != 8) {
                 return; /* invalid message */
@@ -2076,25 +2074,26 @@ namespace PMP
             handleCollectionFetchRequest(clientReference);
         }
             break;
-        case NetworkProtocol::AddHashToEndOfQueueRequestMessage:
-        case NetworkProtocol::AddHashToFrontOfQueueRequestMessage:
+        case ClientMessageType::AddHashToEndOfQueueRequestMessage:
+        case ClientMessageType::AddHashToFrontOfQueueRequestMessage:
             parseAddHashToQueueRequest(message, messageType);
             break;
-        case NetworkProtocol::HashUserDataRequestMessage:
+        case ClientMessageType::HashUserDataRequestMessage:
             parseHashUserDataRequest(message);
             break;
-        case NetworkProtocol::InsertHashIntoQueueRequestMessage:
+        case ClientMessageType::InsertHashIntoQueueRequestMessage:
             parseInsertHashIntoQueueRequest(message);
             break;
-        case NetworkProtocol::PlayerHistoryRequestMessage:
+        case ClientMessageType::PlayerHistoryRequestMessage:
             parsePlayerHistoryRequest(message);
             break;
-        case NetworkProtocol::QueueEntryDuplicationRequestMessage:
+        case ClientMessageType::QueueEntryDuplicationRequestMessage:
             parseQueueEntryDuplicationRequest(message);
             break;
         default:
-            qDebug() << "received unknown binary message type" << messageType
-                     << " with length" << messageLength;
+            qDebug() << "received unknown binary message type"
+                     << static_cast<int>(messageType)
+                     << "with length" << messageLength;
             break; /* unknown message type */
         }
     }
@@ -2180,7 +2179,7 @@ namespace PMP
     }
 
     void ConnectedClient::parseAddHashToQueueRequest(const QByteArray& message,
-                                           NetworkProtocol::ClientMessageType messageType)
+                                                     ClientMessageType messageType)
     {
         qDebug() << "received 'add filehash to queue' request";
 
@@ -2199,10 +2198,12 @@ namespace PMP
 
         qDebug() << " request contains hash:" << hash.dumpToString();
 
-        if (messageType == NetworkProtocol::AddHashToEndOfQueueRequestMessage) {
+        if (messageType == ClientMessageType::AddHashToEndOfQueueRequestMessage)
+        {
             _serverInterface->enqueue(hash);
         }
-        else if (messageType == NetworkProtocol::AddHashToFrontOfQueueRequestMessage) {
+        else if (messageType == ClientMessageType::AddHashToFrontOfQueueRequestMessage)
+        {
             _serverInterface->insertAtFront(hash);
         }
         else {

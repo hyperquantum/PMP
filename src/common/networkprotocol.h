@@ -88,36 +88,36 @@ namespace PMP
         ServerExtensionsMessage = 30,
     };
 
+    enum class ClientMessageType
+    {
+        ClientMessageTypeNone = 0,
+        SingleByteActionMessage = 1,
+        TrackInfoRequestMessage = 2,
+        BulkTrackInfoRequestMessage = 3,
+        QueueFetchRequestMessage = 4,
+        QueueEntryRemovalRequestMessage = 5,
+        GeneratorNonRepetitionChangeMessage = 6,
+        PossibleFilenamesForQueueEntryRequestMessage = 7,
+        PlayerSeekRequestMessage = 8,
+        QueueEntryMoveRequestMessage = 9,
+        InitiateNewUserAccountMessage = 10,
+        FinishNewUserAccountMessage = 11,
+        InitiateLoginMessage = 12,
+        FinishLoginMessage = 13,
+        CollectionFetchRequestMessage = 14,
+        AddHashToEndOfQueueRequestMessage = 15,
+        AddHashToFrontOfQueueRequestMessage = 16,
+        BulkQueueEntryHashRequestMessage = 17,
+        HashUserDataRequestMessage = 18,
+        InsertHashIntoQueueRequestMessage = 19,
+        PlayerHistoryRequestMessage = 20,
+        QueueEntryDuplicationRequestMessage = 21,
+        ClientExtensionsMessage = 22,
+    };
+
     class NetworkProtocol
     {
     public:
-        enum ClientMessageType
-        {
-            ClientMessageTypeNone = 0,
-            SingleByteActionMessage = 1,
-            TrackInfoRequestMessage = 2,
-            BulkTrackInfoRequestMessage = 3,
-            QueueFetchRequestMessage = 4,
-            QueueEntryRemovalRequestMessage = 5,
-            GeneratorNonRepetitionChangeMessage = 6,
-            PossibleFilenamesForQueueEntryRequestMessage = 7,
-            PlayerSeekRequestMessage = 8,
-            QueueEntryMoveRequestMessage = 9,
-            InitiateNewUserAccountMessage = 10,
-            FinishNewUserAccountMessage = 11,
-            InitiateLoginMessage = 12,
-            FinishLoginMessage = 13,
-            CollectionFetchRequestMessage = 14,
-            AddHashToEndOfQueueRequestMessage = 15,
-            AddHashToFrontOfQueueRequestMessage = 16,
-            BulkQueueEntryHashRequestMessage = 17,
-            HashUserDataRequestMessage = 18,
-            InsertHashIntoQueueRequestMessage = 19,
-            PlayerHistoryRequestMessage = 20,
-            QueueEntryDuplicationRequestMessage = 21,
-            ClientExtensionsMessage = 22,
-        };
-
         enum ErrorType
         {
             NoError = 0,
@@ -174,6 +174,7 @@ namespace PMP
         };
 
         static void append2Bytes(QByteArray& buffer, ServerMessageType messageType);
+        static void append2Bytes(QByteArray& buffer, ClientMessageType messageType);
 
         static quint16 encodeMessageTypeForExtension(quint8 extensionId,
                                                      quint8 messageType);

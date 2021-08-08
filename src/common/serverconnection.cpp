@@ -539,7 +539,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(4 + extensionCount * 16); /* estimate */
-        NetworkUtil::append2Bytes(message, NetworkProtocol::ClientExtensionsMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::ClientExtensionsMessage);
         NetworkUtil::appendByte(message, 0); /* filler */
         NetworkUtil::appendByte(message, extensionCount);
 
@@ -568,7 +569,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(3);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::SingleByteActionMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::SingleByteActionMessage);
         NetworkUtil::appendByte(message, action); /* single byte action type */
 
         sendBinaryMessage(message);
@@ -581,7 +583,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(7);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::QueueFetchRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::QueueFetchRequestMessage);
         NetworkUtil::append4Bytes(message, startOffset);
         NetworkUtil::appendByte(message, length);
 
@@ -592,8 +595,8 @@ namespace PMP
     {
         QByteArray message;
         message.reserve(6);
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::QueueEntryRemovalRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::QueueEntryRemovalRequestMessage);
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
@@ -603,7 +606,8 @@ namespace PMP
     {
         QByteArray message;
         message.reserve(8);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::QueueEntryMoveRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::QueueEntryMoveRequestMessage);
         NetworkUtil::append2BytesSigned(message, offsetDiff);
         NetworkUtil::append4Bytes(message, queueID);
 
@@ -614,8 +618,8 @@ namespace PMP
     {
         QByteArray message;
         message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::AddHashToFrontOfQueueRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                  ClientMessageType::AddHashToFrontOfQueueRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkProtocol::appendHash(message, hash);
 
@@ -626,8 +630,8 @@ namespace PMP
     {
         QByteArray message;
         message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::AddHashToEndOfQueueRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                    ClientMessageType::AddHashToEndOfQueueRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkProtocol::appendHash(message, hash);
 
@@ -655,8 +659,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
-        NetworkUtil::append2Bytes(
-                             message, NetworkProtocol::InsertHashIntoQueueRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                    ClientMessageType::InsertHashIntoQueueRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkUtil::append4Bytes(message, ref);
         NetworkUtil::append4Bytes(message, index);
@@ -677,8 +681,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4);
-        NetworkUtil::append2Bytes(message,
-                                    NetworkProtocol::QueueEntryDuplicationRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                  ClientMessageType::QueueEntryDuplicationRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkUtil::append4Bytes(message, ref);
         NetworkUtil::append4Bytes(message, queueID);
@@ -694,7 +698,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(6);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::TrackInfoRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::TrackInfoRequestMessage);
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
@@ -714,7 +719,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 4 * queueIDs.size());
-        NetworkUtil::append2Bytes(message, NetworkProtocol::BulkTrackInfoRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::BulkTrackInfoRequestMessage);
 
         uint QID;
         foreach(QID, queueIDs) {
@@ -738,8 +744,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 4 * queueIDs.size());
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::BulkQueueEntryHashRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                     ClientMessageType::BulkQueueEntryHashRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
 
         foreach(uint QID, queueIDs) {
@@ -765,7 +771,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + hashes.size() * NetworkProtocol::FILEHASH_BYTECOUNT);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::HashUserDataRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::HashUserDataRequestMessage);
         NetworkUtil::append2Bytes(message, 2 | 1); /* request prev. heard & score */
         NetworkUtil::append4Bytes(message, userId); /* user ID */
 
@@ -785,8 +792,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(6);
-        NetworkUtil::append2Bytes(
-                  message, NetworkProtocol::PossibleFilenamesForQueueEntryRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                         ClientMessageType::PossibleFilenamesForQueueEntryRequestMessage);
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
@@ -949,7 +956,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::PlayerHistoryRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::PlayerHistoryRequestMessage);
         NetworkUtil::appendByte(message, 0); /* filler */
         NetworkUtil::appendByte(message, limitUnsigned);
 
@@ -1019,7 +1027,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(14);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::PlayerSeekRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::PlayerSeekRequestMessage);
         NetworkUtil::append4Bytes(message, queueID);
         NetworkUtil::append8BytesSigned(message, position);
 
@@ -1076,8 +1085,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(6);
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::GeneratorNonRepetitionChangeMessage);
+        NetworkProtocol::append2Bytes(message,
+                                  ClientMessageType::GeneratorNonRepetitionChangeMessage);
         NetworkUtil::append4BytesSigned(message, seconds);
 
         sendBinaryMessage(message);
@@ -1125,8 +1134,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + loginBytes.size());
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::InitiateNewUserAccountMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::InitiateNewUserAccountMessage);
         NetworkUtil::appendByteUnsigned(message, loginBytes.size());
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, clientReference);
@@ -1146,7 +1155,7 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + loginBytes.size());
-        NetworkUtil::append2Bytes(message, NetworkProtocol::InitiateLoginMessage);
+        NetworkProtocol::append2Bytes(message, ClientMessageType::InitiateLoginMessage);
         NetworkUtil::appendByteUnsigned(message, loginBytes.size());
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, clientReference);
@@ -1167,7 +1176,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(4 + 4 + loginBytes.size() + salt.size() + hashedPassword.size());
-        NetworkUtil::append2Bytes(message, NetworkProtocol::FinishNewUserAccountMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::FinishNewUserAccountMessage);
         NetworkUtil::appendByteUnsigned(message, loginBytes.size());
         NetworkUtil::appendByteUnsigned(message, salt.size());
         NetworkUtil::append4Bytes(message, clientReference);
@@ -1194,7 +1204,7 @@ namespace PMP
             4 + 4 + 4 + loginBytes.size() + userSalt.size() + sessionSalt.size()
             + hashedPassword.size()
         );
-        NetworkUtil::append2Bytes(message, NetworkProtocol::FinishLoginMessage);
+        NetworkProtocol::append2Bytes(message, ClientMessageType::FinishLoginMessage);
         NetworkUtil::append2Bytes(message, 0); /* unused */
         NetworkUtil::appendByteUnsigned(message, loginBytes.size());
         NetworkUtil::appendByteUnsigned(message, userSalt.size());
@@ -1217,8 +1227,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(4 + 4);
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::CollectionFetchRequestMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::CollectionFetchRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, clientReference);
 

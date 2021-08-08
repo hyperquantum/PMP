@@ -166,7 +166,7 @@ namespace PMP
         void sendServerHealthMessage();
 
         void handleBinaryMessage(QByteArray const& message);
-        void handleStandardBinaryMessage(NetworkProtocol::ClientMessageType messageType,
+        void handleStandardBinaryMessage(ClientMessageType messageType,
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 messageType,
                                     QByteArray const& message);
@@ -177,7 +177,7 @@ namespace PMP
 
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
-                                        NetworkProtocol::ClientMessageType messageType);
+                                        ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
         void parseQueueEntryRemovalRequest(QByteArray const& message);
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
