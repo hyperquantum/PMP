@@ -693,9 +693,10 @@ namespace PMP
 
     void ConnectedClient::sendUsersList()
     {
-        QList<UserIdAndLogin> users = _users->getUsers();
+        auto const users = _users->getUsers();
         auto usersCount = users.size();
-        if (usersCount > std::numeric_limits<quint16>::max()) {
+        if (usersCount > std::numeric_limits<quint16>::max())
+        {
             qWarning() << "users count exceeds limit, cannot send list";
             return;
         }
@@ -705,7 +706,8 @@ namespace PMP
         NetworkProtocol::append2Bytes(message, ServerMessageType::UsersListMessage);
         NetworkUtil::append2Bytes(message, static_cast<quint16>(usersCount));
 
-        Q_FOREACH(UserIdAndLogin user, users) {
+        for (auto& user : users)
+        {
             NetworkUtil::append4Bytes(message, user.first); /* ID */
 
             QByteArray loginNameBytes = user.second.toUtf8();

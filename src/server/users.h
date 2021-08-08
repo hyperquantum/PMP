@@ -24,11 +24,11 @@
 
 #include "database.h"  // for User :-/
 
-#include <QList>
 #include <QObject>
 #include <QPair>
 #include <QString>
 #include <QtGlobal>
+#include <QVector>
 
 namespace PMP
 {
@@ -48,7 +48,7 @@ namespace PMP
 
         Users();
 
-        QList<UserIdAndLogin> getUsers();
+        QVector<UserIdAndLogin> getUsers();
         QString getUserLogin(quint32 userId) const;
         bool getUserByLogin(QString login, User& user);
         static bool checkUserLoginPassword(User const& user,

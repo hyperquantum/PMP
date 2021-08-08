@@ -48,9 +48,9 @@ namespace PMP
         }
     }
 
-    QList<UserIdAndLogin> Users::getUsers()
+    QVector<UserIdAndLogin> Users::getUsers()
     {
-        QList<UserIdAndLogin> result;
+        QVector<UserIdAndLogin> result;
         result.reserve(_usersById.size());
 
         for (auto& u : qAsConst(_usersById))
