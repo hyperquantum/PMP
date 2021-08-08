@@ -55,7 +55,7 @@ namespace PMP
 
     enum class ServerMessageType
     {
-        ServerMessageTypeNone = 0,
+        None = 0,
         PlayerStateMessage = 1,
         VolumeChangedMessage = 2,
         TrackInfoMessage = 3,
@@ -90,7 +90,7 @@ namespace PMP
 
     enum class ClientMessageType
     {
-        ClientMessageTypeNone = 0,
+        None = 0,
         SingleByteActionMessage = 1,
         TrackInfoRequestMessage = 2,
         BulkTrackInfoRequestMessage = 3,
