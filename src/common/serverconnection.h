@@ -37,11 +37,12 @@
 #include <QUuid>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class CollectionFetcher;
 
-    class RequestID {
+    class RequestID
+    {
     public:
         RequestID() : _rawId(0) {}
         RequestID(uint rawId) : _rawId(rawId) {}
@@ -53,19 +54,23 @@ namespace PMP {
         uint _rawId;
     };
 
-    inline bool operator==(const RequestID& me, const RequestID& other) {
+    inline bool operator==(const RequestID& me, const RequestID& other)
+    {
         return me.rawId() == other.rawId();
     }
 
-    inline bool operator!=(const RequestID& me, const RequestID& other) {
+    inline bool operator!=(const RequestID& me, const RequestID& other)
+    {
         return !(me == other);
     }
 
-    inline uint qHash(const RequestID& requestId) {
+    inline uint qHash(const RequestID& requestId)
+    {
         return requestId.rawId();
     }
 
-    enum class ServerEventSubscription {
+    enum class ServerEventSubscription
+    {
         None = 0,
         AllEvents = 1,
         ServerHealthMessages = 2,
@@ -74,11 +79,12 @@ namespace PMP {
     /**
         Represents a connection to a PMP server.
     */
-    class ServerConnection : public QObject {
+    class ServerConnection : public QObject
+    {
         Q_OBJECT
-
     private:
-        enum State {
+        enum State
+        {
             NotConnected, Connecting, Handshake, TextMode,
             HandshakeFailure, BinaryHandshake, BinaryMode
         };
@@ -89,7 +95,8 @@ namespace PMP {
         class DuplicationResultHandler;
 
     public:
-        enum UserRegistrationError {
+        enum UserRegistrationError
+        {
             UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
         };
 

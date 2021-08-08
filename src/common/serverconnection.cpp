@@ -26,9 +26,10 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
-    class ServerConnection::ResultHandler {
+namespace PMP
+{
+    class ServerConnection::ResultHandler
+    {
     public:
         virtual ~ResultHandler();
 
@@ -49,7 +50,8 @@ namespace PMP {
         ServerConnection* const _parent;
     };
 
-    ServerConnection::ResultHandler::~ResultHandler() {
+    ServerConnection::ResultHandler::~ResultHandler()
+    {
         //
     }
 
@@ -116,7 +118,8 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    class ServerConnection::CollectionFetchResultHandler : public ResultHandler {
+    class ServerConnection::CollectionFetchResultHandler : public ResultHandler
+    {
     public:
         CollectionFetchResultHandler(ServerConnection* parent,
                                      CollectionFetcher* fetcher);
@@ -158,7 +161,8 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    class ServerConnection::TrackInsertionResultHandler : public ResultHandler {
+    class ServerConnection::TrackInsertionResultHandler : public ResultHandler
+    {
     public:
         TrackInsertionResultHandler(ServerConnection* parent, qint32 index);
 
@@ -210,7 +214,8 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    class ServerConnection::DuplicationResultHandler : public ResultHandler {
+    class ServerConnection::DuplicationResultHandler : public ResultHandler
+    {
     public:
         DuplicationResultHandler(ServerConnection* parent);
 
@@ -269,7 +274,8 @@ namespace PMP {
         );
     }
 
-    void ServerConnection::reset() {
+    void ServerConnection::reset()
+    {
         _state = NotConnected;
         _socket.abort();
         _readBuffer.clear();
@@ -277,18 +283,21 @@ namespace PMP {
         _serverProtocolNo = -1;
     }
 
-    void ServerConnection::connectToHost(QString const& host, quint16 port) {
+    void ServerConnection::connectToHost(QString const& host, quint16 port)
+    {
         qDebug() << "connecting to" << host << "on port" << port;
         _state = Connecting;
         _readBuffer.clear();
         _socket.connectToHost(host, port);
     }
 
-    quint32 ServerConnection::userLoggedInId() const {
+    quint32 ServerConnection::userLoggedInId() const
+    {
         return _userLoggedInId;
     }
 
-    QString ServerConnection::userLoggedInName() const {
+    QString ServerConnection::userLoggedInName() const
+    {
         return _userLoggedInName;
     }
 
@@ -302,12 +311,14 @@ namespace PMP {
         return _serverProtocolNo >= 14;
     }
 
-    void ServerConnection::onConnected() {
+    void ServerConnection::onConnected()
+    {
         qDebug() << "connected to host";
         _state = Handshake;
     }
 
-    void ServerConnection::onReadyRead() {
+    void ServerConnection::onReadyRead()
+    {
         State state;
         do {
             state = _state;
@@ -437,7 +448,8 @@ namespace PMP {
         } while (_state != state && _socket.bytesAvailable() > 0);
     }
 
-    void ServerConnection::onSocketError(QAbstractSocket::SocketError error) {
+    void ServerConnection::onSocketError(QAbstractSocket::SocketError error)
+    {
         qDebug() << "socket error" << error;
 
         switch (_state) {
@@ -459,7 +471,8 @@ namespace PMP {
         }
     }
 
-    void ServerConnection::readTextCommands() {
+    void ServerConnection::readTextCommands()
+    {
         do {
             bool hadSemicolon = false;
             char c;
@@ -480,7 +493,8 @@ namespace PMP {
         } while (_state == TextMode);
     }
 
-    void ServerConnection::executeTextCommand(QString const& commandText) {
+    void ServerConnection::executeTextCommand(QString const& commandText)
+    {
         if (commandText == "binary") {
             /* switch to binary communication mode */
             _state = BinaryHandshake;
@@ -490,13 +504,15 @@ namespace PMP {
         }
     }
 
-    void ServerConnection::sendTextCommand(QString const& command) {
+    void ServerConnection::sendTextCommand(QString const& command)
+    {
         qDebug() << "sending command" << command;
         _socket.write((command + ";").toUtf8());
         _socket.flush();
     }
 
-    void ServerConnection::sendBinaryMessage(QByteArray const& message) {
+    void ServerConnection::sendBinaryMessage(QByteArray const& message)
+    {
         auto messageLength = message.length();
         if (messageLength > std::numeric_limits<qint32>::max() - 1)
         {
@@ -512,7 +528,8 @@ namespace PMP {
         _socket.flush();
     }
 
-    void ServerConnection::sendProtocolExtensionsMessage() {
+    void ServerConnection::sendProtocolExtensionsMessage()
+    {
         if (_serverProtocolNo < 12) return; /* server will not understand this message */
 
         QVector<const NetworkProtocol::ProtocolExtension*> extensions;
@@ -539,7 +556,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::sendSingleByteAction(quint8 action) {
+    void ServerConnection::sendSingleByteAction(quint8 action)
+    {
         if (!_binarySendingMode) {
             qDebug() << "PROBLEM: cannot send single byte action yet; action:"
                      << static_cast<uint>(action);
@@ -556,7 +574,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::sendQueueFetchRequest(uint startOffset, quint8 length) {
+    void ServerConnection::sendQueueFetchRequest(uint startOffset, quint8 length)
+    {
         qDebug() << "sending queue fetch request; startOffset=" << startOffset
                  << "; length=" << static_cast<uint>(length);
 
@@ -569,7 +588,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::deleteQueueEntry(uint queueID) {
+    void ServerConnection::deleteQueueEntry(uint queueID)
+    {
         QByteArray message;
         message.reserve(6);
         NetworkUtil::append2Bytes(message,
@@ -579,7 +599,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::moveQueueEntry(uint queueID, qint16 offsetDiff) {
+    void ServerConnection::moveQueueEntry(uint queueID, qint16 offsetDiff)
+    {
         QByteArray message;
         message.reserve(8);
         NetworkUtil::append2Bytes(message, NetworkProtocol::QueueEntryMoveRequestMessage);
@@ -589,7 +610,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::insertQueueEntryAtFront(FileHash const& hash) {
+    void ServerConnection::insertQueueEntryAtFront(FileHash const& hash)
+    {
         QByteArray message;
         message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
         NetworkUtil::append2Bytes(message,
@@ -600,7 +622,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::insertQueueEntryAtEnd(FileHash const& hash) {
+    void ServerConnection::insertQueueEntryAtEnd(FileHash const& hash)
+    {
         QByteArray message;
         message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
         NetworkUtil::append2Bytes(message,
@@ -611,7 +634,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    uint ServerConnection::getNewReference() {
+    uint ServerConnection::getNewReference()
+    {
         // don't use: return _nextRef++;
         auto ref = _nextRef;
         _nextRef++;
@@ -643,7 +667,8 @@ namespace PMP {
         return ref;
     }
 
-    void ServerConnection::duplicateQueueEntry(quint32 queueID) {
+    void ServerConnection::duplicateQueueEntry(quint32 queueID)
+    {
         auto handler = new DuplicationResultHandler(this);
         auto ref = getNewReference();
         _resultHandlers[ref] = handler;
@@ -661,7 +686,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::sendQueueEntryInfoRequest(uint queueID) {
+    void ServerConnection::sendQueueEntryInfoRequest(uint queueID)
+    {
         if (queueID == 0) return;
 
         qDebug() << "sending request for track info of QID" << queueID;
@@ -674,7 +700,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::sendQueueEntryInfoRequest(QList<uint> const& queueIDs) {
+    void ServerConnection::sendQueueEntryInfoRequest(QList<uint> const& queueIDs)
+    {
         if (queueIDs.empty()) return;
 
         if (queueIDs.size() == 1) {
@@ -697,7 +724,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::sendQueueEntryHashRequest(QList<uint> const& queueIDs) {
+    void ServerConnection::sendQueueEntryHashRequest(QList<uint> const& queueIDs)
+    {
         if (queueIDs.empty()) return;
 
         if (queueIDs.size() == 1) {
@@ -751,7 +779,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::sendPossibleFilenamesRequest(uint queueID) {
+    void ServerConnection::sendPossibleFilenamesRequest(uint queueID)
+    {
         qDebug() << "sending request for possible filenames of QID" << queueID;
 
         QByteArray message;
@@ -763,7 +792,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::createNewUserAccount(QString login, QString password) {
+    void ServerConnection::createNewUserAccount(QString login, QString password)
+    {
         _userAccountRegistrationRef = getNewReference();
         _userAccountRegistrationLogin = login;
         _userAccountRegistrationPassword = password;
@@ -771,7 +801,8 @@ namespace PMP {
         sendInitiateNewUserAccountMessage(login, _userAccountRegistrationRef);
     }
 
-    void ServerConnection::login(QString login, QString password) {
+    void ServerConnection::login(QString login, QString password)
+    {
         _userLoginRef = getNewReference();
         _userLoggingIn = login;
         _userLoggingInPassword = password;
@@ -779,19 +810,23 @@ namespace PMP {
         sendInitiateLoginMessage(login, _userLoginRef);
     }
 
-    void ServerConnection::switchToPublicMode() {
+    void ServerConnection::switchToPublicMode()
+    {
         sendSingleByteAction(30);
     }
 
-    void ServerConnection::switchToPersonalMode() {
+    void ServerConnection::switchToPersonalMode()
+    {
         sendSingleByteAction(31);
     }
 
-    void ServerConnection::requestUserPlayingForMode() {
+    void ServerConnection::requestUserPlayingForMode()
+    {
         sendSingleByteAction(14);
     }
 
-    void ServerConnection::handleNewUserSalt(QString login, QByteArray salt) {
+    void ServerConnection::handleNewUserSalt(QString login, QByteArray salt)
+    {
         if (login != _userAccountRegistrationLogin) return;
 
         uint reference = _userAccountRegistrationRef;
@@ -890,7 +925,8 @@ namespace PMP {
         }
     }
 
-    void ServerConnection::onFullIndexationRunningStatusReceived(bool running) {
+    void ServerConnection::onFullIndexationRunningStatusReceived(bool running)
+    {
         auto oldValue = _doingFullIndexation;
         _doingFullIndexation = running;
 
@@ -904,7 +940,8 @@ namespace PMP {
         }
     }
 
-    void ServerConnection::sendPlayerHistoryRequest(int limit) {
+    void ServerConnection::sendPlayerHistoryRequest(int limit)
+    {
         if (limit < 0) limit = 0;
         if (limit > 255) { limit = 255; }
 
@@ -919,39 +956,48 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::sendUserAccountsFetchRequest() {
+    void ServerConnection::sendUserAccountsFetchRequest()
+    {
         sendSingleByteAction(13); /* 13 = fetch list of user accounts */
     }
 
-    void ServerConnection::shutdownServer() {
+    void ServerConnection::shutdownServer()
+    {
         sendSingleByteAction(99); /* 99 = shutdown server */
     }
 
-    void ServerConnection::sendDatabaseIdentifierRequest() {
+    void ServerConnection::sendDatabaseIdentifierRequest()
+    {
         sendSingleByteAction(17); /* 17 = request for database UUID */
     }
 
-    void ServerConnection::sendServerInstanceIdentifierRequest() {
+    void ServerConnection::sendServerInstanceIdentifierRequest()
+    {
         sendSingleByteAction(12); /* 12 = request for server instance UUID */
     }
 
-    void ServerConnection::sendServerNameRequest() {
+    void ServerConnection::sendServerNameRequest()
+    {
         sendSingleByteAction(16); /* 16 = request for server name */
     }
 
-    void ServerConnection::requestPlayerState() {
+    void ServerConnection::requestPlayerState()
+    {
         sendSingleByteAction(10); /* 10 = request player state */
     }
 
-    void ServerConnection::play() {
+    void ServerConnection::play()
+    {
         sendSingleByteAction(1); /* 1 = play */
     }
 
-    void ServerConnection::pause() {
+    void ServerConnection::pause()
+    {
         sendSingleByteAction(2); /* 2 = pause */
     }
 
-    void ServerConnection::skip() {
+    void ServerConnection::skip()
+    {
         sendSingleByteAction(3); /* 3 = skip */
     }
 
@@ -960,7 +1006,8 @@ namespace PMP {
         sendSingleByteAction(4); /* 4 = insert break at front */
     }
 
-    void ServerConnection::seekTo(uint queueID, qint64 position) {
+    void ServerConnection::seekTo(uint queueID, qint64 position)
+    {
         if (!_binarySendingMode) {
             return; /* too early for that */
         }
@@ -979,7 +1026,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::setVolume(int percentage) {
+    void ServerConnection::setVolume(int percentage)
+    {
         if (percentage < 0 || percentage > 100) {
             qWarning() << "Invalid percentage:" << percentage;
             return;
@@ -990,27 +1038,33 @@ namespace PMP {
         sendSingleByteAction(100 + percentageUnsigned); /* 100 to 200 = set volume */
     }
 
-    void ServerConnection::enableDynamicMode() {
+    void ServerConnection::enableDynamicMode()
+    {
         sendSingleByteAction(20); /* 20 = enable dynamic mode */
     }
 
-    void ServerConnection::disableDynamicMode() {
+    void ServerConnection::disableDynamicMode()
+    {
         sendSingleByteAction(21); /* 21 = disable dynamic mode */
     }
 
-    void ServerConnection::expandQueue() {
+    void ServerConnection::expandQueue()
+    {
         sendSingleByteAction(22); /* 22 = request queue expansion */
     }
 
-    void ServerConnection::trimQueue() {
+    void ServerConnection::trimQueue()
+    {
         sendSingleByteAction(23); /* 23 = request queue trim */
     }
 
-    void ServerConnection::requestDynamicModeStatus() {
+    void ServerConnection::requestDynamicModeStatus()
+    {
         sendSingleByteAction(11); /* 11 = request status of dynamic mode */
     }
 
-    void ServerConnection::setDynamicModeNoRepetitionSpan(int seconds) {
+    void ServerConnection::setDynamicModeNoRepetitionSpan(int seconds)
+    {
         if (!_binarySendingMode) {
             return; /* only supported in binary mode */
         }
@@ -1039,15 +1093,18 @@ namespace PMP {
         sendSingleByteAction(25); /* 25 = terminate dynamic mode wave */
     }
 
-    void ServerConnection::startFullIndexation() {
+    void ServerConnection::startFullIndexation()
+    {
         sendSingleByteAction(40); /* 40 = start full indexation */
     }
 
-    void ServerConnection::requestFullIndexationRunningStatus() {
+    void ServerConnection::requestFullIndexationRunningStatus()
+    {
         sendSingleByteAction(15); /* 15 = request for full indexation running status */
     }
 
-    void ServerConnection::fetchCollection(CollectionFetcher* fetcher) {
+    void ServerConnection::fetchCollection(CollectionFetcher* fetcher)
+    {
         fetcher->setParent(this);
 
         auto handler = new CollectionFetchResultHandler(this, fetcher);
@@ -1152,7 +1209,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::sendCollectionFetchRequestMessage(uint clientReference) {
+    void ServerConnection::sendCollectionFetchRequestMessage(uint clientReference)
+    {
         if (!_binarySendingMode) {
             return; /* only supported in binary mode */
         }
@@ -1167,7 +1225,8 @@ namespace PMP {
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::readBinaryCommands() {
+    void ServerConnection::readBinaryCommands()
+    {
         char lengthBytes[4];
 
         while
@@ -1191,7 +1250,8 @@ namespace PMP {
         }
     }
 
-    void ServerConnection::handleBinaryMessage(QByteArray const& message) {
+    void ServerConnection::handleBinaryMessage(QByteArray const& message)
+    {
         if (message.length() < 2) {
             qDebug() << "received invalid binary message (less than 2 bytes)";
             return; /* invalid message */
@@ -1332,7 +1392,8 @@ namespace PMP {
                    << _serverExtensionNames.value(extensionId, "?");
     }
 
-    void ServerConnection::parseSimpleResultMessage(QByteArray const& message) {
+    void ServerConnection::parseSimpleResultMessage(QByteArray const& message)
+    {
         if (message.length() < 12) {
             return; /* invalid message */
         }
@@ -1443,7 +1504,8 @@ namespace PMP {
         Q_EMIT receivedServerInstanceIdentifier(uuid);
     }
 
-    void ServerConnection::parseServerNameMessage(QByteArray const& message) {
+    void ServerConnection::parseServerNameMessage(QByteArray const& message)
+    {
         if (message.length() < 4) {
             return; /* invalid message */
         }
@@ -1455,7 +1517,8 @@ namespace PMP {
         Q_EMIT receivedServerName(nameType, name);
     }
 
-    void ServerConnection::parseDatabaseIdentifierMessage(QByteArray const& message) {
+    void ServerConnection::parseDatabaseIdentifierMessage(QByteArray const& message)
+    {
         if (message.length() != (2 + 16)) {
             qWarning() << "invalid message; length incorrect";
             return;
@@ -1467,7 +1530,8 @@ namespace PMP {
         Q_EMIT receivedDatabaseIdentifier(uuid);
     }
 
-    void ServerConnection::parseServerHealthMessage(QByteArray const& message) {
+    void ServerConnection::parseServerHealthMessage(QByteArray const& message)
+    {
         if (message.length() != 4) {
             qWarning() << "invalid message; length incorrect";
             return;
@@ -1490,7 +1554,8 @@ namespace PMP {
         }
     }
 
-    void ServerConnection::parseUsersListMessage(QByteArray const& message) {
+    void ServerConnection::parseUsersListMessage(QByteArray const& message)
+    {
         if (message.length() < 4) {
             return; /* invalid message */
         }
@@ -1531,7 +1596,8 @@ namespace PMP {
         Q_EMIT receivedUserAccounts(users);
     }
 
-    void ServerConnection::parseNewUserAccountSaltMessage(QByteArray const& message) {
+    void ServerConnection::parseNewUserAccountSaltMessage(QByteArray const& message)
+    {
         if (message.length() < 4) {
             return; /* invalid message */
         }
@@ -1551,7 +1617,8 @@ namespace PMP {
         handleNewUserSalt(login, salt);
     }
 
-    void ServerConnection::parseUserLoginSaltMessage(QByteArray const& message) {
+    void ServerConnection::parseUserLoginSaltMessage(QByteArray const& message)
+    {
         if (message.length() < 8) {
             return; /* invalid message */
         }
@@ -1574,7 +1641,8 @@ namespace PMP {
         handleLoginSalt(login, userSalt, sessionSalt);
     }
 
-    void ServerConnection::parsePlayerStateMessage(QByteArray const& message) {
+    void ServerConnection::parsePlayerStateMessage(QByteArray const& message)
+    {
         if (message.length() != 20) {
             return; /* invalid message */
         }
@@ -1609,7 +1677,8 @@ namespace PMP {
         Q_EMIT receivedPlayerState(state, volume, queueLength, queueID, position);
     }
 
-    void ServerConnection::parseVolumeChangedMessage(QByteArray const& message) {
+    void ServerConnection::parseVolumeChangedMessage(QByteArray const& message)
+    {
         if (message.length() != 3) {
             return; /* invalid message */
         }
@@ -1621,7 +1690,8 @@ namespace PMP {
         if (volume <= 100) { Q_EMIT volumeChanged(volume); }
     }
 
-    void ServerConnection::parseUserPlayingForModeMessage(QByteArray const& message) {
+    void ServerConnection::parseUserPlayingForModeMessage(QByteArray const& message)
+    {
         if (message.length() < 8) {
             return; /* invalid message */
         }
@@ -1727,7 +1797,8 @@ namespace PMP {
         Q_EMIT receivedTrackInfo(queueId, type, lengthMilliseconds, title, artist);
     }
 
-    void ServerConnection::parseBulkTrackInfoMessage(QByteArray const& message) {
+    void ServerConnection::parseBulkTrackInfoMessage(QByteArray const& message)
+    {
         if (message.length() < 4) {
             return; /* invalid message */
         }
@@ -1866,7 +1937,8 @@ namespace PMP {
         Q_EMIT receivedPossibleFilenames(queueID, names);
     }
 
-    void ServerConnection::parseBulkQueueEntryHashMessage(const QByteArray& message) {
+    void ServerConnection::parseBulkQueueEntryHashMessage(const QByteArray& message)
+    {
         qint32 messageLength = message.length();
         if (messageLength < 4) {
             invalidMessageReceived(message, "bulk-queue-entry-hashes");
@@ -2005,7 +2077,8 @@ namespace PMP {
         Q_EMIT queueEntryMoved(fromOffset, toOffset, queueId);
     }
 
-    void ServerConnection::parseDynamicModeStatusMessage(QByteArray const& message) {
+    void ServerConnection::parseDynamicModeStatusMessage(QByteArray const& message)
+    {
         if (message.length() != 7) return; /* invalid message */
 
         quint8 isEnabled = NetworkUtil::getByte(message, 2);
@@ -2291,7 +2364,8 @@ namespace PMP {
         }
     }
 
-    void ServerConnection::parseHashUserDataMessage(const QByteArray& message) {
+    void ServerConnection::parseHashUserDataMessage(const QByteArray& message)
+    {
         int messageLength = message.length();
         if (messageLength < 12) {
             qWarning() << "ServerConnection::parseHashUserDataMessage : invalid msg (1)";
@@ -2355,7 +2429,8 @@ namespace PMP {
         }
     }
 
-    void ServerConnection::parseNewHistoryEntryMessage(const QByteArray& message) {
+    void ServerConnection::parseNewHistoryEntryMessage(const QByteArray& message)
+    {
         qDebug() << "parsing player history entry message";
 
         if (message.length() != 4 + 28) {
@@ -2378,7 +2453,8 @@ namespace PMP {
         Q_EMIT receivedPlayerHistoryEntry(info);
     }
 
-    void ServerConnection::parsePlayerHistoryMessage(const QByteArray& message) {
+    void ServerConnection::parsePlayerHistoryMessage(const QByteArray& message)
+    {
         qDebug() << "parsing player history list message";
 
         if (message.length() < 4) {

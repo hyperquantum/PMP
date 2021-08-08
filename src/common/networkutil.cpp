@@ -23,8 +23,8 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     int NetworkUtil::fitsIn2BytesSigned(int number)
     {
         return number <= std::numeric_limits<qint16>::max()

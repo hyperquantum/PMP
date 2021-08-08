@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,8 +36,8 @@
 #include <QTcpSocket>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class CollectionMonitor;
     class CollectionSender;
     class History;
@@ -49,7 +49,8 @@ namespace PMP {
     class ServerHealthMonitor;
     class Users;
 
-    class ConnectedClient : public QObject {
+    class ConnectedClient : public QObject
+    {
         Q_OBJECT
     public:
         ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
@@ -210,7 +211,8 @@ namespace PMP {
         bool _pendingPlayerStatus;
     };
 
-    class CollectionSender : public QObject {
+    class CollectionSender : public QObject
+    {
         Q_OBJECT
     public:
         CollectionSender(ConnectedClient* connection, uint clientReference,
