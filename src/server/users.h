@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,14 +30,16 @@
 #include <QString>
 #include <QtGlobal>
 
-namespace PMP {
-
+namespace PMP
+{
     typedef QPair<quint32, QString> UserIdAndLogin;
 
-    class Users : public QObject {
+    class Users : public QObject
+    {
         Q_OBJECT
     public:
-        enum ErrorCode {
+        enum ErrorCode
+        {
             Successfull = 0,
             InvalidAccountName = 1,
             AccountAlreadyExists = 2,
