@@ -31,6 +31,11 @@
 
 namespace PMP
 {
+    void NetworkProtocol::append2Bytes(QByteArray& buffer, ServerMessageType messageType)
+    {
+        NetworkUtil::append2Bytes(buffer, static_cast<quint16>(messageType));
+    }
+
     quint16 NetworkProtocol::encodeMessageTypeForExtension(quint8 extensionId,
                                                            quint8 messageType)
     {

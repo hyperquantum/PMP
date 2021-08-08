@@ -53,44 +53,44 @@ namespace PMP
 
     class FileHash;
 
+    enum class ServerMessageType
+    {
+        ServerMessageTypeNone = 0,
+        PlayerStateMessage = 1,
+        VolumeChangedMessage = 2,
+        TrackInfoMessage = 3,
+        BulkTrackInfoMessage = 4,
+        QueueContentsMessage = 5,
+        QueueEntryRemovedMessage = 6,
+        QueueEntryAddedMessage = 7,
+        DynamicModeStatusMessage = 8,
+        PossibleFilenamesForQueueEntryMessage = 9,
+        ServerInstanceIdentifierMessage = 10,
+        QueueEntryMovedMessage = 11,
+        UsersListMessage = 12,
+        NewUserAccountSaltMessage = 13,
+        SimpleResultMessage = 14,
+        UserLoginSaltMessage = 15,
+        UserPlayingForModeMessage = 16,
+        ServerEventNotificationMessage = 17,
+        CollectionFetchResponseMessage = 18,
+        CollectionChangeNotificationMessage = 19,
+        ServerNameMessage = 20,
+        BulkQueueEntryHashMessage = 21,
+        HashUserDataMessage = 22,
+        NewHistoryEntryMessage = 23,
+        PlayerHistoryMessage = 24,
+        DatabaseIdentifierMessage = 25,
+        DynamicModeWaveStatusMessage = 26,
+        QueueEntryAdditionConfirmationMessage = 27,
+        ServerHealthMessage = 28,
+        CollectionAvailabilityChangeNotificationMessage = 29,
+        ServerExtensionsMessage = 30,
+    };
+
     class NetworkProtocol
     {
     public:
-        enum ServerMessageType
-        {
-            ServerMessageTypeNone = 0,
-            PlayerStateMessage = 1,
-            VolumeChangedMessage = 2,
-            TrackInfoMessage = 3,
-            BulkTrackInfoMessage = 4,
-            QueueContentsMessage = 5,
-            QueueEntryRemovedMessage = 6,
-            QueueEntryAddedMessage = 7,
-            DynamicModeStatusMessage = 8,
-            PossibleFilenamesForQueueEntryMessage = 9,
-            ServerInstanceIdentifierMessage = 10,
-            QueueEntryMovedMessage = 11,
-            UsersListMessage = 12,
-            NewUserAccountSaltMessage = 13,
-            SimpleResultMessage = 14,
-            UserLoginSaltMessage = 15,
-            UserPlayingForModeMessage = 16,
-            ServerEventNotificationMessage = 17,
-            CollectionFetchResponseMessage = 18,
-            CollectionChangeNotificationMessage = 19,
-            ServerNameMessage = 20,
-            BulkQueueEntryHashMessage = 21,
-            HashUserDataMessage = 22,
-            NewHistoryEntryMessage = 23,
-            PlayerHistoryMessage = 24,
-            DatabaseIdentifierMessage = 25,
-            DynamicModeWaveStatusMessage = 26,
-            QueueEntryAdditionConfirmationMessage = 27,
-            ServerHealthMessage = 28,
-            CollectionAvailabilityChangeNotificationMessage = 29,
-            ServerExtensionsMessage = 30,
-        };
-
         enum ClientMessageType
         {
             ClientMessageTypeNone = 0,
@@ -172,6 +172,8 @@ namespace PMP
                 //
             }
         };
+
+        static void append2Bytes(QByteArray& buffer, ServerMessageType messageType);
 
         static quint16 encodeMessageTypeForExtension(quint8 extensionId,
                                                      quint8 messageType);

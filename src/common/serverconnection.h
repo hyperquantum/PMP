@@ -250,7 +250,7 @@ namespace PMP
         void readBinaryCommands();
         void executeTextCommand(QString const& commandText);
         void handleBinaryMessage(QByteArray const& message);
-        void handleStandardBinaryMessage(NetworkProtocol::ServerMessageType messageType,
+        void handleStandardBinaryMessage(ServerMessageType messageType,
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 extensionMessageType,
                                     QByteArray const& message);
@@ -310,7 +310,7 @@ namespace PMP
 
         void parseTrackAvailabilityChangeBatchMessage(QByteArray const& message);
         void parseTrackInfoBatchMessage(QByteArray const& message,
-                                        NetworkProtocol::ServerMessageType messageType);
+                                        ServerMessageType messageType);
 
         void parseHashUserDataMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);

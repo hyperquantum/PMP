@@ -1265,109 +1265,108 @@ namespace PMP
             handleExtensionMessage(extensionId, extensionMessageType, message);
         }
         else {
-            auto serverMessageType =
-                static_cast<NetworkProtocol::ServerMessageType>(messageType);
+            auto serverMessageType = static_cast<ServerMessageType>(messageType);
 
             handleStandardBinaryMessage(serverMessageType, message);
         }
     }
 
-    void ServerConnection::handleStandardBinaryMessage(
-                                           NetworkProtocol::ServerMessageType messageType,
-                                           QByteArray const& message)
+    void ServerConnection::handleStandardBinaryMessage(ServerMessageType messageType,
+                                                       QByteArray const& message)
     {
         switch (messageType) {
-        case NetworkProtocol::ServerExtensionsMessage:
+        case ServerMessageType::ServerExtensionsMessage:
             parseServerProtocolExtensionsMessage(message);
             break;
-        case NetworkProtocol::ServerEventNotificationMessage:
+        case ServerMessageType::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
             break;
-        case NetworkProtocol::PlayerStateMessage:
+        case ServerMessageType::PlayerStateMessage:
             parsePlayerStateMessage(message);
             break;
-        case NetworkProtocol::VolumeChangedMessage:
+        case ServerMessageType::VolumeChangedMessage:
             parseVolumeChangedMessage(message);
             break;
-        case NetworkProtocol::TrackInfoMessage:
+        case ServerMessageType::TrackInfoMessage:
             parseTrackInfoMessage(message);
             break;
-        case NetworkProtocol::BulkTrackInfoMessage:
+        case ServerMessageType::BulkTrackInfoMessage:
             parseBulkTrackInfoMessage(message);
             break;
-        case NetworkProtocol::BulkQueueEntryHashMessage:
+        case ServerMessageType::BulkQueueEntryHashMessage:
             parseBulkQueueEntryHashMessage(message);
             break;
-        case NetworkProtocol::QueueContentsMessage:
+        case ServerMessageType::QueueContentsMessage:
             parseQueueContentsMessage(message);
             break;
-        case NetworkProtocol::QueueEntryRemovedMessage:
+        case ServerMessageType::QueueEntryRemovedMessage:
             parseQueueEntryRemovedMessage(message);
             break;
-        case NetworkProtocol::QueueEntryAddedMessage:
+        case ServerMessageType::QueueEntryAddedMessage:
             parseQueueEntryAddedMessage(message);
             break;
-        case NetworkProtocol::DynamicModeStatusMessage:
+        case ServerMessageType::DynamicModeStatusMessage:
             parseDynamicModeStatusMessage(message);
             break;
-        case NetworkProtocol::PossibleFilenamesForQueueEntryMessage:
+        case ServerMessageType::PossibleFilenamesForQueueEntryMessage:
             parsePossibleFilenamesForQueueEntryMessage(message);
             break;
-        case NetworkProtocol::ServerInstanceIdentifierMessage:
+        case ServerMessageType::ServerInstanceIdentifierMessage:
             parseServerInstanceIdentifierMessage(message);
             break;
-        case NetworkProtocol::QueueEntryMovedMessage:
+        case ServerMessageType::QueueEntryMovedMessage:
             parseQueueEntryMovedMessage(message);
             break;
-        case NetworkProtocol::UsersListMessage:
+        case ServerMessageType::UsersListMessage:
             parseUsersListMessage(message);
             break;
-        case NetworkProtocol::NewUserAccountSaltMessage:
+        case ServerMessageType::NewUserAccountSaltMessage:
             parseNewUserAccountSaltMessage(message);
             break;
-        case NetworkProtocol::SimpleResultMessage:
+        case ServerMessageType::SimpleResultMessage:
             parseSimpleResultMessage(message);
             break;
-        case NetworkProtocol::UserLoginSaltMessage:
+        case ServerMessageType::UserLoginSaltMessage:
             parseUserLoginSaltMessage(message);
             break;
-        case NetworkProtocol::UserPlayingForModeMessage:
+        case ServerMessageType::UserPlayingForModeMessage:
             parseUserPlayingForModeMessage(message);
             break;
-        case NetworkProtocol::CollectionFetchResponseMessage:
-        case NetworkProtocol::CollectionChangeNotificationMessage:
+        case ServerMessageType::CollectionFetchResponseMessage:
+        case ServerMessageType::CollectionChangeNotificationMessage:
             parseTrackInfoBatchMessage(message, messageType);
             break;
-        case NetworkProtocol::ServerNameMessage:
+        case ServerMessageType::ServerNameMessage:
             parseServerNameMessage(message);
             break;
-        case NetworkProtocol::HashUserDataMessage:
+        case ServerMessageType::HashUserDataMessage:
             parseHashUserDataMessage(message);
             break;
-        case NetworkProtocol::NewHistoryEntryMessage:
+        case ServerMessageType::NewHistoryEntryMessage:
             parseNewHistoryEntryMessage(message);
             break;
-        case NetworkProtocol::PlayerHistoryMessage:
+        case ServerMessageType::PlayerHistoryMessage:
             parsePlayerHistoryMessage(message);
             break;
-        case NetworkProtocol::DatabaseIdentifierMessage:
+        case ServerMessageType::DatabaseIdentifierMessage:
             parseDatabaseIdentifierMessage(message);
             break;
-        case NetworkProtocol::DynamicModeWaveStatusMessage:
+        case ServerMessageType::DynamicModeWaveStatusMessage:
             parseDynamicModeWaveStatusMessage(message);
             break;
-        case NetworkProtocol::QueueEntryAdditionConfirmationMessage:
+        case ServerMessageType::QueueEntryAdditionConfirmationMessage:
             parseQueueEntryAdditionConfirmationMessage(message);
             break;
-        case NetworkProtocol::ServerHealthMessage:
+        case ServerMessageType::ServerHealthMessage:
             parseServerHealthMessage(message);
             break;
-        case NetworkProtocol::CollectionAvailabilityChangeNotificationMessage:
+        case ServerMessageType::CollectionAvailabilityChangeNotificationMessage:
             parseTrackAvailabilityChangeBatchMessage(message);
             break;
         default:
-            qDebug() << "received unknown binary message type" << messageType
-                     << " with length" << message.length();
+            qDebug() << "received unknown binary message type"
+                     << static_cast<int>(messageType)
+                     << "with length" << message.length();
             break; /* unknown message type */
         }
     }
@@ -2214,7 +2213,7 @@ namespace PMP
     }
 
     void ServerConnection::parseTrackInfoBatchMessage(QByteArray const& message,
-                                           NetworkProtocol::ServerMessageType messageType)
+                                                      ServerMessageType messageType)
     {
         qint32 messageLength = message.length();
         if (messageLength < 4) {
@@ -2222,7 +2221,7 @@ namespace PMP
         }
 
         bool isNotification =
-            messageType == NetworkProtocol::CollectionChangeNotificationMessage;
+            messageType == ServerMessageType::CollectionChangeNotificationMessage;
 
         int offset = isNotification ? 4 : 8;
 
