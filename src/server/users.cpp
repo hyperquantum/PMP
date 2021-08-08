@@ -35,13 +35,13 @@ namespace PMP
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return;
 
-        QList<User> users = db->getUsers();
+        auto const users = db->getUsers();
 
         _usersById.clear();
         _userIdsByLogin.clear();
         _usersById.reserve(users.size());
         _userIdsByLogin.reserve(users.size());
-        Q_FOREACH(User u, users)
+        for (auto& u : users)
         {
             _usersById.insert(u.id, u);
             _userIdsByLogin.insert(u.login.toLower(), u.id);
@@ -51,8 +51,9 @@ namespace PMP
     QList<UserIdAndLogin> Users::getUsers()
     {
         QList<UserIdAndLogin> result;
+        result.reserve(_usersById.size());
 
-        Q_FOREACH(User u, _usersById.values())
+        for (auto& u : qAsConst(_usersById))
         {
             result.append(UserIdAndLogin(u.id, u.login));
         }
