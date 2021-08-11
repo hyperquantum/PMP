@@ -171,20 +171,23 @@ namespace PMP
         return QPair<ErrorCode, quint32>(Successfull, u.id);
     }
 
-    NetworkProtocol::ErrorType Users::toNetworkProtocolError(ErrorCode code)
+    ResultMessageErrorCode Users::toNetworkProtocolError(ErrorCode code)
     {
         switch (code)
         {
         case Successfull:
-            return NetworkProtocol::NoError;
+            return ResultMessageErrorCode::NoError;
+
         case InvalidAccountName:
-            return NetworkProtocol::InvalidUserAccountName;
+            return ResultMessageErrorCode::InvalidUserAccountName;
+
         case AccountAlreadyExists:
-            return NetworkProtocol::UserAccountAlreadyExists;
+            return ResultMessageErrorCode::UserAccountAlreadyExists;
+
         case DatabaseProblem:
-            return NetworkProtocol::DatabaseProblem;
+            return ResultMessageErrorCode::DatabaseProblem;
         }
 
-        return NetworkProtocol::UnknownError;
+        return ResultMessageErrorCode::UnknownError;
     }
 }

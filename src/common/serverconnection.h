@@ -265,15 +265,15 @@ namespace PMP
                                              quint32 clientReference);
 
         void handleNewUserSalt(QString login, QByteArray salt);
-        void handleUserRegistrationResult(quint16 errorType, quint32 intData,
-                                          QByteArray const& blobData);
+        void handleUserRegistrationResult(ResultMessageErrorCode errorCode,
+                                          quint32 intData, QByteArray const& blobData);
 
         void sendInitiateLoginMessage(QString login, quint32 clientReference);
         void sendFinishLoginMessage(QString login, QByteArray userSalt,
                                     QByteArray sessionSalt, QByteArray hashedPassword,
                                     quint32 clientReference);
         void handleLoginSalt(QString login, QByteArray userSalt, QByteArray sessionSalt);
-        void handleUserLoginResult(quint16 errorType, quint32 intData,
+        void handleUserLoginResult(ResultMessageErrorCode errorCode, quint32 intData,
                                    QByteArray const& blobData);
 
         void onFullIndexationRunningStatusReceived(bool running);

@@ -115,29 +115,29 @@ namespace PMP
         ClientExtensionsMessage = 22,
     };
 
+    enum class ResultMessageErrorCode
+    {
+        NoError = 0,
+        InvalidMessageStructure = 1,
+        NotLoggedIn = 10,
+
+        InvalidUserAccountName = 11,
+        UserAccountAlreadyExists = 12,
+        UserAccountRegistrationMismatch = 13,
+        UserAccountLoginMismatch = 14,
+        UserLoginAuthenticationFailed = 15,
+        AlreadyLoggedIn = 16,
+
+        QueueIdNotFound = 20,
+
+        DatabaseProblem = 90,
+        NonFatalInternalServerError = 254,
+        UnknownError = 255
+    };
+
     class NetworkProtocol
     {
     public:
-        enum ErrorType
-        {
-            NoError = 0,
-            InvalidMessageStructure = 1,
-            NotLoggedIn = 10,
-
-            InvalidUserAccountName = 11,
-            UserAccountAlreadyExists = 12,
-            UserAccountRegistrationMismatch = 13,
-            UserAccountLoginMismatch = 14,
-            UserLoginAuthenticationFailed = 15,
-            AlreadyLoggedIn = 16,
-
-            QueueIdNotFound = 20,
-
-            DatabaseProblem = 90,
-            NonFatalInternalServerError = 254,
-            UnknownError = 255
-        };
-
         struct ProtocolExtensionSupport
         {
             quint8 id;
@@ -175,6 +175,7 @@ namespace PMP
 
         static void append2Bytes(QByteArray& buffer, ServerMessageType messageType);
         static void append2Bytes(QByteArray& buffer, ClientMessageType messageType);
+        static void append2Bytes(QByteArray& buffer, ResultMessageErrorCode errorCode);
 
         static quint16 encodeMessageTypeForExtension(quint8 extensionId,
                                                      quint8 messageType);

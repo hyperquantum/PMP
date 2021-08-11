@@ -63,7 +63,7 @@ namespace PMP
                                                      QByteArray const& salt,
                                                      QByteArray const& hashedPassword);
 
-        static NetworkProtocol::ErrorType toNetworkProtocolError(ErrorCode code);
+        static ResultMessageErrorCode toNetworkProtocolError(ErrorCode code);
 
     private:
         void loadUsers();

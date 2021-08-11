@@ -33,7 +33,7 @@ namespace PMP
     public:
         virtual ~ResultHandler();
 
-        virtual void handleResult(NetworkProtocol::ErrorType errorType,
+        virtual void handleResult(ResultMessageErrorCode errorType,
                                   quint32 clientReference, quint32 intData,
                                   QByteArray const& blobData) = 0;
 
@@ -43,7 +43,7 @@ namespace PMP
     protected:
         ResultHandler(ServerConnection* parent);
 
-        QString errorDescription(NetworkProtocol::ErrorType errorType,
+        QString errorDescription(ResultMessageErrorCode errorType,
                                  quint32 clientReference, quint32 intData,
                                  QByteArray const& blobData) const;
 
@@ -72,31 +72,32 @@ namespace PMP
     }
 
     QString ServerConnection::ResultHandler::errorDescription(
-                                                    NetworkProtocol::ErrorType errorType,
-                                                    quint32 clientReference,
-                                                    quint32 intData,
-                                                    QByteArray const& blobData) const
+                                                         ResultMessageErrorCode errorType,
+                                                         quint32 clientReference,
+                                                         quint32 intData,
+                                                         QByteArray const& blobData) const
     {
         QString text = "client-ref " + QString::number(clientReference) + ": ";
 
-        switch (errorType) {
-            case NetworkProtocol::NoError:
+        switch (errorType)
+        {
+            case ResultMessageErrorCode::NoError:
                 text += "no error";
                 break;
 
-            case NetworkProtocol::QueueIdNotFound:
+            case ResultMessageErrorCode::QueueIdNotFound:
                 text += "QID " + QString::number(intData) + " not found";
                 return text;
 
-            case NetworkProtocol::DatabaseProblem:
+            case ResultMessageErrorCode::DatabaseProblem:
                 text += "database problem";
                 break;
 
-            case NetworkProtocol::NonFatalInternalServerError:
+            case ResultMessageErrorCode::NonFatalInternalServerError:
                 text += "non-fatal internal server error";
                 break;
 
-            case NetworkProtocol::UnknownError:
+            case ResultMessageErrorCode::UnknownError:
                 text += "unknown error";
                 break;
 
@@ -124,7 +125,7 @@ namespace PMP
         CollectionFetchResultHandler(ServerConnection* parent,
                                      CollectionFetcher* fetcher);
 
-        void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
+        void handleResult(ResultMessageErrorCode errorType, quint32 clientReference,
                           quint32 intData, QByteArray const& blobData) override;
 
     private:
@@ -140,17 +141,19 @@ namespace PMP
     }
 
     void ServerConnection::CollectionFetchResultHandler::handleResult(
-                                                     NetworkProtocol::ErrorType errorType,
-                                                     quint32 clientReference,
-                                                     quint32 intData,
-                                                     QByteArray const& blobData)
+                                                         ResultMessageErrorCode errorType,
+                                                         quint32 clientReference,
+                                                         quint32 intData,
+                                                         QByteArray const& blobData)
     {
         _parent->_collectionFetchers.remove(clientReference);
 
-        if (errorType == NetworkProtocol::NoError) {
+        if (errorType == ResultMessageErrorCode::NoError)
+        {
             Q_EMIT _fetcher->completed();
         }
-        else {
+        else
+        {
             qWarning() << "CollectionFetchResultHandler:"
                        << errorDescription(errorType, clientReference, intData, blobData);
             Q_EMIT _fetcher->errorOccurred();
@@ -166,7 +169,7 @@ namespace PMP
     public:
         TrackInsertionResultHandler(ServerConnection* parent, qint32 index);
 
-        void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
+        void handleResult(ResultMessageErrorCode errorType, quint32 clientReference,
                           quint32 intData, QByteArray const& blobData) override;
 
         void handleQueueEntryAdditionConfirmation(quint32 clientReference, qint32 index,
@@ -185,12 +188,12 @@ namespace PMP
     }
 
     void ServerConnection::TrackInsertionResultHandler::handleResult(
-                                                     NetworkProtocol::ErrorType errorType,
-                                                     quint32 clientReference,
-                                                     quint32 intData,
-                                                     QByteArray const& blobData)
+                                                         ResultMessageErrorCode errorType,
+                                                         quint32 clientReference,
+                                                         quint32 intData,
+                                                         QByteArray const& blobData)
     {
-        if (errorType == NetworkProtocol::NoError)
+        if (errorType == ResultMessageErrorCode::NoError)
         {
             /* this is how older servers report a successful insertion */
             auto queueID = intData;
@@ -219,7 +222,7 @@ namespace PMP
     public:
         DuplicationResultHandler(ServerConnection* parent);
 
-        void handleResult(NetworkProtocol::ErrorType errorType, quint32 clientReference,
+        void handleResult(ResultMessageErrorCode errorType, quint32 clientReference,
                           quint32 intData, QByteArray const& blobData) override;
 
         void handleQueueEntryAdditionConfirmation(quint32 clientReference, qint32 index,
@@ -234,10 +237,10 @@ namespace PMP
     }
 
     void ServerConnection::DuplicationResultHandler::handleResult(
-                                                     NetworkProtocol::ErrorType errorType,
-                                                     quint32 clientReference,
-                                                     quint32 intData,
-                                                     QByteArray const& blobData)
+                                                         ResultMessageErrorCode errorType,
+                                                         quint32 clientReference,
+                                                         quint32 intData,
+                                                         QByteArray const& blobData)
     {
         qWarning() << "DuplicationResultHandler:"
                    << errorDescription(errorType, clientReference, intData, blobData);
@@ -859,11 +862,11 @@ namespace PMP
         sendFinishLoginMessage(login, userSalt, sessionSalt, hashedPassword, reference);
     }
 
-    void ServerConnection::handleUserRegistrationResult(quint16 errorType,
+    void ServerConnection::handleUserRegistrationResult(ResultMessageErrorCode errorCode,
                                                         quint32 intData,
                                                         QByteArray const& blobData)
     {
-        (void)blobData; /* we don't use this */
+        Q_UNUSED(blobData);
 
         QString login = _userAccountRegistrationLogin;
 
@@ -871,17 +874,20 @@ namespace PMP
         _userAccountRegistrationLogin = "";
         _userAccountRegistrationPassword = "";
 
-        if (errorType == 0) {
+        if (errorCode == ResultMessageErrorCode::NoError)
+        {
             Q_EMIT userAccountCreatedSuccessfully(login, intData);
         }
-        else {
+        else
+        {
             UserRegistrationError error;
 
-            switch (errorType) {
-            case NetworkProtocol::UserAccountAlreadyExists:
+            switch (errorCode)
+            {
+            case ResultMessageErrorCode::UserAccountAlreadyExists:
                 error = AccountAlreadyExists;
                 break;
-            case NetworkProtocol::InvalidUserAccountName:
+            case ResultMessageErrorCode::InvalidUserAccountName:
                 error = InvalidAccountName;
                 break;
             default:
@@ -893,34 +899,37 @@ namespace PMP
         }
     }
 
-    void ServerConnection::handleUserLoginResult(quint16 errorType, quint32 intData,
+    void ServerConnection::handleUserLoginResult(ResultMessageErrorCode errorCode,
+                                                 quint32 intData,
                                                  const QByteArray& blobData)
     {
-        (void)blobData; /* we don't use this */
+        Q_UNUSED(blobData);
 
         QString login = _userLoggingIn;
         quint32 userId = intData;
 
-        qDebug() << " received login result: errorType =" << errorType
+        qDebug() << " received login result: errorType =" << static_cast<int>(errorCode)
                  << "; login =" << login << "; id =" << userId;
 
         /* clean up potentially sensitive information */
         _userLoggingInPassword = "";
 
-        if (errorType == 0) {
+        if (errorCode == ResultMessageErrorCode::NoError)
+        {
             _userLoggedInId = userId;
             _userLoggedInName = _userLoggingIn;
             _userLoggingIn = "";
             Q_EMIT userLoggedInSuccessfully(login, intData);
         }
-        else {
+        else
+        {
             _userLoggingIn = "";
 
             UserLoginError error;
 
-            switch (errorType) {
-            case NetworkProtocol::InvalidUserAccountName:
-            case NetworkProtocol::UserLoginAuthenticationFailed:
+            switch (errorCode) {
+            case ResultMessageErrorCode::InvalidUserAccountName:
+            case ResultMessageErrorCode::UserLoginAuthenticationFailed:
                 error = UserLoginError::AuthenticationFailed;
                 break;
             default:
@@ -2508,27 +2517,30 @@ namespace PMP
                                                quint32 intData,
                                                QByteArray const& blobData)
     {
-        auto errorTypeEnum = static_cast<NetworkProtocol::ErrorType>(errorType);
+        auto errorCodeEnum = static_cast<ResultMessageErrorCode>(errorType);
 
-        if (errorTypeEnum == NetworkProtocol::InvalidMessageStructure)
+        if (errorCodeEnum == ResultMessageErrorCode::InvalidMessageStructure)
         {
             qWarning() << "errortype = InvalidMessageStructure !!";
         }
 
-        if (clientReference == _userLoginRef) {
-            handleUserLoginResult(errorType, intData, blobData);
+        if (clientReference == _userLoginRef)
+        {
+            handleUserLoginResult(errorCodeEnum, intData, blobData);
             return;
         }
 
-        if (clientReference == _userAccountRegistrationRef) {
-            handleUserRegistrationResult(errorType, intData, blobData);
+        if (clientReference == _userAccountRegistrationRef)
+        {
+            handleUserRegistrationResult(errorCodeEnum, intData, blobData);
             return;
         }
 
         auto resultHandler = _resultHandlers.take(clientReference);
-        if (resultHandler) {
-            resultHandler->handleResult(
-                                       errorTypeEnum, clientReference, intData, blobData);
+        if (resultHandler)
+        {
+            resultHandler->handleResult(errorCodeEnum, clientReference, intData,
+                                        blobData);
             delete resultHandler;
             return;
         }

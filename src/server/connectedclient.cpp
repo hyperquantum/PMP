@@ -1331,30 +1331,31 @@ namespace PMP
 
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
-        sendResultMessage(NetworkProtocol::NoError, clientReference, intData);
+        sendResultMessage(ResultMessageErrorCode::NoError, clientReference, intData);
     }
 
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData,
                                              QByteArray const& blobData)
     {
-        sendResultMessage(NetworkProtocol::NoError, clientReference, intData, blobData);
+        sendResultMessage(ResultMessageErrorCode::NoError, clientReference, intData,
+                          blobData);
     }
 
-    void ConnectedClient::sendResultMessage(NetworkProtocol::ErrorType errorType,
+    void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
                                             quint32 clientReference, quint32 intData)
     {
         QByteArray data; /* empty data */
         sendResultMessage(errorType, clientReference, intData, data);
     }
 
-    void ConnectedClient::sendResultMessage(NetworkProtocol::ErrorType errorType,
+    void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
                                             quint32 clientReference, quint32 intData,
                                             QByteArray const& blobData)
     {
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4 + blobData.size());
         NetworkProtocol::append2Bytes(message, ServerMessageType::SimpleResultMessage);
-        NetworkUtil::append2Bytes(message, errorType);
+        NetworkProtocol::append2Bytes(message, errorType);
         NetworkUtil::append4Bytes(message, clientReference);
         NetworkUtil::append4Bytes(message, intData);
 
@@ -1365,8 +1366,8 @@ namespace PMP
 
     void ConnectedClient::sendNonFatalInternalErrorResultMessage(quint32 clientReference)
     {
-        sendResultMessage(
-                        NetworkProtocol::NonFatalInternalServerError, clientReference, 0);
+        sendResultMessage(ResultMessageErrorCode::NonFatalInternalServerError,
+                          clientReference, 0);
     }
 
     void ConnectedClient::serverHealthChanged(bool databaseUnavailable)
@@ -1886,7 +1887,7 @@ namespace PMP
 
             if (messageLength - 8 <= loginLength + saltLength) {
                 sendResultMessage(
-                    NetworkProtocol::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
                 );
                 return; /* invalid message */
             }
@@ -1899,7 +1900,7 @@ namespace PMP
                 || saltFromClient != _saltForUserAccountRegistering)
             {
                 sendResultMessage(
-                    NetworkProtocol::UserAccountRegistrationMismatch,
+                    ResultMessageErrorCode::UserAccountRegistrationMismatch,
                     clientReference, 0, loginBytes
                 );
                 return;
@@ -1918,7 +1919,7 @@ namespace PMP
 
             if (hashedPasswordFromClient.size() != hashTest.size()) {
                 sendResultMessage(
-                    NetworkProtocol::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
                 );
                 return;
             }
@@ -1952,7 +1953,8 @@ namespace PMP
                      << clientReference;
 
             if (isLoggedIn()) { /* already logged in */
-                sendResultMessage(NetworkProtocol::AlreadyLoggedIn, clientReference, 0);
+                sendResultMessage(ResultMessageErrorCode::AlreadyLoggedIn,
+                                  clientReference, 0);
                 return;
             }
 
@@ -1964,7 +1966,7 @@ namespace PMP
 
             if (!userLookup) { /* user does not exist */
                 sendResultMessage(
-                    NetworkProtocol::InvalidUserAccountName, clientReference, 0,
+                    ResultMessageErrorCode::InvalidUserAccountName, clientReference, 0,
                     loginBytes
                 );
                 return;
@@ -1999,7 +2001,7 @@ namespace PMP
                     + hashedPasswordLength)
             {
                 sendResultMessage(
-                    NetworkProtocol::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
                 );
                 return; /* invalid message */
             }
@@ -2012,7 +2014,7 @@ namespace PMP
 
             if (!userLookup) { /* user does not exist */
                 sendResultMessage(
-                    NetworkProtocol::InvalidUserAccountName, clientReference, 0,
+                    ResultMessageErrorCode::InvalidUserAccountName, clientReference, 0,
                     loginBytes
                 );
                 return;
@@ -2030,7 +2032,7 @@ namespace PMP
                 || sessionSaltFromClient != _sessionSaltForUserLoggingIn)
             {
                 sendResultMessage(
-                    NetworkProtocol::UserAccountLoginMismatch,
+                    ResultMessageErrorCode::UserAccountLoginMismatch,
                     clientReference, 0, loginBytes
                 );
                 return;
@@ -2053,9 +2055,8 @@ namespace PMP
                 sendSuccessMessage(clientReference, user.id);
             }
             else {
-                sendResultMessage(
-                    NetworkProtocol::UserLoginAuthenticationFailed, clientReference, 0
-                );
+                sendResultMessage(ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                                  clientReference, 0);
             }
         }
             break;
@@ -2069,7 +2070,8 @@ namespace PMP
 
             if (!isLoggedIn()) {
                 /* client needs to be authenticated for this */
-                sendResultMessage(NetworkProtocol::NotLoggedIn, clientReference, 0);
+                sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference,
+                                  0);
                 return;
             }
 
@@ -2277,7 +2279,8 @@ namespace PMP
         qDebug() << " client ref:" << clientReference << "; " << "QID:" << queueID;
 
         if (queueID <= 0) {
-            sendResultMessage(NetworkProtocol::QueueIdNotFound, clientReference, queueID);
+            sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
+                              queueID);
             return; /* invalid queue ID */
         }
 
@@ -2286,7 +2289,8 @@ namespace PMP
         auto index = queue.findIndex(queueID);
         if (index < 0)
         {
-            sendResultMessage(NetworkProtocol::QueueIdNotFound, clientReference, queueID);
+            sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
+                              queueID);
             return; /* not found; */
         }
 
