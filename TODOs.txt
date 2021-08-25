@@ -36,6 +36,7 @@ KNOWN BUGS
  * unknown error at login because of username case (in)sensitivity
  * track title/artist/length update in the music collection does not trigger an update of queue entries referencing that track
  * doing a "skip" often creates a burst of noise; need to wait until the old track has stopped before starting the next one
+ * GUI remote: title/artist are briefly "unknown" when a track starts
 
 
 PERFORMANCE ISSUES
