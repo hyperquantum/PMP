@@ -179,12 +179,13 @@ the steps need to be modified accordingly.
 
 ### 5. Get the MySQL client library
 
-  → http://dev.mysql.com/downloads/connector/c/  
-  the mysql version number does not matter, just pick the latest version  
-  download 'Windows (x86, 32-bit), ZIP Archive'  
-  extract 'lib/libmysql.dll' to the PMP 'bin' directory  
-  OR alternatively:  
-    if your MySQL server is 32-bit, then you can copy the DLL from that installation
+  You need libmysql.dll or libmariadb.dll.
+  See [here](https://doc.qt.io/qt-5/sql-driver.html#how-to-build-the-qmysql-plugin-on-windows)
+  how to obtain one of those. Make sure to pick a 32-bit DLL if you build PMP
+  in 32-bit mode, or 64-bit if you build PMP in 64-bit mode. You can copy the
+  DLL from your MySQL installation if it matches your PMP build.
+  
+  Copy the DLL to the PMP 'bin' directory.
 
 ### 6. Build PMP
 
