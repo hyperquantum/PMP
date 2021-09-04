@@ -29,7 +29,7 @@
 #include <QFileInfo>
 #include <QString>
 
-#include "tbytevector.h"
+#include "taglib/tbytevector.h"
 
 namespace TagLib
 {
