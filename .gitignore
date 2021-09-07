@@ -12,4 +12,4 @@ CMakeLists.txt.user
 # output and temp files of Win32 release script
 PMP_win32.zip
 win32_archive_full/
-win32_bin_release/
+x64-windows-release-bin/
