@@ -106,7 +106,7 @@ IF NOT EXIST "%bin_dir%\ran_cmake_already" (
 ECHO Building...
 CD "%scriptdir%"
 CD "%bin_dir%"
-"%CMAKE_BIN_DIR%"\cmake.exe ^
+"%CMAKE_BIN_DIR%\cmake.exe" ^
     --build . ^
     --config Release || GOTO :EOF
 ECHO(
