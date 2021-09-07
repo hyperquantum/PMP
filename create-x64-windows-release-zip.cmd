@@ -78,11 +78,21 @@ IF NOT EXIST "%bin_dir%" (
     MKDIR "%bin_dir%"
 )
 
-:: TODO: install PMP dependencies using vcpkg
-CD "%TOOL_VCPKG_BIN_DIR%"
-:: vcpkg install taglib --triplet x64-windows
-:: vcpkg install qt5-base[mysqlplugin] --triplet x64-windows
-:: vcpkg install qt5[essentials] --triplet x64-windows
+:: install PMP dependencies using vcpkg
+IF NOT EXIST "%bin_dir%\ran_vcpkg_already" (
+    ECHO Running vcpkg to install PMP dependencies...
+    
+    CD "%TOOL_VCPKG_BIN_DIR%"
+    vcpkg install taglib --triplet x64-windows || GOTO :EOF
+    vcpkg install qt5-base[mysqlplugin] --triplet x64-windows || GOTO :EOF
+    vcpkg install qt5[essentials] --triplet x64-windows || GOTO :EOF
+    
+    ECHO(
+    
+    CD "%scriptdir%"
+    CD "%bin_dir%"
+    ECHO Hi there. Delete this file if you want to re-run vcpkg. >ran_vcpkg_already
+)
 
 CD "%scriptdir%"
 
