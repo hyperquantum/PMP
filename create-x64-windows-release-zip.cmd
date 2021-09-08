@@ -28,9 +28,10 @@ ECHO(
 
 SET scriptdir=%~dp0
 SET bin_dir=x64-windows-release-bin
-:: SET zipsrcfull_dir=win32_archive_full
-:: SET ziproot_dir=PMP_win32
-:: SET full_zip=PMP_win32.zip
+SET bin_to_release_dir=src\Release
+SET zipsrcfull_dir=x64-windows-archive-full
+SET ziproot_dir=PMP_win64
+SET full_zip=PMP_win64.zip
 
 ECHO ---------------------- Settings ----------------------
 ECHO Script directory: %scriptdir%
@@ -71,6 +72,14 @@ IF NOT EXIST "%TOOL_VCPKG_BIN_DIR%\vcpkg.exe" (
 )
 
 CD "%scriptdir%"
+
+:: cleanup from previous runs (if necessary)
+IF EXIST "%full_zip%" (
+    DEL /q "%full_zip%" || GOTO :EOF
+)
+IF EXIST "%zipsrcfull_dir%" (
+    RD /q /s "%zipsrcfull_dir%" || GOTO :EOF
+)
 
 :: create build directory if first time
 IF NOT EXIST "%bin_dir%" (
@@ -121,4 +130,25 @@ CD "%bin_dir%"
     --config Release || GOTO :EOF
 ECHO(
 
-:: TODO : create ZIP from the files in src\Release
+:: copy files to directory structure for creating the ZIP archive
+ECHO Copying files...
+CD "%scriptdir%"
+SET dist_dir=%scriptdir%\%zipsrcfull_dir%\%ziproot_dir%
+robocopy "%scriptdir%\%bin_dir%\%bin_to_release_dir%" "%dist_dir%" /s >NUL
+DEL /q "%dist_dir%\quicktest.exe" || GOTO :EOF
+ECHO(
+
+:: create ZIP archive
+ECHO Creating ZIP file...
+CD "%scriptdir%\%zipsrcfull_dir%"
+"%TOOL_7Z_BIN_DIR%"\7z.exe a -tzip "%full_zip%" %ziproot_dir%"
+CD "%scriptdir%"
+MOVE "%zipsrcfull_dir%\%full_zip%" . >NUL
+RD /q /s "%zipsrcfull_dir%"
+ECHO(
+
+IF EXIST "%full_zip%" (
+    ECHO Created %full_zip%
+    ECHO Finished successfully.
+    ECHO(
+)
