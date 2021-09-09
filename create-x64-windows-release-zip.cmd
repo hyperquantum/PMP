@@ -1,11 +1,16 @@
 :: ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ::
-:: This batch script packages the binaries for Windows-x86.
+:: This batch script packages the PMP binaries for Windows-x64.
+::
+:: It will use vcpkg to install dependencies and then build and package PMP.
+:: The final output is a ZIP archive containing the binaries.
 ::
 :: PREREQUISITES:
-::  - CMake installed in Windows
-::  - 7-Zip installed in Windows
+::  - CMake installed
+::  - 7-Zip installed
+::  - vcpkg installed
 ::
+:: The installation paths of CMake, 7-Zip, and vcpkg are configured below.
 ::
 :: ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
