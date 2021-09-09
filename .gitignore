@@ -9,7 +9,7 @@ CMakeLists.txt.user
 *.mp3
 *.flac
 
-# output and temp files of Win32 release script
-PMP_win32.zip
-win32_archive_full/
+# output and temp files of Win64 release script
+PMP_win64.zip
+x64-windows-archive-full/
 x64-windows-release-bin/
