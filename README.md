@@ -54,15 +54,14 @@ Contents of this file:
  * Qt 5 (at least 5.8)
    * modules: Core, Gui, Multimedia, Network, Sql, Test, Widgets, Xml
    * database driver for MySQL/MariaDB
- * TagLib 1.11 or higher
+ * TagLib 1.12 or higher
 
 ### Build-time Dependencies
 
  * C++ compiler with support for C++ 2014
  * CMake 3.1 or higher
- * pkg-config
 
-When building on Windows, there is no need to install MinGW by itself. The Qt installer provides an option to install a MinGW toolchain that is compatible with the version of Qt you wish to install.
+Building on Windows is done using [vcpkg](https://github.com/microsoft/vcpkg).
 
 ### Runtime Dependencies
 
@@ -70,8 +69,6 @@ When building on Windows, there is no need to install MinGW by itself. The Qt in
  * Codecs
 
 PMP currently uses MySQL for storing its data. MariaDB is probably a valid replacement, but this has not been tested yet. The MySQL server should be configured as a developer installation (it uses less memory that way) and should be set to use Unicode (UTF-8) by default. Default storage engine should be InnoDB.
-
-The MySQL client library that is required by the Qt database driver should be 32-bit if Qt was built for a 32-bit architecture or 64-bit if Qt was built for a 64-bit architecture.
 
 Windows users will need to install the [Xiph codecs](https://xiph.org/dshow/downloads/) or some other more generic codec pack if they need support for FLAC audio.
 
@@ -90,7 +87,7 @@ You also need to tell PMP where to look for music files. This is done in the con
 
 An example configuration:
 
-```
+```ini
     [database]
     hostname=localhost
     username=root
@@ -107,7 +104,7 @@ First make sure MySQL is running. Then start the PMP-Server executable, and fina
 
 Building PMP on Linux and other Unix-like operating systems should be relatively simple:
 
-1. Make sure you have installed a C++ compiler, pkg-config and CMake
+1. Make sure you have installed a C++ compiler and CMake
 2. Install development packages for MySQL, Qt 5 and TagLib using your package manager
 3. Download and unpack the PMP sourcecode
 4. Open a terminal, change current directory into the 'bin' directory of the PMP sourcecode
@@ -120,93 +117,38 @@ These instructions might need some tweaks, as they haven't been tested (at least
 
 ## 5. Building On Windows
 
-Building PMP on Windows takes some effort.
+Make sure [CMake](https://cmake.org/) is installed.
 
-Please make sure to use a version of Qt that still has the sqldriver plugin for MySQL. The Qt company decided to drop the plugin from its binary distributions for Qt versions 5.12.4 and later.
+These build instructions use [vcpkg](https://github.com/microsoft/vcpkg).
+An x64 build of PMP and its dependencies is necessary because libmysql does not support a 32-bit build.
 
-These steps describe how to do an x86 (32-bit) build of PMP on Windows, with
-Qt 5.15.2 and TagLib 1.12. For a 64-bit build, or for different versions of Qt and/or TagLib,
-the steps need to be modified accordingly.
+First install vcpkg if you haven't done that already.  
+Create the directory `C:\src`, open a CMD terminal and run the following commands:
+```cmd
+> cd C:\src
+> git clone https://github.com/Microsoft/vcpkg.git
+> .\vcpkg\bootstrap-vcpkg.bat
+```
 
-### 1. Download and install CMake
+Then install the dependencies of PMP. Open a CMD terminal and run the following commands:
+```cmd
+> cd C:\src\vcpkg
+> vcpkg install taglib --triplet x64-windows
+> vcpkg install qt5-base[mysqlplugin] --triplet x64-windows
+> vcpkg install qt5[essentials] --triplet x64-windows
+```
 
-  → http://www.cmake.org/download/  → Win32 Installer  
-  install with default options  
+Now [run CMake](https://cmake.org/runningcmake/) so you can build PMP itself.  
+Set "where is the sourcecode" to the PMP sourcecode folder.  
+Set "where to build the binaries" to the "bin" subdirectory of the sourcecode folder, or
+some other folder of your choice.  
+Add the following variables:
 
-### 2. Download and install Qt 5
+* set `VCPKG_TARGET_TRIPLET` to _x64-windows_
+* set `CMAKE_TOOLCHAIN_FILE` to _C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake_
+* optional: set `CMAKE_BUILD_TYPE` to _Debug_ or _Release_
 
-  → http://qt-project.org/downloads  → Qt Online Installer for Windows  
-  run installer, select the following components to install:  
-    Qt 5.15.2/MinGW 8.1.0 32-bit  
-    Developer and Designer Tools/MinGW 8.1.0  
-    Developer and Designer Tools/OpenSSL 1.1.1j Toolkit/OpenSSL 32-bit binaries  
-  edit Windows environment variables, add the following to 'Path':  
-    C:\Qt\5.15.2\mingw81_32\bin  
-    C:\Qt\Tools\mingw810_32  
-    C:\Qt\Tools\mingw810_32\bin  
-  close and reopen all Command Prompt windows for the Path change to take effect  
-
-### 3. Download and build taglib
-
-  → http://taglib.github.io/  → download sourcecode (at least version 1.11)  
-  unpack sourcecode  
-  create 'bin' directory in taglib directory  
-  run CMake (cmake-gui)  
-  'where is the sourcecode': where you unpacked the sourcecode  
-  'where to build the binaries': the "bin" directory you created  
-  before configuring, add the following CMake variables (not including the quotes):  
-    name: "CMAKE_BUILD_TYPE"; type: "STRING"; value: "Release"  
-    name: "CMAKE_INSTALL_PREFIX"; type: "FILEPATH"; value: "C:/Qt/Tools/mingw810_32"  
-    name: "BUILD_SHARED_LIBS"; type: BOOL; value: enabled (or "1")  
-  press 'Configure', select a generator with "MinGW Makefiles"  
-  press 'Generate'  
-  build and install taglib:  
-    open cmd.exe  
-    cd into the "bin" directory  
-    run command: mingw32-make  
-    run command: mingw32-make install  
-
-### 4. Get pkg-config
-
-  → http://ftp.gnome.org/pub/gnome/binaries/win32/dependencies/  
-  download file pkg-config_0.26-1_win32.zip  
-  extract pkg-config.exe to C:\Qt\Tools\mingw810_32\bin  
-  download file gettext-runtime_0.18.1.1-2_win32.zip  
-  extract intl.dll to C:\Qt\Tools\mingw810_32\bin  
-  → http://ftp.gnome.org/pub/gnome/binaries/win32/glib/2.28  
-  download file glib_2.28.8-1_win32.zip  
-  extract libglib-2.0-0.dll to C:\Qt\Tools\mingw810_32\bin  
-
-### 5. Get the MySQL client library
-
-  You need libmysql.dll or libmariadb.dll.
-  See [here](https://doc.qt.io/qt-5/sql-driver.html#how-to-build-the-qmysql-plugin-on-windows)
-  how to obtain one of those. Make sure to pick a 32-bit DLL if you build PMP
-  in 32-bit mode, or 64-bit if you build PMP in 64-bit mode. You can copy the
-  DLL from your MySQL installation if it matches your PMP build.
-  
-  Copy the DLL to the PMP 'bin' directory.
-
-### 6. Build PMP
-
-  Run CMake (cmake-gui)  
-  'where is the sourcecode': select PMP sourcecode folder  
-  'where to build the binaries': "bin" subdirectory of sourcecode folder  
-  add variable CMAKE_PREFIX_PATH and set it to "C:\Qt\5.15.2\mingw81_32"  
-  optional: add variable CMAKE_BUILD_TYPE and set it to "Debug" or "Release"  
-  press 'Configure', select a generator with "MinGW Makefiles"  
-  press 'Generate'  
-  open cmd.exe in the 'bin' directory of PMP and run "mingw32-make"  
-
-### 7. Running PMP
-
-  First start the server:  
-    open cmd.exe and cd into the PMP 'bin' directory  
-    run command: src\PMP-Server.exe  
-    this cmd window must remain open because closing it will kill the server  
-  Then start the client:  
-    run PMP-GUI-Remote.exe directly from Windows Explorer  
-    OR alternatively, start it in a cmd window like the server  
+Then configure, generate, and build the project.
 
 
 ## 6. Caveats / Limitations

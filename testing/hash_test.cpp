@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,16 +31,16 @@
 #include <functional>
 
 /* TagLib includes */
-#include <apetag.h>
-#include <flacfile.h>
-#include <id3v1tag.h>
-#include <id3v2framefactory.h>
-#include <id3v2tag.h>
-#include <mpegfile.h>
-#include <tbytevector.h>
-#include <tfile.h>
-#include <tbytevectorstream.h>
-#include <xiphcomment.h>
+#include <taglib/apetag.h>
+#include <taglib/flacfile.h>
+#include <taglib/id3v1tag.h>
+#include <taglib/id3v2framefactory.h>
+#include <taglib/id3v2tag.h>
+#include <taglib/mpegfile.h>
+#include <taglib/tbytevector.h>
+#include <taglib/tfile.h>
+#include <taglib/tbytevectorstream.h>
+#include <taglib/xiphcomment.h>
 
 using namespace PMP;
 
