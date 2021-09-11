@@ -24,7 +24,6 @@ project(PMP)
 enable_testing()
 
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-include(FindPkgConfig)
 include(PMPVersion)
 
 find_package(Qt5Core REQUIRED)
@@ -35,10 +34,11 @@ find_package(Qt5Sql REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Xml REQUIRED)
 
-pkg_check_modules(TAGLIB REQUIRED taglib>=1.11)
-
+# minimum TagLib version is 1.12
+find_path(TAGLIB_INCLUDE_DIRS taglib/taglib.h)
+find_library(TAGLIB_LIBRARIES tag)
 include_directories(${TAGLIB_INCLUDE_DIRS})
-link_directories(${TAGLIB_LIBRARY_DIRS})
+#target_link_libraries(myprogram ${TAGLIB_LIBRARIES})
 
 # enable compiler warnings for GCC
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)

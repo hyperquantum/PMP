@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,20 +17,29 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_TESTUTIL_H
-#define PMP_TESTUTIL_H
+#ifndef PMP_CLICKABLELABEL_H
+#define PMP_CLICKABLELABEL_H
 
-#include <QObject>
+#include <QLabel>
 
-class TestUtil : public QObject
+namespace PMP
 {
-    Q_OBJECT
-private Q_SLOTS:
-    void getCopyrightLine();
-    void getRandomSeed();
-    void secondsToHoursMinuteSecondsText();
-    void millisecondsToShortDisplayTimeText();
-    void millisecondsToLongDisplayTimeText();
-    void generateZeroedMemory();
-};
+
+    class ClickableLabel : public QLabel
+    {
+        Q_OBJECT
+    public:
+        explicit ClickableLabel(QWidget* parent = nullptr,
+                                Qt::WindowFlags f = Qt::WindowFlags());
+        ~ClickableLabel();
+
+        static ClickableLabel* replace(QLabel*& existingLabel);
+
+    Q_SIGNALS:
+        void clicked();
+
+    protected:
+        void mousePressEvent(QMouseEvent* event) override;
+    };
+}
 #endif

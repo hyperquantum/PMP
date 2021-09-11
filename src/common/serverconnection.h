@@ -38,11 +38,12 @@
 #include <QUuid>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class CollectionFetcher;
 
-    class RequestID {
+    class RequestID
+    {
     public:
         RequestID() : _rawId(0) {}
         RequestID(uint rawId) : _rawId(rawId) {}
@@ -54,19 +55,23 @@ namespace PMP {
         uint _rawId;
     };
 
-    inline bool operator==(const RequestID& me, const RequestID& other) {
+    inline bool operator==(const RequestID& me, const RequestID& other)
+    {
         return me.rawId() == other.rawId();
     }
 
-    inline bool operator!=(const RequestID& me, const RequestID& other) {
+    inline bool operator!=(const RequestID& me, const RequestID& other)
+    {
         return !(me == other);
     }
 
-    inline uint qHash(const RequestID& requestId) {
+    inline uint qHash(const RequestID& requestId)
+    {
         return requestId.rawId();
     }
 
-    enum class ServerEventSubscription {
+    enum class ServerEventSubscription
+    {
         None = 0,
         AllEvents = 1,
         ServerHealthMessages = 2,
@@ -75,11 +80,12 @@ namespace PMP {
     /**
         Represents a connection to a PMP server.
     */
-    class ServerConnection : public QObject {
+    class ServerConnection : public QObject
+    {
         Q_OBJECT
-
     private:
-        enum State {
+        enum State
+        {
             NotConnected, Connecting, Handshake, TextMode,
             HandshakeFailure, BinaryHandshake, BinaryMode
         };
@@ -90,7 +96,8 @@ namespace PMP {
         class DuplicationResultHandler;
 
     public:
-        enum UserRegistrationError {
+        enum UserRegistrationError
+        {
             UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
         };
 
@@ -255,7 +262,7 @@ namespace PMP {
         void readBinaryCommands();
         void executeTextCommand(QString const& commandText);
         void handleBinaryMessage(QByteArray const& message);
-        void handleStandardBinaryMessage(NetworkProtocol::ServerMessageType messageType,
+        void handleStandardBinaryMessage(ServerMessageType messageType,
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 extensionMessageType,
                                     QByteArray const& message);
@@ -270,15 +277,15 @@ namespace PMP {
                                              quint32 clientReference);
 
         void handleNewUserSalt(QString login, QByteArray salt);
-        void handleUserRegistrationResult(quint16 errorType, quint32 intData,
-                                          QByteArray const& blobData);
+        void handleUserRegistrationResult(ResultMessageErrorCode errorCode,
+                                          quint32 intData, QByteArray const& blobData);
 
         void sendInitiateLoginMessage(QString login, quint32 clientReference);
         void sendFinishLoginMessage(QString login, QByteArray userSalt,
                                     QByteArray sessionSalt, QByteArray hashedPassword,
                                     quint32 clientReference);
         void handleLoginSalt(QString login, QByteArray userSalt, QByteArray sessionSalt);
-        void handleUserLoginResult(quint16 errorType, quint32 intData,
+        void handleUserLoginResult(ResultMessageErrorCode errorCode, quint32 intData,
                                    QByteArray const& blobData);
 
         void sendScrobblingProviderInfoRequest();
@@ -319,7 +326,7 @@ namespace PMP {
 
         void parseTrackAvailabilityChangeBatchMessage(QByteArray const& message);
         void parseTrackInfoBatchMessage(QByteArray const& message,
-                                        NetworkProtocol::ServerMessageType messageType);
+                                        ServerMessageType messageType);
 
         void parseHashUserDataMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);

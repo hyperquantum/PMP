@@ -257,7 +257,25 @@ int main(int argc, char *argv[]) {
 
     /* start indexation of the media directories */
     if (databaseInitializationSucceeded && doIndexation)
+    {
+        bool initialIndexation = true;
+
+        QObject::connect(
+            &resolver, &Resolver::fullIndexationRunStatusChanged,
+            &resolver,
+            [&out, &initialIndexation](bool running)
+            {
+                if (running || !initialIndexation)
+                    return;
+
+                initialIndexation = false;
+                out << "Indexation finished." << endl;
+            }
+        );
+
+        out << "Running initial full indexation..." << endl;
         resolver.startFullIndexation();
+    }
 
     auto exitCode = app.exec();
     

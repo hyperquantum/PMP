@@ -40,6 +40,7 @@ namespace PMP {
     {
         None = 0,
         NeverHeard,
+        LastHeardNotInLast1000Days,
         LastHeardNotInLast365Days,
         LastHeardNotInLast180Days,
         LastHeardNotInLast90Days,

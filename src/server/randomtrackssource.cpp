@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -48,7 +48,8 @@ namespace PMP {
         std::shuffle(_unusedHashes.begin(), _unusedHashes.end(), _randomEngine);
 
         _hashesStatus.reserve(_unusedHashes.size());
-        for (auto hash : _unusedHashes) {
+        for (auto const& hash : qAsConst(_unusedHashes))
+        {
             _hashesStatus.insert(hash, TrackStatus::Unused);
         }
 
@@ -123,7 +124,8 @@ namespace PMP {
 
     void RandomTracksSource::putBackAllTracksTakenAsUnused()
     {
-        for (auto hash : _hashesTaken) {
+        for (auto const& hash : qAsConst(_hashesTaken))
+        {
             _notifiedCount++;
             _unusedHashes.append(hash);
             _hashesStatus.insert(hash, TrackStatus::Unused);
@@ -160,12 +162,27 @@ namespace PMP {
         if (_notifiedCount >= UPCOMING_NOTIFY_TARGET_COUNT)
             return;
 
-        for (int i = 0; i < UPCOMING_NOTIFY_BATCH_COUNT; ++i) {
-            auto index = _unusedHashes.size() - 1 - _notifiedCount;
-            if (index < 0) break;
+        auto nextNotificationIndex = _unusedHashes.size() - 1 - _notifiedCount;
 
+        if (nextNotificationIndex < -1)
+        {
+            qWarning() << "reducing notified count from" << _notifiedCount
+                       << "to" << _unusedHashes.size();
+            _notifiedCount = _unusedHashes.size();
+            return;
+        }
+
+        if (nextNotificationIndex < 0)
+            return;
+
+        for (int i = 0; i < UPCOMING_NOTIFY_BATCH_COUNT; ++i)
+        {
             _notifiedCount++;
-            Q_EMIT upcomingTrackNotification(_unusedHashes[index]);
+            Q_EMIT upcomingTrackNotification(_unusedHashes[nextNotificationIndex]);
+
+            nextNotificationIndex--;
+            if (nextNotificationIndex < 0)
+                break;
         }
 
         qDebug() << "notified count has reached" << _notifiedCount;

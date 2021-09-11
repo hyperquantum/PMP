@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,7 +39,8 @@ namespace PMP {
     const QChar Util::PauseSymbol = QChar(0x23F8);
     const QChar Util::PlaySymbol = QChar(0x25B6);
 
-    unsigned Util::getRandomSeed() {
+    unsigned Util::getRandomSeed()
+    {
         /* Because std::random_device seems to be not random at all on MINGW 4.8, we use
          * the system time and an incrementing counter instead. */
 
@@ -61,7 +62,8 @@ namespace PMP {
         return result;
     }
 
-    QString Util::secondsToHoursMinuteSecondsText(qint32 totalSeconds) {
+    QString Util::secondsToHoursMinuteSecondsText(qint32 totalSeconds)
+    {
         if (totalSeconds < 0) { return "?"; }
 
         int sec = totalSeconds % 60;
@@ -75,6 +77,13 @@ namespace PMP {
 
     QString Util::millisecondsToShortDisplayTimeText(qint64 milliseconds)
     {
+        QString prefix;
+        if (milliseconds < 0)
+        {
+            milliseconds = -milliseconds;
+            prefix = "-";
+        }
+
         int partialSeconds = milliseconds % 1000;
         int totalSeconds = int(milliseconds / 1000);
 
@@ -83,20 +92,28 @@ namespace PMP {
         int min = totalMinutes % 60;
         int hrs = totalMinutes / 60;
 
-        if (hrs != 0) {
-            return QString::number(hrs).rightJustified(2, '0')
+        if (hrs != 0)
+        {
+            return prefix + QString::number(hrs).rightJustified(2, '0')
                     + ":" + QString::number(min).rightJustified(2, '0')
                     + ":" + QString::number(sec).rightJustified(2, '0')
                     + "." + QString::number(partialSeconds / 100);
         }
 
-        return QString::number(min).rightJustified(2, '0')
+        return prefix + QString::number(min).rightJustified(2, '0')
                 + ":" + QString::number(sec).rightJustified(2, '0')
                 + "." + QString::number(partialSeconds / 100);
     }
 
     QString Util::millisecondsToLongDisplayTimeText(qint64 milliseconds)
     {
+        QString prefix;
+        if (milliseconds < 0)
+        {
+            milliseconds = -milliseconds;
+            prefix = "-";
+        }
+
         int partialSeconds = milliseconds % 1000;
         int totalSeconds = int(milliseconds / 1000);
 
@@ -105,7 +122,7 @@ namespace PMP {
         int min = totalMinutes % 60;
         int hrs = totalMinutes / 60;
 
-        return QString::number(hrs).rightJustified(2, '0')
+        return prefix + QString::number(hrs).rightJustified(2, '0')
                 + ":" + QString::number(min).rightJustified(2, '0')
                 + ":" + QString::number(sec).rightJustified(2, '0')
                 + "." + QString::number(partialSeconds).rightJustified(3, '0');
