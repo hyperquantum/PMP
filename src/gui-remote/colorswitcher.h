@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,9 +24,10 @@
 #include <QVector>
 #include <QWidget>
 
-namespace PMP {
-
-    class ColorSwitcher : public QWidget {
+namespace PMP
+{
+    class ColorSwitcher : public QWidget
+    {
         Q_OBJECT
     public:
         ColorSwitcher();
