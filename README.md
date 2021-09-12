@@ -117,20 +117,24 @@ These instructions might need some tweaks, as they haven't been tested (at least
 
 ## 5. Building On Windows
 
-Make sure [CMake](https://cmake.org/) is installed.
+Make sure [CMake](https://cmake.org/download/) and [Git](https://git-scm.com/downloads) are installed.
 
-These build instructions use [vcpkg](https://github.com/microsoft/vcpkg).
-An x64 build of PMP and its dependencies is necessary because libmysql does not support a 32-bit build.
+These build instructions use [vcpkg](https://github.com/microsoft/vcpkg) to build PMP's dependencies.
+A 64-bit build is necessary because libmysql does not support a 32-bit build.
+Install [Visual Studio](https://visualstudio.microsoft.com/vs/community/) if you want to use the
+_x64-windows_ triplet like in the build instructions listed here. It may be possible to use MinGW
+instead, but this has not been tested.
 
-First install vcpkg if you haven't done that already.  
-Create the directory `C:\src`, open a CMD terminal and run the following commands:
+If you do not have vcpkg installed yet, open a CMD terminal and run the following commands:  
 ```cmd
+> mkdir C:\src
 > cd C:\src
 > git clone https://github.com/Microsoft/vcpkg.git
 > .\vcpkg\bootstrap-vcpkg.bat
 ```
 
-Then install the dependencies of PMP. Open a CMD terminal and run the following commands:
+Then install the dependencies of PMP. Open a CMD terminal and run the following commands
+ (these may take a long time):
 ```cmd
 > cd C:\src\vcpkg
 > vcpkg install taglib --triplet x64-windows
