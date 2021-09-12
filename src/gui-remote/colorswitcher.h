@@ -49,6 +49,8 @@ namespace PMP
         void mousePressEvent(QMouseEvent* event) override;
 
     private:
+        qreal desiredSize() const;
+
         QVector<QColor> _colors;
         int _colorIndex;
     };

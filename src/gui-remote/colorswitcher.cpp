@@ -21,6 +21,7 @@
 
 #include "colors.h"
 
+#include <QFontMetricsF>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QtDebug>
@@ -77,12 +78,14 @@ namespace PMP
 
     QSize ColorSwitcher::minimumSizeHint() const
     {
-        return QSize(16, 16);
+        auto size = desiredSize();
+
+        return QSize(size, size);
     }
 
     QSize ColorSwitcher::sizeHint() const
     {
-        return QSize(18, 18);
+        return minimumSizeHint();
     }
 
     void ColorSwitcher::paintEvent(QPaintEvent* event)
@@ -111,5 +114,12 @@ namespace PMP
 
             Q_EMIT colorIndexChanged();
         }
+    }
+
+    qreal ColorSwitcher::desiredSize() const
+    {
+        QFontMetricsF metrics { font() };
+
+        return metrics.height() * 0.8;
     }
 }
