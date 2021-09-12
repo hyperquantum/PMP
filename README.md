@@ -138,17 +138,13 @@ Then install the dependencies of PMP. Open a CMD terminal and run the following 
 > vcpkg install qt5[essentials] --triplet x64-windows
 ```
 
-Now [run CMake](https://cmake.org/runningcmake/) so you can build PMP itself.  
-Set "where is the sourcecode" to the PMP sourcecode folder.  
-Set "where to build the binaries" to the "bin" subdirectory of the sourcecode folder, or
-some other folder of your choice.  
-Add the following variables:
+Finally you can build PMP itself. Run the following commands in a CMD terminal. Adjust paths and VS version as needed; change _Debug_ to _Release_ (in both lines) if you prefer:
 
-* set `VCPKG_TARGET_TRIPLET` to _x64-windows_
-* set `CMAKE_TOOLCHAIN_FILE` to _C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake_
-* optional: set `CMAKE_BUILD_TYPE` to _Debug_ or _Release_
-
-Then configure, generate, and build the project.
+```cmd
+> cd PMP\bin
+> "C:\Program Files\CMake\bin\cmake" -G "Visual Studio 16 2019" -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake" -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
+> "C:\Program Files\CMake\bin\cmake" --build . --config Debug
+```
 
 
 ## 6. Caveats / Limitations
