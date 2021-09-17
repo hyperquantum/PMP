@@ -21,6 +21,7 @@
 
 #include "common/clientserverinterface.h"
 #include "common/playercontroller.h"
+#include "common/powermanagement.h"
 #include "common/serverconnection.h"
 #include "common/util.h"
 #include "common/version.h"
@@ -29,7 +30,6 @@
 #include "connectionwidget.h"
 #include "loginwidget.h"
 #include "mainwidget.h"
-#include "powermanagement.h"
 #include "useraccountcreationwidget.h"
 #include "userpickerwidget.h"
 
