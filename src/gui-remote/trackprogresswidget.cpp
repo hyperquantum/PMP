@@ -93,12 +93,14 @@ namespace PMP
             auto position = qMin(_trackPosition, _trackLength);
 
             QRect rect2(rect);
-            rect2.adjust(+2, +2, -1, -1);
+            rect2.adjust(+2, +2, -2, -2);
             int w = (position * rect2.width() + _trackLength / 2) / _trackLength;
             rect2.setWidth(w);
 
             painter.fillRect(rect2,
                              QBrush(Colors::instance().trackProgressWidgetProgress));
+            painter.setPen(QPen(Colors::instance().trackProgressWidgetProgress));
+            painter.drawRect(rect2);
         }
 
         painter.setPen(QPen(Colors::instance().trackProgressWidgetBorder));
