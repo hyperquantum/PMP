@@ -49,7 +49,6 @@ TECHNICAL TODO
 
  * when running an indexation, analyze the most recently created/updated files first
  * large file support (?)
- * try to automate the build procedure on Windows
  * switch to signed integer types for things like queue indices
  * add logging for all server messages that are deemed corrupt or invalid by the client
 
@@ -126,6 +125,7 @@ POLISHING
  * when skipping the current track after a long-time pause (say, more than 10 min), do not let the skip affect scoring of the paused track
  * an icon for the GUI remote executable
  * be more strict in determining the 'end time' for the history of a track that was played; time when paused should not count
+ * GUI remote: history/queue/collection: hide selection when losing focus
 
 
 CODE CLEANUP
