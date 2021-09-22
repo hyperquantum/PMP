@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,9 +24,10 @@
 
 #include <QQueue>
 
-namespace PMP {
-
-    class WaveTrackGenerator : public TrackGeneratorBase {
+namespace PMP
+{
+    class WaveTrackGenerator : public TrackGeneratorBase
+    {
         Q_OBJECT
     public:
         WaveTrackGenerator(QObject* parent, RandomTracksSource* source,

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,9 +28,10 @@
 #include <QDateTime>
 #include <QTimer>
 
-namespace PMP {
-
-    namespace {
+namespace PMP
+{
+    namespace
+    {
         static const int selectionFilterTakeCount = 12;
         static const int selectionFilterKeepCount = 6;
     }
@@ -52,7 +53,8 @@ namespace PMP {
         QVector<FileHash> tracks;
         tracks.reserve(count);
 
-        while (tracks.size() < count && !_upcoming.isEmpty()) {
+        while (tracks.size() < count && !_upcoming.isEmpty())
+        {
             auto track = _upcoming.dequeue();
 
             bool trackIsSuitable =
@@ -94,7 +96,8 @@ namespace PMP {
 
         QTimer::singleShot(
             250, this,
-            [this]() {
+            [this]()
+            {
                 qDebug() << "track generator no longer frozen";
                 _temporaryFreeze = false;
                 checkIfRefillNeeded();
@@ -112,7 +115,8 @@ namespace PMP {
         int attempts = 3;
         int added = 0;
 
-        while (attempts > 0 && _upcoming.size() < desiredUpcomingCount()) {
+        while (attempts > 0 && _upcoming.size() < desiredUpcomingCount())
+        {
             attempts--;
 
             auto tracks =
@@ -128,7 +132,8 @@ namespace PMP {
                                          [this](auto& a, auto& b) {
                                              return selectionFilterCompare(a, b);
                                          });
-            for (auto track : tracks) {
+            for (auto track : tracks)
+            {
                 _upcoming.append(track);
                 added++;
             }
@@ -183,7 +188,8 @@ namespace PMP {
         auto userStats1 = history().getUserStats(t1.id(), user);
         auto userStats2 = history().getUserStats(t2.id(), user);
 
-        if (!userStats1 || !userStats2) {
+        if (!userStats1 || !userStats2)
+        {
             if (userStats1)
                 return 1; // 1 is better
             else if (userStats2)
@@ -203,14 +209,17 @@ namespace PMP {
         QDateTime lastHeard1 = userStats1->lastHeard;
         QDateTime lastHeard2 = userStats2->lastHeard;
 
-        if (lastHeard1.isValid() && lastHeard2.isValid()) {
+        if (lastHeard1.isValid() && lastHeard2.isValid())
+        {
             if (lastHeard1 < lastHeard2) return 1; // 1 is better
             if (lastHeard1 > lastHeard2) return -1; // 2 is better
         }
-        else if (lastHeard1.isValid()) {
+        else if (lastHeard1.isValid())
+        {
             return -1; // 2 is better
         }
-        else if (lastHeard2.isValid()) {
+        else if (lastHeard2.isValid())
+        {
             return 1; // 1 is better
         }
 
@@ -232,7 +241,8 @@ namespace PMP {
 
         auto score = userStats->score;
         auto scoreThreshold = candidate.randomPermillageNumber() - 100;
-        if (score >= 0 && score < scoreThreshold) {
+        if (score >= 0 && score < scoreThreshold)
+        {
             qDebug() << "rejecting candidate" << id
                      << "because it has score" << score
                      << "(threshhold:" << scoreThreshold << ")";
@@ -251,13 +261,15 @@ namespace PMP {
         // are track stats available?
         uint id = candidate.id();
         auto userStats = history().getUserStats(id, criteria().user());
-        if (!userStats) {
+        if (!userStats)
+        {
             qDebug() << "rejecting candidate" << id
                      << "because we don't have its user data yet";
             return false;
         }
 
-        if (userStats->scoreLessThanXPercent(30)) {
+        if (userStats->scoreLessThanXPercent(30))
+        {
             /* reject candidates with a very low score */
             return false;
         }

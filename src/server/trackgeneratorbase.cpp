@@ -29,8 +29,8 @@
 
 #include <algorithm>
 
-namespace PMP {
-
+namespace PMP
+{
     /* ==== TrackGeneratorBase::Candidate ==== */
 
     TrackGeneratorBase::Candidate::Candidate(RandomTracksSource* source,
@@ -111,13 +111,15 @@ namespace PMP {
     {
         auto hash = _source->takeTrack();
 
-        if (hash.isNull()) {
+        if (hash.isNull())
+        {
             qWarning() << "the null hash turned up as a potential candidate";
             _source->putBackUsedTrack(hash);
             return nullptr;
         }
 
-        if (!_resolver->haveFileForHash(hash)) {
+        if (!_resolver->haveFileForHash(hash))
+        {
             qDebug() << "cannot use hash" << hash
                      << "as a candidate because we don't have a file for it";
             _source->putBackUsedTrack(hash);
@@ -125,7 +127,8 @@ namespace PMP {
         }
 
         uint id = _resolver->getID(hash);
-        if (id <= 0) {
+        if (id <= 0)
+        {
             qDebug() << "cannot use hash" << hash
                      << "as a candidate because it hasn't been registered";
             _source->putBackUsedTrack(hash);
@@ -150,7 +153,8 @@ namespace PMP {
 
         int tries = maxAttempts;
 
-        while (tries > 0 && tracks.size() < trackCount) {
+        while (tries > 0 && tracks.size() < trackCount)
+        {
             tries--;
 
             auto candidate = createCandidate();
@@ -161,11 +165,11 @@ namespace PMP {
             tracks.append(candidate);
         }
 
-        if (tracks.size() == trackCount) {
+        if (tracks.size() == trackCount)
             return tracks;
-        }
 
-        if (allOrNothing) {
+        if (allOrNothing)
+        {
             qDebug() << "ran out of attempts; got" << tracks.size()
                      << "out of" << trackCount << "; giving them back to the source";
 
@@ -175,7 +179,8 @@ namespace PMP {
 
             return {};
         }
-        else {
+        else
+        {
             qDebug() << "ran out of attempts; got" << tracks.size()
                      << "out of" << trackCount;
 
@@ -260,7 +265,8 @@ namespace PMP {
 
         QVector<int> sorted;
         sorted.reserve(tracks.size());
-        for (int i = 0; i < tracks.size(); ++i) {
+        for (int i = 0; i < tracks.size(); ++i)
+        {
             sorted.append(i);
         }
 
@@ -274,7 +280,8 @@ namespace PMP {
 
         QVector<bool> included(tracks.size());
 
-        for (int i = 0; i < tracks.size(); ++i) {
+        for (int i = 0; i < tracks.size(); ++i)
+        {
             bool keep = i >= tracks.size() - keepCount;
             included[sorted[i]] = keep;
         }

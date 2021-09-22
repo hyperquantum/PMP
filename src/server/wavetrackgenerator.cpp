@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,9 +24,10 @@
 
 #include <QTimer>
 
-namespace PMP {
-
-    namespace {
+namespace PMP
+{
+    namespace
+    {
         static const int selectionFilterTakeCount = 22;
         static const int selectionFilterKeepCount = 10;
         static const int generationCountGoal = selectionFilterKeepCount * 2;
@@ -174,7 +175,8 @@ namespace PMP {
         qDebug() << "applied selection filter to buffer; reduced size from"
                  << oldBufferSize << "to" << tracks.size();
 
-        for (auto track : tracks) {
+        for (auto track : tracks)
+        {
             _upcoming.append(track);
             _trackGenerationProgress++;
         }
@@ -223,7 +225,8 @@ namespace PMP {
         auto oldUpcomingSize = _upcoming.size();
 
         auto filter =
-                [this](Candidate const& c) {
+                [this](Candidate const& c)
+                {
                     return satisfiesBasicFilter(c) && satisfiesNonRepetition(c);
                 };
 
@@ -269,18 +272,21 @@ namespace PMP {
         // are track stats available?
         uint id = candidate.id();
         auto userStats = history().getUserStats(id, criteria().user());
-        if (!userStats) {
+        if (!userStats)
+        {
             qDebug() << "rejecting candidate" << id
                      << "because we don't have its user data yet";
             return false;
         }
 
         /* reject candidates that do not have a score yet */
-        if (!userStats->haveScore()) {
+        if (!userStats->haveScore())
+        {
             return false;
         }
 
-        if (userStats->scoreLessThanXPercent(60)) {
+        if (userStats->scoreLessThanXPercent(60))
+        {
             /* candidate's score does not measure up to a reasonable minimum */
             return false;
         }

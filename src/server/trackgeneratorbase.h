@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,8 +33,8 @@
 #include <functional>
 #include <random>
 
-namespace PMP {
-
+namespace PMP
+{
     class History;
     class PlayerQueue;
     class QueueEntry;
@@ -42,7 +42,8 @@ namespace PMP {
     class Resolver;
     class TrackRepetitionChecker;
 
-    class TrackGeneratorBase : public QObject {
+    class TrackGeneratorBase : public QObject
+    {
         Q_OBJECT
     public:
         virtual QVector<FileHash> getTracks(int count) = 0;
@@ -57,7 +58,8 @@ namespace PMP {
                            Resolver* resolver, History* history,
                            TrackRepetitionChecker* repetitionChecker);
 
-        class Candidate {
+        class Candidate
+        {
         public:
             Candidate(RandomTracksSource* source, uint id, FileHash const& hash,
                       AudioData const& audioData,

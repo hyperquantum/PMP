@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,11 +29,12 @@
 
 #include <random>
 
-namespace PMP {
-
+namespace PMP
+{
     class Resolver;
 
-    class RandomTracksSource : public QObject {
+    class RandomTracksSource : public QObject
+    {
         Q_OBJECT
     public:
         RandomTracksSource(QObject* parent, Resolver* resolver);

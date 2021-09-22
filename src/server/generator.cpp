@@ -33,9 +33,10 @@
 
 #include <algorithm>
 
-namespace PMP {
-
-    namespace {
+namespace PMP
+{
+    namespace
+    {
         static const int defaultNoRepetitionSpanSeconds = 60 * 60 /* one hour */;
 
         static const int desiredQueueLength = 10;
@@ -180,7 +181,8 @@ namespace PMP {
 
         int generatedCount = 0;
 
-        if (_waveActive) {
+        if (_waveActive)
+        {
             auto tracks = _waveTrackGenerator->getTracks(expandCount);
             generatedCount += tracks.size();
 
@@ -204,24 +206,29 @@ namespace PMP {
             }
         }
 
-        if (generatedCount == expandCount) {
+        if (generatedCount == expandCount)
+        {
             qDebug() << "queue expansion successful: generated" << generatedCount
                      << "tracks";
         }
-        else if (generatedCount == 0) {
+        else if (generatedCount == 0)
+        {
             qWarning() << "queue expansion failed: nothing generated";
         }
-        else if (generatedCount < expandCount) {
+        else if (generatedCount < expandCount)
+        {
             qWarning() << "queue expansion failed: only generated" << generatedCount
                        << "tracks instead of" << expandCount;
         }
-        else { // generatedCount > expandCount
+        else // generatedCount > expandCount
+        {
             qWarning() << "queue expansion too big: generated" << generatedCount
                        << "tracks instead of" << expandCount;
         }
     }
 
-    void Generator::startWave() {
+    void Generator::startWave()
+    {
         qDebug() << "Generator::startWave() called";
 
         if (_criteria.user() <= 0)
@@ -288,14 +295,16 @@ namespace PMP {
         checkQueueRefillNeeded();
     }
 
-    void Generator::queueRefillTimerAction() {
+    void Generator::queueRefillTimerAction()
+    {
         _refillPending = false;
 
         if (!_enabled) return;
 
         int tracksToGenerate = 0;
         uint queueLength = _queue->length();
-        if (queueLength < desiredQueueLength) {
+        if (queueLength < desiredQueueLength)
+        {
             tracksToGenerate = desiredQueueLength - queueLength;
         }
 
