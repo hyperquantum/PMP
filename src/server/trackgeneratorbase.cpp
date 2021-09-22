@@ -101,6 +101,11 @@ namespace PMP
         //
     }
 
+    int TrackGeneratorBase::totalTrackCountInSource() const
+    {
+        return _source->totalTrackCount();
+    }
+
     quint16 TrackGeneratorBase::getRandomPermillage()
     {
         std::uniform_int_distribution<int> range(0, 1000);

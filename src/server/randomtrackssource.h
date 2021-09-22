@@ -39,6 +39,8 @@ namespace PMP
     public:
         RandomTracksSource(QObject* parent, Resolver* resolver);
 
+        int totalTrackCount() const { return _hashesStatus.size(); }
+
         FileHash takeTrack();
 
         void putBackUsedTrack(const FileHash& hash);

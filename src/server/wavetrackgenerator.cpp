@@ -37,6 +37,7 @@ namespace PMP
                                            Resolver* resolver, History* history,
                                            TrackRepetitionChecker* repetitionChecker)
      : TrackGeneratorBase(parent, source, resolver, history, repetitionChecker),
+       _trackGenerationFailCount(0),
        _trackGenerationProgress(0),
        _tracksDeliveredCount(0),
        _waveActive(false),
@@ -81,6 +82,7 @@ namespace PMP
 
         _waveActive = true;
         _waveGenerationCompleted = false;
+        _trackGenerationFailCount = 0;
         _trackGenerationProgress = 0;
         _tracksDeliveredCount = 0;
         _upcoming.reserve(generationCountGoal);
@@ -115,6 +117,9 @@ namespace PMP
         {
             growBuffer();
 
+            if (!_waveActive)
+                return; // early quit
+
             if (_buffer.size() >= selectionFilterTakeCount)
                 applySelectionFilterToBufferAndAppendToUpcoming();
         }
@@ -134,7 +139,6 @@ namespace PMP
     void WaveTrackGenerator::growBuffer()
     {
         int tracksToTakeFromSource = selectionFilterTakeCount - _buffer.size();
-
         if (tracksToTakeFromSource <= 0)
             return;
 
@@ -152,14 +156,25 @@ namespace PMP
                 takeFromSourceAndApplyFilter(tracksToTakeFromSource,
                                              selectionFilterTakeCount,
                                              false, filter);
-
         auto fromSourceCount = tracks.size();
-
         _buffer.append(tracks);
 
         qDebug() << "tried to get" << tracksToTakeFromSource
                  << "tracks from source, got" << fromSourceCount
                  << "after filtering, buffer size is now" << _buffer.size();
+
+        if (fromSourceCount > 0)
+            return; // we found one or more tracks that satisfy the criteria
+
+        if (_trackGenerationFailCount
+                                     < totalTrackCountInSource() - tracksToTakeFromSource)
+        {
+            _trackGenerationFailCount += tracksToTakeFromSource;
+            return; // count failures
+        }
+
+        qDebug() << "failed to gather enough tracks that satisfy the criteria; giving up";
+        terminateWave();
     }
 
     void WaveTrackGenerator::applySelectionFilterToBufferAndAppendToUpcoming()
@@ -219,6 +234,9 @@ namespace PMP
     {
         if (!_waveActive)
             return;
+
+        // less strict criteria may still allow us to succeed, reset the fail counter
+        _trackGenerationFailCount = 0;
 
         // filter upcoming list and recalculate wave progress
 

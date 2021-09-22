@@ -99,6 +99,8 @@ namespace PMP
             bool _unused;
         };
 
+        int totalTrackCountInSource() const;
+
         quint16 getRandomPermillage();
         QSharedPointer<Candidate> createCandidate();
 
