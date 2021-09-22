@@ -132,7 +132,7 @@ namespace PMP
                                          [this](auto& a, auto& b) {
                                              return selectionFilterCompare(a, b);
                                          });
-            for (auto track : tracks)
+            for (auto const& track : qAsConst(tracks))
             {
                 _upcoming.append(track);
                 added++;

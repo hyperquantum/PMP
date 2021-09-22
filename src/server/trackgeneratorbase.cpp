@@ -174,7 +174,7 @@ namespace PMP
                      << "out of" << trackCount << "; giving them back to the source";
 
             // ran out of attempts, put everything back for the next attempt
-            for (auto track : tracks)
+            for (auto const& track : qAsConst(tracks))
                 track->setUnused();
 
             return {};

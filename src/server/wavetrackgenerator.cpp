@@ -175,7 +175,7 @@ namespace PMP
         qDebug() << "applied selection filter to buffer; reduced size from"
                  << oldBufferSize << "to" << tracks.size();
 
-        for (auto track : tracks)
+        for (auto const& track : qAsConst(tracks))
         {
             _upcoming.append(track);
             _trackGenerationProgress++;
