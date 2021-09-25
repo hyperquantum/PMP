@@ -94,12 +94,12 @@ namespace PMP
 
         QPainter painter(this);
 
-        QRect rect = this->rect();
+        QRect rect = this->rect().adjusted(+1, +1, -1, -1);
 
         painter.fillRect(rect, QBrush(_colors[_colorIndex]));
 
         painter.setPen(QPen(Colors::instance().widgetBorder));
-        painter.drawRect(rect.adjusted(0, 0, -1, -1));
+        painter.drawRect(rect);
     }
 
     void ColorSwitcher::mousePressEvent(QMouseEvent* event)
