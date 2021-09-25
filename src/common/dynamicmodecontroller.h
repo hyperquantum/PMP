@@ -50,6 +50,9 @@ namespace PMP
         virtual void startHighScoredTracksWave() = 0;
         virtual void terminateHighScoredTracksWave() = 0;
 
+        virtual void expandQueue() = 0;
+        virtual void trimQueue() = 0;
+
     Q_SIGNALS:
         void dynamicModeEnabledChanged();
         void noRepetitionSpanSecondsChanged();

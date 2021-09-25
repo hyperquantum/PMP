@@ -112,6 +112,16 @@ namespace PMP
         _connection->terminateDynamicModeWave();
     }
 
+    void DynamicModeControllerImpl::expandQueue()
+    {
+        _connection->expandQueue();
+    }
+
+    void DynamicModeControllerImpl::trimQueue()
+    {
+        _connection->trimQueue();
+    }
+
     void DynamicModeControllerImpl::connected()
     {
         _connection->requestDynamicModeStatus();

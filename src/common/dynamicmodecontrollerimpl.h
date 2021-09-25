@@ -50,6 +50,9 @@ namespace PMP
         void startHighScoredTracksWave() override;
         void terminateHighScoredTracksWave() override;
 
+        void expandQueue() override;
+        void trimQueue() override;
+
     private Q_SLOTS:
         void connected();
         void connectionBroken();

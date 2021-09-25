@@ -230,11 +230,11 @@ namespace PMP {
 
         connect(
             _ui->expandButton, &QPushButton::clicked,
-            connection, &ServerConnection::expandQueue
+            dynamicModeController, &DynamicModeController::expandQueue
         );
         connect(
             _ui->trimButton, &QPushButton::clicked,
-            connection, &ServerConnection::trimQueue
+            dynamicModeController, &DynamicModeController::trimQueue
         );
 
         connect(
