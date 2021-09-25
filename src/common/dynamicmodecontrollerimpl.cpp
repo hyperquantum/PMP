@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,8 +21,8 @@
 
 #include "serverconnection.h"
 
-namespace PMP {
-
+namespace PMP
+{
     DynamicModeControllerImpl::DynamicModeControllerImpl(ServerConnection* connection)
      : DynamicModeController(connection),
        _connection(connection),
@@ -110,6 +110,16 @@ namespace PMP {
     void DynamicModeControllerImpl::terminateHighScoredTracksWave()
     {
         _connection->terminateDynamicModeWave();
+    }
+
+    void DynamicModeControllerImpl::expandQueue()
+    {
+        _connection->expandQueue();
+    }
+
+    void DynamicModeControllerImpl::trimQueue()
+    {
+        _connection->trimQueue();
     }
 
     void DynamicModeControllerImpl::connected()

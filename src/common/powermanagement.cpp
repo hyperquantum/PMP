@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,19 +28,21 @@
 #include <windows.h>
 #endif
 
-namespace PMP {
-
+namespace PMP
+{
     PowerManagement::PowerManagement(QObject* parent)
      : QObject(parent), _keepDisplayActive(false)
     {
         //
     }
 
-    bool PowerManagement::getKeepDisplayActive() const {
+    bool PowerManagement::getKeepDisplayActive() const
+    {
         return _keepDisplayActive;
     }
 
-    void PowerManagement::setKeepDisplayActive(bool keepActive) {
+    void PowerManagement::setKeepDisplayActive(bool keepActive)
+    {
         if (keepActive == _keepDisplayActive)
             return;
 
@@ -49,7 +51,8 @@ namespace PMP {
         QTimer::singleShot(0, this, &PowerManagement::updateState);
     }
 
-    bool PowerManagement::isPlatformSupported() const {
+    bool PowerManagement::isPlatformSupported() const
+    {
 #ifdef Q_OS_WIN
         return true;
 #else
@@ -57,7 +60,8 @@ namespace PMP {
 #endif
     }
 
-    void PowerManagement::updateState() {
+    void PowerManagement::updateState()
+    {
 #ifdef Q_OS_WIN
         auto oldValue =
             _keepDisplayActive

@@ -81,15 +81,31 @@ Linux users may need to install a GStreamer plugin to get support for MP3 files.
 
 ## 3. Running PMP
 
-The PMP server needs a database connection. When you run it for the first time, it will generate an empty configuration file. Then you can set the database connection parameters in the configuration file. On Windows the file can be found here:
+First make sure MySQL is installed and running.
+
+### Running the server for the first time
+
+Run the server so it can generate an empty configuration file:
+
+1. Run the server executable (_PMP-Server_)
+2. Kill the server (use ctrl-C)
+3. Edit the server configuration file (see below)
+
+### Configuring the server
+
+On Windows the configuration file can be found here:
 
 ```
   C:\Users\username\AppData\Roaming\Party Music Player\Party Music Player - Server.ini
 ```
 
-You also need to tell PMP where to look for music files. This is done in the configuration file as well.
+On a Unix platform the file should be in your home directory with a similar path and filename.
 
-An example configuration:
+Open the file with a text editor of your choice. You will need to configure the connection
+to your MySQL database server. And you will probably need to configure the path(s) where your
+music is located.
+
+An example configuration for Windows:
 
 ```ini
     [database]
@@ -101,7 +117,16 @@ An example configuration:
     scan_directories=C:/Users/myname/Music, C:/Users/Public/Music
 ```
 
-First make sure MySQL is running. Then start the PMP-Server executable, and finally start the PMP-GUI-Remote executable.
+All other configuration parameters are optional and can be left alone.
+
+### Running PMP
+
+After configuring the server you can run PMP for real:
+
+1. Make sure MySQL is running
+2. Make sure the PMP server is running (_PMP-Server_)
+3. Run the PMP desktop client (_PMP-GUI-Remote_)
+4. Log in; create a new user account first if necessary
 
 
 ## 4. Building On Linux
@@ -121,20 +146,24 @@ These instructions might need some tweaks, as they haven't been tested (at least
 
 ## 5. Building On Windows
 
-Make sure [CMake](https://cmake.org/) is installed.
+Make sure [CMake](https://cmake.org/download/) and [Git](https://git-scm.com/downloads) are installed.
 
-These build instructions use [vcpkg](https://github.com/microsoft/vcpkg).
-An x64 build of PMP and its dependencies is necessary because libmysql does not support a 32-bit build.
+These build instructions use [vcpkg](https://github.com/microsoft/vcpkg) to build PMP's dependencies.
+A 64-bit build is necessary because libmysql does not support a 32-bit build.
+Install [Visual Studio](https://visualstudio.microsoft.com/vs/community/) if you want to use the
+_x64-windows_ triplet like in the build instructions listed here. It may be possible to use MinGW
+instead, but this has not been tested.
 
-First install vcpkg if you haven't done that already.  
-Create the directory `C:\src`, open a CMD terminal and run the following commands:
+If you do not have vcpkg installed yet, open a CMD terminal and run the following commands:  
 ```cmd
+> mkdir C:\src
 > cd C:\src
 > git clone https://github.com/Microsoft/vcpkg.git
 > .\vcpkg\bootstrap-vcpkg.bat
 ```
 
-Then install the dependencies of PMP. Open a CMD terminal and run the following commands:
+Then install the dependencies of PMP. Open a CMD terminal and run the following commands
+ (these may take a long time):
 ```cmd
 > cd C:\src\vcpkg
 > vcpkg install taglib --triplet x64-windows
@@ -142,17 +171,13 @@ Then install the dependencies of PMP. Open a CMD terminal and run the following 
 > vcpkg install qt5[essentials] --triplet x64-windows
 ```
 
-Now [run CMake](https://cmake.org/runningcmake/) so you can build PMP itself.  
-Set "where is the sourcecode" to the PMP sourcecode folder.  
-Set "where to build the binaries" to the "bin" subdirectory of the sourcecode folder, or
-some other folder of your choice.  
-Add the following variables:
+Finally you can build PMP itself. Run the following commands in a CMD terminal. Adjust paths and VS version as needed; change _Debug_ to _Release_ (in both lines) if you prefer:
 
-* set `VCPKG_TARGET_TRIPLET` to _x64-windows_
-* set `CMAKE_TOOLCHAIN_FILE` to _C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake_
-* optional: set `CMAKE_BUILD_TYPE` to _Debug_ or _Release_
-
-Then configure, generate, and build the project.
+```cmd
+> cd PMP\bin
+> "C:\Program Files\CMake\bin\cmake" -G "Visual Studio 16 2019" -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake" -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
+> "C:\Program Files\CMake\bin\cmake" --build . --config Debug
+```
 
 
 ## 6. Caveats / Limitations
