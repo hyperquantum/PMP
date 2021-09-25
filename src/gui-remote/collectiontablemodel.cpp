@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,13 +21,17 @@
 
 #include "common/clientserverinterface.h"
 #include "common/collectionwatcher.h"
-#include "common/simpleplayerstatemonitor.h"
+#include "common/currenttrackmonitor.h"
+#include "common/playercontroller.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
+
+#include "colors.h"
 
 #include <QBrush>
 #include <QBuffer>
 #include <QDataStream>
+#include <QIcon>
 #include <QMimeData>
 #include <QtDebug>
 
@@ -36,64 +40,76 @@
 
 namespace PMP {
 
-    void TrackHighlighter::setUserId(quint32 userId) {
+    void TrackJudge::setUserId(quint32 userId)
+    {
         _userId = userId;
         _haveUserId = true;
 
         _userDataFetcher.enableAutoFetchForUser(userId);
     }
 
-    TriBool TrackHighlighter::shouldHighlightTrack(CollectionTrackInfo const& track) const
+    TriBool TrackJudge::trackSatisfiesCriterium(CollectionTrackInfo const& track,
+                                                bool resultForNone) const
     {
-        switch (_mode) {
-            case TrackHighlightMode::None:
-                return false;
+        switch (_criterium)
+        {
+            case TrackCriterium::None:
+                return resultForNone;
 
-            case TrackHighlightMode::NeverHeard:
+            case TrackCriterium::NeverHeard:
             {
                 auto evaluator = [](QDateTime prevHeard) { return !prevHeard.isValid(); };
-                return shouldHighlightBasedOnHeardDate(track, evaluator);
+                return trackSatisfiesLastHeardDateCriterium(track, evaluator);
             }
-            case TrackHighlightMode::LastHeardNotInLast365Days:
-                return shouldHighlightBasedOnNotHeardInTheLastXDays(track, 365);
+            case TrackCriterium::LastHeardNotInLast1000Days:
+                return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 1000);
 
-            case TrackHighlightMode::LastHeardNotInLast180Days:
-                return shouldHighlightBasedOnNotHeardInTheLastXDays(track, 180);
+            case TrackCriterium::LastHeardNotInLast365Days:
+                return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 365);
 
-            case TrackHighlightMode::LastHeardNotInLast90Days:
-                return shouldHighlightBasedOnNotHeardInTheLastXDays(track, 90);
+            case TrackCriterium::LastHeardNotInLast180Days:
+                return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 180);
 
-            case TrackHighlightMode::LastHeardNotInLast30Days:
-                return shouldHighlightBasedOnNotHeardInTheLastXDays(track, 30);
+            case TrackCriterium::LastHeardNotInLast90Days:
+                return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 90);
 
-            case TrackHighlightMode::LastHeardNotInLast10Days:
-                return shouldHighlightBasedOnNotHeardInTheLastXDays(track, 10);
+            case TrackCriterium::LastHeardNotInLast30Days:
+                return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 30);
 
-            case TrackHighlightMode::WithoutScore:
+            case TrackCriterium::LastHeardNotInLast10Days:
+                return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 10);
+
+            case TrackCriterium::WithoutScore:
             {
                 auto evaluator = [](int permillage) { return permillage < 0; };
-                return shouldHighlightBasedOnScore(track, evaluator);
+                return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackHighlightMode::ScoreAtLeast85:
+            case TrackCriterium::ScoreMaximum30:
+            {
+                auto evaluator =
+                    [](int permillage) { return permillage >= 0 && permillage <= 300; };
+                return trackSatisfiesScoreCriterium(track, evaluator);
+            }
+            case TrackCriterium::ScoreAtLeast85:
             {
                 auto evaluator = [](int permillage) { return permillage >= 850; };
-                return shouldHighlightBasedOnScore(track, evaluator);
+                return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackHighlightMode::ScoreAtLeast90:
+            case TrackCriterium::ScoreAtLeast90:
             {
                 auto evaluator = [](int permillage) { return permillage >= 900; };
-                return shouldHighlightBasedOnScore(track, evaluator);
+                return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackHighlightMode::ScoreAtLeast95:
+            case TrackCriterium::ScoreAtLeast95:
             {
                 auto evaluator = [](int permillage) { return permillage >= 950; };
-                return shouldHighlightBasedOnScore(track, evaluator);
+                return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackHighlightMode::LengthMaximumOneMinute:
+            case TrackCriterium::LengthMaximumOneMinute:
                 if (!track.lengthIsKnown()) return TriBool::unknown;
                 return track.lengthInMilliseconds() <= 60 * 1000;
 
-            case TrackHighlightMode::LengthAtLeastFiveMinutes:
+            case TrackCriterium::LengthAtLeastFiveMinutes:
                 if (!track.lengthIsKnown()) return TriBool::unknown;
                 return track.lengthInMilliseconds() >= 5 * 60 * 1000;
         }
@@ -101,7 +117,7 @@ namespace PMP {
         return false;
     }
 
-    TriBool TrackHighlighter::shouldHighlightBasedOnScore(
+    TriBool TrackJudge::trackSatisfiesScoreCriterium(
                                CollectionTrackInfo const& track,
                                std::function<TriBool(int)> scorePermillageEvaluator) const
     {
@@ -115,7 +131,7 @@ namespace PMP {
         return scorePermillageEvaluator(hashDataForUser->scorePermillage);
     }
 
-    TriBool TrackHighlighter::shouldHighlightBasedOnHeardDate(
+    TriBool TrackJudge::trackSatisfiesLastHeardDateCriterium(
                                     CollectionTrackInfo const& track,
                                     std::function<TriBool(QDateTime)> dateEvaluator) const
     {
@@ -129,16 +145,53 @@ namespace PMP {
         return dateEvaluator(hashDataForUser->previouslyHeard);
     }
 
-    TriBool TrackHighlighter::shouldHighlightBasedOnNotHeardInTheLastXDays(
+    TriBool TrackJudge::trackSatisfiesNotHeardInTheLastXDaysCriterium(
                                                          const CollectionTrackInfo& track,
                                                          int days) const
     {
-        auto evaluator = [days](QDateTime prevHeard) {
-            return !prevHeard.isValid()
-                    || prevHeard <= QDateTime::currentDateTimeUtc().addDays(-days);
-        };
+        auto evaluator =
+            [days](QDateTime prevHeard)
+            {
+                return !prevHeard.isValid()
+                        || prevHeard <= QDateTime::currentDateTimeUtc().addDays(-days);
+            };
 
-        return shouldHighlightBasedOnHeardDate(track, evaluator);
+        return trackSatisfiesLastHeardDateCriterium(track, evaluator);
+    }
+
+    // ============================================================================ //
+
+    CollectionViewContext::CollectionViewContext(QObject* parent,
+                                             ClientServerInterface* clientServerInterface)
+     : QObject(parent),
+       _userId(0)
+    {
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(
+            playerController, &PlayerController::playerModeChanged,
+            this,
+            [this](PlayerMode playerMode, quint32 personalModeUserId)
+            {
+                qDebug() << "CollectionViewContext: received player mode" << playerMode
+                         << "with user ID" << personalModeUserId;
+
+                if (playerMode == PlayerMode::Unknown
+                        || _userId == personalModeUserId)
+                {
+                    return;
+                }
+
+                _userId = personalModeUserId;
+                Q_EMIT userIdChanged();
+            }
+        );
+
+        auto playerMode = playerController->playerMode();
+        if (playerMode != PlayerMode::Unknown)
+        {
+            _userId = playerController->personalModeUserId();
+        }
     }
 
     // ============================================================================ //
@@ -192,11 +245,13 @@ namespace PMP {
     // ============================================================================ //
 
     SortedCollectionTableModel::SortedCollectionTableModel(QObject* parent,
-                                             ClientServerInterface* clientServerInterface)
+                                             ClientServerInterface* clientServerInterface,
+                                             CollectionViewContext* collectionViewContext)
      : QAbstractTableModel(parent),
+       _highlightColorIndex(0),
        _sortBy(0),
        _sortOrder(Qt::AscendingOrder),
-       _highlighter(clientServerInterface->userDataFetcher())
+       _highlightingTrackJudge(clientServerInterface->userDataFetcher())
     {
         _collator.setCaseSensitivity(Qt::CaseInsensitive);
         _collator.setNumericMode(true);
@@ -204,16 +259,33 @@ namespace PMP {
         /* we need to ignore symbols such as quotes, spaces and parentheses */
         _collator.setIgnorePunctuation(true);
 
-        auto& playerStateMonitor = clientServerInterface->simplePlayerStateMonitor();
+        auto* playerController = &clientServerInterface->playerController();
+        _playerState = playerController->playerState();
         connect(
-            &playerStateMonitor, &SimplePlayerStateMonitor::playerModeChanged,
-            this, &SortedCollectionTableModel::onPlayerModeChanged
+            playerController, &PlayerController::playerStateChanged,
+            this,
+            [this, playerController]() {
+                _playerState = playerController->playerState();
+
+                if (!_currentTrackHash.isNull())
+                    markLeftColumnAsChanged();
+            }
         );
 
-        auto playerMode = playerStateMonitor.playerMode();
-        if (playerMode != PlayerMode::Unknown) {
-            _highlighter.setUserId(playerStateMonitor.personalModeUserId());
-        }
+        _highlightingTrackJudge.setUserId(collectionViewContext->userId());
+        connect(
+            collectionViewContext, &CollectionViewContext::userIdChanged,
+            this,
+            [this, collectionViewContext]()
+            {
+                _highlightingTrackJudge.setUserId(collectionViewContext->userId());
+
+                if (usesUserData(_highlightingTrackJudge.getCriterium()))
+                {
+                    markEverythingAsChanged();
+                }
+            }
+        );
 
         auto& collectionWatcher = clientServerInterface->collectionWatcher();
 
@@ -233,37 +305,56 @@ namespace PMP {
         auto& userDataFetcher = clientServerInterface->userDataFetcher();
 
         connect(
-            &userDataFetcher, &UserDataFetcher::dataReceivedForUser,
-            this, &SortedCollectionTableModel::onDataReceivedForUser
+            &userDataFetcher, &UserDataFetcher::userTrackDataChanged,
+            this, &SortedCollectionTableModel::onUserTrackDataChanged
+        );
+
+        auto* currentTrackMonitor = &clientServerInterface->currentTrackMonitor();
+        _currentTrackHash = currentTrackMonitor->currentTrackHash();
+        connect(
+            currentTrackMonitor, &CurrentTrackMonitor::currentTrackInfoChanged,
+            this,
+            [this, currentTrackMonitor]() {
+                currentTrackInfoChanged(currentTrackMonitor->currentTrackHash());
+            }
         );
 
         addWhenModelEmpty(collectionWatcher.getCollection().values());
     }
 
-    void SortedCollectionTableModel::setHighlightMode(TrackHighlightMode mode) {
-        _highlighter.setMode(mode);
+    void SortedCollectionTableModel::setHighlightCriterium(TrackCriterium criterium)
+    {
+        _highlightingTrackJudge.setCriterium(criterium);
 
         /* notify the outside world that potentially everything has changed */
         markEverythingAsChanged();
     }
 
-    bool SortedCollectionTableModel::usesUserData(TrackHighlightMode mode) {
+    int SortedCollectionTableModel::highlightColorIndex() const
+    {
+        return _highlightColorIndex;
+    }
+
+    bool SortedCollectionTableModel::usesUserData(TrackCriterium mode)
+    {
         switch (mode) {
-            case TrackHighlightMode::NeverHeard:
-            case TrackHighlightMode::LastHeardNotInLast365Days:
-            case TrackHighlightMode::LastHeardNotInLast180Days:
-            case TrackHighlightMode::LastHeardNotInLast90Days:
-            case TrackHighlightMode::LastHeardNotInLast30Days:
-            case TrackHighlightMode::LastHeardNotInLast10Days:
-            case TrackHighlightMode::WithoutScore:
-            case TrackHighlightMode::ScoreAtLeast85:
-            case TrackHighlightMode::ScoreAtLeast90:
-            case TrackHighlightMode::ScoreAtLeast95:
+            case TrackCriterium::NeverHeard:
+            case TrackCriterium::LastHeardNotInLast1000Days:
+            case TrackCriterium::LastHeardNotInLast365Days:
+            case TrackCriterium::LastHeardNotInLast180Days:
+            case TrackCriterium::LastHeardNotInLast90Days:
+            case TrackCriterium::LastHeardNotInLast30Days:
+            case TrackCriterium::LastHeardNotInLast10Days:
+            case TrackCriterium::WithoutScore:
+            case TrackCriterium::ScoreMaximum30:
+            case TrackCriterium::ScoreAtLeast85:
+            case TrackCriterium::ScoreAtLeast90:
+            case TrackCriterium::ScoreAtLeast95:
                 return true;
 
-            case TrackHighlightMode::None:
-            case TrackHighlightMode::LengthMaximumOneMinute:
-            case TrackHighlightMode::LengthAtLeastFiveMinutes:
+            case TrackCriterium::None:
+            case TrackCriterium::LengthMaximumOneMinute:
+            case TrackCriterium::LengthAtLeastFiveMinutes:
                 break;
         }
 
@@ -457,30 +548,28 @@ namespace PMP {
         addOrUpdateTrack(track);
     }
 
-    void SortedCollectionTableModel::onDataReceivedForUser(quint32 userId) {
-        if (!_highlighter.isUserIdSetTo(userId))
-            return; /* not relevant */
+    void SortedCollectionTableModel::onUserTrackDataChanged(quint32 userId, FileHash hash)
+    {
+        Q_UNUSED(userId)
+        /* ignore the user ID for change notifications */
 
-        if (usesUserData(_highlighter.getMode())) {
-            markEverythingAsChanged();
-        }
+        auto innerIndex = _hashesToInnerIndexes.value(hash, -1);
+        if (innerIndex < 0)
+            return; /* track is not in the list */
+
+        auto outerIndex = _innerToOuterIndexMap[innerIndex];
+
+        Q_EMIT dataChanged(createIndex(outerIndex, 0),
+                           createIndex(outerIndex, 4 - 1));
     }
 
-    void SortedCollectionTableModel::onPlayerModeChanged(PlayerMode playerMode,
-                                                         quint32 personalModeUserId,
-                                                         QString personalModeUserLogin)
+    void SortedCollectionTableModel::currentTrackInfoChanged(FileHash hash)
     {
-        Q_UNUSED(personalModeUserLogin)
-        qDebug() << "collection model: received player mode:" << playerMode;
-
-        if (playerMode == PlayerMode::Unknown)
+        if (_currentTrackHash == hash)
             return;
 
-        _highlighter.setUserId(personalModeUserId);
-
-        if (usesUserData(_highlighter.getMode())) {
-            markEverythingAsChanged();
-        }
+        _currentTrackHash = hash;
+        markLeftColumnAsChanged();
     }
 
     int SortedCollectionTableModel::findOuterIndexMapIndexForInsert(
@@ -518,6 +607,13 @@ namespace PMP {
         }
     }
 
+    void SortedCollectionTableModel::markLeftColumnAsChanged()
+    {
+        Q_EMIT dataChanged(
+            createIndex(0, 0), createIndex(rowCount() - 1, 0)
+        );
+    }
+
     void SortedCollectionTableModel::updateTrackAvailability(FileHash hash,
                                                              bool isAvailable)
     {
@@ -529,7 +625,7 @@ namespace PMP {
         int outerIndex = _innerToOuterIndexMap[innerIndex];
 
         _tracks[innerIndex]->setAvailable(isAvailable);
-        emit dataChanged(createIndex(outerIndex, 0), createIndex(outerIndex, 4 - 1));
+        Q_EMIT dataChanged(createIndex(outerIndex, 0), createIndex(outerIndex, 4 - 1));
     }
 
     template <class T>
@@ -575,8 +671,10 @@ namespace PMP {
     {
         /* hash already present? */
         auto hashIterator = _hashesToInnerIndexes.find(track.hash());
-        if (hashIterator != _hashesToInnerIndexes.end()) {
-            updateTrack(track);
+        if (hashIterator != _hashesToInnerIndexes.end())
+        {
+            auto innerIndex = hashIterator.value();
+            updateTrack(innerIndex, track);
             return;
         }
 
@@ -605,17 +703,45 @@ namespace PMP {
         endInsertRows();
     }
 
-    void SortedCollectionTableModel::updateTrack(const CollectionTrackInfo& track)
+    void SortedCollectionTableModel::updateTrack(int innerIndex,
+                                                 const CollectionTrackInfo& newTrackData)
     {
-        qWarning() << "collection track update not handled:"
-                   << "title:" << track.title() << "; artist:" << track.artist()
-                   << "; album:" << track.album()
-                   << "; available:" << (track.isAvailable() ? "yes" : "no");
+        auto& track = *_tracks[innerIndex];
 
-        // TODO: update existing entry
-        //
-        //
-        //
+        qDebug() << "collection track update:"
+                   << "title:" << newTrackData.title()
+                   << "; artist:" << newTrackData.artist()
+                   << "; album:" << newTrackData.album()
+                   << "; available:" << (newTrackData.isAvailable() ? "yes" : "no")
+                   << "; hash:" << newTrackData.hash();
+
+        int oldOuterIndex = _innerToOuterIndexMap[innerIndex];
+        int newOuterIndex = findOuterIndexMapIndexForInsert(newTrackData);
+
+        /* moving the track after itself means we need to subtract one from the
+           destination index */
+        if (newOuterIndex > oldOuterIndex)
+            newOuterIndex--;
+
+        if (newOuterIndex != oldOuterIndex)
+        {
+            beginMoveRows(QModelIndex(), oldOuterIndex, oldOuterIndex,
+                          QModelIndex(), newOuterIndex);
+
+            _outerToInnerIndexMap.move(oldOuterIndex, newOuterIndex);
+
+            /* elements between the old and new index got a new outer index;
+               update the inner to outer map to reflect this */
+            rebuildInnerMap(qMin(oldOuterIndex, newOuterIndex),
+                            qMax(oldOuterIndex, newOuterIndex) + 1);
+
+            endMoveRows();
+        }
+
+        track = newTrackData;
+
+        Q_EMIT dataChanged(createIndex(newOuterIndex, 0),
+                           createIndex(newOuterIndex, 4 - 1));
     }
 
     void SortedCollectionTableModel::sort(int column, Qt::SortOrder order) {
@@ -640,7 +766,7 @@ namespace PMP {
     }
 
     void SortedCollectionTableModel::markEverythingAsChanged() {
-        emit dataChanged(
+        Q_EMIT dataChanged(
             createIndex(0, 0), createIndex(rowCount() - 1, columnCount() - 1)
         );
     }
@@ -664,9 +790,17 @@ namespace PMP {
         rebuildInnerMap();
     }
 
-    void SortedCollectionTableModel::rebuildInnerMap(int outerStartIndex) {
+    void SortedCollectionTableModel::rebuildInnerMap(int outerStartIndex)
+    {
+        rebuildInnerMap(outerStartIndex, _outerToInnerIndexMap.size());
+    }
+
+    void SortedCollectionTableModel::rebuildInnerMap(int outerStartIndex,
+                                                     int outerEndIndex)
+    {
         /* (re)construct inner map from outer map */
-        for (int i = outerStartIndex; i < _outerToInnerIndexMap.size(); ++i) {
+        for (int i = outerStartIndex; i < outerEndIndex; ++i)
+        {
             _innerToOuterIndexMap[_outerToInnerIndexMap[i]] = i;
         }
     }
@@ -718,36 +852,71 @@ namespace PMP {
                 break;
             case Qt::DisplayRole:
                 if (index.row() < _tracks.size()) {
+                    auto track = trackAt(index);
+
                     switch (index.column()) {
-                        case 0: return trackAt(index)->title();
-                        case 1: return trackAt(index)->artist();
+                        case 0: return track->title();
+                        case 1: return track->artist();
                         case 2:
                         {
-                            int lengthInSeconds = trackAt(index)->lengthInSeconds();
+                            qint64 lengthInMilliseconds = track->lengthInMilliseconds();
+                            if (lengthInMilliseconds < 0) { return "?"; }
 
-                            if (lengthInSeconds < 0) { return "?"; }
-                            return Util::secondsToHoursMinuteSecondsText(lengthInSeconds);
+                            return Util::millisecondsToShortDisplayTimeText(
+                                                                    lengthInMilliseconds);
                         }
-                        case 3: return trackAt(index)->album();
+                        case 3: return track->album();
+                    }
+                }
+                break;
+            case Qt::DecorationRole:
+                if (index.column() == 0 && index.row() < _tracks.size()) {
+                    auto track = trackAt(index);
+
+                    if (track->hash() == _currentTrackHash) {
+                        switch (_playerState) {
+                            case PlayerState::Playing:
+                                return QIcon(":/mediabuttons/Play.png");
+
+                            case PlayerState::Paused:
+                                return QIcon(":/mediabuttons/Pause.png");
+
+                            default:
+                                break;
+                        }
                     }
                 }
                 break;
             case Qt::ForegroundRole:
                 if (index.row() < _tracks.size()) {
                     auto track = trackAt(index);
-                    if (!track->isAvailable()) return QBrush(Qt::gray);
+                    if (!track->isAvailable())
+                        return QBrush(Colors::instance().inactiveItemForeground);
                 }
                 break;
             case Qt::BackgroundRole:
-                if (index.row() < _tracks.size()) {
+                if (index.row() < _tracks.size())
+                {
                     auto track = trackAt(index);
-                    if (_highlighter.shouldHighlightTrack(*track).isTrue())
-                        return QBrush(Qt::yellow);
+                    auto judgement =
+                           _highlightingTrackJudge.trackSatisfiesCriterium(*track, false);
+
+                    if (judgement.isTrue())
+                    {
+                        auto& colors = Colors::instance().itemBackgroundHighlightColors;
+
+                        auto colorIndex =
+                                qBound(0, _highlightColorIndex, colors.size() - 1);
+
+                        auto color = colors[colorIndex];
+
+                        return QBrush(color);
+                    }
                 }
                 break;
         }
 
-        return QVariant();
+        return {};
     }
 
     Qt::ItemFlags SortedCollectionTableModel::flags(const QModelIndex& index) const {
@@ -808,19 +977,51 @@ namespace PMP {
         return data;
     }
 
+    void SortedCollectionTableModel::setHighlightColorIndex(int colorIndex)
+    {
+        if (_highlightColorIndex == colorIndex)
+            return;
+
+        _highlightColorIndex = colorIndex;
+
+        /* ensure that the model is repainted */
+        markEverythingAsChanged();
+    }
+
     // ============================================================================ //
 
-    FilteredCollectionTableModel::FilteredCollectionTableModel(
-            SortedCollectionTableModel* source, QObject* parent)
-     : _source(source)
+    FilteredCollectionTableModel::FilteredCollectionTableModel(QObject* parent,
+                                             SortedCollectionTableModel* source,
+                                             ClientServerInterface* clientServerInterface,
+                                             CollectionViewContext* collectionViewContext)
+     : _source(source),
+       _filteringTrackJudge(clientServerInterface->userDataFetcher())
     {
         Q_UNUSED(parent)
         setFilterCaseSensitivity(Qt::CaseInsensitive);
 
+        _filteringTrackJudge.setUserId(collectionViewContext->userId());
+        connect(
+            collectionViewContext, &CollectionViewContext::userIdChanged,
+            this,
+            [this, collectionViewContext]()
+            {
+                _filteringTrackJudge.setUserId(collectionViewContext->userId());
+                invalidateFilter();
+            }
+        );
+
         setSourceModel(source);
     }
 
-    void FilteredCollectionTableModel::sort(int column, Qt::SortOrder order) {
+    void FilteredCollectionTableModel::setTrackFilter(TrackCriterium criterium)
+    {
+        _filteringTrackJudge.setCriterium(criterium);
+        invalidateFilter();
+    }
+
+    void FilteredCollectionTableModel::sort(int column, Qt::SortOrder order)
+    {
         _source->sort(column, order);
     }
 
@@ -830,7 +1031,8 @@ namespace PMP {
         return _source->trackAt(mapToSource(index));
     }
 
-    void FilteredCollectionTableModel::setSearchText(QString search) {
+    void FilteredCollectionTableModel::setSearchText(QString search)
+    {
         _searchParts = search.split(QRegExp("\\s+"), QString::SkipEmptyParts);
         invalidateFilter();
     }
@@ -840,18 +1042,26 @@ namespace PMP {
     {
         (void)sourceParent;
 
-        if (_searchParts.empty()) return true; /* not filtered */
+        if (_searchParts.empty()
+                && _filteringTrackJudge.getCriterium() == TrackCriterium::None)
+        {
+            return true; /* not filtered */
+        }
 
         CollectionTrackInfo* track = _source->trackAt(sourceRow);
 
-        Q_FOREACH(QString searchPart, _searchParts) {
-            if (!track->title().contains(searchPart, Qt::CaseInsensitive)
-                    && !track->artist().contains(searchPart, Qt::CaseInsensitive)
-                    && !track->album().contains(searchPart, Qt::CaseInsensitive))
-                return false;
+        if (!_searchParts.empty())
+        {
+            for (QString const& searchPart : _searchParts)
+            {
+                if (!track->title().contains(searchPart, Qt::CaseInsensitive)
+                        && !track->artist().contains(searchPart, Qt::CaseInsensitive)
+                        && !track->album().contains(searchPart, Qt::CaseInsensitive))
+                    return false;
+            }
         }
 
-        return true;
+        return _filteringTrackJudge.trackSatisfiesCriterium(*track, true).isTrue();
     }
 
 }

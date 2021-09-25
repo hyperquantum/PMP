@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,8 +25,8 @@
 #include "playerhistorytrackinfo.h"
 #include "playerstate.h"
 #include "serverhealthstatus.h"
-#include "simpleplayerstatemonitor.h"
 #include "tribool.h"
+#include "userloginerror.h"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -37,11 +37,12 @@
 #include <QUuid>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class CollectionFetcher;
 
-    class RequestID {
+    class RequestID
+    {
     public:
         RequestID() : _rawId(0) {}
         RequestID(uint rawId) : _rawId(rawId) {}
@@ -53,19 +54,23 @@ namespace PMP {
         uint _rawId;
     };
 
-    inline bool operator==(const RequestID& me, const RequestID& other) {
+    inline bool operator==(const RequestID& me, const RequestID& other)
+    {
         return me.rawId() == other.rawId();
     }
 
-    inline bool operator!=(const RequestID& me, const RequestID& other) {
+    inline bool operator!=(const RequestID& me, const RequestID& other)
+    {
         return !(me == other);
     }
 
-    inline uint qHash(const RequestID& requestId) {
+    inline uint qHash(const RequestID& requestId)
+    {
         return requestId.rawId();
     }
 
-    enum class ServerEventSubscription {
+    enum class ServerEventSubscription
+    {
         None = 0,
         AllEvents = 1,
         ServerHealthMessages = 2,
@@ -74,11 +79,12 @@ namespace PMP {
     /**
         Represents a connection to a PMP server.
     */
-    class ServerConnection : public QObject {
+    class ServerConnection : public QObject
+    {
         Q_OBJECT
-
     private:
-        enum State {
+        enum State
+        {
             NotConnected, Connecting, Handshake, TextMode,
             HandshakeFailure, BinaryHandshake, BinaryMode
         };
@@ -89,16 +95,9 @@ namespace PMP {
         class DuplicationResultHandler;
 
     public:
-        enum PlayState { // TODO : eliminate this and use PlayerState instead
-            UnknownState = 0, Stopped = 1, Playing = 2, Paused = 3
-        };
-
-        enum UserRegistrationError {
+        enum UserRegistrationError
+        {
             UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
-        };
-
-        enum UserLoginError {
-            UnknownUserLoginError, UserLoginAuthenticationFailed
         };
 
         ServerConnection(QObject* parent = nullptr,
@@ -123,8 +122,9 @@ namespace PMP {
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
 
         bool serverSupportsQueueEntryDuplication() const;
+        bool serverSupportsDynamicModeWaveTermination() const;
 
-    public slots:
+    public Q_SLOTS:
         void shutdownServer();
 
         void sendDatabaseIdentifierRequest();
@@ -138,7 +138,7 @@ namespace PMP {
 
         void seekTo(uint queueID, qint64 position);
 
-        void insertPauseAtFront();
+        void insertBreakAtFront();
 
         void setVolume(int percentage);
 
@@ -149,6 +149,7 @@ namespace PMP {
         void requestDynamicModeStatus();
         void setDynamicModeNoRepetitionSpan(int seconds);
         void startDynamicModeWave();
+        void terminateDynamicModeWave();
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
         void deleteQueueEntry(uint queueID);
@@ -191,37 +192,29 @@ namespace PMP {
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedServerName(quint8 nameType, QString name);
 
-        void playing();
-        void paused();
-        void stopped();
-        void receivedPlayerState(int state, quint8 volume, quint32 queueLength,
+        void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition);
 
         void volumeChanged(int percentage);
 
-        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
-        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
-
-        void noCurrentTrack();
-        void nowPlayingTrack(quint32 queueID);
-        void nowPlayingTrack(QString title, QString artist, int lengthInSeconds);
-        void trackPositionChanged(quint64 position);
+        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpanSeconds);
+        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged,
+                                                    int progress, int progressTotal);
 
         void receivedPlayerHistoryEntry(PMP::PlayerHistoryTrackInfo track);
         void receivedPlayerHistory(QVector<PMP::PlayerHistoryTrackInfo> tracks);
 
-        void queueLengthChanged(int length);
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);
-        void queueEntryAdded(quint32 offset, quint32 queueID, RequestID requestID);
-        void queueEntryRemoved(quint32 offset, quint32 queueID);
-        void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
-        void receivedTrackInfo(quint32 queueID, QueueEntryType type, int lengthInSeconds,
-                               QString title, QString artist);
-        void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
+        void queueEntryAdded(qint32 offset, quint32 queueId, RequestID requestId);
+        void queueEntryRemoved(qint32 offset, quint32 queueId);
+        void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueId);
+        void receivedTrackInfo(quint32 queueId, QueueEntryType type,
+                               qint64 lengthMilliseconds, QString title, QString artist);
+        void receivedQueueEntryHash(quint32 queueId, QueueEntryType type, FileHash hash);
         void receivedHashUserData(FileHash hash, quint32 userId,
                                   QDateTime previouslyHeard, qint16 scorePermillage);
-        void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
+        void receivedPossibleFilenames(quint32 queueId, QList<QString> names);
 
         void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
         void userAccountCreatedSuccessfully(QString login, quint32 id);
@@ -240,7 +233,7 @@ namespace PMP {
                                                  QVector<PMP::FileHash> unavailable);
         void collectionTracksChanged(QVector<PMP::CollectionTrackInfo> changes);
 
-    private slots:
+    private Q_SLOTS:
         void onConnected();
         void onReadyRead();
         void onSocketError(QAbstractSocket::SocketError error);
@@ -257,7 +250,7 @@ namespace PMP {
         void readBinaryCommands();
         void executeTextCommand(QString const& commandText);
         void handleBinaryMessage(QByteArray const& message);
-        void handleStandardBinaryMessage(NetworkProtocol::ServerMessageType messageType,
+        void handleStandardBinaryMessage(ServerMessageType messageType,
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 extensionMessageType,
                                     QByteArray const& message);
@@ -272,15 +265,15 @@ namespace PMP {
                                              quint32 clientReference);
 
         void handleNewUserSalt(QString login, QByteArray salt);
-        void handleUserRegistrationResult(quint16 errorType, quint32 intData,
-                                          QByteArray const& blobData);
+        void handleUserRegistrationResult(ResultMessageErrorCode errorCode,
+                                          quint32 intData, QByteArray const& blobData);
 
         void sendInitiateLoginMessage(QString login, quint32 clientReference);
         void sendFinishLoginMessage(QString login, QByteArray userSalt,
                                     QByteArray sessionSalt, QByteArray hashedPassword,
                                     quint32 clientReference);
         void handleLoginSalt(QString login, QByteArray userSalt, QByteArray sessionSalt);
-        void handleUserLoginResult(quint16 errorType, quint32 intData,
+        void handleUserLoginResult(ResultMessageErrorCode errorCode, quint32 intData,
                                    QByteArray const& blobData);
 
         void onFullIndexationRunningStatusReceived(bool running);
@@ -317,7 +310,7 @@ namespace PMP {
 
         void parseTrackAvailabilityChangeBatchMessage(QByteArray const& message);
         void parseTrackInfoBatchMessage(QByteArray const& message,
-                                        NetworkProtocol::ServerMessageType messageType);
+                                        ServerMessageType messageType);
 
         void parseHashUserDataMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);

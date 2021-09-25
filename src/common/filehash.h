@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,6 +24,7 @@
 #include <QHash>
 #include <QMetaType>
 #include <QString>
+#include <QtDebug>
 
 namespace PMP {
 
@@ -42,9 +43,13 @@ namespace PMP {
         const QByteArray& SHA1() const { return _sha1; }
         const QByteArray& MD5() const { return _md5; }
 
+        QString toString() const;
+        QString toFancyString() const;
         QString dumpToString() const;
 
     private:
+        QString toStringInternal(QChar dash) const;
+
         uint _length;
         QByteArray _sha1;
         QByteArray _md5;
@@ -93,6 +98,21 @@ namespace PMP {
 
     inline bool operator>=(const FileHash& me, const FileHash& other) {
         return compare(me, other) >= 0;
+    }
+
+    inline QDebug operator<<(QDebug debug, const FileHash& hash) {
+        if (hash.isNull()) {
+            debug << "(null hash)";
+            return debug;
+        }
+
+        QString hashText =
+                QString::number(hash.length())
+                    + "-" + hash.SHA1().toHex()
+                    + "-" + hash.MD5().toHex();
+
+        debug << hashText;
+        return debug;
     }
 }
 

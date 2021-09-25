@@ -22,7 +22,10 @@
 #include "playerhistorytrackinfo.h"
 #include "playermode.h"
 #include "playerstate.h"
+#include "queueentrytype.h"
 #include "serverhealthstatus.h"
+#include "startstopeventstatus.h"
+#include "userloginerror.h"
 
 namespace PMP {
 
@@ -36,7 +39,10 @@ namespace PMP {
             qRegisterMetaType<PMP::PlayerHistoryTrackInfo>();
             qRegisterMetaType<PMP::PlayerMode>();
             qRegisterMetaType<PMP::PlayerState>();
+            qRegisterMetaType<PMP::QueueEntryType>();
             qRegisterMetaType<PMP::ServerHealthStatus>();
+            qRegisterMetaType<PMP::StartStopEventStatus>();
+            qRegisterMetaType<PMP::UserLoginError>();
         }
 
     private:

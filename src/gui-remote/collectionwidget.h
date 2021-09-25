@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,37 +22,50 @@
 
 #include <QWidget>
 
+QT_FORWARD_DECLARE_CLASS(QComboBox)
 QT_FORWARD_DECLARE_CLASS(QMenu)
 
-namespace Ui {
+namespace Ui
+{
     class CollectionWidget;
 }
 
-namespace PMP {
-
+namespace PMP
+{
     class ClientServerInterface;
+    class CollectionViewContext;
+    class ColorSwitcher;
     class FilteredCollectionTableModel;
-    class ServerConnection;
     class SortedCollectionTableModel;
+    enum class TrackCriterium;
 
     class CollectionWidget : public QWidget {
         Q_OBJECT
 
     public:
-        CollectionWidget(QWidget* parent, ServerConnection* connection,
-                         ClientServerInterface* clientServerInterface);
+        CollectionWidget(QWidget* parent, ClientServerInterface* clientServerInterface);
         ~CollectionWidget();
 
-    private slots:
+    private Q_SLOTS:
+        void filterTracksIndexChanged(int index);
         void highlightTracksIndexChanged(int index);
+        void highlightColorIndexChanged();
         void collectionContextMenuRequested(const QPoint& position);
 
     private:
+        void initTrackFilterComboBox();
         void initTrackHighlightingComboBox();
+        void fillTrackCriteriaComboBox(QComboBox* comboBox);
+        void initTrackHighlightingColorSwitcher();
+
+        TrackCriterium getCurrentTrackFilter() const;
+        TrackCriterium getCurrentHighlightMode() const;
+        TrackCriterium getTrackCriteriumFromComboBox(QComboBox* comboBox) const;
 
         Ui::CollectionWidget* _ui;
-        ServerConnection* _connection;
+        ColorSwitcher* _colorSwitcher;
         ClientServerInterface* _clientServerInterface;
+        CollectionViewContext* _collectionViewContext;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;
         QMenu* _collectionContextMenu;

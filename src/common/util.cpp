@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,14 +29,18 @@
 namespace PMP {
 
     const QChar Util::Copyright = QChar(0xA9);
+    const QChar Util::EmDash = QChar(0x2014);
     const QChar Util::EnDash = QChar(0x2013);
     const QChar Util::EAcute = QChar(0xE9);
     const QChar Util::EDiaeresis = QChar(0xEB);
     const QChar Util::FigureDash = QChar(0x2012);
     const QChar Util::GreaterThanOrEqual = QChar(0x2265);
     const QChar Util::LessThanOrEqual = QChar(0x2264);
+    const QChar Util::PauseSymbol = QChar(0x23F8);
+    const QChar Util::PlaySymbol = QChar(0x25B6);
 
-    unsigned Util::getRandomSeed() {
+    unsigned Util::getRandomSeed()
+    {
         /* Because std::random_device seems to be not random at all on MINGW 4.8, we use
          * the system time and an incrementing counter instead. */
 
@@ -58,7 +62,8 @@ namespace PMP {
         return result;
     }
 
-    QString Util::secondsToHoursMinuteSecondsText(qint32 totalSeconds) {
+    QString Util::secondsToHoursMinuteSecondsText(qint32 totalSeconds)
+    {
         if (totalSeconds < 0) { return "?"; }
 
         int sec = totalSeconds % 60;
@@ -66,8 +71,61 @@ namespace PMP {
         int hrs = (totalSeconds / 60) / 60;
 
         return QString::number(hrs).rightJustified(2, '0')
-            + ":" + QString::number(min).rightJustified(2, '0')
-            + ":" + QString::number(sec).rightJustified(2, '0');
+                + ":" + QString::number(min).rightJustified(2, '0')
+                + ":" + QString::number(sec).rightJustified(2, '0');
+    }
+
+    QString Util::millisecondsToShortDisplayTimeText(qint64 milliseconds)
+    {
+        QString prefix;
+        if (milliseconds < 0)
+        {
+            milliseconds = -milliseconds;
+            prefix = "-";
+        }
+
+        int partialSeconds = milliseconds % 1000;
+        int totalSeconds = int(milliseconds / 1000);
+
+        int sec = totalSeconds % 60;
+        int totalMinutes = totalSeconds / 60;
+        int min = totalMinutes % 60;
+        int hrs = totalMinutes / 60;
+
+        if (hrs != 0)
+        {
+            return prefix + QString::number(hrs).rightJustified(2, '0')
+                    + ":" + QString::number(min).rightJustified(2, '0')
+                    + ":" + QString::number(sec).rightJustified(2, '0')
+                    + "." + QString::number(partialSeconds / 100);
+        }
+
+        return prefix + QString::number(min).rightJustified(2, '0')
+                + ":" + QString::number(sec).rightJustified(2, '0')
+                + "." + QString::number(partialSeconds / 100);
+    }
+
+    QString Util::millisecondsToLongDisplayTimeText(qint64 milliseconds)
+    {
+        QString prefix;
+        if (milliseconds < 0)
+        {
+            milliseconds = -milliseconds;
+            prefix = "-";
+        }
+
+        int partialSeconds = milliseconds % 1000;
+        int totalSeconds = int(milliseconds / 1000);
+
+        int sec = totalSeconds % 60;
+        int totalMinutes = totalSeconds / 60;
+        int min = totalMinutes % 60;
+        int hrs = totalMinutes / 60;
+
+        return prefix + QString::number(hrs).rightJustified(2, '0')
+                + ":" + QString::number(min).rightJustified(2, '0')
+                + ":" + QString::number(sec).rightJustified(2, '0')
+                + "." + QString::number(partialSeconds).rightJustified(3, '0');
     }
 
     QString Util::getCopyrightLine(bool mustBeAscii) {

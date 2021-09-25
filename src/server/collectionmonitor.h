@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,7 +36,7 @@ namespace PMP {
     public:
         CollectionMonitor(QObject* parent = 0);
 
-    public slots:
+    public Q_SLOTS:
         void hashBecameAvailable(PMP::FileHash hash);
         void hashBecameUnavailable(PMP::FileHash hash);
         void hashTagInfoChanged(PMP::FileHash hash, QString title, QString artist,
@@ -47,7 +47,7 @@ namespace PMP {
                                      QVector<PMP::FileHash> unavailable);
         void hashInfoChanged(QVector<PMP::CollectionTrackInfo> changes);
 
-    private slots:
+    private Q_SLOTS:
         void emitNotifications();
 
     private:
@@ -61,7 +61,7 @@ namespace PMP {
             qint32 lengthInMilliseconds;
 
             HashInfo()
-             : isAvailable(false), lengthInMilliseconds(0)
+             : isAvailable(false), lengthInMilliseconds(-1)
             {
                 //
             }

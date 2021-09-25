@@ -36,15 +36,32 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="0">
+     <item row="2" column="0">
       <widget class="QLabel" name="highlightTracksLabel">
        <property name="text">
         <string>Highlight tracks:</string>
        </property>
       </widget>
      </item>
+     <item row="2" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout">
+       <item>
+        <widget class="QComboBox" name="highlightTracksComboBox"/>
+       </item>
+       <item>
+        <widget class="QPushButton" name="highlightColorButton"/>
+       </item>
+      </layout>
+     </item>
+     <item row="1" column="0">
+      <widget class="QLabel" name="filterTracksLabel">
+       <property name="text">
+        <string>Filter:</string>
+       </property>
+      </widget>
+     </item>
      <item row="1" column="1">
-      <widget class="QComboBox" name="highlightTracksComboBox"/>
+      <widget class="QComboBox" name="filterTracksComboBox"/>
      </item>
     </layout>
    </item>

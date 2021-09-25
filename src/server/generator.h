@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,97 +22,87 @@
 
 #include "common/filehash.h"
 
+#include "dynamicmodecriteria.h"
+
 #include <QObject>
-#include <QQueue>
 #include <QSet>
+#include <QSharedPointer>
 #include <QTimer>
+#include <QVector>
 
-#include <random>
-
-namespace PMP {
-
+namespace PMP
+{
+    class DynamicTrackGenerator;
     class History;
     class PlayerQueue;
     class QueueEntry;
+    class RandomTracksSource;
     class Resolver;
+    class TrackRepetitionChecker;
+    class WaveTrackGenerator;
 
-    class Generator : public QObject {
+    class Generator : public QObject
+    {
         Q_OBJECT
     public:
         Generator(PlayerQueue* queue, Resolver* resolver, History* history);
 
         bool enabled() const;
         bool waveActive() const;
+        int waveProgress() const;
+        int waveProgressTotal() const;
 
         quint32 userPlayingFor() const;
 
-        int noRepetitionSpan() const;
+        int noRepetitionSpanSeconds() const;
 
         History& history();
 
-    public slots:
+    public Q_SLOTS:
         void enable();
         void disable();
         void requestQueueExpansion();
 
-        void setNoRepetitionSpan(int seconds);
-
         void startWave();
+        void terminateWave();
 
         void currentTrackChanged(QueueEntry const* newTrack);
-        void setUserPlayingFor(quint32 user);
+        void setUserGeneratingFor(quint32 user);
+
+        void setNoRepetitionSpanSeconds(int seconds);
 
     Q_SIGNALS:
-        void enabledChanged(bool enabled);
-        void noRepetitionSpanChanged(int seconds);
-        void waveStarting(quint32 user);
-        void waveFinished(quint32 user);
+        void enabledChanged();
+        void noRepetitionSpanChanged();
+        void waveStarting();
+        void waveProgressChanged(int tracksDelivered, int tracksTotal);
+        void waveFinished(bool completed);
 
-    private slots:
+    private Q_SLOTS:
+        void upcomingTrackNotification(FileHash hash);
         void queueEntryRemoved(quint32, quint32);
-        void hashBecameAvailable(PMP::FileHash hash);
-        void hashBecameUnavailable(PMP::FileHash hash);
 
-        void checkRefillUpcomingBuffer();
-        void checkAndRefillQueue();
+        void queueRefillTimerAction();
 
     private:
-        class Candidate;
+        void checkQueueRefillNeeded();
+        void setDesiredUpcomingCount();
+        void loadAndApplyUserPreferences(quint32 user);
+        void saveUserPreferences();
 
-        static const int upcomingTimerFreqMs = 5000;
-        static const int desiredQueueLength = 10;
-        static const int expandCount = 5;
-        static const int minimalUpcomingCount = 2 * desiredQueueLength;
-        static const int maximalUpcomingCount = 3 * desiredQueueLength + 3 * expandCount;
-        static const int desiredUpcomingRuntimeSeconds = 3600; /* 1 hour */
-
-        quint16 getRandomPermillage();
-        FileHash getNextRandomHash();
-        void checkFirstUpcomingAgainAfterFiltersChanged();
-        void requestQueueRefill();
-        int expandQueue(int howManyTracksToAdd, int maxIterations);
-        void advanceWave();
-        bool satisfiesFilters(Candidate* candidate, bool strict);
-        bool satisfiesWaveFilter(Candidate* candidate);
-
-        std::mt19937 _randomEngine;
-        QList<FileHash> _hashesSource;
-        QSet<FileHash> _hashesInSource;
-        QSet<FileHash> _hashesSpent;
-        QueueEntry const* _currentTrack;
+        RandomTracksSource* _randomTracksSource;
+        TrackRepetitionChecker* _repetitionChecker;
+        DynamicTrackGenerator* _trackGenerator;
+        WaveTrackGenerator* _waveTrackGenerator;
         PlayerQueue* _queue;
         Resolver* _resolver;
         History* _history;
-        QQueue<Candidate*> _upcoming;
-        QTimer* _upcomingTimer;
-        uint _upcomingRuntimeSeconds;
-        int _noRepetitionSpan;
-        int _minimumPermillageByWave;
-        quint32 _userPlayingFor;
+        int _waveProgress;
+        int _waveProgressTotal;
+        DynamicModeCriteria _criteria;
         bool _enabled;
         bool _refillPending;
         bool _waveActive;
-        bool _waveRising;
     };
 }
 #endif

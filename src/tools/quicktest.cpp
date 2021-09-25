@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,12 +21,15 @@
 #include "common/util.h"
 #include "common/version.h"
 
+#include "server/database.h"
+
 #include <QCoreApplication>
 #include <QHostAddress>
 #include <QHostInfo>
 #include <QNetworkInterface>
 #include <QSslSocket>
 #include <QtDebug>
+#include <QtGlobal>
 
 using namespace PMP;
 
@@ -43,6 +46,9 @@ int main(int argc, char *argv[]) {
     Logging::enableConsoleAndTextFileLogging(false);
     Logging::setFilenameTag("T"); /* T = Test */
 
+    QTextStream out(stdout);
+    qDebug() << "Qt version:" << qVersion();
+
     /*
     qDebug() << "Local hostname:" << QHostInfo::localHostName();
 
@@ -51,7 +57,35 @@ int main(int argc, char *argv[]) {
     }
     */
     
+    /*
     qDebug() << "SSL version:" << QSslSocket::sslLibraryVersionNumber();
     qDebug() << "SSL version string:" << QSslSocket::sslLibraryVersionString();
+    */
+
+    if (!Database::init(out, "localhost", "root", "xxxxxxxxxxx"))
+    {
+        qWarning() << "could not initialize database";
+        return 1;
+    }
+
+    auto database = Database::getDatabaseForCurrentThread();
+    if (!database)
+    {
+        qWarning() << "could not get database connection for this thread";
+        return 1;
+    }
+
+    bool ok;
+    auto preferences = database->getUserDynamicModePreferences(1, &ok);
+    if (!ok)
+    {
+        qWarning() << "failed to load user preferences";
+        return 1;
+    }
+
+    qDebug() << "Enable dynamic mode:" << (preferences.dynamicModeEnabled ? "Y" : "N");
+    qDebug() << "Non-repetition interval:"
+             << preferences.trackRepetitionAvoidanceIntervalSeconds << "seconds";
+
     return 0;
 }

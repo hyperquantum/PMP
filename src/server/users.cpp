@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,47 +23,54 @@
 
 #include <QtGlobal>
 
-namespace PMP {
-
+namespace PMP
+{
     Users::Users()
     {
         loadUsers();
     }
 
-    void Users::loadUsers() {
+    void Users::loadUsers()
+    {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return;
 
-        QList<User> users = db->getUsers();
+        auto const users = db->getUsers();
 
         _usersById.clear();
         _userIdsByLogin.clear();
         _usersById.reserve(users.size());
         _userIdsByLogin.reserve(users.size());
-        Q_FOREACH(User u, users) {
+        for (auto& u : users)
+        {
             _usersById.insert(u.id, u);
             _userIdsByLogin.insert(u.login.toLower(), u.id);
         }
     }
 
-    QList<UserIdAndLogin> Users::getUsers() {
-        QList<UserIdAndLogin> result;
+    QVector<UserIdAndLogin> Users::getUsers()
+    {
+        QVector<UserIdAndLogin> result;
+        result.reserve(_usersById.size());
 
-        Q_FOREACH(User u, _usersById.values()) {
+        for (auto& u : qAsConst(_usersById))
+        {
             result.append(UserIdAndLogin(u.id, u.login));
         }
 
         return result;
     }
 
-    QString Users::getUserLogin(quint32 userId) const {
+    QString Users::getUserLogin(quint32 userId) const
+    {
         auto it = _usersById.find(userId);
         if (it == _usersById.end()) return ""; /* not found */
 
         return it->login;
     }
 
-    bool Users::getUserByLogin(QString login, User& user) {
+    bool Users::getUserByLogin(QString login, User& user)
+    {
         quint32 id = _userIdsByLogin.value(login.toLower(), 0);
         if (id == 0) return false;
 
@@ -80,12 +87,15 @@ namespace PMP {
         return hashedPassword == expected;
     }
 
-    QByteArray Users::generateSalt() {
+    QByteArray Users::generateSalt()
+    {
         QByteArray buffer;
-        do {
+        do
+        {
             // FIXME : stop using qrand()
             buffer.append((char)(qrand() % 256));
-        } while (buffer.size() < 24);
+        }
+        while (buffer.size() < 24);
 
         //buffer.truncate(24);
         return buffer;
@@ -103,12 +113,15 @@ namespace PMP {
         }
 
         auto db = Database::getDatabaseForCurrentThread();
-        if (db) {
-            if (db->checkUserExists(accountName)) {
+        if (db)
+        {
+            if (db->checkUserExists(accountName))
+            {
                 return AccountAlreadyExists;
             }
         }
-        else {
+        else
+        {
             return DatabaseProblem;
         }
 
@@ -135,12 +148,15 @@ namespace PMP {
         }
 
         auto db = Database::getDatabaseForCurrentThread();
-        if (db) {
-            if (db->checkUserExists(accountName)) {
+        if (db)
+        {
+            if (db->checkUserExists(accountName))
+            {
                 return QPair<Users::ErrorCode, quint32>(AccountAlreadyExists, 0);
             }
         }
-        else {
+        else
+        {
             return QPair<Users::ErrorCode, quint32>(DatabaseProblem, 0);
         }
 
@@ -155,18 +171,23 @@ namespace PMP {
         return QPair<ErrorCode, quint32>(Successfull, u.id);
     }
 
-    NetworkProtocol::ErrorType Users::toNetworkProtocolError(ErrorCode code) {
-        switch (code) {
+    ResultMessageErrorCode Users::toNetworkProtocolError(ErrorCode code)
+    {
+        switch (code)
+        {
         case Successfull:
-            return NetworkProtocol::NoError;
+            return ResultMessageErrorCode::NoError;
+
         case InvalidAccountName:
-            return NetworkProtocol::InvalidUserAccountName;
+            return ResultMessageErrorCode::InvalidUserAccountName;
+
         case AccountAlreadyExists:
-            return NetworkProtocol::UserAccountAlreadyExists;
+            return ResultMessageErrorCode::UserAccountAlreadyExists;
+
         case DatabaseProblem:
-            return NetworkProtocol::DatabaseProblem;
+            return ResultMessageErrorCode::DatabaseProblem;
         }
 
-        return NetworkProtocol::UnknownError;
+        return ResultMessageErrorCode::UnknownError;
     }
 }

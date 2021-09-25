@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,7 @@
 #include "ui_loginwidget.h"
 
 #include "common/networkprotocol.h"
-//#include "common/serverconnection.h"  already included in the header file :-/
+#include "common/serverconnection.h"
 
 #include <QMessageBox>
 
@@ -98,16 +98,18 @@ namespace PMP {
     }
 
     void LoginWidget::userLoggedInSuccessfully(QString login, quint32 id) {
-        emit loggedIn(login, id);
+        Q_EMIT loggedIn(login, id);
     }
 
     void LoginWidget::userLoginError(QString login,
-                                     ServerConnection::UserLoginError errorType)
+                                     UserLoginError errorType)
     {
+        Q_UNUSED(login)
+
         QString message;
 
         switch (errorType) {
-        case ServerConnection::UserLoginAuthenticationFailed:
+        case UserLoginError::AuthenticationFailed:
             message = tr("The specified user/password combination is not valid.");
             break;
         default:

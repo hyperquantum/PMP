@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,82 +19,105 @@
 
 #include "trackprogresswidget.h"
 
+#include "colors.h"
+
+#include <QFontMetricsF>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QPaintEvent>
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     TrackProgressWidget::TrackProgressWidget(QWidget* parent)
      : QWidget(parent), /*_trackID(0),*/ _trackLength(-1), _trackPosition(-1)
     {
         //
     }
 
-    TrackProgressWidget::~TrackProgressWidget() {
+    TrackProgressWidget::~TrackProgressWidget()
+    {
         //
     }
 
-    QSize TrackProgressWidget::minimumSizeHint() const {
-        return QSize(0, 18);
+    QSize TrackProgressWidget::minimumSizeHint() const
+    {
+        auto height = desiredHeight();
+
+        return QSize(0, height);
     }
 
-    QSize TrackProgressWidget::sizeHint() const {
-        return QSize(256, 18);
+    QSize TrackProgressWidget::sizeHint() const
+    {
+        auto height = desiredHeight();
+
+        return QSize(10 * height, height);
     }
 
-    void TrackProgressWidget::setCurrentTrack(/*uint ID,*/ qint64 length) {
+    void TrackProgressWidget::setCurrentTrack(/*uint ID,*/ qint64 length)
+    {
+        if (_trackLength == length)
+            return; /* no change */
+
         //_trackID = ID;
         _trackLength = length;
         update();
     }
 
-    void TrackProgressWidget::setTrackPosition(qint64 position) {
+    void TrackProgressWidget::setTrackPosition(qint64 position)
+    {
         _trackPosition = position;
         update();
     }
 
-    void TrackProgressWidget::paintEvent(QPaintEvent* event) {
-        QColor emptyColor(50, 65, 75);
-        QColor backgroundColor(25, 35, 45);
-        QColor borderColor(50, 65, 75);
-        QColor progressColor(80, 95, 105);
+    void TrackProgressWidget::paintEvent(QPaintEvent* event)
+    {
+        Q_UNUSED(event)
 
         QPainter painter(this);
 
-        painter.setRenderHint(QPainter::Antialiasing);
+        //painter.setRenderHint(QPainter::Antialiasing);
 
         QRect rect = this->rect().adjusted(+1, +1, -1, -1);
 
-        if (_trackLength <= 0) {
-            painter.fillRect(rect, QBrush(emptyColor));
+        if (_trackLength <= 0)
+        {
+            painter.fillRect(rect, QBrush(Colors::instance().trackProgressWidgetEmpty));
             return;
         }
 
-        painter.fillRect(rect, QBrush(backgroundColor));
+        painter.fillRect(rect, QBrush(Colors::instance().trackProgressWidgetBackground));
 
-        if (_trackPosition > 0) {
+        if (_trackPosition > 0)
+        {
             auto position = qMin(_trackPosition, _trackLength);
 
-            QRectF rect2(rect);
+            QRect rect2(rect);
             rect2.adjust(+2, +2, -2, -2);
             int w = (position * rect2.width() + _trackLength / 2) / _trackLength;
             rect2.setWidth(w);
-            painter.fillRect(rect2, QBrush(progressColor));
+
+            painter.fillRect(rect2,
+                             QBrush(Colors::instance().trackProgressWidgetProgress));
+            painter.setPen(QPen(Colors::instance().trackProgressWidgetProgress));
+            painter.drawRect(rect2);
         }
 
-        painter.setPen(QPen(borderColor));
+        painter.setPen(QPen(Colors::instance().trackProgressWidgetBorder));
         painter.drawRect(rect);
     }
 
-    void TrackProgressWidget::mousePressEvent(QMouseEvent* event) {
-        if (_trackLength > 0 && event->button() == Qt::LeftButton) {
+    void TrackProgressWidget::mousePressEvent(QMouseEvent* event)
+    {
+        if (_trackLength > 0 && event->button() == Qt::LeftButton)
+        {
             QRect rect = this->rect().adjusted(+1+2, +1+2, -1-2, -1-2);
 
-            if (rect.contains(event->pos())) {
+            if (rect.contains(event->pos()))
+            {
                 int x = event->x();
-                if (x < rect.left() || x > rect.x() + rect.width()) {
+                if (x < rect.left() || x > rect.x() + rect.width())
+                {
                     return;
                 }
 
@@ -109,12 +132,19 @@ namespace PMP {
                     (position * rect.width() + _trackLength / 2) / _trackLength + rect.x();
                 qDebug() << " calculated x from calculated position would be:" << x_r;
 
-                emit seekRequested(position);
+                Q_EMIT seekRequested(position);
             }
         }
 
         /* call default implementation */
         QWidget::mousePressEvent(event);
+    }
+
+    qreal TrackProgressWidget::desiredHeight() const
+    {
+        QFontMetricsF metrics { font() };
+
+        return metrics.height();
     }
 
 }

@@ -150,6 +150,9 @@ namespace PMP {
             if (!available)
                 continue; /* the track is not available, so we don't have to care */
 
+            qWarning() << "received positive track availability for an unknown track; "
+                       << "inserting placeholder data for hash" << hash;
+
             /* add the track without its title, artist, etc. */
             CollectionTrackInfo track(hash, available);
             _collectionHash.insert(hash, track);

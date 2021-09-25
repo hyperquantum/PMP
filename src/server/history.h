@@ -29,7 +29,6 @@
 #include <QHash>
 #include <QObject>
 #include <QSharedPointer>
-#include <QTimer>
 
 namespace PMP {
 
@@ -43,6 +42,17 @@ namespace PMP {
         struct HashStats {
             QDateTime lastHeard;
             qint16 score;
+
+            bool haveScore() const { return score >= 0; }
+
+            bool scoreLessThanXPercent(int percent) const
+            {
+                if (!haveScore())
+                    return false; // unknown score doesn't count
+
+                // remember that score is per 1000
+                return score < 10 * percent;
+            }
         };
 
         History(Player* player);
@@ -57,25 +67,24 @@ namespace PMP {
         void updatedHashUserStats(uint hashID, quint32 user,
                                   QDateTime previouslyHeard, qint16 score);
 
-    private slots:
+    private Q_SLOTS:
         void currentTrackChanged(QueueEntry const* newTrack);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
-        void onUpdatedHashUserStats(uint hashID, quint32 user,
+        void onHashUserStatsUpdated(uint hashID, quint32 user,
                                     QDateTime previouslyHeard, qint16 score);
-        void onFetchingTimerTimeout();
+        void sendFetchRequests();
         void onFetchCompleted(quint32 userId, QVector<PMP::UserDataForHashId> results);
 
     private:
         void scheduleFetch(uint hashID, quint32 user);
-
-        static const int fetchingTimerFreqMs = 100;
 
         Player* _player;
         QHash<FileHash, QDateTime> _lastPlayHash;
         QueueEntry const* _nowPlaying;
         QHash<quint32, QHash<uint, HashStats>> _userStats;
         QHash<quint32, QHash<uint, bool>> _userStatsFetching;
-        QTimer* _fetchingTimer;
+        int _fetchRequestsScheduledCount;
+        bool _fetchTimerRunning;
     };
 }
 #endif

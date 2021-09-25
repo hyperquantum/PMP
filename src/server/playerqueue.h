@@ -39,6 +39,22 @@ namespace PMP {
     class QueueEntry;
     class Resolver;
 
+    class TrackRepetitionInfo {
+    public:
+        TrackRepetitionInfo(bool isRepetition, qint64 millisecondsCounted)
+         : _millisecondsCounted(millisecondsCounted), _isRepetition(isRepetition)
+        {
+            //
+        }
+
+        bool isRepetition() const { return _isRepetition; }
+        qint64 millisecondsCounted() const { return _millisecondsCounted; }
+
+    private:
+        qint64 _millisecondsCounted;
+        bool _isRepetition;
+    };
+
     class PlayerQueue : public QObject {
         Q_OBJECT
     public:
@@ -48,14 +64,16 @@ namespace PMP {
 
         PlayerQueue(Resolver* resolver);
 
-        bool checkPotentialRepetitionByAdd(FileHash hash,
-                                           int repetitionAvoidanceSeconds,
-                                           int* nonRepetitionSpan = nullptr) const;
+        TrackRepetitionInfo checkPotentialRepetitionByAdd(FileHash hash,
+                                                          int repetitionAvoidanceSeconds,
+                                                          qint64 extraMarginMilliseconds
+                                                          ) const;
 
         uint getNextQueueID();
 
         bool empty() const;
         uint length() const;
+        bool canAddMoreEntries(int count = 1) const;
 
         int firstTrackIndex() const { return _firstTrackIndex; }
         uint firstTrackQueueId() const { return _firstTrackQueueId; }
@@ -68,7 +86,7 @@ namespace PMP {
 
         QList<QSharedPointer<PlayerHistoryEntry> > recentHistory(int limit);
 
-    public slots:
+    public Q_SLOTS:
         //void clear(bool doNotifications);
         void trim(uint length);
 
@@ -98,7 +116,7 @@ namespace PMP {
 
         void firstTrackChanged(int index, uint queueId);
 
-    private slots:
+    private Q_SLOTS:
         void checkFrontOfQueue();
 
     private:

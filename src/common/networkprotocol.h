@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,11 +20,14 @@
 #ifndef PMP_NETWORKPROTOCOL_H
 #define PMP_NETWORKPROTOCOL_H
 
+#include "common/queueentrytype.h"
+#include "common/startstopeventstatus.h"
+
 #include <QByteArray>
 #include <QString>
 
-namespace PMP {
-
+namespace PMP
+{
     /*
         Network protocol versions
         =========================
@@ -43,107 +46,100 @@ namespace PMP {
          10: single byte request 51 & server msg 28: server health messages
          11: server msg 29: track availability change notifications
          12: clienst msg 22, server msg 30, single byte request 18: protocol extensions
+         13: server msgs 3 & 4: change track length to milliseconds
+         14: single byte request 25 & server msg 26: wave termination & progress
 
     */
 
     class FileHash;
 
-    enum class QueueEntryType : quint8 {
-        Unknown = 0,
-        Track = 1,
-        BreakPoint = 10,
+    enum class ServerMessageType
+    {
+        None = 0,
+        PlayerStateMessage = 1,
+        VolumeChangedMessage = 2,
+        TrackInfoMessage = 3,
+        BulkTrackInfoMessage = 4,
+        QueueContentsMessage = 5,
+        QueueEntryRemovedMessage = 6,
+        QueueEntryAddedMessage = 7,
+        DynamicModeStatusMessage = 8,
+        PossibleFilenamesForQueueEntryMessage = 9,
+        ServerInstanceIdentifierMessage = 10,
+        QueueEntryMovedMessage = 11,
+        UsersListMessage = 12,
+        NewUserAccountSaltMessage = 13,
+        SimpleResultMessage = 14,
+        UserLoginSaltMessage = 15,
+        UserPlayingForModeMessage = 16,
+        ServerEventNotificationMessage = 17,
+        CollectionFetchResponseMessage = 18,
+        CollectionChangeNotificationMessage = 19,
+        ServerNameMessage = 20,
+        BulkQueueEntryHashMessage = 21,
+        HashUserDataMessage = 22,
+        NewHistoryEntryMessage = 23,
+        PlayerHistoryMessage = 24,
+        DatabaseIdentifierMessage = 25,
+        DynamicModeWaveStatusMessage = 26,
+        QueueEntryAdditionConfirmationMessage = 27,
+        ServerHealthMessage = 28,
+        CollectionAvailabilityChangeNotificationMessage = 29,
+        ServerExtensionsMessage = 30,
     };
 
-    class NetworkProtocol {
+    enum class ClientMessageType
+    {
+        None = 0,
+        SingleByteActionMessage = 1,
+        TrackInfoRequestMessage = 2,
+        BulkTrackInfoRequestMessage = 3,
+        QueueFetchRequestMessage = 4,
+        QueueEntryRemovalRequestMessage = 5,
+        GeneratorNonRepetitionChangeMessage = 6,
+        PossibleFilenamesForQueueEntryRequestMessage = 7,
+        PlayerSeekRequestMessage = 8,
+        QueueEntryMoveRequestMessage = 9,
+        InitiateNewUserAccountMessage = 10,
+        FinishNewUserAccountMessage = 11,
+        InitiateLoginMessage = 12,
+        FinishLoginMessage = 13,
+        CollectionFetchRequestMessage = 14,
+        AddHashToEndOfQueueRequestMessage = 15,
+        AddHashToFrontOfQueueRequestMessage = 16,
+        BulkQueueEntryHashRequestMessage = 17,
+        HashUserDataRequestMessage = 18,
+        InsertHashIntoQueueRequestMessage = 19,
+        PlayerHistoryRequestMessage = 20,
+        QueueEntryDuplicationRequestMessage = 21,
+        ClientExtensionsMessage = 22,
+    };
+
+    enum class ResultMessageErrorCode
+    {
+        NoError = 0,
+        InvalidMessageStructure = 1,
+        NotLoggedIn = 10,
+
+        InvalidUserAccountName = 11,
+        UserAccountAlreadyExists = 12,
+        UserAccountRegistrationMismatch = 13,
+        UserAccountLoginMismatch = 14,
+        UserLoginAuthenticationFailed = 15,
+        AlreadyLoggedIn = 16,
+
+        QueueIdNotFound = 20,
+
+        DatabaseProblem = 90,
+        NonFatalInternalServerError = 254,
+        UnknownError = 255
+    };
+
+    class NetworkProtocol
+    {
     public:
-        enum ServerMessageType {
-            ServerMessageTypeNone = 0,
-            PlayerStateMessage = 1,
-            VolumeChangedMessage = 2,
-            TrackInfoMessage = 3,
-            BulkTrackInfoMessage = 4,
-            QueueContentsMessage = 5,
-            QueueEntryRemovedMessage = 6,
-            QueueEntryAddedMessage = 7,
-            DynamicModeStatusMessage = 8,
-            PossibleFilenamesForQueueEntryMessage = 9,
-            ServerInstanceIdentifierMessage = 10,
-            QueueEntryMovedMessage = 11,
-            UsersListMessage = 12,
-            NewUserAccountSaltMessage = 13,
-            SimpleResultMessage = 14,
-            UserLoginSaltMessage = 15,
-            UserPlayingForModeMessage = 16,
-            ServerEventNotificationMessage = 17,
-            CollectionFetchResponseMessage = 18,
-            CollectionChangeNotificationMessage = 19,
-            ServerNameMessage = 20,
-            BulkQueueEntryHashMessage = 21,
-            HashUserDataMessage = 22,
-            NewHistoryEntryMessage = 23,
-            PlayerHistoryMessage = 24,
-            DatabaseIdentifierMessage = 25,
-            DynamicModeWaveStatusMessage = 26,
-            QueueEntryAdditionConfirmationMessage = 27,
-            ServerHealthMessage = 28,
-            CollectionAvailabilityChangeNotificationMessage = 29,
-            ServerExtensionsMessage = 30,
-        };
-
-        enum ClientMessageType {
-            ClientMessageTypeNone = 0,
-            SingleByteActionMessage = 1,
-            TrackInfoRequestMessage = 2,
-            BulkTrackInfoRequestMessage = 3,
-            QueueFetchRequestMessage = 4,
-            QueueEntryRemovalRequestMessage = 5,
-            GeneratorNonRepetitionChangeMessage = 6,
-            PossibleFilenamesForQueueEntryRequestMessage = 7,
-            PlayerSeekRequestMessage = 8,
-            QueueEntryMoveRequestMessage = 9,
-            InitiateNewUserAccountMessage = 10,
-            FinishNewUserAccountMessage = 11,
-            InitiateLoginMessage = 12,
-            FinishLoginMessage = 13,
-            CollectionFetchRequestMessage = 14,
-            AddHashToEndOfQueueRequestMessage = 15,
-            AddHashToFrontOfQueueRequestMessage = 16,
-            BulkQueueEntryHashRequestMessage = 17,
-            HashUserDataRequestMessage = 18,
-            InsertHashIntoQueueRequestMessage = 19,
-            PlayerHistoryRequestMessage = 20,
-            QueueEntryDuplicationRequestMessage = 21,
-            ClientExtensionsMessage = 22,
-        };
-
-        enum ErrorType {
-            NoError = 0,
-            InvalidMessageStructure = 1,
-            NotLoggedIn = 10,
-
-            InvalidUserAccountName = 11,
-            UserAccountAlreadyExists = 12,
-            UserAccountRegistrationMismatch = 13,
-            UserAccountLoginMismatch = 14,
-            UserLoginAuthenticationFailed = 15,
-            AlreadyLoggedIn = 16,
-
-            QueueIdNotFound = 20,
-
-            DatabaseProblem = 90,
-            NonFatalInternalServerError = 254,
-            UnknownError = 255
-        };
-
-        enum class StartStopEventStatus : quint8 {
-            Undefined = 0,
-            StatusNotActive = 1,
-            StatusActiveAlready = 2,
-            EventActivatedNow = 3,
-            EventDeactivatedNow = 4,
-        };
-
-        struct ProtocolExtensionSupport {
+        struct ProtocolExtensionSupport
+        {
             quint8 id;
             quint8 version;
 
@@ -160,7 +156,8 @@ namespace PMP {
             }
         };
 
-        struct ProtocolExtension : ProtocolExtensionSupport {
+        struct ProtocolExtension : ProtocolExtensionSupport
+        {
             QString name;
 
             ProtocolExtension()
@@ -176,15 +173,14 @@ namespace PMP {
             }
         };
 
+        static void append2Bytes(QByteArray& buffer, ServerMessageType messageType);
+        static void append2Bytes(QByteArray& buffer, ClientMessageType messageType);
+        static void append2Bytes(QByteArray& buffer, ResultMessageErrorCode errorCode);
+
         static quint16 encodeMessageTypeForExtension(quint8 extensionId,
                                                      quint8 messageType);
         static void appendExtensionMessageStart(QByteArray& buffer, quint8 extensionId,
                                                 quint8 messageType);
-
-        static bool isValidStartStopEventStatus(quint8 status);
-        static bool isActive(StartStopEventStatus status);
-        static bool isChange(StartStopEventStatus status);
-        static StartStopEventStatus createAlreadyActiveStartStopEventStatus(bool active);
 
         static int ratePassword(QString password);
 

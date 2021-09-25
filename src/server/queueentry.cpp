@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -178,7 +178,7 @@ namespace PMP {
             return false;
         }
 
-        QString path = resolver.findPath(*fileHash, fast);
+        QString path = resolver.findPathForHash(*fileHash, fast);
 
         if (path.length() > 0) {
             _filename = path;

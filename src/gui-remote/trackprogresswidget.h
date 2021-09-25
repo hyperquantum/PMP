@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,19 +22,19 @@
 
 #include <QWidget>
 
-namespace PMP {
-
-    class TrackProgressWidget : public QWidget {
+namespace PMP
+{
+    class TrackProgressWidget : public QWidget
+    {
         Q_OBJECT
-
     public:
         explicit TrackProgressWidget(QWidget* parent = 0);
         ~TrackProgressWidget();
 
-        QSize minimumSizeHint() const;
-        QSize sizeHint() const;
+        QSize minimumSizeHint() const override;
+        QSize sizeHint() const override;
 
-    public slots:
+    public Q_SLOTS:
         void setCurrentTrack(/*uint ID,*/ qint64 length);
         void setTrackPosition(qint64 position);
 
@@ -42,13 +42,15 @@ namespace PMP {
         void seekRequested(/*uint trackID,*/ qint64 position);
 
     protected:
-        void paintEvent(QPaintEvent* event) Q_DECL_OVERRIDE;
-        void mousePressEvent(QMouseEvent* event) Q_DECL_OVERRIDE;
+        void paintEvent(QPaintEvent* event) override;
+        void mousePressEvent(QMouseEvent* event) override;
 
-    private slots:
+    private Q_SLOTS:
 
 
     private:
+        qreal desiredHeight() const;
+
         //uint _trackID;
         qint64 _trackLength;
         qint64 _trackPosition;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,48 +23,58 @@
 #include "common/clientserverinterface.h"
 #include "common/collectiontrackinfo.h"
 #include "common/collectionwatcher.h"
-#include "common/simpleplayerstatemonitor.h"
+#include "common/queuecontroller.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 
+#include <QApplication>
+#include <QClipboard>
 #include <QLocale>
 #include <QtDebug>
 
 namespace PMP {
 
-    TrackInfoDialog::TrackInfoDialog(QWidget* parent, const FileHash& hash,
-                                     ClientServerInterface* clientServerInterface)
+    TrackInfoDialog::TrackInfoDialog(QWidget* parent,
+                                     ClientServerInterface* clientServerInterface,
+                                     const FileHash& hash,
+                                     quint32 queueId)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
         _ui(new Ui::TrackInfoDialog),
         _clientServerInterface(clientServerInterface),
-        _trackHash(hash)
+        _trackHash(hash),
+        _queueId(queueId)
     {
         init();
 
+        fillQueueId();
+        fillHash();
+
         auto trackInfo = clientServerInterface->collectionWatcher().getTrack(hash);
 
-        if (trackInfo.hash().isNull()) { /* not found? */
-            fillHash(hash);
+        if (trackInfo.hash().isNull())
+        { /* not found? */
             clearTrackDetails();
         }
-        else {
-            fillHash(trackInfo.hash());
+        else
+        {
             fillTrackDetails(trackInfo);
         }
 
         fillUserData(_trackHash);
     }
 
-    TrackInfoDialog::TrackInfoDialog(QWidget* parent, const CollectionTrackInfo& track,
-                                     ClientServerInterface* clientServerInterface)
+    TrackInfoDialog::TrackInfoDialog(QWidget* parent,
+                                     ClientServerInterface* clientServerInterface,
+                                     const CollectionTrackInfo& track)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
         _ui(new Ui::TrackInfoDialog),
         _clientServerInterface(clientServerInterface),
-        _trackHash(track.hash())
+        _trackHash(track.hash()),
+        _queueId(0)
     {
         init();
 
-        fillHash(track.hash());
+        fillHash();
         fillTrackDetails(track);
         fillUserData(_trackHash);
     }
@@ -103,6 +113,14 @@ namespace PMP {
     {
         _ui->setupUi(this);
 
+        if (_queueId == 0)
+        {
+            _ui->queueIdLabel->setVisible(false);
+            _ui->queueIdValueLabel->setVisible(false);
+            _ui->fileInfoFormLayout->removeWidget(_ui->queueIdLabel);
+            _ui->fileInfoFormLayout->removeWidget(_ui->queueIdValueLabel);
+        }
+
         connect(
             &_clientServerInterface->collectionWatcher(),
             &CollectionWatcher::newTrackReceived,
@@ -120,16 +138,71 @@ namespace PMP {
             &UserDataFetcher::dataReceivedForUser,
             this, &TrackInfoDialog::dataReceivedForUser
         );
+
+        connect(
+            _clientServerInterface, &ClientServerInterface::connectedChanged,
+            this, &TrackInfoDialog::enableDisableButtons
+        );
+
+        auto queueController = &_clientServerInterface->queueController();
+        connect(
+            _ui->addToQueueFrontButton, &QPushButton::clicked,
+            this,
+            [this, queueController]()
+            {
+                queueController->insertQueueEntryAtFront(_trackHash);
+            }
+        );
+        connect(
+            _ui->addToQueueEndButton, &QPushButton::clicked,
+            this,
+            [this, queueController]()
+            {
+                queueController->insertQueueEntryAtEnd(_trackHash);
+            }
+        );
+
+        connect(
+            _ui->copyHashButton, &QPushButton::clicked,
+            this,
+            [this]()
+            {
+                QApplication::clipboard()->setText(_trackHash.toString());
+            }
+        );
+
+        connect(
+            _ui->closeButton, &QPushButton::clicked,
+            this, &TrackInfoDialog::close
+        );
+
+        enableDisableButtons();
+
+        _ui->closeButton->setFocus();
     }
 
-    void TrackInfoDialog::fillHash(const FileHash& hash)
+    void TrackInfoDialog::enableDisableButtons()
     {
-        QString hashText =
-                QString::number(hash.length())
-                    + Util::FigureDash + hash.SHA1().toHex()
-                    + Util::FigureDash + hash.MD5().toHex();
+        auto connected = _clientServerInterface->connected();
+        auto haveHash = !_trackHash.isNull();
 
-        _ui->hashValueLabel->setText(hashText);
+        _ui->addToQueueFrontButton->setEnabled(connected && haveHash);
+        _ui->addToQueueEndButton->setEnabled(connected && haveHash);
+
+        _ui->copyHashButton->setEnabled(haveHash);
+    }
+
+    void TrackInfoDialog::fillQueueId()
+    {
+        if (_queueId != 0)
+        {
+            _ui->queueIdValueLabel->setText(QString::number(_queueId));
+        }
+    }
+
+    void TrackInfoDialog::fillHash()
+    {
+        _ui->hashValueLabel->setText(_trackHash.toFancyString());
     }
 
     void TrackInfoDialog::fillTrackDetails(const CollectionTrackInfo& trackInfo)
@@ -140,8 +213,8 @@ namespace PMP {
 
         QString lengthText;
         if (trackInfo.lengthIsKnown()) {
-            lengthText =
-                    Util::secondsToHoursMinuteSecondsText(trackInfo.lengthInSeconds());
+            auto length = trackInfo.lengthInMilliseconds();
+            lengthText = Util::millisecondsToLongDisplayTimeText(length);
         }
         else {
             lengthText = tr("unknown");

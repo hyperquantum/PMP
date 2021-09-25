@@ -41,7 +41,11 @@ namespace PMP {
     }
 
     void CollectionMonitor::hashBecameUnavailable(FileHash hash) {
-        HashInfo& info = _collection[hash];
+        auto it = _collection.find(hash);
+        if (it == _collection.end())
+            return; /* nothing to announce */
+
+        HashInfo& info = it.value();
         if (!info.isAvailable) return; /* no change */
 
         info.isAvailable = false;
@@ -151,7 +155,7 @@ namespace PMP {
             notifications.append(info);
         }
 
-        emit hashInfoChanged(notifications);
+        Q_EMIT hashInfoChanged(notifications);
     }
 
     void CollectionMonitor::emitAvailabilityNotifications(QVector<FileHash> hashes) {
@@ -167,6 +171,6 @@ namespace PMP {
                 unavailable.append(h);
         }
 
-        emit hashAvailabilityChanged(available, unavailable);
+        Q_EMIT hashAvailabilityChanged(available, unavailable);
     }
 }

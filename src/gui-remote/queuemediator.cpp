@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,9 +19,10 @@
 
 #include "queuemediator.h"
 
+#include "common/clientserverinterface.h"
+#include "common/queuecontroller.h"
+#include "common/queuemonitor.h"
 #include "common/serverconnection.h"
-
-#include "queuemonitor.h"
 
 #include <QtDebug>
 
@@ -36,11 +37,11 @@ namespace PMP {
         virtual bool execute(QueueMediator& mediator, bool sendToServer) = 0;
         virtual bool rollback(QueueMediator& mediator) = 0;
 
-        virtual bool equals(Operation* op) { return false; }
-        virtual bool equals(InfoOperation* op) { return false; }
-        virtual bool equals(DeleteOperation* op) { return false; }
-        virtual bool equals(AddOperation* op) { return false; }
-        virtual bool equals(MoveOperation* op) { return false; }
+        virtual bool equals(Operation* op) { Q_UNUSED(op) return false; }
+        virtual bool equals(InfoOperation* op) { Q_UNUSED(op) return false; }
+        virtual bool equals(DeleteOperation* op) { Q_UNUSED(op) return false; }
+        virtual bool equals(AddOperation* op) { Q_UNUSED(op) return false; }
+        virtual bool equals(MoveOperation* op) { Q_UNUSED(op) return false; }
 
     };
 
@@ -81,7 +82,7 @@ namespace PMP {
         }
 
         if (sendToServer) {
-            mediator._connection->deleteQueueEntry(_queueID);
+            mediator.queueController().deleteQueueEntry(_queueID);
         }
 
         if (_index < mediator._myQueue.size()) {
@@ -90,7 +91,7 @@ namespace PMP {
 
         mediator._queueLength--;
 
-        emit mediator.trackRemoved(_index, _queueID);
+        Q_EMIT mediator.trackRemoved(_index, _queueID);
         return true;
     }
 
@@ -103,7 +104,7 @@ namespace PMP {
         mediator._myQueue.insert(_index, _queueID);
         mediator._queueLength++;
 
-        emit mediator.trackAdded(_index, _queueID);
+        Q_EMIT mediator.trackAdded(_index, _queueID);
         return true;
     }
 
@@ -153,11 +154,13 @@ namespace PMP {
 
         mediator._queueLength++;
 
-        emit mediator.trackAdded(_index, _queueID);
+        Q_EMIT mediator.trackAdded(_index, _queueID);
         return true;
     }
 
     bool QueueMediator::AddOperation::rollback(QueueMediator& mediator) {
+        Q_UNUSED(mediator)
+
         /* Rollback support for AddOperation is not needed, as this is
            only a server-side operation. */
         return false;
@@ -206,7 +209,7 @@ namespace PMP {
         }
 
         if (sendToServer) {
-            mediator._connection->moveQueueEntry(_queueID, _toIndex - _fromIndex);
+            mediator.queueController().moveQueueEntry(_queueID, _toIndex - _fromIndex);
         }
 
         if (_fromIndex < mediator._myQueue.size()) {
@@ -217,7 +220,7 @@ namespace PMP {
             mediator._myQueue.insert(_toIndex, _queueID);
         }
 
-        emit mediator.trackMoved(_fromIndex, _toIndex, _queueID);
+        Q_EMIT mediator.trackMoved(_fromIndex, _toIndex, _queueID);
         return true;
     }
 
@@ -240,7 +243,7 @@ namespace PMP {
             mediator._myQueue.insert(_fromIndex, _queueID);
         }
 
-        emit mediator.trackMoved(_toIndex, _fromIndex, _queueID);
+        Q_EMIT mediator.trackMoved(_toIndex, _fromIndex, _queueID);
         return true;
     }
 
@@ -314,26 +317,34 @@ namespace PMP {
         }
 
         if (change) {
-            emit mediator.entriesReceived(_index, _entries);
+            Q_EMIT mediator.entriesReceived(_index, _entries);
         }
 
         return true;
     }
 
     bool QueueMediator::InfoOperation::rollback(QueueMediator& mediator) {
+        Q_UNUSED(mediator)
+
         /* NOT NECESSARY */
         return false;
     }
 
     /* ========================== QueueMediator ========================== */
 
-    QueueMediator::QueueMediator(QObject* parent, QueueMonitor* monitor,
-                                 ServerConnection* connection)
-     : AbstractQueueMonitor(parent), _sourceMonitor(monitor), _connection(connection)
+    QueueMediator::QueueMediator(QObject* parent, AbstractQueueMonitor* monitor,
+                                 ClientServerInterface* clientServerInterface)
+     : AbstractQueueMonitor(parent),
+       _sourceMonitor(monitor),
+       _clientServerInterface(clientServerInterface)
     {
         _myQueue = monitor->knownQueuePart();
         _queueLength = monitor->queueLength();
 
+        connect(
+            monitor, &AbstractQueueMonitor::fetchCompleted,
+            this, &QueueMediator::fetchCompleted
+        );
         connect(
             monitor, &AbstractQueueMonitor::queueResetted,
             this, &QueueMediator::resetQueue
@@ -356,6 +367,11 @@ namespace PMP {
         );
     }
 
+    void QueueMediator::setFetchLimit(int count)
+    {
+        _sourceMonitor->setFetchLimit(count);
+    }
+
     QUuid QueueMediator::serverUuid() const {
         return _sourceMonitor->serverUuid();
     }
@@ -372,6 +388,11 @@ namespace PMP {
         return _myQueue[index];
     }
 
+    bool QueueMediator::isFetchCompleted() const
+    {
+        return _sourceMonitor->isFetchCompleted();
+    }
+
     void QueueMediator::removeTrack(int index, quint32 queueID) {
         doLocalOperation(new DeleteOperation(index, queueID));
     }
@@ -385,20 +406,19 @@ namespace PMP {
         moveTrack(fromIndex, toIndex, queueId);
     }
 
-    void QueueMediator::insertFileAsync(int index, const FileHash& hash) {
-        _connection->insertQueueEntryAtIndex(hash, index);
+    void QueueMediator::insertFileAsync(int index, const FileHash& hash)
+    {
+        queueController().insertQueueEntryAtIndex(hash, index);
     }
 
-    void QueueMediator::duplicateEntryAsync(quint32 queueID) {
-        _connection->duplicateQueueEntry(queueID);
+    void QueueMediator::duplicateEntryAsync(quint32 queueID)
+    {
+        queueController().duplicateQueueEntry(queueID);
     }
 
-    bool QueueMediator::canDuplicateEntry(quint32 queueID) const {
-        (void)queueID;
-
-        /* we COULD simulate duplication for tracks on older servers, with a regular
-         * insert operation, but there is no reason to put in the effort at this time */
-        return _connection->serverSupportsQueueEntryDuplication();
+    bool QueueMediator::canDuplicateEntry(quint32 queueID) const
+    {
+        return queueController().canDuplicateEntry(queueID);
     }
 
     void QueueMediator::resetQueue(int queueLength) {
@@ -409,7 +429,7 @@ namespace PMP {
         qDeleteAll(_pendingOperations);
         _pendingOperations.clear();
 
-        emit queueResetted(queueLength);
+        Q_EMIT queueResetted(queueLength);
     }
 
     void QueueMediator::doResetQueue() {
@@ -420,7 +440,7 @@ namespace PMP {
         qDeleteAll(_pendingOperations);
         _pendingOperations.clear();
 
-        emit queueResetted(_queueLength);
+        Q_EMIT queueResetted(_queueLength);
     }
 
     void QueueMediator::entriesReceivedAtServer(int index, QList<quint32> entries) {
@@ -437,6 +457,11 @@ namespace PMP {
 
     void QueueMediator::trackMovedAtServer(int fromIndex, int toIndex, quint32 queueID) {
         handleServerOperation(new MoveOperation(fromIndex, toIndex, queueID));
+    }
+
+    QueueController& QueueMediator::queueController() const
+    {
+        return _clientServerInterface->queueController();
     }
 
     bool QueueMediator::doLocalOperation(Operation* op) {

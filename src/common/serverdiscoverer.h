@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -40,14 +40,14 @@ namespace PMP {
         ServerDiscoverer(QObject* parent = nullptr);
         ~ServerDiscoverer();
 
-    public slots:
+    public Q_SLOTS:
         void sendProbe();
 
     Q_SIGNALS:
         void foundServer(QHostAddress address, quint16 port, QUuid id, QString name);
         void foundExtraServerAddress(QHostAddress address, QUuid id);
 
-    private slots:
+    private Q_SLOTS:
         void sendProbeToLocalhost();
         void sendBroadcastProbe();
         void readPendingDatagrams();
@@ -79,7 +79,7 @@ namespace PMP {
         void foundServer(QHostAddress address, quint16 port,
                          QUuid serverId, QString name);
 
-    private slots:
+    private Q_SLOTS:
         void onConnected();
         void onReceivedServerUuid(QUuid uuid);
         void onReceivedServerName(quint8 nameType, QString name);

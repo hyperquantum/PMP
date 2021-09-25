@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -84,7 +84,8 @@ namespace PMP {
 
                 connect(
                     button, &QCommandLinkButton::clicked,
-                    [=]() { emit accountClicked(username); }
+                    this,
+                    [this, username]() { Q_EMIT accountClicked(username); }
                 );
 
                 _ui->usersListLayout->addWidget(button);

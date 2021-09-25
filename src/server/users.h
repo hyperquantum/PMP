@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,20 +24,22 @@
 
 #include "database.h"  // for User :-/
 
-#include <QList>
 #include <QObject>
 #include <QPair>
 #include <QString>
 #include <QtGlobal>
+#include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     typedef QPair<quint32, QString> UserIdAndLogin;
 
-    class Users : public QObject {
+    class Users : public QObject
+    {
         Q_OBJECT
     public:
-        enum ErrorCode {
+        enum ErrorCode
+        {
             Successfull = 0,
             InvalidAccountName = 1,
             AccountAlreadyExists = 2,
@@ -46,7 +48,7 @@ namespace PMP {
 
         Users();
 
-        QList<UserIdAndLogin> getUsers();
+        QVector<UserIdAndLogin> getUsers();
         QString getUserLogin(quint32 userId) const;
         bool getUserByLogin(QString login, User& user);
         static bool checkUserLoginPassword(User const& user,
@@ -61,7 +63,7 @@ namespace PMP {
                                                      QByteArray const& salt,
                                                      QByteArray const& hashedPassword);
 
-        static NetworkProtocol::ErrorType toNetworkProtocolError(ErrorCode code);
+        static ResultMessageErrorCode toNetworkProtocolError(ErrorCode code);
 
     private:
         void loadUsers();

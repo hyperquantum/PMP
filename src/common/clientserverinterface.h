@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,19 +24,30 @@
 
 namespace PMP {
 
+    class AbstractQueueMonitor;
     class CollectionWatcher;
+    class CurrentTrackMonitor;
+    class DynamicModeController;
     class ServerConnection;
-    class SimplePlayerController;
-    class SimplePlayerStateMonitor;
+    class PlayerController;
+    class QueueController;
+    class QueueEntryInfoFetcher;
     class UserDataFetcher;
 
-    class ClientServerInterface : public QObject {
+    class ClientServerInterface : public QObject
+    {
         Q_OBJECT
     public:
-        ClientServerInterface(QObject* parent, ServerConnection* connection);
+        ClientServerInterface(ServerConnection* connection);
 
-        SimplePlayerController& simplePlayerController();
-        SimplePlayerStateMonitor& simplePlayerStateMonitor();
+        PlayerController& playerController();
+        CurrentTrackMonitor& currentTrackMonitor();
+
+        QueueController& queueController();
+        AbstractQueueMonitor& queueMonitor();
+        QueueEntryInfoFetcher& queueEntryInfoFetcher();
+
+        DynamicModeController& dynamicModeController();
 
         CollectionWatcher& collectionWatcher();
         UserDataFetcher& userDataFetcher();
@@ -45,18 +56,25 @@ namespace PMP {
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
 
-    public Q_SLOTS:
+        bool connected() const { return _connected; }
 
+    public Q_SLOTS:
+        void shutdownServer();
 
     Q_SIGNALS:
-
+        void connectedChanged();
 
     private:
         ServerConnection* _connection;
-        SimplePlayerController* _simplePlayerController;
-        SimplePlayerStateMonitor* _simplePlayerStateMonitor;
+        PlayerController* _simplePlayerController;
+        CurrentTrackMonitor* _currentTrackMonitor;
+        QueueController* _queueController;
+        AbstractQueueMonitor* _queueMonitor;
+        QueueEntryInfoFetcher* _queueEntryInfoFetcher;
+        DynamicModeController* _dynamicModeController;
         CollectionWatcher* _collectionWatcher;
         UserDataFetcher* _userDataFetcher;
+        bool _connected;
     };
 }
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -37,13 +37,13 @@ namespace PMP {
         explicit ConnectionWidget(QWidget* parent = 0);
         ~ConnectionWidget();
 
-    public slots:
+    public Q_SLOTS:
         void reenableFields();
 
     Q_SIGNALS:
         void doConnect(QString server, uint port);
 
-    private slots:
+    private Q_SLOTS:
         void foundServer(QHostAddress address, quint16 port, QUuid id, QString name);
         void connectClicked();
 

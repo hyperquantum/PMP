@@ -21,6 +21,7 @@
 #define PMP_QUEUEMODEL_H
 
 #include "common/filehash.h"
+#include "common/playermode.h"
 
 #include <QAbstractTableModel>
 #include <QList>
@@ -30,7 +31,6 @@ namespace PMP {
     class QueueEntryInfo;
     class QueueEntryInfoFetcher;
     class QueueMediator;
-    class UserDataFetcher;
 
     class QueueTrack {
     public:
@@ -60,12 +60,13 @@ namespace PMP {
         bool _real;
     };
 
+    class ClientServerInterface;
+
     class QueueModel : public QAbstractTableModel {
         Q_OBJECT
     public:
-        QueueModel(QObject* parent, QueueMediator* source,
-                   QueueEntryInfoFetcher* trackInfoFetcher,
-                   UserDataFetcher& userDataFetcher);
+        QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
+                   QueueMediator* source, QueueEntryInfoFetcher* trackInfoFetcher);
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -85,8 +86,9 @@ namespace PMP {
         quint32 trackIdAt(const QModelIndex& index) const;
         QueueTrack trackAt(const QModelIndex& index) const;
 
-    private slots:
-        void onUserPlayingForChanged(quint32 userId);
+    private Q_SLOTS:
+        void playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,
+                               QString personalModeUserLogin);
         void userDataReceivedForUser(quint32 userId);
 
         void queueResetted(int queueLength);
@@ -119,11 +121,11 @@ namespace PMP {
 
         //Track* trackAt(const QModelIndex& index) const;
 
+        ClientServerInterface* _clientServerInterface;
         QueueMediator* _source;
         QueueEntryInfoFetcher* _infoFetcher;
-        UserDataFetcher& _userDataFetcher;
-        bool _receivedUserPlayingFor;
-        quint32 _userPlayingFor;
+        PlayerMode _playerMode;
+        quint32 _personalModeUserId;
         int _modelRows;
         QList<Track*> _tracks;
     };

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,9 @@
 #ifndef PMP_MAINWIDGET_H
 #define PMP_MAINWIDGET_H
 
+#include "common/filehash.h"
+#include "common/playerstate.h"
+
 #include <QWidget>
 
 QT_FORWARD_DECLARE_CLASS(QMenu)
@@ -31,8 +34,8 @@ namespace Ui {
 namespace PMP {
 
     class ClientServerInterface;
-    class CurrentTrackMonitor;
     class PlayerHistoryModel;
+    class PreciseTrackProgressMonitor;
     class QueueEntryInfoFetcher;
     class QueueMediator;
     class QueueModel;
@@ -52,58 +55,62 @@ namespace PMP {
     protected:
         bool eventFilter(QObject*, QEvent*);
 
-    private slots:
-        void playing(quint32 queueID);
-        void paused(quint32 queueID);
-        void stopped(quint32 queueLength);
-        void queueLengthChanged(quint32 queueLength, int state);
+    private Q_SLOTS:
+        void playerModeChanged();
+        void playerStateChanged();
+        void queueLengthChanged();
+        void currentTrackChanged();
+        void currentTrackInfoChanged();
+        void trackProgressChanged(PlayerState state, quint32 queueId,
+                                  qint64 progressInMilliseconds,
+                                  qint64 trackLengthInMilliseconds);
+        void switchTrackTimeDisplayMode();
 
-        void trackProgress(quint32 queueID, quint64 position, int lengthSeconds);
-        void trackProgress(quint64 position);
-        void receivedTitleArtist(QString title, QString artist);
-        void receivedPossibleFilename(QString name);
+        void trackInfoButtonClicked();
 
-        void volumeChanged(int percentage);
+        void volumeChanged();
         void decreaseVolume();
         void increaseVolume();
 
         void historyContextMenuRequested(const QPoint& position);
         void queueContextMenuRequested(const QPoint& position);
 
+        void dynamicModeEnabledChanged();
+        void noRepetitionSpanSecondsChanged();
         void changeDynamicMode(int checkState);
         void noRepetitionIndexChanged(int index);
-        void dynamicModeStatusReceived(bool enabled, int noRepetitionSpan);
-        void dynamicModeHighScoreWaveStatusReceived(bool active, bool statusChanged);
-        void startHighScoredTracksWave();
 
-        void userPlayingForChanged(quint32 userId, QString login);
+        void waveActiveChanged();
+        void waveProgressChanged();
+        void startHighScoredTracksWave();
+        void terminateHighScoredTracksWave();
 
     private:
+        void enableDisableTrackInfoButton();
+        void enableDisablePlayerControlButtons();
+
+        void updateTrackTimeDisplay();
+        void updateTrackTimeDisplay(qint64 positionInMilliseconds,
+                                    qint64 trackLengthInMilliseconds);
+
+        void showTrackInfoDialog(FileHash hash, quint32 queueId = 0);
+
         bool keyEventFilter(QKeyEvent* event);
 
         void buildNoRepetitionList(int spanToSelect);
         QString noRepetitionTimeString(int seconds);
 
         Ui::MainWidget* _ui;
-        ServerConnection* _connection;
         ClientServerInterface* _clientServerInterface;
-        CurrentTrackMonitor* _currentTrackMonitor;
-        QueueMonitor* _queueMonitor;
+        PreciseTrackProgressMonitor* _trackProgressMonitor;
         QueueMediator* _queueMediator;
-        QueueEntryInfoFetcher* _queueEntryInfoFetcher;
         QueueModel* _queueModel;
         QMenu* _queueContextMenu;
-        int _volume;
-        quint32 _nowPlayingQID;
-        QString _nowPlayingTitle;
-        QString _nowPlayingArtist;
-        int _nowPlayingLength;
-        bool _dynamicModeEnabled;
-        bool _dynamicModeHighScoreWaveActive;
         QList<int> _noRepetitionList;
         int _noRepetitionUpdating;
         PlayerHistoryModel* _historyModel;
         QMenu* _historyContextMenu;
+        bool _showingTimeRemaining;
     };
 }
 #endif

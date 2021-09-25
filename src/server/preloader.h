@@ -94,7 +94,7 @@ namespace PMP {
     Q_SIGNALS:
         void trackPreloaded(uint queueId);
 
-    private slots:
+    private Q_SLOTS:
         void queueEntryAdded(quint32 offset, quint32 queueID);
         void queueEntryRemoved(quint32 offset, quint32 queueID);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);

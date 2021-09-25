@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,567 +19,387 @@
 
 #include "generator.h"
 
-#include "common/util.h"
-
 #include "database.h"
+#include "dynamictrackgenerator.h"
 #include "history.h"
 #include "playerqueue.h"
-#include "queueentry.h"
+#include "randomtrackssource.h"
 #include "resolver.h"
+#include "trackrepetitionchecker.h"
+#include "wavetrackgenerator.h"
 
 #include <QtDebug>
 #include <QTimer>
 
 #include <algorithm>
 
-namespace PMP {
+namespace PMP
+{
+    namespace
+    {
+        static const int defaultNoRepetitionSpanSeconds = 60 * 60 /* one hour */;
 
-    /* ========================== Candidate ========================== */
-
-    class Generator::Candidate {
-    public:
-        Candidate(const FileHash& hashID, quint16 randomPermillageNumber1,
-                  quint16 randomPermillageNumber2)
-         : _hash(hashID), _lengthMilliseconds(0),
-           _randomPermillageNumber1(randomPermillageNumber1),
-           _randomPermillageNumber2(randomPermillageNumber2)
-        {
-            //
-        }
-
-        const FileHash& hash() const { return _hash; }
-
-        void setLengthMilliseconds(uint milliseconds) {
-            _lengthMilliseconds = milliseconds;
-        }
-
-        uint lengthMilliseconds() const { return _lengthMilliseconds; }
-
-        quint16 randomPermillageNumber() const { return _randomPermillageNumber1; }
-
-        quint16 randomPermillageNumber2() const { return _randomPermillageNumber2; }
-
-    private:
-        FileHash _hash;
-        uint _lengthMilliseconds;
-        quint16 _randomPermillageNumber1;
-        quint16 _randomPermillageNumber2;
-    };
-
-    /* ========================== Generator ========================== */
+        static const int desiredQueueLength = 10;
+        static const int expandCount = 5;
+    }
 
     Generator::Generator(PlayerQueue* queue, Resolver* resolver, History* history)
-     : _randomEngine(Util::getRandomSeed()), _currentTrack(nullptr),
-       _queue(queue), _resolver(resolver), _history(history),
-       _upcomingTimer(new QTimer(this)), _upcomingRuntimeSeconds(0),
-       _noRepetitionSpan(60 * 60 /* one hour */), _minimumPermillageByWave(0),
-       _userPlayingFor(0), _enabled(false), _refillPending(false), _waveActive(false),
-       _waveRising(false)
+     : _randomTracksSource(new RandomTracksSource(this, resolver)),
+       _repetitionChecker(new TrackRepetitionChecker(this, queue, history)),
+       _trackGenerator(new DynamicTrackGenerator(this, _randomTracksSource, resolver,
+                                                 history, _repetitionChecker)),
+       _waveTrackGenerator(new WaveTrackGenerator(this, _randomTracksSource, resolver,
+                                                  history, _repetitionChecker)),
+       _queue(queue),
+       _resolver(resolver),
+       _history(history),
+       _waveProgress(-1),
+       _waveProgressTotal(0),
+       _enabled(false),
+       _refillPending(false),
+       _waveActive(false)
     {
+        _criteria.setNoRepetitionSpanSeconds(defaultNoRepetitionSpanSeconds);
+        _repetitionChecker->setNoRepetitionSpanSeconds(defaultNoRepetitionSpanSeconds);
+
+        _trackGenerator->setCriteria(_criteria);
+        _waveTrackGenerator->setCriteria(_criteria);
+
+        connect(
+            _randomTracksSource, &RandomTracksSource::upcomingTrackNotification,
+            this, &Generator::upcomingTrackNotification
+        );
         connect(
             _queue, &PlayerQueue::entryRemoved,
             this, &Generator::queueEntryRemoved
         );
         connect(
-            _upcomingTimer, &QTimer::timeout,
-            this, &Generator::checkRefillUpcomingBuffer
+            _waveTrackGenerator, &WaveTrackGenerator::waveStarted,
+            this,
+            [this]()
+            {
+                _waveActive = true;
+                _waveProgress = -1;
+                _waveProgressTotal = 0;
+                Q_EMIT waveStarting();
+            }
         );
         connect(
-            _resolver, &Resolver::hashBecameAvailable,
-            this, &Generator::hashBecameAvailable
+            _waveTrackGenerator, &WaveTrackGenerator::waveProgress,
+            this,
+            [this](int tracksDelivered, int tracksTotal)
+            {
+                _waveProgress = tracksDelivered;
+                _waveProgressTotal = tracksTotal;
+                Q_EMIT waveProgressChanged(tracksDelivered, tracksTotal);
+            }
         );
         connect(
-            _resolver, &Resolver::hashBecameUnavailable,
-            this, &Generator::hashBecameUnavailable
+            _waveTrackGenerator, &WaveTrackGenerator::waveEnded,
+            this,
+            [this](bool completed)
+            {
+                _waveActive = false;
+                Q_EMIT waveFinished(completed);
+            }
         );
-
-        _hashesSource = _resolver->getAllHashes().toList();
-        _hashesInSource = _hashesSource.toSet();
-        std::shuffle(_hashesSource.begin(), _hashesSource.end(), _randomEngine);
-        qDebug() << "Generator: starting with source of size" << _hashesSource.size();
     }
 
-    bool Generator::enabled() const {
+    bool Generator::enabled() const
+    {
         return _enabled;
     }
 
-    bool Generator::waveActive() const {
+    bool Generator::waveActive() const
+    {
         return _waveActive;
     }
 
-    quint32 Generator::userPlayingFor() const {
-        return _userPlayingFor;
+    int Generator::waveProgress() const
+    {
+        return _waveProgress;
     }
 
-    int Generator::noRepetitionSpan() const {
-        return _noRepetitionSpan;
+    int Generator::waveProgressTotal() const
+    {
+        return _waveProgressTotal;
     }
 
-    History& Generator::history() {
+    quint32 Generator::userPlayingFor() const
+    {
+        return _criteria.user();
+    }
+
+    int Generator::noRepetitionSpanSeconds() const
+    {
+        return _criteria.noRepetitionSpanSeconds();
+    }
+
+    History& Generator::history()
+    {
         return *_history;
     }
 
-    void Generator::setNoRepetitionSpan(int seconds) {
-        if (_noRepetitionSpan == seconds) return; /* no change */
-
-        qDebug() << "Generator: changing no-repetition span from" << _noRepetitionSpan
-                 << "to" << seconds;
-        _noRepetitionSpan = seconds;
-
-        emit noRepetitionSpanChanged(seconds);
-    }
-
-    void Generator::startWave() {
-        qDebug() << "Generator::startWave() called";
-
-        if (_userPlayingFor <= 0)
-            return; /* need a user's scores for that */
-
-        bool starting = !_waveActive;
-
-        _waveActive = true;
-        _waveRising = true;
-
-        if (_minimumPermillageByWave <= 500)
-            _minimumPermillageByWave = 500;
-
-        if (starting)
-            emit waveStarting(_userPlayingFor);
-
-        checkFirstUpcomingAgainAfterFiltersChanged();
-    }
-
-    void Generator::enable() {
-        if (_enabled) return; /* enabled already */
+    void Generator::enable()
+    {
+        if (_enabled)
+            return; /* enabled already */
 
         qDebug() << "Generator enabled";
         _enabled = true;
 
-        emit enabledChanged(true);
-        _upcomingTimer->start(upcomingTimerFreqMs);
+        setDesiredUpcomingCount();
 
-        /* Start filling the upcoming buffer at once, and already fill the queue a bit if
-           possible. */
-        checkRefillUpcomingBuffer();
+        _trackGenerator->enable();
+
+        checkQueueRefillNeeded();
+        saveUserPreferences();
+
+        Q_EMIT enabledChanged();
     }
 
-    void Generator::disable() {
-        if (!_enabled) return; /* disabled already */
+    void Generator::disable()
+    {
+        if (!_enabled)
+            return; /* disabled already */
 
         qDebug() << "Generator disabled";
         _enabled = false;
 
-        _upcomingTimer->stop();
-        emit enabledChanged(false);
+        _trackGenerator->disable();
+        _waveTrackGenerator->terminateWave();
+
+        saveUserPreferences();
+
+        Q_EMIT enabledChanged();
     }
 
-    void Generator::requestQueueExpansion() {
-        if (_upcoming.size() < minimalUpcomingCount) {
-            qDebug() << "Generator: no queue expansion because upcoming buffer is low";
+    void Generator::requestQueueExpansion()
+    {
+        if (!_queue->canAddMoreEntries(expandCount))
             return;
-        }
 
-        expandQueue(expandCount, 4 * expandCount);
-    }
+        int generatedCount = 0;
 
-    void Generator::currentTrackChanged(QueueEntry const* newTrack) {
-        _currentTrack = newTrack;
-    }
-
-    void Generator::setUserPlayingFor(quint32 user) {
-        if (_userPlayingFor == user) return; /* no change */
-
-        auto oldUser = _userPlayingFor;
-        _userPlayingFor = user;
-
-        /* if a wave is active, terminate it */
-        if (_waveActive) {
-            _waveActive = false;
-            _waveRising = false;
-            _minimumPermillageByWave = 0;
-            emit waveFinished(oldUser);
-        }
-
-        checkFirstUpcomingAgainAfterFiltersChanged();
-    }
-
-    void Generator::queueEntryRemoved(quint32, quint32) {
-        requestQueueRefill();
-    }
-
-    void Generator::hashBecameAvailable(FileHash hash) {
-        if (_hashesInSource.contains(hash)
-            || _hashesSpent.contains(hash))
+        if (_waveActive)
         {
-            return; /* already known */
-        }
+            auto tracks = _waveTrackGenerator->getTracks(expandCount);
+            generatedCount += tracks.size();
 
-        _hashesInSource.insert(hash);
-
-        /* put it at a random index in the source list */
-        int endIndex = _hashesSource.size();
-        std::uniform_int_distribution<int> range(0, endIndex);
-        int randomIndex = range(_randomEngine);
-
-        /* Avoid shifting the list with 'insert()'; we append and then use swap.
-           We can do this because the list is in random order anyway. */
-        _hashesSource.append(hash); /* append is at endIndex */
-        if (randomIndex < endIndex) {
-            std::swap(_hashesSource[randomIndex], _hashesSource[endIndex]);
-        }
-    }
-
-    void Generator::hashBecameUnavailable(PMP::FileHash hash) {
-        /* We don't remove it from the source because that is expensive. We will simply
-           leave it inside the source, because unavailable tracks are filtered when tracks
-           are taken from the source list.
-
-           We don't remove it from the spent list, because doing that could make the track
-           reappear in the source too soon if it becomes available again. */
-        (void)hash;
-    }
-
-    void Generator::requestQueueRefill() {
-        if (_refillPending) return;
-        _refillPending = true;
-        QTimer::singleShot(100, this, &Generator::checkAndRefillQueue);
-    }
-
-    quint16 Generator::getRandomPermillage() {
-        std::uniform_int_distribution<int> range(0, 1000);
-        return quint16(range(_randomEngine));
-    }
-
-    FileHash Generator::getNextRandomHash() {
-        if (_hashesSource.isEmpty()) {
-            if (_hashesSpent.isEmpty()) { return FileHash(); /* nothing available */ }
-
-            /* rebuild source */
-            qDebug() << "Generator: rebuilding source list";
-            _hashesSource = _hashesSpent.toList();
-            std::shuffle(_hashesSource.begin(), _hashesSource.end(), _randomEngine);
-        }
-
-        FileHash randomHash = _hashesSource.takeLast();
-        if (!randomHash.isNull()) { _hashesSpent.insert(randomHash); }
-
-        auto sourceHashCount = _hashesSource.size();
-        if (sourceHashCount % 10 == 0) {
-            qDebug() << "Generator: source list down to" << sourceHashCount
-                     << " ; spent list count:" << _hashesSpent.size();
-        }
-
-        if (sourceHashCount >= 11) {
-            /* fetch some user stats in advance, for the next calls to this function */
-            auto index = qBound(0, sourceHashCount - 11, sourceHashCount);
-            uint id = _resolver->getID(_hashesSource[index]);
-            _history->fetchMissingUserStats(id, _userPlayingFor);
-        }
-
-        return randomHash;
-    }
-
-    void Generator::checkRefillUpcomingBuffer() {
-        int iterationsLeft = 8;
-        while (iterationsLeft > 0
-               && (_upcoming.length() < maximalUpcomingCount
-                    || _upcomingRuntimeSeconds < desiredUpcomingRuntimeSeconds))
-        {
-            iterationsLeft--;
-
-            FileHash randomHash = getNextRandomHash();
-            if (randomHash.isNull()) { break; /* nothing available */ }
-
-            auto c =
-                new Candidate(randomHash, getRandomPermillage(), getRandomPermillage());
-
-            if (satisfiesFilters(c, false)) {
-                _upcoming.enqueue(c);
-                _upcomingRuntimeSeconds += c->lengthMilliseconds() / 1000;
-            }
-            else {
-                delete c;
-            }
-
-            /* urgent queue refill needed? */
-            if (iterationsLeft >= 6 && _enabled
-                && _upcoming.length() >= minimalUpcomingCount
-                && _queue->length() < desiredQueueLength)
+            for (auto const& track : qAsConst(tracks))
             {
-                /* bail out early */
-                break;
+                _queue->enqueue(track);
+            }
+
+            if (generatedCount >= expandCount)
+                return;
+        }
+
+        if (!_waveActive)
+        {
+            auto tracks = _trackGenerator->getTracks(expandCount - generatedCount);
+            generatedCount += tracks.size();
+
+            for (auto const& track : qAsConst(tracks))
+            {
+                _queue->enqueue(track);
             }
         }
 
-        /* can we do a queue refill right away? */
-        if (_enabled && iterationsLeft >= 6
-            && _upcoming.length() >= minimalUpcomingCount
-            && _queue->length() < desiredQueueLength)
+        if (generatedCount == expandCount)
         {
-            requestQueueRefill();
+            qDebug() << "queue expansion successful: generated" << generatedCount
+                     << "tracks";
         }
-
-        qDebug() << "Generator: buffer length:" << _upcoming.length()
-                 << "; runtime:" << (_upcomingRuntimeSeconds / 60) << "min"
-                 << (_upcomingRuntimeSeconds % 60) << "sec";
-
-        if (_upcoming.length() >= maximalUpcomingCount
-            && !(_enabled && _queue->length() < desiredQueueLength))
+        else if (generatedCount == 0)
         {
-            _upcomingTimer->stop();
+            qWarning() << "queue expansion failed: nothing generated";
+        }
+        else if (generatedCount < expandCount)
+        {
+            qWarning() << "queue expansion failed: only generated" << generatedCount
+                       << "tracks instead of" << expandCount;
+        }
+        else // generatedCount > expandCount
+        {
+            qWarning() << "queue expansion too big: generated" << generatedCount
+                       << "tracks instead of" << expandCount;
         }
     }
 
-    void Generator::checkAndRefillQueue() {
+    void Generator::startWave()
+    {
+        qDebug() << "Generator::startWave() called";
+
+        if (_criteria.user() <= 0)
+            return; // FAIL, need a user's scores for a wave
+
+        _waveTrackGenerator->startWave();
+    }
+
+    void Generator::terminateWave()
+    {
+        qDebug() << "Generator::terminateWave() called";
+
+        _waveTrackGenerator->terminateWave();
+    }
+
+    void Generator::currentTrackChanged(QueueEntry const* newTrack)
+    {
+        _repetitionChecker->currentTrackChanged(newTrack);
+    }
+
+    void Generator::setUserGeneratingFor(quint32 user)
+    {
+        if (_criteria.user() == user)
+            return; /* no change */
+
+        auto oldUser = _criteria.user();
+        qDebug() << "Generator: changing user from" << oldUser << "to" << user;
+
+        /* if a wave is active, terminate it because a wave is bound to a user */
+        _waveTrackGenerator->terminateWave();
+
+        loadAndApplyUserPreferences(user);
+    }
+
+    void Generator::setNoRepetitionSpanSeconds(int seconds)
+    {
+        if (_criteria.noRepetitionSpanSeconds() == seconds)
+            return; /* no change */
+
+        auto oldNoRepetitionSpan = _criteria.noRepetitionSpanSeconds();
+        _criteria.setNoRepetitionSpanSeconds(seconds);
+
+        qDebug() << "Generator: changing no-repetition span from" << oldNoRepetitionSpan
+                 << "to" << seconds;
+
+        _repetitionChecker->setNoRepetitionSpanSeconds(seconds);
+        _trackGenerator->setCriteria(_criteria);
+        _waveTrackGenerator->setCriteria(_criteria);
+
+        saveUserPreferences();
+
+        Q_EMIT noRepetitionSpanChanged();
+    }
+
+    void Generator::upcomingTrackNotification(FileHash hash)
+    {
+        /* fetch user stats for this track that will soon enter our picture */
+        uint id = _resolver->getID(hash);
+        _history->fetchMissingUserStats(id, _criteria.user());
+    }
+
+    void Generator::queueEntryRemoved(quint32, quint32)
+    {
+        checkQueueRefillNeeded();
+    }
+
+    void Generator::queueRefillTimerAction()
+    {
         _refillPending = false;
 
         if (!_enabled) return;
 
         int tracksToGenerate = 0;
         uint queueLength = _queue->length();
-        if (queueLength < desiredQueueLength) {
+        if (queueLength < desiredQueueLength)
+        {
             tracksToGenerate = desiredQueueLength - queueLength;
         }
 
-        expandQueue(tracksToGenerate, 15);
-    }
+        auto tracks =
+                _waveActive
+                    ? _waveTrackGenerator->getTracks(tracksToGenerate)
+                    : _trackGenerator->getTracks(tracksToGenerate);
 
-    int Generator::expandQueue(int howManyTracksToAdd, int maxIterations) {
-        int iterationsLeft = maxIterations;
-        int tracksToGenerate = howManyTracksToAdd;
-
-        while (iterationsLeft > 0
-                && tracksToGenerate > 0
-                && !_upcoming.empty())
+        for (auto const& track : qAsConst(tracks))
         {
-            iterationsLeft--;
-
-            Candidate* c = _upcoming.dequeue();
-            _upcomingRuntimeSeconds -= c->lengthMilliseconds() / 1000;
-
-            /* check filters again */
-            bool ok = satisfiesFilters(c, true);
-
-            /* check score for wave (if active) */
-            if (ok && !satisfiesWaveFilter(c)) {
-                ok = false;
-            }
-
-            /* check occurrence in queue */
-            int nonRepetitionSpan = 0;
-            if (ok) {
-                if (_queue->checkPotentialRepetitionByAdd(c->hash(), _noRepetitionSpan,
-                                                          &nonRepetitionSpan))
-                {
-                    ok = false;
-                }
-            }
-
-            /* check occurrence in 'now playing' */
-            if (ok && nonRepetitionSpan < _noRepetitionSpan) {
-                QueueEntry const* current = _currentTrack;
-                if (current) {
-                    FileHash const* currentHash = current->hash();
-                    if (currentHash && c->hash() == *currentHash) {
-                        ok = false;
-                    }
-                }
-            }
-
-            /* check last play time, taking the future queue position into account */
-            if (ok) {
-                QDateTime maxLastPlay =
-                    QDateTime::currentDateTimeUtc().addSecs(nonRepetitionSpan)
-                                                   .addSecs(-_noRepetitionSpan);
-
-                QDateTime lastPlay = _history->lastPlayed(c->hash());
-
-                if (lastPlay.isValid() && lastPlay > maxLastPlay)
-                {
-                    ok = false;
-                }
-                else {
-                    uint id = _resolver->getID(c->hash());
-                    auto userStats = _history->getUserStats(id, _userPlayingFor);
-                    if (!userStats) { ok = false; }
-                    else {
-                        lastPlay = userStats->lastHeard;
-                        if (lastPlay.isValid() && lastPlay > maxLastPlay) { ok = false; }
-                    }
-                }
-            }
-
-            if (ok) {
-                _queue->enqueue(c->hash());
-                tracksToGenerate--;
-
-                advanceWave();
-            }
-
-            delete c;
+            _queue->enqueue(track);
         }
 
-        if (uint(_upcoming.length()) < maximalUpcomingCount
-            && !_upcomingTimer->isActive())
+        checkQueueRefillNeeded();
+    }
+
+    void Generator::checkQueueRefillNeeded()
+    {
+        if (_refillPending)
+            return;
+
+        int tracksNeeded = desiredQueueLength - (int)_queue->length();
+        if (tracksNeeded <= 0)
+            return;
+
+        _refillPending = true;
+        QTimer::singleShot(100, this, &Generator::queueRefillTimerAction);
+    }
+
+    void Generator::setDesiredUpcomingCount()
+    {
+        int count = std::max(desiredQueueLength + expandCount, 3 * expandCount);
+
+        _trackGenerator->setDesiredUpcomingCount(count);
+        _waveTrackGenerator->setDesiredUpcomingCount(count);
+    }
+
+    void Generator::loadAndApplyUserPreferences(quint32 user)
+    {
+        qDebug() << "Generator: loading preferences for user" << user;
+
+        DynamicModeCriteria oldCriteria { _criteria };
+
+        bool prefersDynamicModeEnabled = _enabled;
+        _criteria.setUser(user);
+
+        auto database = Database::getDatabaseForCurrentThread();
+        if (database)
         {
-            _upcomingTimer->start(upcomingTimerFreqMs);
-        }
+            bool ok;
+            auto preferences = database->getUserDynamicModePreferences(user, &ok);
 
-        /* return how many were added to the queue */
-        return howManyTracksToAdd - tracksToGenerate;
-    }
-
-    void Generator::checkFirstUpcomingAgainAfterFiltersChanged() {
-        if (_upcoming.empty()) {
-            if (!_upcomingTimer->isActive())
-                _upcomingTimer->start(upcomingTimerFreqMs);
-
-            return;
-        }
-
-        auto firstUpcoming = _upcoming.head();
-
-        if (satisfiesFilters(firstUpcoming, true) && satisfiesWaveFilter(firstUpcoming))
-            return; /* OK */
-
-        qDebug() << "removing first track from buffer because it does not pass the"
-                 << "filters anymore after a filter change";
-
-        auto candidate = _upcoming.dequeue();
-        _upcomingRuntimeSeconds -= candidate->lengthMilliseconds() / 1000;
-        delete candidate;
-
-        if (!_upcomingTimer->isActive())
-            _upcomingTimer->start(upcomingTimerFreqMs);
-    }
-
-    void Generator::advanceWave() {
-        if (_waveRising) {
-            if (_minimumPermillageByWave < 700)
-                _minimumPermillageByWave += 100; /* add 10% */
-            else
-                _minimumPermillageByWave += 50; /* add 5% */
-
-            if (_minimumPermillageByWave >= 850)
-                _waveRising = false; /* start descending again */
-
-            qDebug() << "wave has risen to" << _minimumPermillageByWave;
-            return;
-        }
-
-        if (!_waveActive && _minimumPermillageByWave > 0) {
-            _minimumPermillageByWave--; /* subtract 0.1% */
-
-            if (_minimumPermillageByWave >= 10) {
-                _minimumPermillageByWave -= 10; /* subtract an additional 1% */
-
-                if (_minimumPermillageByWave >= 500)
-                    _minimumPermillageByWave -= 20; /* subtract an additional 2% */
-            }
-
-            qDebug() << "non-active wave has descended to" << _minimumPermillageByWave;
-            return;
-        }
-
-        if (_minimumPermillageByWave >= 800)
-            _minimumPermillageByWave -= 10; /* subtract 1% */
-        else if (_minimumPermillageByWave >= 700)
-            _minimumPermillageByWave -= 50; /* subtract 5% */
-        else if (_waveActive) {
-            _minimumPermillageByWave -= 100; /* subtract 10% */
-
-            qDebug() << "wave is now no longer considered active (to the outside world)";
-
-            _waveActive = false;
-            emit waveFinished(_userPlayingFor);
-        }
-
-        qDebug() << "wave has descended to" << _minimumPermillageByWave;
-    }
-
-    bool Generator::satisfiesWaveFilter(Candidate* candidate) {
-        if (_minimumPermillageByWave <= 0) return true;
-
-        uint id = _resolver->getID(candidate->hash());
-        auto userStats = _history->getUserStats(id, _userPlayingFor);
-        if (!userStats) return false; /* score data not loaded --> reject */
-
-        auto score = userStats->score;
-
-        if (score < 0) { /* score not defined yet (play count too low)? */
-            /* reject randomly */
-            if (candidate->randomPermillageNumber() < _minimumPermillageByWave
-                    || candidate->randomPermillageNumber2() < _minimumPermillageByWave)
+            if (ok)
             {
-                qDebug() << "rejecting candidate" << id
-                         << "randomly because it does not have a score yet";
-                return false;
-            }
-        }
-        else if (score < _minimumPermillageByWave) {
-            qDebug() << "rejecting candidate" << id << "because it has score" << score
-                     << "while the wave currently requires at least"
-                     << _minimumPermillageByWave;
-            return false;
-        }
-        else if (_minimumPermillageByWave >= 500) {
-            /* check if score is too high */
-            auto extra = score - _minimumPermillageByWave;
-
-            if (extra > 100 &&
-                    (candidate->randomPermillageNumber() < extra
-                    || candidate->randomPermillageNumber2() < extra))
-            {
-                qDebug() << "rejecting candidate" << id << "because its score (" << score
-                         << ") is randomly too high for the current wave status ("
-                         << _minimumPermillageByWave << ")";
-                return false;
+                prefersDynamicModeEnabled = preferences.dynamicModeEnabled;
+                _criteria.setNoRepetitionSpanSeconds(
+                                     preferences.trackRepetitionAvoidanceIntervalSeconds);
             }
         }
 
-        return true;
+        /* make sure to prefetch track stats for the new user */
+        _randomTracksSource->resetUpcomingTrackNotifications();
+
+        /* give us some time to fetch track stats for the new user */
+        _trackGenerator->freezeTemporarily();
+
+        _repetitionChecker->setUserGeneratingFor(user);
+        _repetitionChecker->setNoRepetitionSpanSeconds(
+                                                     _criteria.noRepetitionSpanSeconds());
+        _trackGenerator->setCriteria(_criteria);
+        _waveTrackGenerator->setCriteria(_criteria);
+
+        if (oldCriteria.noRepetitionSpanSeconds() != _criteria.noRepetitionSpanSeconds())
+            Q_EMIT noRepetitionSpanChanged();
+
+        if (prefersDynamicModeEnabled)
+            enable();
+        else
+            disable();
     }
 
-    bool Generator::satisfiesFilters(Candidate* candidate, bool strict) {
-        /* do we have the hash? */
-        const FileHash& hash = candidate->hash();
-        if (hash.isNull()) return false;
+    void Generator::saveUserPreferences()
+    {
+        qDebug() << "Generator: saving preferences for user" << _criteria.user();
 
-        /* can we find a file for the track? */
-        if (!_resolver->haveFileFor(hash)) return false;
+        auto database = Database::getDatabaseForCurrentThread();
+        if (!database)
+            return; /* problem */
 
-        /* get audio info */
-        const AudioData& audioData = _resolver->findAudioData(hash);
-        auto msLength = audioData.trackLengthMilliseconds();
+        UserDynamicModePreferencesRecord preferences;
+        preferences.dynamicModeEnabled = _enabled;
+        preferences.trackRepetitionAvoidanceIntervalSeconds =
+                                                      _criteria.noRepetitionSpanSeconds();
 
-        /* is it a real track, not a short sound file? */
-        if (msLength < 15000 && msLength >= 0) return false;
-
-        /* is score within tolerance? */
-        uint id = _resolver->getID(candidate->hash());
-        auto userStats = _history->getUserStats(id, _userPlayingFor);
-        if (!userStats) {
-            if (strict) {
-                qDebug() << "rejecting candidate" << id
-                         << "because its score is still unknown";
-                return false;
-            }
-        }
-        else if (!_waveActive) {
-            auto score = userStats->score;
-            if (score >= 0 && score < candidate->randomPermillageNumber() - 100) {
-                qDebug() << "rejecting candidate" << id
-                         << "because it has score" << score << " (threshhold="
-                         << (candidate->randomPermillageNumber() - 100) << ")";
-                return false;
-            }
-        }
-
-        /* save length if known */
-        if (msLength >= 0)
-            candidate->setLengthMilliseconds(uint(msLength));
-
-        return true;
+        database->setUserDynamicModePreferences(_criteria.user(), preferences);
     }
 
 }

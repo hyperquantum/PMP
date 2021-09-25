@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,11 +36,11 @@
 #include <QTcpSocket>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class CollectionMonitor;
     class CollectionSender;
-    class Generator;
+    class History;
     class Player;
     class QueueEntry;
     class Resolver;
@@ -49,11 +49,12 @@ namespace PMP {
     class ServerHealthMonitor;
     class Users;
 
-    class ConnectedClient : public QObject {
+    class ConnectedClient : public QObject
+    {
         Q_OBJECT
     public:
         ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
-                        Player* player, Generator* generator, Users* users,
+                        Player* player, History* history, Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor);
 
@@ -61,7 +62,7 @@ namespace PMP {
 
     Q_SIGNALS:
 
-    private slots:
+    private Q_SLOTS:
 
         void terminateConnection();
         void dataArrived();
@@ -70,10 +71,12 @@ namespace PMP {
         void serverHealthChanged(bool databaseUnavailable);
 
         void volumeChanged(int volume);
-        void dynamicModeStatusChanged(bool enabled);
-        void dynamicModeWaveStarting(quint32 user);
-        void dynamicModeWaveFinished(quint32 user);
-        void dynamicModeNoRepetitionSpanChanged(int seconds);
+        void onDynamicModeStatusEvent(StartStopEventStatus dynamicModeStatus,
+                                      int noRepetitionSpanSeconds);
+        void onDynamicModeWaveStatusEvent(StartStopEventStatus waveStatus,
+                                          quint32 user,
+                                          int waveDeliveredCount,
+                                          int waveTotalCount);
         void playerStateChanged(ServerPlayerState state);
         void currentTrackChanged(QueueEntry const* entry);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
@@ -81,7 +84,8 @@ namespace PMP {
         void sendStateInfo();
         void sendStateInfoAfterTimeout();
         void sendVolumeMessage();
-        void sendDynamicModeStatusMessage();
+        void sendDynamicModeStatusMessage(StartStopEventStatus enabledStatus,
+                                          int noRepetitionSpanSeconds);
         void sendUserPlayingForModeMessage();
         void sendTextualQueueInfo();
         void queueEntryRemoved(quint32 offset, quint32 queueID);
@@ -123,8 +127,10 @@ namespace PMP {
         void sendServerInstanceIdentifier();
         void sendDatabaseIdentifier();
         void sendUsersList();
-        void sendGeneratorWaveStatusMessage(NetworkProtocol::StartStopEventStatus status,
-                                            quint32 user);
+        void sendGeneratorWaveStatusMessage(StartStopEventStatus status,
+                                            quint32 user,
+                                            int waveDeliveredCount,
+                                            int waveTotalCount);
         void sendQueueContentMessage(quint32 startOffset, quint8 length);
         void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
         void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
@@ -141,11 +147,10 @@ namespace PMP {
         void sendSuccessMessage(quint32 clientReference, quint32 intData);
         void sendSuccessMessage(quint32 clientReference, quint32 intData,
                                 QByteArray const& blobData);
-        void sendResultMessage(NetworkProtocol::ErrorType errorType,
-                              quint32 clientReference, quint32 intData);
-        void sendResultMessage(NetworkProtocol::ErrorType errorType,
-                              quint32 clientReference, quint32 intData,
-                              QByteArray const& blobData);
+        void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
+                               quint32 intData);
+        void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
+                               quint32 intData, QByteArray const& blobData);
         void sendNonFatalInternalErrorResultMessage(quint32 clientReference);
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
@@ -160,7 +165,7 @@ namespace PMP {
         void sendServerHealthMessage();
 
         void handleBinaryMessage(QByteArray const& message);
-        void handleStandardBinaryMessage(NetworkProtocol::ClientMessageType messageType,
+        void handleStandardBinaryMessage(ClientMessageType messageType,
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 messageType,
                                     QByteArray const& message);
@@ -171,7 +176,7 @@ namespace PMP {
 
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
-                                        NetworkProtocol::ClientMessageType messageType);
+                                        ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
         void parseQueueEntryRemovalRequest(QByteArray const& message);
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
@@ -185,7 +190,7 @@ namespace PMP {
         QTcpSocket* _socket;
         ServerInterface* _serverInterface;
         Player* _player;
-        Generator* _generator;
+        History* _history;
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;
@@ -205,7 +210,8 @@ namespace PMP {
         bool _pendingPlayerStatus;
     };
 
-    class CollectionSender : public QObject {
+    class CollectionSender : public QObject
+    {
         Q_OBJECT
     public:
         CollectionSender(ConnectedClient* connection, uint clientReference,
@@ -216,7 +222,7 @@ namespace PMP {
                                 QVector<CollectionTrackInfo> tracks);
         void allSent(uint clientReference);
 
-    private slots:
+    private Q_SLOTS:
         void sendNextBatch();
 
     private:

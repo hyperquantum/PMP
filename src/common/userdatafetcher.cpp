@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -113,12 +113,16 @@ namespace PMP {
         if (first) {
             QTimer::singleShot(100, this, &UserDataFetcher::sendPendingNotifications);
         }
+
+        Q_EMIT userTrackDataChanged(userId, hash);
     }
 
-    void UserDataFetcher::sendPendingRequests() {
+    void UserDataFetcher::sendPendingRequests()
+    {
         if (_hashesToFetchForUsers.isEmpty()) return;
 
-        Q_FOREACH(quint32 userId, _hashesToFetchForUsers.keys()) {
+        for (quint32 userId : _hashesToFetchForUsers.keys())
+        {
             _connection->sendHashUserDataRequest(
                 userId, _hashesToFetchForUsers.value(userId).toList()
             );
@@ -127,11 +131,13 @@ namespace PMP {
         _hashesToFetchForUsers.clear();
     }
 
-    void UserDataFetcher::sendPendingNotifications() {
+    void UserDataFetcher::sendPendingNotifications()
+    {
         if (_pendingNotificationsUsers.isEmpty()) return;
 
-        Q_FOREACH(quint32 userId, _pendingNotificationsUsers) {
-            emit dataReceivedForUser(userId);
+        for (quint32 userId : qAsConst(_pendingNotificationsUsers))
+        {
+            Q_EMIT dataReceivedForUser(userId);
         }
 
         _pendingNotificationsUsers.clear();

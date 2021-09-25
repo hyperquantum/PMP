@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>563</width>
-    <height>300</height>
+    <width>591</width>
+    <height>344</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -178,12 +178,12 @@
     </spacer>
    </item>
    <item>
-    <widget class="QGroupBox" name="groupBox">
+    <widget class="QGroupBox" name="fileInfoGroupBox">
      <property name="title">
       <string>File info</string>
      </property>
-     <layout class="QFormLayout" name="formLayout_3">
-      <item row="0" column="0">
+     <layout class="QFormLayout" name="fileInfoFormLayout">
+      <item row="1" column="0">
        <widget class="QLabel" name="hashLabel">
         <property name="styleSheet">
          <string notr="true">font-weight: bold</string>
@@ -193,15 +193,90 @@
         </property>
        </widget>
       </item>
-      <item row="0" column="1">
+      <item row="1" column="1">
        <widget class="QLabel" name="hashValueLabel">
         <property name="text">
          <string>1234567 - 2fd4e1c67a2d28fced849ee1bb76e7391b93eb12 - 9e107d9d372bb6826bd81d3542a419d6</string>
         </property>
        </widget>
       </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="queueIdLabel">
+        <property name="styleSheet">
+         <string notr="true">font-weight: bold</string>
+        </property>
+        <property name="text">
+         <string>Queue ID:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="queueIdValueLabel">
+        <property name="text">
+         <string>1234</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="buttonsLayout">
+     <item>
+      <widget class="QPushButton" name="addToQueueFrontButton">
+       <property name="text">
+        <string>Add to front of queue</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="addToQueueEndButton">
+       <property name="text">
+        <string>Add to end of queue</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="copyHashButton">
+       <property name="text">
+        <string>Copy hash</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="closeButton">
+       <property name="text">
+        <string>Close</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </item>
   </layout>
  </widget>

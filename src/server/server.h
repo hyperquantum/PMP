@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,6 +31,7 @@ namespace PMP {
 
     class CollectionMonitor;
     class Generator;
+    class History;
     class Player;
     class ServerHealthMonitor;
     class Users;
@@ -40,7 +41,8 @@ namespace PMP {
     public:
         Server(QObject* parent, const QUuid& serverInstanceIdentifier);
 
-        bool listen(Player* player, Generator* generator, Users* users,
+        bool listen(Player* player, Generator* generator, History* history,
+                    Users* users,
                     CollectionMonitor* collectionMonitor,
                     ServerHealthMonitor* serverHealthMonitor,
                     const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
@@ -52,13 +54,13 @@ namespace PMP {
         QUuid uuid() const { return _uuid; }
         QString serverPassword() { return _serverPassword; }
 
-    public slots:
+    public Q_SLOTS:
         void shutdown();
 
     Q_SIGNALS:
         void shuttingDown();
 
-    private slots:
+    private Q_SLOTS:
         void newConnectionReceived();
         void sendBroadcast();
         void readPendingDatagrams();
@@ -70,6 +72,7 @@ namespace PMP {
         QString _serverPassword;
         Player* _player;
         Generator* _generator;
+        History* _history;
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;

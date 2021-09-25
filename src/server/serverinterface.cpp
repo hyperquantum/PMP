@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -37,6 +37,27 @@ namespace PMP {
             _server, &Server::shuttingDown,
             this, &ServerInterface::serverShuttingDown
         );
+
+        connect(
+            _generator, &Generator::enabledChanged,
+            this, &ServerInterface::onDynamicModeStatusChanged
+        );
+        connect(
+            _generator, &Generator::noRepetitionSpanChanged,
+            this, &ServerInterface::onDynamicModeNoRepetitionSpanChanged
+        );
+        connect(
+            _generator, &Generator::waveStarting,
+            this, &ServerInterface::onDynamicModeWaveStarted
+        );
+        connect(
+            _generator, &Generator::waveProgressChanged,
+            this, &ServerInterface::onDynamicModeWaveProgress
+        );
+        connect(
+            _generator, &Generator::waveFinished,
+            this, &ServerInterface::onDynamicModeWaveEnded
+        );
     }
 
     QUuid ServerInterface::getServerUuid() const
@@ -54,13 +75,17 @@ namespace PMP {
     {
         if (!isLoggedIn()) return;
 
-        qDebug() << "switching to personal mode for user " << _userLoggedInName;
+        qDebug() << "ServerInterface: switching to personal mode for user "
+                 << _userLoggedInName;
+
         _player->setUserPlayingFor(_userLoggedIn);
     }
 
     void ServerInterface::switchToPublicMode()
     {
         if (!isLoggedIn()) return;
+
+        qDebug() << "ServerInterface: switching to public mode";
 
         _player->setUserPlayingFor(0);
     }
@@ -104,7 +129,12 @@ namespace PMP {
         if (!isLoggedIn()) return;
         if (hash.isNull()) return;
 
-        _player->queue().enqueue(hash);
+        auto& queue = _player->queue();
+
+        if (!queue.canAddMoreEntries())
+            return;
+
+        queue.enqueue(hash);
     }
 
     void ServerInterface::insertAtFront(FileHash hash)
@@ -112,12 +142,24 @@ namespace PMP {
         if (!isLoggedIn()) return;
         if (hash.isNull()) return;
 
-        _player->queue().insertAtFront(hash);
+        auto& queue = _player->queue();
+
+        if (!queue.canAddMoreEntries())
+            return;
+
+        queue.insertAtFront(hash);
     }
 
     void ServerInterface::insertBreakAtFront()
     {
         if (!isLoggedIn()) return;
+
+        auto& queue = _player->queue();
+
+        // TODO : if a break is already present, there is no need to bail out here
+        if (!queue.canAddMoreEntries())
+            return;
+
         _player->queue().insertBreakAtFront();
     }
 
@@ -128,7 +170,12 @@ namespace PMP {
             return;
         }
 
-        _player->queue().insertAtIndex(index, entry);
+        auto& queue = _player->queue();
+
+        if (!queue.canAddMoreEntries())
+            return;
+
+        queue.insertAtIndex(index, entry);
     }
 
     void ServerInterface::moveQueueEntry(uint id, int upDownOffset)
@@ -161,32 +208,74 @@ namespace PMP {
         _generator->requestQueueExpansion();
     }
 
+    void ServerInterface::requestDynamicModeStatus()
+    {
+        auto enabledStatus =
+                Common::createUnchangedStartStopEventStatus(_generator->enabled());
+
+        auto noRepetitionSpanSeconds = _generator->noRepetitionSpanSeconds();
+
+        auto user = _generator->userPlayingFor();
+
+        auto waveStatus =
+                Common::createUnchangedStartStopEventStatus(_generator->waveActive());
+
+        auto waveProgress = _generator->waveProgress();
+        auto waveProgressTotal = _generator->waveProgressTotal();
+
+        Q_EMIT dynamicModeStatusEvent(enabledStatus, noRepetitionSpanSeconds);
+
+        Q_EMIT dynamicModeWaveStatusEvent(waveStatus, user,
+                                          waveProgress, waveProgressTotal);
+    }
+
     void ServerInterface::enableDynamicMode()
     {
         if (!isLoggedIn()) return;
+
+        qDebug() << "ServerInterface: enabling dynamic mode";
+
         _generator->enable();
     }
 
     void ServerInterface::disableDynamicMode()
     {
         if (!isLoggedIn()) return;
+
+        qDebug() << "ServerInterface: disabling dynamic mode";
+
         _generator->disable();
     }
 
-    void ServerInterface::startWave()
+    void ServerInterface::startDynamicModeWave()
     {
         if (!isLoggedIn()) return;
         if (_generator->waveActive()) return;
 
+        qDebug() << "ServerInterface: starting dynamic mode wave";
+
         _generator->startWave();
     }
 
-    void ServerInterface::setTrackRepetitionAvoidanceMinutes(int minutes)
+    void ServerInterface::terminateDynamicModeWave()
     {
         if (!isLoggedIn()) return;
-        if (minutes < 0) return;
+        if (!_generator->waveActive()) return;
 
-        _generator->setNoRepetitionSpan(minutes);
+        qDebug() << "ServerInterface: terminating dynamic mode wave";
+
+        _generator->terminateWave();
+    }
+
+    void ServerInterface::setTrackRepetitionAvoidanceSeconds(int seconds)
+    {
+        if (!isLoggedIn()) return;
+        if (seconds < 0) return;
+
+        qDebug() << "ServerInterface: changing track repetition avoidance interval to"
+                 << seconds << "seconds";
+
+        _generator->setNoRepetitionSpanSeconds(seconds);
     }
 
     void ServerInterface::startFullIndexation()
@@ -205,6 +294,65 @@ namespace PMP {
     {
         if (serverPassword != _server->serverPassword()) return;
         _server->shutdown();
+    }
+
+    void ServerInterface::onDynamicModeStatusChanged()
+    {
+        auto enabledStatus =
+                Common::createChangedStartStopEventStatus(_generator->enabled());
+
+        auto noRepetitionSpanSeconds = _generator->noRepetitionSpanSeconds();
+
+        Q_EMIT dynamicModeStatusEvent(enabledStatus, noRepetitionSpanSeconds);
+    }
+
+    void ServerInterface::onDynamicModeNoRepetitionSpanChanged()
+    {
+        auto enabledStatus =
+                Common::createUnchangedStartStopEventStatus(_generator->enabled());
+
+        auto noRepetitionSpanSeconds = _generator->noRepetitionSpanSeconds();
+
+        Q_EMIT dynamicModeStatusEvent(enabledStatus, noRepetitionSpanSeconds);
+    }
+
+    void ServerInterface::onDynamicModeWaveStarted()
+    {
+        auto user = _generator->userPlayingFor();
+
+        auto waveStatus =
+                Common::createChangedStartStopEventStatus(_generator->waveActive());
+
+        auto waveProgress = _generator->waveProgress();
+        auto waveProgressTotal = _generator->waveProgressTotal();
+
+        Q_EMIT dynamicModeWaveStatusEvent(waveStatus, user,
+                                          waveProgress, waveProgressTotal);
+    }
+
+    void ServerInterface::onDynamicModeWaveProgress(int tracksDelivered, int tracksTotal)
+    {
+        auto user = _generator->userPlayingFor();
+
+        auto waveStatus =
+                Common::createUnchangedStartStopEventStatus(_generator->waveActive());
+
+        Q_EMIT dynamicModeWaveStatusEvent(waveStatus, user,
+                                          tracksDelivered, tracksTotal);
+    }
+
+    void ServerInterface::onDynamicModeWaveEnded()
+    {
+        auto user = _generator->userPlayingFor();
+
+        auto waveStatus =
+                Common::createChangedStartStopEventStatus(_generator->waveActive());
+
+        auto waveProgress = _generator->waveProgress();
+        auto waveProgressTotal = _generator->waveProgressTotal();
+
+        Q_EMIT dynamicModeWaveStatusEvent(waveStatus, user,
+                                          waveProgress, waveProgressTotal);
     }
 
 }

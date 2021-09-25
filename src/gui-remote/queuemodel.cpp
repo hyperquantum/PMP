@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,10 +19,14 @@
 
 #include "queuemodel.h"
 
+#include "common/clientserverinterface.h"
+#include "common/playercontroller.h"
+#include "common/queueentryinfofetcher.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 
-#include "queueentryinfofetcher.h"
+#include "colors.h"
+
 #include "queuemediator.h"
 
 #include <QBuffer>
@@ -36,18 +40,24 @@
 
 namespace PMP {
 
-    QueueModel::QueueModel(QObject* parent, QueueMediator* source,
-                           QueueEntryInfoFetcher* trackInfoFetcher,
-                           UserDataFetcher& userDataFetcher)
-     : QAbstractTableModel(parent), _source(source), _infoFetcher(trackInfoFetcher),
-        _userDataFetcher(userDataFetcher),
-        _receivedUserPlayingFor(false), _userPlayingFor(0), _modelRows(0)
+    QueueModel::QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
+                           QueueMediator* source, QueueEntryInfoFetcher* trackInfoFetcher)
+     : QAbstractTableModel(parent),
+       _clientServerInterface(clientServerInterface),
+       _source(source),
+       _infoFetcher(trackInfoFetcher),
+       _playerMode(PlayerMode::Unknown),
+       _personalModeUserId(0),
+       _modelRows(0)
     {
         _modelRows = _source->queueLength();
 
+        auto playerController = &clientServerInterface->playerController();
+        auto userDataFetcher = &_clientServerInterface->userDataFetcher();
+
         connect(
-            _infoFetcher, &QueueEntryInfoFetcher::userPlayingForChanged,
-            this, &QueueModel::onUserPlayingForChanged
+            playerController, &PlayerController::playerModeChanged,
+            this, &QueueModel::playerModeChanged
         );
         connect(
             _source, &AbstractQueueMonitor::queueResetted,
@@ -62,7 +72,7 @@ namespace PMP {
             this, &QueueModel::tracksChanged
         );
         connect(
-            &_userDataFetcher, &UserDataFetcher::dataReceivedForUser,
+            userDataFetcher, &UserDataFetcher::dataReceivedForUser,
             this, &QueueModel::userDataReceivedForUser
         );
         connect(
@@ -77,6 +87,9 @@ namespace PMP {
             _source, &AbstractQueueMonitor::trackMoved,
             this, &QueueModel::trackMoved
         );
+
+        _playerMode = playerController->playerMode();
+        _personalModeUserId = playerController->personalModeUserId();
     }
 
     int QueueModel::rowCount(const QModelIndex& parent) const {
@@ -129,23 +142,28 @@ namespace PMP {
 
         /* handling for non-track queue entries */
 
-        QColor specialBackgroundColor(50, 65, 75);
-        QColor specialForegroundColor(20, 140, 210);
-
         switch (role) {
             case Qt::DisplayRole:
-                if (info == 0) { return QString(); }
+                if (info == nullptr) { return QString(); }
 
                 switch (info->type()) {
                     case QueueEntryType::Unknown:
-                        break; /* default: empty */
+                        break; /* could be anything */
 
                     case QueueEntryType::Track:
                         break; /* unreachable, see above */
 
                     case QueueEntryType::BreakPoint:
-                        if (col <= 1) return "--- BREAK ---";
-                        return "";
+                        if (col <= 1)
+                            return Util::EmDash + QString(" BREAK ") + Util::EmDash;
+
+                        return QString();
+
+                    case QueueEntryType::UnknownSpecialType:
+                        if (col <= 1)
+                            return Util::EmDash + QString(" ????? ") + Util::EmDash;
+
+                        return QString();
                 }
                 break;
 
@@ -163,13 +181,13 @@ namespace PMP {
                 break;
 
             case Qt::ForegroundRole:
-                if (info)
-                    return QBrush(specialForegroundColor);
+                if (info && info->type() != QueueEntryType::Unknown)
+                    return QBrush(Colors::instance().specialQueueItemForeground);
                 break;
 
             case Qt::BackgroundRole:
-                if (info)
-                    return QBrush(specialBackgroundColor);
+                if (info && info->type() != QueueEntryType::Unknown)
+                    return QBrush(Colors::instance().specialQueueItemBackground);
                 break;
         }
 
@@ -185,11 +203,14 @@ namespace PMP {
                     case 4:
                     {
                         auto& hash = info->hash();
-                        if (hash.isNull() || !_receivedUserPlayingFor)
+                        if (hash.isNull() || _playerMode == PlayerMode::Unknown)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
                         auto hashData =
-                            _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
+                            _clientServerInterface->userDataFetcher().getHashDataForUser(
+                                _personalModeUserId, hash
+                            );
+
                         if (!hashData || !hashData->scoreReceived)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
@@ -219,18 +240,20 @@ namespace PMP {
             case 1: return info->artist();
             case 2:
             {
-                int lengthInSeconds = info->lengthInSeconds();
-                if (lengthInSeconds < 0) { return "?"; }
-                return Util::secondsToHoursMinuteSecondsText(lengthInSeconds);
+                int lengthInMilliseconds = info->lengthInMilliseconds();
+                if (lengthInMilliseconds < 0) { return "?"; }
+                return Util::millisecondsToShortDisplayTimeText(lengthInMilliseconds);
             }
             case 3:
             {
                 auto& hash = info->hash();
-                if (hash.isNull() || !_receivedUserPlayingFor)
+                if (hash.isNull() || _playerMode == PlayerMode::Unknown)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
+                        _clientServerInterface->userDataFetcher().getHashDataForUser(
+                            _personalModeUserId, hash
+                        );
 
                 if (!hashData || !hashData->previouslyHeardReceived)
                     return QVariant();
@@ -244,11 +267,14 @@ namespace PMP {
             case 4:
             {
                 auto& hash = info->hash();
-                if (hash.isNull() || !_receivedUserPlayingFor)
+                if (hash.isNull() || _playerMode == PlayerMode::Unknown)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _userDataFetcher.getHashDataForUser(_userPlayingFor, hash);
+                        _clientServerInterface->userDataFetcher().getHashDataForUser(
+                            _personalModeUserId, hash
+                        );
+
                 if (!hashData || !hashData->scoreReceived)
                     return QVariant();
 
@@ -259,14 +285,18 @@ namespace PMP {
             }
         }
 
-        return QString("Foobar");
+        return QVariant();
     }
 
-    Qt::ItemFlags QueueModel::flags(const QModelIndex& index) const {
-        Q_UNUSED(index)
+    Qt::ItemFlags QueueModel::flags(const QModelIndex& index) const
+    {
+        auto f = Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsDragEnabled;
 
-        return Qt::ItemIsSelectable | Qt::ItemIsEnabled
-            | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
+        /* only allow drop BETWEEN items, not on top of items */
+        if (!index.isValid())
+            f |= Qt::ItemIsDropEnabled;
+
+        return f;
     }
 
     Qt::DropActions QueueModel::supportedDragActions() const {
@@ -397,23 +427,24 @@ namespace PMP {
     bool QueueModel::dropMimeData(const QMimeData* data, Qt::DropAction action,
                                   int row, int column, const QModelIndex& parent)
     {
+        Q_UNUSED(column)
+
         qDebug() << "QueueModel::dropMimeData called; action=" << action
                  << "; row=" << row;
 
-        if (row == -1) {
+        if (row == -1)
+        {
             row = parent.row();
-            column = parent.column();
+            //column = parent.column();
             //parent = parent.parent();
             qDebug() << " went up one level: row=" << row;
         }
 
-        if (data->hasFormat("application/x-pmp-queueitem")) {
+        if (data->hasFormat("application/x-pmp-queueitem"))
             return dropQueueItemMimeData(data, action, row);
-        }
 
-        if (data->hasFormat("application/x-pmp-filehash")) {
+        if (data->hasFormat("application/x-pmp-filehash"))
             return dropFileHashMimeData(data, row);
-        }
 
         return false; /* format not supported */
     }
@@ -494,14 +525,16 @@ namespace PMP {
         return QueueTrack(queueId, hash);
     }
 
-    void QueueModel::onUserPlayingForChanged(quint32 userId) {
-        _userPlayingFor = userId;
-        _receivedUserPlayingFor = true;
+    void QueueModel::playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,
+                                       QString personalModeUserLogin)
+    {
+        Q_UNUSED(personalModeUserLogin)
+
+        _playerMode = playerMode;
+        _personalModeUserId = personalModeUserId;
 
         /* the columns with user-bound data need to be refreshed */
-        emit dataChanged(
-            createIndex(0, 3), createIndex(_modelRows, 3)
-        );
+        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 3));
     }
 
     void QueueModel::queueResetted(int queueLength) {
@@ -559,7 +592,7 @@ namespace PMP {
             }
         }
 
-        emit dataChanged(
+        Q_EMIT dataChanged(
             createIndex(index, 0),
             createIndex(index + entries.size() - 1, 2)
         );
@@ -569,7 +602,7 @@ namespace PMP {
         qDebug() << "QueueModel::tracksChanged; count=" << queueIDs.size();
 
         /* we don't know the indexes, so we say everything changed */
-        emit dataChanged(
+        Q_EMIT dataChanged(
             createIndex(0, 0), createIndex(_modelRows, 2)
         );
     }
@@ -577,7 +610,7 @@ namespace PMP {
     void QueueModel::userDataReceivedForUser(quint32 userId) {
         qDebug() << "QueueModel::userDataReceivedForUser; user:" << userId;
 
-        emit dataChanged(
+        Q_EMIT dataChanged(
             createIndex(0, 3), createIndex(_modelRows, 4)
         );
     }

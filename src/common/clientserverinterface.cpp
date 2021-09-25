@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,38 +20,105 @@
 #include "clientserverinterface.h"
 
 #include "collectionwatcherimpl.h"
+#include "currenttrackmonitorimpl.h"
+#include "dynamicmodecontrollerimpl.h"
 #include "serverconnection.h"
-#include "simpleplayercontrollerimpl.h"
-#include "simpleplayerstatemonitorimpl.h"
+#include "playercontrollerimpl.h"
+#include "queuecontrollerimpl.h"
+#include "queueentryinfofetcher.h"
+#include "queuemonitor.h"
 #include "userdatafetcher.h"
 
 namespace PMP {
 
-    ClientServerInterface::ClientServerInterface(QObject* parent,
-                                                 ServerConnection* connection)
-     : QObject(parent), _connection(connection),
+    ClientServerInterface::ClientServerInterface(ServerConnection* connection)
+     : QObject(connection),
+       _connection(connection),
        _simplePlayerController(nullptr),
-       _simplePlayerStateMonitor(nullptr),
+       _currentTrackMonitor(nullptr),
+       _queueController(nullptr),
+       _queueMonitor(nullptr),
+       _queueEntryInfoFetcher(nullptr),
+       _dynamicModeController(nullptr),
        _collectionWatcher(nullptr),
-       _userDataFetcher(nullptr)
+       _userDataFetcher(nullptr),
+       _connected(connection->isConnected())
     {
-        //
+        connect(
+            connection, &ServerConnection::connected,
+            this,
+            [this]()
+            {
+                if (_connected) return;
+
+                _connected = true;
+                Q_EMIT connectedChanged();
+            },
+            Qt::QueuedConnection
+        );
+        connect(
+            connection, &ServerConnection::connectionBroken,
+            this,
+            [this]()
+            {
+                if (!_connected) return;
+
+                _connected = false;
+                Q_EMIT connectedChanged();
+            },
+            Qt::QueuedConnection
+        );
     }
 
-    SimplePlayerController& ClientServerInterface::simplePlayerController()
+    PlayerController& ClientServerInterface::playerController()
     {
         if (!_simplePlayerController)
-            _simplePlayerController = new SimplePlayerControllerImpl(_connection);
+            _simplePlayerController = new PlayerControllerImpl(_connection);
 
         return *_simplePlayerController;
     }
 
-    SimplePlayerStateMonitor& ClientServerInterface::simplePlayerStateMonitor()
+    CurrentTrackMonitor& ClientServerInterface::currentTrackMonitor()
     {
-        if (!_simplePlayerStateMonitor)
-            _simplePlayerStateMonitor = new SimplePlayerStateMonitorImpl(_connection);
+        if (!_currentTrackMonitor)
+            _currentTrackMonitor = new CurrentTrackMonitorImpl(_connection);
 
-        return *_simplePlayerStateMonitor;
+        return *_currentTrackMonitor;
+    }
+
+    QueueController& ClientServerInterface::queueController()
+    {
+        if (!_queueController)
+            _queueController = new QueueControllerImpl(_connection);
+
+        return *_queueController;
+    }
+
+    AbstractQueueMonitor& ClientServerInterface::queueMonitor()
+    {
+        if (!_queueMonitor)
+            _queueMonitor = new QueueMonitor(_connection);
+
+        return *_queueMonitor;
+    }
+
+    QueueEntryInfoFetcher& ClientServerInterface::queueEntryInfoFetcher()
+    {
+        if (!_queueEntryInfoFetcher)
+        {
+            _queueEntryInfoFetcher =
+                    new QueueEntryInfoFetcher(this, &queueMonitor(), _connection);
+        }
+
+        return *_queueEntryInfoFetcher;
+    }
+
+    DynamicModeController& ClientServerInterface::dynamicModeController()
+    {
+        if (!_dynamicModeController)
+            _dynamicModeController = new DynamicModeControllerImpl(_connection);
+
+        return *_dynamicModeController;
     }
 
     CollectionWatcher& ClientServerInterface::collectionWatcher()
@@ -64,7 +131,8 @@ namespace PMP {
 
     UserDataFetcher& ClientServerInterface::userDataFetcher()
     {
-        if (_userDataFetcher == nullptr) {
+        if (!_userDataFetcher)
+        {
             _userDataFetcher =
                     new UserDataFetcher(this, &collectionWatcher(), _connection);
         }
@@ -85,5 +153,10 @@ namespace PMP {
     QString ClientServerInterface::userLoggedInName() const
     {
         return _connection->userLoggedInName();
+    }
+
+    void ClientServerInterface::shutdownServer()
+    {
+        _connection->shutdownServer();
     }
 }

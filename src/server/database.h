@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -70,6 +70,19 @@ namespace PMP {
         QByteArray password;
     };
 
+    class UserDynamicModePreferencesRecord
+    {
+    public:
+        UserDynamicModePreferencesRecord()
+         : dynamicModeEnabled(true), trackRepetitionAvoidanceIntervalSeconds(3600 /*1hr*/)
+        {
+            //
+        }
+
+        bool dynamicModeEnabled;
+        qint32 trackRepetitionAvoidanceIntervalSeconds;
+    };
+
     class Database {
     public:
         struct HashHistoryStats {
@@ -80,6 +93,8 @@ namespace PMP {
         };
 
         static bool init(QTextStream& out);
+        static bool init(QTextStream& out, QString hostname, QString username,
+                         QString password);
 
         bool isConnectionOpen() const;
 
@@ -93,10 +108,16 @@ namespace PMP {
         QList<QString> getFilenames(uint hashID);
 
         void registerFileSize(uint hashId, qint64 size);
+        QList<qint64> getFileSizes(uint hashID);
 
         QList<User> getUsers();
         bool checkUserExists(QString userName);
         quint32 registerNewUser(User& user);
+
+        UserDynamicModePreferencesRecord getUserDynamicModePreferences(quint32 userId,
+                                                                       bool* ok);
+        bool setUserDynamicModePreferences(quint32 userId,
+                                     UserDynamicModePreferencesRecord const& preferences);
 
         void addToHistory(quint32 hashId, quint32 userId, QDateTime start, QDateTime end,
                           int permillage, bool validForScoring);
@@ -131,12 +152,20 @@ namespace PMP {
                           std::function<void (QSqlQuery&)> resultFetcher);
         bool executeQuery(QSqlQuery& q);
 
+        static bool addColumnIfNotExists(QSqlQuery& q, QString tableName,
+                                         QString columnName, QString type);
+
+        static bool getBool(QVariant v, bool nullValue);
         static int getInt(QVariant v, int nullValue);
         static uint getUInt(QVariant v, uint nullValue);
+        static QDateTime getUtcDateTime(QVariant v);
 
         static qint16 calculateScore(qint32 permillageFromDB, quint32 heardCount);
 
         static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
+        static void printInitializationError(QTextStream& out, QSqlDatabase& db);
+
+        static bool initUsersTable(QSqlQuery& q);
 
         static QString _hostname;
         static QString _username;

@@ -158,10 +158,10 @@ namespace PMP {
         }
 
         if (isNew) {
-            emit foundServer(address, port, serverId, name);
+            Q_EMIT foundServer(address, port, serverId, name);
         }
         else if (newAddress) {
-            emit foundExtraServerAddress(address, serverId);
+            Q_EMIT foundExtraServerAddress(address, serverId);
         }
     }
 
@@ -225,7 +225,7 @@ namespace PMP {
 
         if (!_serverId.isNull()) { /* server found but did not receive a name? */
             /* send with empty name */
-            emit foundServer(_address, _port, _serverId, _serverName);
+            Q_EMIT foundServer(_address, _port, _serverId, _serverName);
         }
     }
 
@@ -234,7 +234,7 @@ namespace PMP {
             return; /* not yet complete */
 
         cleanupConnection();
-        emit foundServer(_address, _port, _serverId, _serverName);
+        Q_EMIT foundServer(_address, _port, _serverId, _serverName);
     }
 
     void ServerProbe::cleanupConnection() {

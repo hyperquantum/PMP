@@ -59,7 +59,7 @@ namespace PMP {
             score = lastHeardResult[0].score;
         }
 
-        emit updatedHashUserStats(hashId, userId, lastHeard, score);
+        Q_EMIT updatedHashUserStats(hashId, userId, lastHeard, score);
     }
 
 }

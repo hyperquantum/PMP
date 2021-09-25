@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,6 +22,7 @@
 
 #include "common/collectiontrackinfo.h"
 #include "common/playermode.h"
+#include "common/playerstate.h"
 #include "common/tribool.h"
 
 #include <QAbstractTableModel>
@@ -35,15 +36,18 @@
 
 namespace PMP {
 
-    enum class TrackHighlightMode {
+    enum class TrackCriterium
+    {
         None = 0,
         NeverHeard,
+        LastHeardNotInLast1000Days,
         LastHeardNotInLast365Days,
         LastHeardNotInLast180Days,
         LastHeardNotInLast90Days,
         LastHeardNotInLast30Days,
         LastHeardNotInLast10Days,
         WithoutScore,
+        ScoreMaximum30,
         ScoreAtLeast85,
         ScoreAtLeast90,
         ScoreAtLeast95,
@@ -53,38 +57,42 @@ namespace PMP {
 
     class UserDataFetcher;
 
-    class TrackHighlighter {
+    class TrackJudge
+    {
     public:
-        TrackHighlighter(UserDataFetcher& userDataFetcher)
-         : _mode(TrackHighlightMode::None), _userId(0), _haveUserId(false),
+        TrackJudge(UserDataFetcher& userDataFetcher)
+         : _criterium(TrackCriterium::None),
+           _userId(0),
+           _haveUserId(false),
            _userDataFetcher(userDataFetcher)
         {
             //
         }
 
         void setUserId(quint32 userId);
-
-        bool isUserIdSetTo(quint32 userId) {
+        bool isUserIdSetTo(quint32 userId) const
+        {
             return _userId == userId && _haveUserId;
         }
 
-        void setMode(TrackHighlightMode mode) { _mode = mode; }
-        TrackHighlightMode getMode() { return _mode; }
+        void setCriterium(TrackCriterium mode) { _criterium = mode; }
+        TrackCriterium getCriterium() const { return _criterium; }
 
-        TriBool shouldHighlightTrack(CollectionTrackInfo const& track) const;
+        TriBool trackSatisfiesCriterium(CollectionTrackInfo const& track,
+                                        bool resultForNone) const;
 
     private:
-        TriBool shouldHighlightBasedOnScore(CollectionTrackInfo const& track,
+        TriBool trackSatisfiesScoreCriterium(CollectionTrackInfo const& track,
                               std::function<TriBool(int)> scorePermillageEvaluator) const;
 
-        TriBool shouldHighlightBasedOnHeardDate(CollectionTrackInfo const& track,
+        TriBool trackSatisfiesLastHeardDateCriterium(CollectionTrackInfo const& track,
                                    std::function<TriBool(QDateTime)> dateEvaluator) const;
 
-        TriBool shouldHighlightBasedOnNotHeardInTheLastXDays(
+        TriBool trackSatisfiesNotHeardInTheLastXDaysCriterium(
                                                          CollectionTrackInfo const& track,
                                                          int days) const;
 
-        TrackHighlightMode _mode;
+        TrackCriterium _criterium;
         quint32 _userId;
         bool _haveUserId;
         UserDataFetcher& _userDataFetcher;
@@ -92,13 +100,32 @@ namespace PMP {
 
     class ClientServerInterface;
 
-    class SortedCollectionTableModel : public QAbstractTableModel {
+    class CollectionViewContext : public QObject
+    {
+        Q_OBJECT
+    public:
+        CollectionViewContext(QObject* parent,
+                              ClientServerInterface* clientServerInterface);
+
+        quint32 userId() const { return _userId; }
+
+    Q_SIGNALS:
+        void userIdChanged();
+
+    private:
+        quint32 _userId;
+    };
+
+    class SortedCollectionTableModel : public QAbstractTableModel
+    {
         Q_OBJECT
     public:
         SortedCollectionTableModel(QObject* parent,
-                                   ClientServerInterface* clientServerInterface);
+                                   ClientServerInterface* clientServerInterface,
+                                   CollectionViewContext* collectionViewContext);
 
-        void setHighlightMode(TrackHighlightMode mode);
+        void setHighlightCriterium(TrackCriterium criterium);
+        int highlightColorIndex() const;
 
         void sortByTitle();
         void sortByArtist();
@@ -119,28 +146,32 @@ namespace PMP {
         Qt::DropActions supportedDropActions() const;
         QMimeData* mimeData(const QModelIndexList& indexes) const;
 
+    public Q_SLOTS:
+        void setHighlightColorIndex(int colorIndex);
+
     private Q_SLOTS:
         void onNewTrackReceived(CollectionTrackInfo track);
         void onTrackAvailabilityChanged(FileHash hash, bool isAvailable);
         void onTrackDataChanged(CollectionTrackInfo track);
-        void onDataReceivedForUser(quint32 userId);
-        void onPlayerModeChanged(PMP::PlayerMode playerMode, quint32 personalModeUserId,
-                                 QString personalModeUserLogin);
+        void onUserTrackDataChanged(quint32 userId, FileHash hash);
+        void currentTrackInfoChanged(FileHash hash);
 
     private:
         void updateTrackAvailability(FileHash hash, bool isAvailable);
         template<class T> void addWhenModelEmpty(T trackCollection);
         void addOrUpdateTrack(CollectionTrackInfo const& track);
         void addTrack(CollectionTrackInfo const& track);
-        void updateTrack(CollectionTrackInfo const& track);
+        void updateTrack(int innerIndex, CollectionTrackInfo const& newTrackData);
         void buildIndexMaps();
         void rebuildInnerMap(int outerStartIndex = 0);
+        void rebuildInnerMap(int outerStartIndex, int outerEndIndex);
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track);
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track,
                                             int searchRangeBegin, int searchRangeEnd);
+        void markLeftColumnAsChanged();
         void markEverythingAsChanged();
 
-        static bool usesUserData(TrackHighlightMode mode);
+        static bool usesUserData(TrackCriterium mode);
 
         bool lessThan(int index1, int index2) const;
         bool lessThan(CollectionTrackInfo const& track1,
@@ -173,22 +204,30 @@ namespace PMP {
         QVector<int> _innerToOuterIndexMap;
         QVector<int> _outerToInnerIndexMap;
         QCollator _collator;
+        int _highlightColorIndex;
         int _sortBy;
         Qt::SortOrder _sortOrder;
-        TrackHighlighter _highlighter;
+        TrackJudge _highlightingTrackJudge;
+        FileHash _currentTrackHash;
+        PlayerState _playerState;
     };
 
-    class FilteredCollectionTableModel : public QSortFilterProxyModel {
+    class FilteredCollectionTableModel : public QSortFilterProxyModel
+    {
         Q_OBJECT
     public:
-        FilteredCollectionTableModel(SortedCollectionTableModel* source,
-                                     QObject* parent = 0);
+        FilteredCollectionTableModel(QObject* parent,
+                                     SortedCollectionTableModel* source,
+                                     ClientServerInterface* clientServerInterface,
+                                     CollectionViewContext* collectionViewContext);
+
+        void setTrackFilter(TrackCriterium criterium);
 
         virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 
         CollectionTrackInfo* trackAt(const QModelIndex& index) const;
 
-    public slots:
+    public Q_SLOTS:
         void setSearchText(QString search);
 
     protected:
@@ -197,9 +236,10 @@ namespace PMP {
     private:
         SortedCollectionTableModel* _source;
         QStringList _searchParts;
+        TrackJudge _filteringTrackJudge;
     };
 }
 
-Q_DECLARE_METATYPE(PMP::TrackHighlightMode)
+Q_DECLARE_METATYPE(PMP::TrackCriterium)
 
 #endif

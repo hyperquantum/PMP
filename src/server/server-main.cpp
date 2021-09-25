@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -37,6 +37,7 @@
 
 #include <QCoreApplication>
 #include <QStandardPaths>
+#include <QtDebug>
 #include <QThreadPool>
 
 using namespace PMP;
@@ -59,6 +60,17 @@ QStringList generateDefaultScanPaths() {
     }
 
     return paths;
+}
+
+void reportStartupError(int exitCode, QString message)
+{
+    QTextStream err(stderr);
+    err << message << endl
+        << "Exiting." << endl;
+
+    // write to log file
+    qDebug() << "Startup error:" << message;
+    qDebug() << "Will exit with code" << exitCode;
 }
 
 int main(int argc, char *argv[]) {
@@ -87,6 +99,7 @@ int main(int argc, char *argv[]) {
     /* set up logging */
     Logging::enableConsoleAndTextFileLogging(true);
     Logging::setFilenameTag("S"); /* S = Server */
+    qDebug() << "PMP server started"; // initial log message
     Logging::cleanupOldLogfiles();
     /* TODO: do a log cleanup regularly, because a server is likely to be run for days,
      *       weeks, or months before being restarted. */
@@ -183,7 +196,7 @@ int main(int argc, char *argv[]) {
     );
     QObject::connect(
         &player, &Player::userPlayingForChanged,
-        &generator, &Generator::setUserPlayingFor
+        &generator, &Generator::setUserGeneratingFor
     );
 
     resolver.setMusicPaths(musicPaths);
@@ -195,17 +208,16 @@ int main(int argc, char *argv[]) {
 
     Server server(nullptr, serverInstanceIdentifier);
     bool listening =
-        server.listen(
-            &player, &generator, &users, &collectionMonitor, &serverHealthMonitor,
-            QHostAddress::Any, 23432
-        );
+        server.listen(&player, &generator, &history, &users, &collectionMonitor,
+                      &serverHealthMonitor, QHostAddress::Any, 23432);
 
-    if (!listening) {
-        out << "Could not start TCP listener: " << server.errorString() << endl;
-        out << "Exiting." << endl;
+    if (!listening)
+    {
+        reportStartupError(1, "Could not start TCP listener: " + server.errorString());
         return 1;
     }
 
+    qDebug() << "Started listening to TCP port:" << server.port();
     out << "Now listening on port " << server.port() << endl
         << "Server password is " << server.serverPassword() << endl
         << endl;
@@ -217,7 +229,29 @@ int main(int argc, char *argv[]) {
 
     /* start indexation of the media directories */
     if (databaseInitializationSucceeded && doIndexation)
-        resolver.startFullIndexation();
+    {
+        bool initialIndexation = true;
 
-    return app.exec();
+        QObject::connect(
+            &resolver, &Resolver::fullIndexationRunStatusChanged,
+            &resolver,
+            [&out, &initialIndexation](bool running)
+            {
+                if (running || !initialIndexation)
+                    return;
+
+                initialIndexation = false;
+                out << "Indexation finished." << endl;
+            }
+        );
+
+        out << "Running initial full indexation..." << endl;
+        resolver.startFullIndexation();
+    }
+
+    auto exitCode = app.exec();
+
+    qDebug() << "Exiting with code" << exitCode;
+
+    return exitCode;
 }

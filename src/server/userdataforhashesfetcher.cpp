@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -40,8 +40,9 @@ namespace PMP {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return; /* problem */
 
-        qDebug() << "FETCHING USERDATA; PrevHeard" << _previouslyHeard
-                 << ", Score" << _score;
+        qDebug() << "fetching user data for" << _hashes.size()
+                 << "hashes; user:" << _userId << " prevHeard:" << _previouslyHeard
+                 << " score:" << _score;
 
         QVector<UserDataForHash> results;
         results.reserve(_hashes.size());
@@ -62,8 +63,8 @@ namespace PMP {
                 data.previouslyHeard = stat.lastHeard;
                 data.score = stat.score;
 
-                qDebug() << "FETCHED: HashID" << stat.hashId
-                         << " PrevHeard" << stat.lastHeard << " Score" << stat.score;
+                qDebug() << "fetched: user" << _userId << " hashID" << stat.hashId
+                         << " prevHeard" << stat.lastHeard << " score" << stat.score;
 
                 results.append(data);
             }
@@ -80,7 +81,7 @@ namespace PMP {
             }
         }
 
-        emit finishedWithResult(_userId, results, _previouslyHeard, _score);
+        Q_EMIT finishedWithResult(_userId, results, _previouslyHeard, _score);
     }
 
 }
