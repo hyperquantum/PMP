@@ -68,7 +68,7 @@ namespace PMP
 
     const Colors Colors::_darkScheme =
         Colors(
-            /* widgetBorder */ QColor::fromRgb(0x7A, 0x7A, 0x7A),
+            /* widgetBorder */ QColor::fromRgb(50, 65, 75),
             /* inactiveItemForeground */ Qt::gray,
             /* itemBackgroundHighlightColors */ {
                 QColor::fromHsl(120, 255, 50),
