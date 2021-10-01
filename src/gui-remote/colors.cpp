@@ -71,9 +71,9 @@ namespace PMP
             /* widgetBorder */ QColor::fromRgb(0x7A, 0x7A, 0x7A),
             /* inactiveItemForeground */ Qt::gray,
             /* itemBackgroundHighlightColors */ {
-                Qt::yellow,
-                QColor(0xAF, 0xEE, 0xEE), // paleturquoise
-                QColor(0xFF, 0x69, 0xB4)  // hotpink
+                QColor::fromHsl(120, 255, 50),
+                QColor::fromHsl(0, 255, 50),
+                QColor::fromHsl(300, 255, 50),
             },
             /* specialQueueItemBackground */ QColor::fromRgb(50, 65, 75),
             /* specialQueueItemForeground */ QColor::fromRgb(20, 140, 210),
