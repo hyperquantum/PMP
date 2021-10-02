@@ -20,6 +20,7 @@
 #include "common/logging.h"
 #include "common/version.h"
 
+#include "colors.h"
 #include "mainwindow.h"
 
 #include <QApplication>
@@ -58,8 +59,8 @@ int main(int argc, char *argv[])
 
             /* HACK: fix link color in QLabel by changing the palette */
             QPalette newPal(app.palette());
-            newPal.setColor(QPalette::Link, QColor::fromRgb(20, 140, 210));
-            newPal.setColor(QPalette::LinkVisited, QColor::fromRgb(20, 140, 210));
+            newPal.setColor(QPalette::Link, Colors::instance().linkText);
+            newPal.setColor(QPalette::LinkVisited, Colors::instance().linkText);
             app.setPalette(newPal);
         }
         else

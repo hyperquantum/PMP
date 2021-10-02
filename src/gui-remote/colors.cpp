@@ -29,7 +29,8 @@ namespace PMP
                    const QColor& trackProgressWidgetEmpty,
                    const QColor& trackProgressWidgetBackground,
                    const QColor& trackProgressWidgetBorder,
-                   const QColor& trackProgressWidgetProgress)
+                   const QColor& trackProgressWidgetProgress,
+                   const QColor& linkText)
      : widgetBorder(widgetBorder),
        inactiveItemForeground(inactiveItemForeground),
        itemBackgroundHighlightColors(itemBackgroundHighlightColors),
@@ -38,7 +39,8 @@ namespace PMP
        trackProgressWidgetEmpty(trackProgressWidgetEmpty),
        trackProgressWidgetBackground(trackProgressWidgetBackground),
        trackProgressWidgetBorder(trackProgressWidgetBorder),
-       trackProgressWidgetProgress(trackProgressWidgetProgress)
+       trackProgressWidgetProgress(trackProgressWidgetProgress),
+       linkText(linkText)
     {
         //
     }
@@ -63,7 +65,8 @@ namespace PMP
             /* trackProgressWidgetEmpty */ QColor::fromHsl(207, 255, 230),
             /* trackProgressWidgetBackground */ QColor::fromHsl(207, 255, 230),
             /* trackProgressWidgetBorder */ QColor::fromHsl(207, 255, 180),
-            /* trackProgressWidgetProgress */ QColor::fromHsl(207, 255, 180)
+            /* trackProgressWidgetProgress */ QColor::fromHsl(207, 255, 180),
+            /* linkText */ Qt::darkGreen // TODO : find a real color
         );
 
     const Colors Colors::_darkScheme =
@@ -80,7 +83,8 @@ namespace PMP
             /* trackProgressWidgetEmpty */ QColor::fromRgb(50, 65, 75),
             /* trackProgressWidgetBackground */ QColor::fromRgb(25, 35, 45),
             /* trackProgressWidgetBorder */ QColor::fromRgb(50, 65, 75),
-            /* trackProgressWidgetProgress */ QColor::fromRgb(80, 95, 105)
+            /* trackProgressWidgetProgress */ QColor::fromRgb(80, 95, 105),
+            /* linkText */ QColor::fromRgb(20, 140, 210)
         );
 
 }

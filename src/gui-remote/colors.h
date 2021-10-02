@@ -35,7 +35,8 @@ namespace PMP {
                const QColor& trackProgressWidgetEmpty,
                const QColor& trackProgressWidgetBackground,
                const QColor& trackProgressWidgetBorder,
-               const QColor& trackProgressWidgetProgress);
+               const QColor& trackProgressWidgetProgress,
+               const QColor& linkText);
 
         static const Colors& instance();
 
@@ -48,6 +49,7 @@ namespace PMP {
         const QColor trackProgressWidgetBackground;
         const QColor trackProgressWidgetBorder;
         const QColor trackProgressWidgetProgress;
+        const QColor linkText;
 
     private:
         static const Colors _lightScheme;
