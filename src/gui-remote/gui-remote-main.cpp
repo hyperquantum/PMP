@@ -48,16 +48,20 @@ int main(int argc, char *argv[])
      *       for several days without closing it. */
 
     QFile styleSheetFile(":qdarkstyle/style.qss");
-    if (styleSheetFile.exists()) {
-        if (styleSheetFile.open(QFile::ReadOnly | QFile::Text)) {
+    if (styleSheetFile.exists())
+    {
+        if (styleSheetFile.open(QFile::ReadOnly | QFile::Text))
+        {
             QTextStream ts(&styleSheetFile);
             app.setStyleSheet(ts.readAll());
         }
-        else {
+        else
+        {
             qWarning() << "could not load qdarkstyle style sheet; open() failed";
         }
     }
-    else {
+    else
+    {
         qWarning() << "could not load qdarkstyle style sheet; file not found";
     }
 
