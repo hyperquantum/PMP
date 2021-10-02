@@ -58,10 +58,10 @@ int main(int argc, char *argv[])
             app.setStyleSheet(ts.readAll());
 
             /* HACK: fix link color in QLabel by changing the palette */
-            QPalette newPal(app.palette());
-            newPal.setColor(QPalette::Link, Colors::instance().linkText);
-            newPal.setColor(QPalette::LinkVisited, Colors::instance().linkText);
-            app.setPalette(newPal);
+            QPalette newPallette(app.palette());
+            newPallette.setColor(QPalette::Link, Colors::instance().linkText);
+            newPallette.setColor(QPalette::LinkVisited, Colors::instance().linkText);
+            app.setPalette(newPallette);
         }
         else
         {
