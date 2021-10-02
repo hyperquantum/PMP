@@ -24,6 +24,7 @@
 
 #include <QApplication>
 #include <QFile>
+#include <QPalette>
 #include <QtDebug>
 #include <QTextStream>
 
@@ -54,6 +55,12 @@ int main(int argc, char *argv[])
         {
             QTextStream ts(&styleSheetFile);
             app.setStyleSheet(ts.readAll());
+
+            /* HACK: fix link color in QLabel by changing the palette */
+            QPalette newPal(app.palette());
+            newPal.setColor(QPalette::Link, QColor::fromRgb(20, 140, 210));
+            newPal.setColor(QPalette::LinkVisited, QColor::fromRgb(20, 140, 210));
+            app.setPalette(newPal);
         }
         else
         {
