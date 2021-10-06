@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,14 +28,15 @@
 
 using namespace PMP;
 
-QString hashToString(const FileHash& hash) {
+QString hashToString(const FileHash& hash)
+{
     return QString::number(hash.length())
             + "-" + hash.SHA1().toHex()
             + "-" + hash.MD5().toHex();
 }
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
     QCoreApplication a(argc, argv);
 
     QCoreApplication::setApplicationName("Party Music Player - Hash tool");
@@ -46,7 +47,8 @@ int main(int argc, char *argv[]) {
     QTextStream out(stdout);
     QTextStream err(stderr);
 
-    if (QCoreApplication::arguments().size() < 2) {
+    if (QCoreApplication::arguments().size() < 2)
+    {
         err << "No arguments given." << endl;
         return 0;
     }
@@ -54,7 +56,8 @@ int main(int argc, char *argv[]) {
     QString fileName = QCoreApplication::arguments()[1];
     QFileInfo fileInfo(fileName);
 
-    if (!FileAnalyzer::isExtensionSupported(fileInfo.suffix(), true)) {
+    if (!FileAnalyzer::isExtensionSupported(fileInfo.suffix(), true))
+    {
         err << "Files with extension \"" << fileInfo.suffix() << "\" are not supported."
             << endl;
         return 1;
@@ -64,7 +67,8 @@ int main(int argc, char *argv[]) {
         !FileAnalyzer::isExtensionSupported(fileInfo.suffix(), false);
 
     QFile file(fileName);
-    if (!file.open(QIODevice::ReadOnly)) {
+    if (!file.open(QIODevice::ReadOnly))
+    {
         err << "Could not open a file with that name." << "\n";
         return 1;
     }
@@ -83,12 +87,15 @@ int main(int argc, char *argv[]) {
     out << "SHA1 Hash: " << sha1_hasher.result().toHex() << endl;
 
     if (isExperimentalFileFormat)
+    {
         out << "NOTICE: support for analyzing this file format is EXPERIMENTAL" << endl;
+    }
 
     FileAnalyzer analyzer(fileContents, fileInfo.suffix());
     analyzer.analyze();
 
-    if (!analyzer.analysisDone()) {
+    if (!analyzer.analysisDone())
+    {
         err << "Something went wrong when analyzing the file!" << endl;
         return 1;
     }
@@ -102,7 +109,8 @@ int main(int argc, char *argv[]) {
 
     out << "track hash: " << hashToString(finalHash) << endl;
 
-    if (!legacyHash.isNull()) {
+    if (!legacyHash.isNull())
+    {
         out << "legacy hash: " << hashToString(legacyHash) << endl;
     }
 
