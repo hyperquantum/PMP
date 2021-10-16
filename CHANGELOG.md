@@ -36,7 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build instructions for Windows have been greatly simplified and now make use of vcpkg.
 - The script for building a Win32 release archive has been replaced with a new one that does a 64-bit build.
 - PMP now requires a C++14 compiler.
-- PMP now requires Qt 5.8 or later.
+- PMP now requires Qt 5.14 or later.
 - PMP now requires TagLib 1.12 or later.
 
 ### Fixed

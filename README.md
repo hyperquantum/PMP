@@ -51,7 +51,7 @@ Contents of this file:
 
 ### Common Dependencies
 
- * Qt 5 (at least 5.8)
+ * Qt 5 (at least 5.14)
    * modules: Core, Gui, Multimedia, Network, Sql, Test, Widgets, Xml
    * database driver for MySQL/MariaDB
  * TagLib 1.12 or higher
