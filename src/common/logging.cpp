@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -100,7 +100,6 @@ namespace PMP {
         QString locationText =
             sourcefile % ":" % QString::number(context.line).leftJustified(6, '-');
 
-        QString output;
         switch (type) {
             case QtDebugMsg:
                 return time % " [D] " % locationText % msg % "\n";
@@ -244,7 +243,6 @@ namespace PMP {
         QString locationText =
             sourcefile % ":" % QString::number(context.line).leftJustified(6, '-');
 
-        QString output;
         switch (type) {
             case QtDebugMsg:
                 return time % " [D] " % locationText % msg % "\n";
