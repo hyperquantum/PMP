@@ -65,6 +65,7 @@ IDEAS
  * player: 'seek to start of track' action or button
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * queue: ability to insert a breakpoint directly before/after any entry in the queue
+ * queue: ability to insert a track at a random position in the queue
  * queue: show error marker for a track that has no known file
  * queue: join title and artist columns when displaying filename
  * queue: save the contents of the queue on server shutdown and restore it at the next server startup
@@ -109,6 +110,7 @@ IDEAS
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
  * client: detect broken connection to the server
  * client: ability to reconnect to the server after the connection was broken
+ ** login dialog: add button for probing for servers again
 
 
 USER FRIENDLINESS
