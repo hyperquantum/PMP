@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -56,7 +56,7 @@ namespace PMP {
             this,
             [this](QAbstractSocket::SocketError error)
             {
-                *_err << "Failed to connect to the server: " << error << endl;
+                *_err << "Failed to connect to the server: " << error << Qt::endl;
                 Q_EMIT exitClient(2);
             }
         );
@@ -65,7 +65,7 @@ namespace PMP {
             this,
             [this]()
             {
-                *_err << "Server does not appear to be a PMP server!" << endl;
+                *_err << "Server does not appear to be a PMP server!" << Qt::endl;
                 Q_EMIT exitClient(2);
             }
         );
@@ -75,7 +75,7 @@ namespace PMP {
             [this]()
             {
                 // TODO : only if this happens before we have finished
-                *_err << "Lost connection to the server unexpectedly!" << endl;
+                *_err << "Lost connection to the server unexpectedly!" << Qt::endl;
                 Q_EMIT exitClient(2);
             }
         );
@@ -91,7 +91,7 @@ namespace PMP {
             {
                 Q_UNUSED(username)
 
-                *_err << "Login failed: " << toString(error) << endl;
+                *_err << "Login failed: " << toString(error) << Qt::endl;
                 Q_EMIT exitClient(2);
             }
         );
@@ -102,9 +102,9 @@ namespace PMP {
             [this](QString output)
             {
                 if (!output.isEmpty())
-                    *_out << output << endl;
+                    *_out << output << Qt::endl;
                 else
-                    *_out << "Command executed successfully" << endl;
+                    *_out << "Command executed successfully" << Qt::endl;
 
                 Q_EMIT exitClient(0);
             }
@@ -115,9 +115,9 @@ namespace PMP {
             [this](int resultCode, QString errorOutput)
             {
                 if (!errorOutput.isEmpty())
-                    *_err << errorOutput << endl;
+                    *_err << errorOutput << Qt::endl;
                 else
-                    *_err << "Unknown error, command failed" << endl;
+                    *_err << "Unknown error, command failed" << Qt::endl;
 
                 Q_EMIT exitClient(resultCode);
             }

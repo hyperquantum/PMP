@@ -45,7 +45,7 @@ namespace PMP
 
         /* The newline that was typed by the user was not printed because we turned off
            echo to the console, so we have to write a newline ourselves now */
-        out << endl;
+        out << Qt::endl;
 
         return password;
     }

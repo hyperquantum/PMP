@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
 
     if (QCoreApplication::arguments().size() < 2)
     {
-        err << "No arguments given." << endl;
+        err << "No arguments given." << Qt::endl;
         return 0;
     }
 
@@ -59,7 +59,7 @@ int main(int argc, char *argv[])
     if (!FileAnalyzer::isExtensionSupported(fileInfo.suffix(), true))
     {
         err << "Files with extension \"" << fileInfo.suffix() << "\" are not supported."
-            << endl;
+            << Qt::endl;
         return 1;
     }
 
@@ -81,14 +81,15 @@ int main(int argc, char *argv[])
     QCryptographicHash sha1_hasher(QCryptographicHash::Sha1);
     sha1_hasher.addData(fileContents);
 
-    out << "File name: " << fileName << endl;
-    out << "File size: " << fileContents.length() << endl;
-    out << "MD5 Hash:  " << md5_hasher.result().toHex() << endl;
-    out << "SHA1 Hash: " << sha1_hasher.result().toHex() << endl;
+    out << "File name: " << fileName << Qt::endl;
+    out << "File size: " << fileContents.length() << Qt::endl;
+    out << "MD5 Hash:  " << md5_hasher.result().toHex() << Qt::endl;
+    out << "SHA1 Hash: " << sha1_hasher.result().toHex() << Qt::endl;
 
     if (isExperimentalFileFormat)
     {
-        out << "NOTICE: support for analyzing this file format is EXPERIMENTAL" << endl;
+        out << "NOTICE: support for analyzing this file format is EXPERIMENTAL"
+            << Qt::endl;
     }
 
     FileAnalyzer analyzer(fileContents, fileInfo.suffix());
@@ -96,22 +97,22 @@ int main(int argc, char *argv[])
 
     if (!analyzer.analysisDone())
     {
-        err << "Something went wrong when analyzing the file!" << endl;
+        err << "Something went wrong when analyzing the file!" << Qt::endl;
         return 1;
     }
 
     FileHash finalHash = analyzer.hash();
     FileHash legacyHash = analyzer.legacyHash();
 
-    out << "title:   " << analyzer.tagData().title() << endl;
-    out << "artist:  " << analyzer.tagData().artist() << endl;
-    out << "comment: " << analyzer.tagData().comment() << endl;
+    out << "title:   " << analyzer.tagData().title() << Qt::endl;
+    out << "artist:  " << analyzer.tagData().artist() << Qt::endl;
+    out << "comment: " << analyzer.tagData().comment() << Qt::endl;
 
-    out << "track hash: " << hashToString(finalHash) << endl;
+    out << "track hash: " << hashToString(finalHash) << Qt::endl;
 
     if (!legacyHash.isNull())
     {
-        out << "legacy hash: " << hashToString(legacyHash) << endl;
+        out << "legacy hash: " << hashToString(legacyHash) << Qt::endl;
     }
 
     return 0;

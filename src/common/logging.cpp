@@ -87,7 +87,7 @@ namespace PMP {
         QString output = generateOutputText(type, context, msg);
 
         QMutexLocker lock(&_mutex);
-        _out << output << flush;
+        _out << output << Qt::flush;
     }
 
     QString ConsoleLogger::generateOutputText(QtMsgType type,
