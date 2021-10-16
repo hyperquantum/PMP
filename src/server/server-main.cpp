@@ -65,8 +65,8 @@ QStringList generateDefaultScanPaths() {
 void reportStartupError(int exitCode, QString message)
 {
     QTextStream err(stderr);
-    err << message << endl
-        << "Exiting." << endl;
+    err << message << '\n'
+        << "Exiting." << Qt::endl;
 
     // write to log file
     qDebug() << "Startup error:" << message;
@@ -91,10 +91,10 @@ int main(int argc, char *argv[]) {
             doIndexation = false;
     }
 
-    out << endl
-        << "Party Music Player - version " PMP_VERSION_DISPLAY << endl
-        << Util::getCopyrightLine(true) << endl
-        << endl;
+    out << Qt::endl
+        << "Party Music Player - version " PMP_VERSION_DISPLAY << Qt::endl
+        << Util::getCopyrightLine(true) << Qt::endl
+        << Qt::endl;
 
     /* set up logging */
     Logging::enableConsoleAndTextFileLogging(true);
@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
             bool ok;
             defaultVolume = defaultVolumeSetting.toString().toInt(&ok);
             if (!ok || defaultVolume < 0 || defaultVolume > 100) {
-                out << "Invalid default volume setting found. Ignoring." << endl << endl;
+                out << "Invalid default volume setting found. Ignoring.\n" << Qt::endl;
                 defaultVolume = -1;
             }
         }
@@ -143,7 +143,7 @@ int main(int argc, char *argv[]) {
 
         QVariant musicPathsSetting = settings.value("media/scan_directories");
         if (!musicPathsSetting.isValid() || musicPathsSetting.toStringList().empty()) {
-            out << "No music paths set.  Setting default paths." << endl << endl;
+            out << "No music paths set.  Setting default paths.\n" << Qt::endl;
             musicPaths = generateDefaultScanPaths();
             settings.setValue("media/scan_directories", musicPaths);
         }
@@ -151,11 +151,11 @@ int main(int argc, char *argv[]) {
             musicPaths = musicPathsSetting.toStringList();
         }
 
-        out << "Music paths to scan:" << endl;
+        out << "Music paths to scan:\n";
         Q_FOREACH(QString path, musicPaths) {
-            out << "  " << path << endl;
+            out << "  " << path << "\n";
         }
-        out << endl;
+        out << Qt::endl;
     }
 
     bool databaseInitializationSucceeded = Database::init(out);
@@ -167,8 +167,8 @@ int main(int argc, char *argv[]) {
 
     /* unique server instance ID (not to be confused with the unique ID of the database)*/
     QUuid serverInstanceIdentifier = QUuid::createUuid();
-    out << "Server instance identifier: " << serverInstanceIdentifier.toString() << endl
-        << endl;
+    out << "Server instance identifier: " << serverInstanceIdentifier.toString() << "\n"
+        << Qt::endl;
 
     Users users;
     Player player(nullptr, &resolver, defaultVolume);
@@ -201,10 +201,10 @@ int main(int argc, char *argv[]) {
 
     resolver.setMusicPaths(musicPaths);
 
-    out << endl
-        << "Volume = " << player.volume() << endl;
+    out << Qt::endl
+        << "Volume = " << player.volume() << Qt::endl;
 
-    out << endl;
+    out << Qt::endl;
 
     Server server(nullptr, serverInstanceIdentifier);
     bool listening =
@@ -218,14 +218,15 @@ int main(int argc, char *argv[]) {
     }
 
     qDebug() << "Started listening to TCP port:" << server.port();
-    out << "Now listening on port " << server.port() << endl
-        << "Server password is " << server.serverPassword() << endl
-        << endl;
+    out << "Now listening on port " << server.port() << "\n"
+        << "Server password is " << server.serverPassword() << "\n"
+        << Qt::endl;
 
     // exit when the server instance signals it
     QObject::connect(&server, &Server::shuttingDown, &app, &QCoreApplication::quit);
 
-    out << endl << "Server initialization complete." << endl;
+    out << "\n"
+        << "Server initialization complete." << Qt::endl;
 
     /* start indexation of the media directories */
     if (databaseInitializationSucceeded && doIndexation)
@@ -241,11 +242,11 @@ int main(int argc, char *argv[]) {
                     return;
 
                 initialIndexation = false;
-                out << "Indexation finished." << endl;
+                out << "Indexation finished." << Qt::endl;
             }
         );
 
-        out << "Running initial full indexation..." << endl;
+        out << "Running initial full indexation..." << Qt::endl;
         resolver.startFullIndexation();
     }
 

@@ -82,12 +82,12 @@ namespace PMP {
     bool Database::init(QTextStream& out, QString hostname, QString username,
                         QString password)
     {
-        out << "initializing database" << endl;
+        out << "initializing database" << Qt::endl;
         _initDoneSuccessfully = false;
 
         if (hostname.isEmpty() || username.isEmpty() || password.isEmpty())
         {
-            out << " incomplete database settings!" << endl << endl;
+            out << " incomplete database settings!\n" << Qt::endl;
             return false;
         }
 
@@ -99,7 +99,7 @@ namespace PMP {
         QSqlDatabase db = createDatabaseConnection("PMP_main_dbconn", false);
         if (!db.isOpen()) {
             out << " ERROR: could not connect to database: " << db.lastError().text()
-                << endl << endl;
+                << "\n" << Qt::endl;
             return false;
         }
 
@@ -132,7 +132,7 @@ namespace PMP {
         q.prepare("SELECT `Value` FROM pmp_misc WHERE `Key`=?");
         q.addBindValue("UUID");
         if (!q.exec()) {
-            out << " error: could not see if UUID already exists" << endl << endl;
+            out << " error: could not see if UUID already exists\n" << Qt::endl;
             return false;
         }
         QUuid uuid;
@@ -145,12 +145,12 @@ namespace PMP {
             q.addBindValue("UUID");
             q.addBindValue(uuid.toString());
             if (!q.exec()) {
-                out << " error inserting UUID into database" << endl << endl;
+                out << " error inserting UUID into database\n" << Qt::endl;
                 return false;
             }
         }
         _uuid = uuid;
-        out << " UUID is " << _uuid.toString() << endl;
+        out << " UUID is " << _uuid.toString() << Qt::endl;
 
         /* create table 'pmp_hash' if needed */
         q.prepare(
@@ -246,7 +246,7 @@ namespace PMP {
 
         _initDoneSuccessfully = true;
 
-        out << " database initialization completed successfully" << endl << endl;
+        out << " database initialization completed successfully\n" << Qt::endl;
         return true;
     }
 
@@ -306,8 +306,8 @@ namespace PMP {
 
     void Database::printInitializationError(QTextStream& out, QSqlDatabase& db)
     {
-        out << " database initialization problem: " << db.lastError().text() << endl;
-        out << endl;
+        out << " database initialization problem: " << db.lastError().text() << Qt::endl;
+        out << Qt::endl;
     }
 
     QSharedPointer<Database> Database::getDatabaseForCurrentThread() {
@@ -356,7 +356,7 @@ namespace PMP {
             };
 
         if (!executeVoid(preparer)) { /* error */
-            qDebug() << "Database::registerHash : insert failed!" << endl;
+            qDebug() << "Database::registerHash : insert failed!" << Qt::endl;
         }
     }
 
@@ -377,7 +377,7 @@ namespace PMP {
 
         uint id;
         if (!executeScalar(preparer, id, 0)) { /* error */
-            qDebug() << "Database::getHashID : query failed!" << endl;
+            qDebug() << "Database::getHashID : query failed!" << Qt::endl;
             return 0;
         }
 
@@ -397,7 +397,7 @@ namespace PMP {
 
         if (!executeQuery(q)) { /* error */
             qDebug() << "Database::getHashes : could not execute; "
-                     << q.lastError().text() << endl;
+                     << q.lastError().text() << Qt::endl;
             return result;
         }
 
@@ -434,7 +434,7 @@ namespace PMP {
 
         bool exists;
         if (!executeScalar(preparer, exists, false)) {
-            qDebug() << "Database::registerFilename : select failed!" << endl;
+            qDebug() << "Database::registerFilename : select failed!" << Qt::endl;
             return;
         }
 
@@ -451,7 +451,7 @@ namespace PMP {
             };
 
         if (!executeVoid(preparer2)) {
-            qDebug() << "Database::registerFilename : insert failed!" << endl;
+            qDebug() << "Database::registerFilename : insert failed!" << Qt::endl;
             return;
         }
     }
@@ -468,7 +468,7 @@ namespace PMP {
 
         if (!executeQuery(q)) { /* error */
             qDebug() << "Database::getFilenames : could not execute; "
-                     << q.lastError().text() << endl;
+                     << q.lastError().text() << Qt::endl;
             return result;
         }
 
@@ -493,7 +493,7 @@ namespace PMP {
             };
 
         if (!executeVoid(preparer)) {
-            qDebug() << "Database::registerFileSize : insert failed!" << endl;
+            qDebug() << "Database::registerFileSize : insert failed!" << Qt::endl;
             return;
         }
     }
@@ -512,7 +512,7 @@ namespace PMP {
         if (!executeQuery(q)) /* error */
         {
             qDebug() << "Database::getFileSizes : could not execute; "
-                     << q.lastError().text() << endl;
+                     << q.lastError().text() << Qt::endl;
             return result;
         }
 
@@ -533,7 +533,7 @@ namespace PMP {
 
         if (!executeQuery(q)) { /* error */
             qDebug() << "Database::getUsers : could not execute; "
-                     << q.lastError().text() << endl;
+                     << q.lastError().text() << Qt::endl;
             return result;
         }
 
@@ -562,7 +562,7 @@ namespace PMP {
 
         bool exists;
         if (!executeScalar(preparer, exists, false)) { /* error */
-            qDebug() << "Database::checkUserExists : query failed!" << endl;
+            qDebug() << "Database::checkUserExists : query failed!" << Qt::endl;
             return false; // FIXME ???
         }
 
@@ -581,7 +581,7 @@ namespace PMP {
             };
 
         if (!executeVoid(preparer)) { /* error */
-            qDebug() << "Database::registerNewUser : insert failed!" << endl;
+            qDebug() << "Database::registerNewUser : insert failed!" << Qt::endl;
             return 0;
         }
 
@@ -589,7 +589,7 @@ namespace PMP {
 
         uint userId = 0;
         if (!executeScalar(preparer2, userId, 0)) {
-            qDebug() << "Database::registerNewUser : select failed!" << endl;
+            qDebug() << "Database::registerNewUser : select failed!" << Qt::endl;
             return 0;
         }
 
@@ -689,7 +689,7 @@ namespace PMP {
             };
 
         if (!executeVoid(preparer)) { /* error */
-            qDebug() << "Database::addToHistory : query FAILED!" << endl;
+            qDebug() << "Database::addToHistory : query FAILED!" << Qt::endl;
             return;
         }
 
@@ -706,7 +706,7 @@ namespace PMP {
 
         QDateTime lastHeard;
         if (!executeScalar(preparer, lastHeard)) { /* error */
-            qDebug() << "Database::getLastHeard : query failed!" << endl;
+            qDebug() << "Database::getLastHeard : query failed!" << Qt::endl;
             return QDateTime(); // FIXME ???
         }
 
@@ -741,7 +741,7 @@ namespace PMP {
 
         if (!executeQuery(q)) { /* error */
             qDebug() << "Database::getLastHeard (bulk) : could not execute; "
-                     << q.lastError().text() << endl;
+                     << q.lastError().text() << Qt::endl;
             return result;
         }
 
@@ -788,7 +788,7 @@ namespace PMP {
 
         if (!executeQuery(q)) { /* error */
             qDebug() << "Database::getHashHistoryStats : could not execute; "
-                     << q.lastError().text() << endl;
+                     << q.lastError().text() << Qt::endl;
             return result;
         }
 
