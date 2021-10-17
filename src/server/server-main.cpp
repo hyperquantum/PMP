@@ -42,7 +42,8 @@
 
 using namespace PMP;
 
-QStringList generateDefaultScanPaths() {
+QStringList generateDefaultScanPaths()
+{
     QStringList paths;
     paths.reserve(3);
 
@@ -55,7 +56,8 @@ QStringList generateDefaultScanPaths() {
     /* Qt <5.3 returns the documents location as downloads location */
     QStringList downloadsPaths =
         QStandardPaths::standardLocations(QStandardPaths::DownloadLocation);
-    Q_FOREACH(QString path, downloadsPaths) {
+    Q_FOREACH(QString path, downloadsPaths)
+    {
         if (!documentsPaths.contains(path)) paths.append(path);
     }
 
@@ -73,8 +75,8 @@ void reportStartupError(int exitCode, QString message)
     qDebug() << "Will exit with code" << exitCode;
 }
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
     QCoreApplication app(argc, argv);
 
     QCoreApplication::setApplicationName("Party Music Player - Server");
@@ -86,7 +88,8 @@ int main(int argc, char *argv[]) {
 
     bool doIndexation = true;
     QStringList args = QCoreApplication::arguments();
-    Q_FOREACH(QString arg, args) {
+    Q_FOREACH(QString arg, args)
+    {
         if (arg == "-no-index" || arg == "-no-indexation")
             doIndexation = false;
     }
@@ -132,34 +135,40 @@ int main(int argc, char *argv[]) {
         {
             bool ok;
             defaultVolume = defaultVolumeSetting.toString().toInt(&ok);
-            if (!ok || defaultVolume < 0 || defaultVolume > 100) {
+            if (!ok || defaultVolume < 0 || defaultVolume > 100)
+            {
                 out << "Invalid default volume setting found. Ignoring.\n" << Qt::endl;
                 defaultVolume = -1;
             }
         }
-        if (defaultVolume < 0) {
+        if (defaultVolume < 0)
+        {
             settings.setValue("player/default_volume", "");
         }
 
         QVariant musicPathsSetting = settings.value("media/scan_directories");
-        if (!musicPathsSetting.isValid() || musicPathsSetting.toStringList().empty()) {
+        if (!musicPathsSetting.isValid() || musicPathsSetting.toStringList().empty())
+        {
             out << "No music paths set.  Setting default paths.\n" << Qt::endl;
             musicPaths = generateDefaultScanPaths();
             settings.setValue("media/scan_directories", musicPaths);
         }
-        else {
+        else
+        {
             musicPaths = musicPathsSetting.toStringList();
         }
 
         out << "Music paths to scan:\n";
-        Q_FOREACH(QString path, musicPaths) {
+        Q_FOREACH(QString path, musicPaths)
+        {
             out << "  " << path << "\n";
         }
         out << Qt::endl;
     }
 
     bool databaseInitializationSucceeded = Database::init(out);
-    if (!databaseInitializationSucceeded) {
+    if (!databaseInitializationSucceeded)
+    {
         serverHealthMonitor.setDatabaseUnavailable();
     }
 
