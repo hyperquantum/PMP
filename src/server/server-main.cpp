@@ -36,46 +36,52 @@
 #include "users.h"
 
 #include <QCoreApplication>
-#include <QStandardPaths>
 #include <QtDebug>
 #include <QThreadPool>
 
 using namespace PMP;
 
-QStringList generateDefaultScanPaths()
+namespace
 {
-    QStringList paths;
-    paths.reserve(3);
-
-    paths.append(QStandardPaths::standardLocations(QStandardPaths::MusicLocation));
-
-    QStringList documentsPaths =
-        QStandardPaths::standardLocations(QStandardPaths::DocumentsLocation);
-    paths.append(documentsPaths);
-
-    /* Qt <5.3 returns the documents location as downloads location */
-    QStringList downloadsPaths =
-        QStandardPaths::standardLocations(QStandardPaths::DownloadLocation);
-    Q_FOREACH(QString path, downloadsPaths)
+    void reportStartupError(int exitCode, QString message)
     {
-        if (!documentsPaths.contains(path)) paths.append(path);
+        QTextStream err(stderr);
+        err << message << '\n'
+            << "Exiting." << Qt::endl;
+
+        // write to log file
+        qDebug() << "Startup error:" << message;
+        qDebug() << "Will exit with code" << exitCode;
     }
 
-    return paths;
+    void printStartupSummary(QTextStream& out, ServerSettings const& serverSettings,
+                             Server const& server, Player const& player)
+    {
+        out << "Server instance identifier: " << server.uuid().toString() << "\n";
+
+        out << Qt::endl;
+
+        out << "Music paths to scan:\n";
+        auto const musicPaths = serverSettings.musicPaths();
+        for (QString const& path : musicPaths)
+        {
+            out << "  " << path << "\n";
+        }
+
+        out << Qt::endl;
+
+        out << "Volume: " << player.volume() << "\n";
+
+        out << Qt::endl;
+
+        out << "Now listening on port " << server.port() << "\n"
+            << "Server password is " << server.serverPassword() << "\n";
+
+        out << Qt::endl;
+    }
 }
 
-void reportStartupError(int exitCode, QString message)
-{
-    QTextStream err(stderr);
-    err << message << '\n'
-        << "Exiting." << Qt::endl;
-
-    // write to log file
-    qDebug() << "Startup error:" << message;
-    qDebug() << "Will exit with code" << exitCode;
-}
-
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
 
@@ -113,7 +119,9 @@ int main(int argc, char *argv[])
 
     ServerHealthMonitor serverHealthMonitor;
 
-    /* clean up leftover preloader cache files */
+    ServerSettings serverSettings;
+    serverSettings.load();
+
     Preloader::cleanupOldFiles();
 
     //foreach (const QString &path, app.libraryPaths())
@@ -123,50 +131,7 @@ int main(int argc, char *argv[])
      * database connection almost everytime a new task is started. */
     QThreadPool::globalInstance()->setExpiryTimeout(-1);
 
-    QStringList musicPaths;
-    int defaultVolume = -1;
-    {
-        ServerSettings serversettings;
-        QSettings& settings = serversettings.getSettings();
-
-        QVariant defaultVolumeSetting = settings.value("player/default_volume");
-        if (defaultVolumeSetting.isValid()
-            && defaultVolumeSetting.toString() != "")
-        {
-            bool ok;
-            defaultVolume = defaultVolumeSetting.toString().toInt(&ok);
-            if (!ok || defaultVolume < 0 || defaultVolume > 100)
-            {
-                out << "Invalid default volume setting found. Ignoring.\n" << Qt::endl;
-                defaultVolume = -1;
-            }
-        }
-        if (defaultVolume < 0)
-        {
-            settings.setValue("player/default_volume", "");
-        }
-
-        QVariant musicPathsSetting = settings.value("media/scan_directories");
-        if (!musicPathsSetting.isValid() || musicPathsSetting.toStringList().empty())
-        {
-            out << "No music paths set.  Setting default paths.\n" << Qt::endl;
-            musicPaths = generateDefaultScanPaths();
-            settings.setValue("media/scan_directories", musicPaths);
-        }
-        else
-        {
-            musicPaths = musicPathsSetting.toStringList();
-        }
-
-        out << "Music paths to scan:\n";
-        Q_FOREACH(QString path, musicPaths)
-        {
-            out << "  " << path << "\n";
-        }
-        out << Qt::endl;
-    }
-
-    bool databaseInitializationSucceeded = Database::init(out);
+    bool databaseInitializationSucceeded = Database::init(out, serverSettings);
     if (!databaseInitializationSucceeded)
     {
         serverHealthMonitor.setDatabaseUnavailable();
@@ -174,13 +139,8 @@ int main(int argc, char *argv[])
 
     Resolver resolver;
 
-    /* unique server instance ID (not to be confused with the unique ID of the database)*/
-    QUuid serverInstanceIdentifier = QUuid::createUuid();
-    out << "Server instance identifier: " << serverInstanceIdentifier.toString() << "\n"
-        << Qt::endl;
-
     Users users;
-    Player player(nullptr, &resolver, defaultVolume);
+    Player player(nullptr, &resolver, serverSettings.defaultVolume());
     PlayerQueue& queue = player.queue();
     History history(&player);
 
@@ -208,14 +168,20 @@ int main(int argc, char *argv[])
         &generator, &Generator::setUserGeneratingFor
     );
 
-    resolver.setMusicPaths(musicPaths);
+    resolver.setMusicPaths(serverSettings.musicPaths());
+    QObject::connect(
+        &serverSettings, &ServerSettings::musicPathsChanged,
+        &resolver,
+        [&serverSettings, &resolver]()
+        {
+            resolver.setMusicPaths(serverSettings.musicPaths());
+        }
+    );
 
-    out << Qt::endl
-        << "Volume = " << player.volume() << Qt::endl;
+    /* unique server instance ID (not to be confused with the unique ID of the database)*/
+    QUuid serverInstanceIdentifier = QUuid::createUuid();
 
-    out << Qt::endl;
-
-    Server server(nullptr, serverInstanceIdentifier);
+    Server server(nullptr, &serverSettings, serverInstanceIdentifier);
     bool listening =
         server.listen(&player, &generator, &history, &users, &collectionMonitor,
                       &serverHealthMonitor, QHostAddress::Any, 23432);
@@ -227,12 +193,11 @@ int main(int argc, char *argv[])
     }
 
     qDebug() << "Started listening to TCP port:" << server.port();
-    out << "Now listening on port " << server.port() << "\n"
-        << "Server password is " << server.serverPassword() << "\n"
-        << Qt::endl;
 
     // exit when the server instance signals it
     QObject::connect(&server, &Server::shuttingDown, &app, &QCoreApplication::quit);
+
+    printStartupSummary(out, serverSettings, server, player);
 
     out << "\n"
         << "Server initialization complete." << Qt::endl;

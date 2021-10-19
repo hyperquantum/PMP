@@ -35,7 +35,8 @@
 
 namespace PMP
 {
-    Server::Server(QObject* parent, const QUuid& serverInstanceIdentifier)
+    Server::Server(QObject* parent, ServerSettings* serverSettings,
+                   const QUuid& serverInstanceIdentifier)
      : QObject(parent),
        _uuid(serverInstanceIdentifier),
        _player(nullptr), _generator(nullptr), _history(nullptr), _users(nullptr),
@@ -46,31 +47,14 @@ namespace PMP
         /* generate a new UUID for ourselves if we did not receive a valid one */
         if (_uuid.isNull()) _uuid = QUuid::createUuid();
 
-        ServerSettings serversettings;
-        QSettings& settings = serversettings.getSettings();
-
-        /* get rid of old 'serverpassword' setting if it still exists */
-        settings.remove("security/serverpassword");
-
-        QVariant serverPassword = settings.value("security/fixedserverpassword");
-        if (!serverPassword.isValid() || serverPassword.toString() == ""
-            || serverPassword.toString().length() < 6)
+        auto fixedServerPassword = serverSettings->fixedServerPassword();
+        if (!fixedServerPassword.isEmpty())
         {
-            if (serverPassword.isValid() && serverPassword.toString().length() > 0)
-            {
-                qWarning() << "ignoring 'fixedserverpassword' setting because"
-                           << "its value is unsafe (too short)";
-            }
-
-            _serverPassword = generateServerPassword();
-
-            /* put placeholder in settings file, so that one can define a fixed
-             * server password if desired */
-            settings.setValue("security/fixedserverpassword", "");
+            _serverPassword = fixedServerPassword;
         }
         else
         {
-            _serverPassword = serverPassword.toString();
+            _serverPassword = generateServerPassword();
         }
 
         connect(

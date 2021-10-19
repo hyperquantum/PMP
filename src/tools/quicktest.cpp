@@ -22,6 +22,7 @@
 #include "common/version.h"
 
 #include "server/database.h"
+#include "server/serversettings.h"
 
 #include <QCoreApplication>
 #include <QHostAddress>
@@ -33,8 +34,8 @@
 
 using namespace PMP;
 
-int main(int argc, char *argv[]) {
-    
+int main(int argc, char* argv[])
+{
     QCoreApplication app(argc, argv);
 
     QCoreApplication::setApplicationName("Party Music Player - Simple test program");
@@ -62,7 +63,12 @@ int main(int argc, char *argv[]) {
     qDebug() << "SSL version string:" << QSslSocket::sslLibraryVersionString();
     */
 
-    if (!Database::init(out, "localhost", "root", "xxxxxxxxxxx"))
+    DatabaseConnectionSettings databaseConnectionSettings;
+    databaseConnectionSettings.hostname = "localhost";
+    databaseConnectionSettings.username = "root";
+    databaseConnectionSettings.password = "xxxxxxxxxxx";
+
+    if (!Database::init(out, databaseConnectionSettings))
     {
         qWarning() << "could not initialize database";
         return 1;

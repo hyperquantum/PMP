@@ -85,6 +85,9 @@ namespace PMP
         qint32 trackRepetitionAvoidanceIntervalSeconds;
     };
 
+    struct DatabaseConnectionSettings;
+    class ServerSettings;
+
     class Database
     {
     public:
@@ -96,9 +99,9 @@ namespace PMP
             qint16 score;
         };
 
-        static bool init(QTextStream& out);
-        static bool init(QTextStream& out, QString hostname, QString username,
-                         QString password);
+        static bool init(QTextStream& out, ServerSettings const& serverSettings);
+        static bool init(QTextStream& out,
+                         DatabaseConnectionSettings const& connectionSettings);
 
         bool isConnectionOpen() const;
 

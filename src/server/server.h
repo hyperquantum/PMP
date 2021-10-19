@@ -34,13 +34,15 @@ namespace PMP
     class History;
     class Player;
     class ServerHealthMonitor;
+    class ServerSettings;
     class Users;
 
     class Server : public QObject
     {
         Q_OBJECT
     public:
-        Server(QObject* parent, const QUuid& serverInstanceIdentifier);
+        Server(QObject* parent, ServerSettings* serverSettings,
+               const QUuid& serverInstanceIdentifier);
 
         bool listen(Player* player, Generator* generator, History* history,
                     Users* users,
@@ -53,7 +55,7 @@ namespace PMP
         quint16 port() const;
 
         QUuid uuid() const { return _uuid; }
-        QString serverPassword() { return _serverPassword; }
+        QString serverPassword() const { return _serverPassword; }
 
     public Q_SLOTS:
         void shutdown();

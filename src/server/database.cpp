@@ -39,65 +39,28 @@ namespace PMP
     QThreadStorage<QSharedPointer<Database>> Database::_threadLocalDatabases;
     QAtomicInt Database::_nextDbNameNumber;
 
-    bool Database::init(QTextStream& out)
+    bool Database::init(QTextStream& out, const ServerSettings& serverSettings)
     {
-        ServerSettings serversettings;
-        QSettings& settings = serversettings.getSettings();
+        auto connectionSettings = serverSettings.databaseConnectionSettings();
 
-        bool incompleteDbSettings = false;
-
-        QVariant hostname = settings.value("database/hostname");
-        if (!hostname.isValid() || hostname.toString() == "")
-        {
-            settings.setValue("database/hostname", "");
-            incompleteDbSettings = true;
-        }
-
-        QVariant user = settings.value("database/username");
-        if (!user.isValid() || user.toString() == "")
-        {
-            settings.setValue("database/username", "");
-            incompleteDbSettings = true;
-        }
-
-        QVariant password = settings.value("database/password");
-        if (!password.isValid() || password.toString() == "")
-        {
-            settings.setValue("database/password", "");
-            incompleteDbSettings = true;
-        }
-
-    //    QVariant schema = settings.value("database/schema");
-    //    if (!schema.isValid() || schema.toString() == "")
-    //    {
-    //        settings.setValue("database/schema", "");
-    //        incompleteDbSettings = true;
-    //    }
-
-        if (incompleteDbSettings)
-        {
-            /* delegate the error */
-            return init(out, "", "", "");
-        }
-
-        return init(out, hostname.toString(), user.toString(), password.toString());
+        return init(out, connectionSettings);
     }
 
-    bool Database::init(QTextStream& out, QString hostname, QString username,
-                        QString password)
+    bool Database::init(QTextStream& out,
+                        const DatabaseConnectionSettings& connectionSettings)
     {
         out << "initializing database" << Qt::endl;
         _initDoneSuccessfully = false;
 
-        if (hostname.isEmpty() || username.isEmpty() || password.isEmpty())
+        if (!connectionSettings.isComplete())
         {
             out << " incomplete database settings!\n" << Qt::endl;
             return false;
         }
 
-        _hostname = hostname;
-        _username = username;
-        _password = password;
+        _hostname = connectionSettings.hostname;
+        _username = connectionSettings.username;
+        _password = connectionSettings.password;
 
         /* open connection */
         QSqlDatabase db = createDatabaseConnection("PMP_main_dbconn", false);
