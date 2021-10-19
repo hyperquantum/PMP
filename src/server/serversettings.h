@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,9 +22,10 @@
 
 #include <QSettings>
 
-namespace PMP {
-
-    class ServerSettings : public QObject {
+namespace PMP
+{
+    class ServerSettings : public QObject
+    {
         Q_OBJECT
     public:
         ServerSettings();
