@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,8 +33,8 @@
 
 #define QT_USE_QSTRINGBUILDER
 
-namespace PMP {
-
+namespace PMP
+{
     Server::Server(QObject* parent, const QUuid& serverInstanceIdentifier)
      : QObject(parent),
        _uuid(serverInstanceIdentifier),
@@ -56,7 +56,8 @@ namespace PMP {
         if (!serverPassword.isValid() || serverPassword.toString() == ""
             || serverPassword.toString().length() < 6)
         {
-            if (serverPassword.isValid() && serverPassword.toString().length() > 0) {
+            if (serverPassword.isValid() && serverPassword.toString().length() > 0)
+            {
                 qWarning() << "ignoring 'fixedserverpassword' setting because"
                            << "its value is unsafe (too short)";
             }
@@ -67,7 +68,8 @@ namespace PMP {
              * server password if desired */
             settings.setValue("security/fixedserverpassword", "");
         }
-        else {
+        else
+        {
             _serverPassword = serverPassword.toString();
         }
 
@@ -81,7 +83,8 @@ namespace PMP {
         connect(_broadcastTimer, &QTimer::timeout, this, &Server::sendBroadcast);
     }
 
-    QString Server::generateServerPassword() {
+    QString Server::generateServerPassword()
+    {
         const QString chars =
             "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz123456789!@#%&*()+=:<>?/-";
 
@@ -91,9 +94,11 @@ namespace PMP {
         QString serverPassword;
         serverPassword.reserve(passwordLength);
         int prevIndex = -consecutiveCharsDistance;
-        for (int i = 0; i < passwordLength; ++i) {
+        for (int i = 0; i < passwordLength; ++i)
+        {
             int index;
-            do {
+            do
+            {
                 index = qrand() % chars.length(); // FIXME : don't use qrand()
             } while (qAbs(index - prevIndex) < consecutiveCharsDistance);
             prevIndex = index;
@@ -117,15 +122,15 @@ namespace PMP {
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
 
-        if (!_server->listen(address, port)) {
+        if (!_server->listen(address, port))
             return false;
-        }
 
         bool bound =
             _udpSocket->bind(
                 23432, QAbstractSocket::ShareAddress | QAbstractSocket::ReuseAddressHint
             );
-        if (!bound) {
+        if (!bound)
+        {
             qWarning() << "UdpSocket bind failed; cannot listen for probes";
         }
 
@@ -135,20 +140,24 @@ namespace PMP {
         return true;
     }
 
-    QString Server::errorString() const {
+    QString Server::errorString() const
+    {
         return _server->errorString();
     }
 
-    quint16 Server::port() const {
+    quint16 Server::port() const
+    {
         return _server->serverPort();
     }
 
-    void Server::shutdown() {
+    void Server::shutdown()
+    {
         _broadcastTimer->stop();
         Q_EMIT shuttingDown();
     }
 
-    void Server::newConnectionReceived() {
+    void Server::newConnectionReceived()
+    {
         QTcpSocket *connection = _server->nextPendingConnection();
 
         auto serverInterface = new ServerInterface(this, _player, _generator);
@@ -162,7 +171,8 @@ namespace PMP {
         connectedClient->setParent(this);
     }
 
-    void Server::sendBroadcast() {
+    void Server::sendBroadcast()
+    {
         QByteArray datagram = "PMPSERVERANNOUNCEv01 ";
         NetworkUtil::append2Bytes(datagram, port());
 
@@ -170,8 +180,10 @@ namespace PMP {
         _udpSocket->flush();
     }
 
-    void Server::readPendingDatagrams() {
-        while (_udpSocket->hasPendingDatagrams()) {
+    void Server::readPendingDatagrams()
+    {
+        while (_udpSocket->hasPendingDatagrams())
+        {
             QByteArray datagram;
             datagram.resize(_udpSocket->pendingDatagramSize());
             QHostAddress sender;
