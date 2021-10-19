@@ -29,8 +29,8 @@
 #include <QtDebug>
 #include <QTextStream>
 
-namespace PMP {
-
+namespace PMP
+{
     QString Database::_hostname;
     QString Database::_username;
     QString Database::_password;
@@ -47,25 +47,29 @@ namespace PMP {
         bool incompleteDbSettings = false;
 
         QVariant hostname = settings.value("database/hostname");
-        if (!hostname.isValid() || hostname.toString() == "") {
+        if (!hostname.isValid() || hostname.toString() == "")
+        {
             settings.setValue("database/hostname", "");
             incompleteDbSettings = true;
         }
 
         QVariant user = settings.value("database/username");
-        if (!user.isValid() || user.toString() == "") {
+        if (!user.isValid() || user.toString() == "")
+        {
             settings.setValue("database/username", "");
             incompleteDbSettings = true;
         }
 
         QVariant password = settings.value("database/password");
-        if (!password.isValid() || password.toString() == "") {
+        if (!password.isValid() || password.toString() == "")
+        {
             settings.setValue("database/password", "");
             incompleteDbSettings = true;
         }
 
     //    QVariant schema = settings.value("database/schema");
-    //    if (!schema.isValid() || schema.toString() == "") {
+    //    if (!schema.isValid() || schema.toString() == "")
+    //    {
     //        settings.setValue("database/schema", "");
     //        incompleteDbSettings = true;
     //    }
@@ -97,7 +101,8 @@ namespace PMP {
 
         /* open connection */
         QSqlDatabase db = createDatabaseConnection("PMP_main_dbconn", false);
-        if (!db.isOpen()) {
+        if (!db.isOpen())
+        {
             out << " ERROR: could not connect to database: " << db.lastError().text()
                 << "\n" << Qt::endl;
             return false;
@@ -131,20 +136,24 @@ namespace PMP {
         /* get UUID, or generate one and store it if it does not exist yet */
         q.prepare("SELECT `Value` FROM pmp_misc WHERE `Key`=?");
         q.addBindValue("UUID");
-        if (!q.exec()) {
+        if (!q.exec())
+        {
             out << " error: could not see if UUID already exists\n" << Qt::endl;
             return false;
         }
         QUuid uuid;
-        if (q.next()) {
+        if (q.next())
+        {
             uuid = QUuid(q.value(0).toString());
         }
-        else {
+        else
+        {
             uuid = QUuid::createUuid();
             q.prepare("INSERT INTO pmp_misc(`Key`, `Value`) VALUES (?,?)");
             q.addBindValue("UUID");
             q.addBindValue(uuid.toString());
-            if (!q.exec()) {
+            if (!q.exec())
+            {
                 out << " error inserting UUID into database\n" << Qt::endl;
                 return false;
             }
@@ -288,7 +297,8 @@ namespace PMP {
         //
     }
 
-    QSqlDatabase Database::createDatabaseConnection(QString name, bool setSchema) {
+    QSqlDatabase Database::createDatabaseConnection(QString name, bool setSchema)
+    {
         QSqlDatabase db = QSqlDatabase::addDatabase("QMYSQL", name);
         db.setHostName(_hostname);
         db.setUserName(_username);
@@ -296,7 +306,8 @@ namespace PMP {
 
         if (setSchema) { db.setDatabaseName("pmp"); }
 
-        if (!db.open()) {
+        if (!db.open())
+        {
             qDebug() << "Database::createDatabaseConnection FAIL:"
                      << "could not open connection; name:" << name;
         }
@@ -310,8 +321,10 @@ namespace PMP {
         out << Qt::endl;
     }
 
-    QSharedPointer<Database> Database::getDatabaseForCurrentThread() {
-        if (_threadLocalDatabases.hasLocalData()) {
+    QSharedPointer<Database> Database::getDatabaseForCurrentThread()
+    {
+        if (_threadLocalDatabases.hasLocalData())
+        {
             return _threadLocalDatabases.localData();
         }
 
@@ -332,20 +345,24 @@ namespace PMP {
         return dbPtr;
     }
 
-    bool Database::isConnectionOpen() const {
+    bool Database::isConnectionOpen() const
+    {
         return _db.isOpen();
     }
 
-    QUuid Database::getDatabaseIdentifier() const {
+    QUuid Database::getDatabaseIdentifier() const
+    {
         return _uuid;
     }
 
-    void Database::registerHash(const FileHash& hash) {
+    void Database::registerHash(const FileHash& hash)
+    {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
 
         auto preparer =
-            [=] (QSqlQuery& q) {
+            [=] (QSqlQuery& q)
+            {
                 q.prepare(
                     "INSERT IGNORE INTO pmp_hash(InputLength, `SHA1`, `MD5`) "
                     "VALUES(?,?,?)"
@@ -360,12 +377,14 @@ namespace PMP {
         }
     }
 
-    uint Database::getHashID(const FileHash& hash) {
+    uint Database::getHashID(const FileHash& hash)
+    {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
 
         auto preparer =
-            [=] (QSqlQuery& q) {
+            [=] (QSqlQuery& q)
+            {
                 q.prepare(
                     "SELECT HashID FROM pmp_hash"
                     " WHERE InputLength=? AND `SHA1`=? AND `MD5`=?"
@@ -376,7 +395,8 @@ namespace PMP {
             };
 
         uint id;
-        if (!executeScalar(preparer, id, 0)) { /* error */
+        if (!executeScalar(preparer, id, 0)) /* error */
+        {
             qDebug() << "Database::getHashID : query failed!" << Qt::endl;
             return 0;
         }
@@ -384,7 +404,8 @@ namespace PMP {
         return id;
     }
 
-    QList<QPair<uint,FileHash> > Database::getHashes(uint largerThanID) {
+    QList<QPair<uint,FileHash> > Database::getHashes(uint largerThanID)
+    {
         QSqlQuery q(_db);
         q.prepare(
             "SELECT HashID,InputLength,`SHA1`,`MD5` FROM pmp_hash"
@@ -395,13 +416,15 @@ namespace PMP {
 
         QList<QPair<uint,FileHash> > result;
 
-        if (!executeQuery(q)) { /* error */
+        if (!executeQuery(q)) /* error */
+        {
             qDebug() << "Database::getHashes : could not execute; "
                      << q.lastError().text() << Qt::endl;
             return result;
         }
 
-        while (q.next()) {
+        while (q.next())
+        {
             uint hashID = q.value(0).toUInt();
             uint length = q.value(1).toUInt();
             QByteArray sha1 = QByteArray::fromHex(q.value(2).toByteArray());
@@ -412,7 +435,8 @@ namespace PMP {
         return result;
     }
 
-    void Database::registerFilename(uint hashID, const QString& filenameWithoutPath) {
+    void Database::registerFilename(uint hashID, const QString& filenameWithoutPath)
+    {
         /* We do not support extremely long file names.  Lookup for those files should be
            done by other means. */
         if (filenameWithoutPath.length() > 255) return;
@@ -421,7 +445,8 @@ namespace PMP {
            tolerable however. */
 
         auto preparer =
-            [=] (QSqlQuery& q) {
+            [=] (QSqlQuery& q)
+            {
                 q.prepare(
                     "SELECT EXISTS("
                     " SELECT * FROM pmp_filename"
@@ -433,7 +458,8 @@ namespace PMP {
             };
 
         bool exists;
-        if (!executeScalar(preparer, exists, false)) {
+        if (!executeScalar(preparer, exists, false))
+        {
             qDebug() << "Database::registerFilename : select failed!" << Qt::endl;
             return;
         }
@@ -441,7 +467,8 @@ namespace PMP {
         if (exists) return; /* already registered */
 
         auto preparer2 =
-            [=] (QSqlQuery& q) {
+            [=] (QSqlQuery& q)
+            {
                 q.prepare(
                     "INSERT INTO pmp_filename(`HashID`,`FilenameWithoutDir`)"
                     " VALUES(?,?)"
@@ -450,13 +477,15 @@ namespace PMP {
                 q.addBindValue(filenameWithoutPath);
             };
 
-        if (!executeVoid(preparer2)) {
+        if (!executeVoid(preparer2))
+        {
             qDebug() << "Database::registerFilename : insert failed!" << Qt::endl;
             return;
         }
     }
 
-    QList<QString> Database::getFilenames(uint hashID) {
+    QList<QString> Database::getFilenames(uint hashID)
+    {
         QSqlQuery q(_db);
         q.prepare(
             "SELECT `FilenameWithoutDir` FROM pmp_filename"
@@ -466,13 +495,15 @@ namespace PMP {
 
         QList<QString> result;
 
-        if (!executeQuery(q)) { /* error */
+        if (!executeQuery(q)) /* error */
+        {
             qDebug() << "Database::getFilenames : could not execute; "
                      << q.lastError().text() << Qt::endl;
             return result;
         }
 
-        while (q.next()) {
+        while (q.next())
+        {
             QString name = q.value(0).toString();
             result.append(name);
         }
@@ -480,9 +511,11 @@ namespace PMP {
         return result;
     }
 
-    void Database::registerFileSize(uint hashId, qint64 size) {
+    void Database::registerFileSize(uint hashId, qint64 size)
+    {
         auto preparer =
-            [=] (QSqlQuery& q) {
+            [=] (QSqlQuery& q)
+            {
                 q.prepare(
                     "INSERT INTO pmp_filesize(`HashID`,`FileSize`)"
                     " VALUES(?,?)"
@@ -492,7 +525,8 @@ namespace PMP {
                 q.addBindValue(size);
             };
 
-        if (!executeVoid(preparer)) {
+        if (!executeVoid(preparer))
+        {
             qDebug() << "Database::registerFileSize : insert failed!" << Qt::endl;
             return;
         }
@@ -525,19 +559,22 @@ namespace PMP {
         return result;
     }
 
-    QList<User> Database::getUsers() {
+    QList<User> Database::getUsers()
+    {
         QSqlQuery q(_db);
         q.prepare("SELECT `UserID`,`Login`,`Salt`,`Password` FROM pmp_user");
 
         QList<User> result;
 
-        if (!executeQuery(q)) { /* error */
+        if (!executeQuery(q)) /* error */
+        {
             qDebug() << "Database::getUsers : could not execute; "
                      << q.lastError().text() << Qt::endl;
             return result;
         }
 
-        while (q.next()) {
+        while (q.next())
+        {
             quint32 userID = q.value(0).toUInt();
             QString login = q.value(1).toString();
             QString salt = q.value(2).toString();
@@ -551,9 +588,11 @@ namespace PMP {
         return result;
     }
 
-    bool Database::checkUserExists(QString userName) {
+    bool Database::checkUserExists(QString userName)
+    {
         auto preparer =
-            [=] (QSqlQuery& q) {
+            [=] (QSqlQuery& q)
+            {
                 q.prepare(
                     "SELECT EXISTS(SELECT * FROM pmp_user WHERE LOWER(`Login`)=LOWER(?))"
                 );
@@ -561,7 +600,8 @@ namespace PMP {
             };
 
         bool exists;
-        if (!executeScalar(preparer, exists, false)) { /* error */
+        if (!executeScalar(preparer, exists, false)) /* error */
+        {
             qDebug() << "Database::checkUserExists : query failed!" << Qt::endl;
             return false; // FIXME ???
         }
@@ -569,9 +609,11 @@ namespace PMP {
         return exists;
     }
 
-    quint32 Database::registerNewUser(User& user) {
+    quint32 Database::registerNewUser(User& user)
+    {
         auto preparer =
-            [=] (QSqlQuery& q) {
+            [=] (QSqlQuery& q)
+            {
                 q.prepare(
                     "INSERT INTO pmp_user(`Login`,`Salt`,`Password`) VALUES(?,?,?)"
                 );
@@ -580,7 +622,8 @@ namespace PMP {
                 q.addBindValue(QString::fromLatin1(user.password.toBase64()));
             };
 
-        if (!executeVoid(preparer)) { /* error */
+        if (!executeVoid(preparer)) /* error */
+        {
             qDebug() << "Database::registerNewUser : insert failed!" << Qt::endl;
             return 0;
         }
@@ -588,7 +631,8 @@ namespace PMP {
         auto preparer2 = prepareSimple("SELECT LAST_INSERT_ID()");
 
         uint userId = 0;
-        if (!executeScalar(preparer2, userId, 0)) {
+        if (!executeScalar(preparer2, userId, 0))
+        {
             qDebug() << "Database::registerNewUser : select failed!" << Qt::endl;
             return 0;
         }
@@ -601,7 +645,8 @@ namespace PMP {
                                                                            bool* ok)
     {
         auto preparer =
-            [=] (QSqlQuery& q) {
+            [=] (QSqlQuery& q)
+            {
                 q.prepare(
                     "SELECT DynamicModeEnabled, TrackRepetitionAvoidanceIntervalSeconds "
                     "FROM pmp_user "
@@ -674,7 +719,8 @@ namespace PMP {
 //                 << "   end" << end;
 
         auto preparer =
-            [=] (QSqlQuery& q) {
+            [=] (QSqlQuery& q)
+            {
                 q.prepare(
                     "INSERT INTO pmp_history"
                     " (`HashID`,`UserID`,`Start`,`End`,`Permillage`,`ValidForScoring`) "
@@ -688,7 +734,8 @@ namespace PMP {
                 q.addBindValue(validForScoring);
             };
 
-        if (!executeVoid(preparer)) { /* error */
+        if (!executeVoid(preparer)) /* error */
+        {
             qDebug() << "Database::addToHistory : query FAILED!" << Qt::endl;
             return;
         }
@@ -696,16 +743,19 @@ namespace PMP {
         return;
     }
 
-    QDateTime Database::getLastHeard(quint32 hashId, quint32 userId) {
+    QDateTime Database::getLastHeard(quint32 hashId, quint32 userId)
+    {
         auto preparer =
-            [=] (QSqlQuery& q) {
+            [=] (QSqlQuery& q)
+            {
                 q.prepare("SELECT MAX(End) FROM pmp_history WHERE HashID=? AND UserID=?");
                 q.addBindValue(hashId);
                 q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
             };
 
         QDateTime lastHeard;
-        if (!executeScalar(preparer, lastHeard)) { /* error */
+        if (!executeScalar(preparer, lastHeard)) /* error */
+        {
             qDebug() << "Database::getLastHeard : query failed!" << Qt::endl;
             return QDateTime(); // FIXME ???
         }
@@ -732,20 +782,23 @@ namespace PMP {
             "WHERE ha.HashID IN " + buildParamsList(hashIds.size())
         );
         q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
-        Q_FOREACH(auto hashId, hashIds) {
+        Q_FOREACH(auto hashId, hashIds)
+        {
             q.addBindValue(hashId);
         }
 
         QList<QPair<quint32, QDateTime>> result;
         result.reserve(hashIds.size());
 
-        if (!executeQuery(q)) { /* error */
+        if (!executeQuery(q)) /* error */
+        {
             qDebug() << "Database::getLastHeard (bulk) : could not execute; "
                      << q.lastError().text() << Qt::endl;
             return result;
         }
 
-        while (q.next()) {
+        while (q.next())
+        {
             quint32 hashID = q.value(0).toUInt();
             QDateTime prevHeard = getUtcDateTime(q.value(1));
 
@@ -779,20 +832,23 @@ namespace PMP {
         QVariant userIdParam = (userId == 0) ? /*NULL*/QVariant(QVariant::UInt) : userId;
         q.addBindValue(userIdParam);
         q.addBindValue(userIdParam); /* twice */
-        Q_FOREACH(auto hashId, hashIds) {
+        Q_FOREACH(auto hashId, hashIds)
+        {
             q.addBindValue(hashId);
         }
 
         QVector<HashHistoryStats> result;
         result.reserve(hashIds.size());
 
-        if (!executeQuery(q)) { /* error */
+        if (!executeQuery(q)) /* error */
+        {
             qDebug() << "Database::getHashHistoryStats : could not execute; "
                      << q.lastError().text() << Qt::endl;
             return result;
         }
 
-        while (q.next()) {
+        while (q.next())
+        {
             quint32 hashID = q.value(0).toUInt();
             QDateTime prevHeard = getUtcDateTime(q.value(1));
             quint32 scoreHeardCount = (quint32)getUInt(q.value(2), 0);
@@ -810,12 +866,14 @@ namespace PMP {
         return result;
     }
 
-    QString Database::buildParamsList(unsigned paramsCount) {
+    QString Database::buildParamsList(unsigned paramsCount)
+    {
         QString s;
         s.reserve(2 + paramsCount * 2);
         s += "(";
 
-        for (unsigned i = 0; i < paramsCount; ++i) {
+        for (unsigned i = 0; i < paramsCount; ++i)
+        {
             if (i == 0)
                 s += "?";
             else
@@ -830,12 +888,15 @@ namespace PMP {
                                  bool defaultValue)
     {
         auto resultGetter =
-            [&b, defaultValue] (QSqlQuery& q) {
-                if (q.next()) {
+            [&b, defaultValue] (QSqlQuery& q)
+            {
+                if (q.next())
+                {
                     QVariant v = q.value(0);
                     b = (v.isNull()) ? defaultValue : v.toBool();
                 }
-                else {
+                else
+                {
                     b = defaultValue;
                 }
             };
@@ -847,35 +908,19 @@ namespace PMP {
         return false;
     }
 
-    /*
-    bool Database::executeScalar(QSqlQuery& q, int& i, int defaultValue) {
-        if (!executeQuery(q)) {
-            i = defaultValue;
-            return false;
-        }
-
-        if (q.next()) {
-            QVariant v = q.value(0);
-            i = (v.isNull()) ? defaultValue : v.toInt();
-        }
-        else {
-            i = defaultValue;
-        }
-
-        return true;
-    }
-    */
-
     bool Database::executeScalar(std::function<void (QSqlQuery&)> preparer, int& i,
                                  int defaultValue)
     {
         auto resultGetter =
-            [&i, defaultValue] (QSqlQuery& q) {
-                if (q.next()) {
+            [&i, defaultValue] (QSqlQuery& q)
+            {
+                if (q.next())
+                {
                     QVariant v = q.value(0);
                     i = (v.isNull()) ? defaultValue : v.toInt();
                 }
-                else {
+                else
+                {
                     i = defaultValue;
                 }
             };
@@ -887,35 +932,19 @@ namespace PMP {
         return false;
     }
 
-    /*
-    bool Database::executeScalar(QSqlQuery& q, uint& i, uint defaultValue) {
-        if (!executeQuery(q)) {
-            i = defaultValue;
-            return false;
-        }
-
-        if (q.next()) {
-            QVariant v = q.value(0);
-            i = (v.isNull()) ? defaultValue : v.toUInt();
-        }
-        else {
-            i = defaultValue;
-        }
-
-        return true;
-    }
-    */
-
     bool Database::executeScalar(std::function<void (QSqlQuery&)> preparer, uint& i,
                                  uint defaultValue)
     {
         auto resultGetter =
-            [&i, defaultValue] (QSqlQuery& q) {
-                if (q.next()) {
+            [&i, defaultValue] (QSqlQuery& q)
+            {
+                if (q.next())
+                {
                     QVariant v = q.value(0);
                     i = (v.isNull()) ? defaultValue : v.toUInt();
                 }
-                else {
+                else
+                {
                     i = defaultValue;
                 }
             };
@@ -930,12 +959,15 @@ namespace PMP {
     bool Database::executeScalar(std::function<void (QSqlQuery&)> preparer, QDateTime& d)
     {
         auto resultGetter =
-            [&d] (QSqlQuery& q) {
-                if (q.next()) {
+            [&d] (QSqlQuery& q)
+            {
+                if (q.next())
+                {
                     QVariant v = q.value(0);
                     d = (v.isNull()) ? QDateTime() : v.toDateTime();
                 }
-                else {
+                else
+                {
                     d = QDateTime();
                 }
             };
@@ -947,30 +979,13 @@ namespace PMP {
         return false;
     }
 
-    /*
-    bool Database::executeScalar(QSqlQuery& q, QString& s, const QString& defaultValue) {
-        if (!executeQuery(q)) {
-            s = defaultValue; // NECESSARY?
-            return false;
-        }
-
-        if (q.next()) {
-            QVariant v = q.value(0);
-            s = (v.isNull()) ? defaultValue : v.toString();
-        }
-        else {
-            s = defaultValue;
-        }
-
-        return true;
-    }
-    */
-
-    std::function<void (QSqlQuery&)> Database::prepareSimple(QString sql) {
+    std::function<void (QSqlQuery&)> Database::prepareSimple(QString sql)
+    {
         return [=] (QSqlQuery& q) { q.prepare(sql); };
     }
 
-    bool Database::executeVoid(std::function<void (QSqlQuery&)> preparer) {
+    bool Database::executeVoid(std::function<void (QSqlQuery&)> preparer)
+    {
         return executeQuery(preparer, false, std::function<void (QSqlQuery&)>());
     }
 
@@ -980,7 +995,8 @@ namespace PMP {
     {
         QSqlQuery q(_db);
         preparer(q);
-        if (q.exec()) {
+        if (q.exec())
+        {
             if (processResult) resultFetcher(q);
             return true;
         }
@@ -995,11 +1011,13 @@ namespace PMP {
         qDebug() << " driver error:" << error.driverText();
         qDebug() << " sql:" << q.lastQuery();
 
-        if (!_db.isOpen()) {
+        if (!_db.isOpen())
+        {
             qDebug() << " connection not open!";
         }
 
-        if (!_db.isValid()) {
+        if (!_db.isValid())
+        {
             qDebug() << " connection not valid!";
         }
 
@@ -1012,14 +1030,16 @@ namespace PMP {
         qDebug() << " will try to re-establish a connection and re-execute the query";
         _db.close();
         _db.setDatabaseName("pmp");
-        if (!_db.open()) {
+        if (!_db.open())
+        {
             qDebug() << "  FAILED.  Connection not reopened.";
             return false;
         }
 
         preparer(q);
 
-        if (!q.exec()) {
+        if (!q.exec())
+        {
             QSqlError error2 = q.lastError();
             qDebug() << "  FAILED to re-execute query:" << error2.text();
             qDebug() << "  error type:" << error2.type();
@@ -1037,7 +1057,8 @@ namespace PMP {
         return true;
     }
 
-    bool Database::executeQuery(QSqlQuery& q) {
+    bool Database::executeQuery(QSqlQuery& q)
+    {
         if (q.exec()) return true;
 
         /* something went wrong */
@@ -1050,27 +1071,32 @@ namespace PMP {
         qDebug() << " driver error:" << error.driverText();
         qDebug() << " sql:" << q.lastQuery();
 
-        if (!_db.isOpen()) {
+        if (!_db.isOpen())
+        {
             qDebug() << " connection not open!";
         }
 
-        if (!_db.isValid()) {
+        if (!_db.isValid())
+        {
             qDebug() << " connection not valid!";
         }
 
         /* An extended sleep period followed by a resume will result in the error "MySQL
            server has gone away", error code 2006. In that case we try to reopen the
            connection and re-execute the query. */
-        if (error.number() == 2006) {
+        if (error.number() == 2006)
+        {
             qDebug() << " will try to re-establish a connection and re-execute the query";
             _db.close();
             _db.setDatabaseName("pmp");
-            if (!_db.open()) {
+            if (!_db.open())
+            {
                 qDebug() << "  FAILED.  Connection not reopened.";
                 return false;
             }
 
-            if (!q.exec()) {
+            if (!q.exec())
+            {
                 QSqlError error2 = q.lastError();
                 qDebug() << "  FAILED to re-execute query:" << error2.text();
                 qDebug() << "  error type:" << error2.type();
@@ -1103,7 +1129,8 @@ namespace PMP {
         q.prepare(sql);
         if (!q.exec()) return false;
         bool exists = false;
-        if (q.next()) {
+        if (q.next())
+        {
             exists = q.value(0).toBool();
         }
         if (exists) return true;
@@ -1125,12 +1152,14 @@ namespace PMP {
         return v.toBool();
     }
 
-    int Database::getInt(QVariant v, int nullValue) {
+    int Database::getInt(QVariant v, int nullValue)
+    {
         if (v.isNull()) return nullValue;
         return v.toInt();
     }
 
-    uint Database::getUInt(QVariant v, uint nullValue) {
+    uint Database::getUInt(QVariant v, uint nullValue)
+    {
         if (v.isNull()) return nullValue;
         return v.toUInt();
     }
@@ -1143,7 +1172,8 @@ namespace PMP {
         return dateTime;
     }
 
-    qint16 Database::calculateScore(qint32 permillageFromDB, quint32 heardCount) {
+    qint16 Database::calculateScore(qint32 permillageFromDB, quint32 heardCount)
+    {
         if (permillageFromDB < 0 || heardCount < 3) return -1;
 
         if (permillageFromDB > 1000) permillageFromDB = 1000;
@@ -1153,5 +1183,4 @@ namespace PMP {
         quint16 permillage = (quint16)permillageFromDB;
         return (permillage * heardCount + 500) / (heardCount + 1);
     }
-
 }

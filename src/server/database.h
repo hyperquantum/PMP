@@ -40,9 +40,10 @@
 QT_FORWARD_DECLARE_CLASS(QSqlQuery)
 QT_FORWARD_DECLARE_CLASS(QTextStream)
 
-namespace PMP {
-
-    class User {
+namespace PMP
+{
+    class User
+    {
     public:
         User()
          : id(0), login("")
@@ -56,7 +57,8 @@ namespace PMP {
             //
         }
 
-        static User fromDb(quint32 id, QString login, QString salt, QString password) {
+        static User fromDb(quint32 id, QString login, QString salt, QString password)
+        {
             return User(
                 id, login,
                 QByteArray::fromBase64(salt.toLatin1()),
@@ -83,9 +85,11 @@ namespace PMP {
         qint32 trackRepetitionAvoidanceIntervalSeconds;
     };
 
-    class Database {
+    class Database
+    {
     public:
-        struct HashHistoryStats {
+        struct HashHistoryStats
+        {
             quint32 hashId;
             quint32 scoreHeardCount;
             QDateTime lastHeard;
