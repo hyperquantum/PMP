@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,15 +27,16 @@
 #include <QString>
 #include <QUuid>
 
-namespace PMP {
-
+namespace PMP
+{
     class FileHash;
     class Generator;
     class Player;
     class QueueEntry;
     class Server;
 
-    class ServerInterface : public QObject {
+    class ServerInterface : public QObject
+    {
         Q_OBJECT
     public:
         ServerInterface(Server* server, Player* player, Generator* generator);

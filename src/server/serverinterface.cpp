@@ -28,8 +28,8 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     ServerInterface::ServerInterface(Server* server, Player* player, Generator* generator)
      : _userLoggedIn(0), _server(server), _player(player), _generator(generator)
     {
@@ -165,7 +165,8 @@ namespace PMP {
 
     void ServerInterface::insertAtIndex(quint32 index, QueueEntry* entry)
     {
-        if (!isLoggedIn()) {
+        if (!isLoggedIn())
+        {
             entry->deleteLater();
             return;
         }
@@ -354,5 +355,4 @@ namespace PMP {
         Q_EMIT dynamicModeWaveStatusEvent(waveStatus, user,
                                           waveProgress, waveProgressTotal);
     }
-
 }
