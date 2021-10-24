@@ -21,6 +21,7 @@
 
 #include "common/clientserverinterface.h"
 #include "common/currenttrackmonitor.h"
+#include "common/generalcontroller.h"
 #include "common/playercontroller.h"
 #include "common/queuecontroller.h"
 #include "common/queueentryinfofetcher.h"
@@ -30,8 +31,8 @@
 #include <QtDebug>
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     /* ===== CommandBase ===== */
 
     void CommandBase::execute(ClientServerInterface* clientServerInterface)
@@ -42,7 +43,8 @@ namespace PMP {
         qDebug() << "CommandBase: called start()";
 
         // initial quick check
-        QTimer::singleShot(0, this, &CommandBase::listenerSlot);
+        if (!_steps.isEmpty())
+            QTimer::singleShot(0, this, &CommandBase::listenerSlot);
 
         // set up timeout timer
         QTimer::singleShot(
@@ -90,6 +92,68 @@ namespace PMP {
         Q_EMIT executionFailed(resultCode, errorOutput);
     }
 
+    void CommandBase::setCommandExecutionResult(ResultMessageErrorCode errorCode)
+    {
+        QString errorOutput;
+
+        switch (errorCode)
+        {
+        case ResultMessageErrorCode::NoError:
+            setCommandExecutionSuccessful();
+            return;
+
+        case ResultMessageErrorCode::NotLoggedIn:
+            errorOutput = "not logged in";
+            break;
+
+        case ResultMessageErrorCode::InvalidUserAccountName:
+            errorOutput = "invalid name for user account";
+            break;
+
+        case ResultMessageErrorCode::UserAccountAlreadyExists:
+            errorOutput = "user account already exists";
+            break;
+
+        case ResultMessageErrorCode::UserLoginAuthenticationFailed:
+            errorOutput = "invalid username or password";
+            break;
+
+        case ResultMessageErrorCode::AlreadyLoggedIn:
+            errorOutput = "already logged in";
+            break;
+
+        case ResultMessageErrorCode::QueueIdNotFound:
+            errorOutput = "queue ID not found";
+            break;
+
+        case ResultMessageErrorCode::UnknownAction:
+            errorOutput = "server does not know how to handle this action";
+            break;
+
+        case ResultMessageErrorCode::DatabaseProblem:
+            errorOutput = "problem with the server database";
+            break;
+
+        case ResultMessageErrorCode::NonFatalInternalServerError:
+            errorOutput = "internal server error (non-fatal)";
+            break;
+
+        case ResultMessageErrorCode::InvalidMessageStructure:
+        case ResultMessageErrorCode::UserAccountRegistrationMismatch:
+        case ResultMessageErrorCode::UserAccountLoginMismatch:
+            errorOutput =
+                    QString("client-server communication error (code %1)")
+                       .arg(static_cast<int>(errorCode));
+            break;
+
+        case ResultMessageErrorCode::UnknownError:
+            errorOutput = "unknown error";
+            break;
+        }
+
+        setCommandExecutionFailed(3, "Command failed: " + errorOutput);
+    }
+
     void CommandBase::listenerSlot()
     {
         if (_finishedOrFailed)
@@ -115,6 +179,41 @@ namespace PMP {
 
         // we advanced, so try the next step right now, don't wait for signals
         QTimer::singleShot(_stepDelayMilliseconds, this, &CommandBase::listenerSlot);
+    }
+
+
+    /* ===== ReloadServerSettingsCommand ===== */
+
+    ReloadServerSettingsCommand::ReloadServerSettingsCommand()
+    {
+        //
+    }
+
+    bool ReloadServerSettingsCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void ReloadServerSettingsCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* generalController = &clientServerInterface->generalController();
+
+        connect(
+            generalController, &GeneralController::serverSettingsReloadResultEvent,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId != _requestId)
+                    return; /* not for us */
+
+                setCommandExecutionResult(errorCode);
+            }
+        );
+    }
+
+    void ReloadServerSettingsCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        _requestId = clientServerInterface->generalController().reloadServerSettings();
     }
 
     /* ===== PlayCommand ===== */
@@ -502,7 +601,8 @@ namespace PMP {
 
     void ShutdownCommand::execute(ClientServerInterface* clientServerInterface)
     {
-        clientServerInterface->shutdownServer();
+        clientServerInterface->generalController().shutdownServer();
+        // TODO : get confirmation from the server before declaring success
         Q_EMIT executionSuccessful();
     }
 
@@ -733,5 +833,4 @@ namespace PMP {
     {
         clientServerInterface->queueController().moveQueueEntry(_queueId, _moveOffset);
     }
-
 }

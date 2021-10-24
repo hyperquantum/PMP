@@ -21,6 +21,7 @@
 #define PMP_NETWORKPROTOCOL_H
 
 #include "common/queueentrytype.h"
+#include "common/resultmessageerrorcode.h"
 #include "common/startstopeventstatus.h"
 
 #include <QByteArray>
@@ -48,6 +49,7 @@ namespace PMP
          12: clienst msg 22, server msg 30, single byte request 18: protocol extensions
          13: server msgs 3 & 4: change track length to milliseconds
          14: single byte request 25 & server msg 26: wave termination & progress
+         15: client msg 23, parameterless action 10, error code 21: server settings reload
 
     */
 
@@ -113,26 +115,15 @@ namespace PMP
         PlayerHistoryRequestMessage = 20,
         QueueEntryDuplicationRequestMessage = 21,
         ClientExtensionsMessage = 22,
+        ParameterlessActionMessage = 23,
     };
 
-    enum class ResultMessageErrorCode
+    enum class ParameterlessActionCode
     {
-        NoError = 0,
-        InvalidMessageStructure = 1,
-        NotLoggedIn = 10,
+        Reserved = 0,
 
-        InvalidUserAccountName = 11,
-        UserAccountAlreadyExists = 12,
-        UserAccountRegistrationMismatch = 13,
-        UserAccountLoginMismatch = 14,
-        UserLoginAuthenticationFailed = 15,
-        AlreadyLoggedIn = 16,
-
-        QueueIdNotFound = 20,
-
-        DatabaseProblem = 90,
-        NonFatalInternalServerError = 254,
-        UnknownError = 255
+        /* 10 - 29 : server administration */
+        ReloadServerSettings = 10,
     };
 
     class NetworkProtocol

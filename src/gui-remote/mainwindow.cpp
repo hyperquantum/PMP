@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,7 @@
 #include "mainwindow.h"
 
 #include "common/clientserverinterface.h"
+#include "common/generalcontroller.h"
 #include "common/playercontroller.h"
 #include "common/powermanagement.h"
 #include "common/serverconnection.h"
@@ -314,7 +315,7 @@ namespace PMP {
 
         if (buttonClicked == QMessageBox::Cancel) return;
 
-        _clientServerInterface->shutdownServer();
+        _clientServerInterface->generalController().shutdownServer();
     }
 
     void MainWindow::updatePowerManagement() {

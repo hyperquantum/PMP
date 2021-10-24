@@ -64,6 +64,7 @@ void printUsage(QTextStream& out)
         << "    qmove <QID> <-diff>: move a track up in the queue (e.g. -3)\n"
         << "    qmove <QID> <+diff>: move a track down in the queue (eg. +2)\n"
         << "    shutdown: shut down the server program\n"
+        << "    reloadserversettings: instruct the server to reload its settings file\n"
         << "\n"
         << "  login command:\n"
         << "    login: forces authentication to occur; prompts for username and password\n"

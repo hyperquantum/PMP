@@ -73,6 +73,7 @@ namespace PMP
 
         QUuid _uuid;
         QString _serverPassword;
+        ServerSettings* _settings;
         Player* _player;
         Generator* _generator;
         History* _history;

@@ -25,13 +25,19 @@
 #include "queueentry.h"
 #include "resolver.h"
 #include "server.h"
+#include "serversettings.h"
 
 #include <QtDebug>
 
 namespace PMP
 {
-    ServerInterface::ServerInterface(Server* server, Player* player, Generator* generator)
-     : _userLoggedIn(0), _server(server), _player(player), _generator(generator)
+    ServerInterface::ServerInterface(ServerSettings* serverSettings, Server* server,
+                                     Player* player, Generator* generator)
+     : _userLoggedIn(0),
+       _serverSettings(serverSettings),
+       _server(server),
+       _player(player),
+       _generator(generator)
     {
         connect(
             _server, &Server::shuttingDown,
@@ -69,6 +75,24 @@ namespace PMP
     {
         _userLoggedIn = userId;
         _userLoggedInName = userLogin;
+    }
+
+    void ServerInterface::reloadServerSettings(uint clientReference)
+    {
+        ResultMessageErrorCode errorCode;
+
+        // TODO : in the future allow reloading if the database is not connected yet
+        if (!isLoggedIn())
+        {
+            errorCode = ResultMessageErrorCode::NotLoggedIn;
+        }
+        else
+        {
+            _serverSettings->load();
+            errorCode = ResultMessageErrorCode::NoError;
+        }
+
+        Q_EMIT serverSettingsReloadResultEvent(clientReference, errorCode);
     }
 
     void ServerInterface::switchToPersonalMode()

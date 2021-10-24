@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -45,7 +45,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 14;
+    const qint16 ConnectedClient::ServerProtocolNo = 15;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -68,6 +68,10 @@ namespace PMP
         connect(
             _serverInterface, &ServerInterface::serverShuttingDown,
             this, &ConnectedClient::terminateConnection
+        );
+        connect(
+            _serverInterface, &ServerInterface::serverSettingsReloadResultEvent,
+            this, &ConnectedClient::serverSettingsReloadResultEvent
         );
 
         connect(
@@ -1377,6 +1381,12 @@ namespace PMP
         sendServerHealthMessage();
     }
 
+    void ConnectedClient::serverSettingsReloadResultEvent(uint clientReference,
+                                                         ResultMessageErrorCode errorCode)
+    {
+        sendResultMessage(errorCode, clientReference, 0);
+    }
+
     void ConnectedClient::volumeChanged(int volume)
     {
         (void)volume;
@@ -1639,19 +1649,16 @@ namespace PMP
     {
         qint32 messageLength = message.length();
 
-        switch (messageType) {
+        switch (messageType)
+        {
         case ClientMessageType::ClientExtensionsMessage:
             parseClientProtocolExtensionsMessage(message);
             break;
         case ClientMessageType::SingleByteActionMessage:
-        {
-            if (messageLength != 3) {
-                return; /* invalid message */
-            }
-
-            quint8 actionType = NetworkUtil::getByte(message, 2);
-            handleSingleByteAction(actionType);
-        }
+            parseSingleByteActionMessage(message);
+            break;
+        case ClientMessageType::ParameterlessActionMessage:
+            parseParameterlessActionMessage(message);
             break;
         case ClientMessageType::TrackInfoRequestMessage:
         {
@@ -1964,10 +1971,11 @@ namespace PMP
             User user;
             bool userLookup = _users->getUserByLogin(login, user);
 
-            if (!userLookup) { /* user does not exist */
+            if (!userLookup) /* user does not exist */
+            {
                 sendResultMessage(
-                    ResultMessageErrorCode::InvalidUserAccountName, clientReference, 0,
-                    loginBytes
+                    ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                    clientReference, 0, loginBytes
                 );
                 return;
             }
@@ -2012,10 +2020,11 @@ namespace PMP
             User user;
             bool userLookup = _users->getUserByLogin(login, user);
 
-            if (!userLookup) { /* user does not exist */
+            if (!userLookup) /* user does not exist */
+            {
                 sendResultMessage(
-                    ResultMessageErrorCode::InvalidUserAccountName, clientReference, 0,
-                    loginBytes
+                    ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                    clientReference, 0, loginBytes
                 );
                 return;
             }
@@ -2180,6 +2189,31 @@ namespace PMP
         }
 
         registerClientProtocolExtensions(extensions);
+    }
+
+    void ConnectedClient::parseSingleByteActionMessage(const QByteArray& message)
+    {
+        if (message.length() != 3)
+            return; /* invalid message */
+
+        quint8 actionType = NetworkUtil::getByte(message, 2);
+        handleSingleByteAction(actionType);
+    }
+
+    void ConnectedClient::parseParameterlessActionMessage(const QByteArray& message)
+    {
+        if (message.length() != 8)
+            return; /* invalid message */
+
+        int numericActionCode = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "received parameterless action" << numericActionCode
+                 << "with client-ref" << clientReference;
+
+        auto action = static_cast<ParameterlessActionCode>(numericActionCode);
+
+        handleParameterlessAction(action, clientReference);
     }
 
     void ConnectedClient::parseAddHashToQueueRequest(const QByteArray& message,
@@ -2375,7 +2409,8 @@ namespace PMP
     void ConnectedClient::handleSingleByteAction(quint8 action)
     {
         /* actions 100-200 represent a SET VOLUME command */
-        if (action >= 100 && action <= 200) {
+        if (action >= 100 && action <= 200)
+        {
             qDebug() << "received CHANGE VOLUME command, volume"
                      << (uint(action - 100));
 
@@ -2385,7 +2420,8 @@ namespace PMP
 
         /* Other actions */
 
-        switch (action) {
+        switch (action)
+        {
         case 1:
             qDebug() << "received PLAY command";
             _serverInterface->play();
@@ -2493,6 +2529,25 @@ namespace PMP
                      << int(action);
             break; /* unknown action type */
         }
+    }
+
+    void ConnectedClient::handleParameterlessAction(ParameterlessActionCode code,
+                                                    quint32 clientReference)
+    {
+        switch (code)
+        {
+        case PMP::ParameterlessActionCode::Reserved:
+            break; /* not to be used, treat as invalid */
+
+        case PMP::ParameterlessActionCode::ReloadServerSettings:
+            _serverInterface->reloadServerSettings(clientReference);
+            return;
+        }
+
+        qDebug() << "code of parameterless action not recognized: code="
+                 << static_cast<int>(code) << " client-ref=" << clientReference;
+
+        sendResultMessage(ResultMessageErrorCode::UnknownAction, clientReference, 0);
     }
 
     void ConnectedClient::handleCollectionFetchRequest(uint clientReference)

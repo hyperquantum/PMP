@@ -21,6 +21,7 @@
 #define PMP_SERVERINTERFACE_H
 
 #include "common/filehash.h"
+#include "common/resultmessageerrorcode.h"
 #include "common/startstopeventstatus.h"
 
 #include <QObject>
@@ -34,17 +35,21 @@ namespace PMP
     class Player;
     class QueueEntry;
     class Server;
+    class ServerSettings;
 
     class ServerInterface : public QObject
     {
         Q_OBJECT
     public:
-        ServerInterface(Server* server, Player* player, Generator* generator);
+        ServerInterface(ServerSettings* serverSettings, Server* server, Player* player,
+                        Generator* generator);
 
         QUuid getServerUuid() const;
 
         bool isLoggedIn() const { return _userLoggedIn > 0; }
         void setLoggedIn(quint32 userId, QString userLogin);
+
+        void reloadServerSettings(uint clientReference);
 
         void switchToPersonalMode();
         void switchToPublicMode();
@@ -80,6 +85,9 @@ namespace PMP
     Q_SIGNALS:
         void serverShuttingDown();
 
+        void serverSettingsReloadResultEvent(uint clientReference,
+                                             ResultMessageErrorCode errorCode);
+
         void dynamicModeStatusEvent(StartStopEventStatus dynamicModeStatus,
                                     int noRepetitionSpanSeconds);
 
@@ -98,6 +106,7 @@ namespace PMP
     private:
         quint32 _userLoggedIn;
         QString _userLoggedInName;
+        ServerSettings* _serverSettings;
         Server* _server;
         Player* _player;
         Generator* _generator;

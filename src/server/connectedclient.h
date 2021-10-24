@@ -60,8 +60,6 @@ namespace PMP
 
         ~ConnectedClient();
 
-    Q_SIGNALS:
-
     private Q_SLOTS:
 
         void terminateConnection();
@@ -69,6 +67,9 @@ namespace PMP
         void socketError(QAbstractSocket::SocketError error);
 
         void serverHealthChanged(bool databaseUnavailable);
+
+        void serverSettingsReloadResultEvent(uint clientReference,
+                                             ResultMessageErrorCode errorCode);
 
         void volumeChanged(int volume);
         void onDynamicModeStatusEvent(StartStopEventStatus dynamicModeStatus,
@@ -172,9 +173,13 @@ namespace PMP
         void registerClientProtocolExtensions(
                            const QVector<NetworkProtocol::ProtocolExtension>& extensions);
         void handleSingleByteAction(quint8 action);
+        void handleParameterlessAction(ParameterlessActionCode code,
+                                       quint32 clientReference);
         void handleCollectionFetchRequest(uint clientReference);
 
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
+        void parseSingleByteActionMessage(QByteArray const& message);
+        void parseParameterlessActionMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);

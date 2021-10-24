@@ -39,6 +39,7 @@ namespace PMP
                    const QUuid& serverInstanceIdentifier)
      : QObject(parent),
        _uuid(serverInstanceIdentifier),
+       _settings(serverSettings),
        _player(nullptr), _generator(nullptr), _history(nullptr), _users(nullptr),
        _collectionMonitor(nullptr), _serverHealthMonitor(nullptr),
        _server(new QTcpServer(this)), _udpSocket(new QUdpSocket(this)),
@@ -144,7 +145,7 @@ namespace PMP
     {
         QTcpSocket *connection = _server->nextPendingConnection();
 
-        auto serverInterface = new ServerInterface(this, _player, _generator);
+        auto serverInterface = new ServerInterface(_settings, this, _player, _generator);
 
         auto connectedClient =
             new ConnectedClient(

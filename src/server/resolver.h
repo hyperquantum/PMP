@@ -32,6 +32,7 @@
 #include <QObject>
 #include <QPair>
 #include <QString>
+#include <QStringList>
 #include <QVector>
 
 namespace PMP
@@ -45,8 +46,8 @@ namespace PMP
     public:
         Resolver();
 
-        void setMusicPaths(QList<QString> paths);
-        QList<QString> musicPaths();
+        void setMusicPaths(QStringList paths);
+        QStringList musicPaths();
 
         bool startFullIndexation();
         bool fullIndexationRunning();
@@ -100,7 +101,7 @@ namespace PMP
 
         QMutex _lock;
 
-        QList<QString> _musicPaths;
+        QStringList _musicPaths;
 
         QList<FileHash> _hashList;
         QHash<FileHash, HashKnowledge*> _hashKnowledge;

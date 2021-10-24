@@ -21,6 +21,8 @@
 #define PMP_COMMANDS_H
 
 #include "common/playerstate.h"
+#include "common/requestid.h"
+#include "common/resultmessageerrorcode.h"
 
 #include "command.h"
 
@@ -28,8 +30,9 @@
 
 #include <functional>
 
-namespace PMP {
-
+namespace PMP
+{
+    // TODO : move CommandBase to its own file
     class CommandBase : public Command
     {
         Q_OBJECT
@@ -39,11 +42,14 @@ namespace PMP {
     protected:
         CommandBase();
 
+        // TODO : make return type of each step an enum instead of bool
         void addStep(std::function<bool ()> step);
         void setStepDelay(int milliseconds);
         void setCommandExecutionSuccessful(QString output = "");
         void setCommandExecutionFailed(int resultCode, QString errorOutput);
+        void setCommandExecutionResult(ResultMessageErrorCode errorCode);
 
+        // TODO : combine setUp and start into one function
         virtual void setUp(ClientServerInterface* clientServerInterface) = 0;
         virtual void start(ClientServerInterface* clientServerInterface) = 0;
 
@@ -55,6 +61,22 @@ namespace PMP {
         int _stepDelayMilliseconds;
         QVector<std::function<bool ()>> _steps;
         bool _finishedOrFailed;
+    };
+
+    class ReloadServerSettingsCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        ReloadServerSettingsCommand();
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        RequestID _requestId;
     };
 
     class PlayCommand : public CommandBase

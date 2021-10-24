@@ -119,6 +119,58 @@ namespace PMP
 
     /* ============================================================================ */
 
+    class ServerConnection::ParameterlessActionResultHandler : public ResultHandler
+    {
+    public:
+        ParameterlessActionResultHandler(ServerConnection* parent,
+                                         ParameterlessActionCode code);
+
+        void handleResult(ResultMessageErrorCode errorType, quint32 clientReference,
+                          quint32 intData, QByteArray const& blobData) override;
+
+    private:
+        ParameterlessActionCode _code;
+    };
+
+    ServerConnection::ParameterlessActionResultHandler::ParameterlessActionResultHandler(
+                                                             ServerConnection* parent,
+                                                             ParameterlessActionCode code)
+     : ResultHandler(parent), _code(code)
+    {
+        //
+    }
+
+    void ServerConnection::ParameterlessActionResultHandler::handleResult(
+                                                         ResultMessageErrorCode errorType,
+                                                         quint32 clientReference,
+                                                         quint32 intData,
+                                                         QByteArray const& blobData)
+    {
+        if (!succeeded(errorType))
+        {
+            qWarning() << "ParameterlessActionResultHandler:"
+                       << "action" << static_cast<int>(_code) << ":"
+                       << errorDescription(errorType, clientReference, intData, blobData);
+        }
+
+        switch (_code)
+        {
+        case ParameterlessActionCode::Reserved:
+            break; /* not supposed to be used */
+
+        case ParameterlessActionCode::ReloadServerSettings:
+            Q_EMIT _parent->serverSettingsReloadResultEvent(errorType,
+                                                            RequestID(clientReference));
+            return;
+        }
+
+        qWarning() << "ParameterlessActionResultHandler: unhandled action"
+                   << static_cast<int>(_code)
+                   << "with client-ref" << clientReference;
+    }
+
+    /* ============================================================================ */
+
     class ServerConnection::CollectionFetchResultHandler : public ResultHandler
     {
     public:
@@ -148,7 +200,7 @@ namespace PMP
     {
         _parent->_collectionFetchers.remove(clientReference);
 
-        if (errorType == ResultMessageErrorCode::NoError)
+        if (succeeded(errorType))
         {
             Q_EMIT _fetcher->completed();
         }
@@ -193,7 +245,7 @@ namespace PMP
                                                          quint32 intData,
                                                          QByteArray const& blobData)
     {
-        if (errorType == ResultMessageErrorCode::NoError)
+        if (succeeded(errorType))
         {
             /* this is how older servers report a successful insertion */
             auto queueID = intData;
@@ -258,7 +310,7 @@ namespace PMP
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 14;
+    const quint16 ServerConnection::ClientProtocolNo = 15;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -302,6 +354,11 @@ namespace PMP
     QString ServerConnection::userLoggedInName() const
     {
         return _userLoggedInName;
+    }
+
+    bool ServerConnection::serverSupportsReloadingServerSettings() const
+    {
+        return _serverProtocolNo >= 15;
     }
 
     bool ServerConnection::serverSupportsQueueEntryDuplication() const
@@ -562,7 +619,8 @@ namespace PMP
 
     void ServerConnection::sendSingleByteAction(quint8 action)
     {
-        if (!_binarySendingMode) {
+        if (!_binarySendingMode)
+        {
             qDebug() << "PROBLEM: cannot send single byte action yet; action:"
                      << static_cast<uint>(action);
             return; /* too early for that */
@@ -577,6 +635,32 @@ namespace PMP
         NetworkUtil::appendByte(message, action); /* single byte action type */
 
         sendBinaryMessage(message);
+    }
+
+    RequestID ServerConnection::sendParameterlessActionRequest(
+                                                             ParameterlessActionCode code)
+    {
+        auto handler = new ParameterlessActionResultHandler(this, code);
+        auto ref = getNewReference();
+        _resultHandlers[ref] = handler;
+
+        // TODO : generate error if server does not support this request
+
+        quint16 numericActionCode = static_cast<quint16>(code);
+
+        qDebug() << "sending parameterless action request with action"
+                 << numericActionCode << "and client-ref" << ref;
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::ParameterlessActionMessage);
+        NetworkUtil::append2Bytes(message, numericActionCode);
+        NetworkUtil::append4Bytes(message, ref);
+
+        sendBinaryMessage(message);
+
+        return RequestID(ref);
     }
 
     void ServerConnection::sendQueueFetchRequest(uint startOffset, quint8 length)
@@ -649,6 +733,14 @@ namespace PMP
         return ref;
     }
 
+    RequestID ServerConnection::reloadServerSettings()
+    {
+        qDebug() << "sending request to reload server settings";
+
+        return sendParameterlessActionRequest(
+                                           ParameterlessActionCode::ReloadServerSettings);
+    }
+
     RequestID ServerConnection::insertQueueEntryAtIndex(const FileHash& hash,
                                                         quint32 index)
     {
@@ -671,7 +763,7 @@ namespace PMP
 
         sendBinaryMessage(message);
 
-        return ref;
+        return RequestID(ref);
     }
 
     void ServerConnection::duplicateQueueEntry(quint32 queueID)
@@ -874,7 +966,7 @@ namespace PMP
         _userAccountRegistrationLogin = "";
         _userAccountRegistrationPassword = "";
 
-        if (errorCode == ResultMessageErrorCode::NoError)
+        if (succeeded(errorCode))
         {
             Q_EMIT userAccountCreatedSuccessfully(login, intData);
         }
@@ -914,7 +1006,7 @@ namespace PMP
         /* clean up potentially sensitive information */
         _userLoggingInPassword = "";
 
-        if (errorCode == ResultMessageErrorCode::NoError)
+        if (succeeded(errorCode))
         {
             _userLoggedInId = userId;
             _userLoggedInName = _userLoggingIn;
