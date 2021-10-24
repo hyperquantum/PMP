@@ -447,11 +447,30 @@ namespace PMP
         return true;
     }
 
-    void ShutdownCommand::execute(ClientServerInterface* clientServerInterface)
+    bool ShutdownCommand::willCauseDisconnect() const
+    {
+        return true;
+    }
+
+    void ShutdownCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        connect(clientServerInterface, &ClientServerInterface::connectedChanged,
+                this, &ShutdownCommand::listenerSlot);
+
+        addStep(
+            [this, clientServerInterface]() -> bool
+            {
+                if (!clientServerInterface->connected())
+                    setCommandExecutionSuccessful();
+
+                return false;
+            }
+        );
+    }
+
+    void ShutdownCommand::start(ClientServerInterface* clientServerInterface)
     {
         clientServerInterface->generalController().shutdownServer();
-        // TODO : get confirmation from the server before declaring success
-        Q_EMIT executionSuccessful();
     }
 
     /* ===== GetVolumeCommand ===== */

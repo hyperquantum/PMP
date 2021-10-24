@@ -27,6 +27,8 @@
 
 namespace PMP
 {
+    // TODO : remove useless constructors
+
     class ReloadServerSettingsCommand : public CommandBase
     {
         Q_OBJECT
@@ -122,14 +124,18 @@ namespace PMP
         int _fetchLimit;
     };
 
-    class ShutdownCommand : public Command
+    class ShutdownCommand : public CommandBase
     {
         Q_OBJECT
     public:
         ShutdownCommand(/*QString serverPassword*/);
 
         bool requiresAuthentication() const override;
-        void execute(ClientServerInterface* clientServerInterface) override;
+        bool willCauseDisconnect() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
 
     private:
         //QString _serverPassword;

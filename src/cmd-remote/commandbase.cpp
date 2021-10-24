@@ -25,6 +25,12 @@
 namespace PMP
 {
 
+    bool CommandBase::willCauseDisconnect() const
+    {
+        // most commands won't
+        return false;
+    }
+
     void CommandBase::execute(ClientServerInterface* clientServerInterface)
     {
         setUp(clientServerInterface);

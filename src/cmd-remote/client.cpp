@@ -26,8 +26,8 @@
 
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     Client::Client(QObject* parent, QTextStream* out, QTextStream* err,
                    QString server, quint16 port, QString username, QString password,
                    Command* command)
@@ -40,7 +40,8 @@ namespace PMP {
        _password(password),
        _serverConnection(nullptr),
        _clientServerInterface(nullptr),
-       _command(command)
+       _command(command),
+       _expectingDisconnect(false)
     {
         // TODO : don't subscribe to _all_ events anymore
         _serverConnection =
@@ -74,7 +75,9 @@ namespace PMP {
             this,
             [this]()
             {
-                // TODO : only if this happens before we have finished
+                if (_expectingDisconnect)
+                    return;
+
                 *_err << "Lost connection to the server unexpectedly!" << Qt::endl;
                 Q_EMIT exitClient(2);
             }
@@ -143,6 +146,8 @@ namespace PMP {
 
     void Client::executeCommand()
     {
+        _expectingDisconnect = _command->willCauseDisconnect();
+
         _command->execute(_clientServerInterface);
     }
 

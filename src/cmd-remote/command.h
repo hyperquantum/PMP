@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,8 +22,8 @@
 
 #include <QObject>
 
-namespace PMP {
-
+namespace PMP
+{
     class ClientServerInterface;
 
     class Command : public QObject
@@ -33,6 +33,8 @@ namespace PMP {
         ~Command();
 
         virtual bool requiresAuthentication() const = 0;
+        virtual bool willCauseDisconnect() const = 0;
+
         virtual void execute(ClientServerInterface* clientServerInterface) = 0;
 
     Q_SIGNALS:

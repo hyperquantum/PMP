@@ -34,6 +34,8 @@ namespace PMP
     {
         Q_OBJECT
     public:
+        virtual bool willCauseDisconnect() const override;
+
         virtual void execute(ClientServerInterface* clientServerInterface) override;
 
     protected:
