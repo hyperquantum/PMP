@@ -30,7 +30,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        ~Command();
+        virtual ~Command() {}
 
         virtual bool requiresAuthentication() const = 0;
         virtual bool willCauseDisconnect() const = 0;
@@ -42,7 +42,7 @@ namespace PMP
         void executionFailed(int resultCode, QString errorOutput);
 
     protected:
-        explicit Command(QObject* parent = nullptr);
+        explicit Command(QObject* parent = nullptr) : QObject(parent) {}
     };
 }
 #endif

@@ -121,7 +121,6 @@ set(PMP_SERVER_HEADERS
 
 set(PMP_CMD_REMOTE_SOURCES
     cmd-remote/client.cpp
-    cmd-remote/command.cpp
     cmd-remote/commandbase.cpp
     cmd-remote/commandparser.cpp
     cmd-remote/commands.cpp
