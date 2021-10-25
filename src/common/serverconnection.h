@@ -238,6 +238,7 @@ namespace PMP
                                  quint32 intData, QByteArray const& blobData);
         void registerServerProtocolExtensions(
                            const QVector<NetworkProtocol::ProtocolExtension>& extensions);
+        void handleServerEvent(ServerEventCode eventCode);
 
         void sendInitiateNewUserAccountMessage(QString login, quint32 clientReference);
         void sendFinishNewUserAccountMessage(QString login, QByteArray salt,

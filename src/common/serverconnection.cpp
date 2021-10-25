@@ -1582,26 +1582,17 @@ namespace PMP
 
     void ServerConnection::parseServerEventNotificationMessage(QByteArray const& message)
     {
-        if (message.length() != 4) {
+        if (message.length() != 4)
             return; /* invalid message */
-        }
 
-        quint8 event = NetworkUtil::getByte(message, 2);
+        quint8 numericEventCode = NetworkUtil::getByte(message, 2);
         quint8 eventArg = NetworkUtil::getByte(message, 3);
 
-        qDebug() << "received server event" << event << "with arg" << eventArg;
+        qDebug() << "received server event" << numericEventCode << "with arg" << eventArg;
 
-        switch (event) {
-        case 1:
-            onFullIndexationRunningStatusReceived(true);
-            break;
-        case 2:
-            onFullIndexationRunningStatusReceived(false);
-            break;
-        default:
-            qDebug() << "received unknown server event:" << event;
-            break;
-        }
+        auto eventCode = static_cast<ServerEventCode>(numericEventCode);
+
+        handleServerEvent(eventCode);
     }
 
     void ServerConnection::parseServerInstanceIdentifierMessage(QByteArray const& message)
@@ -2664,6 +2655,25 @@ namespace PMP
             //    _knownExtensionOther = extension;
             //}
         }
+    }
+
+    void ServerConnection::handleServerEvent(ServerEventCode eventCode)
+    {
+        switch (eventCode)
+        {
+        case ServerEventCode::Reserved:
+            break; /* not to be used, treat as invalid */
+
+        case ServerEventCode::FullIndexationRunning:
+            onFullIndexationRunningStatusReceived(true);
+            return;
+
+        case ServerEventCode::FullIndexationNotRunning:
+            onFullIndexationRunningStatusReceived(false);
+            return;
+        }
+
+        qDebug() << "received unknown server event:" << static_cast<int>(eventCode);
     }
 
 }

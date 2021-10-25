@@ -118,6 +118,13 @@ namespace PMP
         ParameterlessActionMessage = 23,
     };
 
+    enum class ServerEventCode
+    {
+        Reserved = 0,
+        FullIndexationRunning = 1,
+        FullIndexationNotRunning = 2,
+    };
+
     enum class ParameterlessActionCode
     {
         Reserved = 0,

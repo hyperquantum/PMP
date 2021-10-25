@@ -124,7 +124,7 @@ namespace PMP
         void handleBinaryModeSwitchRequest();
         void sendBinaryMessage(QByteArray const& message);
         void sendProtocolExtensionsMessage();
-        void sendEventNotificationMessage(quint8 event);
+        void sendEventNotificationMessage(ServerEventCode eventCode);
         void sendServerInstanceIdentifier();
         void sendDatabaseIdentifier();
         void sendUsersList();

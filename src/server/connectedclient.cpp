@@ -650,15 +650,17 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendEventNotificationMessage(quint8 event)
+    void ConnectedClient::sendEventNotificationMessage(ServerEventCode eventCode)
     {
-        qDebug() << "   sending server event number" << event;
+        qDebug() << "sending server event number" << static_cast<int>(eventCode);
+
+        quint8 numericEventCode = static_cast<quint8>(eventCode);
 
         QByteArray message;
         message.reserve(2 + 2);
         NetworkProtocol::append2Bytes(message,
                                       ServerMessageType::ServerEventNotificationMessage);
-        NetworkUtil::appendByte(message, event);
+        NetworkUtil::appendByte(message, numericEventCode);
         NetworkUtil::appendByte(message, 0); /* unused */
 
         sendBinaryMessage(message);
@@ -1437,7 +1439,12 @@ namespace PMP
 
     void ConnectedClient::onFullIndexationRunStatusChanged(bool running)
     {
-        sendEventNotificationMessage(running ? 1 : 2);
+        auto event =
+            running
+                ? ServerEventCode::FullIndexationRunning
+                : ServerEventCode::FullIndexationNotRunning;
+
+        sendEventNotificationMessage(event);
     }
 
     void ConnectedClient::playerStateChanged(ServerPlayerState state)
