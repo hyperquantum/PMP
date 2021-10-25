@@ -2566,7 +2566,8 @@ namespace PMP
                             const QVector<NetworkProtocol::ProtocolExtension>& extensions)
     {
         /* handle extensions here */
-        for (auto extension : extensions) {
+        for (auto const& extension : extensions)
+        {
             qDebug() << "client will use ID" << extension.id
                      << "and version" << extension.version
                      << "for protocol extension" << extension.name;
