@@ -42,6 +42,11 @@ namespace PMP
         UnknownAction = 21,
 
         DatabaseProblem = 90,
+
+        /// The server does not support the requested action because it is too old.
+        /// This error code will probably only ever be used client-side.
+        ServerTooOld = 240,
+
         NonFatalInternalServerError = 254,
         UnknownError = 255
     };

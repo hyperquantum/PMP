@@ -116,6 +116,11 @@ namespace PMP
 
     void MainWindow::createActions()
     {
+        _reloadServerSettingsAction = new QAction(tr("Re&load server settings"), this);
+        connect(
+            _reloadServerSettingsAction, &QAction::triggered,
+            this, &MainWindow::onReloadServerSettingsTriggered
+        );
 
         _shutdownServerAction = new QAction(tr("&Shutdown server"), this);
         connect(
@@ -165,6 +170,8 @@ namespace PMP
         pmpMenu->addAction(_closeAction);
 
         /* "PMP">"Server administration" menu members */
+        _serverAdminMenu->addAction(_reloadServerSettingsAction);
+        _serverAdminMenu->addSeparator();
         _serverAdminMenu->addAction(_shutdownServerAction);
 
         /* "View" menu members */
@@ -320,6 +327,42 @@ namespace PMP
         if (_connection) { _connection->startFullIndexation(); }
     }
 
+    void MainWindow::onReloadServerSettingsTriggered()
+    {
+        _clientServerInterface->generalController().reloadServerSettings();
+    }
+
+    void MainWindow::reloadServerSettingsResultReceived(ResultMessageErrorCode errorCode)
+    {
+        QMessageBox msgBox;
+
+        if (succeeded(errorCode))
+        {
+            msgBox.setIcon(QMessageBox::Information);
+            msgBox.setText(tr("Server settings have been successfully reloaded."));
+            msgBox.exec();
+            return;
+        }
+
+        msgBox.setIcon(QMessageBox::Warning);
+        msgBox.setText(tr("Server settings could not be reloaded."));
+
+        if (errorCode == ResultMessageErrorCode::ServerTooOld)
+        {
+            msgBox.setInformativeText(
+                tr("The server is too old and does not support reloading its settings.")
+            );
+        }
+        else
+        {
+            msgBox.setInformativeText(
+                tr("Error code: %1").arg(static_cast<int>(errorCode))
+            );
+        }
+
+        msgBox.exec();
+    }
+
     void MainWindow::onShutdownServerTriggered()
     {
         QMessageBox msgBox;
@@ -389,6 +432,8 @@ namespace PMP
         _connection = new ServerConnection(this);
         _clientServerInterface = new ClientServerInterface(_connection);
 
+        auto* generalController = &_clientServerInterface->generalController();
+
         connect(
             _connection, &ServerConnection::connected,
             this, &MainWindow::onConnected
@@ -436,6 +481,10 @@ namespace PMP
                 qDebug() << "fullIndexationFinished triggered";
                 setLeftStatus(5000, tr("Full indexation finished"));
             }
+        );
+        connect(
+            generalController, &GeneralController::serverSettingsReloadResultEvent,
+            this, &MainWindow::reloadServerSettingsResultReceived
         );
         connect(
             &_clientServerInterface->playerController(),

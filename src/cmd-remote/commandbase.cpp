@@ -130,6 +130,10 @@ namespace PMP
             errorOutput = "problem with the server database";
             break;
 
+        case ResultMessageErrorCode::ServerTooOld:
+            errorOutput = "server is too old and does not support this action";
+            break;
+
         case ResultMessageErrorCode::NonFatalInternalServerError:
             errorOutput = "internal server error (non-fatal)";
             break;

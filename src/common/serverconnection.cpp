@@ -25,6 +25,7 @@
 #include "common/util.h"
 
 #include <QtDebug>
+#include <QTimer>
 
 namespace PMP
 {
@@ -733,8 +734,30 @@ namespace PMP
         return ref;
     }
 
+    RequestID ServerConnection::getNewRequestId()
+    {
+        return RequestID(getNewReference());
+    }
+
     RequestID ServerConnection::reloadServerSettings()
     {
+        // TODO : find a way to write this more elegantly
+        if (!serverSupportsReloadingServerSettings())
+        {
+            auto requestId = getNewRequestId();
+            QTimer::singleShot(
+                0, this,
+                [this, requestId]()
+                {
+                    Q_EMIT serverSettingsReloadResultEvent(
+                        ResultMessageErrorCode::ServerTooOld, requestId
+                    );
+                }
+            );
+
+            return requestId;
+        }
+
         qDebug() << "sending request to reload server settings";
 
         return sendParameterlessActionRequest(

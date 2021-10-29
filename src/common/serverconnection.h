@@ -219,6 +219,7 @@ namespace PMP
 
     private:
         uint getNewReference();
+        RequestID getNewRequestId();
 
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);

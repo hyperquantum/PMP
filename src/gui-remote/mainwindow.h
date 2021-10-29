@@ -20,6 +20,7 @@
 #ifndef PMP_MAINWINDOW_H
 #define PMP_MAINWINDOW_H
 
+#include "common/resultmessageerrorcode.h"
 #include "common/serverhealthstatus.h"
 
 #include <QAbstractSocket>
@@ -69,6 +70,8 @@ namespace PMP
         void onLoginCancel();
 
         void onStartFullIndexationTriggered();
+        void onReloadServerSettingsTriggered();
+        void reloadServerSettingsResultReceived(ResultMessageErrorCode errorCode);
         void onShutdownServerTriggered();
         void updatePowerManagement();
         void onAboutPmpAction();
@@ -102,6 +105,7 @@ namespace PMP
         MainWidget* _mainWidget;
         QDockWidget* _musicCollectionDock;
 
+        QAction* _reloadServerSettingsAction;
         QAction* _shutdownServerAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;

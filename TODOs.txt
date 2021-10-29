@@ -91,7 +91,6 @@ IDEAS
  ** support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
  * display PMP server version in the client 'About' dialog
  * ability to view server uptime
- * interactive editing of the list of directories to scan for music
  * ability to ban a track permanently or temporarily; this will also hide it in the music collection
  * ability to set track property "play this less often" or "play this again soon"
  *** 'play now' option in the context menus of the music collection, the history, and maybe the queue
