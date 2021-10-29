@@ -68,6 +68,7 @@ namespace PMP
             (Qt::DockWidgetAreas)(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea)
         );
 
+        createActions();
         createMenus();
         createStatusbar();
 
@@ -113,9 +114,8 @@ namespace PMP
         //
     }
 
-    void MainWindow::createMenus()
+    void MainWindow::createActions()
     {
-        /* Actions */
 
         _shutdownServerAction = new QAction(tr("&Shutdown server"), this);
         connect(
@@ -149,32 +149,36 @@ namespace PMP
 
         _aboutQtAction = new QAction(tr("About &Qt..."), this);
         connect(_aboutQtAction, &QAction::triggered, this, &MainWindow::onAboutQtAction);
+    }
 
-        /* Menus */
-
+    void MainWindow::createMenus()
+    {
+        /* Top-level menus */
         QMenu* pmpMenu = menuBar()->addMenu(tr("&PMP"));
+        _viewMenu = menuBar()->addMenu(tr("&View"));
+        QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
 
+        /* "PMP" menu members */
         pmpMenu->addAction(_startFullIndexationAction);
-
-        QMenu* serverAdminMenu = pmpMenu->addMenu(tr("Server &administration"));
-        _serverAdminAction = serverAdminMenu->menuAction();
-        _serverAdminAction->setVisible(false); /* needs active connection */
-        serverAdminMenu->addAction(_shutdownServerAction);
-
+        _serverAdminMenu = pmpMenu->addMenu(tr("Server &administration"));
         pmpMenu->addSeparator();
         pmpMenu->addAction(_closeAction);
 
-        _viewMenu = menuBar()->addMenu(tr("&View"));
-        _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
+        /* "PMP">"Server administration" menu members */
+        _serverAdminMenu->addAction(_shutdownServerAction);
 
+        /* "View" menu members */
         _viewMenu->addAction(_musicCollectionDock->toggleViewAction());
         _viewMenu->addSeparator();
         _viewMenu->addAction(_keepDisplayActiveAction);
 
-        QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
-
+        /* "Help" menu members */
         helpMenu->addAction(_aboutPmpAction);
         helpMenu->addAction(_aboutQtAction);
+
+        /* Menu visibility */
+        _serverAdminMenu->menuAction()->setVisible(false); /* needs active connection */
+        _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
     }
 
     void MainWindow::createStatusbar()
@@ -604,7 +608,7 @@ namespace PMP
 
         _startFullIndexationAction->setEnabled(false);
         _startFullIndexationAction->setVisible(true);
-        _serverAdminAction->setVisible(true);
+        _serverAdminMenu->menuAction()->setVisible(true);
     }
 
     void MainWindow::onLoginCancel()

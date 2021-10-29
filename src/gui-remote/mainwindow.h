@@ -80,6 +80,7 @@ namespace PMP
         bool keyEventFilter(QKeyEvent* event);
         virtual void closeEvent(QCloseEvent* event);
 
+        void createActions();
         void createMenus();
         void createStatusbar();
         void updateRightStatus();
@@ -101,7 +102,6 @@ namespace PMP
         MainWidget* _mainWidget;
         QDockWidget* _musicCollectionDock;
 
-        QAction* _serverAdminAction;
         QAction* _shutdownServerAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
@@ -109,6 +109,7 @@ namespace PMP
         QAction* _aboutPmpAction;
         QAction* _aboutQtAction;
 
+        QMenu* _serverAdminMenu;
         QMenu* _viewMenu;
 
         PowerManagement* _powerManagement;
