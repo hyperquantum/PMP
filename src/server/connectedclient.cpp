@@ -79,12 +79,7 @@ namespace PMP
             this, &ConnectedClient::terminateConnection
         );
         connect(socket, &QTcpSocket::readyRead, this, &ConnectedClient::dataArrived);
-        connect(
-            socket,
-            static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(
-                                                                      &QTcpSocket::error),
-            this, &ConnectedClient::socketError
-        );
+        connect(socket, &QTcpSocket::errorOccurred, this, &ConnectedClient::socketError);
 
         /* Send greeting.
          * The space at the end allows the client to detect that this server supports the

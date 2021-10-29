@@ -324,7 +324,7 @@ namespace PMP
         connect(&_socket, &QTcpSocket::connected, this, &ServerConnection::onConnected);
         connect(&_socket, &QTcpSocket::readyRead, this, &ServerConnection::onReadyRead);
         connect(
-            &_socket, qOverload<QAbstractSocket::SocketError>(&QTcpSocket::error),
+            &_socket, &QTcpSocket::errorOccurred,
             this, &ServerConnection::onSocketError
         );
     }
