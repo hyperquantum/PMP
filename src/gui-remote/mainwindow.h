@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,8 +31,8 @@ QT_FORWARD_DECLARE_CLASS(QLabel)
 QT_FORWARD_DECLARE_CLASS(QMenu)
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP {
-
+namespace PMP
+{
     class ClientServerInterface;
     class ConnectionWidget;
     class LoginWidget;
@@ -42,7 +42,8 @@ namespace PMP {
     class UserAccountCreationWidget;
     class UserPickerWidget;
 
-    class MainWindow : public QMainWindow {
+    class MainWindow : public QMainWindow
+    {
         Q_OBJECT
 
     public:

@@ -48,8 +48,8 @@
 #include <QStatusBar>
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     MainWindow::MainWindow(QWidget* parent)
      : QMainWindow(parent),
        _leftStatusTimer(new QTimer(this)),
@@ -108,11 +108,13 @@ namespace PMP {
         installEventFilter(this);
     }
 
-    MainWindow::~MainWindow() {
+    MainWindow::~MainWindow()
+    {
         //
     }
 
-    void MainWindow::createMenus() {
+    void MainWindow::createMenus()
+    {
         /* Actions */
 
         _shutdownServerAction = new QAction(tr("&Shutdown server"), this);
@@ -175,7 +177,8 @@ namespace PMP {
         helpMenu->addAction(_aboutQtAction);
     }
 
-    void MainWindow::createStatusbar() {
+    void MainWindow::createStatusbar()
+    {
         _leftStatus = new QLabel("", this);
         _leftStatus->setFrameStyle(QFrame::Panel | QFrame::Sunken);
         _rightStatus = new QLabel("", this);
@@ -191,7 +194,8 @@ namespace PMP {
         updateRightStatus();
     }
 
-    void MainWindow::closeEvent(QCloseEvent* event) {
+    void MainWindow::closeEvent(QCloseEvent* event)
+    {
         QSettings settings(QCoreApplication::organizationName(),
                            QCoreApplication::applicationName());
 
@@ -203,8 +207,10 @@ namespace PMP {
         QMainWindow::closeEvent(event);
     }
 
-    bool MainWindow::eventFilter(QObject* object, QEvent* event) {
-        if (event->type() == QEvent::KeyPress) {
+    bool MainWindow::eventFilter(QObject* object, QEvent* event)
+    {
+        if (event->type() == QEvent::KeyPress)
+        {
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
 
             if (keyEventFilter(keyEvent))
@@ -214,13 +220,15 @@ namespace PMP {
         return QMainWindow::eventFilter(object, event);
     }
 
-    bool MainWindow::keyEventFilter(QKeyEvent* event) {
+    bool MainWindow::keyEventFilter(QKeyEvent* event)
+    {
         //qDebug() << "got key:" << event->key();
 
         /* we need an active connection for the actions of the multimedia buttons */
         if (!_connection) return false;
 
-        switch (event->key()) {
+        switch (event->key())
+        {
             case Qt::Key_MediaNext:
             {
                 qDebug() << "got Next button";
@@ -266,24 +274,30 @@ namespace PMP {
         return false;
     }
 
-    void MainWindow::updateRightStatus() {
-        if (!_connection || !_connection->isConnected()) {
+    void MainWindow::updateRightStatus()
+    {
+        if (!_connection || !_connection->isConnected())
+        {
             _rightStatus->setText(tr("Not connected."));
         }
-        else if (_connection->userLoggedInId() <= 0) {
+        else if (_connection->userLoggedInId() <= 0)
+        {
             _rightStatus->setText(tr("Connected."));
         }
-        else if (_connection->doingFullIndexation().toBool()) {
+        else if (_connection->doingFullIndexation().toBool())
+        {
             _rightStatus->setText(tr("Full indexation running..."));
         }
-        else {
+        else
+        {
             _rightStatus->setText(
                 QString(tr("Logged in as %1.")).arg(_connection->userLoggedInName())
             );
         }
     }
 
-    void MainWindow::setLeftStatus(int intervalMs, QString text) {
+    void MainWindow::setLeftStatus(int intervalMs, QString text)
+    {
         _leftStatus->setText(text);
 
         /* make the text disappear again after some time */
@@ -291,16 +305,19 @@ namespace PMP {
         _leftStatusTimer->start(intervalMs);
     }
 
-    void MainWindow::onLeftStatusTimeout() {
+    void MainWindow::onLeftStatusTimeout()
+    {
         _leftStatusTimer->stop();
         _leftStatus->setText("");
     }
 
-    void MainWindow::onStartFullIndexationTriggered() {
+    void MainWindow::onStartFullIndexationTriggered()
+    {
         if (_connection) { _connection->startFullIndexation(); }
     }
 
-    void MainWindow::onShutdownServerTriggered() {
+    void MainWindow::onShutdownServerTriggered()
+    {
         QMessageBox msgBox;
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.setText(tr("You are about to shutdown the PMP server."));
@@ -318,7 +335,8 @@ namespace PMP {
         _clientServerInterface->generalController().shutdownServer();
     }
 
-    void MainWindow::updatePowerManagement() {
+    void MainWindow::updatePowerManagement()
+    {
         auto playerState =
                 _clientServerInterface->playerController().playerState();
         bool isPlaying = playerState == PlayerState::Playing;
@@ -328,7 +346,8 @@ namespace PMP {
         _powerManagement->setKeepDisplayActive(isPlaying && keepDisplayActiveOption);
     }
 
-    void MainWindow::onAboutPmpAction() {
+    void MainWindow::onAboutPmpAction()
+    {
         QString aboutText =
             tr(
                 "<html>"
@@ -356,11 +375,13 @@ namespace PMP {
         QMessageBox::about(this, tr("About PMP"), aboutText);
     }
 
-    void MainWindow::onAboutQtAction() {
+    void MainWindow::onAboutQtAction()
+    {
         QMessageBox::aboutQt(this);
     }
 
-    void MainWindow::onDoConnect(QString server, uint port) {
+    void MainWindow::onDoConnect(QString server, uint port)
+    {
         _connection = new ServerConnection(this);
         _clientServerInterface = new ClientServerInterface(_connection);
 
@@ -386,7 +407,8 @@ namespace PMP {
         );
         connect(
             _connection, &ServerConnection::fullIndexationStatusReceived,
-            [this](bool running) {
+            [this](bool running)
+            {
                 _startFullIndexationAction->setEnabled(
                     !running && _connection->isLoggedIn()
                 );
@@ -395,14 +417,16 @@ namespace PMP {
         );
         connect(
             _connection, &ServerConnection::fullIndexationStarted,
-            [this] {
+            [this]
+            {
                 setLeftStatus(3000, tr("Full indexation started"));
             }
         );
         connect(
             _connection, &ServerConnection::fullIndexationFinished,
-            [this] {
-            qDebug() << "fullIndexationFinished triggered";
+            [this]
+            {
+                qDebug() << "fullIndexationFinished triggered";
                 setLeftStatus(5000, tr("Full indexation finished"));
             }
         );
@@ -415,12 +439,14 @@ namespace PMP {
         _connection->connectToHost(server, port);
     }
 
-    void MainWindow::onConnected() {
+    void MainWindow::onConnected()
+    {
         showUserAccountPicker();
         updateRightStatus();
     }
 
-    void MainWindow::showUserAccountPicker() {
+    void MainWindow::showUserAccountPicker()
+    {
         _userPickerWidget = new UserPickerWidget(this, _connection);
 
         connect(
@@ -436,7 +462,8 @@ namespace PMP {
         setCentralWidget(_userPickerWidget);
     }
 
-    void MainWindow::onCannotConnect(QAbstractSocket::SocketError error) {
+    void MainWindow::onCannotConnect(QAbstractSocket::SocketError error)
+    {
         Q_UNUSED(error)
 
         QMessageBox::warning(
@@ -447,7 +474,8 @@ namespace PMP {
         _connectionWidget->reenableFields();
     }
 
-    void MainWindow::onInvalidServer() {
+    void MainWindow::onInvalidServer()
+    {
         QMessageBox::warning(
             this, tr("Connection failure"), tr("This is not a valid PMP server!")
         );
@@ -456,7 +484,8 @@ namespace PMP {
         _connectionWidget->reenableFields();
     }
 
-    void MainWindow::onConnectionBroken(QAbstractSocket::SocketError error) {
+    void MainWindow::onConnectionBroken(QAbstractSocket::SocketError error)
+    {
         Q_UNUSED(error)
 
         updateRightStatus();
@@ -467,16 +496,19 @@ namespace PMP {
         this->close();
     }
 
-    void MainWindow::onServerHealthChanged(ServerHealthStatus serverHealth) {
+    void MainWindow::onServerHealthChanged(ServerHealthStatus serverHealth)
+    {
         if (!serverHealth.anyProblems()) return;
 
-        if (serverHealth.databaseUnavailable()) {
+        if (serverHealth.databaseUnavailable())
+        {
             QMessageBox::warning(
                 this, tr("Server problem"),
                 tr("The server reports that its database is not working!")
             );
         }
-        else {
+        else
+        {
             QMessageBox::warning(
                 this, tr("Server problem"),
                 tr("The server reports an unspecified problem!")
@@ -484,7 +516,8 @@ namespace PMP {
         }
     }
 
-    void MainWindow::showMainWidget() {
+    void MainWindow::showMainWidget()
+    {
         _mainWidget = new MainWidget(this);
         _mainWidget->setConnection(_connection, _clientServerInterface);
         setCentralWidget(_mainWidget);
@@ -507,7 +540,8 @@ namespace PMP {
         }
     }
 
-    void MainWindow::onCreateAccountClicked() {
+    void MainWindow::onCreateAccountClicked()
+    {
         _userAccountCreationWidget = new UserAccountCreationWidget(this, _connection);
 
         connect(
@@ -532,12 +566,14 @@ namespace PMP {
         showUserAccountPicker();
     }
 
-    void MainWindow::onAccountCreationCancel() {
+    void MainWindow::onAccountCreationCancel()
+    {
         _userAccountCreationWidget = nullptr;
         showUserAccountPicker();
     }
 
-    void MainWindow::showLoginWidget(QString login) {
+    void MainWindow::showLoginWidget(QString login)
+    {
         _loginWidget = new LoginWidget(this, _connection, login);
 
         connect(
@@ -553,7 +589,8 @@ namespace PMP {
         setCentralWidget(_loginWidget);
     }
 
-    void MainWindow::onLoggedIn(QString login) {
+    void MainWindow::onLoggedIn(QString login)
+    {
         Q_UNUSED(login)
 
         updateRightStatus();
@@ -567,7 +604,8 @@ namespace PMP {
         _serverAdminAction->setVisible(true);
     }
 
-    void MainWindow::onLoginCancel() {
+    void MainWindow::onLoginCancel()
+    {
         _loginWidget = nullptr;
         showUserAccountPicker();
     }

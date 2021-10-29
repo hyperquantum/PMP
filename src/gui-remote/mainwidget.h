@@ -27,12 +27,13 @@
 
 QT_FORWARD_DECLARE_CLASS(QMenu)
 
-namespace Ui {
+namespace Ui
+{
     class MainWidget;
 }
 
-namespace PMP {
-
+namespace PMP
+{
     class ClientServerInterface;
     class PlayerHistoryModel;
     class PreciseTrackProgressMonitor;
@@ -43,7 +44,8 @@ namespace PMP {
     class ServerConnection;
     class UserDataFetcher;
 
-    class MainWidget : public QWidget {
+    class MainWidget : public QWidget
+    {
         Q_OBJECT
     public:
         explicit MainWidget(QWidget *parent = 0);
