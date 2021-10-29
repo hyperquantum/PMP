@@ -26,8 +26,8 @@
 #include <QtDebug>
 #include <QThread>
 
-namespace PMP {
-
+namespace PMP
+{
     const QChar Util::Copyright = QChar(0xA9);
     const QChar Util::EmDash = QChar(0x2014);
     const QChar Util::EnDash = QChar(0x2013);
@@ -128,13 +128,16 @@ namespace PMP {
                 + "." + QString::number(partialSeconds).rightJustified(3, '0');
     }
 
-    QString Util::getCopyrightLine(bool mustBeAscii) {
+    QString Util::getCopyrightLine(bool mustBeAscii)
+    {
         auto line = QString("Copyright %1 %2 %3");
 
-        if (mustBeAscii) {
+        if (mustBeAscii)
+        {
             line = line.arg("(C)").arg(PMP_COPYRIGHT_YEARS).arg("Kevin Andre");
         }
-        else {
+        else
+        {
             line =
                 line.arg(Copyright)
                     .arg(QString(PMP_COPYRIGHT_YEARS).replace('-', EnDash))
@@ -144,7 +147,8 @@ namespace PMP {
         return line;
     }
 
-    QByteArray Util::generateZeroedMemory(int byteCount) {
+    QByteArray Util::generateZeroedMemory(int byteCount)
+    {
         return QByteArray(byteCount, '\0');
     }
 
