@@ -134,14 +134,17 @@ namespace PMP
 
         if (mustBeAscii)
         {
-            line = line.arg("(C)").arg(PMP_COPYRIGHT_YEARS).arg("Kevin Andre");
+            line =
+                line.arg("(C)",
+                         PMP_COPYRIGHT_YEARS,
+                         "Kevin Andre");
         }
         else
         {
             line =
-                line.arg(Copyright)
-                    .arg(QString(PMP_COPYRIGHT_YEARS).replace('-', EnDash))
-                    .arg(QString("Kevin Andr") + EAcute);
+                line.arg(Copyright,
+                         QString(PMP_COPYRIGHT_YEARS).replace('-', EnDash),
+                         QString("Kevin Andr") + EAcute);
         }
 
         return line;
