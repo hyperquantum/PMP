@@ -32,8 +32,8 @@
 #include <QLocale>
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     TrackInfoDialog::TrackInfoDialog(QWidget* parent,
                                      ClientServerInterface* clientServerInterface,
                                      const FileHash& hash,
@@ -212,11 +212,13 @@ namespace PMP {
         _ui->albumValueLabel->setText(trackInfo.album());
 
         QString lengthText;
-        if (trackInfo.lengthIsKnown()) {
+        if (trackInfo.lengthIsKnown())
+        {
             auto length = trackInfo.lengthInMilliseconds();
             lengthText = Util::millisecondsToLongDisplayTimeText(length);
         }
-        else {
+        else
+        {
             lengthText = tr("unknown");
         }
 
@@ -225,7 +227,8 @@ namespace PMP {
 
     void TrackInfoDialog::fillUserData(const FileHash& hash)
     {
-        if (!_clientServerInterface->isLoggedIn()) {
+        if (!_clientServerInterface->isLoggedIn())
+        {
             _ui->usernameValueLabel->clear();
             clearUserData();
             return;
@@ -237,7 +240,8 @@ namespace PMP {
         auto userData =
                _clientServerInterface->userDataFetcher().getHashDataForUser(userId, hash);
 
-        if (userData == nullptr) {
+        if (userData == nullptr)
+        {
             clearUserData();
             return;
         }
@@ -245,26 +249,32 @@ namespace PMP {
         QLocale locale;
 
         QString lastHeardText;
-        if (!userData->previouslyHeardReceived) {
+        if (!userData->previouslyHeardReceived)
+        {
             lastHeardText = tr("unknown");
         }
-        else if (userData->previouslyHeard.isNull()) {
+        else if (userData->previouslyHeard.isNull())
+        {
             lastHeardText = tr("never");
         }
-        else {
+        else
+        {
             lastHeardText = locale.toString(userData->previouslyHeard.toLocalTime());
         }
 
         _ui->lastHeardValueLabel->setText(lastHeardText);
 
         QString scoreText;
-        if (!userData->scoreReceived) {
+        if (!userData->scoreReceived)
+        {
             scoreText = tr("unknown");
         }
-        else if (userData->scorePermillage < 0) {
+        else if (userData->scorePermillage < 0)
+        {
             scoreText = tr("no score yet");
         }
-        else {
+        else
+        {
             scoreText = locale.toString(userData->scorePermillage / 10.0f, 'f', 1);
         }
 

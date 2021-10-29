@@ -25,16 +25,18 @@
 
 #include <QDialog>
 
-namespace Ui {
+namespace Ui
+{
     class TrackInfoDialog;
 }
 
-namespace PMP {
-
+namespace PMP
+{
     class ClientServerInterface;
     class FileHash;
 
-    class TrackInfoDialog : public QDialog {
+    class TrackInfoDialog : public QDialog
+    {
         Q_OBJECT
     public:
         TrackInfoDialog(QWidget* parent, ClientServerInterface* clientServerInterface,
