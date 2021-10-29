@@ -366,11 +366,11 @@ namespace PMP
                 "<p>Using Qt version %5</p>"
                 "</html>"
             )
-            .arg(PMP_WEBSITE)
-            .arg(PMP_BUGREPORT_LOCATION)
-            .arg(PMP_VERSION_DISPLAY)
-            .arg(Util::getCopyrightLine(false))
-            .arg(QT_VERSION_STR);
+            .arg(PMP_WEBSITE,
+                 PMP_BUGREPORT_LOCATION,
+                 PMP_VERSION_DISPLAY,
+                 Util::getCopyrightLine(false),
+                 QT_VERSION_STR);
 
         QMessageBox::about(this, tr("About PMP"), aboutText);
     }
@@ -407,6 +407,7 @@ namespace PMP
         );
         connect(
             _connection, &ServerConnection::fullIndexationStatusReceived,
+            this,
             [this](bool running)
             {
                 _startFullIndexationAction->setEnabled(
@@ -417,6 +418,7 @@ namespace PMP
         );
         connect(
             _connection, &ServerConnection::fullIndexationStarted,
+            this,
             [this]
             {
                 setLeftStatus(3000, tr("Full indexation started"));
@@ -424,6 +426,7 @@ namespace PMP
         );
         connect(
             _connection, &ServerConnection::fullIndexationFinished,
+            this,
             [this]
             {
                 qDebug() << "fullIndexationFinished triggered";
