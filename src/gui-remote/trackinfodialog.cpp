@@ -259,7 +259,11 @@ namespace PMP
         }
         else
         {
-            lastHeardText = locale.toString(userData->previouslyHeard.toLocalTime());
+            lastHeardText =
+                QString("%1 - %2")
+                    .replace('-', Util::EmDash)
+                    .arg(Util::getHowLongAgoText(userData->previouslyHeard),
+                         locale.toString(userData->previouslyHeard.toLocalTime()));
         }
 
         _ui->lastHeardValueLabel->setText(lastHeardText);

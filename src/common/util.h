@@ -22,6 +22,7 @@
 
 #include <QByteArray>
 #include <QChar>
+#include <QDateTime>
 #include <QString>
 
 namespace PMP
@@ -64,6 +65,10 @@ namespace PMP
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
         static QString millisecondsToShortDisplayTimeText(qint64 milliseconds);
         static QString millisecondsToLongDisplayTimeText(qint64 milliseconds);
+
+        static QString getHowLongAgoText(int secondsAgo);
+        static QString getHowLongAgoText(QDateTime pastTime, QDateTime now);
+        static QString getHowLongAgoText(QDateTime pastTime);
 
         static QString getCopyrightLine(bool mustBeAscii = true);
 

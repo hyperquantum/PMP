@@ -128,6 +128,108 @@ namespace PMP
                 + "." + QString::number(partialSeconds).rightJustified(3, '0');
     }
 
+    QString Util::getHowLongAgoText(int secondsAgo)
+    {
+        if (secondsAgo < 0)
+        {
+            qWarning() << "getHowLongAgoText received a negative number:" << secondsAgo;
+            return "";
+        }
+
+        const int secondsPerMinute = 60;
+        const int secondsPerHour = 60 * secondsPerMinute;
+        const int secondsPerDay = 24 * secondsPerHour;
+        const int secondsPerWeek = 7 * secondsPerDay;
+        const int secondsPerYear = 365 * secondsPerDay; // good enough here
+        const int secondsPer4Years = (366 + 3 * 365) * secondsPerDay; // good enough here
+
+        if (secondsAgo == 0)
+            return QString("just now");
+
+        if (secondsAgo < secondsPerMinute)
+        {
+            if (secondsAgo == 1)
+                return QString("1 second ago");
+
+            return QString("%1 seconds ago").arg(secondsAgo);
+        }
+
+        if (secondsAgo < secondsPerHour)
+        {
+            int minutes = secondsAgo / secondsPerMinute;
+
+            if (minutes == 1)
+                return QString("1 minute ago");
+
+            return QString("%1 minutes ago").arg(minutes);
+        }
+
+        if (secondsAgo < secondsPerDay)
+        {
+            int hours = secondsAgo / secondsPerHour;
+
+            if (hours == 1)
+                return QString("1 hour ago");
+
+            return QString("%1 hours ago").arg(hours);
+        }
+
+        if (secondsAgo < secondsPerWeek)
+        {
+            int days = secondsAgo / secondsPerDay;
+
+            if (days == 1)
+                return QString("1 day ago");
+
+            return QString("%1 days ago").arg(days);
+        }
+
+        if (secondsAgo < secondsPerYear)
+        {
+            int weeks = secondsAgo / secondsPerWeek;
+
+            if (weeks == 1)
+                return QString("1 week ago");
+
+            return QString("%1 weeks ago").arg(weeks);
+        }
+
+        if (secondsAgo < 4 * secondsPerYear)
+        {
+            int years = secondsAgo / secondsPerYear;
+
+            if (years == 1)
+                return QString("1 year ago");
+
+            return QString("%1 years ago").arg(years);
+        }
+
+        int fourYears = secondsAgo / secondsPer4Years;
+        int remainingYears = (secondsAgo - fourYears * secondsPer4Years) / secondsPerYear;
+        int years = 4 * fourYears + qMin(remainingYears, 3);
+
+        return QString("%1 years ago").arg(years);
+    }
+
+    QString Util::getHowLongAgoText(QDateTime pastTime, QDateTime now)
+    {
+        if (pastTime > now)
+        {
+            qWarning() << "getHowLongAgoText: pastTime not in the past;"
+                       << "pastTime:" << pastTime << " now:" << now;
+            return "";
+        }
+
+        auto secondsAgo = pastTime.secsTo(now);
+
+        return getHowLongAgoText(secondsAgo);
+    }
+
+    QString Util::getHowLongAgoText(QDateTime pastTime)
+    {
+        return getHowLongAgoText(pastTime, QDateTime::currentDateTimeUtc());
+    }
+
     QString Util::getCopyrightLine(bool mustBeAscii)
     {
         auto line = QString("Copyright %1 %2 %3");
