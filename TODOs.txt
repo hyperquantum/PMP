@@ -111,6 +111,7 @@ IDEAS
  * client: detect broken connection to the server
  * client: ability to reconnect to the server after the connection was broken
  ** login dialog: add button for probing for servers again
+ * take clock difference between client and server into account
 
 
 USER FRIENDLINESS
