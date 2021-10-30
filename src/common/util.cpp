@@ -230,6 +230,45 @@ namespace PMP
         return getHowLongAgoText(pastTime, QDateTime::currentDateTimeUtc());
     }
 
+    int Util::getHowLongAgoUpdateIntervalMs(int secondsAgo)
+    {
+        const int milliseconds = 1;
+        const int seconds = 1000 * milliseconds;
+
+        if (secondsAgo < 0)
+        {
+            qWarning() << "getHowLongAgoUpdateIntervalMs received a negative number:"
+                       << secondsAgo;
+            return 1 * seconds;
+        }
+
+        if (secondsAgo < 60)
+            return 250 * milliseconds;
+
+        if (secondsAgo < 60 * 60)
+            return 1 * seconds;
+
+        return 60 * seconds;
+    }
+
+    TextAndUpdateInterval Util::getHowLongAgoInfo(int secondsAgo)
+    {
+        return TextAndUpdateInterval(getHowLongAgoText(secondsAgo),
+                                     getHowLongAgoUpdateIntervalMs(secondsAgo));
+    }
+
+    TextAndUpdateInterval Util::getHowLongAgoInfo(QDateTime pastTime, QDateTime now)
+    {
+        auto secondsAgo = pastTime.secsTo(now);
+
+        return getHowLongAgoInfo(secondsAgo);
+    }
+
+    TextAndUpdateInterval Util::getHowLongAgoInfo(QDateTime pastTime)
+    {
+        return getHowLongAgoInfo(pastTime, QDateTime::currentDateTimeUtc());
+    }
+
     QString Util::getCopyrightLine(bool mustBeAscii)
     {
         auto line = QString("Copyright %1 %2 %3");

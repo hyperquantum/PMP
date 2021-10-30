@@ -136,6 +136,21 @@ void TestUtil::getHowLongAgoText()
     QCOMPARE(Util::getHowLongAgoText((6 * 365 + 2 * 366) * days), QString("8 years ago"));
 }
 
+void TestUtil::getHowLongAgoUpdateIntervalMs()
+{
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(0), 250);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(1), 250);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(9), 250);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(59), 250);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(60), 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(100), 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(3599), 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(3600), 60 * 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(24 * 3600), 60 * 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(7 * 24 * 3600), 60 * 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(365 * 24 * 3600), 60 * 1000);
+}
+
 void TestUtil::getCopyrightLine()
 {
     QVERIFY(Util::getCopyrightLine(false).contains(QString("Copyright")));

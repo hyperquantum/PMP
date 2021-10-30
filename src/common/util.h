@@ -27,6 +27,23 @@
 
 namespace PMP
 {
+    class TextAndUpdateInterval
+    {
+    public:
+        TextAndUpdateInterval(QString const& text, int intervalMs)
+         : _text(text), _intervalMs(intervalMs)
+        {
+            //
+        }
+
+        QString text() const { return _text; }
+        int intervalMs() const { return _intervalMs; }
+
+    private:
+        QString _text;
+        int _intervalMs;
+    };
+
     class Util
     {
     public:
@@ -69,6 +86,12 @@ namespace PMP
         static QString getHowLongAgoText(int secondsAgo);
         static QString getHowLongAgoText(QDateTime pastTime, QDateTime now);
         static QString getHowLongAgoText(QDateTime pastTime);
+
+        static int getHowLongAgoUpdateIntervalMs(int secondsAgo);
+
+        static TextAndUpdateInterval getHowLongAgoInfo(int secondsAgo);
+        static TextAndUpdateInterval getHowLongAgoInfo(QDateTime pastTime, QDateTime now);
+        static TextAndUpdateInterval getHowLongAgoInfo(QDateTime pastTime);
 
         static QString getCopyrightLine(bool mustBeAscii = true);
 

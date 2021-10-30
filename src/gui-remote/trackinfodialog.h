@@ -23,7 +23,9 @@
 #include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
 
+#include <QDateTime>
 #include <QDialog>
+#include <QTimer>
 
 namespace Ui
 {
@@ -51,6 +53,7 @@ namespace PMP
         void newTrackReceived(CollectionTrackInfo track);
         void trackDataChanged(CollectionTrackInfo track);
         void dataReceivedForUser(quint32 userId);
+        void updateLastHeard();
 
     private:
         void init();
@@ -66,7 +69,9 @@ namespace PMP
 
         Ui::TrackInfoDialog* _ui;
         ClientServerInterface* _clientServerInterface;
+        QTimer* _lastHeardUpdateTimer;
         FileHash _trackHash;
+        QDateTime _lastHeard;
         quint32 _queueId;
     };
 }

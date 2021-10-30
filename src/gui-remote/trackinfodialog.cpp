@@ -41,6 +41,7 @@ namespace PMP
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
         _ui(new Ui::TrackInfoDialog),
         _clientServerInterface(clientServerInterface),
+        _lastHeardUpdateTimer(new QTimer(this)),
         _trackHash(hash),
         _queueId(queueId)
     {
@@ -109,6 +110,32 @@ namespace PMP
         fillUserData(_trackHash);
     }
 
+    void TrackInfoDialog::updateLastHeard()
+    {
+        if (_lastHeard.isNull())
+        {
+            _lastHeardUpdateTimer->stop();
+            return;
+        }
+
+        auto howLongAgo = Util::getHowLongAgoInfo(_lastHeard);
+
+        QLocale locale;
+
+        QString lastHeardText =
+            QString("%1 - %2")
+                .replace('-', Util::EmDash)
+                .arg(howLongAgo.text(),
+                     locale.toString(_lastHeard.toLocalTime()));
+
+        _ui->lastHeardValueLabel->setText(lastHeardText);
+
+        if (_lastHeardUpdateTimer->isActive())
+            _lastHeardUpdateTimer->setInterval(howLongAgo.intervalMs());
+        else
+            _lastHeardUpdateTimer->start(howLongAgo.intervalMs());
+    }
+
     void TrackInfoDialog::init()
     {
         _ui->setupUi(this);
@@ -120,6 +147,11 @@ namespace PMP
             _ui->fileInfoFormLayout->removeWidget(_ui->queueIdLabel);
             _ui->fileInfoFormLayout->removeWidget(_ui->queueIdValueLabel);
         }
+
+        connect(
+            _lastHeardUpdateTimer, &QTimer::timeout,
+            this, &TrackInfoDialog::updateLastHeard
+        );
 
         connect(
             &_clientServerInterface->collectionWatcher(),
@@ -248,25 +280,20 @@ namespace PMP
 
         QLocale locale;
 
-        QString lastHeardText;
+        _lastHeard = QDateTime();
         if (!userData->previouslyHeardReceived)
         {
-            lastHeardText = tr("unknown");
+            _ui->lastHeardValueLabel->setText(tr("unknown"));
         }
         else if (userData->previouslyHeard.isNull())
         {
-            lastHeardText = tr("never");
+            _ui->lastHeardValueLabel->setText(tr("never"));
         }
         else
         {
-            lastHeardText =
-                QString("%1 - %2")
-                    .replace('-', Util::EmDash)
-                    .arg(Util::getHowLongAgoText(userData->previouslyHeard),
-                         locale.toString(userData->previouslyHeard.toLocalTime()));
+            _lastHeard = userData->previouslyHeard;
+            updateLastHeard();
         }
-
-        _ui->lastHeardValueLabel->setText(lastHeardText);
 
         QString scoreText;
         if (!userData->scoreReceived)
@@ -295,6 +322,8 @@ namespace PMP
 
     void TrackInfoDialog::clearUserData()
     {
+        _lastHeard = QDateTime();
+
         _ui->lastHeardValueLabel->clear();
         _ui->scoreValueLabel->clear();
     }

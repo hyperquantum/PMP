@@ -32,6 +32,7 @@ private Q_SLOTS:
     void millisecondsToShortDisplayTimeText();
     void millisecondsToLongDisplayTimeText();
     void getHowLongAgoText();
+    void getHowLongAgoUpdateIntervalMs();
     void generateZeroedMemory();
 };
 #endif
