@@ -25,7 +25,8 @@ namespace PMP
 {
     GeneralControllerImpl::GeneralControllerImpl(ServerConnection* connection)
      : GeneralController(connection),
-       _connection(connection)
+       _connection(connection),
+       _clientClockTimeOffsetMs(0)
     {
         connect(
             _connection, &ServerConnection::connected,
@@ -42,6 +43,11 @@ namespace PMP
 
         if (_connection->isConnected())
             connected();
+    }
+
+    qint64 GeneralControllerImpl::clientClockTimeOffsetMs() const
+    {
+        return _clientClockTimeOffsetMs;
     }
 
     RequestID GeneralControllerImpl::reloadServerSettings()
@@ -62,6 +68,16 @@ namespace PMP
     void GeneralControllerImpl::connectionBroken()
     {
         //
+    }
+
+    void GeneralControllerImpl::receivedClientClockTimeOffset(
+                                                          quint64 clientClockTimeOffsetMs)
+    {
+        if (clientClockTimeOffsetMs == _clientClockTimeOffsetMs)
+            return;
+
+        _clientClockTimeOffsetMs = clientClockTimeOffsetMs;
+        Q_EMIT clientClockTimeOffsetChanged();
     }
 
 }

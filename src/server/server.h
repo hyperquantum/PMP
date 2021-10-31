@@ -61,6 +61,7 @@ namespace PMP
         void shutdown();
 
     Q_SIGNALS:
+        void serverClockTimeSendingPulse();
         void shuttingDown();
 
     private Q_SLOTS:

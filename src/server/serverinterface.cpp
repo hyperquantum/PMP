@@ -40,6 +40,10 @@ namespace PMP
        _generator(generator)
     {
         connect(
+            _server, &Server::serverClockTimeSendingPulse,
+            this, &ServerInterface::serverClockTimeSendingPulse
+        );
+        connect(
             _server, &Server::shuttingDown,
             this, &ServerInterface::serverShuttingDown
         );

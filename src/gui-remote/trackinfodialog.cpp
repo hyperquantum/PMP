@@ -23,6 +23,7 @@
 #include "common/clientserverinterface.h"
 #include "common/collectiontrackinfo.h"
 #include "common/collectionwatcher.h"
+#include "common/generalcontroller.h"
 #include "common/queuecontroller.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
@@ -118,7 +119,12 @@ namespace PMP
             return;
         }
 
-        auto howLongAgo = Util::getHowLongAgoInfo(_lastHeard);
+        auto clientClockTimeOffsetMs =
+                _clientServerInterface->generalController().clientClockTimeOffsetMs();
+
+        auto adjustedLastHeard = _lastHeard.addMSecs(clientClockTimeOffsetMs);
+
+        auto howLongAgo = Util::getHowLongAgoInfo(adjustedLastHeard);
 
         QLocale locale;
 
@@ -126,7 +132,7 @@ namespace PMP
             QString("%1 - %2")
                 .replace('-', Util::EmDash)
                 .arg(howLongAgo.text(),
-                     locale.toString(_lastHeard.toLocalTime()));
+                     locale.toString(adjustedLastHeard.toLocalTime()));
 
         _ui->lastHeardValueLabel->setText(lastHeardText);
 

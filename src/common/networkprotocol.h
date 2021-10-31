@@ -50,6 +50,7 @@ namespace PMP
          13: server msgs 3 & 4: change track length to milliseconds
          14: single byte request 25 & server msg 26: wave termination & progress
          15: client msg 23, parameterless action 10, error code 21: server settings reload
+         16: server msg 31: sending server clock time
 
     */
 
@@ -88,6 +89,7 @@ namespace PMP
         ServerHealthMessage = 28,
         CollectionAvailabilityChangeNotificationMessage = 29,
         ServerExtensionsMessage = 30,
+        ServerClockMessage = 31,
     };
 
     enum class ClientMessageType

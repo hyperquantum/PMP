@@ -32,6 +32,8 @@ namespace PMP
     public:
         explicit GeneralControllerImpl(ServerConnection* connection);
 
+        qint64 clientClockTimeOffsetMs() const override;
+
         RequestID reloadServerSettings() override;
 
     public Q_SLOTS:
@@ -40,9 +42,11 @@ namespace PMP
     private Q_SLOTS:
         void connected();
         void connectionBroken();
+        void receivedClientClockTimeOffset(quint64 clientClockTimeOffsetMs);
 
     private:
         ServerConnection* _connection;
+        qint64 _clientClockTimeOffsetMs;
     };
 }
 #endif

@@ -167,6 +167,7 @@ namespace PMP
         void receivedDatabaseIdentifier(QUuid uuid);
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedServerName(quint8 nameType, QString name);
+        void receivedClientClockTimeOffset(quint64 clientClockTimeOffsetMs);
 
         void serverSettingsReloadResultEvent(ResultMessageErrorCode errorCode,
                                              RequestID requestId);
@@ -268,6 +269,7 @@ namespace PMP
         void parseServerNameMessage(QByteArray const& message);
         void parseDatabaseIdentifierMessage(QByteArray const& message);
         void parseServerHealthMessage(QByteArray const& message);
+        void parseServerClockMessage(QByteArray const& message);
 
         void parseUsersListMessage(QByteArray const& message);
         void parseNewUserAccountSaltMessage(QByteArray const& message);

@@ -83,6 +83,7 @@ namespace PMP
         void shutDownServer(QString serverPassword);
 
     Q_SIGNALS:
+        void serverClockTimeSendingPulse();
         void serverShuttingDown();
 
         void serverSettingsReloadResultEvent(uint clientReference,

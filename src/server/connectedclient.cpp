@@ -45,7 +45,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 15;
+    const qint16 ConnectedClient::ServerProtocolNo = 16;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -181,7 +181,14 @@ namespace PMP
             this, &ConnectedClient::onUserHashStatsUpdated
         );
 
-        if (!_healthEventsEnabled) {
+        connect(
+            _serverInterface, &ServerInterface::serverClockTimeSendingPulse,
+            this, &ConnectedClient::sendServerClockMessage
+        );
+        sendServerClockMessage();
+
+        if (!_healthEventsEnabled)
+        {
             connect(
                 _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
                 this, &ConnectedClient::serverHealthChanged
@@ -1326,6 +1333,23 @@ namespace PMP
         message.reserve(2 + 2);
         NetworkProtocol::append2Bytes(message, ServerMessageType::ServerHealthMessage);
         NetworkUtil::append2Bytes(message, problems);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendServerClockMessage()
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 16)
+            return;
+
+        qint64 msSinceEpoch = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+
+        QByteArray message;
+        message.reserve(2 + 2 + 8);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::ServerClockMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append8BytesSigned(message, msSinceEpoch);
 
         sendBinaryMessage(message);
     }

@@ -33,12 +33,15 @@ namespace PMP
     public:
         virtual ~GeneralController() {}
 
+        virtual qint64 clientClockTimeOffsetMs() const = 0;
+
         virtual RequestID reloadServerSettings() = 0;
 
     public Q_SLOTS:
         virtual void shutdownServer() = 0;
 
     Q_SIGNALS:
+        void clientClockTimeOffsetChanged();
         void serverSettingsReloadResultEvent(ResultMessageErrorCode errorCode,
                                              RequestID requestId);
 

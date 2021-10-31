@@ -237,9 +237,8 @@ namespace PMP
 
         if (secondsAgo < 0)
         {
-            qWarning() << "getHowLongAgoUpdateIntervalMs received a negative number:"
-                       << secondsAgo;
-            return 1 * seconds;
+            /* pretend it is a positive number and return the result for that value */
+            secondsAgo = -secondsAgo;
         }
 
         if (secondsAgo < 60)

@@ -164,6 +164,7 @@ namespace PMP
         void sendServerNameMessage(quint8 type, QString name);
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
+        void sendServerClockMessage();
 
         void handleBinaryMessage(QByteArray const& message);
         void handleStandardBinaryMessage(ClientMessageType messageType,

@@ -311,7 +311,7 @@ namespace PMP
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 15;
+    const quint16 ServerConnection::ClientProtocolNo = 16;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -1497,6 +1497,9 @@ namespace PMP
         case ServerMessageType::CollectionAvailabilityChangeNotificationMessage:
             parseTrackAvailabilityChangeBatchMessage(message);
             break;
+        case ServerMessageType::ServerClockMessage:
+            parseServerClockMessage(message);
+            break;
         default:
             qDebug() << "received unknown binary message type"
                      << static_cast<int>(messageType)
@@ -1676,6 +1679,35 @@ namespace PMP
 
             Q_EMIT serverHealthChanged(newServerHealthStatus);
         }
+    }
+
+    void ServerConnection::parseServerClockMessage(const QByteArray& message)
+    {
+        if (message.length() != 12)
+        {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        qint64 msSinceEpoch = NetworkUtil::get8BytesSigned(message, 4);
+
+        auto serverClockTime = QDateTime::fromMSecsSinceEpoch(msSinceEpoch, Qt::UTC);
+
+        auto clientClockTimeOffsetMs =
+                serverClockTime.msecsTo(QDateTime::currentDateTimeUtc());
+
+        qDebug() << "received server clock time message with value" << msSinceEpoch
+                 << ";" << serverClockTime.toString(Qt::ISODateWithMs)
+                 << "; client offset:" << clientClockTimeOffsetMs << "ms";
+
+        const auto twoHoursMs = 2 * 60 * 60 * 1000;
+
+        if (clientClockTimeOffsetMs > twoHoursMs || clientClockTimeOffsetMs < -twoHoursMs)
+        {
+            qWarning() << "client and server clock are more than two hours apart!";
+        }
+
+        Q_EMIT receivedClientClockTimeOffset(clientClockTimeOffsetMs);
     }
 
     void ServerConnection::parseUsersListMessage(QByteArray const& message)

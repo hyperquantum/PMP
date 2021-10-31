@@ -66,6 +66,13 @@ namespace PMP
         connect(_udpSocket, &QUdpSocket::readyRead, this, &Server::readPendingDatagrams);
 
         connect(_broadcastTimer, &QTimer::timeout, this, &Server::sendBroadcast);
+
+        auto* serverClockTimePulseTimer = new QTimer(this);
+        connect(
+            serverClockTimePulseTimer, &QTimer::timeout,
+            this, &Server::serverClockTimeSendingPulse
+        );
+        serverClockTimePulseTimer->start(60 * 60 * 1000); /* hourly */
     }
 
     QString Server::generateServerPassword()
