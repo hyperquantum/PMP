@@ -37,6 +37,10 @@ namespace PMP
             this, &GeneralControllerImpl::connectionBroken
         );
         connect(
+            _connection, &ServerConnection::receivedClientClockTimeOffset,
+            this, &GeneralControllerImpl::receivedClientClockTimeOffset
+        );
+        connect(
             _connection, &ServerConnection::serverSettingsReloadResultEvent,
             this, &GeneralControllerImpl::serverSettingsReloadResultEvent
         );

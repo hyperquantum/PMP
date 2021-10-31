@@ -2603,6 +2603,9 @@ namespace PMP
         bool hadError = status & 1;
         bool hadSeek = status & 2;
 
+        qDebug() << "received player history entry:" << " QID:" << queueID
+                 << " started:" << started << " ended:" << ended;
+
         PlayerHistoryTrackInfo info(queueID, user, started, ended, hadError, hadSeek,
                                     permillagePlayed);
 
