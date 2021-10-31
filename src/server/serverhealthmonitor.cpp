@@ -19,34 +19,39 @@
 
 #include "serverhealthmonitor.h"
 
-namespace PMP {
-
+namespace PMP
+{
     ServerHealthMonitor::ServerHealthMonitor(QObject* parent)
      : QObject(parent), _databaseUnavailable(false), _sslLibrariesMissing(false)
     {
         //
     }
 
-    bool ServerHealthMonitor::anyProblem() const {
+    bool ServerHealthMonitor::anyProblem() const
+    {
         return _databaseUnavailable || _sslLibrariesMissing;
     }
 
-    bool ServerHealthMonitor::databaseUnavailable() const {
+    bool ServerHealthMonitor::databaseUnavailable() const
+    {
         return _databaseUnavailable;
     }
 
-    bool ServerHealthMonitor::sslLibrariesMissing() const {
+    bool ServerHealthMonitor::sslLibrariesMissing() const
+    {
         return _sslLibrariesMissing;
     }
 
-    void ServerHealthMonitor::setDatabaseUnavailable() {
+    void ServerHealthMonitor::setDatabaseUnavailable()
+    {
         if (_databaseUnavailable) return;
 
         _databaseUnavailable = true;
         Q_EMIT serverHealthChanged(_databaseUnavailable, _sslLibrariesMissing);
     }
 
-    void ServerHealthMonitor::setSslLibrariesMissing() {
+    void ServerHealthMonitor::setSslLibrariesMissing()
+    {
         if (_sslLibrariesMissing) return;
 
         _sslLibrariesMissing = true;

@@ -25,16 +25,26 @@
 #include "queueentry.h"
 #include "resolver.h"
 #include "server.h"
+#include "serversettings.h"
 
 #include <QtDebug>
 
-namespace PMP {
-
-    ServerInterface::ServerInterface(Server* server, uint connectionReference,
-                                     Player* player, Generator* generator)
-     : _connectionReference(connectionReference), _userLoggedIn(0), _server(server),
-       _player(player), _generator(generator)
+namespace PMP
+{
+    ServerInterface::ServerInterface(ServerSettings* serverSettings, Server* server,
+                                     uint connectionReference, Player* player,
+                                     Generator* generator)
+     : _connectionReference(connectionReference),
+       _userLoggedIn(0),
+       _serverSettings(serverSettings),
+       _server(server),
+       _player(player),
+       _generator(generator)
     {
+        connect(
+            _server, &Server::serverClockTimeSendingPulse,
+            this, &ServerInterface::serverClockTimeSendingPulse
+        );
         connect(
             _server, &Server::shuttingDown,
             this, &ServerInterface::serverShuttingDown
@@ -71,6 +81,24 @@ namespace PMP {
     {
         _userLoggedIn = userId;
         _userLoggedInName = userLogin;
+    }
+
+    void ServerInterface::reloadServerSettings(uint clientReference)
+    {
+        ResultMessageErrorCode errorCode;
+
+        // TODO : in the future allow reloading if the database is not connected yet
+        if (!isLoggedIn())
+        {
+            errorCode = ResultMessageErrorCode::NotLoggedIn;
+        }
+        else
+        {
+            _serverSettings->load();
+            errorCode = ResultMessageErrorCode::NoError;
+        }
+
+        Q_EMIT serverSettingsReloadResultEvent(clientReference, errorCode);
     }
 
     void ServerInterface::switchToPersonalMode()
@@ -167,7 +195,8 @@ namespace PMP {
 
     void ServerInterface::insertAtIndex(quint32 index, QueueEntry* entry)
     {
-        if (!isLoggedIn()) {
+        if (!isLoggedIn())
+        {
             entry->deleteLater();
             return;
         }
@@ -356,5 +385,4 @@ namespace PMP {
         Q_EMIT dynamicModeWaveStatusEvent(waveStatus, user,
                                           waveProgress, waveProgressTotal);
     }
-
 }

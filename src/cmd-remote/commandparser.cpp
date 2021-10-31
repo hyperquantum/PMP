@@ -23,8 +23,8 @@
 
 #include <limits>
 
-namespace PMP {
-
+namespace PMP
+{
     CommandParser::CommandParser()
      : _command(nullptr),
        _authenticationMode(AuthenticationMode::Implicit)
@@ -206,6 +206,11 @@ namespace PMP {
         else if (command == "queue")
         {
             handleCommandNotRequiringArguments<QueueCommand>(commandWithArgs);
+        }
+        else if (command == "reloadserversettings")
+        {
+            handleCommandNotRequiringArguments<ReloadServerSettingsCommand>(
+                                                                         commandWithArgs);
         }
         else if (command == "shutdown")
         {

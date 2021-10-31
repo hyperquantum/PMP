@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,14 +28,15 @@
 
 using namespace PMP;
 
-QString hashToString(const FileHash& hash) {
+QString hashToString(const FileHash& hash)
+{
     return QString::number(hash.length())
             + "-" + hash.SHA1().toHex()
             + "-" + hash.MD5().toHex();
 }
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
     QCoreApplication a(argc, argv);
 
     QCoreApplication::setApplicationName("Party Music Player - Hash tool");
@@ -46,17 +47,19 @@ int main(int argc, char *argv[]) {
     QTextStream out(stdout);
     QTextStream err(stderr);
 
-    if (QCoreApplication::arguments().size() < 2) {
-        err << "No arguments given." << endl;
+    if (QCoreApplication::arguments().size() < 2)
+    {
+        err << "No arguments given." << Qt::endl;
         return 0;
     }
 
     QString fileName = QCoreApplication::arguments()[1];
     QFileInfo fileInfo(fileName);
 
-    if (!FileAnalyzer::isExtensionSupported(fileInfo.suffix(), true)) {
+    if (!FileAnalyzer::isExtensionSupported(fileInfo.suffix(), true))
+    {
         err << "Files with extension \"" << fileInfo.suffix() << "\" are not supported."
-            << endl;
+            << Qt::endl;
         return 1;
     }
 
@@ -64,7 +67,8 @@ int main(int argc, char *argv[]) {
         !FileAnalyzer::isExtensionSupported(fileInfo.suffix(), false);
 
     QFile file(fileName);
-    if (!file.open(QIODevice::ReadOnly)) {
+    if (!file.open(QIODevice::ReadOnly))
+    {
         err << "Could not open a file with that name." << "\n";
         return 1;
     }
@@ -77,33 +81,38 @@ int main(int argc, char *argv[]) {
     QCryptographicHash sha1_hasher(QCryptographicHash::Sha1);
     sha1_hasher.addData(fileContents);
 
-    out << "File name: " << fileName << endl;
-    out << "File size: " << fileContents.length() << endl;
-    out << "MD5 Hash:  " << md5_hasher.result().toHex() << endl;
-    out << "SHA1 Hash: " << sha1_hasher.result().toHex() << endl;
+    out << "File name: " << fileName << Qt::endl;
+    out << "File size: " << fileContents.length() << Qt::endl;
+    out << "MD5 Hash:  " << md5_hasher.result().toHex() << Qt::endl;
+    out << "SHA1 Hash: " << sha1_hasher.result().toHex() << Qt::endl;
 
     if (isExperimentalFileFormat)
-        out << "NOTICE: support for analyzing this file format is EXPERIMENTAL" << endl;
+    {
+        out << "NOTICE: support for analyzing this file format is EXPERIMENTAL"
+            << Qt::endl;
+    }
 
     FileAnalyzer analyzer(fileContents, fileInfo.suffix());
     analyzer.analyze();
 
-    if (!analyzer.analysisDone()) {
-        err << "Something went wrong when analyzing the file!" << endl;
+    if (!analyzer.analysisDone())
+    {
+        err << "Something went wrong when analyzing the file!" << Qt::endl;
         return 1;
     }
 
     FileHash finalHash = analyzer.hash();
     FileHash legacyHash = analyzer.legacyHash();
 
-    out << "title:   " << analyzer.tagData().title() << endl;
-    out << "artist:  " << analyzer.tagData().artist() << endl;
-    out << "comment: " << analyzer.tagData().comment() << endl;
+    out << "title:   " << analyzer.tagData().title() << Qt::endl;
+    out << "artist:  " << analyzer.tagData().artist() << Qt::endl;
+    out << "comment: " << analyzer.tagData().comment() << Qt::endl;
 
-    out << "track hash: " << hashToString(finalHash) << endl;
+    out << "track hash: " << hashToString(finalHash) << Qt::endl;
 
-    if (!legacyHash.isNull()) {
-        out << "legacy hash: " << hashToString(legacyHash) << endl;
+    if (!legacyHash.isNull())
+    {
+        out << "legacy hash: " << hashToString(legacyHash) << Qt::endl;
     }
 
     return 0;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,11 +22,30 @@
 
 #include <QByteArray>
 #include <QChar>
+#include <QDateTime>
 #include <QString>
 
-namespace PMP {
+namespace PMP
+{
+    class TextAndUpdateInterval
+    {
+    public:
+        TextAndUpdateInterval(QString const& text, int intervalMs)
+         : _text(text), _intervalMs(intervalMs)
+        {
+            //
+        }
 
-    class Util {
+        QString text() const { return _text; }
+        int intervalMs() const { return _intervalMs; }
+
+    private:
+        QString _text;
+        int _intervalMs;
+    };
+
+    class Util
+    {
     public:
         static unsigned getRandomSeed();
 
@@ -63,6 +82,16 @@ namespace PMP {
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
         static QString millisecondsToShortDisplayTimeText(qint64 milliseconds);
         static QString millisecondsToLongDisplayTimeText(qint64 milliseconds);
+
+        static QString getHowLongAgoText(int secondsAgo);
+        static QString getHowLongAgoText(QDateTime pastTime, QDateTime now);
+        static QString getHowLongAgoText(QDateTime pastTime);
+
+        static int getHowLongAgoUpdateIntervalMs(int secondsAgo);
+
+        static TextAndUpdateInterval getHowLongAgoInfo(int secondsAgo);
+        static TextAndUpdateInterval getHowLongAgoInfo(QDateTime pastTime, QDateTime now);
+        static TextAndUpdateInterval getHowLongAgoInfo(QDateTime pastTime);
 
         static QString getCopyrightLine(bool mustBeAscii = true);
 

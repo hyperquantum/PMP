@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,7 @@
 #ifndef PMP_MAINWINDOW_H
 #define PMP_MAINWINDOW_H
 
+#include "common/resultmessageerrorcode.h"
 #include "common/serverhealthstatus.h"
 
 #include "common/scrobblerstatus.h"
@@ -34,8 +35,8 @@ QT_FORWARD_DECLARE_CLASS(QLabel)
 QT_FORWARD_DECLARE_CLASS(QMenu)
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP {
-
+namespace PMP
+{
     class ClientServerInterface;
     class ConnectionWidget;
     class LoginWidget;
@@ -45,7 +46,8 @@ namespace PMP {
     class UserAccountCreationWidget;
     class UserPickerWidget;
 
-    class MainWindow : public QMainWindow {
+    class MainWindow : public QMainWindow
+    {
         Q_OBJECT
 
     public:
@@ -71,6 +73,8 @@ namespace PMP {
         void onLoginCancel();
 
         void onStartFullIndexationTriggered();
+        void onReloadServerSettingsTriggered();
+        void reloadServerSettingsResultReceived(ResultMessageErrorCode errorCode);
         void onShutdownServerTriggered();
         void onLastFmTriggered();
         void updatePowerManagement();
@@ -83,6 +87,7 @@ namespace PMP {
         bool keyEventFilter(QKeyEvent* event);
         virtual void closeEvent(QCloseEvent* event);
 
+        void createActions();
         void createMenus();
         void createStatusbar();
         void updateRightStatus();
@@ -106,16 +111,17 @@ namespace PMP {
         MainWidget* _mainWidget;
         QDockWidget* _musicCollectionDock;
 
-        QAction* _serverAdminAction;
+        QAction* _reloadServerSettingsAction;
         QAction* _shutdownServerAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
-        QAction* _userMenuAction;
         QAction* _lastFmEnabledAction;
         QAction* _keepDisplayActiveAction;
         QAction* _aboutPmpAction;
         QAction* _aboutQtAction;
 
+        QMenu* _serverAdminMenu;
+        QMenu* _userMenu;
         QMenu* _viewMenu;
 
         PowerManagement* _powerManagement;

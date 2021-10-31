@@ -23,8 +23,8 @@
 #include <QString>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class Command;
 
     enum class AuthenticationMode
@@ -36,7 +36,8 @@ namespace PMP {
         ExplicitAllFromStdIn,
     };
 
-    class CommandParser {
+    class CommandParser
+    {
     public:
         CommandParser();
 

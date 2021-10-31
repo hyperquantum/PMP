@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,32 +17,39 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COMMAND_H
-#define PMP_COMMAND_H
+#ifndef PMP_REQUESTID_H
+#define PMP_REQUESTID_H
 
-#include <QObject>
+#include <QtGlobal>
 
 namespace PMP
 {
-    class ClientServerInterface;
-
-    class Command : public QObject
+    class RequestID
     {
-        Q_OBJECT
     public:
-        virtual ~Command() {}
+        RequestID() : _rawId(0) {}
+        explicit RequestID(uint rawId) : _rawId(rawId) {}
 
-        virtual bool requiresAuthentication() const = 0;
-        virtual bool willCauseDisconnect() const = 0;
+        bool isValid() const { return _rawId > 0; }
+        uint rawId() const { return _rawId; }
 
-        virtual void execute(ClientServerInterface* clientServerInterface) = 0;
-
-    Q_SIGNALS:
-        void executionSuccessful(QString output = "");
-        void executionFailed(int resultCode, QString errorOutput);
-
-    protected:
-        explicit Command(QObject* parent = nullptr) : QObject(parent) {}
+    private:
+        uint _rawId;
     };
+
+    inline bool operator==(const RequestID& me, const RequestID& other)
+    {
+        return me.rawId() == other.rawId();
+    }
+
+    inline bool operator!=(const RequestID& me, const RequestID& other)
+    {
+        return !(me == other);
+    }
+
+    inline uint qHash(const RequestID& requestId)
+    {
+        return requestId.rawId();
+    }
 }
 #endif

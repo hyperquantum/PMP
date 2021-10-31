@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,34 +17,36 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVERHEALTHMONITOR_H
-#define PMP_SERVERHEALTHMONITOR_H
+#ifndef PMP_GENERALCONTROLLER_H
+#define PMP_GENERALCONTROLLER_H
+
+#include "requestid.h"
+#include "resultmessageerrorcode.h"
 
 #include <QObject>
 
 namespace PMP
 {
-    /*! class that monitors server health status on behalf of connected remotes */
-    class ServerHealthMonitor : public QObject
+    class GeneralController : public QObject
     {
         Q_OBJECT
     public:
-        explicit ServerHealthMonitor(QObject *parent = nullptr);
+        virtual ~GeneralController() {}
 
-        bool anyProblem() const;
-        bool databaseUnavailable() const;
-        bool sslLibrariesMissing() const;
+        virtual qint64 clientClockTimeOffsetMs() const = 0;
+
+        virtual RequestID reloadServerSettings() = 0;
 
     public Q_SLOTS:
-        void setDatabaseUnavailable();
-        void setSslLibrariesMissing();
+        virtual void shutdownServer() = 0;
 
     Q_SIGNALS:
-        void serverHealthChanged(bool databaseUnavailable, bool sslLibrariesMissing);
+        void clientClockTimeOffsetChanged();
+        void serverSettingsReloadResultEvent(ResultMessageErrorCode errorCode,
+                                             RequestID requestId);
 
-    private:
-        bool _databaseUnavailable;
-        bool _sslLibrariesMissing;
+    protected:
+        GeneralController(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

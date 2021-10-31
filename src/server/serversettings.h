@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,18 +20,78 @@
 #ifndef PMP_SERVERSETTINGS_H
 #define PMP_SERVERSETTINGS_H
 
-#include <QSettings>
+#include <QObject>
+#include <QStringList>
 
-namespace PMP {
+QT_FORWARD_DECLARE_CLASS(QSettings)
 
-    class ServerSettings : public QObject {
+namespace PMP
+{
+    struct DatabaseConnectionSettings
+    {
+        QString hostname;
+        QString username;
+        QString password;
+
+        bool isComplete() const
+        {
+            return !hostname.isEmpty() && !username.isEmpty() && !password.isEmpty();
+        }
+
+        bool operator==(DatabaseConnectionSettings const& other) const
+        {
+            return hostname == other.hostname
+                && username == other.username
+                && password == other.password;
+        }
+
+        bool operator!=(DatabaseConnectionSettings const& other) const
+        {
+            return !(*this == other);
+        }
+    };
+
+    class ServerSettings : public QObject
+    {
         Q_OBJECT
     public:
         ServerSettings();
 
-        QSettings& getSettings() { return _settings; }
+        int defaultVolume() const { return _defaultVolume; }
+        QStringList musicPaths() const { return _musicPaths; }
+        QString fixedServerPassword() const { return _fixedServerPassword; }
+
+        DatabaseConnectionSettings databaseConnectionSettings() const
+        {
+            return _databaseConnectionSettings;
+        }
+
+    public Q_SLOTS:
+        void load();
+
+    Q_SIGNALS:
+        void defaultVolumeChanged();
+        void musicPathsChanged();
+        void fixedServerPasswordChanged();
+        void databaseConnectionSettingsChanged();
+
     private:
-        QSettings _settings;
+        void loadDefaultVolume(QSettings& settings);
+        void loadMusicPaths(QSettings& settings);
+        void loadFixedServerPassword(QSettings& settings);
+        void loadDatabaseConnectionSettings(QSettings& settings);
+
+        void setDefaultVolume(int volume);
+        void setMusicPaths(QStringList const& paths);
+        void setFixedServerPassword(QString password);
+        void setDatabaseConnectionSettings(DatabaseConnectionSettings const& settings);
+
+        static QStringList generateDefaultScanPaths();
+
+        int _defaultVolume;
+        QStringList _musicPaths;
+        QString _fixedServerPassword;
+        DatabaseConnectionSettings _databaseConnectionSettings;
     };
 }
 #endif

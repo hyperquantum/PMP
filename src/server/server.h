@@ -28,20 +28,23 @@ QT_FORWARD_DECLARE_CLASS(QTcpServer)
 QT_FORWARD_DECLARE_CLASS(QTimer)
 QT_FORWARD_DECLARE_CLASS(QUdpSocket)
 
-namespace PMP {
-
+namespace PMP
+{
     class CollectionMonitor;
     class Generator;
     class History;
     class Player;
     class Scrobbling;
     class ServerHealthMonitor;
+    class ServerSettings;
     class Users;
 
-    class Server : public QObject {
+    class Server : public QObject
+    {
         Q_OBJECT
     public:
-        Server(QObject* parent, const QUuid& serverInstanceIdentifier);
+        Server(QObject* parent, ServerSettings* serverSettings,
+               const QUuid& serverInstanceIdentifier);
 
         bool listen(Player* player, Generator* generator, History* history,
                     Users* users,
@@ -55,12 +58,13 @@ namespace PMP {
         quint16 port() const;
 
         QUuid uuid() const { return _uuid; }
-        QString serverPassword() { return _serverPassword; }
+        QString serverPassword() const { return _serverPassword; }
 
     public Q_SLOTS:
         void shutdown();
 
     Q_SIGNALS:
+        void serverClockTimeSendingPulse();
         void shuttingDown();
 
     private Q_SLOTS:
@@ -77,6 +81,7 @@ namespace PMP {
         QSet<uint> _connectionReferencesInUse;
         QUuid _uuid;
         QString _serverPassword;
+        ServerSettings* _settings;
         Player* _player;
         Generator* _generator;
         History* _history;

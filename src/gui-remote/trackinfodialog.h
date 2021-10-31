@@ -23,18 +23,22 @@
 #include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
 
+#include <QDateTime>
 #include <QDialog>
+#include <QTimer>
 
-namespace Ui {
+namespace Ui
+{
     class TrackInfoDialog;
 }
 
-namespace PMP {
-
+namespace PMP
+{
     class ClientServerInterface;
     class FileHash;
 
-    class TrackInfoDialog : public QDialog {
+    class TrackInfoDialog : public QDialog
+    {
         Q_OBJECT
     public:
         TrackInfoDialog(QWidget* parent, ClientServerInterface* clientServerInterface,
@@ -49,6 +53,7 @@ namespace PMP {
         void newTrackReceived(CollectionTrackInfo track);
         void trackDataChanged(CollectionTrackInfo track);
         void dataReceivedForUser(quint32 userId);
+        void updateLastHeard();
 
     private:
         void init();
@@ -64,7 +69,9 @@ namespace PMP {
 
         Ui::TrackInfoDialog* _ui;
         ClientServerInterface* _clientServerInterface;
+        QTimer* _lastHeardUpdateTimer;
         FileHash _trackHash;
+        QDateTime _lastHeard;
         quint32 _queueId;
     };
 }

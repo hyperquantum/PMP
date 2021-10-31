@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,8 +28,8 @@
 
 QT_FORWARD_DECLARE_CLASS(QTextStream)
 
-namespace PMP {
-
+namespace PMP
+{
     class ClientServerInterface;
     class Command;
     class ServerConnection;
@@ -64,6 +64,7 @@ namespace PMP {
         QPointer<ServerConnection> _serverConnection;
         QPointer<ClientServerInterface> _clientServerInterface;
         QPointer<Command> _command;
+        bool _expectingDisconnect;
     };
 }
 #endif

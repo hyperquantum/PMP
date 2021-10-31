@@ -51,6 +51,7 @@ TECHNICAL TODO
  * large file support (?)
  * switch to signed integer types for things like queue indices
  * add logging for all server messages that are deemed corrupt or invalid by the client
+ * remove all usages of Q_FOREACH
 
 
 IDEAS
@@ -63,12 +64,13 @@ IDEAS
  * player: delayed start: e.g. being able to press Play and then have 5 seconds before PMP actually starts playing
  * player: avoid accidental multiple clicks on "skip" affecting track score unnecessarily
  * player: 'seek to start of track' action or button
+ * queue: ability to insert a new kind of breakpoint that is never consumed ("barrier"?)
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * queue: ability to insert a breakpoint directly before/after any entry in the queue
+ * queue: ability to insert a track at a random position in the queue
  * queue: show error marker for a track that has no known file
  * queue: join title and artist columns when displaying filename
  * queue: save the contents of the queue on server shutdown and restore it at the next server startup
- * queue: "persistent breakpoint": a new kind of breakpoint that is never consumed ("barrier"?)
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
  * music collection: show a "loading collection" indicator while downloading the list from the server
@@ -90,7 +92,6 @@ IDEAS
  ** support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
  * display PMP server version in the client 'About' dialog
  * ability to view server uptime
- * interactive editing of the list of directories to scan for music
  * ability to ban a track permanently or temporarily; this will also hide it in the music collection
  * ability to set track property "play this less often" or "play this again soon"
  *** 'play now' option in the context menus of the music collection, the history, and maybe the queue
@@ -109,6 +110,8 @@ IDEAS
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
  * client: detect broken connection to the server
  * client: ability to reconnect to the server after the connection was broken
+ ** login dialog: add button for probing for servers again
+ * take clock difference between client and server into account
 
 
 USER FRIENDLINESS
