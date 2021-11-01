@@ -41,10 +41,36 @@ namespace PMP
 
         settings.setIniCodec("UTF-8");
 
+        loadServerCaption(settings);
         loadDefaultVolume(settings);
         loadMusicPaths(settings);
         loadFixedServerPassword(settings);
         loadDatabaseConnectionSettings(settings);
+    }
+
+    void ServerSettings::loadServerCaption(QSettings& settings)
+    {
+        /* in Qt .ini files, the group "General" is used when not specifying a group */
+
+        QVariant captionSetting = settings.value("server_caption");
+        if (!captionSetting.isValid() || captionSetting.toString().isEmpty())
+        {
+            settings.setValue("server_caption", "");
+            setServerCaption({});
+            return;
+        }
+
+        auto caption = captionSetting.toString();
+
+        if (caption.length() > 63)
+        {
+            qWarning() << "Server caption as defined in the settings file is too long;"
+                       << "maximum length is 63 characters";
+        }
+
+        caption.truncate(63);
+
+        setServerCaption(caption);
     }
 
     void ServerSettings::loadDefaultVolume(QSettings& settings)
@@ -170,6 +196,15 @@ namespace PMP
         */
 
         setDatabaseConnectionSettings(newConnectionSettings);
+    }
+
+    void ServerSettings::setServerCaption(QString serverCaption)
+    {
+        if (serverCaption == _serverCaption)
+            return; /* no change */
+
+        _serverCaption = serverCaption;
+        Q_EMIT serverCaptionChanged();
     }
 
     void ServerSettings::setDefaultVolume(int volume)

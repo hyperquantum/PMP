@@ -40,6 +40,10 @@ namespace PMP
        _generator(generator)
     {
         connect(
+            _server, &Server::captionChanged,
+            this, &ServerInterface::serverCaptionChanged
+        );
+        connect(
             _server, &Server::serverClockTimeSendingPulse,
             this, &ServerInterface::serverClockTimeSendingPulse
         );
@@ -73,6 +77,11 @@ namespace PMP
     QUuid ServerInterface::getServerUuid() const
     {
         return _server->uuid();
+    }
+
+    QString ServerInterface::getServerCaption() const
+    {
+        return _server->caption();
     }
 
     void ServerInterface::setLoggedIn(quint32 userId, QString userLogin)

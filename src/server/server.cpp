@@ -26,6 +26,7 @@
 #include "serversettings.h"
 
 #include <QByteArray>
+#include <QHostInfo>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
@@ -47,6 +48,12 @@ namespace PMP
     {
         /* generate a new UUID for ourselves if we did not receive a valid one */
         if (_uuid.isNull()) _uuid = QUuid::createUuid();
+
+        connect(
+            _settings, &ServerSettings::serverCaptionChanged,
+            this, [this]() { determineCaption(); }
+        );
+        determineCaption();
 
         auto fixedServerPassword = serverSettings->fixedServerPassword();
         if (!fixedServerPassword.isEmpty())
@@ -192,5 +199,21 @@ namespace PMP
 
             sendBroadcast();
         }
+    }
+
+    void Server::determineCaption()
+    {
+        QString caption = _settings->serverCaption();
+
+        if (caption.isEmpty())
+        {
+            caption = QHostInfo::localHostName();
+        }
+
+        if (caption == _caption)
+            return; /* no change */
+
+        _caption = caption;
+        Q_EMIT captionChanged();
     }
 }

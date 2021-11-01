@@ -1633,7 +1633,9 @@ namespace PMP
 
     void ServerConnection::parseServerNameMessage(QByteArray const& message)
     {
-        if (message.length() < 4) {
+        if (message.length() < 4)
+        {
+            qWarning() << "invalid message; too short";
             return; /* invalid message */
         }
 

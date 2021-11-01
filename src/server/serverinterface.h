@@ -45,6 +45,7 @@ namespace PMP
                         Generator* generator);
 
         QUuid getServerUuid() const;
+        QString getServerCaption() const;
 
         bool isLoggedIn() const { return _userLoggedIn > 0; }
         void setLoggedIn(quint32 userId, QString userLogin);
@@ -83,6 +84,7 @@ namespace PMP
         void shutDownServer(QString serverPassword);
 
     Q_SIGNALS:
+        void serverCaptionChanged();
         void serverClockTimeSendingPulse();
         void serverShuttingDown();
 

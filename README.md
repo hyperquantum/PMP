@@ -207,7 +207,6 @@ Effort is a rough estimate. Priorities can still change.
 | Server to server remote music access                      | Medium   | Medium       |
 | Identify artist by something better than text             | Medium   | Large        |
 | Android app for controlling the server (only a remote)    | Medium   | Large        |
-| Naming a server instance (e.g. "living room")             | Low      | Small        |
 | Time-based auto-stop function                             | Low      | Medium       |
 | Support for other database providers than MySQL           | Low      | Medium       |
 | Support for other music formats than MP3 and FLAC         | Low      | Medium/Large |

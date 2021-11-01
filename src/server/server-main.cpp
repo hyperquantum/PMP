@@ -58,6 +58,7 @@ namespace
                              Server const& server, Player const& player)
     {
         out << "Server instance identifier: " << server.uuid().toString() << "\n";
+        out << "Server caption: " << server.caption() << "\n";
 
         out << Qt::endl;
 
@@ -200,7 +201,8 @@ int main(int argc, char* argv[])
     printStartupSummary(out, serverSettings, server, player);
 
     out << "\n"
-        << "Server initialization complete." << Qt::endl;
+        << "Server initialization complete." << Qt::endl
+        << Qt::endl;
 
     /* start indexation of the media directories */
     if (databaseInitializationSucceeded && doIndexation)
@@ -216,7 +218,8 @@ int main(int argc, char* argv[])
                     return;
 
                 initialIndexation = false;
-                out << "Indexation finished." << Qt::endl;
+                out << "Indexation finished." << Qt::endl
+                    << Qt::endl;
             }
         );
 
