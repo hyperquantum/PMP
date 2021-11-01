@@ -175,7 +175,7 @@ namespace PMP
                                        QVector<CollectionTrackInfo> tracks);
         void sendNewHistoryEntryMessage(QSharedPointer<PlayerHistoryEntry> entry);
         void sendQueueHistoryMessage(int limit);
-        void sendServerNameMessage(quint8 type, QString name);
+        void sendServerNameMessage();
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
         void sendServerClockMessage();

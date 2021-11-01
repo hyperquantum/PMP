@@ -37,7 +37,6 @@
 #include "serverinterface.h"
 #include "users.h"
 
-#include <QHostInfo>
 #include <QMap>
 #include <QThreadPool>
 #include <QTimer>
@@ -182,6 +181,11 @@ namespace PMP
         connect(
             _history, &History::updatedHashUserStats,
             this, &ConnectedClient::onUserHashStatsUpdated
+        );
+
+        connect(
+            _serverInterface, &ServerInterface::serverCaptionChanged,
+            this, [this]() { sendServerNameMessage(); }
         );
 
         connect(
@@ -1353,8 +1357,11 @@ namespace PMP
         sendSuccessMessage(clientReference, 0);
     }
 
-    void ConnectedClient::sendServerNameMessage(quint8 type, QString name)
+    void ConnectedClient::sendServerNameMessage()
     {
+        quint8 type = 0; // TODO : type
+        auto name = _serverInterface->getServerCaption();
+
         name.truncate(63);
         QByteArray nameBytes = name.toUtf8();
 
@@ -2674,7 +2681,7 @@ namespace PMP
             break;
         case 16:
             qDebug() << "received request for server name";
-            sendServerNameMessage(0, QHostInfo::localHostName());
+            sendServerNameMessage();
             break;
         case 17:
             qDebug() << "received request for database UUID";

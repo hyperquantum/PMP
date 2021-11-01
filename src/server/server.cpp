@@ -26,6 +26,7 @@
 #include "serversettings.h"
 
 #include <QByteArray>
+#include <QHostInfo>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QtDebug>
@@ -49,6 +50,12 @@ namespace PMP
     {
         /* generate a new UUID for ourselves if we did not receive a valid one */
         if (_uuid.isNull()) _uuid = QUuid::createUuid();
+
+        connect(
+            _settings, &ServerSettings::serverCaptionChanged,
+            this, [this]() { determineCaption(); }
+        );
+        determineCaption();
 
         auto fixedServerPassword = serverSettings->fixedServerPassword();
         if (!fixedServerPassword.isEmpty())
@@ -211,8 +218,10 @@ namespace PMP
         }
     }
 
-    uint Server::generateConnectionReference() {
-        do {
+    uint Server::generateConnectionReference()
+    {
+        do
+        {
             _lastNewConnectionReference++;
         } while (_lastNewConnectionReference == 0
                  || _connectionReferencesInUse.contains(_lastNewConnectionReference));
@@ -223,8 +232,25 @@ namespace PMP
         return _lastNewConnectionReference;
     }
 
-    void Server::retireConnectionReference(uint connectionReference) {
+    void Server::retireConnectionReference(uint connectionReference)
+    {
         qDebug() << "Removing connection reference:" << connectionReference;
         _connectionReferencesInUse.remove(connectionReference);
+    }
+
+    void Server::determineCaption()
+    {
+        QString caption = _settings->serverCaption();
+
+        if (caption.isEmpty())
+        {
+            caption = QHostInfo::localHostName();
+        }
+
+        if (caption == _caption)
+            return; /* no change */
+
+        _caption = caption;
+        Q_EMIT captionChanged();
     }
 }

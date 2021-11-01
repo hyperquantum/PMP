@@ -58,12 +58,14 @@ namespace PMP
         quint16 port() const;
 
         QUuid uuid() const { return _uuid; }
+        QString caption() const { return _caption; }
         QString serverPassword() const { return _serverPassword; }
 
     public Q_SLOTS:
         void shutdown();
 
     Q_SIGNALS:
+        void captionChanged();
         void serverClockTimeSendingPulse();
         void shuttingDown();
 
@@ -73,13 +75,16 @@ namespace PMP
         void readPendingDatagrams();
 
     private:
+        static QString generateServerPassword();
+
         uint generateConnectionReference();
         void retireConnectionReference(uint connectionReference);
-        static QString generateServerPassword();
+        void determineCaption();
 
         uint _lastNewConnectionReference;
         QSet<uint> _connectionReferencesInUse;
         QUuid _uuid;
+        QString _caption;
         QString _serverPassword;
         ServerSettings* _settings;
         Player* _player;
