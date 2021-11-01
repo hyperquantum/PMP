@@ -76,7 +76,7 @@ namespace PMP
     void ServerSettings::loadDefaultVolume(QSettings& settings)
     {
         int volume = -1;
-        QVariant defaultVolumeSetting = settings.value("player/default_volume");
+        QVariant defaultVolumeSetting = settings.value("Player/default_volume");
         if (defaultVolumeSetting.isValid() && defaultVolumeSetting.toString() != "")
         {
             bool ok;
@@ -89,7 +89,7 @@ namespace PMP
         }
         if (volume < 0)
         {
-            settings.setValue("player/default_volume", "");
+            settings.setValue("Player/default_volume", "");
         }
 
         setDefaultVolume(volume);
@@ -98,12 +98,12 @@ namespace PMP
     void ServerSettings::loadMusicPaths(QSettings& settings)
     {
         QStringList paths;
-        QVariant musicPathsSetting = settings.value("media/scan_directories");
+        QVariant musicPathsSetting = settings.value("Media/scan_directories");
         if (!musicPathsSetting.isValid() || musicPathsSetting.toStringList().empty())
         {
             qInfo() << "server settings: no music paths set. Setting default paths";
             paths = generateDefaultScanPaths();
-            settings.setValue("media/scan_directories", paths);
+            settings.setValue("Media/scan_directories", paths);
         }
         else
         {
@@ -116,12 +116,12 @@ namespace PMP
     void ServerSettings::loadFixedServerPassword(QSettings& settings)
     {
         /* get rid of old 'serverpassword' setting if it still exists */
-        settings.remove("security/serverpassword");
+        settings.remove("Security/serverpassword");
 
         QString fixedServerPassword;
 
         QVariant fixedServerPasswordSetting =
-                settings.value("security/fixedserverpassword");
+                settings.value("Security/fixedserverpassword");
 
         if (!fixedServerPasswordSetting.isValid()
                 || fixedServerPasswordSetting.toString().isEmpty())
@@ -143,7 +143,7 @@ namespace PMP
 
         if (fixedServerPassword.isEmpty())
         {
-            settings.setValue("security/fixedserverpassword", "");
+            settings.setValue("Security/fixedserverpassword", "");
         }
 
         setFixedServerPassword(fixedServerPassword);
@@ -153,30 +153,30 @@ namespace PMP
     {
         DatabaseConnectionSettings newConnectionSettings;
 
-        QVariant hostnameSetting = settings.value("database/hostname");
+        QVariant hostnameSetting = settings.value("Database/hostname");
         if (!hostnameSetting.isValid() || hostnameSetting.toString().isEmpty())
         {
-            settings.setValue("database/hostname", "");
+            settings.setValue("Database/hostname", "");
         }
         else
         {
             newConnectionSettings.hostname = hostnameSetting.toString();
         }
 
-        QVariant usernameSetting = settings.value("database/username");
+        QVariant usernameSetting = settings.value("Database/username");
         if (!usernameSetting.isValid() || usernameSetting.toString().isEmpty())
         {
-            settings.setValue("database/username", "");
+            settings.setValue("Database/username", "");
         }
         else
         {
             newConnectionSettings.username = usernameSetting.toString();
         }
 
-        QVariant passwordSetting = settings.value("database/password");
+        QVariant passwordSetting = settings.value("Database/password");
         if (!passwordSetting.isValid() || passwordSetting.toString().isEmpty())
         {
-            settings.setValue("database/password", "");
+            settings.setValue("Database/password", "");
         }
         else
         {
@@ -184,10 +184,10 @@ namespace PMP
         }
 
         /*
-        QVariant schemaSetting = settings.value("database/schema");
+        QVariant schemaSetting = settings.value("Database/schema");
         if (!schemaSetting.isValid() || schemaSetting.toString().isEmpty())
         {
-            settings.setValue("database/schema", "");
+            settings.setValue("Database/schema", "");
         }
         else
         {
