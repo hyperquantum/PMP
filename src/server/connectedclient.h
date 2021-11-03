@@ -155,11 +155,10 @@ namespace PMP
         void sendSuccessMessage(quint32 clientReference, quint32 intData);
         void sendSuccessMessage(quint32 clientReference, quint32 intData,
                                 QByteArray const& blobData);
-        void sendResultMessage(NetworkProtocol::ErrorType errorType,
-                              quint32 clientReference, quint32 intData);
-        void sendResultMessage(NetworkProtocol::ErrorType errorType,
-                              quint32 clientReference, quint32 intData,
-                              QByteArray const& blobData);
+        void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
+                               quint32 intData);
+        void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
+                               quint32 intData, QByteArray const& blobData);
         void sendNonFatalInternalErrorResultMessage(quint32 clientReference);
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
@@ -183,7 +182,7 @@ namespace PMP
         void sendCompatibilityInterfaceActionTextUpdate(int interfaceId, int actionId);
 
         void handleBinaryMessage(QByteArray const& message);
-        void handleStandardBinaryMessage(NetworkProtocol::ClientMessageType messageType,
+        void handleStandardBinaryMessage(ClientMessageType messageType,
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 messageType,
                                     QByteArray const& message);
@@ -194,7 +193,7 @@ namespace PMP
 
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
-                                        NetworkProtocol::ClientMessageType messageType);
+                                        ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
         void parseQueueEntryRemovalRequest(QByteArray const& message);
         void parseQueueEntryDuplicationRequest(QByteArray const& message);

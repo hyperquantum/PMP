@@ -24,9 +24,10 @@
 #include <QDateTime>
 #include <QString>
 
-namespace PMP {
-
-    class NetworkUtil {
+namespace PMP
+{
+    class NetworkUtil
+    {
     public:
 
         static int fitsIn2BytesSigned(int number);
@@ -77,42 +78,50 @@ namespace PMP {
 
     private:
         template<typename T>
-        static char extractByte0(T number) {
+        static char extractByte0(T number)
+        {
             return static_cast<char>(number & 0xFFu);
         }
 
         template<typename T>
-        static char extractByte1(T number) {
+        static char extractByte1(T number)
+        {
             return static_cast<char>((number >> 8) & 0xFFu);
         }
 
         template<typename T>
-        static char extractByte2(T number) {
+        static char extractByte2(T number)
+        {
             return static_cast<char>((number >> 16) & 0xFFu);
         }
 
         template<typename T>
-        static char extractByte3(T number) {
+        static char extractByte3(T number)
+        {
             return static_cast<char>((number >> 24) & 0xFFu);
         }
 
         template<typename T>
-        static char extractByte4(T number) {
+        static char extractByte4(T number)
+        {
             return static_cast<char>((number >> 32) & 0xFFu);
         }
 
         template<typename T>
-        static char extractByte5(T number) {
+        static char extractByte5(T number)
+        {
             return static_cast<char>((number >> 40) & 0xFFu);
         }
 
         template<typename T>
-        static char extractByte6(T number) {
+        static char extractByte6(T number)
+        {
             return static_cast<char>((number >> 48) & 0xFFu);
         }
 
         template<typename T>
-        static char extractByte7(T number) {
+        static char extractByte7(T number)
+        {
             return static_cast<char>((number >> 56) & 0xFFu);
         }
 

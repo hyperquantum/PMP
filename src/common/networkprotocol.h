@@ -27,8 +27,8 @@
 #include <QByteArray>
 #include <QString>
 
-namespace PMP {
-
+namespace PMP
+{
     /*
         Network protocol versions
         =========================
@@ -56,106 +56,107 @@ namespace PMP {
     class CompatibilityUiState;
     class FileHash;
 
+    enum class ServerMessageType
+    {
+        None = 0,
+        PlayerStateMessage = 1,
+        VolumeChangedMessage = 2,
+        TrackInfoMessage = 3,
+        BulkTrackInfoMessage = 4,
+        QueueContentsMessage = 5,
+        QueueEntryRemovedMessage = 6,
+        QueueEntryAddedMessage = 7,
+        DynamicModeStatusMessage = 8,
+        PossibleFilenamesForQueueEntryMessage = 9,
+        ServerInstanceIdentifierMessage = 10,
+        QueueEntryMovedMessage = 11,
+        UsersListMessage = 12,
+        NewUserAccountSaltMessage = 13,
+        SimpleResultMessage = 14,
+        UserLoginSaltMessage = 15,
+        UserPlayingForModeMessage = 16,
+        ServerEventNotificationMessage = 17,
+        CollectionFetchResponseMessage = 18,
+        CollectionChangeNotificationMessage = 19,
+        ServerNameMessage = 20,
+        BulkQueueEntryHashMessage = 21,
+        HashUserDataMessage = 22,
+        NewHistoryEntryMessage = 23,
+        PlayerHistoryMessage = 24,
+        DatabaseIdentifierMessage = 25,
+        DynamicModeWaveStatusMessage = 26,
+        QueueEntryAdditionConfirmationMessage = 27,
+        ServerHealthMessage = 28,
+        CollectionAvailabilityChangeNotificationMessage = 29,
+        ServerExtensionsMessage = 30,
+        CompatibilityInterfaceAnnouncement = 31,
+        CompatibilityInterfaceLanguageSelectionConfirmation = 32,
+        CompatibilityInterfaceDefinition = 33,
+        CompatibilityInterfaceStateUpdate = 34,
+        CompatibilityInterfaceActionStateUpdate = 35,
+        CompatibilityInterfaceTextUpdate = 36,
+        CompatibilityInterfaceActionTextUpdate = 37,
+    };
+
+    enum class ClientMessageType
+    {
+        None = 0,
+        SingleByteActionMessage = 1,
+        TrackInfoRequestMessage = 2,
+        BulkTrackInfoRequestMessage = 3,
+        QueueFetchRequestMessage = 4,
+        QueueEntryRemovalRequestMessage = 5,
+        GeneratorNonRepetitionChangeMessage = 6,
+        PossibleFilenamesForQueueEntryRequestMessage = 7,
+        PlayerSeekRequestMessage = 8,
+        QueueEntryMoveRequestMessage = 9,
+        InitiateNewUserAccountMessage = 10,
+        FinishNewUserAccountMessage = 11,
+        InitiateLoginMessage = 12,
+        FinishLoginMessage = 13,
+        CollectionFetchRequestMessage = 14,
+        AddHashToEndOfQueueRequestMessage = 15,
+        AddHashToFrontOfQueueRequestMessage = 16,
+        BulkQueueEntryHashRequestMessage = 17,
+        HashUserDataRequestMessage = 18,
+        InsertHashIntoQueueRequestMessage = 19,
+        PlayerHistoryRequestMessage = 20,
+        QueueEntryDuplicationRequestMessage = 21,
+        ClientExtensionsMessage = 22,
+        CompatibilityInterfaceLanguageSelectionRequest = 23,
+        CompatibilityInterfaceDefinitionsRequest = 24,
+        CompatibilityInterfaceTriggerActionRequest = 25,
+    };
+
+    enum class ResultMessageErrorCode
+    {
+        NoError = 0,
+        InvalidMessageStructure = 1,
+        NotLoggedIn = 10,
+
+        InvalidUserAccountName = 11,
+        UserAccountAlreadyExists = 12,
+        UserAccountRegistrationMismatch = 13,
+        UserAccountLoginMismatch = 14,
+        UserLoginAuthenticationFailed = 15,
+        AlreadyLoggedIn = 16,
+
+        QueueIdNotFound = 20,
+        InvalidLanguage = 21,
+        InvalidCompatibilityInterfaceId = 22,
+
+        LanguageNotSet = 30,
+
+        DatabaseProblem = 90,
+        NonFatalInternalServerError = 254,
+        UnknownError = 255
+    };
+
     class NetworkProtocol
     {
     public:
-        enum ServerMessageType
+        struct ProtocolExtensionSupport
         {
-            ServerMessageTypeNone = 0,
-            PlayerStateMessage = 1,
-            VolumeChangedMessage = 2,
-            TrackInfoMessage = 3,
-            BulkTrackInfoMessage = 4,
-            QueueContentsMessage = 5,
-            QueueEntryRemovedMessage = 6,
-            QueueEntryAddedMessage = 7,
-            DynamicModeStatusMessage = 8,
-            PossibleFilenamesForQueueEntryMessage = 9,
-            ServerInstanceIdentifierMessage = 10,
-            QueueEntryMovedMessage = 11,
-            UsersListMessage = 12,
-            NewUserAccountSaltMessage = 13,
-            SimpleResultMessage = 14,
-            UserLoginSaltMessage = 15,
-            UserPlayingForModeMessage = 16,
-            ServerEventNotificationMessage = 17,
-            CollectionFetchResponseMessage = 18,
-            CollectionChangeNotificationMessage = 19,
-            ServerNameMessage = 20,
-            BulkQueueEntryHashMessage = 21,
-            HashUserDataMessage = 22,
-            NewHistoryEntryMessage = 23,
-            PlayerHistoryMessage = 24,
-            DatabaseIdentifierMessage = 25,
-            DynamicModeWaveStatusMessage = 26,
-            QueueEntryAdditionConfirmationMessage = 27,
-            ServerHealthMessage = 28,
-            CollectionAvailabilityChangeNotificationMessage = 29,
-            ServerExtensionsMessage = 30,
-            CompatibilityInterfaceAnnouncement = 31,
-            CompatibilityInterfaceLanguageSelectionConfirmation = 32,
-            CompatibilityInterfaceDefinition = 33,
-            CompatibilityInterfaceStateUpdate = 34,
-            CompatibilityInterfaceActionStateUpdate = 35,
-            CompatibilityInterfaceTextUpdate = 36,
-            CompatibilityInterfaceActionTextUpdate = 37,
-        };
-
-        enum ClientMessageType
-        {
-            ClientMessageTypeNone = 0,
-            SingleByteActionMessage = 1,
-            TrackInfoRequestMessage = 2,
-            BulkTrackInfoRequestMessage = 3,
-            QueueFetchRequestMessage = 4,
-            QueueEntryRemovalRequestMessage = 5,
-            GeneratorNonRepetitionChangeMessage = 6,
-            PossibleFilenamesForQueueEntryRequestMessage = 7,
-            PlayerSeekRequestMessage = 8,
-            QueueEntryMoveRequestMessage = 9,
-            InitiateNewUserAccountMessage = 10,
-            FinishNewUserAccountMessage = 11,
-            InitiateLoginMessage = 12,
-            FinishLoginMessage = 13,
-            CollectionFetchRequestMessage = 14,
-            AddHashToEndOfQueueRequestMessage = 15,
-            AddHashToFrontOfQueueRequestMessage = 16,
-            BulkQueueEntryHashRequestMessage = 17,
-            HashUserDataRequestMessage = 18,
-            InsertHashIntoQueueRequestMessage = 19,
-            PlayerHistoryRequestMessage = 20,
-            QueueEntryDuplicationRequestMessage = 21,
-            ClientExtensionsMessage = 22,
-            CompatibilityInterfaceLanguageSelectionRequest = 23,
-            CompatibilityInterfaceDefinitionsRequest = 24,
-            CompatibilityInterfaceTriggerActionRequest = 25,
-        };
-
-        enum ErrorType
-        {
-            NoError = 0,
-            InvalidMessageStructure = 1,
-            NotLoggedIn = 10,
-
-            InvalidUserAccountName = 11,
-            UserAccountAlreadyExists = 12,
-            UserAccountRegistrationMismatch = 13,
-            UserAccountLoginMismatch = 14,
-            UserLoginAuthenticationFailed = 15,
-            AlreadyLoggedIn = 16,
-
-            QueueIdNotFound = 20,
-            InvalidLanguage = 21,
-            InvalidCompatibilityInterfaceId = 22,
-
-            LanguageNotSet = 30,
-
-            DatabaseProblem = 90,
-            NonFatalInternalServerError = 254,
-            UnknownError = 255
-        };
-
-        struct ProtocolExtensionSupport {
             quint8 id;
             quint8 version;
 
@@ -172,7 +173,8 @@ namespace PMP {
             }
         };
 
-        struct ProtocolExtension : ProtocolExtensionSupport {
+        struct ProtocolExtension : ProtocolExtensionSupport
+        {
             QString name;
 
             ProtocolExtension()
@@ -256,6 +258,10 @@ namespace PMP {
             QString _description;
             QVector<CompatibilityUserInterfaceAction> _actions;
         };
+
+        static void append2Bytes(QByteArray& buffer, ServerMessageType messageType);
+        static void append2Bytes(QByteArray& buffer, ClientMessageType messageType);
+        static void append2Bytes(QByteArray& buffer, ResultMessageErrorCode errorCode);
 
         static quint16 encodeMessageTypeForExtension(quint8 extensionId,
                                                      quint8 messageType);

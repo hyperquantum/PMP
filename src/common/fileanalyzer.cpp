@@ -23,12 +23,12 @@
 #include <QVersionNumber>
 
 /* TagLib includes */
-#include "flacfile.h"
-#include "id3v2framefactory.h"
-#include "mpegfile.h"
-#include "taglib.h"
-//#include "tbytevector.h"
-#include "tbytevectorstream.h"
+#include "taglib/flacfile.h"
+#include "taglib/id3v2framefactory.h"
+#include "taglib/mpegfile.h"
+#include "taglib/taglib.h"
+//#include "taglib/tbytevector.h"
+#include "taglib/tbytevectorstream.h"
 
 namespace PMP {
 

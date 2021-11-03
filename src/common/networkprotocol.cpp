@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,7 +28,23 @@
 #include <QCryptographicHash>
 #include <QtDebug>
 
-namespace PMP {
+namespace PMP
+{
+    void NetworkProtocol::append2Bytes(QByteArray& buffer, ServerMessageType messageType)
+    {
+        NetworkUtil::append2Bytes(buffer, static_cast<quint16>(messageType));
+    }
+
+    void NetworkProtocol::append2Bytes(QByteArray& buffer, ClientMessageType messageType)
+    {
+        NetworkUtil::append2Bytes(buffer, static_cast<quint16>(messageType));
+    }
+
+    void NetworkProtocol::append2Bytes(QByteArray& buffer,
+                                       ResultMessageErrorCode errorCode)
+    {
+        NetworkUtil::append2Bytes(buffer, static_cast<quint16>(errorCode));
+    }
 
     quint16 NetworkProtocol::encodeMessageTypeForExtension(quint8 extensionId,
                                                            quint8 messageType)
@@ -152,31 +168,39 @@ namespace PMP {
         return CompatibilityUiActionState(visible, enabled, disableWhenTriggered);
     }
 
-    int NetworkProtocol::ratePassword(QString password) {
+    int NetworkProtocol::ratePassword(QString password)
+    {
         int rating = 0;
-        for (int i = 0; i < password.size(); ++i) {
+        for (int i = 0; i < password.size(); ++i)
+        {
             rating += 3;
             QChar c = password[i];
 
-            if (c.isDigit()){
+            if (c.isDigit())
+            {
                 rating += 1; /* digits are slightly better than lowercase letters */
             }
-            else if (c.isLetter()){
-                if (c.isLower()) {
+            else if (c.isLetter())
+            {
+                if (c.isLower())
+                {
                     /* lowercase letters worth the least */
                 }
-                else {
+                else
+                {
                     rating += 2; /* uppercase letters are better than digits */
                 }
             }
-            else {
+            else
+            {
                 rating += 7;
             }
         }
 
         int lastDiff = 0;
         int diffConstantCount = 0;
-        for (int i = 1; i < password.size(); ++i) {
+        for (int i = 1; i < password.size(); ++i)
+        {
             QChar prevC = password[i - 1];
             int prevN = prevC.unicode();
             QChar curC = password[i];
@@ -184,14 +208,17 @@ namespace PMP {
 
             /* punish patterns such as "eeeee", "123456", "98765", "ghijklm" etc... */
             int diff = curN - prevN;
-            if (diff <= 1 && diff >= -1) {
+            if (diff <= 1 && diff >= -1)
+            {
                 rating -= 1;
             }
-            if (diff == lastDiff) {
+            if (diff == lastDiff)
+            {
                 diffConstantCount += 1;
                 rating -= diffConstantCount;
             }
-            else {
+            else
+            {
                 diffConstantCount = 0;
             }
 
@@ -201,7 +228,8 @@ namespace PMP {
         return rating;
     }
 
-    QByteArray NetworkProtocol::hashPassword(QByteArray const& salt, QString password) {
+    QByteArray NetworkProtocol::hashPassword(QByteArray const& salt, QString password)
+    {
         QCryptographicHash hasher(QCryptographicHash::Sha256);
         hasher.addData(salt);
         hasher.addData(password.toUtf8());
@@ -225,23 +253,28 @@ namespace PMP {
         return hasher.result();
     }
 
-    quint16 NetworkProtocol::createTrackStatusForTrack() {
+    quint16 NetworkProtocol::createTrackStatusForTrack()
+    {
         return 0; /* TODO: make this depend on track load/error/... status */
     }
 
-    quint16 NetworkProtocol::createTrackStatusUnknownId() {
+    quint16 NetworkProtocol::createTrackStatusUnknownId()
+    {
         return (1u << 16) - 1;
     }
 
-    quint16 NetworkProtocol::createTrackStatusForBreakPoint() {
+    quint16 NetworkProtocol::createTrackStatusForBreakPoint()
+    {
         return (1u << 15) + 1;
     }
 
-    bool NetworkProtocol::isTrackStatusFromRealTrack(quint16 status) {
+    bool NetworkProtocol::isTrackStatusFromRealTrack(quint16 status)
+    {
         return (status & (1u << 15)) == 0;
     }
 
-    QString NetworkProtocol::getPseudoTrackStatusText(quint16 status) {
+    QString NetworkProtocol::getPseudoTrackStatusText(quint16 status)
+    {
         if (isTrackStatusFromRealTrack(status)) return "<< Real track >>";
 
         auto type = status - (1u << 15);
@@ -250,7 +283,8 @@ namespace PMP {
         return "<<<< ????? >>>>";
     }
 
-    QueueEntryType NetworkProtocol::trackStatusToQueueEntryType(quint16 status) {
+    QueueEntryType NetworkProtocol::trackStatusToQueueEntryType(quint16 status)
+    {
         if (isTrackStatusFromRealTrack(status))
             return QueueEntryType::Track;
 
@@ -263,8 +297,10 @@ namespace PMP {
     const QByteArray NetworkProtocol::_fileHashAllZeroes =
             Util::generateZeroedMemory(FILEHASH_BYTECOUNT);
 
-    void NetworkProtocol::appendHash(QByteArray& buffer, const FileHash& hash) {
-        if (hash.isNull()) {
+    void NetworkProtocol::appendHash(QByteArray& buffer, const FileHash& hash)
+    {
+        if (hash.isNull())
+        {
             buffer += _fileHashAllZeroes;
             return;
         }
@@ -275,8 +311,10 @@ namespace PMP {
         // TODO: check if the length of what we added matches FILEHASH_BYTECOUNT
     }
 
-    FileHash NetworkProtocol::getHash(const QByteArray& buffer, int position, bool* ok) {
-        if (position > buffer.size() - FILEHASH_BYTECOUNT) {
+    FileHash NetworkProtocol::getHash(const QByteArray& buffer, int position, bool* ok)
+    {
+        if (position > buffer.size() - FILEHASH_BYTECOUNT)
+        {
             /* not enough bytes to read */
             qWarning() << "NetworkProtocol::getHash: ERROR: not enough bytes to read";
             if (ok) *ok = false;
@@ -292,7 +330,8 @@ namespace PMP {
         }
         position += 8;
 
-        if (lengthPart > std::numeric_limits<uint>::max()) {
+        if (lengthPart > std::numeric_limits<uint>::max())
+        {
             /* conversion of 64-bit number to platform-specific uint would truncate */
             qWarning() << "NetworkProtocol::getHash: ERROR: length overflow";
             if (ok) *ok = false;
@@ -307,7 +346,8 @@ namespace PMP {
         return FileHash(lengthPart, sha1Data, md5Data);
     }
 
-    qint16 NetworkProtocol::getHashUserDataFieldsMaskForProtocolVersion(int version) {
+    qint16 NetworkProtocol::getHashUserDataFieldsMaskForProtocolVersion(int version)
+    {
         if (version < 3) return 1; /* only previously heard */
 
         return 3; /* previously heard & score */

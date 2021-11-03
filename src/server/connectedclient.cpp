@@ -577,7 +577,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(4 + extensionCount * 16); /* estimate */
-        NetworkUtil::append2Bytes(message, NetworkProtocol::ServerExtensionsMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::ServerExtensionsMessage);
         NetworkUtil::appendByte(message, 0); /* filler */
         NetworkUtil::appendByte(message, extensionCount);
 
@@ -628,7 +629,7 @@ namespace PMP
 
         QByteArray message;
         message.reserve(20);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::PlayerStateMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::PlayerStateMessage);
         NetworkUtil::appendByte(message, stateNum);
         NetworkUtil::appendByte(message, volume);
         NetworkUtil::append4Bytes(message, queueLength);
@@ -651,7 +652,7 @@ namespace PMP
 
         QByteArray message;
         message.reserve(3);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::VolumeChangedMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::VolumeChangedMessage);
         NetworkUtil::appendByte(message, volume);
 
         sendBinaryMessage(message);
@@ -665,7 +666,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(7);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::DynamicModeStatusMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::DynamicModeStatusMessage);
         NetworkUtil::appendByte(message, enabled);
         NetworkUtil::append4BytesSigned(message, noRepetitionSpan);
 
@@ -680,7 +682,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(4 + 4 + loginBytes.length());
-        NetworkUtil::append2Bytes(message, NetworkProtocol::UserPlayingForModeMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::UserPlayingForModeMessage);
         NetworkUtil::appendByte(message, quint8(loginBytes.size()));
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, user);
@@ -698,7 +701,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(8 + 4);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::DynamicModeWaveStatusMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::DynamicModeWaveStatusMessage);
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::appendByte(message, quint8(status));
         NetworkUtil::append4Bytes(message, user);
@@ -723,9 +727,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2);
-        NetworkUtil::append2Bytes(
-            message, NetworkProtocol::ServerEventNotificationMessage
-        );
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::ServerEventNotificationMessage);
         NetworkUtil::appendByte(message, event);
         NetworkUtil::appendByte(message, 0); /* unused */
 
@@ -738,9 +741,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 16);
-        NetworkUtil::append2Bytes(
-            message, NetworkProtocol::ServerInstanceIdentifierMessage
-        );
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::ServerInstanceIdentifierMessage);
         message.append(uuid.toRfc4122());
 
         sendBinaryMessage(message);
@@ -757,7 +759,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 16);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::DatabaseIdentifierMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::DatabaseIdentifierMessage);
         message.append(uuid.toRfc4122());
 
         sendBinaryMessage(message);
@@ -765,19 +768,21 @@ namespace PMP
 
     void ConnectedClient::sendUsersList()
     {
-        QList<UserIdAndLogin> users = _users->getUsers();
+        auto const users = _users->getUsers();
         auto usersCount = users.size();
-        if (usersCount > std::numeric_limits<quint16>::max()) {
+        if (usersCount > std::numeric_limits<quint16>::max())
+        {
             qWarning() << "users count exceeds limit, cannot send list";
             return;
         }
 
         QByteArray message;
         message.reserve(2 + 2 + users.size() * (4 + 1 + 20)); /* only an approximation */
-        NetworkUtil::append2Bytes(message, NetworkProtocol::UsersListMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::UsersListMessage);
         NetworkUtil::append2Bytes(message, static_cast<quint16>(usersCount));
 
-        Q_FOREACH(UserIdAndLogin user, users) {
+        for (auto& user : users)
+        {
             NetworkUtil::append4Bytes(message, user.first); /* ID */
 
             QByteArray loginNameBytes = user.second.toUtf8();
@@ -807,7 +812,7 @@ namespace PMP
 
         QByteArray message;
         message.reserve(10 + entries.length() * 4);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::QueueContentsMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::QueueContentsMessage);
         NetworkUtil::append4Bytes(message, queueLength);
         NetworkUtil::append4Bytes(message, startOffset);
 
@@ -830,7 +835,7 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 1 + 1 + entryCount * 28);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::PlayerHistoryMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::PlayerHistoryMessage);
         NetworkUtil::appendByte(message, 0); /* filler */
         NetworkUtil::appendByte(message, entryCount);
 
@@ -855,7 +860,8 @@ namespace PMP
     {
         QByteArray message;
         message.reserve(10);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::QueueEntryRemovedMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::QueueEntryRemovedMessage);
         NetworkUtil::append4Bytes(message, offset);
         NetworkUtil::append4Bytes(message, queueID);
 
@@ -866,7 +872,7 @@ namespace PMP
     {
         QByteArray message;
         message.reserve(10);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::QueueEntryAddedMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::QueueEntryAddedMessage);
         NetworkUtil::append4Bytes(message, offset);
         NetworkUtil::append4Bytes(message, queueID);
 
@@ -878,8 +884,8 @@ namespace PMP
     {
         QByteArray message;
         message.reserve(16);
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::QueueEntryAdditionConfirmationMessage);
+        NetworkProtocol::append2Bytes(message,
+                                ServerMessageType::QueueEntryAdditionConfirmationMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkUtil::append4Bytes(message, clientReference);
         NetworkUtil::append4Bytes(message, index);
@@ -893,7 +899,7 @@ namespace PMP
     {
         QByteArray message;
         message.reserve(14);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::QueueEntryMovedMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::QueueEntryMovedMessage);
         NetworkUtil::append4Bytes(message, fromOffset);
         NetworkUtil::append4Bytes(message, toOffset);
         NetworkUtil::append4Bytes(message, queueID);
@@ -937,7 +943,7 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + 8 + 2 + 2 + titleData.size() + artistData.size());
-        NetworkUtil::append2Bytes(message, NetworkProtocol::TrackInfoMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::TrackInfoMessage);
         NetworkUtil::append2Bytes(message, trackStatus);
         NetworkUtil::append4Bytes(message, queueID);
 
@@ -982,7 +988,7 @@ namespace PMP
             4 + queueIDs.size() * (2 + 8 + 8 + /*title*/20 + /*artist*/15)
         );
 
-        NetworkUtil::append2Bytes(message, NetworkProtocol::BulkTrackInfoMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::BulkTrackInfoMessage);
         NetworkUtil::append2Bytes(message, (uint)queueIDs.size());
 
         PlayerQueue& queue = _player->queue();
@@ -1058,7 +1064,8 @@ namespace PMP
         QByteArray message;
         message.reserve(4 + queueIDs.size() * (8 + NetworkProtocol::FILEHASH_BYTECOUNT));
 
-        NetworkUtil::append2Bytes(message, NetworkProtocol::BulkQueueEntryHashMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::BulkQueueEntryHashMessage);
         NetworkUtil::append2Bytes(message, (uint)queueIDs.size());
 
         PlayerQueue& queue = _player->queue();
@@ -1090,10 +1097,8 @@ namespace PMP
     {
         QByteArray message;
         message.reserve(2 + 4 + names.size() * (4 + 30)); /* only an approximation */
-        NetworkUtil::append2Bytes(
-            message, NetworkProtocol::PossibleFilenamesForQueueEntryMessage
-        );
-
+        NetworkProtocol::append2Bytes(message,
+                                ServerMessageType::PossibleFilenamesForQueueEntryMessage);
         NetworkUtil::append4Bytes(message, queueID);
 
         Q_FOREACH(QString name, names) {
@@ -1112,7 +1117,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(4 + loginBytes.size() + salt.size());
-        NetworkUtil::append2Bytes(message, NetworkProtocol::NewUserAccountSaltMessage);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::NewUserAccountSaltMessage);
         NetworkUtil::appendByte(message, (quint8)loginBytes.size());
         NetworkUtil::appendByte(message, (quint8)salt.size());
 
@@ -1130,7 +1136,7 @@ namespace PMP
 
         QByteArray message;
         message.reserve(4 + 4 + loginBytes.size() + userSalt.size() + sessionSalt.size());
-        NetworkUtil::append2Bytes(message, NetworkProtocol::UserLoginSaltMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::UserLoginSaltMessage);
         NetworkUtil::append2Bytes(message, 0); /* unused */
         NetworkUtil::appendByte(message, (quint8)loginBytes.size());
         NetworkUtil::appendByte(message, (quint8)userSalt.size());
@@ -1181,8 +1187,8 @@ namespace PMP
                         + NetworkProtocol::FILEHASH_BYTECOUNT * available.size()
                         + NetworkProtocol::FILEHASH_BYTECOUNT * unavailable.size());
 
-        NetworkUtil::append2Bytes(message,
-                        NetworkProtocol::CollectionAvailabilityChangeNotificationMessage);
+        NetworkProtocol::append2Bytes(message,
+                      ServerMessageType::CollectionAvailabilityChangeNotificationMessage);
         NetworkUtil::append2Bytes(message, 0) /* filler */;
         NetworkUtil::append2Bytes(message, available.size());
         NetworkUtil::append2Bytes(message, unavailable.size());
@@ -1223,10 +1229,10 @@ namespace PMP
         QByteArray message;
         message.reserve(2 + 2 + 4 + tracks.size() * bytesEstimatedPerTrack);
 
-        NetworkUtil::append2Bytes(
+        NetworkProtocol::append2Bytes(
             message,
-            isNotification ? NetworkProtocol::CollectionChangeNotificationMessage
-                           : NetworkProtocol::CollectionFetchResponseMessage
+            isNotification ? ServerMessageType::CollectionChangeNotificationMessage
+                           : ServerMessageType::CollectionFetchResponseMessage
         );
         NetworkUtil::append2Bytes(message, tracks.size());
         if (!isNotification) {
@@ -1275,7 +1281,7 @@ namespace PMP
 
         quint16 status = (entry->hadError() ? 1 : 0) | (entry->hadSeek() ? 2 : 0);
 
-        NetworkUtil::append2Bytes(message, NetworkProtocol::NewHistoryEntryMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::NewHistoryEntryMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkUtil::append4Bytes(message, entry->queueID());
         NetworkUtil::append4Bytes(message, entry->user());
@@ -1321,7 +1327,7 @@ namespace PMP
                 + results.size() * (NetworkProtocol::FILEHASH_BYTECOUNT + fieldsSize)
         );
 
-        NetworkUtil::append2Bytes(message, NetworkProtocol::HashUserDataMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::HashUserDataMessage);
         NetworkUtil::append2Bytes(message, results.size());
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkUtil::append2Bytes(message, fields);
@@ -1367,7 +1373,7 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + nameBytes.size());
-        NetworkUtil::append2Bytes(message, NetworkProtocol::ServerNameMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::ServerNameMessage);
         NetworkUtil::appendByte(message, 0); /* unused */
         NetworkUtil::appendByte(message, type);
         message += nameBytes;
@@ -1392,7 +1398,7 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2);
-        NetworkUtil::append2Bytes(message, NetworkProtocol::ServerHealthMessage);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::ServerHealthMessage);
         NetworkUtil::append2Bytes(message, problems);
 
         sendBinaryMessage(message);
@@ -1411,8 +1417,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 2 * ids.size() + 2);
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::CompatibilityInterfaceAnnouncement);
+        NetworkProtocol::append2Bytes(message,
+                                   ServerMessageType::CompatibilityInterfaceAnnouncement);
         NetworkUtil::append2BytesUnsigned(message, ids.size());
 
         for (auto id : ids)
@@ -1442,8 +1448,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4);
-        NetworkUtil::append2Bytes(message,
-                    NetworkProtocol::CompatibilityInterfaceLanguageSelectionConfirmation);
+        NetworkProtocol::append2Bytes(message,
+                  ServerMessageType::CompatibilityInterfaceLanguageSelectionConfirmation);
         NetworkUtil::append2Bytes(message, 0); /* unused */
         NetworkUtil::append4Bytes(message, clientReference);
         NetworkUtil::appendByte(message, 0); /* unused */
@@ -1490,8 +1496,8 @@ namespace PMP
                         + interfaceCaptionBytes.size()
                         + interfaceDescriptionBytes.size()
                         + actionIds.size() * (6 + 26 /*estimate*/));
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::CompatibilityInterfaceDefinition);
+        NetworkProtocol::append2Bytes(message,
+                                     ServerMessageType::CompatibilityInterfaceDefinition);
         NetworkUtil::append2BytesUnsigned(message, interfaceId);
         NetworkUtil::append2BytesUnsigned(message, encodedState);
         NetworkUtil::append2BytesUnsigned(message, actionIds.size());
@@ -1543,8 +1549,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 2 + 2);
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::CompatibilityInterfaceStateUpdate);
+        NetworkProtocol::append2Bytes(message,
+                                    ServerMessageType::CompatibilityInterfaceStateUpdate);
         NetworkUtil::append2Bytes(message, 0); // padding
         NetworkUtil::append2BytesUnsigned(message, interfaceId);
         NetworkUtil::append2Bytes(message, encodedState);
@@ -1571,8 +1577,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 2 + 1 + 1);
-        NetworkUtil::append2Bytes(message,
-                                NetworkProtocol::CompatibilityInterfaceActionStateUpdate);
+        NetworkProtocol::append2Bytes(message,
+                              ServerMessageType::CompatibilityInterfaceActionStateUpdate);
         NetworkUtil::append2BytesUnsigned(message, interfaceId);
         NetworkUtil::append2BytesUnsigned(message, actionId);
         NetworkUtil::appendByte(message, 0); // filler
@@ -1606,8 +1612,8 @@ namespace PMP
         QByteArray message;
         message.reserve(2 + 2 + 2 + 2 + 4 + interfaceCaptionBytes.size()
                                           + interfaceDescriptionBytes.size());
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::CompatibilityInterfaceTextUpdate);
+        NetworkProtocol::append2Bytes(message,
+                                     ServerMessageType::CompatibilityInterfaceTextUpdate);
         NetworkUtil::append2BytesUnsigned(message, interfaceId);
         NetworkUtil::append2BytesUnsigned(message, interfaceCaptionBytes.size());
         NetworkUtil::append2BytesUnsigned(message, interfaceDescriptionBytes.size());
@@ -1646,8 +1652,8 @@ namespace PMP
 
         QByteArray message;
         message.reserve(2 + 2 + 2 + 2 + 4 + actionCaptionBytes.size());
-        NetworkUtil::append2Bytes(message,
-                                  NetworkProtocol::CompatibilityInterfaceActionTextUpdate);
+        NetworkProtocol::append2Bytes(message,
+                               ServerMessageType::CompatibilityInterfaceActionTextUpdate);
         NetworkUtil::append2BytesUnsigned(message, interfaceId);
         NetworkUtil::append2BytesUnsigned(message, actionId);
         NetworkUtil::append2BytesUnsigned(message, actionCaptionBytes.size());
@@ -1663,30 +1669,31 @@ namespace PMP
 
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
-        sendResultMessage(NetworkProtocol::NoError, clientReference, intData);
+        sendResultMessage(ResultMessageErrorCode::NoError, clientReference, intData);
     }
 
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData,
                                              QByteArray const& blobData)
     {
-        sendResultMessage(NetworkProtocol::NoError, clientReference, intData, blobData);
+        sendResultMessage(ResultMessageErrorCode::NoError, clientReference, intData,
+                          blobData);
     }
 
-    void ConnectedClient::sendResultMessage(NetworkProtocol::ErrorType errorType,
+    void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
                                             quint32 clientReference, quint32 intData)
     {
         QByteArray data; /* empty data */
         sendResultMessage(errorType, clientReference, intData, data);
     }
 
-    void ConnectedClient::sendResultMessage(NetworkProtocol::ErrorType errorType,
+    void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
                                             quint32 clientReference, quint32 intData,
                                             QByteArray const& blobData)
     {
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4 + blobData.size());
-        NetworkUtil::append2Bytes(message, NetworkProtocol::SimpleResultMessage);
-        NetworkUtil::append2Bytes(message, errorType);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::SimpleResultMessage);
+        NetworkProtocol::append2Bytes(message, errorType);
         NetworkUtil::append4Bytes(message, clientReference);
         NetworkUtil::append4Bytes(message, intData);
 
@@ -1697,8 +1704,8 @@ namespace PMP
 
     void ConnectedClient::sendNonFatalInternalErrorResultMessage(quint32 clientReference)
     {
-        sendResultMessage(
-                        NetworkProtocol::NonFatalInternalServerError, clientReference, 0);
+        sendResultMessage(ResultMessageErrorCode::NonFatalInternalServerError,
+                          clientReference, 0);
     }
 
     void ConnectedClient::serverHealthChanged(bool databaseUnavailable)
@@ -1726,7 +1733,7 @@ namespace PMP
         Q_UNUSED(actionId)
 
         // TODO : make the error more specific
-        sendResultMessage(NetworkProtocol::UnknownError, clientReference, 0);
+        sendResultMessage(ResultMessageErrorCode::UnknownError, clientReference, 0);
     }
 
     void ConnectedClient::volumeChanged(int volume)
@@ -1980,24 +1987,22 @@ namespace PMP
             handleExtensionMessage(extensionId, extensionMessageType, message);
         }
         else {
-            auto clientMessageType =
-                static_cast<NetworkProtocol::ClientMessageType>(messageType);
+            auto clientMessageType = static_cast<ClientMessageType>(messageType);
 
             handleStandardBinaryMessage(clientMessageType, message);
         }
     }
 
-    void ConnectedClient::handleStandardBinaryMessage(
-                                           NetworkProtocol::ClientMessageType messageType,
-                                           QByteArray const& message)
+    void ConnectedClient::handleStandardBinaryMessage(ClientMessageType messageType,
+                                                      QByteArray const& message)
     {
         qint32 messageLength = message.length();
 
         switch (messageType) {
-        case NetworkProtocol::ClientExtensionsMessage:
+        case ClientMessageType::ClientExtensionsMessage:
             parseClientProtocolExtensionsMessage(message);
             break;
-        case NetworkProtocol::SingleByteActionMessage:
+        case ClientMessageType::SingleByteActionMessage:
         {
             if (messageLength != 3) {
                 return; /* invalid message */
@@ -2007,7 +2012,7 @@ namespace PMP
             handleSingleByteAction(actionType);
         }
             break;
-        case NetworkProtocol::TrackInfoRequestMessage:
+        case ClientMessageType::TrackInfoRequestMessage:
         {
             if (messageLength != 6) {
                 return; /* invalid message */
@@ -2024,7 +2029,7 @@ namespace PMP
             sendQueueEntryInfoMessage(queueID);
         }
             break;
-        case NetworkProtocol::BulkTrackInfoRequestMessage:
+        case ClientMessageType::BulkTrackInfoRequestMessage:
         {
             if (messageLength < 6 || (messageLength - 2) % 4 != 0) {
                 return; /* invalid message */
@@ -2049,7 +2054,7 @@ namespace PMP
             sendQueueEntryInfoMessage(QIDs);
         }
             break;
-        case NetworkProtocol::BulkQueueEntryHashRequestMessage:
+        case ClientMessageType::BulkQueueEntryHashRequestMessage:
         {
             if (messageLength < 8 || (messageLength - 4) % 4 != 0) {
                 return; /* invalid message */
@@ -2074,7 +2079,7 @@ namespace PMP
             sendQueueEntryHashMessage(QIDs);
         }
             break;
-        case NetworkProtocol::QueueFetchRequestMessage:
+        case ClientMessageType::QueueFetchRequestMessage:
         {
             if (messageLength != 7) {
                 return; /* invalid message */
@@ -2091,10 +2096,10 @@ namespace PMP
             sendQueueContentMessage(startOffset, length);
         }
             break;
-        case NetworkProtocol::QueueEntryRemovalRequestMessage:
+        case ClientMessageType::QueueEntryRemovalRequestMessage:
             parseQueueEntryRemovalRequest(message);
             break;
-        case NetworkProtocol::GeneratorNonRepetitionChangeMessage:
+        case ClientMessageType::GeneratorNonRepetitionChangeMessage:
         {
             if (messageLength != 6) {
                 return; /* invalid message */
@@ -2113,7 +2118,7 @@ namespace PMP
             _serverInterface->setTrackRepetitionAvoidanceSeconds(intervalSeconds);
         }
             break;
-        case NetworkProtocol::PossibleFilenamesForQueueEntryRequestMessage:
+        case ClientMessageType::PossibleFilenamesForQueueEntryRequestMessage:
         {
             if (messageLength != 6) {
                 return; /* invalid message */
@@ -2152,7 +2157,7 @@ namespace PMP
             sendPossibleTrackFilenames(queueID, filenames);
         }
             break;
-        case NetworkProtocol::PlayerSeekRequestMessage:
+        case ClientMessageType::PlayerSeekRequestMessage:
         {
             if (messageLength != 14) {
                 return; /* invalid message */
@@ -2175,7 +2180,7 @@ namespace PMP
             _serverInterface->seekTo(position);
         }
             break;
-        case NetworkProtocol::QueueEntryMoveRequestMessage:
+        case ClientMessageType::QueueEntryMoveRequestMessage:
         {
             if (messageLength != 8) {
                 return; /* invalid message */
@@ -2192,7 +2197,7 @@ namespace PMP
             _serverInterface->moveQueueEntry(queueID, move);
         }
             break;
-        case NetworkProtocol::InitiateNewUserAccountMessage:
+        case ClientMessageType::InitiateNewUserAccountMessage:
         {
             if (messageLength <= 8) {
                 return; /* invalid message */
@@ -2226,7 +2231,7 @@ namespace PMP
             }
         }
             break;
-        case NetworkProtocol::FinishNewUserAccountMessage:
+        case ClientMessageType::FinishNewUserAccountMessage:
         {
             if (messageLength <= 8) {
                 return; /* invalid message */
@@ -2241,7 +2246,7 @@ namespace PMP
 
             if (messageLength - 8 <= loginLength + saltLength) {
                 sendResultMessage(
-                    NetworkProtocol::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
                 );
                 return; /* invalid message */
             }
@@ -2254,7 +2259,7 @@ namespace PMP
                 || saltFromClient != _saltForUserAccountRegistering)
             {
                 sendResultMessage(
-                    NetworkProtocol::UserAccountRegistrationMismatch,
+                    ResultMessageErrorCode::UserAccountRegistrationMismatch,
                     clientReference, 0, loginBytes
                 );
                 return;
@@ -2273,7 +2278,7 @@ namespace PMP
 
             if (hashedPasswordFromClient.size() != hashTest.size()) {
                 sendResultMessage(
-                    NetworkProtocol::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
                 );
                 return;
             }
@@ -2290,7 +2295,7 @@ namespace PMP
             );
         }
             break;
-        case NetworkProtocol::InitiateLoginMessage:
+        case ClientMessageType::InitiateLoginMessage:
         {
             if (messageLength <= 8) {
                 return; /* invalid message */
@@ -2307,7 +2312,8 @@ namespace PMP
                      << clientReference;
 
             if (isLoggedIn()) { /* already logged in */
-                sendResultMessage(NetworkProtocol::AlreadyLoggedIn, clientReference, 0);
+                sendResultMessage(ResultMessageErrorCode::AlreadyLoggedIn,
+                                  clientReference, 0);
                 return;
             }
 
@@ -2319,7 +2325,7 @@ namespace PMP
 
             if (!userLookup) { /* user does not exist */
                 sendResultMessage(
-                    NetworkProtocol::InvalidUserAccountName, clientReference, 0,
+                    ResultMessageErrorCode::InvalidUserAccountName, clientReference, 0,
                     loginBytes
                 );
                 return;
@@ -2334,7 +2340,7 @@ namespace PMP
             sendUserLoginSaltMessage(login, userSalt, sessionSalt);
         }
             break;
-        case NetworkProtocol::FinishLoginMessage:
+        case ClientMessageType::FinishLoginMessage:
         {
             if (messageLength <= 12) {
                 return; /* invalid message */
@@ -2354,7 +2360,7 @@ namespace PMP
                     + hashedPasswordLength)
             {
                 sendResultMessage(
-                    NetworkProtocol::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
                 );
                 return; /* invalid message */
             }
@@ -2367,7 +2373,7 @@ namespace PMP
 
             if (!userLookup) { /* user does not exist */
                 sendResultMessage(
-                    NetworkProtocol::InvalidUserAccountName, clientReference, 0,
+                    ResultMessageErrorCode::InvalidUserAccountName, clientReference, 0,
                     loginBytes
                 );
                 return;
@@ -2385,7 +2391,7 @@ namespace PMP
                 || sessionSaltFromClient != _sessionSaltForUserLoggingIn)
             {
                 sendResultMessage(
-                    NetworkProtocol::UserAccountLoginMismatch,
+                    ResultMessageErrorCode::UserAccountLoginMismatch,
                     clientReference, 0, loginBytes
                 );
                 return;
@@ -2408,13 +2414,12 @@ namespace PMP
                 sendSuccessMessage(clientReference, user.id);
             }
             else {
-                sendResultMessage(
-                    NetworkProtocol::UserLoginAuthenticationFailed, clientReference, 0
-                );
+                sendResultMessage(ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                                  clientReference, 0);
             }
         }
             break;
-        case NetworkProtocol::CollectionFetchRequestMessage:
+        case ClientMessageType::CollectionFetchRequestMessage:
         {
             if (messageLength != 8) {
                 return; /* invalid message */
@@ -2424,41 +2429,43 @@ namespace PMP
 
             if (!isLoggedIn()) {
                 /* client needs to be authenticated for this */
-                sendResultMessage(NetworkProtocol::NotLoggedIn, clientReference, 0);
+                sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference,
+                                  0);
                 return;
             }
 
             handleCollectionFetchRequest(clientReference);
         }
             break;
-        case NetworkProtocol::AddHashToEndOfQueueRequestMessage:
-        case NetworkProtocol::AddHashToFrontOfQueueRequestMessage:
+        case ClientMessageType::AddHashToEndOfQueueRequestMessage:
+        case ClientMessageType::AddHashToFrontOfQueueRequestMessage:
             parseAddHashToQueueRequest(message, messageType);
             break;
-        case NetworkProtocol::HashUserDataRequestMessage:
+        case ClientMessageType::HashUserDataRequestMessage:
             parseHashUserDataRequest(message);
             break;
-        case NetworkProtocol::InsertHashIntoQueueRequestMessage:
+        case ClientMessageType::InsertHashIntoQueueRequestMessage:
             parseInsertHashIntoQueueRequest(message);
             break;
-        case NetworkProtocol::PlayerHistoryRequestMessage:
+        case ClientMessageType::PlayerHistoryRequestMessage:
             parsePlayerHistoryRequest(message);
             break;
-        case NetworkProtocol::QueueEntryDuplicationRequestMessage:
+        case ClientMessageType::QueueEntryDuplicationRequestMessage:
             parseQueueEntryDuplicationRequest(message);
             break;
-        case NetworkProtocol::CompatibilityInterfaceLanguageSelectionRequest:
+        case ClientMessageType::CompatibilityInterfaceLanguageSelectionRequest:
             parseCompatibilityInterfaceLanguageSelectionRequest(message);
             break;
-        case NetworkProtocol::CompatibilityInterfaceDefinitionsRequest:
+        case ClientMessageType::CompatibilityInterfaceDefinitionsRequest:
             parseCompatibilityInterfaceDefinitionsRequest(message);
             break;
-        case NetworkProtocol::CompatibilityInterfaceTriggerActionRequest:
+        case ClientMessageType::CompatibilityInterfaceTriggerActionRequest:
             parseCompatibilityInterfaceTriggerActionRequest(message);
             break;
         default:
-            qDebug() << "received unknown binary message type" << messageType
-                     << " with length" << messageLength;
+            qDebug() << "received unknown binary message type"
+                     << static_cast<int>(messageType)
+                     << "with length" << messageLength;
             break; /* unknown message type */
         }
     }
@@ -2544,7 +2551,7 @@ namespace PMP
     }
 
     void ConnectedClient::parseAddHashToQueueRequest(const QByteArray& message,
-                                           NetworkProtocol::ClientMessageType messageType)
+                                                     ClientMessageType messageType)
     {
         qDebug() << "received 'add filehash to queue' request";
 
@@ -2563,10 +2570,12 @@ namespace PMP
 
         qDebug() << " request contains hash:" << hash.dumpToString();
 
-        if (messageType == NetworkProtocol::AddHashToEndOfQueueRequestMessage) {
+        if (messageType == ClientMessageType::AddHashToEndOfQueueRequestMessage)
+        {
             _serverInterface->enqueue(hash);
         }
-        else if (messageType == NetworkProtocol::AddHashToFrontOfQueueRequestMessage) {
+        else if (messageType == ClientMessageType::AddHashToFrontOfQueueRequestMessage)
+        {
             _serverInterface->insertAtFront(hash);
         }
         else {
@@ -2638,7 +2647,8 @@ namespace PMP
         qDebug() << " client ref:" << clientReference << "; " << "QID:" << queueID;
 
         if (queueID <= 0) {
-            sendResultMessage(NetworkProtocol::QueueIdNotFound, clientReference, queueID);
+            sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
+                              queueID);
             return; /* invalid queue ID */
         }
 
@@ -2647,7 +2657,8 @@ namespace PMP
         auto index = queue.findIndex(queueID);
         if (index < 0)
         {
-            sendResultMessage(NetworkProtocol::QueueIdNotFound, clientReference, queueID);
+            sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
+                              queueID);
             return; /* not found; */
         }
 
@@ -2763,7 +2774,8 @@ namespace PMP
         else
         {
             qDebug() << "sending error because no language could be selected";
-            sendResultMessage(NetworkProtocol::InvalidLanguage, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::InvalidLanguage, clientReference,
+                              0);
         }
     }
 
@@ -2835,14 +2847,14 @@ namespace PMP
         if (_compatibilityUiLanguage == UserInterfaceLanguage::Invalid)
         {
             qDebug() << "cannot trigger the action because language is not set";
-            sendResultMessage(NetworkProtocol::LanguageNotSet, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::LanguageNotSet, clientReference, 0);
             return;
         }
 
         auto* controller = _compatibilityUis->getControllerById(interfaceId);
         if (!controller)
         {
-            sendResultMessage(NetworkProtocol::InvalidCompatibilityInterfaceId,
+            sendResultMessage(ResultMessageErrorCode::InvalidCompatibilityInterfaceId,
                               clientReference, interfaceId);
             return;
         }

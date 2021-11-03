@@ -61,6 +61,9 @@ namespace PMP {
                 auto evaluator = [](QDateTime prevHeard) { return !prevHeard.isValid(); };
                 return trackSatisfiesLastHeardDateCriterium(track, evaluator);
             }
+            case TrackCriterium::LastHeardNotInLast1000Days:
+                return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 1000);
+
             case TrackCriterium::LastHeardNotInLast365Days:
                 return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 365);
 
@@ -327,13 +330,16 @@ namespace PMP {
         markEverythingAsChanged();
     }
 
-    int SortedCollectionTableModel::highlightColorIndex() const {
+    int SortedCollectionTableModel::highlightColorIndex() const
+    {
         return _highlightColorIndex;
     }
 
-    bool SortedCollectionTableModel::usesUserData(TrackCriterium mode) {
+    bool SortedCollectionTableModel::usesUserData(TrackCriterium mode)
+    {
         switch (mode) {
             case TrackCriterium::NeverHeard:
+            case TrackCriterium::LastHeardNotInLast1000Days:
             case TrackCriterium::LastHeardNotInLast365Days:
             case TrackCriterium::LastHeardNotInLast180Days:
             case TrackCriterium::LastHeardNotInLast90Days:
