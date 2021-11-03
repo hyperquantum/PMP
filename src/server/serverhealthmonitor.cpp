@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,23 +19,26 @@
 
 #include "serverhealthmonitor.h"
 
-namespace PMP {
-
+namespace PMP
+{
     ServerHealthMonitor::ServerHealthMonitor(QObject* parent)
      : QObject(parent), _databaseUnavailable(false)
     {
         //
     }
 
-    bool ServerHealthMonitor::anyProblem() const {
+    bool ServerHealthMonitor::anyProblem() const
+    {
         return _databaseUnavailable;
     }
 
-    bool ServerHealthMonitor::databaseUnavailable() const {
+    bool ServerHealthMonitor::databaseUnavailable() const
+    {
         return _databaseUnavailable;
     }
 
-    void ServerHealthMonitor::setDatabaseUnavailable() {
+    void ServerHealthMonitor::setDatabaseUnavailable()
+    {
         if (_databaseUnavailable) return;
 
         _databaseUnavailable = true;

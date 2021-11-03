@@ -23,18 +23,20 @@
 #include "compatibilityinterfacecontrollerimpl.h"
 #include "currenttrackmonitorimpl.h"
 #include "dynamicmodecontrollerimpl.h"
-#include "serverconnection.h"
+#include "generalcontrollerimpl.h"
 #include "playercontrollerimpl.h"
 #include "queuecontrollerimpl.h"
 #include "queueentryinfofetcher.h"
 #include "queuemonitor.h"
+#include "serverconnection.h"
 #include "userdatafetcher.h"
 
-namespace PMP {
-
+namespace PMP
+{
     ClientServerInterface::ClientServerInterface(ServerConnection* connection)
      : QObject(connection),
        _connection(connection),
+       _generalController(nullptr),
        _simplePlayerController(nullptr),
        _currentTrackMonitor(nullptr),
        _queueController(nullptr),
@@ -70,6 +72,14 @@ namespace PMP {
             },
             Qt::QueuedConnection
         );
+    }
+
+    GeneralController& ClientServerInterface::generalController()
+    {
+        if (!_generalController)
+            _generalController = new GeneralControllerImpl(_connection);
+
+        return *_generalController;
     }
 
     PlayerController& ClientServerInterface::playerController()
@@ -167,10 +177,5 @@ namespace PMP {
     QString ClientServerInterface::userLoggedInName() const
     {
         return _connection->userLoggedInName();
-    }
-
-    void ClientServerInterface::shutdownServer()
-    {
-        _connection->shutdownServer();
     }
 }

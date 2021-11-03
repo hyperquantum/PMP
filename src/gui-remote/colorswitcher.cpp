@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,12 +21,13 @@
 
 #include "colors.h"
 
+#include <QFontMetricsF>
 #include <QMouseEvent>
 #include <QPainter>
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     ColorSwitcher::ColorSwitcher()
      : _colors({ QColor(Qt::white) }),
        _colorIndex(0)
@@ -35,16 +36,20 @@ namespace PMP {
         setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Fixed);
     }
 
-    void ColorSwitcher::setColors(QVector<QColor> colors) {
+    void ColorSwitcher::setColors(QVector<QColor> colors)
+    {
         setColors(colors, 0);
     }
 
-    void ColorSwitcher::setColors(QVector<QColor> colors, int colorIndex) {
-        if (colors.empty()) {
+    void ColorSwitcher::setColors(QVector<QColor> colors, int colorIndex)
+    {
+        if (colors.empty())
+        {
             _colors = { QColor(Qt::white) };
             _colorIndex = 0;
         }
-        else {
+        else
+        {
             _colors = colors;
             _colorIndex = qBound(0, colorIndex, colors.size() - 1);
         }
@@ -54,11 +59,13 @@ namespace PMP {
         Q_EMIT colorIndexChanged();
     }
 
-    int ColorSwitcher::colorIndex() const {
+    int ColorSwitcher::colorIndex() const
+    {
         return _colorIndex;
     }
 
-    void ColorSwitcher::setColorIndex(int colorIndex) {
+    void ColorSwitcher::setColorIndex(int colorIndex)
+    {
         if (_colorIndex == colorIndex)
             return;
 
@@ -69,29 +76,36 @@ namespace PMP {
         Q_EMIT colorIndexChanged();
     }
 
-    QSize ColorSwitcher::minimumSizeHint() const {
-        return QSize(16, 16);
+    QSize ColorSwitcher::minimumSizeHint() const
+    {
+        auto size = desiredSize();
+
+        return QSize(size, size);
     }
 
-    QSize ColorSwitcher::sizeHint() const {
-        return QSize(18, 18);
+    QSize ColorSwitcher::sizeHint() const
+    {
+        return minimumSizeHint();
     }
 
-    void ColorSwitcher::paintEvent(QPaintEvent* event) {
+    void ColorSwitcher::paintEvent(QPaintEvent* event)
+    {
         Q_UNUSED(event)
 
         QPainter painter(this);
 
-        QRect rect = this->rect();
+        QRect rect = this->rect().adjusted(+1, +1, -1, -1);
 
         painter.fillRect(rect, QBrush(_colors[_colorIndex]));
 
         painter.setPen(QPen(Colors::instance().widgetBorder));
-        painter.drawRect(rect.adjusted(0, 0, -1, -1));
+        painter.drawRect(rect);
     }
 
-    void ColorSwitcher::mousePressEvent(QMouseEvent* event) {
-        if (event->button() == Qt::LeftButton) {
+    void ColorSwitcher::mousePressEvent(QMouseEvent* event)
+    {
+        if (event->button() == Qt::LeftButton)
+        {
             _colorIndex++;
             if (_colorIndex >= _colors.size())
                 _colorIndex = 0;
@@ -100,5 +114,12 @@ namespace PMP {
 
             Q_EMIT colorIndexChanged();
         }
+    }
+
+    qreal ColorSwitcher::desiredSize() const
+    {
+        QFontMetricsF metrics { font() };
+
+        return metrics.height() * 0.8;
     }
 }

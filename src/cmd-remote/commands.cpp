@@ -21,100 +21,47 @@
 
 #include "common/clientserverinterface.h"
 #include "common/currenttrackmonitor.h"
+#include "common/generalcontroller.h"
 #include "common/playercontroller.h"
 #include "common/queuecontroller.h"
 #include "common/queueentryinfofetcher.h"
 #include "common/queuemonitor.h"
 #include "common/util.h"
 
-#include <QtDebug>
-#include <QTimer>
+namespace PMP
+{
+    /* ===== ReloadServerSettingsCommand ===== */
 
-namespace PMP {
-
-    /* ===== CommandBase ===== */
-
-    void CommandBase::execute(ClientServerInterface* clientServerInterface)
-    {
-        setUp(clientServerInterface);
-
-        start(clientServerInterface);
-        qDebug() << "CommandBase: called start()";
-
-        // initial quick check
-        QTimer::singleShot(0, this, &CommandBase::listenerSlot);
-
-        // set up timeout timer
-        QTimer::singleShot(
-            1000, this,
-            [this]()
-            {
-                if (!_finishedOrFailed)
-                {
-                    qWarning() << "CommandBase: timeout triggered";
-                    setCommandExecutionFailed(3, "Command timed out");
-                }
-            }
-        );
-    }
-
-    CommandBase::CommandBase()
-     : _currentStep(0),
-       _stepDelayMilliseconds(0),
-       _finishedOrFailed(false)
+    ReloadServerSettingsCommand::ReloadServerSettingsCommand()
     {
         //
     }
 
-    void CommandBase::addStep(std::function<bool ()> step)
+    bool ReloadServerSettingsCommand::requiresAuthentication() const
     {
-        _steps.append(step);
+        return true;
     }
 
-    void CommandBase::setStepDelay(int milliseconds)
+    void ReloadServerSettingsCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        _stepDelayMilliseconds = milliseconds;
+        auto* generalController = &clientServerInterface->generalController();
+
+        connect(
+            generalController, &GeneralController::serverSettingsReloadResultEvent,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId != _requestId)
+                    return; /* not for us */
+
+                setCommandExecutionResult(errorCode);
+            }
+        );
     }
 
-    void CommandBase::setCommandExecutionSuccessful(QString output)
+    void ReloadServerSettingsCommand::start(ClientServerInterface* clientServerInterface)
     {
-        qDebug() << "CommandBase: command reported success";
-        _finishedOrFailed = true;
-        Q_EMIT executionSuccessful(output);
-    }
-
-    void CommandBase::setCommandExecutionFailed(int resultCode, QString errorOutput)
-    {
-        qDebug() << "CommandBase: command reported failure, code:" << resultCode;
-        _finishedOrFailed = true;
-        Q_EMIT executionFailed(resultCode, errorOutput);
-    }
-
-    void CommandBase::listenerSlot()
-    {
-        if (_finishedOrFailed)
-            return;
-
-        bool canAdvance = _steps[_currentStep]();
-
-        if (_finishedOrFailed)
-            return;
-
-        if (!canAdvance)
-            return;
-
-        _currentStep++;
-
-        if (_currentStep >= _steps.size())
-        {
-            qWarning() << "Step number" << _currentStep
-                       << "should be less than" << _steps.size();
-            Q_EMIT executionFailed(3, "internal error");
-            return;
-        }
-
-        // we advanced, so try the next step right now, don't wait for signals
-        QTimer::singleShot(_stepDelayMilliseconds, this, &CommandBase::listenerSlot);
+        _requestId = clientServerInterface->generalController().reloadServerSettings();
     }
 
     /* ===== PlayCommand ===== */
@@ -500,10 +447,30 @@ namespace PMP {
         return true;
     }
 
-    void ShutdownCommand::execute(ClientServerInterface* clientServerInterface)
+    bool ShutdownCommand::willCauseDisconnect() const
     {
-        clientServerInterface->shutdownServer();
-        Q_EMIT executionSuccessful();
+        return true;
+    }
+
+    void ShutdownCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        connect(clientServerInterface, &ClientServerInterface::connectedChanged,
+                this, &ShutdownCommand::listenerSlot);
+
+        addStep(
+            [this, clientServerInterface]() -> bool
+            {
+                if (!clientServerInterface->connected())
+                    setCommandExecutionSuccessful();
+
+                return false;
+            }
+        );
+    }
+
+    void ShutdownCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        clientServerInterface->generalController().shutdownServer();
     }
 
     /* ===== GetVolumeCommand ===== */
@@ -733,5 +700,4 @@ namespace PMP {
     {
         clientServerInterface->queueController().moveQueueEntry(_queueId, _moveOffset);
     }
-
 }

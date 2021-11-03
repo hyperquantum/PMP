@@ -69,6 +69,9 @@ namespace PMP
 
         void serverHealthChanged(bool databaseUnavailable);
 
+        void serverSettingsReloadResultEvent(uint clientReference,
+                                             ResultMessageErrorCode errorCode);
+
         void compatibilityInterfaceActionSucceeded(int interfaceId, int actionId,
                                                    uint clientReference);
         void compatibilityInterfaceActionFailed(int interfaceId, int actionId,
@@ -131,7 +134,7 @@ namespace PMP
         void handleBinaryModeSwitchRequest();
         void sendBinaryMessage(QByteArray const& message);
         void sendProtocolExtensionsMessage();
-        void sendEventNotificationMessage(quint8 event);
+        void sendEventNotificationMessage(ServerEventCode eventCode);
         void sendServerInstanceIdentifier();
         void sendDatabaseIdentifier();
         void sendUsersList();
@@ -168,9 +171,10 @@ namespace PMP
                                        QVector<CollectionTrackInfo> tracks);
         void sendNewHistoryEntryMessage(QSharedPointer<PlayerHistoryEntry> entry);
         void sendQueueHistoryMessage(int limit);
-        void sendServerNameMessage(quint8 type, QString name);
+        void sendServerNameMessage();
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
+        void sendServerClockMessage();
         void sendCompatibilityInterfacesAnnouncement();
         void sendCompatibilityInterfaceLanguageSelectionConfirmation(
                                                           quint32 clientReference,
@@ -189,9 +193,13 @@ namespace PMP
         void registerClientProtocolExtensions(
                            const QVector<NetworkProtocol::ProtocolExtension>& extensions);
         void handleSingleByteAction(quint8 action);
+        void handleParameterlessAction(ParameterlessActionCode code,
+                                       quint32 clientReference);
         void handleCollectionFetchRequest(uint clientReference);
 
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
+        void parseSingleByteActionMessage(QByteArray const& message);
+        void parseParameterlessActionMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         ClientMessageType messageType);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);

@@ -27,8 +27,8 @@
 
 #include <algorithm>
 
-namespace PMP {
-
+namespace PMP
+{
     const int RandomTracksSource::UPCOMING_NOTIFY_BATCH_COUNT = 10;
     const int RandomTracksSource::UPCOMING_NOTIFY_TARGET_COUNT = 250;
 
@@ -61,7 +61,8 @@ namespace PMP {
 
     FileHash RandomTracksSource::takeTrack()
     {
-        if (_unusedHashes.isEmpty()) {
+        if (_unusedHashes.isEmpty())
+        {
             /* start over */
             markUsedTracksAsUnusedAgain();
 
@@ -78,11 +79,13 @@ namespace PMP {
         auto unusedHashCount = _unusedHashes.size();
         auto usedHashCount = _hashesStatus.size() - unusedHashCount - takenCount;
 
-        if (_notifiedCount > 0) {
+        if (_notifiedCount > 0)
+        {
             _notifiedCount--;
         }
 
-        if (unusedHashCount % 10 == 0) {
+        if (unusedHashCount % 10 == 0)
+        {
             qDebug() << "unused tracks list down to" << unusedHashCount
                      << "elements; taken count:" << takenCount
                      << "; used count:" << usedHashCount
@@ -97,7 +100,8 @@ namespace PMP {
     void RandomTracksSource::putBackUsedTrack(const FileHash& hash)
     {
         auto status = getTrackStatus(hash);
-        if (status != TrackStatus::Taken) {
+        if (status != TrackStatus::Taken)
+        {
             qWarning() << "track status for hash" << hash << "expected to be Taken but is"
                        << int(status);
             return;
@@ -110,7 +114,8 @@ namespace PMP {
     void RandomTracksSource::putBackUnusedTrack(const FileHash& hash)
     {
         auto status = getTrackStatus(hash);
-        if (status != TrackStatus::Taken) {
+        if (status != TrackStatus::Taken)
+        {
             qWarning() << "track status for hash" << hash << "expected to be Taken but is"
                        << int(status);
             return;
@@ -144,7 +149,8 @@ namespace PMP {
     void RandomTracksSource::hashBecameAvailable(FileHash hash)
     {
         auto status = getTrackStatus(hash);
-        switch (status) {
+        switch (status)
+        {
             case TrackStatus::Unknown:
                 addNewHashToUnusedList(hash);
                 return;
@@ -211,13 +217,15 @@ namespace PMP {
          * appending the new hash and then swapping it with the element at the target
          * index. We can do this because the list is in random order anyway. */
         _unusedHashes.append(hash);
-        if (randomIndex < endIndex) {
+        if (randomIndex < endIndex)
+        {
             std::swap(_unusedHashes[randomIndex], _unusedHashes[endIndex]);
 
             _notifiedCount = qMin(_notifiedCount, endIndex - randomIndex);
             Q_EMIT upcomingTrackNotification(_unusedHashes[endIndex]);
         }
-        else {
+        else
+        {
             _notifiedCount++;
             Q_EMIT upcomingTrackNotification(_unusedHashes[endIndex]);
         }
@@ -229,7 +237,8 @@ namespace PMP {
     {
         qDebug() << "rebuilding list of unused tracks";
 
-        for (auto it = _hashesStatus.begin(); it != _hashesStatus.end(); ++it) {
+        for (auto it = _hashesStatus.begin(); it != _hashesStatus.end(); ++it)
+        {
             if (it.value() != TrackStatus::Used)
                 continue;
 

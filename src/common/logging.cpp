@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -37,22 +37,26 @@ namespace PMP {
 
     /* ========================== LoggerBase ========================== */
 
-    class LoggerBase {
+    class LoggerBase
+    {
     protected:
         static QString stripSourcefilePath(QString file);
     };
 
     /*! transform "/long/path/name/src/common/xyz.cpp" to "common/xyz.cpp" */
-    QString LoggerBase::stripSourcefilePath(QString file) {
+    QString LoggerBase::stripSourcefilePath(QString file)
+    {
         /* file refers to a source file not present on the machine we are running on, */
         /* so we will use string operations instead of QFileInfo */
 
         /* writing a loop ourselves is faster than calling lastIndexOf() multiple times */
         int lastOne = -1;
-        for (int i = file.size() - 1; i >= 0; --i) {
+        for (int i = file.size() - 1; i >= 0; --i)
+        {
             if (file[i] != '/' && file[i] != '\\') continue; /* not a separator */
 
-            if (lastOne >= 0) {
+            if (lastOne >= 0)
+            {
                 /* we found the second last one */
                 return file.mid(i + 1);
             }
@@ -66,7 +70,8 @@ namespace PMP {
 
     /* ========================== ConsoleLogger ========================== */
 
-    class ConsoleLogger : LoggerBase {
+    class ConsoleLogger : LoggerBase
+    {
     public:
         ConsoleLogger() : _mutex(QMutex::Recursive), _out(stdout) {}
 
@@ -87,7 +92,7 @@ namespace PMP {
         QString output = generateOutputText(type, context, msg);
 
         QMutexLocker lock(&_mutex);
-        _out << output << flush;
+        _out << output << Qt::flush;
     }
 
     QString ConsoleLogger::generateOutputText(QtMsgType type,
@@ -100,8 +105,8 @@ namespace PMP {
         QString locationText =
             sourcefile % ":" % QString::number(context.line).leftJustified(6, '-');
 
-        QString output;
-        switch (type) {
+        switch (type)
+        {
             case QtDebugMsg:
                 return time % " [D] " % locationText % msg % "\n";
 
@@ -123,7 +128,8 @@ namespace PMP {
 
     /* ========================== TextFileLogger ========================== */
 
-    class TextFileLogger : LoggerBase {
+    class TextFileLogger : LoggerBase
+    {
     public:
         TextFileLogger() : _mutex(QMutex::Recursive), _initialized(false), _appPid(0) {}
 
@@ -153,12 +159,14 @@ namespace PMP {
         QString _tag;
     };
 
-    bool TextFileLogger::initialized() {
+    bool TextFileLogger::initialized()
+    {
         QMutexLocker lock(&_mutex);
         return _initialized;
     }
 
-    bool TextFileLogger::init() {
+    bool TextFileLogger::init()
+    {
         QMutexLocker lock(&_mutex);
         _initialized = false;
         _appPid = QCoreApplication::applicationPid();
@@ -166,10 +174,12 @@ namespace PMP {
         char bom[3] = { char(0xEF), char(0xBB), char(0xBF)}; /* UTF-8 byte order mark */
         _byteOrderMark = QByteArray(bom, 3);
 
-        if (QDir::temp().mkpath("PMP-logs")) {
+        if (QDir::temp().mkpath("PMP-logs"))
+        {
             _logDir = QDir::temp().absolutePath() + "/PMP-logs";
         }
-        else {
+        else
+        {
             return false;
         }
 
@@ -177,10 +187,12 @@ namespace PMP {
         return true;
     }
 
-    void TextFileLogger::writeToLogFile(const QString& output) {
+    void TextFileLogger::writeToLogFile(const QString& output)
+    {
         QMutexLocker lock(&_mutex);
 
-        if (!QDir().mkpath(_logDir)) { /* could not create missing log directory */
+        if (!QDir().mkpath(_logDir)) /* could not create missing log directory */
+        {
             /* TODO : handle this */
             return;
         }
@@ -198,12 +210,14 @@ namespace PMP {
         bool opened =
             file.open(QIODevice::WriteOnly | QIODevice::Append | QIODevice::Text);
 
-        if (!opened) { /* could not create/open logfile */
+        if (!opened) /* could not create/open logfile */
+        {
             /* TODO : handle this */
             return;
         }
 
-        if (!existed) {
+        if (!existed)
+        {
             writeFileHeader(file);
         }
 
@@ -211,7 +225,8 @@ namespace PMP {
         file.close();
     }
 
-    void TextFileLogger::writeFileHeader(QFile& file) {
+    void TextFileLogger::writeFileHeader(QFile& file)
+    {
 #if defined(Q_OS_WIN)
          /* Windows needs a byte order mark */
         file.write(_byteOrderMark);
@@ -244,8 +259,8 @@ namespace PMP {
         QString locationText =
             sourcefile % ":" % QString::number(context.line).leftJustified(6, '-');
 
-        QString output;
-        switch (type) {
+        switch (type)
+        {
             case QtDebugMsg:
                 return time % " [D] " % locationText % msg % "\n";
 
@@ -265,7 +280,8 @@ namespace PMP {
         return time % " [???] " % locationText % msg % "\n";
     }
 
-    void TextFileLogger::setFilenameTag(QString tag) {
+    void TextFileLogger::setFilenameTag(QString tag)
+    {
         QMutexLocker lock(&_mutex);
 
         /* cut off an initial dash character, because we put one there automatically */
@@ -279,7 +295,8 @@ namespace PMP {
         _tag = tag;
     }
 
-    void TextFileLogger::cleanupOldLogfiles() {
+    void TextFileLogger::cleanupOldLogfiles()
+    {
         if (!_initialized) return;
 
         QDir dir(_logDir);
@@ -293,7 +310,8 @@ namespace PMP {
                 QDir::Files | QDir::NoSymLinks | QDir::Readable | QDir::Writable
             );
 
-        Q_FOREACH(auto file, files) {
+        Q_FOREACH(auto file, files)
+        {
             if (file.lastModified() >= threshhold) continue;
             if (file.suffix() != "txt") continue;
             if (!regex.match(file.baseName()).hasMatch()) continue;
@@ -344,13 +362,15 @@ namespace PMP {
         if (type == QtFatalMsg) { abort(); }
     }
 
-    void Logging::enableTextFileOnlyLogging() {
+    void Logging::enableTextFileOnlyLogging()
+    {
         if (!globalTextFileLogger.init()) return;
 
         qInstallMessageHandler(logToTextFile);
     }
 
-    void Logging::enableConsoleAndTextFileLogging(bool reducedConsoleOutput) {
+    void Logging::enableConsoleAndTextFileLogging(bool reducedConsoleOutput)
+    {
         if (!globalTextFileLogger.init()) return;
 
         if (reducedConsoleOutput)
@@ -359,15 +379,18 @@ namespace PMP {
             qInstallMessageHandler(logToTextFileAndConsole);
     }
 
-    void Logging::enableConsoleOnlyLogging() {
+    void Logging::enableConsoleOnlyLogging()
+    {
         qInstallMessageHandler(logToConsole);
     }
 
-    void Logging::setFilenameTag(QString suffix) {
+    void Logging::setFilenameTag(QString suffix)
+    {
         globalTextFileLogger.setFilenameTag(suffix);
     }
 
-    void Logging::cleanupOldLogfiles() {
+    void Logging::cleanupOldLogfiles()
+    {
         globalTextFileLogger.cleanupOldLogfiles();
     }
 }

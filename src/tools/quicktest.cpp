@@ -22,19 +22,22 @@
 #include "common/version.h"
 
 #include "server/database.h"
+#include "server/serversettings.h"
 
 #include <QCoreApplication>
+#include <QDateTime>
 #include <QHostAddress>
 #include <QHostInfo>
 #include <QNetworkInterface>
 #include <QSslSocket>
 #include <QtDebug>
 #include <QtGlobal>
+#include <QThread>
 
 using namespace PMP;
 
-int main(int argc, char *argv[]) {
-    
+int main(int argc, char* argv[])
+{
     QCoreApplication app(argc, argv);
 
     QCoreApplication::setApplicationName("Party Music Player - Simple test program");
@@ -62,7 +65,13 @@ int main(int argc, char *argv[]) {
     qDebug() << "SSL version string:" << QSslSocket::sslLibraryVersionString();
     */
 
-    if (!Database::init(out, "localhost", "root", "xxxxxxxxxxx"))
+    /*
+    DatabaseConnectionSettings databaseConnectionSettings;
+    databaseConnectionSettings.hostname = "localhost";
+    databaseConnectionSettings.username = "root";
+    databaseConnectionSettings.password = "xxxxxxxxxxx";
+
+    if (!Database::init(out, databaseConnectionSettings))
     {
         qWarning() << "could not initialize database";
         return 1;
@@ -86,6 +95,24 @@ int main(int argc, char *argv[]) {
     qDebug() << "Enable dynamic mode:" << (preferences.dynamicModeEnabled ? "Y" : "N");
     qDebug() << "Non-repetition interval:"
              << preferences.trackRepetitionAvoidanceIntervalSeconds << "seconds";
+    */
+
+    auto d1 = QDateTime::currentDateTimeUtc();
+    QThread::msleep(200);
+    auto d2 = QDateTime::currentDateTimeUtc();
+    QThread::msleep(200);
+    auto d3 = QDateTime::currentDateTimeUtc();
+
+    qDebug() << "d1-d2:" << d2.msecsTo(d1);
+    qDebug() << "d2-d3:" << d3.msecsTo(d2);
+    qDebug() << d1.toString(Qt::ISODateWithMs)
+             << d2.toString(Qt::ISODateWithMs)
+             << d3.toString(Qt::ISODateWithMs);
+
+    auto msSinceEpoch = d1.toMSecsSinceEpoch();
+    auto d1R = QDateTime::fromMSecsSinceEpoch(msSinceEpoch, Qt::UTC);
+
+    qDebug() << d1R.toString(Qt::ISODateWithMs);
 
     return 0;
 }

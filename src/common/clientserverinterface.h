@@ -22,13 +22,14 @@
 
 #include <QObject>
 
-namespace PMP {
-
+namespace PMP
+{
     class AbstractQueueMonitor;
     class CollectionWatcher;
     class CompatibilityInterfaceController;
     class CurrentTrackMonitor;
     class DynamicModeController;
+    class GeneralController;
     class ServerConnection;
     class PlayerController;
     class QueueController;
@@ -40,6 +41,8 @@ namespace PMP {
         Q_OBJECT
     public:
         ClientServerInterface(ServerConnection* connection);
+
+        GeneralController& generalController();
 
         PlayerController& playerController();
         CurrentTrackMonitor& currentTrackMonitor();
@@ -61,14 +64,12 @@ namespace PMP {
 
         bool connected() const { return _connected; }
 
-    public Q_SLOTS:
-        void shutdownServer();
-
     Q_SIGNALS:
         void connectedChanged();
 
     private:
         ServerConnection* _connection;
+        GeneralController* _generalController;
         PlayerController* _simplePlayerController;
         CurrentTrackMonitor* _currentTrackMonitor;
         QueueController* _queueController;

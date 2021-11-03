@@ -26,6 +26,7 @@
 #include "serversettings.h"
 
 #include <QByteArray>
+#include <QHostInfo>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QtDebug>
@@ -36,9 +37,11 @@
 
 namespace PMP
 {
-    Server::Server(QObject* parent, const QUuid& serverInstanceIdentifier)
+    Server::Server(QObject* parent, ServerSettings* serverSettings,
+                   const QUuid& serverInstanceIdentifier)
      : QObject(parent),
        _uuid(serverInstanceIdentifier),
+       _settings(serverSettings),
        _player(nullptr), _generator(nullptr), _history(nullptr), _users(nullptr),
        _collectionMonitor(nullptr), _serverHealthMonitor(nullptr),
        _server(new QTcpServer(this)), _udpSocket(new QUdpSocket(this)),
@@ -47,29 +50,20 @@ namespace PMP
         /* generate a new UUID for ourselves if we did not receive a valid one */
         if (_uuid.isNull()) _uuid = QUuid::createUuid();
 
-        ServerSettings serversettings;
-        QSettings& settings = serversettings.getSettings();
+        connect(
+            _settings, &ServerSettings::serverCaptionChanged,
+            this, [this]() { determineCaption(); }
+        );
+        determineCaption();
 
-        /* get rid of old 'serverpassword' setting if it still exists */
-        settings.remove("security/serverpassword");
-
-        QVariant serverPassword = settings.value("security/fixedserverpassword");
-        if (!serverPassword.isValid() || serverPassword.toString() == ""
-            || serverPassword.toString().length() < 6)
+        auto fixedServerPassword = serverSettings->fixedServerPassword();
+        if (!fixedServerPassword.isEmpty())
         {
-            if (serverPassword.isValid() && serverPassword.toString().length() > 0) {
-                qWarning() << "ignoring 'fixedserverpassword' setting because"
-                           << "its value is unsafe (too short)";
-            }
-
-            _serverPassword = generateServerPassword();
-
-            /* put placeholder in settings file, so that one can define a fixed
-             * server password if desired */
-            settings.setValue("security/fixedserverpassword", "");
+            _serverPassword = fixedServerPassword;
         }
-        else {
-            _serverPassword = serverPassword.toString();
+        else
+        {
+            _serverPassword = generateServerPassword();
         }
 
         connect(
@@ -80,9 +74,17 @@ namespace PMP
         connect(_udpSocket, &QUdpSocket::readyRead, this, &Server::readPendingDatagrams);
 
         connect(_broadcastTimer, &QTimer::timeout, this, &Server::sendBroadcast);
+
+        auto* serverClockTimePulseTimer = new QTimer(this);
+        connect(
+            serverClockTimePulseTimer, &QTimer::timeout,
+            this, &Server::serverClockTimeSendingPulse
+        );
+        serverClockTimePulseTimer->start(60 * 60 * 1000); /* hourly */
     }
 
-    QString Server::generateServerPassword() {
+    QString Server::generateServerPassword()
+    {
         const QString chars =
             "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz123456789!@#%&*()+=:<>?/-";
 
@@ -92,9 +94,11 @@ namespace PMP
         QString serverPassword;
         serverPassword.reserve(passwordLength);
         int prevIndex = -consecutiveCharsDistance;
-        for (int i = 0; i < passwordLength; ++i) {
+        for (int i = 0; i < passwordLength; ++i)
+        {
             int index;
-            do {
+            do
+            {
                 index = qrand() % chars.length(); // FIXME : don't use qrand()
             } while (qAbs(index - prevIndex) < consecutiveCharsDistance);
             prevIndex = index;
@@ -118,15 +122,15 @@ namespace PMP
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
 
-        if (!_server->listen(address, port)) {
+        if (!_server->listen(address, port))
             return false;
-        }
 
         bool bound =
             _udpSocket->bind(
                 23432, QAbstractSocket::ShareAddress | QAbstractSocket::ReuseAddressHint
             );
-        if (!bound) {
+        if (!bound)
+        {
             qWarning() << "UdpSocket bind failed; cannot listen for probes";
         }
 
@@ -136,15 +140,18 @@ namespace PMP
         return true;
     }
 
-    QString Server::errorString() const {
+    QString Server::errorString() const
+    {
         return _server->errorString();
     }
 
-    quint16 Server::port() const {
+    quint16 Server::port() const
+    {
         return _server->serverPort();
     }
 
-    void Server::shutdown() {
+    void Server::shutdown()
+    {
         _broadcastTimer->stop();
         Q_EMIT shuttingDown();
     }
@@ -153,7 +160,7 @@ namespace PMP
     {
         QTcpSocket *connection = _server->nextPendingConnection();
 
-        auto serverInterface = new ServerInterface(this, _player, _generator);
+        auto serverInterface = new ServerInterface(_settings, this, _player, _generator);
 
         auto connectedClient =
             new ConnectedClient(
@@ -164,7 +171,8 @@ namespace PMP
         connectedClient->setParent(this);
     }
 
-    void Server::sendBroadcast() {
+    void Server::sendBroadcast()
+    {
         QByteArray datagram = "PMPSERVERANNOUNCEv01 ";
         NetworkUtil::append2Bytes(datagram, port());
 
@@ -172,8 +180,10 @@ namespace PMP
         _udpSocket->flush();
     }
 
-    void Server::readPendingDatagrams() {
-        while (_udpSocket->hasPendingDatagrams()) {
+    void Server::readPendingDatagrams()
+    {
+        while (_udpSocket->hasPendingDatagrams())
+        {
             QByteArray datagram;
             datagram.resize(_udpSocket->pendingDatagramSize());
             QHostAddress sender;
@@ -190,5 +200,21 @@ namespace PMP
 
             sendBroadcast();
         }
+    }
+
+    void Server::determineCaption()
+    {
+        QString caption = _settings->serverCaption();
+
+        if (caption.isEmpty())
+        {
+            caption = QHostInfo::localHostName();
+        }
+
+        if (caption == _caption)
+            return; /* no change */
+
+        _caption = caption;
+        Q_EMIT captionChanged();
     }
 }

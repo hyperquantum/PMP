@@ -30,8 +30,8 @@
 #include <QTimer>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class DynamicTrackGenerator;
     class History;
     class PlayerQueue;
@@ -41,7 +41,8 @@ namespace PMP {
     class TrackRepetitionChecker;
     class WaveTrackGenerator;
 
-    class Generator : public QObject {
+    class Generator : public QObject
+    {
         Q_OBJECT
     public:
         Generator(PlayerQueue* queue, Resolver* resolver, History* history);

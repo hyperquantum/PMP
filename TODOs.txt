@@ -37,6 +37,7 @@ KNOWN BUGS
  * track title/artist/length update in the music collection does not trigger an update of queue entries referencing that track
  * doing a "skip" often creates a burst of noise; need to wait until the old track has stopped before starting the next one
  * GUI remote: title/artist are briefly "unknown" when a track starts
+ * client does not always notice when connection to the server breaks
 
 
 PERFORMANCE ISSUES
@@ -48,9 +49,9 @@ TECHNICAL TODO
 
  * when running an indexation, analyze the most recently created/updated files first
  * large file support (?)
- * try to automate the build procedure on Windows
  * switch to signed integer types for things like queue indices
  * add logging for all server messages that are deemed corrupt or invalid by the client
+ * remove all usages of Q_FOREACH
 
 
 IDEAS
@@ -63,12 +64,13 @@ IDEAS
  * player: delayed start: e.g. being able to press Play and then have 5 seconds before PMP actually starts playing
  * player: avoid accidental multiple clicks on "skip" affecting track score unnecessarily
  * player: 'seek to start of track' action or button
+ * queue: ability to insert a new kind of breakpoint that is never consumed ("barrier"?)
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * queue: ability to insert a breakpoint directly before/after any entry in the queue
+ * queue: ability to insert a track at a random position in the queue
  * queue: show error marker for a track that has no known file
  * queue: join title and artist columns when displaying filename
  * queue: save the contents of the queue on server shutdown and restore it at the next server startup
- * queue: "persistent breakpoint": a new kind of breakpoint that is never consumed ("barrier"?)
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
  * music collection: show a "loading collection" indicator while downloading the list from the server
@@ -78,6 +80,8 @@ IDEAS
  ** dynamic mode: detect and prevent track repetition with different hash values
  ** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
+ * power management: close connections when the server machine enters sleep mode
+ * power management: don't let the server machine go to sleep while music is playing
  *** thumbs up/down buttons for the song that is playing and for the history, to affect the score a little bit
  * 'love' & 'hate' button for the song that is playing
  * statistics view for the user; with things like "amount of tracks played in the last 7/30/... days"
@@ -88,7 +92,6 @@ IDEAS
  ** support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
  * display PMP server version in the client 'About' dialog
  * ability to view server uptime
- * interactive editing of the list of directories to scan for music
  * ability to ban a track permanently or temporarily; this will also hide it in the music collection
  * ability to set track property "play this less often" or "play this again soon"
  *** 'play now' option in the context menus of the music collection, the history, and maybe the queue
@@ -98,12 +101,17 @@ IDEAS
  * track info dialog: show indication if file is available or not
  * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time
  * track info dialog: ability to pick the user whose personal stats are shown
+ * track info dialog: display filename(s)
  ** track info dialog: show personal play history for that track
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner
  * visualize sound wave
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
+ * client: detect broken connection to the server
+ * client: ability to reconnect to the server after the connection was broken
+ ** login dialog: add button for probing for servers again
+ * take clock difference between client and server into account
 
 
 USER FRIENDLINESS
@@ -120,6 +128,7 @@ POLISHING
  * when skipping the current track after a long-time pause (say, more than 10 min), do not let the skip affect scoring of the paused track
  * an icon for the GUI remote executable
  * be more strict in determining the 'end time' for the history of a track that was played; time when paused should not count
+ * GUI remote: history/queue/collection: hide selection when losing focus
 
 
 CODE CLEANUP

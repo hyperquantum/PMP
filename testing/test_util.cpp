@@ -85,6 +85,72 @@ void TestUtil::millisecondsToLongDisplayTimeText()
     QCOMPARE(Util::millisecondsToLongDisplayTimeText(-60100), QString("-00:01:00.100"));
 }
 
+void TestUtil::getHowLongAgoText()
+{
+    const int seconds = 1;
+    const int minutes = 60 * seconds;
+    const int hours = 60 * minutes;
+    const int days = 24 * hours;
+    const int weeks = 7 * days;
+
+    QCOMPARE(Util::getHowLongAgoText(0), QString("just now"));
+
+    QCOMPARE(Util::getHowLongAgoText(1 * seconds), QString("1 second ago"));
+    QCOMPARE(Util::getHowLongAgoText(1 * minutes), QString("1 minute ago"));
+    QCOMPARE(Util::getHowLongAgoText(1 * hours), QString("1 hour ago"));
+    QCOMPARE(Util::getHowLongAgoText(1 * days), QString("1 day ago"));
+    QCOMPARE(Util::getHowLongAgoText(1 * weeks), QString("1 week ago"));
+    QCOMPARE(Util::getHowLongAgoText(365 * days), QString("1 year ago"));
+
+    QCOMPARE(Util::getHowLongAgoText(2 * seconds), QString("2 seconds ago"));
+    QCOMPARE(Util::getHowLongAgoText(2 * minutes), QString("2 minutes ago"));
+    QCOMPARE(Util::getHowLongAgoText(2 * hours), QString("2 hours ago"));
+    QCOMPARE(Util::getHowLongAgoText(2 * days), QString("2 days ago"));
+    QCOMPARE(Util::getHowLongAgoText(2 * weeks), QString("2 weeks ago"));
+    QCOMPARE(Util::getHowLongAgoText(2 * 365 * days), QString("2 years ago"));
+
+    QCOMPARE(Util::getHowLongAgoText(59 * seconds), QString("59 seconds ago"));
+    QCOMPARE(Util::getHowLongAgoText(59 * minutes), QString("59 minutes ago"));
+    QCOMPARE(Util::getHowLongAgoText(23 * hours), QString("23 hours ago"));
+    QCOMPARE(Util::getHowLongAgoText(6 * days), QString("6 days ago"));
+    QCOMPARE(Util::getHowLongAgoText(51 * weeks), QString("51 weeks ago"));
+    QCOMPARE(Util::getHowLongAgoText(364 * days), QString("52 weeks ago"));
+
+    QCOMPARE(Util::getHowLongAgoText(1 * minutes - 1*seconds), QString("59 seconds ago"));
+    QCOMPARE(Util::getHowLongAgoText(1 * hours - 1 * seconds), QString("59 minutes ago"));
+    QCOMPARE(Util::getHowLongAgoText(1 * days - 1 * seconds), QString("23 hours ago"));
+    QCOMPARE(Util::getHowLongAgoText(1 * weeks - 1 * seconds), QString("6 days ago"));
+    QCOMPARE(Util::getHowLongAgoText(365 * days - 1 * seconds), QString("52 weeks ago"));
+
+    QCOMPARE(Util::getHowLongAgoText(3 * 365 * days), QString("3 years ago"));
+    QCOMPARE(Util::getHowLongAgoText(4 * 365 * days), QString("3 years ago"));
+    QCOMPARE(Util::getHowLongAgoText((3 * 365 + 366) * days), QString("4 years ago"));
+    QCOMPARE(Util::getHowLongAgoText(5 * 365 * days), QString("4 years ago"));
+    QCOMPARE(Util::getHowLongAgoText((4 * 365 + 366) * days), QString("5 years ago"));
+    QCOMPARE(Util::getHowLongAgoText(6 * 365 * days), QString("5 years ago"));
+    QCOMPARE(Util::getHowLongAgoText((5 * 365 + 366) * days), QString("6 years ago"));
+    QCOMPARE(Util::getHowLongAgoText(7 * 365 * days), QString("6 years ago"));
+    QCOMPARE(Util::getHowLongAgoText((6 * 365 + 366) * days), QString("7 years ago"));
+    QCOMPARE(Util::getHowLongAgoText(8 * 365 * days), QString("7 years ago"));
+    QCOMPARE(Util::getHowLongAgoText((7 * 365 + 366) * days), QString("7 years ago"));
+    QCOMPARE(Util::getHowLongAgoText((6 * 365 + 2 * 366) * days), QString("8 years ago"));
+}
+
+void TestUtil::getHowLongAgoUpdateIntervalMs()
+{
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(0), 250);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(1), 250);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(9), 250);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(59), 250);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(60), 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(100), 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(3599), 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(3600), 60 * 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(24 * 3600), 60 * 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(7 * 24 * 3600), 60 * 1000);
+    QCOMPARE(Util::getHowLongAgoUpdateIntervalMs(365 * 24 * 3600), 60 * 1000);
+}
+
 void TestUtil::getCopyrightLine()
 {
     QVERIFY(Util::getCopyrightLine(false).contains(QString("Copyright")));
@@ -97,7 +163,8 @@ void TestUtil::getCopyrightLine()
     QVERIFY(Util::getCopyrightLine(true).contains(QString("Kevin Andre")));
 
     auto copyrightAscii = Util::getCopyrightLine(true);
-    for (int i = 0; i < copyrightAscii.size(); ++i) {
+    for (int i = 0; i < copyrightAscii.size(); ++i)
+    {
         QVERIFY(copyrightAscii[i] < QChar(128));
     }
 }

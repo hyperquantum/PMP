@@ -34,77 +34,80 @@ using namespace PMP;
 
 void printVersion(QTextStream& out)
 {
-    out << "Party Music Player " PMP_VERSION_DISPLAY << endl
-        << Util::getCopyrightLine(true) << endl
-        << "This is free software; see the source for copying conditions.  There is NO" << endl
-        << "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE." << endl;
+    out << "Party Music Player " PMP_VERSION_DISPLAY << "\n"
+        << Util::getCopyrightLine(true) << "\n"
+        << "This is free software; see the source for copying conditions.  There is NO\n"
+        << "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
+        << Qt::flush;
 }
 
 void printUsage(QTextStream& out)
 {
     auto programName = QFileInfo(QCoreApplication::applicationFilePath()).fileName();
 
-    out << "usage: " << endl
-        << "  " << programName << " help|--help|version|--version" << endl
-        << "  " << programName << " <server-name-or-ip> [<server-port>] <command>" << endl
+    out << "usage: " << Qt::endl
+        << "  " << programName << " help|--help|version|--version\n"
+        << "  " << programName << " <server-name-or-ip> [<server-port>] <command>\n"
         << "  " << programName
-           << " <server-name-or-ip> [<server-port>] <login-command> : <command>" << endl
-        << endl
-        << "  commands:" << endl
-        << "    play: start/resume playback" << endl
-        << "    pause: pause playback" << endl
-        << "    skip: jump to next track in the queue" << endl
-        << "    volume: get current volume percentage (0-100)" << endl
-        << "    volume <number>: set volume percentage (0-100)" << endl
-        << "    nowplaying: get info about the track currently playing" << endl
-        << "    queue: get queue length and the first tracks waiting in the queue" << endl
-        << "    break: insert a break at the front of the queue if not present there yet" << endl
-        << "    qdel <QID>: delete an entry from the queue" << endl
-        << "    qmove <QID> <-diff>: move a track up in the queue (e.g. -3)" << endl
-        << "    qmove <QID> <+diff>: move a track down in the queue (eg. +2)" << endl
-        << "    shutdown: shut down the server program" << endl
-        << endl
-        << "  login command:"<< endl
-        << "    login: forces authentication to occur; prompts for username and password" << endl
-        << "    login <username>: forces authentication to occur; prompts for password" << endl
-        << "    login <username> -: forces authentication to occur; reads password from" << endl
-        << "                        standard input" << endl
-        << "    login - [-]: forces authentication to occur; reads username and password" << endl
-        << "                 from standard input" << endl
-        << endl
-        << "    When reading username and password from standard input, it is assumed that" << endl
-        << "    the first line of the input is the username and the second line is the" << endl
-        << "    password." << endl
-        << endl
-        << "  NOTICE:" << endl
-        << "    The 'shutdown' command no longer supports arguments." << endl
-        << endl
-        << "  Authentication:" << endl
-        << "    All commands that have side-effects require authentication. They will" << endl
-        << "    prompt for username and password in the console. One exception to this" << endl
-        << "    principle is the 'queue' command; it requires authentication although it" << endl
-        << "    has no side-effects. This may change in the future." << endl
-        << "    It used to be possible to run the 'shutdown' command with the " << endl
-        << "    server password as its argument and without logging in as a PMP user," << endl
-        << "    but that is no longer possible. Support for this could be added again" << endl
-        << "    in the future, but that would not be compatible with older PMP servers." << endl
-        << endl
-        << "  Server Password:" << endl
-        << "    This is a global password for the server, printed to stdout at" << endl
-        << "    server startup. It is no longer relevant for the PMP command-line client." << endl
-        << endl
-        << "  Examples:" << endl
-        << "    " << programName << " localhost queue" << endl
-        << "    " << programName << " ::1 volume" << endl
-        << "    " << programName << " localhost volume 100" << endl
-        << "    " << programName << " 127.0.0.1 play" << endl
-        << "    " << programName << " localhost qmove 42 +3" << endl
-        << "    " << programName << " localhost nowplaying" << endl
-        << "    " << programName << " localhost login : nowplaying" << endl
-        << "    " << programName << " localhost login MyUsername : play" << endl
-        << "    " << programName << " localhost login MyUsername - : play <passwordfile" << endl
-        << "    " << programName << " localhost login - : play <credentialsfile" << endl
-        ;
+                   << " <server-name-or-ip> [<server-port>] <login-command> : <command>\n"
+        << "\n"
+        << "  commands:\n"
+        << "    play: start/resume playback\n"
+        << "    pause: pause playback\n"
+        << "    skip: jump to next track in the queue\n"
+        << "    volume: get current volume percentage (0-100)\n"
+        << "    volume <number>: set volume percentage (0-100)\n"
+        << "    nowplaying: get info about the track currently playing\n"
+        << "    queue: get queue length and the first tracks waiting in the queue\n"
+        << "    break: insert a break at the front of the queue if not present there yet\n"
+        << "    qdel <QID>: delete an entry from the queue\n"
+        << "    qmove <QID> <-diff>: move a track up in the queue (e.g. -3)\n"
+        << "    qmove <QID> <+diff>: move a track down in the queue (eg. +2)\n"
+        << "    shutdown: shut down the server program\n"
+        << "    reloadserversettings: instruct the server to reload its settings file\n"
+        << "\n"
+        << "  login command:\n"
+        << "    login: forces authentication to occur; prompts for username and password\n"
+        << "    login <username>: forces authentication to occur; prompts for password\n"
+        << "    login <username> -: forces authentication to occur; reads password from\n"
+        << "                        standard input\n"
+        << "    login - [-]: forces authentication to occur; reads username and\n"
+        << "                 password from standard input\n"
+        << "\n"
+        << "    When reading username and password from standard input, it is assumed\n"
+        << "    that the first line of the input is the username and the second line is\n"
+        << "    the password.\n"
+        << "\n"
+        << "  NOTICE:\n"
+        << "    The 'shutdown' command no longer supports arguments.\n"
+        << "\n"
+        << "  Authentication:\n"
+        << "    All commands that have side-effects require authentication. They will\n"
+        << "    prompt for username and password in the console. One exception to this\n"
+        << "    principle is the 'queue' command; it requires authentication although\n"
+        << "    it has no side-effects. This may change in the future.\n"
+        << "    It used to be possible to run the 'shutdown' command with the\n"
+        << "    server password as its argument and without logging in as a PMP user,\n"
+        << "    but that is no longer possible. Support for this could be added again\n"
+        << "    in the future, but that would not be compatible with older PMP servers.\n"
+        << "\n"
+        << "  Server Password:\n"
+        << "    This is a global password for the server, printed to stdout at\n"
+        << "    server startup. It is no longer relevant for the PMP command-line\n"
+        << "    client.\n"
+        << "\n"
+        << "  Examples:\n"
+        << "    " << programName << " localhost queue\n"
+        << "    " << programName << " ::1 volume\n"
+        << "    " << programName << " localhost volume 100\n"
+        << "    " << programName << " 127.0.0.1 play\n"
+        << "    " << programName << " localhost qmove 42 +3\n"
+        << "    " << programName << " localhost nowplaying\n"
+        << "    " << programName << " localhost login : nowplaying\n"
+        << "    " << programName << " localhost login MyUsername : play\n"
+        << "    " << programName << " localhost login MyUsername - : play <passwordfile\n"
+        << "    " << programName << " localhost login - : play <credentialsfile\n"
+        << Qt::flush;
 }
 
 bool looksLikePortNumber(QString const& string)
@@ -220,7 +223,7 @@ int main(int argc, char *argv[])
 
     if (args.size() < 2)
     {
-        err << "Not enough arguments specified!" << endl;
+        err << "Not enough arguments specified!" << Qt::endl;
         printUsage(err);
         return 1;
     }
@@ -238,7 +241,7 @@ int main(int argc, char *argv[])
         uint number = maybePortArg.toUInt(&ok);
         if (!ok || number > 0xFFFFu)
         {
-            err << "Invalid port number: " << maybePortArg << endl;
+            err << "Invalid port number: " << maybePortArg << Qt::endl;
             return 1;
         }
 
@@ -253,7 +256,7 @@ int main(int argc, char *argv[])
 
     if (commandWithArgs.size() == 0)
     {
-        err << "Not enough arguments specified!" << endl;
+        err << "Not enough arguments specified!" << Qt::endl;
         printUsage(err);
         return 1;
     }
@@ -263,7 +266,7 @@ int main(int argc, char *argv[])
 
     if (!commandParser.parsedSuccessfully())
     {
-        err << commandParser.errorMessage() << endl;
+        err << commandParser.errorMessage() << Qt::endl;
         return 1;
     }
 
@@ -274,7 +277,7 @@ int main(int argc, char *argv[])
 
     if (authentication.haveError())
     {
-        err << authentication.error << endl;
+        err << authentication.error << Qt::endl;
         return 1;
     }
 

@@ -22,6 +22,7 @@
 
 #include "compatibilityui.h"
 #include "queueentrytype.h"
+#include "resultmessageerrorcode.h"
 #include "startstopeventstatus.h"
 
 #include <QByteArray>
@@ -49,7 +50,9 @@ namespace PMP
          12: clienst msg 22, server msg 30, single byte request 18: protocol extensions
          13: server msgs 3 & 4: change track length to milliseconds
          14: single byte request 25 & server msg 26: wave termination & progress
-         15: single byte request 52, server msgs 31-36, client msgs 23-24: compatibility interfaces
+         15: client msg 23, parameterless action 10, error code 21: server settings reload
+         16: server msg 31: sending server clock time
+         17: single byte request 52, server msgs 31-36, client msgs 23-24: compatibility interfaces
 
     */
 
@@ -89,13 +92,14 @@ namespace PMP
         ServerHealthMessage = 28,
         CollectionAvailabilityChangeNotificationMessage = 29,
         ServerExtensionsMessage = 30,
-        CompatibilityInterfaceAnnouncement = 31,
-        CompatibilityInterfaceLanguageSelectionConfirmation = 32,
-        CompatibilityInterfaceDefinition = 33,
-        CompatibilityInterfaceStateUpdate = 34,
-        CompatibilityInterfaceActionStateUpdate = 35,
-        CompatibilityInterfaceTextUpdate = 36,
-        CompatibilityInterfaceActionTextUpdate = 37,
+        ServerClockMessage = 31,
+        CompatibilityInterfaceAnnouncement = 32,
+        CompatibilityInterfaceLanguageSelectionConfirmation = 33,
+        CompatibilityInterfaceDefinition = 34,
+        CompatibilityInterfaceStateUpdate = 35,
+        CompatibilityInterfaceActionStateUpdate = 36,
+        CompatibilityInterfaceTextUpdate = 37,
+        CompatibilityInterfaceActionTextUpdate = 38,
     };
 
     enum class ClientMessageType
@@ -123,33 +127,25 @@ namespace PMP
         PlayerHistoryRequestMessage = 20,
         QueueEntryDuplicationRequestMessage = 21,
         ClientExtensionsMessage = 22,
-        CompatibilityInterfaceLanguageSelectionRequest = 23,
-        CompatibilityInterfaceDefinitionsRequest = 24,
-        CompatibilityInterfaceTriggerActionRequest = 25,
+        ParameterlessActionMessage = 23,
+        CompatibilityInterfaceLanguageSelectionRequest = 24,
+        CompatibilityInterfaceDefinitionsRequest = 25,
+        CompatibilityInterfaceTriggerActionRequest = 26,
     };
 
-    enum class ResultMessageErrorCode
+    enum class ServerEventCode
     {
-        NoError = 0,
-        InvalidMessageStructure = 1,
-        NotLoggedIn = 10,
+        Reserved = 0,
+        FullIndexationRunning = 1,
+        FullIndexationNotRunning = 2,
+    };
 
-        InvalidUserAccountName = 11,
-        UserAccountAlreadyExists = 12,
-        UserAccountRegistrationMismatch = 13,
-        UserAccountLoginMismatch = 14,
-        UserLoginAuthenticationFailed = 15,
-        AlreadyLoggedIn = 16,
+    enum class ParameterlessActionCode
+    {
+        Reserved = 0,
 
-        QueueIdNotFound = 20,
-        InvalidLanguage = 21,
-        InvalidCompatibilityInterfaceId = 22,
-
-        LanguageNotSet = 30,
-
-        DatabaseProblem = 90,
-        NonFatalInternalServerError = 254,
-        UnknownError = 255
+        /* 10 - 29 : server administration */
+        ReloadServerSettings = 10,
     };
 
     class NetworkProtocol

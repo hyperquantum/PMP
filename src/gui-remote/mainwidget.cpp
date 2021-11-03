@@ -47,8 +47,8 @@
 #include <QMenu>
 #include <QSettings>
 
-namespace PMP {
-
+namespace PMP
+{
     MainWidget::MainWidget(QWidget *parent) :
         QWidget(parent),
         _ui(new Ui::MainWidget),
@@ -230,11 +230,11 @@ namespace PMP {
 
         connect(
             _ui->expandButton, &QPushButton::clicked,
-            connection, &ServerConnection::expandQueue
+            dynamicModeController, &DynamicModeController::expandQueue
         );
         connect(
             _ui->trimButton, &QPushButton::clicked,
-            connection, &ServerConnection::trimQueue
+            dynamicModeController, &DynamicModeController::trimQueue
         );
 
         connect(
@@ -314,7 +314,8 @@ namespace PMP {
 
     bool MainWidget::eventFilter(QObject* object, QEvent* event)
     {
-        if (event->type() == QEvent::KeyPress) {
+        if (event->type() == QEvent::KeyPress)
+        {
             QKeyEvent* keyEvent = static_cast<QKeyEvent*>(event);
 
             if (keyEventFilter(keyEvent))
@@ -332,7 +333,8 @@ namespace PMP {
         auto userId = playerController.personalModeUserId();
         auto userLogin = playerController.personalModeUserLogin();
 
-        switch (mode) {
+        switch (mode)
+        {
             case PlayerMode::Public:
                 _ui->playingModeLabel->setText(tr("PUBLIC mode"));
                 _ui->userPlayingForLabel->setText("~~~");
@@ -361,14 +363,18 @@ namespace PMP {
         }
     }
 
-    bool MainWidget::keyEventFilter(QKeyEvent* event) {
-        switch (event->key()) {
+    bool MainWidget::keyEventFilter(QKeyEvent* event)
+    {
+        switch (event->key())
+        {
         case Qt::Key_Delete:
-            if (_ui->queueTableView->hasFocus()) {
+            if (_ui->queueTableView->hasFocus())
+            {
                 //qDebug() << "got delete key";
 
                 QModelIndex index = _ui->queueTableView->currentIndex();
-                if (index.isValid()) {
+                if (index.isValid())
+                {
                     quint32 queueID = _queueModel->trackIdAt(index);
 
                     if (queueID > 0)
@@ -386,16 +392,19 @@ namespace PMP {
         return false;
     }
 
-    void MainWidget::historyContextMenuRequested(const QPoint& position) {
+    void MainWidget::historyContextMenuRequested(const QPoint& position)
+    {
         auto index = _ui->historyTableView->indexAt(position);
-        if (!index.isValid()) {
+        if (!index.isValid())
+        {
             qDebug() << "history: index at mouse position not valid";
             return;
         }
 
         int row = index.row();
         auto hash = _historyModel->trackHashAt(row);
-        if (hash.isNull()) {
+        if (hash.isNull())
+        {
             qDebug() << "history: no hash known for track at row" << row;
             return;
         }
@@ -433,9 +442,9 @@ namespace PMP {
         connect(
             trackInfoAction, &QAction::triggered,
             this,
-            [this, hash]() {
+            [this, hash]()
+            {
                 qDebug() << "history context menu: track info triggered";
-
                 showTrackInfoDialog(hash);
             }
         );
@@ -444,9 +453,11 @@ namespace PMP {
         _historyContextMenu->popup(popupPosition);
     }
 
-    void MainWidget::queueContextMenuRequested(const QPoint& position) {
+    void MainWidget::queueContextMenuRequested(const QPoint& position)
+    {
         auto index = _ui->queueTableView->indexAt(position);
-        if (!index.isValid()) {
+        if (!index.isValid())
+        {
             qDebug() << "queue: index at mouse position not valid";
             return;
         }
@@ -462,14 +473,17 @@ namespace PMP {
 
         QAction* removeAction = _queueContextMenu->addAction(tr("Remove"));
         removeAction->setShortcut(QKeySequence::Delete);
-        if (track.isNull()) {
+        if (track.isNull())
+        {
             removeAction->setEnabled(false);
         }
-        else {
+        else
+        {
             connect(
                 removeAction, &QAction::triggered,
                 this,
-                [this, row, queueId]() {
+                [this, row, queueId]()
+                {
                     qDebug() << "queue context menu: remove action triggered for item"
                              << queueId;
                     _queueMediator->removeTrack(row, queueId);
@@ -480,14 +494,17 @@ namespace PMP {
         _queueContextMenu->addSeparator();
 
         QAction* duplicateAction = _queueContextMenu->addAction(tr("Duplicate"));
-        if (track.isNull() || !_queueMediator->canDuplicateEntry(queueId)) {
+        if (track.isNull() || !_queueMediator->canDuplicateEntry(queueId))
+        {
             duplicateAction->setEnabled(false);
         }
-        else {
+        else
+        {
             connect(
                 duplicateAction, &QAction::triggered,
                 this,
-                [this, queueId]() {
+                [this, queueId]()
+                {
                     qDebug() << "queue context menu: duplicate action triggered for item"
                              << queueId;
                     _queueMediator->duplicateEntryAsync(queueId);
@@ -498,14 +515,17 @@ namespace PMP {
         _queueContextMenu->addSeparator();
 
         QAction* moveToFrontAction = _queueContextMenu->addAction(tr("Move to front"));
-        if (track.isNull()) {
+        if (track.isNull())
+        {
             moveToFrontAction->setEnabled(false);
         }
-        else {
+        else
+        {
             connect(
                 moveToFrontAction, &QAction::triggered,
                 this,
-                [this, row, queueId]() {
+                [this, row, queueId]()
+                {
                     qDebug() << "queue context menu: to-front action triggered for item"
                              << queueId;
                     _queueMediator->moveTrack(row, 0, queueId);
@@ -514,14 +534,17 @@ namespace PMP {
         }
 
         QAction* moveToEndAction = _queueContextMenu->addAction(tr("Move to end"));
-        if (track.isNull()) {
+        if (track.isNull())
+        {
             moveToEndAction->setEnabled(false);
         }
-        else {
+        else
+        {
             connect(
                 moveToEndAction, &QAction::triggered,
                 this,
-                [this, row, queueId]() {
+                [this, row, queueId]()
+                {
                     qDebug() << "queue context menu: to-end action triggered for item"
                              << queueId;
                     _queueMediator->moveTrackToEnd(row, queueId);
@@ -532,14 +555,17 @@ namespace PMP {
         _queueContextMenu->addSeparator();
 
         QAction* trackInfoAction = _queueContextMenu->addAction(tr("Track info"));
-        if (track.hash().isNull()) {
+        if (track.hash().isNull())
+        {
             trackInfoAction->setEnabled(false);
         }
-        else {
+        else
+        {
             connect(
                 trackInfoAction, &QAction::triggered,
                 this,
-                [this, track]() {
+                [this, track]()
+                {
                     qDebug() << "queue context menu: track info action triggered for item"
                              << track.queueId();
 
@@ -607,13 +633,15 @@ namespace PMP {
         }
     }
 
-    void MainWidget::playerStateChanged() {
+    void MainWidget::playerStateChanged()
+    {
         auto& playerController = _clientServerInterface->playerController();
 
         enableDisablePlayerControlButtons();
 
         QString playStateText;
-        switch (playerController.playerState()) {
+        switch (playerController.playerState())
+        {
             case PlayerState::Playing:
                 playStateText = tr("playing");
                 break;
@@ -653,30 +681,37 @@ namespace PMP {
     {
         auto& currentTrackMonitor = _clientServerInterface->currentTrackMonitor();
 
-        if (currentTrackMonitor.isTrackPresent().isUnknown()) {
+        if (currentTrackMonitor.isTrackPresent().isUnknown())
+        {
             _ui->artistTitleLabel->clear();
             _ui->trackProgress->setCurrentTrack(-1);
             _ui->lengthValueLabel->clear();
         }
-        else if (currentTrackMonitor.currentQueueId() <= 0) {
+        else if (currentTrackMonitor.currentQueueId() <= 0)
+        {
             _ui->artistTitleLabel->setText(tr("<no current track>"));
             _ui->trackProgress->setCurrentTrack(-1);
             _ui->lengthValueLabel->clear();
         }
-        else {
+        else
+        {
             auto title = currentTrackMonitor.currentTrackTitle();
             auto artist = currentTrackMonitor.currentTrackArtist();
 
-            if (title.isEmpty() && artist.isEmpty()) {
+            if (title.isEmpty() && artist.isEmpty())
+            {
                 auto filename = currentTrackMonitor.currentTrackPossibleFilename();
-                if (!filename.isEmpty()) {
+                if (!filename.isEmpty())
+                {
                     _ui->artistTitleLabel->setText(filename);
                 }
-                else {
+                else
+                {
                     _ui->artistTitleLabel->setText(tr("<unknown artist/title>"));
                 }
             }
-            else {
+            else
+            {
                 if (title.isEmpty())
                     title = tr("<unknown title>");
 
@@ -688,10 +723,12 @@ namespace PMP {
             }
 
             auto trackLength = currentTrackMonitor.currentTrackLengthMilliseconds();
-            if (trackLength < 0) {
+            if (trackLength < 0)
+            {
                 _ui->lengthValueLabel->setText(tr("?"));
             }
-            else {
+            else
+            {
                 _ui->lengthValueLabel->setText(
                     Util::millisecondsToLongDisplayTimeText(trackLength)
                 );
@@ -755,7 +792,8 @@ namespace PMP {
         showTrackInfoDialog(hash, currentTrackMonitor.currentQueueId());
     }
 
-    void MainWidget::volumeChanged() {
+    void MainWidget::volumeChanged()
+    {
         auto volume = _clientServerInterface->playerController().volume();
         _ui->volumeValueLabel->setText(QString::number(volume));
 
@@ -763,20 +801,24 @@ namespace PMP {
         _ui->volumeIncreaseButton->setEnabled(volume >= 0 && volume < 100);
     }
 
-    void MainWidget::decreaseVolume() {
+    void MainWidget::decreaseVolume()
+    {
         auto volume = _clientServerInterface->playerController().volume();
 
-        if (volume > 0) {
+        if (volume > 0)
+        {
             auto newVolume = volume > 5 ? volume - 5 : 0;
 
             _clientServerInterface->playerController().setVolume(newVolume);
         }
     }
 
-    void MainWidget::increaseVolume() {
+    void MainWidget::increaseVolume()
+    {
         auto volume = _clientServerInterface->playerController().volume();
 
-        if (volume >= 0) {
+        if (volume >= 0)
+        {
             auto newVolume = volume < 95 ? volume + 5 : 100;
 
             _clientServerInterface->playerController().setVolume(newVolume);
@@ -813,7 +855,8 @@ namespace PMP {
         _clientServerInterface->dynamicModeController().terminateHighScoredTracksWave();
     }
 
-    void MainWidget::buildNoRepetitionList(int spanToSelect) {
+    void MainWidget::buildNoRepetitionList(int spanToSelect)
+    {
         _noRepetitionUpdating++;
 
         _noRepetitionList.clear();
@@ -836,9 +879,11 @@ namespace PMP {
 
         int indexOfSpanToSelect = -1;
 
-        if (spanToSelect >= 0) {
+        if (spanToSelect >= 0)
+        {
             indexOfSpanToSelect = _noRepetitionList.indexOf(spanToSelect);
-            if (indexOfSpanToSelect < 0) {
+            if (indexOfSpanToSelect < 0)
+            {
                 _noRepetitionList.append(spanToSelect);
                 std::sort(_noRepetitionList.begin(), _noRepetitionList.end());
                 indexOfSpanToSelect = _noRepetitionList.indexOf(spanToSelect);
@@ -846,28 +891,33 @@ namespace PMP {
         }
 
         int span;
-        foreach(span, _noRepetitionList) {
+        Q_FOREACH(span, _noRepetitionList)
+        {
             _ui->noRepetitionComboBox->addItem(noRepetitionTimeString(span));
         }
 
-        if (indexOfSpanToSelect >= 0) {
+        if (indexOfSpanToSelect >= 0)
+        {
             _ui->noRepetitionComboBox->setCurrentIndex(indexOfSpanToSelect);
         }
 
         _noRepetitionUpdating--;
     }
 
-    QString MainWidget::noRepetitionTimeString(int seconds) {
+    QString MainWidget::noRepetitionTimeString(int seconds)
+    {
         QString output;
 
-        if (seconds > 7 * 24 * 60 * 60) {
+        if (seconds > 7 * 24 * 60 * 60)
+        {
             int weeks = seconds / (7 * 24 * 60 * 60);
             seconds -= weeks * (7 * 24 * 60 * 60);
             output += QString::number(weeks);
             output += (weeks == 1) ? " week" : " weeks";
         }
 
-        if (seconds > 24 * 60 * 60) {
+        if (seconds > 24 * 60 * 60)
+        {
             int days = seconds / (24 * 60 * 60);
             seconds -= days * (24 * 60 * 60);
             if (output.size() > 0) output += " ";
@@ -875,7 +925,8 @@ namespace PMP {
             output += (days == 1) ? " day" : " days";
         }
 
-        if (seconds > 60 * 60) {
+        if (seconds > 60 * 60)
+        {
             int hours = seconds / (60 * 60);
             seconds -= hours * (60 * 60);
             if (output.size() > 0) output += " ";
@@ -883,7 +934,8 @@ namespace PMP {
             output += (hours == 1) ? " hour" : " hours";
         }
 
-        if (seconds > 60) {
+        if (seconds > 60)
+        {
             int minutes = seconds / 60;
             seconds -= minutes * 60;
             if (output.size() > 0) output += " ";
@@ -891,7 +943,8 @@ namespace PMP {
             output += (minutes == 1) ? " minute" : " minutes";
         }
 
-        if (seconds > 0 || output.size() == 0) {
+        if (seconds > 0 || output.size() == 0)
+        {
             if (output.size() > 0) output += " ";
             output += QString::number(seconds);
             output += (seconds == 1) ? " second" : " seconds";
@@ -900,7 +953,8 @@ namespace PMP {
         return output;
     }
 
-    void MainWidget::noRepetitionIndexChanged(int index) {
+    void MainWidget::noRepetitionIndexChanged(int index)
+    {
         if (_noRepetitionUpdating > 0
             || index < 0 || index >= _noRepetitionList.size())
         {

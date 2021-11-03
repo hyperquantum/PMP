@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,31 +17,39 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVERHEALTHMONITOR_H
-#define PMP_SERVERHEALTHMONITOR_H
+#ifndef PMP_REQUESTID_H
+#define PMP_REQUESTID_H
 
-#include <QObject>
+#include <QtGlobal>
 
 namespace PMP
 {
-    /*! class that monitors server health status on behalf of connected remotes */
-    class ServerHealthMonitor : public QObject
+    class RequestID
     {
-        Q_OBJECT
     public:
-        explicit ServerHealthMonitor(QObject *parent = nullptr);
+        RequestID() : _rawId(0) {}
+        explicit RequestID(uint rawId) : _rawId(rawId) {}
 
-        bool anyProblem() const;
-        bool databaseUnavailable() const;
-
-    public Q_SLOTS:
-        void setDatabaseUnavailable();
-
-    Q_SIGNALS:
-        void serverHealthChanged(bool databaseUnavailable);
+        bool isValid() const { return _rawId > 0; }
+        uint rawId() const { return _rawId; }
 
     private:
-        bool _databaseUnavailable;
+        uint _rawId;
     };
+
+    inline bool operator==(const RequestID& me, const RequestID& other)
+    {
+        return me.rawId() == other.rawId();
+    }
+
+    inline bool operator!=(const RequestID& me, const RequestID& other)
+    {
+        return !(me == other);
+    }
+
+    inline uint qHash(const RequestID& requestId)
+    {
+        return requestId.rawId();
+    }
 }
 #endif
