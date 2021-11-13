@@ -71,6 +71,7 @@ namespace PMP
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
         _ui(new Ui::TrackInfoDialog),
         _clientServerInterface(clientServerInterface),
+        _lastHeardUpdateTimer(new QTimer(this)),
         _trackHash(track.hash()),
         _queueId(0)
     {
