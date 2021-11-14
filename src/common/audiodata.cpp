@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,8 +19,8 @@
 
 #include "audiodata.h"
 
-namespace PMP {
-
+namespace PMP
+{
     AudioData::AudioData()
      : _format(UnknownFormat), _trackLengthMilliseconds(-1)
     {

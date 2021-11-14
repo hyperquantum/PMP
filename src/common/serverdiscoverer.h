@@ -29,12 +29,13 @@
 
 QT_FORWARD_DECLARE_CLASS(QUdpSocket)
 
-namespace PMP {
-
+namespace PMP
+{
     class ServerConnection;
     class ServerProbe;
 
-    class ServerDiscoverer : public QObject {
+    class ServerDiscoverer : public QObject
+    {
         Q_OBJECT
     public:
         explicit ServerDiscoverer(QObject* parent = nullptr);
@@ -58,7 +59,8 @@ namespace PMP {
         void sendProbeTo(QHostAddress const& destination);
         void receivedProbeReply(QHostAddress const& server, quint16 port);
 
-        struct ServerData {
+        struct ServerData
+        {
             quint16 port;
             QList<QHostAddress> addresses;
             QString name;
@@ -70,7 +72,8 @@ namespace PMP {
         QHash<QUuid, ServerData*> _servers;
     };
 
-    class ServerProbe : public QObject {
+    class ServerProbe : public QObject
+    {
         Q_OBJECT
     public:
         ServerProbe(QObject* parent, QHostAddress const& address, quint16 port);

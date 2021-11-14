@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,10 +22,11 @@
 
 #include <memory>
 
-namespace PMP {
-
+namespace PMP
+{
     template <typename T>
-    class AbstractHandle {
+    class AbstractHandle
+    {
     protected:
         AbstractHandle() {}
         AbstractHandle(std::shared_ptr<T> pointer) : _ptr(pointer) {}

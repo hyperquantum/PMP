@@ -40,7 +40,8 @@ namespace TagLib
 
 namespace PMP
 {
-    class FileAnalyzer {
+    class FileAnalyzer
+    {
     public:
         FileAnalyzer(const QString& filename);
         FileAnalyzer(const QFileInfo& file);

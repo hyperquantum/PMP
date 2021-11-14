@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,8 +28,8 @@
 #include <QTimer>
 #include <QUdpSocket>
 
-namespace PMP {
-
+namespace PMP
+{
     ServerDiscoverer::ServerDiscoverer(QObject* parent)
      : QObject(parent), _socket(new QUdpSocket(this))
     {
@@ -47,34 +47,41 @@ namespace PMP {
         );
     }
 
-    ServerDiscoverer::~ServerDiscoverer() {
+    ServerDiscoverer::~ServerDiscoverer()
+    {
         qDeleteAll(_addresses.values());
         qDeleteAll(_servers.values());
     }
 
-    void ServerDiscoverer::sendProbe() {
+    void ServerDiscoverer::sendProbe()
+    {
         /* first send to localhost and then broadcast */
         sendProbeToLocalhost();
         QTimer::singleShot(100, this, &ServerDiscoverer::sendBroadcastProbe);
     }
 
-    void ServerDiscoverer::sendProbeToLocalhost() {
+    void ServerDiscoverer::sendProbeToLocalhost()
+    {
         sendProbeTo(QHostAddress::LocalHost);
         sendProbeTo(QHostAddress::LocalHostIPv6);
     }
 
-    void ServerDiscoverer::sendBroadcastProbe() {
+    void ServerDiscoverer::sendBroadcastProbe()
+    {
         sendProbeTo(QHostAddress::Broadcast);
     }
 
-    void ServerDiscoverer::sendProbeTo(QHostAddress const& destination) {
+    void ServerDiscoverer::sendProbeTo(QHostAddress const& destination)
+    {
         QByteArray datagram = "PMPPROBEv01";
         _socket->writeDatagram(datagram, destination, 23432);
         _socket->flush();
     }
 
-    void ServerDiscoverer::readPendingDatagrams() {
-        while (_socket->hasPendingDatagrams()) {
+    void ServerDiscoverer::readPendingDatagrams()
+    {
+        while (_socket->hasPendingDatagrams())
+        {
             QByteArray datagram;
             datagram.resize(_socket->pendingDatagramSize());
             QHostAddress sender;
@@ -95,7 +102,8 @@ namespace PMP {
         }
     }
 
-    void ServerDiscoverer::receivedProbeReply(const QHostAddress& server, quint16 port) {
+    void ServerDiscoverer::receivedProbeReply(const QHostAddress& server, quint16 port)
+    {
         auto serverAndPort = qMakePair(server, port);
 
         if (_addresses.contains(serverAndPort))
@@ -109,8 +117,10 @@ namespace PMP {
         bool isFromLocalhost =
             server == QHostAddress::LocalHost || server == QHostAddress::LocalHostIPv6;
 
-        if (!isFromLocalhost) {
-            Q_FOREACH(auto localAddress, _localHostNetworkAddresses) {
+        if (!isFromLocalhost)
+        {
+            Q_FOREACH(auto localAddress, _localHostNetworkAddresses)
+            {
                 if (localAddress.isEqual(server, QHostAddress::TolerantConversion))
                 {
                    isFromLocalhost = true;
@@ -121,7 +131,8 @@ namespace PMP {
 
         qDebug() << "Originated from localhost?" << (isFromLocalhost ? "Yes" : "No");
 
-        if (isFromLocalhost) {
+        if (isFromLocalhost)
+        {
             auto addressToUse =
                 server.protocol() == QAbstractSocket::IPv4Protocol
                     ? QHostAddress(QHostAddress::LocalHost)
@@ -143,7 +154,8 @@ namespace PMP {
     {
         bool isNew = false;
         auto serverData = _servers.value(serverId, nullptr);
-        if (!serverData) {
+        if (!serverData)
+        {
             isNew = true;
             serverData = new ServerData();
             serverData->port = port;
@@ -152,15 +164,18 @@ namespace PMP {
         }
 
         bool newAddress = false;
-        if (isNew || !serverData->addresses.contains(address)) {
+        if (isNew || !serverData->addresses.contains(address))
+        {
             newAddress = !isNew;
             serverData->addresses.append(address);
         }
 
-        if (isNew) {
+        if (isNew)
+        {
             Q_EMIT foundServer(address, port, serverId, name);
         }
-        else if (newAddress) {
+        else if (newAddress)
+        {
             Q_EMIT foundExtraServerAddress(address, serverId);
         }
     }
@@ -195,17 +210,20 @@ namespace PMP {
         QTimer::singleShot(4000, this, &ServerProbe::onTimeout);
     }
 
-    void ServerProbe::onConnected() {
+    void ServerProbe::onConnected()
+    {
         _connection->sendServerInstanceIdentifierRequest();
         _connection->sendServerNameRequest();
     }
 
-    void ServerProbe::onReceivedServerUuid(QUuid uuid) {
+    void ServerProbe::onReceivedServerUuid(QUuid uuid)
+    {
         _serverId = uuid;
         emitSignalIfDataComplete();
     }
 
-    void ServerProbe::onReceivedServerName(quint8 nameType, QString name) {
+    void ServerProbe::onReceivedServerName(quint8 nameType, QString name)
+    {
         if (_serverNameType > nameType || _serverName == name || name == "")
             return;
 
@@ -215,7 +233,8 @@ namespace PMP {
         emitSignalIfDataComplete();
     }
 
-    void ServerProbe::onTimeout() {
+    void ServerProbe::onTimeout()
+    {
         if (_connection == nullptr)
             return; /* already cleaned up */
 
@@ -223,13 +242,15 @@ namespace PMP {
 
         cleanupConnection();
 
-        if (!_serverId.isNull()) { /* server found but did not receive a name? */
+        if (!_serverId.isNull()) /* server found but did not receive a name? */
+        {
             /* send with empty name */
             Q_EMIT foundServer(_address, _port, _serverId, _serverName);
         }
     }
 
-    void ServerProbe::emitSignalIfDataComplete() {
+    void ServerProbe::emitSignalIfDataComplete()
+    {
         if (_serverId.isNull() || _serverName == "")
             return; /* not yet complete */
 
@@ -237,7 +258,8 @@ namespace PMP {
         Q_EMIT foundServer(_address, _port, _serverId, _serverName);
     }
 
-    void ServerProbe::cleanupConnection() {
+    void ServerProbe::cleanupConnection()
+    {
         _connection->reset();
         _connection->deleteLater();
         _connection = nullptr;

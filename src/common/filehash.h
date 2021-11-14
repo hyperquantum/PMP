@@ -26,16 +26,18 @@
 #include <QString>
 #include <QtDebug>
 
-namespace PMP {
-
-    class FileHash {
+namespace PMP
+{
+    class FileHash
+    {
     public:
         FileHash() : _length(0) { }
         FileHash(uint length, const QByteArray& sha1, const QByteArray& md5);
 
         static FileHash create(const QByteArray& dataToHash);
 
-        bool isNull() const {
+        bool isNull() const
+        {
             return _length == 0 && _sha1.size() == 0 && _md5.size() == 0;
         }
 
@@ -55,23 +57,27 @@ namespace PMP {
         QByteArray _md5;
     };
 
-    inline bool operator==(const FileHash& me, const FileHash& other) {
+    inline bool operator==(const FileHash& me, const FileHash& other)
+    {
         return me.length() == other.length()
             && me.SHA1() == other.SHA1()
             && me.MD5() == other.MD5();
     }
 
-    inline bool operator!=(const FileHash& me, const FileHash& other) {
+    inline bool operator!=(const FileHash& me, const FileHash& other)
+    {
         return !(me == other);
     }
 
-    inline uint qHash(const FileHash& hashID) {
+    inline uint qHash(const FileHash& hashID)
+    {
         return hashID.length()
             ^ qHash(hashID.SHA1())
             ^ qHash(hashID.MD5());
     }
 
-    inline int compare(const FileHash& me, const FileHash& other) {
+    inline int compare(const FileHash& me, const FileHash& other)
+    {
         if (me.length() < other.length()) return -1;
         if (other.length() < me.length()) return 1;
 
@@ -84,24 +90,30 @@ namespace PMP {
         return 0;
     }
 
-    inline bool operator<(const FileHash& me, const FileHash& other) {
+    inline bool operator<(const FileHash& me, const FileHash& other)
+    {
         return compare(me, other) < 0;
     }
 
-    inline bool operator<=(const FileHash& me, const FileHash& other) {
+    inline bool operator<=(const FileHash& me, const FileHash& other)
+    {
         return compare(me, other) <= 0;
     }
 
-    inline bool operator>(const FileHash& me, const FileHash& other) {
+    inline bool operator>(const FileHash& me, const FileHash& other)
+    {
         return compare(me, other) > 0;
     }
 
-    inline bool operator>=(const FileHash& me, const FileHash& other) {
+    inline bool operator>=(const FileHash& me, const FileHash& other)
+    {
         return compare(me, other) >= 0;
     }
 
-    inline QDebug operator<<(QDebug debug, const FileHash& hash) {
-        if (hash.isNull()) {
+    inline QDebug operator<<(QDebug debug, const FileHash& hash)
+    {
+        if (hash.isNull())
+        {
             debug << "(null hash)";
             return debug;
         }
