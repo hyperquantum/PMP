@@ -1033,7 +1033,7 @@ namespace PMP {
 
     void FilteredCollectionTableModel::setSearchText(QString search)
     {
-        _searchParts = search.split(QRegExp("\\s+"), QString::SkipEmptyParts);
+        _searchParts = search.split(QRegExp("\\s+"), Qt::SkipEmptyParts);
         invalidateFilter();
     }
 
