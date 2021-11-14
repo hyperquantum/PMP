@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,19 +25,20 @@
 #include <QString>
 #include <QWidget>
 
-namespace Ui {
+namespace Ui
+{
     class UserAccountCreationWidget;
 }
 
-namespace PMP {
-
+namespace PMP
+{
     class ServerConnection;
 
-    class UserAccountCreationWidget : public QWidget {
+    class UserAccountCreationWidget : public QWidget
+    {
         Q_OBJECT
-
     public:
-        UserAccountCreationWidget(QWidget *parent, ServerConnection *connection);
+        UserAccountCreationWidget(QWidget* parent, ServerConnection* connection);
         ~UserAccountCreationWidget();
 
     Q_SIGNALS:

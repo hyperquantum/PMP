@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,20 +25,23 @@
 
 #include <QMessageBox>
 
-namespace PMP {
-
+namespace PMP
+{
     LoginWidget::LoginWidget(QWidget* parent, ServerConnection *connection,
-                             QString login) :
-        QWidget(parent),
-        _ui(new Ui::LoginWidget), _connection(connection)
+                             QString login)
+     : QWidget(parent),
+       _ui(new Ui::LoginWidget),
+       _connection(connection)
     {
         _ui->setupUi(this);
 
-        if (!login.isEmpty()) {
+        if (!login.isEmpty())
+        {
             _ui->usernameLineEdit->setText(login);
             _ui->passwordLineEdit->setFocus();
         }
-        else {
+        else
+        {
             _ui->usernameLineEdit->setFocus();
         }
 
@@ -70,17 +73,20 @@ namespace PMP {
         delete _ui;
     }
 
-    void LoginWidget::loginClicked() {
+    void LoginWidget::loginClicked()
+    {
         QString accountName = _ui->usernameLineEdit->text();
 
-        if (accountName.size() == 0) {
+        if (accountName.size() == 0)
+        {
             QMessageBox::warning(
                 this, tr("Missing username"), tr("Please specify username!")
             );
             return;
         }
 
-        if (accountName.size() > 63) {
+        if (accountName.size() > 63)
+        {
             QMessageBox::warning(
                 this, tr("Invalid username"), tr("Username is too long!")
             );
@@ -97,7 +103,8 @@ namespace PMP {
         _connection->login(accountName, password);
     }
 
-    void LoginWidget::userLoggedInSuccessfully(QString login, quint32 id) {
+    void LoginWidget::userLoggedInSuccessfully(QString login, quint32 id)
+    {
         Q_EMIT loggedIn(login, id);
     }
 
@@ -108,7 +115,8 @@ namespace PMP {
 
         QString message;
 
-        switch (errorType) {
+        switch (errorType)
+        {
         case UserLoginError::AuthenticationFailed:
             message = tr("The specified user/password combination is not valid.");
             break;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,12 +25,13 @@
 
 #include <QMessageBox>
 
-namespace PMP {
-
+namespace PMP
+{
     UserAccountCreationWidget::UserAccountCreationWidget(QWidget *parent,
                                                          ServerConnection* connection)
-        : QWidget(parent),
-        _ui(new Ui::UserAccountCreationWidget), _connection(connection)
+     : QWidget(parent),
+       _ui(new Ui::UserAccountCreationWidget),
+       _connection(connection)
     {
         _ui->setupUi(this);
         _ui->passwordFeedbackLabel->setText(""); /* remove placeholder text */
@@ -71,10 +72,12 @@ namespace PMP {
         QString password = _ui->newPasswordLineEdit->text();
 
         QString feedback;
-        if (password == "") {
+        if (password == "")
+        {
             feedback = "";
         }
-        else {
+        else
+        {
             int passwordRating = NetworkProtocol::ratePassword(password);
 
             feedback = QString("Password score is %1.").arg(passwordRating);
@@ -83,25 +86,29 @@ namespace PMP {
         _ui->passwordFeedbackLabel->setText(feedback);
     }
 
-    void UserAccountCreationWidget::createAccountClicked() {
+    void UserAccountCreationWidget::createAccountClicked()
+    {
         QString accountName = _ui->usernameLineEdit->text();
         QString trimmedAccountName = accountName.trimmed();
 
-        if (trimmedAccountName != accountName) {
+        if (trimmedAccountName != accountName)
+        {
             QMessageBox::warning(
                 this, "Invalid username", "Username cannot start or end with whitespace!"
             );
             return;
         }
 
-        if (accountName.size() == 0) {
+        if (accountName.size() == 0)
+        {
             QMessageBox::warning(
                 this, "Invalid username", "Username cannot be empty!"
             );
             return;
         }
 
-        if (accountName.size() > 63) {
+        if (accountName.size() > 63)
+        {
             QMessageBox::warning(
                 this, "Invalid username", "Username is too long!"
             );
@@ -110,20 +117,23 @@ namespace PMP {
 
         QString password = _ui->newPasswordLineEdit->text();
         QString retypedPassword = _ui->retypePasswordLineEdit->text();
-        if (password == "") {
+        if (password == "")
+        {
             QMessageBox::warning(
                 this, "Specify password", "Please specify a password!"
             );
             return;
         }
-        if (retypedPassword == "") {
+        if (retypedPassword == "")
+        {
             QMessageBox::warning(
                 this, "Specify password", "Please retype your password!"
             );
             return;
         }
 
-        if (password != retypedPassword) {
+        if (password != retypedPassword)
+        {
             QMessageBox::warning(
                 this, "Invalid password", "Passwords do not match!"
             );
@@ -131,7 +141,8 @@ namespace PMP {
         }
 
         int passwordRating = NetworkProtocol::ratePassword(password);
-        if (passwordRating <= 20) {
+        if (passwordRating <= 20)
+        {
             QMessageBox::warning(
                 this, "Bad password",
                 QString("Password is too simple! (Score is %1, but should be at least 20)")
@@ -163,7 +174,8 @@ namespace PMP {
 
         QString message;
 
-        switch (errorType) {
+        switch (errorType)
+        {
         case ServerConnection::AccountAlreadyExists:
             message = "An account with the same name already exists on the server!";
             break;
