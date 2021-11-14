@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,43 +17,33 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_LOGINWIDGET_H
-#define PMP_LOGINWIDGET_H
+#ifndef PMP_AUTHENTICATIONCONTROLLER_H
+#define PMP_AUTHENTICATIONCONTROLLER_H
 
-#include "common/userloginerror.h"
+#include "userloginerror.h"
 
-#include <QWidget>
-
-namespace Ui
-{
-    class LoginWidget;
-}
+#include <QObject>
 
 namespace PMP
 {
-    class AuthenticationController;
-
-    class LoginWidget : public QWidget
+    class AuthenticationController : public QObject
     {
         Q_OBJECT
     public:
-        LoginWidget(QWidget* parent, AuthenticationController* authenticationController,
-                    QString login);
-        ~LoginWidget();
+        virtual ~AuthenticationController() {}
+
+        virtual void login(QString login, QString password) = 0;
+
+        virtual bool isLoggedIn() const = 0;
+        virtual quint32 userLoggedInId() const = 0;
+        virtual QString userLoggedInName() const = 0;
 
     Q_SIGNALS:
-        void loggedIn(QString login, quint32 accountId);
-        void cancelClicked();
-
-    private Q_SLOTS:
-        void loginClicked();
-
         void userLoggedInSuccessfully(QString login, quint32 id);
         void userLoginFailed(QString login, UserLoginError errorType);
 
-    private:
-        Ui::LoginWidget* _ui;
-        AuthenticationController* _authenticationController;
+    protected:
+        explicit AuthenticationController(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

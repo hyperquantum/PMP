@@ -630,7 +630,10 @@ namespace PMP
 
     void MainWindow::showLoginWidget(QString login)
     {
-        _loginWidget = new LoginWidget(this, _connection, login);
+        _loginWidget =
+                new LoginWidget(this,
+                                &_clientServerInterface->authenticationController(),
+                                login);
 
         connect(
             _loginWidget, &LoginWidget::loggedIn,

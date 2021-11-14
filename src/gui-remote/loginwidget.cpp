@@ -20,6 +20,7 @@
 #include "loginwidget.h"
 #include "ui_loginwidget.h"
 
+#include "common/authenticationcontroller.h"
 #include "common/networkprotocol.h"
 #include "common/serverconnection.h"
 
@@ -27,11 +28,12 @@
 
 namespace PMP
 {
-    LoginWidget::LoginWidget(QWidget* parent, ServerConnection *connection,
+    LoginWidget::LoginWidget(QWidget* parent,
+                             AuthenticationController* authenticationController,
                              QString login)
      : QWidget(parent),
        _ui(new Ui::LoginWidget),
-       _connection(connection)
+       _authenticationController(authenticationController)
     {
         _ui->setupUi(this);
 
@@ -59,12 +61,12 @@ namespace PMP
         );
 
         connect(
-            _connection, &ServerConnection::userLoggedInSuccessfully,
+            _authenticationController,&AuthenticationController::userLoggedInSuccessfully,
             this, &LoginWidget::userLoggedInSuccessfully
         );
         connect(
-            _connection, &ServerConnection::userLoginError,
-            this, &LoginWidget::userLoginError
+            _authenticationController, &AuthenticationController::userLoginFailed,
+            this, &LoginWidget::userLoginFailed
         );
     }
 
@@ -100,7 +102,7 @@ namespace PMP
         _ui->passwordLineEdit->setEnabled(false);
         _ui->loginButton->setEnabled(false);
 
-        _connection->login(accountName, password);
+        _authenticationController->login(accountName, password);
     }
 
     void LoginWidget::userLoggedInSuccessfully(QString login, quint32 id)
@@ -108,8 +110,8 @@ namespace PMP
         Q_EMIT loggedIn(login, id);
     }
 
-    void LoginWidget::userLoginError(QString login,
-                                     UserLoginError errorType)
+    void LoginWidget::userLoginFailed(QString login,
+                                      UserLoginError errorType)
     {
         Q_UNUSED(login)
 
