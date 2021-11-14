@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,7 +32,7 @@ namespace PMP {
     class CollectionWatcherImpl : public CollectionWatcher {
         Q_OBJECT
     public:
-        CollectionWatcherImpl(ServerConnection* connection);
+        explicit CollectionWatcherImpl(ServerConnection* connection);
 
         QHash<FileHash, CollectionTrackInfo> getCollection() override;
         CollectionTrackInfo getTrack(FileHash const& hash) override;

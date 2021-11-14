@@ -39,7 +39,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        ClientServerInterface(ServerConnection* connection);
+        explicit ClientServerInterface(ServerConnection* connection);
 
         GeneralController& generalController();
 

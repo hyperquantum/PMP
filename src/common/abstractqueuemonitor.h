@@ -50,7 +50,7 @@ namespace PMP {
         void trackMoved(int fromIndex, int toIndex, quint32 queueID);
 
     protected:
-        AbstractQueueMonitor(QObject* parent) : QObject(parent) {}
+        explicit AbstractQueueMonitor(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

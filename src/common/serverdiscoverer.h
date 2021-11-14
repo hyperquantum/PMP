@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -37,7 +37,7 @@ namespace PMP {
     class ServerDiscoverer : public QObject {
         Q_OBJECT
     public:
-        ServerDiscoverer(QObject* parent = nullptr);
+        explicit ServerDiscoverer(QObject* parent = nullptr);
         ~ServerDiscoverer();
 
     public Q_SLOTS:

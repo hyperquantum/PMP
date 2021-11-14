@@ -46,7 +46,7 @@ namespace PMP
                                              RequestID requestId);
 
     protected:
-        GeneralController(QObject* parent) : QObject(parent) {}
+        explicit GeneralController(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

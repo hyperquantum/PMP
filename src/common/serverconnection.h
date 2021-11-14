@@ -74,8 +74,8 @@ namespace PMP
             UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
         };
 
-        ServerConnection(QObject* parent = nullptr,
-                         ServerEventSubscription eventSubscription =
+        explicit ServerConnection(QObject* parent = nullptr,
+                                  ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
 
         void reset();
