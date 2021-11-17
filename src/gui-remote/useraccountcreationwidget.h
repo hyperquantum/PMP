@@ -20,7 +20,7 @@
 #ifndef PMP_USERACCOUNTCREATIONWIDGET_H
 #define PMP_USERACCOUNTCREATIONWIDGET_H
 
-#include "common/serverconnection.h" // for the enum :-/
+#include "common/userregistrationerror.h"
 
 #include <QString>
 #include <QWidget>
@@ -50,8 +50,7 @@ namespace PMP
         void createAccountClicked();
 
         void userAccountCreatedSuccessfully(QString login, quint32 id);
-        void userAccountCreationError(QString login,
-                                      ServerConnection::UserRegistrationError errorType);
+        void userAccountCreationError(QString login, UserRegistrationError errorType);
 
     private:
         Ui::UserAccountCreationWidget* _ui;

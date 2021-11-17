@@ -26,6 +26,7 @@
 #include "serverhealthstatus.h"
 #include "startstopeventstatus.h"
 #include "userloginerror.h"
+#include "userregistrationerror.h"
 
 namespace PMP
 {
@@ -45,6 +46,7 @@ namespace PMP
             qRegisterMetaType<PMP::ServerHealthStatus>();
             qRegisterMetaType<PMP::StartStopEventStatus>();
             qRegisterMetaType<PMP::UserLoginError>();
+            qRegisterMetaType<PMP::UserRegistrationError>();
         }
 
     private:

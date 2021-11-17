@@ -21,7 +21,7 @@
 #include "ui_useraccountcreationwidget.h"
 
 #include "common/networkprotocol.h"
-//#include "common/serverconnection.h"  already included in the header file :-/
+#include "common/serverconnection.h"
 
 #include <QMessageBox>
 
@@ -168,7 +168,7 @@ namespace PMP
     }
 
     void UserAccountCreationWidget::userAccountCreationError(QString login,
-                                        ServerConnection::UserRegistrationError errorType)
+                                                          UserRegistrationError errorType)
     {
         Q_UNUSED(login)
 
@@ -176,13 +176,15 @@ namespace PMP
 
         switch (errorType)
         {
-        case ServerConnection::AccountAlreadyExists:
+        case UserRegistrationError::AccountAlreadyExists:
             message = "An account with the same name already exists on the server!";
             break;
-        case ServerConnection::InvalidAccountName:
+
+        case UserRegistrationError::InvalidAccountName:
             message = "The account name is not valid.";
             break;
-        case ServerConnection::UnknownUserRegistrationError:
+
+        case UserRegistrationError::UnknownError:
         default:
             message =
                 "An unknown error occurred on the server while trying to register the account!";

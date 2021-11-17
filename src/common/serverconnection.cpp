@@ -1000,13 +1000,13 @@ namespace PMP
             switch (errorCode)
             {
             case ResultMessageErrorCode::UserAccountAlreadyExists:
-                error = AccountAlreadyExists;
+                error = UserRegistrationError::AccountAlreadyExists;
                 break;
             case ResultMessageErrorCode::InvalidUserAccountName:
-                error = InvalidAccountName;
+                error = UserRegistrationError::InvalidAccountName;
                 break;
             default:
-                error = UnknownUserRegistrationError;
+                error = UserRegistrationError::UnknownError;
                 break;
             }
 

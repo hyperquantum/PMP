@@ -28,6 +28,7 @@
 #include "serverhealthstatus.h"
 #include "tribool.h"
 #include "userloginerror.h"
+#include "userregistrationerror.h"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -69,11 +70,6 @@ namespace PMP
         class DuplicationResultHandler;
 
     public:
-        enum UserRegistrationError
-        {
-            UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
-        };
-
         explicit ServerConnection(QObject* parent = nullptr,
                                   ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
