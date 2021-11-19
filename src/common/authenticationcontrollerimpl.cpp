@@ -38,6 +38,15 @@ namespace PMP
         );
 
         connect(
+            _connection, &ServerConnection::userAccountCreatedSuccessfully,
+            this, &AuthenticationControllerImpl::userAccountCreatedSuccessfully
+        );
+        connect(
+            _connection, &ServerConnection::userAccountCreationError,
+            this, &AuthenticationControllerImpl::userAccountCreationError
+        );
+
+        connect(
             _connection, &ServerConnection::userLoggedInSuccessfully,
             this, &AuthenticationControllerImpl::userLoggedInSuccessfully
         );
@@ -45,6 +54,12 @@ namespace PMP
             _connection, &ServerConnection::userLoginError,
             this, &AuthenticationControllerImpl::userLoginFailed
         );
+    }
+
+    void AuthenticationControllerImpl::createNewUserAccount(QString login,
+                                                            QString password)
+    {
+        _connection->createNewUserAccount(login, password);
     }
 
     void AuthenticationControllerImpl::login(QString login, QString password)

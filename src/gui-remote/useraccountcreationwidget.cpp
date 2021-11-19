@@ -20,18 +20,18 @@
 #include "useraccountcreationwidget.h"
 #include "ui_useraccountcreationwidget.h"
 
+#include "common/authenticationcontroller.h"
 #include "common/networkprotocol.h"
-#include "common/serverconnection.h"
 
 #include <QMessageBox>
 
 namespace PMP
 {
     UserAccountCreationWidget::UserAccountCreationWidget(QWidget *parent,
-                                                         ServerConnection* connection)
+                                       AuthenticationController* authenticationController)
      : QWidget(parent),
        _ui(new Ui::UserAccountCreationWidget),
-       _connection(connection)
+       _authenticationController(authenticationController)
     {
         _ui->setupUi(this);
         _ui->passwordFeedbackLabel->setText(""); /* remove placeholder text */
@@ -51,12 +51,16 @@ namespace PMP
         );
 
         connect(
-            _connection, &ServerConnection::userAccountCreatedSuccessfully,
-            this, &UserAccountCreationWidget::userAccountCreatedSuccessfully
+            _authenticationController,
+            &AuthenticationController::userAccountCreatedSuccessfully,
+            this,
+            &UserAccountCreationWidget::userAccountCreatedSuccessfully
         );
         connect(
-            _connection, &ServerConnection::userAccountCreationError,
-            this, &UserAccountCreationWidget::userAccountCreationError
+            _authenticationController,
+            &AuthenticationController::userAccountCreationError,
+            this,
+            &UserAccountCreationWidget::userAccountCreationError
         );
     }
 
@@ -157,7 +161,7 @@ namespace PMP
         _ui->retypePasswordLineEdit->setEnabled(false);
         _ui->createAccountButton->setEnabled(false);
 
-        _connection->createNewUserAccount(accountName, password);
+        _authenticationController->createNewUserAccount(accountName, password);
     }
 
     void UserAccountCreationWidget::userAccountCreatedSuccessfully(QString login,

@@ -598,7 +598,11 @@ namespace PMP
 
     void MainWindow::onCreateAccountClicked()
     {
-        _userAccountCreationWidget = new UserAccountCreationWidget(this, _connection);
+        auto* authenticationController =
+                &_clientServerInterface->authenticationController();
+
+        _userAccountCreationWidget =
+            new UserAccountCreationWidget(this, authenticationController);
 
         connect(
             _userAccountCreationWidget, &UserAccountCreationWidget::accountCreated,

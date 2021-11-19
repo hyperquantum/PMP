@@ -32,13 +32,14 @@ namespace Ui
 
 namespace PMP
 {
-    class ServerConnection;
+    class AuthenticationController;
 
     class UserAccountCreationWidget : public QWidget
     {
         Q_OBJECT
     public:
-        UserAccountCreationWidget(QWidget* parent, ServerConnection* connection);
+        UserAccountCreationWidget(QWidget* parent,
+                                  AuthenticationController* authenticationController);
         ~UserAccountCreationWidget();
 
     Q_SIGNALS:
@@ -54,7 +55,7 @@ namespace PMP
 
     private:
         Ui::UserAccountCreationWidget* _ui;
-        ServerConnection* _connection;
+        AuthenticationController* _authenticationController;
     };
 }
 #endif

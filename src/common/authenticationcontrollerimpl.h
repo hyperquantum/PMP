@@ -32,6 +32,7 @@ namespace PMP
     public:
         explicit AuthenticationControllerImpl(ServerConnection* connection);
 
+        void createNewUserAccount(QString login, QString password) override;
         void login(QString login, QString password) override;
 
         bool isLoggedIn() const override;
