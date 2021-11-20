@@ -198,6 +198,8 @@ namespace PMP
         const int secondsPerHour = 60 * secondsPerMinute;
         const int secondsPerDay = 24 * secondsPerHour;
         const int secondsPerWeek = 7 * secondsPerDay;
+        const int secondsPerMonth = 30 * secondsPerDay; // good enough here
+        const int secondsPer3Months = 91 * secondsPerDay; // good enough here
         const int secondsPerYear = 365 * secondsPerDay; // good enough here
         const int secondsPer4Years = (366 + 3 * 365) * secondsPerDay; // good enough here
 
@@ -225,21 +227,42 @@ namespace PMP
             return SimpleDuration(days, DurationUnit::Days);
         }
 
-        if (secondsAgo < secondsPerYear)
+        if (secondsAgo < secondsPerMonth)
         {
             int weeks = secondsAgo / secondsPerWeek;
             return SimpleDuration(weeks, DurationUnit::Weeks);
         }
 
-        if (secondsAgo < 4 * secondsPerYear)
+        if (secondsAgo < secondsPerYear)
         {
-            int years = secondsAgo / secondsPerYear;
-            return SimpleDuration(years, DurationUnit::Years);
+            int months;
+            if (secondsAgo < 3 * secondsPerMonth)
+            {
+                months = secondsAgo / secondsPerMonth;
+            }
+            else
+            {
+                int threeMonths = secondsAgo / secondsPer3Months;
+                int remainingMonths =
+                        (secondsAgo - threeMonths * secondsPer3Months) / secondsPerMonth;
+                months = 3 * threeMonths + qMin(remainingMonths, 2);
+            }
+
+            return SimpleDuration(months, DurationUnit::Months);
         }
 
-        int fourYears = secondsAgo / secondsPer4Years;
-        int remainingYears = (secondsAgo - fourYears * secondsPer4Years) / secondsPerYear;
-        int years = 4 * fourYears + qMin(remainingYears, 3);
+        int years;
+        if (secondsAgo < 4 * secondsPerYear)
+        {
+            years = secondsAgo / secondsPerYear;
+        }
+        else
+        {
+            int fourYears = secondsAgo / secondsPer4Years;
+            int remainingYears =
+                    (secondsAgo - fourYears * secondsPer4Years) / secondsPerYear;
+            years = 4 * fourYears + qMin(remainingYears, 3);
+        }
 
         return SimpleDuration(years, DurationUnit::Years);
     }
