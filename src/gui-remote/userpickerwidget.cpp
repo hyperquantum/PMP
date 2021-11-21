@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,8 +24,8 @@
 
 #include <algorithm>
 
-namespace PMP {
-
+namespace PMP
+{
     UserPickerWidget::UserPickerWidget(QWidget* parent, ServerConnection* connection)
         : QWidget(parent),
         _ui(new Ui::UserPickerWidget), _connection(connection),
@@ -54,27 +54,33 @@ namespace PMP {
         _connection->sendUserAccountsFetchRequest();
     }
 
-    UserPickerWidget::~UserPickerWidget() {
+    UserPickerWidget::~UserPickerWidget()
+    {
         delete _ui;
     }
 
-    void UserPickerWidget::receivedUserAccounts(QList<QPair<uint, QString> > accounts) {
+    void UserPickerWidget::receivedUserAccounts(QList<QPair<uint, QString> > accounts)
+    {
         bool serverOk = !_serverProblemsPreventLogin;
 
         std::sort(
             accounts.begin(), accounts.end(),
-            [](const QPair<uint,QString>& u1, const QPair<uint,QString>& u2) {
+            [](const QPair<uint,QString>& u1, const QPair<uint,QString>& u2)
+            {
                 return u1.second < u2.second;
             }
         );
 
         _ui->loadingUserListLabel->setVisible(false);
 
-        if (accounts.size() <= 0) {
+        if (accounts.size() <= 0)
+        {
             _ui->noUserAccountsYetLabel->setVisible(serverOk);
         }
-        else {
-            for (int i = 0; i < accounts.size(); ++i) {
+        else
+        {
+            for (int i = 0; i < accounts.size(); ++i)
+            {
                 QString username = accounts[i].second;
 
                 QCommandLinkButton* button =
@@ -95,10 +101,12 @@ namespace PMP {
         _ui->createNewAccountButton->setEnabled(serverOk);
     }
 
-    void UserPickerWidget::serverHealthChanged(ServerHealthStatus serverHealth) {
+    void UserPickerWidget::serverHealthChanged(ServerHealthStatus serverHealth)
+    {
         _serverProblemsPreventLogin = serverHealth.databaseUnavailable();
 
-        if (_serverProblemsPreventLogin) {
+        if (_serverProblemsPreventLogin)
+        {
             _ui->noUserAccountsYetLabel->setVisible(false);
             _ui->createNewAccountButton->setEnabled(false);
         }

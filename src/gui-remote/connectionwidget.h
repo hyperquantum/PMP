@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,15 +24,16 @@
 #include <QUuid>
 #include <QWidget>
 
-namespace Ui {
+namespace Ui
+{
     class ConnectionWidget;
 }
 
-namespace PMP {
-
-    class ConnectionWidget : public QWidget {
+namespace PMP
+{
+    class ConnectionWidget : public QWidget
+    {
         Q_OBJECT
-
     public:
         explicit ConnectionWidget(QWidget* parent = 0);
         ~ConnectionWidget();
