@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,26 +24,31 @@
 #include <QHostAddress>
 #include <QObject>
 #include <QPair>
-#include <QPointer>
+#include <QSet>
+#include <QSharedPointer>
 #include <QUuid>
 
 QT_FORWARD_DECLARE_CLASS(QUdpSocket)
 
-namespace PMP {
-
+namespace PMP
+{
     class ServerConnection;
     class ServerProbe;
 
-    class ServerDiscoverer : public QObject {
+    class ServerDiscoverer : public QObject
+    {
         Q_OBJECT
     public:
-        ServerDiscoverer(QObject* parent = nullptr);
+        explicit ServerDiscoverer(QObject* parent = nullptr);
         ~ServerDiscoverer();
 
+        bool canDoScan() const;
+
     public Q_SLOTS:
-        void sendProbe();
+        void scanForServers();
 
     Q_SIGNALS:
+        void canDoScanChanged();
         void foundServer(QHostAddress address, quint16 port, QUuid id, QString name);
         void foundExtraServerAddress(QHostAddress address, QUuid id);
 
@@ -55,10 +60,12 @@ namespace PMP {
                            QUuid serverId, QString name);
 
     private:
+        bool isLocalhostAddress(QHostAddress const& address);
         void sendProbeTo(QHostAddress const& destination);
-        void receivedProbeReply(QHostAddress const& server, quint16 port);
+        void receivedServerAnnouncement(QHostAddress const& server, quint16 port);
 
-        struct ServerData {
+        struct ServerData
+        {
             quint16 port;
             QList<QHostAddress> addresses;
             QString name;
@@ -66,11 +73,13 @@ namespace PMP {
 
         QList<QHostAddress> _localHostNetworkAddresses;
         QUdpSocket* _socket;
-        QHash<QPair<QHostAddress, quint16>, QPointer<ServerProbe> > _addresses;
-        QHash<QUuid, ServerData*> _servers;
+        QSet<QPair<QHostAddress, quint16>> _addressesBeingProbed;
+        QHash<QUuid, QSharedPointer<ServerData>> _servers;
+        bool _scanInProgress;
     };
 
-    class ServerProbe : public QObject {
+    class ServerProbe : public QObject
+    {
         Q_OBJECT
     public:
         ServerProbe(QObject* parent, QHostAddress const& address, quint16 port);
@@ -87,7 +96,7 @@ namespace PMP {
 
     private:
         void emitSignalIfDataComplete();
-        void cleanupConnection();
+        void cleanUpConnection();
 
         QHostAddress _address;
         quint16 _port;

@@ -396,16 +396,18 @@ namespace PMP
         }
     }
 
-    void Resolver::setMusicPaths(QList<QString> paths)
+    void Resolver::setMusicPaths(QStringList paths)
     {
         QMutexLocker lock(&_lock);
         _musicPaths = paths;
+
+        qDebug() << "music paths set to:" << paths.join("; ");
     }
 
-    QList<QString> Resolver::musicPaths()
+    QStringList Resolver::musicPaths()
     {
         QMutexLocker lock(&_lock);
-        QList<QString> paths = _musicPaths;
+        QStringList paths = _musicPaths;
         paths.detach();
         return paths;
     }

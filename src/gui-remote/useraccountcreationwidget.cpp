@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,17 +20,18 @@
 #include "useraccountcreationwidget.h"
 #include "ui_useraccountcreationwidget.h"
 
+#include "common/authenticationcontroller.h"
 #include "common/networkprotocol.h"
-//#include "common/serverconnection.h"  already included in the header file :-/
 
 #include <QMessageBox>
 
-namespace PMP {
-
+namespace PMP
+{
     UserAccountCreationWidget::UserAccountCreationWidget(QWidget *parent,
-                                                         ServerConnection* connection)
-        : QWidget(parent),
-        _ui(new Ui::UserAccountCreationWidget), _connection(connection)
+                                       AuthenticationController* authenticationController)
+     : QWidget(parent),
+       _ui(new Ui::UserAccountCreationWidget),
+       _authenticationController(authenticationController)
     {
         _ui->setupUi(this);
         _ui->passwordFeedbackLabel->setText(""); /* remove placeholder text */
@@ -50,12 +51,16 @@ namespace PMP {
         );
 
         connect(
-            _connection, &ServerConnection::userAccountCreatedSuccessfully,
-            this, &UserAccountCreationWidget::userAccountCreatedSuccessfully
+            _authenticationController,
+            &AuthenticationController::userAccountCreatedSuccessfully,
+            this,
+            &UserAccountCreationWidget::userAccountCreatedSuccessfully
         );
         connect(
-            _connection, &ServerConnection::userAccountCreationError,
-            this, &UserAccountCreationWidget::userAccountCreationError
+            _authenticationController,
+            &AuthenticationController::userAccountCreationError,
+            this,
+            &UserAccountCreationWidget::userAccountCreationError
         );
     }
 
@@ -71,10 +76,12 @@ namespace PMP {
         QString password = _ui->newPasswordLineEdit->text();
 
         QString feedback;
-        if (password == "") {
+        if (password == "")
+        {
             feedback = "";
         }
-        else {
+        else
+        {
             int passwordRating = NetworkProtocol::ratePassword(password);
 
             feedback = QString("Password score is %1.").arg(passwordRating);
@@ -83,25 +90,29 @@ namespace PMP {
         _ui->passwordFeedbackLabel->setText(feedback);
     }
 
-    void UserAccountCreationWidget::createAccountClicked() {
+    void UserAccountCreationWidget::createAccountClicked()
+    {
         QString accountName = _ui->usernameLineEdit->text();
         QString trimmedAccountName = accountName.trimmed();
 
-        if (trimmedAccountName != accountName) {
+        if (trimmedAccountName != accountName)
+        {
             QMessageBox::warning(
                 this, "Invalid username", "Username cannot start or end with whitespace!"
             );
             return;
         }
 
-        if (accountName.size() == 0) {
+        if (accountName.size() == 0)
+        {
             QMessageBox::warning(
                 this, "Invalid username", "Username cannot be empty!"
             );
             return;
         }
 
-        if (accountName.size() > 63) {
+        if (accountName.size() > 63)
+        {
             QMessageBox::warning(
                 this, "Invalid username", "Username is too long!"
             );
@@ -110,20 +121,23 @@ namespace PMP {
 
         QString password = _ui->newPasswordLineEdit->text();
         QString retypedPassword = _ui->retypePasswordLineEdit->text();
-        if (password == "") {
+        if (password == "")
+        {
             QMessageBox::warning(
                 this, "Specify password", "Please specify a password!"
             );
             return;
         }
-        if (retypedPassword == "") {
+        if (retypedPassword == "")
+        {
             QMessageBox::warning(
                 this, "Specify password", "Please retype your password!"
             );
             return;
         }
 
-        if (password != retypedPassword) {
+        if (password != retypedPassword)
+        {
             QMessageBox::warning(
                 this, "Invalid password", "Passwords do not match!"
             );
@@ -131,7 +145,8 @@ namespace PMP {
         }
 
         int passwordRating = NetworkProtocol::ratePassword(password);
-        if (passwordRating <= 20) {
+        if (passwordRating <= 20)
+        {
             QMessageBox::warning(
                 this, "Bad password",
                 QString("Password is too simple! (Score is %1, but should be at least 20)")
@@ -146,7 +161,7 @@ namespace PMP {
         _ui->retypePasswordLineEdit->setEnabled(false);
         _ui->createAccountButton->setEnabled(false);
 
-        _connection->createNewUserAccount(accountName, password);
+        _authenticationController->createNewUserAccount(accountName, password);
     }
 
     void UserAccountCreationWidget::userAccountCreatedSuccessfully(QString login,
@@ -157,20 +172,23 @@ namespace PMP {
     }
 
     void UserAccountCreationWidget::userAccountCreationError(QString login,
-                                        ServerConnection::UserRegistrationError errorType)
+                                                          UserRegistrationError errorType)
     {
         Q_UNUSED(login)
 
         QString message;
 
-        switch (errorType) {
-        case ServerConnection::AccountAlreadyExists:
+        switch (errorType)
+        {
+        case UserRegistrationError::AccountAlreadyExists:
             message = "An account with the same name already exists on the server!";
             break;
-        case ServerConnection::InvalidAccountName:
+
+        case UserRegistrationError::InvalidAccountName:
             message = "The account name is not valid.";
             break;
-        case ServerConnection::UnknownUserRegistrationError:
+
+        case UserRegistrationError::UnknownError:
         default:
             message =
                 "An unknown error occurred on the server while trying to register the account!";

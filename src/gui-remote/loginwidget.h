@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,20 +24,21 @@
 
 #include <QWidget>
 
-namespace Ui {
-class LoginWidget;
+namespace Ui
+{
+    class LoginWidget;
 }
 
-namespace PMP {
-
-    class ServerConnection;
+namespace PMP
+{
+    class AuthenticationController;
 
     class LoginWidget : public QWidget
     {
         Q_OBJECT
-
     public:
-        LoginWidget(QWidget* parent, ServerConnection *connection, QString login);
+        LoginWidget(QWidget* parent, AuthenticationController* authenticationController,
+                    QString login);
         ~LoginWidget();
 
     Q_SIGNALS:
@@ -48,11 +49,11 @@ namespace PMP {
         void loginClicked();
 
         void userLoggedInSuccessfully(QString login, quint32 id);
-        void userLoginError(QString login, UserLoginError errorType);
+        void userLoginFailed(QString login, UserLoginError errorType);
 
     private:
         Ui::LoginWidget* _ui;
-        ServerConnection* _connection;
+        AuthenticationController* _authenticationController;
     };
 }
 #endif

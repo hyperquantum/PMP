@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,10 +22,11 @@
 
 #include <QObject>
 
-namespace PMP {
-
+namespace PMP
+{
     /*! class that monitors server health status on behalf of connected remotes */
-    class ServerHealthMonitor : public QObject {
+    class ServerHealthMonitor : public QObject
+    {
         Q_OBJECT
     public:
         explicit ServerHealthMonitor(QObject *parent = nullptr);

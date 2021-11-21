@@ -124,7 +124,7 @@ namespace PMP {
         for (quint32 userId : _hashesToFetchForUsers.keys())
         {
             _connection->sendHashUserDataRequest(
-                userId, _hashesToFetchForUsers.value(userId).toList()
+                userId, _hashesToFetchForUsers.value(userId).values()
             );
         }
 

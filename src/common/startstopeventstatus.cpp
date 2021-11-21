@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,9 +19,10 @@
 
 #include "startstopeventstatus.h"
 
-namespace PMP {
-    namespace Common {
-
+namespace PMP
+{
+    namespace Common
+    {
         bool isValidStartStopEventStatus(quint8 status)
         {
             switch (status)

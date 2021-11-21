@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,19 +27,22 @@ QT_FORWARD_DECLARE_CLASS(QTcpServer)
 QT_FORWARD_DECLARE_CLASS(QTimer)
 QT_FORWARD_DECLARE_CLASS(QUdpSocket)
 
-namespace PMP {
-
+namespace PMP
+{
     class CollectionMonitor;
     class Generator;
     class History;
     class Player;
     class ServerHealthMonitor;
+    class ServerSettings;
     class Users;
 
-    class Server : public QObject {
+    class Server : public QObject
+    {
         Q_OBJECT
     public:
-        Server(QObject* parent, const QUuid& serverInstanceIdentifier);
+        Server(QObject* parent, ServerSettings* serverSettings,
+               const QUuid& serverInstanceIdentifier);
 
         bool listen(Player* player, Generator* generator, History* history,
                     Users* users,
@@ -52,12 +55,15 @@ namespace PMP {
         quint16 port() const;
 
         QUuid uuid() const { return _uuid; }
-        QString serverPassword() { return _serverPassword; }
+        QString caption() const { return _caption; }
+        QString serverPassword() const { return _serverPassword; }
 
     public Q_SLOTS:
         void shutdown();
 
     Q_SIGNALS:
+        void captionChanged();
+        void serverClockTimeSendingPulse();
         void shuttingDown();
 
     private Q_SLOTS:
@@ -68,8 +74,12 @@ namespace PMP {
     private:
         static QString generateServerPassword();
 
+        void determineCaption();
+
         QUuid _uuid;
+        QString _caption;
         QString _serverPassword;
+        ServerSettings* _settings;
         Player* _player;
         Generator* _generator;
         History* _history;

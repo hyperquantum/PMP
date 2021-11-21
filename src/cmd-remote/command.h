@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,17 +22,19 @@
 
 #include <QObject>
 
-namespace PMP {
-
+namespace PMP
+{
     class ClientServerInterface;
 
     class Command : public QObject
     {
         Q_OBJECT
     public:
-        ~Command();
+        virtual ~Command() {}
 
         virtual bool requiresAuthentication() const = 0;
+        virtual bool willCauseDisconnect() const = 0;
+
         virtual void execute(ClientServerInterface* clientServerInterface) = 0;
 
     Q_SIGNALS:
@@ -40,7 +42,7 @@ namespace PMP {
         void executionFailed(int resultCode, QString errorOutput);
 
     protected:
-        explicit Command(QObject* parent = nullptr);
+        explicit Command(QObject* parent = nullptr) : QObject(parent) {}
     };
 }
 #endif

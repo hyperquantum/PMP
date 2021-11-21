@@ -20,8 +20,8 @@
 #ifndef PMP_TRIBOOL_H
 #define PMP_TRIBOOL_H
 
-namespace PMP {
-
+namespace PMP
+{
     class TriBool
     {
     public:

@@ -21,40 +21,28 @@
 #define PMP_COMMANDS_H
 
 #include "common/playerstate.h"
+#include "common/requestid.h"
 
-#include "command.h"
+#include "commandbase.h"
 
-#include <QVector>
+namespace PMP
+{
+    // TODO : remove useless constructors
 
-#include <functional>
-
-namespace PMP {
-
-    class CommandBase : public Command
+    class ReloadServerSettingsCommand : public CommandBase
     {
         Q_OBJECT
     public:
-        virtual void execute(ClientServerInterface* clientServerInterface) override;
+        ReloadServerSettingsCommand();
+
+        bool requiresAuthentication() const override;
 
     protected:
-        CommandBase();
-
-        void addStep(std::function<bool ()> step);
-        void setStepDelay(int milliseconds);
-        void setCommandExecutionSuccessful(QString output = "");
-        void setCommandExecutionFailed(int resultCode, QString errorOutput);
-
-        virtual void setUp(ClientServerInterface* clientServerInterface) = 0;
-        virtual void start(ClientServerInterface* clientServerInterface) = 0;
-
-    protected Q_SLOTS:
-        void listenerSlot();
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
 
     private:
-        int _currentStep;
-        int _stepDelayMilliseconds;
-        QVector<std::function<bool ()>> _steps;
-        bool _finishedOrFailed;
+        RequestID _requestId;
     };
 
     class PlayCommand : public CommandBase
@@ -136,14 +124,18 @@ namespace PMP {
         int _fetchLimit;
     };
 
-    class ShutdownCommand : public Command
+    class ShutdownCommand : public CommandBase
     {
         Q_OBJECT
     public:
         ShutdownCommand(/*QString serverPassword*/);
 
         bool requiresAuthentication() const override;
-        void execute(ClientServerInterface* clientServerInterface) override;
+        bool willCauseDisconnect() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
 
     private:
         //QString _serverPassword;

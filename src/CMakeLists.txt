@@ -19,6 +19,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(PMP_COMMON_SOURCES
     common/audiodata.cpp
+    common/authenticationcontrollerimpl.cpp
     common/clientserverinterface.cpp
     common/collectionwatcherimpl.cpp
     common/commonmetatypes.cpp
@@ -26,6 +27,7 @@ set(PMP_COMMON_SOURCES
     common/dynamicmodecontrollerimpl.cpp
     common/fileanalyzer.cpp
     common/filehash.cpp
+    common/generalcontrollerimpl.cpp
     common/logging.cpp
     common/networkprotocol.cpp
     common/networkutil.cpp
@@ -44,6 +46,8 @@ set(PMP_COMMON_SOURCES
 )
 set(PMP_COMMON_HEADERS
     common/abstractqueuemonitor.h
+    common/authenticationcontroller.h
+    common/authenticationcontrollerimpl.h
     common/clientserverinterface.h
     common/collectionfetcher.h
     common/collectionwatcher.h
@@ -52,6 +56,8 @@ set(PMP_COMMON_HEADERS
     common/currenttrackmonitorimpl.h
     common/dynamicmodecontroller.h
     common/dynamicmodecontrollerimpl.h
+    common/generalcontroller.h
+    common/generalcontrollerimpl.h
     common/playercontroller.h
     common/playercontrollerimpl.h
     common/powermanagement.h
@@ -118,7 +124,7 @@ set(PMP_SERVER_HEADERS
 
 set(PMP_CMD_REMOTE_SOURCES
     cmd-remote/client.cpp
-    cmd-remote/command.cpp
+    cmd-remote/commandbase.cpp
     cmd-remote/commandparser.cpp
     cmd-remote/commands.cpp
     cmd-remote/console.cpp
@@ -126,6 +132,7 @@ set(PMP_CMD_REMOTE_SOURCES
 set(PMP_CMD_REMOTE_HEADERS
     cmd-remote/client.h
     cmd-remote/command.h
+    cmd-remote/commandbase.h
     cmd-remote/commands.h
 )
 

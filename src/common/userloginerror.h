@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,8 +22,8 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     enum class UserLoginError
     {
         UnknownError,
@@ -43,7 +43,6 @@ namespace PMP {
 
         return debug << int(error);
     }
-
 }
 
 Q_DECLARE_METATYPE(PMP::UserLoginError)

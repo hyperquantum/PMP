@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,7 +36,6 @@
 #include "serverinterface.h"
 #include "users.h"
 
-#include <QHostInfo>
 #include <QMap>
 #include <QThreadPool>
 #include <QTimer>
@@ -45,7 +44,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 14;
+    const qint16 ConnectedClient::ServerProtocolNo = 16;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -69,18 +68,17 @@ namespace PMP
             _serverInterface, &ServerInterface::serverShuttingDown,
             this, &ConnectedClient::terminateConnection
         );
+        connect(
+            _serverInterface, &ServerInterface::serverSettingsReloadResultEvent,
+            this, &ConnectedClient::serverSettingsReloadResultEvent
+        );
 
         connect(
             socket, &QTcpSocket::disconnected,
             this, &ConnectedClient::terminateConnection
         );
         connect(socket, &QTcpSocket::readyRead, this, &ConnectedClient::dataArrived);
-        connect(
-            socket,
-            static_cast<void (QTcpSocket::*)(QAbstractSocket::SocketError)>(
-                                                                      &QTcpSocket::error),
-            this, &ConnectedClient::socketError
-        );
+        connect(socket, &QTcpSocket::errorOccurred, this, &ConnectedClient::socketError);
 
         /* Send greeting.
          * The space at the end allows the client to detect that this server supports the
@@ -182,7 +180,19 @@ namespace PMP
             this, &ConnectedClient::onUserHashStatsUpdated
         );
 
-        if (!_healthEventsEnabled) {
+        connect(
+            _serverInterface, &ServerInterface::serverCaptionChanged,
+            this, [this]() { sendServerNameMessage(); }
+        );
+
+        connect(
+            _serverInterface, &ServerInterface::serverClockTimeSendingPulse,
+            this, &ConnectedClient::sendServerClockMessage
+        );
+        sendServerClockMessage();
+
+        if (!_healthEventsEnabled)
+        {
             connect(
                 _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
                 this, &ConnectedClient::serverHealthChanged
@@ -646,15 +656,17 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendEventNotificationMessage(quint8 event)
+    void ConnectedClient::sendEventNotificationMessage(ServerEventCode eventCode)
     {
-        qDebug() << "   sending server event number" << event;
+        qDebug() << "sending server event number" << static_cast<int>(eventCode);
+
+        quint8 numericEventCode = static_cast<quint8>(eventCode);
 
         QByteArray message;
         message.reserve(2 + 2);
         NetworkProtocol::append2Bytes(message,
                                       ServerMessageType::ServerEventNotificationMessage);
-        NetworkUtil::appendByte(message, event);
+        NetworkUtil::appendByte(message, numericEventCode);
         NetworkUtil::appendByte(message, 0); /* unused */
 
         sendBinaryMessage(message);
@@ -1291,8 +1303,11 @@ namespace PMP
         sendSuccessMessage(clientReference, 0);
     }
 
-    void ConnectedClient::sendServerNameMessage(quint8 type, QString name)
+    void ConnectedClient::sendServerNameMessage()
     {
+        quint8 type = 0; // TODO : type
+        auto name = _serverInterface->getServerCaption();
+
         name.truncate(63);
         QByteArray nameBytes = name.toUtf8();
 
@@ -1325,6 +1340,23 @@ namespace PMP
         message.reserve(2 + 2);
         NetworkProtocol::append2Bytes(message, ServerMessageType::ServerHealthMessage);
         NetworkUtil::append2Bytes(message, problems);
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendServerClockMessage()
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 16)
+            return;
+
+        qint64 msSinceEpoch = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+
+        QByteArray message;
+        message.reserve(2 + 2 + 8);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::ServerClockMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append8BytesSigned(message, msSinceEpoch);
 
         sendBinaryMessage(message);
     }
@@ -1377,6 +1409,12 @@ namespace PMP
         sendServerHealthMessage();
     }
 
+    void ConnectedClient::serverSettingsReloadResultEvent(uint clientReference,
+                                                         ResultMessageErrorCode errorCode)
+    {
+        sendResultMessage(errorCode, clientReference, 0);
+    }
+
     void ConnectedClient::volumeChanged(int volume)
     {
         (void)volume;
@@ -1427,7 +1465,12 @@ namespace PMP
 
     void ConnectedClient::onFullIndexationRunStatusChanged(bool running)
     {
-        sendEventNotificationMessage(running ? 1 : 2);
+        auto event =
+            running
+                ? ServerEventCode::FullIndexationRunning
+                : ServerEventCode::FullIndexationNotRunning;
+
+        sendEventNotificationMessage(event);
     }
 
     void ConnectedClient::playerStateChanged(ServerPlayerState state)
@@ -1639,19 +1682,16 @@ namespace PMP
     {
         qint32 messageLength = message.length();
 
-        switch (messageType) {
+        switch (messageType)
+        {
         case ClientMessageType::ClientExtensionsMessage:
             parseClientProtocolExtensionsMessage(message);
             break;
         case ClientMessageType::SingleByteActionMessage:
-        {
-            if (messageLength != 3) {
-                return; /* invalid message */
-            }
-
-            quint8 actionType = NetworkUtil::getByte(message, 2);
-            handleSingleByteAction(actionType);
-        }
+            parseSingleByteActionMessage(message);
+            break;
+        case ClientMessageType::ParameterlessActionMessage:
+            parseParameterlessActionMessage(message);
             break;
         case ClientMessageType::TrackInfoRequestMessage:
         {
@@ -1964,10 +2004,11 @@ namespace PMP
             User user;
             bool userLookup = _users->getUserByLogin(login, user);
 
-            if (!userLookup) { /* user does not exist */
+            if (!userLookup) /* user does not exist */
+            {
                 sendResultMessage(
-                    ResultMessageErrorCode::InvalidUserAccountName, clientReference, 0,
-                    loginBytes
+                    ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                    clientReference, 0, loginBytes
                 );
                 return;
             }
@@ -2012,10 +2053,11 @@ namespace PMP
             User user;
             bool userLookup = _users->getUserByLogin(login, user);
 
-            if (!userLookup) { /* user does not exist */
+            if (!userLookup) /* user does not exist */
+            {
                 sendResultMessage(
-                    ResultMessageErrorCode::InvalidUserAccountName, clientReference, 0,
-                    loginBytes
+                    ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                    clientReference, 0, loginBytes
                 );
                 return;
             }
@@ -2180,6 +2222,31 @@ namespace PMP
         }
 
         registerClientProtocolExtensions(extensions);
+    }
+
+    void ConnectedClient::parseSingleByteActionMessage(const QByteArray& message)
+    {
+        if (message.length() != 3)
+            return; /* invalid message */
+
+        quint8 actionType = NetworkUtil::getByte(message, 2);
+        handleSingleByteAction(actionType);
+    }
+
+    void ConnectedClient::parseParameterlessActionMessage(const QByteArray& message)
+    {
+        if (message.length() != 8)
+            return; /* invalid message */
+
+        int numericActionCode = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "received parameterless action" << numericActionCode
+                 << "with client-ref" << clientReference;
+
+        auto action = static_cast<ParameterlessActionCode>(numericActionCode);
+
+        handleParameterlessAction(action, clientReference);
     }
 
     void ConnectedClient::parseAddHashToQueueRequest(const QByteArray& message,
@@ -2375,7 +2442,8 @@ namespace PMP
     void ConnectedClient::handleSingleByteAction(quint8 action)
     {
         /* actions 100-200 represent a SET VOLUME command */
-        if (action >= 100 && action <= 200) {
+        if (action >= 100 && action <= 200)
+        {
             qDebug() << "received CHANGE VOLUME command, volume"
                      << (uint(action - 100));
 
@@ -2385,7 +2453,8 @@ namespace PMP
 
         /* Other actions */
 
-        switch (action) {
+        switch (action)
+        {
         case 1:
             qDebug() << "received PLAY command";
             _serverInterface->play();
@@ -2430,7 +2499,7 @@ namespace PMP
             break;
         case 16:
             qDebug() << "received request for server name";
-            sendServerNameMessage(0, QHostInfo::localHostName());
+            sendServerNameMessage();
             break;
         case 17:
             qDebug() << "received request for database UUID";
@@ -2495,6 +2564,25 @@ namespace PMP
         }
     }
 
+    void ConnectedClient::handleParameterlessAction(ParameterlessActionCode code,
+                                                    quint32 clientReference)
+    {
+        switch (code)
+        {
+        case PMP::ParameterlessActionCode::Reserved:
+            break; /* not to be used, treat as invalid */
+
+        case PMP::ParameterlessActionCode::ReloadServerSettings:
+            _serverInterface->reloadServerSettings(clientReference);
+            return;
+        }
+
+        qDebug() << "code of parameterless action not recognized: code="
+                 << static_cast<int>(code) << " client-ref=" << clientReference;
+
+        sendResultMessage(ResultMessageErrorCode::UnknownAction, clientReference, 0);
+    }
+
     void ConnectedClient::handleCollectionFetchRequest(uint clientReference)
     {
         auto sender =
@@ -2511,7 +2599,8 @@ namespace PMP
                             const QVector<NetworkProtocol::ProtocolExtension>& extensions)
     {
         /* handle extensions here */
-        for (auto extension : extensions) {
+        for (auto const& extension : extensions)
+        {
             qDebug() << "client will use ID" << extension.id
                      << "and version" << extension.version
                      << "for protocol extension" << extension.name;

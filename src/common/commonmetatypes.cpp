@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,14 +26,17 @@
 #include "serverhealthstatus.h"
 #include "startstopeventstatus.h"
 #include "userloginerror.h"
+#include "userregistrationerror.h"
 
-namespace PMP {
-
+namespace PMP
+{
     /** Utility object to automatically do the qRegisterMetaType calls at program
      *  startup */
-    class CommonMetatypesInit {
+    class CommonMetatypesInit
+    {
     protected:
-        CommonMetatypesInit() {
+        CommonMetatypesInit()
+        {
             qRegisterMetaType<PMP::CollectionTrackInfo>();
             qRegisterMetaType<PMP::FileHash>();
             qRegisterMetaType<PMP::PlayerHistoryTrackInfo>();
@@ -43,6 +46,7 @@ namespace PMP {
             qRegisterMetaType<PMP::ServerHealthStatus>();
             qRegisterMetaType<PMP::StartStopEventStatus>();
             qRegisterMetaType<PMP::UserLoginError>();
+            qRegisterMetaType<PMP::UserRegistrationError>();
         }
 
     private:
@@ -50,5 +54,4 @@ namespace PMP {
     };
 
     CommonMetatypesInit CommonMetatypesInit::GlobalVariable;
-
 }

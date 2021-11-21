@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,17 +28,18 @@
 
 QT_FORWARD_DECLARE_CLASS(QCommandLinkButton)
 
-namespace Ui {
+namespace Ui
+{
     class UserPickerWidget;
 }
 
-namespace PMP {
-
+namespace PMP
+{
     class ServerConnection;
 
-    class UserPickerWidget : public QWidget {
+    class UserPickerWidget : public QWidget
+    {
         Q_OBJECT
-
     public:
         UserPickerWidget(QWidget *parent, ServerConnection* connection);
         ~UserPickerWidget();

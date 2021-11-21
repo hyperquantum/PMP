@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,25 +20,30 @@
 #include "loginwidget.h"
 #include "ui_loginwidget.h"
 
+#include "common/authenticationcontroller.h"
 #include "common/networkprotocol.h"
 #include "common/serverconnection.h"
 
 #include <QMessageBox>
 
-namespace PMP {
-
-    LoginWidget::LoginWidget(QWidget* parent, ServerConnection *connection,
-                             QString login) :
-        QWidget(parent),
-        _ui(new Ui::LoginWidget), _connection(connection)
+namespace PMP
+{
+    LoginWidget::LoginWidget(QWidget* parent,
+                             AuthenticationController* authenticationController,
+                             QString login)
+     : QWidget(parent),
+       _ui(new Ui::LoginWidget),
+       _authenticationController(authenticationController)
     {
         _ui->setupUi(this);
 
-        if (!login.isEmpty()) {
+        if (!login.isEmpty())
+        {
             _ui->usernameLineEdit->setText(login);
             _ui->passwordLineEdit->setFocus();
         }
-        else {
+        else
+        {
             _ui->usernameLineEdit->setFocus();
         }
 
@@ -56,12 +61,12 @@ namespace PMP {
         );
 
         connect(
-            _connection, &ServerConnection::userLoggedInSuccessfully,
+            _authenticationController,&AuthenticationController::userLoggedInSuccessfully,
             this, &LoginWidget::userLoggedInSuccessfully
         );
         connect(
-            _connection, &ServerConnection::userLoginError,
-            this, &LoginWidget::userLoginError
+            _authenticationController, &AuthenticationController::userLoginFailed,
+            this, &LoginWidget::userLoginFailed
         );
     }
 
@@ -70,17 +75,20 @@ namespace PMP {
         delete _ui;
     }
 
-    void LoginWidget::loginClicked() {
+    void LoginWidget::loginClicked()
+    {
         QString accountName = _ui->usernameLineEdit->text();
 
-        if (accountName.size() == 0) {
+        if (accountName.size() == 0)
+        {
             QMessageBox::warning(
                 this, tr("Missing username"), tr("Please specify username!")
             );
             return;
         }
 
-        if (accountName.size() > 63) {
+        if (accountName.size() > 63)
+        {
             QMessageBox::warning(
                 this, tr("Invalid username"), tr("Username is too long!")
             );
@@ -94,21 +102,23 @@ namespace PMP {
         _ui->passwordLineEdit->setEnabled(false);
         _ui->loginButton->setEnabled(false);
 
-        _connection->login(accountName, password);
+        _authenticationController->login(accountName, password);
     }
 
-    void LoginWidget::userLoggedInSuccessfully(QString login, quint32 id) {
+    void LoginWidget::userLoggedInSuccessfully(QString login, quint32 id)
+    {
         Q_EMIT loggedIn(login, id);
     }
 
-    void LoginWidget::userLoginError(QString login,
-                                     UserLoginError errorType)
+    void LoginWidget::userLoginFailed(QString login,
+                                      UserLoginError errorType)
     {
         Q_UNUSED(login)
 
         QString message;
 
-        switch (errorType) {
+        switch (errorType)
+        {
         case UserLoginError::AuthenticationFailed:
             message = tr("The specified user/password combination is not valid.");
             break;

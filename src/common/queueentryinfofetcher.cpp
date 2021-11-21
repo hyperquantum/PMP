@@ -387,7 +387,7 @@ namespace PMP
     {
         if (_trackChangeNotificationsPending.isEmpty()) return;
 
-        QList<quint32> list = _trackChangeNotificationsPending.toList();
+        QList<quint32> list = _trackChangeNotificationsPending.values();
         _trackChangeNotificationsPending.clear();
 
         qDebug() << "QueueEntryInfoFetcher: going to emit tracksChanged signal for"

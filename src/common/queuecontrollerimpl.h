@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,7 +30,7 @@ namespace PMP {
     {
         Q_OBJECT
     public:
-        QueueControllerImpl(ServerConnection* connection);
+        explicit QueueControllerImpl(ServerConnection* connection);
 
         bool canDuplicateEntry(quint32 queueId) const override;
 

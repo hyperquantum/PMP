@@ -24,9 +24,11 @@
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
 #include "playerstate.h"
+#include "requestid.h"
 #include "serverhealthstatus.h"
 #include "tribool.h"
 #include "userloginerror.h"
+#include "userregistrationerror.h"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -40,34 +42,6 @@
 namespace PMP
 {
     class CollectionFetcher;
-
-    class RequestID
-    {
-    public:
-        RequestID() : _rawId(0) {}
-        RequestID(uint rawId) : _rawId(rawId) {}
-
-        bool isValid() const { return _rawId > 0; }
-        uint rawId() const { return _rawId; }
-
-    private:
-        uint _rawId;
-    };
-
-    inline bool operator==(const RequestID& me, const RequestID& other)
-    {
-        return me.rawId() == other.rawId();
-    }
-
-    inline bool operator!=(const RequestID& me, const RequestID& other)
-    {
-        return !(me == other);
-    }
-
-    inline uint qHash(const RequestID& requestId)
-    {
-        return requestId.rawId();
-    }
 
     enum class ServerEventSubscription
     {
@@ -90,18 +64,14 @@ namespace PMP
         };
 
         class ResultHandler;
+        class ParameterlessActionResultHandler;
         class CollectionFetchResultHandler;
         class TrackInsertionResultHandler;
         class DuplicationResultHandler;
 
     public:
-        enum UserRegistrationError
-        {
-            UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
-        };
-
-        ServerConnection(QObject* parent = nullptr,
-                         ServerEventSubscription eventSubscription =
+        explicit ServerConnection(QObject* parent = nullptr,
+                                  ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
 
         void reset();
@@ -119,8 +89,10 @@ namespace PMP
 
         void fetchCollection(CollectionFetcher* fetcher);
 
+        RequestID reloadServerSettings();
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
 
+        bool serverSupportsReloadingServerSettings() const;
         bool serverSupportsQueueEntryDuplication() const;
         bool serverSupportsDynamicModeWaveTermination() const;
 
@@ -191,6 +163,10 @@ namespace PMP
         void receivedDatabaseIdentifier(QUuid uuid);
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedServerName(quint8 nameType, QString name);
+        void receivedClientClockTimeOffset(quint64 clientClockTimeOffsetMs);
+
+        void serverSettingsReloadResultEvent(ResultMessageErrorCode errorCode,
+                                             RequestID requestId);
 
         void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition);
@@ -240,11 +216,13 @@ namespace PMP
 
     private:
         uint getNewReference();
+        RequestID getNewRequestId();
 
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
         void sendProtocolExtensionsMessage();
         void sendSingleByteAction(quint8 action);
+        RequestID sendParameterlessActionRequest(ParameterlessActionCode code);
 
         void readTextCommands();
         void readBinaryCommands();
@@ -258,6 +236,7 @@ namespace PMP
                                  quint32 intData, QByteArray const& blobData);
         void registerServerProtocolExtensions(
                            const QVector<NetworkProtocol::ProtocolExtension>& extensions);
+        void handleServerEvent(ServerEventCode eventCode);
 
         void sendInitiateNewUserAccountMessage(QString login, quint32 clientReference);
         void sendFinishNewUserAccountMessage(QString login, QByteArray salt,
@@ -286,6 +265,7 @@ namespace PMP
         void parseServerNameMessage(QByteArray const& message);
         void parseDatabaseIdentifierMessage(QByteArray const& message);
         void parseServerHealthMessage(QByteArray const& message);
+        void parseServerClockMessage(QByteArray const& message);
 
         void parseUsersListMessage(QByteArray const& message);
         void parseNewUserAccountSaltMessage(QByteArray const& message);
