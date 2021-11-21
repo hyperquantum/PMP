@@ -48,11 +48,23 @@ namespace PMP
         auto discoverer = new ServerDiscoverer(this);
 
         connect(
+            discoverer, &ServerDiscoverer::canDoScanChanged,
+            this,
+            [this, discoverer]()
+            {
+                _ui->scanButton->setEnabled(discoverer->canDoScan());
+            }
+        );
+        connect(
+            _ui->scanButton, &QPushButton::clicked,
+            discoverer, &ServerDiscoverer::scanForServers
+        );
+        connect(
             discoverer, &ServerDiscoverer::foundServer,
             this, &ConnectionWidget::foundServer
         );
 
-        discoverer->sendProbe();
+        discoverer->scanForServers();
     }
 
     ConnectionWidget::~ConnectionWidget()
@@ -85,6 +97,7 @@ namespace PMP
 
         connect(
             button, &QCommandLinkButton::clicked,
+            this,
             [=]()
             {
                 _ui->serverLineEdit->setEnabled(false);
