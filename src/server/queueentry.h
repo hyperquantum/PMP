@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,17 +27,19 @@
 #include <QDateTime>
 #include <QObject>
 
-namespace PMP {
-
+namespace PMP
+{
     class PlayerQueue;
     class Resolver;
 
-    enum class QueueEntryKind {
+    enum class QueueEntryKind
+    {
         Track = 0,
         Break
     };
 
-    class QueueEntry : public QObject {
+    class QueueEntry : public QObject
+    {
         Q_OBJECT
     public:
         QueueEntry(PlayerQueue* parent, QString const& filename);

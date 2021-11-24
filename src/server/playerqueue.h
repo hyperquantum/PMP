@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,14 +32,15 @@
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP {
-
+namespace PMP
+{
     class FileHash;
     class PlayerHistoryEntry;
     class QueueEntry;
     class Resolver;
 
-    class TrackRepetitionInfo {
+    class TrackRepetitionInfo
+    {
     public:
         TrackRepetitionInfo(bool isRepetition, qint64 millisecondsCounted)
          : _millisecondsCounted(millisecondsCounted), _isRepetition(isRepetition)
@@ -55,10 +56,12 @@ namespace PMP {
         bool _isRepetition;
     };
 
-    class PlayerQueue : public QObject {
+    class PlayerQueue : public QObject
+    {
         Q_OBJECT
     public:
-        enum HistoryType {
+        enum HistoryType
+        {
             Played, Skipped, Error
         };
 

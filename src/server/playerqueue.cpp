@@ -25,8 +25,8 @@
 #include <QtDebug>
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     namespace
     {
          /* this limit could be increased or decreased in the future */
@@ -50,25 +50,30 @@ namespace PMP {
         int length = _queue.length();
         uint operationsDone = 0;
 
-        for (int i = 0; i < length && i < 10 && operationsDone <= 3; ++i) {
+        for (int i = 0; i < length && i < 10 && operationsDone <= 3; ++i)
+        {
             QueueEntry* entry = _queue[i];
             if (!entry->isTrack()) continue;
 
-            if (entry->hash() == nullptr) {
+            if (entry->hash() == nullptr)
+            {
                 qDebug() << "Queue: need to calculate hash for queue index" << (i + 1);
                 operationsDone++;
                 if (!entry->checkHash(*_resolver)) continue; /* check next track */
             }
 
             QString const* filename = entry->filename();
-            if (filename && !_resolver->pathStillValid(*entry->hash(), *filename)) {
+            if (filename && !_resolver->pathStillValid(*entry->hash(), *filename))
+            {
                 qDebug() << "Queue: filename no longer valid for queue index" << (i + 1);
                 filename = nullptr;
             }
 
-            if (!filename) {
+            if (!filename)
+            {
                 int& backoff = entry->fileFinderBackoff();
-                if (backoff > 0) {
+                if (backoff > 0)
+                {
                     backoff--;
                     continue;
                 }
@@ -78,11 +83,13 @@ namespace PMP {
                 qDebug() << "Queue: need to get a valid filename for queue index"
                          << (i + 1);
                 operationsDone++;
-                if (entry->checkValidFilename(*_resolver, false)) {
+                if (entry->checkValidFilename(*_resolver, false))
+                {
                     backoff = 0;
                     if (failedCount > 0) failedCount >>= 1; /* divide by two */
                 }
-                else {
+                else
+                {
                     failedCount = qMin(failedCount + 1, 100);
                     backoff = failedCount + (i * 2);
                     continue;
@@ -129,7 +136,8 @@ namespace PMP {
     void PlayerQueue::findFirstTrackBetweenIndices(int start, int end,
                                                    bool resetIfNoneFound)
     {
-        for (int i = start; i < end && i < _queue.length(); ++i) {
+        for (int i = start; i < end && i < _queue.length(); ++i)
+        {
             auto entry = _queue[i];
             if (!entry->isTrack())
                 continue;
@@ -383,17 +391,21 @@ namespace PMP {
         auto queueId = entry->queueID();
 
         /* sanity checks */
-        if (indexDiff < 0) {
+        if (indexDiff < 0)
+        {
             /* cannot move beyond first place */
-            if (index < -indexDiff) {
+            if (index < -indexDiff)
+            {
                 qDebug() << "Queue::move: cannot move item" << queueId << "upwards"
                          << -indexDiff << "places because its index is now" << index;
                 return false;
             }
         }
-        else { /* indexDiff > 0 */
+        else /* indexDiff > 0 */
+        {
             /* cannot move beyond last place */
-            if (_queue.size() - 1 - indexDiff < index) {
+            if (_queue.size() - 1 - indexDiff < index)
+            {
                 qDebug() << "Queue::move: cannot move item" << queueId << "downwards"
                          << indexDiff << "places because its index is now" << index
                          << "and the queue only has" << _queue.size() << "items";
@@ -411,13 +423,15 @@ namespace PMP {
             firstTrackChange = false;
         /* else if (_firstTrackIndex < 0)  this is already covered by the first if
             firstTrackChange = false; */
-        else if (newIndex < index) /* -- track moved up */ {
+        else if (newIndex < index) /* -- track moved up */
+        {
             if (entry->isTrack())
                 setFirstTrackIndexAndId(newIndex, queueId);
             else
                 _firstTrackIndex++; /* moved down to make room */
         }
-        else { /* newIndex > index -- track moved down */
+        else /* newIndex > index -- track moved down */
+        {
             if (_firstTrackIndex == index)
                 findFirstTrackBetweenIndices(index, newIndex + 1, true);
             else
@@ -469,7 +483,8 @@ namespace PMP {
                  << " error?" << entry->hadError();
         _history.enqueue(entry);
 
-        if (_history.size() > 20) {
+        if (_history.size() > 20)
+        {
             auto oldest = _history.dequeue();
             qDebug() << "deleting oldest queue history entry: QID" << oldest->queueID();
 
@@ -493,7 +508,8 @@ namespace PMP {
     {
         // FIXME: find a more efficient way to get the index
         int length = _queue.length();
-        for (int i = 0; i < length; ++i) {
+        for (int i = 0; i < length; ++i)
+        {
             if (_queue[i]->queueID() == queueID) return i;
         }
 
@@ -511,13 +527,15 @@ namespace PMP {
             QueueEntry* entry = _queue[i];
             if (!entry->isTrack()) continue;
 
-            if (entry->hash() == nullptr) {
+            if (entry->hash() == nullptr)
+            {
                 /* we don't know the track's hash yet. We need to calculate it first */
                 qDebug() << "Queue::checkPotentialRepetitionByAdd:"
                          << "need to calculate hash first, for QID" << entry->queueID();
                 entry->checkHash(*_resolver);
 
-                if (entry->hash() == nullptr) {
+                if (entry->hash() == nullptr)
+                {
                     qDebug() << "PROBLEM: failed calculating hash of QID"
                              << entry->queueID();
                     /* could not calculate hash, so let's pray that this is a different
@@ -528,17 +546,20 @@ namespace PMP {
 
             const FileHash& entryHash = *entry->hash();
 
-            if (entryHash == hash) {
+            if (entryHash == hash)
+            {
                 return TrackRepetitionInfo(true, millisecondsCounted);
             }
 
             entry->checkAudioData(*_resolver);
             qint64 entryLengthMilliseconds = entry->lengthInMilliseconds();
 
-            if (entryLengthMilliseconds > 0) {
+            if (entryLengthMilliseconds > 0)
+            {
                 millisecondsCounted += entryLengthMilliseconds;
 
-                if (millisecondsCounted >= repetitionAvoidanceSeconds * qint64(1000)) {
+                if (millisecondsCounted >= repetitionAvoidanceSeconds * qint64(1000))
+                {
                     break; /* time between the tracks is large enough */
                 }
             }

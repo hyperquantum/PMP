@@ -25,8 +25,8 @@
 #include <QFileInfo>
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     QueueEntry::QueueEntry(PlayerQueue* parent, QString const& filename)
      : QObject(parent),
        _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
@@ -77,28 +77,34 @@ namespace PMP {
         //
     }
 
-    QueueEntry* QueueEntry::createBreak(PlayerQueue* parent) {
+    QueueEntry* QueueEntry::createBreak(PlayerQueue* parent)
+    {
         return new QueueEntry(parent, QueueEntryKind::Break);
     }
 
-    QueueEntry::~QueueEntry() {
+    QueueEntry::~QueueEntry()
+    {
         //
     }
 
-    void QueueEntry::markAsNotNewAnymore() {
+    void QueueEntry::markAsNotNewAnymore()
+    {
         _new = false;
     }
 
-    FileHash const* QueueEntry::hash() const {
+    FileHash const* QueueEntry::hash() const
+    {
         if (_hash.isNull()) { return nullptr; }
 
         return &_hash;
     }
 
-    bool QueueEntry::checkHash(Resolver& resolver) {
+    bool QueueEntry::checkHash(Resolver& resolver)
+    {
         if (!_hash.isNull()) return true; /* already got it */
 
-        if (!_haveFilename) {
+        if (!_haveFilename)
+        {
             qDebug() << "PROBLEM: QueueEntry" << _queueID
                      << "does not have either hash nor filename";
             return false;
@@ -106,7 +112,8 @@ namespace PMP {
 
         _hash = resolver.analyzeAndRegisterFile(_filename);
 
-        if (_hash.isNull()) {
+        if (_hash.isNull())
+        {
             qDebug() << "PROBLEM: QueueEntry" << _queueID
                      << ": analysis of file failed:" << _filename;
             return false;
@@ -115,15 +122,16 @@ namespace PMP {
         return true;
     }
 
-    void QueueEntry::setFilename(QString const& filename) {
+    void QueueEntry::setFilename(QString const& filename)
+    {
         _filename = filename;
         _haveFilename = true;
     }
 
-    QString const* QueueEntry::filename() const {
-        if (_haveFilename) {
+    QString const* QueueEntry::filename() const
+    {
+        if (_haveFilename)
             return &_filename;
-        }
 
         return nullptr;
     }
@@ -136,11 +144,14 @@ namespace PMP {
 
         FileHash const* fileHash = this->hash();
 
-        if (_haveFilename) {
+        if (_haveFilename)
+        {
             qDebug() << " have filename, need to verify it: " << _filename;
 
-            if (fileHash) {
-                if (resolver.pathStillValid(*fileHash, _filename)) {
+            if (fileHash)
+            {
+                if (resolver.pathStillValid(*fileHash, _filename))
+                {
                     if (outFilename) { (*outFilename) = _filename; }
                     return true;
                 }
@@ -149,19 +160,23 @@ namespace PMP {
                 _haveFilename = false;
                 _filename = "";
             }
-            else {
+            else
+            {
                 QString name = _filename;
                 QFileInfo file(name);
 
-                if (file.isRelative()) {
-                    if (!file.makeAbsolute()) {
+                if (file.isRelative())
+                {
+                    if (!file.makeAbsolute())
+                    {
                         qDebug() << "  failed to make path absolute";
                         return false;
                     }
                     _filename = file.absolutePath();
                 }
 
-                if (file.isFile() && file.isReadable()) {
+                if (file.isFile() && file.isReadable())
+                {
                     if (outFilename) { (*outFilename) = _filename; }
                     return true;
                 }
@@ -173,14 +188,16 @@ namespace PMP {
 
         /* we don't have a valid filename */
 
-        if (!fileHash) {
+        if (!fileHash)
+        {
             qDebug() << " no hash, cannot get filename";
             return false;
         }
 
         QString path = resolver.findPathForHash(*fileHash, fast);
 
-        if (path.length() > 0) {
+        if (path.length() > 0)
+        {
             _filename = path;
             _haveFilename = true;
             if (outFilename) { (*outFilename) = _filename; }
@@ -192,15 +209,18 @@ namespace PMP {
         return false;
     }
 
-    void QueueEntry::checkAudioData(Resolver& resolver) {
+    void QueueEntry::checkAudioData(Resolver& resolver)
+    {
         if (_hash.isNull()) return;
 
-        if (!_audioInfo.isComplete()) {
+        if (!_audioInfo.isComplete())
+        {
             _audioInfo = resolver.findAudioData(_hash);
         }
     }
 
-    void QueueEntry::checkTrackData(Resolver& resolver) {
+    void QueueEntry::checkTrackData(Resolver& resolver)
+    {
         if (_hash.isNull()) return;
 
         checkAudioData(resolver);
@@ -208,31 +228,38 @@ namespace PMP {
         if (_fetchedTagData) return;
 
         const TagData* tag = resolver.findTagData(_hash);
-        if (tag) {
+        if (tag)
+        {
             _tagData = *tag;
             _fetchedTagData = true;
         }
     }
 
-    qint64 QueueEntry::lengthInMilliseconds() const {
+    qint64 QueueEntry::lengthInMilliseconds() const
+    {
         return _audioInfo.trackLengthMilliseconds();
     }
 
-    QString QueueEntry::artist() const {
+    QString QueueEntry::artist() const
+    {
         return _tagData.artist();
     }
 
-    QString QueueEntry::title() const {
+    QString QueueEntry::title() const
+    {
         return _tagData.title();
     }
 
-    void QueueEntry::setStartedNow() {
+    void QueueEntry::setStartedNow()
+    {
         _started = QDateTime::currentDateTimeUtc();
     }
 
-    void QueueEntry::setEndedNow() {
+    void QueueEntry::setEndedNow()
+    {
         /* set 'started' equal to 'ended' if 'started' hasn't been set yet */
-        if (_started.isNull()) {
+        if (_started.isNull())
+        {
             _started = QDateTime::currentDateTimeUtc();
             _ended = _started;
             return;
