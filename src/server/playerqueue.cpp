@@ -166,151 +166,101 @@ namespace PMP
         }
     }
 
-    QueueEntry* PlayerQueue::enqueue(QString const& filename)
+    Result PlayerQueue::enqueue(QString const& filename)
     {
-        if (!canAddMoreEntries())
-        {
-            qWarning() << "queue does not allow adding another entry";
-            return nullptr;
-        }
-
-        auto entry = new QueueEntry(this, filename);
-        enqueue(entry);
-        return entry;
+        return enqueue(QueueEntryCreators::filename(filename));
     }
 
-    QueueEntry* PlayerQueue::enqueue(FileHash hash)
+    Result PlayerQueue::enqueue(FileHash hash)
     {
-        if (!canAddMoreEntries())
-        {
-            qWarning() << "queue does not allow adding another entry";
-            return nullptr;
-        }
+        if (hash.isNull())
+            return Error::hashIsNull();
 
-        auto entry = new QueueEntry(this, hash);
-        enqueue(entry);
-        return entry;
+        return enqueue(QueueEntryCreators::hash(hash));
     }
 
-    QueueEntry* PlayerQueue::insertAtFront(FileHash hash)
+    Result PlayerQueue::enqueue(std::function<QueueEntry* (uint)> queueEntryCreator)
     {
-        if (!canAddMoreEntries())
-        {
-            qWarning() << "queue does not allow adding another entry";
-            return nullptr;
-        }
-
-        auto entry = new QueueEntry(this, hash);
-        insertAtFront(entry);
-        return entry;
+        return insertAtIndex(_queue.length(), queueEntryCreator);
     }
 
-    void PlayerQueue::insertBreakAtFront()
+    Result PlayerQueue::insertAtFront(FileHash hash)
     {
-        if (!_queue.empty() && _queue[0]->kind() == QueueEntryKind::Break)
-            return;
+        if (hash.isNull())
+            return Error::hashIsNull();
 
-        if (!canAddMoreEntries())
-        {
-            qWarning() << "queue does not allow adding another entry";
-            return;
-        }
-
-        insertAtFront(QueueEntry::createBreak(this));
+        return insertAtFront(QueueEntryCreators::hash(hash));
     }
 
-    QueueEntry* PlayerQueue::insertAtIndex(quint32 index, FileHash hash)
+    Result PlayerQueue::insertBreakAtFront()
     {
-        if (index > uint(_queue.size())) return nullptr;
-
-        if (!canAddMoreEntries())
-        {
-            qWarning() << "queue does not allow adding another entry";
-            return nullptr;
-        }
-
-        auto entry = new QueueEntry(this, hash);
-        insertAtIndex(index, entry);
-        return entry;
+        return insertAtFront(QueueEntryCreators::breakpoint());
     }
 
-    void PlayerQueue::enqueue(QueueEntry* entry)
+    Result PlayerQueue::insertAtFront(std::function<QueueEntry* (uint)> queueEntryCreator)
     {
-        if (!entry->isNewlyCreated() || entry->parent() != this)
-            return;
-
-        if (!canAddMoreEntries())
-        {
-            qWarning() << "queue does not allow adding another entry";
-            return;
-        }
-
-        entry->markAsNotNewAnymore();
-        _idLookup.insert(entry->queueID(), entry);
-        _queue.enqueue(entry);
-
-        bool firstTrackChange = _firstTrackIndex < 0 && entry->isTrack();
-        if (firstTrackChange)
-            setFirstTrackIndexAndId(_queue.length() - 1, entry->queueID());
-
-        Q_EMIT entryAdded(uint(_queue.size()) - 1, entry->queueID());
-
-        if (firstTrackChange)
-            emitFirstTrackChanged();
+        return insertAtIndex(0, queueEntryCreator);
     }
 
-    void PlayerQueue::insertAtFront(QueueEntry* entry)
+    Result PlayerQueue::insertAtIndex(qint32 index, FileHash hash)
     {
-        if (!entry->isNewlyCreated() || entry->parent() != this)
-            return;
+        if (hash.isNull())
+            return Error::hashIsNull();
 
-        if (!canAddMoreEntries())
-        {
-            qWarning() << "queue does not allow adding another entry";
-            return;
-        }
-
-        entry->markAsNotNewAnymore();
-        _idLookup.insert(entry->queueID(), entry);
-        _queue.prepend(entry);
-
-        bool firstTrackChange = entry->isTrack();
-        if (firstTrackChange)
-            setFirstTrackIndexAndId(0, entry->queueID());
-
-        Q_EMIT entryAdded(0, entry->queueID());
-
-        if (firstTrackChange)
-            emitFirstTrackChanged();
+        return insertAtIndex(index, QueueEntryCreators::hash(hash));
     }
 
-    void PlayerQueue::insertAtIndex(quint32 index, QueueEntry* entry)
+    Result PlayerQueue::insertAtIndex(qint32 index,
+                                      std::function<QueueEntry* (uint)> queueEntryCreator)
     {
-        if (!entry->isNewlyCreated() || entry->parent() != this)
-            return;
+        return insertAtIndex(index, queueEntryCreator, [](uint queueId) {});
+    }
+
+    Result PlayerQueue::insertAtIndex(qint32 index,
+                                      std::function<QueueEntry* (uint)> queueEntryCreator,
+                                      std::function<void (uint)> queueIdNotifier)
+    {
+        if (index < 0
+                || index > _queue.size()) /* notice: one past the end is allowed */
+        {
+            qWarning() << "queue index out of range:" << index;
+            return Error::queueIndexOutOfRange();
+        }
 
         if (!canAddMoreEntries())
         {
             qWarning() << "queue does not allow adding another entry";
-            return;
+            return Error::queueMaxSizeExceeded();
         }
 
-        entry->markAsNotNewAnymore();
+        auto id = getNextQueueID();
+        auto* entry = queueEntryCreator(id);
+        if (entry->queueID() != id)
+        {
+            qWarning() << "new queue entry did not adopt the specified queue ID";
+            delete entry;
+            return Error::internalError();
+        }
+
+        entry->setParent(this);
         _idLookup.insert(entry->queueID(), entry);
         _queue.insert(int(index), entry);
 
         bool firstTrackChange = true;
-        if ((_firstTrackIndex < 0 || uint(_firstTrackIndex) >= index) && entry->isTrack())
+        if ((_firstTrackIndex < 0 || _firstTrackIndex >= index) && entry->isTrack())
             setFirstTrackIndexAndId(index, entry->queueID());
-        else if (_firstTrackIndex >= 0 && uint(_firstTrackIndex) >= index)
+        else if (_firstTrackIndex >= 0 && _firstTrackIndex >= index)
             _firstTrackIndex++;
         else
             firstTrackChange = false;
 
+        queueIdNotifier(entry->queueID());
         Q_EMIT entryAdded(index, entry->queueID());
 
         if (firstTrackChange)
             emitFirstTrackChanged();
+
+        return Success();
     }
 
     QueueEntry* PlayerQueue::dequeue()
@@ -451,6 +401,11 @@ namespace PMP
         return _queue.mid(startoffset, maxCount);
     }
 
+    QueueEntry* PlayerQueue::peek()
+    {
+        return entryAtIndex(0);
+    }
+
     QueueEntry* PlayerQueue::peekFirstTrackEntry()
     {
         if (_firstTrackIndex < 0) return nullptr;
@@ -506,6 +461,9 @@ namespace PMP
 
     int PlayerQueue::findIndex(quint32 queueID)
     {
+        if (queueID <= 0)
+            return -1;
+
         // FIXME: find a more efficient way to get the index
         int length = _queue.length();
         for (int i = 0; i < length; ++i)

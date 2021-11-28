@@ -40,6 +40,10 @@ namespace PMP
 
         QueueIdNotFound = 20,
         UnknownAction = 21,
+        InvalidHash = 22,
+        InvalidQueueIndex = 23,
+
+        MaximumQueueSizeExceeded = 50,
 
         DatabaseProblem = 90,
 

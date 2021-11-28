@@ -27,69 +27,83 @@
 
 namespace PMP
 {
-    QueueEntry::QueueEntry(PlayerQueue* parent, QString const& filename)
-     : QObject(parent),
-       _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
-       _filename(filename), _haveFilename(true),
-       _fetchedTagData(false), _fileFinderBackoff(0), _fileFinderFailedCount(0)
-    {
-        //
-    }
-
-    QueueEntry::QueueEntry(PlayerQueue* parent, FileHash hash, TagData const& tags)
-     : QObject(parent),
-       _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
-       _hash(hash), _haveFilename(false),
-       _fetchedTagData(true), _tagData(tags),
-       _fileFinderBackoff(0), _fileFinderFailedCount(0)
-    {
-        //
-    }
-
-    QueueEntry::QueueEntry(PlayerQueue* parent, FileHash hash)
-     : QObject(parent),
-       _queueID(parent->getNextQueueID()), _new(true), _kind(QueueEntryKind::Track),
-       _hash(hash), _haveFilename(false),
+    QueueEntry::QueueEntry(uint queueId, const QString& filename)
+     : QObject(nullptr),
+       _queueID(queueId),
+       _kind(QueueEntryKind::Track),
+       _filename(filename),
+       _haveFilename(true),
        _fetchedTagData(false),
-       _fileFinderBackoff(0), _fileFinderFailedCount(0)
+       _fileFinderBackoff(0),
+       _fileFinderFailedCount(0)
     {
         //
     }
 
-    QueueEntry::QueueEntry(PlayerQueue* parent, QueueEntry const* existing)
-     : QObject(parent),
-       _queueID(parent->getNextQueueID()), _new(true), _kind(existing->_kind),
-       _hash(existing->_hash), _audioInfo(existing->_audioInfo),
-       _filename(existing->_filename), _haveFilename(existing->_haveFilename),
-       _fetchedTagData(existing->_fetchedTagData), _tagData(existing->_tagData),
+    QueueEntry::QueueEntry(uint queueId, FileHash hash)
+     : QObject(nullptr),
+       _queueID(queueId),
+       _kind(QueueEntryKind::Track),
+       _hash(hash),
+       _haveFilename(false),
+       _fetchedTagData(false),
+       _fileFinderBackoff(0),
+       _fileFinderFailedCount(0)
+    {
+        //
+    }
+
+    QueueEntry::QueueEntry(uint queueId, QueueEntry const* existing)
+     : QObject(nullptr),
+       _queueID(queueId),
+       _kind(existing->_kind),
+       _hash(existing->_hash),
+       _audioInfo(existing->_audioInfo),
+       _filename(existing->_filename),
+       _haveFilename(existing->_haveFilename),
+       _fetchedTagData(existing->_fetchedTagData),
+       _tagData(existing->_tagData),
        _fileFinderBackoff(existing->_fileFinderBackoff),
        _fileFinderFailedCount(existing->_fileFinderFailedCount)
     {
         //
     }
 
-    QueueEntry::QueueEntry(PlayerQueue* parent, QueueEntryKind kind)
+    QueueEntry::QueueEntry(QObject* parent, uint queueId, QueueEntryKind kind)
      : QObject(parent),
-       _queueID(parent->getNextQueueID()), _new(true), _kind(kind),
-       _haveFilename(false), _fetchedTagData(false),
-       _fileFinderBackoff(0), _fileFinderFailedCount(0)
+       _queueID(queueId),
+       _kind(kind),
+       _haveFilename(false),
+       _fetchedTagData(false),
+       _fileFinderBackoff(0),
+       _fileFinderFailedCount(0)
     {
         //
     }
 
-    QueueEntry* QueueEntry::createBreak(PlayerQueue* parent)
+    QueueEntry* QueueEntry::createBreak(uint queueId)
     {
-        return new QueueEntry(parent, QueueEntryKind::Break);
+        return new QueueEntry(nullptr, queueId, QueueEntryKind::Break);
+    }
+
+    QueueEntry* QueueEntry::createFromFilename(uint queueId, const QString& filename)
+    {
+        return new QueueEntry(queueId, filename);
+    }
+
+    QueueEntry* QueueEntry::createFromHash(uint queueId, FileHash hash)
+    {
+        return new QueueEntry(queueId, hash);
+    }
+
+    QueueEntry* QueueEntry::createCopyOf(uint queueId, const QueueEntry* existing)
+    {
+        return new QueueEntry(queueId, existing);
     }
 
     QueueEntry::~QueueEntry()
     {
         //
-    }
-
-    void QueueEntry::markAsNotNewAnymore()
-    {
-        _new = false;
     }
 
     FileHash const* QueueEntry::hash() const
