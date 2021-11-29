@@ -32,6 +32,70 @@
 
 using namespace PMP;
 
+static const char * const usageTextTemplate = R""""(
+usage:
+  {{PROGRAMNAME}} help|--help|version|--version
+  {{PROGRAMNAME}} <server-name-or-ip> [<server-port>] <command>
+  {{PROGRAMNAME}} <server-name-or-ip> [<server-port>] <login-command> : <command>
+
+  commands:
+    play: start/resume playback
+    pause: pause playback
+    skip: jump to next track in the queue
+    volume: get current volume percentage (0-100)
+    volume <number>: set volume percentage (0-100)
+    nowplaying: get info about the track currently playing
+    queue: get queue length and the first tracks waiting in the queue
+    break: insert a break at the front of the queue if not present there yet
+    qdel <QID>: delete an entry from the queue
+    qmove <QID> <-diff>: move a track up in the queue (e.g. -3)
+    qmove <QID> <+diff>: move a track down in the queue (eg. +2)
+    shutdown: shut down the server program
+    reloadserversettings: instruct the server to reload its settings file
+
+  login command:
+    login: forces authentication to occur; prompts for username and password
+    login <username>: forces authentication to occur; prompts for password
+    login <username> -: forces authentication to occur; reads password from
+                        standard input
+    login - [-]: forces authentication to occur; reads username and
+                 password from standard input
+
+    When reading username and password from standard input, it is assumed
+    that the first line of the input is the username and the second line is
+    the password.
+
+  NOTICE:
+    The 'shutdown' command no longer supports arguments.
+
+  Authentication:
+    All commands that have side-effects require authentication. They will
+    prompt for username and password in the console. One exception to this
+    principle is the 'queue' command; it requires authentication although
+    it has no side-effects. This may change in the future.
+    It used to be possible to run the 'shutdown' command with the
+    server password as its argument and without logging in as a PMP user,
+    but that is no longer possible. Support for this could be added again
+    in the future, but that would not be compatible with older PMP servers.
+
+  Server Password:
+    This is a global password for the server, printed to stdout at
+    server startup. It is no longer relevant for the PMP command-line
+    client.
+
+  Examples:
+    {{PROGRAMNAME}} localhost queue
+    {{PROGRAMNAME}} ::1 volume
+    {{PROGRAMNAME}} localhost volume 100
+    {{PROGRAMNAME}} 127.0.0.1 play
+    {{PROGRAMNAME}} localhost qmove 42 +3
+    {{PROGRAMNAME}} localhost nowplaying
+    {{PROGRAMNAME}} localhost login : nowplaying
+    {{PROGRAMNAME}} localhost login MyUsername : play
+    {{PROGRAMNAME}} localhost login MyUsername - : play <passwordfile
+    {{PROGRAMNAME}} localhost login - : play <credentialsfile
+)"""";
+
 void printVersion(QTextStream& out)
 {
     out << "Party Music Player " PMP_VERSION_DISPLAY << "\n"
@@ -45,69 +109,11 @@ void printUsage(QTextStream& out)
 {
     auto programName = QFileInfo(QCoreApplication::applicationFilePath()).fileName();
 
-    out << "usage: " << Qt::endl
-        << "  " << programName << " help|--help|version|--version\n"
-        << "  " << programName << " <server-name-or-ip> [<server-port>] <command>\n"
-        << "  " << programName
-                   << " <server-name-or-ip> [<server-port>] <login-command> : <command>\n"
-        << "\n"
-        << "  commands:\n"
-        << "    play: start/resume playback\n"
-        << "    pause: pause playback\n"
-        << "    skip: jump to next track in the queue\n"
-        << "    volume: get current volume percentage (0-100)\n"
-        << "    volume <number>: set volume percentage (0-100)\n"
-        << "    nowplaying: get info about the track currently playing\n"
-        << "    queue: get queue length and the first tracks waiting in the queue\n"
-        << "    break: insert a break at the front of the queue if not present there yet\n"
-        << "    qdel <QID>: delete an entry from the queue\n"
-        << "    qmove <QID> <-diff>: move a track up in the queue (e.g. -3)\n"
-        << "    qmove <QID> <+diff>: move a track down in the queue (eg. +2)\n"
-        << "    shutdown: shut down the server program\n"
-        << "    reloadserversettings: instruct the server to reload its settings file\n"
-        << "\n"
-        << "  login command:\n"
-        << "    login: forces authentication to occur; prompts for username and password\n"
-        << "    login <username>: forces authentication to occur; prompts for password\n"
-        << "    login <username> -: forces authentication to occur; reads password from\n"
-        << "                        standard input\n"
-        << "    login - [-]: forces authentication to occur; reads username and\n"
-        << "                 password from standard input\n"
-        << "\n"
-        << "    When reading username and password from standard input, it is assumed\n"
-        << "    that the first line of the input is the username and the second line is\n"
-        << "    the password.\n"
-        << "\n"
-        << "  NOTICE:\n"
-        << "    The 'shutdown' command no longer supports arguments.\n"
-        << "\n"
-        << "  Authentication:\n"
-        << "    All commands that have side-effects require authentication. They will\n"
-        << "    prompt for username and password in the console. One exception to this\n"
-        << "    principle is the 'queue' command; it requires authentication although\n"
-        << "    it has no side-effects. This may change in the future.\n"
-        << "    It used to be possible to run the 'shutdown' command with the\n"
-        << "    server password as its argument and without logging in as a PMP user,\n"
-        << "    but that is no longer possible. Support for this could be added again\n"
-        << "    in the future, but that would not be compatible with older PMP servers.\n"
-        << "\n"
-        << "  Server Password:\n"
-        << "    This is a global password for the server, printed to stdout at\n"
-        << "    server startup. It is no longer relevant for the PMP command-line\n"
-        << "    client.\n"
-        << "\n"
-        << "  Examples:\n"
-        << "    " << programName << " localhost queue\n"
-        << "    " << programName << " ::1 volume\n"
-        << "    " << programName << " localhost volume 100\n"
-        << "    " << programName << " 127.0.0.1 play\n"
-        << "    " << programName << " localhost qmove 42 +3\n"
-        << "    " << programName << " localhost nowplaying\n"
-        << "    " << programName << " localhost login : nowplaying\n"
-        << "    " << programName << " localhost login MyUsername : play\n"
-        << "    " << programName << " localhost login MyUsername - : play <passwordfile\n"
-        << "    " << programName << " localhost login - : play <credentialsfile\n"
-        << Qt::flush;
+    QString usageText = usageTextTemplate;
+    usageText = usageText.trimmed();
+    usageText.replace("{{PROGRAMNAME}}", programName);
+
+    out << usageText << Qt::endl;
 }
 
 bool looksLikePortNumber(QString const& string)
