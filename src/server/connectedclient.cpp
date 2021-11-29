@@ -83,6 +83,8 @@ namespace PMP
             this,
             [this]()
             {
+                if (_terminated) return;
+
                 qDebug() << "TCP socket disconnected; terminating this connection";
                 terminateConnection();
             }
