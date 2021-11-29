@@ -171,7 +171,9 @@ namespace PMP
         {
             sendInfoRequest(queueID);
         }
-        else if (info->hash().isNull() && !_hashRequestsSent.contains(queueID))
+        else if (info->hash().isNull()
+                 && !info->isTrack().isFalse()
+                 && !_hashRequestsSent.contains(queueID))
         {
             sendHashRequest(queueID);
         }
