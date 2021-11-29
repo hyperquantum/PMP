@@ -66,7 +66,12 @@ namespace PMP
 
         connect(
             _serverInterface, &ServerInterface::serverShuttingDown,
-            this, &ConnectedClient::terminateConnection
+            this,
+            [this]()
+            {
+                qDebug() << "server shutting down; terminating this connection";
+                terminateConnection();
+            }
         );
         connect(
             _serverInterface, &ServerInterface::serverSettingsReloadResultEvent,
@@ -75,7 +80,12 @@ namespace PMP
 
         connect(
             socket, &QTcpSocket::disconnected,
-            this, &ConnectedClient::terminateConnection
+            this,
+            [this]()
+            {
+                qDebug() << "TCP socket disconnected; terminating this connection";
+                terminateConnection();
+            }
         );
         connect(socket, &QTcpSocket::readyRead, this, &ConnectedClient::dataArrived);
         connect(socket, &QTcpSocket::errorOccurred, this, &ConnectedClient::socketError);
@@ -100,7 +110,7 @@ namespace PMP
     {
         qDebug() << "terminateConnection() called";
         if (_terminated) return;
-        qDebug() << " will terminate and cleanup connection now";
+        qDebug() << " will terminate and clean up connection now";
         _terminated = true;
         _socket->close();
         _textReadBuffer.clear();
@@ -259,6 +269,7 @@ namespace PMP
                 || heading[1] != 'M'
                 || heading[2] != 'P')
             {
+                qDebug() << "incoming connection without PMP signature; terminating it";
                 terminateConnection();
                 return;
             }
@@ -279,7 +290,8 @@ namespace PMP
     {
         switch (error) {
             case QAbstractSocket::RemoteHostClosedError:
-                this->terminateConnection();
+                qDebug() << "got socket error RemoteHostClosedError; terminating connection";
+                terminateConnection();
                 break;
             default:
                 qDebug() << "ConnectedClient: unhandled socket error:" << error;
