@@ -67,6 +67,7 @@ namespace PMP
         class ParameterlessActionResultHandler;
         class CollectionFetchResultHandler;
         class TrackInsertionResultHandler;
+        class QueueEntryInsertionResultHandler;
         class DuplicationResultHandler;
 
     public:
@@ -91,10 +92,13 @@ namespace PMP
 
         RequestID reloadServerSettings();
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
+        RequestID insertBreakAtIndex(int index);
+        RequestID duplicateQueueEntry(uint queueID);
 
         bool serverSupportsReloadingServerSettings() const;
         bool serverSupportsQueueEntryDuplication() const;
         bool serverSupportsDynamicModeWaveTermination() const;
+        bool serverSupportsInsertingBreaksAtAnyIndex() const;
 
     public Q_SLOTS:
         void shutdownServer();
@@ -110,7 +114,7 @@ namespace PMP
 
         void seekTo(uint queueID, qint64 position);
 
-        void insertBreakAtFront();
+        void insertBreakAtFrontIfNotExists();
 
         void setVolume(int percentage);
 
@@ -125,7 +129,6 @@ namespace PMP
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
         void deleteQueueEntry(uint queueID);
-        void duplicateQueueEntry(uint queueID);
         void moveQueueEntry(uint queueID, qint16 offsetDiff);
 
         void insertQueueEntryAtFront(FileHash const& hash);
@@ -183,6 +186,8 @@ namespace PMP
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);
         void queueEntryAdded(qint32 offset, quint32 queueId, RequestID requestId);
+        void queueEntryInsertionFailed(ResultMessageErrorCode errorCode,
+                                       RequestID requestId);
         void queueEntryRemoved(qint32 offset, quint32 queueId);
         void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueId);
         void receivedTrackInfo(quint32 queueId, QueueEntryType type,
@@ -217,6 +222,12 @@ namespace PMP
     private:
         uint getNewReference();
         RequestID getNewRequestId();
+        RequestID signalRequestError(ResultMessageErrorCode errorCode,
+                             void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
+                                                                   RequestID));
+        RequestID signalServerTooOldError(
+                             void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
+                                                                   RequestID));
 
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);

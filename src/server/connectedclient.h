@@ -187,6 +187,7 @@ namespace PMP
         void parseParameterlessActionMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         ClientMessageType messageType);
+        void parseInsertSpecialQueueItemRequest(QByteArray const& message);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
         void parseQueueEntryRemovalRequest(QByteArray const& message);
         void parseQueueEntryDuplicationRequest(QByteArray const& message);

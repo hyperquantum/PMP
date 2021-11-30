@@ -47,6 +47,7 @@ usage:
     nowplaying: get info about the track currently playing
     queue: get queue length and the first tracks waiting in the queue
     break: insert a break at the front of the queue if not present there yet
+    insert <item-type> <position>: insert an item into the queue (see below)
     qdel <QID>: delete an entry from the queue
     qmove <QID> <-diff>: move a track up in the queue (e.g. -3)
     qmove <QID> <+diff>: move a track down in the queue (eg. +2)
@@ -64,6 +65,13 @@ usage:
     When reading username and password from standard input, it is assumed
     that the first line of the input is the username and the second line is
     the password.
+
+  insert command:
+    insert break front: insert a break at the front of the queue
+    insert break index <number>: insert a break at the specified index
+
+    The numeric index is zero-based, meaning that 0 indicates the front of
+    the queue.
 
   NOTICE:
     The 'shutdown' command no longer supports arguments.
@@ -88,6 +96,7 @@ usage:
     {{PROGRAMNAME}} ::1 volume
     {{PROGRAMNAME}} localhost volume 100
     {{PROGRAMNAME}} 127.0.0.1 play
+    {{PROGRAMNAME}} localhost insert break index 2
     {{PROGRAMNAME}} localhost qmove 42 +3
     {{PROGRAMNAME}} localhost nowplaying
     {{PROGRAMNAME}} localhost login : nowplaying

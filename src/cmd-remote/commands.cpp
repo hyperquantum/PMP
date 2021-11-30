@@ -599,7 +599,49 @@ namespace PMP
 
     void BreakCommand::start(ClientServerInterface* clientServerInterface)
     {
-        clientServerInterface->queueController().insertBreakAtFront();
+        clientServerInterface->queueController().insertBreakAtFrontIfNotExists();
+    }
+
+    /* ===== QueueInsertBreakCommand ===== */
+
+    QueueInsertBreakCommand::QueueInsertBreakCommand(int index)
+     : _index(index)
+    {
+        //
+    }
+
+    bool QueueInsertBreakCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void QueueInsertBreakCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* queueController = &clientServerInterface->queueController();
+
+        connect(
+            queueController, &QueueController::queueEntryAdded,
+            this,
+            [this](qint32 index, quint32 queueId, RequestID requestId)
+            {
+                if (requestId == _requestId)
+                    setCommandExecutionSuccessful();
+            }
+        );
+        connect(
+            queueController, &QueueController::queueEntryInsertionFailed,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId == _requestId)
+                    setCommandExecutionResult(errorCode);
+            }
+        );
+    }
+
+    void QueueInsertBreakCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        _requestId = clientServerInterface->queueController().insertBreakAtIndex(_index);
     }
 
     /* ===== QueueDeleteCommand ===== */

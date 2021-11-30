@@ -188,7 +188,7 @@ namespace PMP
 
         connect(
             _ui->insertBreakButton, &QPushButton::clicked,
-            queueController, &QueueController::insertBreakAtFront
+            queueController, &QueueController::insertBreakAtFrontIfNotExists
         );
 
         connect(

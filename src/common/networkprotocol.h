@@ -51,6 +51,7 @@ namespace PMP
          14: single byte request 25 & server msg 26: wave termination & progress
          15: client msg 23, parameterless action 10, error code 21: server settings reload
          16: server msg 31: sending server clock time
+         17: client msg 24: inserting breaks at any index
 
     */
 
@@ -118,6 +119,7 @@ namespace PMP
         QueueEntryDuplicationRequestMessage = 21,
         ClientExtensionsMessage = 22,
         ParameterlessActionMessage = 23,
+        InsertSpecialQueueItemRequest = 24,
     };
 
     enum class ServerEventCode

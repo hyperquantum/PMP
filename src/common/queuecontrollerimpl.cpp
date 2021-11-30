@@ -21,8 +21,8 @@
 
 #include "serverconnection.h"
 
-namespace PMP {
-
+namespace PMP
+{
     QueueControllerImpl::QueueControllerImpl(ServerConnection* connection)
      : QueueController(connection),
        _connection(connection)
@@ -39,6 +39,10 @@ namespace PMP {
         connect(
             _connection, &ServerConnection::queueEntryAdded,
             this, &QueueControllerImpl::queueEntryAdded
+        );
+        connect(
+            _connection, &ServerConnection::queueEntryInsertionFailed,
+            this, &QueueControllerImpl::queueEntryInsertionFailed
         );
         connect(
             _connection, &ServerConnection::queueEntryRemoved,
@@ -59,9 +63,9 @@ namespace PMP {
         return _connection->serverSupportsQueueEntryDuplication();
     }
 
-    void QueueControllerImpl::insertBreakAtFront()
+    void QueueControllerImpl::insertBreakAtFrontIfNotExists()
     {
-        _connection->insertBreakAtFront();
+        _connection->insertBreakAtFrontIfNotExists();
     }
 
     void QueueControllerImpl::insertQueueEntryAtFront(FileHash hash)
@@ -74,9 +78,14 @@ namespace PMP {
         _connection->insertQueueEntryAtEnd(hash);
     }
 
-    void QueueControllerImpl::insertQueueEntryAtIndex(FileHash hash, quint32 index)
+    RequestID QueueControllerImpl::insertQueueEntryAtIndex(FileHash hash, quint32 index)
     {
-        _connection->insertQueueEntryAtIndex(hash, index);
+        return _connection->insertQueueEntryAtIndex(hash, index);
+    }
+
+    RequestID QueueControllerImpl::insertBreakAtIndex(int index)
+    {
+        return _connection->insertBreakAtIndex(index);
     }
 
     void QueueControllerImpl::deleteQueueEntry(uint queueId)
@@ -84,9 +93,9 @@ namespace PMP {
         _connection->deleteQueueEntry(queueId);
     }
 
-    void QueueControllerImpl::duplicateQueueEntry(uint queueId)
+    RequestID QueueControllerImpl::duplicateQueueEntry(uint queueId)
     {
-        _connection->duplicateQueueEntry(queueId);
+        return _connection->duplicateQueueEntry(queueId);
     }
 
     void QueueControllerImpl::moveQueueEntry(uint queueId, qint16 offsetDiff)

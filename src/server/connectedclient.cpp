@@ -44,7 +44,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 16;
+    const qint16 ConnectedClient::ServerProtocolNo = 17;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -2181,6 +2181,9 @@ namespace PMP
         case ClientMessageType::HashUserDataRequestMessage:
             parseHashUserDataRequest(message);
             break;
+        case ClientMessageType::InsertSpecialQueueItemRequest:
+            parseInsertSpecialQueueItemRequest(message);
+            break;
         case ClientMessageType::InsertHashIntoQueueRequestMessage:
             parseInsertHashIntoQueueRequest(message);
             break;
@@ -2332,6 +2335,36 @@ namespace PMP
         {
             return; /* invalid message */
         }
+    }
+
+    void ConnectedClient::parseInsertSpecialQueueItemRequest(QByteArray const& message)
+    {
+        qDebug() << "received 'insert special queue item' request";
+
+        if (message.length() != 12)
+            return; /* invalid message */
+
+        quint8 itemType = NetworkUtil::getByte(message, 2);
+        quint8 indexTypeNumber = NetworkUtil::getByte(message, 3);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        qint32 offset = NetworkUtil::get4BytesSigned(message, 8);
+
+        if (itemType != 1) /* 1 means a break */
+            return; /* invalid message */
+
+        QueueIndexType indexType;
+        if (indexTypeNumber == 0)
+            indexType = QueueIndexType::Front;
+        else if (indexTypeNumber == 1)
+            indexType = QueueIndexType::End;
+        else
+            return; /* invalid message */
+
+        auto result = _serverInterface->insertBreak(indexType, offset, clientReference);
+
+        /* success is handled by the queue insertion event, failure is handled here */
+        if (!result)
+            sendResultMessage(result, clientReference);
     }
 
     void ConnectedClient::parseInsertHashIntoQueueRequest(const QByteArray &message)

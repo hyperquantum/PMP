@@ -183,6 +183,23 @@ namespace PMP
         void start(ClientServerInterface* clientServerInterface) override;
     };
 
+    class QueueInsertBreakCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        QueueInsertBreakCommand(int index);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        int _index;
+        RequestID _requestId;
+    };
+
     class QueueDeleteCommand : public CommandBase
     {
         Q_OBJECT
