@@ -354,15 +354,17 @@ namespace PMP
         }
 
         int insertionIndex;
+        auto insertionIndexType = QueueIndexType::Normal;
+
         if (arguments[argumentIndex] == "front")
         {
             insertionIndex = 0;
         }
-        /*
         else if (arguments[argumentIndex] == "end")
         {
+            insertionIndex = 0;
+            insertionIndexType = QueueIndexType::Reverse;
         }
-        */
         else if (arguments[argumentIndex] == "index")
         {
             argumentIndex++;
@@ -382,8 +384,7 @@ namespace PMP
         }
         else
         {
-            //_errorMessage = "Position indicator must be 'front', 'end' or 'index'!";
-            _errorMessage = "Position indicator must be 'front' or 'index'!";
+            _errorMessage = "Position indicator must be 'front', 'end' or 'index'!";
             return;
         }
 
@@ -393,7 +394,7 @@ namespace PMP
             return;
         }
 
-        _command = new QueueInsertBreakCommand(insertionIndex);
+        _command = new QueueInsertBreakCommand(insertionIndex, insertionIndexType);
     }
 
 }

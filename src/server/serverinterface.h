@@ -21,6 +21,7 @@
 #define PMP_SERVERINTERFACE_H
 
 #include "common/filehash.h"
+#include "common/queueindextype.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/startstopeventstatus.h"
 
@@ -42,8 +43,6 @@ namespace PMP
     class QueueEntry;
     class Server;
     class ServerSettings;
-
-    enum class QueueIndexType { Front, End };
 
     class ServerInterface : public QObject
     {
@@ -73,7 +72,7 @@ namespace PMP
         Result enqueue(FileHash hash);
         Result insertAtFront(FileHash hash);
         Result insertBreakAtFrontIfNotExists();
-        Result insertBreak(QueueIndexType indexType, int offset, quint32 clientReference);
+        Result insertBreak(QueueIndexType indexType, int index, quint32 clientReference);
         Result duplicateQueueEntry(uint id, quint32 clientReference);
         Result insertAtIndex(qint32 index,
                              std::function<QueueEntry* (uint)> queueEntryCreator,
@@ -125,8 +124,8 @@ namespace PMP
         void onDynamicModeWaveEnded();
 
     private:
-        int calculateQueueIndex(PlayerQueue const& queue, QueueIndexType indexType,
-                                int offset);
+        int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType,
+                                int index);
         std::function<void (uint)> createQueueInsertionIdNotifier(
                                                                  quint32 clientReference);
 

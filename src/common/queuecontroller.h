@@ -21,6 +21,7 @@
 #define PMP_QUEUECONTROLLER_H
 
 #include "filehash.h"
+#include "queueindextype.h"
 #include "requestid.h"
 #include "resultmessageerrorcode.h"
 
@@ -41,7 +42,8 @@ namespace PMP
         virtual void insertQueueEntryAtFront(FileHash hash) = 0;
         virtual void insertQueueEntryAtEnd(FileHash hash) = 0;
         virtual RequestID insertQueueEntryAtIndex(FileHash hash, quint32 index) = 0;
-        virtual RequestID insertBreakAtIndex(int index) = 0;
+        virtual RequestID insertBreakAtIndex(int index,
+                                   QueueIndexType indexType = QueueIndexType::Normal) = 0;
         virtual void deleteQueueEntry(uint queueId) = 0;
         virtual RequestID duplicateQueueEntry(uint queueId) = 0;
         virtual void moveQueueEntry(uint queueId, qint16 offsetDiff) = 0;

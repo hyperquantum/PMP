@@ -604,8 +604,9 @@ namespace PMP
 
     /* ===== QueueInsertBreakCommand ===== */
 
-    QueueInsertBreakCommand::QueueInsertBreakCommand(int index)
-     : _index(index)
+    QueueInsertBreakCommand::QueueInsertBreakCommand(int index, QueueIndexType indexType)
+     : _index(index),
+       _indexType(indexType)
     {
         //
     }
@@ -641,7 +642,9 @@ namespace PMP
 
     void QueueInsertBreakCommand::start(ClientServerInterface* clientServerInterface)
     {
-        _requestId = clientServerInterface->queueController().insertBreakAtIndex(_index);
+        auto& queueController = clientServerInterface->queueController();
+
+        _requestId = queueController.insertBreakAtIndex(_index, _indexType);
     }
 
     /* ===== QueueDeleteCommand ===== */

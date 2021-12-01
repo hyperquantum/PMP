@@ -200,14 +200,14 @@ namespace PMP
         return queue.insertBreakAtFront();
     }
 
-    Result ServerInterface::insertBreak(QueueIndexType indexType, int offset,
+    Result ServerInterface::insertBreak(QueueIndexType indexType, int index,
                                         quint32 clientReference)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();
 
         auto& queue = _player->queue();
-        int index = calculateQueueIndex(queue, indexType, offset);
+        index = toNormalIndex(queue, indexType, index);
         if (index < 0)
             return Error::queueIndexOutOfRange();
 
@@ -443,19 +443,19 @@ namespace PMP
                                           waveProgress, waveProgressTotal);
     }
 
-    int ServerInterface::calculateQueueIndex(const PlayerQueue& queue,
-                                             QueueIndexType indexType, int offset)
+    int ServerInterface::toNormalIndex(const PlayerQueue& queue,
+                                       QueueIndexType indexType, int index)
     {
-        if (offset < 0) /* invalid offset */
+        if (index < 0) /* invalid index */
             return -1;
 
-        if (indexType == QueueIndexType::Front)
+        if (indexType == QueueIndexType::Normal)
         {
-            return offset;
+            return index;
         }
-        else // if (indexType == QueueIndexType::End)
+        else /* reverse index */
         {
-            return queue.length() - offset;
+            return queue.length() - index;
         }
     }
 

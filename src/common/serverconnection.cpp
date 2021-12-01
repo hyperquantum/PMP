@@ -853,7 +853,7 @@ namespace PMP
         return RequestID(ref);
     }
 
-    RequestID ServerConnection::insertBreakAtIndex(int index)
+    RequestID ServerConnection::insertBreakAtIndex(int index, QueueIndexType indexType)
     {
         if (!serverSupportsInsertingBreaksAtAnyIndex())
             return signalServerTooOldError(&ServerConnection::queueEntryInsertionFailed);
@@ -865,12 +865,15 @@ namespace PMP
         qDebug() << "sending request to insert break at index" << index
                  << "; ref=" << ref;
 
+        quint8 itemTypeByte = 1 /* break */;
+        quint8 indexTypeByte = indexType == QueueIndexType::Normal ? 0 : 1;
+
         QByteArray message;
         message.reserve(2 + 1 + 1 + 4 + 4);
         NetworkProtocol::append2Bytes(message,
                                       ClientMessageType::InsertSpecialQueueItemRequest);
-        NetworkUtil::appendByte(message, 1 /* break */);
-        NetworkUtil::appendByte(message, 0 /* front-based indexing */);
+        NetworkUtil::appendByte(message, itemTypeByte);
+        NetworkUtil::appendByte(message, indexTypeByte);
         NetworkUtil::append4Bytes(message, ref);
         NetworkUtil::append4Bytes(message, index);
 

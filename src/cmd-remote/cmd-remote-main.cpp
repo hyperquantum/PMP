@@ -45,7 +45,7 @@ usage:
     volume: get current volume percentage (0-100)
     volume <number>: set volume percentage (0-100)
     nowplaying: get info about the track currently playing
-    queue: get queue length and the first tracks waiting in the queue
+    queue: print queue length and the first tracks waiting in the queue
     break: insert a break at the front of the queue if not present there yet
     insert <item-type> <position>: insert an item into the queue (see below)
     qdel <QID>: delete an entry from the queue
@@ -54,7 +54,7 @@ usage:
     shutdown: shut down the server program
     reloadserversettings: instruct the server to reload its settings file
 
-  login command:
+  'login' command:
     login: forces authentication to occur; prompts for username and password
     login <username>: forces authentication to occur; prompts for password
     login <username> -: forces authentication to occur; reads password from
@@ -66,14 +66,19 @@ usage:
     that the first line of the input is the username and the second line is
     the password.
 
-  insert command:
+  'insert' command:
     insert break front: insert a break at the front of the queue
+    insert break end: insert a break at the end of the queue
     insert break index <number>: insert a break at the specified index
 
     The numeric index is zero-based, meaning that 0 indicates the front of
     the queue.
+    The 'insert break' command requires a fairly recent version of the PMP
+    server in order to work.
 
   NOTICE:
+    Some commands require a fairly recent version of the PMP server in order
+    to work.
     The 'shutdown' command no longer supports arguments.
 
   Authentication:

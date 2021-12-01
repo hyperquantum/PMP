@@ -2354,9 +2354,9 @@ namespace PMP
 
         QueueIndexType indexType;
         if (indexTypeNumber == 0)
-            indexType = QueueIndexType::Front;
+            indexType = QueueIndexType::Normal;
         else if (indexTypeNumber == 1)
-            indexType = QueueIndexType::End;
+            indexType = QueueIndexType::Reverse;
         else
             return; /* invalid message */
 

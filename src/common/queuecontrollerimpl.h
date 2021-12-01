@@ -39,7 +39,7 @@ namespace PMP
         void insertQueueEntryAtFront(FileHash hash) override;
         void insertQueueEntryAtEnd(FileHash hash) override;
         RequestID insertQueueEntryAtIndex(FileHash hash, quint32 index) override;
-        RequestID insertBreakAtIndex(int index) override;
+        RequestID insertBreakAtIndex(int index, QueueIndexType indexType) override;
         void deleteQueueEntry(uint queueId) override;
         RequestID duplicateQueueEntry(uint queueId) override;
         void moveQueueEntry(uint queueId, qint16 offsetDiff) override;

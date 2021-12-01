@@ -83,9 +83,9 @@ namespace PMP
         return _connection->insertQueueEntryAtIndex(hash, index);
     }
 
-    RequestID QueueControllerImpl::insertBreakAtIndex(int index)
+    RequestID QueueControllerImpl::insertBreakAtIndex(int index, QueueIndexType indexType)
     {
-        return _connection->insertBreakAtIndex(index);
+        return _connection->insertBreakAtIndex(index, indexType);
     }
 
     void QueueControllerImpl::deleteQueueEntry(uint queueId)

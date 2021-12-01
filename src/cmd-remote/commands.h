@@ -21,6 +21,7 @@
 #define PMP_COMMANDS_H
 
 #include "common/playerstate.h"
+#include "common/queueindextype.h"
 #include "common/requestid.h"
 
 #include "commandbase.h"
@@ -187,7 +188,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        QueueInsertBreakCommand(int index);
+        QueueInsertBreakCommand(int index, QueueIndexType indexType);
 
         bool requiresAuthentication() const override;
 
@@ -197,6 +198,7 @@ namespace PMP
 
     private:
         int _index;
+        QueueIndexType _indexType;
         RequestID _requestId;
     };
 

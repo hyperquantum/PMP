@@ -24,6 +24,7 @@
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
 #include "playerstate.h"
+#include "queueindextype.h"
 #include "requestid.h"
 #include "serverhealthstatus.h"
 #include "tribool.h"
@@ -92,7 +93,8 @@ namespace PMP
 
         RequestID reloadServerSettings();
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
-        RequestID insertBreakAtIndex(int index);
+        RequestID insertBreakAtIndex(int index,
+                                     QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
 
         bool serverSupportsReloadingServerSettings() const;
