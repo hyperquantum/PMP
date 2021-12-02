@@ -42,6 +42,7 @@ namespace PMP
         UnknownAction = 21,
         InvalidHash = 22,
         InvalidQueueIndex = 23,
+        InvalidQueueItemType = 24,
 
         MaximumQueueSizeExceeded = 50,
 

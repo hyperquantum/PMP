@@ -451,7 +451,6 @@ namespace PMP
 
         PlayerInstance* oldCurrentInstance = _currentInstance;
         QueueEntry* oldNowPlaying = _nowPlaying;
-        uint oldQueueLength = _queue.length();
 
         if (_currentInstance)
             moveCurrentInstanceToOldInstanceSlot();
@@ -465,6 +464,9 @@ namespace PMP
         QueueEntry* nextTrack = nullptr;
         while (!_queue.empty())
         {
+            if (_queue.firstEntryIsBarrier())
+                break; /* this will cause playback to stop because next == nullptr */
+
             QueueEntry* entry = _queue.dequeue();
             if (!entry->isTrack())
             {
@@ -509,7 +511,7 @@ namespace PMP
         }
         else
         {
-            /* we stop because we have nothing left to play */
+            /* we stop because we don't have a track to play */
             newState = ServerPlayerState::Stopped;
 
             /* this instance ended up not being used for playing a track, don't lose it */
@@ -525,12 +527,6 @@ namespace PMP
             Q_EMIT currentTrackChanged(nextTrack);
 
         changeStateTo(newState);
-
-        if (!nextTrack && _queue.empty() && oldQueueLength > 0)
-        {
-            qDebug() << "queue is finished, nothing left to play";
-            Q_EMIT finished();
-        }
 
         return nextTrack;
     }

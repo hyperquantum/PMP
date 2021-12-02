@@ -216,6 +216,28 @@ namespace PMP
         return insertAtIndex(index, queueEntryCreator, [](uint queueId) {});
     }
 
+    Result PlayerQueue::insertAtIndex(qint32 index, SpecialQueueItemType itemType,
+                                      std::function<void (uint)> queueIdNotifier)
+    {
+        std::function<QueueEntry* (uint)> queueEntryCreator;
+
+        switch (itemType)
+        {
+        case PMP::SpecialQueueItemType::Break:
+            queueEntryCreator = QueueEntry::createBreak;
+            break;
+
+        case PMP::SpecialQueueItemType::Barrier:
+            queueEntryCreator = QueueEntry::createBarrier;
+            break;
+
+        default:
+            return Error::queueItemTypeInvalid();
+        }
+
+        return insertAtIndex(index, queueEntryCreator, queueIdNotifier);
+    }
+
     Result PlayerQueue::insertAtIndex(qint32 index,
                                       std::function<QueueEntry* (uint)> queueEntryCreator,
                                       std::function<void (uint)> queueIdNotifier)
@@ -401,12 +423,19 @@ namespace PMP
         return _queue.mid(startoffset, maxCount);
     }
 
-    QueueEntry* PlayerQueue::peek()
+    QueueEntry* PlayerQueue::peek() const
     {
         return entryAtIndex(0);
     }
 
-    QueueEntry* PlayerQueue::peekFirstTrackEntry()
+    bool PlayerQueue::firstEntryIsBarrier() const
+    {
+        auto firstEntry = peek();
+
+        return firstEntry && firstEntry->kind() == QueueEntryKind::Barrier;
+    }
+
+    QueueEntry* PlayerQueue::peekFirstTrackEntry() const
     {
         if (_firstTrackIndex < 0) return nullptr;
 
@@ -421,7 +450,7 @@ namespace PMP
         return it.value();
     }
 
-    QueueEntry* PlayerQueue::entryAtIndex(int index)
+    QueueEntry* PlayerQueue::entryAtIndex(int index) const
     {
         if (index < 0 || index >= _queue.size())
             return nullptr;

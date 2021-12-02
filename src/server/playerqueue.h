@@ -21,6 +21,7 @@
 #define PMP_PLAYERQUEUE_H
 
 #include "common/filehash.h"
+#include "common/specialqueueitemtype.h"
 
 #include "playerhistoryentry.h"
 #include "result.h"
@@ -84,11 +85,12 @@ namespace PMP
         int firstTrackIndex() const { return _firstTrackIndex; }
         uint firstTrackQueueId() const { return _firstTrackQueueId; }
 
-        QueueEntry* peek();
-        QueueEntry* peekFirstTrackEntry();
+        QueueEntry* peek() const;
+        bool firstEntryIsBarrier() const;
+        QueueEntry* peekFirstTrackEntry() const;
         QueueEntry* lookup(quint32 queueID);
         int findIndex(quint32 queueID);
-        QueueEntry* entryAtIndex(int index);
+        QueueEntry* entryAtIndex(int index) const;
         QList<QueueEntry*> entries(int startoffset, int maxCount);
 
         Result enqueue(QString const& filename);
@@ -102,6 +104,8 @@ namespace PMP
         Result insertAtIndex(qint32 index, FileHash hash);
         Result insertAtIndex(qint32 index,
                              std::function<QueueEntry* (uint)> queueEntryCreator);
+        Result insertAtIndex(qint32 index, SpecialQueueItemType itemType,
+                             std::function<void (uint)> queueIdNotifier);
         Result insertAtIndex(qint32 index,
                              std::function<QueueEntry* (uint)> queueEntryCreator,
                              std::function<void (uint)> queueIdNotifier);

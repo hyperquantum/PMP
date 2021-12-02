@@ -35,6 +35,7 @@ namespace PMP
         QueueEntryIdNotFound,
         QueueIndexOutOfRange,
         QueueMaxSizeExceeded,
+        QueueItemTypeInvalid,
 
         InternalError,
     };
@@ -98,6 +99,7 @@ namespace PMP
 
         static Error queueIndexOutOfRange() { return ResultCode::QueueIndexOutOfRange; }
         static Error queueMaxSizeExceeded() { return ResultCode::QueueMaxSizeExceeded; }
+        static Error queueItemTypeInvalid() { return ResultCode::QueueItemTypeInvalid; }
 
         static Error internalError() { return ResultCode::InternalError; }
 

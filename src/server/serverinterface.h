@@ -23,6 +23,7 @@
 #include "common/filehash.h"
 #include "common/queueindextype.h"
 #include "common/resultmessageerrorcode.h"
+#include "common/specialqueueitemtype.h"
 #include "common/startstopeventstatus.h"
 
 #include "result.h"
@@ -72,7 +73,9 @@ namespace PMP
         Result enqueue(FileHash hash);
         Result insertAtFront(FileHash hash);
         Result insertBreakAtFrontIfNotExists();
-        Result insertBreak(QueueIndexType indexType, int index, quint32 clientReference);
+        Result insertSpecialQueueItem(SpecialQueueItemType itemType,
+                                      QueueIndexType indexType, int index,
+                                      quint32 clientReference);
         Result duplicateQueueEntry(uint id, quint32 clientReference);
         Result insertAtIndex(qint32 index,
                              std::function<QueueEntry* (uint)> queueEntryCreator,

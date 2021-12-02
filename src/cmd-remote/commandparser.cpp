@@ -340,16 +340,26 @@ namespace PMP
 
         int argumentIndex = 0;
 
-        if (arguments[argumentIndex] != "break")
+        SpecialQueueItemType itemType;
+        if (arguments[argumentIndex] == "break")
         {
-            _errorMessage = "First argument of command 'insert' must be 'break'!";
+            itemType = SpecialQueueItemType::Break;
+        }
+        else if (arguments[argumentIndex] == "barrier")
+        {
+            itemType = SpecialQueueItemType::Barrier;
+        }
+        else
+        {
+            _errorMessage =
+                    "First argument of command 'insert' must be 'break' or 'barrier'!";
             return;
         }
 
         argumentIndex++;
         if (arguments.size() <= argumentIndex)
         {
-            _errorMessage = "Command 'insert break' requires at least one more argument!";
+            _errorMessage = "Command 'insert' requires at least one more argument!";
             return;
         }
 
@@ -394,7 +404,8 @@ namespace PMP
             return;
         }
 
-        _command = new QueueInsertBreakCommand(insertionIndex, insertionIndexType);
+        _command = new QueueInsertSpecialItemCommand(itemType, insertionIndex,
+                                                     insertionIndexType);
     }
 
 }

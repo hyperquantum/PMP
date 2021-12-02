@@ -200,8 +200,9 @@ namespace PMP
         return queue.insertBreakAtFront();
     }
 
-    Result ServerInterface::insertBreak(QueueIndexType indexType, int index,
-                                        quint32 clientReference)
+    Result ServerInterface::insertSpecialQueueItem(SpecialQueueItemType itemType,
+                                                   QueueIndexType indexType, int index,
+                                                   quint32 clientReference)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();
@@ -211,7 +212,7 @@ namespace PMP
         if (index < 0)
             return Error::queueIndexOutOfRange();
 
-        return queue.insertAtIndex(index, QueueEntry::createBreak,
+        return queue.insertAtIndex(index, itemType,
                                    createQueueInsertionIdNotifier(clientReference));
     }
 

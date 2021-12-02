@@ -44,7 +44,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 17;
+    const qint16 ConnectedClient::ServerProtocolNo = 18;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -864,13 +864,25 @@ namespace PMP
 
     quint16 ConnectedClient::createTrackStatusFor(QueueEntry* entry)
     {
-        if (entry->isTrack()) {
-            return NetworkProtocol::createTrackStatusForTrack();
+        switch (entry->kind())
+        {
+        case PMP::QueueEntryKind::Track:
+            break; /* handled below */
+
+        case PMP::QueueEntryKind::Break:
+            return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Break);
+
+        case PMP::QueueEntryKind::Barrier:
+            return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Barrier);
         }
-        else {
-            /* TODO: there will be more pseudos; differentiate between them... */
-            return NetworkProtocol::createTrackStatusForBreakPoint();
+
+        if (!entry->isTrack()) /* unhandled non-track thing */
+        {
+            qWarning() << "Unhandled QueueEntryKind" << int(entry->kind());
+            return NetworkProtocol::createTrackStatusForUnknownThing();
         }
+
+        return NetworkProtocol::createTrackStatusForTrack();
     }
 
     void ConnectedClient::sendQueueEntryInfoMessage(quint32 queueID)
@@ -1395,28 +1407,32 @@ namespace PMP
     {
         switch (result.code())
         {
-        case PMP::ResultCode::Success:
+        case ResultCode::Success:
             sendResultMessage(ResultMessageErrorCode::NoError, clientReference, 0);
             return;
-        case PMP::ResultCode::NotLoggedIn:
+        case ResultCode::NotLoggedIn:
             sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference, 0);
             return;
-        case PMP::ResultCode::HashIsNull:
+        case ResultCode::HashIsNull:
             sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference, 0);
             return;
-        case PMP::ResultCode::QueueEntryIdNotFound:
+        case ResultCode::QueueEntryIdNotFound:
             sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
                               static_cast<quint32>(result.intArg()));
             return;
-        case PMP::ResultCode::QueueIndexOutOfRange:
+        case ResultCode::QueueIndexOutOfRange:
             sendResultMessage(ResultMessageErrorCode::InvalidQueueIndex, clientReference,
                               0);
             return;
-        case PMP::ResultCode::QueueMaxSizeExceeded:
+        case ResultCode::QueueMaxSizeExceeded:
             sendResultMessage(ResultMessageErrorCode::MaximumQueueSizeExceeded,
                               clientReference, 0);
             return;
-        case PMP::ResultCode::InternalError:
+        case ResultCode::QueueItemTypeInvalid:
+            sendResultMessage(ResultMessageErrorCode::InvalidQueueItemType,
+                              clientReference, 0);
+            return;
+        case ResultCode::InternalError:
             sendResultMessage(ResultMessageErrorCode::NonFatalInternalServerError,
                               clientReference, 0);
             return;
@@ -2344,12 +2360,17 @@ namespace PMP
         if (message.length() != 12)
             return; /* invalid message */
 
-        quint8 itemType = NetworkUtil::getByte(message, 2);
+        quint8 itemTypeNumber = NetworkUtil::getByte(message, 2);
         quint8 indexTypeNumber = NetworkUtil::getByte(message, 3);
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
         qint32 offset = NetworkUtil::get4BytesSigned(message, 8);
 
-        if (itemType != 1) /* 1 means a break */
+        SpecialQueueItemType itemType;
+        if (itemTypeNumber == 1)
+            itemType = SpecialQueueItemType::Break;
+        else if (itemTypeNumber == 2)
+            itemType = SpecialQueueItemType::Barrier;
+        else
             return; /* invalid message */
 
         QueueIndexType indexType;
@@ -2360,7 +2381,8 @@ namespace PMP
         else
             return; /* invalid message */
 
-        auto result = _serverInterface->insertBreak(indexType, offset, clientReference);
+        auto result = _serverInterface->insertSpecialQueueItem(itemType, indexType,
+                                                               offset, clientReference);
 
         /* success is handled by the queue insertion event, failure is handled here */
         if (!result)

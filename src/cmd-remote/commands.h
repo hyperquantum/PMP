@@ -23,6 +23,7 @@
 #include "common/playerstate.h"
 #include "common/queueindextype.h"
 #include "common/requestid.h"
+#include "common/specialqueueitemtype.h"
 
 #include "commandbase.h"
 
@@ -184,11 +185,12 @@ namespace PMP
         void start(ClientServerInterface* clientServerInterface) override;
     };
 
-    class QueueInsertBreakCommand : public CommandBase
+    class QueueInsertSpecialItemCommand : public CommandBase
     {
         Q_OBJECT
     public:
-        QueueInsertBreakCommand(int index, QueueIndexType indexType);
+        QueueInsertSpecialItemCommand(SpecialQueueItemType itemType, int index,
+                                      QueueIndexType indexType);
 
         bool requiresAuthentication() const override;
 
@@ -197,6 +199,7 @@ namespace PMP
         void start(ClientServerInterface* clientServerInterface) override;
 
     private:
+        SpecialQueueItemType _itemType;
         int _index;
         QueueIndexType _indexType;
         RequestID _requestId;

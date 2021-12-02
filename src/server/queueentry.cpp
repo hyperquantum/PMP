@@ -69,8 +69,8 @@ namespace PMP
         //
     }
 
-    QueueEntry::QueueEntry(QObject* parent, uint queueId, QueueEntryKind kind)
-     : QObject(parent),
+    QueueEntry::QueueEntry(uint queueId, QueueEntryKind kind)
+     : QObject(nullptr),
        _queueID(queueId),
        _kind(kind),
        _haveFilename(false),
@@ -83,7 +83,12 @@ namespace PMP
 
     QueueEntry* QueueEntry::createBreak(uint queueId)
     {
-        return new QueueEntry(nullptr, queueId, QueueEntryKind::Break);
+        return new QueueEntry(queueId, QueueEntryKind::Break);
+    }
+
+    QueueEntry* QueueEntry::createBarrier(uint queueId)
+    {
+        return new QueueEntry(queueId, QueueEntryKind::Barrier);
     }
 
     QueueEntry* QueueEntry::createFromFilename(uint queueId, const QString& filename)

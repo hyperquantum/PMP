@@ -25,6 +25,7 @@
 #include "queueentrytype.h"
 #include "queueindextype.h"
 #include "serverhealthstatus.h"
+#include "specialqueueitemtype.h"
 #include "startstopeventstatus.h"
 #include "userloginerror.h"
 #include "userregistrationerror.h"
@@ -46,6 +47,7 @@ namespace PMP
             qRegisterMetaType<PMP::QueueEntryType>();
             qRegisterMetaType<PMP::QueueIndexType>();
             qRegisterMetaType<PMP::ServerHealthStatus>();
+            qRegisterMetaType<PMP::SpecialQueueItemType>();
             qRegisterMetaType<PMP::StartStopEventStatus>();
             qRegisterMetaType<PMP::UserLoginError>();
             qRegisterMetaType<PMP::UserRegistrationError>();

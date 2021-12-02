@@ -354,7 +354,7 @@ namespace PMP
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 17;
+    const quint16 ServerConnection::ClientProtocolNo = 18;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -853,7 +853,10 @@ namespace PMP
         return RequestID(ref);
     }
 
-    RequestID ServerConnection::insertBreakAtIndex(int index, QueueIndexType indexType)
+    RequestID ServerConnection::insertSpecialQueueItemAtIndex(
+                                                            SpecialQueueItemType itemType,
+                                                            int index,
+                                                            QueueIndexType indexType)
     {
         if (!serverSupportsInsertingBreaksAtAnyIndex())
             return signalServerTooOldError(&ServerConnection::queueEntryInsertionFailed);
@@ -862,10 +865,10 @@ namespace PMP
         auto ref = getNewReference();
         _resultHandlers[ref] = handler;
 
-        qDebug() << "sending request to insert break at index" << index
+        qDebug() << "sending request to insert" << itemType << "at index" << index
                  << "; ref=" << ref;
 
-        quint8 itemTypeByte = 1 /* break */;
+        quint8 itemTypeByte = (itemType == SpecialQueueItemType::Barrier) ? 2 : 1;
         quint8 indexTypeByte = indexType == QueueIndexType::Normal ? 0 : 1;
 
         QByteArray message;

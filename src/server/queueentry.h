@@ -37,7 +37,8 @@ namespace PMP
     enum class QueueEntryKind
     {
         Track = 0,
-        Break
+        Break,
+        Barrier,
     };
 
     class QueueEntry : public QObject
@@ -45,6 +46,7 @@ namespace PMP
         Q_OBJECT
     public:
         static QueueEntry* createBreak(uint queueId);
+        static QueueEntry* createBarrier(uint queueId);
         static QueueEntry* createFromFilename(uint queueId, QString const& filename);
         static QueueEntry* createFromHash(uint queueId, FileHash hash);
         static QueueEntry* createCopyOf(uint queueId, QueueEntry const* existing);
@@ -84,7 +86,7 @@ namespace PMP
         QueueEntry(uint queueId, QString const& filename);
         QueueEntry(uint queueId, FileHash hash);
         QueueEntry(uint queueId, QueueEntry const* existing);
-        QueueEntry(QObject* parent, uint queueId, QueueEntryKind kind);
+        QueueEntry(uint queueId, QueueEntryKind kind);
 
         uint const _queueID;
         QueueEntryKind _kind;

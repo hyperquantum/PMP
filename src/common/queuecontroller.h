@@ -24,6 +24,7 @@
 #include "queueindextype.h"
 #include "requestid.h"
 #include "resultmessageerrorcode.h"
+#include "specialqueueitemtype.h"
 
 #include <QObject>
 
@@ -42,7 +43,8 @@ namespace PMP
         virtual void insertQueueEntryAtFront(FileHash hash) = 0;
         virtual void insertQueueEntryAtEnd(FileHash hash) = 0;
         virtual RequestID insertQueueEntryAtIndex(FileHash hash, quint32 index) = 0;
-        virtual RequestID insertBreakAtIndex(int index,
+        virtual RequestID insertSpecialItemAtIndex(SpecialQueueItemType itemType,
+                                                   int index,
                                    QueueIndexType indexType = QueueIndexType::Normal) = 0;
         virtual void deleteQueueEntry(uint queueId) = 0;
         virtual RequestID duplicateQueueEntry(uint queueId) = 0;

@@ -375,21 +375,21 @@ namespace PMP
                 auto lengthString =
                         Util::millisecondsToShortDisplayTimeText(lengthMilliseconds);
                 output += lengthString.rightJustified(8);
+                output += "|";
             }
             else if (entry->isTrack().toBool(true))
             {
                 output += "   ??   ";
+                output += "|";
             }
             else
             {
                 output += "        ";
             }
 
-            output += "|";
-
             if (entry->isTrack().toBool(false) == false)
             {
-                output += "    ";
+                output += "      ";
                 output += getSpecialEntryText(entry);
             }
             else if (entry->needFilename() && !entry->informativeFilename().isEmpty())
@@ -421,7 +421,10 @@ namespace PMP
                 return "";
 
             case QueueEntryType::BreakPoint:
-                return "---------- BREAK ----------";
+                return "----------- BREAK -----------";
+
+            case QueueEntryType::Barrier:
+                return "---------- BARRIER ----------";
 
             case QueueEntryType::UnknownSpecialType:
                 return "<<<< UNKNOWN ENTITY >>>>";
@@ -602,21 +605,25 @@ namespace PMP
         clientServerInterface->queueController().insertBreakAtFrontIfNotExists();
     }
 
-    /* ===== QueueInsertBreakCommand ===== */
+    /* ===== QueueInsertSpecialItemCommand ===== */
 
-    QueueInsertBreakCommand::QueueInsertBreakCommand(int index, QueueIndexType indexType)
-     : _index(index),
+    QueueInsertSpecialItemCommand::QueueInsertSpecialItemCommand(
+                                                            SpecialQueueItemType itemType,
+                                                            int index,
+                                                            QueueIndexType indexType)
+     : _itemType(itemType),
+       _index(index),
        _indexType(indexType)
     {
         //
     }
 
-    bool QueueInsertBreakCommand::requiresAuthentication() const
+    bool QueueInsertSpecialItemCommand::requiresAuthentication() const
     {
         return true;
     }
 
-    void QueueInsertBreakCommand::setUp(ClientServerInterface* clientServerInterface)
+    void QueueInsertSpecialItemCommand::setUp(ClientServerInterface* clientServerInterface)
     {
         auto* queueController = &clientServerInterface->queueController();
 
@@ -640,11 +647,13 @@ namespace PMP
         );
     }
 
-    void QueueInsertBreakCommand::start(ClientServerInterface* clientServerInterface)
+    void QueueInsertSpecialItemCommand::start(
+                                             ClientServerInterface* clientServerInterface)
     {
         auto& queueController = clientServerInterface->queueController();
 
-        _requestId = queueController.insertBreakAtIndex(_index, _indexType);
+        _requestId =
+                queueController.insertSpecialItemAtIndex(_itemType, _index, _indexType);
     }
 
     /* ===== QueueDeleteCommand ===== */

@@ -29,6 +29,7 @@ namespace PMP
         Unknown = 0,
         Track = 1,
         BreakPoint = 10,
+        Barrier = 11,
         UnknownSpecialType = 127
     };
 
@@ -36,21 +37,25 @@ namespace PMP
     {
         switch (type)
         {
-            case QueueEntryType::Unknown:
-                debug << "QueueEntryType::Unknown";
-                return debug;
+        case QueueEntryType::Unknown:
+            debug << "QueueEntryType::Unknown";
+            return debug;
 
-            case QueueEntryType::Track:
-                debug << "QueueEntryType::Track";
-                return debug;
+        case QueueEntryType::Track:
+            debug << "QueueEntryType::Track";
+            return debug;
 
-            case QueueEntryType::BreakPoint:
-                debug << "QueueEntryType::BreakPoint";
-                return debug;
+        case QueueEntryType::BreakPoint:
+            debug << "QueueEntryType::BreakPoint";
+            return debug;
 
-            case QueueEntryType::UnknownSpecialType:
-                debug << "QueueEntryType::UnknownSpecialType";
-                return debug;
+        case PMP::QueueEntryType::Barrier:
+            debug << "QueueEntryType::Barrier";
+            break;
+
+        case QueueEntryType::UnknownSpecialType:
+            debug << "QueueEntryType::UnknownSpecialType";
+            return debug;
         }
 
         debug << int(type);

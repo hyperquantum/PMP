@@ -132,9 +132,6 @@ namespace PMP
         void userPlayingForChanged(quint32 user);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
 
-        /*! Emitted when the queue is empty and the current track is finished. */
-        void finished();
-
     private Q_SLOTS:
         void changeStateTo(ServerPlayerState state);
 

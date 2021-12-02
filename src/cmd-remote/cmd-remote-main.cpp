@@ -70,11 +70,18 @@ usage:
     insert break front: insert a break at the front of the queue
     insert break end: insert a break at the end of the queue
     insert break index <number>: insert a break at the specified index
+    insert barrier end: insert a barrier at the end of the queue
 
     The numeric index is zero-based, meaning that 0 indicates the front of
     the queue.
-    The 'insert break' command requires a fairly recent version of the PMP
-    server in order to work.
+    Inserting a break or a barrier with the 'insert' command requires a
+    fairly recent version of the PMP server in order to work. Older servers
+    do not support barriers, and they only support inserting a break at the
+    front of the queue, with the condition that there is no break present
+    yet at that location (see the 'break' command).
+    A barrier is like a break, but is never consumed. Playback just stops
+    when the current track finishes and the first item in the queue is a
+    barrier.
 
   NOTICE:
     Some commands require a fairly recent version of the PMP server in order
@@ -102,6 +109,7 @@ usage:
     {{PROGRAMNAME}} localhost volume 100
     {{PROGRAMNAME}} 127.0.0.1 play
     {{PROGRAMNAME}} localhost insert break index 2
+    {{PROGRAMNAME}} localhost insert barrier front
     {{PROGRAMNAME}} localhost qmove 42 +3
     {{PROGRAMNAME}} localhost nowplaying
     {{PROGRAMNAME}} localhost login : nowplaying
