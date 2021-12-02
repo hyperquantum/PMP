@@ -42,7 +42,7 @@ namespace PMP
     private Q_SLOTS:
         void connected();
         void connectionBroken();
-        void receivedClientClockTimeOffset(quint64 clientClockTimeOffsetMs);
+        void receivedClientClockTimeOffset(qint64 clientClockTimeOffsetMs);
 
     private:
         ServerConnection* _connection;

@@ -168,7 +168,7 @@ namespace PMP
         void receivedDatabaseIdentifier(QUuid uuid);
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedServerName(quint8 nameType, QString name);
-        void receivedClientClockTimeOffset(quint64 clientClockTimeOffsetMs);
+        void receivedClientClockTimeOffset(qint64 clientClockTimeOffsetMs);
 
         void serverSettingsReloadResultEvent(ResultMessageErrorCode errorCode,
                                              RequestID requestId);
