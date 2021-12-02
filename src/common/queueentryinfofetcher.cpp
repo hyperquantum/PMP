@@ -41,6 +41,9 @@ namespace PMP
 
     bool QueueEntryInfo::needFilename() const
     {
+        if (_type != QueueEntryType::Track)
+            return false;
+
         return title().trimmed().isEmpty() || artist().trimmed().isEmpty();
     }
 

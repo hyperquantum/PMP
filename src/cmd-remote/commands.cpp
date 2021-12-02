@@ -307,7 +307,7 @@ namespace PMP
                         return false; /* download incomplete, shouldn't happen */
 
                     auto entry = queueEntryInfoFetcher->entryInfoByQID(queueId);
-                    if (!entry)
+                    if (!entry || entry->type() == QueueEntryType::Unknown)
                         return false; /* info not available yet */
 
                     if (entry->needFilename())
