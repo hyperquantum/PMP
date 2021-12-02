@@ -168,7 +168,6 @@ namespace PMP {
                     if (!info) return QVariant();
                     return info->artist();
                 }
-                    return QString(tr("<Artist>"));
                 case 2:
                 {
                     if (!info) return QVariant();
