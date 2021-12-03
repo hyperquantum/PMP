@@ -26,11 +26,12 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     /* ========================== Operation ========================== */
 
-    class QueueMediator::Operation {
+    class QueueMediator::Operation
+    {
     public:
         virtual ~Operation() {}
 
@@ -42,12 +43,12 @@ namespace PMP {
         virtual bool equals(DeleteOperation* op) { Q_UNUSED(op) return false; }
         virtual bool equals(AddOperation* op) { Q_UNUSED(op) return false; }
         virtual bool equals(MoveOperation* op) { Q_UNUSED(op) return false; }
-
     };
 
     /* ========================== DeleteOperation ========================== */
 
-    class QueueMediator::DeleteOperation : public QueueMediator::Operation {
+    class QueueMediator::DeleteOperation : public QueueMediator::Operation
+    {
     public:
         DeleteOperation(int index, quint32 queueID)
          : _index(index), _queueID(queueID)
@@ -62,7 +63,8 @@ namespace PMP {
 
         virtual bool equals(Operation* op) { return op != 0 && op->equals(this); }
 
-        virtual bool equals(DeleteOperation* op) {
+        virtual bool equals(DeleteOperation* op)
+        {
             return op != 0 && _index == op->_index && _queueID == op->_queueID;
         }
 
@@ -81,11 +83,13 @@ namespace PMP {
             return false; /* PROBLEM or INCONSISTENCY */
         }
 
-        if (sendToServer) {
+        if (sendToServer)
+        {
             mediator.queueController().deleteQueueEntry(_queueID);
         }
 
-        if (_index < mediator._myQueue.size()) {
+        if (_index < mediator._myQueue.size())
+        {
             mediator._myQueue.removeAt(_index);
         }
 
@@ -95,8 +99,10 @@ namespace PMP {
         return true;
     }
 
-    bool QueueMediator::DeleteOperation::rollback(QueueMediator& mediator) {
-        if (_index < 0 || _index > mediator._myQueue.size()) {
+    bool QueueMediator::DeleteOperation::rollback(QueueMediator& mediator)
+    {
+        if (_index < 0 || _index > mediator._myQueue.size())
+        {
             /* how could this have ever been applied? */
             return false;
         }
@@ -110,7 +116,8 @@ namespace PMP {
 
     /* ========================== AddOperation ========================== */
 
-    class QueueMediator::AddOperation : public QueueMediator::Operation {
+    class QueueMediator::AddOperation : public QueueMediator::Operation
+    {
     public:
         AddOperation(int index, quint32 queueID)
          : _index(index), _queueID(queueID)
@@ -125,7 +132,8 @@ namespace PMP {
 
         virtual bool equals(Operation* op) { return op != 0 && op->equals(this); }
 
-        virtual bool equals(AddOperation* op) {
+        virtual bool equals(AddOperation* op)
+        {
             return op != 0 && _index == op->_index && _queueID == op->_queueID;
         }
 
@@ -142,13 +150,15 @@ namespace PMP {
             return false; /* PROBLEM or INCONSISTENCY */
         }
 
-        if (sendToServer) {
+        if (sendToServer)
+        {
             /* NOT POSSIBLE, because the server determines the queue ID */
             //mediator._connection->addQueueEntry(_queueID);
             return false;
         }
 
-        if (_index <= mediator._myQueue.size()) {
+        if (_index <= mediator._myQueue.size())
+        {
             mediator._myQueue.insert(_index, _queueID);
         }
 
@@ -158,7 +168,8 @@ namespace PMP {
         return true;
     }
 
-    bool QueueMediator::AddOperation::rollback(QueueMediator& mediator) {
+    bool QueueMediator::AddOperation::rollback(QueueMediator& mediator)
+    {
         Q_UNUSED(mediator)
 
         /* Rollback support for AddOperation is not needed, as this is
@@ -168,7 +179,8 @@ namespace PMP {
 
     /* ========================== MoveOperation ========================== */
 
-    class QueueMediator::MoveOperation : public QueueMediator::Operation {
+    class QueueMediator::MoveOperation : public QueueMediator::Operation
+    {
     public:
         MoveOperation(int fromIndex, int toIndex, quint32 queueID)
          : _fromIndex(fromIndex), _toIndex(toIndex), _queueID(queueID)
@@ -183,7 +195,8 @@ namespace PMP {
 
         virtual bool equals(Operation* op) { return op != 0 && op->equals(this); }
 
-        virtual bool equals(MoveOperation* op) {
+        virtual bool equals(MoveOperation* op)
+        {
             return op != 0
                 && _fromIndex == op->_fromIndex
                 && _toIndex == op->_toIndex
@@ -208,15 +221,18 @@ namespace PMP {
             return false; /* PROBLEM or INCONSISTENCY */
         }
 
-        if (sendToServer) {
+        if (sendToServer)
+        {
             mediator.queueController().moveQueueEntry(_queueID, _toIndex - _fromIndex);
         }
 
-        if (_fromIndex < mediator._myQueue.size()) {
+        if (_fromIndex < mediator._myQueue.size())
+        {
             mediator._myQueue.removeAt(_fromIndex);
         }
 
-        if (_toIndex <= mediator._myQueue.size()) {
+        if (_toIndex <= mediator._myQueue.size())
+        {
             mediator._myQueue.insert(_toIndex, _queueID);
         }
 
@@ -224,7 +240,8 @@ namespace PMP {
         return true;
     }
 
-    bool QueueMediator::MoveOperation::rollback(QueueMediator& mediator) {
+    bool QueueMediator::MoveOperation::rollback(QueueMediator& mediator)
+    {
         if (_fromIndex < 0 || _toIndex < 0
             || _fromIndex >= mediator._queueLength
             || _toIndex >= mediator._queueLength
@@ -235,11 +252,13 @@ namespace PMP {
             return false;
         }
 
-        if (_toIndex < mediator._myQueue.size()) {
+        if (_toIndex < mediator._myQueue.size())
+        {
             mediator._myQueue.removeAt(_toIndex);
         }
 
-        if (_fromIndex <= mediator._myQueue.size()) {
+        if (_fromIndex <= mediator._myQueue.size())
+        {
             mediator._myQueue.insert(_fromIndex, _queueID);
         }
 
@@ -249,7 +268,8 @@ namespace PMP {
 
     /* ========================== InfoOperation ========================== */
 
-    class QueueMediator::InfoOperation : public QueueMediator::Operation {
+    class QueueMediator::InfoOperation : public QueueMediator::Operation
+    {
     public:
         InfoOperation(int index, QList<quint32> entries)
          : _index(index), _entries(entries)
@@ -264,7 +284,8 @@ namespace PMP {
 
         virtual bool equals(Operation* op) { return op != 0 && op->equals(this); }
 
-        virtual bool equals(InfoOperation* op) {
+        virtual bool equals(InfoOperation* op)
+        {
             if (op == 0 || _index != op->_index)
             {
                 return false;
@@ -288,26 +309,32 @@ namespace PMP {
             return false; /* PROBLEM or INCONSISTENCY */
         }
 
-        if (sendToServer) {
+        if (sendToServer)
+        {
             /* NOT POSSIBLE, because this operation is never requested by the client */
         }
 
-        if (mediator._myQueue.size() < _index + _entries.size()) {
+        if (mediator._myQueue.size() < _index + _entries.size())
+        {
             qDebug() << " need to expand mediator list";
             mediator._myQueue.reserve(_index + _entries.size());
-            do {
+            do
+            {
                 mediator._myQueue.append(0);
-            } while (mediator._myQueue.size() < _index + _entries.size());
+            }
+            while (mediator._myQueue.size() < _index + _entries.size());
         }
 
         bool change = false;
-        for (int i = 0; i < _entries.size(); ++i) {
+        for (int i = 0; i < _entries.size(); ++i)
+        {
             int queueIndex = _index + i;
 
             quint32 existing = mediator._myQueue[queueIndex];
             if (existing == _entries[i]) continue;
 
-            if (existing != 0) {
+            if (existing != 0)
+            {
                 qDebug() << "QueueMediator::InfoOperation::execute: INCONSISTENCY detected (2)";
                 return false; /* INCONSISTENCY detected */
             }
@@ -316,14 +343,16 @@ namespace PMP {
             change = true;
         }
 
-        if (change) {
+        if (change)
+        {
             Q_EMIT mediator.entriesReceived(_index, _entries);
         }
 
         return true;
     }
 
-    bool QueueMediator::InfoOperation::rollback(QueueMediator& mediator) {
+    bool QueueMediator::InfoOperation::rollback(QueueMediator& mediator)
+    {
         Q_UNUSED(mediator)
 
         /* NOT NECESSARY */
@@ -372,12 +401,15 @@ namespace PMP {
         _sourceMonitor->setFetchLimit(count);
     }
 
-    QUuid QueueMediator::serverUuid() const {
+    QUuid QueueMediator::serverUuid() const
+    {
         return _sourceMonitor->serverUuid();
     }
 
-    quint32 QueueMediator::queueEntry(int index) {
-        if (index < 0 || index >= _myQueue.size()) {
+    quint32 QueueMediator::queueEntry(int index)
+    {
+        if (index < 0 || index >= _myQueue.size())
+        {
             /* make sure the info will be fetched from the server */
             (void)(_sourceMonitor->queueEntry(index));
 
@@ -393,15 +425,18 @@ namespace PMP {
         return _sourceMonitor->isFetchCompleted();
     }
 
-    void QueueMediator::removeTrack(int index, quint32 queueID) {
+    void QueueMediator::removeTrack(int index, quint32 queueID)
+    {
         doLocalOperation(new DeleteOperation(index, queueID));
     }
 
-    void QueueMediator::moveTrack(int fromIndex, int toIndex, quint32 queueID) {
+    void QueueMediator::moveTrack(int fromIndex, int toIndex, quint32 queueID)
+    {
         doLocalOperation(new MoveOperation(fromIndex, toIndex, queueID));
     }
 
-    void QueueMediator::moveTrackToEnd(int fromIndex, quint32 queueId) {
+    void QueueMediator::moveTrackToEnd(int fromIndex, quint32 queueId)
+    {
         auto toIndex = queueLength() - 1;
         moveTrack(fromIndex, toIndex, queueId);
     }
@@ -421,7 +456,8 @@ namespace PMP {
         return queueController().canDuplicateEntry(queueID);
     }
 
-    void QueueMediator::resetQueue(int queueLength) {
+    void QueueMediator::resetQueue(int queueLength)
+    {
         qDebug() << "QueueMediator: resetting state, length=" << queueLength;
         _queueLength = queueLength;
         _myQueue = _sourceMonitor->knownQueuePart();
@@ -432,7 +468,8 @@ namespace PMP {
         Q_EMIT queueResetted(queueLength);
     }
 
-    void QueueMediator::doResetQueue() {
+    void QueueMediator::doResetQueue()
+    {
         qDebug() << "QueueMediator: resetting state to that from source";
         _queueLength = _sourceMonitor->queueLength();
         _myQueue = _sourceMonitor->knownQueuePart();
@@ -443,19 +480,23 @@ namespace PMP {
         Q_EMIT queueResetted(_queueLength);
     }
 
-    void QueueMediator::entriesReceivedAtServer(int index, QList<quint32> entries) {
+    void QueueMediator::entriesReceivedAtServer(int index, QList<quint32> entries)
+    {
         handleServerOperation(new InfoOperation(index, entries));
     }
 
-    void QueueMediator::trackAddedAtServer(int index, quint32 queueID) {
+    void QueueMediator::trackAddedAtServer(int index, quint32 queueID)
+    {
         handleServerOperation(new AddOperation(index, queueID));
     }
 
-    void QueueMediator::trackRemovedAtServer(int index, quint32 queueID) {
+    void QueueMediator::trackRemovedAtServer(int index, quint32 queueID)
+    {
         handleServerOperation(new DeleteOperation(index, queueID));
     }
 
-    void QueueMediator::trackMovedAtServer(int fromIndex, int toIndex, quint32 queueID) {
+    void QueueMediator::trackMovedAtServer(int fromIndex, int toIndex, quint32 queueID)
+    {
         handleServerOperation(new MoveOperation(fromIndex, toIndex, queueID));
     }
 
@@ -464,8 +505,10 @@ namespace PMP {
         return _clientServerInterface->queueController();
     }
 
-    bool QueueMediator::doLocalOperation(Operation* op) {
-        if (!op->execute(*this, true)) {
+    bool QueueMediator::doLocalOperation(Operation* op)
+    {
+        if (!op->execute(*this, true))
+        {
             qDebug() << "QueueMediator::doLocalOperation: FAILED to execute";
 
             /* PROBLEM */
@@ -479,14 +522,17 @@ namespace PMP {
         return true;
     }
 
-    bool QueueMediator::handleServerOperation(Operation* op) {
-        if (_pendingOperations.empty()) {
+    bool QueueMediator::handleServerOperation(Operation* op)
+    {
+        if (_pendingOperations.empty())
+        {
             bool result = op->execute(*this, false);
             delete op;
             return result;
         }
 
-        if (_pendingOperations.first()->equals(op)) {
+        if (_pendingOperations.first()->equals(op))
+        {
             /* already executed */
             Operation* firstOp = _pendingOperations.first();
             _pendingOperations.removeFirst();
@@ -499,10 +545,12 @@ namespace PMP {
         qDebug() << "QueueMediator: doing rollback";
 
         bool allFailMustReset = false;
-        for(int i = _pendingOperations.size() - 1; i >= 0; --i) {
+        for(int i = _pendingOperations.size() - 1; i >= 0; --i)
+        {
             Operation* pastOp = _pendingOperations[i];
 
-            if (!allFailMustReset) {
+            if (!allFailMustReset)
+            {
                 allFailMustReset = !pastOp->rollback(*this);
             }
 
@@ -512,12 +560,14 @@ namespace PMP {
         _pendingOperations.clear();
 
         /* rollback complete; sanity check */
-        if (_queueLength != _sourceMonitor->queueLength()) {
+        if (_queueLength != _sourceMonitor->queueLength())
+        {
             allFailMustReset = true;
         }
 
         /* now apply the operation that came from the server */
-        if (!allFailMustReset && !op->execute(*this, false)) {
+        if (!allFailMustReset && !op->execute(*this, false))
+        {
             /* still a problem */
             allFailMustReset = true;
         }

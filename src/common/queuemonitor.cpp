@@ -25,8 +25,8 @@
 #include <QtGlobal>
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     namespace
     {
         static const int initialQueueFetchLength = 10;

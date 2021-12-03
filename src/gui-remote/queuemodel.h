@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,13 +26,14 @@
 #include <QAbstractTableModel>
 #include <QList>
 
-namespace PMP {
-
+namespace PMP
+{
     class QueueEntryInfo;
     class QueueEntryInfoFetcher;
     class QueueMediator;
 
-    class QueueTrack {
+    class QueueTrack
+    {
     public:
         QueueTrack() : _id(0)/*, _real()*/ {}
 
@@ -62,7 +63,8 @@ namespace PMP {
 
     class ClientServerInterface;
 
-    class QueueModel : public QAbstractTableModel {
+    class QueueModel : public QAbstractTableModel
+    {
         Q_OBJECT
     public:
         QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
@@ -102,7 +104,8 @@ namespace PMP {
 //        void tracksChanged(int firstIndex, int lastIndex);
 
     private:
-        struct Track {
+        struct Track
+        {
             quint32 _queueID;
             QString _title;
             QString _artist;
