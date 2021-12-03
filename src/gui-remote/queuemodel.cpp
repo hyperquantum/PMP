@@ -146,24 +146,31 @@ namespace PMP {
             case Qt::DisplayRole:
                 if (info == nullptr) { return QString(); }
 
-                switch (info->type()) {
-                    case QueueEntryType::Unknown:
-                        break; /* could be anything */
+                switch (info->type())
+                {
+                case QueueEntryType::Unknown:
+                    break; /* could be anything */
 
-                    case QueueEntryType::Track:
-                        break; /* unreachable, see above */
+                case QueueEntryType::Track:
+                    break; /* unreachable, see above */
 
-                    case QueueEntryType::BreakPoint:
-                        if (col <= 1)
-                            return Util::EmDash + QString(" BREAK ") + Util::EmDash;
+                case QueueEntryType::BreakPoint:
+                    if (col <= 1)
+                        return Util::EmDash + QString(" BREAK ") + Util::EmDash;
 
-                        return QString();
+                    return QString();
 
-                    case QueueEntryType::UnknownSpecialType:
-                        if (col <= 1)
-                            return Util::EmDash + QString(" ????? ") + Util::EmDash;
+                case QueueEntryType::Barrier:
+                    if (col <= 1)
+                        return Util::EmDash + QString(" BARRIER ") + Util::EmDash;
 
-                        return QString();
+                    return QString();
+
+                case QueueEntryType::UnknownSpecialType:
+                    if (col <= 1)
+                        return Util::EmDash + QString(" ????? ") + Util::EmDash;
+
+                    return QString();
                 }
                 break;
 

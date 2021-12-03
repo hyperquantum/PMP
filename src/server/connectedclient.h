@@ -28,6 +28,7 @@
 
 #include "clientrequestorigin.h"
 #include "playerhistoryentry.h"
+#include "result.h"
 #include "serverplayerstate.h"
 #include "userdataforhashesfetcher.h"
 
@@ -94,7 +95,9 @@ namespace PMP
         void sendUserPlayingForModeMessage();
         void sendTextualQueueInfo();
         void queueEntryRemoved(quint32 offset, quint32 queueID);
-        void queueEntryAdded(quint32 offset, quint32 queueID);
+        void queueEntryAddedWithoutReference(quint32 index, quint32 queueId);
+        void queueEntryAddedWithReference(quint32 index, quint32 queueId,
+                                          quint32 clientReference);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
         void onUserPlayingForChanged(quint32 user);
         void onUserHashStatsUpdated(uint hashID, quint32 user,
@@ -162,6 +165,7 @@ namespace PMP
         void sendSuccessMessage(quint32 clientReference, quint32 intData);
         void sendSuccessMessage(quint32 clientReference, quint32 intData,
                                 QByteArray const& blobData);
+        void sendResultMessage(Result const& result, quint32 clientReference);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
                                quint32 intData);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
@@ -208,6 +212,7 @@ namespace PMP
         void parseParameterlessActionMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         ClientMessageType messageType);
+        void parseInsertSpecialQueueItemRequest(QByteArray const& message);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
         void parseQueueEntryRemovalRequest(QByteArray const& message);
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
@@ -239,7 +244,6 @@ namespace PMP
         QByteArray _saltForUserAccountRegistering;
         QString _userAccountLoggingIn;
         QByteArray _sessionSaltForUserLoggingIn;
-        QHash<quint32, quint32> _trackAdditionConfirmationsPending;
         bool _terminated;
         bool _binaryMode;
         bool _eventsEnabled;

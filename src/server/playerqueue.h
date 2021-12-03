@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,12 +17,14 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_QUEUE_H
-#define PMP_QUEUE_H
+#ifndef PMP_PLAYERQUEUE_H
+#define PMP_PLAYERQUEUE_H
 
 #include "common/filehash.h"
+#include "common/specialqueueitemtype.h"
 
 #include "playerhistoryentry.h"
+#include "result.h"
 
 #include <QHash>
 #include <QObject>
@@ -30,16 +32,19 @@
 #include <QSharedPointer>
 #include <QtGlobal>
 
+#include <functional>
+
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP {
-
+namespace PMP
+{
     class FileHash;
     class PlayerHistoryEntry;
     class QueueEntry;
     class Resolver;
 
-    class TrackRepetitionInfo {
+    class TrackRepetitionInfo
+    {
     public:
         TrackRepetitionInfo(bool isRepetition, qint64 millisecondsCounted)
          : _millisecondsCounted(millisecondsCounted), _isRepetition(isRepetition)
@@ -55,10 +60,12 @@ namespace PMP {
         bool _isRepetition;
     };
 
-    class PlayerQueue : public QObject {
+    class PlayerQueue : public QObject
+    {
         Q_OBJECT
     public:
-        enum HistoryType {
+        enum HistoryType
+        {
             Played, Skipped, Error
         };
 
@@ -78,28 +85,36 @@ namespace PMP {
         int firstTrackIndex() const { return _firstTrackIndex; }
         uint firstTrackQueueId() const { return _firstTrackQueueId; }
 
-        QueueEntry* peekFirstTrackEntry();
+        QueueEntry* peek() const;
+        bool firstEntryIsBarrier() const;
+        QueueEntry* peekFirstTrackEntry() const;
         QueueEntry* lookup(quint32 queueID);
         int findIndex(quint32 queueID);
-        QueueEntry* entryAtIndex(int index);
+        QueueEntry* entryAtIndex(int index) const;
         QList<QueueEntry*> entries(int startoffset, int maxCount);
+
+        Result enqueue(QString const& filename);
+        Result enqueue(FileHash hash);
+        Result enqueue(std::function<QueueEntry* (uint)> queueEntryCreator);
+
+        Result insertAtFront(FileHash hash);
+        Result insertBreakAtFront();
+        Result insertAtFront(std::function<QueueEntry* (uint)> queueEntryCreator);
+
+        Result insertAtIndex(qint32 index, FileHash hash);
+        Result insertAtIndex(qint32 index,
+                             std::function<QueueEntry* (uint)> queueEntryCreator);
+        Result insertAtIndex(qint32 index, SpecialQueueItemType itemType,
+                             std::function<void (uint)> queueIdNotifier);
+        Result insertAtIndex(qint32 index,
+                             std::function<QueueEntry* (uint)> queueEntryCreator,
+                             std::function<void (uint)> queueIdNotifier);
 
         QList<QSharedPointer<PlayerHistoryEntry> > recentHistory(int limit);
 
     public Q_SLOTS:
         //void clear(bool doNotifications);
         void trim(uint length);
-
-        void enqueue(QueueEntry* entry);
-        QueueEntry* enqueue(QString const& filename);
-        QueueEntry* enqueue(FileHash hash);
-
-        void insertAtFront(QueueEntry* entry);
-        QueueEntry* insertAtFront(FileHash hash);
-        void insertBreakAtFront();
-
-        void insertAtIndex(quint32 index, QueueEntry* entry);
-        QueueEntry* insertAtIndex(quint32 index, FileHash hash);
 
         QueueEntry* dequeue();
         bool remove(quint32 queueID);

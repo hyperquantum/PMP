@@ -30,8 +30,8 @@
 //#include "taglib/tbytevector.h"
 #include "taglib/tbytevectorstream.h"
 
-namespace PMP {
-
+namespace PMP
+{
     FileAnalyzer::FileAnalyzer(const QString& filename)
      : FileAnalyzer(QFileInfo(filename))
     {
@@ -169,7 +169,7 @@ namespace PMP {
     {
         auto extensionEnum = getExtension(extension);
 
-        (void)enableExperimentalFileFormats; /* no experimental formats at this time */
+        Q_UNUSED(enableExperimentalFileFormats) /* no experimental formats at this time */
 
         ///* Experimental formats */
         //if (extensionEnum == Extension::SomeExperimentalFormat)
@@ -297,7 +297,8 @@ namespace PMP {
         unsigned long size = data.size();
         if (size < 4 || position == 0) return false;
 
-        do {
+        do
+        {
             position--;
             if (data[int(position)] == char(0xFFu)
                 && data[int(position + 1)] != char(0xFFu)
@@ -305,7 +306,8 @@ namespace PMP {
             {
                 return true;
             }
-        } while (position > 0);
+        }
+        while (position > 0);
 
         return false;
     }

@@ -288,7 +288,7 @@ namespace PMP {
         QDir dir(tempDir);
         if (!dir.exists()) { return; }
 
-        auto threshhold = QDateTime(QDate::currentDate().addDays(-10));
+        auto threshhold = QDate::currentDate().addDays(-10).startOfDay();
 
         auto files =
             dir.entryInfoList(

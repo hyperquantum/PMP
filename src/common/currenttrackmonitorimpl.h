@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,7 +33,7 @@ namespace PMP {
     class CurrentTrackMonitorImpl : public CurrentTrackMonitor {
         Q_OBJECT
     public:
-        CurrentTrackMonitorImpl(ServerConnection* connection);
+        explicit CurrentTrackMonitorImpl(ServerConnection* connection);
 
         PlayerState playerState() const override;
 

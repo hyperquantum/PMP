@@ -83,7 +83,7 @@ namespace PMP
         switch (errorType)
         {
             case ResultMessageErrorCode::NoError:
-                text += "no error";
+                text += "unknown error (no error code)";
                 break;
 
             case ResultMessageErrorCode::QueueIdNotFound:
@@ -246,24 +246,67 @@ namespace PMP
                                                          quint32 intData,
                                                          QByteArray const& blobData)
     {
+        RequestID requestId(clientReference);
+
         if (succeeded(errorType))
         {
             /* this is how older servers report a successful insertion */
-            auto queueID = intData;
-            Q_EMIT _parent->queueEntryAdded(_index, queueID, RequestID(clientReference));
+            auto queueId = intData;
+            Q_EMIT _parent->queueEntryAdded(_index, queueId, requestId);
         }
         else
         {
             qWarning() << "TrackInsertionResultHandler:"
                        << errorDescription(errorType, clientReference, intData, blobData);
 
-            // TODO: report error to the originator of the request
+            Q_EMIT _parent->queueEntryInsertionFailed(errorType, requestId);
         }
     }
 
     void
     ServerConnection::TrackInsertionResultHandler::handleQueueEntryAdditionConfirmation(
                                   quint32 clientReference, qint32 index, quint32 queueID)
+    {
+        Q_EMIT _parent->queueEntryAdded(index, queueID, RequestID(clientReference));
+    }
+
+    /* ============================================================================ */
+
+    class ServerConnection::QueueEntryInsertionResultHandler : public ResultHandler
+    {
+    public:
+        QueueEntryInsertionResultHandler(ServerConnection* parent);
+
+        void handleResult(ResultMessageErrorCode errorType, quint32 clientReference,
+                          quint32 intData, QByteArray const& blobData) override;
+
+        void handleQueueEntryAdditionConfirmation(quint32 clientReference, qint32 index,
+                                                  quint32 queueID) override;
+    };
+
+    ServerConnection::QueueEntryInsertionResultHandler::QueueEntryInsertionResultHandler(
+                                                                 ServerConnection* parent)
+     : ResultHandler(parent)
+    {
+        //
+    }
+
+    void ServerConnection::QueueEntryInsertionResultHandler::handleResult(
+                                                         ResultMessageErrorCode errorType,
+                                                         quint32 clientReference,
+                                                         quint32 intData,
+                                                         QByteArray const& blobData)
+    {
+        qWarning() << "QueueEntryInsertionResultHandler:"
+                   << errorDescription(errorType, clientReference, intData, blobData);
+
+        Q_EMIT _parent->queueEntryInsertionFailed(errorType, RequestID(clientReference));
+    }
+
+    void ServerConnection::QueueEntryInsertionResultHandler::handleQueueEntryAdditionConfirmation(
+                                                                  quint32 clientReference,
+                                                                  qint32 index,
+                                                                  quint32 queueID)
     {
         Q_EMIT _parent->queueEntryAdded(index, queueID, RequestID(clientReference));
     }
@@ -298,7 +341,7 @@ namespace PMP
         qWarning() << "DuplicationResultHandler:"
                    << errorDescription(errorType, clientReference, intData, blobData);
 
-        // TODO: report error to the originator of the request
+        Q_EMIT _parent->queueEntryInsertionFailed(errorType, RequestID(clientReference));
     }
 
     void ServerConnection::DuplicationResultHandler::handleQueueEntryAdditionConfirmation(
@@ -311,7 +354,7 @@ namespace PMP
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 16;
+    const quint16 ServerConnection::ClientProtocolNo = 18;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
@@ -372,6 +415,11 @@ namespace PMP
     bool ServerConnection::serverSupportsDynamicModeWaveTermination() const
     {
         return _serverProtocolNo >= 14;
+    }
+
+    bool ServerConnection::serverSupportsInsertingBreaksAtAnyIndex() const
+    {
+        return _serverProtocolNo >= 17;
     }
 
     void ServerConnection::onConnected()
@@ -751,23 +799,37 @@ namespace PMP
         return RequestID(getNewReference());
     }
 
+    RequestID ServerConnection::signalRequestError(ResultMessageErrorCode errorCode,
+                             void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
+                                                                   RequestID))
+    {
+        auto requestId = getNewRequestId();
+
+        QTimer::singleShot(
+            0,
+            this,
+            [this, errorSignal, errorCode, requestId]()
+            {
+                Q_EMIT (this->*errorSignal)(errorCode, requestId);
+            }
+        );
+
+        return requestId;
+    }
+
+    RequestID ServerConnection::signalServerTooOldError(
+                             void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
+                                                                   RequestID))
+    {
+        return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
+    }
+
     RequestID ServerConnection::reloadServerSettings()
     {
-        // TODO : find a way to write this more elegantly
         if (!serverSupportsReloadingServerSettings())
         {
-            auto requestId = getNewRequestId();
-            QTimer::singleShot(
-                0, this,
-                [this, requestId]()
-                {
-                    Q_EMIT serverSettingsReloadResultEvent(
-                        ResultMessageErrorCode::ServerTooOld, requestId
-                    );
-                }
-            );
-
-            return requestId;
+            return signalServerTooOldError(
+                                      &ServerConnection::serverSettingsReloadResultEvent);
         }
 
         qDebug() << "sending request to reload server settings";
@@ -779,7 +841,9 @@ namespace PMP
     RequestID ServerConnection::insertQueueEntryAtIndex(const FileHash& hash,
                                                         quint32 index)
     {
-        if (hash.isNull()) return RequestID(); /* invalid */
+        if (hash.isNull())
+            return signalRequestError(ResultMessageErrorCode::InvalidHash,
+                                      &ServerConnection::queueEntryInsertionFailed);
 
         auto handler = new TrackInsertionResultHandler(this, index);
         auto ref = getNewReference();
@@ -801,13 +865,45 @@ namespace PMP
         return RequestID(ref);
     }
 
-    void ServerConnection::duplicateQueueEntry(quint32 queueID)
+    RequestID ServerConnection::insertSpecialQueueItemAtIndex(
+                                                            SpecialQueueItemType itemType,
+                                                            int index,
+                                                            QueueIndexType indexType)
+    {
+        if (!serverSupportsInsertingBreaksAtAnyIndex())
+            return signalServerTooOldError(&ServerConnection::queueEntryInsertionFailed);
+
+        auto handler = new QueueEntryInsertionResultHandler(this);
+        auto ref = getNewReference();
+        _resultHandlers[ref] = handler;
+
+        qDebug() << "sending request to insert" << itemType << "at index" << index
+                 << "; ref=" << ref;
+
+        quint8 itemTypeByte = (itemType == SpecialQueueItemType::Barrier) ? 2 : 1;
+        quint8 indexTypeByte = indexType == QueueIndexType::Normal ? 0 : 1;
+
+        QByteArray message;
+        message.reserve(2 + 1 + 1 + 4 + 4);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::InsertSpecialQueueItemRequest);
+        NetworkUtil::appendByte(message, itemTypeByte);
+        NetworkUtil::appendByte(message, indexTypeByte);
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkUtil::append4Bytes(message, index);
+
+        sendBinaryMessage(message);
+
+        return RequestID(ref);
+    }
+
+    RequestID ServerConnection::duplicateQueueEntry(quint32 queueID)
     {
         auto handler = new DuplicationResultHandler(this);
         auto ref = getNewReference();
         _resultHandlers[ref] = handler;
 
-        qDebug() << "sending request to duplicate QID " << queueID;
+        qDebug() << "sending request to duplicate QID" << queueID << "; ref=" << ref;
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4);
@@ -818,6 +914,8 @@ namespace PMP
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
+
+        return RequestID(ref);
     }
 
     void ServerConnection::sendQueueEntryInfoRequest(uint queueID)
@@ -1031,13 +1129,13 @@ namespace PMP
             switch (errorCode)
             {
             case ResultMessageErrorCode::UserAccountAlreadyExists:
-                error = AccountAlreadyExists;
+                error = UserRegistrationError::AccountAlreadyExists;
                 break;
             case ResultMessageErrorCode::InvalidUserAccountName:
-                error = InvalidAccountName;
+                error = UserRegistrationError::InvalidAccountName;
                 break;
             default:
-                error = UnknownUserRegistrationError;
+                error = UserRegistrationError::UnknownError;
                 break;
             }
 
@@ -1195,7 +1293,7 @@ namespace PMP
         sendSingleByteAction(3); /* 3 = skip */
     }
 
-    void ServerConnection::insertBreakAtFront()
+    void ServerConnection::insertBreakAtFrontIfNotExists()
     {
         sendSingleByteAction(4); /* 4 = insert break at front */
     }

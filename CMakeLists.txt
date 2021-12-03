@@ -40,9 +40,13 @@ find_library(TAGLIB_LIBRARIES tag)
 include_directories(${TAGLIB_INCLUDE_DIRS})
 #target_link_libraries(myprogram ${TAGLIB_LIBRARIES})
 
-# enable compiler warnings for GCC
+# enable compiler warnings
 if(CMAKE_COMPILER_IS_GNUCC OR CMAKE_COMPILER_IS_GNUCXX)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wno-long-long -pedantic")
+endif()
+if(MSVC)
+    # /W4 triggers (too) many warnings in Qt header files
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W3")
 endif()
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)

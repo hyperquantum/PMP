@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,10 +24,11 @@
 
 #include <functional>
 
-namespace PMP {
-
+namespace PMP
+{
     template <typename T>
-    class QObjectResourceKeeper {
+    class QObjectResourceKeeper
+    {
     public:
         QObjectResourceKeeper(T* qobject, std::function<void (T*)> cleaner)
          : _qobject(qobject), _cleaner(cleaner)
@@ -35,7 +36,8 @@ namespace PMP {
             //
         }
 
-        ~QObjectResourceKeeper() {
+        ~QObjectResourceKeeper()
+        {
             _cleaner(_qobject);
         }
 
@@ -43,6 +45,5 @@ namespace PMP {
         QPointer<T> _qobject;
         std::function<void (T*)> _cleaner;
     };
-
 }
 #endif

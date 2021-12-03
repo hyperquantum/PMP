@@ -41,6 +41,9 @@ namespace PMP
 
     bool QueueEntryInfo::needFilename() const
     {
+        if (_type != QueueEntryType::Track)
+            return false;
+
         return title().trimmed().isEmpty() || artist().trimmed().isEmpty();
     }
 
@@ -171,7 +174,9 @@ namespace PMP
         {
             sendInfoRequest(queueID);
         }
-        else if (info->hash().isNull() && !_hashRequestsSent.contains(queueID))
+        else if (info->hash().isNull()
+                 && !info->isTrack().isFalse()
+                 && !_hashRequestsSent.contains(queueID))
         {
             sendHashRequest(queueID);
         }
@@ -387,7 +392,7 @@ namespace PMP
     {
         if (_trackChangeNotificationsPending.isEmpty()) return;
 
-        QList<quint32> list = _trackChangeNotificationsPending.toList();
+        QList<quint32> list = _trackChangeNotificationsPending.values();
         _trackChangeNotificationsPending.clear();
 
         qDebug() << "QueueEntryInfoFetcher: going to emit tracksChanged signal for"

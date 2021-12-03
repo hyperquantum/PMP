@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,32 +22,40 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
-    enum class QueueEntryType {
+namespace PMP
+{
+    enum class QueueEntryType
+    {
         Unknown = 0,
         Track = 1,
         BreakPoint = 10,
+        Barrier = 11,
         UnknownSpecialType = 127
     };
 
-    inline QDebug operator<<(QDebug debug, QueueEntryType type) {
-        switch (type) {
-            case QueueEntryType::Unknown:
-                debug << "QueueEntryType::Unknown";
-                return debug;
+    inline QDebug operator<<(QDebug debug, QueueEntryType type)
+    {
+        switch (type)
+        {
+        case QueueEntryType::Unknown:
+            debug << "QueueEntryType::Unknown";
+            return debug;
 
-            case QueueEntryType::Track:
-                debug << "QueueEntryType::Track";
-                return debug;
+        case QueueEntryType::Track:
+            debug << "QueueEntryType::Track";
+            return debug;
 
-            case QueueEntryType::BreakPoint:
-                debug << "QueueEntryType::BreakPoint";
-                return debug;
+        case QueueEntryType::BreakPoint:
+            debug << "QueueEntryType::BreakPoint";
+            return debug;
 
-            case QueueEntryType::UnknownSpecialType:
-                debug << "QueueEntryType::UnknownSpecialType";
-                return debug;
+        case PMP::QueueEntryType::Barrier:
+            debug << "QueueEntryType::Barrier";
+            break;
+
+        case QueueEntryType::UnknownSpecialType:
+            debug << "QueueEntryType::UnknownSpecialType";
+            return debug;
         }
 
         debug << int(type);

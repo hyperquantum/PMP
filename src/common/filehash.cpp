@@ -23,8 +23,8 @@
 
 #include <QCryptographicHash>
 
-namespace PMP {
-
+namespace PMP
+{
     FileHash::FileHash(uint length, const QByteArray& sha1,
         const QByteArray& md5)
      : _length(length), _sha1(sha1), _md5(md5)

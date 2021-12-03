@@ -45,7 +45,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 16;
+    const qint16 ConnectedClient::ServerProtocolNo = 18;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -69,7 +69,12 @@ namespace PMP
 
         connect(
             _serverInterface, &ServerInterface::serverShuttingDown,
-            this, &ConnectedClient::terminateConnection
+            this,
+            [this]()
+            {
+                qDebug() << "server shutting down; terminating this connection";
+                terminateConnection();
+            }
         );
         connect(
             _serverInterface, &ServerInterface::serverSettingsReloadResultEvent,
@@ -78,7 +83,14 @@ namespace PMP
 
         connect(
             socket, &QTcpSocket::disconnected,
-            this, &ConnectedClient::terminateConnection
+            this,
+            [this]()
+            {
+                if (_terminated) return;
+
+                qDebug() << "TCP socket disconnected; terminating this connection";
+                terminateConnection();
+            }
         );
         connect(socket, &QTcpSocket::readyRead, this, &ConnectedClient::dataArrived);
         connect(socket, &QTcpSocket::errorOccurred, this, &ConnectedClient::socketError);
@@ -103,7 +115,7 @@ namespace PMP
     {
         qDebug() << "terminateConnection() called";
         if (_terminated) return;
-        qDebug() << " will terminate and cleanup connection now";
+        qDebug() << " will terminate and clean up connection now";
         _terminated = true;
         _socket->close();
         _textReadBuffer.clear();
@@ -156,8 +168,12 @@ namespace PMP
             this, &ConnectedClient::queueEntryRemoved
         );
         connect(
-            queue, &PlayerQueue::entryAdded,
-            this, &ConnectedClient::queueEntryAdded
+            _serverInterface, &ServerInterface::queueEntryAddedWithoutReference,
+            this, &ConnectedClient::queueEntryAddedWithoutReference
+        );
+        connect(
+            _serverInterface, &ServerInterface::queueEntryAddedWithReference,
+            this, &ConnectedClient::queueEntryAddedWithReference
         );
         connect(
             queue, &PlayerQueue::entryMoved,
@@ -278,6 +294,7 @@ namespace PMP
                 || heading[1] != 'M'
                 || heading[2] != 'P')
             {
+                qDebug() << "incoming connection without PMP signature; terminating it";
                 terminateConnection();
                 return;
             }
@@ -298,7 +315,8 @@ namespace PMP
     {
         switch (error) {
             case QAbstractSocket::RemoteHostClosedError:
-                this->terminateConnection();
+                qDebug() << "got socket error RemoteHostClosedError; terminating connection";
+                terminateConnection();
                 break;
             default:
                 qDebug() << "ConnectedClient: unhandled socket error:" << error;
@@ -879,13 +897,25 @@ namespace PMP
 
     quint16 ConnectedClient::createTrackStatusFor(QueueEntry* entry)
     {
-        if (entry->isTrack()) {
-            return NetworkProtocol::createTrackStatusForTrack();
+        switch (entry->kind())
+        {
+        case PMP::QueueEntryKind::Track:
+            break; /* handled below */
+
+        case PMP::QueueEntryKind::Break:
+            return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Break);
+
+        case PMP::QueueEntryKind::Barrier:
+            return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Barrier);
         }
-        else {
-            /* TODO: there will be more pseudos; differentiate between them... */
-            return NetworkProtocol::createTrackStatusForBreakPoint();
+
+        if (!entry->isTrack()) /* unhandled non-track thing */
+        {
+            qWarning() << "Unhandled QueueEntryKind" << int(entry->kind());
+            return NetworkProtocol::createTrackStatusForUnknownThing();
         }
+
+        return NetworkProtocol::createTrackStatusForTrack();
     }
 
     void ConnectedClient::sendQueueEntryInfoMessage(quint32 queueID)
@@ -1491,6 +1521,46 @@ namespace PMP
                           blobData);
     }
 
+    void ConnectedClient::sendResultMessage(const Result& result, quint32 clientReference)
+    {
+        switch (result.code())
+        {
+        case ResultCode::Success:
+            sendResultMessage(ResultMessageErrorCode::NoError, clientReference, 0);
+            return;
+        case ResultCode::NotLoggedIn:
+            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference, 0);
+            return;
+        case ResultCode::HashIsNull:
+            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference, 0);
+            return;
+        case ResultCode::QueueEntryIdNotFound:
+            sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
+                              static_cast<quint32>(result.intArg()));
+            return;
+        case ResultCode::QueueIndexOutOfRange:
+            sendResultMessage(ResultMessageErrorCode::InvalidQueueIndex, clientReference,
+                              0);
+            return;
+        case ResultCode::QueueMaxSizeExceeded:
+            sendResultMessage(ResultMessageErrorCode::MaximumQueueSizeExceeded,
+                              clientReference, 0);
+            return;
+        case ResultCode::QueueItemTypeInvalid:
+            sendResultMessage(ResultMessageErrorCode::InvalidQueueItemType,
+                              clientReference, 0);
+            return;
+        case ResultCode::InternalError:
+            sendResultMessage(ResultMessageErrorCode::NonFatalInternalServerError,
+                              clientReference, 0);
+            return;
+        }
+
+        qWarning() << "Unhandled ResultCode" << int(result.code())
+                   << "for client-ref" << clientReference;
+        sendResultMessage(ResultMessageErrorCode::UnknownError, clientReference, 0);
+    }
+
     void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
                                             quint32 clientReference, quint32 intData)
     {
@@ -1723,23 +1793,23 @@ namespace PMP
         schedulePlayerStateNotification(); /* queue length changed, notify after delay */
     }
 
-    void ConnectedClient::queueEntryAdded(quint32 offset, quint32 queueID)
+    void ConnectedClient::queueEntryAddedWithoutReference(quint32 index, quint32 queueId)
     {
-        auto it = _trackAdditionConfirmationsPending.find(queueID);
-        if (it != _trackAdditionConfirmationsPending.end()) {
-            auto clientReference = it.value();
-            _trackAdditionConfirmationsPending.erase(it);
+        sendQueueEntryAddedMessage(index, queueId);
 
-            if (_clientProtocolNo >= 9) {
-                sendQueueEntryAdditionConfirmationMessage(
-                                                        clientReference, offset, queueID);
-            }
-            else {
-                sendSuccessMessage(clientReference, queueID);
-            }
+        schedulePlayerStateNotification(); /* queue length changed, notify after delay */
+    }
+
+    void ConnectedClient::queueEntryAddedWithReference(quint32 index, quint32 queueId,
+                                                       quint32 clientReference)
+    {
+        if (_clientProtocolNo >= 9)
+        {
+            sendQueueEntryAdditionConfirmationMessage(clientReference, index, queueId);
         }
-        else {
-            sendQueueEntryAddedMessage(offset, queueID);
+        else
+        {
+            sendSuccessMessage(clientReference, queueId);
         }
 
         schedulePlayerStateNotification(); /* queue length changed, notify after delay */
@@ -2248,6 +2318,9 @@ namespace PMP
         case ClientMessageType::HashUserDataRequestMessage:
             parseHashUserDataRequest(message);
             break;
+        case ClientMessageType::InsertSpecialQueueItemRequest:
+            parseInsertSpecialQueueItemRequest(message);
+            break;
         case ClientMessageType::InsertHashIntoQueueRequestMessage:
             parseInsertHashIntoQueueRequest(message);
             break;
@@ -2390,13 +2463,10 @@ namespace PMP
             return;
         }
 
-        if (!isLoggedIn()) { return; /* client needs to be authenticated for this */ }
-
         bool ok;
         FileHash hash = NetworkProtocol::getHash(message, 4, &ok);
-        if (!ok || hash.isNull()) {
+        if (!ok || hash.isNull())
             return; /* invalid message */
-        }
 
         qDebug() << " request contains hash:" << hash.dumpToString();
 
@@ -2408,39 +2478,75 @@ namespace PMP
         {
             _serverInterface->insertAtFront(hash);
         }
-        else {
+        else
+        {
             return; /* invalid message */
         }
+    }
+
+    void ConnectedClient::parseInsertSpecialQueueItemRequest(QByteArray const& message)
+    {
+        qDebug() << "received 'insert special queue item' request";
+
+        if (message.length() != 12)
+            return; /* invalid message */
+
+        quint8 itemTypeNumber = NetworkUtil::getByte(message, 2);
+        quint8 indexTypeNumber = NetworkUtil::getByte(message, 3);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        qint32 offset = NetworkUtil::get4BytesSigned(message, 8);
+
+        SpecialQueueItemType itemType;
+        if (itemTypeNumber == 1)
+            itemType = SpecialQueueItemType::Break;
+        else if (itemTypeNumber == 2)
+            itemType = SpecialQueueItemType::Barrier;
+        else
+            return; /* invalid message */
+
+        QueueIndexType indexType;
+        if (indexTypeNumber == 0)
+            indexType = QueueIndexType::Normal;
+        else if (indexTypeNumber == 1)
+            indexType = QueueIndexType::Reverse;
+        else
+            return; /* invalid message */
+
+        auto result = _serverInterface->insertSpecialQueueItem(itemType, indexType,
+                                                               offset, clientReference);
+
+        /* success is handled by the queue insertion event, failure is handled here */
+        if (!result)
+            sendResultMessage(result, clientReference);
     }
 
     void ConnectedClient::parseInsertHashIntoQueueRequest(const QByteArray &message)
     {
         qDebug() << "received 'insert filehash into queue at index' request";
 
-        if (message.length() != 2 + 2 + 4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT) {
+        if (message.length() != 2 + 2 + 4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT)
             return; /* invalid message */
-        }
-
-        if (!isLoggedIn()) { return; /* client needs to be authenticated for this */ }
 
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-        quint32 index = NetworkUtil::get4Bytes(message, 8);
+        qint32 index = NetworkUtil::get4BytesSigned(message, 8);
 
         qDebug() << " client ref:" << clientReference << "; " << "index:" << index;
 
         bool ok;
         FileHash hash = NetworkProtocol::getHash(message, 12, &ok);
-        if (!ok || hash.isNull()) {
+        if (!ok || hash.isNull())
             return; /* invalid message */
-        }
 
         qDebug() << " request contains hash:" << hash.dumpToString();
 
-        PlayerQueue& queue = _player->queue();
-        auto entry = new QueueEntry(&queue, hash);
+        auto entryCreator = QueueEntryCreators::hash(hash);
 
-        _trackAdditionConfirmationsPending[entry->queueID()] = clientReference;
-        _serverInterface->insertAtIndex(index, entry);
+        auto result =
+                _serverInterface->insertAtIndex(index, entryCreator, clientReference);
+
+        /* success is handled by the queue insertion event, failure is handled here */
+        if (!result)
+            sendResultMessage(result, clientReference);
     }
 
     void ConnectedClient::parseQueueEntryRemovalRequest(QByteArray const& message)
@@ -2465,45 +2571,19 @@ namespace PMP
     {
         qDebug() << "received 'duplicate queue entry' request";
 
-        if (message.length() != 2 + 2 + 4 + 4) {
+        if (message.length() != 2 + 2 + 4 + 4)
             return; /* invalid message */
-        }
-
-        if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-        quint32 queueID = NetworkUtil::get4Bytes(message, 8);
+        quint32 queueId = NetworkUtil::get4Bytes(message, 8);
 
-        qDebug() << " client ref:" << clientReference << "; " << "QID:" << queueID;
+        qDebug() << " client ref:" << clientReference << "; " << "QID:" << queueId;
 
-        if (queueID <= 0) {
-            sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
-                              queueID);
-            return; /* invalid queue ID */
-        }
+        auto result = _serverInterface->duplicateQueueEntry(queueId, clientReference);
 
-        auto& queue = _player->queue();
-
-        auto index = queue.findIndex(queueID);
-        if (index < 0)
-        {
-            sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
-                              queueID);
-            return; /* not found; */
-        }
-
-        auto existing = queue.entryAtIndex(index);
-        if (!existing || existing->queueID() != queueID)
-        {
-            qWarning() << "queue inconsistency for QID" << queueID;
-            sendNonFatalInternalErrorResultMessage(clientReference);
-            return; /* not found; */
-        }
-
-        auto entry = new QueueEntry(&queue, existing);
-
-        _trackAdditionConfirmationsPending[entry->queueID()] = clientReference;
-        _serverInterface->insertAtIndex(index + 1, entry);
+        /* success is handled by the queue insertion event, failure is handled here */
+        if (!result)
+            sendResultMessage(result, clientReference);
     }
 
     void ConnectedClient::parseHashUserDataRequest(const QByteArray& message)
@@ -2651,7 +2731,7 @@ namespace PMP
             break;
         case 4:
             qDebug() << "received INSERT BREAK AT FRONT command";
-            _serverInterface->insertBreakAtFront();
+            _serverInterface->insertBreakAtFrontIfNotExists();
             break;
         case 10: /* request for state info */
             qDebug() << "received request for player status";

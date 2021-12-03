@@ -20,11 +20,12 @@
 #ifndef PMP_NETWORKPROTOCOL_H
 #define PMP_NETWORKPROTOCOL_H
 
-#include "common/queueentrytype.h"
-#include "common/resultmessageerrorcode.h"
-#include "common/scrobblerstatus.h"
-#include "common/scrobblingprovider.h"
-#include "common/startstopeventstatus.h"
+#include "queueentrytype.h"
+#include "resultmessageerrorcode.h"
+#include "scrobblerstatus.h"
+#include "scrobblingprovider.h"
+#include "specialqueueitemtype.h"
+#include "startstopeventstatus.h"
 
 #include <QByteArray>
 #include <QString>
@@ -53,6 +54,8 @@ namespace PMP
          14: single byte request 25 & server msg 26: wave termination & progress
          15: client msg 23, parameterless action 10, error code 21: server settings reload
          16: server msg 31: sending server clock time
+         17: client msg 24: inserting breaks at any index
+         18: client msg 24, server msg 3 & 4 & 21: barriers
 
     */
 
@@ -120,6 +123,7 @@ namespace PMP
         QueueEntryDuplicationRequestMessage = 21,
         ClientExtensionsMessage = 22,
         ParameterlessActionMessage = 23,
+        InsertSpecialQueueItemRequest = 24,
     };
 
     enum class ServerEventCode
@@ -211,8 +215,9 @@ namespace PMP
                                               QByteArray const& hashedSaltedUserPassword);
 
         static quint16 createTrackStatusForTrack();
+        static quint16 createTrackStatusFor(SpecialQueueItemType itemType);
         static quint16 createTrackStatusUnknownId();
-        static quint16 createTrackStatusForBreakPoint();
+        static quint16 createTrackStatusForUnknownThing();
 
         static bool isTrackStatusFromRealTrack(quint16 status);
         static QString getPseudoTrackStatusText(quint16 status);

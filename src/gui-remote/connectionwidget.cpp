@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,8 +27,8 @@
 #include <QIntValidator>
 #include <QMessageBox>
 
-namespace PMP {
-
+namespace PMP
+{
     ConnectionWidget::ConnectionWidget(QWidget* parent)
      : QWidget(parent), _ui(new Ui::ConnectionWidget())
     {
@@ -48,18 +48,32 @@ namespace PMP {
         auto discoverer = new ServerDiscoverer(this);
 
         connect(
+            discoverer, &ServerDiscoverer::canDoScanChanged,
+            this,
+            [this, discoverer]()
+            {
+                _ui->scanButton->setEnabled(discoverer->canDoScan());
+            }
+        );
+        connect(
+            _ui->scanButton, &QPushButton::clicked,
+            discoverer, &ServerDiscoverer::scanForServers
+        );
+        connect(
             discoverer, &ServerDiscoverer::foundServer,
             this, &ConnectionWidget::foundServer
         );
 
-        discoverer->sendProbe();
+        discoverer->scanForServers();
     }
 
-    ConnectionWidget::~ConnectionWidget() {
+    ConnectionWidget::~ConnectionWidget()
+    {
         delete _ui;
     }
 
-    void ConnectionWidget::reenableFields() {
+    void ConnectionWidget::reenableFields()
+    {
         _ui->serverLineEdit->setEnabled(true);
         _ui->portLineEdit->setEnabled(true);
         _ui->connectButton->setEnabled(true);
@@ -83,7 +97,9 @@ namespace PMP {
 
         connect(
             button, &QCommandLinkButton::clicked,
-            [=]() {
+            this,
+            [=]()
+            {
                 _ui->serverLineEdit->setEnabled(false);
                 _ui->portLineEdit->setEnabled(false);
                 _ui->connectButton->setEnabled(false);
@@ -97,14 +113,16 @@ namespace PMP {
         _ui->noServersFoundLabel->hide();
     }
 
-    void ConnectionWidget::connectClicked() {
+    void ConnectionWidget::connectClicked()
+    {
         QString server = _ui->serverLineEdit->text().trimmed();
         QString portString = _ui->portLineEdit->text().trimmed();
 
         QMessageBox msg;
 
         /* Validate server */
-        if (server.length() == 0) {
+        if (server.length() == 0)
+        {
             msg.setText(tr("You need to fill in the hostname or IP of the server!"));
             msg.exec();
             return;
@@ -114,7 +132,8 @@ namespace PMP {
         int pos = 0;
         auto portValidationResult =
                 _ui->portLineEdit->validator()->validate(portString, pos);
-        if (portValidationResult != QValidator::Acceptable) {
+        if (portValidationResult != QValidator::Acceptable)
+        {
             msg.setText(tr("Invalid port number!"));
             msg.setInformativeText(tr("Port number must be in the range 1 to 65535."));
             msg.exec();

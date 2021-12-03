@@ -75,7 +75,7 @@ namespace PMP
     }
 
     void GeneralControllerImpl::receivedClientClockTimeOffset(
-                                                          quint64 clientClockTimeOffsetMs)
+                                                           qint64 clientClockTimeOffsetMs)
     {
         if (clientClockTimeOffsetMs == _clientClockTimeOffsetMs)
             return;

@@ -104,13 +104,14 @@ namespace PMP
     {
         _clientServerInterface = clientServerInterface;
         new AutoPersonalModeAction(clientServerInterface);
-        _queueMediator = new QueueMediator(connection,
+        _queueMediator = new QueueMediator(clientServerInterface,
                                            &clientServerInterface->queueMonitor(),
                                            clientServerInterface);
         auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
         _queueModel =
             new QueueModel(
-                connection, clientServerInterface, _queueMediator, queueEntryInfoFetcher
+                clientServerInterface, clientServerInterface, _queueMediator,
+                queueEntryInfoFetcher
             );
         _historyModel = new PlayerHistoryModel(this, queueEntryInfoFetcher);
         _historyModel->setConnection(connection);
@@ -187,7 +188,7 @@ namespace PMP
 
         connect(
             _ui->insertBreakButton, &QPushButton::clicked,
-            queueController, &QueueController::insertBreakAtFront
+            queueController, &QueueController::insertBreakAtFrontIfNotExists
         );
 
         connect(

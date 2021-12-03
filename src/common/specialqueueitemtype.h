@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,20 +17,34 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "tagdata.h"
+#ifndef PMP_SPECIALQUEUEITEMTYPE_H
+#define PMP_SPECIALQUEUEITEMTYPE_H
+
+#include <QtDebug>
 
 namespace PMP
 {
-    TagData::TagData()
-    {
-        //
-    }
 
-    TagData::TagData(const QString& artist, const QString& title,
-                     const QString& album, const QString& comment)
-     : _artist(artist), _title(title),
-       _album(album), _comment(comment)
+    enum class SpecialQueueItemType { Break, Barrier };
+
+    inline QDebug operator<<(QDebug debug, SpecialQueueItemType type)
     {
-        //
+        switch (type)
+        {
+        case SpecialQueueItemType::Break:
+            debug << "SpecialQueueItemType::Break";
+            return debug;
+
+        case SpecialQueueItemType::Barrier:
+            debug << "SpecialQueueItemType::Barrier";
+            return debug;
+        }
+
+        debug << int(type);
+        return debug;
     }
 }
+
+Q_DECLARE_METATYPE(PMP::SpecialQueueItemType)
+
+#endif

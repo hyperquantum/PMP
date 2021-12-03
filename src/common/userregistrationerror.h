@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,34 +17,38 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_USERLOGINERROR_H
-#define PMP_USERLOGINERROR_H
+#ifndef PMP_USERREGISTRATIONERROR_H
+#define PMP_USERREGISTRATIONERROR_H
 
 #include <QtDebug>
 
 namespace PMP
 {
-    enum class UserLoginError
+    enum class UserRegistrationError
     {
         UnknownError,
-        AuthenticationFailed
+        AccountAlreadyExists,
+        InvalidAccountName
     };
 
-    inline QDebug operator<<(QDebug debug, UserLoginError error)
+    inline QDebug operator<<(QDebug debug, UserRegistrationError error)
     {
         switch (error)
         {
-            case UserLoginError::UnknownError:
-                return debug << "UserLoginError::UnknownError";
+            case UserRegistrationError::UnknownError:
+                return debug << "UserRegistrationError::UnknownError";
 
-            case UserLoginError::AuthenticationFailed:
-                return debug << "UserLoginError::AuthenticationFailed";
+            case UserRegistrationError::AccountAlreadyExists:
+                return debug << "UserRegistrationError::AccountAlreadyExists";
+
+            case UserRegistrationError::InvalidAccountName:
+                return debug << "UserRegistrationError::InvalidAccountName";
         }
 
         return debug << int(error);
     }
 }
 
-Q_DECLARE_METATYPE(PMP::UserLoginError)
+Q_DECLARE_METATYPE(PMP::UserRegistrationError)
 
 #endif

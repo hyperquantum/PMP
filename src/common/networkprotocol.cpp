@@ -209,14 +209,29 @@ namespace PMP
         return 0; /* TODO: make this depend on track load/error/... status */
     }
 
-    quint16 NetworkProtocol::createTrackStatusUnknownId()
+    quint16 NetworkProtocol::createTrackStatusFor(SpecialQueueItemType itemType)
     {
-        return (1u << 16) - 1;
+        switch (itemType)
+        {
+        case PMP::SpecialQueueItemType::Break:
+            return (1u << 15) + 1;
+
+        case PMP::SpecialQueueItemType::Barrier:
+            return (1u << 15) + 2;
+        }
+
+        qWarning() << "Unhandled SpecialQueueItemType" << itemType;
+        return createTrackStatusForUnknownThing();
     }
 
-    quint16 NetworkProtocol::createTrackStatusForBreakPoint()
+    quint16 NetworkProtocol::createTrackStatusUnknownId()
     {
-        return (1u << 15) + 1;
+        return 0xFFFFu;
+    }
+
+    quint16 NetworkProtocol::createTrackStatusForUnknownThing()
+    {
+        return 0xFFFEu;
     }
 
     bool NetworkProtocol::isTrackStatusFromRealTrack(quint16 status)
@@ -228,10 +243,25 @@ namespace PMP
     {
         if (isTrackStatusFromRealTrack(status)) return "<< Real track >>";
 
-        auto type = status - (1u << 15);
-        if (type == 1) return "<<<<< BREAK >>>>>";
+        auto type = trackStatusToQueueEntryType(status);
+        switch (type)
+        {
+        case PMP::QueueEntryType::Unknown:
+        case PMP::QueueEntryType::Track:
+            break; /* these are not expected */
 
-        return "<<<< ????? >>>>";
+        case PMP::QueueEntryType::BreakPoint:
+            return "<<<<< BREAK >>>>>";
+
+        case PMP::QueueEntryType::Barrier:
+            return "<<<< BARRIER >>>>";
+
+        case PMP::QueueEntryType::UnknownSpecialType:
+            return "<<<<< ????? >>>>>";
+        }
+
+        qWarning() << "Unhandled/unexpected QueueEntryType" << type;
+        return "<<<< ??????? >>>>";
     }
 
     QueueEntryType NetworkProtocol::trackStatusToQueueEntryType(quint16 status)
@@ -241,6 +271,7 @@ namespace PMP
 
         auto type = status - (1u << 15);
         if (type == 1) return QueueEntryType::BreakPoint;
+        if (type == 2) return QueueEntryType::Barrier;
 
         return QueueEntryType::UnknownSpecialType;
     }

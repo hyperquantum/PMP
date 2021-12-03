@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,9 +22,10 @@
 
 #include <QMetaType>
 
-namespace PMP {
-
-    class ServerHealthStatus {
+namespace PMP
+{
+    class ServerHealthStatus
+    {
     public:
         ServerHealthStatus()
          : _databaseUnavailable(false), _sslLibrariesMissing(false),
@@ -67,9 +68,8 @@ namespace PMP {
     {
         return !(me == other);
     }
-
 }
 
 Q_DECLARE_METATYPE(PMP::ServerHealthStatus)
 
-#endif // SERVERHEALTHSTATUS_H
+#endif

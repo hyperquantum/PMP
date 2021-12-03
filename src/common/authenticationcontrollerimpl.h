@@ -17,36 +17,34 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_GENERALCONTROLLERIMPL_H
-#define PMP_GENERALCONTROLLERIMPL_H
+#ifndef PMP_AUTHENTICATIONCONTROLLERIMPL_H
+#define PMP_AUTHENTICATIONCONTROLLERIMPL_H
 
-#include "generalcontroller.h"
+#include "authenticationcontroller.h"
 
 namespace PMP
 {
     class ServerConnection;
 
-    class GeneralControllerImpl : public GeneralController
+    class AuthenticationControllerImpl : public AuthenticationController
     {
         Q_OBJECT
     public:
-        explicit GeneralControllerImpl(ServerConnection* connection);
+        explicit AuthenticationControllerImpl(ServerConnection* connection);
 
-        qint64 clientClockTimeOffsetMs() const override;
+        void createNewUserAccount(QString login, QString password) override;
+        void login(QString login, QString password) override;
 
-        RequestID reloadServerSettings() override;
-
-    public Q_SLOTS:
-        void shutdownServer() override;
+        bool isLoggedIn() const override;
+        quint32 userLoggedInId() const override;
+        QString userLoggedInName() const override;
 
     private Q_SLOTS:
         void connected();
         void connectionBroken();
-        void receivedClientClockTimeOffset(qint64 clientClockTimeOffsetMs);
 
     private:
         ServerConnection* _connection;
-        qint64 _clientClockTimeOffsetMs;
     };
 }
 #endif

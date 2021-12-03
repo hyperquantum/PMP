@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,9 +23,10 @@
 #include <QMetaType>
 #include <QtGlobal>
 
-namespace PMP {
-
-    enum class StartStopEventStatus : quint8 {
+namespace PMP
+{
+    enum class StartStopEventStatus : quint8
+    {
         Undefined = 0,
         StatusUnchangedNotActive = 1,
         StatusUnchangedActive = 2,
@@ -33,14 +34,13 @@ namespace PMP {
         StatusChangedToNotActive = 4,
     };
 
-    namespace Common {
-
+    namespace Common
+    {
         bool isValidStartStopEventStatus(quint8 status);
         bool isActive(StartStopEventStatus status);
         bool isChange(StartStopEventStatus status);
         StartStopEventStatus createUnchangedStartStopEventStatus(bool active);
         StartStopEventStatus createChangedStartStopEventStatus(bool active);
-
     }
 }
 

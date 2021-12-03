@@ -25,6 +25,7 @@
 namespace PMP
 {
     class AbstractQueueMonitor;
+    class AuthenticationController;
     class CollectionWatcher;
     class CurrentTrackMonitor;
     class DynamicModeController;
@@ -39,7 +40,9 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        ClientServerInterface(ServerConnection* connection);
+        explicit ClientServerInterface(ServerConnection* connection);
+
+        AuthenticationController& authenticationController();
 
         GeneralController& generalController();
 
@@ -66,6 +69,7 @@ namespace PMP
 
     private:
         ServerConnection* _connection;
+        AuthenticationController* _authenticationController;
         GeneralController* _generalController;
         PlayerController* _simplePlayerController;
         CurrentTrackMonitor* _currentTrackMonitor;

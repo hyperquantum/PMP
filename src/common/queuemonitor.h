@@ -30,7 +30,7 @@ namespace PMP {
     {
         Q_OBJECT
     public:
-        QueueMonitor(ServerConnection* connection);
+        explicit QueueMonitor(ServerConnection* connection);
 
         void setFetchLimit(int count) override;
 

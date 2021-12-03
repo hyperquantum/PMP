@@ -23,30 +23,38 @@
 #include "playermode.h"
 #include "playerstate.h"
 #include "queueentrytype.h"
+#include "queueindextype.h"
 #include "scrobblerstatus.h"
 #include "scrobblingprovider.h"
 #include "serverhealthstatus.h"
+#include "specialqueueitemtype.h"
 #include "startstopeventstatus.h"
 #include "userloginerror.h"
+#include "userregistrationerror.h"
 
-namespace PMP {
-
+namespace PMP
+{
     /** Utility object to automatically do the qRegisterMetaType calls at program
      *  startup */
-    class CommonMetatypesInit {
+    class CommonMetatypesInit
+    {
     protected:
-        CommonMetatypesInit() {
+        CommonMetatypesInit()
+        {
             qRegisterMetaType<PMP::CollectionTrackInfo>();
             qRegisterMetaType<PMP::FileHash>();
             qRegisterMetaType<PMP::PlayerHistoryTrackInfo>();
             qRegisterMetaType<PMP::PlayerMode>();
             qRegisterMetaType<PMP::PlayerState>();
             qRegisterMetaType<PMP::QueueEntryType>();
+            qRegisterMetaType<PMP::QueueIndexType>();
             qRegisterMetaType<PMP::ScrobblerStatus>();
             qRegisterMetaType<PMP::ScrobblingProvider>();
             qRegisterMetaType<PMP::ServerHealthStatus>();
+            qRegisterMetaType<PMP::SpecialQueueItemType>();
             qRegisterMetaType<PMP::StartStopEventStatus>();
             qRegisterMetaType<PMP::UserLoginError>();
+            qRegisterMetaType<PMP::UserRegistrationError>();
         }
 
     private:
@@ -54,5 +62,4 @@ namespace PMP {
     };
 
     CommonMetatypesInit CommonMetatypesInit::GlobalVariable;
-
 }

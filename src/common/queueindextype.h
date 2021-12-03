@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,20 +17,33 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "tagdata.h"
+#ifndef PMP_QUEUEINDEXTYPE_H
+#define PMP_QUEUEINDEXTYPE_H
+
+#include <QtDebug>
 
 namespace PMP
 {
-    TagData::TagData()
-    {
-        //
-    }
+    enum class QueueIndexType { Normal, Reverse };
 
-    TagData::TagData(const QString& artist, const QString& title,
-                     const QString& album, const QString& comment)
-     : _artist(artist), _title(title),
-       _album(album), _comment(comment)
+    inline QDebug operator<<(QDebug debug, QueueIndexType type)
     {
-        //
+        switch (type)
+        {
+        case QueueIndexType::Normal:
+            debug << "QueueIndexType::Normal";
+            return debug;
+
+        case QueueIndexType::Reverse:
+            debug << "QueueIndexType::Reverse";
+            return debug;
+        }
+
+        debug << int(type);
+        return debug;
     }
 }
+
+Q_DECLARE_METATYPE(PMP::QueueIndexType)
+
+#endif

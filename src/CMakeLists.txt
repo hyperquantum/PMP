@@ -19,6 +19,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(PMP_COMMON_SOURCES
     common/audiodata.cpp
+    common/authenticationcontrollerimpl.cpp
     common/clientserverinterface.cpp
     common/collectionwatcherimpl.cpp
     common/commonmetatypes.cpp
@@ -48,6 +49,8 @@ set(PMP_COMMON_SOURCES
 )
 set(PMP_COMMON_HEADERS
     common/abstractqueuemonitor.h
+    common/authenticationcontroller.h
+    common/authenticationcontrollerimpl.h
     common/clientserverinterface.h
     common/collectionfetcher.h
     common/collectionwatcher.h
@@ -64,9 +67,11 @@ set(PMP_COMMON_HEADERS
     common/queuecontroller.h
     common/queuecontrollerimpl.h
     common/queueentryinfofetcher.h
+    common/queueindextype.h
     common/queuemonitor.h
     common/serverconnection.h
     common/serverdiscoverer.h
+    common/specialqueueitemtype.h
     common/userdatafetcher.h
 )
 

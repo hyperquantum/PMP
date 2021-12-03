@@ -674,7 +674,11 @@ namespace PMP
 
     void MainWindow::onCreateAccountClicked()
     {
-        _userAccountCreationWidget = new UserAccountCreationWidget(this, _connection);
+        auto* authenticationController =
+                &_clientServerInterface->authenticationController();
+
+        _userAccountCreationWidget =
+            new UserAccountCreationWidget(this, authenticationController);
 
         connect(
             _userAccountCreationWidget, &UserAccountCreationWidget::accountCreated,
@@ -706,7 +710,10 @@ namespace PMP
 
     void MainWindow::showLoginWidget(QString login)
     {
-        _loginWidget = new LoginWidget(this, _connection, login);
+        _loginWidget =
+                new LoginWidget(this,
+                                &_clientServerInterface->authenticationController(),
+                                login);
 
         connect(
             _loginWidget, &LoginWidget::loggedIn,
