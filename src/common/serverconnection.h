@@ -102,6 +102,7 @@ namespace PMP
         bool serverSupportsQueueEntryDuplication() const;
         bool serverSupportsDynamicModeWaveTermination() const;
         bool serverSupportsInsertingBreaksAtAnyIndex() const;
+        bool serverSupportsInsertingBarriers() const;
 
     public Q_SLOTS:
         void shutdownServer();

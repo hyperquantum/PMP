@@ -420,6 +420,11 @@ namespace PMP
         return _serverProtocolNo >= 17;
     }
 
+    bool ServerConnection::serverSupportsInsertingBarriers() const
+    {
+        return _serverProtocolNo >= 18;
+    }
+
     void ServerConnection::onConnected()
     {
         qDebug() << "connected to host";

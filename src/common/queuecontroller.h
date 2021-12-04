@@ -37,6 +37,8 @@ namespace PMP
         virtual ~QueueController() {}
 
         virtual bool canDuplicateEntry(quint32 queueId) const = 0;
+        virtual bool canInsertBreakAtAnyIndex() const = 0;
+        virtual bool canInsertBarrier() const = 0;
 
     public Q_SLOTS:
         virtual void insertBreakAtFrontIfNotExists() = 0;

@@ -463,10 +463,13 @@ namespace PMP
             return;
         }
 
+        auto* queueController = &_clientServerInterface->queueController();
+
         int row = index.row();
         auto track = _queueModel->trackAt(index);
         auto queueId = track.queueId();
-        qDebug() << "queue: context menu opening for Q-item" << queueId;
+        qDebug() << "queue: context menu opening for Q-item" << queueId
+                 << "at row index" << row;
 
         if (_queueContextMenu)
             delete _queueContextMenu;
@@ -488,27 +491,6 @@ namespace PMP
                     qDebug() << "queue context menu: remove action triggered for item"
                              << queueId;
                     _queueMediator->removeTrack(row, queueId);
-                }
-            );
-        }
-
-        _queueContextMenu->addSeparator();
-
-        QAction* duplicateAction = _queueContextMenu->addAction(tr("Duplicate"));
-        if (track.isNull() || !_queueMediator->canDuplicateEntry(queueId))
-        {
-            duplicateAction->setEnabled(false);
-        }
-        else
-        {
-            connect(
-                duplicateAction, &QAction::triggered,
-                this,
-                [this, queueId]()
-                {
-                    qDebug() << "queue context menu: duplicate action triggered for item"
-                             << queueId;
-                    _queueMediator->duplicateEntryAsync(queueId);
                 }
             );
         }
@@ -551,6 +533,91 @@ namespace PMP
                     _queueMediator->moveTrackToEnd(row, queueId);
                 }
             );
+        }
+
+        _queueContextMenu->addSeparator();
+
+        QAction* duplicateAction = _queueContextMenu->addAction(tr("Duplicate"));
+        if (track.isNull() || !_queueMediator->canDuplicateEntry(queueId))
+        {
+            duplicateAction->setEnabled(false);
+        }
+        else
+        {
+            connect(
+                duplicateAction, &QAction::triggered,
+                this,
+                [this, queueId]()
+                {
+                    qDebug() << "queue context menu: duplicate action triggered for item"
+                             << queueId;
+                    _queueMediator->duplicateEntryAsync(queueId);
+                }
+            );
+        }
+
+        QMenu* insertBeforeThisMenu = _queueContextMenu->addMenu(tr("Insert before this"));
+        auto* insertBreakBeforeThisAction = insertBeforeThisMenu->addAction(tr("Break"));
+        connect(insertBreakBeforeThisAction, &QAction::triggered,
+                queueController,
+                [queueController, row]()
+                {
+                    qDebug()
+                        << "queue context menu: triggered: insert before this -> break";
+                    queueController->insertSpecialItemAtIndex(SpecialQueueItemType::Break,
+                                                              row);
+                }
+        );
+        auto* insertBarrierBeforeThisAction =
+                insertBeforeThisMenu->addAction(tr("Barrier"));
+        connect(insertBarrierBeforeThisAction, &QAction::triggered,
+                queueController,
+                [queueController, row]()
+                {
+                    qDebug()
+                        << "queue context menu: triggered: insert before this -> barrier";
+                    queueController->insertSpecialItemAtIndex(
+                                                            SpecialQueueItemType::Barrier,
+                                                            row);
+                }
+        );
+
+        QMenu* insertAfterThisMenu = _queueContextMenu->addMenu(tr("Insert after this"));
+        auto* insertBreakAfterThisAction = insertAfterThisMenu->addAction(tr("Break"));
+        connect(insertBreakAfterThisAction, &QAction::triggered,
+                queueController,
+                [queueController, row]()
+                {
+                    qDebug()
+                        << "queue context menu: triggered: insert after this -> break";
+                    queueController->insertSpecialItemAtIndex(SpecialQueueItemType::Break,
+                                                              row + 1);
+                }
+        );
+        auto* insertBarrierAfterThisAction =
+                insertAfterThisMenu->addAction(tr("Barrier"));
+        connect(insertBarrierAfterThisAction, &QAction::triggered,
+                queueController,
+                [queueController, row]()
+                {
+                    qDebug()
+                        << "queue context menu: triggered: insert after this -> barrier";
+                    queueController->insertSpecialItemAtIndex(
+                                                            SpecialQueueItemType::Barrier,
+                                                            row + 1);
+                }
+        );
+
+        if (!queueController->canInsertBreakAtAnyIndex())
+        {
+            insertBreakBeforeThisAction->setEnabled(false);
+            insertBreakAfterThisAction->setEnabled(false);
+        }
+
+        if (!queueController->canInsertBarrier())
+        {
+            insertBarrierBeforeThisAction->setEnabled(false);
+            insertBarrierAfterThisAction->setEnabled(false);
         }
 
         _queueContextMenu->addSeparator();

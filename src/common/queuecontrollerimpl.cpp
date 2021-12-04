@@ -63,6 +63,16 @@ namespace PMP
         return _connection->serverSupportsQueueEntryDuplication();
     }
 
+    bool QueueControllerImpl::canInsertBreakAtAnyIndex() const
+    {
+        return _connection->serverSupportsInsertingBreaksAtAnyIndex();
+    }
+
+    bool QueueControllerImpl::canInsertBarrier() const
+    {
+        return _connection->serverSupportsInsertingBarriers();
+    }
+
     void QueueControllerImpl::insertBreakAtFrontIfNotExists()
     {
         _connection->insertBreakAtFrontIfNotExists();
