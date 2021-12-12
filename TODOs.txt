@@ -98,6 +98,7 @@ IDEAS
  * require the server password when registering a new user account
  * alternative display of "prev. heard" as a time span, e.g. "5 days ago" or "9 weeks ago"
  * track info dialog: show indication if file is available or not
+ * track info dialog: show indication if a file was manually added to the queue (and when) or added by dynamic mode
  * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time
  * track info dialog: ability to pick the user whose personal stats are shown
  * track info dialog: display filename(s)
