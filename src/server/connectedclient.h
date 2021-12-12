@@ -83,7 +83,7 @@ namespace PMP
         void currentTrackChanged(QueueEntry const* entry);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void trackPositionChanged(qint64 position);
-        void sendStateInfo();
+        void sendPlayerStateMessage();
         void sendStateInfoAfterTimeout();
         void sendVolumeMessage();
         void sendDynamicModeStatusMessage(StartStopEventStatus enabledStatus,
@@ -135,7 +135,7 @@ namespace PMP
                                             quint32 user,
                                             int waveDeliveredCount,
                                             int waveTotalCount);
-        void sendQueueContentMessage(quint32 startOffset, quint8 length);
+        void sendQueueContentMessage(qint32 startOffset, quint8 length);
         void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
         void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
         void sendQueueEntryAdditionConfirmationMessage(quint32 clientReference,

@@ -103,9 +103,9 @@ namespace PMP
         return _queue.empty();
     }
 
-    uint PlayerQueue::length() const
+    int PlayerQueue::length() const
     {
-        return uint(_queue.length());
+        return _queue.length();
     }
 
     bool PlayerQueue::canAddMoreEntries(int count) const

@@ -551,10 +551,10 @@ namespace PMP
     void ConnectedClient::sendStateInfoAfterTimeout()
     {
         _pendingPlayerStatus = false;
-        sendStateInfo();
+        sendPlayerStateMessage();
     }
 
-    void ConnectedClient::sendStateInfo()
+    void ConnectedClient::sendPlayerStateMessage()
     {
         //qDebug() << "sending state info";
 
@@ -575,7 +575,7 @@ namespace PMP
         quint64 position = _player->playPosition();
         quint8 volume = _player->volume();
 
-        quint32 queueLength = _player->queue().length();
+        qint32 queueLength = _player->queue().length();
 
         QueueEntry const* nowPlaying = _player->nowPlaying();
         quint32 queueID = nowPlaying ? nowPlaying->queueID() : 0;
@@ -750,10 +750,10 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueContentMessage(quint32 startOffset, quint8 length)
+    void ConnectedClient::sendQueueContentMessage(qint32 startOffset, quint8 length)
     {
         PlayerQueue& queue = _player->queue();
-        uint queueLength = queue.length();
+        int queueLength = queue.length();
 
         if (startOffset >= queueLength) {
             length = 0;
@@ -1546,7 +1546,7 @@ namespace PMP
     void ConnectedClient::playerStateChanged(ServerPlayerState state)
     {
         if (_binaryMode) {
-            sendStateInfo();
+            sendPlayerStateMessage();
             return;
         }
 
@@ -1566,7 +1566,7 @@ namespace PMP
     void ConnectedClient::currentTrackChanged(QueueEntry const* entry)
     {
         if (_binaryMode) {
-            sendStateInfo();
+            sendPlayerStateMessage();
             return;
         }
 
@@ -1601,7 +1601,7 @@ namespace PMP
         (void)position;
 
         if (_binaryMode) {
-            sendStateInfo();
+            sendPlayerStateMessage();
             return;
         }
 
@@ -1838,8 +1838,11 @@ namespace PMP
 
             if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
-            quint32 startOffset = NetworkUtil::get4Bytes(message, 2);
+            qint32 startOffset = NetworkUtil::get4BytesSigned(message, 2);
             quint8 length = NetworkUtil::getByte(message, 6);
+
+            if (startOffset < 0)
+                return; /* invalid message */
 
             qDebug() << "received queue fetch request; offset:" << startOffset
                      << "  length:" << length;
@@ -2553,7 +2556,7 @@ namespace PMP
             break;
         case 10: /* request for state info */
             qDebug() << "received request for player status";
-            sendStateInfo();
+            sendPlayerStateMessage();
             break;
         case 11: /* request for status of dynamic mode */
             qDebug() << "received request for dynamic mode status";

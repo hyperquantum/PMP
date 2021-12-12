@@ -79,7 +79,7 @@ namespace PMP
         uint getNextQueueID();
 
         bool empty() const;
-        uint length() const;
+        int length() const;
         bool canAddMoreEntries(int count = 1) const;
 
         int firstTrackIndex() const { return _firstTrackIndex; }

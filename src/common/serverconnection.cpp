@@ -1910,9 +1910,12 @@ namespace PMP
 
         quint8 playerState = NetworkUtil::getByte(message, 2);
         quint8 volume = NetworkUtil::getByte(message, 3);
-        quint32 queueLength = NetworkUtil::get4Bytes(message, 4);
+        qint32 queueLength = NetworkUtil::get4BytesSigned(message, 4);
         quint32 queueID = NetworkUtil::get4Bytes(message, 8);
         quint64 position = NetworkUtil::get8Bytes(message, 12);
+
+        if (queueLength < 0)
+            return; /* invalid message */
 
         //qDebug() << "received player state message";
 
@@ -1977,8 +1980,11 @@ namespace PMP
         if (message.length() < 10)
             return; /* invalid message */
 
-        quint32 queueLength = NetworkUtil::get4Bytes(message, 2);
-        quint32 startOffset = NetworkUtil::get4Bytes(message, 6);
+        qint32 queueLength = NetworkUtil::get4BytesSigned(message, 2);
+        qint32 startOffset = NetworkUtil::get4BytesSigned(message, 6);
+
+        if (queueLength < 0 || startOffset < 0)
+            return; /* invalid message */
 
         QList<quint32> queueIDs;
         queueIDs.reserve((message.length() - 10) / 4);
