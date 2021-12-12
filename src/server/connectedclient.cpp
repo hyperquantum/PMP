@@ -1764,91 +1764,16 @@ namespace PMP
             parseParameterlessActionMessage(message);
             break;
         case ClientMessageType::TrackInfoRequestMessage:
-        {
-            if (messageLength != 6) {
-                return; /* invalid message */
-            }
-
-            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
-
-            if (queueID <= 0) {
-                return; /* invalid queue ID */
-            }
-
-            qDebug() << "received track info request for Q-ID" << queueID;
-
-            sendQueueEntryInfoMessage(queueID);
-        }
+            parseTrackInfoRequestMessage(message);
             break;
         case ClientMessageType::BulkTrackInfoRequestMessage:
-        {
-            if (messageLength < 6 || (messageLength - 2) % 4 != 0) {
-                return; /* invalid message */
-            }
-
-            QList<quint32> QIDs;
-            QIDs.reserve((messageLength - 2) / 4);
-
-            int offset = 2;
-            while (offset <= messageLength - 4) {
-                quint32 queueID = NetworkUtil::get4Bytes(message, offset);
-
-                if (queueID > 0) {
-                    QIDs.append(queueID);
-                }
-
-                offset += 4;
-            }
-
-            qDebug() << "received bulk track info request for" << QIDs.size() << "QIDs";
-
-            sendQueueEntryInfoMessage(QIDs);
-        }
+            parseBulkTrackInfoRequestMessage(message);
             break;
         case ClientMessageType::BulkQueueEntryHashRequestMessage:
-        {
-            if (messageLength < 8 || (messageLength - 4) % 4 != 0) {
-                return; /* invalid message */
-            }
-
-            QList<quint32> QIDs;
-            QIDs.reserve((messageLength - 4) / 4);
-
-            int offset = 4;
-            while (offset <= messageLength - 4) {
-                quint32 queueID = NetworkUtil::get4Bytes(message, offset);
-
-                if (queueID > 0) {
-                    QIDs.append(queueID);
-                }
-
-                offset += 4;
-            }
-
-            qDebug() << "received bulk hash info request for" << QIDs.size() << "QIDs";
-
-            sendQueueEntryHashMessage(QIDs);
-        }
+            parseBulkQueueEntryHashRequestMessage(message);
             break;
         case ClientMessageType::QueueFetchRequestMessage:
-        {
-            if (messageLength != 7) {
-                return; /* invalid message */
-            }
-
-            if (!isLoggedIn()) return; /* client needs to be authenticated for this */
-
-            qint32 startOffset = NetworkUtil::get4BytesSigned(message, 2);
-            quint8 length = NetworkUtil::getByte(message, 6);
-
-            if (startOffset < 0)
-                return; /* invalid message */
-
-            qDebug() << "received queue fetch request; offset:" << startOffset
-                     << "  length:" << length;
-
-            sendQueueContentMessage(startOffset, length);
-        }
+            parseQueueFetchRequestMessage(message);
             break;
         case ClientMessageType::QueueEntryRemovalRequestMessage:
             parseQueueEntryRemovalRequest(message);
@@ -2323,6 +2248,89 @@ namespace PMP
         auto action = static_cast<ParameterlessActionCode>(numericActionCode);
 
         handleParameterlessAction(action, clientReference);
+    }
+
+    void ConnectedClient::parseTrackInfoRequestMessage(const QByteArray& message)
+    {
+        if (message.length() != 6)
+            return; /* invalid message */
+
+        quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+
+        if (queueID <= 0)
+            return; /* invalid queue ID */
+
+        qDebug() << "received track info request for Q-ID" << queueID;
+
+        sendQueueEntryInfoMessage(queueID);
+    }
+
+    void ConnectedClient::parseBulkTrackInfoRequestMessage(const QByteArray& message)
+    {
+        if (message.length() < 6 || (message.length() - 2) % 4 != 0)
+            return; /* invalid message */
+
+        QList<quint32> QIDs;
+        QIDs.reserve((message.length() - 2) / 4);
+
+        int offset = 2;
+        while (offset <= message.length() - 4)
+        {
+            quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+
+            if (queueID > 0)
+                QIDs.append(queueID);
+
+            offset += 4;
+        }
+
+        qDebug() << "received bulk track info request for" << QIDs.size() << "QIDs";
+
+        sendQueueEntryInfoMessage(QIDs);
+    }
+
+    void ConnectedClient::parseBulkQueueEntryHashRequestMessage(const QByteArray& message)
+    {
+        if (message.length() < 8 || (message.length() - 4) % 4 != 0)
+            return; /* invalid message */
+
+        QList<quint32> QIDs;
+        QIDs.reserve((message.length() - 4) / 4);
+
+        int offset = 4;
+        while (offset <= message.length() - 4)
+        {
+            quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+
+            if (queueID > 0)
+                QIDs.append(queueID);
+
+            offset += 4;
+        }
+
+        qDebug() << "received bulk hash info request for" << QIDs.size() << "QIDs";
+
+        sendQueueEntryHashMessage(QIDs);
+    }
+
+    void ConnectedClient::parseQueueFetchRequestMessage(const QByteArray& message)
+    {
+        if (message.length() != 7)
+            return; /* invalid message */
+
+        if (!isLoggedIn())
+            return; /* client needs to be authenticated for this */
+
+        qint32 startOffset = NetworkUtil::get4BytesSigned(message, 2);
+        quint8 length = NetworkUtil::getByte(message, 6);
+
+        if (startOffset < 0)
+            return; /* invalid message */
+
+        qDebug() << "received queue fetch request; offset:" << startOffset
+                 << "  length:" << length;
+
+        sendQueueContentMessage(startOffset, length);
     }
 
     void ConnectedClient::parseAddHashToQueueRequest(const QByteArray& message,

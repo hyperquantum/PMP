@@ -185,6 +185,10 @@ namespace PMP
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseSingleByteActionMessage(QByteArray const& message);
         void parseParameterlessActionMessage(QByteArray const& message);
+        void parseTrackInfoRequestMessage(QByteArray const& message);
+        void parseBulkTrackInfoRequestMessage(QByteArray const& message);
+        void parseBulkQueueEntryHashRequestMessage(QByteArray const& message);
+        void parseQueueFetchRequestMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         ClientMessageType messageType);
         void parseInsertSpecialQueueItemRequest(QByteArray const& message);
