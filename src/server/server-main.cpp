@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
 
     Preloader::cleanupOldFiles();
 
-    //foreach (const QString &path, app.libraryPaths())
+    //for (const QString &path : app.libraryPaths())
     //    out << " LIB PATH : " << path << endl;
 
     /* Keep the threads of the thread pool alive, so we don't have to generate a new

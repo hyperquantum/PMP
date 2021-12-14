@@ -375,10 +375,9 @@ namespace PMP
 
         if (db != nullptr)
         {
-            QList<QPair<uint, FileHash> > hashes = db->getHashes();
+            const QList<QPair<uint, FileHash>> hashes = db->getHashes();
 
-            QPair<uint, FileHash> pair;
-            foreach(pair, hashes)
+            for (auto& pair : hashes)
             {
                 auto knowledge = new HashKnowledge(this, pair.second, pair.first);
                 _hashKnowledge.insert(pair.second, knowledge);

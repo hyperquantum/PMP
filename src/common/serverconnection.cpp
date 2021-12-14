@@ -943,8 +943,8 @@ namespace PMP
         NetworkProtocol::append2Bytes(message,
                                       ClientMessageType::BulkTrackInfoRequestMessage);
 
-        uint QID;
-        foreach(QID, queueIDs) {
+        for (auto QID : queueIDs)
+        {
             NetworkUtil::append4Bytes(message, QID);
         }
 
@@ -969,7 +969,8 @@ namespace PMP
                                      ClientMessageType::BulkQueueEntryHashRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
 
-        foreach(uint QID, queueIDs) {
+        for (auto QID : queueIDs)
+        {
             NetworkUtil::append4Bytes(message, QID);
         }
 
@@ -997,7 +998,8 @@ namespace PMP
         NetworkUtil::append2Bytes(message, 2 | 1); /* request prev. heard & score */
         NetworkUtil::append4Bytes(message, userId); /* user ID */
 
-        foreach (FileHash hash, hashes) {
+        for (auto& hash : hashes)
+        {
             if (hash.isNull())
                 qWarning() << "request contains null hash";
 

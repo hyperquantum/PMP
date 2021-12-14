@@ -1611,7 +1611,7 @@ namespace PMP
     void ConnectedClient::sendTextualQueueInfo()
     {
         PlayerQueue& queue = _player->queue();
-        QList<QueueEntry*> queueContent = queue.entries(0, 10);
+        const QList<QueueEntry*> queueContent = queue.entries(0, 10);
 
         QString command =
             "queue length " + QString::number(queue.length())
@@ -1620,9 +1620,9 @@ namespace PMP
         command.reserve(command.size() + 100 * queueContent.size());
 
         Resolver& resolver = _player->resolver();
-        QueueEntry* entry;
         uint index = 0;
-        foreach(entry, queueContent) {
+        for (auto entry : queueContent)
+        {
             ++index;
             entry->checkTrackData(resolver);
 
