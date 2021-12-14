@@ -94,8 +94,8 @@ int main(int argc, char* argv[])
     QTextStream out(stdout);
 
     bool doIndexation = true;
-    QStringList args = QCoreApplication::arguments();
-    Q_FOREACH(QString arg, args)
+    const QStringList args = QCoreApplication::arguments();
+    for (auto& arg : args)
     {
         if (arg == "-no-index" || arg == "-no-indexation")
             doIndexation = false;

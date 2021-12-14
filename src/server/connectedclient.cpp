@@ -762,7 +762,7 @@ namespace PMP
             length = queueLength - startOffset;
         }
 
-        QList<QueueEntry*> entries =
+        const QList<QueueEntry*> entries =
             queue.entries(startOffset, (length == 0) ? -1 : length);
 
         QByteArray message;
@@ -771,7 +771,8 @@ namespace PMP
         NetworkUtil::append4Bytes(message, queueLength);
         NetworkUtil::append4Bytes(message, startOffset);
 
-        Q_FOREACH(QueueEntry* entry, entries) {
+        for (auto* entry : entries)
+        {
             NetworkUtil::append4Bytes(message, entry->queueID());
         }
 
@@ -785,7 +786,7 @@ namespace PMP
         /* keep a reasonable limit */
         if (limit <= 0 || limit > 255) { limit = 255; }
 
-        auto entries = queue.recentHistory(limit);
+        const auto entries = queue.recentHistory(limit);
         auto entryCount = static_cast<quint8>(entries.length());
 
         QByteArray message;
@@ -794,7 +795,8 @@ namespace PMP
         NetworkUtil::appendByte(message, 0); /* filler */
         NetworkUtil::appendByte(message, entryCount);
 
-        Q_FOREACH(auto entry, entries) {
+        for (auto& entry : entries)
+        {
             quint16 status =
                 (entry->hadError() ? 1 : 0) | (entry->hadSeek() ? 2 : 0);
 
@@ -1012,7 +1014,7 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueEntryHashMessage(const QList<quint32> &queueIDs)
+    void ConnectedClient::sendQueueEntryHashMessage(const QList<quint32>& queueIDs)
     {
         if (queueIDs.empty()) {
             return;
@@ -1041,7 +1043,8 @@ namespace PMP
 
         FileHash emptyHash;
 
-        Q_FOREACH(quint32 queueID, queueIDs) {
+        for (auto queueID : queueIDs)
+        {
             QueueEntry* track = queue.lookup(queueID);
             auto trackStatus =
                 track ? createTrackStatusFor(track)
@@ -1068,7 +1071,8 @@ namespace PMP
                                 ServerMessageType::PossibleFilenamesForQueueEntryMessage);
         NetworkUtil::append4Bytes(message, queueID);
 
-        Q_FOREACH(QString name, names) {
+        for (auto& name : names)
+        {
             QByteArray nameBytes = name.toUtf8();
             NetworkUtil::append4BytesSigned(message, nameBytes.size());
             message += nameBytes;
@@ -1300,7 +1304,8 @@ namespace PMP
         NetworkUtil::append2Bytes(message, fields);
         NetworkUtil::append4Bytes(message, userId);
 
-        Q_FOREACH(auto const& result, results) {
+        for (auto& result : qAsConst(results))
+        {
             NetworkProtocol::appendHash(message, result.hash);
 
             if (havePreviouslyHeard) {

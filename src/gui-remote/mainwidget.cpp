@@ -958,8 +958,7 @@ namespace PMP
             }
         }
 
-        int span;
-        Q_FOREACH(span, _noRepetitionList)
+        for (auto span : qAsConst(_noRepetitionList))
         {
             _ui->noRepetitionComboBox->addItem(noRepetitionTimeString(span));
         }

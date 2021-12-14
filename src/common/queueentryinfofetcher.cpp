@@ -70,7 +70,7 @@ namespace PMP
         int longestLength = names[0].length();
 
         int limit = 20;
-        Q_FOREACH(QString name, names)
+        for (auto& name : names)
         {
             if (name.length() < shortestLength) shortestLength = name.length();
             else if (name.length() > longestLength) longestLength = name.length();
@@ -86,7 +86,7 @@ namespace PMP
         QString middle = names[0];
 
         limit = 10;
-        Q_FOREACH(QString name, names)
+        for (auto& name : names)
         {
             int diff = std::abs(name.length() - middleLength);
             int oldDiff = std::abs(middle.length() - middleLength);

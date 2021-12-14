@@ -357,7 +357,7 @@ namespace PMP
         QList<int> rows;
         QList<quint32> ids;
         int prevRow = -1;
-        Q_FOREACH(const QModelIndex& index, indexes)
+        for (auto& index : indexes)
         {
             int row = index.row();
             if (row == prevRow) continue;
@@ -592,9 +592,9 @@ namespace PMP
         {
             beginInsertRows(QModelIndex(), 0, queueLength - 1);
             _modelRows = queueLength;
-            QList<quint32> knownQueue = _source->knownQueuePart();
+            const QList<quint32> knownQueue = _source->knownQueuePart();
             _tracks.reserve(knownQueue.size());
-            Q_FOREACH(quint32 queueID, knownQueue)
+            for (auto queueID : knownQueue)
             {
                 _tracks.append(new Track(queueID));
             }
