@@ -114,20 +114,20 @@ namespace PMP
 
     public Q_SLOTS:
         //void clear(bool doNotifications);
-        void trim(uint length);
+        void trim(int length);
 
         QueueEntry* dequeue();
         bool remove(quint32 queueID);
-        bool removeAtIndex(uint index);
+        bool removeAtIndex(int index);
         bool moveById(quint32 queueID, qint16 indexDiff);
         bool moveByIndex(int index, qint16 indexDiff);
 
         void addToHistory(QSharedPointer<PlayerHistoryEntry> entry);
 
     Q_SIGNALS:
-        void entryAdded(quint32 offset, quint32 queueID);
-        void entryRemoved(quint32 offset, quint32 queueID);
-        void entryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
+        void entryAdded(qint32 offset, quint32 queueID);
+        void entryRemoved(qint32 offset, quint32 queueID);
+        void entryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueID);
 
         void firstTrackChanged(int index, uint queueId);
 

@@ -90,9 +90,9 @@ namespace PMP
                                           int noRepetitionSpanSeconds);
         void sendUserPlayingForModeMessage();
         void sendTextualQueueInfo();
-        void queueEntryRemoved(quint32 offset, quint32 queueID);
-        void queueEntryAddedWithoutReference(quint32 index, quint32 queueId);
-        void queueEntryAddedWithReference(quint32 index, quint32 queueId,
+        void queueEntryRemoved(qint32 offset, quint32 queueID);
+        void queueEntryAddedWithoutReference(qint32 index, quint32 queueId);
+        void queueEntryAddedWithReference(qint32 index, quint32 queueId,
                                           quint32 clientReference);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
         void onUserPlayingForChanged(quint32 user);
@@ -136,11 +136,11 @@ namespace PMP
                                             int waveDeliveredCount,
                                             int waveTotalCount);
         void sendQueueContentMessage(qint32 startOffset, quint8 length);
-        void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
-        void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
+        void sendQueueEntryRemovedMessage(qint32 offset, quint32 queueID);
+        void sendQueueEntryAddedMessage(qint32 offset, quint32 queueID);
         void sendQueueEntryAdditionConfirmationMessage(quint32 clientReference,
-                                                       quint32 index, quint32 queueID);
-        void sendQueueEntryMovedMessage(quint32 fromOffset, quint32 toOffset,
+                                                       qint32 index, quint32 queueID);
+        void sendQueueEntryMovedMessage(qint32 fromOffset, qint32 toOffset,
                                         quint32 queueID);
         void sendQueueEntryInfoMessage(quint32 queueID);
         void sendQueueEntryInfoMessage(QList<quint32> const& queueIDs);

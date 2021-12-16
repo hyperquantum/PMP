@@ -813,7 +813,7 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID)
+    void ConnectedClient::sendQueueEntryRemovedMessage(qint32 offset, quint32 queueID)
     {
         QByteArray message;
         message.reserve(10);
@@ -825,7 +825,7 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueEntryAddedMessage(quint32 offset, quint32 queueID)
+    void ConnectedClient::sendQueueEntryAddedMessage(qint32 offset, quint32 queueID)
     {
         QByteArray message;
         message.reserve(10);
@@ -837,7 +837,7 @@ namespace PMP
     }
 
     void ConnectedClient::sendQueueEntryAdditionConfirmationMessage(
-            quint32 clientReference, quint32 index, quint32 queueID)
+            quint32 clientReference, qint32 index, quint32 queueID)
     {
         QByteArray message;
         message.reserve(16);
@@ -851,7 +851,7 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueEntryMovedMessage(quint32 fromOffset, quint32 toOffset,
+    void ConnectedClient::sendQueueEntryMovedMessage(qint32 fromOffset, qint32 toOffset,
                                                      quint32 queueID)
     {
         QByteArray message;
@@ -1672,20 +1672,20 @@ namespace PMP
         QTimer::singleShot(25, this, &ConnectedClient::sendStateInfoAfterTimeout);
     }
 
-    void ConnectedClient::queueEntryRemoved(quint32 offset, quint32 queueID)
+    void ConnectedClient::queueEntryRemoved(qint32 offset, quint32 queueID)
     {
         sendQueueEntryRemovedMessage(offset, queueID);
         schedulePlayerStateNotification(); /* queue length changed, notify after delay */
     }
 
-    void ConnectedClient::queueEntryAddedWithoutReference(quint32 index, quint32 queueId)
+    void ConnectedClient::queueEntryAddedWithoutReference(qint32 index, quint32 queueId)
     {
         sendQueueEntryAddedMessage(index, queueId);
 
         schedulePlayerStateNotification(); /* queue length changed, notify after delay */
     }
 
-    void ConnectedClient::queueEntryAddedWithReference(quint32 index, quint32 queueId,
+    void ConnectedClient::queueEntryAddedWithReference(qint32 index, quint32 queueId,
                                                        quint32 clientReference)
     {
         if (_clientProtocolNo >= 9)

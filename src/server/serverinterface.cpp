@@ -370,7 +370,7 @@ namespace PMP
         _server->shutdown();
     }
 
-    void ServerInterface::onQueueEntryAdded(quint32 offset, quint32 queueId)
+    void ServerInterface::onQueueEntryAdded(qint32 offset, quint32 queueId)
     {
         auto it = _queueEntryInsertionsPending.find(queueId);
         if (it == _queueEntryInsertionsPending.end())

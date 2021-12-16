@@ -158,9 +158,9 @@ namespace PMP
         Q_EMIT firstTrackChanged(_firstTrackIndex, _firstTrackQueueId);
     }
 
-    void PlayerQueue::trim(uint length)
+    void PlayerQueue::trim(int length)
     {
-        while (uint(_queue.length()) > length)
+        while (_queue.length() > length)
         {
             removeAtIndex(_queue.length() - 1);
         }
@@ -314,18 +314,19 @@ namespace PMP
         return removeAtIndex(index);
     }
 
-    bool PlayerQueue::removeAtIndex(uint index)
+    bool PlayerQueue::removeAtIndex(int index)
     {
-        if (index >= (uint)_queue.length()) return false;
+        if (index < 0 || index >= _queue.length())
+            return false;
 
         QueueEntry* entry = _queue[index];
         quint32 queueID = entry->queueID();
         _queue.removeAt(index);
 
         bool firstTrackChange = true;
-        if (_firstTrackIndex < 0 || uint(_firstTrackIndex) < index)
+        if (_firstTrackIndex < 0 || _firstTrackIndex < index)
             firstTrackChange = false;
-        else if (uint(_firstTrackIndex) == index)
+        else if (_firstTrackIndex == index)
             findFirstTrackBetweenIndices(index, _queue.length(), true);
         else
             _firstTrackIndex--;
