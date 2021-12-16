@@ -51,7 +51,6 @@ TECHNICAL TODO
  * large file support (?)
  * switch to signed integer types for things like queue indices
  * add logging for all server messages that are deemed corrupt or invalid by the client
- * remove all usages of Q_FOREACH
 
 
 IDEAS
