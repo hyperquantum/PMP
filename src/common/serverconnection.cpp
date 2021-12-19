@@ -362,7 +362,8 @@ namespace PMP
        _autoSubscribeToEventsAfterConnect(eventSubscription),
        _state(ServerConnection::NotConnected),
        _binarySendingMode(false),
-       _serverProtocolNo(-1), _nextRef(1),
+       _serverProtocolNo(-1),
+       _nextRef(1),
        _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0)
     {
         connect(&_socket, &QTcpSocket::connected, this, &ServerConnection::onConnected);
@@ -781,9 +782,15 @@ namespace PMP
 
     uint ServerConnection::getNewReference()
     {
-        // don't use: return _nextRef++;
         auto ref = _nextRef;
         _nextRef++;
+
+        if (_nextRef >= 0x80000000u)
+        {
+            qWarning() << "client references getting really big, going to disconnect";
+            QTimer::singleShot(0, this, [this]() { reset(); });
+        }
+
         return ref;
     }
 
