@@ -20,8 +20,6 @@
 #ifndef PMP_USERPICKERWIDGET_H
 #define PMP_USERPICKERWIDGET_H
 
-#include "common/serverhealthstatus.h"
-
 #include <QList>
 #include <QPair>
 #include <QWidget>
@@ -35,13 +33,16 @@ namespace Ui
 
 namespace PMP
 {
-    class ServerConnection;
+    class AuthenticationController;
+    class GeneralController;
 
     class UserPickerWidget : public QWidget
     {
         Q_OBJECT
     public:
-        UserPickerWidget(QWidget *parent, ServerConnection* connection);
+        UserPickerWidget(QWidget* parent,
+                         GeneralController* generalController,
+                         AuthenticationController* authenticationController);
         ~UserPickerWidget();
 
     Q_SIGNALS:
@@ -50,11 +51,13 @@ namespace PMP
 
     private Q_SLOTS:
         void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
-        void serverHealthChanged(ServerHealthStatus serverHealth);
 
     private:
+        void checkServerHealth();
+
         Ui::UserPickerWidget* _ui;
-        ServerConnection* _connection;
+        GeneralController* _generalController;
+        AuthenticationController* _authenticationController;
         bool _serverProblemsPreventLogin;
     };
 }

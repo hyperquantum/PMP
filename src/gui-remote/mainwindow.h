@@ -21,7 +21,6 @@
 #define PMP_MAINWINDOW_H
 
 #include "common/resultmessageerrorcode.h"
-#include "common/serverhealthstatus.h"
 
 #include <QAbstractSocket>
 #include <QMainWindow>
@@ -60,7 +59,7 @@ namespace PMP
         void onCannotConnect(QAbstractSocket::SocketError error);
         void onInvalidServer();
         void onConnectionBroken(QAbstractSocket::SocketError error);
-        void onServerHealthChanged(ServerHealthStatus serverHealth);
+        void onServerHealthChanged();
 
         void onCreateAccountClicked();
         void onAccountCreated(QString login, QString password, quint32 accountId);

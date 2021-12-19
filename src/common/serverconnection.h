@@ -165,7 +165,7 @@ namespace PMP
         void cannotConnect(QAbstractSocket::SocketError error);
         void invalidServer();
         void connectionBroken(QAbstractSocket::SocketError error);
-        void serverHealthChanged(ServerHealthStatus serverHealth);
+        void serverHealthReceived();
 
         void receivedDatabaseIdentifier(QUuid uuid);
         void receivedServerInstanceIdentifier(QUuid uuid);
@@ -201,7 +201,7 @@ namespace PMP
                                   QDateTime previouslyHeard, qint16 scorePermillage);
         void receivedPossibleFilenames(quint32 queueId, QList<QString> names);
 
-        void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
+        void userAccountsReceived(QList<QPair<uint, QString>> accounts);
         void userAccountCreatedSuccessfully(QString login, quint32 id);
         void userAccountCreationError(QString login, UserRegistrationError errorType);
 

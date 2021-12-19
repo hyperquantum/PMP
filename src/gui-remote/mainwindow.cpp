@@ -451,7 +451,7 @@ namespace PMP
             this, &MainWindow::onConnectionBroken
         );
         connect(
-            _connection, &ServerConnection::serverHealthChanged,
+            generalController, &GeneralController::serverHealthChanged,
             this, &MainWindow::onServerHealthChanged
         );
         connect(
@@ -503,7 +503,9 @@ namespace PMP
 
     void MainWindow::showUserAccountPicker()
     {
-        _userPickerWidget = new UserPickerWidget(this, _connection);
+        _userPickerWidget =
+                new UserPickerWidget(this, &_clientServerInterface->generalController(),
+                                     &_clientServerInterface->authenticationController());
 
         connect(
             _userPickerWidget, &UserPickerWidget::accountClicked,
@@ -552,9 +554,12 @@ namespace PMP
         this->close();
     }
 
-    void MainWindow::onServerHealthChanged(ServerHealthStatus serverHealth)
+    void MainWindow::onServerHealthChanged()
     {
-        if (!serverHealth.anyProblems()) return;
+        auto serverHealth = _clientServerInterface->generalController().serverHealth();
+
+        if (!serverHealth.anyProblems())
+            return;
 
         if (serverHealth.databaseUnavailable())
         {

@@ -38,6 +38,10 @@ namespace PMP
         );
 
         connect(
+            _connection, &ServerConnection::userAccountsReceived,
+            this, &AuthenticationControllerImpl::userAccountsReceived
+        );
+        connect(
             _connection, &ServerConnection::userAccountCreatedSuccessfully,
             this, &AuthenticationControllerImpl::userAccountCreatedSuccessfully
         );
@@ -54,6 +58,11 @@ namespace PMP
             _connection, &ServerConnection::userLoginError,
             this, &AuthenticationControllerImpl::userLoginFailed
         );
+    }
+
+    void AuthenticationControllerImpl::sendUserAccountsFetchRequest()
+    {
+        _connection->sendUserAccountsFetchRequest();
     }
 
     void AuthenticationControllerImpl::createNewUserAccount(QString login,

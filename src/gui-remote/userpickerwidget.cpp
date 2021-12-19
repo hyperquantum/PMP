@@ -20,16 +20,21 @@
 #include "userpickerwidget.h"
 #include "ui_userpickerwidget.h"
 
-#include "common/serverconnection.h"
+#include "common/authenticationcontroller.h"
+#include "common/generalcontroller.h"
 
 #include <algorithm>
 
 namespace PMP
 {
-    UserPickerWidget::UserPickerWidget(QWidget* parent, ServerConnection* connection)
-        : QWidget(parent),
-        _ui(new Ui::UserPickerWidget), _connection(connection),
-        _serverProblemsPreventLogin(connection->serverHealth().databaseUnavailable())
+    UserPickerWidget::UserPickerWidget(QWidget* parent,
+                                       GeneralController* generalController,
+                                       AuthenticationController* authenticationController)
+     : QWidget(parent),
+       _ui(new Ui::UserPickerWidget),
+       _generalController(generalController),
+       _authenticationController(authenticationController),
+       _serverProblemsPreventLogin(generalController->serverHealth().databaseUnavailable())
     {
         _ui->setupUi(this);
 
@@ -37,12 +42,12 @@ namespace PMP
         _ui->createNewAccountButton->setEnabled(false);
 
         connect(
-            _connection, &ServerConnection::serverHealthChanged,
-            this, &UserPickerWidget::serverHealthChanged
+            _generalController, &GeneralController::serverHealthChanged,
+            this, [this]() { checkServerHealth(); }
         );
 
         connect(
-            _connection, &ServerConnection::receivedUserAccounts,
+            _authenticationController, &AuthenticationController::userAccountsReceived,
             this, &UserPickerWidget::receivedUserAccounts
         );
 
@@ -51,7 +56,9 @@ namespace PMP
             this, &UserPickerWidget::createAccountClicked
         );
 
-        _connection->sendUserAccountsFetchRequest();
+        _authenticationController->sendUserAccountsFetchRequest();
+
+        checkServerHealth();
     }
 
     UserPickerWidget::~UserPickerWidget()
@@ -101,8 +108,10 @@ namespace PMP
         _ui->createNewAccountButton->setEnabled(serverOk);
     }
 
-    void UserPickerWidget::serverHealthChanged(ServerHealthStatus serverHealth)
+    void UserPickerWidget::checkServerHealth()
     {
+        auto serverHealth = _generalController->serverHealth();
+
         _serverProblemsPreventLogin = serverHealth.databaseUnavailable();
 
         if (_serverProblemsPreventLogin)

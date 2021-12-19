@@ -1773,26 +1773,25 @@ namespace PMP
 
     void ServerConnection::parseServerHealthMessage(QByteArray const& message)
     {
-        if (message.length() != 4) {
+        if (message.length() != 4)
+        {
             qWarning() << "invalid message; length incorrect";
             return;
         }
 
         quint16 problems = NetworkUtil::get2Bytes(message, 2);
 
+        qDebug() << "received server health message; problems=" << problems;
+
         bool databaseUnavailable = problems & 1u;
 
         ServerHealthStatus newServerHealthStatus(databaseUnavailable);
 
-        bool healthStatusChanged = _serverHealthStatus != newServerHealthStatus;
+        /* server health messages cannot be re-requested by the client, so we need to
+           store the information in the connection */
         _serverHealthStatus = newServerHealthStatus;
 
-        if (healthStatusChanged) {
-            if (databaseUnavailable)
-                qWarning() << "server reports that its database is unavailable";
-
-            Q_EMIT serverHealthChanged(newServerHealthStatus);
-        }
+        Q_EMIT serverHealthReceived();
     }
 
     void ServerConnection::parseServerClockMessage(const QByteArray& message)
@@ -1859,11 +1858,10 @@ namespace PMP
             users.append(QPair<uint, QString>(userId, login));
         }
 
-        if (offset != message.length()) {
+        if (offset != message.length())
             return; /* invalid message */
-        }
 
-        Q_EMIT receivedUserAccounts(users);
+        Q_EMIT userAccountsReceived(users);
     }
 
     void ServerConnection::parseNewUserAccountSaltMessage(QByteArray const& message)
