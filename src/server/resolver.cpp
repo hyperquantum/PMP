@@ -166,7 +166,7 @@ namespace PMP
 
         /* check for duplicate tags */
         bool tagIsNew = true;
-        for (const TagData* existing : _tags)
+        for (auto* existing : qAsConst(_tags))
         {
             if (existing->title() == t.title()
                     && existing->artist() == t.artist()
@@ -337,7 +337,7 @@ namespace PMP
 
     bool Resolver::HashKnowledge::isAvailable()
     {
-        for (auto file : _files)
+        for (auto file : qAsConst(_files))
         {
             if (file->stillValid()) return true;
 
@@ -349,7 +349,7 @@ namespace PMP
 
     QString Resolver::HashKnowledge::getFile()
     {
-        for (auto file : _files)
+        for (auto file : qAsConst(_files))
         {
             if (file->stillValid()) return file->_path;
 
@@ -524,7 +524,7 @@ namespace PMP
 
         QVector<QString> result;
 
-        for (const auto file : _paths)
+        for (auto file : qAsConst(_paths))
         {
             if (!file->hasIndexationNumber(_fullIndexationNumber))
             {
@@ -849,7 +849,7 @@ namespace PMP
         QVector<CollectionTrackInfo> result;
         result.reserve(hashes.size());
 
-        for (auto hash : hashes)
+        for (auto& hash : qAsConst(hashes))
         {
             auto knowledge = _hashKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
@@ -900,7 +900,7 @@ namespace PMP
         QList<QPair<uint, FileHash>> result;
         result.reserve(hashes.size());
 
-        for (auto hash : hashes)
+        for (auto& hash : qAsConst(hashes))
         {
             auto knowledge = _hashKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
@@ -918,7 +918,7 @@ namespace PMP
         QVector<QPair<uint, FileHash>> result;
         result.reserve(hashes.size());
 
-        for (auto hash : hashes)
+        for (auto const& hash : qAsConst(hashes))
         {
             auto knowledge = _hashKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
