@@ -699,7 +699,7 @@ namespace PMP
     QString Resolver::findPathForHashByLikelyFilename(Database& db, const FileHash& hash,
                                                       uint hashId)
     {
-        auto filenames = db.getFilenames(hashId).toSet();
+        auto filenames = db.getFilenames(hashId);
         if (filenames.empty()) /* no known filenames */
             return {};
 
@@ -748,7 +748,7 @@ namespace PMP
                                                      uint hashId)
     {
         /* get likely file sizes */
-        QSet<qint64> previousFileSizes = db.getFileSizes(hashId).toSet();
+        auto previousFileSizes = db.getFileSizes(hashId);
 
         auto musicPaths = this->musicPaths();
 

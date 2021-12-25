@@ -450,8 +450,8 @@ namespace PMP
     QList<QString> Database::getFilenames(uint hashID)
     {
         QSqlQuery q(_db);
-        q.prepare(
-            "SELECT `FilenameWithoutDir` FROM pmp_filename"
+        q.prepare( // we use DISTINCT because there's no unique index
+            "SELECT DISTINCT `FilenameWithoutDir` FROM pmp_filename"
             " WHERE HashID=?"
         );
         q.addBindValue(hashID);
