@@ -117,7 +117,7 @@ namespace PMP
             this, &QueueEntryInfoFetcher::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &QueueEntryInfoFetcher::connectionBroken
         );
         connect(

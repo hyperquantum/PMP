@@ -32,7 +32,7 @@ namespace PMP
             this, &QueueControllerImpl::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &QueueControllerImpl::connectionBroken
         );
 

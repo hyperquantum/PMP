@@ -80,6 +80,11 @@ namespace PMP
         );
     }
 
+    ServerInterface::~ServerInterface()
+    {
+        qDebug() << "ServerInterface destructor called";
+    }
+
     QUuid ServerInterface::getServerUuid() const
     {
         return _server->uuid();

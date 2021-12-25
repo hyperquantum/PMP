@@ -49,7 +49,7 @@ namespace PMP
             this, &QueueMonitor::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &QueueMonitor::connectionBroken
         );
         connect(

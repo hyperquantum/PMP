@@ -296,7 +296,7 @@ namespace PMP
 
     void ServerProbe::cleanUpConnection()
     {
-        _connection->reset();
+        _connection->disconnect();
         _connection->deleteLater();
         _connection = nullptr;
     }

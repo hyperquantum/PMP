@@ -33,7 +33,7 @@ namespace PMP
             this, &GeneralControllerImpl::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &GeneralControllerImpl::connectionBroken
         );
 

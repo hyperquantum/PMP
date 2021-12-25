@@ -126,6 +126,7 @@ namespace PMP
         void sendTextCommand(QString const& command);
         void handleBinaryModeSwitchRequest();
         void sendBinaryMessage(QByteArray const& message);
+        void sendKeepAliveReply(quint8 blob);
         void sendProtocolExtensionsMessage();
         void sendEventNotificationMessage(ServerEventCode eventCode);
         void sendServerInstanceIdentifier();
@@ -182,6 +183,7 @@ namespace PMP
                                        quint32 clientReference);
         void handleCollectionFetchRequest(uint clientReference);
 
+        void parseKeepAliveMessage(QByteArray const& message);
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseSingleByteActionMessage(QByteArray const& message);
         void parseParameterlessActionMessage(QByteArray const& message);

@@ -33,7 +33,7 @@ namespace PMP
             this, &AuthenticationControllerImpl::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &AuthenticationControllerImpl::connectionBroken
         );
 

@@ -447,8 +447,8 @@ namespace PMP
             this, &MainWindow::onInvalidServer
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
-            this, &MainWindow::onConnectionBroken
+            _connection, &ServerConnection::disconnected,
+            this, &MainWindow::onDisconnected
         );
         connect(
             generalController, &GeneralController::serverHealthChanged,
@@ -501,6 +501,16 @@ namespace PMP
         updateRightStatus();
     }
 
+    void MainWindow::onDisconnected()
+    {
+        updateRightStatus();
+
+        QMessageBox::warning(
+            this, tr("Connection failure"), tr("Connection to the server was lost!")
+        );
+        this->close();
+    }
+
     void MainWindow::showUserAccountPicker()
     {
         _userPickerWidget =
@@ -540,18 +550,6 @@ namespace PMP
 
         /* let the user try to correct any possible mistake */
         _connectionWidget->reenableFields();
-    }
-
-    void MainWindow::onConnectionBroken(QAbstractSocket::SocketError error)
-    {
-        Q_UNUSED(error)
-
-        updateRightStatus();
-
-        QMessageBox::warning(
-            this, tr("Connection failure"), tr("Connection to the server was lost!")
-        );
-        this->close();
     }
 
     void MainWindow::onServerHealthChanged()

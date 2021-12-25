@@ -21,6 +21,7 @@
 #define PMP_SERVERCONNECTION_H
 
 #include "collectiontrackinfo.h"
+#include "disconnectreason.h"
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
 #include "playerstate.h"
@@ -34,6 +35,7 @@
 
 #include <QByteArray>
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QHash>
 #include <QList>
 #include <QObject>
@@ -62,7 +64,8 @@ namespace PMP
         enum State
         {
             NotConnected, Connecting, Handshake, TextMode,
-            HandshakeFailure, BinaryHandshake, BinaryMode
+            HandshakeFailure, BinaryHandshake, BinaryMode,
+            Aborting, Disconnecting
         };
 
         class ResultHandler;
@@ -77,10 +80,10 @@ namespace PMP
                                   ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
 
-        void reset();
         void connectToHost(QString const& host, quint16 port);
+        void disconnect();
 
-        bool isConnected() const { return _state == BinaryMode; }
+        bool isConnected() const;
         bool isLoggedIn() const { return userLoggedInId() > 0; }
 
         ServerHealthStatus serverHealth() const { return _serverHealthStatus; }
@@ -162,9 +165,9 @@ namespace PMP
 
     Q_SIGNALS:
         void connected();
+        void disconnected(DisconnectReason reason);
         void cannotConnect(QAbstractSocket::SocketError error);
         void invalidServer();
-        void connectionBroken(QAbstractSocket::SocketError error);
         void serverHealthReceived();
 
         void receivedDatabaseIdentifier(QUuid uuid);
@@ -220,10 +223,14 @@ namespace PMP
 
     private Q_SLOTS:
         void onConnected();
+        void onDisconnected();
         void onReadyRead();
         void onSocketError(QAbstractSocket::SocketError error);
+        void onKeepAliveTimerTimeout();
 
     private:
+        void breakConnection(DisconnectReason reason);
+
         uint getNewReference();
         RequestID getNewRequestId();
         RequestID signalRequestError(ResultMessageErrorCode errorCode,
@@ -235,6 +242,7 @@ namespace PMP
 
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
+        void sendKeepAliveMessage();
         void sendProtocolExtensionsMessage();
         void sendSingleByteAction(quint8 action);
         RequestID sendParameterlessActionRequest(ParameterlessActionCode code);
@@ -271,6 +279,8 @@ namespace PMP
                                    QByteArray const& blobData);
 
         void onFullIndexationRunningStatusReceived(bool running);
+
+        void parseKeepAliveMessage(QByteArray const& message);
 
         void parseSimpleResultMessage(QByteArray const& message);
 
@@ -317,7 +327,12 @@ namespace PMP
                                     QString extraInfo = "");
 
         static const quint16 ClientProtocolNo;
+        static const int KeepAliveIntervalMs;
+        static const int KeepAliveReplyTimeoutMs;
 
+        DisconnectReason _disconnectReason;
+        QElapsedTimer _timeSinceLastMessageReceived;
+        QTimer* _keepAliveTimer;
         ServerEventSubscription _autoSubscribeToEventsAfterConnect;
         State _state;
         QTcpSocket _socket;

@@ -44,7 +44,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 18;
+    const qint16 ConnectedClient::ServerProtocolNo = 19;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -517,6 +517,16 @@ namespace PMP
         _socket->write(lengthBytes);
         _socket->write(message);
         _socket->flush();
+    }
+
+    void ConnectedClient::sendKeepAliveReply(quint8 blob)
+    {
+        QByteArray message;
+        message.reserve(4);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::KeepAliveMessage);
+        NetworkUtil::append2Bytes(message, blob);
+
+        sendBinaryMessage(message);
     }
 
     void ConnectedClient::sendProtocolExtensionsMessage()
@@ -1759,6 +1769,9 @@ namespace PMP
 
         switch (messageType)
         {
+        case ClientMessageType::KeepAliveMessage:
+            parseKeepAliveMessage(message);
+            break;
         case ClientMessageType::ClientExtensionsMessage:
             parseClientProtocolExtensionsMessage(message);
             break;
@@ -2168,6 +2181,16 @@ namespace PMP
                    << "with length" << message.length()
                    << "; extension name: "
                    << _clientExtensionNames.value(extensionId, "?");
+    }
+
+    void ConnectedClient::parseKeepAliveMessage(const QByteArray& message)
+    {
+        if (message.length() != 4)
+            return; /* invalid message */
+
+        quint16 blob = NetworkUtil::get2Bytes(message, 2);
+
+        sendKeepAliveReply(blob);
     }
 
     void ConnectedClient::parseClientProtocolExtensionsMessage(QByteArray const& message)

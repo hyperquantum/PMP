@@ -41,7 +41,7 @@ namespace PMP {
             this, &PlayerControllerImpl::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &PlayerControllerImpl::connectionBroken
         );
         connect(

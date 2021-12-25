@@ -52,6 +52,8 @@ namespace PMP
         ServerInterface(ServerSettings* serverSettings, Server* server, Player* player,
                         Generator* generator);
 
+        ~ServerInterface();
+
         QUuid getServerUuid() const;
         QString getServerCaption() const;
 
