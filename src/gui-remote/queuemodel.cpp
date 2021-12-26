@@ -38,15 +38,138 @@
 #include <QList>
 #include <QMimeData>
 #include <QtDebug>
+#include <QTimer>
 
 namespace PMP
 {
+    RegularUiRefresher::RegularUiRefresher(QObject* parent)
+     : QObject(parent)
+    {
+        //
+    }
+
+    void RegularUiRefresher::setRefresh(uint id, qint64 intervalMilliseconds)
+    {
+        if (intervalMilliseconds > 0 && isAlreadyRegistered(id, intervalMilliseconds))
+            return; /* nothing to do */
+
+        removeId(id);
+
+        if (intervalMilliseconds <= 0)
+            return; /* stop refresh for this id */
+
+        _idsToInterval.insert(id, intervalMilliseconds);
+        _intervalsToIds[intervalMilliseconds] << id;
+
+        createTimerIfNotExists(intervalMilliseconds);
+    }
+
+    void RegularUiRefresher::stopRefresh(uint id)
+    {
+        setRefresh(id, 0);
+    }
+
+    void RegularUiRefresher::timerTimeout(QTimer* timer, quint64 interval)
+    {
+        //qDebug() << "UI update timer timeout triggered for interval" << interval;
+
+        auto it = _intervalsToIds.find(interval);
+        if (it == _intervalsToIds.end() || it.value().empty())
+        {
+            _intervalsToIds.remove(interval);
+            destroyTimer(timer, interval);
+            return;
+        }
+
+        removeAllForInterval(interval);
+
+        Q_EMIT timeout();
+    }
+
+    bool RegularUiRefresher::isAlreadyRegistered(uint id, qint64 intervalMilliseconds)
+    {
+        auto idIterator = _idsToInterval.find(id);
+        if (idIterator == _idsToInterval.end()
+                || idIterator.value() != intervalMilliseconds)
+        {
+            return false;
+        }
+
+        auto intervalIterator = _intervalsToIds.find(intervalMilliseconds);
+        if (intervalIterator == _intervalsToIds.end()
+                || !intervalIterator.value().contains(id))
+        {
+            return false;
+        }
+
+        return _intervalTimers.contains(intervalMilliseconds);
+    }
+
+    void RegularUiRefresher::removeId(uint id)
+    {
+        auto it = _idsToInterval.find(id);
+        if (it == _idsToInterval.end())
+            return;
+
+        auto interval = it.value();
+
+        auto& ids = _intervalsToIds[interval];
+        ids.remove(id);
+        if (ids.empty())
+            _intervalsToIds.remove(interval);
+
+        _idsToInterval.erase(it);
+    }
+
+    void RegularUiRefresher::removeAllForInterval(quint64 interval)
+    {
+        auto& ids = _intervalsToIds[interval];
+
+        for (auto id : qAsConst(ids))
+        {
+            _idsToInterval.remove(id);
+        }
+
+        ids.clear();
+        _intervalsToIds.remove(interval);
+    }
+
+    void RegularUiRefresher::createTimerIfNotExists(quint64 intervalMilliseconds)
+    {
+        if (_intervalTimers.contains(intervalMilliseconds))
+            return;
+
+        auto* timer = new QTimer(this);
+
+        connect(
+            timer, &QTimer::timeout,
+            this,
+            [this, timer, intervalMilliseconds]()
+            {
+                timerTimeout(timer, intervalMilliseconds);
+            }
+        );
+
+        qDebug() << "creating UI update timer for interval" << intervalMilliseconds;
+        _intervalTimers << intervalMilliseconds;
+        timer->start(intervalMilliseconds);
+    }
+
+    void RegularUiRefresher::destroyTimer(QTimer* timer, quint64 interval)
+    {
+        qDebug() << "destroying UI update timer for interval" << interval;
+        _intervalTimers.remove(interval);
+        timer->stop();
+        timer->deleteLater();
+    }
+
     QueueModel::QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
                            QueueMediator* source, QueueEntryInfoFetcher* trackInfoFetcher)
      : QAbstractTableModel(parent),
        _userDataFetcher(&clientServerInterface->userDataFetcher()),
        _source(source),
        _infoFetcher(trackInfoFetcher),
+       _lastHeardRefresher(new RegularUiRefresher(this)),
        _clientClockTimeOffsetMs(0),
        _playerMode(PlayerMode::Unknown),
        _personalModeUserId(0),
@@ -64,7 +187,7 @@ namespace PMP
             [this, generalController]()
             {
                 _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
-                Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 3));
+                markLastHeardColumnAsChanged();
             }
         );
 
@@ -99,6 +222,11 @@ namespace PMP
         connect(
             _source, &AbstractQueueMonitor::trackMoved,
             this, &QueueModel::trackMoved
+        );
+
+        connect(
+            _lastHeardRefresher, &RegularUiRefresher::timeout,
+            this, [this]() { markLastHeardColumnAsChanged(); }
         );
 
         _playerMode = playerController->playerMode();
@@ -297,7 +425,8 @@ namespace PMP
 
                 auto howLongAgo = Util::getHowLongAgoInfo(adjustedLastHeard);
 
-                 // TODO: update regularly
+                _lastHeardRefresher->setRefresh(info->queueID(), howLongAgo.intervalMs());
+
                 return howLongAgo.text();
             }
             case 4:
@@ -585,8 +714,7 @@ namespace PMP
         _playerMode = playerMode;
         _personalModeUserId = personalModeUserId;
 
-        /* the columns with user-bound data need to be refreshed */
-        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 3));
+        markUserDataColumnsAsChanged();
     }
 
     void QueueModel::queueResetted(int queueLength)
@@ -657,7 +785,7 @@ namespace PMP
 
         Q_EMIT dataChanged(
             createIndex(index, 0),
-            createIndex(index + entries.size() - 1, 2)
+            createIndex(index + entries.size() - 1, 4)
         );
     }
 
@@ -667,7 +795,8 @@ namespace PMP
 
         /* we don't know the indexes, so we say everything changed */
         Q_EMIT dataChanged(
-            createIndex(0, 0), createIndex(_modelRows, 2)
+            createIndex(0, 0),
+            createIndex(_modelRows, 4)
         );
     }
 
@@ -675,9 +804,7 @@ namespace PMP
     {
         qDebug() << "QueueModel::userDataReceivedForUser; user:" << userId;
 
-        Q_EMIT dataChanged(
-            createIndex(0, 3), createIndex(_modelRows, 4)
-        );
+        markUserDataColumnsAsChanged();
     }
 
     void QueueModel::trackAdded(int index, quint32 queueID)
@@ -710,6 +837,8 @@ namespace PMP
     void QueueModel::trackRemoved(int index, quint32 queueID)
     {
         qDebug() << "QueueModel::trackRemoved; index=" << index << "; QID=" << queueID;
+
+        _lastHeardRefresher->stopRefresh(queueID);
 
         beginRemoveRows(QModelIndex(), index, index);
 
@@ -758,4 +887,15 @@ namespace PMP
 
         endMoveRows();
     }
+
+    void QueueModel::markLastHeardColumnAsChanged()
+    {
+        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 3));
+    }
+
+    void QueueModel::markUserDataColumnsAsChanged()
+    {
+        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 4));
+    }
+
 }

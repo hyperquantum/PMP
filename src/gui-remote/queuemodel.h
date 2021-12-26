@@ -24,7 +24,9 @@
 #include "common/playermode.h"
 
 #include <QAbstractTableModel>
+#include <QHash>
 #include <QList>
+#include <QSet>
 
 namespace PMP
 {
@@ -33,6 +35,33 @@ namespace PMP
     class QueueEntryInfoFetcher;
     class QueueMediator;
     class UserDataFetcher;
+
+    class RegularUiRefresher : public QObject
+    {
+        Q_OBJECT
+    public:
+        explicit RegularUiRefresher(QObject* parent);
+
+        void setRefresh(uint id, qint64 intervalMilliseconds);
+        void stopRefresh(uint id);
+
+    Q_SIGNALS:
+        void timeout();
+
+    private Q_SLOTS:
+        void timerTimeout(QTimer* timer, quint64 interval);
+
+    private:
+        bool isAlreadyRegistered(uint id, qint64 intervalMilliseconds);
+        void removeId(uint id);
+        void removeAllForInterval(quint64 interval);
+        void createTimerIfNotExists(quint64 interval);
+        void destroyTimer(QTimer* timer, quint64 interval);
+
+        QHash<qint64, QSet<uint>> _intervalsToIds;
+        QHash<uint, qint64> _idsToInterval;
+        QSet<qint64> _intervalTimers;
+    };
 
     class QueueTrack
     {
@@ -122,11 +151,15 @@ namespace PMP
         bool dropQueueItemMimeData(const QMimeData* data, Qt::DropAction action, int row);
         bool dropFileHashMimeData(const QMimeData* data, int row);
 
+        void markLastHeardColumnAsChanged();
+        void markUserDataColumnsAsChanged();
+
         //Track* trackAt(const QModelIndex& index) const;
 
         UserDataFetcher* _userDataFetcher;
         QueueMediator* _source;
         QueueEntryInfoFetcher* _infoFetcher;
+        RegularUiRefresher* _lastHeardRefresher;
         qint64 _clientClockTimeOffsetMs;
         PlayerMode _playerMode;
         quint32 _personalModeUserId;
