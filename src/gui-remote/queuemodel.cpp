@@ -20,6 +20,7 @@
 #include "queuemodel.h"
 
 #include "common/clientserverinterface.h"
+#include "common/generalcontroller.h"
 #include "common/playercontroller.h"
 #include "common/queueentryinfofetcher.h"
 #include "common/userdatafetcher.h"
@@ -43,17 +44,29 @@ namespace PMP
     QueueModel::QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
                            QueueMediator* source, QueueEntryInfoFetcher* trackInfoFetcher)
      : QAbstractTableModel(parent),
-       _clientServerInterface(clientServerInterface),
+       _userDataFetcher(&clientServerInterface->userDataFetcher()),
        _source(source),
        _infoFetcher(trackInfoFetcher),
+       _clientClockTimeOffsetMs(0),
        _playerMode(PlayerMode::Unknown),
        _personalModeUserId(0),
        _modelRows(0)
     {
         _modelRows = _source->queueLength();
 
+        auto generalController = &clientServerInterface->generalController();
         auto playerController = &clientServerInterface->playerController();
-        auto userDataFetcher = &_clientServerInterface->userDataFetcher();
+
+        _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
+        connect(
+            generalController, &GeneralController::clientClockTimeOffsetChanged,
+            this,
+            [this, generalController]()
+            {
+                _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
+                Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 3));
+            }
+        );
 
         connect(
             playerController, &PlayerController::playerModeChanged,
@@ -72,7 +85,7 @@ namespace PMP
             this, &QueueModel::tracksChanged
         );
         connect(
-            userDataFetcher, &UserDataFetcher::dataReceivedForUser,
+            _userDataFetcher, &UserDataFetcher::dataReceivedForUser,
             this, &QueueModel::userDataReceivedForUser
         );
         connect(
@@ -226,7 +239,7 @@ namespace PMP
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
                         auto hashData =
-                            _clientServerInterface->userDataFetcher().getHashDataForUser(
+                            _userDataFetcher->getHashDataForUser(
                                 _personalModeUserId, hash
                             );
 
@@ -271,9 +284,7 @@ namespace PMP
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _clientServerInterface->userDataFetcher().getHashDataForUser(
-                            _personalModeUserId, hash
-                        );
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
 
                 if (!hashData || !hashData->previouslyHeardReceived)
                     return QVariant();
@@ -281,8 +292,13 @@ namespace PMP
                 if (hashData->previouslyHeard.isNull())
                     return tr("Never");
 
-                 // TODO: formatting?
-                return hashData->previouslyHeard.toLocalTime();
+                auto adjustedLastHeard =
+                        hashData->previouslyHeard.addMSecs(_clientClockTimeOffsetMs);
+
+                auto howLongAgo = Util::getHowLongAgoInfo(adjustedLastHeard);
+
+                 // TODO: update regularly
+                return howLongAgo.text();
             }
             case 4:
             {
@@ -291,9 +307,7 @@ namespace PMP
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _clientServerInterface->userDataFetcher().getHashDataForUser(
-                            _personalModeUserId, hash
-                        );
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
 
                 if (!hashData || !hashData->scoreReceived)
                     return QVariant();

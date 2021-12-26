@@ -28,9 +28,11 @@
 
 namespace PMP
 {
+    class ClientServerInterface;
     class QueueEntryInfo;
     class QueueEntryInfoFetcher;
     class QueueMediator;
+    class UserDataFetcher;
 
     class QueueTrack
     {
@@ -60,8 +62,6 @@ namespace PMP
         FileHash _hash;
         bool _real;
     };
-
-    class ClientServerInterface;
 
     class QueueModel : public QAbstractTableModel
     {
@@ -124,9 +124,10 @@ namespace PMP
 
         //Track* trackAt(const QModelIndex& index) const;
 
-        ClientServerInterface* _clientServerInterface;
+        UserDataFetcher* _userDataFetcher;
         QueueMediator* _source;
         QueueEntryInfoFetcher* _infoFetcher;
+        qint64 _clientClockTimeOffsetMs;
         PlayerMode _playerMode;
         quint32 _personalModeUserId;
         int _modelRows;
