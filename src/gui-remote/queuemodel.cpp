@@ -382,6 +382,30 @@ namespace PMP
                     default:
                         return Qt::AlignLeft + Qt::AlignVCenter;
                 }
+            case Qt::ToolTipRole:
+                if (col == 3) /* prev. heard */
+                {
+                    auto& hash = info->hash();
+                    if (hash.isNull() || _playerMode == PlayerMode::Unknown)
+                        return QString(); /* unknown */
+
+                    auto hashData =
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
+
+                    if (!hashData || !hashData->previouslyHeardReceived
+                                  || hashData->previouslyHeard.isNull())
+                        return QString();
+
+                    auto adjustedLastHeard =
+                            hashData->previouslyHeard.addMSecs(_clientClockTimeOffsetMs);
+
+                    // TODO: formatting?
+                    return adjustedLastHeard.toLocalTime();
+                }
+                else
+                {
+                    return QString();
+                }
             case Qt::DisplayRole:
                 break; /* handled below */
 
