@@ -54,7 +54,8 @@ namespace PMP
      : QMainWindow(parent),
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
-       _connection(nullptr), _clientServerInterface(nullptr),
+       _connection(nullptr),
+       _clientServerInterface(nullptr),
        _userPickerWidget(nullptr), _loginWidget(nullptr), _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
        _powerManagement(new PowerManagement(this))
@@ -236,7 +237,8 @@ namespace PMP
         //qDebug() << "got key:" << event->key();
 
         /* we need an active connection for the actions of the multimedia buttons */
-        if (!_connection) return false;
+        if (!_clientServerInterface || !_clientServerInterface->connected())
+            return false;
 
         switch (event->key())
         {
@@ -287,11 +289,11 @@ namespace PMP
 
     void MainWindow::updateRightStatus()
     {
-        if (!_connection || !_connection->isConnected())
+        if (!_clientServerInterface || !_clientServerInterface->connected())
         {
             _rightStatus->setText(tr("Not connected."));
         }
-        else if (_connection->userLoggedInId() <= 0)
+        else if (!_clientServerInterface->isLoggedIn())
         {
             _rightStatus->setText(tr("Connected."));
         }
@@ -302,7 +304,8 @@ namespace PMP
         else
         {
             _rightStatus->setText(
-                QString(tr("Logged in as %1.")).arg(_connection->userLoggedInName())
+                QString(tr("Logged in as %1."))
+                        .arg(_clientServerInterface->userLoggedInName())
             );
         }
     }
@@ -435,9 +438,10 @@ namespace PMP
         auto* generalController = &_clientServerInterface->generalController();
 
         connect(
-            _connection, &ServerConnection::connected,
-            this, &MainWindow::onConnected
+            _clientServerInterface, &ClientServerInterface::connectedChanged,
+            this, &MainWindow::onConnectedChanged
         );
+
         connect(
             _connection, &ServerConnection::cannotConnect,
             this, &MainWindow::onCannotConnect
@@ -445,10 +449,6 @@ namespace PMP
         connect(
             _connection, &ServerConnection::invalidServer,
             this, &MainWindow::onInvalidServer
-        );
-        connect(
-            _connection, &ServerConnection::disconnected,
-            this, &MainWindow::onDisconnected
         );
         connect(
             generalController, &GeneralController::serverHealthChanged,
@@ -460,7 +460,7 @@ namespace PMP
             [this](bool running)
             {
                 _startFullIndexationAction->setEnabled(
-                    !running && _connection->isLoggedIn()
+                    !running && _clientServerInterface->isLoggedIn()
                 );
                 updateRightStatus();
             }
@@ -495,20 +495,21 @@ namespace PMP
         _connection->connectToHost(server, port);
     }
 
-    void MainWindow::onConnected()
-    {
-        showUserAccountPicker();
-        updateRightStatus();
-    }
-
-    void MainWindow::onDisconnected()
+    void MainWindow::onConnectedChanged()
     {
         updateRightStatus();
 
-        QMessageBox::warning(
-            this, tr("Connection failure"), tr("Connection to the server was lost!")
-        );
-        this->close();
+        if (_clientServerInterface && _clientServerInterface->connected())
+        {
+            showUserAccountPicker();
+        }
+        else
+        {
+            QMessageBox::warning(
+                this, tr("Connection failure"), tr("Connection to the server was lost!")
+            );
+            this->close();
+        }
     }
 
     void MainWindow::showUserAccountPicker()

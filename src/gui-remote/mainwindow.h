@@ -55,8 +55,7 @@ namespace PMP
 
     private Q_SLOTS:
         void onDoConnect(QString server, uint port);
-        void onConnected();
-        void onDisconnected();
+        void onConnectedChanged();
         void onCannotConnect(QAbstractSocket::SocketError error);
         void onInvalidServer();
         void onServerHealthChanged();
