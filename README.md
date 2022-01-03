@@ -1,6 +1,6 @@
 ﻿# Party Music Player [![license][license-badge]][LICENSE]
 
-Copyright (C) 2011-2021  Kevin André
+Copyright (C) 2011-2022  Kevin André
 
 Party Music Player, abbreviated as PMP, is a multi-user client-server music system. The server is responsible for playing music, and a separate program, a 'remote', is used to connect to the server and instruct it what to do. PMP has an advanced file tracking mechanism; it can deal with moved/renamed and duplicate files without any problems.
 
