@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -357,7 +357,7 @@ namespace PMP
     const quint16 ServerConnection::ClientProtocolNo = 19;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
-    const int ServerConnection::KeepAliveReplyTimeoutMs = 3 * 1000;
+    const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
