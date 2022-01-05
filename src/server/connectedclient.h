@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -187,9 +187,11 @@ namespace PMP
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseSingleByteActionMessage(QByteArray const& message);
         void parseParameterlessActionMessage(QByteArray const& message);
+        void parsePlayerSeekRequestMessage(QByteArray const& message);
         void parseTrackInfoRequestMessage(QByteArray const& message);
         void parseBulkTrackInfoRequestMessage(QByteArray const& message);
         void parseBulkQueueEntryHashRequestMessage(QByteArray const& message);
+        void parsePossibleFilenamesForQueueEntryRequestMessage(QByteArray const& message);
         void parseQueueFetchRequestMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         ClientMessageType messageType);
@@ -197,8 +199,11 @@ namespace PMP
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
         void parseQueueEntryRemovalRequest(QByteArray const& message);
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
+        void parseQueueEntryMoveRequestMessage(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
+        void parseGeneratorNonRepetitionChangeMessage(QByteArray const& message);
+        void parseCollectionFetchRequestMessage(QByteArray const& message);
 
         void schedulePlayerStateNotification();
 

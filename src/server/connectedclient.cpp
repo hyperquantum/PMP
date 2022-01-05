@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -1797,102 +1797,16 @@ namespace PMP
             parseQueueEntryRemovalRequest(message);
             break;
         case ClientMessageType::GeneratorNonRepetitionChangeMessage:
-        {
-            if (messageLength != 6) {
-                return; /* invalid message */
-            }
-
-            if (!isLoggedIn()) return; /* client needs to be authenticated for this */
-
-            qint32 intervalSeconds = NetworkUtil::get4BytesSigned(message, 2);
-            qDebug() << "received change request for generator non-repetition interval;"
-                     << "seconds:" << intervalSeconds;
-
-            if (intervalSeconds < 0) {
-                return; /* invalid message */
-            }
-
-            _serverInterface->setTrackRepetitionAvoidanceSeconds(intervalSeconds);
-        }
+            parseGeneratorNonRepetitionChangeMessage(message);
             break;
         case ClientMessageType::PossibleFilenamesForQueueEntryRequestMessage:
-        {
-            if (messageLength != 6) {
-                return; /* invalid message */
-            }
-
-            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
-            qDebug() << "received request for possible filenames of QID" << queueID;
-
-            if (queueID <= 0) {
-                return; /* invalid queue ID */
-            }
-
-            QueueEntry* entry = _player->queue().lookup(queueID);
-            if (entry == nullptr) {
-                return; /* not found :-/ */
-            }
-
-            const FileHash* hash = entry->hash();
-            if (hash == nullptr) {
-                /* hash not found */
-                /* TODO: register callback to resume this once the hash becomes known */
-                return;
-            }
-
-            uint hashID = _player->resolver().getID(*hash);
-
-            /* FIXME: do this in another thread, it will slow down the main thread */
-
-            auto db = Database::getDatabaseForCurrentThread();
-            if (!db) {
-                return; /* database unusable */
-            }
-
-            QList<QString> filenames = db->getFilenames(hashID);
-
-            sendPossibleTrackFilenames(queueID, filenames);
-        }
+            parsePossibleFilenamesForQueueEntryRequestMessage(message);
             break;
         case ClientMessageType::PlayerSeekRequestMessage:
-        {
-            if (messageLength != 14) {
-                return; /* invalid message */
-            }
-
-            if (!isLoggedIn()) return; /* client needs to be authenticated for this */
-
-            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
-            qint64 position = NetworkUtil::get8BytesSigned(message, 6);
-
-            qDebug() << "received seek command; QID:" << queueID
-                     << "  position:" << position;
-
-            if (queueID != _player->nowPlayingQID()) {
-                return; /* invalid queue ID */
-            }
-
-            if (position < 0) return; /* invalid position */
-
-            _serverInterface->seekTo(position);
-        }
+            parsePlayerSeekRequestMessage(message);
             break;
         case ClientMessageType::QueueEntryMoveRequestMessage:
-        {
-            if (messageLength != 8) {
-                return; /* invalid message */
-            }
-
-            if (!isLoggedIn()) return; /* client needs to be authenticated for this */
-
-            qint16 move = NetworkUtil::get2BytesSigned(message, 2);
-            quint32 queueID = NetworkUtil::get4Bytes(message, 4);
-
-            qDebug() << "received track move command; QID:" << queueID
-                     << " move:" << move;
-
-            _serverInterface->moveQueueEntry(queueID, move);
-        }
+            parseQueueEntryMoveRequestMessage(message);
             break;
         case ClientMessageType::InitiateNewUserAccountMessage:
         {
@@ -2119,22 +2033,7 @@ namespace PMP
         }
             break;
         case ClientMessageType::CollectionFetchRequestMessage:
-        {
-            if (messageLength != 8) {
-                return; /* invalid message */
-            }
-
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-
-            if (!isLoggedIn()) {
-                /* client needs to be authenticated for this */
-                sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference,
-                                  0);
-                return;
-            }
-
-            handleCollectionFetchRequest(clientReference);
-        }
+            parseCollectionFetchRequestMessage(message);
             break;
         case ClientMessageType::AddHashToEndOfQueueRequestMessage:
         case ClientMessageType::AddHashToFrontOfQueueRequestMessage:
@@ -2278,6 +2177,27 @@ namespace PMP
         handleParameterlessAction(action, clientReference);
     }
 
+    void ConnectedClient::parsePlayerSeekRequestMessage(const QByteArray& message)
+    {
+        if (message.length() != 14)
+            return; /* invalid message */
+
+        if (!isLoggedIn()) return; /* client needs to be authenticated for this */
+
+        quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+        qint64 position = NetworkUtil::get8BytesSigned(message, 6);
+
+        qDebug() << "received seek command; QID:" << queueID
+                 << "  position:" << position;
+
+        if (queueID != _player->nowPlayingQID())
+            return; /* invalid queue ID */
+
+        if (position < 0) return; /* invalid position */
+
+        _serverInterface->seekTo(position);
+    }
+
     void ConnectedClient::parseTrackInfoRequestMessage(const QByteArray& message)
     {
         if (message.length() != 6)
@@ -2339,6 +2259,43 @@ namespace PMP
         qDebug() << "received bulk hash info request for" << QIDs.size() << "QIDs";
 
         sendQueueEntryHashMessage(QIDs);
+    }
+
+    void ConnectedClient::parsePossibleFilenamesForQueueEntryRequestMessage(
+                                                                const QByteArray& message)
+    {
+        if (message.length() != 6)
+            return; /* invalid message */
+
+        quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+        qDebug() << "received request for possible filenames of QID" << queueID;
+
+        if (queueID <= 0)
+            return; /* invalid queue ID */
+
+        QueueEntry* entry = _player->queue().lookup(queueID);
+        if (entry == nullptr)
+            return; /* not found :-/ */
+
+        const FileHash* hash = entry->hash();
+        if (hash == nullptr)
+        {
+            /* hash not found */
+            /* TODO: register callback to resume this once the hash becomes known */
+            return;
+        }
+
+        uint hashID = _player->resolver().getID(*hash);
+
+        /* FIXME: do this in another thread, it will slow down the main thread */
+
+        auto db = Database::getDatabaseForCurrentThread();
+        if (!db)
+            return; /* database unusable */
+
+        QList<QString> filenames = db->getFilenames(hashID);
+
+        sendPossibleTrackFilenames(queueID, filenames);
     }
 
     void ConnectedClient::parseQueueFetchRequestMessage(const QByteArray& message)
@@ -2494,6 +2451,22 @@ namespace PMP
             sendResultMessage(result, clientReference);
     }
 
+    void ConnectedClient::parseQueueEntryMoveRequestMessage(const QByteArray& message)
+    {
+        if (message.length() != 8)
+            return; /* invalid message */
+
+        if (!isLoggedIn()) return; /* client needs to be authenticated for this */
+
+        qint16 move = NetworkUtil::get2BytesSigned(message, 2);
+        quint32 queueID = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "received track move command; QID:" << queueID
+                 << " move:" << move;
+
+        _serverInterface->moveQueueEntry(queueID, move);
+    }
+
     void ConnectedClient::parseHashUserDataRequest(const QByteArray& message)
     {
         if (message.length() <= 2 + 2 + 4) {
@@ -2556,6 +2529,41 @@ namespace PMP
         int limit = NetworkUtil::getByteUnsignedToInt(message, 3);
 
         sendQueueHistoryMessage(limit);
+    }
+
+    void ConnectedClient::parseGeneratorNonRepetitionChangeMessage(
+                                                                const QByteArray& message)
+    {
+        if (message.length() != 6)
+            return; /* invalid message */
+
+        if (!isLoggedIn()) return; /* client needs to be authenticated for this */
+
+        qint32 intervalSeconds = NetworkUtil::get4BytesSigned(message, 2);
+        qDebug() << "received change request for generator non-repetition interval;"
+                 << "seconds:" << intervalSeconds;
+
+        if (intervalSeconds < 0)
+            return; /* invalid message */
+
+        _serverInterface->setTrackRepetitionAvoidanceSeconds(intervalSeconds);
+    }
+
+    void ConnectedClient::parseCollectionFetchRequestMessage(const QByteArray& message)
+    {
+        if (message.length() != 8)
+            return; /* invalid message */
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        if (!isLoggedIn())
+        {
+            /* client needs to be authenticated for this */
+            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference, 0);
+            return;
+        }
+
+        handleCollectionFetchRequest(clientReference);
     }
 
     void ConnectedClient::handleSingleByteAction(quint8 action)
