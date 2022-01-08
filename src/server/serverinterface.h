@@ -52,6 +52,8 @@ namespace PMP
         ServerInterface(ServerSettings* serverSettings, Server* server,
                         uint connectionReference, Player* player, Generator* generator);
 
+        ~ServerInterface();
+
         QUuid getServerUuid() const;
         QString getServerCaption() const;
 
@@ -106,8 +108,8 @@ namespace PMP
         void serverSettingsReloadResultEvent(uint clientReference,
                                              ResultMessageErrorCode errorCode);
 
-        void queueEntryAddedWithoutReference(quint32 offset, quint32 queueId);
-        void queueEntryAddedWithReference(quint32 offset, quint32 queueId,
+        void queueEntryAddedWithoutReference(qint32 offset, quint32 queueId);
+        void queueEntryAddedWithReference(qint32 offset, quint32 queueId,
                                           quint32 clientReference);
 
         void dynamicModeStatusEvent(StartStopEventStatus dynamicModeStatus,
@@ -119,7 +121,7 @@ namespace PMP
                                         int waveTotalCount);
 
     private Q_SLOTS:
-        void onQueueEntryAdded(quint32 offset, quint32 queueId);
+        void onQueueEntryAdded(qint32 offset, quint32 queueId);
 
         void onDynamicModeStatusChanged();
         void onDynamicModeNoRepetitionSpanChanged();

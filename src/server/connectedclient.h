@@ -87,16 +87,16 @@ namespace PMP
         void currentTrackChanged(QueueEntry const* entry);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void trackPositionChanged(qint64 position);
-        void sendStateInfo();
+        void sendPlayerStateMessage();
         void sendStateInfoAfterTimeout();
         void sendVolumeMessage();
         void sendDynamicModeStatusMessage(StartStopEventStatus enabledStatus,
                                           int noRepetitionSpanSeconds);
         void sendUserPlayingForModeMessage();
         void sendTextualQueueInfo();
-        void queueEntryRemoved(quint32 offset, quint32 queueID);
-        void queueEntryAddedWithoutReference(quint32 index, quint32 queueId);
-        void queueEntryAddedWithReference(quint32 index, quint32 queueId,
+        void queueEntryRemoved(qint32 offset, quint32 queueID);
+        void queueEntryAddedWithoutReference(qint32 index, quint32 queueId);
+        void queueEntryAddedWithReference(qint32 index, quint32 queueId,
                                           quint32 clientReference);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
         void onUserPlayingForChanged(quint32 user);
@@ -140,6 +140,7 @@ namespace PMP
         void appendScrobblingMessageStart(QByteArray& buffer,
                                     NetworkProtocol::ScrobblingServerMessage messageType);
         void sendBinaryMessage(QByteArray const& message);
+        void sendKeepAliveReply(quint8 blob);
         void sendProtocolExtensionsMessage();
         void sendEventNotificationMessage(ServerEventCode eventCode);
         void sendServerInstanceIdentifier();
@@ -149,12 +150,12 @@ namespace PMP
                                             quint32 user,
                                             int waveDeliveredCount,
                                             int waveTotalCount);
-        void sendQueueContentMessage(quint32 startOffset, quint8 length);
-        void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
-        void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
+        void sendQueueContentMessage(qint32 startOffset, quint8 length);
+        void sendQueueEntryRemovedMessage(qint32 offset, quint32 queueID);
+        void sendQueueEntryAddedMessage(qint32 offset, quint32 queueID);
         void sendQueueEntryAdditionConfirmationMessage(quint32 clientReference,
-                                                       quint32 index, quint32 queueID);
-        void sendQueueEntryMovedMessage(quint32 fromOffset, quint32 toOffset,
+                                                       qint32 index, quint32 queueID);
+        void sendQueueEntryMovedMessage(qint32 fromOffset, qint32 toOffset,
                                         quint32 queueID);
         void sendQueueEntryInfoMessage(quint32 queueID);
         void sendQueueEntryInfoMessage(QList<quint32> const& queueIDs);
@@ -207,9 +208,14 @@ namespace PMP
                                        quint32 clientReference);
         void handleCollectionFetchRequest(uint clientReference);
 
+        void parseKeepAliveMessage(QByteArray const& message);
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseSingleByteActionMessage(QByteArray const& message);
         void parseParameterlessActionMessage(QByteArray const& message);
+        void parseTrackInfoRequestMessage(QByteArray const& message);
+        void parseBulkTrackInfoRequestMessage(QByteArray const& message);
+        void parseBulkQueueEntryHashRequestMessage(QByteArray const& message);
+        void parseQueueFetchRequestMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         ClientMessageType messageType);
         void parseInsertSpecialQueueItemRequest(QByteArray const& message);

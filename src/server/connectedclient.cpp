@@ -45,7 +45,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 18;
+    const qint16 ConnectedClient::ServerProtocolNo = 19;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -551,6 +551,16 @@ namespace PMP
         _socket->flush();
     }
 
+    void ConnectedClient::sendKeepAliveReply(quint8 blob)
+    {
+        QByteArray message;
+        message.reserve(4);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::KeepAliveMessage);
+        NetworkUtil::append2Bytes(message, blob);
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendProtocolExtensionsMessage()
     {
         if (_clientProtocolNo < 12) return; /* client will not understand this message */
@@ -584,10 +594,10 @@ namespace PMP
     void ConnectedClient::sendStateInfoAfterTimeout()
     {
         _pendingPlayerStatus = false;
-        sendStateInfo();
+        sendPlayerStateMessage();
     }
 
-    void ConnectedClient::sendStateInfo()
+    void ConnectedClient::sendPlayerStateMessage()
     {
         //qDebug() << "sending state info";
 
@@ -608,7 +618,7 @@ namespace PMP
         quint64 position = _player->playPosition();
         quint8 volume = _player->volume();
 
-        quint32 queueLength = _player->queue().length();
+        qint32 queueLength = _player->queue().length();
 
         QueueEntry const* nowPlaying = _player->nowPlaying();
         quint32 queueID = nowPlaying ? nowPlaying->queueID() : 0;
@@ -783,10 +793,10 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueContentMessage(quint32 startOffset, quint8 length)
+    void ConnectedClient::sendQueueContentMessage(qint32 startOffset, quint8 length)
     {
         PlayerQueue& queue = _player->queue();
-        uint queueLength = queue.length();
+        int queueLength = queue.length();
 
         if (startOffset >= queueLength) {
             length = 0;
@@ -795,7 +805,7 @@ namespace PMP
             length = queueLength - startOffset;
         }
 
-        QList<QueueEntry*> entries =
+        const QList<QueueEntry*> entries =
             queue.entries(startOffset, (length == 0) ? -1 : length);
 
         QByteArray message;
@@ -804,7 +814,8 @@ namespace PMP
         NetworkUtil::append4Bytes(message, queueLength);
         NetworkUtil::append4Bytes(message, startOffset);
 
-        Q_FOREACH(QueueEntry* entry, entries) {
+        for (auto* entry : entries)
+        {
             NetworkUtil::append4Bytes(message, entry->queueID());
         }
 
@@ -818,7 +829,7 @@ namespace PMP
         /* keep a reasonable limit */
         if (limit <= 0 || limit > 255) { limit = 255; }
 
-        auto entries = queue.recentHistory(limit);
+        const auto entries = queue.recentHistory(limit);
         auto entryCount = static_cast<quint8>(entries.length());
 
         QByteArray message;
@@ -827,7 +838,8 @@ namespace PMP
         NetworkUtil::appendByte(message, 0); /* filler */
         NetworkUtil::appendByte(message, entryCount);
 
-        Q_FOREACH(auto entry, entries) {
+        for (auto& entry : entries)
+        {
             quint16 status =
                 (entry->hadError() ? 1 : 0) | (entry->hadSeek() ? 2 : 0);
 
@@ -844,7 +856,7 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID)
+    void ConnectedClient::sendQueueEntryRemovedMessage(qint32 offset, quint32 queueID)
     {
         QByteArray message;
         message.reserve(10);
@@ -856,7 +868,7 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueEntryAddedMessage(quint32 offset, quint32 queueID)
+    void ConnectedClient::sendQueueEntryAddedMessage(qint32 offset, quint32 queueID)
     {
         QByteArray message;
         message.reserve(10);
@@ -868,7 +880,7 @@ namespace PMP
     }
 
     void ConnectedClient::sendQueueEntryAdditionConfirmationMessage(
-            quint32 clientReference, quint32 index, quint32 queueID)
+            quint32 clientReference, qint32 index, quint32 queueID)
     {
         QByteArray message;
         message.reserve(16);
@@ -882,7 +894,7 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueEntryMovedMessage(quint32 fromOffset, quint32 toOffset,
+    void ConnectedClient::sendQueueEntryMovedMessage(qint32 fromOffset, qint32 toOffset,
                                                      quint32 queueID)
     {
         QByteArray message;
@@ -1045,7 +1057,7 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueEntryHashMessage(const QList<quint32> &queueIDs)
+    void ConnectedClient::sendQueueEntryHashMessage(const QList<quint32>& queueIDs)
     {
         if (queueIDs.empty()) {
             return;
@@ -1074,7 +1086,8 @@ namespace PMP
 
         FileHash emptyHash;
 
-        Q_FOREACH(quint32 queueID, queueIDs) {
+        for (auto queueID : queueIDs)
+        {
             QueueEntry* track = queue.lookup(queueID);
             auto trackStatus =
                 track ? createTrackStatusFor(track)
@@ -1101,7 +1114,8 @@ namespace PMP
                                 ServerMessageType::PossibleFilenamesForQueueEntryMessage);
         NetworkUtil::append4Bytes(message, queueID);
 
-        Q_FOREACH(QString name, names) {
+        for (auto& name : names)
+        {
             QByteArray nameBytes = name.toUtf8();
             NetworkUtil::append4BytesSigned(message, nameBytes.size());
             message += nameBytes;
@@ -1333,7 +1347,8 @@ namespace PMP
         NetworkUtil::append2Bytes(message, fields);
         NetworkUtil::append4Bytes(message, userId);
 
-        Q_FOREACH(auto const& result, results) {
+        for (auto& result : qAsConst(results))
+        {
             NetworkProtocol::appendHash(message, result.hash);
 
             if (havePreviouslyHeard) {
@@ -1666,7 +1681,7 @@ namespace PMP
     void ConnectedClient::playerStateChanged(ServerPlayerState state)
     {
         if (_binaryMode) {
-            sendStateInfo();
+            sendPlayerStateMessage();
             return;
         }
 
@@ -1686,7 +1701,7 @@ namespace PMP
     void ConnectedClient::currentTrackChanged(QueueEntry const* entry)
     {
         if (_binaryMode) {
-            sendStateInfo();
+            sendPlayerStateMessage();
             return;
         }
 
@@ -1721,7 +1736,7 @@ namespace PMP
         (void)position;
 
         if (_binaryMode) {
-            sendStateInfo();
+            sendPlayerStateMessage();
             return;
         }
 
@@ -1731,7 +1746,7 @@ namespace PMP
     void ConnectedClient::sendTextualQueueInfo()
     {
         PlayerQueue& queue = _player->queue();
-        QList<QueueEntry*> queueContent = queue.entries(0, 10);
+        const QList<QueueEntry*> queueContent = queue.entries(0, 10);
 
         QString command =
             "queue length " + QString::number(queue.length())
@@ -1740,9 +1755,9 @@ namespace PMP
         command.reserve(command.size() + 100 * queueContent.size());
 
         Resolver& resolver = _player->resolver();
-        QueueEntry* entry;
         uint index = 0;
-        foreach(entry, queueContent) {
+        for (auto entry : queueContent)
+        {
             ++index;
             entry->checkTrackData(resolver);
 
@@ -1787,20 +1802,20 @@ namespace PMP
         QTimer::singleShot(25, this, &ConnectedClient::sendStateInfoAfterTimeout);
     }
 
-    void ConnectedClient::queueEntryRemoved(quint32 offset, quint32 queueID)
+    void ConnectedClient::queueEntryRemoved(qint32 offset, quint32 queueID)
     {
         sendQueueEntryRemovedMessage(offset, queueID);
         schedulePlayerStateNotification(); /* queue length changed, notify after delay */
     }
 
-    void ConnectedClient::queueEntryAddedWithoutReference(quint32 index, quint32 queueId)
+    void ConnectedClient::queueEntryAddedWithoutReference(qint32 index, quint32 queueId)
     {
         sendQueueEntryAddedMessage(index, queueId);
 
         schedulePlayerStateNotification(); /* queue length changed, notify after delay */
     }
 
-    void ConnectedClient::queueEntryAddedWithReference(quint32 index, quint32 queueId,
+    void ConnectedClient::queueEntryAddedWithReference(qint32 index, quint32 queueId,
                                                        quint32 clientReference)
     {
         if (_clientProtocolNo >= 9)
@@ -1874,6 +1889,9 @@ namespace PMP
 
         switch (messageType)
         {
+        case ClientMessageType::KeepAliveMessage:
+            parseKeepAliveMessage(message);
+            break;
         case ClientMessageType::ClientExtensionsMessage:
             parseClientProtocolExtensionsMessage(message);
             break;
@@ -1884,88 +1902,16 @@ namespace PMP
             parseParameterlessActionMessage(message);
             break;
         case ClientMessageType::TrackInfoRequestMessage:
-        {
-            if (messageLength != 6) {
-                return; /* invalid message */
-            }
-
-            quint32 queueID = NetworkUtil::get4Bytes(message, 2);
-
-            if (queueID <= 0) {
-                return; /* invalid queue ID */
-            }
-
-            qDebug() << "received track info request for Q-ID" << queueID;
-
-            sendQueueEntryInfoMessage(queueID);
-        }
+            parseTrackInfoRequestMessage(message);
             break;
         case ClientMessageType::BulkTrackInfoRequestMessage:
-        {
-            if (messageLength < 6 || (messageLength - 2) % 4 != 0) {
-                return; /* invalid message */
-            }
-
-            QList<quint32> QIDs;
-            QIDs.reserve((messageLength - 2) / 4);
-
-            int offset = 2;
-            while (offset <= messageLength - 4) {
-                quint32 queueID = NetworkUtil::get4Bytes(message, offset);
-
-                if (queueID > 0) {
-                    QIDs.append(queueID);
-                }
-
-                offset += 4;
-            }
-
-            qDebug() << "received bulk track info request for" << QIDs.size() << "QIDs";
-
-            sendQueueEntryInfoMessage(QIDs);
-        }
+            parseBulkTrackInfoRequestMessage(message);
             break;
         case ClientMessageType::BulkQueueEntryHashRequestMessage:
-        {
-            if (messageLength < 8 || (messageLength - 4) % 4 != 0) {
-                return; /* invalid message */
-            }
-
-            QList<quint32> QIDs;
-            QIDs.reserve((messageLength - 4) / 4);
-
-            int offset = 4;
-            while (offset <= messageLength - 4) {
-                quint32 queueID = NetworkUtil::get4Bytes(message, offset);
-
-                if (queueID > 0) {
-                    QIDs.append(queueID);
-                }
-
-                offset += 4;
-            }
-
-            qDebug() << "received bulk hash info request for" << QIDs.size() << "QIDs";
-
-            sendQueueEntryHashMessage(QIDs);
-        }
+            parseBulkQueueEntryHashRequestMessage(message);
             break;
         case ClientMessageType::QueueFetchRequestMessage:
-        {
-            if (messageLength != 7) {
-                return; /* invalid message */
-            }
-
-            if (!isLoggedIn()) return; /* client needs to be authenticated for this */
-
-            quint32 startOffset = NetworkUtil::get4Bytes(message, 2);
-            quint8 length = NetworkUtil::getByte(message, 6);
-
-            qDebug() << "received queue fetch request; offset:" << startOffset
-                     << "  length:" << length;
-
-            sendQueueContentMessage(startOffset, length);
-        }
+            parseQueueFetchRequestMessage(message);
             break;
         case ClientMessageType::QueueEntryRemovalRequestMessage:
             parseQueueEntryRemovalRequest(message);
@@ -2368,6 +2314,16 @@ namespace PMP
                    << _clientExtensionNames.value(extensionId, "?");
     }
 
+    void ConnectedClient::parseKeepAliveMessage(const QByteArray& message)
+    {
+        if (message.length() != 4)
+            return; /* invalid message */
+
+        quint16 blob = NetworkUtil::get2Bytes(message, 2);
+
+        sendKeepAliveReply(blob);
+    }
+
     void ConnectedClient::parseClientProtocolExtensionsMessage(QByteArray const& message)
     {
         if (message.length() < 4) {
@@ -2451,6 +2407,89 @@ namespace PMP
         auto action = static_cast<ParameterlessActionCode>(numericActionCode);
 
         handleParameterlessAction(action, clientReference);
+    }
+
+    void ConnectedClient::parseTrackInfoRequestMessage(const QByteArray& message)
+    {
+        if (message.length() != 6)
+            return; /* invalid message */
+
+        quint32 queueID = NetworkUtil::get4Bytes(message, 2);
+
+        if (queueID <= 0)
+            return; /* invalid queue ID */
+
+        qDebug() << "received track info request for Q-ID" << queueID;
+
+        sendQueueEntryInfoMessage(queueID);
+    }
+
+    void ConnectedClient::parseBulkTrackInfoRequestMessage(const QByteArray& message)
+    {
+        if (message.length() < 6 || (message.length() - 2) % 4 != 0)
+            return; /* invalid message */
+
+        QList<quint32> QIDs;
+        QIDs.reserve((message.length() - 2) / 4);
+
+        int offset = 2;
+        while (offset <= message.length() - 4)
+        {
+            quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+
+            if (queueID > 0)
+                QIDs.append(queueID);
+
+            offset += 4;
+        }
+
+        qDebug() << "received bulk track info request for" << QIDs.size() << "QIDs";
+
+        sendQueueEntryInfoMessage(QIDs);
+    }
+
+    void ConnectedClient::parseBulkQueueEntryHashRequestMessage(const QByteArray& message)
+    {
+        if (message.length() < 8 || (message.length() - 4) % 4 != 0)
+            return; /* invalid message */
+
+        QList<quint32> QIDs;
+        QIDs.reserve((message.length() - 4) / 4);
+
+        int offset = 4;
+        while (offset <= message.length() - 4)
+        {
+            quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+
+            if (queueID > 0)
+                QIDs.append(queueID);
+
+            offset += 4;
+        }
+
+        qDebug() << "received bulk hash info request for" << QIDs.size() << "QIDs";
+
+        sendQueueEntryHashMessage(QIDs);
+    }
+
+    void ConnectedClient::parseQueueFetchRequestMessage(const QByteArray& message)
+    {
+        if (message.length() != 7)
+            return; /* invalid message */
+
+        if (!isLoggedIn())
+            return; /* client needs to be authenticated for this */
+
+        qint32 startOffset = NetworkUtil::get4BytesSigned(message, 2);
+        quint8 length = NetworkUtil::getByte(message, 6);
+
+        if (startOffset < 0)
+            return; /* invalid message */
+
+        qDebug() << "received queue fetch request; offset:" << startOffset
+                 << "  length:" << length;
+
+        sendQueueContentMessage(startOffset, length);
     }
 
     void ConnectedClient::parseAddHashToQueueRequest(const QByteArray& message,
@@ -2735,7 +2774,7 @@ namespace PMP
             break;
         case 10: /* request for state info */
             qDebug() << "received request for player status";
-            sendStateInfo();
+            sendPlayerStateMessage();
             break;
         case 11: /* request for status of dynamic mode */
             qDebug() << "received request for dynamic mode status";

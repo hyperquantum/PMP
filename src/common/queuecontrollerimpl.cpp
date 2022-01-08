@@ -32,7 +32,7 @@ namespace PMP
             this, &QueueControllerImpl::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &QueueControllerImpl::connectionBroken
         );
 
@@ -61,6 +61,16 @@ namespace PMP
         /* we COULD simulate duplication for tracks on older servers, with a regular
          * insert operation, but there is no reason to put in the effort at this time */
         return _connection->serverSupportsQueueEntryDuplication();
+    }
+
+    bool QueueControllerImpl::canInsertBreakAtAnyIndex() const
+    {
+        return _connection->serverSupportsInsertingBreaksAtAnyIndex();
+    }
+
+    bool QueueControllerImpl::canInsertBarrier() const
+    {
+        return _connection->serverSupportsInsertingBarriers();
     }
 
     void QueueControllerImpl::insertBreakAtFrontIfNotExists()

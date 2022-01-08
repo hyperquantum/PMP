@@ -56,6 +56,7 @@ namespace PMP
          16: server msg 31: sending server clock time
          17: client msg 24: inserting breaks at any index
          18: client msg 24, server msg 3 & 4 & 21: barriers
+         19: client msg 25, server msg 32: keep-alive messages
 
     */
 
@@ -95,6 +96,7 @@ namespace PMP
         CollectionAvailabilityChangeNotificationMessage = 29,
         ServerExtensionsMessage = 30,
         ServerClockMessage = 31,
+        KeepAliveMessage = 32,
     };
 
     enum class ClientMessageType
@@ -124,6 +126,7 @@ namespace PMP
         ClientExtensionsMessage = 22,
         ParameterlessActionMessage = 23,
         InsertSpecialQueueItemRequest = 24,
+        KeepAliveMessage = 25,
     };
 
     enum class ServerEventCode

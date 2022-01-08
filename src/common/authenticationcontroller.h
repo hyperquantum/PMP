@@ -23,7 +23,9 @@
 #include "userloginerror.h"
 #include "userregistrationerror.h"
 
+#include <QList>
 #include <QObject>
+#include <QPair>
 
 namespace PMP
 {
@@ -33,6 +35,8 @@ namespace PMP
     public:
         virtual ~AuthenticationController() {}
 
+        virtual void sendUserAccountsFetchRequest() = 0;
+
         virtual void createNewUserAccount(QString login, QString password) = 0;
         virtual void login(QString login, QString password) = 0;
 
@@ -41,6 +45,7 @@ namespace PMP
         virtual QString userLoggedInName() const = 0;
 
     Q_SIGNALS:
+        void userAccountsReceived(QList<QPair<uint, QString>> accounts);
         void userAccountCreatedSuccessfully(QString login, quint32 id);
         void userAccountCreationError(QString login, UserRegistrationError errorType);
 

@@ -32,6 +32,8 @@ namespace PMP
     public:
         explicit AuthenticationControllerImpl(ServerConnection* connection);
 
+        void sendUserAccountsFetchRequest() override;
+
         void createNewUserAccount(QString login, QString password) override;
         void login(QString login, QString password) override;
 

@@ -71,7 +71,7 @@ namespace PMP
             }
         );
         connect(
-            _serverConnection, &ServerConnection::connectionBroken,
+            _serverConnection, &ServerConnection::disconnected,
             this,
             [this]()
             {

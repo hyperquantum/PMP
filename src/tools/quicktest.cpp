@@ -56,7 +56,7 @@ int main(int argc, char* argv[])
     /*
     qDebug() << "Local hostname:" << QHostInfo::localHostName();
 
-    foreach (const QHostAddress& address, QNetworkInterface::allAddresses()) {
+    for (const QHostAddress& address : QNetworkInterface::allAddresses()) {
         qDebug() << address.toString();
     }
     */

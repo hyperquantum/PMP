@@ -20,6 +20,7 @@
 #include "queuemodel.h"
 
 #include "common/clientserverinterface.h"
+#include "common/generalcontroller.h"
 #include "common/playercontroller.h"
 #include "common/queueentryinfofetcher.h"
 #include "common/userdatafetcher.h"
@@ -37,23 +38,158 @@
 #include <QList>
 #include <QMimeData>
 #include <QtDebug>
+#include <QTimer>
 
-namespace PMP {
+namespace PMP
+{
+    RegularUiRefresher::RegularUiRefresher(QObject* parent)
+     : QObject(parent)
+    {
+        //
+    }
+
+    void RegularUiRefresher::setRefresh(uint id, qint64 intervalMilliseconds)
+    {
+        if (intervalMilliseconds > 0 && isAlreadyRegistered(id, intervalMilliseconds))
+            return; /* nothing to do */
+
+        removeId(id);
+
+        if (intervalMilliseconds <= 0)
+            return; /* stop refresh for this id */
+
+        _idsToInterval.insert(id, intervalMilliseconds);
+        _intervalsToIds[intervalMilliseconds] << id;
+
+        createTimerIfNotExists(intervalMilliseconds);
+    }
+
+    void RegularUiRefresher::stopRefresh(uint id)
+    {
+        setRefresh(id, 0);
+    }
+
+    void RegularUiRefresher::timerTimeout(QTimer* timer, quint64 interval)
+    {
+        //qDebug() << "UI update timer timeout triggered for interval" << interval;
+
+        auto it = _intervalsToIds.find(interval);
+        if (it == _intervalsToIds.end() || it.value().empty())
+        {
+            _intervalsToIds.remove(interval);
+            destroyTimer(timer, interval);
+            return;
+        }
+
+        removeAllForInterval(interval);
+
+        Q_EMIT timeout();
+    }
+
+    bool RegularUiRefresher::isAlreadyRegistered(uint id, qint64 intervalMilliseconds)
+    {
+        auto idIterator = _idsToInterval.find(id);
+        if (idIterator == _idsToInterval.end()
+                || idIterator.value() != intervalMilliseconds)
+        {
+            return false;
+        }
+
+        auto intervalIterator = _intervalsToIds.find(intervalMilliseconds);
+        if (intervalIterator == _intervalsToIds.end()
+                || !intervalIterator.value().contains(id))
+        {
+            return false;
+        }
+
+        return _intervalTimers.contains(intervalMilliseconds);
+    }
+
+    void RegularUiRefresher::removeId(uint id)
+    {
+        auto it = _idsToInterval.find(id);
+        if (it == _idsToInterval.end())
+            return;
+
+        auto interval = it.value();
+
+        auto& ids = _intervalsToIds[interval];
+        ids.remove(id);
+        if (ids.empty())
+            _intervalsToIds.remove(interval);
+
+        _idsToInterval.erase(it);
+    }
+
+    void RegularUiRefresher::removeAllForInterval(quint64 interval)
+    {
+        auto& ids = _intervalsToIds[interval];
+
+        for (auto id : qAsConst(ids))
+        {
+            _idsToInterval.remove(id);
+        }
+
+        ids.clear();
+        _intervalsToIds.remove(interval);
+    }
+
+    void RegularUiRefresher::createTimerIfNotExists(quint64 intervalMilliseconds)
+    {
+        if (_intervalTimers.contains(intervalMilliseconds))
+            return;
+
+        auto* timer = new QTimer(this);
+
+        connect(
+            timer, &QTimer::timeout,
+            this,
+            [this, timer, intervalMilliseconds]()
+            {
+                timerTimeout(timer, intervalMilliseconds);
+            }
+        );
+
+        qDebug() << "creating UI update timer for interval" << intervalMilliseconds;
+        _intervalTimers << intervalMilliseconds;
+        timer->start(intervalMilliseconds);
+    }
+
+    void RegularUiRefresher::destroyTimer(QTimer* timer, quint64 interval)
+    {
+        qDebug() << "destroying UI update timer for interval" << interval;
+        _intervalTimers.remove(interval);
+        timer->stop();
+        timer->deleteLater();
+    }
 
     QueueModel::QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
                            QueueMediator* source, QueueEntryInfoFetcher* trackInfoFetcher)
      : QAbstractTableModel(parent),
-       _clientServerInterface(clientServerInterface),
+       _userDataFetcher(&clientServerInterface->userDataFetcher()),
        _source(source),
        _infoFetcher(trackInfoFetcher),
+       _lastHeardRefresher(new RegularUiRefresher(this)),
+       _clientClockTimeOffsetMs(0),
        _playerMode(PlayerMode::Unknown),
        _personalModeUserId(0),
        _modelRows(0)
     {
         _modelRows = _source->queueLength();
 
+        auto generalController = &clientServerInterface->generalController();
         auto playerController = &clientServerInterface->playerController();
-        auto userDataFetcher = &_clientServerInterface->userDataFetcher();
+
+        _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
+        connect(
+            generalController, &GeneralController::clientClockTimeOffsetChanged,
+            this,
+            [this, generalController]()
+            {
+                _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
+                markLastHeardColumnAsChanged();
+            }
+        );
 
         connect(
             playerController, &PlayerController::playerModeChanged,
@@ -72,7 +208,7 @@ namespace PMP {
             this, &QueueModel::tracksChanged
         );
         connect(
-            userDataFetcher, &UserDataFetcher::dataReceivedForUser,
+            _userDataFetcher, &UserDataFetcher::dataReceivedForUser,
             this, &QueueModel::userDataReceivedForUser
         );
         connect(
@@ -88,18 +224,25 @@ namespace PMP {
             this, &QueueModel::trackMoved
         );
 
+        connect(
+            _lastHeardRefresher, &RegularUiRefresher::timeout,
+            this, [this]() { markLastHeardColumnAsChanged(); }
+        );
+
         _playerMode = playerController->playerMode();
         _personalModeUserId = playerController->personalModeUserId();
     }
 
-    int QueueModel::rowCount(const QModelIndex& parent) const {
+    int QueueModel::rowCount(const QModelIndex& parent) const
+    {
         Q_UNUSED(parent)
 
         //qDebug() << "QueueModel::rowCount returning" << _modelRows;
         return _modelRows;
     }
 
-    int QueueModel::columnCount(const QModelIndex& parent) const {
+    int QueueModel::columnCount(const QModelIndex& parent) const
+    {
         Q_UNUSED(parent)
 
         return 5;
@@ -108,9 +251,12 @@ namespace PMP {
     QVariant QueueModel::headerData(int section, Qt::Orientation orientation,
                                     int role) const
     {
-        if (role == Qt::DisplayRole) {
-            if (orientation == Qt::Horizontal) {
-                switch (section) {
+        if (role == Qt::DisplayRole)
+        {
+            if (orientation == Qt::Horizontal)
+            {
+                switch (section)
+                {
                     case 0: return QString(tr("Title"));
                     case 1: return QString(tr("Artist"));
                     case 2: return QString(tr("Length"));
@@ -118,7 +264,8 @@ namespace PMP {
                     case 4: return QString(tr("Score"));
                 }
             }
-            else if (orientation == Qt::Vertical) {
+            else if (orientation == Qt::Vertical)
+            {
                 return section + 1;
             }
         }
@@ -126,7 +273,8 @@ namespace PMP {
         return QVariant();
     }
 
-    QVariant QueueModel::data(const QModelIndex& index, int role) const {
+    QVariant QueueModel::data(const QModelIndex& index, int role) const
+    {
         //qDebug() << "QueueModel::data called with role" << role;
 
         int col = index.column();
@@ -142,7 +290,8 @@ namespace PMP {
 
         /* handling for non-track queue entries */
 
-        switch (role) {
+        switch (role)
+        {
             case Qt::DisplayRole:
                 if (info == nullptr) { return QString(); }
 
@@ -180,7 +329,8 @@ namespace PMP {
                 break;
 
             case Qt::FontRole:
-                if (info) {
+                if (info)
+                {
                     QFont font;
                     font.setItalic(true);
                     return font;
@@ -201,10 +351,13 @@ namespace PMP {
         return QVariant();
     }
 
-    QVariant QueueModel::trackModelData(QueueEntryInfo* info, int col, int role) const {
-        switch (role) {
+    QVariant QueueModel::trackModelData(QueueEntryInfo* info, int col, int role) const
+    {
+        switch (role)
+        {
             case Qt::TextAlignmentRole:
-                switch (col) {
+                switch (col)
+                {
                     case 2:
                         return Qt::AlignRight + Qt::AlignVCenter;
                     case 4:
@@ -214,7 +367,7 @@ namespace PMP {
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
                         auto hashData =
-                            _clientServerInterface->userDataFetcher().getHashDataForUser(
+                            _userDataFetcher->getHashDataForUser(
                                 _personalModeUserId, hash
                             );
 
@@ -229,6 +382,30 @@ namespace PMP {
                     default:
                         return Qt::AlignLeft + Qt::AlignVCenter;
                 }
+            case Qt::ToolTipRole:
+                if (col == 3) /* prev. heard */
+                {
+                    auto& hash = info->hash();
+                    if (hash.isNull() || _playerMode == PlayerMode::Unknown)
+                        return QString(); /* unknown */
+
+                    auto hashData =
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
+
+                    if (!hashData || !hashData->previouslyHeardReceived
+                                  || hashData->previouslyHeard.isNull())
+                        return QString();
+
+                    auto adjustedLastHeard =
+                            hashData->previouslyHeard.addMSecs(_clientClockTimeOffsetMs);
+
+                    // TODO: formatting?
+                    return adjustedLastHeard.toLocalTime();
+                }
+                else
+                {
+                    return QString();
+                }
             case Qt::DisplayRole:
                 break; /* handled below */
 
@@ -238,7 +415,8 @@ namespace PMP {
 
         /* DisplayRole */
 
-        switch (col) {
+        switch (col)
+        {
             case 0:
             {
                 QString title = info->title();
@@ -258,9 +436,7 @@ namespace PMP {
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _clientServerInterface->userDataFetcher().getHashDataForUser(
-                            _personalModeUserId, hash
-                        );
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
 
                 if (!hashData || !hashData->previouslyHeardReceived)
                     return QVariant();
@@ -268,8 +444,14 @@ namespace PMP {
                 if (hashData->previouslyHeard.isNull())
                     return tr("Never");
 
-                 // TODO: formatting?
-                return hashData->previouslyHeard.toLocalTime();
+                auto adjustedLastHeard =
+                        hashData->previouslyHeard.addMSecs(_clientClockTimeOffsetMs);
+
+                auto howLongAgo = Util::getHowLongAgoInfo(adjustedLastHeard);
+
+                _lastHeardRefresher->setRefresh(info->queueID(), howLongAgo.intervalMs());
+
+                return howLongAgo.text();
             }
             case 4:
             {
@@ -278,9 +460,7 @@ namespace PMP {
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _clientServerInterface->userDataFetcher().getHashDataForUser(
-                            _personalModeUserId, hash
-                        );
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
 
                 if (!hashData || !hashData->scoreReceived)
                     return QVariant();
@@ -306,22 +486,27 @@ namespace PMP {
         return f;
     }
 
-    Qt::DropActions QueueModel::supportedDragActions() const {
+    Qt::DropActions QueueModel::supportedDragActions() const
+    {
         return Qt::MoveAction; // TODO: add support for copying queue items
     }
 
-    Qt::DropActions QueueModel::supportedDropActions() const {
+    Qt::DropActions QueueModel::supportedDropActions() const
+    {
         return Qt::MoveAction | Qt::CopyAction;
     }
 
-    QStringList QueueModel::mimeTypes() const {
-        return {
-            QString("application/x-pmp-queueitem"),
-            QString("application/x-pmp-filehash")
-        };
+    QStringList QueueModel::mimeTypes() const
+    {
+        return
+            {
+                QString("application/x-pmp-queueitem"),
+                QString("application/x-pmp-filehash")
+            };
     }
 
-    QMimeData* QueueModel::mimeData(const QModelIndexList& indexes) const {
+    QMimeData* QueueModel::mimeData(const QModelIndexList& indexes) const
+    {
         if (indexes.isEmpty()) return 0;
 
         qDebug() << "QueueModel::mimeData called; indexes count =" << indexes.size();
@@ -339,7 +524,8 @@ namespace PMP {
         QList<int> rows;
         QList<quint32> ids;
         int prevRow = -1;
-        Q_FOREACH(const QModelIndex& index, indexes) {
+        for (auto& index : indexes)
+        {
             int row = index.row();
             if (row == prevRow) continue;
             prevRow = row;
@@ -351,7 +537,8 @@ namespace PMP {
         }
 
         stream << (quint32)rows.size();
-        for (int i = 0; i < rows.size(); ++i) {
+        for (int i = 0; i < rows.size(); ++i)
+        {
             stream << (quint32)(uint)rows[i];
             stream << ids[i];
         }
@@ -384,27 +571,32 @@ namespace PMP {
         stream >> queueID;
 
         int newIndex;
-        if (row < 0) {
+        if (row < 0)
+        {
             newIndex = _modelRows - 1;
         }
-        else if ((uint)row > oldIndex) {
+        else if ((uint)row > oldIndex)
+        {
             newIndex = row - 1;
         }
-        else {
+        else
+        {
             newIndex = row;
         }
 
         qDebug() << " oldIndex=" << oldIndex << " ; QID=" << queueID
                  << "; newIndex=" << newIndex;
 
-        if (oldIndex != (uint)newIndex) {
+        if (oldIndex != (uint)newIndex)
+        {
             _source->moveTrack(oldIndex, newIndex, queueID);
         }
 
         return true;
     }
 
-    bool QueueModel::dropFileHashMimeData(const QMimeData *data, int row) {
+    bool QueueModel::dropFileHashMimeData(const QMimeData *data, int row)
+    {
         qDebug() << "QueueModel::dropFileHashMimeData called";
 
         QDataStream stream(data->data("application/x-pmp-filehash"));
@@ -461,11 +653,13 @@ namespace PMP {
     {
         qDebug() << "QueueModel::canDropMimeData called";
 
-        if (!QAbstractTableModel::canDropMimeData(data, action, row, column, parent)) {
+        if (!QAbstractTableModel::canDropMimeData(data, action, row, column, parent))
+        {
             return false;
         }
 
-        if (data->hasFormat("application/x-pmp-queueitem")) {
+        if (data->hasFormat("application/x-pmp-queueitem"))
+        {
             QDataStream stream(data->data("application/x-pmp-queueitem"));
 
             QUuid serverUuid;
@@ -474,7 +668,8 @@ namespace PMP {
             return !serverUuid.isNull() && serverUuid == _source->serverUuid();
         }
 
-        if (data->hasFormat("application/x-pmp-filehash")) {
+        if (data->hasFormat("application/x-pmp-filehash"))
+        {
             qDebug() << "recognized application/x-pmp-filehash";
 
             QDataStream stream(data->data("application/x-pmp-filehash"));
@@ -487,9 +682,11 @@ namespace PMP {
         return false;
     }
 
-    quint32 QueueModel::trackIdAt(const QModelIndex& index) const {
+    quint32 QueueModel::trackIdAt(const QModelIndex& index) const
+    {
         int row = index.row();
-        if (row >= _tracks.size()) {
+        if (row >= _tracks.size())
+        {
             /* make sure the info will be fetched from the server */
             (void)(_source->queueEntry(row));
 
@@ -506,7 +703,8 @@ namespace PMP {
     QueueTrack QueueModel::trackAt(const QModelIndex& index) const
     {
         int row = index.row();
-        if (row >= _tracks.size()) {
+        if (row >= _tracks.size())
+        {
             /* make sure the info will be fetched from the server */
             (void)(_source->queueEntry(row));
 
@@ -540,14 +738,15 @@ namespace PMP {
         _playerMode = playerMode;
         _personalModeUserId = personalModeUserId;
 
-        /* the columns with user-bound data need to be refreshed */
-        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 3));
+        markUserDataColumnsAsChanged();
     }
 
-    void QueueModel::queueResetted(int queueLength) {
+    void QueueModel::queueResetted(int queueLength)
+    {
         qDebug() << "QueueModel::queueResetted; len=" << queueLength;
 
-        if (_modelRows > 0) {
+        if (_modelRows > 0)
+        {
             beginRemoveRows(QModelIndex(), 0, _modelRows - 1);
             _modelRows = 0;
             qDeleteAll(_tracks);
@@ -555,43 +754,52 @@ namespace PMP {
             endRemoveRows();
         }
 
-        if (queueLength > 0) {
+        if (queueLength > 0)
+        {
             beginInsertRows(QModelIndex(), 0, queueLength - 1);
             _modelRows = queueLength;
-            QList<quint32> knownQueue = _source->knownQueuePart();
+            const QList<quint32> knownQueue = _source->knownQueuePart();
             _tracks.reserve(knownQueue.size());
-            Q_FOREACH(quint32 queueID, knownQueue) {
+            for (auto queueID : knownQueue)
+            {
                 _tracks.append(new Track(queueID));
             }
             endInsertRows();
         }
     }
 
-    void QueueModel::entriesReceived(int index, QList<quint32> entries) {
+    void QueueModel::entriesReceived(int index, QList<quint32> entries)
+    {
         qDebug() << "QueueModel::entriesReceived; index=" << index
                  << "; count=" << entries.size();
 
         /* expand tracks list */
-        if (index + entries.size() > _tracks.size()) {
+        if (index + entries.size() > _tracks.size())
+        {
             qDebug() << " expanding model tracks list";
             _tracks.reserve(index + entries.size());
-            do {
+            do
+            {
                 _tracks.append(0);
-            } while (_tracks.size() < index + entries.size());
+            }
+            while (_tracks.size() < index + entries.size());
         }
 
         /* create Track instances */
-        for (int i = 0; i < entries.size(); ++i) {
+        for (int i = 0; i < entries.size(); ++i)
+        {
             int currentIndex = index + i;
 
             quint32 qid = entries[i];
 
             Track* t = _tracks[currentIndex];
-            if (t == 0) {
+            if (t == 0)
+            {
                 t = new Track(qid);
                 _tracks[currentIndex] = t;
             }
-            else if (t->_queueID != qid) {
+            else if (t->_queueID != qid)
+            {
                 qDebug() << " PROBLEM: inconsistency detected at index" << currentIndex;
                 delete t;
                 t = new Track(qid);
@@ -601,43 +809,48 @@ namespace PMP {
 
         Q_EMIT dataChanged(
             createIndex(index, 0),
-            createIndex(index + entries.size() - 1, 2)
+            createIndex(index + entries.size() - 1, 4)
         );
     }
 
-    void QueueModel::tracksChanged(QList<quint32> queueIDs) {
+    void QueueModel::tracksChanged(QList<quint32> queueIDs)
+    {
         qDebug() << "QueueModel::tracksChanged; count=" << queueIDs.size();
 
         /* we don't know the indexes, so we say everything changed */
         Q_EMIT dataChanged(
-            createIndex(0, 0), createIndex(_modelRows, 2)
+            createIndex(0, 0),
+            createIndex(_modelRows, 4)
         );
     }
 
-    void QueueModel::userDataReceivedForUser(quint32 userId) {
+    void QueueModel::userDataReceivedForUser(quint32 userId)
+    {
         qDebug() << "QueueModel::userDataReceivedForUser; user:" << userId;
 
-        Q_EMIT dataChanged(
-            createIndex(0, 3), createIndex(_modelRows, 4)
-        );
+        markUserDataColumnsAsChanged();
     }
 
-    void QueueModel::trackAdded(int index, quint32 queueID) {
+    void QueueModel::trackAdded(int index, quint32 queueID)
+    {
         qDebug() << "QueueModel::trackAdded; index=" << index << "; QID=" << queueID;
 
         beginInsertRows(QModelIndex(), index, index);
 
-        if (index > _tracks.size()) {
+        if (index > _tracks.size())
+        {
             qDebug() << " need to expand QueueModel tracks list before we can append";
             _tracks.reserve(index + 1);
 
-            while (_tracks.size() < index) {
+            while (_tracks.size() < index)
+            {
                 _tracks.append(0);
             }
 
             _tracks.append(new Track(queueID));
         }
-        else {
+        else
+        {
             _tracks.insert(index, new Track(queueID));
         }
 
@@ -645,12 +858,16 @@ namespace PMP {
         endInsertRows();
     }
 
-    void QueueModel::trackRemoved(int index, quint32 queueID) {
+    void QueueModel::trackRemoved(int index, quint32 queueID)
+    {
         qDebug() << "QueueModel::trackRemoved; index=" << index << "; QID=" << queueID;
+
+        _lastHeardRefresher->stopRefresh(queueID);
 
         beginRemoveRows(QModelIndex(), index, index);
 
-        if (index < _tracks.size()) {
+        if (index < _tracks.size())
+        {
             Track* t = _tracks[index];
             delete t;
             _tracks.removeAt(index);
@@ -660,7 +877,8 @@ namespace PMP {
         endRemoveRows();
     }
 
-    void QueueModel::trackMoved(int fromIndex, int toIndex, quint32 queueID) {
+    void QueueModel::trackMoved(int fromIndex, int toIndex, quint32 queueID)
+    {
         qDebug() << "QueueModel::trackMoved; oldIndex=" << fromIndex
                  << "; newIndex=" << toIndex << "; QID=" << queueID;
 
@@ -671,22 +889,37 @@ namespace PMP {
         beginMoveRows(QModelIndex(), fromIndex, fromIndex, QModelIndex(), qtToIndex);
 
         Track* t = 0;
-        if (fromIndex < _tracks.size()) {
+        if (fromIndex < _tracks.size())
+        {
             t = _tracks[fromIndex];
             _tracks.removeAt(fromIndex);
         }
 
-        if (toIndex <= _tracks.size()) {
-            if (t == 0) {
+        if (toIndex <= _tracks.size())
+        {
+            if (t == 0)
+            {
                 t = new Track(queueID);
             }
 
             _tracks.insert(toIndex, t);
         }
-        else {
+        else
+        {
             delete t;
         }
 
         endMoveRows();
     }
+
+    void QueueModel::markLastHeardColumnAsChanged()
+    {
+        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 3));
+    }
+
+    void QueueModel::markUserDataColumnsAsChanged()
+    {
+        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 4));
+    }
+
 }

@@ -305,12 +305,12 @@ namespace PMP {
         QDateTime threshhold = QDate::currentDate().addDays(-6).startOfDay();
         QRegularExpression regex("^\\d{4}-\\d{2}-\\d{2}-");
 
-        auto files =
+        const auto files =
             dir.entryInfoList(
                 QDir::Files | QDir::NoSymLinks | QDir::Readable | QDir::Writable
             );
 
-        Q_FOREACH(auto file, files)
+        for (auto& file : files)
         {
             if (file.lastModified() >= threshhold) continue;
             if (file.suffix() != "txt") continue;

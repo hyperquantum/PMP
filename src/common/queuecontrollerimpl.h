@@ -33,6 +33,8 @@ namespace PMP
         explicit QueueControllerImpl(ServerConnection* connection);
 
         bool canDuplicateEntry(quint32 queueId) const override;
+        bool canInsertBreakAtAnyIndex() const override;
+        bool canInsertBarrier() const override;
 
     public Q_SLOTS:
         void insertBreakAtFrontIfNotExists() override;
