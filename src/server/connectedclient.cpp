@@ -1489,7 +1489,7 @@ namespace PMP
 
     void ConnectedClient::serverHealthChanged(bool databaseUnavailable)
     {
-        (void)databaseUnavailable;
+        Q_UNUSED(databaseUnavailable)
 
         sendServerHealthMessage();
     }
@@ -1502,7 +1502,7 @@ namespace PMP
 
     void ConnectedClient::volumeChanged(int volume)
     {
-        (void)volume;
+        Q_UNUSED(volume)
 
         sendVolumeMessage();
     }
@@ -1524,7 +1524,7 @@ namespace PMP
 
     void ConnectedClient::onUserPlayingForChanged(quint32 user)
     {
-        (void)user;
+        Q_UNUSED(user)
 
         sendUserPlayingForModeMessage();
     }
@@ -1613,7 +1613,7 @@ namespace PMP
 
     void ConnectedClient::trackPositionChanged(qint64 position)
     {
-        (void)position;
+        Q_UNUSED(position)
 
         if (_binaryMode) {
             sendPlayerStateMessage();
