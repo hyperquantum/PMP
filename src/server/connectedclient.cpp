@@ -264,10 +264,7 @@ namespace PMP
         if (_clientProtocolNo < 0)
         {
             if (_socket->bytesAvailable() < 5)
-            {
-                /* not enough data */
-                return;
-            }
+                return; /* not enough data */
 
             char heading[5];
             _socket->read(heading, 5);
@@ -490,9 +487,15 @@ namespace PMP
 
     void ConnectedClient::sendTextCommand(QString const& command)
     {
+        if (!_socket->isValid())
+        {
+            qWarning() << "cannot send text command when socket not in valid state";
+            return;
+        }
+
         if (_terminated)
         {
-            qDebug() << "cannot send text command because connection is terminated";
+            qWarning() << "cannot send text command because connection is terminated";
             return;
         }
 
@@ -513,28 +516,32 @@ namespace PMP
         /* tell the client that all further communication will be in binary mode */
         sendTextCommand("binary");
 
-        char binaryHeader[5];
-        binaryHeader[0] = 'P';
-        binaryHeader[1] = 'M';
-        binaryHeader[2] = 'P';
-        /* the next two bytes are the protocol version */
-        binaryHeader[3] = char(((unsigned)ServerProtocolNo >> 8) & 255);
-        binaryHeader[4] = char((unsigned)ServerProtocolNo & 255);
-        _socket->write(binaryHeader, sizeof(binaryHeader));
+        /* send binary hello */
+        QByteArray binaryHeader;
+        binaryHeader.reserve(5);
+        binaryHeader.append("PMP", 3);
+        NetworkUtil::append2Bytes(binaryHeader, ServerProtocolNo);
+        _socket->write(binaryHeader);
         _socket->flush();
     }
 
     void ConnectedClient::sendBinaryMessage(QByteArray const& message)
     {
+        if (!_socket->isValid())
+        {
+            qWarning() << "cannot send binary message when socket not in valid state";
+            return;
+        }
+
         if (_terminated)
         {
-            qDebug() << "cannot send binary message because connection is terminated";
+            qWarning() << "cannot send binary message because connection is terminated";
             return;
         }
 
         if (!_binaryMode)
         {
-            qDebug() << "cannot send binary message when not in binary mode";
+            qWarning() << "cannot send binary message when not in binary mode";
             return; /* only supported in binary mode */
         }
 
