@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,11 +29,12 @@
 #include <QMediaPlayer>
 #include <QQueue>
 
-namespace PMP {
-
+namespace PMP
+{
     class Resolver;
 
-    class PlayerInstance : public QObject {
+    class PlayerInstance : public QObject
+    {
         Q_OBJECT
     public:
         PlayerInstance(QObject* parent, int identifier, Preloader* preloader,
@@ -88,7 +89,8 @@ namespace PMP {
         bool _deleteAfterStopped;
     };
 
-    class Player : public QObject {
+    class Player : public QObject
+    {
         Q_OBJECT
     public:
         Player(QObject* parent, Resolver* resolver, int defaultVolume);
@@ -129,9 +131,6 @@ namespace PMP {
         void volumeChanged(int volume);
         void userPlayingForChanged(quint32 user);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
-
-        /*! Emitted when the queue is empty and the current track is finished. */
-        void finished();
 
     private Q_SLOTS:
         void changeStateTo(ServerPlayerState state);

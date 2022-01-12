@@ -94,8 +94,8 @@ int main(int argc, char* argv[])
     QTextStream out(stdout);
 
     bool doIndexation = true;
-    QStringList args = QCoreApplication::arguments();
-    Q_FOREACH(QString arg, args)
+    const QStringList args = QCoreApplication::arguments();
+    for (auto& arg : args)
     {
         if (arg == "-no-index" || arg == "-no-indexation")
             doIndexation = false;
@@ -125,7 +125,7 @@ int main(int argc, char* argv[])
 
     Preloader::cleanupOldFiles();
 
-    //foreach (const QString &path, app.libraryPaths())
+    //for (const QString &path : app.libraryPaths())
     //    out << " LIB PATH : " << path << endl;
 
     /* Keep the threads of the thread pool alive, so we don't have to generate a new

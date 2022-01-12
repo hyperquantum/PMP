@@ -450,8 +450,8 @@ namespace PMP
     QList<QString> Database::getFilenames(uint hashID)
     {
         QSqlQuery q(_db);
-        q.prepare(
-            "SELECT `FilenameWithoutDir` FROM pmp_filename"
+        q.prepare( // we use DISTINCT because there's no unique index
+            "SELECT DISTINCT `FilenameWithoutDir` FROM pmp_filename"
             " WHERE HashID=?"
         );
         q.addBindValue(hashID);
@@ -745,7 +745,7 @@ namespace PMP
             "WHERE ha.HashID IN " + buildParamsList(hashIds.size())
         );
         q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
-        Q_FOREACH(auto hashId, hashIds)
+        for (auto hashId : hashIds)
         {
             q.addBindValue(hashId);
         }
@@ -795,7 +795,7 @@ namespace PMP
         QVariant userIdParam = (userId == 0) ? /*NULL*/QVariant(QVariant::UInt) : userId;
         q.addBindValue(userIdParam);
         q.addBindValue(userIdParam); /* twice */
-        Q_FOREACH(auto hashId, hashIds)
+        for (auto hashId : hashIds)
         {
             q.addBindValue(hashId);
         }

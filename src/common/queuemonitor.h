@@ -22,8 +22,8 @@
 
 #include "abstractqueuemonitor.h"
 
-namespace PMP {
-
+namespace PMP
+{
     class ServerConnection;
 
     class QueueMonitor : public AbstractQueueMonitor

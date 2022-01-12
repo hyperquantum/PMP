@@ -22,8 +22,8 @@
 
 #include "queuecontroller.h"
 
-namespace PMP {
-
+namespace PMP
+{
     class ServerConnection;
 
     class QueueControllerImpl : public QueueController
@@ -33,14 +33,18 @@ namespace PMP {
         explicit QueueControllerImpl(ServerConnection* connection);
 
         bool canDuplicateEntry(quint32 queueId) const override;
+        bool canInsertBreakAtAnyIndex() const override;
+        bool canInsertBarrier() const override;
 
     public Q_SLOTS:
-        void insertBreakAtFront() override;
+        void insertBreakAtFrontIfNotExists() override;
         void insertQueueEntryAtFront(FileHash hash) override;
         void insertQueueEntryAtEnd(FileHash hash) override;
-        void insertQueueEntryAtIndex(FileHash hash, quint32 index) override;
+        RequestID insertQueueEntryAtIndex(FileHash hash, quint32 index) override;
+        RequestID insertSpecialItemAtIndex(SpecialQueueItemType itemType, int index,
+                                           QueueIndexType indexType) override;
         void deleteQueueEntry(uint queueId) override;
-        void duplicateQueueEntry(uint queueId) override;
+        RequestID duplicateQueueEntry(uint queueId) override;
         void moveQueueEntry(uint queueId, qint16 offsetDiff) override;
 
     private Q_SLOTS:

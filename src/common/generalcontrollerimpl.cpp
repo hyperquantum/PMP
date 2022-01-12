@@ -33,8 +33,13 @@ namespace PMP
             this, &GeneralControllerImpl::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &GeneralControllerImpl::connectionBroken
+        );
+
+        connect(
+            _connection, &ServerConnection::serverHealthReceived,
+            this, &GeneralControllerImpl::serverHealthReceived
         );
         connect(
             _connection, &ServerConnection::receivedClientClockTimeOffset,
@@ -47,6 +52,11 @@ namespace PMP
 
         if (_connection->isConnected())
             connected();
+    }
+
+    ServerHealthStatus GeneralControllerImpl::serverHealth() const
+    {
+        return _serverHealthStatus;
     }
 
     qint64 GeneralControllerImpl::clientClockTimeOffsetMs() const
@@ -74,8 +84,23 @@ namespace PMP
         //
     }
 
+    void GeneralControllerImpl::serverHealthReceived()
+    {
+        auto serverHealth = _connection->serverHealth();
+
+        if (_serverHealthStatus == serverHealth)
+            return; /* no change */
+
+        _serverHealthStatus = serverHealth;
+
+        if (serverHealth.databaseUnavailable())
+            qWarning() << "server reports that its database is unavailable";
+
+        Q_EMIT serverHealthChanged();
+    }
+
     void GeneralControllerImpl::receivedClientClockTimeOffset(
-                                                          quint64 clientClockTimeOffsetMs)
+                                                           qint64 clientClockTimeOffsetMs)
     {
         if (clientClockTimeOffsetMs == _clientClockTimeOffsetMs)
             return;

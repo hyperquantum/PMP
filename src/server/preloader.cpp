@@ -240,9 +240,11 @@ namespace PMP {
         scheduleCheckForTracksToPreload();
     }
 
-    Preloader::~Preloader() {
+    Preloader::~Preloader()
+    {
         /* delete cache files */
-        Q_FOREACH(PreloadTrack* track, _tracksByQueueID.values()) {
+        for (auto* track : _tracksByQueueID.values())
+        {
             if (track->status() != PreloadTrack::Status::Preloaded) continue;
 
             QFile::remove(track->getCachedFile());
@@ -290,12 +292,13 @@ namespace PMP {
 
         auto threshhold = QDate::currentDate().addDays(-10).startOfDay();
 
-        auto files =
+        const auto files =
             dir.entryInfoList(
                 QDir::Files | QDir::NoSymLinks | QDir::Readable | QDir::Writable
             );
 
-        Q_FOREACH(auto file, files) {
+        for (auto& file : files)
+        {
             if (file.lastModified() >= threshhold) continue;
             if (!FileAnalyzer::isExtensionSupported(file.suffix())) continue;
 
@@ -304,15 +307,17 @@ namespace PMP {
         }
     }
 
-    void Preloader::queueEntryAdded(quint32 offset, quint32 queueID) {
-        (void)queueID;
+    void Preloader::queueEntryAdded(qint32 offset, quint32 queueID)
+    {
+        Q_UNUSED(queueID);
 
         if (offset >= PRELOAD_RANGE) return;
 
         scheduleCheckForTracksToPreload();
     }
 
-    void Preloader::queueEntryRemoved(quint32 offset, quint32 queueID) {
+    void Preloader::queueEntryRemoved(qint32 offset, quint32 queueID)
+    {
         if (offset < PRELOAD_RANGE) {
             scheduleCheckForTracksToPreload();
         }
@@ -321,9 +326,9 @@ namespace PMP {
         scheduleCheckForCacheEntriesToDelete();
     }
 
-    void Preloader::queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID)
+    void Preloader::queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueID)
     {
-        (void)queueID;
+        Q_UNUSED(queueID);
 
         if (toOffset >= PRELOAD_RANGE && fromOffset >= PRELOAD_RANGE)
             return;
@@ -372,8 +377,9 @@ namespace PMP {
         _preloadCheckTimerRunning = false;
         qDebug() << "running preload check";
 
-        QList<QueueEntry*> queueEntries = _queue->entries(0, PRELOAD_RANGE);
-        Q_FOREACH(QueueEntry* entry, queueEntries) {
+        const QList<QueueEntry*> queueEntries = _queue->entries(0, PRELOAD_RANGE);
+        for (auto* entry : queueEntries)
+        {
             checkToPreloadTrack(entry);
         }
 

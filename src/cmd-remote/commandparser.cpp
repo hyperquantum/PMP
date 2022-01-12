@@ -212,6 +212,10 @@ namespace PMP
             handleCommandNotRequiringArguments<ReloadServerSettingsCommand>(
                                                                          commandWithArgs);
         }
+        else if (command == "insert")
+        {
+            parseInsertCommand(args);
+        }
         else if (command == "shutdown")
         {
             if (argsCount == 0)
@@ -324,6 +328,84 @@ namespace PMP
                 _errorMessage +=
                         " (did you forget to put spaces around the \":\" separator?)";
         }
+    }
+
+    void CommandParser::parseInsertCommand(QVector<QString> arguments)
+    {
+        if (arguments.isEmpty())
+        {
+            _errorMessage = "Command 'insert' requires arguments!";
+            return;
+        }
+
+        int argumentIndex = 0;
+
+        SpecialQueueItemType itemType;
+        if (arguments[argumentIndex] == "break")
+        {
+            itemType = SpecialQueueItemType::Break;
+        }
+        else if (arguments[argumentIndex] == "barrier")
+        {
+            itemType = SpecialQueueItemType::Barrier;
+        }
+        else
+        {
+            _errorMessage =
+                    "First argument of command 'insert' must be 'break' or 'barrier'!";
+            return;
+        }
+
+        argumentIndex++;
+        if (arguments.size() <= argumentIndex)
+        {
+            _errorMessage = "Command 'insert' requires at least one more argument!";
+            return;
+        }
+
+        int insertionIndex;
+        auto insertionIndexType = QueueIndexType::Normal;
+
+        if (arguments[argumentIndex] == "front")
+        {
+            insertionIndex = 0;
+        }
+        else if (arguments[argumentIndex] == "end")
+        {
+            insertionIndex = 0;
+            insertionIndexType = QueueIndexType::Reverse;
+        }
+        else if (arguments[argumentIndex] == "index")
+        {
+            argumentIndex++;
+            if (arguments.size() <= argumentIndex)
+            {
+                _errorMessage = "No actual index provided after 'index'!";
+                return;
+            }
+
+            bool ok;
+            insertionIndex = arguments[argumentIndex].toInt(&ok);
+            if (!ok || insertionIndex < 0)
+            {
+                _errorMessage = "Index must be a non-negative number!";
+                return;
+            }
+        }
+        else
+        {
+            _errorMessage = "Position indicator must be 'front', 'end' or 'index'!";
+            return;
+        }
+
+        if (argumentIndex + 1 < arguments.size())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new QueueInsertSpecialItemCommand(itemType, insertionIndex,
+                                                     insertionIndexType);
     }
 
 }

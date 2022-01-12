@@ -21,18 +21,26 @@
 #define PMP_SERVERINTERFACE_H
 
 #include "common/filehash.h"
+#include "common/queueindextype.h"
 #include "common/resultmessageerrorcode.h"
+#include "common/specialqueueitemtype.h"
 #include "common/startstopeventstatus.h"
 
+#include "result.h"
+
 #include <QObject>
+#include <QHash>
 #include <QString>
 #include <QUuid>
+
+#include <functional>
 
 namespace PMP
 {
     class FileHash;
     class Generator;
     class Player;
+    class PlayerQueue;
     class QueueEntry;
     class Server;
     class ServerSettings;
@@ -43,6 +51,8 @@ namespace PMP
     public:
         ServerInterface(ServerSettings* serverSettings, Server* server, Player* player,
                         Generator* generator);
+
+        ~ServerInterface();
 
         QUuid getServerUuid() const;
         QString getServerCaption() const;
@@ -62,10 +72,16 @@ namespace PMP
 
         void setVolume(int volumePercentage);
 
-        void enqueue(FileHash hash);
-        void insertAtFront(FileHash hash);
-        void insertBreakAtFront();
-        void insertAtIndex(quint32 index, QueueEntry* entry);
+        Result enqueue(FileHash hash);
+        Result insertAtFront(FileHash hash);
+        Result insertBreakAtFrontIfNotExists();
+        Result insertSpecialQueueItem(SpecialQueueItemType itemType,
+                                      QueueIndexType indexType, int index,
+                                      quint32 clientReference);
+        Result duplicateQueueEntry(uint id, quint32 clientReference);
+        Result insertAtIndex(qint32 index,
+                             std::function<QueueEntry* (uint)> queueEntryCreator,
+                             quint32 clientReference);
         void moveQueueEntry(uint id, int upDownOffset);
         void removeQueueEntry(uint id);
         void trimQueue();
@@ -91,6 +107,10 @@ namespace PMP
         void serverSettingsReloadResultEvent(uint clientReference,
                                              ResultMessageErrorCode errorCode);
 
+        void queueEntryAddedWithoutReference(qint32 offset, quint32 queueId);
+        void queueEntryAddedWithReference(qint32 offset, quint32 queueId,
+                                          quint32 clientReference);
+
         void dynamicModeStatusEvent(StartStopEventStatus dynamicModeStatus,
                                     int noRepetitionSpanSeconds);
 
@@ -100,6 +120,8 @@ namespace PMP
                                         int waveTotalCount);
 
     private Q_SLOTS:
+        void onQueueEntryAdded(qint32 offset, quint32 queueId);
+
         void onDynamicModeStatusChanged();
         void onDynamicModeNoRepetitionSpanChanged();
         void onDynamicModeWaveStarted();
@@ -107,12 +129,18 @@ namespace PMP
         void onDynamicModeWaveEnded();
 
     private:
+        int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType,
+                                int index);
+        std::function<void (uint)> createQueueInsertionIdNotifier(
+                                                                 quint32 clientReference);
+
         quint32 _userLoggedIn;
         QString _userLoggedInName;
         ServerSettings* _serverSettings;
         Server* _server;
         Player* _player;
         Generator* _generator;
+        QHash<quint32, quint32> _queueEntryInsertionsPending;
     };
 }
 #endif

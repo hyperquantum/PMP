@@ -122,10 +122,13 @@ QList<std::function<void (TagLib::Ogg::XiphComment*)> > getXiphModifiers() {
     return modifiers;
 }
 
-QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers() {
+QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers()
+{
     QList<std::function<void (TagLib::MPEG::File*)> > modifiers;
 
-    Q_FOREACH(auto id3v1Modifier, getId3v1Modifiers()) {
+    const auto id3v1Modifiers = getId3v1Modifiers();
+    for (auto id3v1Modifier : id3v1Modifiers)
+    {
         modifiers.append(
             [id3v1Modifier](TagLib::MPEG::File* file) {
                 id3v1Modifier(file->ID3v1Tag(true));
@@ -133,7 +136,9 @@ QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers() {
         );
     }
 
-    Q_FOREACH(auto id3v2Modifier, getId3v2Modifiers()) {
+    const auto id3v2Modifiers = getId3v2Modifiers();
+    for (auto id3v2Modifier : id3v2Modifiers)
+    {
         modifiers.append(
             [id3v2Modifier](TagLib::MPEG::File* file) {
                 id3v2Modifier(file->ID3v2Tag(true));
@@ -141,7 +146,9 @@ QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers() {
         );
     }
 
-    Q_FOREACH(auto apeModifier, getApeModifiers()) {
+    const auto apeModifiers = getApeModifiers();
+    for (auto apeModifier : apeModifiers)
+    {
         modifiers.append(
             [apeModifier](TagLib::MPEG::File* file) {
                 apeModifier(file->APETag(true));
@@ -152,10 +159,13 @@ QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers() {
     return modifiers;
 }
 
-QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers() {
+QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers()
+{
     QList<std::function<void (TagLib::FLAC::File*)> > modifiers;
 
-    Q_FOREACH(auto id3v1Modifier, getId3v1Modifiers()) {
+    const auto id3v1Modifiers = getId3v1Modifiers();
+    for (auto id3v1Modifier : id3v1Modifiers)
+    {
         modifiers.append(
             [id3v1Modifier](TagLib::FLAC::File* file) {
                 id3v1Modifier(file->ID3v1Tag(true));
@@ -163,7 +173,9 @@ QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers() {
         );
     }
 
-    Q_FOREACH(auto id3v2Modifier, getId3v2Modifiers()) {
+    const auto id3v2Modifiers = getId3v2Modifiers();
+    for (auto id3v2Modifier : id3v2Modifiers)
+    {
         modifiers.append(
             [id3v2Modifier](TagLib::FLAC::File* file) {
                 id3v2Modifier(file->ID3v2Tag(true));
@@ -171,7 +183,9 @@ QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers() {
         );
     }
 
-    Q_FOREACH(auto xiphModifier, getXiphModifiers()) {
+    const auto xiphModifiers = getXiphModifiers();
+    for (auto xiphModifier : xiphModifiers)
+    {
         modifiers.append(
             [xiphModifier](TagLib::FLAC::File* file) {
                 xiphModifier(file->xiphComment(true));
@@ -193,8 +207,11 @@ QList<std::function<void (TagLib::File*)> > getModifiers(QString extension) {
 
     /* format-specific file modifications */
 
-    if (extension == "mp3") {
-        Q_FOREACH(auto mp3Modifier, getMp3Modifiers()) {
+    if (extension == "mp3")
+    {
+        const auto mp3Modifiers = getMp3Modifiers();
+        for (auto mp3Modifier : mp3Modifiers)
+        {
             modifiers.append(
                 [mp3Modifier](TagLib::File* file) {
                     mp3Modifier(static_cast<TagLib::MPEG::File*>(file));
@@ -202,8 +219,11 @@ QList<std::function<void (TagLib::File*)> > getModifiers(QString extension) {
             );
         }
     }
-    else if (extension == "flac") {
-        Q_FOREACH(auto flacModifier, getFlacModifiers()) {
+    else if (extension == "flac")
+    {
+        const auto flacModifiers = getFlacModifiers();
+        for (auto flacModifier : flacModifiers)
+        {
             modifiers.append(
                 [flacModifier](TagLib::File* file) {
                     flacModifier(static_cast<TagLib::FLAC::File*>(file));
@@ -288,7 +308,8 @@ public:
         transformed << multiTransformed;
 
         unsigned correctHashCount = 0;
-        Q_FOREACH(auto modifiedData, transformed) {
+        for (auto& modifiedData : qAsConst(transformed))
+        {
             FileAnalyzer analyzer(modifiedData, extension());
             analyzer.analyze();
             if (!analyzer.analysisDone()) {
@@ -329,7 +350,8 @@ private:
 
         /* Apply each modification, and make sure they each generate a result different
            from the others and from the original data. */
-        Q_FOREACH(auto modifier, modifiers) {
+        for (const auto& modifier : modifiers)
+        {
             auto modifiedData = applyModification(originalFileContents(), modifier);
             _out << "Modified data checksum: " << checksum(modifiedData) << Qt::endl;
 
@@ -365,7 +387,8 @@ private:
 
         _out << "Generating combined modifications" << Qt::endl;
 
-        Q_FOREACH(auto modifier1, modifiers) {
+        for (const auto& modifier1 : modifiers)
+        {
             auto modifiedData1 = applyModification(originalFileContents(), modifier1);
             if (modifiedData1.size() == 0) {
                 _err << "Problem: modification went wrong, returned no result"
@@ -373,7 +396,8 @@ private:
                 return QVector<TagLib::ByteVector>();
             }
 
-            Q_FOREACH(auto modifier2, modifiers) {
+            for (const auto& modifier2 : modifiers)
+            {
                 auto modifiedData2 = applyModification(modifiedData1, modifier2);
                 _out << "Modified data checksum: " << checksum(modifiedData2) << Qt::endl;
                 if (modifiedData2.size() == 0) {

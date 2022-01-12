@@ -302,15 +302,15 @@ namespace PMP {
         QDir dir(_logDir);
         if (!dir.exists()) { return; }
 
-        QDateTime threshhold = QDateTime(QDate::currentDate().addDays(-6));
+        QDateTime threshhold = QDate::currentDate().addDays(-6).startOfDay();
         QRegularExpression regex("^\\d{4}-\\d{2}-\\d{2}-");
 
-        auto files =
+        const auto files =
             dir.entryInfoList(
                 QDir::Files | QDir::NoSymLinks | QDir::Readable | QDir::Writable
             );
 
-        Q_FOREACH(auto file, files)
+        for (auto& file : files)
         {
             if (file.lastModified() >= threshhold) continue;
             if (file.suffix() != "txt") continue;
@@ -323,8 +323,11 @@ namespace PMP {
 
     /* ========================== Logging ========================== */
 
-    static ConsoleLogger globalConsoleLogger; /* global instance */
-    static TextFileLogger globalTextFileLogger; /* global instance */
+    namespace
+    {
+        static ConsoleLogger globalConsoleLogger; /* global instance */
+        static TextFileLogger globalTextFileLogger; /* global instance */
+    }
 
     void logToTextFile(QtMsgType type, const QMessageLogContext& context,
                        const QString& msg)

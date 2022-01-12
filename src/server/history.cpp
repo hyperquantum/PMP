@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -108,12 +108,14 @@ namespace PMP {
     }
 
     void History::sendFetchRequests() {
-        Q_FOREACH(auto user, _userStatsFetching.keys()) {
+        for (auto user : _userStatsFetching.keys())
+        {
             QHash<uint, bool>& hashes = _userStatsFetching[user];
 
             QVector<uint> hashesToFetch;
             hashesToFetch.reserve(hashes.size());
-            Q_FOREACH(auto hash, hashes.keys()) {
+            for (auto hash : hashes.keys())
+            {
                 bool& beingFetched = hashes[hash];
                 if (!beingFetched) {
                     hashesToFetch.append(hash);
@@ -192,7 +194,8 @@ namespace PMP {
         QHash<uint, bool>& hashesForFetching = _userStatsFetching[userId];
         QHash<uint, HashStats>& statsForUser = _userStats[userId];
 
-        Q_FOREACH(UserDataForHashId const& hashData, results) {
+        for (auto const& hashData : results)
+        {
             auto hashId = hashData.hashId;
 
             hashesForFetching.remove(hashId);

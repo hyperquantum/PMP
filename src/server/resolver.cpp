@@ -166,7 +166,7 @@ namespace PMP
 
         /* check for duplicate tags */
         bool tagIsNew = true;
-        for (const TagData* existing : _tags)
+        for (auto* existing : qAsConst(_tags))
         {
             if (existing->title() == t.title()
                     && existing->artist() == t.artist()
@@ -337,7 +337,7 @@ namespace PMP
 
     bool Resolver::HashKnowledge::isAvailable()
     {
-        for (auto file : _files)
+        for (auto file : qAsConst(_files))
         {
             if (file->stillValid()) return true;
 
@@ -349,7 +349,7 @@ namespace PMP
 
     QString Resolver::HashKnowledge::getFile()
     {
-        for (auto file : _files)
+        for (auto file : qAsConst(_files))
         {
             if (file->stillValid()) return file->_path;
 
@@ -375,10 +375,9 @@ namespace PMP
 
         if (db != nullptr)
         {
-            QList<QPair<uint, FileHash> > hashes = db->getHashes();
+            const QList<QPair<uint, FileHash>> hashes = db->getHashes();
 
-            QPair<uint, FileHash> pair;
-            foreach(pair, hashes)
+            for (auto& pair : hashes)
             {
                 auto knowledge = new HashKnowledge(this, pair.second, pair.first);
                 _hashKnowledge.insert(pair.second, knowledge);
@@ -525,7 +524,7 @@ namespace PMP
 
         QVector<QString> result;
 
-        for (const auto file : _paths)
+        for (auto file : qAsConst(_paths))
         {
             if (!file->hasIndexationNumber(_fullIndexationNumber))
             {
@@ -700,7 +699,7 @@ namespace PMP
     QString Resolver::findPathForHashByLikelyFilename(Database& db, const FileHash& hash,
                                                       uint hashId)
     {
-        auto filenames = db.getFilenames(hashId).toSet();
+        auto filenames = db.getFilenames(hashId);
         if (filenames.empty()) /* no known filenames */
             return {};
 
@@ -749,7 +748,7 @@ namespace PMP
                                                      uint hashId)
     {
         /* get likely file sizes */
-        QSet<qint64> previousFileSizes = db.getFileSizes(hashId).toSet();
+        auto previousFileSizes = db.getFileSizes(hashId);
 
         auto musicPaths = this->musicPaths();
 
@@ -850,7 +849,7 @@ namespace PMP
         QVector<CollectionTrackInfo> result;
         result.reserve(hashes.size());
 
-        for (auto hash : hashes)
+        for (auto& hash : qAsConst(hashes))
         {
             auto knowledge = _hashKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
@@ -901,7 +900,7 @@ namespace PMP
         QList<QPair<uint, FileHash>> result;
         result.reserve(hashes.size());
 
-        for (auto hash : hashes)
+        for (auto& hash : qAsConst(hashes))
         {
             auto knowledge = _hashKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
@@ -919,7 +918,7 @@ namespace PMP
         QVector<QPair<uint, FileHash>> result;
         result.reserve(hashes.size());
 
-        for (auto hash : hashes)
+        for (auto const& hash : qAsConst(hashes))
         {
             auto knowledge = _hashKnowledge.value(hash, nullptr);
             if (!knowledge) continue;

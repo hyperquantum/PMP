@@ -35,7 +35,7 @@ namespace PMP
             this, &DynamicModeControllerImpl::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &DynamicModeControllerImpl::connectionBroken
         );
         connect(

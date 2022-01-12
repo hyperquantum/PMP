@@ -41,6 +41,9 @@ namespace PMP
 
     bool QueueEntryInfo::needFilename() const
     {
+        if (_type != QueueEntryType::Track)
+            return false;
+
         return title().trimmed().isEmpty() || artist().trimmed().isEmpty();
     }
 
@@ -67,7 +70,7 @@ namespace PMP
         int longestLength = names[0].length();
 
         int limit = 20;
-        Q_FOREACH(QString name, names)
+        for (auto& name : names)
         {
             if (name.length() < shortestLength) shortestLength = name.length();
             else if (name.length() > longestLength) longestLength = name.length();
@@ -83,7 +86,7 @@ namespace PMP
         QString middle = names[0];
 
         limit = 10;
-        Q_FOREACH(QString name, names)
+        for (auto& name : names)
         {
             int diff = std::abs(name.length() - middleLength);
             int oldDiff = std::abs(middle.length() - middleLength);
@@ -114,7 +117,7 @@ namespace PMP
             this, &QueueEntryInfoFetcher::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &QueueEntryInfoFetcher::connectionBroken
         );
         connect(
@@ -171,7 +174,9 @@ namespace PMP
         {
             sendInfoRequest(queueID);
         }
-        else if (info->hash().isNull() && !_hashRequestsSent.contains(queueID))
+        else if (info->hash().isNull()
+                 && !info->isTrack().isFalse()
+                 && !_hashRequestsSent.contains(queueID))
         {
             sendHashRequest(queueID);
         }

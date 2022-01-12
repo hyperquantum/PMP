@@ -126,6 +126,18 @@ namespace PMP
             errorOutput = "server does not know how to handle this action";
             break;
 
+        case PMP::ResultMessageErrorCode::InvalidHash:
+            errorOutput = "invalid file hash";
+            break;
+
+        case PMP::ResultMessageErrorCode::InvalidQueueIndex:
+            errorOutput = "invalid queue index";
+            break;
+
+        case PMP::ResultMessageErrorCode::MaximumQueueSizeExceeded:
+            errorOutput = "maximum queue size would be exceeded";
+            break;
+
         case ResultMessageErrorCode::DatabaseProblem:
             errorOutput = "problem with the server database";
             break;

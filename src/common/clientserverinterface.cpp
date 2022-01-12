@@ -61,10 +61,12 @@ namespace PMP
             Qt::QueuedConnection
         );
         connect(
-            connection, &ServerConnection::connectionBroken,
+            connection, &ServerConnection::disconnected,
             this,
             [this]()
             {
+                qDebug() << "connection has been disconnected";
+
                 if (!_connected) return;
 
                 _connected = false;

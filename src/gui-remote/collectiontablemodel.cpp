@@ -949,7 +949,8 @@ namespace PMP {
 
         QVector<FileHash> hashes;
         int prevRow = -1;
-        Q_FOREACH(const QModelIndex& index, indexes) {
+        for (auto& index : indexes)
+        {
             int row = index.row();
             if (row == prevRow) continue;
             prevRow = row;

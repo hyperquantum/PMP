@@ -64,9 +64,11 @@ set(PMP_COMMON_HEADERS
     common/queuecontroller.h
     common/queuecontrollerimpl.h
     common/queueentryinfofetcher.h
+    common/queueindextype.h
     common/queuemonitor.h
     common/serverconnection.h
     common/serverdiscoverer.h
+    common/specialqueueitemtype.h
     common/userdatafetcher.h
 )
 

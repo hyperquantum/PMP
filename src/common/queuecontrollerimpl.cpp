@@ -21,8 +21,8 @@
 
 #include "serverconnection.h"
 
-namespace PMP {
-
+namespace PMP
+{
     QueueControllerImpl::QueueControllerImpl(ServerConnection* connection)
      : QueueController(connection),
        _connection(connection)
@@ -32,13 +32,17 @@ namespace PMP {
             this, &QueueControllerImpl::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &QueueControllerImpl::connectionBroken
         );
 
         connect(
             _connection, &ServerConnection::queueEntryAdded,
             this, &QueueControllerImpl::queueEntryAdded
+        );
+        connect(
+            _connection, &ServerConnection::queueEntryInsertionFailed,
+            this, &QueueControllerImpl::queueEntryInsertionFailed
         );
         connect(
             _connection, &ServerConnection::queueEntryRemoved,
@@ -59,9 +63,19 @@ namespace PMP {
         return _connection->serverSupportsQueueEntryDuplication();
     }
 
-    void QueueControllerImpl::insertBreakAtFront()
+    bool QueueControllerImpl::canInsertBreakAtAnyIndex() const
     {
-        _connection->insertBreakAtFront();
+        return _connection->serverSupportsInsertingBreaksAtAnyIndex();
+    }
+
+    bool QueueControllerImpl::canInsertBarrier() const
+    {
+        return _connection->serverSupportsInsertingBarriers();
+    }
+
+    void QueueControllerImpl::insertBreakAtFrontIfNotExists()
+    {
+        _connection->insertBreakAtFrontIfNotExists();
     }
 
     void QueueControllerImpl::insertQueueEntryAtFront(FileHash hash)
@@ -74,9 +88,16 @@ namespace PMP {
         _connection->insertQueueEntryAtEnd(hash);
     }
 
-    void QueueControllerImpl::insertQueueEntryAtIndex(FileHash hash, quint32 index)
+    RequestID QueueControllerImpl::insertQueueEntryAtIndex(FileHash hash, quint32 index)
     {
-        _connection->insertQueueEntryAtIndex(hash, index);
+        return _connection->insertQueueEntryAtIndex(hash, index);
+    }
+
+    RequestID QueueControllerImpl::insertSpecialItemAtIndex(SpecialQueueItemType itemType,
+                                                            int index,
+                                                            QueueIndexType indexType)
+    {
+        return _connection->insertSpecialQueueItemAtIndex(itemType, index, indexType);
     }
 
     void QueueControllerImpl::deleteQueueEntry(uint queueId)
@@ -84,9 +105,9 @@ namespace PMP {
         _connection->deleteQueueEntry(queueId);
     }
 
-    void QueueControllerImpl::duplicateQueueEntry(uint queueId)
+    RequestID QueueControllerImpl::duplicateQueueEntry(uint queueId)
     {
-        _connection->duplicateQueueEntry(queueId);
+        return _connection->duplicateQueueEntry(queueId);
     }
 
     void QueueControllerImpl::moveQueueEntry(uint queueId, qint16 offsetDiff)
