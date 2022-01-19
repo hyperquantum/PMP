@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,15 +25,17 @@
 #include <QRunnable>
 #include <QVector>
 
-namespace PMP {
-
-    struct UserDataForHashId {
+namespace PMP
+{
+    struct UserDataForHashId
+    {
         uint hashId;
         QDateTime previouslyHeard;
         qint16 score;
     };
 
-    class UserDataForTracksFetcher : public QObject, public QRunnable {
+    class UserDataForTracksFetcher : public QObject, public QRunnable
+    {
         Q_OBJECT
     public:
         UserDataForTracksFetcher(quint32 userId, QVector<uint> hashIds);
@@ -47,7 +49,6 @@ namespace PMP {
         quint32 _userId;
         QVector<uint> _hashIds;
     };
-
 }
 
 Q_DECLARE_METATYPE(PMP::UserDataForHashId)
