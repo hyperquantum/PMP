@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2022, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -64,11 +64,9 @@ set(PMP_COMMON_HEADERS
     common/queuecontroller.h
     common/queuecontrollerimpl.h
     common/queueentryinfofetcher.h
-    common/queueindextype.h
     common/queuemonitor.h
     common/serverconnection.h
     common/serverdiscoverer.h
-    common/specialqueueitemtype.h
     common/userdatafetcher.h
 )
 
