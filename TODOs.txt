@@ -58,8 +58,8 @@ IDEAS
  ** player: option for single track mode (vs. continuous play)
  * player: 'load track' action that loads a track but does not start playing; this allows seek before playing
  ** player: 'play again next' action for the song that is currently playing
- ** player: auto-stop timer to make playback stop at or near a specified clock time
- * player: auto-start timer to make playback start at a specified clock time
+ *** player: auto-stop timer to make playback stop at or near a specified clock time
+ ** player: auto-start timer to make playback start at a specified clock time
  * player: delayed start: e.g. being able to press Play and then have 5 seconds before PMP actually starts playing
  * player: avoid accidental multiple clicks on "skip" affecting track score unnecessarily
  * player: 'seek to start of track' action or button
@@ -77,6 +77,7 @@ IDEAS
  * music collection: provide fast partial indexation that only detects new files
  * music collection: show some kind of indicator for a track that is already present in the queue
  * music collection: show filtered count / total count
+ * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  ** dynamic mode: detect and prevent track repetition with different hash values
  ** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
