@@ -118,15 +118,19 @@ namespace PMP
 
     void History::sendFetchRequests()
     {
-        for (auto user : _userStatsFetching.keys())
+        for (auto userIt = _userStatsFetching.begin();
+             userIt != _userStatsFetching.end();
+             ++userIt)
         {
-            QHash<uint, bool>& hashes = _userStatsFetching[user];
+            auto user = userIt.key();
+            QHash<uint, bool>& hashes = userIt.value();
 
             QVector<uint> hashesToFetch;
             hashesToFetch.reserve(hashes.size());
-            for (auto hash : hashes.keys())
+            for (auto hashIt = hashes.begin(); hashIt != hashes.end(); ++hashIt)
             {
-                bool& beingFetched = hashes[hash];
+                auto hash = hashIt.key();
+                bool& beingFetched = hashIt.value();
                 if (!beingFetched)
                 {
                     hashesToFetch.append(hash);
