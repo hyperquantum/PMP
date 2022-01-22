@@ -76,7 +76,7 @@ namespace PMP
                 QDateTime::currentDateTimeUtc().addMSecs(millisecondsCounted)
                                                .addSecs(-_noRepetitionSpanSeconds);
 
-        QDateTime lastPlay = _history->lastPlayed(hash);
+        QDateTime lastPlay = _history->lastPlayedGloballySinceStartup(hash);
         if (lastPlay.isValid() && lastPlay > maxLastPlay)
             return true;
 

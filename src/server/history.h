@@ -60,7 +60,7 @@ namespace PMP
         History(Player* player);
 
         /** Get last played time since server startup (non-user-specific) */
-        QDateTime lastPlayed(FileHash const& hash) const;
+        QDateTime lastPlayedGloballySinceStartup(FileHash const& hash) const;
 
         bool fetchMissingUserStats(uint hashID, quint32 user);
         HashStats const* getUserStats(uint hashID, quint32 user);

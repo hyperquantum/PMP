@@ -52,7 +52,7 @@ namespace PMP
         );
     }
 
-    QDateTime History::lastPlayed(FileHash const& hash) const
+    QDateTime History::lastPlayedGloballySinceStartup(FileHash const& hash) const
     {
         return _lastPlayHash[hash];
     }
