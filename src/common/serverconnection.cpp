@@ -983,7 +983,9 @@ namespace PMP
                                                             int index,
                                                             QueueIndexType indexType)
     {
-        if (!serverCapabilities().supportsInsertingBreaksAtAnyIndex())
+        if (!serverCapabilities().supportsInsertingBreaksAtAnyIndex()
+                || (itemType == SpecialQueueItemType::Barrier
+                    && !serverCapabilities().supportsInsertingBarriers()))
         {
             return signalServerTooOldError(&ServerConnection::queueEntryInsertionFailed);
         }
