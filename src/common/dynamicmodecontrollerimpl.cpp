@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,7 @@
 
 #include "dynamicmodecontrollerimpl.h"
 
+#include "servercapabilities.h"
 #include "serverconnection.h"
 
 namespace PMP
@@ -74,7 +75,7 @@ namespace PMP
     bool DynamicModeControllerImpl::canTerminateWave() const
     {
         return _waveActive.isTrue()
-                && _connection->serverSupportsDynamicModeWaveTermination();
+                && _connection->serverCapabilities().supportsDynamicModeWaveTermination();
     }
 
     int DynamicModeControllerImpl::waveProgress() const

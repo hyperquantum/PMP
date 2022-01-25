@@ -19,10 +19,11 @@
 
 #include "serverconnection.h"
 
-#include "common/collectionfetcher.h"
-#include "common/networkprotocol.h"
-#include "common/networkutil.h"
-#include "common/util.h"
+#include "collectionfetcher.h"
+#include "networkprotocol.h"
+#include "networkutil.h"
+#include "servercapabilitiesimpl.h"
+#include "util.h"
 
 #include <QtDebug>
 #include <QTimer>
@@ -362,6 +363,7 @@ namespace PMP
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
      : QObject(parent),
+       _serverCapabilities(new ServerCapabilitiesImpl()),
        _disconnectReason(DisconnectReason::Unknown),
        _keepAliveTimer(new QTimer(this)),
        _autoSubscribeToEventsAfterConnect(eventSubscription),
@@ -389,6 +391,11 @@ namespace PMP
         );
     }
 
+    ServerConnection::~ServerConnection()
+    {
+        delete _serverCapabilities;
+    }
+
     void ServerConnection::connectToHost(QString const& host, quint16 port)
     {
         qDebug() << "connecting to" << host << "on port" << port;
@@ -401,6 +408,11 @@ namespace PMP
     {
         qDebug() << "disconnect() called";
         breakConnection(DisconnectReason::ClientInitiated);
+    }
+
+    ServerCapabilities const& ServerConnection::serverCapabilities() const
+    {
+        return *_serverCapabilities;
     }
 
     bool ServerConnection::isConnected() const
@@ -416,31 +428,6 @@ namespace PMP
     QString ServerConnection::userLoggedInName() const
     {
         return _userLoggedInName;
-    }
-
-    bool ServerConnection::serverSupportsReloadingServerSettings() const
-    {
-        return _serverProtocolNo >= 15;
-    }
-
-    bool ServerConnection::serverSupportsQueueEntryDuplication() const
-    {
-        return _serverProtocolNo >= 9;
-    }
-
-    bool ServerConnection::serverSupportsDynamicModeWaveTermination() const
-    {
-        return _serverProtocolNo >= 14;
-    }
-
-    bool ServerConnection::serverSupportsInsertingBreaksAtAnyIndex() const
-    {
-        return _serverProtocolNo >= 17;
-    }
-
-    bool ServerConnection::serverSupportsInsertingBarriers() const
-    {
-        return _serverProtocolNo >= 18;
     }
 
     void ServerConnection::onConnected()
@@ -563,6 +550,7 @@ namespace PMP
 
                 _serverProtocolNo = NetworkUtil::get2Bytes(heading, 3);
                 qDebug() << "server protocol version:" << _serverProtocolNo;
+                _serverCapabilities->setServerProtocolNumber(_serverProtocolNo);
 
                 _state = BinaryMode;
 
@@ -951,7 +939,7 @@ namespace PMP
 
     RequestID ServerConnection::reloadServerSettings()
     {
-        if (!serverSupportsReloadingServerSettings())
+        if (!serverCapabilities().supportsReloadingServerSettings())
         {
             return signalServerTooOldError(
                                       &ServerConnection::serverSettingsReloadResultEvent);
@@ -995,8 +983,10 @@ namespace PMP
                                                             int index,
                                                             QueueIndexType indexType)
     {
-        if (!serverSupportsInsertingBreaksAtAnyIndex())
+        if (!serverCapabilities().supportsInsertingBreaksAtAnyIndex())
+        {
             return signalServerTooOldError(&ServerConnection::queueEntryInsertionFailed);
+        }
 
         auto handler = new QueueEntryInsertionResultHandler(this);
         auto ref = getNewReference();

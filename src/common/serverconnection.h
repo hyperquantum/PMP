@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -46,6 +46,8 @@
 namespace PMP
 {
     class CollectionFetcher;
+    class ServerCapabilities;
+    class ServerCapabilitiesImpl;
 
     enum class ServerEventSubscription
     {
@@ -79,14 +81,16 @@ namespace PMP
         explicit ServerConnection(QObject* parent = nullptr,
                                   ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
+        ~ServerConnection();
 
         void connectToHost(QString const& host, quint16 port);
         void disconnect();
 
+        ServerCapabilities const& serverCapabilities() const;
+        ServerHealthStatus serverHealth() const { return _serverHealthStatus; }
+
         bool isConnected() const;
         bool isLoggedIn() const { return userLoggedInId() > 0; }
-
-        ServerHealthStatus serverHealth() const { return _serverHealthStatus; }
 
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
@@ -100,12 +104,6 @@ namespace PMP
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
-
-        bool serverSupportsReloadingServerSettings() const;
-        bool serverSupportsQueueEntryDuplication() const;
-        bool serverSupportsDynamicModeWaveTermination() const;
-        bool serverSupportsInsertingBreaksAtAnyIndex() const;
-        bool serverSupportsInsertingBarriers() const;
 
     public Q_SLOTS:
         void shutdownServer();
@@ -330,6 +328,7 @@ namespace PMP
         static const int KeepAliveIntervalMs;
         static const int KeepAliveReplyTimeoutMs;
 
+        ServerCapabilitiesImpl* _serverCapabilities;
         DisconnectReason _disconnectReason;
         QElapsedTimer _timeSinceLastMessageReceived;
         QTimer* _keepAliveTimer;

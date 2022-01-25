@@ -36,6 +36,7 @@ set(PMP_COMMON_SOURCES
     common/queuecontrollerimpl.cpp
     common/queueentryinfofetcher.cpp
     common/queuemonitor.cpp
+    common/servercapabilitiesimpl.cpp
     common/serverconnection.cpp
     common/serverdiscoverer.cpp
     common/startstopeventstatus.cpp
