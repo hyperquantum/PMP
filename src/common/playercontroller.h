@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,9 +28,10 @@
 #include <QObject>
 #include <QString>
 
-namespace PMP {
-
-    class PlayerController : public QObject {
+namespace PMP
+{
+    class PlayerController : public QObject
+    {
         Q_OBJECT
     public:
         virtual ~PlayerController() {}
@@ -70,6 +71,5 @@ namespace PMP {
     protected:
         explicit PlayerController(QObject* parent) : QObject(parent) {}
     };
-
 }
 #endif

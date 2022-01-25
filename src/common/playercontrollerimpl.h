@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,11 +22,12 @@
 
 #include "playercontroller.h"
 
-namespace PMP {
-
+namespace PMP
+{
     class ServerConnection;
 
-    class PlayerControllerImpl : public PlayerController {
+    class PlayerControllerImpl : public PlayerController
+    {
         Q_OBJECT
     public:
         explicit PlayerControllerImpl(ServerConnection* connection);

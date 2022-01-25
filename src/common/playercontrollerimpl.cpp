@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,8 +23,8 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     PlayerControllerImpl::PlayerControllerImpl(ServerConnection* connection)
      : PlayerController(connection),
        _connection(connection),
@@ -61,7 +61,8 @@ namespace PMP {
             connected();
     }
 
-    PlayerState PlayerControllerImpl::playerState() const {
+    PlayerState PlayerControllerImpl::playerState() const
+    {
         return _state;
     }
 
@@ -83,13 +84,15 @@ namespace PMP {
         return _queueLength;
     }
 
-    bool PlayerControllerImpl::canPlay() const {
+    bool PlayerControllerImpl::canPlay() const
+    {
         return _queueLength > 0
             && (_state == PlayerState::Paused
                 || _state == PlayerState::Stopped);
     }
 
-    bool PlayerControllerImpl::canPause() const {
+    bool PlayerControllerImpl::canPause() const
+    {
         return _state == PlayerState::Playing;
     }
 
@@ -125,15 +128,18 @@ namespace PMP {
         return _volume;
     }
 
-    void PlayerControllerImpl::play() {
+    void PlayerControllerImpl::play()
+    {
         _connection->play();
     }
 
-    void PlayerControllerImpl::pause() {
+    void PlayerControllerImpl::pause()
+    {
         _connection->pause();
     }
 
-    void PlayerControllerImpl::skip() {
+    void PlayerControllerImpl::skip()
+    {
         _trackJustSkipped = _trackNowPlaying;
         _connection->skip();
     }
@@ -205,7 +211,8 @@ namespace PMP {
         _trackNowPlaying = nowPlayingQueueId;
         _volume = volume;
 
-        if (stateChanged) {
+        if (stateChanged)
+        {
             qDebug() << "player state changed to" << state;
             Q_EMIT playerStateChanged(state);
         }
@@ -216,7 +223,8 @@ namespace PMP {
         if (queueLengthChanged)
             Q_EMIT this->queueLengthChanged();
 
-        if (volumeChanged) {
+        if (volumeChanged)
+        {
             qDebug() << "volume changed to" << volume;
             Q_EMIT this->volumeChanged();
         }
