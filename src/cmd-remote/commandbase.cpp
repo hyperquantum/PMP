@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -132,6 +132,10 @@ namespace PMP
 
         case PMP::ResultMessageErrorCode::InvalidQueueIndex:
             errorOutput = "invalid queue index";
+            break;
+
+        case ResultMessageErrorCode::InvalidQueueItemType:
+            errorOutput = "invalid queue item type";
             break;
 
         case PMP::ResultMessageErrorCode::MaximumQueueSizeExceeded:
