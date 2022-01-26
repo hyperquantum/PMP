@@ -70,6 +70,7 @@ namespace PMP
             Aborting, Disconnecting
         };
 
+        class ResultMessageData;
         class ResultHandler;
         class ParameterlessActionResultHandler;
         class CollectionFetchResultHandler;
