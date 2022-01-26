@@ -2754,10 +2754,10 @@ namespace PMP
     {
         switch (code)
         {
-        case PMP::ParameterlessActionCode::Reserved:
+        case ParameterlessActionCode::Reserved:
             break; /* not to be used, treat as invalid */
 
-        case PMP::ParameterlessActionCode::ReloadServerSettings:
+        case ParameterlessActionCode::ReloadServerSettings:
             _serverInterface->reloadServerSettings(clientReference);
             return;
         }
