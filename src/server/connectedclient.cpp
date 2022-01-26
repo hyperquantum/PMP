@@ -1480,39 +1480,44 @@ namespace PMP
         switch (result.code())
         {
         case ResultCode::Success:
-            sendResultMessage(ResultMessageErrorCode::NoError, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::NoError, clientReference);
             return;
         case ResultCode::NotLoggedIn:
-            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference);
             return;
         case ResultCode::HashIsNull:
-            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
             return;
         case ResultCode::QueueEntryIdNotFound:
             sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
                               static_cast<quint32>(result.intArg()));
             return;
         case ResultCode::QueueIndexOutOfRange:
-            sendResultMessage(ResultMessageErrorCode::InvalidQueueIndex, clientReference,
-                              0);
+            sendResultMessage(ResultMessageErrorCode::InvalidQueueIndex, clientReference);
             return;
         case ResultCode::QueueMaxSizeExceeded:
             sendResultMessage(ResultMessageErrorCode::MaximumQueueSizeExceeded,
-                              clientReference, 0);
+                              clientReference);
             return;
         case ResultCode::QueueItemTypeInvalid:
             sendResultMessage(ResultMessageErrorCode::InvalidQueueItemType,
-                              clientReference, 0);
+                              clientReference);
             return;
         case ResultCode::InternalError:
             sendResultMessage(ResultMessageErrorCode::NonFatalInternalServerError,
-                              clientReference, 0);
+                              clientReference);
             return;
         }
 
         qWarning() << "Unhandled ResultCode" << int(result.code())
                    << "for client-ref" << clientReference;
-        sendResultMessage(ResultMessageErrorCode::UnknownError, clientReference, 0);
+        sendResultMessage(ResultMessageErrorCode::UnknownError, clientReference);
+    }
+
+    void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
+                                            quint32 clientReference)
+    {
+        return sendResultMessage(errorType, clientReference, 0);
     }
 
     void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
@@ -1554,7 +1559,7 @@ namespace PMP
     void ConnectedClient::serverSettingsReloadResultEvent(uint clientReference,
                                                          ResultMessageErrorCode errorCode)
     {
-        sendResultMessage(errorCode, clientReference, 0);
+        sendResultMessage(errorCode, clientReference);
     }
 
     void ConnectedClient::volumeChanged(int volume)
@@ -1925,7 +1930,7 @@ namespace PMP
             if (messageLength - 8 <= loginLength + saltLength)
             {
                 sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference
                 );
                 return; /* invalid message */
             }
@@ -1958,7 +1963,7 @@ namespace PMP
             if (hashedPasswordFromClient.size() != hashTest.size())
             {
                 sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference
                 );
                 return;
             }
@@ -1992,7 +1997,7 @@ namespace PMP
             if (isLoggedIn()) /* already logged in */
             {
                 sendResultMessage(ResultMessageErrorCode::AlreadyLoggedIn,
-                                  clientReference, 0);
+                                  clientReference);
                 return;
             }
 
@@ -2039,7 +2044,7 @@ namespace PMP
                     + hashedPasswordLength)
             {
                 sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference
                 );
                 return; /* invalid message */
             }
@@ -2097,7 +2102,7 @@ namespace PMP
             else
             {
                 sendResultMessage(ResultMessageErrorCode::UserLoginAuthenticationFailed,
-                                  clientReference, 0);
+                                  clientReference);
             }
         }
             break;
@@ -2617,7 +2622,7 @@ namespace PMP
         if (!isLoggedIn())
         {
             /* client needs to be authenticated for this */
-            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference);
             return;
         }
 
@@ -2765,7 +2770,7 @@ namespace PMP
         qDebug() << "code of parameterless action not recognized: code="
                  << static_cast<int>(code) << " client-ref=" << clientReference;
 
-        sendResultMessage(ResultMessageErrorCode::UnknownAction, clientReference, 0);
+        sendResultMessage(ResultMessageErrorCode::UnknownAction, clientReference);
     }
 
     void ConnectedClient::handleCollectionFetchRequest(uint clientReference)

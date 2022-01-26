@@ -153,6 +153,7 @@ namespace PMP
         void sendSuccessMessage(quint32 clientReference, quint32 intData,
                                 QByteArray const& blobData);
         void sendResultMessage(Result const& result, quint32 clientReference);
+        void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
                                quint32 intData);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
