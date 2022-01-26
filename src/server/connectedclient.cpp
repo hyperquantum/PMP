@@ -2248,8 +2248,6 @@ namespace PMP
         if (message.length() != 14)
             return; /* invalid message */
 
-        if (!isLoggedIn()) return; /* client needs to be authenticated for this */
-
         quint32 queueID = NetworkUtil::get4Bytes(message, 2);
         qint64 position = NetworkUtil::get8BytesSigned(message, 6);
 
