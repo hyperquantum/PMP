@@ -34,6 +34,7 @@ namespace PMP
     class History;
     class Player;
     class ServerHealthMonitor;
+    class ServerInterface;
     class ServerSettings;
     class Users;
 
@@ -74,6 +75,7 @@ namespace PMP
     private:
         static QString generateServerPassword();
 
+        ServerInterface* createServerInterface();
         void determineCaption();
 
         QUuid _uuid;

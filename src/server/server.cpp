@@ -41,9 +41,14 @@ namespace PMP
      : QObject(parent),
        _uuid(serverInstanceIdentifier),
        _settings(serverSettings),
-       _player(nullptr), _generator(nullptr), _history(nullptr), _users(nullptr),
-       _collectionMonitor(nullptr), _serverHealthMonitor(nullptr),
-       _server(new QTcpServer(this)), _udpSocket(new QUdpSocket(this)),
+       _player(nullptr),
+       _generator(nullptr),
+       _history(nullptr),
+       _users(nullptr),
+       _collectionMonitor(nullptr),
+       _serverHealthMonitor(nullptr),
+       _server(new QTcpServer(this)),
+       _udpSocket(new QUdpSocket(this)),
        _broadcastTimer(new QTimer(this)),
        _connectionCount(0)
     {
@@ -160,7 +165,7 @@ namespace PMP
     {
         QTcpSocket* connection = _server->nextPendingConnection();
 
-        auto serverInterface = new ServerInterface(_settings, this, _player, _generator);
+        auto serverInterface = createServerInterface();
 
         auto connectedClient =
             new ConnectedClient(
@@ -215,6 +220,11 @@ namespace PMP
 
             sendBroadcast();
         }
+    }
+
+    ServerInterface* Server::createServerInterface()
+    {
+        return new ServerInterface(_settings, this, _player, _generator);
     }
 
     void Server::determineCaption()
