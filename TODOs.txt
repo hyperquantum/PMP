@@ -63,6 +63,7 @@ IDEAS
  * player: delayed start: e.g. being able to press Play and then have 5 seconds before PMP actually starts playing
  * player: avoid accidental multiple clicks on "skip" affecting track score unnecessarily
  * player: 'seek to start of track' action or button
+ * player: make track position display less precise while playing, it is too fast for the human eye anyway
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * queue: ability to insert a breakpoint directly before/after any entry in the queue
  * queue: ability to insert a track at a random position in the queue
@@ -113,6 +114,7 @@ IDEAS
  * client: ability to reconnect to the server after the connection was broken
  ** login dialog: add button for probing for servers again
  * take clock difference between client and server into account
+ * add button to copy title and artist of current track to clipboard
 
 
 USER FRIENDLINESS
