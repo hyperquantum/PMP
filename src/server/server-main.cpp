@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,7 @@
 
 #include "collectionmonitor.h"
 #include "database.h"
+#include "delayedstart.h"
 #include "generator.h"
 #include "history.h"
 #include "player.h"
@@ -142,6 +143,7 @@ int main(int argc, char* argv[])
 
     Users users;
     Player player(nullptr, &resolver, serverSettings.defaultVolume());
+    DelayedStart delayedStart(&player);
     PlayerQueue& queue = player.queue();
     History history(&player);
 
@@ -185,7 +187,8 @@ int main(int argc, char* argv[])
     Server server(nullptr, &serverSettings, serverInstanceIdentifier);
     bool listening =
         server.listen(&player, &generator, &history, &users, &collectionMonitor,
-                      &serverHealthMonitor, QHostAddress::Any, 23432);
+                      &serverHealthMonitor, &delayedStart,
+                      QHostAddress::Any, 23432);
 
     if (!listening)
     {

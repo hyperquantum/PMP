@@ -76,6 +76,7 @@ set(PMP_SERVER_SOURCES
     server/collectionmonitor.cpp
     server/connectedclient.cpp
     server/database.cpp
+    server/delayedstart.cpp
     server/dynamicmodecriteria.cpp
     server/dynamictrackgenerator.cpp
     server/generator.cpp
@@ -102,6 +103,7 @@ set(PMP_SERVER_HEADERS
     server/addtohistorytask.h
     server/collectionmonitor.h
     server/connectedclient.h
+    server/delayedstart.h
     server/dynamictrackgenerator.h
     server/generator.h
     server/history.h

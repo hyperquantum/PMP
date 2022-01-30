@@ -30,6 +30,7 @@ QT_FORWARD_DECLARE_CLASS(QUdpSocket)
 namespace PMP
 {
     class CollectionMonitor;
+    class DelayedStart;
     class Generator;
     class History;
     class Player;
@@ -49,6 +50,7 @@ namespace PMP
                     Users* users,
                     CollectionMonitor* collectionMonitor,
                     ServerHealthMonitor* serverHealthMonitor,
+                    DelayedStart* delayedStart,
                     const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
 
         QString errorString() const;
@@ -88,6 +90,7 @@ namespace PMP
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;
+        DelayedStart* _delayedStart;
         QTcpServer* _server;
         QUdpSocket* _udpSocket;
         QTimer* _broadcastTimer;

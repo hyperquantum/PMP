@@ -72,6 +72,7 @@ namespace PMP
 
         class ResultMessageData;
         class ResultHandler;
+        class StandardResultHandler;
         class ParameterlessActionResultHandler;
         class CollectionFetchResultHandler;
         class TrackInsertionResultHandler;
@@ -101,6 +102,8 @@ namespace PMP
         void fetchCollection(CollectionFetcher* fetcher);
 
         RequestID reloadServerSettings();
+        RequestID activateDelayedStart(qint64 delayMilliseconds);
+        RequestID deactivateDelayedStart();
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
@@ -176,9 +179,14 @@ namespace PMP
 
         void serverSettingsReloadResultEvent(ResultMessageErrorCode errorCode,
                                              RequestID requestId);
+        void delayedStartActivationResultEvent(ResultMessageErrorCode errorCode,
+                                               RequestID requestId);
+        void delayedStartDeactivationResultEvent(ResultMessageErrorCode errorCode,
+                                                 RequestID requestId);
 
         void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
-                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
+                                 quint32 nowPlayingQID, quint64 nowPlayingPosition,
+                                 bool delayedStartActive);
 
         void volumeChanged(int percentage);
 
@@ -254,7 +262,7 @@ namespace PMP
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 extensionMessageType,
                                     QByteArray const& message);
-        void handleResultMessage(quint16 errorType, quint32 clientReference,
+        void handleResultMessage(quint16 errorCode, quint32 clientReference,
                                  quint32 intData, QByteArray const& blobData);
         void registerServerProtocolExtensions(
                            const QVector<NetworkProtocol::ProtocolExtension>& extensions);

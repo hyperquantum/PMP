@@ -32,6 +32,7 @@ namespace PMP
         void setServerProtocolNumber(int serverProtocolNumber);
 
         bool supportsReloadingServerSettings() const override;
+        bool supportsDelayedStart() const override;
         bool supportsQueueEntryDuplication() const override;
         bool supportsDynamicModeWaveTermination() const override;
         bool supportsInsertingBreaksAtAnyIndex() const override;

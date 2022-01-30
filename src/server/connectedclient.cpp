@@ -44,7 +44,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 19;
+    const qint16 ConnectedClient::ServerProtocolNo = 20;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -149,6 +149,11 @@ namespace PMP
         connect(
             _player, &Player::userPlayingForChanged,
             this, &ConnectedClient::onUserPlayingForChanged
+        );
+
+        connect(
+            _serverInterface, &ServerInterface::delayedStartActiveChanged,
+            this, &ConnectedClient::onDelayedStartActiveChanged
         );
 
         connect(
@@ -610,9 +615,10 @@ namespace PMP
     {
         //qDebug() << "sending state info";
 
-        ServerPlayerState state = _player->state();
+        auto playerStateOverview = _serverInterface->getPlayerStateOverview();
+
         quint8 stateNum = 0;
-        switch (state)
+        switch (playerStateOverview.playerState)
         {
         case ServerPlayerState::Stopped:
             stateNum = 1;
@@ -625,26 +631,21 @@ namespace PMP
             break;
         }
 
-        quint64 position = _player->playPosition();
-        quint8 volume = _player->volume();
-
-        qint32 queueLength = _player->queue().length();
-
-        QueueEntry const* nowPlaying = _player->nowPlaying();
-        quint32 queueID = nowPlaying ? nowPlaying->queueID() : 0;
+        if (_clientProtocolNo >= 20 && playerStateOverview.delayedStartActive)
+            stateNum |= 128;
 
         QByteArray message;
         message.reserve(20);
         NetworkProtocol::append2Bytes(message, ServerMessageType::PlayerStateMessage);
         NetworkUtil::appendByte(message, stateNum);
-        NetworkUtil::appendByte(message, volume);
-        NetworkUtil::append4Bytes(message, queueLength);
-        NetworkUtil::append4Bytes(message, queueID);
-        NetworkUtil::append8Bytes(message, position);
+        NetworkUtil::appendByte(message, playerStateOverview.volume);
+        NetworkUtil::append4Bytes(message, playerStateOverview.queueLength);
+        NetworkUtil::append4Bytes(message, playerStateOverview.nowPlayingQueueId);
+        NetworkUtil::append8Bytes(message, playerStateOverview.trackPosition);
 
         sendBinaryMessage(message);
 
-        _lastSentNowPlayingID = queueID;
+        _lastSentNowPlayingID = playerStateOverview.nowPlayingQueueId;
     }
 
     void ConnectedClient::sendVolumeMessage()
@@ -1482,8 +1483,15 @@ namespace PMP
         case ResultCode::Success:
             sendResultMessage(ResultMessageErrorCode::NoError, clientReference);
             return;
+        case ResultCode::NoOp:
+            sendResultMessage(ResultMessageErrorCode::AlreadyDone, clientReference);
+            return;
         case ResultCode::NotLoggedIn:
             sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference);
+            return;
+        case ResultCode::OperationAlreadyRunning:
+            sendResultMessage(ResultMessageErrorCode::OperationAlreadyRunning,
+                              clientReference);
             return;
         case ResultCode::HashIsNull:
             sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
@@ -1502,6 +1510,9 @@ namespace PMP
         case ResultCode::QueueItemTypeInvalid:
             sendResultMessage(ResultMessageErrorCode::InvalidQueueItemType,
                               clientReference);
+            return;
+        case ResultCode::DelayOutOfRange:
+            sendResultMessage(ResultMessageErrorCode::InvalidTimeSpan, clientReference);
             return;
         case ResultCode::InternalError:
             sendResultMessage(ResultMessageErrorCode::NonFatalInternalServerError,
@@ -1690,6 +1701,11 @@ namespace PMP
         //sendTextCommand("position " + QString::number(position));
     }
 
+    void ConnectedClient::onDelayedStartActiveChanged()
+    {
+        sendPlayerStateMessage();
+    }
+
     void ConnectedClient::sendTextualQueueInfo()
     {
         PlayerQueue& queue = _player->queue();
@@ -1874,6 +1890,9 @@ namespace PMP
             break;
         case ClientMessageType::PossibleFilenamesForQueueEntryRequestMessage:
             parsePossibleFilenamesForQueueEntryRequestMessage(message);
+            break;
+        case ClientMessageType::ActivateDelayedStartRequest:
+            parseActivateDelayedStartRequest(message);
             break;
         case ClientMessageType::PlayerSeekRequestMessage:
             parsePlayerSeekRequestMessage(message);
@@ -2246,6 +2265,21 @@ namespace PMP
         auto action = static_cast<ParameterlessActionCode>(numericActionCode);
 
         handleParameterlessAction(action, clientReference);
+    }
+
+    void ConnectedClient::parseActivateDelayedStartRequest(const QByteArray& message)
+    {
+        if (message.length() != 16)
+            return; /* invalid message */
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        qint64 delayMilliseconds = NetworkUtil::get8BytesSigned(message, 8);
+
+        qDebug() << "received delayed start activation request; delay:"
+                 << delayMilliseconds << "ms; client-ref:" << clientReference;
+
+        auto result = _serverInterface->activateDelayedStart(delayMilliseconds);
+        sendResultMessage(result, clientReference);
     }
 
     void ConnectedClient::parsePlayerSeekRequestMessage(const QByteArray& message)
@@ -2765,6 +2799,13 @@ namespace PMP
         case ParameterlessActionCode::ReloadServerSettings:
             _serverInterface->reloadServerSettings(clientReference);
             return;
+
+        case ParameterlessActionCode::DeactivateDelayedStart:
+            {
+                auto result = _serverInterface->deactivateDelayedStart();
+                sendResultMessage(result, clientReference);
+                return;
+            }
         }
 
         qDebug() << "code of parameterless action not recognized: code="

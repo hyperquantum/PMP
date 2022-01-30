@@ -53,6 +53,7 @@ Changes for each version:
   17: client msg 24: inserting breaks at any index
   18: client msg 24, server msg 3 & 4 & 21: barriers
   19: client msg 25, server msg 32: keep-alive messages
+  20: client msg 26, server msg 1, parameterless action 40, error codes 2 & 25 & 51: delayed start
 */
 
 namespace PMP
@@ -124,6 +125,7 @@ namespace PMP
         ParameterlessActionMessage = 23,
         InsertSpecialQueueItemRequest = 24,
         KeepAliveMessage = 25,
+        ActivateDelayedStartRequest = 26,
     };
 
     enum class ServerEventCode
@@ -139,6 +141,9 @@ namespace PMP
 
         /* 10 - 29 : server administration */
         ReloadServerSettings = 10,
+
+        /* 30 - 59 : player */
+        DeactivateDelayedStart = 40,
     };
 
     class NetworkProtocol

@@ -35,6 +35,7 @@ namespace PMP
         ~PlayerControllerImpl() {}
 
         PlayerState playerState() const override;
+        TriBool delayedStartActive() const override;
         TriBool isTrackPresent() const override;
         quint32 currentQueueId() const override;
         uint queueLength() const override;
@@ -47,6 +48,9 @@ namespace PMP
         QString personalModeUserLogin() const override;
 
         int volume() const override;
+
+        RequestID activateDelayedStart(qint64 delayMilliseconds) override;
+        RequestID deactivateDelayedStart() override;
 
     public Q_SLOTS:
         void play() override;
@@ -62,13 +66,15 @@ namespace PMP
         void connected();
         void connectionBroken();
         void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
-                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
+                                 quint32 nowPlayingQID, quint64 nowPlayingPosition,
+                                 bool delayedStartActive);
         void receivedUserPlayingFor(quint32 userId, QString userLogin);
         void receivedVolume(int volume);
 
     private:
         void updateState(PlayerState state, int volume, quint32 queueLength,
-                         quint32 nowPlayingQueueId, qint64 nowPlayingPosition);
+                         quint32 nowPlayingQueueId, qint64 nowPlayingPosition,
+                         TriBool delayedStartActive);
         void updateMode(PlayerMode mode, quint32 personalModeUserId,
                         QString personalModeUserLogin);
 
@@ -81,6 +87,7 @@ namespace PMP
         quint32 _personalModeUserId;
         QString _personalModeUserLogin;
         int _volume;
+        TriBool _delayedStartActive;
     };
 }
 #endif

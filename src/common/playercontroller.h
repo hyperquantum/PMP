@@ -24,6 +24,8 @@
 
 #include "playermode.h"
 #include "playerstate.h"
+#include "requestid.h"
+#include "resultmessageerrorcode.h"
 
 #include <QObject>
 #include <QString>
@@ -37,6 +39,7 @@ namespace PMP
         virtual ~PlayerController() {}
 
         virtual PlayerState playerState() const = 0;
+        virtual TriBool delayedStartActive() const = 0;
         virtual TriBool isTrackPresent() const = 0;
         virtual quint32 currentQueueId() const = 0;
         virtual uint queueLength() const = 0;
@@ -49,6 +52,9 @@ namespace PMP
         virtual QString personalModeUserLogin() const = 0;
 
         virtual int volume() const = 0;
+
+        virtual RequestID activateDelayedStart(qint64 delayMilliseconds) = 0;
+        virtual RequestID deactivateDelayedStart() = 0;
 
     public Q_SLOTS:
         virtual void play() = 0;
@@ -67,6 +73,12 @@ namespace PMP
                                QString personalModeUserLogin);
         void volumeChanged();
         void queueLengthChanged();
+        void delayedStartActiveChanged();
+
+        void delayedStartActivationResultEvent(ResultMessageErrorCode errorCode,
+                                               RequestID requestId);
+        void delayedStartDeactivationResultEvent(ResultMessageErrorCode errorCode,
+                                                 RequestID requestId);
 
     protected:
         explicit PlayerController(QObject* parent) : QObject(parent) {}

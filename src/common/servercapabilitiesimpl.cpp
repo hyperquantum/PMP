@@ -37,6 +37,11 @@ namespace PMP
         return _serverProtocolNumber >= 15;
     }
 
+    bool ServerCapabilitiesImpl::supportsDelayedStart() const
+    {
+        return _serverProtocolNumber >= 20;
+    }
+
     bool ServerCapabilitiesImpl::supportsQueueEntryDuplication() const
     {
         return _serverProtocolNumber >= 9;

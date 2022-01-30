@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -62,6 +62,73 @@ namespace PMP
     void ReloadServerSettingsCommand::start(ClientServerInterface* clientServerInterface)
     {
         _requestId = clientServerInterface->generalController().reloadServerSettings();
+    }
+
+    /* ===== ActivateDelayedStartCommand ===== */
+
+    ActivateDelayedStartCommand::ActivateDelayedStartCommand(qint64 delayMilliseconds)
+     : _delayMilliseconds(delayMilliseconds)
+    {
+        //
+    }
+
+    bool ActivateDelayedStartCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void ActivateDelayedStartCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(
+            playerController, &PlayerController::delayedStartActivationResultEvent,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId != _requestId)
+                    return; /* not for us */
+
+                setCommandExecutionResult(errorCode);
+            }
+        );
+    }
+
+    void ActivateDelayedStartCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        _requestId = clientServerInterface->playerController().activateDelayedStart(
+                                                                      _delayMilliseconds);
+    }
+
+    /* ===== DeactivateDelayedStartCommand ===== */
+
+    bool DeactivateDelayedStartCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void DeactivateDelayedStartCommand::setUp(
+                                             ClientServerInterface* clientServerInterface)
+    {
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(
+            playerController, &PlayerController::delayedStartDeactivationResultEvent,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId != _requestId)
+                    return; /* not for us */
+
+                setCommandExecutionResult(errorCode);
+            }
+        );
+    }
+
+    void DeactivateDelayedStartCommand::start(
+                                             ClientServerInterface* clientServerInterface)
+    {
+        _requestId = clientServerInterface->playerController().deactivateDelayedStart();
     }
 
     /* ===== PlayCommand ===== */
@@ -754,4 +821,5 @@ namespace PMP
     {
         clientServerInterface->queueController().moveQueueEntry(_queueId, _moveOffset);
     }
+
 }

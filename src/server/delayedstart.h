@@ -17,25 +17,42 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVERCAPABILITIES_H
-#define PMP_SERVERCAPABILITIES_H
+#ifndef PMP_DELAYEDSTART_H
+#define PMP_DELAYEDSTART_H
+
+#include "result.h"
+
+#include <QDeadlineTimer>
+#include <QObject>
+
+QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP
 {
-    class ServerCapabilities
+    class Player;
+
+    class DelayedStart : public QObject
     {
+        Q_OBJECT
     public:
-        virtual ~ServerCapabilities() {}
+        explicit DelayedStart(Player* player);
 
-        virtual bool supportsReloadingServerSettings() const = 0;
-        virtual bool supportsDelayedStart() const = 0;
-        virtual bool supportsQueueEntryDuplication() const = 0;
-        virtual bool supportsDynamicModeWaveTermination() const = 0;
-        virtual bool supportsInsertingBreaksAtAnyIndex() const = 0;
-        virtual bool supportsInsertingBarriers() const = 0;
+        bool isActive() const { return _delayedStartActive; }
+        Result activate(int delayMilliseconds);
+        Result deactivate();
 
-    protected:
-        ServerCapabilities() {}
+    Q_SIGNALS:
+        void delayedStartActiveChanged();
+
+    private:
+        void scheduleTimer();
+        int getTimerIntervalForRemainingTime(qint64 remainingMilliseconds);
+        void doStart();
+
+        Player* _player;
+        QTimer* _timer;
+        QDeadlineTimer _startDeadline;
+        bool _delayedStartActive;
     };
 }
 #endif

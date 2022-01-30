@@ -47,6 +47,7 @@ namespace PMP
        _users(nullptr),
        _collectionMonitor(nullptr),
        _serverHealthMonitor(nullptr),
+       _delayedStart(nullptr),
        _server(new QTcpServer(this)),
        _udpSocket(new QUdpSocket(this)),
        _broadcastTimer(new QTimer(this)),
@@ -118,6 +119,7 @@ namespace PMP
                         Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor,
+                        DelayedStart* delayedStart,
                         const QHostAddress& address, quint16 port)
     {
         _player = player;
@@ -126,6 +128,7 @@ namespace PMP
         _users = users;
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
+        _delayedStart = delayedStart;
 
         if (!_server->listen(address, port))
             return false;
@@ -224,7 +227,7 @@ namespace PMP
 
     ServerInterface* Server::createServerInterface()
     {
-        return new ServerInterface(_settings, this, _player, _generator);
+        return new ServerInterface(_settings, this, _player, _generator, _delayedStart);
     }
 
     void Server::determineCaption()

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,6 +25,19 @@
 
 namespace PMP
 {
+
+    bool CommandParser::CommandArguments::currentIsOneOf(QVector<QString> options) const
+    {
+        return options.contains(current());
+    }
+
+    bool CommandParser::CommandArguments::tryParseInt(int& number) const
+    {
+        bool ok;
+        number = current().toInt(&ok);
+        return ok;
+    }
+
     CommandParser::CommandParser()
      : _command(nullptr),
        _authenticationMode(AuthenticationMode::Implicit)
@@ -181,6 +194,7 @@ namespace PMP
 
         auto command = commandWithArgs[0];
         auto args = commandWithArgs.mid(1);
+        CommandArguments arguments(args);
         auto argsCount = args.size();
 
         if (command == "play")
@@ -215,6 +229,10 @@ namespace PMP
         else if (command == "insert")
         {
             parseInsertCommand(args);
+        }
+        else if (command == "delayedstart")
+        {
+            parseDelayedStartCommand(args);
         }
         else if (command == "shutdown")
         {
@@ -406,6 +424,88 @@ namespace PMP
 
         _command = new QueueInsertSpecialItemCommand(itemType, insertionIndex,
                                                      insertionIndexType);
+    }
+
+    void CommandParser::parseDelayedStartCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Command 'delayedstart' requires arguments!";
+            return;
+        }
+
+        if (arguments.currentIsOneOf({"abort", "cancel"}))
+        {
+            if (arguments.haveMore())
+            {
+                _errorMessage = "Command has too many arguments!";
+                return;
+            }
+
+            _command = new DeactivateDelayedStartCommand();
+        }
+        else if (arguments.current() == "wait")
+        {
+            arguments.advance();
+            parseDelayedStartWait(arguments);
+        }
+        else
+        {
+            _errorMessage =
+                    "Expected 'abort' or 'cancel' or 'wait' after 'delayedstart'!";
+        }
+    }
+
+    void CommandParser::parseDelayedStartWait(CommandArguments& arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Expected more arguments after 'wait'!";
+            return;
+        }
+
+        int number;
+        if (!arguments.tryParseInt(number))
+        {
+            _errorMessage = "Expected valid number after 'wait'!";
+            return;
+        }
+        if (number <= 0 || number > 1000000)
+        {
+            _errorMessage = "Number after 'wait' must be in the range 1 - 1000000!";
+            return;
+        }
+
+        if (arguments.currentIsLast())
+        {
+            _errorMessage = "Expected time unit after the number!";
+            return;
+        }
+
+        arguments.advance();
+
+        qint64 unitMilliseconds = -1;
+        if (arguments.currentIsOneOf({"s", "seconds", "second"}))
+            unitMilliseconds = 1000;
+        else if (arguments.currentIsOneOf({"min", "minutes", "minute"}))
+            unitMilliseconds = 60 * 1000;
+        else if (arguments.currentIsOneOf({"h", "hours", "hour"}))
+            unitMilliseconds = 60 * 60 * 1000;
+        else if (arguments.currentIsOneOf({"ms", "milliseconds", "millisecond"}))
+            unitMilliseconds = 1;
+        else
+        {
+            _errorMessage = QString("Invalid time unit: '%1'").arg(arguments.current());
+            return;
+        }
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Too many arguments!";
+            return;
+        }
+
+        _command = new ActivateDelayedStartCommand(number * unitMilliseconds);
     }
 
 }

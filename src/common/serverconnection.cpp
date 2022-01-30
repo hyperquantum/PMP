@@ -102,7 +102,8 @@ namespace PMP
         switch (data.errorType)
         {
             case ResultMessageErrorCode::NoError:
-                text += "unknown error (no error code)";
+            case ResultMessageErrorCode::AlreadyDone:
+                text += "unknown error (code indicates success)";
                 break;
 
             case ResultMessageErrorCode::QueueIdNotFound:
@@ -135,6 +136,41 @@ namespace PMP
                 + ", blobData.size=" + QString::number(data.blobData.size());
 
         return text;
+    }
+
+    /* ============================================================================ */
+
+    class ServerConnection::StandardResultHandler : public ResultHandler
+    {
+    public:
+        StandardResultHandler(ServerConnection* parent,
+                           void (ServerConnection::* resultSignal)(ResultMessageErrorCode,
+                                                                   RequestID));
+
+        void handleResult(ResultMessageData const& data) override;
+
+    private:
+        void (ServerConnection::* _resultSignal)(ResultMessageErrorCode, RequestID);
+    };
+
+    ServerConnection::StandardResultHandler::StandardResultHandler(
+                                                ServerConnection* parent,
+                                                void (ServerConnection::* resultSignal)(
+                                                        ResultMessageErrorCode,RequestID))
+     : ResultHandler(parent), _resultSignal(resultSignal)
+    {
+        //
+    }
+
+    void ServerConnection::StandardResultHandler::handleResult(
+                                                            ResultMessageData const& data)
+    {
+        if (data.isFailure())
+        {
+            qWarning() << "StandardResultHandler:" << errorDescription(data);
+        }
+
+        (_parent->*_resultSignal)(data.errorType, data.toRequestID());
     }
 
     /* ============================================================================ */
@@ -177,6 +213,11 @@ namespace PMP
         case ParameterlessActionCode::ReloadServerSettings:
             Q_EMIT _parent->serverSettingsReloadResultEvent(data.errorType,
                                                             data.toRequestID());
+            return;
+
+        case ParameterlessActionCode::DeactivateDelayedStart:
+            Q_EMIT _parent->delayedStartDeactivationResultEvent(data.errorType,
+                                                                data.toRequestID());
             return;
         }
 
@@ -344,7 +385,7 @@ namespace PMP
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 19;
+    const quint16 ServerConnection::ClientProtocolNo = 20;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -938,6 +979,50 @@ namespace PMP
 
         return sendParameterlessActionRequest(
                                            ParameterlessActionCode::ReloadServerSettings);
+    }
+
+    RequestID ServerConnection::activateDelayedStart(qint64 delayMilliseconds)
+    {
+        if (!serverCapabilities().supportsDelayedStart())
+        {
+            return signalServerTooOldError(
+                                    &ServerConnection::delayedStartActivationResultEvent);
+        }
+
+        auto handler =
+            new StandardResultHandler(this,
+                                    &ServerConnection::delayedStartActivationResultEvent);
+        auto ref = getNewReference();
+        _resultHandlers[ref] = handler;
+
+        qDebug() << "sending request to activate delayed start; delay:"
+                 << delayMilliseconds << "ms; ref:" << ref;
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 8);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::ActivateDelayedStartRequest);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkUtil::append8BytesSigned(message, delayMilliseconds);
+
+        sendBinaryMessage(message);
+
+        return RequestID(ref);
+    }
+
+    RequestID ServerConnection::deactivateDelayedStart()
+    {
+        if (!serverCapabilities().supportsDelayedStart())
+        {
+            return signalServerTooOldError(
+                                  &ServerConnection::delayedStartDeactivationResultEvent);
+        }
+
+        qDebug() << "sending request to deactivate delayed start";
+
+        return sendParameterlessActionRequest(
+                                         ParameterlessActionCode::DeactivateDelayedStart);
     }
 
     RequestID ServerConnection::insertQueueEntryAtIndex(const FileHash& hash,
@@ -1750,16 +1835,16 @@ namespace PMP
             return; /* invalid message */
         }
 
-        quint16 errorType = NetworkUtil::get2Bytes(message, 2);
+        quint16 errorCode = NetworkUtil::get2Bytes(message, 2);
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
         quint32 intData = NetworkUtil::get4Bytes(message, 8);
 
         QByteArray blobData = message.mid(12);
 
-        qDebug() << "received result/error message; type:" << errorType
+        qDebug() << "received result/error message; errorCode:" << errorCode
                  << " client-ref:" << clientReference;
 
-        handleResultMessage(errorType, clientReference, intData, blobData);
+        handleResultMessage(errorCode, clientReference, intData, blobData);
     }
 
     void ServerConnection::parseServerProtocolExtensionsMessage(QByteArray const& message)
@@ -2015,14 +2100,13 @@ namespace PMP
 
     void ServerConnection::parsePlayerStateMessage(QByteArray const& message)
     {
-        if (message.length() != 20) {
+        if (message.length() != 20)
             return; /* invalid message */
-        }
 
         quint8 playerState = NetworkUtil::getByte(message, 2);
         quint8 volume = NetworkUtil::getByte(message, 3);
         qint32 queueLength = NetworkUtil::get4BytesSigned(message, 4);
-        quint32 queueID = NetworkUtil::get4Bytes(message, 8);
+        quint32 queueId = NetworkUtil::get4Bytes(message, 8);
         quint64 position = NetworkUtil::get8Bytes(message, 12);
 
         if (queueLength < 0)
@@ -2033,8 +2117,16 @@ namespace PMP
         // TODO : rename volumeChanged signal or get rid of it
         if (volume <= 100) { Q_EMIT volumeChanged(volume); }
 
+        bool delayedStartActive = false;
+        if (_serverProtocolNo >= 20)
+        {
+            delayedStartActive = (playerState & 128) != 0;
+            playerState &= 63;
+        }
+
         auto state = PlayerState::Unknown;
-        switch (playerState) {
+        switch (playerState)
+        {
             case 1:
                 state = PlayerState::Stopped;
                 break;
@@ -2049,7 +2141,8 @@ namespace PMP
                 break;
         }
 
-        Q_EMIT receivedPlayerState(state, volume, queueLength, queueID, position);
+        Q_EMIT receivedPlayerState(state, volume, queueLength, queueId, position,
+                                   delayedStartActive);
     }
 
     void ServerConnection::parseVolumeChangedMessage(QByteArray const& message)
@@ -2876,11 +2969,11 @@ namespace PMP
         Q_EMIT receivedPlayerHistory(entries);
     }
 
-    void ServerConnection::handleResultMessage(quint16 errorType, quint32 clientReference,
+    void ServerConnection::handleResultMessage(quint16 errorCode, quint32 clientReference,
                                                quint32 intData,
                                                QByteArray const& blobData)
     {
-        auto errorCodeEnum = static_cast<ResultMessageErrorCode>(errorType);
+        auto errorCodeEnum = static_cast<ResultMessageErrorCode>(errorCode);
 
         if (errorCodeEnum == ResultMessageErrorCode::InvalidMessageStructure)
         {

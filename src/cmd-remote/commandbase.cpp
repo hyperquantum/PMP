@@ -95,6 +95,7 @@ namespace PMP
         switch (errorCode)
         {
         case ResultMessageErrorCode::NoError:
+        case ResultMessageErrorCode::AlreadyDone:
             setCommandExecutionSuccessful();
             return;
 
@@ -138,8 +139,16 @@ namespace PMP
             errorOutput = "invalid queue item type";
             break;
 
+        case ResultMessageErrorCode::InvalidTimeSpan:
+            errorOutput = "invalid time span";
+            break;
+
         case PMP::ResultMessageErrorCode::MaximumQueueSizeExceeded:
             errorOutput = "maximum queue size would be exceeded";
+            break;
+
+        case ResultMessageErrorCode::OperationAlreadyRunning:
+            errorOutput = "operation cannot be started because it is already running";
             break;
 
         case ResultMessageErrorCode::DatabaseProblem:

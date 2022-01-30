@@ -56,6 +56,14 @@ namespace PMP
             _connection, &ServerConnection::volumeChanged,
             this, &PlayerControllerImpl::receivedVolume
         );
+        connect(
+            _connection, &ServerConnection::delayedStartActivationResultEvent,
+            this, &PlayerControllerImpl::delayedStartActivationResultEvent
+        );
+        connect(
+            _connection, &ServerConnection::delayedStartDeactivationResultEvent,
+            this, &PlayerControllerImpl::delayedStartDeactivationResultEvent
+        );
 
         if (_connection->isConnected())
             connected();
@@ -64,6 +72,11 @@ namespace PMP
     PlayerState PlayerControllerImpl::playerState() const
     {
         return _state;
+    }
+
+    TriBool PlayerControllerImpl::delayedStartActive() const
+    {
+        return _delayedStartActive;
     }
 
     TriBool PlayerControllerImpl::isTrackPresent() const
@@ -128,6 +141,16 @@ namespace PMP
         return _volume;
     }
 
+    RequestID PlayerControllerImpl::activateDelayedStart(qint64 delayMilliseconds)
+    {
+        return _connection->activateDelayedStart(delayMilliseconds);
+    }
+
+    RequestID PlayerControllerImpl::deactivateDelayedStart()
+    {
+        return _connection->deactivateDelayedStart();
+    }
+
     void PlayerControllerImpl::play()
     {
         _connection->play();
@@ -168,13 +191,15 @@ namespace PMP
     void PlayerControllerImpl::connectionBroken()
     {
         updateMode(PlayerMode::Unknown, 0, QString());
-        updateState(PlayerState::Unknown, -1, 0, 0,-1);
+        updateState(PlayerState::Unknown, -1, 0, 0,-1, TriBool::unknown);
     }
 
     void PlayerControllerImpl::receivedPlayerState(PlayerState state, quint8 volume,
-                quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition)
+                quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition,
+                                                   bool delayedStartActive)
     {
-        updateState(state, volume, queueLength, nowPlayingQID, nowPlayingPosition);
+        updateState(state, volume, queueLength, nowPlayingQID, nowPlayingPosition,
+                    delayedStartActive);
     }
 
     void PlayerControllerImpl::receivedUserPlayingFor(quint32 userId, QString userLogin)
@@ -197,7 +222,8 @@ namespace PMP
 
     void PlayerControllerImpl::updateState(PlayerState state, int volume,
                                            quint32 queueLength, quint32 nowPlayingQueueId,
-                                           qint64 nowPlayingPosition)
+                                           qint64 nowPlayingPosition,
+                                           TriBool delayedStartActive)
     {
         Q_UNUSED(nowPlayingPosition);
 
@@ -205,11 +231,14 @@ namespace PMP
         bool queueLengthChanged = _queueLength != queueLength;
         bool currentQueueIdChanged = _trackNowPlaying != nowPlayingQueueId;
         bool volumeChanged = _volume != volume;
+        bool delayedStartActiveChanged =
+                !_delayedStartActive.isIdenticalTo(delayedStartActive);
 
         _state = state;
         _queueLength = queueLength;
         _trackNowPlaying = nowPlayingQueueId;
         _volume = volume;
+        _delayedStartActive = delayedStartActive;
 
         if (stateChanged)
         {
@@ -227,6 +256,12 @@ namespace PMP
         {
             qDebug() << "volume changed to" << volume;
             Q_EMIT this->volumeChanged();
+        }
+
+        if (delayedStartActiveChanged)
+        {
+            qDebug() << "delayed start active has changed";
+            Q_EMIT this->delayedStartActiveChanged();
         }
     }
 
