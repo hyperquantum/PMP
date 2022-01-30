@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,36 +28,35 @@
 #include <QByteArray>
 #include <QString>
 
+/*
+Network protocol versions
+=========================
+
+Changes for each version:
+
+   1: first version, no version increments for a long time
+   2: first increment for test purposes, no strict incrementing yet after this
+   3: client msg 18, server msg 22: added support for retrieving scores
+   4: client msg 19: added support for inserting a track at a specific index
+   5: client msg 20, server msg 23 & 24: added player history fetching
+   6: single byte request 17 & server msg 25: retrieving the database identifier
+   7: server msgs 18 & 19 extended with album and track length
+   8: server msg 26 and single byte request 24 for dynamic mode waves
+   9: client msg 21, server msg 27: queue entry duplication
+  10: single byte request 51 & server msg 28: server health messages
+  11: server msg 29: track availability change notifications
+  12: clienst msg 22, server msg 30, single byte request 18: protocol extensions
+  13: server msgs 3 & 4: change track length to milliseconds
+  14: single byte request 25 & server msg 26: wave termination & progress
+  15: client msg 23, parameterless action 10, error code 21: server settings reload
+  16: server msg 31: sending server clock time
+  17: client msg 24: inserting breaks at any index
+  18: client msg 24, server msg 3 & 4 & 21: barriers
+  19: client msg 25, server msg 32: keep-alive messages
+*/
+
 namespace PMP
 {
-    /*
-        Network protocol versions
-        =========================
-
-        Changes for each version:
-
-          1: first version, no version increments for a long time
-          2: first increment for test purposes, no strict incrementing yet after this
-          3: client msg 18, server msg 22: added support for retrieving scores
-          4: client msg 19: added support for inserting a track at a specific index
-          5: client msg 20, server msg 23 & 24: added player history fetching
-          6: single byte request 17 & server msg 25: retrieving the database identifier
-          7: server msgs 18 & 19 extended with album and track length
-          8: server msg 26 and single byte request 24 for dynamic mode waves
-          9: client msg 21, server msg 27: queue entry duplication
-         10: single byte request 51 & server msg 28: server health messages
-         11: server msg 29: track availability change notifications
-         12: clienst msg 22, server msg 30, single byte request 18: protocol extensions
-         13: server msgs 3 & 4: change track length to milliseconds
-         14: single byte request 25 & server msg 26: wave termination & progress
-         15: client msg 23, parameterless action 10, error code 21: server settings reload
-         16: server msg 31: sending server clock time
-         17: client msg 24: inserting breaks at any index
-         18: client msg 24, server msg 3 & 4 & 21: barriers
-         19: client msg 25, server msg 32: keep-alive messages
-
-    */
-
     class FileHash;
 
     enum class ServerMessageType
