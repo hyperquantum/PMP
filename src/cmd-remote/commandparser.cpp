@@ -48,6 +48,12 @@ namespace PMP
         return time.isValid();
     }
 
+    bool CommandParser::CommandArguments::tryParseDate(QDate& date) const
+    {
+        date = QDate::fromString(current(), "yyyy-MM-dd");
+        return date.isValid();
+    }
+
     CommandParser::CommandParser()
      : _command(nullptr),
        _authenticationMode(AuthenticationMode::Implicit)
@@ -483,27 +489,44 @@ namespace PMP
             return;
         }
 
-        QTime time;
-        if (arguments.tryParseTime(time))
+        bool dateSpecified;
+        QDate date;
+        if (arguments.tryParseDate(date))
         {
-            if (arguments.haveMore())
-            {
-                _errorMessage = "Command has too many arguments!";
-                return;
-            }
+            dateSpecified = true;
+            arguments.advance();
+        }
+        else
+        {
+            dateSpecified = false;
+            date = QDate::currentDate();
+        }
 
-            QDateTime dateTime(QDate::currentDate(), time);
-            if (!isInFuture(dateTime))
-            {
-                _errorMessage = "Start time must be in the future!";
-                return;
-            }
+        QTime time;
+        if (!arguments.tryParseTime(time))
+        {
+            if (dateSpecified)
+                _errorMessage = "Expected time after date!";
+            else
+                _errorMessage = "Expected date or time after 'at'!";
 
-            _command = new DelayedStartAtCommand(dateTime);
             return;
         }
 
-        _errorMessage = "Expected time after 'at'!";
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        QDateTime dateTime(date, time);
+        if (!isInFuture(dateTime))
+        {
+            _errorMessage = "Start time must be in the future!";
+            return;
+        }
+
+        _command = new DelayedStartAtCommand(dateTime);
     }
 
     void CommandParser::parseDelayedStartWait(CommandArguments& arguments)

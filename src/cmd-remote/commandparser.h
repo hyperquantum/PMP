@@ -20,6 +20,7 @@
 #ifndef PMP_COMMANDPARSER_H
 #define PMP_COMMANDPARSER_H
 
+#include <QDate>
 #include <QString>
 #include <QTime>
 #include <QVector>
@@ -90,6 +91,7 @@ namespace PMP
 
             bool tryParseInt(int& number) const;
             bool tryParseTime(QTime& time) const;
+            bool tryParseDate(QDate& date) const;
 
         private:
             QVector<QString> _arguments;
