@@ -64,20 +64,20 @@ namespace PMP
         _requestId = clientServerInterface->generalController().reloadServerSettings();
     }
 
-    /* ===== ActivateDelayedStartCommand ===== */
+    /* ===== DelayedStartAtCommand ===== */
 
-    ActivateDelayedStartCommand::ActivateDelayedStartCommand(qint64 delayMilliseconds)
-     : _delayMilliseconds(delayMilliseconds)
+    DelayedStartAtCommand::DelayedStartAtCommand(QDateTime startTime)
+     : _startTime(startTime)
     {
         //
     }
 
-    bool ActivateDelayedStartCommand::requiresAuthentication() const
+    bool DelayedStartAtCommand::requiresAuthentication() const
     {
         return true;
     }
 
-    void ActivateDelayedStartCommand::setUp(ClientServerInterface* clientServerInterface)
+    void DelayedStartAtCommand::setUp(ClientServerInterface* clientServerInterface)
     {
         auto* playerController = &clientServerInterface->playerController();
 
@@ -94,21 +94,56 @@ namespace PMP
         );
     }
 
-    void ActivateDelayedStartCommand::start(ClientServerInterface* clientServerInterface)
+    void DelayedStartAtCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        _requestId = clientServerInterface->playerController().activateDelayedStart(
+                                                                              _startTime);
+    }
+
+    /* ===== DelayedStartWaitCommand ===== */
+
+    DelayedStartWaitCommand::DelayedStartWaitCommand(qint64 delayMilliseconds)
+     : _delayMilliseconds(delayMilliseconds)
+    {
+        //
+    }
+
+    bool DelayedStartWaitCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void DelayedStartWaitCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(
+            playerController, &PlayerController::delayedStartActivationResultEvent,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId != _requestId)
+                    return; /* not for us */
+
+                setCommandExecutionResult(errorCode);
+            }
+        );
+    }
+
+    void DelayedStartWaitCommand::start(ClientServerInterface* clientServerInterface)
     {
         _requestId = clientServerInterface->playerController().activateDelayedStart(
                                                                       _delayMilliseconds);
     }
 
-    /* ===== DeactivateDelayedStartCommand ===== */
+    /* ===== DeactivateDelayedCancelCommand ===== */
 
-    bool DeactivateDelayedStartCommand::requiresAuthentication() const
+    bool DelayedStartCancelCommand::requiresAuthentication() const
     {
         return true;
     }
 
-    void DeactivateDelayedStartCommand::setUp(
-                                             ClientServerInterface* clientServerInterface)
+    void DelayedStartCancelCommand::setUp(ClientServerInterface* clientServerInterface)
     {
         auto* playerController = &clientServerInterface->playerController();
 
@@ -125,8 +160,7 @@ namespace PMP
         );
     }
 
-    void DeactivateDelayedStartCommand::start(
-                                             ClientServerInterface* clientServerInterface)
+    void DelayedStartCancelCommand::start(ClientServerInterface* clientServerInterface)
     {
         _requestId = clientServerInterface->playerController().deactivateDelayedStart();
     }

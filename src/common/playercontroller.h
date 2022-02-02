@@ -27,6 +27,7 @@
 #include "requestid.h"
 #include "resultmessageerrorcode.h"
 
+#include <QDateTime>
 #include <QObject>
 #include <QString>
 
@@ -54,6 +55,7 @@ namespace PMP
         virtual int volume() const = 0;
 
         virtual RequestID activateDelayedStart(qint64 delayMilliseconds) = 0;
+        virtual RequestID activateDelayedStart(QDateTime startTime) = 0;
         virtual RequestID deactivateDelayedStart() = 0;
 
     public Q_SLOTS:

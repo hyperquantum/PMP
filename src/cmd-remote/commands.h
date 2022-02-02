@@ -27,6 +27,8 @@
 
 #include "commandbase.h"
 
+#include <QDateTime>
+
 namespace PMP
 {
     // TODO : remove useless constructors
@@ -47,11 +49,28 @@ namespace PMP
         RequestID _requestId;
     };
 
-    class ActivateDelayedStartCommand : public CommandBase
+    class DelayedStartAtCommand : public CommandBase
     {
         Q_OBJECT
     public:
-        ActivateDelayedStartCommand(qint64 delayMilliseconds);
+        DelayedStartAtCommand(QDateTime startTime);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        QDateTime _startTime;
+        RequestID _requestId;
+    };
+
+    class DelayedStartWaitCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        DelayedStartWaitCommand(qint64 delayMilliseconds);
 
         bool requiresAuthentication() const override;
 
@@ -64,7 +83,7 @@ namespace PMP
         RequestID _requestId;
     };
 
-    class DeactivateDelayedStartCommand : public CommandBase
+    class DelayedStartCancelCommand : public CommandBase
     {
         Q_OBJECT
     public:

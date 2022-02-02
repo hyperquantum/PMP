@@ -50,6 +50,7 @@ namespace PMP
         int volume() const override;
 
         RequestID activateDelayedStart(qint64 delayMilliseconds) override;
+        RequestID activateDelayedStart(QDateTime startTime) override;
         RequestID deactivateDelayedStart() override;
 
     public Q_SLOTS:

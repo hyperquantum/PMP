@@ -38,6 +38,16 @@ namespace PMP
         return ok;
     }
 
+    bool CommandParser::CommandArguments::tryParseTime(QTime& time) const
+    {
+        time = QTime::fromString(current(), "H:m");
+        if (time.isValid())
+            return true;
+
+        time = QTime::fromString(current(), "H:m:s");
+        return time.isValid();
+    }
+
     CommandParser::CommandParser()
      : _command(nullptr),
        _authenticationMode(AuthenticationMode::Implicit)
@@ -446,7 +456,12 @@ namespace PMP
                 return;
             }
 
-            _command = new DeactivateDelayedStartCommand();
+            _command = new DelayedStartCancelCommand();
+        }
+        else if (arguments.current() == "at")
+        {
+            arguments.advance();
+            parseDelayedStartAt(arguments);
         }
         else if (arguments.current() == "wait")
         {
@@ -456,8 +471,39 @@ namespace PMP
         else
         {
             _errorMessage =
-                    "Expected 'abort' or 'cancel' or 'wait' after 'delayedstart'!";
+                "Expected 'abort' or 'cancel' or 'at' or 'wait' after 'delayedstart'!";
         }
+    }
+
+    void CommandParser::parseDelayedStartAt(CommandArguments& arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Expected more arguments after 'at'!";
+            return;
+        }
+
+        QTime time;
+        if (arguments.tryParseTime(time))
+        {
+            if (arguments.haveMore())
+            {
+                _errorMessage = "Command has too many arguments!";
+                return;
+            }
+
+            QDateTime dateTime(QDate::currentDate(), time);
+            if (!isInFuture(dateTime))
+            {
+                _errorMessage = "Start time must be in the future!";
+                return;
+            }
+
+            _command = new DelayedStartAtCommand(dateTime);
+            return;
+        }
+
+        _errorMessage = "Expected time after 'at'!";
     }
 
     void CommandParser::parseDelayedStartWait(CommandArguments& arguments)
@@ -505,11 +551,16 @@ namespace PMP
 
         if (arguments.haveMore())
         {
-            _errorMessage = "Too many arguments!";
+            _errorMessage = "Command has too many arguments!";
             return;
         }
 
-        _command = new ActivateDelayedStartCommand(number * unitMilliseconds);
+        _command = new DelayedStartWaitCommand(number * unitMilliseconds);
+    }
+
+    bool CommandParser::isInFuture(QDateTime time)
+    {
+        return QDateTime::currentDateTimeUtc() < time.toUTC();
     }
 
 }

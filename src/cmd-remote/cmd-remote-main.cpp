@@ -55,6 +55,7 @@ usage:
     shutdown: shut down the server program
     reloadserversettings: instruct the server to reload its settings file
     delayedstart wait <number> <time unit>: activate delayed start (see below)
+    delayedstart at <time>: activate delayed start (see below)
     delayedstart abort|cancel: cancel delayed start (see below)
 
   'login' command:
@@ -90,10 +91,12 @@ usage:
     delayedstart abort: cancel delayed start
     delayedstart cancel: cancel delayed start
     delayedstart wait <number> <time unit>: activate delayed start
+    delayedstart at <time>: activate delayed start
 
     Delayed start causes playback to start in the future, based on a timer.
     After the timer runs out, PMP starts playing as if the user had issued
-    the 'play' command.
+    the 'play' command. Delayed start should not be affected by changes to
+    the clock time on the server or the client after activation.
     Use 'wait' for specifying an exact delay between issuing the command
     and the time when playback will start. Time unit can be hours, minutes,
     seconds, or milliseconds. The countdown will start when the server
@@ -101,6 +104,10 @@ usage:
     type username or password in the console for authentication purposes.
     Reading username and password from standard input is recommended (see
     the 'login' command).
+    Use 'at' for specifying the exact time when playback needs to start.
+    The time is local client clock time and expected to be in format 'H:m'
+    or 'H:m:s' using 24 hours notation, no AM or PM. The time specified is
+    converted to a delay right before sending the command to the server.
     A delayed start that has been activated but whose deadline has not been
     reached yet can still be cancelled with 'cancel' or 'abort'. Delayed
     start is cancelled automatically when playback is started before the
@@ -141,6 +148,8 @@ usage:
     {{PROGRAMNAME}} localhost login - : play <credentialsfile
     {{PROGRAMNAME}} delayedstart wait 1 minute
     {{PROGRAMNAME}} delayedstart wait 90 seconds
+    {{PROGRAMNAME}} delayedstart at 15:30
+    {{PROGRAMNAME}} delayedstart at 9:30:00
 )"""";
 
 void printVersion(QTextStream& out)

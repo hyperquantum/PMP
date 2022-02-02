@@ -146,6 +146,14 @@ namespace PMP
         return _connection->activateDelayedStart(delayMilliseconds);
     }
 
+    RequestID PlayerControllerImpl::activateDelayedStart(QDateTime startTime)
+    {
+        auto delayMilliseconds =
+                QDateTime::currentDateTimeUtc().msecsTo(startTime.toUTC());
+
+        return activateDelayedStart(delayMilliseconds);
+    }
+
     RequestID PlayerControllerImpl::deactivateDelayedStart()
     {
         return _connection->deactivateDelayedStart();

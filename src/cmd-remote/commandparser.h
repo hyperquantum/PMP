@@ -21,6 +21,7 @@
 #define PMP_COMMANDPARSER_H
 
 #include <QString>
+#include <QTime>
 #include <QVector>
 
 namespace PMP
@@ -88,6 +89,7 @@ namespace PMP
             bool currentIsOneOf(QVector<QString> options) const;
 
             bool tryParseInt(int& number) const;
+            bool tryParseTime(QTime& time) const;
 
         private:
             QVector<QString> _arguments;
@@ -103,10 +105,13 @@ namespace PMP
         void parseCommand(QVector<QString> commandWithArgs);
         void parseInsertCommand(QVector<QString> arguments);
         void parseDelayedStartCommand(CommandArguments arguments);
+        void parseDelayedStartAt(CommandArguments& arguments);
         void parseDelayedStartWait(CommandArguments& arguments);
 
         template <class SomeCommand>
         void handleCommandNotRequiringArguments(QVector<QString> commandWithArgs);
+
+        static bool isInFuture(QDateTime time);
 
         Command* _command;
         QString _errorMessage;
