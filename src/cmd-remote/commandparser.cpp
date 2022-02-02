@@ -334,6 +334,10 @@ namespace PMP
 
             _command = new QueueMoveCommand(queueId, moveDiff);
         }
+        else if (command == "login")
+        {
+            _errorMessage = "The 'login' command can only be used as the first command";
+        }
         else if (command == ":")
         {
             _errorMessage = "Expected command before \":\" separator";

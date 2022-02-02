@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,6 +39,7 @@ usage:
   {{PROGRAMNAME}} <server-name-or-ip> [<server-port>] <login-command> : <command>
 
   commands:
+    login: force authentication before running the next command (see below)
     play: start/resume playback
     pause: pause playback
     skip: jump to next track in the queue
