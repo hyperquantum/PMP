@@ -21,11 +21,15 @@
 #define PMP_QUEUECONTROLLER_H
 
 #include "filehash.h"
+#include "queueindextype.h"
+#include "requestid.h"
+#include "resultmessageerrorcode.h"
+#include "specialqueueitemtype.h"
 
 #include <QObject>
 
-namespace PMP {
-
+namespace PMP
+{
     class QueueController : public QObject
     {
         Q_OBJECT
@@ -33,18 +37,25 @@ namespace PMP {
         virtual ~QueueController() {}
 
         virtual bool canDuplicateEntry(quint32 queueId) const = 0;
+        virtual bool canInsertBreakAtAnyIndex() const = 0;
+        virtual bool canInsertBarrier() const = 0;
 
     public Q_SLOTS:
-        virtual void insertBreakAtFront() = 0;
+        virtual void insertBreakAtFrontIfNotExists() = 0;
         virtual void insertQueueEntryAtFront(FileHash hash) = 0;
         virtual void insertQueueEntryAtEnd(FileHash hash) = 0;
-        virtual void insertQueueEntryAtIndex(FileHash hash, quint32 index) = 0;
+        virtual RequestID insertQueueEntryAtIndex(FileHash hash, quint32 index) = 0;
+        virtual RequestID insertSpecialItemAtIndex(SpecialQueueItemType itemType,
+                                                   int index,
+                                   QueueIndexType indexType = QueueIndexType::Normal) = 0;
         virtual void deleteQueueEntry(uint queueId) = 0;
-        virtual void duplicateQueueEntry(uint queueId) = 0;
+        virtual RequestID duplicateQueueEntry(uint queueId) = 0;
         virtual void moveQueueEntry(uint queueId, qint16 offsetDiff) = 0;
 
     Q_SIGNALS:
-        void queueEntryAdded(qint32 index, quint32 queueId);
+        void queueEntryAdded(qint32 index, quint32 queueId, RequestID requestId);
+        void queueEntryInsertionFailed(ResultMessageErrorCode errorCode,
+                                       RequestID requestId);
         void queueEntryRemoved(qint32 index, quint32 queueId);
         void queueEntryMoved(qint32 fromIndex, qint32 toIndex, quint32 queueId);
 

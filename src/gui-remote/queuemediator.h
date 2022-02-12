@@ -22,8 +22,8 @@
 
 #include "common/abstractqueuemonitor.h"
 
-namespace PMP {
-
+namespace PMP
+{
     class AbstractQueueMonitor;
     class ClientServerInterface;
     class FileHash;

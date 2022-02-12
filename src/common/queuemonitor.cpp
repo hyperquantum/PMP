@@ -25,8 +25,8 @@
 #include <QtGlobal>
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     namespace
     {
         static const int initialQueueFetchLength = 10;
@@ -49,7 +49,7 @@ namespace PMP {
             this, &QueueMonitor::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &QueueMonitor::connectionBroken
         );
         connect(

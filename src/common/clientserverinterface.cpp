@@ -19,6 +19,7 @@
 
 #include "clientserverinterface.h"
 
+#include "authenticationcontrollerimpl.h"
 #include "collectionwatcherimpl.h"
 #include "compatibilityinterfacecontrollerimpl.h"
 #include "currenttrackmonitorimpl.h"
@@ -36,6 +37,7 @@ namespace PMP
     ClientServerInterface::ClientServerInterface(ServerConnection* connection)
      : QObject(connection),
        _connection(connection),
+       _authenticationController(nullptr),
        _generalController(nullptr),
        _simplePlayerController(nullptr),
        _currentTrackMonitor(nullptr),
@@ -61,10 +63,12 @@ namespace PMP
             Qt::QueuedConnection
         );
         connect(
-            connection, &ServerConnection::connectionBroken,
+            connection, &ServerConnection::disconnected,
             this,
             [this]()
             {
+                qDebug() << "connection has been disconnected";
+
                 if (!_connected) return;
 
                 _connected = false;
@@ -72,6 +76,14 @@ namespace PMP
             },
             Qt::QueuedConnection
         );
+    }
+
+    AuthenticationController& ClientServerInterface::authenticationController()
+    {
+        if (!_authenticationController)
+            _authenticationController = new AuthenticationControllerImpl(_connection);
+
+        return *_authenticationController;
     }
 
     GeneralController& ClientServerInterface::generalController()

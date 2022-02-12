@@ -22,15 +22,15 @@
 
 #include "abstractqueuemonitor.h"
 
-namespace PMP {
-
+namespace PMP
+{
     class ServerConnection;
 
     class QueueMonitor : public AbstractQueueMonitor
     {
         Q_OBJECT
     public:
-        QueueMonitor(ServerConnection* connection);
+        explicit QueueMonitor(ServerConnection* connection);
 
         void setFetchLimit(int count) override;
 

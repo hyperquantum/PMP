@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -62,6 +62,107 @@ namespace PMP
     void ReloadServerSettingsCommand::start(ClientServerInterface* clientServerInterface)
     {
         _requestId = clientServerInterface->generalController().reloadServerSettings();
+    }
+
+    /* ===== DelayedStartAtCommand ===== */
+
+    DelayedStartAtCommand::DelayedStartAtCommand(QDateTime startTime)
+     : _startTime(startTime)
+    {
+        //
+    }
+
+    bool DelayedStartAtCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void DelayedStartAtCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(
+            playerController, &PlayerController::delayedStartActivationResultEvent,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId != _requestId)
+                    return; /* not for us */
+
+                setCommandExecutionResult(errorCode);
+            }
+        );
+    }
+
+    void DelayedStartAtCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        _requestId = clientServerInterface->playerController().activateDelayedStart(
+                                                                              _startTime);
+    }
+
+    /* ===== DelayedStartWaitCommand ===== */
+
+    DelayedStartWaitCommand::DelayedStartWaitCommand(qint64 delayMilliseconds)
+     : _delayMilliseconds(delayMilliseconds)
+    {
+        //
+    }
+
+    bool DelayedStartWaitCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void DelayedStartWaitCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(
+            playerController, &PlayerController::delayedStartActivationResultEvent,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId != _requestId)
+                    return; /* not for us */
+
+                setCommandExecutionResult(errorCode);
+            }
+        );
+    }
+
+    void DelayedStartWaitCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        _requestId = clientServerInterface->playerController().activateDelayedStart(
+                                                                      _delayMilliseconds);
+    }
+
+    /* ===== DeactivateDelayedCancelCommand ===== */
+
+    bool DelayedStartCancelCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void DelayedStartCancelCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* playerController = &clientServerInterface->playerController();
+
+        connect(
+            playerController, &PlayerController::delayedStartDeactivationResultEvent,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId != _requestId)
+                    return; /* not for us */
+
+                setCommandExecutionResult(errorCode);
+            }
+        );
+    }
+
+    void DelayedStartCancelCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        _requestId = clientServerInterface->playerController().deactivateDelayedStart();
     }
 
     /* ===== PlayCommand ===== */
@@ -307,7 +408,7 @@ namespace PMP
                         return false; /* download incomplete, shouldn't happen */
 
                     auto entry = queueEntryInfoFetcher->entryInfoByQID(queueId);
-                    if (!entry)
+                    if (!entry || entry->type() == QueueEntryType::Unknown)
                         return false; /* info not available yet */
 
                     if (entry->needFilename())
@@ -375,21 +476,21 @@ namespace PMP
                 auto lengthString =
                         Util::millisecondsToShortDisplayTimeText(lengthMilliseconds);
                 output += lengthString.rightJustified(8);
+                output += "|";
             }
             else if (entry->isTrack().toBool(true))
             {
                 output += "   ??   ";
+                output += "|";
             }
             else
             {
                 output += "        ";
             }
 
-            output += "|";
-
             if (entry->isTrack().toBool(false) == false)
             {
-                output += "    ";
+                output += "      ";
                 output += getSpecialEntryText(entry);
             }
             else if (entry->needFilename() && !entry->informativeFilename().isEmpty())
@@ -421,7 +522,10 @@ namespace PMP
                 return "";
 
             case QueueEntryType::BreakPoint:
-                return "---------- BREAK ----------";
+                return "----------- BREAK -----------";
+
+            case QueueEntryType::Barrier:
+                return "---------- BARRIER ----------";
 
             case QueueEntryType::UnknownSpecialType:
                 return "<<<< UNKNOWN ENTITY >>>>";
@@ -599,7 +703,58 @@ namespace PMP
 
     void BreakCommand::start(ClientServerInterface* clientServerInterface)
     {
-        clientServerInterface->queueController().insertBreakAtFront();
+        clientServerInterface->queueController().insertBreakAtFrontIfNotExists();
+    }
+
+    /* ===== QueueInsertSpecialItemCommand ===== */
+
+    QueueInsertSpecialItemCommand::QueueInsertSpecialItemCommand(
+                                                            SpecialQueueItemType itemType,
+                                                            int index,
+                                                            QueueIndexType indexType)
+     : _itemType(itemType),
+       _index(index),
+       _indexType(indexType)
+    {
+        //
+    }
+
+    bool QueueInsertSpecialItemCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void QueueInsertSpecialItemCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto* queueController = &clientServerInterface->queueController();
+
+        connect(
+            queueController, &QueueController::queueEntryAdded,
+            this,
+            [this](qint32 index, quint32 queueId, RequestID requestId)
+            {
+                if (requestId == _requestId)
+                    setCommandExecutionSuccessful();
+            }
+        );
+        connect(
+            queueController, &QueueController::queueEntryInsertionFailed,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId == _requestId)
+                    setCommandExecutionResult(errorCode);
+            }
+        );
+    }
+
+    void QueueInsertSpecialItemCommand::start(
+                                             ClientServerInterface* clientServerInterface)
+    {
+        auto& queueController = clientServerInterface->queueController();
+
+        _requestId =
+                queueController.insertSpecialItemAtIndex(_itemType, _index, _indexType);
     }
 
     /* ===== QueueDeleteCommand ===== */
@@ -700,4 +855,5 @@ namespace PMP
     {
         clientServerInterface->queueController().moveQueueEntry(_queueId, _moveOffset);
     }
+
 }

@@ -51,7 +51,6 @@ TECHNICAL TODO
  * large file support (?)
  * switch to signed integer types for things like queue indices
  * add logging for all server messages that are deemed corrupt or invalid by the client
- * remove all usages of Q_FOREACH
 
 
 IDEAS
@@ -59,12 +58,12 @@ IDEAS
  ** player: option for single track mode (vs. continuous play)
  * player: 'load track' action that loads a track but does not start playing; this allows seek before playing
  ** player: 'play again next' action for the song that is currently playing
- ** player: auto-stop timer to make playback stop at or near a specified clock time
- * player: auto-start timer to make playback start at a specified clock time
+ *** player: auto-stop timer to make playback stop at or near a specified clock time
+ ** player: auto-start timer to make playback start at a specified clock time
  * player: delayed start: e.g. being able to press Play and then have 5 seconds before PMP actually starts playing
  * player: avoid accidental multiple clicks on "skip" affecting track score unnecessarily
  * player: 'seek to start of track' action or button
- * queue: ability to insert a new kind of breakpoint that is never consumed ("barrier"?)
+ * player: make track position display less precise while playing, it is too fast for the human eye anyway
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * queue: ability to insert a breakpoint directly before/after any entry in the queue
  * queue: ability to insert a track at a random position in the queue
@@ -74,9 +73,12 @@ IDEAS
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
  * music collection: show a "loading collection" indicator while downloading the list from the server
+ * music collection: new filters "not in the queue"/"in the queue"
  * music collection: add a clear button for the filter
  * music collection: provide fast partial indexation that only detects new files
  * music collection: show some kind of indicator for a track that is already present in the queue
+ * music collection: show filtered count / total count
+ * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  ** dynamic mode: detect and prevent track repetition with different hash values
  ** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
@@ -97,8 +99,8 @@ IDEAS
  *** 'play now' option in the context menus of the music collection, the history, and maybe the queue
  * dark theme for the client
  * require the server password when registering a new user account
- * alternative display of "prev. heard" as a time span, e.g. "5 days ago" or "9 weeks ago"
  * track info dialog: show indication if file is available or not
+ * track info dialog: show indication if a file was manually added to the queue (and when) or added by dynamic mode
  * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time
  * track info dialog: ability to pick the user whose personal stats are shown
  * track info dialog: display filename(s)
@@ -112,6 +114,7 @@ IDEAS
  * client: ability to reconnect to the server after the connection was broken
  ** login dialog: add button for probing for servers again
  * take clock difference between client and server into account
+ * add button to copy title and artist of current track to clipboard
 
 
 USER FRIENDLINESS

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,9 +29,10 @@
 #include <QThreadPool>
 #include <QTimer>
 
-namespace PMP {
-
-    namespace {
+namespace PMP
+{
+    namespace
+    {
         static const int fetchingTimerFreqMs = 20;
     }
 
@@ -51,26 +52,30 @@ namespace PMP {
         );
     }
 
-    QDateTime History::lastPlayed(FileHash const& hash) const {
+    QDateTime History::lastPlayedGloballySinceStartup(FileHash const& hash) const
+    {
         return _lastPlayHash[hash];
     }
 
-    bool History::fetchMissingUserStats(uint hashID, quint32 user) {
-        if (hashID == 0 || _userStats[user].contains(hashID)) return false;
+    bool History::fetchMissingUserStats(uint hashID, quint32 user)
+    {
+        if (hashID == 0 || _userStats[user].contains(hashID))
+            return false;
 
         scheduleFetch(hashID, user);
         return true;
     }
 
-    History::HashStats const* History::getUserStats(uint hashID, quint32 user) {
-        if (hashID == 0) return nullptr;
+    History::HashStats const* History::getUserStats(uint hashID, quint32 user)
+    {
+        if (hashID == 0)
+            return nullptr;
 
         QHash<uint, HashStats>& userData = _userStats[user];
 
         auto hashDataIterator = userData.find(hashID);
-        if (hashDataIterator != userData.end()) {
+        if (hashDataIterator != userData.end())
             return &hashDataIterator.value();
-        }
 
         /* we will need to fetch the data from the database first */
         scheduleFetch(hashID, user);
@@ -85,21 +90,25 @@ namespace PMP {
         QHash<uint, bool>& hashes = _userStatsFetching[user];
 
         auto hashDataIterator = hashes.find(hashID);
-        if (hashDataIterator == hashes.end()) {
+        if (hashDataIterator == hashes.end())
+        {
             hashes[hashID] = false; /* add as not yet fetched */
         }
 
-        /*if (_fetchRequestsScheduledCount >= 10) {
+        /*if (_fetchRequestsScheduledCount >= 10)
+        {
             // don't wait, start right now
             sendFetchRequests();
         }
         else */
-        if (!_fetchTimerRunning) {
+        if (!_fetchTimerRunning)
+        {
             _fetchTimerRunning = true;
             QTimer::singleShot(
                 fetchingTimerFreqMs,
                 this,
-                [this]() {
+                [this]()
+                {
                     _fetchTimerRunning = false;
                     sendFetchRequests();
                 }
@@ -107,15 +116,23 @@ namespace PMP {
         }
     }
 
-    void History::sendFetchRequests() {
-        Q_FOREACH(auto user, _userStatsFetching.keys()) {
-            QHash<uint, bool>& hashes = _userStatsFetching[user];
+    void History::sendFetchRequests()
+    {
+        for (auto userIt = _userStatsFetching.begin();
+             userIt != _userStatsFetching.end();
+             ++userIt)
+        {
+            auto user = userIt.key();
+            QHash<uint, bool>& hashes = userIt.value();
 
             QVector<uint> hashesToFetch;
             hashesToFetch.reserve(hashes.size());
-            Q_FOREACH(auto hash, hashes.keys()) {
-                bool& beingFetched = hashes[hash];
-                if (!beingFetched) {
+            for (auto hashIt = hashes.begin(); hashIt != hashes.end(); ++hashIt)
+            {
+                auto hash = hashIt.key();
+                bool& beingFetched = hashIt.value();
+                if (!beingFetched)
+                {
                     hashesToFetch.append(hash);
                     beingFetched = true;
                 }
@@ -137,11 +154,14 @@ namespace PMP {
         _fetchRequestsScheduledCount = 0;
     }
 
-    void History::currentTrackChanged(QueueEntry const* newTrack) {
-        if (_nowPlaying != 0 && newTrack != _nowPlaying) {
+    void History::currentTrackChanged(QueueEntry const* newTrack)
+    {
+        if (_nowPlaying != 0 && newTrack != _nowPlaying)
+        {
             const FileHash* hash = _nowPlaying->hash();
             /* TODO: make sure hash is known, so history won't get lost */
-            if (hash) {
+            if (hash)
+            {
                 _lastPlayHash[*hash] = QDateTime::currentDateTimeUtc();
             }
         }
@@ -149,12 +169,14 @@ namespace PMP {
         _nowPlaying = newTrack;
     }
 
-    void History::newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry) {
+    void History::newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry)
+    {
         if (entry->permillage() <= 0 && entry->hadError())
             return;
 
         FileHash hash = entry->hash();
-        if (hash.isNull()) {
+        if (hash.isNull())
+        {
             qWarning() << "cannot save history for queue ID" << entry->queueID()
                        << "because hash is unavailabe";
             return;
@@ -192,7 +214,8 @@ namespace PMP {
         QHash<uint, bool>& hashesForFetching = _userStatsFetching[userId];
         QHash<uint, HashStats>& statsForUser = _userStats[userId];
 
-        Q_FOREACH(UserDataForHashId const& hashData, results) {
+        for (auto const& hashData : results)
+        {
             auto hashId = hashData.hashId;
 
             hashesForFetching.remove(hashId);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -48,7 +48,7 @@ namespace PMP
 
     private Q_SLOTS:
         void connected();
-        void connectionBroken();
+        void disconnected();
 
         void compatibilityInterfaceAnnouncementReceived(QVector<int> interfaceIds);
         void compatibilityInterfaceLanguageSelectionSucceeded(

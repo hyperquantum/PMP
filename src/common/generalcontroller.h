@@ -22,6 +22,7 @@
 
 #include "requestid.h"
 #include "resultmessageerrorcode.h"
+#include "serverhealthstatus.h"
 
 #include <QObject>
 
@@ -33,6 +34,8 @@ namespace PMP
     public:
         virtual ~GeneralController() {}
 
+        virtual ServerHealthStatus serverHealth() const = 0;
+
         virtual qint64 clientClockTimeOffsetMs() const = 0;
 
         virtual RequestID reloadServerSettings() = 0;
@@ -41,12 +44,13 @@ namespace PMP
         virtual void shutdownServer() = 0;
 
     Q_SIGNALS:
+        void serverHealthChanged();
         void clientClockTimeOffsetChanged();
         void serverSettingsReloadResultEvent(ResultMessageErrorCode errorCode,
                                              RequestID requestId);
 
     protected:
-        GeneralController(QObject* parent) : QObject(parent) {}
+        explicit GeneralController(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

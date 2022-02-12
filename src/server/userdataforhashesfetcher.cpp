@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,8 +24,8 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     UserDataForHashesFetcher::UserDataForHashesFetcher(quint32 userId,
                                                        QVector<FileHash> hashes,
                                                        bool previouslyHeard, bool score,
@@ -36,7 +36,8 @@ namespace PMP {
         //
     }
 
-    void UserDataForHashesFetcher::run() {
+    void UserDataForHashesFetcher::run()
+    {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return; /* problem */
 
@@ -47,17 +48,20 @@ namespace PMP {
         QVector<UserDataForHash> results;
         results.reserve(_hashes.size());
 
-        auto idsForHashes = _resolver.getIDs(_hashes);
+        const auto idsForHashes = _resolver.getIDs(_hashes);
         QHash<quint32, FileHash> ids;
         ids.reserve(idsForHashes.size());
-        Q_FOREACH(auto idAndHash, idsForHashes) {
+        for (auto& idAndHash : idsForHashes)
+        {
             ids.insert(idAndHash.first, idAndHash.second);
         }
 
-        if (_score) {
+        if (_score)
+        {
             /* get score and last heard */
-            auto stats = db->getHashHistoryStats(_userId, ids.keys());
-            Q_FOREACH(Database::HashHistoryStats const& stat, stats) {
+            const auto stats = db->getHashHistoryStats(_userId, ids.keys());
+            for (auto& stat : stats)
+            {
                 UserDataForHash data;
                 data.hash = ids.value(stat.hashId);
                 data.previouslyHeard = stat.lastHeard;
@@ -69,10 +73,12 @@ namespace PMP {
                 results.append(data);
             }
         }
-        else {
+        else
+        {
             /* only last heard */
-            auto lastHeardList = db->getLastHeard(_userId, ids.keys());
-            Q_FOREACH(auto lastHeard, lastHeardList) {
+            const auto lastHeardList = db->getLastHeard(_userId, ids.keys());
+            for (auto& lastHeard : lastHeardList)
+            {
                 UserDataForHash data;
                 data.hash = ids.value(lastHeard.first);
                 data.previouslyHeard = lastHeard.second;

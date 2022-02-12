@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,6 +26,7 @@ namespace PMP
     {
         NoError = 0,
         InvalidMessageStructure = 1,
+        AlreadyDone = 2 /**< The action was successful but had no effect */,
         NotLoggedIn = 10,
 
         /// This was historically used for authentication failure (when account not
@@ -40,10 +41,16 @@ namespace PMP
 
         QueueIdNotFound = 20,
         UnknownAction = 21,
-        InvalidLanguage = 22,
-        InvalidCompatibilityInterfaceId = 23,
+        InvalidHash = 22,
+        InvalidQueueIndex = 23,
+        InvalidQueueItemType = 24,
+        InvalidTimeSpan = 25,
+        InvalidLanguage = 26,
+        InvalidCompatibilityInterfaceId = 27,
 
-        LanguageNotSet = 30,
+        MaximumQueueSizeExceeded = 50,
+        OperationAlreadyRunning = 51,
+        LanguageNotSet = 52,
 
         DatabaseProblem = 90,
 
@@ -57,7 +64,8 @@ namespace PMP
 
     inline bool succeeded(ResultMessageErrorCode errorCode)
     {
-        return errorCode == ResultMessageErrorCode::NoError;
+        return errorCode == ResultMessageErrorCode::NoError
+            || errorCode == ResultMessageErrorCode::AlreadyDone;
     }
 }
 #endif

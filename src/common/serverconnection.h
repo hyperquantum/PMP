@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,16 +22,21 @@
 
 #include "collectiontrackinfo.h"
 #include "compatibilityui.h"
+#include "disconnectreason.h"
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
 #include "playerstate.h"
+#include "queueindextype.h"
 #include "requestid.h"
 #include "serverhealthstatus.h"
+#include "specialqueueitemtype.h"
 #include "tribool.h"
 #include "userloginerror.h"
+#include "userregistrationerror.h"
 
 #include <QByteArray>
 #include <QDateTime>
+#include <QElapsedTimer>
 #include <QHash>
 #include <QList>
 #include <QObject>
@@ -43,6 +48,8 @@
 namespace PMP
 {
     class CollectionFetcher;
+    class ServerCapabilities;
+    class ServerCapabilitiesImpl;
 
     enum class ServerEventSubscription
     {
@@ -61,33 +68,31 @@ namespace PMP
         enum State
         {
             NotConnected, Connecting, Handshake, TextMode,
-            HandshakeFailure, BinaryHandshake, BinaryMode
+            HandshakeFailure, BinaryHandshake, BinaryMode,
+            Aborting, Disconnecting
         };
 
+        class ResultMessageData;
         class ResultHandler;
+        class StandardResultHandler;
         class ParameterlessActionResultHandler;
         class CollectionFetchResultHandler;
         class TrackInsertionResultHandler;
+        class QueueEntryInsertionResultHandler;
         class DuplicationResultHandler;
         class CompatibilityInterfaceLanguageSelectionResultHandler;
         class CompatibilityInterfaceActionTriggerResultHandler;
 
     public:
-        enum UserRegistrationError
-        {
-            UnknownUserRegistrationError, AccountAlreadyExists, InvalidAccountName
-        };
-
-        ServerConnection(QObject* parent = nullptr,
-                         ServerEventSubscription eventSubscription =
+        explicit ServerConnection(QObject* parent = nullptr,
+                                  ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
+        ~ServerConnection();
 
-        void reset();
         void connectToHost(QString const& host, quint16 port);
+        void disconnect();
 
-        bool isConnected() const { return _state == BinaryMode; }
-        bool isLoggedIn() const { return userLoggedInId() > 0; }
-
+        ServerCapabilities const& serverCapabilities() const;
         ServerHealthStatus serverHealth() const { return _serverHealthStatus; }
 
         QVector<int> getCompatibilityInterfaceIds();
@@ -97,6 +102,9 @@ namespace PMP
         RequestID sendCompatibilityInterfaceTriggerActionRequest(int interfaceId,
                                                                  int actionId);
 
+        bool isConnected() const;
+        bool isLoggedIn() const { return userLoggedInId() > 0; }
+
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
 
@@ -105,11 +113,12 @@ namespace PMP
         void fetchCollection(CollectionFetcher* fetcher);
 
         RequestID reloadServerSettings();
+        RequestID activateDelayedStart(qint64 delayMilliseconds);
+        RequestID deactivateDelayedStart();
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
-
-        bool serverSupportsReloadingServerSettings() const;
-        bool serverSupportsQueueEntryDuplication() const;
-        bool serverSupportsDynamicModeWaveTermination() const;
+        RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
+                                       QueueIndexType indexType = QueueIndexType::Normal);
+        RequestID duplicateQueueEntry(uint queueID);
 
     public Q_SLOTS:
         void shutdownServer();
@@ -125,7 +134,7 @@ namespace PMP
 
         void seekTo(uint queueID, qint64 position);
 
-        void insertBreakAtFront();
+        void insertBreakAtFrontIfNotExists();
 
         void setVolume(int percentage);
 
@@ -140,7 +149,6 @@ namespace PMP
 
         void sendQueueFetchRequest(uint startOffset, quint8 length = 0);
         void deleteQueueEntry(uint queueID);
-        void duplicateQueueEntry(uint queueID);
         void moveQueueEntry(uint queueID, qint16 offsetDiff);
 
         void insertQueueEntryAtFront(FileHash const& hash);
@@ -170,21 +178,26 @@ namespace PMP
 
     Q_SIGNALS:
         void connected();
+        void disconnected(DisconnectReason reason);
         void cannotConnect(QAbstractSocket::SocketError error);
         void invalidServer();
-        void connectionBroken(QAbstractSocket::SocketError error);
-        void serverHealthChanged(ServerHealthStatus serverHealth);
+        void serverHealthReceived();
 
         void receivedDatabaseIdentifier(QUuid uuid);
         void receivedServerInstanceIdentifier(QUuid uuid);
         void receivedServerName(quint8 nameType, QString name);
-        void receivedClientClockTimeOffset(quint64 clientClockTimeOffsetMs);
+        void receivedClientClockTimeOffset(qint64 clientClockTimeOffsetMs);
 
         void serverSettingsReloadResultEvent(ResultMessageErrorCode errorCode,
                                              RequestID requestId);
+        void delayedStartActivationResultEvent(ResultMessageErrorCode errorCode,
+                                               RequestID requestId);
+        void delayedStartDeactivationResultEvent(ResultMessageErrorCode errorCode,
+                                                 RequestID requestId);
 
         void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
-                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
+                                 quint32 nowPlayingQID, quint64 nowPlayingPosition,
+                                 bool delayedStartActive);
 
         void volumeChanged(int percentage);
 
@@ -198,6 +211,8 @@ namespace PMP
         void receivedQueueContents(int queueLength, int startOffset,
                                    QList<quint32> queueIDs);
         void queueEntryAdded(qint32 offset, quint32 queueId, RequestID requestId);
+        void queueEntryInsertionFailed(ResultMessageErrorCode errorCode,
+                                       RequestID requestId);
         void queueEntryRemoved(qint32 offset, quint32 queueId);
         void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueId);
         void receivedTrackInfo(quint32 queueId, QueueEntryType type,
@@ -207,7 +222,7 @@ namespace PMP
                                   QDateTime previouslyHeard, qint16 scorePermillage);
         void receivedPossibleFilenames(quint32 queueId, QList<QString> names);
 
-        void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
+        void userAccountsReceived(QList<QPair<uint, QString>> accounts);
         void userAccountCreatedSuccessfully(QString login, quint32 id);
         void userAccountCreationError(QString login, UserRegistrationError errorType);
 
@@ -254,15 +269,26 @@ namespace PMP
 
     private Q_SLOTS:
         void onConnected();
+        void onDisconnected();
         void onReadyRead();
         void onSocketError(QAbstractSocket::SocketError error);
+        void onKeepAliveTimerTimeout();
 
     private:
+        void breakConnection(DisconnectReason reason);
+
         uint getNewReference();
         RequestID getNewRequestId();
+        RequestID signalRequestError(ResultMessageErrorCode errorCode,
+                             void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
+                                                                   RequestID));
+        RequestID signalServerTooOldError(
+                             void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
+                                                                   RequestID));
 
         void sendTextCommand(QString const& command);
         void sendBinaryMessage(QByteArray const& message);
+        void sendKeepAliveMessage();
         void sendProtocolExtensionsMessage();
         void sendSingleByteAction(quint8 action);
         RequestID sendParameterlessActionRequest(ParameterlessActionCode code);
@@ -275,7 +301,7 @@ namespace PMP
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 extensionMessageType,
                                     QByteArray const& message);
-        void handleResultMessage(quint16 errorType, quint32 clientReference,
+        void handleResultMessage(quint16 errorCode, quint32 clientReference,
                                  quint32 intData, QByteArray const& blobData);
         quint32 registerResultHandler(ResultHandler* handler);
         void discardResultHandler(quint32 clientReference);
@@ -301,6 +327,8 @@ namespace PMP
                                    QByteArray const& blobData);
 
         void onFullIndexationRunningStatusReceived(bool running);
+
+        void parseKeepAliveMessage(QByteArray const& message);
 
         void parseSimpleResultMessage(QByteArray const& message);
 
@@ -356,7 +384,13 @@ namespace PMP
                                     QString extraInfo = "");
 
         static const quint16 ClientProtocolNo;
+        static const int KeepAliveIntervalMs;
+        static const int KeepAliveReplyTimeoutMs;
 
+        ServerCapabilitiesImpl* _serverCapabilities;
+        DisconnectReason _disconnectReason;
+        QElapsedTimer _timeSinceLastMessageReceived;
+        QTimer* _keepAliveTimer;
         ServerEventSubscription _autoSubscribeToEventsAfterConnect;
         State _state;
         QTcpSocket _socket;

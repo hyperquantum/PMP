@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,24 +20,26 @@
 #ifndef PMP_USERACCOUNTCREATIONWIDGET_H
 #define PMP_USERACCOUNTCREATIONWIDGET_H
 
-#include "common/serverconnection.h" // for the enum :-/
+#include "common/userregistrationerror.h"
 
 #include <QString>
 #include <QWidget>
 
-namespace Ui {
+namespace Ui
+{
     class UserAccountCreationWidget;
 }
 
-namespace PMP {
+namespace PMP
+{
+    class AuthenticationController;
 
-    class ServerConnection;
-
-    class UserAccountCreationWidget : public QWidget {
+    class UserAccountCreationWidget : public QWidget
+    {
         Q_OBJECT
-
     public:
-        UserAccountCreationWidget(QWidget *parent, ServerConnection *connection);
+        UserAccountCreationWidget(QWidget* parent,
+                                  AuthenticationController* authenticationController);
         ~UserAccountCreationWidget();
 
     Q_SIGNALS:
@@ -49,12 +51,11 @@ namespace PMP {
         void createAccountClicked();
 
         void userAccountCreatedSuccessfully(QString login, quint32 id);
-        void userAccountCreationError(QString login,
-                                      ServerConnection::UserRegistrationError errorType);
+        void userAccountCreationError(QString login, UserRegistrationError errorType);
 
     private:
         Ui::UserAccountCreationWidget* _ui;
-        ServerConnection* _connection;
+        AuthenticationController* _authenticationController;
     };
 }
 #endif

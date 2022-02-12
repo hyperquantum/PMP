@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,16 +30,18 @@
 #include <QObject>
 #include <QSharedPointer>
 
-namespace PMP {
-
+namespace PMP
+{
     class FileHash;
     class Player;
     class QueueEntry;
 
-    class History : public QObject {
+    class History : public QObject
+    {
         Q_OBJECT
     public:
-        struct HashStats {
+        struct HashStats
+        {
             QDateTime lastHeard;
             qint16 score;
 
@@ -58,7 +60,7 @@ namespace PMP {
         History(Player* player);
 
         /** Get last played time since server startup (non-user-specific) */
-        QDateTime lastPlayed(FileHash const& hash) const;
+        QDateTime lastPlayedGloballySinceStartup(FileHash const& hash) const;
 
         bool fetchMissingUserStats(uint hashID, quint32 user);
         HashStats const* getUserStats(uint hashID, quint32 user);

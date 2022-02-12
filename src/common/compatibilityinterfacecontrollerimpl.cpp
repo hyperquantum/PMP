@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -42,8 +42,8 @@ namespace PMP
             this, &CompatibilityInterfaceControllerImpl::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
-            this, &CompatibilityInterfaceControllerImpl::connectionBroken
+            _connection, &ServerConnection::disconnected,
+            this, &CompatibilityInterfaceControllerImpl::disconnected
         );
 
         connect(
@@ -150,7 +150,7 @@ namespace PMP
         );
     }
 
-    void CompatibilityInterfaceControllerImpl::connectionBroken()
+    void CompatibilityInterfaceControllerImpl::disconnected()
     {
         _canFetchDefinitions = false;
 

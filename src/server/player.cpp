@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,8 +26,8 @@
 #include <QtDebug>
 #include <QtGlobal>
 
-namespace PMP {
-
+namespace PMP
+{
     PlayerInstance::PlayerInstance(QObject* parent, int identifier, Preloader* preloader,
                                    Resolver* resolver)
      : QObject(parent),
@@ -86,7 +86,8 @@ namespace PMP {
         qDebug() << "PlayerInstance" << _identifier
                  << ": setTrack() called for queue ID" << queueId;
 
-        if (!availableForNewTrack()) {
+        if (!availableForNewTrack())
+        {
             qWarning() << "cannot set new track because we're not available yet!";
             return;
         }
@@ -103,8 +104,10 @@ namespace PMP {
         _preloadedFile = _preloader->getPreloadedCacheFile(queueId);
         QString filename = _preloadedFile.getFilename();
 
-        if (filename.isEmpty()) {
-            if (onlyIfPreloaded) {
+        if (filename.isEmpty())
+        {
+            if (onlyIfPreloaded)
+            {
                 qDebug() << "queue ID" << queueId
                          << "not preloaded yet, will not set media now";
                 return;
@@ -118,7 +121,8 @@ namespace PMP {
             }
         }
 
-        if (!filename.isEmpty()) {
+        if (!filename.isEmpty())
+        {
             qDebug() << "going to load media:" << filename;
             _player->setMedia(QUrl::fromLocalFile(filename));
             _mediaSet = true;
@@ -132,7 +136,8 @@ namespace PMP {
         _player->play();
 
         /* set start time if it hasn't been set yet */
-        if (_track->started().isNull()) {
+        if (_track->started().isNull())
+        {
             _track->setStartedNow();
         }
 
@@ -175,9 +180,11 @@ namespace PMP {
     {
         qDebug() << "PlayerInstance" << _identifier << ": state changed to" << state;
 
-        switch (state) {
+        switch (state)
+        {
             case QMediaPlayer::StoppedState:
-                switch (_player->mediaStatus()) {
+                switch (_player->mediaStatus())
+                {
                     case QMediaPlayer::EndOfMedia:
                         Q_EMIT trackFinished();
                         break;
@@ -217,18 +224,22 @@ namespace PMP {
         updateEndOfTrackComingUpFlag();
     }
 
-    void PlayerInstance::internalDurationChanged(qint64 duration) {
+    void PlayerInstance::internalDurationChanged(qint64 duration)
+    {
         Q_UNUSED(duration)
 
         updateEndOfTrackComingUpFlag();
     }
 
-    void PlayerInstance::updateEndOfTrackComingUpFlag() {
+    void PlayerInstance::updateEndOfTrackComingUpFlag()
+    {
         auto lengthMilliseconds = _track->lengthInMilliseconds();
-        if (lengthMilliseconds < 0) {
+        if (lengthMilliseconds < 0)
+        {
             qWarning() << "track duration not known, using backend duration";
             lengthMilliseconds = _player->duration();
-            if (lengthMilliseconds <= 0) {
+            if (lengthMilliseconds <= 0)
+            {
                 qWarning() << "track duration still unknown";
                 return;
             }
@@ -241,7 +252,8 @@ namespace PMP {
         bool endOfTrackComingUp =
                 positionMilliseconds >= (lengthMilliseconds - endOfTrackSpanMilliseconds);
 
-        if (endOfTrackComingUp != _endOfTrackComingUp) {
+        if (endOfTrackComingUp != _endOfTrackComingUp)
+        {
             _endOfTrackComingUp = endOfTrackComingUp;
             Q_EMIT endOfTrackComingUpChanged(endOfTrackComingUp);
         }
@@ -283,19 +295,23 @@ namespace PMP {
         _oldInstance2 = createNewPlayerInstance();
     }
 
-    int Player::volume() const {
+    int Player::volume() const
+    {
         return _volume;
     }
 
-    bool Player::playing() const {
+    bool Player::playing() const
+    {
         return _state == ServerPlayerState::Playing;
     }
 
-    ServerPlayerState Player::state() const {
+    ServerPlayerState Player::state() const
+    {
         return _state;
     }
 
-    void Player::changeStateTo(ServerPlayerState state) {
+    void Player::changeStateTo(ServerPlayerState state)
+    {
         if (_state == state) return;
 
         qDebug() << "Player: state changed from" << int(_state) << "to" << int(state);
@@ -303,47 +319,55 @@ namespace PMP {
         Q_EMIT stateChanged(state);
     }
 
-    QueueEntry const* Player::nowPlaying() const {
+    QueueEntry const* Player::nowPlaying() const
+    {
         return _nowPlaying;
     }
 
-    uint Player::nowPlayingQID() const {
+    uint Player::nowPlayingQID() const
+    {
         QueueEntry* entry = _nowPlaying;
         return entry ? entry->queueID() : 0;
     }
 
-    qint64 Player::playPosition() const {
+    qint64 Player::playPosition() const
+    {
         return _playPosition;
     }
 
-    quint32 Player::userPlayingFor() const {
+    quint32 Player::userPlayingFor() const
+    {
         return _userPlayingFor;
     }
 
-    PlayerQueue& Player::queue() {
+    PlayerQueue& Player::queue()
+    {
         return _queue;
     }
 
-    Resolver& Player::resolver() {
+    Resolver& Player::resolver()
+    {
         return *_resolver;
     }
 
-    void Player::playPause() {
-        if (_state == ServerPlayerState::Playing) {
+    void Player::playPause()
+    {
+        if (_state == ServerPlayerState::Playing)
             pause();
-        }
-        else {
+        else
             play();
-        }
     }
 
-    void Player::play() {
-        switch (_state) {
+    void Player::play()
+    {
+        switch (_state)
+        {
             case ServerPlayerState::Stopped:
                 startNext(false, true);
                 break;
             case ServerPlayerState::Paused:
-                if (_currentInstance) {
+                if (_currentInstance)
+                {
                     _currentInstance->play(); /* resume paused track */
                     changeStateTo(ServerPlayerState::Playing);
                 }
@@ -353,13 +377,16 @@ namespace PMP {
         }
     }
 
-    void Player::pause() {
-        switch (_state) {
+    void Player::pause()
+    {
+        switch (_state)
+        {
             case ServerPlayerState::Stopped:
             case ServerPlayerState::Paused:
                 break; /* no effect */
             case ServerPlayerState::Playing:
-                if (_currentInstance) {
+                if (_currentInstance)
+                {
                     _currentInstance->pause();
                     changeStateTo(ServerPlayerState::Paused);
                 }
@@ -367,10 +394,12 @@ namespace PMP {
         }
     }
 
-    void Player::skip() {
+    void Player::skip()
+    {
         bool mustPlay;
 
-        switch (_state) {
+        switch (_state)
+        {
             case ServerPlayerState::Stopped:
             default:
                 return; /* do nothing */
@@ -386,7 +415,8 @@ namespace PMP {
         startNext(true, mustPlay);
     }
 
-    void Player::seekTo(qint64 position) {
+    void Player::seekTo(qint64 position)
+    {
         if (_state != ServerPlayerState::Playing && _state != ServerPlayerState::Paused)
             return;
 
@@ -394,7 +424,8 @@ namespace PMP {
             _currentInstance->seekTo(position);
     }
 
-    void Player::setVolume(int volume) {
+    void Player::setVolume(int volume)
+    {
         if (volume < 0 || volume > 100) return;
         if (volume == _volume) return;
 
@@ -406,19 +437,20 @@ namespace PMP {
         Q_EMIT volumeChanged(volume);
     }
 
-    void Player::setUserPlayingFor(quint32 user) {
+    void Player::setUserPlayingFor(quint32 user)
+    {
         if (_userPlayingFor == user) return; /* no change */
 
         _userPlayingFor = user;
         Q_EMIT userPlayingForChanged(user);
     }
 
-    bool Player::startNext(bool stopCurrent, bool playNext) {
+    bool Player::startNext(bool stopCurrent, bool playNext)
+    {
         qDebug() << "Player::startNext(" << stopCurrent << "," << playNext << ") called";
 
         PlayerInstance* oldCurrentInstance = _currentInstance;
         QueueEntry* oldNowPlaying = _nowPlaying;
-        uint oldQueueLength = _queue.length();
 
         if (_currentInstance)
             moveCurrentInstanceToOldInstanceSlot();
@@ -430,24 +462,33 @@ namespace PMP {
 
         /* find next track to play and start it */
         QueueEntry* nextTrack = nullptr;
-        while (!_queue.empty()) {
+        while (!_queue.empty())
+        {
+            if (_queue.firstEntryIsBarrier())
+                break; /* this will cause playback to stop because next == nullptr */
+
             QueueEntry* entry = _queue.dequeue();
-            if (!entry->isTrack()) {
-                if (entry->kind() == QueueEntryKind::Break) {
+            if (!entry->isTrack())
+            {
+                if (entry->kind() == QueueEntryKind::Break)
+                {
                     break; /* this will cause playback to stop because next == nullptr */
                 }
-                else { /* unknown non-track thing, let's just ignore it */
+                else /* unknown non-track thing, let's just ignore it */
+                {
                     continue;
                 }
             }
 
             putInHistoryOrder(entry);
             bool ok = tryStartNextTrack(nextInstance, entry, playNext);
-            if (ok) {
+            if (ok)
+            {
                 nextTrack = entry;
                 break;
             }
-            else {
+            else
+            {
                 qWarning() << "failed to load/start track with queue ID"
                            << entry->queueID();
 
@@ -455,19 +496,22 @@ namespace PMP {
             }
         }
 
-        if (stopCurrent && oldCurrentInstance) {
+        if (stopCurrent && oldCurrentInstance)
+        {
             oldCurrentInstance->stop();
         }
 
         ServerPlayerState newState;
-        if (nextTrack) {
+        if (nextTrack)
+        {
             newState = playNext ? ServerPlayerState::Playing : ServerPlayerState::Paused;
 
             /* try to figure out track length, and if possible tag, artist... */
             nextTrack->checkTrackData(*_resolver);
         }
-        else {
-            /* we stop because we have nothing left to play */
+        else
+        {
+            /* we stop because we don't have a track to play */
             newState = ServerPlayerState::Stopped;
 
             /* this instance ended up not being used for playing a track, don't lose it */
@@ -484,30 +528,29 @@ namespace PMP {
 
         changeStateTo(newState);
 
-        if (!nextTrack && _queue.empty() && oldQueueLength > 0) {
-            qDebug() << "queue is finished, nothing left to play";
-            Q_EMIT finished();
-        }
-
         return nextTrack;
     }
 
-    void Player::instancePlaying(PlayerInstance* instance) {
+    void Player::instancePlaying(PlayerInstance* instance)
+    {
         if (instance != _currentInstance) return;
 
         changeStateTo(ServerPlayerState::Playing);
     }
 
-    void Player::instancePaused(PlayerInstance* instance) {
+    void Player::instancePaused(PlayerInstance* instance)
+    {
         if (instance != _currentInstance) return;
 
         changeStateTo(ServerPlayerState::Paused);
     }
 
-    void Player::instancePositionChanged(PlayerInstance* instance, qint64 position) {
+    void Player::instancePositionChanged(PlayerInstance* instance, qint64 position)
+    {
         if (instance != _currentInstance) return;
 
-        if (_state == ServerPlayerState::Stopped) {
+        if (_state == ServerPlayerState::Stopped)
+        {
             _playPosition = 0;
             return;
         }
@@ -526,19 +569,22 @@ namespace PMP {
             prepareForFirstTrackFromQueue();
     }
 
-    void Player::instancePlaybackError(PlayerInstance* instance) {
+    void Player::instancePlaybackError(PlayerInstance* instance)
+    {
         /* register track as not played */
         addToHistory(instance->track(), 0, true, false);
     }
 
-    void Player::instanceTrackFinished(PlayerInstance* instance) {
+    void Player::instanceTrackFinished(PlayerInstance* instance)
+    {
         auto track = instance->track();
         bool hadSeek = instance->hadSeek();
         addToHistory(track, 1000, false, hadSeek);
 
         if (instance != _currentInstance) return;
 
-        switch (_state) {
+        switch (_state)
+        {
             case ServerPlayerState::Playing:
                 startNext(false, true);
                 break;
@@ -550,7 +596,8 @@ namespace PMP {
         }
     }
 
-    void Player::instanceStoppedEarly(PlayerInstance* instance, qint64 position) {
+    void Player::instanceStoppedEarly(PlayerInstance* instance, qint64 position)
+    {
         auto track = instance->track();
         bool hadSeek = instance->hadSeek();
         auto permillage = calcPermillagePlayed(track, position, hadSeek);
@@ -577,17 +624,20 @@ namespace PMP {
         if (!_oldInstance1 || !_oldInstance2)
             return;
 
-        if (!_nextInstance && _oldInstance1->availableForNewTrack()) {
+        if (!_nextInstance && _oldInstance1->availableForNewTrack())
+        {
             qDebug() << "moving old player instance 1 to next instance";
             _nextInstance = _oldInstance1;
             _oldInstance1 = nullptr;
         }
-        else if (!_nextInstance && _oldInstance2->availableForNewTrack()) {
+        else if (!_nextInstance && _oldInstance2->availableForNewTrack())
+        {
             qDebug() << "moving old player instance 2 to next instance";
             _nextInstance = _oldInstance2;
             _oldInstance2 = nullptr;
         }
-        else {
+        else
+        {
             qDebug() << "old player instance 2 will be deleted";
             _oldInstance2->deleteAfterStopped();
             _oldInstance2 = nullptr;
@@ -607,13 +657,16 @@ namespace PMP {
 
         makeSureOneOldInstanceSlotIsFree();
 
-        if (!_oldInstance1) {
+        if (!_oldInstance1)
+        {
             _oldInstance1 = instance;
         }
-        else if (!_oldInstance2) {
+        else if (!_oldInstance2)
+        {
             _oldInstance2 = instance;
         }
-        else {
+        else
+        {
             qWarning() << "will have to delete instance because no slot is free";
             instance->deleteAfterStopped();
         }
@@ -640,7 +693,8 @@ namespace PMP {
         connect(
             instance, &PlayerInstance::endOfTrackComingUpChanged,
             this,
-            [=](bool endOfTrackComingUp) {
+            [=](bool endOfTrackComingUp)
+            {
                 this->instanceEndOfTrackComingUpChanged(instance, endOfTrackComingUp);
             }
         );
@@ -666,16 +720,20 @@ namespace PMP {
         if (!nextTrack || !nextTrack->isTrack())
             return; /* no next track to prepare for now */
 
-        if (!_nextInstance) {
-            if (_oldInstance1 && _oldInstance1->availableForNewTrack()) {
+        if (!_nextInstance)
+        {
+            if (_oldInstance1 && _oldInstance1->availableForNewTrack())
+            {
                 _nextInstance = _oldInstance1;
                 _oldInstance1 = nullptr;
             }
-            else if (_oldInstance2 && _oldInstance2->availableForNewTrack()) {
+            else if (_oldInstance2 && _oldInstance2->availableForNewTrack())
+            {
                 _nextInstance = _oldInstance2;
                 _oldInstance2 = nullptr;
             }
-            else {
+            else
+            {
                 _nextInstance = createNewPlayerInstance();
             }
         }
@@ -689,7 +747,8 @@ namespace PMP {
         if (!entry || !entry->isTrack())
             return false; /* argument should be a track */
 
-        if (!playerInstance->availableForNewTrack()) {
+        if (!playerInstance->availableForNewTrack())
+        {
             qWarning() << "instance not available for new track!";
             return false;
         }
@@ -735,7 +794,8 @@ namespace PMP {
         if (!entry->isTrack())
             return; /* don't put breakpoints in the history */
 
-        if (_historyOrder.isEmpty()) {
+        if (_historyOrder.isEmpty())
+        {
             qWarning()
                     << "history order is empty when adding a history entry for queue ID"
                     << entry->queueID();
@@ -755,7 +815,8 @@ namespace PMP {
             started = QDateTime::currentDateTimeUtc();
 
         QDateTime ended = entry->ended();
-        if (!ended.isValid()) {
+        if (!ended.isValid())
+        {
             if (permillage > 0)
                 ended = QDateTime::currentDateTimeUtc();
             else
@@ -770,7 +831,8 @@ namespace PMP {
                 hadError, hadSeek, permillage
             );
 
-        if (_historyOrder.isEmpty() || _historyOrder.first() != queueID) {
+        if (_historyOrder.isEmpty() || _historyOrder.first() != queueID)
+        {
             _pendingHistory.insert(queueID, historyEntry);
             return;
         }

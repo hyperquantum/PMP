@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,27 +20,29 @@
 #ifndef PMP_USERPICKERWIDGET_H
 #define PMP_USERPICKERWIDGET_H
 
-#include "common/serverhealthstatus.h"
-
 #include <QList>
 #include <QPair>
 #include <QWidget>
 
 QT_FORWARD_DECLARE_CLASS(QCommandLinkButton)
 
-namespace Ui {
+namespace Ui
+{
     class UserPickerWidget;
 }
 
-namespace PMP {
+namespace PMP
+{
+    class AuthenticationController;
+    class GeneralController;
 
-    class ServerConnection;
-
-    class UserPickerWidget : public QWidget {
+    class UserPickerWidget : public QWidget
+    {
         Q_OBJECT
-
     public:
-        UserPickerWidget(QWidget *parent, ServerConnection* connection);
+        UserPickerWidget(QWidget* parent,
+                         GeneralController* generalController,
+                         AuthenticationController* authenticationController);
         ~UserPickerWidget();
 
     Q_SIGNALS:
@@ -49,11 +51,13 @@ namespace PMP {
 
     private Q_SLOTS:
         void receivedUserAccounts(QList<QPair<uint, QString> > accounts);
-        void serverHealthChanged(ServerHealthStatus serverHealth);
 
     private:
+        void checkServerHealth();
+
         Ui::UserPickerWidget* _ui;
-        ServerConnection* _connection;
+        GeneralController* _generalController;
+        AuthenticationController* _authenticationController;
         bool _serverProblemsPreventLogin;
     };
 }

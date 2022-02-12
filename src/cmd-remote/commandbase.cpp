@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -95,6 +95,7 @@ namespace PMP
         switch (errorCode)
         {
         case ResultMessageErrorCode::NoError:
+        case ResultMessageErrorCode::AlreadyDone:
             setCommandExecutionSuccessful();
             return;
 
@@ -124,6 +125,30 @@ namespace PMP
 
         case ResultMessageErrorCode::UnknownAction:
             errorOutput = "server does not know how to handle this action";
+            break;
+
+        case PMP::ResultMessageErrorCode::InvalidHash:
+            errorOutput = "invalid file hash";
+            break;
+
+        case PMP::ResultMessageErrorCode::InvalidQueueIndex:
+            errorOutput = "invalid queue index";
+            break;
+
+        case ResultMessageErrorCode::InvalidQueueItemType:
+            errorOutput = "invalid queue item type";
+            break;
+
+        case ResultMessageErrorCode::InvalidTimeSpan:
+            errorOutput = "invalid time span";
+            break;
+
+        case PMP::ResultMessageErrorCode::MaximumQueueSizeExceeded:
+            errorOutput = "maximum queue size would be exceeded";
+            break;
+
+        case ResultMessageErrorCode::OperationAlreadyRunning:
+            errorOutput = "operation cannot be started because it is already running";
             break;
 
         case ResultMessageErrorCode::DatabaseProblem:

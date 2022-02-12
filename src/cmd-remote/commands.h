@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,9 +21,13 @@
 #define PMP_COMMANDS_H
 
 #include "common/playerstate.h"
+#include "common/queueindextype.h"
 #include "common/requestid.h"
+#include "common/specialqueueitemtype.h"
 
 #include "commandbase.h"
+
+#include <QDateTime>
 
 namespace PMP
 {
@@ -35,6 +39,54 @@ namespace PMP
     public:
         ReloadServerSettingsCommand();
 
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        RequestID _requestId;
+    };
+
+    class DelayedStartAtCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        DelayedStartAtCommand(QDateTime startTime);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        QDateTime _startTime;
+        RequestID _requestId;
+    };
+
+    class DelayedStartWaitCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        DelayedStartWaitCommand(qint64 delayMilliseconds);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        qint64 _delayMilliseconds;
+        RequestID _requestId;
+    };
+
+    class DelayedStartCancelCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
         bool requiresAuthentication() const override;
 
     protected:
@@ -181,6 +233,26 @@ namespace PMP
     protected:
         void setUp(ClientServerInterface* clientServerInterface) override;
         void start(ClientServerInterface* clientServerInterface) override;
+    };
+
+    class QueueInsertSpecialItemCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        QueueInsertSpecialItemCommand(SpecialQueueItemType itemType, int index,
+                                      QueueIndexType indexType);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        SpecialQueueItemType _itemType;
+        int _index;
+        QueueIndexType _indexType;
+        RequestID _requestId;
     };
 
     class QueueDeleteCommand : public CommandBase

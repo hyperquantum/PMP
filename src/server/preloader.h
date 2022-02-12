@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -95,9 +95,9 @@ namespace PMP {
         void trackPreloaded(uint queueId);
 
     private Q_SLOTS:
-        void queueEntryAdded(quint32 offset, quint32 queueID);
-        void queueEntryRemoved(quint32 offset, quint32 queueID);
-        void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
+        void queueEntryAdded(qint32 offset, quint32 queueID);
+        void queueEntryRemoved(qint32 offset, quint32 queueID);
+        void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueID);
         void firstTrackInQueueChanged(int index, uint queueId);
 
         void scheduleFirstTrackCheck();

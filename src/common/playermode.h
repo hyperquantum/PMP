@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,16 +22,19 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
-    enum class PlayerMode {
+namespace PMP
+{
+    enum class PlayerMode
+    {
         Unknown = 0,
         Personal,
         Public
     };
 
-    inline QDebug operator<<(QDebug debug, PlayerMode mode) {
-        switch (mode) {
+    inline QDebug operator<<(QDebug debug, PlayerMode mode)
+    {
+        switch (mode)
+        {
             case PlayerMode::Unknown:
                 debug << "PlayerMode::Unknown";
                 return debug;

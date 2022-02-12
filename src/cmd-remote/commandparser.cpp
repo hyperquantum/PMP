@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,6 +25,35 @@
 
 namespace PMP
 {
+
+    bool CommandParser::CommandArguments::currentIsOneOf(QVector<QString> options) const
+    {
+        return options.contains(current());
+    }
+
+    bool CommandParser::CommandArguments::tryParseInt(int& number) const
+    {
+        bool ok;
+        number = current().toInt(&ok);
+        return ok;
+    }
+
+    bool CommandParser::CommandArguments::tryParseTime(QTime& time) const
+    {
+        time = QTime::fromString(current(), "H:m");
+        if (time.isValid())
+            return true;
+
+        time = QTime::fromString(current(), "H:m:s");
+        return time.isValid();
+    }
+
+    bool CommandParser::CommandArguments::tryParseDate(QDate& date) const
+    {
+        date = QDate::fromString(current(), "yyyy-MM-dd");
+        return date.isValid();
+    }
+
     CommandParser::CommandParser()
      : _command(nullptr),
        _authenticationMode(AuthenticationMode::Implicit)
@@ -181,6 +210,7 @@ namespace PMP
 
         auto command = commandWithArgs[0];
         auto args = commandWithArgs.mid(1);
+        CommandArguments arguments(args);
         auto argsCount = args.size();
 
         if (command == "play")
@@ -211,6 +241,14 @@ namespace PMP
         {
             handleCommandNotRequiringArguments<ReloadServerSettingsCommand>(
                                                                          commandWithArgs);
+        }
+        else if (command == "insert")
+        {
+            parseInsertCommand(args);
+        }
+        else if (command == "delayedstart")
+        {
+            parseDelayedStartCommand(args);
         }
         else if (command == "shutdown")
         {
@@ -312,6 +350,10 @@ namespace PMP
 
             _command = new QueueMoveCommand(queueId, moveDiff);
         }
+        else if (command == "login")
+        {
+            _errorMessage = "The 'login' command can only be used as the first command";
+        }
         else if (command == ":")
         {
             _errorMessage = "Expected command before \":\" separator";
@@ -324,6 +366,224 @@ namespace PMP
                 _errorMessage +=
                         " (did you forget to put spaces around the \":\" separator?)";
         }
+    }
+
+    void CommandParser::parseInsertCommand(QVector<QString> arguments)
+    {
+        if (arguments.isEmpty())
+        {
+            _errorMessage = "Command 'insert' requires arguments!";
+            return;
+        }
+
+        int argumentIndex = 0;
+
+        SpecialQueueItemType itemType;
+        if (arguments[argumentIndex] == "break")
+        {
+            itemType = SpecialQueueItemType::Break;
+        }
+        else if (arguments[argumentIndex] == "barrier")
+        {
+            itemType = SpecialQueueItemType::Barrier;
+        }
+        else
+        {
+            _errorMessage =
+                    "First argument of command 'insert' must be 'break' or 'barrier'!";
+            return;
+        }
+
+        argumentIndex++;
+        if (arguments.size() <= argumentIndex)
+        {
+            _errorMessage = "Command 'insert' requires at least one more argument!";
+            return;
+        }
+
+        int insertionIndex;
+        auto insertionIndexType = QueueIndexType::Normal;
+
+        if (arguments[argumentIndex] == "front")
+        {
+            insertionIndex = 0;
+        }
+        else if (arguments[argumentIndex] == "end")
+        {
+            insertionIndex = 0;
+            insertionIndexType = QueueIndexType::Reverse;
+        }
+        else if (arguments[argumentIndex] == "index")
+        {
+            argumentIndex++;
+            if (arguments.size() <= argumentIndex)
+            {
+                _errorMessage = "No actual index provided after 'index'!";
+                return;
+            }
+
+            bool ok;
+            insertionIndex = arguments[argumentIndex].toInt(&ok);
+            if (!ok || insertionIndex < 0)
+            {
+                _errorMessage = "Index must be a non-negative number!";
+                return;
+            }
+        }
+        else
+        {
+            _errorMessage = "Position indicator must be 'front', 'end' or 'index'!";
+            return;
+        }
+
+        if (argumentIndex + 1 < arguments.size())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new QueueInsertSpecialItemCommand(itemType, insertionIndex,
+                                                     insertionIndexType);
+    }
+
+    void CommandParser::parseDelayedStartCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Command 'delayedstart' requires arguments!";
+            return;
+        }
+
+        if (arguments.currentIsOneOf({"abort", "cancel"}))
+        {
+            if (arguments.haveMore())
+            {
+                _errorMessage = "Command has too many arguments!";
+                return;
+            }
+
+            _command = new DelayedStartCancelCommand();
+        }
+        else if (arguments.current() == "at")
+        {
+            arguments.advance();
+            parseDelayedStartAt(arguments);
+        }
+        else if (arguments.current() == "wait")
+        {
+            arguments.advance();
+            parseDelayedStartWait(arguments);
+        }
+        else
+        {
+            _errorMessage =
+                "Expected 'abort' or 'cancel' or 'at' or 'wait' after 'delayedstart'!";
+        }
+    }
+
+    void CommandParser::parseDelayedStartAt(CommandArguments& arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Expected more arguments after 'at'!";
+            return;
+        }
+
+        bool dateSpecified;
+        QDate date;
+        if (arguments.tryParseDate(date))
+        {
+            dateSpecified = true;
+            arguments.advance();
+        }
+        else
+        {
+            dateSpecified = false;
+            date = QDate::currentDate();
+        }
+
+        QTime time;
+        if (!arguments.tryParseTime(time))
+        {
+            if (dateSpecified)
+                _errorMessage = "Expected time after date!";
+            else
+                _errorMessage = "Expected date or time after 'at'!";
+
+            return;
+        }
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        QDateTime dateTime(date, time);
+        if (!isInFuture(dateTime))
+        {
+            _errorMessage = "Start time must be in the future!";
+            return;
+        }
+
+        _command = new DelayedStartAtCommand(dateTime);
+    }
+
+    void CommandParser::parseDelayedStartWait(CommandArguments& arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Expected more arguments after 'wait'!";
+            return;
+        }
+
+        int number;
+        if (!arguments.tryParseInt(number))
+        {
+            _errorMessage = "Expected valid number after 'wait'!";
+            return;
+        }
+        if (number <= 0 || number > 1000000)
+        {
+            _errorMessage = "Number after 'wait' must be in the range 1 - 1000000!";
+            return;
+        }
+
+        if (arguments.currentIsLast())
+        {
+            _errorMessage = "Expected time unit after the number!";
+            return;
+        }
+
+        arguments.advance();
+
+        qint64 unitMilliseconds = -1;
+        if (arguments.currentIsOneOf({"s", "seconds", "second"}))
+            unitMilliseconds = 1000;
+        else if (arguments.currentIsOneOf({"min", "minutes", "minute"}))
+            unitMilliseconds = 60 * 1000;
+        else if (arguments.currentIsOneOf({"h", "hours", "hour"}))
+            unitMilliseconds = 60 * 60 * 1000;
+        else if (arguments.currentIsOneOf({"ms", "milliseconds", "millisecond"}))
+            unitMilliseconds = 1;
+        else
+        {
+            _errorMessage = QString("Invalid time unit: '%1'").arg(arguments.current());
+            return;
+        }
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new DelayedStartWaitCommand(number * unitMilliseconds);
+    }
+
+    bool CommandParser::isInFuture(QDateTime time)
+    {
+        return QDateTime::currentDateTimeUtc() < time.toUTC();
     }
 
 }

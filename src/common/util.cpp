@@ -128,106 +128,162 @@ namespace PMP
                 + "." + QString::number(partialSeconds).rightJustified(3, '0');
     }
 
-    QString Util::getHowLongAgoText(int secondsAgo)
+    QString Util::getHowLongAgoText(SimpleDuration howLongAgo)
+    {
+        if (howLongAgo.amount() < 0)
+        {
+            qWarning() << "getHowLongAgoText received a negative number:"
+                       << howLongAgo.amount()
+                       << " (unit" << int(howLongAgo.unit()) << ")";
+            return "";
+        }
+
+        if (howLongAgo.amount() == 0)
+            return QString("just now");
+
+        auto amount = howLongAgo.amount();
+
+        switch (howLongAgo.unit())
+        {
+        case PMP::DurationUnit::Seconds:
+            return amount == 1
+                    ? QString("1 second ago")
+                    : QString("%1 seconds ago").arg(amount);
+
+        case PMP::DurationUnit::Minutes:
+            return amount == 1
+                    ? QString("1 minute ago")
+                    : QString("%1 minutes ago").arg(amount);
+
+        case PMP::DurationUnit::Hours:
+            return amount == 1
+                    ? QString("1 hour ago")
+                    : QString("%1 hours ago").arg(amount);
+
+        case PMP::DurationUnit::Days:
+            return amount == 1
+                    ? QString("1 day ago")
+                    : QString("%1 days ago").arg(amount);
+
+        case PMP::DurationUnit::Weeks:
+            return amount == 1
+                    ? QString("1 week ago")
+                    : QString("%1 weeks ago").arg(amount);
+
+        case PMP::DurationUnit::Months:
+            return amount == 1
+                    ? QString("1 month ago")
+                    : QString("%1 months ago").arg(amount);
+
+        case PMP::DurationUnit::Years:
+            return amount == 1
+                    ? QString("1 year ago")
+                    : QString("%1 years ago").arg(amount);
+        }
+
+        qWarning() << "unknown/unhandled DurationUnit value:" << int(howLongAgo.unit());
+        return "";
+    }
+
+    SimpleDuration Util::getHowLongAgoDuration(int secondsAgo)
     {
         if (secondsAgo < 0)
         {
-            qWarning() << "getHowLongAgoText received a negative number:" << secondsAgo;
-            return "";
+            qWarning() << "getHowLongAgoDuration received a negative number:"
+                       << secondsAgo;
+            return {};
         }
 
         const int secondsPerMinute = 60;
         const int secondsPerHour = 60 * secondsPerMinute;
         const int secondsPerDay = 24 * secondsPerHour;
         const int secondsPerWeek = 7 * secondsPerDay;
+        const int secondsPerMonth = 30 * secondsPerDay; // good enough here
+        const int secondsPer3Months = 91 * secondsPerDay; // good enough here
         const int secondsPerYear = 365 * secondsPerDay; // good enough here
         const int secondsPer4Years = (366 + 3 * 365) * secondsPerDay; // good enough here
 
         if (secondsAgo == 0)
-            return QString("just now");
+            return {};
 
         if (secondsAgo < secondsPerMinute)
-        {
-            if (secondsAgo == 1)
-                return QString("1 second ago");
-
-            return QString("%1 seconds ago").arg(secondsAgo);
-        }
+            return SimpleDuration(secondsAgo, DurationUnit::Seconds);
 
         if (secondsAgo < secondsPerHour)
         {
             int minutes = secondsAgo / secondsPerMinute;
-
-            if (minutes == 1)
-                return QString("1 minute ago");
-
-            return QString("%1 minutes ago").arg(minutes);
+            return SimpleDuration(minutes, DurationUnit::Minutes);
         }
 
         if (secondsAgo < secondsPerDay)
         {
             int hours = secondsAgo / secondsPerHour;
-
-            if (hours == 1)
-                return QString("1 hour ago");
-
-            return QString("%1 hours ago").arg(hours);
+            return SimpleDuration(hours, DurationUnit::Hours);
         }
 
         if (secondsAgo < secondsPerWeek)
         {
             int days = secondsAgo / secondsPerDay;
+            return SimpleDuration(days, DurationUnit::Days);
+        }
 
-            if (days == 1)
-                return QString("1 day ago");
-
-            return QString("%1 days ago").arg(days);
+        if (secondsAgo < secondsPerMonth)
+        {
+            int weeks = secondsAgo / secondsPerWeek;
+            return SimpleDuration(weeks, DurationUnit::Weeks);
         }
 
         if (secondsAgo < secondsPerYear)
         {
-            int weeks = secondsAgo / secondsPerWeek;
+            int months;
+            if (secondsAgo < 3 * secondsPerMonth)
+            {
+                months = secondsAgo / secondsPerMonth;
+            }
+            else
+            {
+                int threeMonths = secondsAgo / secondsPer3Months;
+                int remainingMonths =
+                        (secondsAgo - threeMonths * secondsPer3Months) / secondsPerMonth;
+                months = 3 * threeMonths + qMin(remainingMonths, 2);
+            }
 
-            if (weeks == 1)
-                return QString("1 week ago");
-
-            return QString("%1 weeks ago").arg(weeks);
+            return SimpleDuration(months, DurationUnit::Months);
         }
 
+        int years;
         if (secondsAgo < 4 * secondsPerYear)
         {
-            int years = secondsAgo / secondsPerYear;
-
-            if (years == 1)
-                return QString("1 year ago");
-
-            return QString("%1 years ago").arg(years);
+            years = secondsAgo / secondsPerYear;
+        }
+        else
+        {
+            int fourYears = secondsAgo / secondsPer4Years;
+            int remainingYears =
+                    (secondsAgo - fourYears * secondsPer4Years) / secondsPerYear;
+            years = 4 * fourYears + qMin(remainingYears, 3);
         }
 
-        int fourYears = secondsAgo / secondsPer4Years;
-        int remainingYears = (secondsAgo - fourYears * secondsPer4Years) / secondsPerYear;
-        int years = 4 * fourYears + qMin(remainingYears, 3);
-
-        return QString("%1 years ago").arg(years);
+        return SimpleDuration(years, DurationUnit::Years);
     }
 
-    QString Util::getHowLongAgoText(QDateTime pastTime, QDateTime now)
+    SimpleDuration Util::getHowLongAgoDuration(QDateTime pastTime, QDateTime now)
     {
         if (pastTime > now)
         {
-            qWarning() << "getHowLongAgoText: pastTime not in the past;"
+            qWarning() << "getHowLongAgoDuration: pastTime not in the past;"
                        << "pastTime:" << pastTime << " now:" << now;
-            return "";
+            return {};
         }
 
         auto secondsAgo = pastTime.secsTo(now);
 
-        return getHowLongAgoText(secondsAgo);
+        return getHowLongAgoDuration(secondsAgo);
     }
 
-    QString Util::getHowLongAgoText(QDateTime pastTime)
+    SimpleDuration Util::getHowLongAgoDuration(QDateTime pastTime)
     {
-        return getHowLongAgoText(pastTime, QDateTime::currentDateTimeUtc());
+        return getHowLongAgoDuration(pastTime, QDateTime::currentDateTimeUtc());
     }
 
     int Util::getHowLongAgoUpdateIntervalMs(int secondsAgo)
@@ -252,7 +308,7 @@ namespace PMP
 
     TextAndUpdateInterval Util::getHowLongAgoInfo(int secondsAgo)
     {
-        return TextAndUpdateInterval(getHowLongAgoText(secondsAgo),
+        return TextAndUpdateInterval(getHowLongAgoText(getHowLongAgoDuration(secondsAgo)),
                                      getHowLongAgoUpdateIntervalMs(secondsAgo));
     }
 

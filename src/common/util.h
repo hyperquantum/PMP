@@ -27,6 +27,36 @@
 
 namespace PMP
 {
+    enum class DurationUnit
+    {
+        Seconds,
+        Minutes,
+        Hours,
+        Days,
+        Weeks,
+        Months,
+        Years,
+    };
+
+    class SimpleDuration
+    {
+    public:
+        SimpleDuration() : _amount(0), _unit(DurationUnit::Seconds) {}
+
+        SimpleDuration(int amount, DurationUnit unit)
+         : _amount(amount), _unit(unit)
+        {
+            //
+        }
+
+        int amount() { return _amount; }
+        DurationUnit unit() { return _unit; }
+
+    private:
+        int _amount;
+        DurationUnit _unit;
+    };
+
     class TextAndUpdateInterval
     {
     public:
@@ -83,9 +113,11 @@ namespace PMP
         static QString millisecondsToShortDisplayTimeText(qint64 milliseconds);
         static QString millisecondsToLongDisplayTimeText(qint64 milliseconds);
 
-        static QString getHowLongAgoText(int secondsAgo);
-        static QString getHowLongAgoText(QDateTime pastTime, QDateTime now);
-        static QString getHowLongAgoText(QDateTime pastTime);
+        static QString getHowLongAgoText(SimpleDuration howLongAgo);
+
+        static SimpleDuration getHowLongAgoDuration(int secondsAgo);
+        static SimpleDuration getHowLongAgoDuration(QDateTime pastTime, QDateTime now);
+        static SimpleDuration getHowLongAgoDuration(QDateTime pastTime);
 
         static int getHowLongAgoUpdateIntervalMs(int secondsAgo);
 
@@ -97,13 +129,15 @@ namespace PMP
 
         static QByteArray generateZeroedMemory(int byteCount);
 
-        static int compare(uint i1, uint i2) {
+        static int compare(uint i1, uint i2)
+        {
             if (i1 < i2) return -1;
             if (i1 > i2) return 1;
             return 0;
         }
 
-        static int compare(int i1, int i2) {
+        static int compare(int i1, int i2)
+        {
             if (i1 < i2) return -1;
             if (i1 > i2) return 1;
             return 0;

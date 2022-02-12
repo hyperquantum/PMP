@@ -61,7 +61,7 @@ namespace PMP
         void waveProgressChanged();
 
     protected:
-        DynamicModeController(QObject* parent) : QObject(parent) {}
+        explicit DynamicModeController(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

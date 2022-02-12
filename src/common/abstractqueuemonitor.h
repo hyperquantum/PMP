@@ -24,8 +24,8 @@
 #include <QObject>
 #include <QUuid>
 
-namespace PMP {
-
+namespace PMP
+{
     class AbstractQueueMonitor : public QObject
     {
         Q_OBJECT
@@ -50,7 +50,7 @@ namespace PMP {
         void trackMoved(int fromIndex, int toIndex, quint32 queueID);
 
     protected:
-        AbstractQueueMonitor(QObject* parent) : QObject(parent) {}
+        explicit AbstractQueueMonitor(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

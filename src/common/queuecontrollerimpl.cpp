@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,10 +19,11 @@
 
 #include "queuecontrollerimpl.h"
 
+#include "servercapabilities.h"
 #include "serverconnection.h"
 
-namespace PMP {
-
+namespace PMP
+{
     QueueControllerImpl::QueueControllerImpl(ServerConnection* connection)
      : QueueController(connection),
        _connection(connection)
@@ -32,13 +33,17 @@ namespace PMP {
             this, &QueueControllerImpl::connected
         );
         connect(
-            _connection, &ServerConnection::connectionBroken,
+            _connection, &ServerConnection::disconnected,
             this, &QueueControllerImpl::connectionBroken
         );
 
         connect(
             _connection, &ServerConnection::queueEntryAdded,
             this, &QueueControllerImpl::queueEntryAdded
+        );
+        connect(
+            _connection, &ServerConnection::queueEntryInsertionFailed,
+            this, &QueueControllerImpl::queueEntryInsertionFailed
         );
         connect(
             _connection, &ServerConnection::queueEntryRemoved,
@@ -56,12 +61,22 @@ namespace PMP {
 
         /* we COULD simulate duplication for tracks on older servers, with a regular
          * insert operation, but there is no reason to put in the effort at this time */
-        return _connection->serverSupportsQueueEntryDuplication();
+        return _connection->serverCapabilities().supportsQueueEntryDuplication();
     }
 
-    void QueueControllerImpl::insertBreakAtFront()
+    bool QueueControllerImpl::canInsertBreakAtAnyIndex() const
     {
-        _connection->insertBreakAtFront();
+        return _connection->serverCapabilities().supportsInsertingBreaksAtAnyIndex();
+    }
+
+    bool QueueControllerImpl::canInsertBarrier() const
+    {
+        return _connection->serverCapabilities().supportsInsertingBarriers();
+    }
+
+    void QueueControllerImpl::insertBreakAtFrontIfNotExists()
+    {
+        _connection->insertBreakAtFrontIfNotExists();
     }
 
     void QueueControllerImpl::insertQueueEntryAtFront(FileHash hash)
@@ -74,9 +89,16 @@ namespace PMP {
         _connection->insertQueueEntryAtEnd(hash);
     }
 
-    void QueueControllerImpl::insertQueueEntryAtIndex(FileHash hash, quint32 index)
+    RequestID QueueControllerImpl::insertQueueEntryAtIndex(FileHash hash, quint32 index)
     {
-        _connection->insertQueueEntryAtIndex(hash, index);
+        return _connection->insertQueueEntryAtIndex(hash, index);
+    }
+
+    RequestID QueueControllerImpl::insertSpecialItemAtIndex(SpecialQueueItemType itemType,
+                                                            int index,
+                                                            QueueIndexType indexType)
+    {
+        return _connection->insertSpecialQueueItemAtIndex(itemType, index, indexType);
     }
 
     void QueueControllerImpl::deleteQueueEntry(uint queueId)
@@ -84,9 +106,9 @@ namespace PMP {
         _connection->deleteQueueEntry(queueId);
     }
 
-    void QueueControllerImpl::duplicateQueueEntry(uint queueId)
+    RequestID QueueControllerImpl::duplicateQueueEntry(uint queueId)
     {
-        _connection->duplicateQueueEntry(queueId);
+        return _connection->duplicateQueueEntry(queueId);
     }
 
     void QueueControllerImpl::moveQueueEntry(uint queueId, qint16 offsetDiff)

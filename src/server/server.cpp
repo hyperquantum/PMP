@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -42,10 +42,17 @@ namespace PMP
      : QObject(parent),
        _uuid(serverInstanceIdentifier),
        _settings(serverSettings),
-       _player(nullptr), _generator(nullptr), _history(nullptr), _users(nullptr),
-       _collectionMonitor(nullptr), _serverHealthMonitor(nullptr),
-       _server(new QTcpServer(this)), _udpSocket(new QUdpSocket(this)),
-       _broadcastTimer(new QTimer(this))
+       _player(nullptr),
+       _generator(nullptr),
+       _history(nullptr),
+       _users(nullptr),
+       _collectionMonitor(nullptr),
+       _serverHealthMonitor(nullptr),
+       _delayedStart(nullptr),
+       _server(new QTcpServer(this)),
+       _udpSocket(new QUdpSocket(this)),
+       _broadcastTimer(new QTimer(this)),
+       _connectionCount(0)
     {
         /* generate a new UUID for ourselves if we did not receive a valid one */
         if (_uuid.isNull()) _uuid = QUuid::createUuid();
@@ -113,6 +120,7 @@ namespace PMP
                         Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor,
+                        DelayedStart* delayedStart,
                         const QHostAddress& address, quint16 port)
     {
         _player = player;
@@ -121,6 +129,7 @@ namespace PMP
         _users = users;
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
+        _delayedStart = delayedStart;
 
         if (!_server->listen(address, port))
             return false;
@@ -158,15 +167,30 @@ namespace PMP
 
     void Server::newConnectionReceived()
     {
-        QTcpSocket *connection = _server->nextPendingConnection();
+        QTcpSocket* connection = _server->nextPendingConnection();
 
-        auto serverInterface = new ServerInterface(_settings, this, _player, _generator);
+        auto serverInterface = createServerInterface();
 
         auto connectedClient =
             new ConnectedClient(
                 connection, serverInterface, _player, _history, _users,
                 _collectionMonitor, _serverHealthMonitor
             );
+
+        _connectionCount++;
+        qDebug() << "created new connection, connection count is now" << _connectionCount;
+
+        connect(
+            connectedClient, &ConnectedClient::destroyed,
+            this,
+            [this]()
+            {
+                _connectionCount--;
+
+                qDebug() << "connection was destroyed; connection count is now"
+                         << _connectionCount;
+            }
+        );
 
         connectedClient->setParent(this);
     }
@@ -200,6 +224,11 @@ namespace PMP
 
             sendBroadcast();
         }
+    }
+
+    ServerInterface* Server::createServerInterface()
+    {
+        return new ServerInterface(_settings, this, _player, _generator, _delayedStart);
     }
 
     void Server::determineCaption()

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,8 +22,8 @@
 #include "database.h"
 #include "resolver.h"
 
-namespace PMP {
-
+namespace PMP
+{
     AddToHistoryTask::AddToHistoryTask(Resolver* resolver,
                                        QSharedPointer<PlayerHistoryEntry> entry)
      : _resolver(resolver), _entry(entry)
@@ -31,7 +31,8 @@ namespace PMP {
         //
     }
 
-    void AddToHistoryTask::run() {
+    void AddToHistoryTask::run()
+    {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return; /* nothing we can do */
 
@@ -54,7 +55,8 @@ namespace PMP {
         auto lastHeardResult = db->getHashHistoryStats(userId, hashes);
         QDateTime lastHeard;
         qint16 score = -1;
-        if (lastHeardResult.size() == 1 && lastHeardResult[0].hashId == hashId) {
+        if (lastHeardResult.size() == 1 && lastHeardResult[0].hashId == hashId)
+        {
             lastHeard = lastHeardResult[0].lastHeard;
             score = lastHeardResult[0].score;
         }

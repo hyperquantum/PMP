@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,7 @@
 
 #include "serverinterface.h"
 
+#include "delayedstart.h"
 #include "generator.h"
 #include "player.h"
 #include "playerqueue.h"
@@ -32,12 +33,14 @@
 namespace PMP
 {
     ServerInterface::ServerInterface(ServerSettings* serverSettings, Server* server,
-                                     Player* player, Generator* generator)
+                                     Player* player, Generator* generator,
+                                     DelayedStart* delayedStart)
      : _userLoggedIn(0),
        _serverSettings(serverSettings),
        _server(server),
        _player(player),
-       _generator(generator)
+       _generator(generator),
+       _delayedStart(delayedStart)
     {
         connect(
             _server, &Server::captionChanged,
@@ -50,6 +53,17 @@ namespace PMP
         connect(
             _server, &Server::shuttingDown,
             this, &ServerInterface::serverShuttingDown
+        );
+
+        connect(
+            _delayedStart, &DelayedStart::delayedStartActiveChanged,
+            this, &ServerInterface::delayedStartActiveChanged
+        );
+
+        auto* queue = &_player->queue();
+        connect(
+            queue, &PlayerQueue::entryAdded,
+            this, &ServerInterface::onQueueEntryAdded
         );
 
         connect(
@@ -79,6 +93,11 @@ namespace PMP
             resolver, &Resolver::fullIndexationRunStatusChanged,
             this, &ServerInterface::fullIndexationRunStatusChanged
         );
+    }
+
+    ServerInterface::~ServerInterface()
+    {
+        qDebug() << "ServerInterface destructor called";
     }
 
     QUuid ServerInterface::getServerUuid() const
@@ -134,6 +153,22 @@ namespace PMP
         _player->setUserPlayingFor(0);
     }
 
+    Result ServerInterface::activateDelayedStart(qint64 delayMilliseconds)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _delayedStart->activate(delayMilliseconds);
+    }
+
+    Result ServerInterface::deactivateDelayedStart()
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _delayedStart->deactivate();
+    }
+
     void ServerInterface::play()
     {
         if (!isLoggedIn()) return;
@@ -168,59 +203,104 @@ namespace PMP
         _player->setVolume(volumePercentage);
     }
 
-    void ServerInterface::enqueue(FileHash hash)
+    PlayerStateOverview ServerInterface::getPlayerStateOverview()
     {
-        if (!isLoggedIn()) return;
-        if (hash.isNull()) return;
+        QueueEntry const* nowPlaying = _player->nowPlaying();
 
-        auto& queue = _player->queue();
+        PlayerStateOverview overview;
+        overview.playerState = _player->state();
+        overview.nowPlayingQueueId = nowPlaying ? nowPlaying->queueID() : 0;
+        overview.trackPosition = _player->playPosition();
+        overview.volume = _player->volume();
+        overview.queueLength = _player->queue().length();
+        overview.delayedStartActive = _delayedStart->isActive();
 
-        if (!queue.canAddMoreEntries())
-            return;
-
-        queue.enqueue(hash);
+        return overview;
     }
 
-    void ServerInterface::insertAtFront(FileHash hash)
-    {
-        if (!isLoggedIn()) return;
-        if (hash.isNull()) return;
-
-        auto& queue = _player->queue();
-
-        if (!queue.canAddMoreEntries())
-            return;
-
-        queue.insertAtFront(hash);
-    }
-
-    void ServerInterface::insertBreakAtFront()
-    {
-        if (!isLoggedIn()) return;
-
-        auto& queue = _player->queue();
-
-        // TODO : if a break is already present, there is no need to bail out here
-        if (!queue.canAddMoreEntries())
-            return;
-
-        _player->queue().insertBreakAtFront();
-    }
-
-    void ServerInterface::insertAtIndex(quint32 index, QueueEntry* entry)
+    Result ServerInterface::enqueue(FileHash hash)
     {
         if (!isLoggedIn())
-        {
-            entry->deleteLater();
-            return;
-        }
+            return Error::notLoggedIn();
 
         auto& queue = _player->queue();
 
-        if (!queue.canAddMoreEntries())
-            return;
+        return queue.enqueue(hash);
+    }
 
-        queue.insertAtIndex(index, entry);
+    Result ServerInterface::insertAtFront(FileHash hash)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        auto& queue = _player->queue();
+
+        return queue.insertAtFront(hash);
+    }
+
+    Result ServerInterface::insertBreakAtFrontIfNotExists()
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        auto& queue = _player->queue();
+        auto* firstEntry = queue.peek();
+        if (firstEntry && firstEntry->kind() == QueueEntryKind::Break)
+            return Success(); /* already present, nothing to do */
+
+        return queue.insertBreakAtFront();
+    }
+
+    Result ServerInterface::insertSpecialQueueItem(SpecialQueueItemType itemType,
+                                                   QueueIndexType indexType, int index,
+                                                   quint32 clientReference)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        auto& queue = _player->queue();
+        index = toNormalIndex(queue, indexType, index);
+        if (index < 0)
+            return Error::queueIndexOutOfRange();
+
+        return queue.insertAtIndex(index, itemType,
+                                   createQueueInsertionIdNotifier(clientReference));
+    }
+
+    Result ServerInterface::duplicateQueueEntry(uint id, quint32 clientReference)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        auto& queue = _player->queue();
+
+        auto index = queue.findIndex(id);
+        if (index < 0)
+            return Error::queueEntryIdNotFound(id);
+
+        auto existing = queue.entryAtIndex(index);
+        if (!existing || existing->queueID() != id)
+        {
+            qWarning() << "queue inconsistency for QID" << id;
+            return Error::internalError();
+        }
+
+        auto entryCreator = QueueEntryCreators::copyOf(existing);
+
+        return insertAtIndex(index + 1, entryCreator, clientReference);
+    }
+
+    Result ServerInterface::insertAtIndex(qint32 index,
+                                      std::function<QueueEntry* (uint)> queueEntryCreator,
+                                          quint32 clientReference)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        auto& queue = _player->queue();
+
+        return queue.insertAtIndex(index, queueEntryCreator,
+                                   createQueueInsertionIdNotifier(clientReference));
     }
 
     void ServerInterface::moveQueueEntry(uint id, int upDownOffset)
@@ -346,6 +426,21 @@ namespace PMP
         _server->shutdown();
     }
 
+    void ServerInterface::onQueueEntryAdded(qint32 offset, quint32 queueId)
+    {
+        auto it = _queueEntryInsertionsPending.find(queueId);
+        if (it == _queueEntryInsertionsPending.end())
+        {
+            Q_EMIT queueEntryAddedWithoutReference(offset, queueId);
+            return;
+        }
+
+        auto clientReference = it.value();
+        _queueEntryInsertionsPending.erase(it);
+
+        Q_EMIT queueEntryAddedWithReference(offset, queueId, clientReference);
+    }
+
     void ServerInterface::onDynamicModeStatusChanged()
     {
         auto enabledStatus =
@@ -403,5 +498,31 @@ namespace PMP
 
         Q_EMIT dynamicModeWaveStatusEvent(waveStatus, user,
                                           waveProgress, waveProgressTotal);
+    }
+
+    int ServerInterface::toNormalIndex(const PlayerQueue& queue,
+                                       QueueIndexType indexType, int index)
+    {
+        if (index < 0) /* invalid index */
+            return -1;
+
+        if (indexType == QueueIndexType::Normal)
+        {
+            return index;
+        }
+        else /* reverse index */
+        {
+            return queue.length() - index;
+        }
+    }
+
+    std::function<void (uint)> ServerInterface::createQueueInsertionIdNotifier(
+                                                                  quint32 clientReference)
+    {
+        return
+            [this, clientReference](uint queueId)
+            {
+                _queueEntryInsertionsPending[queueId] = clientReference;
+            };
     }
 }

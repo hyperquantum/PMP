@@ -30,7 +30,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        DynamicModeControllerImpl(ServerConnection* connection);
+        explicit DynamicModeControllerImpl(ServerConnection* connection);
 
         TriBool dynamicModeEnabled() const override;
         int noRepetitionSpanSeconds() const override;

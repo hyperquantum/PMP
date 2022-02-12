@@ -302,7 +302,7 @@ namespace PMP
         if (!_enabled) return;
 
         int tracksToGenerate = 0;
-        uint queueLength = _queue->length();
+        int queueLength = _queue->length();
         if (queueLength < desiredQueueLength)
         {
             tracksToGenerate = desiredQueueLength - queueLength;
@@ -326,7 +326,7 @@ namespace PMP
         if (_refillPending)
             return;
 
-        int tracksNeeded = desiredQueueLength - (int)_queue->length();
+        int tracksNeeded = desiredQueueLength - _queue->length();
         if (tracksNeeded <= 0)
             return;
 

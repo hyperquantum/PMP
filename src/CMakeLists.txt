@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2022, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -19,6 +19,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(PMP_COMMON_SOURCES
     common/audiodata.cpp
+    common/authenticationcontrollerimpl.cpp
     common/clientserverinterface.cpp
     common/collectionwatcherimpl.cpp
     common/commonmetatypes.cpp
@@ -37,6 +38,7 @@ set(PMP_COMMON_SOURCES
     common/queuecontrollerimpl.cpp
     common/queueentryinfofetcher.cpp
     common/queuemonitor.cpp
+    common/servercapabilitiesimpl.cpp
     common/serverconnection.cpp
     common/serverdiscoverer.cpp
     common/startstopeventstatus.cpp
@@ -47,6 +49,8 @@ set(PMP_COMMON_SOURCES
 )
 set(PMP_COMMON_HEADERS
     common/abstractqueuemonitor.h
+    common/authenticationcontroller.h
+    common/authenticationcontrollerimpl.h
     common/clientserverinterface.h
     common/collectionfetcher.h
     common/collectionwatcher.h
@@ -82,6 +86,7 @@ set(PMP_SERVER_SOURCES
     server/compatibilityuicontrollers.cpp
     server/connectedclient.cpp
     server/database.cpp
+    server/delayedstart.cpp
     server/dynamicmodecriteria.cpp
     server/dynamictrackgenerator.cpp
     server/generator.cpp
@@ -111,6 +116,7 @@ set(PMP_SERVER_HEADERS
     server/compatibilityuicontrollercollection.h
     server/compatibilityuicontrollers.h
     server/connectedclient.h
+    server/delayedstart.h
     server/dynamictrackgenerator.h
     server/generator.h
     server/history.h

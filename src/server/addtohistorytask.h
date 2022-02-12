@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,11 +26,12 @@
 #include <QRunnable>
 #include <QSharedPointer>
 
-namespace PMP {
-
+namespace PMP
+{
     class Resolver;
 
-    class AddToHistoryTask : public QObject, public QRunnable {
+    class AddToHistoryTask : public QObject, public QRunnable
+    {
         Q_OBJECT
     public:
         AddToHistoryTask(Resolver* resolver, QSharedPointer<PlayerHistoryEntry> entry);

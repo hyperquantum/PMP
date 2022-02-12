@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,11 +22,13 @@
 
 #include <QString>
 
-namespace PMP {
-
-    class AudioData {
+namespace PMP
+{
+    class AudioData
+    {
     public:
-        enum FileFormat {
+        enum FileFormat
+        {
             UnknownFormat = 0,
             MP3 = 1,
             //WMA = 2,
@@ -36,7 +38,8 @@ namespace PMP {
         AudioData();
         AudioData(FileFormat format, qint64 trackLengthMilliseconds);
 
-        bool isComplete() const {
+        bool isComplete() const
+        {
             return _format != UnknownFormat && _trackLengthMilliseconds >= 0;
         }
 
@@ -46,12 +49,9 @@ namespace PMP {
         qint64 trackLengthMilliseconds() const { return _trackLengthMilliseconds; }
         int trackLengthSeconds() const { return int(_trackLengthMilliseconds / 1000); }
 
-        void setTrackLengthMilliseconds(qint64 length) {
-            _trackLengthMilliseconds = length;
-        }
-
-        void setTrackLengthSeconds(int length) {
-            _trackLengthMilliseconds = length * 1000;
+        void setTrackLengthMilliseconds(qint64 lengthMilliseconds)
+        {
+            _trackLengthMilliseconds = lengthMilliseconds;
         }
 
     private:

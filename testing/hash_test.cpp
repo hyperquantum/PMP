@@ -122,10 +122,13 @@ QList<std::function<void (TagLib::Ogg::XiphComment*)> > getXiphModifiers() {
     return modifiers;
 }
 
-QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers() {
+QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers()
+{
     QList<std::function<void (TagLib::MPEG::File*)> > modifiers;
 
-    Q_FOREACH(auto id3v1Modifier, getId3v1Modifiers()) {
+    const auto id3v1Modifiers = getId3v1Modifiers();
+    for (auto id3v1Modifier : id3v1Modifiers)
+    {
         modifiers.append(
             [id3v1Modifier](TagLib::MPEG::File* file) {
                 id3v1Modifier(file->ID3v1Tag(true));
@@ -133,7 +136,9 @@ QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers() {
         );
     }
 
-    Q_FOREACH(auto id3v2Modifier, getId3v2Modifiers()) {
+    const auto id3v2Modifiers = getId3v2Modifiers();
+    for (auto id3v2Modifier : id3v2Modifiers)
+    {
         modifiers.append(
             [id3v2Modifier](TagLib::MPEG::File* file) {
                 id3v2Modifier(file->ID3v2Tag(true));
@@ -141,7 +146,9 @@ QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers() {
         );
     }
 
-    Q_FOREACH(auto apeModifier, getApeModifiers()) {
+    const auto apeModifiers = getApeModifiers();
+    for (auto apeModifier : apeModifiers)
+    {
         modifiers.append(
             [apeModifier](TagLib::MPEG::File* file) {
                 apeModifier(file->APETag(true));
@@ -152,10 +159,13 @@ QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers() {
     return modifiers;
 }
 
-QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers() {
+QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers()
+{
     QList<std::function<void (TagLib::FLAC::File*)> > modifiers;
 
-    Q_FOREACH(auto id3v1Modifier, getId3v1Modifiers()) {
+    const auto id3v1Modifiers = getId3v1Modifiers();
+    for (auto id3v1Modifier : id3v1Modifiers)
+    {
         modifiers.append(
             [id3v1Modifier](TagLib::FLAC::File* file) {
                 id3v1Modifier(file->ID3v1Tag(true));
@@ -163,7 +173,9 @@ QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers() {
         );
     }
 
-    Q_FOREACH(auto id3v2Modifier, getId3v2Modifiers()) {
+    const auto id3v2Modifiers = getId3v2Modifiers();
+    for (auto id3v2Modifier : id3v2Modifiers)
+    {
         modifiers.append(
             [id3v2Modifier](TagLib::FLAC::File* file) {
                 id3v2Modifier(file->ID3v2Tag(true));
@@ -171,7 +183,9 @@ QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers() {
         );
     }
 
-    Q_FOREACH(auto xiphModifier, getXiphModifiers()) {
+    const auto xiphModifiers = getXiphModifiers();
+    for (auto xiphModifier : xiphModifiers)
+    {
         modifiers.append(
             [xiphModifier](TagLib::FLAC::File* file) {
                 xiphModifier(file->xiphComment(true));
@@ -193,8 +207,11 @@ QList<std::function<void (TagLib::File*)> > getModifiers(QString extension) {
 
     /* format-specific file modifications */
 
-    if (extension == "mp3") {
-        Q_FOREACH(auto mp3Modifier, getMp3Modifiers()) {
+    if (extension == "mp3")
+    {
+        const auto mp3Modifiers = getMp3Modifiers();
+        for (auto mp3Modifier : mp3Modifiers)
+        {
             modifiers.append(
                 [mp3Modifier](TagLib::File* file) {
                     mp3Modifier(static_cast<TagLib::MPEG::File*>(file));
@@ -202,8 +219,11 @@ QList<std::function<void (TagLib::File*)> > getModifiers(QString extension) {
             );
         }
     }
-    else if (extension == "flac") {
-        Q_FOREACH(auto flacModifier, getFlacModifiers()) {
+    else if (extension == "flac")
+    {
+        const auto flacModifiers = getFlacModifiers();
+        for (auto flacModifier : flacModifiers)
+        {
             modifiers.append(
                 [flacModifier](TagLib::File* file) {
                     flacModifier(static_cast<TagLib::FLAC::File*>(file));
@@ -225,14 +245,14 @@ public:
         _extension = fileInfo.suffix();
 
         if (!FileAnalyzer::isExtensionSupported(_extension, true)) {
-            _err << "File extension not supported: " << _extension << endl;
+            _err << "File extension not supported: " << _extension << Qt::endl;
             _error = true;
             return;
         }
 
         QFile file(filename);
         if (!file.open(QIODevice::ReadOnly)) {
-            _err << "Could not open file: " << filename << endl;
+            _err << "Could not open file: " << filename << Qt::endl;
             _error = true;
             return;
         }
@@ -243,7 +263,7 @@ public:
         if (!analyzer.analysisDone()) {
             if (expectedResult == "invalid") return; /* OK */
 
-            _err << "File analysis FAILED unexpectedly for " << filename << endl;
+            _err << "File analysis FAILED unexpectedly for " << filename << Qt::endl;
             _error = true;
             return;
         }
@@ -251,17 +271,17 @@ public:
         _originalResult = getHashAsString(analyzer.hash());
 
         if (_originalResult != expectedResult) {
-            _err << "Hash MISMATCH!" << endl
-                 << "Filename: " << filename << endl
-                 << "Expected: " << expectedResult << endl
-                 << "Actual:   " << _originalResult << endl;
+            _err << "Hash MISMATCH!" << Qt::endl
+                 << "Filename: " << filename << Qt::endl
+                 << "Expected: " << expectedResult << Qt::endl
+                 << "Actual:   " << _originalResult << Qt::endl;
             _error = true;
             return;
         }
 
         QByteArray contents = file.readAll();
         _originalFileContents.setData(contents.data(), contents.length());
-        _out << "Original data checksum: " << checksum(_originalFileContents) << endl;
+        _out << "Original data checksum: " << checksum(_originalFileContents) << Qt::endl;
     }
 
     bool error() const { return _error; }
@@ -288,21 +308,22 @@ public:
         transformed << multiTransformed;
 
         unsigned correctHashCount = 0;
-        Q_FOREACH(auto modifiedData, transformed) {
+        for (auto& modifiedData : qAsConst(transformed))
+        {
             FileAnalyzer analyzer(modifiedData, extension());
             analyzer.analyze();
             if (!analyzer.analysisDone()) {
-                _err << "File analysis FAILED on modified data!" << endl;
+                _err << "File analysis FAILED on modified data!" << Qt::endl;
                 return false;
             }
 
             QString modifiedHash = getHashAsString(analyzer.hash());
             if (modifiedHash != _expectedResult) {
-                _err << "Hash MISMATCH after modification!" << endl
-                     << "Filename: " << _filename << endl
-                     << "Expected: " << _expectedResult << endl
-                     << "Original: " << originalResult() << endl
-                     << "Modified: " << modifiedHash << endl;
+                _err << "Hash MISMATCH after modification!" << Qt::endl
+                     << "Filename: " << _filename << Qt::endl
+                     << "Expected: " << _expectedResult << Qt::endl
+                     << "Original: " << originalResult() << Qt::endl
+                     << "Modified: " << modifiedHash << Qt::endl;
 
                 writeDebugFile(_filename + "_MODIFIED.data", modifiedData);
                 return false;
@@ -312,7 +333,7 @@ public:
         }
 
         _out << "Got correct hash in " << correctHashCount << " of " << transformed.size()
-             << " cases." << endl;
+             << " cases." << Qt::endl;
 
         return correctHashCount == (unsigned)transformed.size();
     }
@@ -325,28 +346,30 @@ private:
         QVector<TagLib::ByteVector> transformed;
         transformed.reserve(modifiers.size());
 
-        _out << "Generating single modifications" << endl;
+        _out << "Generating single modifications" << Qt::endl;
 
         /* Apply each modification, and make sure they each generate a result different
            from the others and from the original data. */
-        Q_FOREACH(auto modifier, modifiers) {
+        for (const auto& modifier : modifiers)
+        {
             auto modifiedData = applyModification(originalFileContents(), modifier);
-            _out << "Modified data checksum: " << checksum(modifiedData) << endl;
+            _out << "Modified data checksum: " << checksum(modifiedData) << Qt::endl;
 
             if (modifiedData.size() == 0) {
-                _err << "Problem: modification went wrong, returned no result" << endl;
+                _err << "Problem: modification went wrong, returned no result"
+                     << Qt::endl;
                 return QVector<TagLib::ByteVector>();
             }
 
             if (modifiedData == originalFileContents()) {
                 _err << "Problem: modification ineffective; test would be unreliable"
-                     << endl;
+                     << Qt::endl;
                 return QVector<TagLib::ByteVector>();
             }
 
             if (transformed.contains(modifiedData)) {
                 _err << "Problem: modification not unique; test would be unreliable"
-                     << endl;
+                     << Qt::endl;
                 return QVector<TagLib::ByteVector>();
             }
 
@@ -362,26 +385,29 @@ private:
         QVector<TagLib::ByteVector> transformed;
         transformed.reserve(modifiers.size() * modifiers.size());
 
-        _out << "Generating combined modifications" << endl;
+        _out << "Generating combined modifications" << Qt::endl;
 
-        Q_FOREACH(auto modifier1, modifiers) {
+        for (const auto& modifier1 : modifiers)
+        {
             auto modifiedData1 = applyModification(originalFileContents(), modifier1);
             if (modifiedData1.size() == 0) {
-                _err << "Problem: modification went wrong, returned no result" << endl;
+                _err << "Problem: modification went wrong, returned no result"
+                     << Qt::endl;
                 return QVector<TagLib::ByteVector>();
             }
 
-            Q_FOREACH(auto modifier2, modifiers) {
+            for (const auto& modifier2 : modifiers)
+            {
                 auto modifiedData2 = applyModification(modifiedData1, modifier2);
-                _out << "Modified data checksum: " << checksum(modifiedData2) << endl;
+                _out << "Modified data checksum: " << checksum(modifiedData2) << Qt::endl;
                 if (modifiedData2.size() == 0) {
                     _err << "Problem: modification went wrong, returned no result"
-                         << endl;
+                         << Qt::endl;
                     return QVector<TagLib::ByteVector>();
                 }
 
                 if (modifiedData2 == originalFileContents()) {
-                    _err << "Problem: combined modification is no-op" << endl;
+                    _err << "Problem: combined modification is no-op" << Qt::endl;
                     return QVector<TagLib::ByteVector>();
                 }
 
@@ -395,7 +421,7 @@ private:
     void writeDebugFile(QString filename, const TagLib::ByteVector& contents) {
         QSaveFile file(filename);
         if (!file.open(QIODevice::WriteOnly)) {
-            _err << "Could not open file for writing: " << filename << endl;
+            _err << "Could not open file for writing: " << filename << Qt::endl;
             return;
         }
 
@@ -421,14 +447,16 @@ private:
 
         if (scratchFile->readOnly() || !scratchFile->isOpen() || !scratchFile->isValid())
         {
-            _err << "Problem when modifying tags: scratch file not modifyable" << endl;
+            _err << "Problem when modifying tags: scratch file not modifyable"
+                 << Qt::endl;
             return TagLib::ByteVector();
         }
 
         modifier(scratchFile);
 
         if (!scratchFile->save()) {
-            _err << "Problem when saving modified scratch file to scratch stream" << endl;
+            _err << "Problem when saving modified scratch file to scratch stream"
+                 << Qt::endl;
             return TagLib::ByteVector();
         }
 
@@ -462,7 +490,7 @@ int main(int argc, char *argv[]) {
     QStringList arguments = QCoreApplication::arguments();
     if (arguments.size() != 3 || arguments[1].isEmpty() || arguments[2].isEmpty())
     {
-        err << "Exactly two non-empty arguments are required." << endl;
+        err << "Exactly two non-empty arguments are required." << Qt::endl;
         return 2;
     }
 
@@ -475,6 +503,6 @@ int main(int argc, char *argv[]) {
     bool result = tester.testModifications(getModifiers(tester.extension()));
     if (!result) return 1;
 
-    out << "Success!" << endl;
+    out << "Success!" << Qt::endl;
     return 0;
 }

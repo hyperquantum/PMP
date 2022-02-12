@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,34 +27,35 @@
 #include <QDateTime>
 #include <QObject>
 
-namespace PMP {
+#include <functional>
 
+namespace PMP
+{
     class PlayerQueue;
     class Resolver;
 
-    enum class QueueEntryKind {
+    enum class QueueEntryKind
+    {
         Track = 0,
-        Break
+        Break,
+        Barrier,
     };
 
-    class QueueEntry : public QObject {
+    class QueueEntry : public QObject
+    {
         Q_OBJECT
     public:
-        QueueEntry(PlayerQueue* parent, QString const& filename);
-        QueueEntry(PlayerQueue* parent, FileHash hash, const TagData& tags);
-        QueueEntry(PlayerQueue* parent, FileHash hash);
-        QueueEntry(PlayerQueue* parent, QueueEntry const* existing);
-
-        static QueueEntry* createBreak(PlayerQueue* parent);
+        static QueueEntry* createBreak(uint queueId);
+        static QueueEntry* createBarrier(uint queueId);
+        static QueueEntry* createFromFilename(uint queueId, QString const& filename);
+        static QueueEntry* createFromHash(uint queueId, FileHash hash);
+        static QueueEntry* createCopyOf(uint queueId, QueueEntry const* existing);
 
         ~QueueEntry();
 
         uint queueID() const { return _queueID; }
         QueueEntryKind kind() const { return _kind; }
         bool isTrack() const { return _kind == QueueEntryKind::Track; }
-
-        bool isNewlyCreated() { return _new; }
-        void markAsNotNewAnymore();
 
         FileHash const* hash() const;
         bool checkHash(Resolver& resolver);
@@ -82,10 +83,12 @@ namespace PMP {
         void setEndedNow();
 
     private:
-        QueueEntry(PlayerQueue* parent, QueueEntryKind kind);
+        QueueEntry(uint queueId, QString const& filename);
+        QueueEntry(uint queueId, FileHash hash);
+        QueueEntry(uint queueId, QueueEntry const* existing);
+        QueueEntry(uint queueId, QueueEntryKind kind);
 
         uint const _queueID;
-        bool _new;
         QueueEntryKind _kind;
         FileHash _hash;
         //bool _fetchedAudioInfo;
@@ -98,6 +101,43 @@ namespace PMP {
         int _fileFinderFailedCount;
         QDateTime _started;
         QDateTime _ended;
+    };
+
+    class QueueEntryCreators
+    {
+    public:
+        static std::function<QueueEntry* (uint)> breakpoint()
+        {
+            return QueueEntry::createBreak;
+        }
+
+        static std::function<QueueEntry* (uint)> hash(FileHash hash)
+        {
+            return
+                [hash](uint queueId)
+                {
+                    return QueueEntry::createFromHash(queueId, hash);
+                };
+        }
+
+        static std::function<QueueEntry* (uint)> filename(QString const& filename)
+        {
+            return
+                [filename](uint queueId)
+                {
+                    return QueueEntry::createFromFilename(queueId, filename);
+                };
+        }
+
+        static std::function<QueueEntry* (uint)> copyOf(QueueEntry const* existing)
+        {
+            return
+                [existing](uint queueId)
+                {
+                    return QueueEntry::createCopyOf(queueId, existing);
+                };
+        }
+
     };
 }
 #endif

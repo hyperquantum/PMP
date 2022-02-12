@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,6 +26,7 @@
 #include "common/networkprotocol.h"
 
 #include "playerhistoryentry.h"
+#include "result.h"
 #include "serverplayerstate.h"
 #include "userdataforhashesfetcher.h"
 
@@ -88,15 +89,18 @@ namespace PMP
         void currentTrackChanged(QueueEntry const* entry);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void trackPositionChanged(qint64 position);
-        void sendStateInfo();
+        void onDelayedStartActiveChanged();
+        void sendPlayerStateMessage();
         void sendStateInfoAfterTimeout();
         void sendVolumeMessage();
         void sendDynamicModeStatusMessage(StartStopEventStatus enabledStatus,
                                           int noRepetitionSpanSeconds);
         void sendUserPlayingForModeMessage();
         void sendTextualQueueInfo();
-        void queueEntryRemoved(quint32 offset, quint32 queueID);
-        void queueEntryAdded(quint32 offset, quint32 queueID);
+        void queueEntryRemoved(qint32 offset, quint32 queueID);
+        void queueEntryAddedWithoutReference(qint32 index, quint32 queueId);
+        void queueEntryAddedWithReference(qint32 index, quint32 queueId,
+                                          quint32 clientReference);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
         void onUserPlayingForChanged(quint32 user);
         void onUserHashStatsUpdated(uint hashID, quint32 user,
@@ -133,6 +137,7 @@ namespace PMP
         void sendTextCommand(QString const& command);
         void handleBinaryModeSwitchRequest();
         void sendBinaryMessage(QByteArray const& message);
+        void sendKeepAliveReply(quint8 blob);
         void sendProtocolExtensionsMessage();
         void sendEventNotificationMessage(ServerEventCode eventCode);
         void sendServerInstanceIdentifier();
@@ -142,12 +147,12 @@ namespace PMP
                                             quint32 user,
                                             int waveDeliveredCount,
                                             int waveTotalCount);
-        void sendQueueContentMessage(quint32 startOffset, quint8 length);
-        void sendQueueEntryRemovedMessage(quint32 offset, quint32 queueID);
-        void sendQueueEntryAddedMessage(quint32 offset, quint32 queueID);
+        void sendQueueContentMessage(qint32 startOffset, quint8 length);
+        void sendQueueEntryRemovedMessage(qint32 offset, quint32 queueID);
+        void sendQueueEntryAddedMessage(qint32 offset, quint32 queueID);
         void sendQueueEntryAdditionConfirmationMessage(quint32 clientReference,
-                                                       quint32 index, quint32 queueID);
-        void sendQueueEntryMovedMessage(quint32 fromOffset, quint32 toOffset,
+                                                       qint32 index, quint32 queueID);
+        void sendQueueEntryMovedMessage(qint32 fromOffset, qint32 toOffset,
                                         quint32 queueID);
         void sendQueueEntryInfoMessage(quint32 queueID);
         void sendQueueEntryInfoMessage(QList<quint32> const& queueIDs);
@@ -158,6 +163,8 @@ namespace PMP
         void sendSuccessMessage(quint32 clientReference, quint32 intData);
         void sendSuccessMessage(quint32 clientReference, quint32 intData,
                                 QByteArray const& blobData);
+        void sendResultMessage(Result const& result, quint32 clientReference);
+        void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
                                quint32 intData);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
@@ -197,16 +204,28 @@ namespace PMP
                                        quint32 clientReference);
         void handleCollectionFetchRequest(uint clientReference);
 
+        void parseKeepAliveMessage(QByteArray const& message);
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseSingleByteActionMessage(QByteArray const& message);
         void parseParameterlessActionMessage(QByteArray const& message);
+        void parseActivateDelayedStartRequest(QByteArray const& message);
+        void parsePlayerSeekRequestMessage(QByteArray const& message);
+        void parseTrackInfoRequestMessage(QByteArray const& message);
+        void parseBulkTrackInfoRequestMessage(QByteArray const& message);
+        void parseBulkQueueEntryHashRequestMessage(QByteArray const& message);
+        void parsePossibleFilenamesForQueueEntryRequestMessage(QByteArray const& message);
+        void parseQueueFetchRequestMessage(QByteArray const& message);
         void parseAddHashToQueueRequest(QByteArray const& message,
                                         ClientMessageType messageType);
+        void parseInsertSpecialQueueItemRequest(QByteArray const& message);
         void parseInsertHashIntoQueueRequest(QByteArray const& message);
         void parseQueueEntryRemovalRequest(QByteArray const& message);
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
+        void parseQueueEntryMoveRequestMessage(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
+        void parseGeneratorNonRepetitionChangeMessage(QByteArray const& message);
+        void parseCollectionFetchRequestMessage(QByteArray const& message);
         void parseCompatibilityInterfaceLanguageSelectionRequest(
                                                                QByteArray const& message);
         void parseCompatibilityInterfaceDefinitionsRequest(QByteArray const& message);
@@ -233,7 +252,6 @@ namespace PMP
         QByteArray _saltForUserAccountRegistering;
         QString _userAccountLoggingIn;
         QByteArray _sessionSaltForUserLoggingIn;
-        QHash<quint32, quint32> _trackAdditionConfirmationsPending;
         bool _terminated;
         bool _binaryMode;
         bool _eventsEnabled;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,18 +24,23 @@
 
 #include "playermode.h"
 #include "playerstate.h"
+#include "requestid.h"
+#include "resultmessageerrorcode.h"
 
+#include <QDateTime>
 #include <QObject>
 #include <QString>
 
-namespace PMP {
-
-    class PlayerController : public QObject {
+namespace PMP
+{
+    class PlayerController : public QObject
+    {
         Q_OBJECT
     public:
         virtual ~PlayerController() {}
 
         virtual PlayerState playerState() const = 0;
+        virtual TriBool delayedStartActive() const = 0;
         virtual TriBool isTrackPresent() const = 0;
         virtual quint32 currentQueueId() const = 0;
         virtual uint queueLength() const = 0;
@@ -48,6 +53,10 @@ namespace PMP {
         virtual QString personalModeUserLogin() const = 0;
 
         virtual int volume() const = 0;
+
+        virtual RequestID activateDelayedStart(qint64 delayMilliseconds) = 0;
+        virtual RequestID activateDelayedStart(QDateTime startTime) = 0;
+        virtual RequestID deactivateDelayedStart() = 0;
 
     public Q_SLOTS:
         virtual void play() = 0;
@@ -66,10 +75,15 @@ namespace PMP {
                                QString personalModeUserLogin);
         void volumeChanged();
         void queueLengthChanged();
+        void delayedStartActiveChanged();
+
+        void delayedStartActivationResultEvent(ResultMessageErrorCode errorCode,
+                                               RequestID requestId);
+        void delayedStartDeactivationResultEvent(ResultMessageErrorCode errorCode,
+                                                 RequestID requestId);
 
     protected:
         explicit PlayerController(QObject* parent) : QObject(parent) {}
     };
-
 }
 #endif

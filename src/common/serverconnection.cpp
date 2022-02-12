@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,25 +19,49 @@
 
 #include "serverconnection.h"
 
-#include "common/collectionfetcher.h"
-#include "common/containerutil.h"
-#include "common/networkprotocol.h"
-#include "common/networkutil.h"
-#include "common/util.h"
+#include "collectionfetcher.h"
+#include "containerutil.h"
+#include "networkprotocol.h"
+#include "networkutil.h"
+#include "servercapabilitiesimpl.h"
+#include "util.h"
 
 #include <QtDebug>
 #include <QTimer>
 
 namespace PMP
 {
+    class ServerConnection::ResultMessageData
+    {
+    public:
+        ResultMessageData(ResultMessageErrorCode errorType,
+                          quint32 clientReference, quint32 intData,
+                          QByteArray const& blobData)
+         : errorType(errorType),
+           clientReference(clientReference),
+           intData(intData),
+           blobData(blobData)
+        {
+            //
+        }
+
+        bool isSuccess() const { return succeeded(errorType); }
+        bool isFailure() const { return !isSuccess(); }
+
+        RequestID toRequestID() const { return RequestID(clientReference); }
+
+        const ResultMessageErrorCode errorType;
+        const quint32 clientReference;
+        const quint32 intData;
+        const QByteArray blobData;
+    };
+
     class ServerConnection::ResultHandler
     {
     public:
         virtual ~ResultHandler();
 
-        virtual void handleResult(ResultMessageErrorCode errorType,
-                                  quint32 clientReference, quint32 intData,
-                                  QByteArray const& blobData) = 0;
+        virtual void handleResult(ResultMessageData const& data) = 0;
 
         virtual void handleQueueEntryAdditionConfirmation(quint32 clientReference,
                                                           qint32 index, quint32 queueID);
@@ -45,9 +69,7 @@ namespace PMP
     protected:
         ResultHandler(ServerConnection* parent);
 
-        QString errorDescription(ResultMessageErrorCode errorType,
-                                 quint32 clientReference, quint32 intData,
-                                 QByteArray const& blobData) const;
+        QString errorDescription(ResultMessageData const& data) const;
 
         ServerConnection* const _parent;
     };
@@ -74,17 +96,15 @@ namespace PMP
     }
 
     QString ServerConnection::ResultHandler::errorDescription(
-                                                         ResultMessageErrorCode errorType,
-                                                         quint32 clientReference,
-                                                         quint32 intData,
-                                                         QByteArray const& blobData) const
+                                                      ResultMessageData const& data) const
     {
-        QString text = "client-ref " + QString::number(clientReference) + ": ";
+        QString text = "client-ref " + QString::number(data.clientReference) + ": ";
 
-        switch (errorType)
+        switch (data.errorType)
         {
             case ResultMessageErrorCode::NoError:
-                text += "no error";
+            case ResultMessageErrorCode::AlreadyDone:
+                text += "unknown error (code indicates success)";
                 break;
 
             case ResultMessageErrorCode::InvalidMessageStructure:
@@ -96,7 +116,7 @@ namespace PMP
                 break;
 
             case ResultMessageErrorCode::QueueIdNotFound:
-                text += "QID " + QString::number(intData) + " not found";
+                text += "QID " + QString::number(data.intData) + " not found";
                 return text;
 
             case ResultMessageErrorCode::InvalidLanguage:
@@ -104,7 +124,8 @@ namespace PMP
                 break;
 
             case ResultMessageErrorCode::InvalidCompatibilityInterfaceId:
-                text += "invalid compatibility interface ID: " + QString::number(intData);
+                text += "invalid compatibility interface ID: "
+                        + QString::number(data.intData);
                 return text;
 
             case ResultMessageErrorCode::LanguageNotSet:
@@ -124,18 +145,54 @@ namespace PMP
                 break;
 
             default:
-                text += "error code " + QString::number(int(errorType));
+                text += "error code " + QString::number(int(data.errorType));
                 break;
         }
 
         /* nothing interesting to add? */
-        if (intData == 0 && blobData.size() == 0)
+        if (data.intData == 0 && data.blobData.size() == 0)
             return text;
 
-        text += "; intData=" + QString::number(intData) +
-                "; blobData.size=" + QString::number(blobData.size());
+        text +=
+            ": intData=" + QString::number(data.intData)
+                + ", blobData.size=" + QString::number(data.blobData.size());
 
         return text;
+    }
+
+    /* ============================================================================ */
+
+    class ServerConnection::StandardResultHandler : public ResultHandler
+    {
+    public:
+        StandardResultHandler(ServerConnection* parent,
+                           void (ServerConnection::* resultSignal)(ResultMessageErrorCode,
+                                                                   RequestID));
+
+        void handleResult(ResultMessageData const& data) override;
+
+    private:
+        void (ServerConnection::* _resultSignal)(ResultMessageErrorCode, RequestID);
+    };
+
+    ServerConnection::StandardResultHandler::StandardResultHandler(
+                                                ServerConnection* parent,
+                                                void (ServerConnection::* resultSignal)(
+                                                        ResultMessageErrorCode,RequestID))
+     : ResultHandler(parent), _resultSignal(resultSignal)
+    {
+        //
+    }
+
+    void ServerConnection::StandardResultHandler::handleResult(
+                                                            ResultMessageData const& data)
+    {
+        if (data.isFailure())
+        {
+            qWarning() << "StandardResultHandler:" << errorDescription(data);
+        }
+
+        (_parent->*_resultSignal)(data.errorType, data.toRequestID());
     }
 
     /* ============================================================================ */
@@ -146,8 +203,7 @@ namespace PMP
         ParameterlessActionResultHandler(ServerConnection* parent,
                                          ParameterlessActionCode code);
 
-        void handleResult(ResultMessageErrorCode errorType, quint32 clientReference,
-                          quint32 intData, QByteArray const& blobData) override;
+        void handleResult(ResultMessageData const& data) override;
 
     private:
         ParameterlessActionCode _code;
@@ -162,16 +218,13 @@ namespace PMP
     }
 
     void ServerConnection::ParameterlessActionResultHandler::handleResult(
-                                                         ResultMessageErrorCode errorType,
-                                                         quint32 clientReference,
-                                                         quint32 intData,
-                                                         QByteArray const& blobData)
+                                                            ResultMessageData const& data)
     {
-        if (!succeeded(errorType))
+        if (data.isFailure())
         {
             qWarning() << "ParameterlessActionResultHandler:"
                        << "action" << static_cast<int>(_code) << ":"
-                       << errorDescription(errorType, clientReference, intData, blobData);
+                       << errorDescription(data);
         }
 
         switch (_code)
@@ -180,14 +233,19 @@ namespace PMP
             break; /* not supposed to be used */
 
         case ParameterlessActionCode::ReloadServerSettings:
-            Q_EMIT _parent->serverSettingsReloadResultEvent(errorType,
-                                                            RequestID(clientReference));
+            Q_EMIT _parent->serverSettingsReloadResultEvent(data.errorType,
+                                                            data.toRequestID());
+            return;
+
+        case ParameterlessActionCode::DeactivateDelayedStart:
+            Q_EMIT _parent->delayedStartDeactivationResultEvent(data.errorType,
+                                                                data.toRequestID());
             return;
         }
 
         qWarning() << "ParameterlessActionResultHandler: unhandled action"
                    << static_cast<int>(_code)
-                   << "with client-ref" << clientReference;
+                   << "with client-ref" << data.clientReference;
     }
 
     /* ============================================================================ */
@@ -198,8 +256,7 @@ namespace PMP
         CollectionFetchResultHandler(ServerConnection* parent,
                                      CollectionFetcher* fetcher);
 
-        void handleResult(ResultMessageErrorCode errorType, quint32 clientReference,
-                          quint32 intData, QByteArray const& blobData) override;
+        void handleResult(ResultMessageData const& data) override;
 
     private:
         CollectionFetcher* _fetcher;
@@ -214,21 +271,17 @@ namespace PMP
     }
 
     void ServerConnection::CollectionFetchResultHandler::handleResult(
-                                                         ResultMessageErrorCode errorType,
-                                                         quint32 clientReference,
-                                                         quint32 intData,
-                                                         QByteArray const& blobData)
+                                                            ResultMessageData const& data)
     {
-        _parent->_collectionFetchers.remove(clientReference);
+        _parent->_collectionFetchers.remove(data.clientReference);
 
-        if (succeeded(errorType))
+        if (data.isSuccess())
         {
             Q_EMIT _fetcher->completed();
         }
         else
         {
-            qWarning() << "CollectionFetchResultHandler:"
-                       << errorDescription(errorType, clientReference, intData, blobData);
+            qWarning() << "CollectionFetchResultHandler:" << errorDescription(data);
             Q_EMIT _fetcher->errorOccurred();
         }
 
@@ -242,8 +295,7 @@ namespace PMP
     public:
         TrackInsertionResultHandler(ServerConnection* parent, qint32 index);
 
-        void handleResult(ResultMessageErrorCode errorType, quint32 clientReference,
-                          quint32 intData, QByteArray const& blobData) override;
+        void handleResult(ResultMessageData const& data) override;
 
         void handleQueueEntryAdditionConfirmation(quint32 clientReference, qint32 index,
                                                   quint32 queueID) override;
@@ -261,23 +313,18 @@ namespace PMP
     }
 
     void ServerConnection::TrackInsertionResultHandler::handleResult(
-                                                         ResultMessageErrorCode errorType,
-                                                         quint32 clientReference,
-                                                         quint32 intData,
-                                                         QByteArray const& blobData)
+                                                            ResultMessageData const& data)
     {
-        if (succeeded(errorType))
+        if (data.isSuccess())
         {
             /* this is how older servers report a successful insertion */
-            auto queueID = intData;
-            Q_EMIT _parent->queueEntryAdded(_index, queueID, RequestID(clientReference));
+            auto queueId = data.intData;
+            Q_EMIT _parent->queueEntryAdded(_index, queueId, data.toRequestID());
         }
         else
         {
-            qWarning() << "TrackInsertionResultHandler:"
-                       << errorDescription(errorType, clientReference, intData, blobData);
-
-            // TODO: report error to the originator of the request
+            qWarning() << "TrackInsertionResultHandler:" << errorDescription(data);
+            Q_EMIT _parent->queueEntryInsertionFailed(data.errorType, data.toRequestID());
         }
     }
 
@@ -290,13 +337,47 @@ namespace PMP
 
     /* ============================================================================ */
 
+    class ServerConnection::QueueEntryInsertionResultHandler : public ResultHandler
+    {
+    public:
+        QueueEntryInsertionResultHandler(ServerConnection* parent);
+
+        void handleResult(ResultMessageData const& data) override;
+
+        void handleQueueEntryAdditionConfirmation(quint32 clientReference, qint32 index,
+                                                  quint32 queueID) override;
+    };
+
+    ServerConnection::QueueEntryInsertionResultHandler::QueueEntryInsertionResultHandler(
+                                                                 ServerConnection* parent)
+     : ResultHandler(parent)
+    {
+        //
+    }
+
+    void ServerConnection::QueueEntryInsertionResultHandler::handleResult(
+                                                            ResultMessageData const& data)
+    {
+        qWarning() << "QueueEntryInsertionResultHandler:" << errorDescription(data);
+        Q_EMIT _parent->queueEntryInsertionFailed(data.errorType, data.toRequestID());
+    }
+
+    void ServerConnection::QueueEntryInsertionResultHandler::handleQueueEntryAdditionConfirmation(
+                                                                  quint32 clientReference,
+                                                                  qint32 index,
+                                                                  quint32 queueID)
+    {
+        Q_EMIT _parent->queueEntryAdded(index, queueID, RequestID(clientReference));
+    }
+
+    /* ============================================================================ */
+
     class ServerConnection::DuplicationResultHandler : public ResultHandler
     {
     public:
         DuplicationResultHandler(ServerConnection* parent);
 
-        void handleResult(ResultMessageErrorCode errorType, quint32 clientReference,
-                          quint32 intData, QByteArray const& blobData) override;
+        void handleResult(ResultMessageData const& data) override;
 
         void handleQueueEntryAdditionConfirmation(quint32 clientReference, qint32 index,
                                                   quint32 queueID) override;
@@ -310,15 +391,10 @@ namespace PMP
     }
 
     void ServerConnection::DuplicationResultHandler::handleResult(
-                                                         ResultMessageErrorCode errorType,
-                                                         quint32 clientReference,
-                                                         quint32 intData,
-                                                         QByteArray const& blobData)
+                                                            ResultMessageData const& data)
     {
-        qWarning() << "DuplicationResultHandler:"
-                   << errorDescription(errorType, clientReference, intData, blobData);
-
-        // TODO: report error to the originator of the request
+        qWarning() << "DuplicationResultHandler:" << errorDescription(data);
+        Q_EMIT _parent->queueEntryInsertionFailed(data.errorType, data.toRequestID());
     }
 
     void ServerConnection::DuplicationResultHandler::handleQueueEntryAdditionConfirmation(
@@ -337,8 +413,7 @@ namespace PMP
     public:
         CompatibilityInterfaceLanguageSelectionResultHandler(ServerConnection* parent);
 
-        void handleResult(ResultMessageErrorCode errorType, quint32 clientReference,
-                          quint32 intData, const QByteArray &blobData) override;
+        void handleResult(ResultMessageData const& data) override;
     };
 
     ServerConnection::CompatibilityInterfaceLanguageSelectionResultHandler
@@ -350,12 +425,10 @@ namespace PMP
     }
 
     void ServerConnection::CompatibilityInterfaceLanguageSelectionResultHandler
-                         ::handleResult(ResultMessageErrorCode errorType,
-                                        quint32 clientReference, quint32 intData,
-                                        const QByteArray& blobData)
+                         ::handleResult(ResultMessageData const& data)
     {
         qWarning() << "CompatibilityInterfaceLanguageSelectionResultHandler:"
-                   << errorDescription(errorType, clientReference, intData, blobData);
+                   << errorDescription(data);
 
         // TODO: report error to the originator of the request
     }
@@ -369,8 +442,7 @@ namespace PMP
         CompatibilityInterfaceActionTriggerResultHandler(ServerConnection* parent,
                                                          int interfaceId, int actionId);
 
-        void handleResult(ResultMessageErrorCode errorType, quint32 clientReference,
-                          quint32 intData, const QByteArray &blobData) override;
+        void handleResult(ResultMessageData const& data) override;
 
     private:
         int _interfaceId;
@@ -390,60 +462,67 @@ namespace PMP
     }
 
     void ServerConnection::CompatibilityInterfaceActionTriggerResultHandler
-                         ::handleResult(ResultMessageErrorCode errorType,
-                                        quint32 clientReference, quint32 intData,
-                                        const QByteArray& blobData)
+                         ::handleResult(ResultMessageData const& data)
     {
-        RequestID requestId(clientReference);
-
-        if (errorType == ResultMessageErrorCode::NoError)
+        if (data.isSuccess())
         {
             qDebug() << "Compatibility action reported success; interface:"
                      << _interfaceId << " action:" << _actionId;
 
-            Q_EMIT _parent->compatibilityInterfaceActionSucceeded(_interfaceId,
-                                                                  _actionId, requestId);
+            Q_EMIT _parent->compatibilityInterfaceActionSucceeded(_interfaceId, _actionId,
+                                                                  data.toRequestID());
             return;
         }
 
         qWarning() << "Compatibility interface" << _interfaceId << "action" << _actionId
                    << "reported failure:"
-                   << errorDescription(errorType, clientReference, intData, blobData);
+                   << errorDescription(data);
 
         Q_EMIT _parent->compatibilityInterfaceActionFailed(_interfaceId, _actionId,
-                                                           requestId);
+                                                           data.toRequestID());
     }
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 17;
+    const quint16 ServerConnection::ClientProtocolNo = 21;
+
+    const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
+    const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
 
     ServerConnection::ServerConnection(QObject* parent,
                                        ServerEventSubscription eventSubscription)
      : QObject(parent),
+       _serverCapabilities(new ServerCapabilitiesImpl()),
+       _disconnectReason(DisconnectReason::Unknown),
+       _keepAliveTimer(new QTimer(this)),
        _autoSubscribeToEventsAfterConnect(eventSubscription),
        _state(ServerConnection::NotConnected),
        _binarySendingMode(false),
-       _serverProtocolNo(-1), _nextRef(1),
+       _serverProtocolNo(-1),
+       _nextRef(1),
        _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0)
     {
         connect(&_socket, &QTcpSocket::connected, this, &ServerConnection::onConnected);
+        connect(
+            &_socket, &QTcpSocket::disconnected,
+            this, &ServerConnection::onDisconnected
+        );
         connect(&_socket, &QTcpSocket::readyRead, this, &ServerConnection::onReadyRead);
         connect(
             &_socket, &QTcpSocket::errorOccurred,
             this, &ServerConnection::onSocketError
         );
+
+        _keepAliveTimer->setSingleShot(true);
+        connect(
+            _keepAliveTimer, &QTimer::timeout,
+            this, &ServerConnection::onKeepAliveTimerTimeout
+        );
     }
 
-    void ServerConnection::reset()
+    ServerConnection::~ServerConnection()
     {
-        _state = NotConnected;
-        _socket.abort();
-        _readBuffer.clear();
-        _binarySendingMode = false;
-        _serverProtocolNo = -1;
-
-        _compatibilityInterfaceIds.clear();
+        delete _serverCapabilities;
     }
 
     void ServerConnection::connectToHost(QString const& host, quint16 port)
@@ -459,6 +538,22 @@ namespace PMP
         return ContainerUtil::toVector(_compatibilityInterfaceIds);
     }
 
+    void ServerConnection::disconnect()
+    {
+        qDebug() << "disconnect() called";
+        breakConnection(DisconnectReason::ClientInitiated);
+    }
+
+    ServerCapabilities const& ServerConnection::serverCapabilities() const
+    {
+        return *_serverCapabilities;
+    }
+
+    bool ServerConnection::isConnected() const
+    {
+        return _state == BinaryMode;
+    }
+
     quint32 ServerConnection::userLoggedInId() const
     {
         return _userLoggedInId;
@@ -469,25 +564,32 @@ namespace PMP
         return _userLoggedInName;
     }
 
-    bool ServerConnection::serverSupportsReloadingServerSettings() const
-    {
-        return _serverProtocolNo >= 15;
-    }
-
-    bool ServerConnection::serverSupportsQueueEntryDuplication() const
-    {
-        return _serverProtocolNo >= 9;
-    }
-
-    bool ServerConnection::serverSupportsDynamicModeWaveTermination() const
-    {
-        return _serverProtocolNo >= 14;
-    }
-
     void ServerConnection::onConnected()
     {
         qDebug() << "connected to host";
         _state = Handshake;
+    }
+
+    void ServerConnection::onDisconnected()
+    {
+        qDebug() << "socket disconnected";
+
+        if (_state == NotConnected)
+            return;
+
+        if (_state != Aborting && _state != Disconnecting)
+            _disconnectReason = DisconnectReason::Unknown;
+
+        bool wasConnected = _state == Disconnecting;
+        _state = NotConnected;
+
+        _readBuffer.clear();
+        _binarySendingMode = false;
+        _serverProtocolNo = -1;
+        _compatibilityInterfaceIds.clear();
+
+        if (wasConnected)
+            Q_EMIT disconnected(_disconnectReason);
     }
 
     void ServerConnection::onReadyRead()
@@ -515,7 +617,7 @@ namespace PMP
                 {
                     _state = HandshakeFailure;
                     Q_EMIT invalidServer();
-                    reset();
+                    breakConnection(DisconnectReason::ProtocolError);
                     return;
                 }
 
@@ -577,14 +679,18 @@ namespace PMP
                 {
                     _state = HandshakeFailure;
                     Q_EMIT invalidServer();
-                    reset();
+                    breakConnection(DisconnectReason::ProtocolError);
                     return;
                 }
 
                 _serverProtocolNo = NetworkUtil::get2Bytes(heading, 3);
                 qDebug() << "server protocol version:" << _serverProtocolNo;
+                _serverCapabilities->setServerProtocolNumber(_serverProtocolNo);
 
                 _state = BinaryMode;
+
+                _timeSinceLastMessageReceived.start();
+                _keepAliveTimer->start(KeepAliveIntervalMs);
 
                 if (_serverProtocolNo >= 12) {
                     /* if interested in protocol extensions... */
@@ -613,6 +719,8 @@ namespace PMP
                 readBinaryCommands();
                 break;
             case HandshakeFailure:
+            case Aborting:
+            case Disconnecting:
                 /* do nothing */
                 break;
             }
@@ -628,21 +736,80 @@ namespace PMP
         switch (_state)
         {
         case NotConnected:
+        case Aborting:
+        case Disconnecting:
             break; /* ignore error */
+
         case Connecting:
         case Handshake:
         case HandshakeFailure: /* just in case this one here too */
             Q_EMIT cannotConnect(error);
-            reset();
+            breakConnection(DisconnectReason::SocketError);
             break;
+
         case TextMode:
         case BinaryHandshake:
         case BinaryMode:
-            _state = NotConnected;
-            Q_EMIT connectionBroken(error);
-            reset();
+            breakConnection(DisconnectReason::SocketError);
             break;
         }
+    }
+
+    void ServerConnection::onKeepAliveTimerTimeout()
+    {
+        if (!isConnected())
+            return;
+
+        QTimer::singleShot(
+            KeepAliveReplyTimeoutMs,
+            this,
+            [this]()
+            {
+                if (!_timeSinceLastMessageReceived.hasExpired(KeepAliveIntervalMs))
+                    return; /* received a reply in time */
+
+                qDebug() << "server is not responding, going to disconnect now";
+                breakConnection(DisconnectReason::KeepAliveTimeout);
+            }
+        );
+
+        qDebug() << "received nothing from the server for a while, sending keep-alive";
+
+        if (_serverProtocolNo < 19)
+        {
+            /* for older servers, send a cheap data request */
+            requestDynamicModeStatus();
+        }
+        else
+        {
+            sendKeepAliveMessage();
+        }
+    }
+
+    void ServerConnection::breakConnection(DisconnectReason reason)
+    {
+        qDebug() << "breakConnection() called with reason:" << reason;
+
+        if (_state == NotConnected)
+        {
+            /* don't change state */
+        }
+        else if (_state != Aborting && _state != Disconnecting)
+        {
+            _disconnectReason = reason;
+
+            if (isConnected())
+                _state = Disconnecting;
+            else
+                _state = Aborting;
+        }
+
+        _socket.abort();
+
+        _keepAliveTimer->stop();
+        _readBuffer.clear();
+        _binarySendingMode = false;
+        _serverProtocolNo = -1;
     }
 
     void ServerConnection::readTextCommands()
@@ -680,6 +847,12 @@ namespace PMP
 
     void ServerConnection::sendTextCommand(QString const& command)
     {
+        if (!_socket.isValid())
+        {
+            qWarning() << "cannot send text command when socket not in valid state";
+            return;
+        }
+
         qDebug() << "sending command" << command;
         _socket.write((command + ";").toUtf8());
         _socket.flush();
@@ -687,6 +860,17 @@ namespace PMP
 
     void ServerConnection::sendBinaryMessage(QByteArray const& message)
     {
+        if (!_socket.isValid())
+        {
+            qWarning() << "cannot send binary message when socket not in valid state";
+            return;
+        }
+        if (!_binarySendingMode)
+        {
+            qWarning() << "cannot send binary message when not connected in binary mode";
+            return;
+        }
+
         auto messageLength = message.length();
         if (messageLength > std::numeric_limits<qint32>::max() - 1)
         {
@@ -700,6 +884,16 @@ namespace PMP
         _socket.write(lengthBytes);
         _socket.write(message);
         _socket.flush();
+    }
+
+    void ServerConnection::sendKeepAliveMessage()
+    {
+        QByteArray message;
+        message.reserve(4);
+        NetworkProtocol::append2Bytes(message, ClientMessageType::KeepAliveMessage);
+        NetworkUtil::append2Bytes(message, 0); /* payload, unused for now */
+
+        sendBinaryMessage(message);
     }
 
     void ServerConnection::sendProtocolExtensionsMessage()
@@ -733,13 +927,6 @@ namespace PMP
 
     void ServerConnection::sendSingleByteAction(quint8 action)
     {
-        if (!_binarySendingMode)
-        {
-            qDebug() << "PROBLEM: cannot send single byte action yet; action:"
-                     << static_cast<uint>(action);
-            return; /* too early for that */
-        }
-
         qDebug() << "sending single byte action" << static_cast<uint>(action);
 
         QByteArray message;
@@ -841,9 +1028,17 @@ namespace PMP
 
     uint ServerConnection::getNewReference()
     {
-        // don't use: return _nextRef++;
         auto ref = _nextRef;
         _nextRef++;
+
+        if (_nextRef >= 0x80000000u)
+        {
+            qWarning() << "client references getting really big, going to disconnect";
+            QTimer::singleShot(
+                0, this, [this]() { breakConnection(DisconnectReason::Unknown); }
+            );
+        }
+
         return ref;
     }
 
@@ -852,23 +1047,37 @@ namespace PMP
         return RequestID(getNewReference());
     }
 
+    RequestID ServerConnection::signalRequestError(ResultMessageErrorCode errorCode,
+                             void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
+                                                                   RequestID))
+    {
+        auto requestId = getNewRequestId();
+
+        QTimer::singleShot(
+            0,
+            this,
+            [this, errorSignal, errorCode, requestId]()
+            {
+                Q_EMIT (this->*errorSignal)(errorCode, requestId);
+            }
+        );
+
+        return requestId;
+    }
+
+    RequestID ServerConnection::signalServerTooOldError(
+                             void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
+                                                                   RequestID))
+    {
+        return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
+    }
+
     RequestID ServerConnection::reloadServerSettings()
     {
-        // TODO : find a way to write this more elegantly
-        if (!serverSupportsReloadingServerSettings())
+        if (!serverCapabilities().supportsReloadingServerSettings())
         {
-            auto requestId = getNewRequestId();
-            QTimer::singleShot(
-                0, this,
-                [this, requestId]()
-                {
-                    Q_EMIT serverSettingsReloadResultEvent(
-                        ResultMessageErrorCode::ServerTooOld, requestId
-                    );
-                }
-            );
-
-            return requestId;
+            return signalServerTooOldError(
+                                      &ServerConnection::serverSettingsReloadResultEvent);
         }
 
         qDebug() << "sending request to reload server settings";
@@ -877,10 +1086,56 @@ namespace PMP
                                            ParameterlessActionCode::ReloadServerSettings);
     }
 
+    RequestID ServerConnection::activateDelayedStart(qint64 delayMilliseconds)
+    {
+        if (!serverCapabilities().supportsDelayedStart())
+        {
+            return signalServerTooOldError(
+                                    &ServerConnection::delayedStartActivationResultEvent);
+        }
+
+        auto handler =
+            new StandardResultHandler(this,
+                                    &ServerConnection::delayedStartActivationResultEvent);
+        auto ref = getNewReference();
+        _resultHandlers[ref] = handler;
+
+        qDebug() << "sending request to activate delayed start; delay:"
+                 << delayMilliseconds << "ms; ref:" << ref;
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 8);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::ActivateDelayedStartRequest);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkUtil::append8BytesSigned(message, delayMilliseconds);
+
+        sendBinaryMessage(message);
+
+        return RequestID(ref);
+    }
+
+    RequestID ServerConnection::deactivateDelayedStart()
+    {
+        if (!serverCapabilities().supportsDelayedStart())
+        {
+            return signalServerTooOldError(
+                                  &ServerConnection::delayedStartDeactivationResultEvent);
+        }
+
+        qDebug() << "sending request to deactivate delayed start";
+
+        return sendParameterlessActionRequest(
+                                         ParameterlessActionCode::DeactivateDelayedStart);
+    }
+
     RequestID ServerConnection::insertQueueEntryAtIndex(const FileHash& hash,
                                                         quint32 index)
     {
-        if (hash.isNull()) return RequestID(); /* invalid */
+        if (hash.isNull())
+            return signalRequestError(ResultMessageErrorCode::InvalidHash,
+                                      &ServerConnection::queueEntryInsertionFailed);
 
         auto ref = registerResultHandler(new TrackInsertionResultHandler(this, index));
 
@@ -900,11 +1155,47 @@ namespace PMP
         return RequestID(ref);
     }
 
-    void ServerConnection::duplicateQueueEntry(quint32 queueID)
+    RequestID ServerConnection::insertSpecialQueueItemAtIndex(
+                                                            SpecialQueueItemType itemType,
+                                                            int index,
+                                                            QueueIndexType indexType)
+    {
+        if (!serverCapabilities().supportsInsertingBreaksAtAnyIndex()
+                || (itemType == SpecialQueueItemType::Barrier
+                    && !serverCapabilities().supportsInsertingBarriers()))
+        {
+            return signalServerTooOldError(&ServerConnection::queueEntryInsertionFailed);
+        }
+
+        auto handler = new QueueEntryInsertionResultHandler(this);
+        auto ref = getNewReference();
+        _resultHandlers[ref] = handler;
+
+        qDebug() << "sending request to insert" << itemType << "at index" << index
+                 << "; ref=" << ref;
+
+        quint8 itemTypeByte = (itemType == SpecialQueueItemType::Barrier) ? 2 : 1;
+        quint8 indexTypeByte = indexType == QueueIndexType::Normal ? 0 : 1;
+
+        QByteArray message;
+        message.reserve(2 + 1 + 1 + 4 + 4);
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::InsertSpecialQueueItemRequest);
+        NetworkUtil::appendByte(message, itemTypeByte);
+        NetworkUtil::appendByte(message, indexTypeByte);
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkUtil::append4Bytes(message, index);
+
+        sendBinaryMessage(message);
+
+        return RequestID(ref);
+    }
+
+    RequestID ServerConnection::duplicateQueueEntry(quint32 queueID)
     {
         auto ref = registerResultHandler(new DuplicationResultHandler(this));
 
-        qDebug() << "sending request to duplicate QID " << queueID;
+        qDebug() << "sending request to duplicate QID" << queueID << "; ref=" << ref;
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4);
@@ -915,6 +1206,8 @@ namespace PMP
         NetworkUtil::append4Bytes(message, queueID);
 
         sendBinaryMessage(message);
+
+        return RequestID(ref);
     }
 
     void ServerConnection::sendQueueEntryInfoRequest(uint queueID)
@@ -949,8 +1242,8 @@ namespace PMP
         NetworkProtocol::append2Bytes(message,
                                       ClientMessageType::BulkTrackInfoRequestMessage);
 
-        uint QID;
-        foreach(QID, queueIDs) {
+        for (auto QID : queueIDs)
+        {
             NetworkUtil::append4Bytes(message, QID);
         }
 
@@ -975,7 +1268,8 @@ namespace PMP
                                      ClientMessageType::BulkQueueEntryHashRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
 
-        foreach(uint QID, queueIDs) {
+        for (auto QID : queueIDs)
+        {
             NetworkUtil::append4Bytes(message, QID);
         }
 
@@ -1003,7 +1297,8 @@ namespace PMP
         NetworkUtil::append2Bytes(message, 2 | 1); /* request prev. heard & score */
         NetworkUtil::append4Bytes(message, userId); /* user ID */
 
-        foreach (FileHash hash, hashes) {
+        for (auto& hash : hashes)
+        {
             if (hash.isNull())
                 qWarning() << "request contains null hash";
 
@@ -1109,13 +1404,13 @@ namespace PMP
             switch (errorCode)
             {
             case ResultMessageErrorCode::UserAccountAlreadyExists:
-                error = AccountAlreadyExists;
+                error = UserRegistrationError::AccountAlreadyExists;
                 break;
             case ResultMessageErrorCode::InvalidUserAccountName:
-                error = InvalidAccountName;
+                error = UserRegistrationError::InvalidAccountName;
                 break;
             default:
-                error = UnknownUserRegistrationError;
+                error = UserRegistrationError::UnknownError;
                 break;
             }
 
@@ -1242,18 +1537,15 @@ namespace PMP
         sendSingleByteAction(3); /* 3 = skip */
     }
 
-    void ServerConnection::insertBreakAtFront()
+    void ServerConnection::insertBreakAtFrontIfNotExists()
     {
         sendSingleByteAction(4); /* 4 = insert break at front */
     }
 
     void ServerConnection::seekTo(uint queueID, qint64 position)
     {
-        if (!_binarySendingMode) {
-            return; /* too early for that */
-        }
-
-        if (position < 0) {
+        if (position < 0)
+        {
             qWarning() << "Position out of range:" << position;
             return;
         }
@@ -1307,11 +1599,8 @@ namespace PMP
 
     void ServerConnection::setDynamicModeNoRepetitionSpan(int seconds)
     {
-        if (!_binarySendingMode) {
-            return; /* only supported in binary mode */
-        }
-
-        if (seconds < 0 || seconds > std::numeric_limits<qint32>::max() - 1) {
+        if (seconds < 0 || seconds > std::numeric_limits<qint32>::max() - 1)
+        {
             qWarning() << "Repetition span out of range:" << seconds;
             return;
         }
@@ -1358,10 +1647,6 @@ namespace PMP
     void ServerConnection::sendInitiateNewUserAccountMessage(QString login,
                                                              quint32 clientReference)
     {
-        if (!_binarySendingMode) {
-            return; /* only supported in binary mode */
-        }
-
         QByteArray loginBytes = login.toUtf8();
 
         QByteArray message;
@@ -1379,10 +1664,6 @@ namespace PMP
     void ServerConnection::sendInitiateLoginMessage(QString login,
                                                     quint32 clientReference)
     {
-        if (!_binarySendingMode) {
-            return; /* only supported in binary mode */
-        }
-
         QByteArray loginBytes = login.toUtf8();
 
         QByteArray message;
@@ -1400,10 +1681,6 @@ namespace PMP
                                                            QByteArray hashedPassword,
                                                            quint32 clientReference)
     {
-        if (!_binarySendingMode) {
-            return; /* only supported in binary mode */
-        }
-
         QByteArray loginBytes = login.toUtf8();
 
         QByteArray message;
@@ -1425,10 +1702,6 @@ namespace PMP
                                                   QByteArray hashedPassword,
                                                   quint32 clientReference)
     {
-        if (!_binarySendingMode) {
-            return; /* only supported in binary mode */
-        }
-
         QByteArray loginBytes = login.toUtf8();
 
         QByteArray message;
@@ -1453,9 +1726,6 @@ namespace PMP
 
     void ServerConnection::sendCollectionFetchRequestMessage(uint clientReference)
     {
-        if (!_binarySendingMode)
-            return; /* only supported in binary mode */
-
         QByteArray message;
         message.reserve(4 + 4);
         NetworkProtocol::append2Bytes(message,
@@ -1881,19 +2151,26 @@ namespace PMP
 
     void ServerConnection::handleBinaryMessage(QByteArray const& message)
     {
-        if (message.length() < 2) {
+        if (message.length() < 2)
+        {
             qDebug() << "received invalid binary message (less than 2 bytes)";
             return; /* invalid message */
         }
 
+        _timeSinceLastMessageReceived.start();
+        _keepAliveTimer->stop();
+        _keepAliveTimer->start(KeepAliveIntervalMs);
+
         quint16 messageType = NetworkUtil::get2Bytes(message, 0);
-        if (messageType & (1u << 15)) {
+        if (messageType & (1u << 15))
+        {
             quint8 extensionMessageType = messageType & 0x7Fu;
             quint8 extensionId = (messageType >> 7) & 0xFFu;
 
             handleExtensionMessage(extensionId, extensionMessageType, message);
         }
-        else {
+        else
+        {
             auto serverMessageType = static_cast<ServerMessageType>(messageType);
 
             handleStandardBinaryMessage(serverMessageType, message);
@@ -1903,7 +2180,11 @@ namespace PMP
     void ServerConnection::handleStandardBinaryMessage(ServerMessageType messageType,
                                                        QByteArray const& message)
     {
-        switch (messageType) {
+        switch (messageType)
+        {
+        case ServerMessageType::KeepAliveMessage:
+            parseKeepAliveMessage(message);
+            break;
         case ServerMessageType::ServerExtensionsMessage:
             parseServerProtocolExtensionsMessage(message);
             break;
@@ -2044,22 +2325,35 @@ namespace PMP
                    << _serverExtensionNames.value(extensionId, "?");
     }
 
+    void ServerConnection::parseKeepAliveMessage(QByteArray const& message)
+    {
+        if (message.length() != 4)
+            return; /* invalid message */
+
+        quint16 payload = NetworkUtil::get2Bytes(message, 2);
+
+        qDebug() << "received keep-alive message from the server; payload="
+                 << QString::number(payload, 16) << "(hex)";
+
+        /* nothing needs to be done with this message, just receiving it was sufficient */
+    }
+
     void ServerConnection::parseSimpleResultMessage(QByteArray const& message)
     {
         if (message.length() < 12) {
             return; /* invalid message */
         }
 
-        quint16 errorType = NetworkUtil::get2Bytes(message, 2);
+        quint16 errorCode = NetworkUtil::get2Bytes(message, 2);
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
         quint32 intData = NetworkUtil::get4Bytes(message, 8);
 
         QByteArray blobData = message.mid(12);
 
-        qDebug() << "received result/error message; type:" << errorType
+        qDebug() << "received result/error message; errorCode:" << errorCode
                  << " client-ref:" << clientReference;
 
-        handleResultMessage(errorType, clientReference, intData, blobData);
+        handleResultMessage(errorCode, clientReference, intData, blobData);
     }
 
     void ServerConnection::parseServerProtocolExtensionsMessage(QByteArray const& message)
@@ -2177,26 +2471,25 @@ namespace PMP
 
     void ServerConnection::parseServerHealthMessage(QByteArray const& message)
     {
-        if (message.length() != 4) {
+        if (message.length() != 4)
+        {
             qWarning() << "invalid message; length incorrect";
             return;
         }
 
         quint16 problems = NetworkUtil::get2Bytes(message, 2);
 
+        qDebug() << "received server health message; problems=" << problems;
+
         bool databaseUnavailable = problems & 1u;
 
         ServerHealthStatus newServerHealthStatus(databaseUnavailable);
 
-        bool healthStatusChanged = _serverHealthStatus != newServerHealthStatus;
+        /* server health messages cannot be re-requested by the client, so we need to
+           store the information in the connection */
         _serverHealthStatus = newServerHealthStatus;
 
-        if (healthStatusChanged) {
-            if (databaseUnavailable)
-                qWarning() << "server reports that its database is unavailable";
-
-            Q_EMIT serverHealthChanged(newServerHealthStatus);
-        }
+        Q_EMIT serverHealthReceived();
     }
 
     void ServerConnection::parseServerClockMessage(const QByteArray& message)
@@ -2263,11 +2556,10 @@ namespace PMP
             users.append(QPair<uint, QString>(userId, login));
         }
 
-        if (offset != message.length()) {
+        if (offset != message.length())
             return; /* invalid message */
-        }
 
-        Q_EMIT receivedUserAccounts(users);
+        Q_EMIT userAccountsReceived(users);
     }
 
     void ServerConnection::parseNewUserAccountSaltMessage(QByteArray const& message)
@@ -2317,23 +2609,33 @@ namespace PMP
 
     void ServerConnection::parsePlayerStateMessage(QByteArray const& message)
     {
-        if (message.length() != 20) {
+        if (message.length() != 20)
             return; /* invalid message */
-        }
 
         quint8 playerState = NetworkUtil::getByte(message, 2);
         quint8 volume = NetworkUtil::getByte(message, 3);
-        quint32 queueLength = NetworkUtil::get4Bytes(message, 4);
-        quint32 queueID = NetworkUtil::get4Bytes(message, 8);
+        qint32 queueLength = NetworkUtil::get4BytesSigned(message, 4);
+        quint32 queueId = NetworkUtil::get4Bytes(message, 8);
         quint64 position = NetworkUtil::get8Bytes(message, 12);
+
+        if (queueLength < 0)
+            return; /* invalid message */
 
         //qDebug() << "received player state message";
 
         // TODO : rename volumeChanged signal or get rid of it
         if (volume <= 100) { Q_EMIT volumeChanged(volume); }
 
+        bool delayedStartActive = false;
+        if (_serverProtocolNo >= 20)
+        {
+            delayedStartActive = (playerState & 128) != 0;
+            playerState &= 63;
+        }
+
         auto state = PlayerState::Unknown;
-        switch (playerState) {
+        switch (playerState)
+        {
             case 1:
                 state = PlayerState::Stopped;
                 break;
@@ -2348,7 +2650,8 @@ namespace PMP
                 break;
         }
 
-        Q_EMIT receivedPlayerState(state, volume, queueLength, queueID, position);
+        Q_EMIT receivedPlayerState(state, volume, queueLength, queueId, position,
+                                   delayedStartActive);
     }
 
     void ServerConnection::parseVolumeChangedMessage(QByteArray const& message)
@@ -2390,8 +2693,11 @@ namespace PMP
         if (message.length() < 10)
             return; /* invalid message */
 
-        quint32 queueLength = NetworkUtil::get4Bytes(message, 2);
-        quint32 startOffset = NetworkUtil::get4Bytes(message, 6);
+        qint32 queueLength = NetworkUtil::get4BytesSigned(message, 2);
+        qint32 startOffset = NetworkUtil::get4BytesSigned(message, 6);
+
+        if (queueLength < 0 || startOffset < 0)
+            return; /* invalid message */
 
         QList<quint32> queueIDs;
         queueIDs.reserve((message.length() - 10) / 4);
@@ -3172,11 +3478,11 @@ namespace PMP
         Q_EMIT receivedPlayerHistory(entries);
     }
 
-    void ServerConnection::handleResultMessage(quint16 errorType, quint32 clientReference,
+    void ServerConnection::handleResultMessage(quint16 errorCode, quint32 clientReference,
                                                quint32 intData,
                                                QByteArray const& blobData)
     {
-        auto errorCodeEnum = static_cast<ResultMessageErrorCode>(errorType);
+        auto errorCodeEnum = static_cast<ResultMessageErrorCode>(errorCode);
 
         if (errorCodeEnum == ResultMessageErrorCode::InvalidMessageStructure)
         {
@@ -3198,8 +3504,8 @@ namespace PMP
         auto resultHandler = _resultHandlers.take(clientReference);
         if (resultHandler)
         {
-            resultHandler->handleResult(errorCodeEnum, clientReference, intData,
-                                        blobData);
+            ResultMessageData data(errorCodeEnum, clientReference, intData, blobData);
+            resultHandler->handleResult(data);
             delete resultHandler;
             return;
         }

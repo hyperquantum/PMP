@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,8 +23,8 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     UserDataForTracksFetcher::UserDataForTracksFetcher(quint32 userId,
                                                        QVector<uint> hashIds)
      : _userId(userId), _hashIds(hashIds)
@@ -32,7 +32,8 @@ namespace PMP {
         //
     }
 
-    void UserDataForTracksFetcher::run() {
+    void UserDataForTracksFetcher::run()
+    {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return; /* problem */
 
@@ -45,12 +46,14 @@ namespace PMP {
         /* convert QVector<uint> to QList<quint32> */
         QList<quint32> ids;
         ids.reserve(_hashIds.size());
-        Q_FOREACH(auto id, _hashIds) {
+        for (auto id : qAsConst(_hashIds))
+        {
             ids << id;
         }
 
-        auto stats = db->getHashHistoryStats(_userId, ids);
-        Q_FOREACH(Database::HashHistoryStats const& stat, stats) {
+        const auto stats = db->getHashHistoryStats(_userId, ids);
+        for (auto& stat : stats)
+        {
             UserDataForHashId data;
             data.hashId = stat.hashId;
             data.previouslyHeard = stat.lastHeard;
@@ -68,9 +71,11 @@ namespace PMP {
     /* =========================== UserDataForHashInit =========================== */
 
     /* utility object to automatically do the qRegisterMetaType call at program startup */
-    class UserDataForTracksInit {
+    class UserDataForTracksInit
+    {
     public:
-        UserDataForTracksInit() {
+        UserDataForTracksInit()
+        {
             //qDebug() << "UserDataForTracksInit running";
             qRegisterMetaType<PMP::UserDataForHashId>("PMP::UserDataForHashId");
             qRegisterMetaType<QList<PMP::UserDataForHashId>>(
@@ -81,5 +86,4 @@ namespace PMP {
     };
 
     static UserDataForTracksInit userDataForTracksInit;
-
 }
