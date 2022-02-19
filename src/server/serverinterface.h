@@ -79,6 +79,8 @@ namespace PMP
 
         Result activateDelayedStart(qint64 delayMilliseconds);
         Result deactivateDelayedStart();
+        bool delayedStartActive() const;
+        qint64 getDelayedStartTimeRemainingMilliseconds() const;
 
         void play();
         void pause();

@@ -49,6 +49,10 @@ namespace PMP
             this, &PlayerControllerImpl::receivedPlayerState
         );
         connect(
+            _connection, &ServerConnection::receivedDelayedStartInfo,
+            this, &PlayerControllerImpl::receivedDelayedStartInfo
+        );
+        connect(
             _connection, &ServerConnection::receivedUserPlayingFor,
             this, &PlayerControllerImpl::receivedUserPlayingFor
         );
@@ -141,6 +145,14 @@ namespace PMP
         return _volume;
     }
 
+    QDateTime PlayerControllerImpl::delayedStartServerDeadline()
+    {
+        if (!_delayedStartActive.isTrue())
+            return {}; /* return invalid datetime */
+
+        return _delayedStartServerDeadline;
+    }
+
     RequestID PlayerControllerImpl::activateDelayedStart(qint64 delayMilliseconds)
     {
         return _connection->activateDelayedStart(delayMilliseconds);
@@ -206,8 +218,31 @@ namespace PMP
                 quint32 queueLength, quint32 nowPlayingQID, quint64 nowPlayingPosition,
                                                    bool delayedStartActive)
     {
+        if (delayedStartActive && !_delayedStartActive.isTrue())
+            _connection->sendDelayedStartInfoRequest();
+
         updateState(state, volume, queueLength, nowPlayingQID, nowPlayingPosition,
                     delayedStartActive);
+    }
+
+    void PlayerControllerImpl::receivedDelayedStartInfo(QDateTime serverClockDeadline,
+                                                        qint64 timeRemainingMilliseconds)
+    {
+        Q_UNUSED(timeRemainingMilliseconds)
+
+        bool delayedStartActiveChanged = !_delayedStartActive.isTrue();
+        bool delayedStartDeadlineChanged =
+                _delayedStartServerDeadline != serverClockDeadline;
+
+        _delayedStartActive = true;
+        _delayedStartServerDeadline = serverClockDeadline;
+
+        if (!delayedStartActiveChanged && !delayedStartDeadlineChanged)
+            return;
+
+        qDebug() << "delayed start is active and has server clock deadline"
+                 << serverClockDeadline;
+        Q_EMIT this->delayedStartActiveInfoChanged();
     }
 
     void PlayerControllerImpl::receivedUserPlayingFor(quint32 userId, QString userLogin)
@@ -247,6 +282,8 @@ namespace PMP
         _trackNowPlaying = nowPlayingQueueId;
         _volume = volume;
         _delayedStartActive = delayedStartActive;
+        if (!delayedStartActive.isTrue())
+            _delayedStartServerDeadline = QDateTime();
 
         if (stateChanged)
         {
@@ -269,7 +306,7 @@ namespace PMP
         if (delayedStartActiveChanged)
         {
             qDebug() << "delayed start active has changed";
-            Q_EMIT this->delayedStartActiveChanged();
+            Q_EMIT this->delayedStartActiveInfoChanged();
         }
     }
 

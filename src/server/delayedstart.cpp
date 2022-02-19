@@ -83,6 +83,14 @@ namespace PMP
         return Success();
     }
 
+    qint64 DelayedStart::timeRemainingMilliseconds() const
+    {
+        if (!_delayedStartActive)
+            return -1;
+
+        return  _startDeadline.remainingTime();
+    }
+
     void DelayedStart::scheduleTimer()
     {
         _timer->stop(); /* just in case something completely new is scheduled */

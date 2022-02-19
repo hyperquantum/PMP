@@ -147,10 +147,12 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/colors.cpp
     gui-remote/colorswitcher.cpp
     gui-remote/connectionwidget.cpp
+    gui-remote/delayedstartnotification.cpp
     gui-remote/gui-remote-metatypes.cpp
     gui-remote/loginwidget.cpp
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp
+    gui-remote/notificationbar.cpp
     gui-remote/playerhistorymodel.cpp
     gui-remote/precisetrackprogressmonitor.cpp
     gui-remote/queuemediator.cpp
@@ -168,9 +170,11 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/collectionwidget.h
     gui-remote/colorswitcher.h
     gui-remote/connectionwidget.h
+    gui-remote/delayedstartnotification.h
     gui-remote/loginwidget.h
     gui-remote/mainwidget.h
     gui-remote/mainwindow.h
+    gui-remote/notificationbar.h
     gui-remote/playerhistorymodel.h
     gui-remote/precisetrackprogressmonitor.h
     gui-remote/queuemediator.h
@@ -186,6 +190,7 @@ set(PMP_GUI_REMOTE_UIS
     gui-remote/connectionwidget.ui
     gui-remote/loginwidget.ui
     gui-remote/mainwidget.ui
+    gui-remote/notificationbar.ui
     gui-remote/trackinfodialog.ui
     gui-remote/useraccountcreationwidget.ui
     gui-remote/userpickerwidget.ui

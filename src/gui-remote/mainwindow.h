@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -37,6 +37,7 @@ namespace PMP
     class ConnectionWidget;
     class LoginWidget;
     class MainWidget;
+    class NotificationBar;
     class PowerManagement;
     class ServerConnection;
     class UserAccountCreationWidget;
@@ -90,6 +91,7 @@ namespace PMP
         void showLoginWidget(QString login);
         void showMainWidget();
 
+        NotificationBar* _notificationBar;
         QLabel* _leftStatus;
         QLabel* _rightStatus;
         QTimer* _leftStatusTimer;

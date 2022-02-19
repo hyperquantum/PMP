@@ -49,6 +49,7 @@ namespace PMP
 
         int volume() const override;
 
+        QDateTime delayedStartServerDeadline() override;
         RequestID activateDelayedStart(qint64 delayMilliseconds) override;
         RequestID activateDelayedStart(QDateTime startTime) override;
         RequestID deactivateDelayedStart() override;
@@ -69,6 +70,8 @@ namespace PMP
         void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition,
                                  bool delayedStartActive);
+        void receivedDelayedStartInfo(QDateTime serverClockDeadline,
+                                      qint64 timeRemainingMilliseconds);
         void receivedUserPlayingFor(quint32 userId, QString userLogin);
         void receivedVolume(int volume);
 
@@ -89,6 +92,7 @@ namespace PMP
         QString _personalModeUserLogin;
         int _volume;
         TriBool _delayedStartActive;
+        QDateTime _delayedStartServerDeadline;
     };
 }
 #endif

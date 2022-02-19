@@ -162,6 +162,16 @@ namespace PMP
         return _delayedStart->deactivate();
     }
 
+    bool ServerInterface::delayedStartActive() const
+    {
+        return _delayedStart->isActive();
+    }
+
+    qint64 ServerInterface::getDelayedStartTimeRemainingMilliseconds() const
+    {
+        return _delayedStart->timeRemainingMilliseconds();
+    }
+
     void ServerInterface::play()
     {
         if (!isLoggedIn()) return;

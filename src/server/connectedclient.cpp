@@ -44,7 +44,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 20;
+    const qint16 ConnectedClient::ServerProtocolNo = 21;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -58,8 +58,10 @@ namespace PMP
        _serverHealthMonitor(serverHealthMonitor),
        _clientProtocolNo(-1),
        _lastSentNowPlayingID(0),
-       _terminated(false), _binaryMode(false),
-       _eventsEnabled(false), _healthEventsEnabled(false),
+       _terminated(false),
+       _binaryMode(false),
+       _eventsEnabled(false),
+       _healthEventsEnabled(false),
        _pendingPlayerStatus(false)
     {
         _serverInterface->setParent(this);
@@ -121,9 +123,13 @@ namespace PMP
 
     void ConnectedClient::enableEvents()
     {
-        if (_eventsEnabled) return;
+        if (_eventsEnabled)
+            return;
 
         qDebug() << "enabling event notifications";
+
+        enableHealthEvents(GeneralOrSpecific::General);
+
         _eventsEnabled = true;
 
         auto queue = &_player->queue();
@@ -211,23 +217,17 @@ namespace PMP
             this, &ConnectedClient::sendServerClockMessage
         );
         sendServerClockMessage();
-
-        if (!_healthEventsEnabled)
-        {
-            connect(
-                _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
-                this, &ConnectedClient::serverHealthChanged
-            );
-
-            sendServerHealthMessageIfNotEverythingOkay();
-        }
     }
 
-    void ConnectedClient::enableHealthEvents()
+    void ConnectedClient::enableHealthEvents(GeneralOrSpecific howEnabled)
     {
-        auto healthEventsWereAlreadyEnabled = _eventsEnabled | _healthEventsEnabled;
-        _healthEventsEnabled = true;
-        if (healthEventsWereAlreadyEnabled) return; /* nothing to do */
+        auto healthEventsWereEnabledAlready = _eventsEnabled | _healthEventsEnabled;
+
+        if (howEnabled == GeneralOrSpecific::Specific)
+            _healthEventsEnabled = true;
+
+        if (healthEventsWereEnabledAlready)
+            return; /* nothing to do */
 
         connect(
             _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
@@ -1464,6 +1464,34 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendDelayedStartInfoMessage()
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 21)
+            return;
+
+        qint64 msTimeRemaining =
+                _serverInterface->getDelayedStartTimeRemainingMilliseconds();
+
+        if (msTimeRemaining < 0)
+        {
+            qWarning() << "delayed start time remaining is negative, cannot send info";
+            return;
+        }
+
+        qint64 msSinceEpoch = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+
+        QByteArray message;
+        message.reserve(2 + 2 + 8 + 8);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::DelayedStartInfoMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append8BytesSigned(message, msSinceEpoch);
+        NetworkUtil::append8BytesSigned(message, msTimeRemaining);
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
         sendResultMessage(ResultMessageErrorCode::NoError, clientReference, intData);
@@ -1703,7 +1731,10 @@ namespace PMP
 
     void ConnectedClient::onDelayedStartActiveChanged()
     {
-        sendPlayerStateMessage();
+        if (_clientProtocolNo >= 21 && _serverInterface->delayedStartActive())
+            sendDelayedStartInfoMessage();
+        else
+            sendPlayerStateMessage();
     }
 
     void ConnectedClient::sendTextualQueueInfo()
@@ -2733,6 +2764,11 @@ namespace PMP
             qDebug() << "received request for list of protocol extensions";
             sendProtocolExtensionsMessage();
             break;
+        case 19:
+            qDebug() << "received request for delayed start info";
+            if (_serverInterface->delayedStartActive())
+                sendDelayedStartInfoMessage();
+            break;
         case 20: /* enable dynamic mode */
             qDebug() << "received ENABLE DYNAMIC MODE command";
             _serverInterface->enableDynamicMode();
@@ -2775,7 +2811,7 @@ namespace PMP
             break;
         case 51:
             qDebug() << "received SUBSCRIBE TO SERVER HEALTH UPDATES command";
-            enableHealthEvents();
+            enableHealthEvents(GeneralOrSpecific::Specific);
             break;
         case 99:
             qDebug() << "received SHUTDOWN command";

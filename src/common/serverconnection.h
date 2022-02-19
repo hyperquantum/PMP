@@ -115,6 +115,7 @@ namespace PMP
         void sendDatabaseIdentifierRequest();
         void sendServerInstanceIdentifierRequest();
         void sendServerNameRequest();
+        void sendDelayedStartInfoRequest();
 
         void requestPlayerState();
         void play();
@@ -187,6 +188,8 @@ namespace PMP
         void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition,
                                  bool delayedStartActive);
+        void receivedDelayedStartInfo(QDateTime serverClockDeadline,
+                                      qint64 timeRemainingMilliseconds);
 
         void volumeChanged(int percentage);
 
@@ -304,6 +307,7 @@ namespace PMP
         void parseUserLoginSaltMessage(QByteArray const& message);
 
         void parsePlayerStateMessage(QByteArray const& message);
+        void parseDelayedStartInfoMessage(QByteArray const& message);
         void parseVolumeChangedMessage(QByteArray const& message);
         void parseUserPlayingForModeMessage(QByteArray const& message);
 
@@ -332,6 +336,8 @@ namespace PMP
 
         void invalidMessageReceived(QByteArray const& message, QString messageType = "",
                                     QString extraInfo = "");
+
+        void receivedServerClockTime(QDateTime serverClockTime);
 
         static const quint16 ClientProtocolNo;
         static const int KeepAliveIntervalMs;

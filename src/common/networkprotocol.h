@@ -54,6 +54,7 @@ Changes for each version:
   18: client msg 24, server msg 3 & 4 & 21: barriers
   19: client msg 25, server msg 32: keep-alive messages
   20: client msg 26, server msg 1, parameterless action 40, error codes 2 & 25 & 51: delayed start
+  21: single byte request 19, server msg 33: delayed start deadline information
 */
 
 namespace PMP
@@ -95,6 +96,7 @@ namespace PMP
         ServerExtensionsMessage = 30,
         ServerClockMessage = 31,
         KeepAliveMessage = 32,
+        DelayedStartInfoMessage = 33,
     };
 
     enum class ClientMessageType

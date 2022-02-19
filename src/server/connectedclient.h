@@ -112,8 +112,10 @@ namespace PMP
                                              bool havePreviouslyHeard, bool haveScore);
 
     private:
+        enum class GeneralOrSpecific { General, Specific };
+
         void enableEvents();
-        void enableHealthEvents();
+        void enableHealthEvents(GeneralOrSpecific howEnabled);
 
         bool isLoggedIn() const;
 
@@ -172,6 +174,7 @@ namespace PMP
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
         void sendServerClockMessage();
+        void sendDelayedStartInfoMessage();
 
         void handleBinaryMessage(QByteArray const& message);
         void handleStandardBinaryMessage(ClientMessageType messageType,

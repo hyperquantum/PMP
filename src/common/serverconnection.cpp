@@ -385,7 +385,7 @@ namespace PMP
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 20;
+    const quint16 ServerConnection::ClientProtocolNo = 21;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -1416,6 +1416,11 @@ namespace PMP
         sendSingleByteAction(16); /* 16 = request for server name */
     }
 
+    void ServerConnection::sendDelayedStartInfoRequest()
+    {
+        sendSingleByteAction(19); /* 19 = request for delayed start information */
+    }
+
     void ServerConnection::requestPlayerState()
     {
         sendSingleByteAction(10); /* 10 = request player state */
@@ -1706,6 +1711,9 @@ namespace PMP
         case ServerMessageType::PlayerStateMessage:
             parsePlayerStateMessage(message);
             break;
+        case ServerMessageType::DelayedStartInfoMessage:
+            parseDelayedStartInfoMessage(message);
+            break;
         case ServerMessageType::VolumeChangedMessage:
             parseVolumeChangedMessage(message);
             break;
@@ -1995,21 +2003,10 @@ namespace PMP
 
         auto serverClockTime = QDateTime::fromMSecsSinceEpoch(msSinceEpoch, Qt::UTC);
 
-        auto clientClockTimeOffsetMs =
-                serverClockTime.msecsTo(QDateTime::currentDateTimeUtc());
-
         qDebug() << "received server clock time message with value" << msSinceEpoch
-                 << ";" << serverClockTime.toString(Qt::ISODateWithMs)
-                 << "; client offset:" << clientClockTimeOffsetMs << "ms";
+                 << ";" << serverClockTime.toString(Qt::ISODateWithMs);
 
-        const auto twoHoursMs = 2 * 60 * 60 * 1000;
-
-        if (clientClockTimeOffsetMs > twoHoursMs || clientClockTimeOffsetMs < -twoHoursMs)
-        {
-            qWarning() << "client and server clock are more than two hours apart!";
-        }
-
-        Q_EMIT receivedClientClockTimeOffset(clientClockTimeOffsetMs);
+        receivedServerClockTime(serverClockTime);
     }
 
     void ServerConnection::parseUsersListMessage(QByteArray const& message)
@@ -2143,6 +2140,32 @@ namespace PMP
 
         Q_EMIT receivedPlayerState(state, volume, queueLength, queueId, position,
                                    delayedStartActive);
+    }
+
+    void ServerConnection::parseDelayedStartInfoMessage(const QByteArray& message)
+    {
+        if (message.length() != 20)
+        {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        qint64 serverClockTimeMsSinceEpoch = NetworkUtil::get8BytesSigned(message, 4);
+        qint64 msTimeRemaining = NetworkUtil::get8BytesSigned(message, 12);
+
+        auto serverClockTime =
+                QDateTime::fromMSecsSinceEpoch(serverClockTimeMsSinceEpoch, Qt::UTC);
+
+        qDebug() << "received delayed start info message: server clock time is"
+                 << serverClockTimeMsSinceEpoch
+                 << "meaning" << serverClockTime.toString(Qt::ISODateWithMs)
+                 << "; time remaining:" << msTimeRemaining << "ms";
+
+        receivedServerClockTime(serverClockTime);
+
+        auto serverClockDeadline = serverClockTime.addMSecs(msTimeRemaining);
+
+        Q_EMIT receivedDelayedStartInfo(serverClockDeadline, msTimeRemaining);
     }
 
     void ServerConnection::parseVolumeChangedMessage(QByteArray const& message)
@@ -3010,6 +3033,23 @@ namespace PMP
     {
         qWarning() << "received invalid message; length=" << message.size()
                    << " type=" << messageType << " extra info=" << extraInfo;
+    }
+
+    void ServerConnection::receivedServerClockTime(QDateTime serverClockTime)
+    {
+        auto clientClockTimeOffsetMs =
+                serverClockTime.msecsTo(QDateTime::currentDateTimeUtc());
+
+        qDebug() << "client clock time offset:" << clientClockTimeOffsetMs << "ms";
+
+        const auto twoHoursMs = 2 * 60 * 60 * 1000;
+
+        if (clientClockTimeOffsetMs > twoHoursMs || clientClockTimeOffsetMs < -twoHoursMs)
+        {
+            qWarning() << "client and server clock are more than two hours apart!";
+        }
+
+        Q_EMIT receivedClientClockTimeOffset(clientClockTimeOffsetMs);
     }
 
     void ServerConnection::registerServerProtocolExtensions(

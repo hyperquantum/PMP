@@ -54,6 +54,7 @@ namespace PMP
 
         virtual int volume() const = 0;
 
+        virtual QDateTime delayedStartServerDeadline() = 0;
         virtual RequestID activateDelayedStart(qint64 delayMilliseconds) = 0;
         virtual RequestID activateDelayedStart(QDateTime startTime) = 0;
         virtual RequestID deactivateDelayedStart() = 0;
@@ -75,7 +76,7 @@ namespace PMP
                                QString personalModeUserLogin);
         void volumeChanged();
         void queueLengthChanged();
-        void delayedStartActiveChanged();
+        void delayedStartActiveInfoChanged();
 
         void delayedStartActivationResultEvent(ResultMessageErrorCode errorCode,
                                                RequestID requestId);

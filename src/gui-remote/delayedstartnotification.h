@@ -17,44 +17,39 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_DELAYEDSTART_H
-#define PMP_DELAYEDSTART_H
+#ifndef PMP_DELAYEDSTARTNOTIFICATION_H
+#define PMP_DELAYEDSTARTNOTIFICATION_H
 
-#include "result.h"
-
-#include <QDeadlineTimer>
-#include <QObject>
-
-QT_FORWARD_DECLARE_CLASS(QTimer)
+#include "notificationbar.h"
 
 namespace PMP
 {
-    class Player;
+    class GeneralController;
+    class PlayerController;
 
-    class DelayedStart : public QObject
+    class DelayedStartNotification : public Notification
     {
         Q_OBJECT
     public:
-        explicit DelayedStart(Player* player);
+        DelayedStartNotification(QObject* parent, PlayerController* playerController,
+                                 GeneralController* generalController);
 
-        bool isActive() const { return _delayedStartActive; }
-        Result activate(int delayMilliseconds);
-        Result deactivate();
+        QString notificationText() const override { return _text; }
 
-        qint64 timeRemainingMilliseconds() const;
+        QString actionButton1Text() const override;
 
-    Q_SIGNALS:
-        void delayedStartActiveChanged();
+        bool visible() const override { return _visible; }
+
+        void actionButton1Pushed() override;
+
+    private Q_SLOTS:
+        void updateInfo();
 
     private:
-        void scheduleTimer();
-        int getTimerIntervalForRemainingTime(qint64 remainingMilliseconds);
-        void doStart();
-
-        Player* _player;
-        QTimer* _timer;
-        QDeadlineTimer _startDeadline;
-        bool _delayedStartActive;
+        PlayerController* _playerController;
+        GeneralController* _generalController;
+        QString _text;
+        bool _visible;
     };
 }
 #endif
