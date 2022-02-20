@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2022, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -39,6 +39,7 @@ set(PMP_COMMON_SOURCES
     common/queuemonitor.cpp
     common/scrobblerstatus.cpp
     common/scrobblingprovider.cpp
+    common/servercapabilitiesimpl.cpp
     common/serverconnection.cpp
     common/serverdiscoverer.cpp
     common/startstopeventstatus.cpp
@@ -67,11 +68,9 @@ set(PMP_COMMON_HEADERS
     common/queuecontroller.h
     common/queuecontrollerimpl.h
     common/queueentryinfofetcher.h
-    common/queueindextype.h
     common/queuemonitor.h
     common/serverconnection.h
     common/serverdiscoverer.h
-    common/specialqueueitemtype.h
     common/userdatafetcher.h
 )
 
@@ -81,6 +80,7 @@ set(PMP_SERVER_SOURCES
     server/collectionmonitor.cpp
     server/connectedclient.cpp
     server/database.cpp
+    server/delayedstart.cpp
     server/dynamicmodecriteria.cpp
     server/dynamictrackgenerator.cpp
     server/generator.cpp
@@ -117,6 +117,7 @@ set(PMP_SERVER_HEADERS
     server/addtohistorytask.h
     server/collectionmonitor.h
     server/connectedclient.h
+    server/delayedstart.h
     server/dynamictrackgenerator.h
     server/generator.h
     server/history.h
@@ -165,10 +166,12 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/colors.cpp
     gui-remote/colorswitcher.cpp
     gui-remote/connectionwidget.cpp
+    gui-remote/delayedstartnotification.cpp
     gui-remote/gui-remote-metatypes.cpp
     gui-remote/loginwidget.cpp
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp
+    gui-remote/notificationbar.cpp
     gui-remote/playerhistorymodel.cpp
     gui-remote/precisetrackprogressmonitor.cpp
     gui-remote/queuemediator.cpp
@@ -186,9 +189,11 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/collectionwidget.h
     gui-remote/colorswitcher.h
     gui-remote/connectionwidget.h
+    gui-remote/delayedstartnotification.h
     gui-remote/loginwidget.h
     gui-remote/mainwidget.h
     gui-remote/mainwindow.h
+    gui-remote/notificationbar.h
     gui-remote/playerhistorymodel.h
     gui-remote/precisetrackprogressmonitor.h
     gui-remote/queuemediator.h
@@ -204,6 +209,7 @@ set(PMP_GUI_REMOTE_UIS
     gui-remote/connectionwidget.ui
     gui-remote/loginwidget.ui
     gui-remote/mainwidget.ui
+    gui-remote/notificationbar.ui
     gui-remote/trackinfodialog.ui
     gui-remote/useraccountcreationwidget.ui
     gui-remote/userpickerwidget.ui

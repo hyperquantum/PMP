@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,34 +17,44 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_ADDTOHISTORYTASK_H
-#define PMP_ADDTOHISTORYTASK_H
+#ifndef PMP_DELAYEDSTART_H
+#define PMP_DELAYEDSTART_H
 
-#include "playerhistoryentry.h"
+#include "result.h"
 
+#include <QDeadlineTimer>
 #include <QObject>
-#include <QRunnable>
-#include <QSharedPointer>
+
+QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP
 {
-    class Resolver;
+    class Player;
 
-    class AddToHistoryTask : public QObject, public QRunnable
+    class DelayedStart : public QObject
     {
         Q_OBJECT
     public:
-        AddToHistoryTask(Resolver* resolver, QSharedPointer<PlayerHistoryEntry> entry);
+        explicit DelayedStart(Player* player);
 
-        void run();
+        bool isActive() const { return _delayedStartActive; }
+        Result activate(int delayMilliseconds);
+        Result deactivate();
+
+        qint64 timeRemainingMilliseconds() const;
 
     Q_SIGNALS:
-        void updatedHashUserStats(uint hashID, quint32 user,
-                                  QDateTime previouslyHeard, qint16 score);
+        void delayedStartActiveChanged();
 
     private:
-        Resolver* _resolver;
-        QSharedPointer<PlayerHistoryEntry> _entry;
+        void scheduleTimer();
+        int getTimerIntervalForRemainingTime(qint64 remainingMilliseconds);
+        void doStart();
+
+        Player* _player;
+        QTimer* _timer;
+        QDeadlineTimer _startDeadline;
+        bool _delayedStartActive;
     };
 }
 #endif

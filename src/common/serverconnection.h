@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,6 +47,8 @@
 namespace PMP
 {
     class CollectionFetcher;
+    class ServerCapabilities;
+    class ServerCapabilitiesImpl;
 
     enum class ServerEventSubscription
     {
@@ -69,7 +71,9 @@ namespace PMP
             Aborting, Disconnecting
         };
 
+        class ResultMessageData;
         class ResultHandler;
+        class StandardResultHandler;
         class ParameterlessActionResultHandler;
         class CollectionFetchResultHandler;
         class TrackInsertionResultHandler;
@@ -80,14 +84,16 @@ namespace PMP
         explicit ServerConnection(QObject* parent = nullptr,
                                   ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
+        ~ServerConnection();
 
         void connectToHost(QString const& host, quint16 port);
         void disconnect();
 
+        ServerCapabilities const& serverCapabilities() const;
+        ServerHealthStatus serverHealth() const { return _serverHealthStatus; }
+
         bool isConnected() const;
         bool isLoggedIn() const { return userLoggedInId() > 0; }
-
-        ServerHealthStatus serverHealth() const { return _serverHealthStatus; }
 
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
@@ -97,16 +103,12 @@ namespace PMP
         void fetchCollection(CollectionFetcher* fetcher);
 
         RequestID reloadServerSettings();
+        RequestID activateDelayedStart(qint64 delayMilliseconds);
+        RequestID deactivateDelayedStart();
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
-
-        bool serverSupportsReloadingServerSettings() const;
-        bool serverSupportsQueueEntryDuplication() const;
-        bool serverSupportsDynamicModeWaveTermination() const;
-        bool serverSupportsInsertingBreaksAtAnyIndex() const;
-        bool serverSupportsInsertingBarriers() const;
 
     public Q_SLOTS:
         void shutdownServer();
@@ -114,6 +116,7 @@ namespace PMP
         void sendDatabaseIdentifierRequest();
         void sendServerInstanceIdentifierRequest();
         void sendServerNameRequest();
+        void sendDelayedStartInfoRequest();
 
         void requestPlayerState();
         void play();
@@ -182,9 +185,16 @@ namespace PMP
 
         void serverSettingsReloadResultEvent(ResultMessageErrorCode errorCode,
                                              RequestID requestId);
+        void delayedStartActivationResultEvent(ResultMessageErrorCode errorCode,
+                                               RequestID requestId);
+        void delayedStartDeactivationResultEvent(ResultMessageErrorCode errorCode,
+                                                 RequestID requestId);
 
         void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
-                                 quint32 nowPlayingQID, quint64 nowPlayingPosition);
+                                 quint32 nowPlayingQID, quint64 nowPlayingPosition,
+                                 bool delayedStartActive);
+        void receivedDelayedStartInfo(QDateTime serverClockDeadline,
+                                      qint64 timeRemainingMilliseconds);
 
         void volumeChanged(int percentage);
 
@@ -267,7 +277,7 @@ namespace PMP
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 extensionMessageType,
                                     QByteArray const& message);
-        void handleResultMessage(quint16 errorType, quint32 clientReference,
+        void handleResultMessage(quint16 errorCode, quint32 clientReference,
                                  quint32 intData, QByteArray const& blobData);
         void registerServerProtocolExtensions(
                            const QVector<NetworkProtocol::ProtocolExtension>& extensions);
@@ -313,6 +323,7 @@ namespace PMP
         void parseUserLoginSaltMessage(QByteArray const& message);
 
         void parsePlayerStateMessage(QByteArray const& message);
+        void parseDelayedStartInfoMessage(QByteArray const& message);
         void parseVolumeChangedMessage(QByteArray const& message);
         void parseUserPlayingForModeMessage(QByteArray const& message);
 
@@ -346,10 +357,13 @@ namespace PMP
         void invalidMessageReceived(QByteArray const& message, QString messageType = "",
                                     QString extraInfo = "");
 
+        void receivedServerClockTime(QDateTime serverClockTime);
+
         static const quint16 ClientProtocolNo;
         static const int KeepAliveIntervalMs;
         static const int KeepAliveReplyTimeoutMs;
 
+        ServerCapabilitiesImpl* _serverCapabilities;
         DisconnectReason _disconnectReason;
         QElapsedTimer _timeSinceLastMessageReceived;
         QTimer* _keepAliveTimer;

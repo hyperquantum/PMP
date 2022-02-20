@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,6 +27,7 @@
 #include "common/startstopeventstatus.h"
 
 #include "result.h"
+#include "serverplayerstate.h"
 
 #include <QObject>
 #include <QHash>
@@ -37,6 +38,7 @@
 
 namespace PMP
 {
+    class DelayedStart;
     class FileHash;
     class Generator;
     class Player;
@@ -45,12 +47,23 @@ namespace PMP
     class Server;
     class ServerSettings;
 
+    struct PlayerStateOverview
+    {
+        quint64 trackPosition;
+        quint32 nowPlayingQueueId;
+        qint32 queueLength;
+        ServerPlayerState playerState;
+        quint8 volume;
+        bool delayedStartActive;
+    };
+
     class ServerInterface : public QObject
     {
         Q_OBJECT
     public:
         ServerInterface(ServerSettings* serverSettings, Server* server,
-                        uint connectionReference, Player* player, Generator* generator);
+                        uint connectionReference, Player* player, Generator* generator,
+                        DelayedStart* delayedStart);
 
         ~ServerInterface();
 
@@ -66,12 +79,19 @@ namespace PMP
         void switchToPersonalMode();
         void switchToPublicMode();
 
+        Result activateDelayedStart(qint64 delayMilliseconds);
+        Result deactivateDelayedStart();
+        bool delayedStartActive() const;
+        qint64 getDelayedStartTimeRemainingMilliseconds() const;
+
         void play();
         void pause();
         void skip();
         void seekTo(qint64 positionMilliseconds);
 
         void setVolume(int volumePercentage);
+
+        PlayerStateOverview getPlayerStateOverview();
 
         Result enqueue(FileHash hash);
         Result insertAtFront(FileHash hash);
@@ -108,6 +128,8 @@ namespace PMP
         void serverSettingsReloadResultEvent(uint clientReference,
                                              ResultMessageErrorCode errorCode);
 
+        void delayedStartActiveChanged();
+
         void queueEntryAddedWithoutReference(qint32 offset, quint32 queueId);
         void queueEntryAddedWithReference(qint32 offset, quint32 queueId,
                                           quint32 clientReference);
@@ -141,6 +163,7 @@ namespace PMP
         Server* _server;
         Player* _player;
         Generator* _generator;
+        DelayedStart* _delayedStart;
         QHash<quint32, quint32> _queueEntryInsertionsPending;
     };
 }

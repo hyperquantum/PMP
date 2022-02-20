@@ -87,6 +87,7 @@ namespace PMP
         void currentTrackChanged(QueueEntry const* entry);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void trackPositionChanged(qint64 position);
+        void onDelayedStartActiveChanged();
         void sendPlayerStateMessage();
         void sendStateInfoAfterTimeout();
         void sendVolumeMessage();
@@ -122,8 +123,10 @@ namespace PMP
                                                 bool enabled);
 
     private:
+        enum class GeneralOrSpecific { General, Specific };
+
         void enableEvents();
-        void enableHealthEvents();
+        void enableHealthEvents(GeneralOrSpecific howEnabled);
 
         bool isLoggedIn() const;
         void connectSlotsAfterSuccessfulUserLogin(quint32 userLoggedIn);
@@ -167,6 +170,7 @@ namespace PMP
         void sendSuccessMessage(quint32 clientReference, quint32 intData,
                                 QByteArray const& blobData);
         void sendResultMessage(Result const& result, quint32 clientReference);
+        void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
                                quint32 intData);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
@@ -184,6 +188,7 @@ namespace PMP
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
         void sendServerClockMessage();
+        void sendDelayedStartInfoMessage();
 
         void fetchScrobblingProviderInfoForCurrentUser();
         void sendScrobblingProviderInfoMessage(quint32 userId,
@@ -212,6 +217,7 @@ namespace PMP
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseSingleByteActionMessage(QByteArray const& message);
         void parseParameterlessActionMessage(QByteArray const& message);
+        void parseActivateDelayedStartRequest(QByteArray const& message);
         void parsePlayerSeekRequestMessage(QByteArray const& message);
         void parseTrackInfoRequestMessage(QByteArray const& message);
         void parseBulkTrackInfoRequestMessage(QByteArray const& message);

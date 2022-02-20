@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,6 +39,7 @@ usage:
   {{PROGRAMNAME}} <server-name-or-ip> [<server-port>] <login-command> : <command>
 
   commands:
+    login: force authentication before running the next command (see below)
     play: start/resume playback
     pause: pause playback
     skip: jump to next track in the queue
@@ -53,6 +54,9 @@ usage:
     qmove <QID> <+diff>: move a track down in the queue (eg. +2)
     shutdown: shut down the server program
     reloadserversettings: instruct the server to reload its settings file
+    delayedstart wait <number> <time unit>: activate delayed start (see below)
+    delayedstart at [<date>] <time>: activate delayed start (see below)
+    delayedstart abort|cancel: cancel delayed start (see below)
 
   'login' command:
     login: forces authentication to occur; prompts for username and password
@@ -82,6 +86,33 @@ usage:
     A barrier is like a break, but is never consumed. Playback just stops
     when the current track finishes and the first item in the queue is a
     barrier.
+
+  'delayedstart' command:
+    delayedstart abort: cancel delayed start
+    delayedstart cancel: cancel delayed start
+    delayedstart wait <number> <time unit>: activate delayed start
+    delayedstart at [<date>] <time>: activate delayed start
+
+    Delayed start causes playback to start in the future, based on a timer.
+    After the timer runs out, PMP starts playing as if the user had issued
+    the 'play' command. Delayed start should not be affected by changes to
+    the clock time on the server or the client after activation.
+    Use 'wait' for specifying an exact delay between issuing the command
+    and the time when playback will start. Time unit can be hours, minutes,
+    seconds, or milliseconds. The countdown will start when the server
+    receives the command, not earlier; keep that in mind if you need to
+    type username or password in the console for authentication purposes.
+    Reading username and password from standard input is recommended (see
+    the 'login' command).
+    Use 'at' for specifying the exact date and time when playback needs to
+    start. If the date is omitted, the current date is assumed. The time is
+    local client clock time and expected to be in format 'H:m' or 'H:m:s'.
+    Only 24-hours notation is supported, no AM or PM. The date is expected
+    to be in format 'yyyy-MM-dd'.
+    A delayed start that has been activated but whose deadline has not been
+    reached yet can still be cancelled with 'cancel' or 'abort'. Delayed
+    start is cancelled automatically when playback is started before the
+    deadline.
 
   NOTICE:
     Some commands require a fairly recent version of the PMP server in order
@@ -116,6 +147,11 @@ usage:
     {{PROGRAMNAME}} localhost login MyUsername : play
     {{PROGRAMNAME}} localhost login MyUsername - : play <passwordfile
     {{PROGRAMNAME}} localhost login - : play <credentialsfile
+    {{PROGRAMNAME}} delayedstart wait 1 minute
+    {{PROGRAMNAME}} delayedstart wait 90 seconds
+    {{PROGRAMNAME}} delayedstart at 15:30
+    {{PROGRAMNAME}} delayedstart at 9:30:00
+    {{PROGRAMNAME}} delayedstart at 2022-02-28 00:00
 )"""";
 
 void printVersion(QTextStream& out)

@@ -43,9 +43,16 @@ namespace PMP
        _lastNewConnectionReference(0),
        _uuid(serverInstanceIdentifier),
        _settings(serverSettings),
-       _player(nullptr), _generator(nullptr), _history(nullptr), _users(nullptr),
-       _collectionMonitor(nullptr), _serverHealthMonitor(nullptr), _scrobbling(nullptr),
-       _server(new QTcpServer(this)), _udpSocket(new QUdpSocket(this)),
+       _player(nullptr),
+       _generator(nullptr),
+       _history(nullptr),
+       _users(nullptr),
+       _collectionMonitor(nullptr),
+       _serverHealthMonitor(nullptr),
+       _scrobbling(nullptr),
+       _delayedStart(nullptr),
+       _server(new QTcpServer(this)),
+       _udpSocket(new QUdpSocket(this)),
        _broadcastTimer(new QTimer(this)),
        _connectionCount(0)
     {
@@ -114,7 +121,9 @@ namespace PMP
     bool Server::listen(Player* player, Generator* generator, History* history,
                         Users* users,
                         CollectionMonitor* collectionMonitor,
-                        ServerHealthMonitor* serverHealthMonitor, Scrobbling* scrobbling,
+                        ServerHealthMonitor* serverHealthMonitor,
+                        Scrobbling* scrobbling,
+                        DelayedStart* delayedStart,
                         const QHostAddress& address, quint16 port)
     {
         _player = player;
@@ -124,6 +133,7 @@ namespace PMP
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
         _scrobbling = scrobbling;
+        _delayedStart = delayedStart;
 
         if (!_server->listen(address, port))
             return false;
@@ -163,21 +173,7 @@ namespace PMP
     {
         QTcpSocket* connection = _server->nextPendingConnection();
 
-        uint connectionReference = generateConnectionReference();
-
-        qDebug() << "Creating client connection with reference" << connectionReference;
-
-        auto serverInterface =
-            new ServerInterface(_settings, this, connectionReference, _player,
-                                _generator);
-
-        connect(
-            serverInterface, &ServerInterface::destroyed,
-            this,
-            [this, connectionReference]() {
-                this->retireConnectionReference(connectionReference);
-            }
-        );
+        auto serverInterface = createServerInterface();
 
         auto connectedClient =
             new ConnectedClient(
@@ -252,6 +248,27 @@ namespace PMP
     {
         qDebug() << "Removing connection reference:" << connectionReference;
         _connectionReferencesInUse.remove(connectionReference);
+    }
+
+    ServerInterface* Server::createServerInterface()
+    {
+        uint connectionReference = generateConnectionReference();
+
+        qDebug() << "Creating client connection with reference" << connectionReference;
+
+        auto serverInterface =
+            new ServerInterface(_settings, this, connectionReference, _player,
+                                _generator, _delayedStart);
+
+        connect(
+            serverInterface, &ServerInterface::destroyed,
+            this,
+            [this, connectionReference]() {
+                this->retireConnectionReference(connectionReference);
+            }
+        );
+        
+        return serverInterface;
     }
 
     void Server::determineCaption()

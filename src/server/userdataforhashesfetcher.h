@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,17 +27,19 @@
 #include <QRunnable>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class Resolver;
 
-    struct UserDataForHash {
+    struct UserDataForHash
+    {
         FileHash hash;
         QDateTime previouslyHeard;
         qint16 score;
     };
 
-    class UserDataForHashesFetcher : public QObject, public QRunnable {
+    class UserDataForHashesFetcher : public QObject, public QRunnable
+    {
         Q_OBJECT
     public:
         UserDataForHashesFetcher(quint32 userId, QVector<FileHash> hashes,

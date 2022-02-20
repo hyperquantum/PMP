@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,7 @@
 
 #include "serverinterface.h"
 
+#include "delayedstart.h"
 #include "generator.h"
 #include "player.h"
 #include "playerqueue.h"
@@ -33,13 +34,14 @@ namespace PMP
 {
     ServerInterface::ServerInterface(ServerSettings* serverSettings, Server* server,
                                      uint connectionReference, Player* player,
-                                     Generator* generator)
+                                     Generator* generator, DelayedStart* delayedStart)
      : _connectionReference(connectionReference),
        _userLoggedIn(0),
        _serverSettings(serverSettings),
        _server(server),
        _player(player),
-       _generator(generator)
+       _generator(generator),
+       _delayedStart(delayedStart)
     {
         connect(
             _server, &Server::captionChanged,
@@ -52,6 +54,11 @@ namespace PMP
         connect(
             _server, &Server::shuttingDown,
             this, &ServerInterface::serverShuttingDown
+        );
+
+        connect(
+            _delayedStart, &DelayedStart::delayedStartActiveChanged,
+            this, &ServerInterface::delayedStartActiveChanged
         );
 
         auto* queue = &_player->queue();
@@ -140,6 +147,32 @@ namespace PMP
         _player->setUserPlayingFor(0);
     }
 
+    Result ServerInterface::activateDelayedStart(qint64 delayMilliseconds)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _delayedStart->activate(delayMilliseconds);
+    }
+
+    Result ServerInterface::deactivateDelayedStart()
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _delayedStart->deactivate();
+    }
+
+    bool ServerInterface::delayedStartActive() const
+    {
+        return _delayedStart->isActive();
+    }
+
+    qint64 ServerInterface::getDelayedStartTimeRemainingMilliseconds() const
+    {
+        return _delayedStart->timeRemainingMilliseconds();
+    }
+
     void ServerInterface::play()
     {
         if (!isLoggedIn()) return;
@@ -172,6 +205,21 @@ namespace PMP
         if (volumePercentage < 0 || volumePercentage > 100) return;
 
         _player->setVolume(volumePercentage);
+    }
+
+    PlayerStateOverview ServerInterface::getPlayerStateOverview()
+    {
+        QueueEntry const* nowPlaying = _player->nowPlaying();
+
+        PlayerStateOverview overview;
+        overview.playerState = _player->state();
+        overview.nowPlayingQueueId = nowPlaying ? nowPlaying->queueID() : 0;
+        overview.trackPosition = _player->playPosition();
+        overview.volume = _player->volume();
+        overview.queueLength = _player->queue().length();
+        overview.delayedStartActive = _delayedStart->isActive();
+
+        return overview;
     }
 
     Result ServerInterface::enqueue(FileHash hash)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,34 +17,29 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_ADDTOHISTORYTASK_H
-#define PMP_ADDTOHISTORYTASK_H
+#ifndef SERVERCAPABILITIESIMPL_H
+#define SERVERCAPABILITIESIMPL_H
 
-#include "playerhistoryentry.h"
-
-#include <QObject>
-#include <QRunnable>
-#include <QSharedPointer>
+#include "servercapabilities.h"
 
 namespace PMP
 {
-    class Resolver;
-
-    class AddToHistoryTask : public QObject, public QRunnable
+    class ServerCapabilitiesImpl : public ServerCapabilities
     {
-        Q_OBJECT
     public:
-        AddToHistoryTask(Resolver* resolver, QSharedPointer<PlayerHistoryEntry> entry);
+        ServerCapabilitiesImpl();
 
-        void run();
+        void setServerProtocolNumber(int serverProtocolNumber);
 
-    Q_SIGNALS:
-        void updatedHashUserStats(uint hashID, quint32 user,
-                                  QDateTime previouslyHeard, qint16 score);
+        bool supportsReloadingServerSettings() const override;
+        bool supportsDelayedStart() const override;
+        bool supportsQueueEntryDuplication() const override;
+        bool supportsDynamicModeWaveTermination() const override;
+        bool supportsInsertingBreaksAtAnyIndex() const override;
+        bool supportsInsertingBarriers() const override;
 
     private:
-        Resolver* _resolver;
-        QSharedPointer<PlayerHistoryEntry> _entry;
+        int _serverProtocolNumber;
     };
 }
 #endif

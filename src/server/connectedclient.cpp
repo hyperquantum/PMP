@@ -45,7 +45,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 19;
+    const qint16 ConnectedClient::ServerProtocolNo = 21;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -61,8 +61,10 @@ namespace PMP
        _clientProtocolNo(-1),
        _scrobblingSupportThis(222, "scrobbling"),
        _lastSentNowPlayingID(0),
-       _terminated(false), _binaryMode(false),
-       _eventsEnabled(false), _healthEventsEnabled(false),
+       _terminated(false),
+       _binaryMode(false),
+       _eventsEnabled(false),
+       _healthEventsEnabled(false),
        _pendingPlayerStatus(false)
     {
         _serverInterface->setParent(this);
@@ -124,9 +126,13 @@ namespace PMP
 
     void ConnectedClient::enableEvents()
     {
-        if (_eventsEnabled) return;
+        if (_eventsEnabled)
+            return;
 
         qDebug() << "enabling event notifications";
+
+        enableHealthEvents(GeneralOrSpecific::General);
+
         _eventsEnabled = true;
 
         auto queue = &_player->queue();
@@ -152,6 +158,11 @@ namespace PMP
         connect(
             _player, &Player::userPlayingForChanged,
             this, &ConnectedClient::onUserPlayingForChanged
+        );
+
+        connect(
+            _serverInterface, &ServerInterface::delayedStartActiveChanged,
+            this, &ConnectedClient::onDelayedStartActiveChanged
         );
 
         connect(
@@ -209,23 +220,17 @@ namespace PMP
             this, &ConnectedClient::sendServerClockMessage
         );
         sendServerClockMessage();
-
-        if (!_healthEventsEnabled)
-        {
-            connect(
-                _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
-                this, &ConnectedClient::serverHealthChanged
-            );
-
-            sendServerHealthMessageIfNotEverythingOkay();
-        }
     }
 
-    void ConnectedClient::enableHealthEvents()
+    void ConnectedClient::enableHealthEvents(GeneralOrSpecific howEnabled)
     {
-        auto healthEventsWereAlreadyEnabled = _eventsEnabled | _healthEventsEnabled;
-        _healthEventsEnabled = true;
-        if (healthEventsWereAlreadyEnabled) return; /* nothing to do */
+        auto healthEventsWereEnabledAlready = _eventsEnabled | _healthEventsEnabled;
+
+        if (howEnabled == GeneralOrSpecific::Specific)
+            _healthEventsEnabled = true;
+
+        if (healthEventsWereEnabledAlready)
+            return; /* nothing to do */
 
         connect(
             _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
@@ -643,9 +648,10 @@ namespace PMP
     {
         //qDebug() << "sending state info";
 
-        ServerPlayerState state = _player->state();
+        auto playerStateOverview = _serverInterface->getPlayerStateOverview();
+
         quint8 stateNum = 0;
-        switch (state)
+        switch (playerStateOverview.playerState)
         {
         case ServerPlayerState::Stopped:
             stateNum = 1;
@@ -658,26 +664,21 @@ namespace PMP
             break;
         }
 
-        quint64 position = _player->playPosition();
-        quint8 volume = _player->volume();
-
-        qint32 queueLength = _player->queue().length();
-
-        QueueEntry const* nowPlaying = _player->nowPlaying();
-        quint32 queueID = nowPlaying ? nowPlaying->queueID() : 0;
+        if (_clientProtocolNo >= 20 && playerStateOverview.delayedStartActive)
+            stateNum |= 128;
 
         QByteArray message;
         message.reserve(20);
         NetworkProtocol::append2Bytes(message, ServerMessageType::PlayerStateMessage);
         NetworkUtil::appendByte(message, stateNum);
-        NetworkUtil::appendByte(message, volume);
-        NetworkUtil::append4Bytes(message, queueLength);
-        NetworkUtil::append4Bytes(message, queueID);
-        NetworkUtil::append8Bytes(message, position);
+        NetworkUtil::appendByte(message, playerStateOverview.volume);
+        NetworkUtil::append4Bytes(message, playerStateOverview.queueLength);
+        NetworkUtil::append4Bytes(message, playerStateOverview.nowPlayingQueueId);
+        NetworkUtil::append8Bytes(message, playerStateOverview.trackPosition);
 
         sendBinaryMessage(message);
 
-        _lastSentNowPlayingID = queueID;
+        _lastSentNowPlayingID = playerStateOverview.nowPlayingQueueId;
     }
 
     void ConnectedClient::sendVolumeMessage()
@@ -1581,6 +1582,34 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendDelayedStartInfoMessage()
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 21)
+            return;
+
+        qint64 msTimeRemaining =
+                _serverInterface->getDelayedStartTimeRemainingMilliseconds();
+
+        if (msTimeRemaining < 0)
+        {
+            qWarning() << "delayed start time remaining is negative, cannot send info";
+            return;
+        }
+
+        qint64 msSinceEpoch = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+
+        QByteArray message;
+        message.reserve(2 + 2 + 8 + 8);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::DelayedStartInfoMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append8BytesSigned(message, msSinceEpoch);
+        NetworkUtil::append8BytesSigned(message, msTimeRemaining);
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
         sendResultMessage(ResultMessageErrorCode::NoError, clientReference, intData);
@@ -1598,39 +1627,54 @@ namespace PMP
         switch (result.code())
         {
         case ResultCode::Success:
-            sendResultMessage(ResultMessageErrorCode::NoError, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::NoError, clientReference);
+            return;
+        case ResultCode::NoOp:
+            sendResultMessage(ResultMessageErrorCode::AlreadyDone, clientReference);
             return;
         case ResultCode::NotLoggedIn:
-            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference);
+            return;
+        case ResultCode::OperationAlreadyRunning:
+            sendResultMessage(ResultMessageErrorCode::OperationAlreadyRunning,
+                              clientReference);
             return;
         case ResultCode::HashIsNull:
-            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
             return;
         case ResultCode::QueueEntryIdNotFound:
             sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
                               static_cast<quint32>(result.intArg()));
             return;
         case ResultCode::QueueIndexOutOfRange:
-            sendResultMessage(ResultMessageErrorCode::InvalidQueueIndex, clientReference,
-                              0);
+            sendResultMessage(ResultMessageErrorCode::InvalidQueueIndex, clientReference);
             return;
         case ResultCode::QueueMaxSizeExceeded:
             sendResultMessage(ResultMessageErrorCode::MaximumQueueSizeExceeded,
-                              clientReference, 0);
+                              clientReference);
             return;
         case ResultCode::QueueItemTypeInvalid:
             sendResultMessage(ResultMessageErrorCode::InvalidQueueItemType,
-                              clientReference, 0);
+                              clientReference);
+            return;
+        case ResultCode::DelayOutOfRange:
+            sendResultMessage(ResultMessageErrorCode::InvalidTimeSpan, clientReference);
             return;
         case ResultCode::InternalError:
             sendResultMessage(ResultMessageErrorCode::NonFatalInternalServerError,
-                              clientReference, 0);
+                              clientReference);
             return;
         }
 
         qWarning() << "Unhandled ResultCode" << int(result.code())
                    << "for client-ref" << clientReference;
-        sendResultMessage(ResultMessageErrorCode::UnknownError, clientReference, 0);
+        sendResultMessage(ResultMessageErrorCode::UnknownError, clientReference);
+    }
+
+    void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
+                                            quint32 clientReference)
+    {
+        return sendResultMessage(errorType, clientReference, 0);
     }
 
     void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
@@ -1674,7 +1718,7 @@ namespace PMP
     void ConnectedClient::serverSettingsReloadResultEvent(uint clientReference,
                                                          ResultMessageErrorCode errorCode)
     {
-        sendResultMessage(errorCode, clientReference, 0);
+        sendResultMessage(errorCode, clientReference);
     }
 
     void ConnectedClient::volumeChanged(int volume)
@@ -1803,6 +1847,14 @@ namespace PMP
         }
 
         //sendTextCommand("position " + QString::number(position));
+    }
+
+    void ConnectedClient::onDelayedStartActiveChanged()
+    {
+        if (_clientProtocolNo >= 21 && _serverInterface->delayedStartActive())
+            sendDelayedStartInfoMessage();
+        else
+            sendPlayerStateMessage();
     }
 
     void ConnectedClient::sendTextualQueueInfo()
@@ -1990,6 +2042,9 @@ namespace PMP
         case ClientMessageType::PossibleFilenamesForQueueEntryRequestMessage:
             parsePossibleFilenamesForQueueEntryRequestMessage(message);
             break;
+        case ClientMessageType::ActivateDelayedStartRequest:
+            parseActivateDelayedStartRequest(message);
+            break;
         case ClientMessageType::PlayerSeekRequestMessage:
             parsePlayerSeekRequestMessage(message);
             break;
@@ -2045,7 +2100,7 @@ namespace PMP
             if (messageLength - 8 <= loginLength + saltLength)
             {
                 sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference
                 );
                 return; /* invalid message */
             }
@@ -2078,7 +2133,7 @@ namespace PMP
             if (hashedPasswordFromClient.size() != hashTest.size())
             {
                 sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference
                 );
                 return;
             }
@@ -2112,7 +2167,7 @@ namespace PMP
             if (isLoggedIn()) /* already logged in */
             {
                 sendResultMessage(ResultMessageErrorCode::AlreadyLoggedIn,
-                                  clientReference, 0);
+                                  clientReference);
                 return;
             }
 
@@ -2159,7 +2214,7 @@ namespace PMP
                     + hashedPasswordLength)
             {
                 sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
+                    ResultMessageErrorCode::InvalidMessageStructure, clientReference
                 );
                 return; /* invalid message */
             }
@@ -2218,7 +2273,7 @@ namespace PMP
             else
             {
                 sendResultMessage(ResultMessageErrorCode::UserLoginAuthenticationFailed,
-                                  clientReference, 0);
+                                  clientReference);
             }
         }
             break;
@@ -2374,12 +2429,25 @@ namespace PMP
         handleParameterlessAction(action, clientReference);
     }
 
+    void ConnectedClient::parseActivateDelayedStartRequest(const QByteArray& message)
+    {
+        if (message.length() != 16)
+            return; /* invalid message */
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        qint64 delayMilliseconds = NetworkUtil::get8BytesSigned(message, 8);
+
+        qDebug() << "received delayed start activation request; delay:"
+                 << delayMilliseconds << "ms; client-ref:" << clientReference;
+
+        auto result = _serverInterface->activateDelayedStart(delayMilliseconds);
+        sendResultMessage(result, clientReference);
+    }
+
     void ConnectedClient::parsePlayerSeekRequestMessage(const QByteArray& message)
     {
         if (message.length() != 14)
             return; /* invalid message */
-
-        if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
         quint32 queueID = NetworkUtil::get4Bytes(message, 2);
         qint64 position = NetworkUtil::get8BytesSigned(message, 6);
@@ -2799,7 +2867,7 @@ namespace PMP
         if (!isLoggedIn())
         {
             /* client needs to be authenticated for this */
-            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference);
             return;
         }
 
@@ -2876,6 +2944,11 @@ namespace PMP
             qDebug() << "received request for list of protocol extensions";
             sendProtocolExtensionsMessage();
             break;
+        case 19:
+            qDebug() << "received request for delayed start info";
+            if (_serverInterface->delayedStartActive())
+                sendDelayedStartInfoMessage();
+            break;
         case 20: /* enable dynamic mode */
             qDebug() << "received ENABLE DYNAMIC MODE command";
             _serverInterface->enableDynamicMode();
@@ -2918,7 +2991,7 @@ namespace PMP
             break;
         case 51:
             qDebug() << "received SUBSCRIBE TO SERVER HEALTH UPDATES command";
-            enableHealthEvents();
+            enableHealthEvents(GeneralOrSpecific::Specific);
             break;
         case 99:
             qDebug() << "received SHUTDOWN command";
@@ -2936,18 +3009,25 @@ namespace PMP
     {
         switch (code)
         {
-        case PMP::ParameterlessActionCode::Reserved:
+        case ParameterlessActionCode::Reserved:
             break; /* not to be used, treat as invalid */
 
-        case PMP::ParameterlessActionCode::ReloadServerSettings:
+        case ParameterlessActionCode::ReloadServerSettings:
             _serverInterface->reloadServerSettings(clientReference);
             return;
+
+        case ParameterlessActionCode::DeactivateDelayedStart:
+            {
+                auto result = _serverInterface->deactivateDelayedStart();
+                sendResultMessage(result, clientReference);
+                return;
+            }
         }
 
         qDebug() << "code of parameterless action not recognized: code="
                  << static_cast<int>(code) << " client-ref=" << clientReference;
 
-        sendResultMessage(ResultMessageErrorCode::UnknownAction, clientReference, 0);
+        sendResultMessage(ResultMessageErrorCode::UnknownAction, clientReference);
     }
 
     void ConnectedClient::handleCollectionFetchRequest(uint clientReference)

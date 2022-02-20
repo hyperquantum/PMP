@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,8 +29,10 @@
 
 #include "collectionwidget.h"
 #include "connectionwidget.h"
+#include "delayedstartnotification.h"
 #include "loginwidget.h"
 #include "mainwidget.h"
+#include "notificationbar.h"
 #include "useraccountcreationwidget.h"
 #include "userpickerwidget.h"
 
@@ -47,16 +49,22 @@
 #include <QSettings>
 #include <QStatusBar>
 #include <QTimer>
+#include <QVBoxLayout>
 
 namespace PMP
 {
     MainWindow::MainWindow(QWidget* parent)
      : QMainWindow(parent),
+       _notificationBar(nullptr),
+       _leftStatus(nullptr),
+       _rightStatus(nullptr),
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
        _connection(nullptr),
        _clientServerInterface(nullptr),
-       _userPickerWidget(nullptr), _loginWidget(nullptr), _mainWidget(nullptr),
+       _userPickerWidget(nullptr),
+       _loginWidget(nullptr),
+       _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
        _powerManagement(new PowerManagement(this)),
        _lastFmStatus(ScrobblerStatus::Unknown)
@@ -654,9 +662,25 @@ namespace PMP
 
     void MainWindow::showMainWidget()
     {
-        _mainWidget = new MainWidget(this);
+        auto* mainCentralWidget = new QWidget(this);
+
+        auto* delayedStartNotification =
+            new DelayedStartNotification(this,
+                                         &_clientServerInterface->playerController(),
+                                         &_clientServerInterface->generalController());
+
+        _notificationBar = new NotificationBar(mainCentralWidget);
+        _notificationBar->showNotification(delayedStartNotification);
+
+        _mainWidget = new MainWidget(mainCentralWidget);
         _mainWidget->setConnection(_connection, _clientServerInterface);
-        setCentralWidget(_mainWidget);
+
+        auto centralVerticalLayout = new QVBoxLayout(mainCentralWidget);
+        centralVerticalLayout->setContentsMargins(0, 0, 0, 0);
+        centralVerticalLayout->addWidget(_notificationBar);
+        centralVerticalLayout->addWidget(_mainWidget);
+
+        setCentralWidget(mainCentralWidget);
 
         auto collectionWidget =
                 new CollectionWidget(_musicCollectionDock, _clientServerInterface);

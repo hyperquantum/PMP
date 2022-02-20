@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,34 +17,25 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_ADDTOHISTORYTASK_H
-#define PMP_ADDTOHISTORYTASK_H
-
-#include "playerhistoryentry.h"
-
-#include <QObject>
-#include <QRunnable>
-#include <QSharedPointer>
+#ifndef PMP_SERVERCAPABILITIES_H
+#define PMP_SERVERCAPABILITIES_H
 
 namespace PMP
 {
-    class Resolver;
-
-    class AddToHistoryTask : public QObject, public QRunnable
+    class ServerCapabilities
     {
-        Q_OBJECT
     public:
-        AddToHistoryTask(Resolver* resolver, QSharedPointer<PlayerHistoryEntry> entry);
+        virtual ~ServerCapabilities() {}
 
-        void run();
+        virtual bool supportsReloadingServerSettings() const = 0;
+        virtual bool supportsDelayedStart() const = 0;
+        virtual bool supportsQueueEntryDuplication() const = 0;
+        virtual bool supportsDynamicModeWaveTermination() const = 0;
+        virtual bool supportsInsertingBreaksAtAnyIndex() const = 0;
+        virtual bool supportsInsertingBarriers() const = 0;
 
-    Q_SIGNALS:
-        void updatedHashUserStats(uint hashID, quint32 user,
-                                  QDateTime previouslyHeard, qint16 score);
-
-    private:
-        Resolver* _resolver;
-        QSharedPointer<PlayerHistoryEntry> _entry;
+    protected:
+        ServerCapabilities() {}
     };
 }
 #endif

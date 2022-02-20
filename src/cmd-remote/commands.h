@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,6 +27,8 @@
 
 #include "commandbase.h"
 
+#include <QDateTime>
+
 namespace PMP
 {
     // TODO : remove useless constructors
@@ -37,6 +39,54 @@ namespace PMP
     public:
         ReloadServerSettingsCommand();
 
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        RequestID _requestId;
+    };
+
+    class DelayedStartAtCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        DelayedStartAtCommand(QDateTime startTime);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        QDateTime _startTime;
+        RequestID _requestId;
+    };
+
+    class DelayedStartWaitCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        DelayedStartWaitCommand(qint64 delayMilliseconds);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        qint64 _delayMilliseconds;
+        RequestID _requestId;
+    };
+
+    class DelayedStartCancelCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
         bool requiresAuthentication() const override;
 
     protected:

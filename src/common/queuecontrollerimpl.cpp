@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,7 @@
 
 #include "queuecontrollerimpl.h"
 
+#include "servercapabilities.h"
 #include "serverconnection.h"
 
 namespace PMP
@@ -60,17 +61,17 @@ namespace PMP
 
         /* we COULD simulate duplication for tracks on older servers, with a regular
          * insert operation, but there is no reason to put in the effort at this time */
-        return _connection->serverSupportsQueueEntryDuplication();
+        return _connection->serverCapabilities().supportsQueueEntryDuplication();
     }
 
     bool QueueControllerImpl::canInsertBreakAtAnyIndex() const
     {
-        return _connection->serverSupportsInsertingBreaksAtAnyIndex();
+        return _connection->serverCapabilities().supportsInsertingBreaksAtAnyIndex();
     }
 
     bool QueueControllerImpl::canInsertBarrier() const
     {
-        return _connection->serverSupportsInsertingBarriers();
+        return _connection->serverCapabilities().supportsInsertingBarriers();
     }
 
     void QueueControllerImpl::insertBreakAtFrontIfNotExists()

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,8 +24,8 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     UserDataForHashesFetcher::UserDataForHashesFetcher(quint32 userId,
                                                        QVector<FileHash> hashes,
                                                        bool previouslyHeard, bool score,
@@ -36,7 +36,8 @@ namespace PMP {
         //
     }
 
-    void UserDataForHashesFetcher::run() {
+    void UserDataForHashesFetcher::run()
+    {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return; /* problem */
 
@@ -55,7 +56,8 @@ namespace PMP {
             ids.insert(idAndHash.first, idAndHash.second);
         }
 
-        if (_score) {
+        if (_score)
+        {
             /* get score and last heard */
             const auto stats = db->getHashHistoryStats(_userId, ids.keys());
             for (auto& stat : stats)
@@ -71,7 +73,8 @@ namespace PMP {
                 results.append(data);
             }
         }
-        else {
+        else
+        {
             /* only last heard */
             const auto lastHeardList = db->getLastHeard(_userId, ids.keys());
             for (auto& lastHeard : lastHeardList)

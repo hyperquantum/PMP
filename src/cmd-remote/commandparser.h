@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,9 @@
 #ifndef PMP_COMMANDPARSER_H
 #define PMP_COMMANDPARSER_H
 
+#include <QDate>
 #include <QString>
+#include <QTime>
 #include <QVector>
 
 namespace PMP
@@ -51,6 +53,51 @@ namespace PMP
         QString errorMessage() const { return _errorMessage; }
 
     private:
+        class CommandArguments
+        {
+        public:
+            CommandArguments(QVector<QString> arguments)
+             : _arguments(arguments),
+               _currentIndex(0)
+            {
+                //
+            }
+
+            void advance() { _currentIndex++; }
+
+            int remainingCount() const
+            {
+                if (_currentIndex >= _arguments.size())
+                    return 0;
+
+                return _arguments.size() - 1 - _currentIndex;
+            }
+
+            bool haveCurrent() const { return _currentIndex < _arguments.size(); }
+            bool noCurrent() const { return !haveCurrent(); }
+
+            bool haveMore() const { return remainingCount() > 0; }
+            bool currentIsLast() const { return !haveMore(); }
+
+            QString current() const
+            {
+                if (_currentIndex >= _arguments.size())
+                    return {};
+
+                return _arguments[_currentIndex];
+            }
+
+            bool currentIsOneOf(QVector<QString> options) const;
+
+            bool tryParseInt(int& number) const;
+            bool tryParseTime(QTime& time) const;
+            bool tryParseDate(QDate& date) const;
+
+        private:
+            QVector<QString> _arguments;
+            int _currentIndex;
+        };
+
         void reset();
 
         bool gotParseError() const { return !_errorMessage.isEmpty(); }
@@ -59,9 +106,14 @@ namespace PMP
         void parseExplicitLoginAndSeparator(QVector<QString>& commandWithArgs);
         void parseCommand(QVector<QString> commandWithArgs);
         void parseInsertCommand(QVector<QString> arguments);
+        void parseDelayedStartCommand(CommandArguments arguments);
+        void parseDelayedStartAt(CommandArguments& arguments);
+        void parseDelayedStartWait(CommandArguments& arguments);
 
         template <class SomeCommand>
         void handleCommandNotRequiringArguments(QVector<QString> commandWithArgs);
+
+        static bool isInFuture(QDateTime time);
 
         Command* _command;
         QString _errorMessage;

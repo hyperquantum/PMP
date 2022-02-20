@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,8 +27,11 @@ namespace PMP
     enum class ResultCode
     {
         Success = 0,
+        NoOp /**< Successful action that had no effect */,
 
         NotLoggedIn,
+
+        OperationAlreadyRunning,
 
         HashIsNull,
 
@@ -36,6 +39,7 @@ namespace PMP
         QueueIndexOutOfRange,
         QueueMaxSizeExceeded,
         QueueItemTypeInvalid,
+        DelayOutOfRange,
 
         InternalError,
     };
@@ -50,7 +54,8 @@ namespace PMP
         ResultCode code() const { return _code; }
         qint64 intArg() const { return _intArg; }
 
-        bool notSuccessful() const { return _code != ResultCode::Success; }
+        bool notSuccessful() const { return _code != ResultCode::Success &&
+                                            _code != ResultCode::NoOp; }
 
         Result& operator=(Result const& result) = default;
         Result& operator=(Result&& result) = default;
@@ -85,10 +90,21 @@ namespace PMP
         Success() : Result(ResultCode::Success) {}
     };
 
+    class NoOp : public Result
+    {
+    public:
+        NoOp() : Result(ResultCode::NoOp) {}
+    };
+
     class Error : public Result
     {
     public:
         static Error notLoggedIn() { return ResultCode::NotLoggedIn; }
+
+        static Error operationAlreadyRunning()
+        {
+            return ResultCode::OperationAlreadyRunning;
+        }
 
         static Error hashIsNull() { return ResultCode::HashIsNull; }
 
@@ -100,6 +116,7 @@ namespace PMP
         static Error queueIndexOutOfRange() { return ResultCode::QueueIndexOutOfRange; }
         static Error queueMaxSizeExceeded() { return ResultCode::QueueMaxSizeExceeded; }
         static Error queueItemTypeInvalid() { return ResultCode::QueueItemTypeInvalid; }
+        static Error delayOutOfRange() { return ResultCode::DelayOutOfRange; }
 
         static Error internalError() { return ResultCode::InternalError; }
 
