@@ -48,6 +48,8 @@ namespace PMP
         void updateInfo();
 
     private:
+        static QString deadlineText(QDateTime deadline);
+
         PlayerController* _playerController;
         GeneralController* _generalController;
         QTimer* _countDownTimer;

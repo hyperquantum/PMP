@@ -88,7 +88,7 @@ namespace PMP
 
                 text =
                     QString("Delayed start active - will start at %1 - time remaining %2")
-                        .arg(deadline.toLocalTime().toString("HH:mm:ss"),
+                        .arg(deadlineText(deadline),
                              Util::getCountdownTimeText(timeRemainingMs));
 
                 auto updateIntervalMs =
@@ -109,6 +109,18 @@ namespace PMP
             _visible = active;
             Q_EMIT visibleChanged();
         }
+    }
+
+    QString DelayedStartNotification::deadlineText(QDateTime deadline)
+    {
+        deadline = deadline.toLocalTime();
+
+        auto time = deadline.time();
+
+        if (time.second() == 0)
+            return time.toString("HH:mm");
+
+        return time.toString("HH:mm:ss");
     }
 
 }
