@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -126,6 +126,35 @@ namespace PMP
                 + ":" + QString::number(min).rightJustified(2, '0')
                 + ":" + QString::number(sec).rightJustified(2, '0')
                 + "." + QString::number(partialSeconds).rightJustified(3, '0');
+    }
+
+    QString Util::getCountdownTimeText(qint64 millisecondsRemaining)
+    {
+        if (millisecondsRemaining < 0)
+            millisecondsRemaining = 0;
+
+        int totalSeconds = int(millisecondsRemaining / 1000);
+        int seconds = totalSeconds % 60;
+
+        int totalMinutes = totalSeconds / 60;
+        int minutes = totalMinutes % 60;
+
+        int hours = totalMinutes / 60;
+
+        return QString::number(hours).rightJustified(2, '0')
+                + ":" + QString::number(minutes).rightJustified(2, '0')
+                + ":" + QString::number(seconds).rightJustified(2, '0');
+    }
+
+    int Util::getCountdownUpdateIntervalMs(qint64 millisecondsRemaining)
+    {
+        if (millisecondsRemaining < 0)
+            millisecondsRemaining = -millisecondsRemaining;
+
+        if (millisecondsRemaining < 10 * 1000)
+            return 250;
+
+        return 1000;
     }
 
     QString Util::getHowLongAgoText(SimpleDuration howLongAgo)

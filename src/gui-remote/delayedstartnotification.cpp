@@ -21,6 +21,9 @@
 
 #include "common/generalcontroller.h"
 #include "common/playercontroller.h"
+#include "common/util.h"
+
+#include <QTimer>
 
 namespace PMP
 {
@@ -30,6 +33,7 @@ namespace PMP
      : Notification(parent),
        _playerController(playerController),
        _generalController(generalController),
+       _countDownTimer(new QTimer(this)),
        _visible(false)
     {
         connect(
@@ -39,6 +43,12 @@ namespace PMP
 
         connect(
             _generalController, &GeneralController::clientClockTimeOffsetChanged,
+            this, &DelayedStartNotification::updateInfo
+        );
+
+        _countDownTimer->setSingleShot(true);
+        connect(
+            _countDownTimer, &QTimer::timeout,
             this, &DelayedStartNotification::updateInfo
         );
 
@@ -73,9 +83,18 @@ namespace PMP
                 deadline =
                         deadline.addMSecs(_generalController->clientClockTimeOffsetMs());
 
+                auto timeRemainingMs =
+                        qMax(0LL, QDateTime::currentDateTimeUtc().msecsTo(deadline));
+
                 text =
-                    QString("Delayed start active - will start at %1")
-                        .arg(deadline.toString("HH:mm:ss"));
+                    QString("Delayed start active - will start at %1 - time remaining %2")
+                        .arg(deadline.toString("HH:mm:ss"),
+                             Util::getCountdownTimeText(timeRemainingMs));
+
+                auto updateIntervalMs =
+                        Util::getCountdownUpdateIntervalMs(timeRemainingMs);
+
+                _countDownTimer->start(updateIntervalMs);
             }
         }
 

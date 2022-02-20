@@ -22,6 +22,8 @@
 
 #include "notificationbar.h"
 
+QT_FORWARD_DECLARE_CLASS(QTimer)
+
 namespace PMP
 {
     class GeneralController;
@@ -48,6 +50,7 @@ namespace PMP
     private:
         PlayerController* _playerController;
         GeneralController* _generalController;
+        QTimer* _countDownTimer;
         QString _text;
         bool _visible;
     };
