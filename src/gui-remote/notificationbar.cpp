@@ -36,7 +36,7 @@ namespace PMP
     /* ============================================================================ */
 
     NotificationBar::NotificationBar(QWidget* parent)
-     : QWidget(parent),
+     : QFrame(parent),
        _ui(new Ui::NotificationBar),
        _notification(nullptr)
     {
@@ -75,8 +75,22 @@ namespace PMP
         auto labelMinimumSize = _ui->notificationTextLabel->minimumSizeHint();
         auto buttonMinimumSize = _ui->firstActionButton->minimumSizeHint();
 
-        return QSize(labelMinimumSize.width() + buttonMinimumSize.width(),
-                     qMax(labelMinimumSize.height(), buttonMinimumSize.height()));
+        auto layoutMargins = layout()->contentsMargins();
+        auto layoutSpacing = layout()->spacing();
+
+        auto width =
+            layoutMargins.left() +
+            labelMinimumSize.width() +
+            layoutSpacing +
+            buttonMinimumSize.width() +
+            layoutMargins.right();
+
+        auto height =
+            layoutMargins.top() +
+            qMax(labelMinimumSize.height(), buttonMinimumSize.height()) +
+            layoutMargins.bottom();
+
+        return QSize(width, height);
     }
 
     QSize NotificationBar::sizeHint() const
@@ -84,8 +98,22 @@ namespace PMP
         auto labelSize = _ui->notificationTextLabel->sizeHint();
         auto buttonSize = _ui->firstActionButton->sizeHint();
 
-        return QSize(labelSize.width() + buttonSize.width(),
-                     qMax(labelSize.height(), buttonSize.height()));
+        auto layoutMargins = layout()->contentsMargins();
+        auto layoutSpacing = layout()->spacing();
+
+        auto width =
+            layoutMargins.left() +
+            labelSize.width() +
+            layoutSpacing +
+            buttonSize.width() +
+            layoutMargins.right();
+
+        auto height =
+            layoutMargins.top() +
+            qMax(labelSize.height(), buttonSize.height()) +
+            layoutMargins.bottom();
+
+        return QSize(width, height);
     }
 
     void NotificationBar::setUpNotification()

@@ -20,7 +20,7 @@
 #ifndef PMP_NOTIFICATIONBAR_H
 #define PMP_NOTIFICATIONBAR_H
 
-#include <QWidget>
+#include <QFrame>
 
 namespace Ui
 {
@@ -52,7 +52,7 @@ namespace PMP
         explicit Notification(QObject* parent = nullptr);
     };
 
-    class NotificationBar : public QWidget
+    class NotificationBar : public QFrame
     {
         Q_OBJECT
     public:
