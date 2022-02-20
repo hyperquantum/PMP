@@ -600,6 +600,7 @@ namespace PMP
         _mainWidget->setConnection(_connection, _clientServerInterface);
 
         auto centralVerticalLayout = new QVBoxLayout(mainCentralWidget);
+        centralVerticalLayout->setContentsMargins(0, 0, 0, 0);
         centralVerticalLayout->addWidget(_notificationBar);
         centralVerticalLayout->addWidget(_mainWidget);
 
