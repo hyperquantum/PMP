@@ -88,7 +88,7 @@ namespace PMP
 
                 text =
                     QString("Delayed start active - will start at %1 - time remaining %2")
-                        .arg(deadline.toString("HH:mm:ss"),
+                        .arg(deadline.toLocalTime().toString("HH:mm:ss"),
                              Util::getCountdownTimeText(timeRemainingMs));
 
                 auto updateIntervalMs =
