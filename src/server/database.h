@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -228,6 +228,7 @@ namespace PMP
         static bool initUsersTable(QSqlQuery& q);
 
         static QString _hostname;
+        static int _port;
         static QString _username;
         static QString _password;
         static QUuid _uuid;

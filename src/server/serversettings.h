@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,8 +30,15 @@ namespace PMP
     struct DatabaseConnectionSettings
     {
         QString hostname;
+        int port;
         QString username;
         QString password;
+
+        DatabaseConnectionSettings()
+         : port(0)
+        {
+            //
+        }
 
         bool isComplete() const
         {
@@ -41,6 +48,7 @@ namespace PMP
         bool operator==(DatabaseConnectionSettings const& other) const
         {
             return hostname == other.hostname
+                && port == other.port
                 && username == other.username
                 && password == other.password;
         }
