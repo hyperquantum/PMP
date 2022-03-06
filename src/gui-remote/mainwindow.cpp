@@ -29,6 +29,7 @@
 
 #include "collectionwidget.h"
 #include "connectionwidget.h"
+#include "delayedstartdialog.h"
 #include "delayedstartnotification.h"
 #include "loginwidget.h"
 #include "mainwidget.h"
@@ -147,6 +148,18 @@ namespace PMP
         _closeAction = new QAction(tr("&Close remote"), this);
         connect(_closeAction, &QAction::triggered, this, &MainWindow::close);
 
+        _activateDelayedStartAction = new QAction(tr("Activate &delayed start..."));
+        connect(
+            _activateDelayedStartAction, &QAction::triggered,
+            this,
+            [this]()
+            {
+                auto* dialog = new DelayedStartDialog(this, _clientServerInterface);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->open();
+            }
+        );
+
         _keepDisplayActiveAction =
                 new QAction(tr("Keep &display active during playback"), this);
         _keepDisplayActiveAction->setCheckable(true);
@@ -169,6 +182,7 @@ namespace PMP
     {
         /* Top-level menus */
         QMenu* pmpMenu = menuBar()->addMenu(tr("&PMP"));
+        _actionsMenu = menuBar()->addMenu(tr("&Actions"));
         _viewMenu = menuBar()->addMenu(tr("&View"));
         QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
 
@@ -183,6 +197,9 @@ namespace PMP
         _serverAdminMenu->addSeparator();
         _serverAdminMenu->addAction(_shutdownServerAction);
 
+        /* "Actions" menu members */
+        _actionsMenu->addAction(_activateDelayedStartAction);
+
         /* "View" menu members */
         _viewMenu->addAction(_musicCollectionDock->toggleViewAction());
         _viewMenu->addSeparator();
@@ -194,6 +211,7 @@ namespace PMP
 
         /* Menu visibility */
         _serverAdminMenu->menuAction()->setVisible(false); /* needs active connection */
+        _actionsMenu->menuAction()->setVisible(false);
         _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
     }
 
@@ -611,6 +629,7 @@ namespace PMP
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 
+        _actionsMenu->menuAction()->setVisible(true);
         _viewMenu->menuAction()->setVisible(true);
 
         {

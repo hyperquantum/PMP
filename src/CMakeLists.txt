@@ -147,6 +147,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/colors.cpp
     gui-remote/colorswitcher.cpp
     gui-remote/connectionwidget.cpp
+    gui-remote/delayedstartdialog.cpp
     gui-remote/delayedstartnotification.cpp
     gui-remote/gui-remote-metatypes.cpp
     gui-remote/loginwidget.cpp
@@ -170,6 +171,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/collectionwidget.h
     gui-remote/colorswitcher.h
     gui-remote/connectionwidget.h
+    gui-remote/delayedstartdialog.h
     gui-remote/delayedstartnotification.h
     gui-remote/loginwidget.h
     gui-remote/mainwidget.h
@@ -188,6 +190,7 @@ set(PMP_GUI_REMOTE_HEADERS
 set(PMP_GUI_REMOTE_UIS
     gui-remote/collectionwidget.ui
     gui-remote/connectionwidget.ui
+    gui-remote/delayedstartdialog.ui
     gui-remote/loginwidget.ui
     gui-remote/mainwidget.ui
     gui-remote/notificationbar.ui
