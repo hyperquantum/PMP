@@ -59,7 +59,7 @@ namespace PMP
     {
         int index = _list.size();
 
-        beginInsertRows(QModelIndex(), index, index);
+        beginInsertRows({}, index, index);
         auto entry = QSharedPointer<PlayerHistoryTrackInfo>::create(track);
         _list.append(entry);
         endInsertRows();
@@ -69,7 +69,7 @@ namespace PMP
         {
             auto oldestEntry = _list.first();
 
-            beginRemoveRows(QModelIndex(), 0, 0);
+            beginRemoveRows({}, 0, 0);
             _list.removeFirst();
             endRemoveRows();
 
@@ -82,7 +82,7 @@ namespace PMP
     {
         if (_list.size() > 0)
         {
-            beginRemoveRows(QModelIndex(), 0, _list.size() - 1);
+            beginRemoveRows({}, 0, _list.size() - 1);
             _list.clear();
             endRemoveRows();
         }
@@ -96,7 +96,7 @@ namespace PMP
         if (tracks.empty())
             return;
 
-        beginInsertRows(QModelIndex(), 0, tracks.size() - 1);
+        beginInsertRows({}, 0, tracks.size() - 1);
         for (auto& track : qAsConst(tracks))
         {
             _list.append(QSharedPointer<PlayerHistoryTrackInfo>::create(track));
@@ -142,13 +142,13 @@ namespace PMP
             }
         }
 
-        return QVariant();
+        return {};
     }
 
     QVariant PlayerHistoryModel::data(const QModelIndex& index, int role) const
     {
         if (!index.isValid() || index.row() < 0 || index.row() >= _list.size())
-            return QVariant();
+            return {};
 
         auto item = _list[index.row()];
 
@@ -169,19 +169,20 @@ namespace PMP
             {
                 case 0:
                 {
-                    if (!info) return QVariant();
+                    if (!info) return {};
 
                     QString title = info->title();
                     return (title != "") ? title : info->informativeFilename();
                 }
                 case 1:
                 {
-                    if (!info) return QVariant();
+                    if (!info) return {};
+
                     return info->artist();
                 }
                 case 2:
                 {
-                    if (!info) return QVariant();
+                    if (!info) return {};
 
                     int lengthInMilliseconds = info->lengthInMilliseconds();
                     if (lengthInMilliseconds < 0) { return "?"; }
@@ -193,7 +194,7 @@ namespace PMP
             }
         }
 
-        return QVariant();
+        return {};
     }
 
     Qt::ItemFlags PlayerHistoryModel::flags(const QModelIndex& index) const
@@ -217,11 +218,11 @@ namespace PMP
 
     FileHash PlayerHistoryModel::trackHashAt(int rowIndex) const
     {
-        if (rowIndex < 0 || rowIndex >= _list.size()) return FileHash();
+        if (rowIndex < 0 || rowIndex >= _list.size()) return {};
 
         auto queueID = _list[rowIndex]->queueID();
         auto info = _infoFetcher->entryInfoByQID(queueID);
-        if (!info) return FileHash();
+        if (!info) return {};
 
         return info->hash();
     }
