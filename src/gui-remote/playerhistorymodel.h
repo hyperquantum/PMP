@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,12 +28,13 @@
 #include <QSharedPointer>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class QueueEntryInfoFetcher;
     class ServerConnection;
 
-    class PlayerHistoryModel : public QAbstractTableModel {
+    class PlayerHistoryModel : public QAbstractTableModel
+    {
         Q_OBJECT
     public:
         PlayerHistoryModel(QObject* parent, QueueEntryInfoFetcher* trackInfoFetcher);
