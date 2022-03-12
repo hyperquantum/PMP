@@ -19,8 +19,9 @@
 
 #include "playerhistorymodel.h"
 
+#include "common/clientserverinterface.h"
+#include "common/historycontroller.h"
 #include "common/queueentryinfofetcher.h"
-#include "common/serverconnection.h"
 #include "common/util.h"
 
 #include <QBrush>
@@ -32,27 +33,46 @@
 namespace PMP
 {
     PlayerHistoryModel::PlayerHistoryModel(QObject* parent,
-                                           QueueEntryInfoFetcher* trackInfoFetcher)
-     : QAbstractTableModel(parent), _historySizeGoal(15), _infoFetcher(trackInfoFetcher)
+                                           ClientServerInterface* clientServerInterface)
+     : QAbstractTableModel(parent),
+       _historySizeGoal(20),
+       _infoFetcher(&clientServerInterface->queueEntryInfoFetcher())
     {
         connect(
             _infoFetcher, &QueueEntryInfoFetcher::tracksChanged,
             this, &PlayerHistoryModel::onTracksChanged
         );
-    }
 
-    void PlayerHistoryModel::setConnection(ServerConnection* connection)
-    {
+        auto* historyController = &clientServerInterface->historyController();
         connect(
-            connection, &ServerConnection::receivedPlayerHistoryEntry,
+            historyController, &HistoryController::receivedPlayerHistoryEntry,
             this, &PlayerHistoryModel::onReceivedPlayerHistoryEntry
         );
         connect(
-            connection, &ServerConnection::receivedPlayerHistory,
+            historyController, &HistoryController::receivedPlayerHistory,
             this, &PlayerHistoryModel::onReceivedPlayerHistory
         );
 
-        connection->sendPlayerHistoryRequest(_historySizeGoal);
+        connect(
+            clientServerInterface, &ClientServerInterface::connectedChanged,
+            this,
+            [this, clientServerInterface, historyController]()
+            {
+                if (clientServerInterface->connected())
+                {
+                    historyController->sendPlayerHistoryRequest(_historySizeGoal);
+                }
+                else
+                {
+                    beginRemoveRows({}, 0, _list.size() - 1);
+                    _list.clear();
+                    endRemoveRows();
+                }
+            }
+        );
+
+        if (clientServerInterface->connected())
+            historyController->sendPlayerHistoryRequest(_historySizeGoal);
     }
 
     void PlayerHistoryModel::onReceivedPlayerHistoryEntry(PlayerHistoryTrackInfo track)

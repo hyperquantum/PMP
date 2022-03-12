@@ -28,6 +28,7 @@ set(PMP_COMMON_SOURCES
     common/fileanalyzer.cpp
     common/filehash.cpp
     common/generalcontrollerimpl.cpp
+    common/historycontrollerimpl.cpp
     common/logging.cpp
     common/networkprotocol.cpp
     common/networkutil.cpp
@@ -59,6 +60,8 @@ set(PMP_COMMON_HEADERS
     common/dynamicmodecontrollerimpl.h
     common/generalcontroller.h
     common/generalcontrollerimpl.h
+    common/historycontroller.h
+    common/historycontrollerimpl.h
     common/playercontroller.h
     common/playercontrollerimpl.h
     common/powermanagement.h

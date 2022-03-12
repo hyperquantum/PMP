@@ -24,6 +24,7 @@
 #include "currenttrackmonitorimpl.h"
 #include "dynamicmodecontrollerimpl.h"
 #include "generalcontrollerimpl.h"
+#include "historycontrollerimpl.h"
 #include "playercontrollerimpl.h"
 #include "queuecontrollerimpl.h"
 #include "queueentryinfofetcher.h"
@@ -44,6 +45,7 @@ namespace PMP
        _queueMonitor(nullptr),
        _queueEntryInfoFetcher(nullptr),
        _dynamicModeController(nullptr),
+       _historyController(nullptr),
        _collectionWatcher(nullptr),
        _userDataFetcher(nullptr),
        _connected(connection->isConnected())
@@ -141,6 +143,14 @@ namespace PMP
             _dynamicModeController = new DynamicModeControllerImpl(_connection);
 
         return *_dynamicModeController;
+    }
+
+    HistoryController& ClientServerInterface::historyController()
+    {
+        if (!_historyController)
+            _historyController = new HistoryControllerImpl(_connection);
+
+        return *_historyController;
     }
 
     CollectionWatcher& ClientServerInterface::collectionWatcher()

@@ -615,7 +615,7 @@ namespace PMP
         _notificationBar->showNotification(delayedStartNotification);
 
         _mainWidget = new MainWidget(mainCentralWidget);
-        _mainWidget->setConnection(_connection, _clientServerInterface);
+        _mainWidget->setConnection(_clientServerInterface);
 
         auto centralVerticalLayout = new QVBoxLayout(mainCentralWidget);
         centralVerticalLayout->setContentsMargins(0, 0, 0, 0);

@@ -30,16 +30,14 @@
 
 namespace PMP
 {
+    class ClientServerInterface;
     class QueueEntryInfoFetcher;
-    class ServerConnection;
 
     class PlayerHistoryModel : public QAbstractTableModel
     {
         Q_OBJECT
     public:
-        PlayerHistoryModel(QObject* parent, QueueEntryInfoFetcher* trackInfoFetcher);
-
-        void setConnection(ServerConnection* connection);
+        PlayerHistoryModel(QObject* parent, ClientServerInterface* clientServerInterface);
 
         FileHash trackHashAt(int rowIndex) const;
 

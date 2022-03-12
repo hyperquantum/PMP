@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,6 +30,7 @@ namespace PMP
     class CurrentTrackMonitor;
     class DynamicModeController;
     class GeneralController;
+    class HistoryController;
     class ServerConnection;
     class PlayerController;
     class QueueController;
@@ -55,6 +56,8 @@ namespace PMP
 
         DynamicModeController& dynamicModeController();
 
+        HistoryController& historyController();
+
         CollectionWatcher& collectionWatcher();
         UserDataFetcher& userDataFetcher();
 
@@ -77,6 +80,7 @@ namespace PMP
         AbstractQueueMonitor* _queueMonitor;
         QueueEntryInfoFetcher* _queueEntryInfoFetcher;
         DynamicModeController* _dynamicModeController;
+        HistoryController* _historyController;
         CollectionWatcher* _collectionWatcher;
         UserDataFetcher* _userDataFetcher;
         bool _connected;
