@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,9 +23,10 @@
 #include <QDateTime>
 #include <QMetaType>
 
-namespace PMP {
-
-    class PlayerHistoryTrackInfo {
+namespace PMP
+{
+    class PlayerHistoryTrackInfo
+    {
     public:
         PlayerHistoryTrackInfo()
          : _queueID(0), _user(0), _permillage(-1), _error(false), _seek(false)
@@ -59,7 +60,6 @@ namespace PMP {
         bool _error;
         bool _seek;
     };
-
 }
 
 Q_DECLARE_METATYPE(PMP::PlayerHistoryTrackInfo)
