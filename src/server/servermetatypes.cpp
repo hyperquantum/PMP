@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,13 +22,15 @@
 #include <QMetaType>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     /** Utility object to automatically do the qRegisterMetaType calls at program
      *  startup */
-    class ServerMetatypesInit {
+    class ServerMetatypesInit
+    {
     private:
-        ServerMetatypesInit() {
+        ServerMetatypesInit()
+        {
             qRegisterMetaType<PMP::UserDataForHash>();
             qRegisterMetaType<QVector<PMP::UserDataForHash>>();
         }
