@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,7 @@
 #include "common/audiodata.h"
 #include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
+#include "common/tagdata.h"
 
 #include <QDateTime>
 #include <QFutureWatcher>
@@ -31,14 +32,119 @@
 #include <QMutex>
 #include <QObject>
 #include <QPair>
+#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QVector>
 
+QT_FORWARD_DECLARE_CLASS(QFileInfo)
+QT_FORWARD_DECLARE_CLASS(QThreadPool)
+
 namespace PMP
 {
     class Database;
+    class FileAnalyzer;
     class TagData;
+
+    class FileHashes
+    {
+    public:
+        FileHashes()
+         : _hashes { FileHash() }
+        {
+            //
+        }
+
+        FileHashes(FileHash mainHash)
+         : _hashes { mainHash }
+        {
+            //
+        }
+
+        FileHashes(FileHash mainHash, FileHash alternativeHash)
+         : _hashes {mainHash, alternativeHash}
+        {
+            //
+        }
+
+        FileHash main() const { return _hashes[0]; }
+        bool multipleHashes() const { return _hashes.size() > 1; }
+
+        QVector<FileHash> const& allHashes() const { return _hashes; }
+
+    private:
+        const QVector<FileHash> _hashes;
+    };
+
+    class FileInfo
+    {
+    public:
+        FileInfo() : _size(-1) {}
+
+        FileInfo(QString path, qint64 size, QDateTime lastModifiedUtc)
+         : _path(path), _size(size), _lastModifiedUtc(lastModifiedUtc)
+        {
+            //
+        }
+
+        QString path() const { return _path; }
+        qint64 size() const { return _size; }
+        QDateTime lastModifiedUtc() const { return _lastModifiedUtc; }
+
+        bool equals(FileInfo const& other) const
+        {
+            return path() == other.path()
+                && size() == other.size()
+                && lastModifiedUtc() == other.lastModifiedUtc();
+        }
+
+    private:
+        QString _path;
+        qint64 _size;
+        QDateTime _lastModifiedUtc;
+    };
+
+    inline bool operator == (FileInfo const& first, FileInfo const& second)
+    {
+        return first.equals(second);
+    }
+
+    inline bool operator != (FileInfo const& first, FileInfo const& second)
+    {
+        return !(first == second);
+    }
+
+    class Analyzer : public QObject
+    {
+        Q_OBJECT
+    public:
+        Analyzer(QObject* parent);
+        ~Analyzer();
+
+        void enqueueFile(QString path);
+
+        bool isFinished();
+
+    Q_SIGNALS:
+        void fileAnalysisFailed(QString path);
+        void fileAnalysisCompleted(QString path, PMP::FileHashes hashes,
+                                   PMP::FileInfo fileInfo, PMP::AudioData audioData,
+                                   PMP::TagData tagData);
+        void finished();
+
+    private:
+        static void analyzeFile(Analyzer* analyzer, QString path);
+        static FileHashes extractHashes(FileAnalyzer const& fileAnalyzer);
+        static FileInfo extractFileInfo(QFileInfo& fileInfo);
+        void onFileAnalysisFailed(QString path);
+        void onFileAnalysisCompleted(QString path, FileHashes hashes, FileInfo fileInfo,
+                                     AudioData audioData, TagData tagData);
+        void markAsNoLongerInProgress(QString path, bool& allFinished);
+
+        QThreadPool* _threadPool;
+        QMutex _lock;
+        QSet<QString> _pathsInProgress;
+    };
 
     class Resolver : public QObject
     {
@@ -71,6 +177,10 @@ namespace PMP
 
     private Q_SLOTS:
         void onFullIndexationFinished();
+        void onFileAnalysisFailed(QString path);
+        void onFileAnalysisCompleted(QString path, FileHashes hashes, FileInfo fileInfo,
+                                     AudioData audioData, TagData tagData);
+        void onAnalyzerFinished();
 
     Q_SIGNALS:
         void fullIndexationRunStatusChanged(bool running);
@@ -81,6 +191,14 @@ namespace PMP
                                 QString album, qint32 lengthInMilliseconds);
 
     private:
+        enum class FullIndexationStatus
+        {
+            NotRunning,
+            FileSystemTraversal,
+            WaitingForFileAnalysisCompletion,
+            CheckingForFileRemovals,
+        };
+
         struct VerifiedFile;
         class HashKnowledge;
 
@@ -97,7 +215,10 @@ namespace PMP
         QString findPathByQuickScanOfNewFiles(QVector<QString> newFiles,
                                               const FileHash& hash);
 
-        void doFullIndexation();
+        void doFullIndexationFileSystemTraversal();
+        void doFullIndexationCheckForFileRemovals();
+
+        Analyzer* _analyzer;
 
         QMutex _lock;
 
@@ -109,10 +230,13 @@ namespace PMP
         QHash<QString, VerifiedFile*> _paths;
 
         uint _fullIndexationNumber;
-        bool _fullIndexationRunning;
-        QFutureWatcher<void> _fullIndexationWatcher;
+        FullIndexationStatus _fullIndexationStatus;
 
         AudioData _emptyAudioData;
     };
 }
+
+Q_DECLARE_METATYPE(PMP::FileHashes)
+Q_DECLARE_METATYPE(PMP::FileInfo)
+
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,6 +35,135 @@
 
 namespace PMP
 {
+    Analyzer::Analyzer(QObject* parent)
+     : QObject(parent),
+       _threadPool(new QThreadPool(this))
+    {
+        /* single thread only, because it's mostly I/O */
+        _threadPool->setMaxThreadCount(1);
+    }
+
+    Analyzer::~Analyzer()
+    {
+        _threadPool->clear();
+        _threadPool->waitForDone();
+    }
+
+    void Analyzer::enqueueFile(QString path)
+    {
+        QMutexLocker lock(&_lock);
+
+        if (_pathsInProgress.contains(path))
+            return;
+
+        _pathsInProgress << path;
+
+        QtConcurrent::run(_threadPool, &analyzeFile, this, path);
+    }
+
+    bool Analyzer::isFinished()
+    {
+        QMutexLocker lock(&_lock);
+        return _pathsInProgress.empty();
+    }
+
+    void Analyzer::analyzeFile(Analyzer* analyzer, QString path)
+    {
+        QFileInfo firstQFileInfo(path);
+        FileInfo firstFileInfo = extractFileInfo(firstQFileInfo);
+
+        FileAnalyzer fileAnalyzer(firstQFileInfo);
+        fileAnalyzer.analyze();
+
+        QFileInfo secondQFileInfo(path);
+        FileInfo secondFileInfo = extractFileInfo(secondQFileInfo);
+
+        if (firstFileInfo != secondFileInfo) /* file was changed? */
+        {
+            qDebug() << "file seems to have changed:" << path;
+            if (secondQFileInfo.exists())
+            {
+                analyzer->_pathsInProgress.remove(path);
+                analyzer->enqueueFile(path); /* try again later */
+            }
+            else
+                analyzer->onFileAnalysisFailed(path); /* file no longer exists */
+
+            return;
+        }
+
+        if (!fileAnalyzer.analysisDone()) /* something went wrong */
+        {
+            qDebug() << "file analysis failed:" << path;
+            analyzer->onFileAnalysisFailed(path);
+            return;
+        }
+
+        auto audioData = fileAnalyzer.audioData();
+        if (audioData.trackLengthMilliseconds() > std::numeric_limits<qint32>::max())
+        {
+            /* file too long, probably not music anyway */
+            qDebug() << "file audio too long:" << path;
+            analyzer->onFileAnalysisFailed(path);
+            return;
+        }
+
+        auto hashes = extractHashes(fileAnalyzer);
+        auto tagData = fileAnalyzer.tagData();
+
+        analyzer->onFileAnalysisCompleted(path, hashes, secondFileInfo, audioData,
+                                          tagData);
+    }
+
+    FileHashes Analyzer::extractHashes(const FileAnalyzer& fileAnalyzer)
+    {
+        FileHash mainHash = fileAnalyzer.hash();
+        FileHash legacyHash = fileAnalyzer.legacyHash();
+
+        if (!legacyHash.isNull())
+            return FileHashes { mainHash, legacyHash };
+
+        return FileHashes { mainHash };
+    }
+
+    FileInfo Analyzer::extractFileInfo(QFileInfo& fileInfo)
+    {
+        return FileInfo(fileInfo.absoluteFilePath(),
+                        fileInfo.size(),
+                        fileInfo.lastModified().toUTC());
+    }
+
+    void Analyzer::onFileAnalysisFailed(QString path)
+    {
+        bool isFinished;
+        markAsNoLongerInProgress(path, isFinished);
+
+        Q_EMIT fileAnalysisFailed(path);
+
+        if (isFinished)
+            Q_EMIT finished();
+    }
+
+    void Analyzer::onFileAnalysisCompleted(QString path, FileHashes hashes,
+                                           FileInfo fileInfo, AudioData audioData,
+                                           TagData tagData)
+    {
+        bool isFinished;
+        markAsNoLongerInProgress(path, isFinished);
+
+        Q_EMIT fileAnalysisCompleted(path, hashes, fileInfo, audioData, tagData);
+
+        if (isFinished)
+            Q_EMIT finished();
+    }
+
+    void Analyzer::markAsNoLongerInProgress(QString path, bool& allFinished)
+    {
+        QMutexLocker lock(&_lock);
+        _pathsInProgress.remove(path);
+        allFinished = _pathsInProgress.empty();
+    }
+
     /* ========================== private class declarations ========================== */
 
     struct Resolver::VerifiedFile
@@ -362,14 +491,17 @@ namespace PMP
     /* ========================== Resolver ========================== */
 
     Resolver::Resolver()
-     : _lock(QMutex::Recursive),
-       _fullIndexationNumber(1), _fullIndexationRunning(false),
-       _fullIndexationWatcher(this)
+     : _analyzer(new Analyzer(this)),
+       _lock(QMutex::Recursive),
+       _fullIndexationNumber(1),
+       _fullIndexationStatus(FullIndexationStatus::NotRunning)
     {
-        connect(
-            &_fullIndexationWatcher, &QFutureWatcher<void>::finished,
-            this, &Resolver::onFullIndexationFinished
-        );
+        connect(_analyzer, &Analyzer::fileAnalysisFailed,
+                this, &Resolver::onFileAnalysisFailed);
+        connect(_analyzer, &Analyzer::fileAnalysisCompleted,
+                this, &Resolver::onFileAnalysisCompleted);
+        connect(_analyzer, &Analyzer::finished,
+                this, &Resolver::onAnalyzerFinished);
 
         auto db = Database::getDatabaseForCurrentThread();
 
@@ -413,40 +545,104 @@ namespace PMP
 
     bool Resolver::fullIndexationRunning()
     {
-        return _fullIndexationRunning;
+        return _fullIndexationStatus != FullIndexationStatus::NotRunning;
     }
 
     bool Resolver::startFullIndexation()
     {
-        if (_fullIndexationRunning)
+        if (fullIndexationRunning())
             return false; /* already running */
 
-        // TODO : update list of music paths from settings file
-
-        _fullIndexationRunning = true;
+        qDebug() << "full indexation starting";
+        _fullIndexationNumber += 2; /* add 2 so it will never become zero */
+        _fullIndexationStatus = FullIndexationStatus::FileSystemTraversal;
         Q_EMIT fullIndexationRunStatusChanged(true);
-        QFuture<void> future = QtConcurrent::run(this, &Resolver::doFullIndexation);
-        _fullIndexationWatcher.setFuture(future);
+        QtConcurrent::run(this, &Resolver::doFullIndexationFileSystemTraversal);
 
         return true;
     }
 
     void Resolver::onFullIndexationFinished()
     {
-        _fullIndexationRunning = false;
         Q_EMIT fullIndexationRunStatusChanged(false);
     }
 
-    void Resolver::doFullIndexation()
+    void Resolver::onFileAnalysisFailed(QString path)
     {
-        qDebug() << "full indexation started";
-        _fullIndexationNumber += 2; /* add 2 so it will never become zero */
+        // TODO
+    }
+
+    void Resolver::onFileAnalysisCompleted(QString path, FileHashes hashes,
+                                           FileInfo fileInfo, AudioData audioData,
+                                           TagData tagData)
+    {
+        QMutexLocker lock(&_lock);
+
+        HashKnowledge* knowledge;
+        if (!hashes.multipleHashes())
+        {
+            knowledge = registerHash(hashes.main());
+        }
+        else
+        {
+            knowledge = nullptr;
+            for (auto const& hash : hashes.allHashes())
+            {
+                auto k = _hashKnowledge.value(hash, nullptr);
+                if (!k)
+                    continue;
+
+                if (!knowledge)
+                    knowledge = k;
+                else
+                    qDebug() << "detected multiple hashes in use for file" << path << ":"
+                             << knowledge->hash() << "and" << k->hash();
+            }
+
+            if (!knowledge)
+            {
+                knowledge = registerHash(hashes.main());
+            }
+        }
+
+        if (!knowledge)
+        {
+            qDebug() << "failed to register hash for:" << path;
+            return;
+        }
+
+        knowledge->addInfo(audioData, tagData);
+
+        if (fileInfo.path().length() <= 0
+                || fileInfo.size() <= 0
+                || fileInfo.lastModifiedUtc().isNull())
+        {
+            qDebug() << "cannot register file details for:" << path;
+            return;
+        }
+
+        knowledge->addPath(fileInfo.path(), fileInfo.size(), fileInfo.lastModifiedUtc(),
+                           _fullIndexationNumber);
+    }
+
+    void Resolver::onAnalyzerFinished()
+    {
+        if (_fullIndexationStatus
+                                == FullIndexationStatus::WaitingForFileAnalysisCompletion)
+        {
+            _fullIndexationStatus = FullIndexationStatus::CheckingForFileRemovals;
+            QtConcurrent::run(this, &Resolver::doFullIndexationCheckForFileRemovals);
+        }
+    }
+
+    void Resolver::doFullIndexationFileSystemTraversal()
+    {
+        qDebug() << "full indexation: running file system traversal (music paths)";
+
 
         auto musicPaths = this->musicPaths();
 
-        QList<QString> filesToAnalyze;
-
-        /* traverse filesystem to find music files */
+        uint fileCount = 0;
         for (QString const& musicPath : qAsConst(musicPaths))
         {
             QDirIterator it(musicPath, QDirIterator::Subdirectories); /* no symlinks */
@@ -456,33 +652,41 @@ namespace PMP
                 QFileInfo entry(it.next());
                 if (!FileAnalyzer::isFileSupported(entry)) continue;
 
-                filesToAnalyze.append(entry.absoluteFilePath());
+                fileCount++;
+                _analyzer->enqueueFile(entry.absoluteFilePath());
             }
         }
 
-        qDebug() << "full indexation:" << filesToAnalyze.size() << "files to analyze";
+        qDebug() << "full indexation:" << fileCount << "files added to analysis queue";
 
-        /* analyze the files we found */
-        for (QString const& filePath : qAsConst(filesToAnalyze))
+        if (_analyzer->isFinished())
         {
-            FileHash hash =
-                    analyzeAndRegisterFileInternal(filePath, _fullIndexationNumber);
-
-            if (hash.isNull())
-            {
-                qDebug() << "file analysis FAILED:" << filePath;
-            }
+            _fullIndexationStatus = FullIndexationStatus::CheckingForFileRemovals;
+            QtConcurrent::run(this, &Resolver::doFullIndexationCheckForFileRemovals);
         }
+        else
+        {
+            _fullIndexationStatus =
+                    FullIndexationStatus::WaitingForFileAnalysisCompletion;
+        }
+    }
 
-        qDebug() << "full indexation: going to check for files that are now gone";
+    void Resolver::doFullIndexationCheckForFileRemovals()
+    {
+        qDebug() << "full indexation: checking for files that have disappeared";
 
         auto pathsToCheck = getPathsThatDontMatchCurrentFullIndexationNumber();
+        qDebug() << "full indexation:" << pathsToCheck.size()
+                 << "files need checking for their possible disappearance";
+
         for (QString const& path : qAsConst(pathsToCheck))
         {
             checkFileStillExistsAndIsValid(path);
         }
 
+        _fullIndexationStatus = FullIndexationStatus::NotRunning;
         qDebug() << "full indexation finished.";
+        QTimer::singleShot(0, this, [this]() { onFullIndexationFinished(); });
     }
 
     Resolver::HashKnowledge* Resolver::registerHash(const FileHash& hash)

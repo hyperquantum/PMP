@@ -17,6 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "resolver.h"
 #include "userdataforhashesfetcher.h"
 
 #include <QMetaType>
@@ -31,6 +32,8 @@ namespace PMP
     private:
         ServerMetatypesInit()
         {
+            qRegisterMetaType<PMP::FileHashes>();
+            qRegisterMetaType<PMP::FileInfo>();
             qRegisterMetaType<PMP::UserDataForHash>();
             qRegisterMetaType<QVector<PMP::UserDataForHash>>();
         }

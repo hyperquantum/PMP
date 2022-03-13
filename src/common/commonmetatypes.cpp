@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,6 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "audiodata.h"
 #include "collectiontrackinfo.h"
 #include "filehash.h"
 #include "playerhistorytrackinfo.h"
@@ -27,6 +28,7 @@
 #include "serverhealthstatus.h"
 #include "specialqueueitemtype.h"
 #include "startstopeventstatus.h"
+#include "tagdata.h"
 #include "userloginerror.h"
 #include "userregistrationerror.h"
 
@@ -39,6 +41,7 @@ namespace PMP
     protected:
         CommonMetatypesInit()
         {
+            qRegisterMetaType<PMP::AudioData>();
             qRegisterMetaType<PMP::CollectionTrackInfo>();
             qRegisterMetaType<PMP::FileHash>();
             qRegisterMetaType<PMP::PlayerHistoryTrackInfo>();
@@ -49,6 +52,7 @@ namespace PMP
             qRegisterMetaType<PMP::ServerHealthStatus>();
             qRegisterMetaType<PMP::SpecialQueueItemType>();
             qRegisterMetaType<PMP::StartStopEventStatus>();
+            qRegisterMetaType<PMP::TagData>();
             qRegisterMetaType<PMP::UserLoginError>();
             qRegisterMetaType<PMP::UserRegistrationError>();
         }
