@@ -17,7 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "resolver.h"
+#include "analyzer.h"
 #include "userdataforhashesfetcher.h"
 
 #include <QMetaType>
