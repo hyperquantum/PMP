@@ -19,6 +19,8 @@
 
 #include "serverinterface.h"
 
+#include "common/promise.h"
+
 #include "delayedstart.h"
 #include "generator.h"
 #include "player.h"
@@ -109,22 +111,22 @@ namespace PMP
         _userLoggedInName = userLogin;
     }
 
-    void ServerInterface::reloadServerSettings(uint clientReference)
+    FutureResult<ResultMessageErrorCode> ServerInterface::reloadServerSettings()
     {
-        ResultMessageErrorCode errorCode;
+        Promise<ResultMessageErrorCode, void> promise;
 
         // TODO : in the future allow reloading if the database is not connected yet
         if (!isLoggedIn())
         {
-            errorCode = ResultMessageErrorCode::NotLoggedIn;
+            promise.setResult(ResultMessageErrorCode::NotLoggedIn);
         }
         else
         {
             _serverSettings->load();
-            errorCode = ResultMessageErrorCode::NoError;
+            promise.setResult(ResultMessageErrorCode::NoError);
         }
 
-        Q_EMIT serverSettingsReloadResultEvent(clientReference, errorCode);
+        return promise.futureResult();
     }
 
     void ServerInterface::switchToPersonalMode()

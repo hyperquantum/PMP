@@ -75,10 +75,6 @@ namespace PMP
                 terminateConnection();
             }
         );
-        connect(
-            _serverInterface, &ServerInterface::serverSettingsReloadResultEvent,
-            this, &ConnectedClient::serverSettingsReloadResultEvent
-        );
 
         connect(
             socket, &QTcpSocket::disconnected,
@@ -2833,9 +2829,18 @@ namespace PMP
             break; /* not to be used, treat as invalid */
 
         case ParameterlessActionCode::ReloadServerSettings:
-            _serverInterface->reloadServerSettings(clientReference);
-            return;
+        {
+            auto future = _serverInterface->reloadServerSettings();
+            future.addResultListener(
+                this,
+                [this, clientReference](ResultMessageErrorCode error)
+                {
+                    Q_EMIT serverSettingsReloadResultEvent(clientReference, error);
+                }
+            );
 
+            return;
+        }
         case ParameterlessActionCode::DeactivateDelayedStart:
             {
                 auto result = _serverInterface->deactivateDelayedStart();

@@ -21,6 +21,7 @@
 #define PMP_SERVERINTERFACE_H
 
 #include "common/filehash.h"
+#include "common/future.h"
 #include "common/queueindextype.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/specialqueueitemtype.h"
@@ -72,7 +73,7 @@ namespace PMP
         bool isLoggedIn() const { return _userLoggedIn > 0; }
         void setLoggedIn(quint32 userId, QString userLogin);
 
-        void reloadServerSettings(uint clientReference);
+        FutureResult<ResultMessageErrorCode> reloadServerSettings();
 
         void switchToPersonalMode();
         void switchToPublicMode();
@@ -122,9 +123,6 @@ namespace PMP
         void serverCaptionChanged();
         void serverClockTimeSendingPulse();
         void serverShuttingDown();
-
-        void serverSettingsReloadResultEvent(uint clientReference,
-                                             ResultMessageErrorCode errorCode);
 
         void delayedStartActiveChanged();
 
