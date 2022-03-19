@@ -62,7 +62,7 @@ namespace PMP
                 {
                     historyController->sendPlayerHistoryRequest(_historySizeGoal);
                 }
-                else
+                else if (!_list.empty())
                 {
                     beginRemoveRows({}, 0, _list.size() - 1);
                     _list.clear();
