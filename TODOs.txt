@@ -55,7 +55,6 @@ IDEAS
  * player: 'seek to start of track' action or button
  * player: make track position display less precise while playing, it is too fast for the human eye anyway
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
- * queue: ability to insert a breakpoint directly before/after any entry in the queue
  * queue: ability to insert a track at a random position in the queue
  * queue: show error marker for a track that has no known file
  * queue: join title and artist columns when displaying filename
@@ -80,7 +79,6 @@ IDEAS
  * 'about the remote' window; with client version and protocol version
  * 'about the server' window; with server name, UUID and protocol version
  * provide play/pause buttons in Windows taskbar popup
- * use libgroove for playback (?)
  ** support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
  * display PMP server version in the client 'About' dialog
  * ability to view server uptime
@@ -100,9 +98,7 @@ IDEAS
  * giant "now playing" screen banner
  * visualize sound wave
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
- * client: detect broken connection to the server
  * client: ability to reconnect to the server after the connection was broken
- ** login dialog: add button for probing for servers again
  * take clock difference between client and server into account
  * add button to copy title and artist of current track to clipboard
 
@@ -130,6 +126,7 @@ TECHNICAL IDEAS
  * large file support (?)
  * switch to signed integer types for things like queue indices
  * add logging for all server messages that are deemed corrupt or invalid by the client
+ * use libgroove for playback (?)
 
 
 CODE IMPROVEMENTS
