@@ -45,14 +45,6 @@ PERFORMANCE ISSUES
  *
 
 
-TECHNICAL TODO
-
- * when running an indexation, analyze the most recently created/updated files first
- * large file support (?)
- * switch to signed integer types for things like queue indices
- * add logging for all server messages that are deemed corrupt or invalid by the client
-
-
 IDEAS
 
  ** player: option for single track mode (vs. continuous play)
@@ -132,6 +124,14 @@ POLISHING
  * GUI remote: history/queue/collection: hide selection when losing focus
 
 
-CODE CLEANUP
+TECHNICAL IDEAS
 
- *
+ * when running an indexation, analyze the most recently created/updated files first
+ * large file support (?)
+ * switch to signed integer types for things like queue indices
+ * add logging for all server messages that are deemed corrupt or invalid by the client
+
+
+CODE IMPROVEMENTS
+
+ * introduce "null" sentinel value for the Nullable class
