@@ -20,19 +20,210 @@
 #include "delayedstartdialog.h"
 #include "ui_delayedstartdialog.h"
 
+#include "common/abstractqueuemonitor.h"
 #include "common/clientserverinterface.h"
+#include "common/dynamicmodecontroller.h"
 #include "common/playercontroller.h"
+#include "common/queueentryinfofetcher.h"
+#include "common/util.h"
 
 #include <QLocale>
 #include <QMessageBox>
+//#include <QtConcurrent/QtConcurrent>
+#include <QTimer>
 
 namespace PMP
 {
+
+    PlayDurationCalculator::PlayDurationCalculator(QObject* parent,
+                                             ClientServerInterface* clientServerInterface)
+     : QObject(parent),
+       _clientServerInterface(clientServerInterface),
+       _calculating(false),
+       _mustRestartCalculation(false)
+    {
+        auto* dynamicModeController = &_clientServerInterface->dynamicModeController();
+        connect(dynamicModeController, &DynamicModeController::dynamicModeEnabledChanged,
+                this, &PlayDurationCalculator::onDynamicModeEnabledChanged);
+
+        auto* queueMonitor = &clientServerInterface->queueMonitor();
+        connect(queueMonitor, &AbstractQueueMonitor::queueResetted,
+                this, &PlayDurationCalculator::triggerRecalculation);
+        connect(
+            queueMonitor, &AbstractQueueMonitor::entriesReceived,
+            this,
+            [this](int index)
+            {
+                if (_breakIndex.hasValue() && index > _breakIndex.value())
+                    return;
+
+                triggerRecalculation();
+            }
+        );
+        connect(
+            queueMonitor, &AbstractQueueMonitor::trackAdded,
+            this,
+            [this](int index)
+            {
+                if (_breakIndex.hasValue() && index > _breakIndex.value())
+                    return;
+
+                triggerRecalculation();
+            }
+        );
+        connect(
+            queueMonitor, &AbstractQueueMonitor::trackRemoved,
+            this,
+            [this](int index)
+            {
+                if (_breakIndex.hasValue() && index > _breakIndex.value())
+                    return;
+
+                triggerRecalculation();
+            }
+        );
+        connect(
+            queueMonitor, &AbstractQueueMonitor::trackMoved,
+            this,
+            [this](int fromIndex, int toIndex)
+            {
+                if (_breakIndex.isNull())
+                    return;
+
+                if (fromIndex < _breakIndex.value() && toIndex < _breakIndex.value())
+                    return;
+
+                if (fromIndex > _breakIndex.value() && toIndex > _breakIndex.value())
+                    return;
+
+                triggerRecalculation();
+            }
+        );
+
+        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+        connect(queueEntryInfoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+                this, &PlayDurationCalculator::triggerRecalculation);
+
+        triggerRecalculation();
+    }
+
+    void PlayDurationCalculator::onDynamicModeEnabledChanged()
+    {
+        if (_breakIndex.hasValue())
+            return; // dynamic mode status does not affect our calculation
+
+        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
+        auto dynamicModeEnabled = dynamicModeController.dynamicModeEnabled();
+
+        if (dynamicModeEnabled.isTrue())
+        {
+            _duration.setToNull();
+            Q_EMIT resultChanged();
+        }
+        else if (dynamicModeEnabled.isFalse())
+        {
+            triggerRecalculation();
+        }
+        else
+        {
+            _duration.setToNull();
+            Q_EMIT resultChanged();
+        }
+    }
+
+    void PlayDurationCalculator::triggerRecalculation()
+    {
+        if (_calculating)
+        {
+            _mustRestartCalculation = true;
+            return;
+        }
+
+        //QtConcurrent::run(&calculate, this);
+        QTimer::singleShot(0, this, [this]() { calculate(this); });
+    }
+
+    void PlayDurationCalculator::calculate(PlayDurationCalculator* calculator)
+    {
+        auto* clientServerInterface = calculator->_clientServerInterface;
+
+        auto& dynamicModeController = clientServerInterface->dynamicModeController();
+
+        auto& queueMonitor = clientServerInterface->queueMonitor();
+        auto& queueEntryInfoFetcher = clientServerInterface->queueEntryInfoFetcher();
+
+        Nullable<int> breakIndex;
+        Nullable<qint64> duration;
+
+        auto queueLength = queueMonitor.queueLength();
+        if (queueLength >= 0)
+        {
+            qint64 durationSum = 0;
+            for (int i = 0; i < queueLength; ++i)
+            {
+                auto queueEntryId = queueMonitor.queueEntry(i);
+                auto* entryInfo = queueEntryInfoFetcher.entryInfoByQID(queueEntryId);
+                if (!entryInfo)
+                {
+                    durationSum = -1;
+                    break;
+                }
+
+                auto entryType = entryInfo->type();
+                auto entryDuration = entryInfo->lengthInMilliseconds();
+                switch (entryType)
+                {
+                case QueueEntryType::BreakPoint:
+                case QueueEntryType::Barrier:
+                    breakIndex = i;
+                    break;
+                case QueueEntryType::Track:
+                    if (entryDuration < 0)
+                        durationSum = -1;
+                    else
+                        durationSum += entryDuration;
+                    break;
+                default:
+                    durationSum = -1;
+                    break;
+                }
+
+                if (breakIndex.hasValue() || durationSum < 0)
+                    break;
+            }
+
+            if (durationSum >=0
+                    && (breakIndex.hasValue()
+                        || dynamicModeController.dynamicModeEnabled().isFalse()))
+            {
+                duration = durationSum;
+            }
+        }
+
+        QTimer::singleShot(
+            0, calculator,
+            [calculator, breakIndex, duration]()
+            {
+                calculator->_calculating = false;
+                calculator->_breakIndex = breakIndex;
+                calculator->_duration = duration;
+
+                if (calculator->_mustRestartCalculation)
+                    calculator->triggerRecalculation();
+
+                Q_EMIT calculator->resultChanged();
+            }
+        );
+    }
+
+    /* ====================================== */
+
     DelayedStartDialog::DelayedStartDialog(QWidget* parent,
                                            ClientServerInterface* clientServerInterface)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
        _ui(new Ui::DelayedStartDialog),
-       _clientServerInterface(clientServerInterface)
+       _clientServerInterface(clientServerInterface),
+       _playDurationCalculator(new PlayDurationCalculator(this, clientServerInterface))
     {
         _ui->setupUi(this);
 
@@ -50,6 +241,8 @@ namespace PMP
 
         connect(_ui->dateTimeEdit, &QDateTimeEdit::dateTimeChanged,
                 this, [this]() { _ui->clockTimeRadioButton->setChecked(true); });
+        connect(_ui->dateTimeEdit, &QDateTimeEdit::dateTimeChanged,
+                this, &DelayedStartDialog::updateEstimatedEndTime);
 
         connect(_ui->hoursSpinBox, qOverload<int>(&QSpinBox::valueChanged),
                 this, [this]() { _ui->delayRadioButton->setChecked(true); });
@@ -61,6 +254,11 @@ namespace PMP
         auto* playerController = &_clientServerInterface->playerController();
         connect(playerController, &PlayerController::delayedStartActivationResultEvent,
                 this, &DelayedStartDialog::activationResultReceived);
+
+        connect(_playDurationCalculator, &PlayDurationCalculator::resultChanged,
+                this, &DelayedStartDialog::updateEstimatedEndTime);
+
+        updateEstimatedEndTime();
     }
 
     DelayedStartDialog::~DelayedStartDialog()
@@ -122,6 +320,34 @@ namespace PMP
         }
 
         _ui->buttonBox->setEnabled(false);
+    }
+
+    void DelayedStartDialog::updateEstimatedEndTime()
+    {
+        if (!_playDurationCalculator->calculationFinished())
+        {
+            _ui->estimatedTracksDurationValueLabel->setText(tr("calculating..."));
+            _ui->estimatedStopTimeValueLabel->setText("");
+            return;
+        }
+
+        auto duration = _playDurationCalculator->duration();
+        if (!duration.hasValue())
+        {
+            _ui->estimatedTracksDurationValueLabel->setText(tr("N/A"));
+            _ui->estimatedStopTimeValueLabel->setText(tr("N/A"));
+            return;
+        }
+
+        auto durationMilliseconds = duration.value();
+        auto end = _ui->dateTimeEdit->dateTime().addMSecs(durationMilliseconds);
+
+        QLocale locale;
+
+        _ui->estimatedTracksDurationValueLabel->setText(
+                    Util::millisecondsToShortDisplayTimeText(durationMilliseconds));
+        _ui->estimatedStopTimeValueLabel->setText(
+                    end.toString(locale.dateTimeFormat(QLocale::LongFormat)));
     }
 
     void DelayedStartDialog::activationResultReceived(ResultMessageErrorCode errorCode)

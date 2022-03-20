@@ -20,8 +20,10 @@
 #ifndef PMP_DELAYEDSTARTDIALOG_H
 #define PMP_DELAYEDSTARTDIALOG_H
 
+#include "common/nullable.h"
 #include "common/requestid.h"
 #include "common/resultmessageerrorcode.h"
+#include "common/tribool.h"
 
 #include <QDialog>
 
@@ -33,6 +35,7 @@ namespace Ui
 namespace PMP
 {
     class ClientServerInterface;
+    class PlayDurationCalculator;
 
     class DelayedStartDialog : public QDialog
     {
@@ -45,12 +48,42 @@ namespace PMP
         void done(int r) override;
 
     private Q_SLOTS:
+        void updateEstimatedEndTime();
         void activationResultReceived(ResultMessageErrorCode errorCode);
 
     private:
         Ui::DelayedStartDialog* _ui;
         ClientServerInterface* _clientServerInterface;
+        PlayDurationCalculator* _playDurationCalculator;
         RequestID _requestId;
+    };
+
+    class PlayDurationCalculator : public QObject
+    {
+        Q_OBJECT
+    public:
+        PlayDurationCalculator(QObject* parent,
+                               ClientServerInterface* clientServerInterface);
+
+        bool calculationFinished() const { return !_calculating; }
+        Nullable<qint64> duration() const { return _duration; }
+
+    Q_SIGNALS:
+        void resultChanged();
+
+    private Q_SLOTS:
+        void onDynamicModeEnabledChanged();
+        void triggerRecalculation();
+
+    private:
+        static void calculate(PlayDurationCalculator* calculator);
+
+        ClientServerInterface* _clientServerInterface;
+        TriBool _dynamicModeEnabled;
+        Nullable<int> _breakIndex;
+        Nullable<qint64> _duration;
+        bool _calculating;
+        bool _mustRestartCalculation;
     };
 }
 #endif

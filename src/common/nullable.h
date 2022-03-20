@@ -43,6 +43,8 @@ namespace PMP
         T const& value() const { return _value; }
         T& value() { return _value; }
 
+        void setToNull() { _hasValue = false; }
+
         Nullable<T>& operator=(Nullable<T> const& nullable) = default;
 
         Nullable<T>& operator=(T const& value)
