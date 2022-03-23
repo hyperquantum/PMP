@@ -22,30 +22,47 @@
 
 namespace PMP
 {
+    class NullType
+    {
+    public:
+        constexpr NullType() {}
+
+        NullType const& operator=(NullType const&) = delete;
+
+        constexpr bool operator==(NullType) { return true; }
+        constexpr bool operator!=(NullType) { return false; }
+    };
+
+    constexpr NullType null = {};
+
     template<class T>
     class Nullable
     {
     public:
-        Nullable() : _hasValue {false}, _value {}
+        constexpr Nullable() : _hasValue {false}, _value {}
         {
             //
         }
 
-        Nullable(T const& contents)
+        constexpr Nullable(NullType) : _hasValue(), _value {}
+        {
+            //
+        }
+
+        constexpr Nullable(T const& contents)
          : _hasValue(true), _value(contents)
         {
             //
         }
 
-        bool hasValue() const { return _hasValue; }
-        bool isNull() const { return !_hasValue; }
-
-        T const& value() const { return _value; }
-        T& value() { return _value; }
+        constexpr bool hasValue() const { return _hasValue; }
+        constexpr bool isNull() const { return !_hasValue; }
+        constexpr T value() const { return _value; }
 
         void setToNull() { _hasValue = false; }
 
         Nullable<T>& operator=(Nullable<T> const& nullable) = default;
+        Nullable<T>& operator=(NullType) { setToNull(); return *this; };
 
         Nullable<T>& operator=(T const& value)
         {
@@ -54,7 +71,7 @@ namespace PMP
             return *this;
         }
 
-        bool operator==(Nullable<T> const& other) const
+        constexpr bool operator==(Nullable<T> const& other) const
         {
             if (!hasValue())
                 return !other.hasValue();
@@ -62,7 +79,7 @@ namespace PMP
             return other.hasValue() && value() == other.value();
         }
 
-        bool operator!=(Nullable<T> const& other) const
+        constexpr bool operator!=(Nullable<T> const& other) const
         {
             return !(*this == other);
         }
@@ -71,5 +88,29 @@ namespace PMP
         bool _hasValue;
         T _value;
     };
+
+    template<class T>
+    constexpr bool operator==(Nullable<T> const& nullable, NullType)
+    {
+        return nullable.isNull();
+    }
+
+    template<class T>
+    constexpr bool operator!=(Nullable<T> const& nullable, NullType)
+    {
+        return !(nullable == null);
+    }
+
+    template<class T>
+    constexpr bool operator==(NullType, Nullable<T> const& nullable)
+    {
+        return nullable.isNull();
+    }
+
+    template<class T>
+    constexpr bool operator!=(NullType, Nullable<T> const& nullable)
+    {
+        return !(null == nullable);
+    }
 }
 #endif

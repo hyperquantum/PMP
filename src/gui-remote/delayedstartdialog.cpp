@@ -126,7 +126,7 @@ namespace PMP
         }
         else
         {
-            _duration.setToNull();
+            _duration = null;
             Q_EMIT resultChanged();
         }
     }

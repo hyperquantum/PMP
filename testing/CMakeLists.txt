@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -61,6 +61,13 @@ add_hashtest(
     tone.flac
     50070-fc8a0825f871a9fd235c2960bd92679e-0f6da8f31d5af63893d087dc1595716400fb0d02
 )
+
+
+# TestNullable
+qt5_wrap_cpp(PMP_TestNullable_MOCS test_nullable.h)
+add_executable(test_nullable test_nullable.cpp ${PMP_TestNullable_MOCS})
+target_link_libraries(test_nullable Qt5::Core Qt5::Test)
+add_test(test_nullable test_nullable)
 
 
 # TestFileHash
