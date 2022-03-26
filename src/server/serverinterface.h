@@ -73,7 +73,7 @@ namespace PMP
         bool isLoggedIn() const { return _userLoggedIn > 0; }
         void setLoggedIn(quint32 userId, QString userLogin);
 
-        FutureResult<ResultMessageErrorCode> reloadServerSettings();
+        SimpleFuture<ResultMessageErrorCode> reloadServerSettings();
 
         void switchToPersonalMode();
         void switchToPublicMode();

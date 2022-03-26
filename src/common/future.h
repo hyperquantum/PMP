@@ -35,14 +35,18 @@ namespace PMP
     template<class ResultType, class ErrorType>
     class Future;
 
-    template<class ResultType>
-    class FutureResult;
+    template<class T>
+    class SimpleFuture;
 
-    template<class ErrorType>
-    class FutureAction;
+    class VoidFuture;
 
     template<class ResultType, class ErrorType>
     class Promise;
+
+    template<class T>
+    class SimplePromise;
+
+    class VoidPromise;
 
     template<class T>
     struct FutureListener
@@ -138,10 +142,16 @@ namespace PMP
         friend class Promise<ResultType, ErrorType>;
         friend class Promise<ResultType, void>;
         friend class Promise<void, ErrorType>;
+        friend class Promise<void, void>;
+        friend class SimplePromise<ResultType>;
+        friend class VoidPromise;
 
         friend class Future<ResultType, ErrorType>;
-        friend class FutureResult<ResultType>;
-        friend class FutureAction<ErrorType>;
+        friend class Future<ResultType, void>;
+        friend class Future<void, ErrorType>;
+        friend class Future<void, void>;
+        friend class SimpleFuture<ResultType>;
+        friend class VoidFuture;
 
         friend class QSharedPointer<FutureStorage<ResultType, ErrorType>>;
 
@@ -181,7 +191,7 @@ namespace PMP
     };
 
     template<class ResultType>
-    class FutureResult
+    class Future<ResultType, void>
     {
     public:
         void addResultListener(QObject* receiver, std::function<void (ResultType)> f)
@@ -189,8 +199,13 @@ namespace PMP
             _storage->addResultListener(receiver, f);
         }
 
+        void addFailureListener(QObject* receiver, std::function<void ()> f)
+        {
+            _storage->addFailureListener(receiver, [f](int) { f(); });
+        }
+
     private:
-        FutureResult(QSharedPointer<FutureStorage<ResultType, int>> storage)
+        Future(QSharedPointer<FutureStorage<ResultType, int>> storage)
          : _storage(storage)
         {
             //
@@ -202,7 +217,7 @@ namespace PMP
     };
 
     template<class ErrorType>
-    class FutureAction
+    class Future<void, ErrorType>
     {
     public:
         void addSuccessListener(QObject* receiver, std::function<void ()> f)
@@ -216,7 +231,7 @@ namespace PMP
         }
 
     private:
-        FutureAction(QSharedPointer<FutureStorage<int, ErrorType>> storage)
+        Future(QSharedPointer<FutureStorage<int, ErrorType>> storage)
          : _storage(storage)
         {
             //
@@ -225,6 +240,73 @@ namespace PMP
         friend class Promise<void, ErrorType>;
 
         QSharedPointer<FutureStorage<int, ErrorType>> _storage;
+    };
+
+    template<>
+    class Future<void, void>
+    {
+    public:
+        void addSuccessListener(QObject* receiver, std::function<void ()> f)
+        {
+            _storage->addResultListener(receiver, [f](int) { f(); });
+        }
+
+        void addFailureListener(QObject* receiver, std::function<void ()> f)
+        {
+            _storage->addFailureListener(receiver, [f](int) { f(); });
+        }
+
+    private:
+        Future(QSharedPointer<FutureStorage<int, int>> storage)
+         : _storage(storage)
+        {
+            //
+        }
+
+        friend class Promise<void, void>;
+
+        QSharedPointer<FutureStorage<int, int>> _storage;
+    };
+
+    template<class T>
+    class SimpleFuture
+    {
+    public:
+        void addResultListener(QObject* receiver, std::function<void (T)> f)
+        {
+            _storage->addResultListener(receiver, f);
+        }
+
+    private:
+        SimpleFuture(QSharedPointer<FutureStorage<T, int>> storage)
+         : _storage(storage)
+        {
+            //
+        }
+
+        friend class SimplePromise<T>;
+
+        QSharedPointer<FutureStorage<T, int>> _storage;
+    };
+
+    class VoidFuture
+    {
+    public:
+        void addFinishedListener(QObject* receiver, std::function<void ()> f)
+        {
+            _storage->addResultListener(receiver, [f](int) { f(); });
+        }
+
+    private:
+        VoidFuture(QSharedPointer<FutureStorage<int, int>> storage)
+         : _storage(storage)
+        {
+            //
+        }
+
+        friend class VoidPromise;
+
+        QSharedPointer<FutureStorage<int, int>> _storage;
     };
 }
 #endif

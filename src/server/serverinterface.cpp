@@ -111,9 +111,9 @@ namespace PMP
         _userLoggedInName = userLogin;
     }
 
-    FutureResult<ResultMessageErrorCode> ServerInterface::reloadServerSettings()
+    SimpleFuture<ResultMessageErrorCode> ServerInterface::reloadServerSettings()
     {
-        Promise<ResultMessageErrorCode, void> promise;
+        SimplePromise<ResultMessageErrorCode> promise;
 
         // TODO : in the future allow reloading if the database is not connected yet
         if (!isLoggedIn())
@@ -126,7 +126,7 @@ namespace PMP
             promise.setResult(ResultMessageErrorCode::NoError);
         }
 
-        return promise.futureResult();
+        return promise.future();
     }
 
     void ServerInterface::switchToPersonalMode()

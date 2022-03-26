@@ -21,6 +21,7 @@
 #define PMP_PROMISE_H
 
 #include "future.h"
+#include "resultorerror.h"
 
 namespace PMP
 {
@@ -44,12 +45,20 @@ namespace PMP
             return Future<ResultType, ErrorType>(_storage);
         }
 
+        void setResult(ResultOrError<ResultType, ErrorType> const& r)
+        {
+            if (r.succeeded())
+                setResult(r.result());
+            else
+                setError(r.error());
+        }
+
         void setResult(ResultType result)
         {
             _storage->setResult(result);
         }
 
-        void setFailed(ErrorType error)
+        void setError(ErrorType error)
         {
             _storage->setFailed(error);
         }
@@ -73,14 +82,27 @@ namespace PMP
         Promise(Promise const&) = delete;
         Promise& operator=(Promise const&) = delete;
 
-        FutureResult<ResultType> futureResult()
+        Future<ResultType, void> future()
         {
-            return FutureResult<ResultType>(_storage);
+            return Future<ResultType, void>(_storage);
+        }
+
+        void setResult(ResultOrError<ResultType, void> const& r)
+        {
+            if (r.succeeded())
+                setResult(r.result());
+            else
+                setError();
         }
 
         void setResult(ResultType result)
         {
             _storage->setResult(result);
+        }
+
+        void setError()
+        {
+            _storage.setFailed(0);
         }
 
     private:
@@ -102,9 +124,17 @@ namespace PMP
         Promise(Promise const&) = delete;
         Promise& operator=(Promise const&) = delete;
 
-        FutureAction<ErrorType> futureAction()
+        Future<void, ErrorType> future()
         {
-            return FutureAction<ErrorType>(_storage);
+            return Future<void, ErrorType>(_storage);
+        }
+
+        void setResult(ResultOrError<void, ErrorType> const& r)
+        {
+            if (r.succeeded())
+                setSuccessful();
+            else
+                setError(r.error());
         }
 
         void setSuccessful()
@@ -112,13 +142,112 @@ namespace PMP
             _storage->setResult(0);
         }
 
-        void setFailed(ErrorType error)
+        void setError(ErrorType error)
         {
             _storage->setFailed(error);
         }
 
     private:
         QSharedPointer<FutureStorage<int, ErrorType>> _storage;
+    };
+
+    template<>
+    class Promise<void, void>
+    {
+    public:
+        Promise()
+         : _storage(QSharedPointer<FutureStorage<int, int>>::create())
+        {
+            //
+        }
+
+        Promise(Promise&&) = default;
+
+        Promise(Promise const&) = delete;
+        Promise& operator=(Promise const&) = delete;
+
+        Future<void, void> future()
+        {
+            return Future<void, void>(_storage);
+        }
+
+        void setResult(ResultOrError<void, void> const& r)
+        {
+            if (r.succeeded())
+                setSuccessful();
+            else
+                setFailed();
+        }
+
+        void setSuccessful()
+        {
+            _storage->setResult(0);
+        }
+
+        void setFailed()
+        {
+            _storage->setFailed(0);
+        }
+
+    private:
+        QSharedPointer<FutureStorage<int, int>> _storage;
+    };
+
+    template<class T>
+    class SimplePromise
+    {
+    public:
+        SimplePromise()
+         : _storage(QSharedPointer<FutureStorage<T, int>>::create())
+        {
+            //
+        }
+
+        SimplePromise(SimplePromise&&) = default;
+
+        SimplePromise(SimplePromise const&) = delete;
+        SimplePromise& operator=(SimplePromise const&) = delete;
+
+        SimpleFuture<T> future()
+        {
+            return SimpleFuture<T>(_storage);
+        }
+
+        void setResult(T result)
+        {
+            _storage->setResult(result);
+        }
+
+    private:
+        QSharedPointer<FutureStorage<T, int>> _storage;
+    };
+
+    class VoidPromise
+    {
+    public:
+        VoidPromise()
+         : _storage(QSharedPointer<FutureStorage<int, int>>::create())
+        {
+            //
+        }
+
+        VoidPromise(VoidPromise&&) = default;
+
+        VoidPromise(VoidPromise const&) = delete;
+        VoidPromise& operator=(VoidPromise const&) = delete;
+
+        VoidFuture future()
+        {
+            return VoidFuture(_storage);
+        }
+
+        void setFinished()
+        {
+            _storage->setResult(0);
+        }
+
+    private:
+        QSharedPointer<FutureStorage<int, int>> _storage;
     };
 }
 #endif
