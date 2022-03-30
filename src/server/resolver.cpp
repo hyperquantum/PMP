@@ -19,6 +19,7 @@
 
 #include "resolver.h"
 
+#include "common/concurrent.h"
 #include "common/fileanalyzer.h"
 
 #include "database.h"
@@ -35,6 +36,74 @@
 
 namespace PMP
 {
+    Future<void, void> HashIdRegistrar::loadAllFromDatabase()
+    {
+        auto work =
+            [this]() -> ResultOrError<void, void>
+            {
+                auto db = Database::getDatabaseForCurrentThread();
+                if (!db) return failure; /* database not available */
+
+                const QList<QPair<uint, FileHash>> hashes = db->getHashes();
+
+                QMutexLocker lock(&_mutex);
+                for (auto& pair : hashes)
+                {
+                    _hashes.insert(pair.second, pair.first);
+                    _ids.insert(pair.first, pair.second);
+                }
+
+                qDebug() << "loaded" << hashes.count() << "hashes from the database";
+                return success;
+            };
+
+        Promise<void, void> promise;
+        return Concurrent::run<void, void>(std::move(promise), work);
+    }
+
+    Future<uint, void> HashIdRegistrar::getOrCreateId(FileHash hash)
+    {
+        {
+            QMutexLocker lock(&_mutex);
+            auto id = _hashes.value(hash, 0);
+            if (id > 0)
+                return Future<uint, void>::fromResult(id);
+        }
+
+        auto work =
+            [this, hash]() -> ResultOrError<uint, void>
+            {
+                auto db = Database::getDatabaseForCurrentThread();
+                if (!db) return failure; /* database not available */
+
+                db->registerHash(hash);
+                uint id = db->getHashID(hash);
+                if (id <= 0) return failure; /* something went wrong */
+
+                QMutexLocker lock(&_mutex);
+                _hashes.insert(hash, id);
+                _ids.insert(id, hash);
+                return id;
+            };
+
+        Promise<uint, void> promise;
+        return Concurrent::run<uint, void>(std::move(promise), work);
+    }
+
+    QVector<QPair<uint, FileHash>> HashIdRegistrar::getAllLoaded()
+    {
+        QMutexLocker lock(&_mutex);
+
+        QVector<QPair<uint, FileHash>> result;
+        result.reserve(_ids.size());
+
+        for (auto it = _ids.begin(); it != _ids.end(); ++it)
+        {
+            result << qMakePair(it.key(), it.value());
+        }
+
+        return result;
+    }
 
     /* ========================== private class declarations ========================== */
 
@@ -375,28 +444,40 @@ namespace PMP
         connect(_analyzer, &Analyzer::finished,
                 this, &Resolver::onAnalyzerFinished);
 
-        auto db = Database::getDatabaseForCurrentThread();
-
-        if (db != nullptr)
-        {
-            const QList<QPair<uint, FileHash>> hashes = db->getHashes();
-
-            for (auto& pair : hashes)
+        auto dbLoadingFuture = _hashIdRegistrar.loadAllFromDatabase();
+        dbLoadingFuture.addSuccessListener(
+            this,
+            [this]()
             {
-                auto knowledge = new HashKnowledge(this, pair.second, pair.first);
-                _hashKnowledge.insert(pair.second, knowledge);
-                _idToHash.insert(pair.first, knowledge);
-                _hashList.append(pair.second);
-            }
+                qDebug() << "Resolver: successfully loaded hashes from the database";
 
-            qDebug() << "loaded" << _hashList.count()
-                     << "hashes from the database";
-        }
-        else
-        {
-            qDebug() << "Resolver: could not load hashes because"
-                     << "there is no working DB connection";
-        }
+                auto allHashes = _hashIdRegistrar.getAllLoaded();
+
+                uint newHashesCount = 0;
+                QMutexLocker lock(&_lock);
+                for (auto& pair : allHashes)
+                {
+                    if (_idToHash.contains(pair.first))
+                        continue;
+
+                    auto knowledge = new HashKnowledge(this, pair.second, pair.first);
+                    _hashKnowledge.insert(pair.second, knowledge);
+                    _idToHash.insert(pair.first, knowledge);
+                    _hashList.append(pair.second);
+                    newHashesCount++;
+                }
+
+                qDebug() << "Resolver: hashes processed; got"
+                         << newHashesCount << "new hashes";
+            }
+        );
+        dbLoadingFuture.addFailureListener(
+            this,
+            []()
+            {
+                qDebug() << "Resolver: could not load hashes from the database";
+            }
+        );
     }
 
     void Resolver::setMusicPaths(QStringList paths)

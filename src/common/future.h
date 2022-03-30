@@ -21,6 +21,7 @@
 #define PMP_FUTURE_H
 
 #include "nullable.h"
+#include "resultorerror.h"
 
 #include <QMutex>
 #include <QMutexLocker>
@@ -88,7 +89,7 @@ namespace PMP
             }
         }
 
-        void setFailed(ErrorType error)
+        void setError(ErrorType error)
         {
             QMutexLocker lock(&_mutex);
 
@@ -178,6 +179,20 @@ namespace PMP
             _storage->addFailureListener(receiver, f);
         }
 
+        static Future fromResult(ResultType result)
+        {
+            auto storage {QSharedPointer<FutureStorage<ResultType, ErrorType>>::create()};
+            storage->setResult(result);
+            return Future(storage);
+        }
+
+        static Future fromError(ErrorType error)
+        {
+            auto storage {QSharedPointer<FutureStorage<ResultType, ErrorType>>::create()};
+            storage->setError(error);
+            return Future(storage);
+        }
+
     private:
         Future(QSharedPointer<FutureStorage<ResultType, ErrorType>> storage)
          : _storage(storage)
@@ -202,6 +217,24 @@ namespace PMP
         void addFailureListener(QObject* receiver, std::function<void ()> f)
         {
             _storage->addFailureListener(receiver, [f](int) { f(); });
+        }
+
+        static Future fromResult(ResultType result)
+        {
+            auto storage {QSharedPointer<FutureStorage<ResultType, int>>::create()};
+            storage->setResult(result);
+            return Future(storage);
+        }
+
+        static Future fromError()
+        {
+            return Future { failure };
+        }
+
+        Future(FailureType)
+         : _storage(QSharedPointer<FutureStorage<ResultType, int>>::create())
+        {
+            _storage->setError(0);
         }
 
     private:
@@ -230,6 +263,24 @@ namespace PMP
             _storage->addFailureListener(receiver, f);
         }
 
+        static Future fromSuccess()
+        {
+            return Future { success };
+        }
+
+        static Future fromError(ErrorType error)
+        {
+            auto storage {QSharedPointer<FutureStorage<int, ErrorType>>::create()};
+            storage->setError(error);
+            return Future(storage);
+        }
+
+        Future(SuccessType)
+         : _storage(QSharedPointer<FutureStorage<int, ErrorType>>::create())
+        {
+            _storage->setResult(0);
+        }
+
     private:
         Future(QSharedPointer<FutureStorage<int, ErrorType>> storage)
          : _storage(storage)
@@ -256,6 +307,28 @@ namespace PMP
             _storage->addFailureListener(receiver, [f](int) { f(); });
         }
 
+        static Future fromSuccess()
+        {
+            return Future { success };
+        }
+
+        static Future fromError()
+        {
+            return Future { failure };
+        }
+
+        Future(SuccessType)
+         : _storage(QSharedPointer<FutureStorage<int, int>>::create())
+        {
+            _storage->setResult(0);
+        }
+
+        Future(FailureType)
+         : _storage(QSharedPointer<FutureStorage<int, int>>::create())
+        {
+            _storage->setError(0);
+        }
+
     private:
         Future(QSharedPointer<FutureStorage<int, int>> storage)
          : _storage(storage)
@@ -277,6 +350,13 @@ namespace PMP
             _storage->addResultListener(receiver, f);
         }
 
+        static SimpleFuture fromResult(T result)
+        {
+            auto storage {QSharedPointer<FutureStorage<T, int>>::create()};
+            storage->setResult(result);
+            return SimpleFuture(storage);
+        }
+
     private:
         SimpleFuture(QSharedPointer<FutureStorage<T, int>> storage)
          : _storage(storage)
@@ -295,6 +375,13 @@ namespace PMP
         void addFinishedListener(QObject* receiver, std::function<void ()> f)
         {
             _storage->addResultListener(receiver, [f](int) { f(); });
+        }
+
+        static VoidFuture fromFinished()
+        {
+            auto storage {QSharedPointer<FutureStorage<int, int>>::create()};
+            storage->setResult(0);
+            return VoidFuture(storage);
         }
 
     private:

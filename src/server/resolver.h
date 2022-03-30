@@ -23,6 +23,7 @@
 #include "common/audiodata.h"
 #include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
+#include "common/future.h"
 #include "common/tagdata.h"
 
 #include "analyzer.h"
@@ -42,6 +43,20 @@
 namespace PMP
 {
     class Database;
+
+    class HashIdRegistrar
+    {
+    public:
+        Future<void, void> loadAllFromDatabase();
+        Future<uint, void> getOrCreateId(FileHash hash);
+
+        QVector<QPair<uint, FileHash>> getAllLoaded();
+
+    private:
+        QMutex _mutex;
+        QHash<FileHash, uint> _hashes;
+        QHash<uint, FileHash> _ids;
+    };
 
     class Resolver : public QObject
     {
@@ -116,6 +131,7 @@ namespace PMP
         void doFullIndexationCheckForFileRemovals();
 
         Analyzer* _analyzer;
+        HashIdRegistrar _hashIdRegistrar;
 
         QMutex _lock;
 

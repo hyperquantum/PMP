@@ -60,7 +60,7 @@ namespace PMP
 
         void setError(ErrorType error)
         {
-            _storage->setFailed(error);
+            _storage->setError(error);
         }
 
     private:
@@ -102,7 +102,7 @@ namespace PMP
 
         void setError()
         {
-            _storage.setFailed(0);
+            _storage->setError(0);
         }
 
     private:
@@ -144,7 +144,7 @@ namespace PMP
 
         void setError(ErrorType error)
         {
-            _storage->setFailed(error);
+            _storage->setError(error);
         }
 
     private:
@@ -186,7 +186,7 @@ namespace PMP
 
         void setFailed()
         {
-            _storage->setFailed(0);
+            _storage->setError(0);
         }
 
     private:
