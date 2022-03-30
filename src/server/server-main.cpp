@@ -17,6 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "common/concurrent.h"
 #include "common/logging.h"
 #include "common/util.h"
 #include "common/version.h"
@@ -250,5 +251,8 @@ int runServer(QCoreApplication& app, bool doIndexation)
         setUpAndRunInitialIndexation(resolver);
 
     auto exitCode = app.exec();
+
+    Concurrent::waitUntilEverythingFinished();
+
     return exitCode;
 }

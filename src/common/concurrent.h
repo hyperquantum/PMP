@@ -24,6 +24,7 @@
 #include "nullable.h"
 #include "promise.h"
 
+#include <QAtomicInteger>
 #include <QtConcurrent/QtConcurrent>
 
 #include <functional>
@@ -33,6 +34,25 @@ namespace PMP
 {
     class Concurrent
     {
+    private:
+        class CountIncrementer
+        {
+        public:
+            CountIncrementer()
+             : _count(&_runningCount)
+            {
+                _count->ref();
+            }
+
+            ~CountIncrementer()
+            {
+                _count->deref();
+            }
+
+        private :
+            QAtomicInteger<int>* _count;
+        };
+
     public:
         template<class ResultType, class ErrorType>
         static Future<ResultType, ErrorType> run(
@@ -87,6 +107,8 @@ namespace PMP
             return future;
         }
 
+        static void waitUntilEverythingFinished();
+
     private:
         template<class ResultType, class ErrorType>
         static std::function<void ()> makeWork(
@@ -99,6 +121,7 @@ namespace PMP
             auto work =
                     [sharedPromise, f]()
                     {
+                        CountIncrementer countIncrement;
                         auto resultOrError = f();
                         sharedPromise->setResult(resultOrError);
                     };
@@ -115,6 +138,7 @@ namespace PMP
             auto work =
                     [sharedPromise, f]()
                     {
+                        CountIncrementer countIncrement;
                         auto result = f();
                         sharedPromise->setResult(result);
                     };
@@ -130,6 +154,7 @@ namespace PMP
             auto work =
                     [sharedPromise, f]()
                     {
+                        CountIncrementer countIncrement;
                         f();
                         sharedPromise->setFinished();
                     };
@@ -138,6 +163,8 @@ namespace PMP
         }
 
         Concurrent() {}
+
+        static QAtomicInteger<int> _runningCount;
     };
 }
 #endif
