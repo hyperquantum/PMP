@@ -39,3 +39,5 @@ if(${PMP_VERSION_PATCH} EQUAL "0")
 else()
     set(PMP_VERSION_DISPLAY "${PMP_VERSION_MAJORMINORPATCH}")
 endif()
+
+message(STATUS "PMP version (display): ${PMP_VERSION_DISPLAY}")
