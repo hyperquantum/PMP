@@ -40,4 +40,36 @@ else()
     set(PMP_VERSION_DISPLAY "${PMP_VERSION_MAJORMINORPATCH}")
 endif()
 
+set(VCS_BRANCH "")
+set(VCS_REVISION_LONG "")
+
+if (EXISTS "${CMAKE_SOURCE_DIR}/.git")
+    set(DETECT_VCS_INFO ON)
+
+    find_program(GIT_EXECUTABLE git)
+    if(NOT GIT_EXECUTABLE OR GIT_EXECUTABLE-NOTFOUND)
+        set(DETECT_VCS_INFO OFF)
+    endif()
+
+    if(DETECT_VCS_INFO)
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE VCS_BRANCH
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+        )
+
+        execute_process(
+            COMMAND ${GIT_EXECUTABLE} describe --long --tags --always
+            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+            OUTPUT_VARIABLE VCS_REVISION_LONG
+            OUTPUT_STRIP_TRAILING_WHITESPACE
+            ERROR_QUIET
+        )
+    endif()
+endif()
+
 message(STATUS "PMP version (display): ${PMP_VERSION_DISPLAY}")
+message(STATUS "VCS branch:   ${VCS_BRANCH}")
+message(STATUS "VCS revision: ${VCS_REVISION_LONG}")
