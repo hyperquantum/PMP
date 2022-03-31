@@ -437,14 +437,16 @@ namespace PMP
                 " License (GPLv3).</p>"
                 "<p>Website: <a href=\"%1\">%1</a></p>"
                 "<p>Report bugs at: <a href=\"%2\">%2</a></p>"
-                "<p>Party Music Player <b>version %3</b><br>"
-                "%4</p>" /* copyright line */
-                "<p>Using Qt version %5</p>"
+                "<p>Party Music Player <b>version %3</b> build %4 (%5)<br>"
+                "%6</p>" /* copyright line */
+                "<p>Using Qt version %7</p>"
                 "</html>"
             )
             .arg(PMP_WEBSITE,
                  PMP_BUGREPORT_LOCATION,
                  PMP_VERSION_DISPLAY,
+                 VCS_REVISION_LONG,
+                 VCS_BRANCH,
                  Util::getCopyrightLine(false),
                  QT_VERSION_STR);
 
