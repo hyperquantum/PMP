@@ -694,11 +694,10 @@ namespace PMP
 
     FileHash Resolver::analyzeAndRegisterFile(const QString& filename)
     {
-        return analyzeAndRegisterFileInternal(filename, 0);
+        return analyzeAndRegisterFileInternal(filename);
     }
 
-    FileHash Resolver::analyzeAndRegisterFileInternal(const QString& filename,
-                                                      uint fullIndexationNumber)
+    FileHash Resolver::analyzeAndRegisterFileInternal(const QString& filename)
     {
         QFileInfo info(filename);
 
@@ -758,7 +757,7 @@ namespace PMP
             return FileHash(); /* return invalid hash */
         }
 
-        knowledge->addPath(filename, fileSize, fileLastModified, fullIndexationNumber);
+        knowledge->addPath(filename, fileSize, fileLastModified, 0);
 
         return knowledge->hash();
     }
@@ -888,8 +887,7 @@ namespace PMP
                         continue; /* this one will have a different hash */
                     }
 
-                    FileHash candidateHash =
-                            analyzeAndRegisterFileInternal(candidatePath, 0);
+                    auto candidateHash = analyzeAndRegisterFileInternal(candidatePath);
                     if (candidateHash.isNull()) continue; /* failed to analyze */
 
                     if (candidateHash == hash)
@@ -936,7 +934,7 @@ namespace PMP
 
                 qDebug() << "  checking out file with matching size:" << candidatePath;
 
-                auto candidateHash = analyzeAndRegisterFileInternal(candidatePath, 0);
+                auto candidateHash = analyzeAndRegisterFileInternal(candidatePath);
                 if (candidateHash == hash)
                     return candidatePath;
             }
@@ -964,7 +962,7 @@ namespace PMP
             auto newFilePath = newFiles[i];
             qDebug() << "  checking out new file:" << newFilePath;
 
-            auto candidateHash = analyzeAndRegisterFileInternal(newFilePath, 0);
+            auto candidateHash = analyzeAndRegisterFileInternal(newFilePath);
             if (candidateHash == hash)
                 return newFilePath;
         }

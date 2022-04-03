@@ -114,8 +114,7 @@ namespace PMP
         struct VerifiedFile;
         class HashKnowledge;
 
-        FileHash analyzeAndRegisterFileInternal(const QString& filename,
-                                                uint fullIndexationNumber);
+        FileHash analyzeAndRegisterFileInternal(const QString& filename);
         HashKnowledge* registerHash(const FileHash& hash);
         QVector<QString> getPathsThatDontMatchCurrentFullIndexationNumber();
         void checkFileStillExistsAndIsValid(QString path);
