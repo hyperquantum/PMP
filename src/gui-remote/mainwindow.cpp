@@ -424,6 +424,15 @@ namespace PMP
 
     void MainWindow::onAboutPmpAction()
     {
+        const auto programNameVersionBuild =
+            QString(VCS_REVISION_LONG).isEmpty()
+                ? tr("Party Music Player <b>version %1</b>")
+                    .arg(PMP_VERSION_DISPLAY)
+                : tr("Party Music Player <b>version %1</b> build %2 (%3)")
+                    .arg(PMP_VERSION_DISPLAY,
+                         VCS_REVISION_LONG,
+                         VCS_BRANCH);
+
         QString aboutText =
             tr(
                 "<html>"
@@ -437,16 +446,14 @@ namespace PMP
                 " License (GPLv3).</p>"
                 "<p>Website: <a href=\"%1\">%1</a></p>"
                 "<p>Report bugs at: <a href=\"%2\">%2</a></p>"
-                "<p>Party Music Player <b>version %3</b> build %4 (%5)<br>"
-                "%6</p>" /* copyright line */
-                "<p>Using Qt version %7</p>"
+                "<p>%3<br>" /* program name, version, and possibly build info */
+                "%4</p>" /* copyright line */
+                "<p>Using Qt version %5</p>"
                 "</html>"
             )
             .arg(PMP_WEBSITE,
                  PMP_BUGREPORT_LOCATION,
-                 PMP_VERSION_DISPLAY,
-                 VCS_REVISION_LONG,
-                 VCS_BRANCH,
+                 programNameVersionBuild,
                  Util::getCopyrightLine(false),
                  QT_VERSION_STR);
 
