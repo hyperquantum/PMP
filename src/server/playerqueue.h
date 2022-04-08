@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -93,7 +93,6 @@ namespace PMP
         QueueEntry* entryAtIndex(int index) const;
         QList<QueueEntry*> entries(int startoffset, int maxCount);
 
-        Result enqueue(QString const& filename);
         Result enqueue(FileHash hash);
         Result enqueue(std::function<QueueEntry* (uint)> queueEntryCreator);
 

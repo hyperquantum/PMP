@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,19 +27,6 @@
 
 namespace PMP
 {
-    QueueEntry::QueueEntry(uint queueId, const QString& filename)
-     : QObject(nullptr),
-       _queueID(queueId),
-       _kind(QueueEntryKind::Track),
-       _filename(filename),
-       _haveFilename(true),
-       _fetchedTagData(false),
-       _fileFinderBackoff(0),
-       _fileFinderFailedCount(0)
-    {
-        //
-    }
-
     QueueEntry::QueueEntry(uint queueId, FileHash hash)
      : QObject(nullptr),
        _queueID(queueId),
@@ -91,11 +78,6 @@ namespace PMP
         return new QueueEntry(queueId, QueueEntryKind::Barrier);
     }
 
-    QueueEntry* QueueEntry::createFromFilename(uint queueId, const QString& filename)
-    {
-        return new QueueEntry(queueId, filename);
-    }
-
     QueueEntry* QueueEntry::createFromHash(uint queueId, FileHash hash)
     {
         return new QueueEntry(queueId, hash);
@@ -116,29 +98,6 @@ namespace PMP
         if (_hash.isNull()) { return nullptr; }
 
         return &_hash;
-    }
-
-    bool QueueEntry::checkHash(Resolver& resolver)
-    {
-        if (!_hash.isNull()) return true; /* already got it */
-
-        if (!_haveFilename)
-        {
-            qDebug() << "PROBLEM: QueueEntry" << _queueID
-                     << "does not have either hash nor filename";
-            return false;
-        }
-
-        _hash = resolver.analyzeAndRegisterFile(_filename);
-
-        if (_hash.isNull())
-        {
-            qDebug() << "PROBLEM: QueueEntry" << _queueID
-                     << ": analysis of file failed:" << _filename;
-            return false;
-        }
-
-        return true;
     }
 
     void QueueEntry::setFilename(QString const& filename)

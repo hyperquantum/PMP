@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -53,14 +53,8 @@ namespace PMP
         for (int i = 0; i < length && i < 10 && operationsDone <= 3; ++i)
         {
             QueueEntry* entry = _queue[i];
-            if (!entry->isTrack()) continue;
-
-            if (entry->hash() == nullptr)
-            {
-                qDebug() << "Queue: need to calculate hash for queue index" << (i + 1);
-                operationsDone++;
-                if (!entry->checkHash(*_resolver)) continue; /* check next track */
-            }
+            if (!entry->isTrack())
+                continue;
 
             QString const* filename = entry->filename();
             if (filename && !_resolver->pathStillValid(*entry->hash(), *filename))
@@ -164,11 +158,6 @@ namespace PMP
         {
             removeAtIndex(_queue.length() - 1);
         }
-    }
-
-    Result PlayerQueue::enqueue(QString const& filename)
-    {
-        return enqueue(QueueEntryCreators::filename(filename));
     }
 
     Result PlayerQueue::enqueue(FileHash hash)
@@ -513,24 +502,8 @@ namespace PMP
         for (int i = _queue.length() - 1; i >= 0; --i)
         {
             QueueEntry* entry = _queue[i];
-            if (!entry->isTrack()) continue;
-
-            if (entry->hash() == nullptr)
-            {
-                /* we don't know the track's hash yet. We need to calculate it first */
-                qDebug() << "Queue::checkPotentialRepetitionByAdd:"
-                         << "need to calculate hash first, for QID" << entry->queueID();
-                entry->checkHash(*_resolver);
-
-                if (entry->hash() == nullptr)
-                {
-                    qDebug() << "PROBLEM: failed calculating hash of QID"
-                             << entry->queueID();
-                    /* could not calculate hash, so let's pray that this is a different
-                       track and continue */
-                    continue;
-                }
-            }
+            if (!entry->isTrack())
+                continue;
 
             const FileHash& entryHash = *entry->hash();
 

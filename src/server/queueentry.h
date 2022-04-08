@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,7 +47,6 @@ namespace PMP
     public:
         static QueueEntry* createBreak(uint queueId);
         static QueueEntry* createBarrier(uint queueId);
-        static QueueEntry* createFromFilename(uint queueId, QString const& filename);
         static QueueEntry* createFromHash(uint queueId, FileHash hash);
         static QueueEntry* createCopyOf(uint queueId, QueueEntry const* existing);
 
@@ -58,7 +57,6 @@ namespace PMP
         bool isTrack() const { return _kind == QueueEntryKind::Track; }
 
         FileHash const* hash() const;
-        bool checkHash(Resolver& resolver);
 
         void setFilename(QString const& filename);
         QString const* filename() const;
@@ -83,7 +81,6 @@ namespace PMP
         void setEndedNow();
 
     private:
-        QueueEntry(uint queueId, QString const& filename);
         QueueEntry(uint queueId, FileHash hash);
         QueueEntry(uint queueId, QueueEntry const* existing);
         QueueEntry(uint queueId, QueueEntryKind kind);
@@ -120,15 +117,6 @@ namespace PMP
                 };
         }
 
-        static std::function<QueueEntry* (uint)> filename(QString const& filename)
-        {
-            return
-                [filename](uint queueId)
-                {
-                    return QueueEntry::createFromFilename(queueId, filename);
-                };
-        }
-
         static std::function<QueueEntry* (uint)> copyOf(QueueEntry const* existing)
         {
             return
@@ -137,7 +125,6 @@ namespace PMP
                     return QueueEntry::createCopyOf(queueId, existing);
                 };
         }
-
     };
 }
 #endif
