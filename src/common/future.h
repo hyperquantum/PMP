@@ -33,8 +33,10 @@
 
 namespace PMP
 {
-    template<class ResultType, class ErrorType>
-    class Future;
+    template<class ResultType, class ErrorType> class Future;
+    template<class ResultType> class Future<ResultType, void>;
+    template<class ErrorType> class Future<void, ErrorType>;
+    template<> class Future<void, void>;
 
     template<class T>
     class SimpleFuture;
@@ -48,19 +50,6 @@ namespace PMP
     class SimplePromise;
 
     class VoidPromise;
-
-    template<class T>
-    struct FutureListener
-    {
-        QObject* receiver;
-        std::function<void (T)> functionToCall;
-
-        FutureListener(QObject* receiver, std::function<void (T)> functionToCall)
-         : receiver(receiver), functionToCall(functionToCall)
-        {
-            //
-        }
-    };
 
     template<class ResultType, class ErrorType>
     class FutureStorage
@@ -84,8 +73,7 @@ namespace PMP
 
             for (auto const& listener : _resultListeners)
             {
-                auto f = listener.functionToCall;
-                QTimer::singleShot(0, listener.receiver, [f, result]() { f(result); });
+                listener(result);
             }
         }
 
@@ -101,43 +89,64 @@ namespace PMP
 
             for (auto const& listener : _failureListeners)
             {
-                auto f = listener.functionToCall;
-                QTimer::singleShot(0, listener.receiver, [f, error]() { f(error); });
+                listener(error);
             }
         }
 
-        void addResultListener(QObject* receiver, std::function<void (ResultType)> f)
+        void addResultListener(std::function<void (ResultType)> f)
         {
             QMutexLocker lock(&_mutex);
 
             if (!_finished)
             {
-                _resultListeners.append(FutureListener<ResultType>(receiver, f));
+                _resultListeners.append(f);
                 return;
             }
 
             if (_result.hasValue())
             {
                 auto value = _result.value();
-                QTimer::singleShot(0, receiver, [f, value]() { f(value); });
+                f(value);
             }
         }
 
-        void addFailureListener(QObject* receiver, std::function<void (ErrorType)> f)
+        void addResultListener(QObject* receiver, std::function<void (ResultType)> f)
+        {
+            auto listener =
+                [receiver, f](ResultType result)
+                {
+                    QTimer::singleShot(0, receiver, [f, result]() { f(result); });
+                };
+
+            addResultListener(listener);
+        }
+
+        void addFailureListener(std::function<void (ErrorType)> f)
         {
             QMutexLocker lock(&_mutex);
 
             if (!_finished)
             {
-                _failureListeners.append(FutureListener<ErrorType>(receiver, f));
+                _failureListeners.append(f);
                 return;
             }
 
             if (_error.hasValue())
             {
                 auto error = _error.value();
-                QTimer::singleShot(0, receiver, [f, error]() { f(error); });
+                f(error);
             }
+        }
+
+        void addFailureListener(QObject* receiver, std::function<void (ErrorType)> f)
+        {
+            auto listener =
+                [receiver, f](ErrorType error)
+                {
+                    QTimer::singleShot(0, receiver, [f, error]() { f(error); });
+                };
+
+            addFailureListener(listener);
         }
 
         friend class Promise<ResultType, ErrorType>;
@@ -147,10 +156,7 @@ namespace PMP
         friend class SimplePromise<ResultType>;
         friend class VoidPromise;
 
-        friend class Future<ResultType, ErrorType>;
-        friend class Future<ResultType, void>;
-        friend class Future<void, ErrorType>;
-        friend class Future<void, void>;
+        template<class T1, class T2> friend class Future;
         friend class SimpleFuture<ResultType>;
         friend class VoidFuture;
 
@@ -161,8 +167,8 @@ namespace PMP
         bool _finished;
         Nullable<ResultType> _result;
         Nullable<ErrorType> _error;
-        QVector<FutureListener<ResultType>> _resultListeners;
-        QVector<FutureListener<ErrorType>> _failureListeners;
+        QVector<std::function<void (ResultType)>> _resultListeners;
+        QVector<std::function<void (ErrorType)>> _failureListeners;
     };
 
     template<class ResultType, class ErrorType>
@@ -219,6 +225,27 @@ namespace PMP
             _storage->addFailureListener(receiver, [f](int) { f(); });
         }
 
+        template<class OtherResultType>
+        Future<OtherResultType, void> transformResult(
+                QObject* receiver,
+                std::function<OtherResultType (ResultType)> resultTransformation)
+        {
+            auto storage {QSharedPointer<FutureStorage<OtherResultType, int>>::create()};
+
+            _storage->addResultListener(
+                receiver,
+                [storage, resultTransformation](ResultType result)
+                {
+                    storage->setResult(resultTransformation(result));
+                }
+            );
+            _storage->addFailureListener(
+                receiver, [storage](int) { storage->setError(0); }
+            );
+
+            return Future<OtherResultType, void>(storage);
+        }
+
         static Future fromResult(ResultType result)
         {
             auto storage {QSharedPointer<FutureStorage<ResultType, int>>::create()};
@@ -244,6 +271,7 @@ namespace PMP
             //
         }
 
+        template<class T1, class T2> friend class Future;
         friend class Promise<ResultType, void>;
 
         QSharedPointer<FutureStorage<ResultType, int>> _storage;

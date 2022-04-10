@@ -70,11 +70,10 @@ namespace PMP
         bool startFullIndexation();
         bool fullIndexationRunning();
 
-        FileHash analyzeAndRegisterFile(const QString& filename);
-
         bool haveFileForHash(const FileHash& hash);
         QString findPathForHash(const FileHash& hash, bool fast);
         bool pathStillValid(const FileHash& hash, QString path);
+        Nullable<FileHash> findHashForFilePath(QString path);
 
         const AudioData& findAudioData(const FileHash& hash);
         const TagData* findTagData(const FileHash& hash);
@@ -90,8 +89,7 @@ namespace PMP
     private Q_SLOTS:
         void onFullIndexationFinished();
         void onFileAnalysisFailed(QString path);
-        void onFileAnalysisCompleted(QString path, FileHashes hashes, FileInfo fileInfo,
-                                     AudioData audioData, TagData tagData);
+        void onFileAnalysisCompleted(QString path, FileAnalysis analysis);
         void onAnalyzerFinished();
 
     Q_SIGNALS:
@@ -114,6 +112,7 @@ namespace PMP
         struct VerifiedFile;
         class HashKnowledge;
 
+        Future<FileHash, void> analyzeAndRegisterFileAsync(QString filename);
         FileHash analyzeAndRegisterFileInternal(const QString& filename);
         HashKnowledge* registerHash(const FileHash& hash);
         QVector<QString> getPathsThatDontMatchCurrentFullIndexationNumber();

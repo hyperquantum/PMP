@@ -32,6 +32,7 @@ namespace PMP
     private:
         ServerMetatypesInit()
         {
+            qRegisterMetaType<PMP::FileAnalysis>();
             qRegisterMetaType<PMP::FileHashes>();
             qRegisterMetaType<PMP::FileInfo>();
             qRegisterMetaType<PMP::UserDataForHash>();

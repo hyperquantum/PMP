@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -155,7 +155,8 @@ namespace PMP {
             //
         }
 
-        ~PreloadTrack() {
+        ~PreloadTrack()
+        {
             cleanup();
         }
 
@@ -388,14 +389,17 @@ namespace PMP {
 
     void Preloader::checkToPreloadTrack(QueueEntry* entry)
     {
-        const FileHash* hash = entry->hash();
-        const QString* filename = entry->filename();
-        if (!hash && !filename) return;
+        if (!entry->isTrack())
+            return;
+
+        FileHash hash = entry->hash().value();
+        Nullable<QString> filename = entry->filename();
 
         auto id = entry->queueID();
         auto track = _tracksByQueueID.value(id, nullptr);
 
-        if (track && track->status() == PreloadTrack::Preloaded) {
+        if (track && track->status() == PreloadTrack::Preloaded)
+        {
             if (QFileInfo::exists(track->getCachedFile()))
                 return; /* preloaded file is present */
 
@@ -410,8 +414,7 @@ namespace PMP {
 
         qDebug() << "putting queue ID" << id << "on the list for preloading";
 
-        track =
-            new PreloadTrack(hash ? *hash : FileHash(), filename ? *filename : "");
+        track = new PreloadTrack(hash, filename.valueOr({}));
 
         _tracksByQueueID.insert(id, track);
         _tracksToPreload.append(id);

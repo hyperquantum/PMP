@@ -19,6 +19,7 @@
 
 #include "connectedclient.h"
 
+#include "common/concurrent.h"
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
@@ -1094,8 +1095,6 @@ namespace PMP
 
         /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
 
-        FileHash emptyHash;
-
         for (auto queueID : queueIDs)
         {
             QueueEntry* track = queue.lookup(queueID);
@@ -1103,13 +1102,12 @@ namespace PMP
                 track ? createTrackStatusFor(track)
                       : NetworkProtocol::createTrackStatusUnknownId();
 
-            const FileHash* hash = track ? track->hash() : &emptyHash;
-            hash = hash ? hash : &emptyHash;
+            auto hash = track ? track->hash() : null;
 
             NetworkUtil::append4Bytes(message, queueID);
             NetworkUtil::append2Bytes(message, trackStatus);
             NetworkUtil::append2Bytes(message, 0); /* filler */
-            NetworkProtocol::appendHash(message, *hash);
+            NetworkProtocol::appendHash(message, hash.value());
         }
 
         sendBinaryMessage(message);
@@ -1692,7 +1690,7 @@ namespace PMP
         }
 
         int seconds = static_cast<int>(entry->lengthInMilliseconds() / 1000);
-        FileHash const* hash = entry->hash();
+        auto hash = entry->hash().value();
 
         sendTextCommand(
             "nowplaying track\n QID: " + QString::number(entry->queueID())
@@ -1700,9 +1698,9 @@ namespace PMP
              + "\n title: " + entry->title()
              + "\n artist: " + entry->artist()
              + "\n length: " + (seconds < 0 ? "?" : QString::number(seconds)) + " sec"
-             + "\n hash length: " + (!hash ? "?" : QString::number(hash->length()))
-             + "\n hash SHA-1: " + (!hash ? "?" : hash->SHA1().toHex())
-             + "\n hash MD5: " + (!hash ? "?" : hash->MD5().toHex())
+             + "\n hash length: " + QString::number(hash.length())
+             + "\n hash SHA-1: " + hash.SHA1().toHex()
+             + "\n hash MD5: " + hash.MD5().toHex()
         );
     }
 
@@ -2397,35 +2395,42 @@ namespace PMP
         if (message.length() != 6)
             return; /* invalid message */
 
-        quint32 queueID = NetworkUtil::get4Bytes(message, 2);
-        qDebug() << "received request for possible filenames of QID" << queueID;
+        quint32 queueId = NetworkUtil::get4Bytes(message, 2);
+        qDebug() << "received request for possible filenames of QID" << queueId;
 
-        if (queueID <= 0)
+        if (queueId <= 0)
             return; /* invalid queue ID */
 
-        QueueEntry* entry = _player->queue().lookup(queueID);
+        QueueEntry* entry = _player->queue().lookup(queueId);
         if (entry == nullptr)
             return; /* not found :-/ */
 
-        const FileHash* hash = entry->hash();
-        if (hash == nullptr)
-        {
-            /* hash not found */
-            /* TODO: register callback to resume this once the hash becomes known */
+        if (!entry->isTrack())
             return;
-        }
 
-        uint hashID = _player->resolver().getID(*hash);
+        auto hash = entry->hash().value();
+        uint hashId = _player->resolver().getID(hash);
 
-        /* FIXME: do this in another thread, it will slow down the main thread */
+        auto future =
+            Concurrent::run<QList<QString>, void>(
+                {},
+                [hashId]() -> ResultOrError<QList<QString>, void>
+                {
+                    auto db = Database::getDatabaseForCurrentThread();
+                    if (!db)
+                        return failure; /* database unusable */
 
-        auto db = Database::getDatabaseForCurrentThread();
-        if (!db)
-            return; /* database unusable */
+                    return db->getFilenames(hashId);
+                }
+            );
 
-        QList<QString> filenames = db->getFilenames(hashID);
-
-        sendPossibleTrackFilenames(queueID, filenames);
+        future.addResultListener(
+            this,
+            [this, queueId](QList<QString> result)
+            {
+                sendPossibleTrackFilenames(queueId, result);
+            }
+        );
     }
 
     void ConnectedClient::parseQueueFetchRequestMessage(const QByteArray& message)

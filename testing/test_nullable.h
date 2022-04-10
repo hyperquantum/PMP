@@ -35,5 +35,7 @@ private Q_SLOTS:
     void equalsOperatorComparesValue();
     void notEqualOperatorComparesValue();
     void assignmentOperatorWorks();
+    void valueOrReturnsValueIfNotNull();
+    void valueOrReturnsAlternativeIfNull();
 };
 #endif

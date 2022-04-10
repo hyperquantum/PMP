@@ -22,6 +22,7 @@
 
 #include "common/audiodata.h"
 #include "common/filehash.h"
+#include "common/nullable.h"
 #include "common/tagdata.h"
 
 #include <QDateTime>
@@ -56,10 +57,10 @@ namespace PMP
         QueueEntryKind kind() const { return _kind; }
         bool isTrack() const { return _kind == QueueEntryKind::Track; }
 
-        FileHash const* hash() const;
+        Nullable<FileHash> hash() const;
 
         void setFilename(QString const& filename);
-        QString const* filename() const;
+        Nullable<QString> filename() const;
         bool checkValidFilename(Resolver& resolver, bool fast,
                                 QString* outFilename = nullptr);
 

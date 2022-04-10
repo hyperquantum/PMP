@@ -60,6 +60,7 @@ namespace PMP
      : QObject(nullptr),
        _queueID(queueId),
        _kind(kind),
+       _hash{},
        _haveFilename(false),
        _fetchedTagData(false),
        _fileFinderBackoff(0),
@@ -93,11 +94,12 @@ namespace PMP
         //
     }
 
-    FileHash const* QueueEntry::hash() const
+    Nullable<FileHash> QueueEntry::hash() const
     {
-        if (_hash.isNull()) { return nullptr; }
+        if (_hash.isNull())
+            return null;
 
-        return &_hash;
+        return _hash;
     }
 
     void QueueEntry::setFilename(QString const& filename)
@@ -106,12 +108,12 @@ namespace PMP
         _haveFilename = true;
     }
 
-    QString const* QueueEntry::filename() const
+    Nullable<QString> QueueEntry::filename() const
     {
         if (_haveFilename)
-            return &_filename;
+            return _filename;
 
-        return nullptr;
+        return null;
     }
 
     bool QueueEntry::checkValidFilename(Resolver& resolver, bool fast,
@@ -120,15 +122,15 @@ namespace PMP
         qDebug() << "QueueEntry::checkValidFilename QID" << _queueID;
         if (!isTrack()) return false;
 
-        FileHash const* fileHash = this->hash();
+        auto fileHash = this->hash();
 
         if (_haveFilename)
         {
             qDebug() << " have filename, need to verify it: " << _filename;
 
-            if (fileHash)
+            if (fileHash.hasValue())
             {
-                if (resolver.pathStillValid(*fileHash, _filename))
+                if (resolver.pathStillValid(fileHash.value(), _filename))
                 {
                     if (outFilename) { (*outFilename) = _filename; }
                     return true;
@@ -166,13 +168,13 @@ namespace PMP
 
         /* we don't have a valid filename */
 
-        if (!fileHash)
+        if (fileHash.isNull())
         {
             qDebug() << " no hash, cannot get filename";
             return false;
         }
 
-        QString path = resolver.findPathForHash(*fileHash, fast);
+        QString path = resolver.findPathForHash(fileHash.value(), fast);
 
         if (path.length() > 0)
         {

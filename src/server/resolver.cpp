@@ -525,11 +525,11 @@ namespace PMP
         // TODO
     }
 
-    void Resolver::onFileAnalysisCompleted(QString path, FileHashes hashes,
-                                           FileInfo fileInfo, AudioData audioData,
-                                           TagData tagData)
+    void Resolver::onFileAnalysisCompleted(QString path, FileAnalysis analysis)
     {
         QMutexLocker lock(&_lock);
+
+        auto hashes = analysis.hashes();
 
         HashKnowledge* knowledge;
         if (!hashes.multipleHashes())
@@ -564,7 +564,9 @@ namespace PMP
             return;
         }
 
-        knowledge->addInfo(audioData, tagData);
+        knowledge->addInfo(analysis.audioData(), analysis.tagData());
+
+        auto fileInfo = analysis.fileInfo();
 
         if (fileInfo.path().length() <= 0
                 || fileInfo.size() <= 0
@@ -588,10 +590,26 @@ namespace PMP
         }
     }
 
+    Future<FileHash, void> Resolver::analyzeAndRegisterFileAsync(QString filename)
+    {
+        auto analysisFuture = _analyzer->analyzeFile(filename);
+
+        auto result =
+            analysisFuture.transformResult<FileHash>(
+                this,
+                [this, filename](FileAnalysis analysis)
+                {
+                    onFileAnalysisCompleted(filename, analysis);
+                    return analysis.hashes().main();
+                }
+            );
+
+        return result;
+    }
+
     void Resolver::doFullIndexationFileSystemTraversal()
     {
         qDebug() << "full indexation: running file system traversal (music paths)";
-
 
         auto musicPaths = this->musicPaths();
 
@@ -692,11 +710,6 @@ namespace PMP
         return result;
     }
 
-    FileHash Resolver::analyzeAndRegisterFile(const QString& filename)
-    {
-        return analyzeAndRegisterFileInternal(filename);
-    }
-
     FileHash Resolver::analyzeAndRegisterFileInternal(const QString& filename)
     {
         QFileInfo info(filename);
@@ -783,6 +796,23 @@ namespace PMP
         return knowledge->isStillValid(file);
     }
 
+    Nullable<FileHash> Resolver::findHashForFilePath(QString path)
+    {
+        QMutexLocker lock(&_lock);
+
+        VerifiedFile* file = _paths.value(path, nullptr);
+        if (file)
+        {
+            auto hash = file->_parent->hash();
+            return hash;
+        }
+
+        qDebug() << "path is not yet registered, putting it in the analyzer queue:"
+                 << path;
+        _analyzer->enqueueFile(path);
+        return null;
+    }
+
     void Resolver::checkFileStillExistsAndIsValid(QString path)
     {
         QMutexLocker lock(&_lock);
@@ -855,9 +885,11 @@ namespace PMP
     QString Resolver::findPathForHashByLikelyFilename(Database& db, const FileHash& hash,
                                                       uint hashId)
     {
-        auto filenames = db.getFilenames(hashId);
-        if (filenames.empty()) /* no known filenames */
+        auto filenamesResult = db.getFilenames(hashId);
+        if (filenamesResult.failed()) /* no known filenames */
             return {};
+
+        auto const filenames = filenamesResult.result();
 
         qDebug() << " going to look for a matching file using a filename-based heuristic";
 
@@ -873,7 +905,7 @@ namespace PMP
 
                 QDir dir(entry.filePath());
 
-                for (QString const& fileShort : qAsConst(filenames))
+                for (QString const& fileShort : filenames)
                 {
                     if (!dir.exists(fileShort)) continue;
 

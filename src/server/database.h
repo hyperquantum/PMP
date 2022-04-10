@@ -21,6 +21,7 @@
 #define PMP_DATABASE_H
 
 #include "common/filehash.h"
+#include "common/resultorerror.h"
 
 #include <QAtomicInt>
 #include <QByteArray>
@@ -112,7 +113,7 @@ namespace PMP
         QList<QPair<uint,FileHash> > getHashes(uint largerThanID = 0);
 
         void registerFilename(uint hashID, const QString& filenameWithoutPath);
-        QList<QString> getFilenames(uint hashID);
+        ResultOrError<QList<QString>, void> getFilenames(uint hashID);
 
         void registerFileSize(uint hashId, qint64 size);
         QList<qint64> getFileSizes(uint hashID);

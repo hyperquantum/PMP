@@ -451,7 +451,7 @@ namespace PMP
         }
     }
 
-    QList<QString> Database::getFilenames(uint hashID)
+    ResultOrError<QList<QString>, void> Database::getFilenames(uint hashID)
     {
         QSqlQuery q(_db);
         q.prepare( // we use DISTINCT because there's no unique index
@@ -460,15 +460,14 @@ namespace PMP
         );
         q.addBindValue(hashID);
 
-        QList<QString> result;
-
         if (!executeQuery(q)) /* error */
         {
             qDebug() << "Database::getFilenames : could not execute; "
                      << q.lastError().text() << Qt::endl;
-            return result;
+            return failure;
         }
 
+        QList<QString> result;
         while (q.next())
         {
             QString name = q.value(0).toString();

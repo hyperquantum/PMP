@@ -56,14 +56,15 @@ namespace PMP
             if (!entry->isTrack())
                 continue;
 
-            QString const* filename = entry->filename();
-            if (filename && !_resolver->pathStillValid(*entry->hash(), *filename))
+            auto filename = entry->filename();
+            if (filename.hasValue()
+                && !_resolver->pathStillValid(entry->hash().value(), filename.value()))
             {
                 qDebug() << "Queue: filename no longer valid for queue index" << (i + 1);
                 filename = nullptr;
             }
 
-            if (!filename)
+            if (filename.isNull())
             {
                 int& backoff = entry->fileFinderBackoff();
                 if (backoff > 0)
@@ -505,12 +506,10 @@ namespace PMP
             if (!entry->isTrack())
                 continue;
 
-            const FileHash& entryHash = *entry->hash();
+            auto entryHash = entry->hash().value();
 
             if (entryHash == hash)
-            {
                 return TrackRepetitionInfo(true, millisecondsCounted);
-            }
 
             entry->checkAudioData(*_resolver);
             qint64 entryLengthMilliseconds = entry->lengthInMilliseconds();

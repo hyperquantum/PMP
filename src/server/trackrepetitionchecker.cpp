@@ -65,8 +65,8 @@ namespace PMP
         QueueEntry const* trackNowPlaying = _currentTrack;
         if (trackNowPlaying)
         {
-            FileHash const* currentHash = trackNowPlaying->hash();
-            if (currentHash && hash == *currentHash)
+            auto currentHash = trackNowPlaying->hash().value();
+            if (hash == currentHash)
                 return true;
         }
 

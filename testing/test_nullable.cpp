@@ -125,4 +125,22 @@ void TestNullable::assignmentOperatorWorks()
     QVERIFY(i == 789);
 }
 
+void TestNullable::valueOrReturnsValueIfNotNull()
+{
+    Nullable<int> i { 1234 };
+    Nullable<QString> s { QString("ABCD") };
+
+    QCOMPARE(i.valueOr(-7), 1234);
+    QCOMPARE(s.valueOr("Hello"), QString("ABCD"));
+}
+
+void TestNullable::valueOrReturnsAlternativeIfNull()
+{
+    Nullable<int> i;
+    Nullable<QString> s;
+
+    QCOMPARE(i.valueOr(-7), -7);
+    QCOMPARE(s.valueOr("Hello"), QString("Hello"));
+}
+
 QTEST_MAIN(TestNullable)

@@ -22,6 +22,7 @@
 
 #include "common/audiodata.h"
 #include "common/filehash.h"
+#include "common/future.h"
 #include "common/tagdata.h"
 
 #include <QDateTime>
@@ -63,7 +64,7 @@ namespace PMP
         QVector<FileHash> const& allHashes() const { return _hashes; }
 
     private:
-        const QVector<FileHash> _hashes;
+        QVector<FileHash> _hashes;
     };
 
     class FileInfo
@@ -104,6 +105,30 @@ namespace PMP
         return !(first == second);
     }
 
+    class FileAnalysis
+    {
+    public:
+        FileAnalysis() {}
+
+        FileAnalysis(FileHashes const& hashes, FileInfo const& fileInfo,
+                     AudioData const& audioData, TagData const& tagData)
+         : _hashes(hashes), _fileInfo(fileInfo), _audioData(audioData), _tagData(tagData)
+        {
+            //
+        }
+
+        FileHashes const& hashes() const { return _hashes; }
+        FileInfo const& fileInfo() const { return _fileInfo; }
+        AudioData const& audioData() const { return _audioData; }
+        TagData const& tagData() const { return _tagData; }
+
+    private:
+        FileHashes _hashes;
+        FileInfo _fileInfo;
+        AudioData _audioData;
+        TagData _tagData;
+    };
+
     class Analyzer : public QObject
     {
         Q_OBJECT
@@ -112,26 +137,26 @@ namespace PMP
         ~Analyzer();
 
         void enqueueFile(QString path);
-
         bool isFinished();
+
+        Future<FileAnalysis, void> analyzeFile(QString path);
 
     Q_SIGNALS:
         void fileAnalysisFailed(QString path);
-        void fileAnalysisCompleted(QString path, PMP::FileHashes hashes,
-                                   PMP::FileInfo fileInfo, PMP::AudioData audioData,
-                                   PMP::TagData tagData);
+        void fileAnalysisCompleted(QString path, PMP::FileAnalysis analysis);
         void finished();
 
     private:
-        static void analyzeFile(Analyzer* analyzer, QString path);
+        static ResultOrError<FileAnalysis, void> analyzeFileInternal(Analyzer* analyzer,
+                                                                     QString path);
         static FileHashes extractHashes(FileAnalyzer const& fileAnalyzer);
         static FileInfo extractFileInfo(QFileInfo& fileInfo);
         void onFileAnalysisFailed(QString path);
-        void onFileAnalysisCompleted(QString path, FileHashes hashes, FileInfo fileInfo,
-                                     AudioData audioData, TagData tagData);
+        void onFileAnalysisCompleted(QString path, FileAnalysis analysis);
         void markAsNoLongerInProgress(QString path, bool& allFinished);
 
-        QThreadPool* _threadPool;
+        QThreadPool* _queueThreadPool;
+        QThreadPool* _onDemandThreadPool;
         QMutex _lock;
         QSet<QString> _pathsInProgress;
     };
@@ -140,5 +165,6 @@ namespace PMP
 
 Q_DECLARE_METATYPE(PMP::FileHashes)
 Q_DECLARE_METATYPE(PMP::FileInfo)
+Q_DECLARE_METATYPE(PMP::FileAnalysis)
 
 #endif

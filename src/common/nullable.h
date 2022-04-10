@@ -59,6 +59,11 @@ namespace PMP
         constexpr bool isNull() const { return !_hasValue; }
         constexpr T value() const { return _value; }
 
+        constexpr T valueOr(T alternative) const
+        {
+            return _hasValue ? _value : alternative;
+        }
+
         void setToNull() { _hasValue = false; }
 
         Nullable<T>& operator=(Nullable<T> const& nullable) = default;

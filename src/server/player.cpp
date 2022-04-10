@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -823,11 +823,11 @@ namespace PMP
                 ended = started;
         }
 
-        auto* hash = entry->hash();
+        Nullable<FileHash> hash = entry->hash();
 
         auto historyEntry =
             QSharedPointer<PlayerHistoryEntry>::create(
-                queueID, hash ? *hash : FileHash(), userPlayedFor, started, ended,
+                queueID, hash.value(), userPlayedFor, started, ended,
                 hadError, hadSeek, permillage
             );
 
