@@ -20,6 +20,7 @@
 #include "resolver.h"
 
 #include "common/concurrent.h"
+#include "common/containerutil.h"
 #include "common/fileanalyzer.h"
 
 #include "database.h"
@@ -44,7 +45,11 @@ namespace PMP
                 auto db = Database::getDatabaseForCurrentThread();
                 if (!db) return failure; /* database not available */
 
-                const QList<QPair<uint, FileHash>> hashes = db->getHashes();
+                auto hashesResult = db->getHashes();
+                if (hashesResult.failed())
+                    return failure;
+
+                const auto hashes = hashesResult.result();
 
                 QMutexLocker lock(&_mutex);
                 for (auto& pair : hashes)
@@ -935,7 +940,10 @@ namespace PMP
                                                      uint hashId)
     {
         /* get likely file sizes */
-        auto previousFileSizes = db.getFileSizes(hashId);
+        auto previousFileSizesResult = db.getFileSizes(hashId);
+        QSet<qint64> previousFileSizes;
+        if (previousFileSizesResult.succeeded())
+            ContainerUtil::addToSet(previousFileSizesResult.result(), previousFileSizes);
 
         auto musicPaths = this->musicPaths();
 

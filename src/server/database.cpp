@@ -371,7 +371,8 @@ namespace PMP
         return id;
     }
 
-    QList<QPair<uint,FileHash> > Database::getHashes(uint largerThanID)
+    ResultOrError<QList<QPair<uint,FileHash>>, void> Database::getHashes(
+                                                                        uint largerThanID)
     {
         QSqlQuery q(_db);
         q.prepare(
@@ -381,15 +382,14 @@ namespace PMP
         );
         q.addBindValue(largerThanID);
 
-        QList<QPair<uint,FileHash> > result;
-
         if (!executeQuery(q)) /* error */
         {
             qDebug() << "Database::getHashes : could not execute; "
                      << q.lastError().text() << Qt::endl;
-            return result;
+            return failure;
         }
 
+        QList<QPair<uint,FileHash> > result;
         while (q.next())
         {
             uint hashID = q.value(0).toUInt();
@@ -498,7 +498,7 @@ namespace PMP
         }
     }
 
-    QList<qint64> Database::getFileSizes(uint hashID)
+    ResultOrError<QList<qint64>, void> Database::getFileSizes(uint hashID)
     {
         QSqlQuery q(_db);
         q.prepare(
@@ -507,15 +507,14 @@ namespace PMP
         );
         q.addBindValue(hashID);
 
-        QList<qint64> result;
-
         if (!executeQuery(q)) /* error */
         {
             qDebug() << "Database::getFileSizes : could not execute; "
                      << q.lastError().text() << Qt::endl;
-            return result;
+            return failure;
         }
 
+        QList<qint64> result;
         while (q.next())
         {
             qint64 fileSize = q.value(0).toLongLong();
