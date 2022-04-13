@@ -30,7 +30,7 @@ namespace PMP
     {
     public:
         Promise()
-         : _storage(QSharedPointer<FutureStorage<ResultType, ErrorType>>::create())
+         : _storage(FutureStorage<ResultType, ErrorType>::create())
         {
             //
         }
@@ -72,7 +72,7 @@ namespace PMP
     {
     public:
         Promise()
-         : _storage(QSharedPointer<FutureStorage<ResultType, int>>::create())
+         : _storage(FutureStorage<ResultType, FailureType>::create())
         {
             //
         }
@@ -102,11 +102,11 @@ namespace PMP
 
         void setError()
         {
-            _storage->setError(0);
+            _storage->setError(failure);
         }
 
     private:
-        QSharedPointer<FutureStorage<ResultType, int>> _storage;
+        QSharedPointer<FutureStorage<ResultType, FailureType>> _storage;
     };
 
     template<class ErrorType>
@@ -114,7 +114,7 @@ namespace PMP
     {
     public:
         Promise()
-         : _storage(QSharedPointer<FutureStorage<int, ErrorType>>::create())
+         : _storage(FutureStorage<SuccessType, ErrorType>::create())
         {
             //
         }
@@ -139,7 +139,7 @@ namespace PMP
 
         void setSuccessful()
         {
-            _storage->setResult(0);
+            _storage->setResult(success);
         }
 
         void setError(ErrorType error)
@@ -148,7 +148,7 @@ namespace PMP
         }
 
     private:
-        QSharedPointer<FutureStorage<int, ErrorType>> _storage;
+        QSharedPointer<FutureStorage<SuccessType, ErrorType>> _storage;
     };
 
     template<>
@@ -156,7 +156,7 @@ namespace PMP
     {
     public:
         Promise()
-         : _storage(QSharedPointer<FutureStorage<int, int>>::create())
+         : _storage(FutureStorage<SuccessType, FailureType>::create())
         {
             //
         }
@@ -181,16 +181,16 @@ namespace PMP
 
         void setSuccessful()
         {
-            _storage->setResult(0);
+            _storage->setResult(success);
         }
 
         void setFailed()
         {
-            _storage->setError(0);
+            _storage->setError(failure);
         }
 
     private:
-        QSharedPointer<FutureStorage<int, int>> _storage;
+        QSharedPointer<FutureStorage<SuccessType, FailureType>> _storage;
     };
 
     template<class T>
@@ -198,7 +198,7 @@ namespace PMP
     {
     public:
         SimplePromise()
-         : _storage(QSharedPointer<FutureStorage<T, int>>::create())
+         : _storage(FutureStorage<T, FailureType>::create())
         {
             //
         }
@@ -219,14 +219,14 @@ namespace PMP
         }
 
     private:
-        QSharedPointer<FutureStorage<T, int>> _storage;
+        QSharedPointer<FutureStorage<T, FailureType>> _storage;
     };
 
     class VoidPromise
     {
     public:
         VoidPromise()
-         : _storage(QSharedPointer<FutureStorage<int, int>>::create())
+         : _storage(FutureStorage<SuccessType, FailureType>::create())
         {
             //
         }
@@ -243,11 +243,11 @@ namespace PMP
 
         void setFinished()
         {
-            _storage->setResult(0);
+            _storage->setResult(success);
         }
 
     private:
-        QSharedPointer<FutureStorage<int, int>> _storage;
+        QSharedPointer<FutureStorage<SuccessType, FailureType>> _storage;
     };
 }
 #endif

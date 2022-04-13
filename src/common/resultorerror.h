@@ -29,8 +29,6 @@ namespace PMP
     public:
         constexpr SuccessType() {}
 
-        SuccessType const& operator=(SuccessType const&) = delete;
-
         constexpr bool operator==(SuccessType) { return true; }
         constexpr bool operator!=(SuccessType) { return false; }
     };
@@ -42,8 +40,6 @@ namespace PMP
     public:
         constexpr FailureType() {}
 
-        FailureType const& operator=(FailureType const&) = delete;
-
         constexpr bool operator==(FailureType) { return true; }
         constexpr bool operator!=(FailureType) { return false; }
     };
@@ -54,6 +50,16 @@ namespace PMP
     class ResultOrError
     {
     public:
+        static constexpr ResultOrError fromResult(ResultType result)
+        {
+            return ResultOrError(result, {});
+        }
+
+        static constexpr ResultOrError fromError(ErrorType error)
+        {
+            return ResultOrError({}, error);
+        }
+
         constexpr ResultOrError(ResultType result) : _result(result) {}
         constexpr ResultOrError(ErrorType error) : _error(error) {}
 
@@ -64,6 +70,11 @@ namespace PMP
         ErrorType error() const { return _error.value(); }
 
     private:
+        constexpr ResultOrError(Nullable<ResultType>&& result,
+                                Nullable<ErrorType>&& error)
+         : _result(result), _error(error)
+        {}
+
         Nullable<ResultType> _result;
         Nullable<ErrorType> _error;
     };
