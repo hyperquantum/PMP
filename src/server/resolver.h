@@ -29,7 +29,6 @@
 #include "analyzer.h"
 
 #include <QDateTime>
-#include <QFutureWatcher>
 #include <QHash>
 #include <QMultiHash>
 #include <QMutex>
