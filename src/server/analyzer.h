@@ -61,6 +61,8 @@ namespace PMP
         FileHash main() const { return _hashes[0]; }
         bool multipleHashes() const { return _hashes.size() > 1; }
 
+        bool contains(FileHash hash) { return _hashes.contains(hash); }
+
         QVector<FileHash> const& allHashes() const { return _hashes; }
 
     private:
@@ -139,7 +141,8 @@ namespace PMP
         void enqueueFile(QString path);
         bool isFinished();
 
-        Future<FileAnalysis, void> analyzeFile(QString path);
+        Future<FileAnalysis, void> analyzeFileAsync(QString path);
+        ResultOrError<FileAnalysis, void> analyzeFile(QString path);
 
     Q_SIGNALS:
         void fileAnalysisFailed(QString path);
@@ -160,7 +163,6 @@ namespace PMP
         QMutex _lock;
         QSet<QString> _pathsInProgress;
     };
-
 }
 
 Q_DECLARE_METATYPE(PMP::FileHashes)

@@ -81,17 +81,26 @@ namespace PMP
         return _pathsInProgress.empty();
     }
 
-    Future<FileAnalysis, void> Analyzer::analyzeFile(QString path)
+    Future<FileAnalysis, void> Analyzer::analyzeFileAsync(QString path)
     {
-        return
+        auto future =
             Concurrent::run<FileAnalysis, void>(
                 _onDemandThreadPool,
                 Promise<FileAnalysis, void>(),
-                [this, path]()
-                {
-                    return analyzeFileInternal(this, path);
-                }
+                [this, path]() { return analyzeFile(path); }
             );
+
+        return future;
+    }
+
+    ResultOrError<FileAnalysis, void> Analyzer::analyzeFile(QString path)
+    {
+        auto maybeResult = analyzeFileInternal(this, path);
+
+        if (maybeResult.succeeded())
+            Q_EMIT fileAnalysisCompleted(path, maybeResult.result());
+
+        return maybeResult;
     }
 
     ResultOrError<FileAnalysis, void> Analyzer::analyzeFileInternal(Analyzer* analyzer,

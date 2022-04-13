@@ -597,7 +597,7 @@ namespace PMP
 
     Future<FileHash, void> Resolver::analyzeAndRegisterFileAsync(QString filename)
     {
-        auto analysisFuture = _analyzer->analyzeFile(filename);
+        auto analysisFuture = _analyzer->analyzeFileAsync(filename);
 
         auto result =
             analysisFuture.transformResult<FileHash>(
