@@ -100,8 +100,8 @@ namespace PMP
                                       quint32 clientReference);
         Result duplicateQueueEntry(uint id, quint32 clientReference);
         Result insertAtIndex(qint32 index,
-                             std::function<QueueEntry* (uint)> queueEntryCreator,
-                             quint32 clientReference);
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                       quint32 clientReference);
         void moveQueueEntry(uint id, int upDownOffset);
         void removeQueueEntry(uint id);
         void trimQueue();

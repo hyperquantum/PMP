@@ -28,8 +28,7 @@
 namespace PMP
 {
     QueueEntry::QueueEntry(uint queueId, FileHash hash)
-     : QObject(nullptr),
-       _queueID(queueId),
+     : _queueID(queueId),
        _kind(QueueEntryKind::Track),
        _hash(hash),
        _haveFilename(false),
@@ -40,9 +39,8 @@ namespace PMP
         //
     }
 
-    QueueEntry::QueueEntry(uint queueId, QueueEntry const* existing)
-     : QObject(nullptr),
-       _queueID(queueId),
+    QueueEntry::QueueEntry(uint queueId, QSharedPointer<QueueEntry const> existing)
+     : _queueID(queueId),
        _kind(existing->_kind),
        _hash(existing->_hash),
        _audioInfo(existing->_audioInfo),
@@ -57,8 +55,7 @@ namespace PMP
     }
 
     QueueEntry::QueueEntry(uint queueId, QueueEntryKind kind)
-     : QObject(nullptr),
-       _queueID(queueId),
+     : _queueID(queueId),
        _kind(kind),
        _hash{},
        _haveFilename(false),
@@ -69,24 +66,25 @@ namespace PMP
         //
     }
 
-    QueueEntry* QueueEntry::createBreak(uint queueId)
+    QSharedPointer<QueueEntry> QueueEntry::createBreak(uint queueId)
     {
-        return new QueueEntry(queueId, QueueEntryKind::Break);
+        return QSharedPointer<QueueEntry>::create(queueId, QueueEntryKind::Break);
     }
 
-    QueueEntry* QueueEntry::createBarrier(uint queueId)
+    QSharedPointer<QueueEntry> QueueEntry::createBarrier(uint queueId)
     {
-        return new QueueEntry(queueId, QueueEntryKind::Barrier);
+        return QSharedPointer<QueueEntry>::create(queueId, QueueEntryKind::Barrier);
     }
 
-    QueueEntry* QueueEntry::createFromHash(uint queueId, FileHash hash)
+    QSharedPointer<QueueEntry> QueueEntry::createFromHash(uint queueId, FileHash hash)
     {
-        return new QueueEntry(queueId, hash);
+        return QSharedPointer<QueueEntry>::create(queueId, hash);
     }
 
-    QueueEntry* QueueEntry::createCopyOf(uint queueId, const QueueEntry* existing)
+    QSharedPointer<QueueEntry> QueueEntry::createCopyOf(uint queueId,
+                                                QSharedPointer<const QueueEntry> existing)
     {
-        return new QueueEntry(queueId, existing);
+        return QSharedPointer<QueueEntry>::create(queueId, existing);
     }
 
     QueueEntry::~QueueEntry()

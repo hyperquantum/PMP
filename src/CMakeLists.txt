@@ -116,7 +116,6 @@ set(PMP_SERVER_HEADERS
     server/player.h
     server/playerqueue.h
     server/preloader.h
-    server/queueentry.h
     server/randomtrackssource.h
     server/resolver.h
     server/server.h

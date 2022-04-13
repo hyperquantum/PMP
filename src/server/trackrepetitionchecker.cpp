@@ -62,7 +62,7 @@ namespace PMP
             return false;
 
         // check occurrence in 'now playing'
-        QueueEntry const* trackNowPlaying = _currentTrack;
+        auto trackNowPlaying = _currentTrack;
         if (trackNowPlaying)
         {
             auto currentHash = trackNowPlaying->hash().value();
@@ -106,7 +106,8 @@ namespace PMP
         Q_EMIT noRepetitionSpanSecondsChanged();
     }
 
-    void TrackRepetitionChecker::currentTrackChanged(const QueueEntry* newTrack)
+    void TrackRepetitionChecker::currentTrackChanged(
+                                                QSharedPointer<const QueueEntry> newTrack)
     {
         _currentTrack = newTrack;
     }

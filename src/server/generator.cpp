@@ -244,7 +244,7 @@ namespace PMP
         _waveTrackGenerator->terminateWave();
     }
 
-    void Generator::currentTrackChanged(QueueEntry const* newTrack)
+    void Generator::currentTrackChanged(QSharedPointer<QueueEntry const> newTrack)
     {
         _repetitionChecker->currentTrackChanged(newTrack);
     }

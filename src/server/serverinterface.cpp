@@ -210,7 +210,7 @@ namespace PMP
 
     PlayerStateOverview ServerInterface::getPlayerStateOverview()
     {
-        QueueEntry const* nowPlaying = _player->nowPlaying();
+        auto nowPlaying = _player->nowPlaying();
 
         PlayerStateOverview overview;
         overview.playerState = _player->state();
@@ -249,7 +249,7 @@ namespace PMP
             return Error::notLoggedIn();
 
         auto& queue = _player->queue();
-        auto* firstEntry = queue.peek();
+        auto firstEntry = queue.peek();
         if (firstEntry && firstEntry->kind() == QueueEntryKind::Break)
             return Success(); /* already present, nothing to do */
 
@@ -296,8 +296,8 @@ namespace PMP
     }
 
     Result ServerInterface::insertAtIndex(qint32 index,
-                                      std::function<QueueEntry* (uint)> queueEntryCreator,
-                                          quint32 clientReference)
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                       quint32 clientReference)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -115,7 +115,7 @@ namespace PMP {
     private:
         static const int PRELOAD_RANGE = 5;
 
-        void checkToPreloadTrack(QueueEntry* entry);
+        void checkToPreloadTrack(QSharedPointer<QueueEntry> entry);
 
         void doLock(uint queueId);
         void doUnlock(uint queueId);

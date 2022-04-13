@@ -80,7 +80,7 @@ namespace PMP
                                           int waveDeliveredCount,
                                           int waveTotalCount);
         void playerStateChanged(ServerPlayerState state);
-        void currentTrackChanged(QueueEntry const* entry);
+        void currentTrackChanged(QSharedPointer<QueueEntry const> entry);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void trackPositionChanged(qint64 position);
         void onDelayedStartActiveChanged();
@@ -149,7 +149,7 @@ namespace PMP
         void sendQueueEntryInfoMessage(quint32 queueID);
         void sendQueueEntryInfoMessage(QList<quint32> const& queueIDs);
         void sendQueueEntryHashMessage(QList<quint32> const& queueIDs);
-        quint16 createTrackStatusFor(QueueEntry* entry);
+        quint16 createTrackStatusFor(QSharedPointer<QueueEntry> entry);
         void sendPossibleTrackFilenames(quint32 queueID, QList<QString> const& names);
         void sendNewUserAccountSaltMessage(QString login, QByteArray const& salt);
         void sendSuccessMessage(quint32 clientReference, quint32 intData);

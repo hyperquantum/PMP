@@ -154,7 +154,7 @@ namespace PMP
         _fetchRequestsScheduledCount = 0;
     }
 
-    void History::currentTrackChanged(QueueEntry const* newTrack)
+    void History::currentTrackChanged(QSharedPointer<QueueEntry const> newTrack)
     {
         if (_nowPlaying != nullptr && newTrack != _nowPlaying)
         {

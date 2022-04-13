@@ -815,8 +815,7 @@ namespace PMP
             length = queueLength - startOffset;
         }
 
-        const QList<QueueEntry*> entries =
-            queue.entries(startOffset, (length == 0) ? -1 : length);
+        auto entries = queue.entries(startOffset, (length == 0) ? -1 : length);
 
         QByteArray message;
         message.reserve(10 + entries.length() * 4);
@@ -824,7 +823,7 @@ namespace PMP
         NetworkUtil::append4Bytes(message, queueLength);
         NetworkUtil::append4Bytes(message, startOffset);
 
-        for (auto* entry : entries)
+        for (auto& entry : entries)
         {
             NetworkUtil::append4Bytes(message, entry->queueID());
         }
@@ -917,7 +916,7 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    quint16 ConnectedClient::createTrackStatusFor(QueueEntry* entry)
+    quint16 ConnectedClient::createTrackStatusFor(QSharedPointer<QueueEntry> entry)
     {
         switch (entry->kind())
         {
@@ -942,7 +941,7 @@ namespace PMP
 
     void ConnectedClient::sendQueueEntryInfoMessage(quint32 queueID)
     {
-        QueueEntry* track = _player->queue().lookup(queueID);
+        auto track = _player->queue().lookup(queueID);
         if (track == nullptr) { return; /* sorry, cannot send */ }
 
         track->checkTrackData(_player->resolver());
@@ -1019,7 +1018,7 @@ namespace PMP
 
         for(quint32 queueID : queueIDs)
         {
-            QueueEntry* track = queue.lookup(queueID);
+            auto track = queue.lookup(queueID);
             auto trackStatus =
                 track ? createTrackStatusFor(track)
                       : NetworkProtocol::createTrackStatusUnknownId();
@@ -1032,7 +1031,7 @@ namespace PMP
 
         for(quint32 queueID : queueIDs)
         {
-            QueueEntry* track = queue.lookup(queueID);
+            auto track = queue.lookup(queueID);
             if (track == 0) { continue; /* ID not found */ }
 
             track->checkTrackData(_player->resolver());
@@ -1097,7 +1096,7 @@ namespace PMP
 
         for (auto queueID : queueIDs)
         {
-            QueueEntry* track = queue.lookup(queueID);
+            auto track = queue.lookup(queueID);
             auto trackStatus =
                 track ? createTrackStatusFor(track)
                       : NetworkProtocol::createTrackStatusUnknownId();
@@ -1675,7 +1674,7 @@ namespace PMP
         }
     }
 
-    void ConnectedClient::currentTrackChanged(QueueEntry const* entry)
+    void ConnectedClient::currentTrackChanged(QSharedPointer<QueueEntry const> entry)
     {
         if (_binaryMode)
         {
@@ -1734,7 +1733,7 @@ namespace PMP
     void ConnectedClient::sendTextualQueueInfo()
     {
         PlayerQueue& queue = _player->queue();
-        const QList<QueueEntry*> queueContent = queue.entries(0, 10);
+        const auto queueContent = queue.entries(0, 10);
 
         QString command =
             "queue length " + QString::number(queue.length())
@@ -1744,7 +1743,7 @@ namespace PMP
 
         Resolver& resolver = _player->resolver();
         uint index = 0;
-        for (auto entry : queueContent)
+        for (auto& entry : queueContent)
         {
             ++index;
             entry->checkTrackData(resolver);
@@ -2401,7 +2400,7 @@ namespace PMP
         if (queueId <= 0)
             return; /* invalid queue ID */
 
-        QueueEntry* entry = _player->queue().lookup(queueId);
+        auto entry = _player->queue().lookup(queueId);
         if (entry == nullptr)
             return; /* not found :-/ */
 

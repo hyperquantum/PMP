@@ -26,7 +26,7 @@
 #include "common/tagdata.h"
 
 #include <QDateTime>
-#include <QObject>
+#include <QSharedPointer>
 
 #include <functional>
 
@@ -42,14 +42,14 @@ namespace PMP
         Barrier,
     };
 
-    class QueueEntry : public QObject
+    class QueueEntry
     {
-        Q_OBJECT
     public:
-        static QueueEntry* createBreak(uint queueId);
-        static QueueEntry* createBarrier(uint queueId);
-        static QueueEntry* createFromHash(uint queueId, FileHash hash);
-        static QueueEntry* createCopyOf(uint queueId, QueueEntry const* existing);
+        static QSharedPointer<QueueEntry> createBreak(uint queueId);
+        static QSharedPointer<QueueEntry> createBarrier(uint queueId);
+        static QSharedPointer<QueueEntry> createFromHash(uint queueId, FileHash hash);
+        static QSharedPointer<QueueEntry> createCopyOf(uint queueId,
+                                               QSharedPointer<QueueEntry const> existing);
 
         ~QueueEntry();
 
@@ -83,8 +83,10 @@ namespace PMP
 
     private:
         QueueEntry(uint queueId, FileHash hash);
-        QueueEntry(uint queueId, QueueEntry const* existing);
+        QueueEntry(uint queueId, QSharedPointer<QueueEntry const> existing);
         QueueEntry(uint queueId, QueueEntryKind kind);
+
+        friend class QSharedPointer<QueueEntry>;
 
         uint const _queueID;
         QueueEntryKind _kind;
@@ -104,12 +106,12 @@ namespace PMP
     class QueueEntryCreators
     {
     public:
-        static std::function<QueueEntry* (uint)> breakpoint()
+        static std::function<QSharedPointer<QueueEntry> (uint)> breakpoint()
         {
             return QueueEntry::createBreak;
         }
 
-        static std::function<QueueEntry* (uint)> hash(FileHash hash)
+        static std::function<QSharedPointer<QueueEntry> (uint)> hash(FileHash hash)
         {
             return
                 [hash](uint queueId)
@@ -118,7 +120,8 @@ namespace PMP
                 };
         }
 
-        static std::function<QueueEntry* (uint)> copyOf(QueueEntry const* existing)
+        static std::function<QSharedPointer<QueueEntry> (uint)> copyOf(
+                                                QSharedPointer<QueueEntry const> existing)
         {
             return
                 [existing](uint queueId)

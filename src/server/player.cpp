@@ -79,7 +79,8 @@ namespace PMP
         _player->setVolume(qRound(linearVolume * 100));
     }
 
-    void PlayerInstance::setTrack(QueueEntry* queueEntry, bool onlyIfPreloaded)
+    void PlayerInstance::setTrack(QSharedPointer<QueueEntry> queueEntry,
+                                  bool onlyIfPreloaded)
     {
         auto queueId = queueEntry->queueID();
 
@@ -319,14 +320,14 @@ namespace PMP
         Q_EMIT stateChanged(state);
     }
 
-    QueueEntry const* Player::nowPlaying() const
+    QSharedPointer<QueueEntry const> Player::nowPlaying() const
     {
         return _nowPlaying;
     }
 
     uint Player::nowPlayingQID() const
     {
-        QueueEntry* entry = _nowPlaying;
+        auto entry = _nowPlaying;
         return entry ? entry->queueID() : 0;
     }
 
@@ -450,7 +451,7 @@ namespace PMP
         qDebug() << "Player::startNext(" << stopCurrent << "," << playNext << ") called";
 
         PlayerInstance* oldCurrentInstance = _currentInstance;
-        QueueEntry* oldNowPlaying = _nowPlaying;
+        QSharedPointer<QueueEntry> oldNowPlaying = _nowPlaying;
 
         if (_currentInstance)
             moveCurrentInstanceToOldInstanceSlot();
@@ -461,13 +462,13 @@ namespace PMP
         _nextInstance = nullptr;
 
         /* find next track to play and start it */
-        QueueEntry* nextTrack = nullptr;
+        QSharedPointer<QueueEntry> nextTrack = nullptr;
         while (!_queue.empty())
         {
             if (_queue.firstEntryIsBarrier())
                 break; /* this will cause playback to stop because next == nullptr */
 
-            QueueEntry* entry = _queue.dequeue();
+            auto entry = _queue.dequeue();
             if (!entry->isTrack())
             {
                 if (entry->kind() == QueueEntryKind::Break)
@@ -716,7 +717,7 @@ namespace PMP
 
     void Player::prepareForFirstTrackFromQueue()
     {
-        QueueEntry* nextTrack = _queue.peekFirstTrackEntry();
+        auto nextTrack = _queue.peekFirstTrackEntry();
         if (!nextTrack || !nextTrack->isTrack())
             return; /* no next track to prepare for now */
 
@@ -741,7 +742,8 @@ namespace PMP
         tryPrepareTrack(_nextInstance, nextTrack, true); /* ignore the result */
     }
 
-    bool Player::tryPrepareTrack(PlayerInstance* playerInstance, QueueEntry* entry,
+    bool Player::tryPrepareTrack(PlayerInstance* playerInstance,
+                                 QSharedPointer<QueueEntry> entry,
                                  bool onlyIfPreloaded)
     {
         if (!entry || !entry->isTrack())
@@ -760,7 +762,8 @@ namespace PMP
         return playerInstance->trackSetSuccessfully();
     }
 
-    bool Player::tryStartNextTrack(PlayerInstance* playerInstance, QueueEntry* entry,
+    bool Player::tryStartNextTrack(PlayerInstance* playerInstance,
+                                   QSharedPointer<QueueEntry> entry,
                                    bool startPlaying)
     {
         if (!entry || !entry->isTrack())
@@ -781,13 +784,13 @@ namespace PMP
         return true;
     }
 
-    void Player::putInHistoryOrder(QueueEntry* entry)
+    void Player::putInHistoryOrder(QSharedPointer<QueueEntry> entry)
     {
         _historyOrder.enqueue(entry->queueID());
     }
 
-    void Player::addToHistory(QueueEntry* entry, int permillage, bool hadError,
-                              bool hadSeek)
+    void Player::addToHistory(QSharedPointer<QueueEntry> entry, int permillage,
+                              bool hadError, bool hadSeek)
     {
         entry->setEndedNow(); /* register end time */
 
@@ -857,7 +860,8 @@ namespace PMP
 
     /* permillage (for lack of a better name) is like percentage, but with factor 1000
        instead of 100 */
-    int Player::calcPermillagePlayed(QueueEntry* track, qint64 positionReached,
+    int Player::calcPermillagePlayed(QSharedPointer<QueueEntry> track,
+                                     qint64 positionReached,
                                      bool seeked)
     {
         if (seeked) return -1;

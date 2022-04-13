@@ -378,8 +378,8 @@ namespace PMP {
         _preloadCheckTimerRunning = false;
         qDebug() << "running preload check";
 
-        const QList<QueueEntry*> queueEntries = _queue->entries(0, PRELOAD_RANGE);
-        for (auto* entry : queueEntries)
+        auto queueEntries = _queue->entries(0, PRELOAD_RANGE);
+        for (auto& entry : queueEntries)
         {
             checkToPreloadTrack(entry);
         }
@@ -387,7 +387,7 @@ namespace PMP {
         checkForJobsToStart();
     }
 
-    void Preloader::checkToPreloadTrack(QueueEntry* entry)
+    void Preloader::checkToPreloadTrack(QSharedPointer<QueueEntry> entry)
     {
         if (!entry->isTrack())
             return;
