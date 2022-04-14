@@ -50,46 +50,63 @@ namespace PMP
         int length = _queue.length();
         uint operationsDone = 0;
 
-        for (int i = 0; i < length && i < 10 && operationsDone <= 3; ++i)
+        for (int index = 0; index < length && index < 10 && operationsDone <= 3; ++index)
         {
-            auto entry = _queue[i];
+            auto entry = _queue[index];
             if (!entry->isTrack())
                 continue;
 
+            auto hash = entry->hash().value();
             auto filename = entry->filename();
-            if (filename.hasValue()
-                && !_resolver->pathStillValid(entry->hash().value(), filename.value()))
+            if (filename.hasValue() && !_resolver->pathStillValid(hash, filename.value()))
             {
-                qDebug() << "Queue: filename no longer valid for queue index" << (i + 1);
-                filename = nullptr;
+                qDebug() << "PlayerQueue: filename no longer valid for queue index"
+                         << (index + 1);
+                filename = null;
+                entry->invalidateFilename();
             }
 
-            if (filename.isNull())
+            int& backoff = entry->fileFinderBackoff();
+
+            if (filename.hasValue())
             {
-                int& backoff = entry->fileFinderBackoff();
-                if (backoff > 0)
-                {
-                    backoff--;
-                    continue;
-                }
+                backoff = 0;
+                continue;
+            }
 
-                int& failedCount = entry->fileFinderFailedCount();
+            if (backoff > 0)
+            {
+                backoff--;
+                continue;
+            }
 
-                qDebug() << "Queue: need to get a valid filename for queue index"
-                         << (i + 1);
-                operationsDone++;
-                if (entry->checkValidFilename(*_resolver, false))
+            qDebug() << "PlayerQueue: need to obtain a valid filename for queue index"
+                     << (index + 1) << "which has queue ID" << entry->queueID()
+                     << "and hash" << hash;
+
+            backoff = 10;
+            auto future = _resolver->findPathForHashAsync(hash);
+            future.addResultListener(
+                this,
+                [entry](QString path)
                 {
-                    backoff = 0;
-                    if (failedCount > 0) failedCount >>= 1; /* divide by two */
+                    qDebug() << "PlayerQueue: found file" << path
+                             << "for queue ID" << entry->queueID();
+
+                    entry->fileFinderBackoff() = 0;
+                    entry->fileFinderFailedCount() /= 2;
+                    entry->setFilename(path);
                 }
-                else
+            );
+            future.addFailureListener(
+                this,
+                [entry, index](FailureType)
                 {
+                    int& failedCount = entry->fileFinderFailedCount();
                     failedCount = qMin(failedCount + 1, 100);
-                    backoff = failedCount + (i * 2);
-                    continue;
+                    entry->fileFinderBackoff() = failedCount + (index * 2);
                 }
-            }
+            );
         }
     }
 

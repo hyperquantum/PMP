@@ -114,77 +114,10 @@ namespace PMP
         return null;
     }
 
-    bool QueueEntry::checkValidFilename(Resolver& resolver, bool fast,
-                                        QString* outFilename)
+    void QueueEntry::invalidateFilename()
     {
-        qDebug() << "QueueEntry::checkValidFilename QID" << _queueID;
-        if (!isTrack()) return false;
-
-        auto fileHash = this->hash();
-
-        if (_haveFilename)
-        {
-            qDebug() << " have filename, need to verify it: " << _filename;
-
-            if (fileHash.hasValue())
-            {
-                if (resolver.pathStillValid(fileHash.value(), _filename))
-                {
-                    if (outFilename) { (*outFilename) = _filename; }
-                    return true;
-                }
-
-                qDebug() << "  filename is no longer valid";
-                _haveFilename = false;
-                _filename = "";
-            }
-            else
-            {
-                QString name = _filename;
-                QFileInfo file(name);
-
-                if (file.isRelative())
-                {
-                    if (!file.makeAbsolute())
-                    {
-                        qDebug() << "  failed to make path absolute";
-                        return false;
-                    }
-                    _filename = file.absolutePath();
-                }
-
-                if (file.isFile() && file.isReadable())
-                {
-                    if (outFilename) { (*outFilename) = _filename; }
-                    return true;
-                }
-
-                qDebug() << "  filename is no longer valid, and we have no hash";
-                return false;
-            }
-        }
-
-        /* we don't have a valid filename */
-
-        if (fileHash.isNull())
-        {
-            qDebug() << " no hash, cannot get filename";
-            return false;
-        }
-
-        QString path = resolver.findPathForHash(fileHash.value(), fast);
-
-        if (path.length() > 0)
-        {
-            _filename = path;
-            _haveFilename = true;
-            if (outFilename) { (*outFilename) = _filename; }
-            qDebug() << " found filename: " << path;
-            return true;
-        }
-
-        qDebug() << " no known filename";
-        return false;
+        _haveFilename = false;
+        _filename.clear();
     }
 
     void QueueEntry::checkAudioData(Resolver& resolver)

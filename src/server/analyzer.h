@@ -26,8 +26,10 @@
 #include "common/tagdata.h"
 
 #include <QDateTime>
+#include <QHash>
 #include <QMutex>
 #include <QObject>
+#include <QSet>
 #include <QVector>
 
 QT_FORWARD_DECLARE_CLASS(QFileInfo)
@@ -141,8 +143,8 @@ namespace PMP
         void enqueueFile(QString path);
         bool isFinished();
 
-        Future<FileAnalysis, void> analyzeFileAsync(QString path);
-        ResultOrError<FileAnalysis, void> analyzeFile(QString path);
+        Future<FileAnalysis, FailureType> analyzeFileAsync(QString path);
+        ResultOrError<FileAnalysis, FailureType> analyzeFile(QString path);
 
     Q_SIGNALS:
         void fileAnalysisFailed(QString path);
@@ -150,8 +152,10 @@ namespace PMP
         void finished();
 
     private:
-        static ResultOrError<FileAnalysis, void> analyzeFileInternal(Analyzer* analyzer,
-                                                                     QString path);
+        static ResultOrError<FileAnalysis, FailureType> analyzeFileInternal(
+                                                                    Analyzer* analyzer,
+                                                                    QString path,
+                                                                    bool fromQueue);
         static FileHashes extractHashes(FileAnalyzer const& fileAnalyzer);
         static FileInfo extractFileInfo(QFileInfo& fileInfo);
         void onFileAnalysisFailed(QString path);
@@ -162,6 +166,7 @@ namespace PMP
         QThreadPool* _onDemandThreadPool;
         QMutex _lock;
         QSet<QString> _pathsInProgress;
+        QHash<QString, Future<FileAnalysis, FailureType>> _onDemandInProgress;
     };
 }
 

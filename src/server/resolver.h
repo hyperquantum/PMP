@@ -46,8 +46,8 @@ namespace PMP
     class HashIdRegistrar
     {
     public:
-        Future<void, void> loadAllFromDatabase();
-        Future<uint, void> getOrCreateId(FileHash hash);
+        Future<SuccessType, FailureType> loadAllFromDatabase();
+        Future<uint, FailureType> getOrCreateId(FileHash hash);
 
         QVector<QPair<uint, FileHash>> getAllLoaded();
 
@@ -55,6 +55,60 @@ namespace PMP
         QMutex _mutex;
         QHash<FileHash, uint> _hashes;
         QHash<uint, FileHash> _ids;
+    };
+
+    class FileLocations
+    {
+    public:
+        void insert(uint id, QString path);
+        void remove(uint id, QString path);
+
+        QList<uint> getIdsByPath(QString path);
+        QStringList getPathsById(uint id);
+
+        bool pathHasAtLeastOneId(QString path);
+
+    private:
+        QMutex _mutex;
+        QHash<uint, QStringList> _idToPaths;
+        QHash<QString, QList<uint>> _pathToIds;
+    };
+
+    class FileFinder : public QObject
+    {
+        Q_OBJECT
+    public:
+        FileFinder(QObject* parent, HashIdRegistrar* hashIdRegistrar,
+                   FileLocations* fileLocations, Analyzer* analyzer);
+
+        void setMusicPaths(QStringList paths);
+
+        Future<QString, FailureType> findHashAsync(uint id, FileHash hash);
+
+    private Q_SLOTS:
+        void fileAnalysisCompleted(QString path, PMP::FileAnalysis analysis);
+
+    private:
+        void markAsCompleted(uint id);
+
+        ResultOrError<QString, FailureType> findHashInternal(uint id, FileHash hash);
+
+        QString findPathForHashByLikelyFilename(Database& db, uint id,
+                                                FileHash const& hash);
+
+        QString findPathByQuickScanForNewFiles(Database& db, uint id,
+                                               const FileHash& hash);
+
+        QString findPathByQuickScanOfNewFiles(QVector<QString> newFiles,
+                                              const FileHash& hash);
+
+        QMutex _mutex;
+        HashIdRegistrar* _hashIdRegistrar;
+        FileLocations* _fileLocations;
+        Analyzer* _analyzer;
+        QThreadPool* _threadPool;
+        QStringList _musicPaths;
+        QHash<uint, Future<QString, FailureType>> _inProgress;
     };
 
     class Resolver : public QObject
@@ -69,10 +123,11 @@ namespace PMP
         bool startFullIndexation();
         bool fullIndexationRunning();
 
+        Future<QString, FailureType> findPathForHashAsync(FileHash hash);
+
         bool haveFileForHash(const FileHash& hash);
-        QString findPathForHash(const FileHash& hash, bool fast);
         bool pathStillValid(const FileHash& hash, QString path);
-        Nullable<FileHash> findHashForFilePath(QString path);
+        Nullable<FileHash> getHashForFilePath(QString path);
 
         const AudioData& findAudioData(const FileHash& hash);
         const TagData* findTagData(const FileHash& hash);
@@ -111,23 +166,16 @@ namespace PMP
         struct VerifiedFile;
         class HashKnowledge;
 
-        Future<FileHash, void> analyzeAndRegisterFileAsync(QString filename);
-        FileHash analyzeAndRegisterFileInternal(const QString& filename);
         HashKnowledge* registerHash(const FileHash& hash);
         QVector<QString> getPathsThatDontMatchCurrentFullIndexationNumber();
         void checkFileStillExistsAndIsValid(QString path);
 
-        QString findPathForHashByLikelyFilename(Database& db, const FileHash& hash,
-                                                uint hashId);
-        QString findPathByQuickScanForNewFiles(Database& db, const FileHash& hash,
-                                               uint hashId);
-        QString findPathByQuickScanOfNewFiles(QVector<QString> newFiles,
-                                              const FileHash& hash);
-
         void doFullIndexationFileSystemTraversal();
         void doFullIndexationCheckForFileRemovals();
 
+        FileLocations _fileLocations;
         Analyzer* _analyzer;
+        FileFinder* _fileFinder;
         HashIdRegistrar _hashIdRegistrar;
 
         QMutex _lock;

@@ -45,7 +45,7 @@ namespace PMP
             return Future<ResultType, ErrorType>(_storage);
         }
 
-        void setResult(ResultOrError<ResultType, ErrorType> const& r)
+        void setOutcome(ResultOrError<ResultType, ErrorType> const& r)
         {
             if (r.succeeded())
                 setResult(r.result());
@@ -65,132 +65,6 @@ namespace PMP
 
     private:
         QSharedPointer<FutureStorage<ResultType, ErrorType>> _storage;
-    };
-
-    template<class ResultType>
-    class Promise<ResultType, void>
-    {
-    public:
-        Promise()
-         : _storage(FutureStorage<ResultType, FailureType>::create())
-        {
-            //
-        }
-
-        Promise(Promise&&) = default;
-
-        Promise(Promise const&) = delete;
-        Promise& operator=(Promise const&) = delete;
-
-        Future<ResultType, void> future()
-        {
-            return Future<ResultType, void>(_storage);
-        }
-
-        void setResult(ResultOrError<ResultType, void> const& r)
-        {
-            if (r.succeeded())
-                setResult(r.result());
-            else
-                setError();
-        }
-
-        void setResult(ResultType result)
-        {
-            _storage->setResult(result);
-        }
-
-        void setError()
-        {
-            _storage->setError(failure);
-        }
-
-    private:
-        QSharedPointer<FutureStorage<ResultType, FailureType>> _storage;
-    };
-
-    template<class ErrorType>
-    class Promise<void, ErrorType>
-    {
-    public:
-        Promise()
-         : _storage(FutureStorage<SuccessType, ErrorType>::create())
-        {
-            //
-        }
-
-        Promise(Promise&&) = default;
-
-        Promise(Promise const&) = delete;
-        Promise& operator=(Promise const&) = delete;
-
-        Future<void, ErrorType> future()
-        {
-            return Future<void, ErrorType>(_storage);
-        }
-
-        void setResult(ResultOrError<void, ErrorType> const& r)
-        {
-            if (r.succeeded())
-                setSuccessful();
-            else
-                setError(r.error());
-        }
-
-        void setSuccessful()
-        {
-            _storage->setResult(success);
-        }
-
-        void setError(ErrorType error)
-        {
-            _storage->setError(error);
-        }
-
-    private:
-        QSharedPointer<FutureStorage<SuccessType, ErrorType>> _storage;
-    };
-
-    template<>
-    class Promise<void, void>
-    {
-    public:
-        Promise()
-         : _storage(FutureStorage<SuccessType, FailureType>::create())
-        {
-            //
-        }
-
-        Promise(Promise&&) = default;
-
-        Promise(Promise const&) = delete;
-        Promise& operator=(Promise const&) = delete;
-
-        Future<void, void> future()
-        {
-            return Future<void, void>(_storage);
-        }
-
-        void setResult(ResultOrError<void, void> const& r)
-        {
-            if (r.succeeded())
-                setSuccessful();
-            else
-                setFailed();
-        }
-
-        void setSuccessful()
-        {
-            _storage->setResult(success);
-        }
-
-        void setFailed()
-        {
-            _storage->setError(failure);
-        }
-
-    private:
-        QSharedPointer<FutureStorage<SuccessType, FailureType>> _storage;
     };
 
     template<class T>

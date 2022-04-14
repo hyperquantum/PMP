@@ -110,13 +110,14 @@ namespace PMP
 
         void registerHash(const FileHash& hash);
         uint getHashID(const FileHash& hash);
-        ResultOrError<QList<QPair<uint,FileHash>>, void> getHashes(uint largerThanID = 0);
+        ResultOrError<QList<QPair<uint,FileHash>>, FailureType> getHashes(
+                                                                   uint largerThanID = 0);
 
         void registerFilename(uint hashID, const QString& filenameWithoutPath);
-        ResultOrError<QList<QString>, void> getFilenames(uint hashID);
+        ResultOrError<QList<QString>, FailureType> getFilenames(uint hashID);
 
         void registerFileSize(uint hashId, qint64 size);
-        ResultOrError<QList<qint64>, void> getFileSizes(uint hashID);
+        ResultOrError<QList<qint64>, FailureType> getFileSizes(uint hashID);
 
         QList<User> getUsers();
         bool checkUserExists(QString userName);

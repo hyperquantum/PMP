@@ -1106,7 +1106,7 @@ namespace PMP
             NetworkUtil::append4Bytes(message, queueID);
             NetworkUtil::append2Bytes(message, trackStatus);
             NetworkUtil::append2Bytes(message, 0); /* filler */
-            NetworkProtocol::appendHash(message, hash.value());
+            NetworkProtocol::appendHash(message, hash);
         }
 
         sendBinaryMessage(message);
@@ -2411,9 +2411,9 @@ namespace PMP
         uint hashId = _player->resolver().getID(hash);
 
         auto future =
-            Concurrent::run<QList<QString>, void>(
+            Concurrent::run<QList<QString>, FailureType>(
                 {},
-                [hashId]() -> ResultOrError<QList<QString>, void>
+                [hashId]() -> ResultOrError<QList<QString>, FailureType>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)

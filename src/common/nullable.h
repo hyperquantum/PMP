@@ -20,6 +20,8 @@
 #ifndef PMP_NULLABLE_H
 #define PMP_NULLABLE_H
 
+#include <QtGlobal>
+
 namespace PMP
 {
     class NullType
@@ -57,7 +59,12 @@ namespace PMP
 
         constexpr bool hasValue() const { return _hasValue; }
         constexpr bool isNull() const { return !_hasValue; }
-        constexpr T value() const { return _value; }
+
+        T value() const
+        {
+            Q_ASSERT_X(hasValue(), "Nullable::value()", "nullable has no value");
+            return _value;
+        }
 
         constexpr T valueOr(T alternative) const
         {

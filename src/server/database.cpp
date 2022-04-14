@@ -371,7 +371,7 @@ namespace PMP
         return id;
     }
 
-    ResultOrError<QList<QPair<uint,FileHash>>, void> Database::getHashes(
+    ResultOrError<QList<QPair<uint, FileHash> >, FailureType> Database::getHashes(
                                                                         uint largerThanID)
     {
         QSqlQuery q(_db);
@@ -451,7 +451,7 @@ namespace PMP
         }
     }
 
-    ResultOrError<QList<QString>, void> Database::getFilenames(uint hashID)
+    ResultOrError<QList<QString>, FailureType> Database::getFilenames(uint hashID)
     {
         QSqlQuery q(_db);
         q.prepare( // we use DISTINCT because there's no unique index
@@ -498,7 +498,7 @@ namespace PMP
         }
     }
 
-    ResultOrError<QList<qint64>, void> Database::getFileSizes(uint hashID)
+    ResultOrError<QList<qint64>, FailureType> Database::getFileSizes(uint hashID)
     {
         QSqlQuery q(_db);
         q.prepare(

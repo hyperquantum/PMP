@@ -66,8 +66,17 @@ namespace PMP
         constexpr bool succeeded() const { return _result.hasValue(); }
         constexpr bool failed() const { return _result.isNull(); }
 
-        ResultType result() const { return _result.value(); }
-        ErrorType error() const { return _error.value(); }
+        ResultType result() const
+        {
+            Q_ASSERT_X(succeeded(), "ResultOrError::result()", "no result available");
+            return _result.value();
+        }
+
+        ErrorType error() const
+        {
+            Q_ASSERT_X(failed(), "ResultOrError::error()", "no error available");
+            return _error.value();
+        }
 
     private:
         constexpr ResultOrError(Nullable<ResultType>&& result,
@@ -77,67 +86,6 @@ namespace PMP
 
         Nullable<ResultType> _result;
         Nullable<ErrorType> _error;
-    };
-
-    template<class ErrorType>
-    class ResultOrError<void, ErrorType>
-    {
-    public:
-        template<class ResultType>
-        constexpr ResultOrError(ResultOrError<ResultType, ErrorType> const& result)
-         : _error { result.failed() ? Nullable<ErrorType>(result.error()) : null }
-        {}
-
-        constexpr ResultOrError(SuccessType) {}
-        constexpr ResultOrError(ErrorType error) : _error(error) {}
-
-        constexpr bool succeeded() const { return _error.isNull(); }
-        constexpr bool failed() const { return _error.hasValue(); }
-
-        ErrorType error() const { return _error.value(); }
-
-    private:
-        Nullable<ErrorType> _error;
-    };
-
-    template<class ResultType>
-    class ResultOrError<ResultType, void>
-    {
-    public:
-        template<class ErrorType>
-        constexpr ResultOrError(ResultOrError<ResultType, ErrorType> const& result)
-         : _result { result.succeeded() ? Nullable<ResultType>(result.result()) : null }
-        {}
-
-        constexpr ResultOrError(ResultType result) : _result(result) {}
-        constexpr ResultOrError(FailureType) {}
-
-        constexpr bool succeeded() const { return _result.hasValue(); }
-        constexpr bool failed() const { return _result.isNull(); }
-
-        ResultType result() const { return _result.value(); }
-
-    private:
-        Nullable<ResultType> _result;
-    };
-
-    template<>
-    class ResultOrError<void, void>
-    {
-    public:
-        template<class ResultType, class ErrorType>
-        constexpr ResultOrError(ResultOrError<ResultType, ErrorType> const& result)
-         : _succeeded(result.succeeded())
-        {}
-
-        constexpr ResultOrError(SuccessType) : _succeeded(true) {}
-        constexpr ResultOrError(FailureType) : _succeeded(false) {}
-
-        constexpr bool succeeded() const { return _succeeded; }
-        constexpr bool failed() const { return !_succeeded; }
-
-    private:
-        bool _succeeded;
     };
 }
 #endif

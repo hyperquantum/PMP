@@ -61,8 +61,7 @@ namespace PMP
 
         void setFilename(QString const& filename);
         Nullable<QString> filename() const;
-        bool checkValidFilename(Resolver& resolver, bool fast,
-                                QString* outFilename = nullptr);
+        void invalidateFilename();
 
         void checkAudioData(Resolver& resolver);
         void checkTrackData(Resolver& resolver);

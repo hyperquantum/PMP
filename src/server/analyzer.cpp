@@ -22,6 +22,7 @@
 #include "common/concurrent.h"
 #include "common/fileanalyzer.h"
 
+#include <QtDebug>
 #include <QThreadPool>
 
 namespace PMP
@@ -55,12 +56,12 @@ namespace PMP
         _pathsInProgress << path;
 
         auto future =
-            Concurrent::run<FileAnalysis, void>(
+            Concurrent::run<FileAnalysis, FailureType>(
                 _queueThreadPool,
-                Promise<FileAnalysis, void>(),
+                {},
                 [this, path]()
                 {
-                    return analyzeFileInternal(this, path);
+                    return analyzeFileInternal(this, path, true);
                 }
             );
 
@@ -72,7 +73,10 @@ namespace PMP
             }
         );
 
-        future.addFailureListener(this, [this, path]() { onFileAnalysisFailed(path); });
+        future.addFailureListener(
+            this,
+            [this, path](FailureType) { onFileAnalysisFailed(path); }
+        );
     }
 
     bool Analyzer::isFinished()
@@ -81,21 +85,40 @@ namespace PMP
         return _pathsInProgress.empty();
     }
 
-    Future<FileAnalysis, void> Analyzer::analyzeFileAsync(QString path)
+    Future<FileAnalysis, FailureType> Analyzer::analyzeFileAsync(QString path)
     {
+        QMutexLocker lock(&_lock);
+
+        auto it = _onDemandInProgress.find(path);
+        if (it != _onDemandInProgress.end())
+            return it.value();
+
+        qDebug() << "Analyzer: starting background job for:" << path;
         auto future =
-            Concurrent::run<FileAnalysis, void>(
+            Concurrent::run<FileAnalysis, FailureType>(
                 _onDemandThreadPool,
-                Promise<FileAnalysis, void>(),
-                [this, path]() { return analyzeFile(path); }
+                {},
+                [this, path]()
+                {
+                    auto result = analyzeFile(path);
+
+                    qDebug() << "Analyzer: job finished for:" << path;
+
+                    QMutexLocker lock(&_lock);
+                    _onDemandInProgress.remove(path);
+
+                    return result;
+                }
             );
+
+        _onDemandInProgress.insert(path, future);
 
         return future;
     }
 
-    ResultOrError<FileAnalysis, void> Analyzer::analyzeFile(QString path)
+    ResultOrError<FileAnalysis, FailureType> Analyzer::analyzeFile(QString path)
     {
-        auto maybeResult = analyzeFileInternal(this, path);
+        auto maybeResult = analyzeFileInternal(this, path, false);
 
         if (maybeResult.succeeded())
             Q_EMIT fileAnalysisCompleted(path, maybeResult.result());
@@ -103,8 +126,10 @@ namespace PMP
         return maybeResult;
     }
 
-    ResultOrError<FileAnalysis, void> Analyzer::analyzeFileInternal(Analyzer* analyzer,
-                                                                    QString path)
+    ResultOrError<FileAnalysis, FailureType> Analyzer::analyzeFileInternal(
+                                                                    Analyzer* analyzer,
+                                                                    QString path,
+                                                                    bool fromQueue)
     {
         QFileInfo firstQFileInfo(path);
         FileInfo firstFileInfo = extractFileInfo(firstQFileInfo);
@@ -119,7 +144,9 @@ namespace PMP
         {
             if (secondQFileInfo.exists())
             {
-                qDebug() << "file seems to have changed, will retry later:" << path;
+                qDebug() << "Analyzer: file seems to have changed, will retry later:"
+                         << path;
+                if (fromQueue)
                 {
                     QMutexLocker lock(&analyzer->_lock);
                     analyzer->_pathsInProgress.remove(path);
@@ -128,7 +155,7 @@ namespace PMP
             }
             else
             {
-                qDebug() << "file seems to have been deleted:" << path;
+                qDebug() << "Analyzer: file seems to have been deleted:" << path;
             }
 
             return failure;
@@ -136,7 +163,7 @@ namespace PMP
 
         if (!fileAnalyzer.analysisDone()) /* something went wrong */
         {
-            qDebug() << "file analysis failed:" << path;
+            qDebug() << "Analyzer: file analysis failed:" << path;
             return failure;
         }
 
@@ -144,7 +171,7 @@ namespace PMP
         if (audioData.trackLengthMilliseconds() > std::numeric_limits<qint32>::max())
         {
             /* file too long, probably not music anyway */
-            qDebug() << "file audio too long:" << path;
+            qDebug() << "Analyzer: file audio too long:" << path;
             return failure;
         }
 
@@ -175,6 +202,8 @@ namespace PMP
 
     void Analyzer::onFileAnalysisFailed(QString path)
     {
+        qDebug() << "Analyzer: failed to analyze" << path;
+
         bool isFinished;
         markAsNoLongerInProgress(path, isFinished);
 
@@ -186,6 +215,17 @@ namespace PMP
 
     void Analyzer::onFileAnalysisCompleted(QString path, FileAnalysis analysis)
     {
+        qDebug() << "Analyzer: completed analysis of" << path;
+        if (analysis.hashes().multipleHashes())
+        {
+            auto hashes = analysis.hashes().allHashes();
+            qDebug() << "Analyzer: multiple hashes found for" << path;
+            for (int i = 0; i < hashes.size(); ++i)
+            {
+                qDebug() << (i + 1) << "/" << hashes.size() << ":" << hashes[i];
+            }
+        }
+
         bool isFinished;
         markAsNoLongerInProgress(path, isFinished);
 

@@ -123,7 +123,7 @@ namespace PMP
                     {
                         CountIncrementer countIncrement;
                         auto resultOrError = f();
-                        sharedPromise->setResult(resultOrError);
+                        sharedPromise->setOutcome(resultOrError);
                     };
 
             return work;

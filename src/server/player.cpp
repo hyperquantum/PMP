@@ -89,7 +89,8 @@ namespace PMP
 
         if (!availableForNewTrack())
         {
-            qWarning() << "cannot set new track because we're not available yet!";
+            qWarning() << "PlayerInstance" << _identifier
+                       << "cannot set new track because the instance is not available!";
             return;
         }
 
@@ -105,26 +106,37 @@ namespace PMP
         _preloadedFile = _preloader->getPreloadedCacheFile(queueId);
         QString filename = _preloadedFile.getFilename();
 
+        if (filename.isEmpty() && onlyIfPreloaded)
+        {
+            qDebug() << "PlayerInstance: queue ID" << queueId
+                     << "not preloaded yet, will not set media now";
+            return;
+        }
+
         if (filename.isEmpty())
         {
-            if (onlyIfPreloaded)
-            {
-                qDebug() << "queue ID" << queueId
-                         << "not preloaded yet, will not set media now";
-                return;
-            }
+            filename = queueEntry->filename().valueOr({});
 
-            if (queueEntry->checkValidFilename(*_resolver, true, &filename))
+            if (!filename.isEmpty())
             {
-                qWarning() << "QID" << queueId << "was not preloaded; "
-                              "using unpreprocessed file that may be slow to access or "
-                              "may fail to play";
+                if (_resolver->pathStillValid(queueEntry->hash().value(), filename))
+                {
+                    qWarning() << "queue ID" << queueId << "was not preloaded; "
+                                  "will try to use unpreprocessed file that may be slow "
+                                  "to access or may fail to play";
+                }
+                else
+                {
+                    filename.clear();
+                    queueEntry->invalidateFilename();
+                }
             }
         }
 
         if (!filename.isEmpty())
         {
-            qDebug() << "going to load media:" << filename;
+            qDebug() << "PlayerInstance" << _identifier << "for queue ID" << queueId
+                     << ": going to load media:" << filename;
             _player->setMedia(QUrl::fromLocalFile(filename));
             _mediaSet = true;
         }

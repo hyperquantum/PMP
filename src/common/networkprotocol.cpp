@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -223,7 +223,7 @@ namespace PMP
     const QByteArray NetworkProtocol::_fileHashAllZeroes =
             Util::generateZeroedMemory(FILEHASH_BYTECOUNT);
 
-    void NetworkProtocol::appendHash(QByteArray& buffer, const FileHash& hash)
+    void NetworkProtocol::appendHash(QByteArray& buffer, Nullable<FileHash> hash)
     {
         if (hash.isNull())
         {
@@ -231,9 +231,16 @@ namespace PMP
             return;
         }
 
-        NetworkUtil::append8Bytes(buffer, hash.length());
-        buffer += hash.SHA1();
-        buffer += hash.MD5();
+        auto hashValue = hash.value();
+        if (hashValue.isNull())
+        {
+            buffer += _fileHashAllZeroes;
+            return;
+        }
+
+        NetworkUtil::append8Bytes(buffer, hashValue.length());
+        buffer += hashValue.SHA1();
+        buffer += hashValue.MD5();
         // TODO: check if the length of what we added matches FILEHASH_BYTECOUNT
     }
 

@@ -26,6 +26,8 @@
 #include <QMutex>
 #include <QMutexLocker>
 #include <QSharedPointer>
+#include <QtDebug>
+#include <QtGlobal>
 #include <QTimer>
 #include <QVector>
 #include <QWaitCondition>
@@ -34,10 +36,8 @@
 
 namespace PMP
 {
-    template<class ResultType, class ErrorType> class Future;
-    template<class ResultType> class Future<ResultType, void>;
-    template<class ErrorType> class Future<void, ErrorType>;
-    template<> class Future<void, void>;
+    template<class ResultType, class ErrorType>
+    class Future;
 
     template<class T>
     class SimpleFuture;
@@ -67,12 +67,20 @@ namespace PMP
             return QSharedPointer<FutureStorage<ResultType, ErrorType>>::create();
         }
 
+        void setOutcome(ResultOrError<ResultType, ErrorType> outcome)
+        {
+            if (outcome.succeeded())
+                setResult(outcome.result());
+            else
+                setError(outcome.error());
+        }
+
         void setResult(ResultType result)
         {
             QMutexLocker lock(&_mutex);
 
-            if (_finished)
-                return; // not supposed to be called
+            Q_ASSERT_X(!_finished, "FutureStorage::setResult()",
+                       "attempt to set result on finished future");
 
             _finished = true;
             _result = result;
@@ -87,8 +95,8 @@ namespace PMP
         {
             QMutexLocker lock(&_mutex);
 
-            if (_finished)
-                return; // not supposed to be called
+            Q_ASSERT_X(!_finished, "FutureStorage::setError()",
+                       "attempt to set error on finished future");
 
             _finished = true;
             _error = error;
@@ -97,6 +105,51 @@ namespace PMP
                 listener(error);
 
             _waitCondition.wakeAll();
+        }
+
+        void addListener(std::function<void (ResultOrError<ResultType, ErrorType>)> f)
+        {
+            QMutexLocker lock(&_mutex);
+
+            if (!_finished)
+            {
+                _resultListeners.append(
+                    [f](ResultType result)
+                    {
+                        f(ResultOrError<ResultType, ErrorType>::fromResult(result));
+                    }
+                );
+                _failureListeners.append(
+                    [f](ErrorType error)
+                    {
+                        f(ResultOrError<ResultType, ErrorType>::fromError(error));
+                    }
+                );
+                return;
+            }
+
+            if (_result.hasValue())
+            {
+                auto value = _result.value();
+                f(ResultOrError<ResultType, ErrorType>::fromResult(value));
+            }
+            else
+            {
+                auto error = _error.value();
+                f(ResultOrError<ResultType, ErrorType>::fromError(error));
+            }
+        }
+
+        void addListener(QObject* receiver,
+                         std::function<void (ResultOrError<ResultType, ErrorType>)> f)
+        {
+            auto listener =
+                [receiver, f](ResultOrError<ResultType, ErrorType> result)
+                {
+                    QTimer::singleShot(0, receiver, [f, result]() { f(result); });
+                };
+
+            addListener(listener);
         }
 
         void addResultListener(std::function<void (ResultType)> f)
@@ -177,9 +230,6 @@ namespace PMP
 
     private:
         friend class Promise<ResultType, ErrorType>;
-        friend class Promise<ResultType, void>;
-        friend class Promise<void, ErrorType>;
-        friend class Promise<void, void>;
         friend class SimplePromise<ResultType>;
         friend class VoidPromise;
 
@@ -202,6 +252,17 @@ namespace PMP
     class Future
     {
     public:
+        void addListener(std::function<void (ResultOrError<ResultType, ErrorType>)> f)
+        {
+            _storage->addListener(f);
+        }
+
+        void addListener(QObject* receiver,
+                         std::function<void (ResultOrError<ResultType, ErrorType>)> f)
+        {
+            _storage->addListener(receiver, f);
+        }
+
         void addResultListener(QObject* receiver, std::function<void (ResultType)> f)
         {
             _storage->addResultListener(receiver, f);
@@ -215,6 +276,59 @@ namespace PMP
         ResultOrError<ResultType, ErrorType> resultOrError()
         {
             return _storage->getResultOrError();
+        }
+
+        template<class ResultType2, class ErrorType2>
+        Future<ResultType2, ErrorType2> thenFuture(
+                std::function<Future<ResultType2, ErrorType2> (
+                                                 ResultOrError<ResultType, ErrorType>)> f)
+        {
+            auto newStorage = FutureStorage<ResultType2, ErrorType2>::create();
+
+            _storage->addListener(
+                [newStorage, f](ResultOrError<ResultType, ErrorType> originalOutcome)
+                {
+                    auto innerFuture = f(originalOutcome);
+                    innerFuture.addListener(
+                        [newStorage](ResultOrError<ResultType2, ErrorType2> secondResult)
+                        {
+                            newStorage->setOutcome(secondResult);
+                        }
+                    );
+                }
+            );
+
+            return Future<ResultType2, ErrorType2>(newStorage);
+        }
+
+        template<class ResultType2, class ErrorType2>
+        Future<ResultType2, ErrorType2> thenFuture(
+                std::function<Future<ResultType2, ErrorType2> (ResultType)> continuation,
+                std::function<ErrorType2 (ErrorType)> errorTranslation)
+        {
+            auto newStorage = FutureStorage<ResultType2, ErrorType2>::create();
+
+            _storage->addListener(
+                [newStorage, continuation, errorTranslation](
+                                     ResultOrError<ResultType, ErrorType> originalOutcome)
+                {
+                    if (originalOutcome.failed())
+                    {
+                        newStorage->setError(errorTranslation(originalOutcome.error()));
+                        return;
+                    }
+
+                    auto innerFuture = continuation(originalOutcome.result());
+                    innerFuture.addListener(
+                        [newStorage](ResultOrError<ResultType2, ErrorType2> secondResult)
+                        {
+                            newStorage->setOutcome(secondResult);
+                        }
+                    );
+                }
+            );
+
+            return Future<ResultType2, ErrorType2>(newStorage);
         }
 
         static Future fromResult(ResultType result)
@@ -238,194 +352,10 @@ namespace PMP
             //
         }
 
+        template<class T1, class T2> friend class Future;
         friend class Promise<ResultType, ErrorType>;
 
         QSharedPointer<FutureStorage<ResultType, ErrorType>> _storage;
-    };
-
-    template<class ResultType>
-    class Future<ResultType, void>
-    {
-    public:
-        void addResultListener(QObject* receiver, std::function<void (ResultType)> f)
-        {
-            _storage->addResultListener(receiver, f);
-        }
-
-        void addFailureListener(QObject* receiver, std::function<void ()> f)
-        {
-            _storage->addFailureListener(receiver, [f](FailureType) { f(); });
-        }
-
-        ResultOrError<ResultType, void> resultOrError()
-        {
-            auto result = _storage->getResultOrError();
-            if (result.succeeded())
-                return result.result();
-            else
-                return failure;
-        }
-
-        template<class OtherResultType>
-        Future<OtherResultType, void> transformResult(
-                QObject* receiver,
-                std::function<OtherResultType (ResultType)> resultTransformation)
-        {
-            auto storage { FutureStorage<OtherResultType, FailureType>::create() };
-
-            _storage->addResultListener(
-                receiver,
-                [storage, resultTransformation](ResultType result)
-                {
-                    storage->setResult(resultTransformation(result));
-                }
-            );
-            _storage->addFailureListener(
-                receiver, [storage](FailureType) { storage->setError(failure); }
-            );
-
-            return Future<OtherResultType, void>(storage);
-        }
-
-        static Future fromResult(ResultType result)
-        {
-            auto storage { FutureStorage<ResultType, FailureType>::create() };
-            storage->setResult(result);
-            return Future(storage);
-        }
-
-        static Future fromError()
-        {
-            return Future { failure };
-        }
-
-        Future(FailureType)
-         : _storage(FutureStorage<ResultType, FailureType>::create())
-        {
-            _storage->setError(failure);
-        }
-
-    private:
-        Future(QSharedPointer<FutureStorage<ResultType, FailureType>> storage)
-         : _storage(storage)
-        {
-            //
-        }
-
-        template<class T1, class T2> friend class Future;
-        friend class Promise<ResultType, void>;
-
-        QSharedPointer<FutureStorage<ResultType, FailureType>> _storage;
-    };
-
-    template<class ErrorType>
-    class Future<void, ErrorType>
-    {
-    public:
-        void addSuccessListener(QObject* receiver, std::function<void ()> f)
-        {
-            _storage->addResultListener(receiver, [f](SuccessType) { f(); });
-        }
-
-        void addFailureListener(QObject* receiver, std::function<void (ErrorType)> f)
-        {
-            _storage->addFailureListener(receiver, f);
-        }
-
-        ResultOrError<void, ErrorType> resultOrError()
-        {
-            auto result = _storage->getResultOrError();
-            if (result.succeeded())
-                return success;
-            else
-                return result.error();
-        }
-
-        static Future fromSuccess()
-        {
-            return Future { success };
-        }
-
-        static Future fromError(ErrorType error)
-        {
-            auto storage { FutureStorage<SuccessType, ErrorType>::create() };
-            storage->setError(error);
-            return Future(storage);
-        }
-
-        Future(SuccessType)
-         : _storage(FutureStorage<SuccessType, ErrorType>::create())
-        {
-            _storage->setResult(success);
-        }
-
-    private:
-        Future(QSharedPointer<FutureStorage<SuccessType, ErrorType>> storage)
-         : _storage(storage)
-        {
-            //
-        }
-
-        friend class Promise<void, ErrorType>;
-
-        QSharedPointer<FutureStorage<SuccessType, ErrorType>> _storage;
-    };
-
-    template<>
-    class Future<void, void>
-    {
-    public:
-        void addSuccessListener(QObject* receiver, std::function<void ()> f)
-        {
-            _storage->addResultListener(receiver, [f](SuccessType) { f(); });
-        }
-
-        void addFailureListener(QObject* receiver, std::function<void ()> f)
-        {
-            _storage->addFailureListener(receiver, [f](FailureType) { f(); });
-        }
-
-        ResultOrError<void, void> resultOrError()
-        {
-            auto result = _storage->getResultOrError();
-            if (result.succeeded())
-                return success;
-            else
-                return failure;
-        }
-
-        static Future fromSuccess()
-        {
-            return Future { success };
-        }
-
-        static Future fromError()
-        {
-            return Future { failure };
-        }
-
-        Future(SuccessType)
-         : _storage(FutureStorage<SuccessType, FailureType>::create())
-        {
-            _storage->setResult(success);
-        }
-
-        Future(FailureType)
-         : _storage(FutureStorage<SuccessType, FailureType>::create())
-        {
-            _storage->setError(failure);
-        }
-
-    private:
-        Future(QSharedPointer<FutureStorage<SuccessType, FailureType>> storage)
-         : _storage(storage)
-        {
-            //
-        }
-
-        friend class Promise<void, void>;
-
-        QSharedPointer<FutureStorage<SuccessType, FailureType>> _storage;
     };
 
     template<class T>
