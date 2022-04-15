@@ -20,6 +20,7 @@
 #ifndef PMP_FUTURE_H
 #define PMP_FUTURE_H
 
+#include "concurrentinternals.h"
 #include "futureinternals.h"
 #include "resultorerror.h"
 

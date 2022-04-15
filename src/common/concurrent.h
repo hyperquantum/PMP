@@ -20,11 +20,11 @@
 #ifndef PMP_CONCURRENT_H
 #define PMP_CONCURRENT_H
 
+#include "concurrentinternals.h"
 #include "future.h"
 #include "nullable.h"
 #include "promise.h"
 
-#include <QAtomicInteger>
 #include <QtConcurrent/QtConcurrent>
 
 #include <functional>
@@ -34,25 +34,6 @@ namespace PMP
 {
     class Concurrent
     {
-    private:
-        class CountIncrementer
-        {
-        public:
-            CountIncrementer()
-             : _count(&_runningCount)
-            {
-                _count->ref();
-            }
-
-            ~CountIncrementer()
-            {
-                _count->deref();
-            }
-
-        private :
-            QAtomicInteger<int>* _count;
-        };
-
     public:
         template<class ResultType, class ErrorType>
         static Future<ResultType, ErrorType> run(
@@ -107,9 +88,14 @@ namespace PMP
             return future;
         }
 
-        static void waitUntilEverythingFinished();
+        static void waitUntilEverythingFinished()
+        {
+            ConcurrentInternals::waitUntilEverythingFinished();
+        }
 
     private:
+        using CountIncrementer = ConcurrentInternals::CountIncrementer;
+
         template<class ResultType, class ErrorType>
         static std::function<void ()> makeWork(
                                 Promise<ResultType, ErrorType>&& promise,
@@ -163,8 +149,6 @@ namespace PMP
         }
 
         Concurrent() {}
-
-        static QAtomicInteger<int> _runningCount;
     };
 }
 #endif

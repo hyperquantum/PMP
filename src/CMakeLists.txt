@@ -23,7 +23,7 @@ set(PMP_COMMON_SOURCES
     common/clientserverinterface.cpp
     common/collectionwatcherimpl.cpp
     common/commonmetatypes.cpp
-    common/concurrent.cpp
+    common/concurrentinternals.cpp
     common/currenttrackmonitorimpl.cpp
     common/dynamicmodecontrollerimpl.cpp
     common/fileanalyzer.cpp

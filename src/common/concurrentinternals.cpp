@@ -17,19 +17,19 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "concurrent.h"
+#include "concurrentinternals.h"
 
 #include <QtDebug>
 #include <QThread>
 
 namespace PMP
 {
-    QAtomicInteger<int> Concurrent::_runningCount;
+    QAtomicInteger<int> ConcurrentInternals::_runningCount;
 
-    void Concurrent::waitUntilEverythingFinished()
+    void ConcurrentInternals::waitUntilEverythingFinished()
     {
         qDebug() << "waiting for background jobs to finish";
         while (_runningCount.loadAcquire() > 0)
-            QThread::sleep(1);
+            QThread::msleep(200);
     }
 }
