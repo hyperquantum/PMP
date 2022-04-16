@@ -354,21 +354,18 @@ namespace PMP
         qDebug() << "Preloader: don't have a filename yet for queue ID" << queueId
                  << "which has hash" << hash;
 
-        auto findPathFuture =
-            _resolver->findPathForHashAsync(hash);
-
         return
-            findPathFuture.thenFuture<QString, FailureType>(
-                [queueId](QString path)
-                {
-                    qDebug() << "Preloader: found path" << path
-                             << "for queue ID" << queueId;
-                    return Concurrent::run<QString, FailureType>(
-                        {}, [queueId, path]() { return runPreload(queueId, path); }
-                    );
-                },
-                [](FailureType) { return failure; }
-            );
+            _resolver->findPathForHashAsync(hash)
+                .thenAsync<QString, FailureType>(
+                    [queueId](QString path)
+                    {
+                        qDebug() << "Preloader: found path" << path
+                                 << "for queue ID" << queueId;
+
+                        return runPreload(queueId, path);
+                    },
+                    [](FailureType) { return failure; }
+                );
     }
 
     ResultOrError<QString, FailureType> Preloader::runPreload(uint queueId,

@@ -228,6 +228,8 @@ namespace PMP
         }
 
     private:
+        friend class ConcurrentInternals;
+
         friend class Promise<ResultType, ErrorType>;
         friend class SimplePromise<ResultType>;
         friend class VoidPromise;

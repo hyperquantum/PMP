@@ -91,23 +91,72 @@ namespace PMP
         {
             auto newStorage = FutureStorage<ResultType2, ErrorType2>::create();
 
-            _storage->addListener(
-                [newStorage, continuation, errorTranslation](
-                                     ResultOrError<ResultType, ErrorType> originalOutcome)
+            _storage->addFailureListener(
+                [newStorage, errorTranslation](ErrorType error)
                 {
-                    if (originalOutcome.failed())
-                    {
-                        newStorage->setError(errorTranslation(originalOutcome.error()));
-                        return;
-                    }
+                    newStorage->setError(errorTranslation(error));
+                }
+            );
 
-                    auto innerFuture = continuation(originalOutcome.result());
+            _storage->addResultListener(
+                [newStorage, continuation](ResultType originalResult)
+                {
+                    auto innerFuture = continuation(originalResult);
                     innerFuture.addListener(
                         [newStorage](ResultOrError<ResultType2, ErrorType2> secondResult)
                         {
                             newStorage->setOutcome(secondResult);
                         }
                     );
+                }
+            );
+
+            return Future<ResultType2, ErrorType2>(newStorage);
+        }
+
+        template<class ResultType2, class ErrorType2>
+        Future<ResultType2, ErrorType2> thenAsync(
+                std::function<ResultOrError<ResultType2, ErrorType2> (
+                                      ResultOrError<ResultType, ErrorType>)> continuation)
+        {
+            auto newStorage = FutureStorage<ResultType2, ErrorType2>::create();
+
+            _storage->addListener(
+                [newStorage, continuation](
+                                     ResultOrError<ResultType, ErrorType> originalOutcome)
+                {
+                    ConcurrentInternals::run(newStorage, continuation, originalOutcome);
+                }
+            );
+
+            return Future<ResultType2, ErrorType2>(newStorage);
+        }
+
+        template<class ResultType2, class ErrorType2>
+        Future<ResultType2, ErrorType2> thenAsync(
+                std::function<ResultOrError<ResultType2, ErrorType2> (
+                                                                ResultType)> continuation,
+                std::function<ErrorType2 (ErrorType)> errorTranslation)
+        {
+            auto newStorage = FutureStorage<ResultType2, ErrorType2>::create();
+
+            _storage->addFailureListener(
+                [newStorage, errorTranslation](ErrorType error)
+                {
+                    newStorage->setError(errorTranslation(error));
+                }
+            );
+
+            _storage->addResultListener(
+                [newStorage, continuation](ResultType originalResult)
+                {
+                    auto work =
+                        [continuation, originalResult]()
+                        {
+                            return continuation(originalResult);
+                        };
+
+                    ConcurrentInternals::run<ResultType2, ErrorType2>(newStorage, work);
                 }
             );
 
