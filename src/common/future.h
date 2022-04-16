@@ -186,6 +186,7 @@ namespace PMP
 
         template<class T1, class T2> friend class Future;
         friend class Promise<ResultType, ErrorType>;
+        friend class Concurrent;
 
         QSharedPointer<FutureStorage<ResultType, ErrorType>> _storage;
     };

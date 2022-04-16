@@ -2412,7 +2412,6 @@ namespace PMP
 
         auto future =
             Concurrent::run<QList<QString>, FailureType>(
-                {},
                 [hashId]() -> ResultOrError<QList<QString>, FailureType>
                 {
                     auto db = Database::getDatabaseForCurrentThread();

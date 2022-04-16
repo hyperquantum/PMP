@@ -37,23 +37,25 @@ namespace PMP
     public:
         template<class ResultType, class ErrorType>
         static Future<ResultType, ErrorType> run(
-                                Promise<ResultType, ErrorType>&& promise,
                                 std::function<ResultOrError<ResultType, ErrorType> ()> f)
         {
-            auto future = promise.future();
-            QtConcurrent::run(makeWork(std::move(promise), f));
-            return future;
+            auto storage =
+                ConcurrentInternals::createFutureStorage<ResultType, ErrorType>();
+
+            ConcurrentInternals::run(storage, f);
+            return Future<ResultType, ErrorType>(storage);
         }
 
         template<class ResultType, class ErrorType>
         static Future<ResultType, ErrorType> run(
                                 QThreadPool* threadPool,
-                                Promise<ResultType, ErrorType>&& promise,
                                 std::function<ResultOrError<ResultType, ErrorType> ()> f)
         {
-            auto future = promise.future();
-            QtConcurrent::run(threadPool, makeWork(std::move(promise), f));
-            return future;
+            auto storage =
+                ConcurrentInternals::createFutureStorage<ResultType, ErrorType>();
+
+            ConcurrentInternals::run(storage, threadPool, f);
+            return Future<ResultType, ErrorType>(storage);
         }
 
         template<class T>
@@ -95,25 +97,6 @@ namespace PMP
 
     private:
         using CountIncrementer = ConcurrentInternals::CountIncrementer;
-
-        template<class ResultType, class ErrorType>
-        static std::function<void ()> makeWork(
-                                Promise<ResultType, ErrorType>&& promise,
-                                std::function<ResultOrError<ResultType, ErrorType> ()> f)
-        {
-            auto sharedPromise =
-                    std::make_shared<Promise<ResultType, ErrorType>>(std::move(promise));
-
-            auto work =
-                    [sharedPromise, f]()
-                    {
-                        CountIncrementer countIncrement;
-                        auto resultOrError = f();
-                        sharedPromise->setOutcome(resultOrError);
-                    };
-
-            return work;
-        }
 
         template<class T>
         static std::function<void ()> makeWork(SimplePromise<T>&& promise,

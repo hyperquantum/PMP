@@ -35,6 +35,12 @@ namespace PMP
     {
     private:
         template<class ResultType, class ErrorType>
+        static QSharedPointer<FutureStorage<ResultType, ErrorType>> createFutureStorage()
+        {
+            return QSharedPointer<FutureStorage<ResultType, ErrorType>>::create();
+        }
+
+        template<class ResultType, class ErrorType>
         static void run(QSharedPointer<FutureStorage<ResultType, ErrorType>> storage,
                         std::function<ResultOrError<ResultType, ErrorType> ()> f)
         {

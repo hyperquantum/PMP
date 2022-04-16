@@ -65,7 +65,7 @@ namespace PMP
                 return success;
             };
 
-        return Concurrent::run<SuccessType, FailureType>({}, work);
+        return Concurrent::run<SuccessType, FailureType>(work);
     }
 
     Future<uint, FailureType> HashIdRegistrar::getOrCreateId(FileHash hash)
@@ -98,7 +98,7 @@ namespace PMP
                 return id;
             };
 
-        return Concurrent::run<uint, FailureType>({}, work);
+        return Concurrent::run<uint, FailureType>(work);
     }
 
     QVector<QPair<uint, FileHash>> HashIdRegistrar::getAllLoaded()
@@ -252,7 +252,6 @@ namespace PMP
         auto future =
             Concurrent::run<QString, FailureType>(
                 _threadPool,
-                {},
                 [this, id, hash]()
                 {
                     auto result = findHashInternal(id, hash);

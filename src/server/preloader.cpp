@@ -343,7 +343,6 @@ namespace PMP
                 && _resolver->pathStillValid(hash, originalFilename))
         {
             return Concurrent::run<QString, FailureType>(
-                {},
                 [queueId, originalFilename]()
                 {
                     return runPreload(queueId, originalFilename);

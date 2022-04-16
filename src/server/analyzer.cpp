@@ -58,7 +58,6 @@ namespace PMP
         auto future =
             Concurrent::run<FileAnalysis, FailureType>(
                 _queueThreadPool,
-                {},
                 [this, path]()
                 {
                     return analyzeFileInternal(this, path, true);
@@ -97,7 +96,6 @@ namespace PMP
         auto future =
             Concurrent::run<FileAnalysis, FailureType>(
                 _onDemandThreadPool,
-                {},
                 [this, path]()
                 {
                     auto result = analyzeFile(path);
