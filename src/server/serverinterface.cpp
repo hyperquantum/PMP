@@ -19,8 +19,10 @@
 
 #include "serverinterface.h"
 
+#include "common/concurrent.h"
 #include "common/promise.h"
 
+#include "database.h"
 #include "delayedstart.h"
 #include "generator.h"
 #include "player.h"
@@ -221,6 +223,38 @@ namespace PMP
         overview.delayedStartActive = _delayedStart->isActive();
 
         return overview;
+    }
+
+    Future<QList<QString>, Result> ServerInterface::getPossibleFilenamesForQueueEntry(
+                                                                                  uint id)
+    {
+        if (id <= 0) /* invalid queue ID */
+            return FutureError(Error::queueEntryIdNotFound(0));
+
+        auto entry = _player->queue().lookup(id);
+        if (entry == nullptr) /* ID not found */
+            return FutureError(Error::queueEntryIdNotFound(id));
+
+        if (!entry->isTrack())
+            return FutureError(Error::queueItemTypeInvalid());
+
+        auto hash = entry->hash().value();
+        uint hashId = _player->resolver().getID(hash);
+
+        auto future =
+            Concurrent::run<QList<QString>, FailureType>(
+                [hashId]() -> ResultOrError<QList<QString>, FailureType>
+                {
+                    auto db = Database::getDatabaseForCurrentThread();
+                    if (!db)
+                        return failure; /* database unusable */
+
+                    return db->getFilenames(hashId);
+                }
+            )
+            .convertError<Result>([](FailureType) { return Error::internalError(); });
+
+        return future;
     }
 
     Result ServerInterface::enqueue(FileHash hash)

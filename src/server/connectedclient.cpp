@@ -2397,30 +2397,7 @@ namespace PMP
         quint32 queueId = NetworkUtil::get4Bytes(message, 2);
         qDebug() << "received request for possible filenames of QID" << queueId;
 
-        if (queueId <= 0)
-            return; /* invalid queue ID */
-
-        auto entry = _player->queue().lookup(queueId);
-        if (entry == nullptr)
-            return; /* not found :-/ */
-
-        if (!entry->isTrack())
-            return;
-
-        auto hash = entry->hash().value();
-        uint hashId = _player->resolver().getID(hash);
-
-        auto future =
-            Concurrent::run<QList<QString>, FailureType>(
-                [hashId]() -> ResultOrError<QList<QString>, FailureType>
-                {
-                    auto db = Database::getDatabaseForCurrentThread();
-                    if (!db)
-                        return failure; /* database unusable */
-
-                    return db->getFilenames(hashId);
-                }
-            );
+        auto future = _serverInterface->getPossibleFilenamesForQueueEntry(queueId);
 
         future.addResultListener(
             this,
