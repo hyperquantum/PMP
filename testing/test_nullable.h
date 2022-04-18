@@ -29,12 +29,18 @@ class TestNullable : public QObject
     Q_OBJECT
 private Q_SLOTS:
     void defaultConstructedIsNull();
+    void defaultConstructorWorksIfTypeNotDefaultConstructible();
     void nullConstructedIsNull();
     void valueConstructedIsNotNull();
     void valueConstructedContainsCorrectValue();
+    void valueConstructedFromSpecialType();
+    void destructorCallsValueDestructor();
+    void setToNullCallsValueDestructor();
+    void valueDoesNotCauseCopy();
     void equalsOperatorComparesValue();
     void notEqualOperatorComparesValue();
     void assignmentOperatorWorks();
+    void assignmentOperatorCallsValueConstructor();
     void valueOrReturnsValueIfNotNull();
     void valueOrReturnsAlternativeIfNull();
 };

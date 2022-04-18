@@ -38,48 +38,83 @@ namespace PMP
     constexpr NullType null = {};
 
     template<class T>
-    class Nullable
+    class alignas(T) Nullable
     {
     public:
-        constexpr Nullable() : _hasValue {false}, _value {}
+        constexpr Nullable() : _hasValue { false }
         {
             //
         }
 
-        constexpr Nullable(NullType) : _hasValue(), _value {}
+        constexpr Nullable(NullType) : _hasValue { false }
         {
             //
         }
 
         constexpr Nullable(T const& contents)
-         : _hasValue(true), _value(contents)
+         : _hasValue(true)
         {
-            //
+            new (reinterpret_cast<T*>(&_valueStorage)) T(contents);
+        }
+
+        Nullable(Nullable<T> const& other)
+         : _hasValue(other.hasValue())
+        {
+            if (other.hasValue())
+            {
+                new (reinterpret_cast<T*>(&_valueStorage)) T(other.value());
+            }
+        }
+
+        ~Nullable()
+        {
+            setToNull();
         }
 
         constexpr bool hasValue() const { return _hasValue; }
         constexpr bool isNull() const { return !_hasValue; }
 
-        T value() const
+        T& value()
         {
             Q_ASSERT_X(hasValue(), "Nullable::value()", "nullable has no value");
-            return _value;
+            return *reinterpret_cast<T*>(&_valueStorage);
         }
 
-        constexpr T valueOr(T alternative) const
+        T const& value() const
         {
-            return _hasValue ? _value : alternative;
+            Q_ASSERT_X(hasValue(), "Nullable::value()", "nullable has no value");
+            return *reinterpret_cast<T const*>(&_valueStorage);
         }
 
-        void setToNull() { _hasValue = false; }
+        constexpr T valueOr(T const& alternative) const
+        {
+            return hasValue() ? value() : alternative;
+        }
 
-        Nullable<T>& operator=(Nullable<T> const& nullable) = default;
+        void setToNull()
+        {
+            if (_hasValue)
+            {
+                value().~T();
+                _hasValue = false;
+            }
+        }
+
         Nullable<T>& operator=(NullType) { setToNull(); return *this; };
 
-        Nullable<T>& operator=(T const& value)
+        Nullable<T>& operator=(Nullable<T> const& other)
         {
-            _value = value;
-            _hasValue = true;
+            if (this == &other)
+                return *this;
+
+            setToNull();
+
+            if (other._hasValue)
+            {
+                new (reinterpret_cast<T*>(&_valueStorage)) T(other.value());
+                _hasValue = true;
+            }
+
             return *this;
         }
 
@@ -97,8 +132,8 @@ namespace PMP
         }
 
     private:
+        alignas(T) quint8 _valueStorage[sizeof(T)] { 0 };
         bool _hasValue;
-        T _value;
     };
 
     template<class T>

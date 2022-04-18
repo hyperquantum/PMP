@@ -23,6 +23,42 @@
 
 using namespace PMP;
 
+class SpecialType
+{
+public:
+    SpecialType(int* constructorCount, int* destructorCount)
+     : _constructorCount(constructorCount),
+       _destructorCount(destructorCount)
+    {
+        (*_constructorCount)++;
+    }
+
+    SpecialType(SpecialType const& other)
+     : _constructorCount(other._constructorCount),
+       _destructorCount(other._destructorCount)
+    {
+        (*_constructorCount)++;
+    }
+
+    ~SpecialType()
+    {
+        (*_destructorCount)++;
+    }
+
+    SpecialType& operator=(SpecialType const& other)
+    {
+        _constructorCount = other._constructorCount;
+        _destructorCount = other._destructorCount;
+        return *this;
+    }
+
+    void dummyOperation() {}
+
+private:
+    int* _constructorCount;
+    int* _destructorCount;
+};
+
 void TestNullable::defaultConstructedIsNull()
 {
     Nullable<int> i;
@@ -36,6 +72,13 @@ void TestNullable::defaultConstructedIsNull()
 
     QVERIFY(!i.hasValue());
     QVERIFY(!s.hasValue());
+}
+
+void TestNullable::defaultConstructorWorksIfTypeNotDefaultConstructible()
+{
+    Nullable<SpecialType> n;
+
+    QVERIFY(n.isNull());
 }
 
 void TestNullable::nullConstructedIsNull()
@@ -75,6 +118,64 @@ void TestNullable::valueConstructedContainsCorrectValue()
 
     QCOMPARE(i.value(), 1234);
     QCOMPARE(s.value(), QString("ABCD"));
+}
+
+void TestNullable::valueConstructedFromSpecialType()
+{
+    int constructed = 0;
+    int destructed = 0;
+    SpecialType t(&constructed, &destructed);
+
+    QCOMPARE(constructed, 1);
+
+    Nullable<SpecialType> n(t);
+
+    QCOMPARE(constructed, 2);
+}
+
+void TestNullable::destructorCallsValueDestructor()
+{
+    int constructed = 0;
+    int destructed = 0;
+    SpecialType t(&constructed, &destructed);
+
+    QCOMPARE(destructed, 0);
+
+    {
+        Nullable<SpecialType> n(t);
+    }
+
+    QCOMPARE(destructed, 1);
+}
+
+void TestNullable::setToNullCallsValueDestructor()
+{
+    int constructed = 0;
+    int destructed = 0;
+    SpecialType t(&constructed, &destructed);
+    Nullable<SpecialType> n(t);
+
+    QCOMPARE(destructed, 0);
+
+    n.setToNull();
+
+    QCOMPARE(destructed, 1);
+}
+
+void TestNullable::valueDoesNotCauseCopy()
+{
+    int constructed = 0;
+    int destructed = 0;
+    SpecialType t(&constructed, &destructed);
+    Nullable<SpecialType> n(t);
+
+    QCOMPARE(constructed, 2);
+
+    auto& v = n.value();
+
+    QCOMPARE(constructed, 2);
+
+    v.dummyOperation(); /* avoids 'unused variable' warning */
 }
 
 void TestNullable::equalsOperatorComparesValue()
@@ -123,6 +224,23 @@ void TestNullable::assignmentOperatorWorks()
 
     QVERIFY(i != null);
     QVERIFY(i == 789);
+}
+
+void TestNullable::assignmentOperatorCallsValueConstructor()
+{
+    int constructed = 0;
+    int destructed = 0;
+    SpecialType t(&constructed, &destructed);
+    Nullable<SpecialType> n1(t);
+    Nullable<SpecialType> n2;
+
+    // reset
+    constructed = 0;
+    destructed = 0;
+
+    n2 = n1;
+
+    QCOMPARE(constructed, 1);
 }
 
 void TestNullable::valueOrReturnsValueIfNotNull()
