@@ -877,6 +877,7 @@ namespace PMP
 
     void Resolver::onFileAnalysisFailed(QString path)
     {
+        Q_UNUSED(path)
         // TODO
     }
 

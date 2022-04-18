@@ -222,7 +222,7 @@ namespace PMP
     Result PlayerQueue::insertAtIndex(qint32 index,
                        std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator)
     {
-        return insertAtIndex(index, queueEntryCreator, [](uint queueId) {});
+        return insertAtIndex(index, queueEntryCreator, [](uint) {});
     }
 
     Result PlayerQueue::insertAtIndex(qint32 index, SpecialQueueItemType itemType,
