@@ -1,0 +1,25 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: List files in bin folder (1)
+        run: |
+          ls bin
+      - name: Run CMake
+        working-directory: bin
+        run: cmake -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
+      - name: List files in bin folder (2)
+        run: |
+          ls bin
+      - name: Run make
+        run: make -j2
+      - name: List files in bin folder (3)
+        run: |
+          ls bin
