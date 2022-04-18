@@ -27,7 +27,7 @@ jobs:
           ls bin
       - name: Run make
         working-directory: bin
-        run: make -j2
+        run: make -j2 -k
       - name: List files in bin folder (3)
         run: |
           ls bin
