@@ -163,6 +163,29 @@ namespace PMP
             return Future<ResultType2, ErrorType2>(newStorage);
         }
 
+        template<class ErrorType2>
+        Future<ResultType, ErrorType2> convertError(
+                                    std::function<ErrorType2 (ErrorType)> errorConversion)
+        {
+            auto newStorage = FutureStorage<ResultType, ErrorType2>::create();
+
+            _storage->addFailureListener(
+                [newStorage, errorConversion](ErrorType error)
+                {
+                    newStorage->setError(errorConversion(error));
+                }
+            );
+
+            _storage->addResultListener(
+                [newStorage](ResultType result)
+                {
+                    newStorage->setResult(result);
+                }
+            );
+
+            return Future<ResultType, ErrorType2>(newStorage);
+        }
+
         static Future fromResult(ResultType result)
         {
             auto storage { FutureStorage<ResultType, ErrorType>::create() };
