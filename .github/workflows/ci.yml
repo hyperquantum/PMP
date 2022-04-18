@@ -12,6 +12,13 @@ jobs:
       - name: List files in bin folder (1)
         run: |
           ls bin
+      - name: Install dependencies
+        run: >
+          sudo apt-get install -y
+          libtag1-dev
+          default-libmysqlclient-dev
+          qtbase5-dev
+          qtmultimedia5-dev
       - name: Run CMake
         working-directory: bin
         run: cmake -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
