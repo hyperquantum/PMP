@@ -106,8 +106,6 @@ namespace PMP
 
         bool isConnectionOpen() const;
 
-        QUuid getDatabaseIdentifier() const;
-
         void registerHash(const FileHash& hash);
         uint getHashID(const FileHash& hash);
         ResultOrError<QList<QPair<uint,FileHash>>, FailureType> getHashes(
@@ -137,6 +135,7 @@ namespace PMP
                                                       QList<quint32> hashIds);
 
         static QSharedPointer<Database> getDatabaseForCurrentThread();
+        static QUuid getDatabaseUuid();
 
     private:
         Database(QSqlDatabase db);
@@ -174,6 +173,8 @@ namespace PMP
         static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
         static void printInitializationError(QTextStream& out, QSqlDatabase& db);
 
+        static bool initMiscTable(QSqlQuery& q);
+        static ResultOrError<QUuid, FailureType> initDatabaseUuid(QSqlQuery& q);
         static bool initUsersTable(QSqlQuery& q);
 
         static QString _hostname;

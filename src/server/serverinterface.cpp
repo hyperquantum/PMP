@@ -107,6 +107,16 @@ namespace PMP
         return _server->caption();
     }
 
+    ResultOrError<QUuid, Result> ServerInterface::getDatabaseUuid() const
+    {
+        auto uuid = Database::getDatabaseUuid();
+
+        if (uuid.isNull())
+            return Error::internalError();
+
+        return uuid;
+    }
+
     void ServerInterface::setLoggedIn(quint32 userId, QString userLogin)
     {
         _userLoggedIn = userId;

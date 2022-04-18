@@ -26,7 +26,6 @@
 #include "common/version.h"
 
 #include "collectionmonitor.h"
-#include "database.h"
 #include "history.h"
 #include "player.h"
 #include "playerqueue.h"
@@ -757,11 +756,12 @@ namespace PMP
 
     void ConnectedClient::sendDatabaseIdentifier()
     {
-        auto db = Database::getDatabaseForCurrentThread();
-        if (!db)
-            return; /* database unusable */
+        auto maybeUuid = _serverInterface->getDatabaseUuid();
 
-        QUuid uuid = db->getDatabaseIdentifier();
+        if (maybeUuid.failed())
+            return;
+
+        auto uuid = maybeUuid.result();
 
         QByteArray message;
         message.reserve(2 + 16);

@@ -70,6 +70,8 @@ namespace PMP
         QUuid getServerUuid() const;
         QString getServerCaption() const;
 
+        ResultOrError<QUuid, Result> getDatabaseUuid() const;
+
         bool isLoggedIn() const { return _userLoggedIn > 0; }
         void setLoggedIn(quint32 userId, QString userLogin);
 

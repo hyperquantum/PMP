@@ -83,48 +83,24 @@ namespace PMP
         }
 
         /* create table 'pmp_misc' if needed */
-        q.prepare(
-            "CREATE TABLE IF NOT EXISTS pmp_misc("
-            " `Key` VARCHAR(63) NOT NULL,"
-            " `Value` VARCHAR(255),"
-            " PRIMARY KEY(`Key`) "
-            ") "
-            "ENGINE = InnoDB "
-            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
-        );
-        if (!q.exec())
+        if (!initMiscTable(q))
         {
             printInitializationError(out, db);
             return false;
         }
 
         /* get UUID, or generate one and store it if it does not exist yet */
-        q.prepare("SELECT `Value` FROM pmp_misc WHERE `Key`=?");
-        q.addBindValue("UUID");
-        if (!q.exec())
+        auto maybeUuid = initDatabaseUuid(q);
+        if (maybeUuid.succeeded())
         {
-            out << " error: could not see if UUID already exists\n" << Qt::endl;
-            return false;
-        }
-        QUuid uuid;
-        if (q.next())
-        {
-            uuid = QUuid(q.value(0).toString());
+            _uuid = maybeUuid.result();
+            out << " UUID is" << _uuid.toString() << Qt::endl;
         }
         else
         {
-            uuid = QUuid::createUuid();
-            q.prepare("INSERT INTO pmp_misc(`Key`, `Value`) VALUES (?,?)");
-            q.addBindValue("UUID");
-            q.addBindValue(uuid.toString());
-            if (!q.exec())
-            {
-                out << " error inserting UUID into database\n" << Qt::endl;
-                return false;
-            }
+            out << " error inserting UUID into database\n" << Qt::endl;
+            return false;
         }
-        _uuid = uuid;
-        out << " UUID is " << _uuid.toString() << Qt::endl;
 
         /* create table 'pmp_hash' if needed */
         q.prepare(
@@ -224,6 +200,52 @@ namespace PMP
         return true;
     }
 
+    bool Database::initMiscTable(QSqlQuery& q)
+    {
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_misc("
+            " `Key` VARCHAR(63) NOT NULL,"
+            " `Value` VARCHAR(255),"
+            " PRIMARY KEY(`Key`) "
+            ") "
+            "ENGINE = InnoDB "
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
+        );
+
+        return q.exec();
+    }
+
+    ResultOrError<QUuid, FailureType> Database::initDatabaseUuid(QSqlQuery& q)
+    {
+        q.prepare("SELECT `Value` FROM pmp_misc WHERE `Key`=?");
+        q.addBindValue("UUID");
+        if (!q.exec())
+        {
+            qCritical() << "could not see if UUID already exists";
+            return failure;
+        }
+
+        if (q.next())
+        {
+            auto uuid = QUuid(q.value(0).toString());
+            return uuid;
+        }
+
+        auto uuid { QUuid::createUuid() };
+
+        q.prepare("INSERT INTO pmp_misc(`Key`, `Value`) VALUES (?,?)");
+        q.addBindValue("UUID");
+        q.addBindValue(uuid.toString());
+        if (!q.exec())
+        {
+            qCritical() << "error inserting UUID into database";
+            return failure;
+        }
+
+        qDebug() << "generated new UUID for the database:" << uuid;
+        return uuid;
+    }
+
     bool Database::initUsersTable(QSqlQuery& q)
     {
         q.prepare(
@@ -312,14 +334,14 @@ namespace PMP
         return dbPtr;
     }
 
+    QUuid Database::getDatabaseUuid()
+    {
+        return _uuid;
+    }
+
     bool Database::isConnectionOpen() const
     {
         return _db.isOpen();
-    }
-
-    QUuid Database::getDatabaseIdentifier() const
-    {
-        return _uuid;
     }
 
     void Database::registerHash(const FileHash& hash)
