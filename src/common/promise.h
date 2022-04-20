@@ -40,7 +40,7 @@ namespace PMP
         Promise(Promise const&) = delete;
         Promise& operator=(Promise const&) = delete;
 
-        Future<ResultType, ErrorType> future()
+        Future<ResultType, ErrorType> future() const
         {
             return Future<ResultType, ErrorType>(_storage);
         }
@@ -82,7 +82,7 @@ namespace PMP
         SimplePromise(SimplePromise const&) = delete;
         SimplePromise& operator=(SimplePromise const&) = delete;
 
-        SimpleFuture<T> future()
+        SimpleFuture<T> future() const
         {
             return SimpleFuture<T>(_storage);
         }
@@ -110,7 +110,7 @@ namespace PMP
         VoidPromise(VoidPromise const&) = delete;
         VoidPromise& operator=(VoidPromise const&) = delete;
 
-        VoidFuture future()
+        VoidFuture future() const
         {
             return VoidFuture(_storage);
         }

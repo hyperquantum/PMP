@@ -22,6 +22,7 @@
 #include "collectionfetcher.h"
 #include "networkprotocol.h"
 #include "networkutil.h"
+#include "promise.h"
 #include "servercapabilitiesimpl.h"
 #include "util.h"
 
@@ -140,48 +141,65 @@ namespace PMP
 
     /* ============================================================================ */
 
-    class ServerConnection::StandardResultHandler : public ResultHandler
+    class ServerConnection::PromiseResultHandler : public ResultHandler
     {
     public:
-        StandardResultHandler(ServerConnection* parent,
-                           void (ServerConnection::* resultSignal)(ResultMessageErrorCode,
-                                                                   RequestID));
+        PromiseResultHandler(ServerConnection* parent);
+
+        SimpleFuture<ResultMessageErrorCode> future() const;
 
         void handleResult(ResultMessageData const& data) override;
 
+    protected:
+        virtual QString getActionDetail() const;
+
     private:
-        void (ServerConnection::* _resultSignal)(ResultMessageErrorCode, RequestID);
+        SimplePromise<ResultMessageErrorCode> _promise;
     };
 
-    ServerConnection::StandardResultHandler::StandardResultHandler(
-                                                ServerConnection* parent,
-                                                void (ServerConnection::* resultSignal)(
-                                                        ResultMessageErrorCode,RequestID))
-     : ResultHandler(parent), _resultSignal(resultSignal)
+    ServerConnection::PromiseResultHandler::PromiseResultHandler(ServerConnection* parent)
+     : ResultHandler(parent)
     {
         //
     }
 
-    void ServerConnection::StandardResultHandler::handleResult(
+    SimpleFuture<ResultMessageErrorCode> ServerConnection::PromiseResultHandler::future(
+                                                                                   ) const
+    {
+        return _promise.future();
+    }
+
+    void ServerConnection::PromiseResultHandler::handleResult(
                                                             ResultMessageData const& data)
     {
         if (data.isFailure())
         {
-            qWarning() << "StandardResultHandler:" << errorDescription(data);
+            auto actionDetail = getActionDetail();
+
+            if (actionDetail.isEmpty())
+                qWarning() << "PromiseResultHandler:" << errorDescription(data);
+            else
+                qWarning() << "PromiseResultHandler:" << actionDetail << ":"
+                           << errorDescription(data);
         }
 
-        (_parent->*_resultSignal)(data.errorType, data.toRequestID());
+        _promise.setResult(data.errorType);
+    }
+
+    QString ServerConnection::PromiseResultHandler::getActionDetail() const
+    {
+        return {};
     }
 
     /* ============================================================================ */
 
-    class ServerConnection::ParameterlessActionResultHandler : public ResultHandler
+    class ServerConnection::ParameterlessActionResultHandler : public PromiseResultHandler
     {
     public:
         ParameterlessActionResultHandler(ServerConnection* parent,
                                          ParameterlessActionCode code);
-
-        void handleResult(ResultMessageData const& data) override;
+    protected:
+        QString getActionDetail() const override;
 
     private:
         ParameterlessActionCode _code;
@@ -190,40 +208,26 @@ namespace PMP
     ServerConnection::ParameterlessActionResultHandler::ParameterlessActionResultHandler(
                                                              ServerConnection* parent,
                                                              ParameterlessActionCode code)
-     : ResultHandler(parent), _code(code)
+     : PromiseResultHandler(parent), _code(code)
     {
         //
     }
 
-    void ServerConnection::ParameterlessActionResultHandler::handleResult(
-                                                            ResultMessageData const& data)
+    QString ServerConnection::ParameterlessActionResultHandler::getActionDetail() const
     {
-        if (data.isFailure())
-        {
-            qWarning() << "ParameterlessActionResultHandler:"
-                       << "action" << static_cast<int>(_code) << ":"
-                       << errorDescription(data);
-        }
-
         switch (_code)
         {
         case ParameterlessActionCode::Reserved:
             break; /* not supposed to be used */
 
         case ParameterlessActionCode::ReloadServerSettings:
-            Q_EMIT _parent->serverSettingsReloadResultEvent(data.errorType,
-                                                            data.toRequestID());
-            return;
+            return "server settings reload";
 
         case ParameterlessActionCode::DeactivateDelayedStart:
-            Q_EMIT _parent->delayedStartDeactivationResultEvent(data.errorType,
-                                                                data.toRequestID());
-            return;
+            return "delayed start deactivation";
         }
 
-        qWarning() << "ParameterlessActionResultHandler: unhandled action"
-                   << static_cast<int>(_code)
-                   << "with client-ref" << data.clientReference;
+        return "action with code " + QString::number(static_cast<int>(_code));
     }
 
     /* ============================================================================ */
@@ -833,7 +837,7 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    RequestID ServerConnection::sendParameterlessActionRequest(
+    SimpleFuture<ResultMessageErrorCode> ServerConnection::sendParameterlessActionRequest(
                                                              ParameterlessActionCode code)
     {
         auto handler = new ParameterlessActionResultHandler(this, code);
@@ -856,7 +860,7 @@ namespace PMP
 
         sendBinaryMessage(message);
 
-        return RequestID(ref);
+        return handler->future();
     }
 
     void ServerConnection::sendQueueFetchRequest(uint startOffset, quint8 length)
@@ -967,13 +971,15 @@ namespace PMP
         return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
     }
 
-    RequestID ServerConnection::reloadServerSettings()
+    FutureResult<ResultMessageErrorCode> ServerConnection::serverTooOldFutureResult()
+    {
+        return FutureResult(ResultMessageErrorCode::ServerTooOld);
+    }
+
+    SimpleFuture<ResultMessageErrorCode> ServerConnection::reloadServerSettings()
     {
         if (!serverCapabilities().supportsReloadingServerSettings())
-        {
-            return signalServerTooOldError(
-                                      &ServerConnection::serverSettingsReloadResultEvent);
-        }
+            return serverTooOldFutureResult();
 
         qDebug() << "sending request to reload server settings";
 
@@ -981,17 +987,13 @@ namespace PMP
                                            ParameterlessActionCode::ReloadServerSettings);
     }
 
-    RequestID ServerConnection::activateDelayedStart(qint64 delayMilliseconds)
+    SimpleFuture<ResultMessageErrorCode> ServerConnection::activateDelayedStart(
+                                                                 qint64 delayMilliseconds)
     {
         if (!serverCapabilities().supportsDelayedStart())
-        {
-            return signalServerTooOldError(
-                                    &ServerConnection::delayedStartActivationResultEvent);
-        }
+            return serverTooOldFutureResult();
 
-        auto handler =
-            new StandardResultHandler(this,
-                                    &ServerConnection::delayedStartActivationResultEvent);
+        auto handler = new PromiseResultHandler(this);
         auto ref = getNewReference();
         _resultHandlers[ref] = handler;
 
@@ -1008,16 +1010,13 @@ namespace PMP
 
         sendBinaryMessage(message);
 
-        return RequestID(ref);
+        return handler->future();
     }
 
-    RequestID ServerConnection::deactivateDelayedStart()
+    SimpleFuture<ResultMessageErrorCode> ServerConnection::deactivateDelayedStart()
     {
         if (!serverCapabilities().supportsDelayedStart())
-        {
-            return signalServerTooOldError(
-                                  &ServerConnection::delayedStartDeactivationResultEvent);
-        }
+            return serverTooOldFutureResult();
 
         qDebug() << "sending request to deactivate delayed start";
 

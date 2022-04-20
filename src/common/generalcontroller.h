@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_GENERALCONTROLLER_H
 #define PMP_GENERALCONTROLLER_H
 
-#include "requestid.h"
+#include "future.h"
 #include "resultmessageerrorcode.h"
 #include "serverhealthstatus.h"
 
@@ -38,7 +38,7 @@ namespace PMP
 
         virtual qint64 clientClockTimeOffsetMs() const = 0;
 
-        virtual RequestID reloadServerSettings() = 0;
+        virtual SimpleFuture<ResultMessageErrorCode> reloadServerSettings() = 0;
 
     public Q_SLOTS:
         virtual void shutdownServer() = 0;
@@ -46,8 +46,6 @@ namespace PMP
     Q_SIGNALS:
         void serverHealthChanged();
         void clientClockTimeOffsetChanged();
-        void serverSettingsReloadResultEvent(ResultMessageErrorCode errorCode,
-                                             RequestID requestId);
 
     protected:
         explicit GeneralController(QObject* parent) : QObject(parent) {}

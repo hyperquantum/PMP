@@ -21,7 +21,6 @@
 #define PMP_DELAYEDSTARTDIALOG_H
 
 #include "common/nullable.h"
-#include "common/requestid.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/tribool.h"
 
@@ -55,7 +54,6 @@ namespace PMP
         Ui::DelayedStartDialog* _ui;
         ClientServerInterface* _clientServerInterface;
         PlayDurationCalculator* _playDurationCalculator;
-        RequestID _requestId;
     };
 
     class PlayDurationCalculator : public QObject

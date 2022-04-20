@@ -60,14 +60,6 @@ namespace PMP
             _connection, &ServerConnection::volumeChanged,
             this, &PlayerControllerImpl::receivedVolume
         );
-        connect(
-            _connection, &ServerConnection::delayedStartActivationResultEvent,
-            this, &PlayerControllerImpl::delayedStartActivationResultEvent
-        );
-        connect(
-            _connection, &ServerConnection::delayedStartDeactivationResultEvent,
-            this, &PlayerControllerImpl::delayedStartDeactivationResultEvent
-        );
 
         if (_connection->isConnected())
             connected();
@@ -153,12 +145,14 @@ namespace PMP
         return _delayedStartServerDeadline;
     }
 
-    RequestID PlayerControllerImpl::activateDelayedStart(qint64 delayMilliseconds)
+    SimpleFuture<ResultMessageErrorCode> PlayerControllerImpl::activateDelayedStart(
+                                                                 qint64 delayMilliseconds)
     {
         return _connection->activateDelayedStart(delayMilliseconds);
     }
 
-    RequestID PlayerControllerImpl::activateDelayedStart(QDateTime startTime)
+    SimpleFuture<ResultMessageErrorCode> PlayerControllerImpl::activateDelayedStart(
+                                                                      QDateTime startTime)
     {
         auto delayMilliseconds =
                 QDateTime::currentDateTimeUtc().msecsTo(startTime.toUTC());
@@ -166,7 +160,7 @@ namespace PMP
         return activateDelayedStart(delayMilliseconds);
     }
 
-    RequestID PlayerControllerImpl::deactivateDelayedStart()
+    SimpleFuture<ResultMessageErrorCode> PlayerControllerImpl::deactivateDelayedStart()
     {
         return _connection->deactivateDelayedStart();
     }

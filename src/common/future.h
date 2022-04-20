@@ -32,6 +32,19 @@
 namespace PMP
 {
     template<class T>
+    class FutureResult
+    {
+    public:
+        FutureResult(T const& result) : _result(result) {}
+        FutureResult(T&& result) : _result(result) {}
+
+    private:
+        friend class SimpleFuture<T>;
+
+        T _result;
+    };
+
+    template<class T>
     class FutureError
     {
     public:
@@ -206,7 +219,7 @@ namespace PMP
             return Future(storage);
         }
 
-        Future(FutureError<ErrorType> const& error)
+        Future(FutureError<ErrorType>&& error)
          : _storage { FutureStorage<ResultType, ErrorType>::create() }
         {
             _storage->setError(error._error);
@@ -247,6 +260,12 @@ namespace PMP
             auto storage { FutureStorage<T, FailureType>::create() };
             storage->setResult(result);
             return SimpleFuture(storage);
+        }
+
+        SimpleFuture(FutureResult<T>&& result)
+         : _storage { FutureStorage<T, FailureType>::create() }
+        {
+            _storage->setResult(result._result);
         }
 
     private:

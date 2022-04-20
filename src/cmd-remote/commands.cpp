@@ -44,24 +44,13 @@ namespace PMP
 
     void ReloadServerSettingsCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        auto* generalController = &clientServerInterface->generalController();
-
-        connect(
-            generalController, &GeneralController::serverSettingsReloadResultEvent,
-            this,
-            [this](ResultMessageErrorCode errorCode, RequestID requestId)
-            {
-                if (requestId != _requestId)
-                    return; /* not for us */
-
-                setCommandExecutionResult(errorCode);
-            }
-        );
+        //
     }
 
     void ReloadServerSettingsCommand::start(ClientServerInterface* clientServerInterface)
     {
-        _requestId = clientServerInterface->generalController().reloadServerSettings();
+        auto future = clientServerInterface->generalController().reloadServerSettings();
+        addCommandExecutionFutureListener(future);
     }
 
     /* ===== DelayedStartAtCommand ===== */
@@ -79,25 +68,15 @@ namespace PMP
 
     void DelayedStartAtCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        auto* playerController = &clientServerInterface->playerController();
-
-        connect(
-            playerController, &PlayerController::delayedStartActivationResultEvent,
-            this,
-            [this](ResultMessageErrorCode errorCode, RequestID requestId)
-            {
-                if (requestId != _requestId)
-                    return; /* not for us */
-
-                setCommandExecutionResult(errorCode);
-            }
-        );
+        //
     }
 
     void DelayedStartAtCommand::start(ClientServerInterface* clientServerInterface)
     {
-        _requestId = clientServerInterface->playerController().activateDelayedStart(
-                                                                              _startTime);
+        auto future =
+            clientServerInterface->playerController().activateDelayedStart(_startTime);
+
+        addCommandExecutionFutureListener(future);
     }
 
     /* ===== DelayedStartWaitCommand ===== */
@@ -115,25 +94,15 @@ namespace PMP
 
     void DelayedStartWaitCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        auto* playerController = &clientServerInterface->playerController();
-
-        connect(
-            playerController, &PlayerController::delayedStartActivationResultEvent,
-            this,
-            [this](ResultMessageErrorCode errorCode, RequestID requestId)
-            {
-                if (requestId != _requestId)
-                    return; /* not for us */
-
-                setCommandExecutionResult(errorCode);
-            }
-        );
+        //
     }
 
     void DelayedStartWaitCommand::start(ClientServerInterface* clientServerInterface)
     {
-        _requestId = clientServerInterface->playerController().activateDelayedStart(
+        auto future =
+            clientServerInterface->playerController().activateDelayedStart(
                                                                       _delayMilliseconds);
+        addCommandExecutionFutureListener(future);
     }
 
     /* ===== DeactivateDelayedCancelCommand ===== */
@@ -145,24 +114,13 @@ namespace PMP
 
     void DelayedStartCancelCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        auto* playerController = &clientServerInterface->playerController();
-
-        connect(
-            playerController, &PlayerController::delayedStartDeactivationResultEvent,
-            this,
-            [this](ResultMessageErrorCode errorCode, RequestID requestId)
-            {
-                if (requestId != _requestId)
-                    return; /* not for us */
-
-                setCommandExecutionResult(errorCode);
-            }
-        );
+        //
     }
 
     void DelayedStartCancelCommand::start(ClientServerInterface* clientServerInterface)
     {
-        _requestId = clientServerInterface->playerController().deactivateDelayedStart();
+        auto future = clientServerInterface->playerController().deactivateDelayedStart();
+        addCommandExecutionFutureListener(future);
     }
 
     /* ===== PlayCommand ===== */

@@ -358,7 +358,15 @@ namespace PMP
 
     void MainWindow::onReloadServerSettingsTriggered()
     {
-        _clientServerInterface->generalController().reloadServerSettings();
+        auto future =  _clientServerInterface->generalController().reloadServerSettings();
+
+        future.addResultListener(
+            this,
+            [this](ResultMessageErrorCode code)
+            {
+                reloadServerSettingsResultReceived(code);
+            }
+        );
     }
 
     void MainWindow::reloadServerSettingsResultReceived(ResultMessageErrorCode errorCode)
@@ -516,10 +524,6 @@ namespace PMP
                 qDebug() << "fullIndexationFinished triggered";
                 setLeftStatus(5000, tr("Full indexation finished"));
             }
-        );
-        connect(
-            generalController, &GeneralController::serverSettingsReloadResultEvent,
-            this, &MainWindow::reloadServerSettingsResultReceived
         );
         connect(
             &_clientServerInterface->playerController(),

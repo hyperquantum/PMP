@@ -29,7 +29,6 @@
 
 #include <QLocale>
 #include <QMessageBox>
-//#include <QtConcurrent/QtConcurrent>
 #include <QTimer>
 
 namespace PMP
@@ -251,10 +250,6 @@ namespace PMP
         connect(_ui->secondsSpinBox, qOverload<int>(&QSpinBox::valueChanged),
                 this, [this]() { _ui->delayRadioButton->setChecked(true); });
 
-        auto* playerController = &_clientServerInterface->playerController();
-        connect(playerController, &PlayerController::delayedStartActivationResultEvent,
-                this, &DelayedStartDialog::activationResultReceived);
-
         connect(_playDurationCalculator, &PlayDurationCalculator::resultChanged,
                 this, &DelayedStartDialog::updateEstimatedEndTime);
 
@@ -293,8 +288,13 @@ namespace PMP
                 return;
             }
 
-            _requestId =
+            auto future =
                 _clientServerInterface->playerController().activateDelayedStart(deadline);
+
+            future.addResultListener(
+                this,
+                [this](ResultMessageErrorCode code) { activationResultReceived(code); }
+            );
         }
         else
         {
@@ -314,9 +314,13 @@ namespace PMP
                 return;
             }
 
-            _requestId =
+            auto future =
                 _clientServerInterface->playerController().activateDelayedStart(
                                                                        millisecondsTotal);
+            future.addResultListener(
+                this,
+                [this](ResultMessageErrorCode code) { activationResultReceived(code); }
+            );
         }
 
         _ui->buttonBox->setEnabled(false);

@@ -179,6 +179,15 @@ namespace PMP
         setCommandExecutionFailed(3, "Command failed: " + errorOutput);
     }
 
+    void CommandBase::addCommandExecutionFutureListener(
+                                              SimpleFuture<ResultMessageErrorCode> future)
+    {
+        future.addResultListener(
+            this,
+            [this](ResultMessageErrorCode code) { setCommandExecutionResult(code); }
+        );
+    }
+
     void CommandBase::listenerSlot()
     {
         if (_finishedOrFailed)
