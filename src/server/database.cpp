@@ -102,36 +102,14 @@ namespace PMP
             return false;
         }
 
-        /* create table 'pmp_hash' if needed */
-        if (!initHashTable(q))
-        {
-            printInitializationError(out, db);
-            return false;
-        }
+        bool tablesInitialized =
+            initHashTable(q)         /* pmp_hash */
+            && initFilenameTable(q)  /* pmp_filename */
+            && initFileSizeTable(q)  /* pmp_filesize */
+            && initUsersTable(q)     /* pmp_user */
+            && initHistoryTable(q);  /* pmp_history */
 
-        /* create table 'pmp_filename' if needed */
-        if (!initFilenameTable(q))
-        {
-            printInitializationError(out, db);
-            return false;
-        }
-
-        /* create table 'pmp_filesize' if needed */
-        if (!initFileSizeTable(q))
-        {
-            printInitializationError(out, db);
-            return false;
-        }
-
-        /* create table 'pmp_user' if needed */
-        if (!initUsersTable(q))
-        {
-            printInitializationError(out, db);
-            return false;
-        }
-
-        /* create table 'pmp_history' if needed */
-        if (!initHistoryTable(q))
+        if (!tablesInitialized)
         {
             printInitializationError(out, db);
             return false;
