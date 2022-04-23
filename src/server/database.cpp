@@ -223,7 +223,15 @@ namespace PMP
             ") ENGINE = InnoDB"
         );
 
-        return q.exec();
+        if (!q.exec())
+            return false;
+
+        const auto tableName = "pmp_filesize";
+
+        if (!addColumnIfNotExists(q, tableName, "YearLastSeen", "INT"))
+            return false;
+
+        return true;
     }
 
     bool Database::initUsersTable(QSqlQuery& q)
@@ -515,23 +523,25 @@ namespace PMP
         return result;
     }
 
-    void Database::registerFileSize(uint hashId, qint64 size)
+    void Database::registerFileSizeSeen(uint hashId, qint64 size, int currentYear)
     {
         auto preparer =
             [=] (QSqlQuery& q)
             {
                 q.prepare(
-                    "INSERT INTO pmp_filesize(`HashID`,`FileSize`)"
-                    " VALUES(?,?)"
-                    " ON DUPLICATE KEY UPDATE `FileSize`=`FileSize`"
+                    "INSERT INTO pmp_filesize(`HashID`,`FileSize`,`YearLastSeen`)"
+                    " VALUES(?,?,?)"
+                    " ON DUPLICATE KEY UPDATE `YearLastSeen`=?"
                 );
                 q.addBindValue(hashId);
                 q.addBindValue(size);
+                q.addBindValue(currentYear);
+                q.addBindValue(currentYear);
             };
 
         if (!executeVoid(preparer))
         {
-            qDebug() << "Database::registerFileSize : insert failed!" << Qt::endl;
+            qDebug() << "Database::registerFileSize : insert/update failed!" << Qt::endl;
             return;
         }
     }

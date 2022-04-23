@@ -717,7 +717,7 @@ namespace PMP
             /* save filename without path in the database */
             db->registerFilenameSeen(_hashId, info.fileName(), currentYear);
 
-            db->registerFileSize(_hashId, fileSize);
+            db->registerFileSizeSeen(_hashId, fileSize, currentYear);
         }
 
         if (_files.length() == 1) /* count went from 0 to 1 */

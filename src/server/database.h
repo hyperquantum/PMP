@@ -115,7 +115,7 @@ namespace PMP
                                   int currentYear);
         ResultOrError<QList<QString>, FailureType> getFilenames(uint hashID);
 
-        void registerFileSize(uint hashId, qint64 size);
+        void registerFileSizeSeen(uint hashId, qint64 size, int currentYear);
         ResultOrError<QList<qint64>, FailureType> getFileSizes(uint hashID);
 
         QList<User> getUsers();
