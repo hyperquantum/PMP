@@ -111,7 +111,8 @@ namespace PMP
         ResultOrError<QList<QPair<uint,FileHash>>, FailureType> getHashes(
                                                                    uint largerThanID = 0);
 
-        void registerFilename(uint hashID, const QString& filenameWithoutPath);
+        bool registerFilenameSeen(uint hashId, const QString& filenameWithoutPath,
+                                  int currentYear);
         ResultOrError<QList<QString>, FailureType> getFilenames(uint hashID);
 
         void registerFileSize(uint hashId, qint64 size);

@@ -198,7 +198,15 @@ namespace PMP
             "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
         );
 
-        return q.exec();
+        if (!q.exec())
+            return false;
+
+        const auto tableName = "pmp_filename";
+
+        if (!addColumnIfNotExists(q, tableName, "YearLastSeen", "INT"))
+            return false;
+
+        return true;
     }
 
     bool Database::initFileSizeTable(QSqlQuery& q)
@@ -233,9 +241,7 @@ namespace PMP
             "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
         );
         if (!q.exec())
-        {
             return false;
-        }
 
         const auto tableName = "pmp_user";
 
@@ -426,53 +432,61 @@ namespace PMP
         return result;
     }
 
-    void Database::registerFilename(uint hashID, const QString& filenameWithoutPath)
+    bool Database::registerFilenameSeen(uint hashId, const QString& filenameWithoutPath,
+                                        int currentYear)
     {
         /* We do not support extremely long file names.  Lookup for those files should be
            done by other means. */
-        if (filenameWithoutPath.length() > 255) return;
+        if (filenameWithoutPath.length() > 255)
+            return false;
 
         /* A race condition could cause duplicate records to be registered; that is
            tolerable however. */
 
-        auto preparer =
-            [=] (QSqlQuery& q)
-            {
-                q.prepare(
-                    "SELECT EXISTS("
-                    " SELECT * FROM pmp_filename"
-                    "  WHERE `HashID`=? AND `FilenameWithoutDir`=? "
-                    ")"
-                );
-                q.addBindValue(hashID);
-                q.addBindValue(filenameWithoutPath);
-            };
+        QSqlQuery query(_db);
+        query.prepare(
+            "SELECT `YearLastSeen` FROM pmp_filename "
+            "WHERE `HashID`=? AND `FilenameWithoutDir`=? "
+            "ORDER BY COALESCE(`YearLastSeen`, 0) "
+            "LIMIT 1"
+        );
+        query.addBindValue(hashId);
+        query.addBindValue(filenameWithoutPath);
 
-        bool exists;
-        if (!executeScalar(preparer, exists, false))
+        if (!executeQuery(query))
+            return false;
+
+        if (query.next())
         {
-            qDebug() << "Database::registerFilename : select failed!" << Qt::endl;
-            return;
+            int oldYear = query.value(0).toInt();
+            if (oldYear == currentYear)
+                return true; /* nothing to update */
+
+            /* Delete existing entries with an older year or without a year. This also
+               causes duplicate entries to be cleaned up eventually. */
+            query.prepare(
+                "DELETE FROM pmp_filename "
+                "WHERE `HashID`=? AND `FilenameWithoutDir`=?"
+            );
+            query.addBindValue(hashId);
+            query.addBindValue(filenameWithoutPath);
+
+            if (!executeQuery(query))
+                return false;
         }
 
-        if (exists) return; /* already registered */
+        query.prepare(
+            "INSERT INTO pmp_filename(`HashID`,`FilenameWithoutDir`,`YearLastSeen`) "
+            "VALUES(?,?,?)"
+        );
+        query.addBindValue(hashId);
+        query.addBindValue(filenameWithoutPath);
+        query.addBindValue(currentYear);
 
-        auto preparer2 =
-            [=] (QSqlQuery& q)
-            {
-                q.prepare(
-                    "INSERT INTO pmp_filename(`HashID`,`FilenameWithoutDir`)"
-                    " VALUES(?,?)"
-                );
-                q.addBindValue(hashID);
-                q.addBindValue(filenameWithoutPath);
-            };
+        if (!executeQuery(query))
+            return false;
 
-        if (!executeVoid(preparer2))
-        {
-            qDebug() << "Database::registerFilename : insert failed!" << Qt::endl;
-            return;
-        }
+        return true;
     }
 
     ResultOrError<QList<QString>, FailureType> Database::getFilenames(uint hashID)

@@ -712,8 +712,10 @@ namespace PMP
         auto db = Database::getDatabaseForCurrentThread();
         if (_hashId > 0 && db)
         {
+            int currentYear = QDateTime::currentDateTimeUtc().date().year();
+
             /* save filename without path in the database */
-            db->registerFilename(_hashId, info.fileName());
+            db->registerFilenameSeen(_hashId, info.fileName(), currentYear);
 
             db->registerFileSize(_hashId, fileSize);
         }
