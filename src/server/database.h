@@ -175,7 +175,11 @@ namespace PMP
 
         static bool initMiscTable(QSqlQuery& q);
         static ResultOrError<QUuid, FailureType> initDatabaseUuid(QSqlQuery& q);
+        static bool initHashTable(QSqlQuery& q);
+        static bool initFilenameTable(QSqlQuery& q);
+        static bool initFileSizeTable(QSqlQuery& q);
         static bool initUsersTable(QSqlQuery& q);
+        static bool initHistoryTable(QSqlQuery& q);
 
         static QString _hostname;
         static int _port;

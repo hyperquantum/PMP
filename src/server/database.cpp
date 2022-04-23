@@ -103,36 +103,21 @@ namespace PMP
         }
 
         /* create table 'pmp_hash' if needed */
-        q.prepare(
-            "CREATE TABLE IF NOT EXISTS pmp_hash("
-            " `HashID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
-            " `InputLength` INT UNSIGNED NOT NULL,"
-            " `SHA1` VARCHAR(40) NOT NULL,"
-            " `MD5` VARCHAR(32) NOT NULL,"
-            " PRIMARY KEY (`HashID`),"
-            " UNIQUE INDEX `IDX_pmphash` (`InputLength` ASC, `SHA1` ASC, `MD5` ASC) "
-            ") ENGINE = InnoDB"
-        );
-        if (!q.exec())
+        if (!initHashTable(q))
         {
             printInitializationError(out, db);
             return false;
         }
 
         /* create table 'pmp_filename' if needed */
-        q.prepare(
-            "CREATE TABLE IF NOT EXISTS pmp_filename("
-            " `HashID` INT UNSIGNED NOT NULL,"
-            " `FilenameWithoutDir` VARCHAR(255) NOT NULL,"
-            " CONSTRAINT `FK_pmpfilenamehashid`"
-            "  FOREIGN KEY (`HashID`)"
-            "   REFERENCES pmp_hash (`HashID`)"
-            "   ON DELETE CASCADE ON UPDATE CASCADE"
-            ") "
-            "ENGINE = InnoDB "
-            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
-        );
-        if (!q.exec())
+        if (!initFilenameTable(q))
+        {
+            printInitializationError(out, db);
+            return false;
+        }
+
+        /* create table 'pmp_filesize' if needed */
+        if (!initFileSizeTable(q))
         {
             printInitializationError(out, db);
             return false;
@@ -146,49 +131,7 @@ namespace PMP
         }
 
         /* create table 'pmp_history' if needed */
-        q.prepare(
-            "CREATE TABLE IF NOT EXISTS pmp_history ("
-            " `HistoryID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
-            " `HashID` INT UNSIGNED NOT NULL,"
-            " `UserID` INT UNSIGNED,"
-            " `Start` DATETIME NOT NULL,"
-            " `End` DATETIME,"
-            " `Permillage` INT NOT NULL,"
-            " `ValidForScoring` BIT NOT NULL,"
-            " PRIMARY KEY (`HistoryID`),"
-            " INDEX `IDX_history_hash` (`HashID` ASC),"
-            " INDEX `IDX_history_user_hash` (`UserID` ASC, `HashID` ASC),"
-            " CONSTRAINT `FK_history_hash`"
-            "  FOREIGN KEY (`HashID`)"
-            "  REFERENCES `pmp_hash` (`HashID`)"
-            "   ON DELETE RESTRICT ON UPDATE CASCADE,"
-            " CONSTRAINT `FK_history_user`"
-            "  FOREIGN KEY (`UserID`)"
-            "  REFERENCES `pmp_user` (`UserID`)"
-            "   ON DELETE RESTRICT ON UPDATE CASCADE"
-            ") "
-            "ENGINE = InnoDB "
-            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
-        );
-        if (!q.exec())
-        {
-            printInitializationError(out, db);
-            return false;
-        }
-
-        /* create table 'pmp_filesize' if needed */
-        q.prepare(
-            "CREATE TABLE IF NOT EXISTS pmp_filesize("
-            " `HashID` INT UNSIGNED NOT NULL,"
-            " `FileSize` BIGINT NOT NULL," /* signed; Qt uses qint64 for file sizes */
-            " CONSTRAINT `FK_pmpfilesizehashid`"
-            "  FOREIGN KEY (`HashID`)"
-            "   REFERENCES pmp_hash (`HashID`)"
-            "   ON DELETE CASCADE ON UPDATE CASCADE,"
-            " UNIQUE INDEX `IDX_pmpfilesize` (`FileSize` ASC, `HashID` ASC) "
-            ") ENGINE = InnoDB"
-        );
-        if (!q.exec())
+        if (!initHistoryTable(q))
         {
             printInitializationError(out, db);
             return false;
@@ -246,6 +189,57 @@ namespace PMP
         return uuid;
     }
 
+    bool Database::initHashTable(QSqlQuery& q)
+    {
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_hash("
+            " `HashID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+            " `InputLength` INT UNSIGNED NOT NULL,"
+            " `SHA1` VARCHAR(40) NOT NULL,"
+            " `MD5` VARCHAR(32) NOT NULL,"
+            " PRIMARY KEY (`HashID`),"
+            " UNIQUE INDEX `IDX_pmphash` (`InputLength` ASC, `SHA1` ASC, `MD5` ASC) "
+            ") ENGINE = InnoDB"
+        );
+
+        return q.exec();
+    }
+
+    bool Database::initFilenameTable(QSqlQuery& q)
+    {
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_filename("
+            " `HashID` INT UNSIGNED NOT NULL,"
+            " `FilenameWithoutDir` VARCHAR(255) NOT NULL,"
+            " CONSTRAINT `FK_pmpfilenamehashid`"
+            "  FOREIGN KEY (`HashID`)"
+            "   REFERENCES pmp_hash (`HashID`)"
+            "   ON DELETE CASCADE ON UPDATE CASCADE"
+            ") "
+            "ENGINE = InnoDB "
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
+        );
+
+        return q.exec();
+    }
+
+    bool Database::initFileSizeTable(QSqlQuery& q)
+    {
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_filesize("
+            " `HashID` INT UNSIGNED NOT NULL,"
+            " `FileSize` BIGINT NOT NULL," /* signed; Qt uses qint64 for file sizes */
+            " CONSTRAINT `FK_pmpfilesizehashid`"
+            "  FOREIGN KEY (`HashID`)"
+            "   REFERENCES pmp_hash (`HashID`)"
+            "   ON DELETE CASCADE ON UPDATE CASCADE,"
+            " UNIQUE INDEX `IDX_pmpfilesize` (`FileSize` ASC, `HashID` ASC) "
+            ") ENGINE = InnoDB"
+        );
+
+        return q.exec();
+    }
+
     bool Database::initUsersTable(QSqlQuery& q)
     {
         q.prepare(
@@ -276,6 +270,36 @@ namespace PMP
         }
 
         return true;
+    }
+
+    bool Database::initHistoryTable(QSqlQuery& q)
+    {
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_history ("
+            " `HistoryID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+            " `HashID` INT UNSIGNED NOT NULL,"
+            " `UserID` INT UNSIGNED,"
+            " `Start` DATETIME NOT NULL,"
+            " `End` DATETIME,"
+            " `Permillage` INT NOT NULL,"
+            " `ValidForScoring` BIT NOT NULL,"
+            " PRIMARY KEY (`HistoryID`),"
+            " INDEX `IDX_history_hash` (`HashID` ASC),"
+            " INDEX `IDX_history_user_hash` (`UserID` ASC, `HashID` ASC),"
+            " CONSTRAINT `FK_history_hash`"
+            "  FOREIGN KEY (`HashID`)"
+            "  REFERENCES `pmp_hash` (`HashID`)"
+            "   ON DELETE RESTRICT ON UPDATE CASCADE,"
+            " CONSTRAINT `FK_history_user`"
+            "  FOREIGN KEY (`UserID`)"
+            "  REFERENCES `pmp_user` (`UserID`)"
+            "   ON DELETE RESTRICT ON UPDATE CASCADE"
+            ") "
+            "ENGINE = InnoDB "
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
+        );
+
+        return q.exec();
     }
 
     Database::Database(QSqlDatabase db)
