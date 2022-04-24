@@ -252,7 +252,5 @@ int runServer(QCoreApplication& app, bool doIndexation)
 
     auto exitCode = app.exec();
 
-    Concurrent::waitUntilEverythingFinished();
-
     return exitCode;
 }

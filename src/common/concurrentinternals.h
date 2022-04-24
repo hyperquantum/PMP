@@ -74,26 +74,6 @@ namespace PMP
             QtConcurrent::run(threadPool, makeWork(storage, f, arg));
         }
 
-        static void waitUntilEverythingFinished();
-
-        class CountIncrementer
-        {
-        public:
-            CountIncrementer()
-             : _count(&_runningCount)
-            {
-                _count->ref();
-            }
-
-            ~CountIncrementer()
-            {
-                _count->deref();
-            }
-
-        private :
-            QAtomicInteger<int>* _count;
-        };
-
     private:
         template<class ResultType, class ErrorType>
         static std::function<void ()> makeWork(
@@ -103,7 +83,6 @@ namespace PMP
             auto work =
                 [storage, f]()
                 {
-                    CountIncrementer countIncrement;
                     auto outcome = f();
                     storage->setOutcome(outcome);
                 };
@@ -121,7 +100,6 @@ namespace PMP
             auto work =
                 [storage, f, arg]()
                 {
-                    CountIncrementer countIncrement;
                     auto outcome = f(arg);
                     storage->setOutcome(outcome);
                 };
@@ -133,8 +111,6 @@ namespace PMP
         template<class T1, class T2> friend class Future;
 
         ConcurrentInternals() {}
-
-        static QAtomicInteger<int> _runningCount;
     };
 }
 #endif

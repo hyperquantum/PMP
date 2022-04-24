@@ -90,14 +90,7 @@ namespace PMP
             return future;
         }
 
-        static void waitUntilEverythingFinished()
-        {
-            ConcurrentInternals::waitUntilEverythingFinished();
-        }
-
     private:
-        using CountIncrementer = ConcurrentInternals::CountIncrementer;
-
         template<class T>
         static std::function<void ()> makeWork(SimplePromise<T>&& promise,
                                                std::function<T ()> f)
@@ -107,7 +100,6 @@ namespace PMP
             auto work =
                     [sharedPromise, f]()
                     {
-                        CountIncrementer countIncrement;
                         auto result = f();
                         sharedPromise->setResult(result);
                     };
@@ -123,7 +115,6 @@ namespace PMP
             auto work =
                     [sharedPromise, f]()
                     {
-                        CountIncrementer countIncrement;
                         f();
                         sharedPromise->setFinished();
                     };
