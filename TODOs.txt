@@ -90,6 +90,7 @@ IDEAS
  * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time
  * track info dialog: ability to pick the user whose personal stats are shown
  * track info dialog: display filename(s)
+ * track info dialog: should become modeless
  ** track info dialog: show personal play history for that track
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
