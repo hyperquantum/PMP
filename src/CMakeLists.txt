@@ -36,6 +36,8 @@ set(PMP_COMMON_SOURCES
     common/powermanagement.cpp
     common/queuecontrollerimpl.cpp
     common/queueentryinfofetcher.cpp
+    common/queueentryinfostorage.cpp
+    common/queueentryinfostorageimpl.cpp
     common/queuemonitor.cpp
     common/servercapabilitiesimpl.cpp
     common/serverconnection.cpp
@@ -68,6 +70,8 @@ set(PMP_COMMON_HEADERS
     common/queuecontroller.h
     common/queuecontrollerimpl.h
     common/queueentryinfofetcher.h
+    common/queueentryinfostorage.h
+    common/queueentryinfostorageimpl.h
     common/queuemonitor.h
     common/serverconnection.h
     common/serverdiscoverer.h

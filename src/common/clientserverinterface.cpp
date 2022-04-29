@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,6 +28,7 @@
 #include "playercontrollerimpl.h"
 #include "queuecontrollerimpl.h"
 #include "queueentryinfofetcher.h"
+#include "queueentryinfostorageimpl.h"
 #include "queuemonitor.h"
 #include "serverconnection.h"
 #include "userdatafetcher.h"
@@ -37,17 +38,6 @@ namespace PMP
     ClientServerInterface::ClientServerInterface(ServerConnection* connection)
      : QObject(connection),
        _connection(connection),
-       _authenticationController(nullptr),
-       _generalController(nullptr),
-       _simplePlayerController(nullptr),
-       _currentTrackMonitor(nullptr),
-       _queueController(nullptr),
-       _queueMonitor(nullptr),
-       _queueEntryInfoFetcher(nullptr),
-       _dynamicModeController(nullptr),
-       _historyController(nullptr),
-       _collectionWatcher(nullptr),
-       _userDataFetcher(nullptr),
        _connected(connection->isConnected())
     {
         connect(
@@ -126,12 +116,21 @@ namespace PMP
         return *_queueMonitor;
     }
 
+    QueueEntryInfoStorage& ClientServerInterface::queueEntryInfoStorage()
+    {
+        if (!_queueEntryInfoStorage)
+            _queueEntryInfoStorage = new QueueEntryInfoStorageImpl(_connection);
+
+        return *_queueEntryInfoStorage;
+    }
+
     QueueEntryInfoFetcher& ClientServerInterface::queueEntryInfoFetcher()
     {
         if (!_queueEntryInfoFetcher)
         {
-            _queueEntryInfoFetcher =
-                    new QueueEntryInfoFetcher(this, &queueMonitor(), _connection);
+            _queueEntryInfoFetcher = new QueueEntryInfoFetcher(this, &queueMonitor(),
+                                                               &queueEntryInfoStorage(),
+                                                               _connection);
         }
 
         return *_queueEntryInfoFetcher;

@@ -154,7 +154,7 @@ namespace PMP
 
     class AbstractQueueMonitor;
     class QueueEntryInfo;
-    class QueueEntryInfoFetcher;
+    class QueueEntryInfoStorage;
 
     class QueueCommand : public CommandBase
     {
@@ -170,7 +170,7 @@ namespace PMP
 
     private:
         void printQueue(AbstractQueueMonitor* queueMonitor,
-                        QueueEntryInfoFetcher* queueEntryInfoFetcher);
+                        QueueEntryInfoStorage* queueEntryInfoStorage);
         QString getSpecialEntryText(QueueEntryInfo const* entry) const;
 
         int _fetchLimit;

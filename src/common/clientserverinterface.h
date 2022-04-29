@@ -35,6 +35,7 @@ namespace PMP
     class PlayerController;
     class QueueController;
     class QueueEntryInfoFetcher;
+    class QueueEntryInfoStorage;
     class UserDataFetcher;
 
     class ClientServerInterface : public QObject
@@ -52,6 +53,7 @@ namespace PMP
 
         QueueController& queueController();
         AbstractQueueMonitor& queueMonitor();
+        QueueEntryInfoStorage& queueEntryInfoStorage();
         QueueEntryInfoFetcher& queueEntryInfoFetcher();
 
         DynamicModeController& dynamicModeController();
@@ -72,17 +74,18 @@ namespace PMP
 
     private:
         ServerConnection* _connection;
-        AuthenticationController* _authenticationController;
-        GeneralController* _generalController;
-        PlayerController* _simplePlayerController;
-        CurrentTrackMonitor* _currentTrackMonitor;
-        QueueController* _queueController;
-        AbstractQueueMonitor* _queueMonitor;
-        QueueEntryInfoFetcher* _queueEntryInfoFetcher;
-        DynamicModeController* _dynamicModeController;
-        HistoryController* _historyController;
-        CollectionWatcher* _collectionWatcher;
-        UserDataFetcher* _userDataFetcher;
+        AuthenticationController* _authenticationController { nullptr };
+        GeneralController* _generalController { nullptr };
+        PlayerController* _simplePlayerController { nullptr };
+        CurrentTrackMonitor* _currentTrackMonitor { nullptr };
+        QueueController* _queueController { nullptr };
+        AbstractQueueMonitor* _queueMonitor { nullptr };
+        QueueEntryInfoStorage* _queueEntryInfoStorage { nullptr };
+        QueueEntryInfoFetcher* _queueEntryInfoFetcher { nullptr };
+        DynamicModeController* _dynamicModeController { nullptr };
+        HistoryController* _historyController { nullptr };
+        CollectionWatcher* _collectionWatcher { nullptr };
+        UserDataFetcher* _userDataFetcher { nullptr };
         bool _connected;
     };
 }

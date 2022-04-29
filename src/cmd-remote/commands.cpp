@@ -24,7 +24,7 @@
 #include "common/generalcontroller.h"
 #include "common/playercontroller.h"
 #include "common/queuecontroller.h"
-#include "common/queueentryinfofetcher.h"
+#include "common/queueentryinfostorage.h"
 #include "common/queuemonitor.h"
 #include "common/util.h"
 
@@ -345,15 +345,17 @@ namespace PMP
         auto* queueMonitor = &clientServerInterface->queueMonitor();
         queueMonitor->setFetchLimit(_fetchLimit);
 
-        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+        auto* queueEntryInfoStorage = &clientServerInterface->queueEntryInfoStorage();
+
+        (void)clientServerInterface->queueEntryInfoFetcher(); /* speed things up */
 
         connect(queueMonitor, &QueueMonitor::fetchCompleted,
                 this, &QueueCommand::listenerSlot);
-        connect(queueEntryInfoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+        connect(queueEntryInfoStorage, &QueueEntryInfoStorage::tracksChanged,
                 this, &QueueCommand::listenerSlot);
 
         addStep(
-            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> bool
             {
                 if (!queueMonitor->isFetchCompleted())
                     return false;
@@ -365,7 +367,7 @@ namespace PMP
                     if (queueId == 0)
                         return false; /* download incomplete, shouldn't happen */
 
-                    auto entry = queueEntryInfoFetcher->entryInfoByQID(queueId);
+                    auto entry = queueEntryInfoStorage->entryInfoByQueueId(queueId);
                     if (!entry || entry->type() == QueueEntryType::Unknown)
                         return false; /* info not available yet */
 
@@ -380,9 +382,9 @@ namespace PMP
             }
         );
         addStep(
-            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> bool
             {
-                printQueue(queueMonitor, queueEntryInfoFetcher);
+                printQueue(queueMonitor, queueEntryInfoStorage);
                 return false;
             }
         );
@@ -395,7 +397,7 @@ namespace PMP
     }
 
     void QueueCommand::printQueue(AbstractQueueMonitor* queueMonitor,
-                                  QueueEntryInfoFetcher* queueEntryInfoFetcher)
+                                  QueueEntryInfoStorage* queueEntryInfoStorage)
     {
         QString output;
         output.reserve(80 + 80 + 80 * _fetchLimit);
@@ -421,7 +423,7 @@ namespace PMP
             output += QString::number(queueId).rightJustified(7);
             output += "|";
 
-            auto entry = queueEntryInfoFetcher->entryInfoByQID(queueId);
+            auto entry = queueEntryInfoStorage->entryInfoByQueueId(queueId);
             if (!entry)
             {
                 output += "??????????"; /* info not available yet, unlikely but possible*/
@@ -626,15 +628,15 @@ namespace PMP
         auto* queueMonitor = &clientServerInterface->queueMonitor();
         queueMonitor->setFetchLimit(1);
 
-        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+        auto* queueEntryInfoStorage = &clientServerInterface->queueEntryInfoStorage();
 
         connect(queueMonitor, &QueueMonitor::fetchCompleted,
                 this, &BreakCommand::listenerSlot);
-        connect(queueEntryInfoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+        connect(queueEntryInfoStorage, &QueueEntryInfoStorage::tracksChanged,
                 this, &BreakCommand::listenerSlot);
 
         addStep(
-            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> bool
             {
                 if (!queueMonitor->isFetchCompleted())
                     return false;
@@ -646,7 +648,7 @@ namespace PMP
                 if (firstEntryId == 0)
                     return false; /* shouldn't happen */
 
-                auto firstEntry = queueEntryInfoFetcher->entryInfoByQID(firstEntryId);
+                auto firstEntry = queueEntryInfoStorage->entryInfoByQueueId(firstEntryId);
                 if (!firstEntry)
                     return false;
 

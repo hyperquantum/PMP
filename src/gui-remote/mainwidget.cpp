@@ -105,11 +105,11 @@ namespace PMP
         _queueMediator = new QueueMediator(clientServerInterface,
                                            &clientServerInterface->queueMonitor(),
                                            clientServerInterface);
-        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+        auto* queueEntryInfoStorage = &clientServerInterface->queueEntryInfoStorage();
         _queueModel =
             new QueueModel(
                 clientServerInterface, clientServerInterface, _queueMediator,
-                queueEntryInfoFetcher
+                queueEntryInfoStorage
             );
         _historyModel = new PlayerHistoryModel(this, _clientServerInterface);
 

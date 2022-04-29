@@ -21,7 +21,7 @@
 
 #include "common/clientserverinterface.h"
 #include "common/historycontroller.h"
-#include "common/queueentryinfofetcher.h"
+#include "common/queueentryinfostorage.h"
 #include "common/util.h"
 
 #include <QBrush>
@@ -36,10 +36,10 @@ namespace PMP
                                            ClientServerInterface* clientServerInterface)
      : QAbstractTableModel(parent),
        _historySizeGoal(20),
-       _infoFetcher(&clientServerInterface->queueEntryInfoFetcher())
+       _infoStorage(&clientServerInterface->queueEntryInfoStorage())
     {
         connect(
-            _infoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+            _infoStorage, &QueueEntryInfoStorage::tracksChanged,
             this, &PlayerHistoryModel::onTracksChanged
         );
 
@@ -93,7 +93,7 @@ namespace PMP
             _list.removeFirst();
             endRemoveRows();
 
-            _infoFetcher->dropInfoFor(oldestEntry->queueID());
+            _infoStorage->dropInfoFor(oldestEntry->queueID());
         }
     }
 
@@ -182,8 +182,8 @@ namespace PMP
         {
             int col = index.column();
 
-            auto queueID = _list[index.row()]->queueID();
-            auto info = _infoFetcher->entryInfoByQID(queueID);
+            auto queueId = _list[index.row()]->queueID();
+            auto info = _infoStorage->entryInfoByQueueId(queueId);
 
             switch (col)
             {
@@ -240,8 +240,8 @@ namespace PMP
     {
         if (rowIndex < 0 || rowIndex >= _list.size()) return {};
 
-        auto queueID = _list[rowIndex]->queueID();
-        auto info = _infoFetcher->entryInfoByQID(queueID);
+        auto queueId = _list[rowIndex]->queueID();
+        auto info = _infoStorage->entryInfoByQueueId(queueId);
         if (!info) return {};
 
         return info->hash();
@@ -266,8 +266,8 @@ namespace PMP
             if (row == prevRow) continue;
             prevRow = row;
 
-            auto queueID = _list[row]->queueID();
-            auto info = _infoFetcher->entryInfoByQID(queueID);
+            auto queueId = _list[row]->queueID();
+            auto info = _infoStorage->entryInfoByQueueId(queueId);
             if (!info)
             {
                 qDebug() << " ignoring track without info";

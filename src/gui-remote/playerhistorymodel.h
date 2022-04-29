@@ -31,7 +31,7 @@
 namespace PMP
 {
     class ClientServerInterface;
-    class QueueEntryInfoFetcher;
+    class QueueEntryInfoStorage;
 
     class PlayerHistoryModel : public QAbstractTableModel
     {
@@ -59,7 +59,7 @@ namespace PMP
 
     private:
         int _historySizeGoal;
-        QueueEntryInfoFetcher* _infoFetcher;
+        QueueEntryInfoStorage* _infoStorage;
         QList<QSharedPointer<PlayerHistoryTrackInfo>> _list;
     };
 }

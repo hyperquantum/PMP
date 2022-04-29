@@ -24,7 +24,7 @@
 #include "common/clientserverinterface.h"
 #include "common/dynamicmodecontroller.h"
 #include "common/playercontroller.h"
-#include "common/queueentryinfofetcher.h"
+#include "common/queueentryinfostorage.h"
 #include "common/util.h"
 
 #include <QLocale>
@@ -99,8 +99,8 @@ namespace PMP
             }
         );
 
-        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
-        connect(queueEntryInfoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+        auto* queueEntryInfoStorage = &clientServerInterface->queueEntryInfoStorage();
+        connect(queueEntryInfoStorage, &QueueEntryInfoStorage::tracksChanged,
                 this, &PlayDurationCalculator::triggerRecalculation);
 
         triggerRecalculation();
@@ -149,7 +149,7 @@ namespace PMP
         auto& dynamicModeController = clientServerInterface->dynamicModeController();
 
         auto& queueMonitor = clientServerInterface->queueMonitor();
-        auto& queueEntryInfoFetcher = clientServerInterface->queueEntryInfoFetcher();
+        auto& queueEntryInfoStorage = clientServerInterface->queueEntryInfoStorage();
 
         Nullable<int> breakIndex;
         Nullable<qint64> duration;
@@ -161,7 +161,7 @@ namespace PMP
             for (int i = 0; i < queueLength; ++i)
             {
                 auto queueEntryId = queueMonitor.queueEntry(i);
-                auto* entryInfo = queueEntryInfoFetcher.entryInfoByQID(queueEntryId);
+                auto* entryInfo = queueEntryInfoStorage.entryInfoByQueueId(queueEntryId);
                 if (!entryInfo)
                 {
                     durationSum = -1;
