@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,11 +26,12 @@
 
 #include <QElapsedTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     class ServerConnection;
 
-    class CurrentTrackMonitorImpl : public CurrentTrackMonitor {
+    class CurrentTrackMonitorImpl : public CurrentTrackMonitor
+    {
         Q_OBJECT
     public:
         explicit CurrentTrackMonitorImpl(ServerConnection* connection);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,8 +23,8 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     CurrentTrackMonitorImpl::CurrentTrackMonitorImpl(ServerConnection* connection)
      : CurrentTrackMonitor(connection),
        _connection(connection),
@@ -196,7 +196,8 @@ namespace PMP {
         _currentTrackTitle = title;
         _currentTrackArtist = artist;
 
-        if (title.isEmpty() && artist.isEmpty()) {
+        if (title.isEmpty() && artist.isEmpty())
+        {
             _connection->sendPossibleFilenamesRequest(queueId);
         }
 
@@ -213,7 +214,8 @@ namespace PMP {
             return;
 
         QString longest;
-        for (QString name : names) {
+        for (QString name : names)
+        {
             if (name.size() >= longest.size())
                 longest = name;
         }
@@ -238,7 +240,8 @@ namespace PMP {
 
         clearTrackInfo();
 
-        if (queueId > 0) {
+        if (queueId > 0)
+        {
             _connection->sendQueueEntryInfoRequest(queueId);
 
             QList<uint> ids { queueId };
@@ -253,7 +256,8 @@ namespace PMP {
     {
         auto queueId = _currentQueueId;
 
-        if (queueId <= 0) {
+        if (queueId <= 0)
+        {
             _progressTimer.invalidate();
             _progressAtTimerStart = 0;
 
@@ -285,5 +289,4 @@ namespace PMP {
         _currentTrackPossibleFilename.clear();
         _currentTrackLengthMilliseconds = -1;
     }
-
 }
