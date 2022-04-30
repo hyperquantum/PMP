@@ -95,7 +95,8 @@ namespace PMP
     CurrentTrackMonitor& ClientServerInterface::currentTrackMonitor()
     {
         if (!_currentTrackMonitor)
-            _currentTrackMonitor = new CurrentTrackMonitorImpl(_connection);
+            _currentTrackMonitor = new CurrentTrackMonitorImpl(&queueEntryInfoStorage(),
+                                                               _connection);
 
         return *_currentTrackMonitor;
     }
