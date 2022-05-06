@@ -9,9 +9,6 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-      - name: List files in bin folder (1)
-        run: |
-          ls bin
       - name: Install dependencies
         run: >
           sudo apt-get install -y
@@ -22,12 +19,6 @@ jobs:
       - name: Run CMake
         working-directory: bin
         run: cmake -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
-      - name: List files in bin folder (2)
-        run: |
-          ls bin
       - name: Run make
         working-directory: bin
         run: make -j2 -k
-      - name: List files in bin folder (3)
-        run: |
-          ls bin
