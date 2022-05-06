@@ -44,6 +44,8 @@
 #include <QUuid>
 #include <QVector>
 
+QT_FORWARD_DECLARE_CLASS(QTimer)
+
 namespace PMP
 {
     class CollectionFetcher;

@@ -28,6 +28,8 @@
 #include <QList>
 #include <QSet>
 
+QT_FORWARD_DECLARE_CLASS(QTimer)
+
 namespace PMP
 {
     class ClientServerInterface;

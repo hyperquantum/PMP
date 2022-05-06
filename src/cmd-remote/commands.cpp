@@ -684,7 +684,8 @@ namespace PMP
         return true;
     }
 
-    void QueueInsertSpecialItemCommand::setUp(ClientServerInterface* clientServerInterface)
+    void QueueInsertSpecialItemCommand::setUp(
+                                             ClientServerInterface* clientServerInterface)
     {
         auto* queueController = &clientServerInterface->queueController();
 
@@ -693,6 +694,9 @@ namespace PMP
             this,
             [this](qint32 index, quint32 queueId, RequestID requestId)
             {
+                Q_UNUSED(index)
+                Q_UNUSED(queueId)
+
                 if (requestId == _requestId)
                     setCommandExecutionSuccessful();
             }
