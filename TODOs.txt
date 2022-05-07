@@ -68,6 +68,7 @@ IDEAS
  ** dynamic mode: detect and prevent track repetition with different hash values
  ** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
+ * dynamic mode: try to enqueue "new" tracks and tracks without score regularly
  * power management: close connections when the server machine enters sleep mode
  * power management: don't let the server machine go to sleep while music is playing
  *** thumbs up/down buttons for the song that is playing and for the history, to affect the score a little bit
@@ -123,6 +124,7 @@ TECHNICAL IDEAS
  * when running an indexation, analyze the most recently created/updated files first
  * large file support (?)
  * switch to signed integer types for things like queue indices
+ * log network protocol version numbers when establishing a client/server connection
  * add logging for all server messages that are deemed corrupt or invalid by the client
  * use libgroove for playback (?)
 
