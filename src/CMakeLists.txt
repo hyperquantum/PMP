@@ -28,6 +28,7 @@ set(PMP_COMMON_SOURCES
     common/fileanalyzer.cpp
     common/filehash.cpp
     common/generalcontrollerimpl.cpp
+    common/historycontrollerimpl.cpp
     common/logging.cpp
     common/networkprotocol.cpp
     common/networkutil.cpp
@@ -36,6 +37,8 @@ set(PMP_COMMON_SOURCES
     common/powermanagement.cpp
     common/queuecontrollerimpl.cpp
     common/queueentryinfofetcher.cpp
+    common/queueentryinfostorage.cpp
+    common/queueentryinfostorageimpl.cpp
     common/queuemonitor.cpp
     common/scrobblerstatus.cpp
     common/scrobblingprovider.cpp
@@ -62,12 +65,16 @@ set(PMP_COMMON_HEADERS
     common/dynamicmodecontrollerimpl.h
     common/generalcontroller.h
     common/generalcontrollerimpl.h
+    common/historycontroller.h
+    common/historycontrollerimpl.h
     common/playercontroller.h
     common/playercontrollerimpl.h
     common/powermanagement.h
     common/queuecontroller.h
     common/queuecontrollerimpl.h
     common/queueentryinfofetcher.h
+    common/queueentryinfostorage.h
+    common/queueentryinfostorageimpl.h
     common/queuemonitor.h
     common/serverconnection.h
     common/serverdiscoverer.h
@@ -76,6 +83,7 @@ set(PMP_COMMON_HEADERS
 
 set(PMP_SERVER_SOURCES
     server/addtohistorytask.cpp
+    server/analyzer.cpp
     server/clientrequestorigin.cpp
     server/collectionmonitor.cpp
     server/connectedclient.cpp
@@ -115,6 +123,7 @@ set(PMP_SERVER_SOURCES
 )
 set(PMP_SERVER_HEADERS
     server/addtohistorytask.h
+    server/analyzer.h
     server/collectionmonitor.h
     server/connectedclient.h
     server/delayedstart.h
@@ -125,7 +134,6 @@ set(PMP_SERVER_HEADERS
     server/player.h
     server/playerqueue.h
     server/preloader.h
-    server/queueentry.h
     server/randomtrackssource.h
     server/resolver.h
     server/scrobbler.h
@@ -166,6 +174,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/colors.cpp
     gui-remote/colorswitcher.cpp
     gui-remote/connectionwidget.cpp
+    gui-remote/delayedstartdialog.cpp
     gui-remote/delayedstartnotification.cpp
     gui-remote/gui-remote-metatypes.cpp
     gui-remote/loginwidget.cpp
@@ -189,6 +198,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/collectionwidget.h
     gui-remote/colorswitcher.h
     gui-remote/connectionwidget.h
+    gui-remote/delayedstartdialog.h
     gui-remote/delayedstartnotification.h
     gui-remote/loginwidget.h
     gui-remote/mainwidget.h
@@ -207,6 +217,7 @@ set(PMP_GUI_REMOTE_HEADERS
 set(PMP_GUI_REMOTE_UIS
     gui-remote/collectionwidget.ui
     gui-remote/connectionwidget.ui
+    gui-remote/delayedstartdialog.ui
     gui-remote/loginwidget.ui
     gui-remote/mainwidget.ui
     gui-remote/notificationbar.ui

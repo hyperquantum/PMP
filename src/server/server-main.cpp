@@ -17,6 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "common/concurrent.h"
 #include "common/logging.h"
 #include "common/util.h"
 #include "common/version.h"
@@ -85,6 +86,35 @@ namespace
     }
 }
 
+namespace
+{
+    bool initialIndexation = true;
+}
+
+void setUpAndRunInitialIndexation(Resolver& resolver)
+{
+    QObject::connect(
+        &resolver, &Resolver::fullIndexationRunStatusChanged,
+        &resolver,
+        [](bool running)
+        {
+            if (running || !initialIndexation)
+                return;
+
+            initialIndexation = false;
+            QTextStream out(stdout);
+            out << "Indexation finished." << Qt::endl
+                << Qt::endl;
+        }
+    );
+
+    QTextStream out(stdout);
+    out << "Running initial full indexation..." << Qt::endl;
+    resolver.startFullIndexation();
+}
+
+int runServer(QCoreApplication& app, bool doIndexation);
+
 int main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
@@ -94,8 +124,6 @@ int main(int argc, char* argv[])
     QCoreApplication::setOrganizationName(PMP_ORGANIZATION_NAME);
     QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
 
-    QTextStream out(stdout);
-
     bool doIndexation = true;
     const QStringList args = QCoreApplication::arguments();
     for (auto& arg : args)
@@ -103,6 +131,17 @@ int main(int argc, char* argv[])
         if (arg == "-no-index" || arg == "-no-indexation")
             doIndexation = false;
     }
+
+    auto exitCode = runServer(app, doIndexation);
+
+    qDebug() << "Exiting with code" << exitCode;
+
+    return exitCode;
+}
+
+int runServer(QCoreApplication& app, bool doIndexation)
+{
+    QTextStream out(stdout);
 
     out << Qt::endl
         << "Party Music Player - version " PMP_VERSION_DISPLAY << Qt::endl
@@ -237,32 +276,12 @@ int main(int argc, char* argv[])
 
     /* start indexation of the media directories */
     if (databaseInitializationSucceeded && doIndexation)
-    {
-        bool initialIndexation = true;
-
-        QObject::connect(
-            &resolver, &Resolver::fullIndexationRunStatusChanged,
-            &resolver,
-            [&out, &initialIndexation](bool running)
-            {
-                if (running || !initialIndexation)
-                    return;
-
-                initialIndexation = false;
-                out << "Indexation finished." << Qt::endl
-                    << Qt::endl;
-            }
-        );
-
-        out << "Running initial full indexation..." << Qt::endl;
-        resolver.startFullIndexation();
-    }
+        setUpAndRunInitialIndexation(resolver);
 
     auto exitCode = app.exec();
-    
-    qDebug() << "Exiting with code" << exitCode;
+
     out << "\n"
         << "Server exiting with code " << exitCode << "." << Qt::endl;
-    
+
     return exitCode;
 }

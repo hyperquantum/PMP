@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -84,7 +84,8 @@ namespace PMP
         _player->setVolume(qRound(linearVolume * 100));
     }
 
-    void PlayerInstance::setTrack(QueueEntry* queueEntry, bool onlyIfPreloaded)
+    void PlayerInstance::setTrack(QSharedPointer<QueueEntry> queueEntry,
+                                  bool onlyIfPreloaded)
     {
         auto queueId = queueEntry->queueID();
 
@@ -93,7 +94,8 @@ namespace PMP
 
         if (!availableForNewTrack())
         {
-            qWarning() << "cannot set new track because we're not available yet!";
+            qWarning() << "PlayerInstance" << _identifier
+                       << "cannot set new track because the instance is not available!";
             return;
         }
 
@@ -109,26 +111,37 @@ namespace PMP
         _preloadedFile = _preloader->getPreloadedCacheFile(queueId);
         QString filename = _preloadedFile.getFilename();
 
+        if (filename.isEmpty() && onlyIfPreloaded)
+        {
+            qDebug() << "PlayerInstance: queue ID" << queueId
+                     << "not preloaded yet, will not set media now";
+            return;
+        }
+
         if (filename.isEmpty())
         {
-            if (onlyIfPreloaded)
-            {
-                qDebug() << "queue ID" << queueId
-                         << "not preloaded yet, will not set media now";
-                return;
-            }
+            filename = queueEntry->filename().valueOr({});
 
-            if (queueEntry->checkValidFilename(*_resolver, true, &filename))
+            if (!filename.isEmpty())
             {
-                qWarning() << "QID" << queueId << "was not preloaded; "
-                              "using unpreprocessed file that may be slow to access or "
-                              "may fail to play";
+                if (_resolver->pathStillValid(queueEntry->hash().value(), filename))
+                {
+                    qWarning() << "queue ID" << queueId << "was not preloaded; "
+                                  "will try to use unpreprocessed file that may be slow "
+                                  "to access or may fail to play";
+                }
+                else
+                {
+                    filename.clear();
+                    queueEntry->invalidateFilename();
+                }
             }
         }
 
         if (!filename.isEmpty())
         {
-            qDebug() << "going to load media:" << filename;
+            qDebug() << "PlayerInstance" << _identifier << "for queue ID" << queueId
+                     << ": going to load media:" << filename;
             _player->setMedia(QUrl::fromLocalFile(filename));
             _mediaSet = true;
         }
@@ -328,14 +341,14 @@ namespace PMP
         }
     }
 
-    QueueEntry const* Player::nowPlaying() const
+    QSharedPointer<QueueEntry const> Player::nowPlaying() const
     {
         return _nowPlaying;
     }
 
     uint Player::nowPlayingQID() const
     {
-        QueueEntry* entry = _nowPlaying;
+        auto entry = _nowPlaying;
         return entry ? entry->queueID() : 0;
     }
 
@@ -464,7 +477,7 @@ namespace PMP
         qDebug() << "Player::startNext(" << stopCurrent << "," << playNext << ") called";
 
         PlayerInstance* oldCurrentInstance = _currentInstance;
-        QueueEntry* oldNowPlaying = _nowPlaying;
+        QSharedPointer<QueueEntry> oldNowPlaying = _nowPlaying;
 
         if (_currentInstance)
             moveCurrentInstanceToOldInstanceSlot();
@@ -475,13 +488,13 @@ namespace PMP
         _nextInstance = nullptr;
 
         /* find next track to play and start it */
-        QueueEntry* nextTrack = nullptr;
+        QSharedPointer<QueueEntry> nextTrack = nullptr;
         while (!_queue.empty())
         {
             if (_queue.firstEntryIsBarrier())
                 break; /* this will cause playback to stop because next == nullptr */
 
-            QueueEntry* entry = _queue.dequeue();
+            auto entry = _queue.dequeue();
             if (!entry->isTrack())
             {
                 if (entry->kind() == QueueEntryKind::Break)
@@ -733,7 +746,7 @@ namespace PMP
 
     void Player::prepareForFirstTrackFromQueue()
     {
-        QueueEntry* nextTrack = _queue.peekFirstTrackEntry();
+        auto nextTrack = _queue.peekFirstTrackEntry();
         if (!nextTrack || !nextTrack->isTrack())
             return; /* no next track to prepare for now */
 
@@ -758,7 +771,8 @@ namespace PMP
         tryPrepareTrack(_nextInstance, nextTrack, true); /* ignore the result */
     }
 
-    bool Player::tryPrepareTrack(PlayerInstance* playerInstance, QueueEntry* entry,
+    bool Player::tryPrepareTrack(PlayerInstance* playerInstance,
+                                 QSharedPointer<QueueEntry> entry,
                                  bool onlyIfPreloaded)
     {
         if (!entry || !entry->isTrack())
@@ -777,7 +791,8 @@ namespace PMP
         return playerInstance->trackSetSuccessfully();
     }
 
-    bool Player::tryStartNextTrack(PlayerInstance* playerInstance, QueueEntry* entry,
+    bool Player::tryStartNextTrack(PlayerInstance* playerInstance,
+                                   QSharedPointer<QueueEntry> entry,
                                    bool startPlaying)
     {
         if (!entry || !entry->isTrack())
@@ -798,7 +813,8 @@ namespace PMP
         return true;
     }
 
-    void Player::emitStartedPlaying(QueueEntry const* queueEntry) {
+    void Player::emitStartedPlaying(QSharedPointer<QueueEntry> queueEntry)
+    {
         if (!queueEntry) return;
 
         auto startTime = queueEntry->started();
@@ -809,13 +825,13 @@ namespace PMP
                             queueEntry->artist(), queueEntry->album(), lengthInSeconds);
     }
 
-    void Player::putInHistoryOrder(QueueEntry* entry)
+    void Player::putInHistoryOrder(QSharedPointer<QueueEntry> entry)
     {
         _historyOrder.enqueue(entry->queueID());
     }
 
-    void Player::addToHistory(QueueEntry* entry, int permillage, bool hadError,
-                              bool hadSeek)
+    void Player::addToHistory(QSharedPointer<QueueEntry> entry, int permillage,
+                              bool hadError, bool hadSeek)
     {
         entry->setEndedNow(); /* register end time */
 
@@ -851,11 +867,11 @@ namespace PMP
                 ended = started;
         }
 
-        auto* hash = entry->hash();
+        Nullable<FileHash> hash = entry->hash();
 
         auto historyEntry =
             QSharedPointer<PlayerHistoryEntry>::create(
-                queueID, hash ? *hash : FileHash(), userPlayedFor, started, ended,
+                queueID, hash.value(), userPlayedFor, started, ended,
                 hadError, hadSeek, permillage
             );
 
@@ -885,7 +901,8 @@ namespace PMP
 
     /* permillage (for lack of a better name) is like percentage, but with factor 1000
        instead of 100 */
-    int Player::calcPermillagePlayed(QueueEntry* track, qint64 positionReached,
+    int Player::calcPermillagePlayed(QSharedPointer<QueueEntry> track,
+                                     qint64 positionReached,
                                      bool seeked)
     {
         if (seeked) return -1;

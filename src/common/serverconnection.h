@@ -22,6 +22,7 @@
 
 #include "collectiontrackinfo.h"
 #include "disconnectreason.h"
+#include "future.h"
 #include "networkprotocol.h"
 #include "playerhistorytrackinfo.h"
 #include "playerstate.h"
@@ -43,6 +44,8 @@
 #include <QTcpSocket>
 #include <QUuid>
 #include <QVector>
+
+QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP
 {
@@ -73,7 +76,7 @@ namespace PMP
 
         class ResultMessageData;
         class ResultHandler;
-        class StandardResultHandler;
+        class PromiseResultHandler;
         class ParameterlessActionResultHandler;
         class CollectionFetchResultHandler;
         class TrackInsertionResultHandler;
@@ -102,9 +105,10 @@ namespace PMP
 
         void fetchCollection(CollectionFetcher* fetcher);
 
-        RequestID reloadServerSettings();
-        RequestID activateDelayedStart(qint64 delayMilliseconds);
-        RequestID deactivateDelayedStart();
+        SimpleFuture<ResultMessageErrorCode> reloadServerSettings();
+        SimpleFuture<ResultMessageErrorCode> activateDelayedStart(
+                                                                qint64 delayMilliseconds);
+        SimpleFuture<ResultMessageErrorCode> deactivateDelayedStart();
         RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
@@ -183,13 +187,6 @@ namespace PMP
         void receivedServerName(quint8 nameType, QString name);
         void receivedClientClockTimeOffset(qint64 clientClockTimeOffsetMs);
 
-        void serverSettingsReloadResultEvent(ResultMessageErrorCode errorCode,
-                                             RequestID requestId);
-        void delayedStartActivationResultEvent(ResultMessageErrorCode errorCode,
-                                               RequestID requestId);
-        void delayedStartDeactivationResultEvent(ResultMessageErrorCode errorCode,
-                                                 RequestID requestId);
-
         void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQID, quint64 nowPlayingPosition,
                                  bool delayedStartActive);
@@ -259,6 +256,7 @@ namespace PMP
         RequestID signalServerTooOldError(
                              void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
                                                                    RequestID));
+        FutureResult<ResultMessageErrorCode> serverTooOldFutureResult();
 
         void sendTextCommand(QString const& command);
         void appendScrobblingMessageStart(QByteArray& buffer,
@@ -267,7 +265,8 @@ namespace PMP
         void sendKeepAliveMessage();
         void sendProtocolExtensionsMessage();
         void sendSingleByteAction(quint8 action);
-        RequestID sendParameterlessActionRequest(ParameterlessActionCode code);
+        SimpleFuture<ResultMessageErrorCode> sendParameterlessActionRequest(
+                                                            ParameterlessActionCode code);
 
         void readTextCommands();
         void readBinaryCommands();

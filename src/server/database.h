@@ -21,6 +21,7 @@
 #define PMP_DATABASE_H
 
 #include "common/filehash.h"
+#include "common/resultorerror.h"
 
 #include <QAtomicInt>
 #include <QByteArray>
@@ -147,17 +148,17 @@ namespace PMP
 
         bool isConnectionOpen() const;
 
-        QUuid getDatabaseIdentifier() const;
-
         void registerHash(const FileHash& hash);
         uint getHashID(const FileHash& hash);
-        QList<QPair<uint,FileHash> > getHashes(uint largerThanID = 0);
+        ResultOrError<QList<QPair<uint,FileHash>>, FailureType> getHashes(
+                                                                   uint largerThanID = 0);
 
-        void registerFilename(uint hashID, const QString& filenameWithoutPath);
-        QList<QString> getFilenames(uint hashID);
+        bool registerFilenameSeen(uint hashId, const QString& filenameWithoutPath,
+                                  int currentYear);
+        ResultOrError<QList<QString>, FailureType> getFilenames(uint hashID);
 
-        void registerFileSize(uint hashId, qint64 size);
-        QList<qint64> getFileSizes(uint hashID);
+        void registerFileSizeSeen(uint hashId, qint64 size, int currentYear);
+        ResultOrError<QList<qint64>, FailureType> getFileSizes(uint hashID);
 
         QList<User> getUsers();
         bool checkUserExists(QString userName);
@@ -187,6 +188,7 @@ namespace PMP
                                                            int limit);
 
         static QSharedPointer<Database> getDatabaseForCurrentThread();
+        static QUuid getDatabaseUuid();
 
     private:
         Database(QSqlDatabase db);
@@ -225,7 +227,13 @@ namespace PMP
         static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
         static void printInitializationError(QTextStream& out, QSqlDatabase& db);
 
+        static bool initMiscTable(QSqlQuery& q);
+        static ResultOrError<QUuid, FailureType> initDatabaseUuid(QSqlQuery& q);
+        static bool initHashTable(QSqlQuery& q);
+        static bool initFilenameTable(QSqlQuery& q);
+        static bool initFileSizeTable(QSqlQuery& q);
         static bool initUsersTable(QSqlQuery& q);
+        static bool initHistoryTable(QSqlQuery& q);
 
         static QString _hostname;
         static int _port;

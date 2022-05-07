@@ -20,6 +20,7 @@
 #ifndef PMP_NETWORKPROTOCOL_H
 #define PMP_NETWORKPROTOCOL_H
 
+#include "nullable.h"
 #include "queueentrytype.h"
 #include "resultmessageerrorcode.h"
 #include "scrobblerstatus.h"
@@ -233,7 +234,7 @@ namespace PMP
         static QueueEntryType trackStatusToQueueEntryType(quint16 status);
 
         static const int FILEHASH_BYTECOUNT = 8 /*length*/ + 20 /*SHA-1*/ + 16 /*MD5*/;
-        static void appendHash(QByteArray& buffer, const FileHash& hash);
+        static void appendHash(QByteArray& buffer, Nullable<FileHash> hash);
         static FileHash getHash(const QByteArray& buffer, int position, bool* ok);
 
         static qint16 getHashUserDataFieldsMaskForProtocolVersion(int version);

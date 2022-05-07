@@ -70,7 +70,7 @@ namespace PMP
                                   QDateTime previouslyHeard, qint16 score);
 
     private Q_SLOTS:
-        void currentTrackChanged(QueueEntry const* newTrack);
+        void currentTrackChanged(QSharedPointer<QueueEntry const> newTrack);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void onHashUserStatsUpdated(uint hashID, quint32 user,
                                     QDateTime previouslyHeard, qint16 score);
@@ -82,7 +82,7 @@ namespace PMP
 
         Player* _player;
         QHash<FileHash, QDateTime> _lastPlayHash;
-        QueueEntry const* _nowPlaying;
+        QSharedPointer<QueueEntry const> _nowPlaying;
         QHash<quint32, QHash<uint, HashStats>> _userStats;
         QHash<quint32, QHash<uint, bool>> _userStatsFetching;
         int _fetchRequestsScheduledCount;

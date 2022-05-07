@@ -37,8 +37,16 @@ namespace PMP
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return; /* problem */
 
-        qDebug() << "fetching track user data for" << _hashIds.size()
-                 << "ID's; user:" << _userId;
+        if (_hashIds.size() == 1)
+        {
+            qDebug() << "fetching track user data for hash ID" << _hashIds[0]
+                     << "and user" << _userId;
+        }
+        else
+        {
+            qDebug() << "fetching track user data for" << _hashIds.size()
+                     << "ID's; user:" << _userId;
+        }
 
         QVector<UserDataForHashId> results;
         results.reserve(_hashIds.size());

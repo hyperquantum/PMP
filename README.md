@@ -59,7 +59,7 @@ Contents of this file:
 ### Build-time Dependencies
 
  * C++ compiler with support for C++ 2014
- * CMake 3.1 or higher
+ * CMake 3.8 or higher
 
 Building on Windows is done using [vcpkg](https://github.com/microsoft/vcpkg).
 

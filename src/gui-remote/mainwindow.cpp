@@ -29,6 +29,7 @@
 
 #include "collectionwidget.h"
 #include "connectionwidget.h"
+#include "delayedstartdialog.h"
 #include "delayedstartnotification.h"
 #include "loginwidget.h"
 #include "mainwidget.h"
@@ -156,6 +157,18 @@ namespace PMP
             this, &MainWindow::onLastFmTriggered
         );
 
+        _activateDelayedStartAction = new QAction(tr("Activate &delayed start..."));
+        connect(
+            _activateDelayedStartAction, &QAction::triggered,
+            this,
+            [this]()
+            {
+                auto* dialog = new DelayedStartDialog(this, _clientServerInterface);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->open();
+            }
+        );
+
         _keepDisplayActiveAction =
                 new QAction(tr("Keep &display active during playback"), this);
         _keepDisplayActiveAction->setCheckable(true);
@@ -179,6 +192,7 @@ namespace PMP
         /* Top-level menus */
         QMenu* pmpMenu = menuBar()->addMenu(tr("&PMP"));
         _userMenu = menuBar()->addMenu(tr("&User"));
+        _actionsMenu = menuBar()->addMenu(tr("&Actions"));
         _viewMenu = menuBar()->addMenu(tr("&View"));
         QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
 
@@ -199,6 +213,9 @@ namespace PMP
         /* "User"/"Scrobbling" menu members */
         scrobblingMenu->addAction(_lastFmEnabledAction);
 
+        /* "Actions" menu members */
+        _actionsMenu->addAction(_activateDelayedStartAction);
+
         /* "View" menu members */
         _viewMenu->addAction(_musicCollectionDock->toggleViewAction());
         _viewMenu->addSeparator();
@@ -211,6 +228,7 @@ namespace PMP
         /* Menu visibility */
         _serverAdminMenu->menuAction()->setVisible(false); /* needs active connection */
         _userMenu->menuAction()->setVisible(false); /* will be made visible after login */
+        _actionsMenu->menuAction()->setVisible(false);
         _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
     }
 
@@ -398,7 +416,15 @@ namespace PMP
 
     void MainWindow::onReloadServerSettingsTriggered()
     {
-        _clientServerInterface->generalController().reloadServerSettings();
+        auto future =  _clientServerInterface->generalController().reloadServerSettings();
+
+        future.addResultListener(
+            this,
+            [this](ResultMessageErrorCode code)
+            {
+                reloadServerSettingsResultReceived(code);
+            }
+        );
     }
 
     void MainWindow::reloadServerSettingsResultReceived(ResultMessageErrorCode errorCode)
@@ -474,6 +500,15 @@ namespace PMP
 
     void MainWindow::onAboutPmpAction()
     {
+        const auto programNameVersionBuild =
+            QString(VCS_REVISION_LONG).isEmpty()
+                ? tr("Party Music Player <b>version %1</b>")
+                    .arg(PMP_VERSION_DISPLAY)
+                : tr("Party Music Player <b>version %1</b> build %2 (%3)")
+                    .arg(PMP_VERSION_DISPLAY,
+                         VCS_REVISION_LONG,
+                         VCS_BRANCH);
+
         QString aboutText =
             tr(
                 "<html>"
@@ -487,14 +522,14 @@ namespace PMP
                 " License (GPLv3).</p>"
                 "<p>Website: <a href=\"%1\">%1</a></p>"
                 "<p>Report bugs at: <a href=\"%2\">%2</a></p>"
-                "<p>Party Music Player <b>version %3</b><br>"
+                "<p>%3<br>" /* program name, version, and possibly build info */
                 "%4</p>" /* copyright line */
                 "<p>Using Qt version %5</p>"
                 "</html>"
             )
             .arg(PMP_WEBSITE,
                  PMP_BUGREPORT_LOCATION,
-                 PMP_VERSION_DISPLAY,
+                 programNameVersionBuild,
                  Util::getCopyrightLine(false),
                  QT_VERSION_STR);
 
@@ -557,10 +592,6 @@ namespace PMP
                 qDebug() << "fullIndexationFinished triggered";
                 setLeftStatus(5000, tr("Full indexation finished"));
             }
-        );
-        connect(
-            generalController, &GeneralController::serverSettingsReloadResultEvent,
-            this, &MainWindow::reloadServerSettingsResultReceived
         );
         connect(
             &_clientServerInterface->playerController(),
@@ -673,7 +704,7 @@ namespace PMP
         _notificationBar->showNotification(delayedStartNotification);
 
         _mainWidget = new MainWidget(mainCentralWidget);
-        _mainWidget->setConnection(_connection, _clientServerInterface);
+        _mainWidget->setConnection(_clientServerInterface);
 
         auto centralVerticalLayout = new QVBoxLayout(mainCentralWidget);
         centralVerticalLayout->setContentsMargins(0, 0, 0, 0);
@@ -687,6 +718,7 @@ namespace PMP
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 
+        _actionsMenu->menuAction()->setVisible(true);
         _viewMenu->menuAction()->setVisible(true);
 
         {

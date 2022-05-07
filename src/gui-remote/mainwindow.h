@@ -116,12 +116,14 @@ namespace PMP
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
         QAction* _lastFmEnabledAction;
+        QAction* _activateDelayedStartAction;
         QAction* _keepDisplayActiveAction;
         QAction* _aboutPmpAction;
         QAction* _aboutQtAction;
 
         QMenu* _serverAdminMenu;
         QMenu* _userMenu;
+        QMenu* _actionsMenu;
         QMenu* _viewMenu;
 
         PowerManagement* _powerManagement;

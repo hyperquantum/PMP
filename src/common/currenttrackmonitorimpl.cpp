@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,14 +19,18 @@
 
 #include "currenttrackmonitorimpl.h"
 
+#include "queueentryinfostorage.h"
 #include "serverconnection.h"
 
 #include <QtDebug>
 
-namespace PMP {
-
-    CurrentTrackMonitorImpl::CurrentTrackMonitorImpl(ServerConnection* connection)
+namespace PMP
+{
+    CurrentTrackMonitorImpl::CurrentTrackMonitorImpl(
+                                             QueueEntryInfoStorage* queueEntryInfoStorage,
+                                             ServerConnection* connection)
      : CurrentTrackMonitor(connection),
+       _queueEntryInfoStorage(queueEntryInfoStorage),
        _connection(connection),
        _playerState(PlayerState::Unknown),
        _currentQueueId(0),
@@ -47,18 +51,8 @@ namespace PMP {
             _connection, &ServerConnection::receivedPlayerState,
             this, &CurrentTrackMonitorImpl::receivedPlayerState
         );
-        connect(
-            _connection, &ServerConnection::receivedQueueEntryHash,
-            this, &CurrentTrackMonitorImpl::receivedQueueEntryHash
-        );
-        connect(
-            _connection, &ServerConnection::receivedTrackInfo,
-            this, &CurrentTrackMonitorImpl::receivedTrackInfo
-        );
-        connect(
-            _connection, &ServerConnection::receivedPossibleFilenames,
-            this, &CurrentTrackMonitorImpl::receivedPossibleFilenames
-        );
+        connect(_queueEntryInfoStorage, &QueueEntryInfoStorage::tracksChanged,
+                this, &CurrentTrackMonitorImpl::tracksChanged);
 
         if (_connection->isConnected())
             connected();
@@ -142,6 +136,7 @@ namespace PMP {
         clearTrackInfo();
 
         Q_EMIT currentTrackChanged();
+        Q_EMIT currentTrackInfoChanged();
     }
 
     void CurrentTrackMonitorImpl::receivedPlayerState(PlayerState state, quint8 volume,
@@ -151,79 +146,18 @@ namespace PMP {
     {
         Q_UNUSED(volume)
         Q_UNUSED(queueLength)
-        Q_UNUSED(nowPlayingPosition)
 
         _playerState = state;
         changeCurrentQueueId(nowPlayingQueueId);
         changeCurrentTrackPosition(nowPlayingPosition);
     }
 
-    void CurrentTrackMonitorImpl::receivedQueueEntryHash(quint32 queueId,
-                                                         QueueEntryType type,
-                                                         FileHash hash)
+    void CurrentTrackMonitorImpl::tracksChanged(QList<quint32> queueIds)
     {
-        if (queueId != _currentQueueId)
+        if (_currentQueueId <= 0 || !queueIds.contains(_currentQueueId))
             return;
 
-        if (type != QueueEntryType::Track)
-            return;
-
-        if (hash == _currentHash)
-            return;
-
-        _currentHash = hash;
-
-        Q_EMIT currentTrackInfoChanged();
-    }
-
-    void CurrentTrackMonitorImpl::receivedTrackInfo(quint32 queueId, QueueEntryType type,
-                                                    qint64 lengthMilliseconds,
-                                                    QString title, QString artist)
-    {
-        if (queueId != _currentQueueId)
-            return;
-
-        if (type != QueueEntryType::Track)
-            return;
-
-        bool lengthChanged = lengthMilliseconds != _currentTrackLengthMilliseconds;
-        bool tagsChanged = title != _currentTrackTitle || artist != _currentTrackArtist;
-
-        if (!lengthChanged && !tagsChanged)
-            return;
-
-        _currentTrackLengthMilliseconds = lengthMilliseconds;
-        _currentTrackTitle = title;
-        _currentTrackArtist = artist;
-
-        if (title.isEmpty() && artist.isEmpty()) {
-            _connection->sendPossibleFilenamesRequest(queueId);
-        }
-
-        Q_EMIT currentTrackInfoChanged();
-
-        if (lengthChanged)
-            emitCalculatedTrackProgress();
-    }
-
-    void CurrentTrackMonitorImpl::receivedPossibleFilenames(quint32 queueId,
-                                                            QList<QString> names)
-    {
-        if (queueId != _currentQueueId)
-            return;
-
-        QString longest;
-        for (QString name : names) {
-            if (name.size() >= longest.size())
-                longest = name;
-        }
-
-        if (longest == _currentTrackPossibleFilename)
-            return;
-
-        _currentTrackPossibleFilename = longest;
-
-        Q_EMIT currentTrackInfoChanged();
+        updateTrackFields(false);
     }
 
     void CurrentTrackMonitorImpl::changeCurrentQueueId(quint32 queueId)
@@ -236,24 +170,57 @@ namespace PMP {
         _currentQueueId = queueId;
         _haveReceivedCurrentTrack = true;
 
-        clearTrackInfo();
+        updateTrackFields(true);
+    }
 
-        if (queueId > 0) {
-            _connection->sendQueueEntryInfoRequest(queueId);
+    void CurrentTrackMonitorImpl::updateTrackFields(bool isNewTrack)
+    {
+        FileHash hash;
+        QString title;
+        QString artist;
+        QString possibleFilename;
+        qint64 lengthMilliseconds { -1 };
 
-            QList<uint> ids { queueId };
-            _connection->sendQueueEntryHashRequest(ids);
+        auto* entry = _queueEntryInfoStorage->entryInfoByQueueId(_currentQueueId);
+        if (entry)
+        {
+            hash = entry->hash();
+            title = entry->title();
+            artist = entry->artist();
+            possibleFilename = entry->informativeFilename();
+            lengthMilliseconds = entry->lengthInMilliseconds();
         }
 
-        Q_EMIT currentTrackChanged();
-        Q_EMIT currentTrackInfoChanged();
+        bool lengthChanged = lengthMilliseconds != _currentTrackLengthMilliseconds;
+        bool fieldsChanged =
+                hash != _currentHash
+                || title != _currentTrackTitle
+                || artist != _currentTrackArtist
+                || possibleFilename != _currentTrackPossibleFilename
+                || lengthChanged;
+
+        _currentHash = hash;
+        _currentTrackTitle = title;
+        _currentTrackArtist = artist;
+        _currentTrackPossibleFilename = possibleFilename;
+        _currentTrackLengthMilliseconds = lengthMilliseconds;
+
+        if (isNewTrack)
+            Q_EMIT currentTrackChanged();
+
+        if (isNewTrack || fieldsChanged)
+            Q_EMIT currentTrackInfoChanged();
+
+        if (lengthChanged)
+            emitCalculatedTrackProgress();
     }
 
     void CurrentTrackMonitorImpl::changeCurrentTrackPosition(qint64 positionMilliseconds)
     {
         auto queueId = _currentQueueId;
 
-        if (queueId <= 0) {
+        if (queueId <= 0)
+        {
             _progressTimer.invalidate();
             _progressAtTimerStart = 0;
 
@@ -285,5 +252,4 @@ namespace PMP {
         _currentTrackPossibleFilename.clear();
         _currentTrackLengthMilliseconds = -1;
     }
-
 }

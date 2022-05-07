@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,9 +24,11 @@
 #include "currenttrackmonitorimpl.h"
 #include "dynamicmodecontrollerimpl.h"
 #include "generalcontrollerimpl.h"
+#include "historycontrollerimpl.h"
 #include "playercontrollerimpl.h"
 #include "queuecontrollerimpl.h"
 #include "queueentryinfofetcher.h"
+#include "queueentryinfostorageimpl.h"
 #include "queuemonitor.h"
 #include "serverconnection.h"
 #include "userdatafetcher.h"
@@ -36,16 +38,6 @@ namespace PMP
     ClientServerInterface::ClientServerInterface(ServerConnection* connection)
      : QObject(connection),
        _connection(connection),
-       _authenticationController(nullptr),
-       _generalController(nullptr),
-       _simplePlayerController(nullptr),
-       _currentTrackMonitor(nullptr),
-       _queueController(nullptr),
-       _queueMonitor(nullptr),
-       _queueEntryInfoFetcher(nullptr),
-       _dynamicModeController(nullptr),
-       _collectionWatcher(nullptr),
-       _userDataFetcher(nullptr),
        _connected(connection->isConnected())
     {
         connect(
@@ -103,7 +95,8 @@ namespace PMP
     CurrentTrackMonitor& ClientServerInterface::currentTrackMonitor()
     {
         if (!_currentTrackMonitor)
-            _currentTrackMonitor = new CurrentTrackMonitorImpl(_connection);
+            _currentTrackMonitor = new CurrentTrackMonitorImpl(&queueEntryInfoStorage(),
+                                                               _connection);
 
         return *_currentTrackMonitor;
     }
@@ -124,12 +117,21 @@ namespace PMP
         return *_queueMonitor;
     }
 
+    QueueEntryInfoStorage& ClientServerInterface::queueEntryInfoStorage()
+    {
+        if (!_queueEntryInfoStorage)
+            _queueEntryInfoStorage = new QueueEntryInfoStorageImpl(_connection);
+
+        return *_queueEntryInfoStorage;
+    }
+
     QueueEntryInfoFetcher& ClientServerInterface::queueEntryInfoFetcher()
     {
         if (!_queueEntryInfoFetcher)
         {
-            _queueEntryInfoFetcher =
-                    new QueueEntryInfoFetcher(this, &queueMonitor(), _connection);
+            _queueEntryInfoFetcher = new QueueEntryInfoFetcher(this, &queueMonitor(),
+                                                               &queueEntryInfoStorage(),
+                                                               _connection);
         }
 
         return *_queueEntryInfoFetcher;
@@ -141,6 +143,14 @@ namespace PMP
             _dynamicModeController = new DynamicModeControllerImpl(_connection);
 
         return *_dynamicModeController;
+    }
+
+    HistoryController& ClientServerInterface::historyController()
+    {
+        if (!_historyController)
+            _historyController = new HistoryControllerImpl(_connection);
+
+        return *_historyController;
     }
 
     CollectionWatcher& ClientServerInterface::collectionWatcher()

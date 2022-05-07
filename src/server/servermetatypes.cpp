@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,6 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "analyzer.h"
 #include "clientrequestorigin.h"
 #include "scrobblingbackend.h"
 #include "userdataforhashesfetcher.h"
@@ -24,17 +25,21 @@
 #include <QMetaType>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     /** Utility object to automatically do the qRegisterMetaType calls at program
      *  startup */
-    class ServerMetatypesInit {
+    class ServerMetatypesInit
+    {
     private:
-        ServerMetatypesInit() {
+        ServerMetatypesInit()
+        {
             qRegisterMetaType<PMP::ClientRequestOrigin>();
+            qRegisterMetaType<PMP::FileAnalysis>();
+            qRegisterMetaType<PMP::FileHashes>();
+            qRegisterMetaType<PMP::FileInfo>();
             qRegisterMetaType<PMP::ScrobblingBackendState>();
             qRegisterMetaType<PMP::ScrobbleResult>();
-
             qRegisterMetaType<PMP::UserDataForHash>();
             qRegisterMetaType<QVector<PMP::UserDataForHash>>();
         }

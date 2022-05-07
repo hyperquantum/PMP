@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -45,10 +45,6 @@ namespace PMP
             _connection, &ServerConnection::receivedClientClockTimeOffset,
             this, &GeneralControllerImpl::receivedClientClockTimeOffset
         );
-        connect(
-            _connection, &ServerConnection::serverSettingsReloadResultEvent,
-            this, &GeneralControllerImpl::serverSettingsReloadResultEvent
-        );
 
         if (_connection->isConnected())
             connected();
@@ -64,7 +60,7 @@ namespace PMP
         return _clientClockTimeOffsetMs;
     }
 
-    RequestID GeneralControllerImpl::reloadServerSettings()
+    SimpleFuture<ResultMessageErrorCode> GeneralControllerImpl::reloadServerSettings()
     {
         return _connection->reloadServerSettings();
     }

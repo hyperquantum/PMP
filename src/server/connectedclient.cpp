@@ -19,13 +19,13 @@
 
 #include "connectedclient.h"
 
+#include "common/concurrent.h"
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
 #include "common/version.h"
 
 #include "collectionmonitor.h"
-#include "database.h"
 #include "history.h"
 #include "player.h"
 #include "playerqueue.h"
@@ -77,10 +77,6 @@ namespace PMP
                 qDebug() << "server shutting down; terminating this connection";
                 terminateConnection();
             }
-        );
-        connect(
-            _serverInterface, &ServerInterface::serverSettingsReloadResultEvent,
-            this, &ConnectedClient::serverSettingsReloadResultEvent
         );
 
         connect(
@@ -793,11 +789,12 @@ namespace PMP
 
     void ConnectedClient::sendDatabaseIdentifier()
     {
-        auto db = Database::getDatabaseForCurrentThread();
-        if (!db)
-            return; /* database unusable */
+        auto maybeUuid = _serverInterface->getDatabaseUuid();
 
-        QUuid uuid = db->getDatabaseIdentifier();
+        if (maybeUuid.failed())
+            return;
+
+        auto uuid = maybeUuid.result();
 
         QByteArray message;
         message.reserve(2 + 16);
@@ -851,8 +848,7 @@ namespace PMP
             length = queueLength - startOffset;
         }
 
-        const QList<QueueEntry*> entries =
-            queue.entries(startOffset, (length == 0) ? -1 : length);
+        auto entries = queue.entries(startOffset, (length == 0) ? -1 : length);
 
         QByteArray message;
         message.reserve(10 + entries.length() * 4);
@@ -860,7 +856,7 @@ namespace PMP
         NetworkUtil::append4Bytes(message, queueLength);
         NetworkUtil::append4Bytes(message, startOffset);
 
-        for (auto* entry : entries)
+        for (auto& entry : entries)
         {
             NetworkUtil::append4Bytes(message, entry->queueID());
         }
@@ -953,7 +949,7 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    quint16 ConnectedClient::createTrackStatusFor(QueueEntry* entry)
+    quint16 ConnectedClient::createTrackStatusFor(QSharedPointer<QueueEntry> entry)
     {
         switch (entry->kind())
         {
@@ -978,7 +974,7 @@ namespace PMP
 
     void ConnectedClient::sendQueueEntryInfoMessage(quint32 queueID)
     {
-        QueueEntry* track = _player->queue().lookup(queueID);
+        auto track = _player->queue().lookup(queueID);
         if (track == nullptr) { return; /* sorry, cannot send */ }
 
         track->checkTrackData(_player->resolver());
@@ -1055,7 +1051,7 @@ namespace PMP
 
         for(quint32 queueID : queueIDs)
         {
-            QueueEntry* track = queue.lookup(queueID);
+            auto track = queue.lookup(queueID);
             auto trackStatus =
                 track ? createTrackStatusFor(track)
                       : NetworkProtocol::createTrackStatusUnknownId();
@@ -1068,7 +1064,7 @@ namespace PMP
 
         for(quint32 queueID : queueIDs)
         {
-            QueueEntry* track = queue.lookup(queueID);
+            auto track = queue.lookup(queueID);
             if (track == 0) { continue; /* ID not found */ }
 
             track->checkTrackData(_player->resolver());
@@ -1131,22 +1127,19 @@ namespace PMP
 
         /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
 
-        FileHash emptyHash;
-
         for (auto queueID : queueIDs)
         {
-            QueueEntry* track = queue.lookup(queueID);
+            auto track = queue.lookup(queueID);
             auto trackStatus =
                 track ? createTrackStatusFor(track)
                       : NetworkProtocol::createTrackStatusUnknownId();
 
-            const FileHash* hash = track ? track->hash() : &emptyHash;
-            hash = hash ? hash : &emptyHash;
+            auto hash = track ? track->hash() : null;
 
             NetworkUtil::append4Bytes(message, queueID);
             NetworkUtil::append2Bytes(message, trackStatus);
             NetworkUtil::append2Bytes(message, 0); /* filler */
-            NetworkProtocol::appendHash(message, *hash);
+            NetworkProtocol::appendHash(message, hash);
         }
 
         sendBinaryMessage(message);
@@ -1801,7 +1794,7 @@ namespace PMP
         }
     }
 
-    void ConnectedClient::currentTrackChanged(QueueEntry const* entry)
+    void ConnectedClient::currentTrackChanged(QSharedPointer<QueueEntry const> entry)
     {
         if (_binaryMode)
         {
@@ -1816,7 +1809,7 @@ namespace PMP
         }
 
         int seconds = static_cast<int>(entry->lengthInMilliseconds() / 1000);
-        FileHash const* hash = entry->hash();
+        auto hash = entry->hash().value();
 
         sendTextCommand(
             "nowplaying track\n QID: " + QString::number(entry->queueID())
@@ -1824,9 +1817,9 @@ namespace PMP
              + "\n title: " + entry->title()
              + "\n artist: " + entry->artist()
              + "\n length: " + (seconds < 0 ? "?" : QString::number(seconds)) + " sec"
-             + "\n hash length: " + (!hash ? "?" : QString::number(hash->length()))
-             + "\n hash SHA-1: " + (!hash ? "?" : hash->SHA1().toHex())
-             + "\n hash MD5: " + (!hash ? "?" : hash->MD5().toHex())
+             + "\n hash length: " + QString::number(hash.length())
+             + "\n hash SHA-1: " + hash.SHA1().toHex()
+             + "\n hash MD5: " + hash.MD5().toHex()
         );
     }
 
@@ -1860,7 +1853,7 @@ namespace PMP
     void ConnectedClient::sendTextualQueueInfo()
     {
         PlayerQueue& queue = _player->queue();
-        const QList<QueueEntry*> queueContent = queue.entries(0, 10);
+        const auto queueContent = queue.entries(0, 10);
 
         QString command =
             "queue length " + QString::number(queue.length())
@@ -1870,7 +1863,7 @@ namespace PMP
 
         Resolver& resolver = _player->resolver();
         uint index = 0;
-        for (auto entry : queueContent)
+        for (auto& entry : queueContent)
         {
             ++index;
             entry->checkTrackData(resolver);
@@ -2532,35 +2525,18 @@ namespace PMP
         if (message.length() != 6)
             return; /* invalid message */
 
-        quint32 queueID = NetworkUtil::get4Bytes(message, 2);
-        qDebug() << "received request for possible filenames of QID" << queueID;
+        quint32 queueId = NetworkUtil::get4Bytes(message, 2);
+        qDebug() << "received request for possible filenames of QID" << queueId;
 
-        if (queueID <= 0)
-            return; /* invalid queue ID */
+        auto future = _serverInterface->getPossibleFilenamesForQueueEntry(queueId);
 
-        QueueEntry* entry = _player->queue().lookup(queueID);
-        if (entry == nullptr)
-            return; /* not found :-/ */
-
-        const FileHash* hash = entry->hash();
-        if (hash == nullptr)
-        {
-            /* hash not found */
-            /* TODO: register callback to resume this once the hash becomes known */
-            return;
-        }
-
-        uint hashID = _player->resolver().getID(*hash);
-
-        /* FIXME: do this in another thread, it will slow down the main thread */
-
-        auto db = Database::getDatabaseForCurrentThread();
-        if (!db)
-            return; /* database unusable */
-
-        QList<QString> filenames = db->getFilenames(hashID);
-
-        sendPossibleTrackFilenames(queueID, filenames);
+        future.addResultListener(
+            this,
+            [this, queueId](QList<QString> result)
+            {
+                sendPossibleTrackFilenames(queueId, result);
+            }
+        );
     }
 
     void ConnectedClient::parseQueueFetchRequestMessage(const QByteArray& message)
@@ -3013,9 +2989,18 @@ namespace PMP
             break; /* not to be used, treat as invalid */
 
         case ParameterlessActionCode::ReloadServerSettings:
-            _serverInterface->reloadServerSettings(clientReference);
-            return;
+        {
+            auto future = _serverInterface->reloadServerSettings();
+            future.addResultListener(
+                this,
+                [this, clientReference](ResultMessageErrorCode error)
+                {
+                    Q_EMIT serverSettingsReloadResultEvent(clientReference, error);
+                }
+            );
 
+            return;
+        }
         case ParameterlessActionCode::DeactivateDelayedStart:
             {
                 auto result = _serverInterface->deactivateDelayedStart();

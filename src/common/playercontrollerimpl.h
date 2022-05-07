@@ -50,9 +50,11 @@ namespace PMP
         int volume() const override;
 
         QDateTime delayedStartServerDeadline() override;
-        RequestID activateDelayedStart(qint64 delayMilliseconds) override;
-        RequestID activateDelayedStart(QDateTime startTime) override;
-        RequestID deactivateDelayedStart() override;
+        SimpleFuture<ResultMessageErrorCode> activateDelayedStart(
+                                                       qint64 delayMilliseconds) override;
+        SimpleFuture<ResultMessageErrorCode> activateDelayedStart(
+                                                            QDateTime startTime) override;
+        SimpleFuture<ResultMessageErrorCode> deactivateDelayedStart() override;
 
     public Q_SLOTS:
         void play() override;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,22 +27,8 @@
 
 namespace PMP
 {
-    QueueEntry::QueueEntry(uint queueId, const QString& filename)
-     : QObject(nullptr),
-       _queueID(queueId),
-       _kind(QueueEntryKind::Track),
-       _filename(filename),
-       _haveFilename(true),
-       _fetchedTagData(false),
-       _fileFinderBackoff(0),
-       _fileFinderFailedCount(0)
-    {
-        //
-    }
-
     QueueEntry::QueueEntry(uint queueId, FileHash hash)
-     : QObject(nullptr),
-       _queueID(queueId),
+     : _queueID(queueId),
        _kind(QueueEntryKind::Track),
        _hash(hash),
        _haveFilename(false),
@@ -53,9 +39,8 @@ namespace PMP
         //
     }
 
-    QueueEntry::QueueEntry(uint queueId, QueueEntry const* existing)
-     : QObject(nullptr),
-       _queueID(queueId),
+    QueueEntry::QueueEntry(uint queueId, QSharedPointer<QueueEntry const> existing)
+     : _queueID(queueId),
        _kind(existing->_kind),
        _hash(existing->_hash),
        _audioInfo(existing->_audioInfo),
@@ -70,9 +55,9 @@ namespace PMP
     }
 
     QueueEntry::QueueEntry(uint queueId, QueueEntryKind kind)
-     : QObject(nullptr),
-       _queueID(queueId),
+     : _queueID(queueId),
        _kind(kind),
+       _hash{},
        _haveFilename(false),
        _fetchedTagData(false),
        _fileFinderBackoff(0),
@@ -81,29 +66,25 @@ namespace PMP
         //
     }
 
-    QueueEntry* QueueEntry::createBreak(uint queueId)
+    QSharedPointer<QueueEntry> QueueEntry::createBreak(uint queueId)
     {
-        return new QueueEntry(queueId, QueueEntryKind::Break);
+        return QSharedPointer<QueueEntry>::create(queueId, QueueEntryKind::Break);
     }
 
-    QueueEntry* QueueEntry::createBarrier(uint queueId)
+    QSharedPointer<QueueEntry> QueueEntry::createBarrier(uint queueId)
     {
-        return new QueueEntry(queueId, QueueEntryKind::Barrier);
+        return QSharedPointer<QueueEntry>::create(queueId, QueueEntryKind::Barrier);
     }
 
-    QueueEntry* QueueEntry::createFromFilename(uint queueId, const QString& filename)
+    QSharedPointer<QueueEntry> QueueEntry::createFromHash(uint queueId, FileHash hash)
     {
-        return new QueueEntry(queueId, filename);
+        return QSharedPointer<QueueEntry>::create(queueId, hash);
     }
 
-    QueueEntry* QueueEntry::createFromHash(uint queueId, FileHash hash)
+    QSharedPointer<QueueEntry> QueueEntry::createCopyOf(uint queueId,
+                                                QSharedPointer<const QueueEntry> existing)
     {
-        return new QueueEntry(queueId, hash);
-    }
-
-    QueueEntry* QueueEntry::createCopyOf(uint queueId, const QueueEntry* existing)
-    {
-        return new QueueEntry(queueId, existing);
+        return QSharedPointer<QueueEntry>::create(queueId, existing);
     }
 
     QueueEntry::~QueueEntry()
@@ -111,34 +92,12 @@ namespace PMP
         //
     }
 
-    FileHash const* QueueEntry::hash() const
+    Nullable<FileHash> QueueEntry::hash() const
     {
-        if (_hash.isNull()) { return nullptr; }
-
-        return &_hash;
-    }
-
-    bool QueueEntry::checkHash(Resolver& resolver)
-    {
-        if (!_hash.isNull()) return true; /* already got it */
-
-        if (!_haveFilename)
-        {
-            qDebug() << "PROBLEM: QueueEntry" << _queueID
-                     << "does not have either hash nor filename";
-            return false;
-        }
-
-        _hash = resolver.analyzeAndRegisterFile(_filename);
-
         if (_hash.isNull())
-        {
-            qDebug() << "PROBLEM: QueueEntry" << _queueID
-                     << ": analysis of file failed:" << _filename;
-            return false;
-        }
+            return null;
 
-        return true;
+        return _hash;
     }
 
     void QueueEntry::setFilename(QString const& filename)
@@ -147,85 +106,18 @@ namespace PMP
         _haveFilename = true;
     }
 
-    QString const* QueueEntry::filename() const
+    Nullable<QString> QueueEntry::filename() const
     {
         if (_haveFilename)
-            return &_filename;
+            return _filename;
 
-        return nullptr;
+        return null;
     }
 
-    bool QueueEntry::checkValidFilename(Resolver& resolver, bool fast,
-                                        QString* outFilename)
+    void QueueEntry::invalidateFilename()
     {
-        qDebug() << "QueueEntry::checkValidFilename QID" << _queueID;
-        if (!isTrack()) return false;
-
-        FileHash const* fileHash = this->hash();
-
-        if (_haveFilename)
-        {
-            qDebug() << " have filename, need to verify it: " << _filename;
-
-            if (fileHash)
-            {
-                if (resolver.pathStillValid(*fileHash, _filename))
-                {
-                    if (outFilename) { (*outFilename) = _filename; }
-                    return true;
-                }
-
-                qDebug() << "  filename is no longer valid";
-                _haveFilename = false;
-                _filename = "";
-            }
-            else
-            {
-                QString name = _filename;
-                QFileInfo file(name);
-
-                if (file.isRelative())
-                {
-                    if (!file.makeAbsolute())
-                    {
-                        qDebug() << "  failed to make path absolute";
-                        return false;
-                    }
-                    _filename = file.absolutePath();
-                }
-
-                if (file.isFile() && file.isReadable())
-                {
-                    if (outFilename) { (*outFilename) = _filename; }
-                    return true;
-                }
-
-                qDebug() << "  filename is no longer valid, and we have no hash";
-                return false;
-            }
-        }
-
-        /* we don't have a valid filename */
-
-        if (!fileHash)
-        {
-            qDebug() << " no hash, cannot get filename";
-            return false;
-        }
-
-        QString path = resolver.findPathForHash(*fileHash, fast);
-
-        if (path.length() > 0)
-        {
-            _filename = path;
-            _haveFilename = true;
-            if (outFilename) { (*outFilename) = _filename; }
-            qDebug() << " found filename: " << path;
-            return true;
-        }
-
-        qDebug() << " no known filename";
-        return false;
+        _haveFilename = false;
+        _filename.clear();
     }
 
     void QueueEntry::checkAudioData(Resolver& resolver)

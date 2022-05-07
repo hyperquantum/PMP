@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -50,51 +50,63 @@ namespace PMP
         int length = _queue.length();
         uint operationsDone = 0;
 
-        for (int i = 0; i < length && i < 10 && operationsDone <= 3; ++i)
+        for (int index = 0; index < length && index < 10 && operationsDone <= 3; ++index)
         {
-            QueueEntry* entry = _queue[i];
-            if (!entry->isTrack()) continue;
+            auto entry = _queue[index];
+            if (!entry->isTrack())
+                continue;
 
-            if (entry->hash() == nullptr)
+            auto hash = entry->hash().value();
+            auto filename = entry->filename();
+            if (filename.hasValue() && !_resolver->pathStillValid(hash, filename.value()))
             {
-                qDebug() << "Queue: need to calculate hash for queue index" << (i + 1);
-                operationsDone++;
-                if (!entry->checkHash(*_resolver)) continue; /* check next track */
+                qDebug() << "PlayerQueue: filename no longer valid for queue index"
+                         << (index + 1);
+                filename = null;
+                entry->invalidateFilename();
             }
 
-            QString const* filename = entry->filename();
-            if (filename && !_resolver->pathStillValid(*entry->hash(), *filename))
+            int& backoff = entry->fileFinderBackoff();
+
+            if (filename.hasValue())
             {
-                qDebug() << "Queue: filename no longer valid for queue index" << (i + 1);
-                filename = nullptr;
+                backoff = 0;
+                continue;
             }
 
-            if (!filename)
+            if (backoff > 0)
             {
-                int& backoff = entry->fileFinderBackoff();
-                if (backoff > 0)
-                {
-                    backoff--;
-                    continue;
-                }
+                backoff--;
+                continue;
+            }
 
-                int& failedCount = entry->fileFinderFailedCount();
+            qDebug() << "PlayerQueue: need to obtain a valid filename for queue index"
+                     << (index + 1) << "which has queue ID" << entry->queueID()
+                     << "and hash" << hash;
 
-                qDebug() << "Queue: need to get a valid filename for queue index"
-                         << (i + 1);
-                operationsDone++;
-                if (entry->checkValidFilename(*_resolver, false))
+            backoff = 10;
+            auto future = _resolver->findPathForHashAsync(hash);
+            future.addResultListener(
+                this,
+                [entry](QString path)
                 {
-                    backoff = 0;
-                    if (failedCount > 0) failedCount >>= 1; /* divide by two */
+                    qDebug() << "PlayerQueue: found file" << path
+                             << "for queue ID" << entry->queueID();
+
+                    entry->fileFinderBackoff() = 0;
+                    entry->fileFinderFailedCount() /= 2;
+                    entry->setFilename(path);
                 }
-                else
+            );
+            future.addFailureListener(
+                this,
+                [entry, index](FailureType)
                 {
+                    int& failedCount = entry->fileFinderFailedCount();
                     failedCount = qMin(failedCount + 1, 100);
-                    backoff = failedCount + (i * 2);
-                    continue;
+                    entry->fileFinderBackoff() = failedCount + (index * 2);
                 }
-            }
+            );
         }
     }
 
@@ -166,11 +178,6 @@ namespace PMP
         }
     }
 
-    Result PlayerQueue::enqueue(QString const& filename)
-    {
-        return enqueue(QueueEntryCreators::filename(filename));
-    }
-
     Result PlayerQueue::enqueue(FileHash hash)
     {
         if (hash.isNull())
@@ -179,7 +186,8 @@ namespace PMP
         return enqueue(QueueEntryCreators::hash(hash));
     }
 
-    Result PlayerQueue::enqueue(std::function<QueueEntry* (uint)> queueEntryCreator)
+    Result PlayerQueue::enqueue(
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator)
     {
         return insertAtIndex(_queue.length(), queueEntryCreator);
     }
@@ -197,7 +205,8 @@ namespace PMP
         return insertAtFront(QueueEntryCreators::breakpoint());
     }
 
-    Result PlayerQueue::insertAtFront(std::function<QueueEntry* (uint)> queueEntryCreator)
+    Result PlayerQueue::insertAtFront(
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator)
     {
         return insertAtIndex(0, queueEntryCreator);
     }
@@ -211,15 +220,15 @@ namespace PMP
     }
 
     Result PlayerQueue::insertAtIndex(qint32 index,
-                                      std::function<QueueEntry* (uint)> queueEntryCreator)
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator)
     {
-        return insertAtIndex(index, queueEntryCreator, [](uint queueId) {});
+        return insertAtIndex(index, queueEntryCreator, [](uint) {});
     }
 
     Result PlayerQueue::insertAtIndex(qint32 index, SpecialQueueItemType itemType,
                                       std::function<void (uint)> queueIdNotifier)
     {
-        std::function<QueueEntry* (uint)> queueEntryCreator;
+        std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator;
 
         switch (itemType)
         {
@@ -239,8 +248,8 @@ namespace PMP
     }
 
     Result PlayerQueue::insertAtIndex(qint32 index,
-                                      std::function<QueueEntry* (uint)> queueEntryCreator,
-                                      std::function<void (uint)> queueIdNotifier)
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                       std::function<void (uint)> queueIdNotifier)
     {
         if (index < 0
                 || index > _queue.size()) /* notice: one past the end is allowed */
@@ -256,15 +265,13 @@ namespace PMP
         }
 
         auto id = getNextQueueID();
-        auto* entry = queueEntryCreator(id);
+        auto entry = queueEntryCreator(id);
         if (entry->queueID() != id)
         {
             qWarning() << "new queue entry did not adopt the specified queue ID";
-            delete entry;
             return Error::internalError();
         }
 
-        entry->setParent(this);
         _idLookup.insert(entry->queueID(), entry);
         _queue.insert(int(index), entry);
 
@@ -285,10 +292,10 @@ namespace PMP
         return Success();
     }
 
-    QueueEntry* PlayerQueue::dequeue()
+    QSharedPointer<QueueEntry> PlayerQueue::dequeue()
     {
         if (_queue.empty()) { return nullptr; }
-        QueueEntry* entry = _queue.dequeue();
+        auto entry = _queue.dequeue();
 
         bool firstTrackChange = true;
         if (_firstTrackIndex < 0)
@@ -319,7 +326,7 @@ namespace PMP
         if (index < 0 || index >= _queue.length())
             return false;
 
-        QueueEntry* entry = _queue[index];
+        auto entry = _queue[index];
         quint32 queueID = entry->queueID();
         _queue.removeAt(index);
 
@@ -337,7 +344,6 @@ namespace PMP
                  << "from lookup table because it was deleted from the queue";
 
         _idLookup.remove(queueID);
-        delete entry;
 
         if (firstTrackChange)
             emitFirstTrackChanged();
@@ -419,12 +425,12 @@ namespace PMP
         return true;
     }
 
-    QList<QueueEntry*> PlayerQueue::entries(int startoffset, int maxCount)
+    QList<QSharedPointer<QueueEntry>> PlayerQueue::entries(int startoffset, int maxCount)
     {
         return _queue.mid(startoffset, maxCount);
     }
 
-    QueueEntry* PlayerQueue::peek() const
+    QSharedPointer<QueueEntry> PlayerQueue::peek() const
     {
         return entryAtIndex(0);
     }
@@ -436,22 +442,23 @@ namespace PMP
         return firstEntry && firstEntry->kind() == QueueEntryKind::Barrier;
     }
 
-    QueueEntry* PlayerQueue::peekFirstTrackEntry() const
+    QSharedPointer<QueueEntry> PlayerQueue::peekFirstTrackEntry() const
     {
-        if (_firstTrackIndex < 0) return nullptr;
+        if (_firstTrackIndex < 0)
+            return nullptr;
 
         return _queue[_firstTrackIndex];
     }
 
-    QueueEntry* PlayerQueue::lookup(quint32 queueID)
+    QSharedPointer<QueueEntry> PlayerQueue::lookup(quint32 queueID)
     {
-        QHash<quint32, QueueEntry*>::iterator it = _idLookup.find(queueID);
+        auto it = _idLookup.find(queueID);
         if (it == _idLookup.end()) { return nullptr; }
 
         return it.value();
     }
 
-    QueueEntry* PlayerQueue::entryAtIndex(int index) const
+    QSharedPointer<QueueEntry> PlayerQueue::entryAtIndex(int index) const
     {
         if (index < 0 || index >= _queue.size())
             return nullptr;
@@ -473,9 +480,8 @@ namespace PMP
             auto oldest = _history.dequeue();
             qDebug() << "deleting oldest queue history entry: QID" << oldest->queueID();
 
-            QueueEntry* oldestEntry = _idLookup[oldest->queueID()];
+            auto oldestEntry = _idLookup[oldest->queueID()];
             _idLookup.remove(oldest->queueID());
-            delete oldestEntry;
         }
 
         qDebug() << " history size now:" << _history.size();
@@ -512,32 +518,14 @@ namespace PMP
 
         for (int i = _queue.length() - 1; i >= 0; --i)
         {
-            QueueEntry* entry = _queue[i];
-            if (!entry->isTrack()) continue;
+            auto entry = _queue[i];
+            if (!entry->isTrack())
+                continue;
 
-            if (entry->hash() == nullptr)
-            {
-                /* we don't know the track's hash yet. We need to calculate it first */
-                qDebug() << "Queue::checkPotentialRepetitionByAdd:"
-                         << "need to calculate hash first, for QID" << entry->queueID();
-                entry->checkHash(*_resolver);
-
-                if (entry->hash() == nullptr)
-                {
-                    qDebug() << "PROBLEM: failed calculating hash of QID"
-                             << entry->queueID();
-                    /* could not calculate hash, so let's pray that this is a different
-                       track and continue */
-                    continue;
-                }
-            }
-
-            const FileHash& entryHash = *entry->hash();
+            auto entryHash = entry->hash().value();
 
             if (entryHash == hash)
-            {
                 return TrackRepetitionInfo(true, millisecondsCounted);
-            }
 
             entry->checkAudioData(*_resolver);
             qint64 entryLengthMilliseconds = entry->lengthInMilliseconds();

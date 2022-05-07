@@ -28,7 +28,6 @@ KNOWN BUGS
  * hash calculation is wrong for MP3 files containing an APE tag
  * preloaded tracks are sometimes deleted before they are used because they are old
  * player fails to play preloaded entries of which the file has been deleted already
- * server crashes when a server shutdown is performed while a full indexation is running
  * GUI remote: searching the music collection for "e" does not return results having "ë"
  * a "skip" operation should not affect the current track's score if performed by another user
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
@@ -36,21 +35,11 @@ KNOWN BUGS
  * unknown error at login because of username case (in)sensitivity
  * track title/artist/length update in the music collection does not trigger an update of queue entries referencing that track
  * doing a "skip" often creates a burst of noise; need to wait until the old track has stopped before starting the next one
- * GUI remote: title/artist are briefly "unknown" when a track starts
- * client does not always notice when connection to the server breaks
 
 
 PERFORMANCE ISSUES
 
  *
-
-
-TECHNICAL TODO
-
- * when running an indexation, analyze the most recently created/updated files first
- * large file support (?)
- * switch to signed integer types for things like queue indices
- * add logging for all server messages that are deemed corrupt or invalid by the client
 
 
 IDEAS
@@ -59,13 +48,10 @@ IDEAS
  * player: 'load track' action that loads a track but does not start playing; this allows seek before playing
  ** player: 'play again next' action for the song that is currently playing
  *** player: auto-stop timer to make playback stop at or near a specified clock time
- ** player: auto-start timer to make playback start at a specified clock time
- * player: delayed start: e.g. being able to press Play and then have 5 seconds before PMP actually starts playing
  * player: avoid accidental multiple clicks on "skip" affecting track score unnecessarily
  * player: 'seek to start of track' action or button
  * player: make track position display less precise while playing, it is too fast for the human eye anyway
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
- * queue: ability to insert a breakpoint directly before/after any entry in the queue
  * queue: ability to insert a track at a random position in the queue
  * queue: show error marker for a track that has no known file
  * queue: join title and artist columns when displaying filename
@@ -90,7 +76,6 @@ IDEAS
  * 'about the remote' window; with client version and protocol version
  * 'about the server' window; with server name, UUID and protocol version
  * provide play/pause buttons in Windows taskbar popup
- * use libgroove for playback (?)
  ** support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
  * display PMP server version in the client 'About' dialog
  * ability to view server uptime
@@ -104,15 +89,14 @@ IDEAS
  * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time
  * track info dialog: ability to pick the user whose personal stats are shown
  * track info dialog: display filename(s)
+ * track info dialog: should become modeless
  ** track info dialog: show personal play history for that track
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner
  * visualize sound wave
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
- * client: detect broken connection to the server
  * client: ability to reconnect to the server after the connection was broken
- ** login dialog: add button for probing for servers again
  * take clock difference between client and server into account
  * add button to copy title and artist of current track to clipboard
 
@@ -134,6 +118,15 @@ POLISHING
  * GUI remote: history/queue/collection: hide selection when losing focus
 
 
-CODE CLEANUP
+TECHNICAL IDEAS
+
+ * when running an indexation, analyze the most recently created/updated files first
+ * large file support (?)
+ * switch to signed integer types for things like queue indices
+ * add logging for all server messages that are deemed corrupt or invalid by the client
+ * use libgroove for playback (?)
+
+
+CODE IMPROVEMENTS
 
  *

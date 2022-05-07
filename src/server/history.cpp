@@ -154,15 +154,14 @@ namespace PMP
         _fetchRequestsScheduledCount = 0;
     }
 
-    void History::currentTrackChanged(QueueEntry const* newTrack)
+    void History::currentTrackChanged(QSharedPointer<QueueEntry const> newTrack)
     {
-        if (_nowPlaying != 0 && newTrack != _nowPlaying)
+        if (_nowPlaying != nullptr && newTrack != _nowPlaying)
         {
-            const FileHash* hash = _nowPlaying->hash();
-            /* TODO: make sure hash is known, so history won't get lost */
-            if (hash)
+            Nullable<FileHash> hash = _nowPlaying->hash();
+            if (hash.hasValue())
             {
-                _lastPlayHash[*hash] = QDateTime::currentDateTimeUtc();
+                _lastPlayHash[hash.value()] = QDateTime::currentDateTimeUtc();
             }
         }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,7 +22,7 @@
 #include "common/clientserverinterface.h"
 #include "common/generalcontroller.h"
 #include "common/playercontroller.h"
-#include "common/queueentryinfofetcher.h"
+#include "common/queueentryinfostorage.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 
@@ -164,11 +164,11 @@ namespace PMP
     }
 
     QueueModel::QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
-                           QueueMediator* source, QueueEntryInfoFetcher* trackInfoFetcher)
+                           QueueMediator* source, QueueEntryInfoStorage* trackInfoStorage)
      : QAbstractTableModel(parent),
        _userDataFetcher(&clientServerInterface->userDataFetcher()),
        _source(source),
-       _infoFetcher(trackInfoFetcher),
+       _infoStorage(trackInfoStorage),
        _lastHeardRefresher(new RegularUiRefresher(this)),
        _clientClockTimeOffsetMs(0),
        _playerMode(PlayerMode::Unknown),
@@ -176,6 +176,8 @@ namespace PMP
        _modelRows(0)
     {
         _modelRows = _source->queueLength();
+
+        (void)clientServerInterface->queueEntryInfoFetcher(); /* speed things up */
 
         auto generalController = &clientServerInterface->generalController();
         auto playerController = &clientServerInterface->playerController();
@@ -204,7 +206,7 @@ namespace PMP
             this, &QueueModel::entriesReceived
         );
         connect(
-            _infoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+            _infoStorage, &QueueEntryInfoStorage::tracksChanged,
             this, &QueueModel::tracksChanged
         );
         connect(
@@ -279,10 +281,10 @@ namespace PMP
 
         int col = index.column();
 
-        quint32 queueID = trackIdAt(index);
+        quint32 queueId = trackIdAt(index);
 
         QueueEntryInfo* info =
-            queueID ? _infoFetcher->entryInfoByQID(queueID) : nullptr;
+            queueId ? _infoStorage->entryInfoByQueueId(queueId) : nullptr;
 
         /* handle real track entries in a separate function */
         if (info && info->type() == QueueEntryType::Track)
@@ -717,7 +719,8 @@ namespace PMP
 
         auto queueId = track->_queueID;
 
-        QueueEntryInfo* info = queueId ? _infoFetcher->entryInfoByQID(queueId) : nullptr;
+        QueueEntryInfo* info =
+                queueId ? _infoStorage->entryInfoByQueueId(queueId) : nullptr;
 
         if (info == nullptr)
             return QueueTrack();

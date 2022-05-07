@@ -22,9 +22,9 @@
 
 #include "common/tribool.h"
 
+#include "future.h"
 #include "playermode.h"
 #include "playerstate.h"
-#include "requestid.h"
 #include "resultmessageerrorcode.h"
 
 #include <QDateTime>
@@ -55,9 +55,11 @@ namespace PMP
         virtual int volume() const = 0;
 
         virtual QDateTime delayedStartServerDeadline() = 0;
-        virtual RequestID activateDelayedStart(qint64 delayMilliseconds) = 0;
-        virtual RequestID activateDelayedStart(QDateTime startTime) = 0;
-        virtual RequestID deactivateDelayedStart() = 0;
+        virtual SimpleFuture<ResultMessageErrorCode> activateDelayedStart(
+                                                            qint64 delayMilliseconds) = 0;
+        virtual SimpleFuture<ResultMessageErrorCode> activateDelayedStart(
+                                                                 QDateTime startTime) = 0;
+        virtual SimpleFuture<ResultMessageErrorCode> deactivateDelayedStart() = 0;
 
     public Q_SLOTS:
         virtual void play() = 0;
@@ -77,11 +79,6 @@ namespace PMP
         void volumeChanged();
         void queueLengthChanged();
         void delayedStartActiveInfoChanged();
-
-        void delayedStartActivationResultEvent(ResultMessageErrorCode errorCode,
-                                               RequestID requestId);
-        void delayedStartDeactivationResultEvent(ResultMessageErrorCode errorCode,
-                                                 RequestID requestId);
 
     protected:
         explicit PlayerController(QObject* parent) : QObject(parent) {}

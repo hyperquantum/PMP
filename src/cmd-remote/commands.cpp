@@ -24,7 +24,7 @@
 #include "common/generalcontroller.h"
 #include "common/playercontroller.h"
 #include "common/queuecontroller.h"
-#include "common/queueentryinfofetcher.h"
+#include "common/queueentryinfostorage.h"
 #include "common/queuemonitor.h"
 #include "common/util.h"
 
@@ -44,24 +44,13 @@ namespace PMP
 
     void ReloadServerSettingsCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        auto* generalController = &clientServerInterface->generalController();
-
-        connect(
-            generalController, &GeneralController::serverSettingsReloadResultEvent,
-            this,
-            [this](ResultMessageErrorCode errorCode, RequestID requestId)
-            {
-                if (requestId != _requestId)
-                    return; /* not for us */
-
-                setCommandExecutionResult(errorCode);
-            }
-        );
+        //
     }
 
     void ReloadServerSettingsCommand::start(ClientServerInterface* clientServerInterface)
     {
-        _requestId = clientServerInterface->generalController().reloadServerSettings();
+        auto future = clientServerInterface->generalController().reloadServerSettings();
+        addCommandExecutionFutureListener(future);
     }
 
     /* ===== DelayedStartAtCommand ===== */
@@ -79,25 +68,15 @@ namespace PMP
 
     void DelayedStartAtCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        auto* playerController = &clientServerInterface->playerController();
-
-        connect(
-            playerController, &PlayerController::delayedStartActivationResultEvent,
-            this,
-            [this](ResultMessageErrorCode errorCode, RequestID requestId)
-            {
-                if (requestId != _requestId)
-                    return; /* not for us */
-
-                setCommandExecutionResult(errorCode);
-            }
-        );
+        //
     }
 
     void DelayedStartAtCommand::start(ClientServerInterface* clientServerInterface)
     {
-        _requestId = clientServerInterface->playerController().activateDelayedStart(
-                                                                              _startTime);
+        auto future =
+            clientServerInterface->playerController().activateDelayedStart(_startTime);
+
+        addCommandExecutionFutureListener(future);
     }
 
     /* ===== DelayedStartWaitCommand ===== */
@@ -115,25 +94,15 @@ namespace PMP
 
     void DelayedStartWaitCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        auto* playerController = &clientServerInterface->playerController();
-
-        connect(
-            playerController, &PlayerController::delayedStartActivationResultEvent,
-            this,
-            [this](ResultMessageErrorCode errorCode, RequestID requestId)
-            {
-                if (requestId != _requestId)
-                    return; /* not for us */
-
-                setCommandExecutionResult(errorCode);
-            }
-        );
+        //
     }
 
     void DelayedStartWaitCommand::start(ClientServerInterface* clientServerInterface)
     {
-        _requestId = clientServerInterface->playerController().activateDelayedStart(
+        auto future =
+            clientServerInterface->playerController().activateDelayedStart(
                                                                       _delayMilliseconds);
+        addCommandExecutionFutureListener(future);
     }
 
     /* ===== DeactivateDelayedCancelCommand ===== */
@@ -145,24 +114,13 @@ namespace PMP
 
     void DelayedStartCancelCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        auto* playerController = &clientServerInterface->playerController();
-
-        connect(
-            playerController, &PlayerController::delayedStartDeactivationResultEvent,
-            this,
-            [this](ResultMessageErrorCode errorCode, RequestID requestId)
-            {
-                if (requestId != _requestId)
-                    return; /* not for us */
-
-                setCommandExecutionResult(errorCode);
-            }
-        );
+        //
     }
 
     void DelayedStartCancelCommand::start(ClientServerInterface* clientServerInterface)
     {
-        _requestId = clientServerInterface->playerController().deactivateDelayedStart();
+        auto future = clientServerInterface->playerController().deactivateDelayedStart();
+        addCommandExecutionFutureListener(future);
     }
 
     /* ===== PlayCommand ===== */
@@ -387,15 +345,17 @@ namespace PMP
         auto* queueMonitor = &clientServerInterface->queueMonitor();
         queueMonitor->setFetchLimit(_fetchLimit);
 
-        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+        auto* queueEntryInfoStorage = &clientServerInterface->queueEntryInfoStorage();
+
+        (void)clientServerInterface->queueEntryInfoFetcher(); /* speed things up */
 
         connect(queueMonitor, &QueueMonitor::fetchCompleted,
                 this, &QueueCommand::listenerSlot);
-        connect(queueEntryInfoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+        connect(queueEntryInfoStorage, &QueueEntryInfoStorage::tracksChanged,
                 this, &QueueCommand::listenerSlot);
 
         addStep(
-            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> bool
             {
                 if (!queueMonitor->isFetchCompleted())
                     return false;
@@ -407,7 +367,7 @@ namespace PMP
                     if (queueId == 0)
                         return false; /* download incomplete, shouldn't happen */
 
-                    auto entry = queueEntryInfoFetcher->entryInfoByQID(queueId);
+                    auto entry = queueEntryInfoStorage->entryInfoByQueueId(queueId);
                     if (!entry || entry->type() == QueueEntryType::Unknown)
                         return false; /* info not available yet */
 
@@ -422,9 +382,9 @@ namespace PMP
             }
         );
         addStep(
-            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> bool
             {
-                printQueue(queueMonitor, queueEntryInfoFetcher);
+                printQueue(queueMonitor, queueEntryInfoStorage);
                 return false;
             }
         );
@@ -437,7 +397,7 @@ namespace PMP
     }
 
     void QueueCommand::printQueue(AbstractQueueMonitor* queueMonitor,
-                                  QueueEntryInfoFetcher* queueEntryInfoFetcher)
+                                  QueueEntryInfoStorage* queueEntryInfoStorage)
     {
         QString output;
         output.reserve(80 + 80 + 80 * _fetchLimit);
@@ -463,7 +423,7 @@ namespace PMP
             output += QString::number(queueId).rightJustified(7);
             output += "|";
 
-            auto entry = queueEntryInfoFetcher->entryInfoByQID(queueId);
+            auto entry = queueEntryInfoStorage->entryInfoByQueueId(queueId);
             if (!entry)
             {
                 output += "??????????"; /* info not available yet, unlikely but possible*/
@@ -668,15 +628,15 @@ namespace PMP
         auto* queueMonitor = &clientServerInterface->queueMonitor();
         queueMonitor->setFetchLimit(1);
 
-        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+        auto* queueEntryInfoStorage = &clientServerInterface->queueEntryInfoStorage();
 
         connect(queueMonitor, &QueueMonitor::fetchCompleted,
                 this, &BreakCommand::listenerSlot);
-        connect(queueEntryInfoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+        connect(queueEntryInfoStorage, &QueueEntryInfoStorage::tracksChanged,
                 this, &BreakCommand::listenerSlot);
 
         addStep(
-            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> bool
             {
                 if (!queueMonitor->isFetchCompleted())
                     return false;
@@ -688,7 +648,7 @@ namespace PMP
                 if (firstEntryId == 0)
                     return false; /* shouldn't happen */
 
-                auto firstEntry = queueEntryInfoFetcher->entryInfoByQID(firstEntryId);
+                auto firstEntry = queueEntryInfoStorage->entryInfoByQueueId(firstEntryId);
                 if (!firstEntry)
                     return false;
 
@@ -724,7 +684,8 @@ namespace PMP
         return true;
     }
 
-    void QueueInsertSpecialItemCommand::setUp(ClientServerInterface* clientServerInterface)
+    void QueueInsertSpecialItemCommand::setUp(
+                                             ClientServerInterface* clientServerInterface)
     {
         auto* queueController = &clientServerInterface->queueController();
 
@@ -733,6 +694,9 @@ namespace PMP
             this,
             [this](qint32 index, quint32 queueId, RequestID requestId)
             {
+                Q_UNUSED(index)
+                Q_UNUSED(queueId)
+
                 if (requestId == _requestId)
                     setCommandExecutionSuccessful();
             }

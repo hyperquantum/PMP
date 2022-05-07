@@ -19,6 +19,10 @@
 
 #include "serverinterface.h"
 
+#include "common/concurrent.h"
+#include "common/promise.h"
+
+#include "database.h"
 #include "delayedstart.h"
 #include "generator.h"
 #include "player.h"
@@ -104,28 +108,38 @@ namespace PMP
         return _server->caption();
     }
 
+    ResultOrError<QUuid, Result> ServerInterface::getDatabaseUuid() const
+    {
+        auto uuid = Database::getDatabaseUuid();
+
+        if (uuid.isNull())
+            return Error::internalError();
+
+        return uuid;
+    }
+
     void ServerInterface::setLoggedIn(quint32 userId, QString userLogin)
     {
         _userLoggedIn = userId;
         _userLoggedInName = userLogin;
     }
 
-    void ServerInterface::reloadServerSettings(uint clientReference)
+    SimpleFuture<ResultMessageErrorCode> ServerInterface::reloadServerSettings()
     {
-        ResultMessageErrorCode errorCode;
+        SimplePromise<ResultMessageErrorCode> promise;
 
         // TODO : in the future allow reloading if the database is not connected yet
         if (!isLoggedIn())
         {
-            errorCode = ResultMessageErrorCode::NotLoggedIn;
+            promise.setResult(ResultMessageErrorCode::NotLoggedIn);
         }
         else
         {
             _serverSettings->load();
-            errorCode = ResultMessageErrorCode::NoError;
+            promise.setResult(ResultMessageErrorCode::NoError);
         }
 
-        Q_EMIT serverSettingsReloadResultEvent(clientReference, errorCode);
+        return promise.future();
     }
 
     void ServerInterface::switchToPersonalMode()
@@ -209,7 +223,7 @@ namespace PMP
 
     PlayerStateOverview ServerInterface::getPlayerStateOverview()
     {
-        QueueEntry const* nowPlaying = _player->nowPlaying();
+        auto nowPlaying = _player->nowPlaying();
 
         PlayerStateOverview overview;
         overview.playerState = _player->state();
@@ -220,6 +234,38 @@ namespace PMP
         overview.delayedStartActive = _delayedStart->isActive();
 
         return overview;
+    }
+
+    Future<QList<QString>, Result> ServerInterface::getPossibleFilenamesForQueueEntry(
+                                                                                  uint id)
+    {
+        if (id <= 0) /* invalid queue ID */
+            return FutureError(Error::queueEntryIdNotFound(0));
+
+        auto entry = _player->queue().lookup(id);
+        if (entry == nullptr) /* ID not found */
+            return FutureError(Error::queueEntryIdNotFound(id));
+
+        if (!entry->isTrack())
+            return FutureError(Error::queueItemTypeInvalid());
+
+        auto hash = entry->hash().value();
+        uint hashId = _player->resolver().getID(hash);
+
+        auto future =
+            Concurrent::run<QList<QString>, FailureType>(
+                [hashId]() -> ResultOrError<QList<QString>, FailureType>
+                {
+                    auto db = Database::getDatabaseForCurrentThread();
+                    if (!db)
+                        return failure; /* database unusable */
+
+                    return db->getFilenames(hashId);
+                }
+            )
+            .convertError<Result>([](FailureType) { return Error::internalError(); });
+
+        return future;
     }
 
     Result ServerInterface::enqueue(FileHash hash)
@@ -248,7 +294,7 @@ namespace PMP
             return Error::notLoggedIn();
 
         auto& queue = _player->queue();
-        auto* firstEntry = queue.peek();
+        auto firstEntry = queue.peek();
         if (firstEntry && firstEntry->kind() == QueueEntryKind::Break)
             return Success(); /* already present, nothing to do */
 
@@ -295,8 +341,8 @@ namespace PMP
     }
 
     Result ServerInterface::insertAtIndex(qint32 index,
-                                      std::function<QueueEntry* (uint)> queueEntryCreator,
-                                          quint32 clientReference)
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                       quint32 clientReference)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();

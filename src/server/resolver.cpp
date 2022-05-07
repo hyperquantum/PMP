@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,8 @@
 
 #include "resolver.h"
 
+#include "common/concurrent.h"
+#include "common/containerutil.h"
 #include "common/fileanalyzer.h"
 
 #include "database.h"
@@ -35,6 +37,421 @@
 
 namespace PMP
 {
+    /* ========================== HashIdRegistrar ========================== */
+
+    Future<SuccessType, FailureType> HashIdRegistrar::loadAllFromDatabase()
+    {
+        auto work =
+            [this]() -> ResultOrError<SuccessType, FailureType>
+            {
+                auto db = Database::getDatabaseForCurrentThread();
+                if (!db) return failure; /* database not available */
+
+                auto hashesResult = db->getHashes();
+                if (hashesResult.failed())
+                    return failure;
+
+                const auto hashes = hashesResult.result();
+
+                QMutexLocker lock(&_mutex);
+                for (auto& pair : hashes)
+                {
+                    _hashes.insert(pair.second, pair.first);
+                    _ids.insert(pair.first, pair.second);
+                }
+
+                qDebug() << "HashIdRegistrar: loaded" << hashes.count()
+                         << "hashes from the database";
+                return success;
+            };
+
+        return Concurrent::run<SuccessType, FailureType>(work);
+    }
+
+    Future<uint, FailureType> HashIdRegistrar::getOrCreateId(FileHash hash)
+    {
+        {
+            QMutexLocker lock(&_mutex);
+            auto id = _hashes.value(hash, 0);
+            if (id > 0)
+                return Future<uint, FailureType>::fromResult(id);
+        }
+
+        auto work =
+            [this, hash]() -> ResultOrError<uint, FailureType>
+            {
+                auto db = Database::getDatabaseForCurrentThread();
+                if (!db) return failure; /* database not available */
+
+                db->registerHash(hash);
+                uint id = db->getHashID(hash);
+                if (id <= 0)
+                {
+                    qWarning() << "HashIdRegistrar: failed to get/register hash" << hash;
+                    return failure;
+                }
+
+                QMutexLocker lock(&_mutex);
+                _hashes.insert(hash, id);
+                _ids.insert(id, hash);
+                qDebug() << "HashIdRegistrar: got ID" << id << "for hash" << hash;
+                return id;
+            };
+
+        return Concurrent::run<uint, FailureType>(work);
+    }
+
+    QVector<QPair<uint, FileHash>> HashIdRegistrar::getAllLoaded()
+    {
+        QMutexLocker lock(&_mutex);
+
+        QVector<QPair<uint, FileHash>> result;
+        result.reserve(_ids.size());
+
+        for (auto it = _ids.begin(); it != _ids.end(); ++it)
+        {
+            result << qMakePair(it.key(), it.value());
+        }
+
+        return result;
+    }
+
+    /* ========================== FileLocations ========================== */
+
+    void FileLocations::insert(uint id, QString path)
+    {
+        if (id <= 0)
+        {
+            qWarning() << "FileLocations: insert() called with invalid ID" << id
+                       << "for path" << path;
+            return;
+        }
+
+        if (path.isEmpty())
+        {
+            qWarning() << "FileLocations: insert() called with empty path for ID" << id;
+            return;
+        }
+
+        QMutexLocker lock(&_mutex);
+
+        auto& paths = _idToPaths[id];
+        if (!paths.contains(path))
+            paths.append(path);
+
+        auto& ids = _pathToIds[path];
+        if (!ids.contains(id))
+            ids.append(id);
+    }
+
+    void FileLocations::remove(uint id, QString path)
+    {
+        qDebug() << "FileLocations: remove() called for ID" << id << "and path" << path;
+
+        if (id <= 0)
+        {
+            qWarning() << "FileLocations: remove() called with invalid ID" << id
+                       << "for path" << path;
+            return;
+        }
+
+        if (path.isEmpty())
+        {
+            qWarning() << "FileLocations: remove() called with empty path for ID" << id;
+            return;
+        }
+
+        QMutexLocker lock(&_mutex);
+
+        auto& paths = _idToPaths[id];
+        paths.removeOne(path);
+
+        auto& ids = _pathToIds[path];
+        ids.removeOne(id);
+    }
+
+    QList<uint> FileLocations::getIdsByPath(QString path)
+    {
+        QMutexLocker lock(&_mutex);
+
+        auto it = _pathToIds.find(path);
+        if (it == _pathToIds.end())
+            return {};
+
+        auto ids = it.value();
+        ids.detach();
+
+        return ids;
+    }
+
+    QStringList FileLocations::getPathsById(uint id)
+    {
+        QMutexLocker lock(&_mutex);
+
+        auto it = _idToPaths.find(id);
+        if (it == _idToPaths.end())
+            return {};
+
+        auto paths = it.value();
+        paths.detach();
+
+        return paths;
+    }
+
+    bool FileLocations::pathHasAtLeastOneId(QString path)
+    {
+        QMutexLocker lock(&_mutex);
+
+        auto it = _pathToIds.find(path);
+        if (it == _pathToIds.end())
+            return false;
+
+        return !it.value().isEmpty();
+    }
+
+    /* ========================== FileFinder ========================== */
+
+    FileFinder::FileFinder(QObject* parent, HashIdRegistrar* hashIdRegistrar,
+                           FileLocations* fileLocations, Analyzer* analyzer)
+        : QObject(parent),
+          _hashIdRegistrar(hashIdRegistrar),
+          _fileLocations(fileLocations),
+          _analyzer(analyzer),
+          _threadPool(new QThreadPool(this))
+    {
+        /* single thread only, because it's mostly I/O */
+        _threadPool->setMaxThreadCount(1);
+
+        connect(analyzer, &Analyzer::fileAnalysisCompleted,
+                this, &FileFinder::fileAnalysisCompleted);
+    }
+
+    void FileFinder::setMusicPaths(QStringList paths)
+    {
+        QMutexLocker lock(&_mutex);
+
+        _musicPaths = paths;
+        _musicPaths.detach();
+    }
+
+    Future<QString, FailureType> FileFinder::findHashAsync(uint id, FileHash hash)
+    {
+        QMutexLocker lock(&_mutex);
+
+        qDebug() << "FileFinder: need to find hash" << hash << "with ID" << id;
+
+        auto it = _inProgress.find(id);
+        if (it != _inProgress.end())
+        {
+            qDebug() << "FileFinder: returning existing future for ID" << id;
+            return it.value();
+        }
+
+        qDebug() << "FileFinder: starting background job to find file for ID" << id;
+
+        auto future =
+            Concurrent::run<QString, FailureType>(
+                _threadPool,
+                [this, id, hash]()
+                {
+                    auto result = findHashInternal(id, hash);
+                    markAsCompleted(id);
+
+                    if (result.succeeded())
+                    {
+                        qDebug() << "FileFinder: found file" << result.result()
+                                 << "for ID" << id;
+                    }
+                    else
+                    {
+                        qDebug() << "FileFinder: failed to find file for ID" << id;
+                    }
+                    return result;
+                }
+            );
+
+        return future;
+    }
+
+    void FileFinder::fileAnalysisCompleted(QString path, FileAnalysis analysis)
+    {
+        for (auto const& hash : analysis.hashes().allHashes())
+        {
+            auto future = _hashIdRegistrar->getOrCreateId(hash);
+
+            future.addResultListener(
+                this,
+                [this, path](uint id)
+                {
+                    _fileLocations->insert(id, path);
+                }
+            );
+        }
+    }
+
+    void FileFinder::markAsCompleted(uint id)
+    {
+        QMutexLocker lock(&_mutex);
+        _inProgress.remove(id);
+    }
+
+    ResultOrError<QString, FailureType> FileFinder::findHashInternal(uint id,
+                                                                     FileHash hash)
+    {
+        auto db = Database::getDatabaseForCurrentThread();
+        if (!db)
+            return failure;
+
+        auto path = findPathForHashByLikelyFilename(*db, id, hash);
+        if (!path.isEmpty())
+        {
+            qDebug() << "FileFinder: found match by filename heuristic:" << path;
+            return path;
+        }
+
+        path = findPathByQuickScanForNewFiles(*db, id, hash);
+        if (!path.isEmpty())
+        {
+            qDebug() << "FileFinder: found match by quick scan for new files:" << path;
+            return path;
+        }
+
+        return failure;
+    }
+
+    QString FileFinder::findPathForHashByLikelyFilename(Database& db, uint id,
+                                                        FileHash const& hash)
+    {
+        auto filenamesResult = db.getFilenames(id);
+        if (filenamesResult.failed()) /* no known filenames */
+            return {};
+
+        auto const filenames = filenamesResult.result();
+
+        const auto musicPaths = _musicPaths;
+        for (QString const& musicPath : musicPaths)
+        {
+            QDirIterator it(musicPath, QDir::Dirs | QDir::Readable | QDir::NoDotAndDotDot,
+                            QDirIterator::Subdirectories);
+
+            while (it.hasNext())
+            {
+                QFileInfo entry(it.next());
+                if (!entry.isDir()) continue;
+
+                QDir dir(entry.filePath());
+
+                for (QString const& fileShort : filenames)
+                {
+                    if (!dir.exists(fileShort)) continue;
+
+                    QString candidatePath = dir.filePath(fileShort);
+
+                    auto maybeHash = _analyzer->analyzeFile(candidatePath);
+                    if (maybeHash.failed())
+                        continue; /* failed to analyze */
+
+                    auto candidateHashes = maybeHash.result().hashes();
+                    if (candidateHashes.contains(hash))
+                        return candidatePath;
+                }
+            }
+        }
+
+        qDebug() << "FileFinder: filename based heuristic found no results for ID" << id;
+        return {};
+    }
+
+    QString FileFinder::findPathByQuickScanForNewFiles(Database& db, uint id,
+                                                       const FileHash& hash)
+    {
+        /* get likely file sizes */
+        auto previousFileSizesResult = db.getFileSizes(id);
+        QSet<qint64> previousFileSizes;
+        if (previousFileSizesResult.succeeded())
+            ContainerUtil::addToSet(previousFileSizesResult.result(), previousFileSizes);
+
+        QVector<QString> newFilesToScan;
+
+        const auto musicPaths = _musicPaths;
+        for (QString const& musicPath : musicPaths)
+        {
+            QDirIterator it(musicPath, QDirIterator::Subdirectories); /* no symlinks */
+
+            while (it.hasNext())
+            {
+                QFileInfo entry(it.next());
+                if (!FileAnalyzer::isFileSupported(entry)) continue;
+
+                auto candidatePath = entry.absoluteFilePath();
+
+                if (!previousFileSizes.contains(entry.size()))
+                {
+                    /* file size does not indicate a match */
+
+                    if (!_fileLocations->pathHasAtLeastOneId(candidatePath))
+                        newFilesToScan.append(candidatePath); /* it's a new file */
+                    continue;
+                }
+
+                qDebug() << "FileFinder: checking out" << candidatePath
+                         << "because its file size seems to match";
+                auto maybeHash = _analyzer->analyzeFile(candidatePath);
+                if (maybeHash.failed())
+                    continue; /* failed to analyze */
+
+                auto candidateHashes = maybeHash.result().hashes();
+                if (candidateHashes.contains(hash))
+                    return candidatePath;
+            }
+        }
+
+        return findPathByQuickScanOfNewFiles(newFilesToScan, hash);
+    }
+
+    QString FileFinder::findPathByQuickScanOfNewFiles(QVector<QString> newFiles,
+                                                      const FileHash& hash)
+    {
+        if (newFiles.isEmpty())
+            return {};
+
+        const int maxNewFilesToScan = 3;
+
+        const int scanCount = qMin(maxNewFilesToScan, newFiles.size());
+
+        qDebug() << "FileFinder: encountered" << newFiles.size()
+                 << "new files; examining" << scanCount << "of them to see if they match";
+
+        for (int i = 0; i < scanCount; ++i)
+        {
+            auto candidatePath = newFiles[i];
+
+            qDebug() << "FileFinder: checking out new file:" << candidatePath;
+
+            auto maybeHash = _analyzer->analyzeFile(candidatePath);
+            if (maybeHash.failed())
+                continue; /* failed to analyze */
+
+            auto candidateHashes = maybeHash.result().hashes();
+            if (candidateHashes.contains(hash))
+                return candidatePath;
+        }
+
+        if (scanCount >= newFiles.size())
+            return {};
+
+        qDebug() << "FileFinder: reached maximum number of new files to scan;"
+                 << "enqueueing" << (newFiles.size() - scanCount) << "files for analysis";
+
+        /* enqueue the rest of the new files for analysis */
+        for (int i = scanCount; i < newFiles.size(); ++i)
+        {
+            _analyzer->enqueueFile(newFiles[i]);
+        }
+
+        return {};
+    }
+
     /* ========================== private class declarations ========================== */
 
     struct Resolver::VerifiedFile
@@ -295,10 +712,12 @@ namespace PMP
         auto db = Database::getDatabaseForCurrentThread();
         if (_hashId > 0 && db)
         {
-            /* save filename without path in the database */
-            db->registerFilename(_hashId, info.fileName());
+            int currentYear = QDateTime::currentDateTimeUtc().date().year();
 
-            db->registerFileSize(_hashId, fileSize);
+            /* save filename without path in the database */
+            db->registerFilenameSeen(_hashId, info.fileName(), currentYear);
+
+            db->registerFileSizeSeen(_hashId, fileSize, currentYear);
         }
 
         if (_files.length() == 1) /* count went from 0 to 1 */
@@ -310,6 +729,8 @@ namespace PMP
     void Resolver::HashKnowledge::removeInvalidPath(Resolver::VerifiedFile* file)
     {
         qDebug() << "Resolver: removing path:" << file->_path;
+
+        _parent->_fileLocations.remove(_hashId, file->_path);
 
         if (_parent->_paths.value(file->_path, nullptr) == file)
         {
@@ -356,47 +777,68 @@ namespace PMP
             removeInvalidPath(file);
         }
 
-        return ""; /* no file available */
+        return {}; /* no file available */
     }
 
     /* ========================== Resolver ========================== */
 
     Resolver::Resolver()
-     : _lock(QMutex::Recursive),
-       _fullIndexationNumber(1), _fullIndexationRunning(false),
-       _fullIndexationWatcher(this)
+     : _analyzer(nullptr),
+       _fileFinder(nullptr),
+       _lock(QMutex::Recursive),
+       _fullIndexationNumber(1),
+       _fullIndexationStatus(FullIndexationStatus::NotRunning)
     {
-        connect(
-            &_fullIndexationWatcher, &QFutureWatcher<void>::finished,
-            this, &Resolver::onFullIndexationFinished
-        );
+        _analyzer = new Analyzer(this);
+        _fileFinder = new FileFinder(this, &_hashIdRegistrar, &_fileLocations, _analyzer);
 
-        auto db = Database::getDatabaseForCurrentThread();
+        connect(_analyzer, &Analyzer::fileAnalysisFailed,
+                this, &Resolver::onFileAnalysisFailed);
+        connect(_analyzer, &Analyzer::fileAnalysisCompleted,
+                this, &Resolver::onFileAnalysisCompleted);
+        connect(_analyzer, &Analyzer::finished,
+                this, &Resolver::onAnalyzerFinished);
 
-        if (db != nullptr)
-        {
-            const QList<QPair<uint, FileHash>> hashes = db->getHashes();
-
-            for (auto& pair : hashes)
+        auto dbLoadingFuture = _hashIdRegistrar.loadAllFromDatabase();
+        dbLoadingFuture.addResultListener(
+            this,
+            [this](SuccessType)
             {
-                auto knowledge = new HashKnowledge(this, pair.second, pair.first);
-                _hashKnowledge.insert(pair.second, knowledge);
-                _idToHash.insert(pair.first, knowledge);
-                _hashList.append(pair.second);
-            }
+                qDebug() << "Resolver: successfully loaded hashes from the database";
 
-            qDebug() << "loaded" << _hashList.count()
-                     << "hashes from the database";
-        }
-        else
-        {
-            qDebug() << "Resolver: could not load hashes because"
-                     << "there is no working DB connection";
-        }
+                auto allHashes = _hashIdRegistrar.getAllLoaded();
+
+                uint newHashesCount = 0;
+                QMutexLocker lock(&_lock);
+                for (auto& pair : allHashes)
+                {
+                    if (_idToHash.contains(pair.first))
+                        continue;
+
+                    auto knowledge = new HashKnowledge(this, pair.second, pair.first);
+                    _hashKnowledge.insert(pair.second, knowledge);
+                    _idToHash.insert(pair.first, knowledge);
+                    _hashList.append(pair.second);
+                    newHashesCount++;
+                }
+
+                qDebug() << "Resolver: hashes processed; got"
+                         << newHashesCount << "new hashes";
+            }
+        );
+        dbLoadingFuture.addFailureListener(
+            this,
+            [](FailureType)
+            {
+                qDebug() << "Resolver: could not load hashes from the database";
+            }
+        );
     }
 
     void Resolver::setMusicPaths(QStringList paths)
     {
+        _fileFinder->setMusicPaths(paths);
+
         QMutexLocker lock(&_lock);
         _musicPaths = paths;
 
@@ -413,40 +855,135 @@ namespace PMP
 
     bool Resolver::fullIndexationRunning()
     {
-        return _fullIndexationRunning;
+        return _fullIndexationStatus != FullIndexationStatus::NotRunning;
     }
 
     bool Resolver::startFullIndexation()
     {
-        if (_fullIndexationRunning)
+        if (fullIndexationRunning())
             return false; /* already running */
 
-        // TODO : update list of music paths from settings file
-
-        _fullIndexationRunning = true;
+        qDebug() << "full indexation starting";
+        _fullIndexationNumber += 2; /* add 2 so it will never become zero */
+        _fullIndexationStatus = FullIndexationStatus::FileSystemTraversal;
         Q_EMIT fullIndexationRunStatusChanged(true);
-        QFuture<void> future = QtConcurrent::run(this, &Resolver::doFullIndexation);
-        _fullIndexationWatcher.setFuture(future);
+        QtConcurrent::run(this, &Resolver::doFullIndexationFileSystemTraversal);
 
         return true;
     }
 
     void Resolver::onFullIndexationFinished()
     {
-        _fullIndexationRunning = false;
         Q_EMIT fullIndexationRunStatusChanged(false);
     }
 
-    void Resolver::doFullIndexation()
+    void Resolver::onFileAnalysisFailed(QString path)
     {
-        qDebug() << "full indexation started";
-        _fullIndexationNumber += 2; /* add 2 so it will never become zero */
+        Q_UNUSED(path)
+        // TODO
+    }
+
+    void Resolver::onFileAnalysisCompleted(QString path, FileAnalysis analysis)
+    {
+        auto hashes = analysis.hashes();
+
+        QMutexLocker lock(&_lock);
+
+        HashKnowledge* knowledge;
+        if (!hashes.multipleHashes())
+        {
+            knowledge = registerHash(hashes.main());
+        }
+        else
+        {
+            knowledge = nullptr;
+            for (auto const& hash : hashes.allHashes())
+            {
+                auto k = _hashKnowledge.value(hash, nullptr);
+                if (!k)
+                    continue;
+
+                if (!knowledge)
+                    knowledge = k;
+                else
+                    qDebug() << "detected multiple hashes in use for file" << path << ":"
+                             << knowledge->hash() << "and" << k->hash();
+            }
+
+            if (!knowledge)
+            {
+                knowledge = registerHash(hashes.main());
+            }
+        }
+
+        if (!knowledge)
+        {
+            qDebug() << "failed to register hash for:" << path;
+            return;
+        }
+
+        knowledge->addInfo(analysis.audioData(), analysis.tagData());
+
+        auto fileInfo = analysis.fileInfo();
+
+        if (fileInfo.path().length() <= 0
+                || fileInfo.size() <= 0
+                || fileInfo.lastModifiedUtc().isNull())
+        {
+            qDebug() << "cannot register file details for:" << path;
+            return;
+        }
+
+        knowledge->addPath(fileInfo.path(), fileInfo.size(), fileInfo.lastModifiedUtc(),
+                           _fullIndexationNumber);
+    }
+
+    void Resolver::onAnalyzerFinished()
+    {
+        if (_fullIndexationStatus
+                                == FullIndexationStatus::WaitingForFileAnalysisCompletion)
+        {
+            _fullIndexationStatus = FullIndexationStatus::CheckingForFileRemovals;
+            QtConcurrent::run(this, &Resolver::doFullIndexationCheckForFileRemovals);
+        }
+    }
+
+    Future<QString, FailureType> Resolver::findPathForHashAsync(FileHash hash)
+    {
+        {
+            QMutexLocker lock(&_lock);
+
+            auto it = _hashKnowledge.find(hash);
+            if (it != _hashKnowledge.end())
+            {
+                auto path = it.value()->getFile();
+                if (!path.isEmpty())
+                {
+                    return Future<QString, FailureType>::fromResult(path);
+                }
+            }
+        }
+
+        auto idFuture = _hashIdRegistrar.getOrCreateId(hash);
+
+        // TODO : check if we have it in the locations cache
+
+        auto pathFuture =
+            idFuture.thenFuture<QString, FailureType>(
+                [this, hash](uint id) { return _fileFinder->findHashAsync(id, hash); },
+                [](FailureType) { return failure; }
+            );
+
+        return pathFuture;
+    }
+
+    void Resolver::doFullIndexationFileSystemTraversal()
+    {
+        qDebug() << "full indexation: running file system traversal (music paths)";
 
         auto musicPaths = this->musicPaths();
 
-        QList<QString> filesToAnalyze;
-
-        /* traverse filesystem to find music files */
+        uint fileCount = 0;
         for (QString const& musicPath : qAsConst(musicPaths))
         {
             QDirIterator it(musicPath, QDirIterator::Subdirectories); /* no symlinks */
@@ -456,38 +993,47 @@ namespace PMP
                 QFileInfo entry(it.next());
                 if (!FileAnalyzer::isFileSupported(entry)) continue;
 
-                filesToAnalyze.append(entry.absoluteFilePath());
+                fileCount++;
+                _analyzer->enqueueFile(entry.absoluteFilePath());
             }
         }
 
-        qDebug() << "full indexation:" << filesToAnalyze.size() << "files to analyze";
+        qDebug() << "full indexation:" << fileCount << "files added to analysis queue";
 
-        /* analyze the files we found */
-        for (QString const& filePath : qAsConst(filesToAnalyze))
+        if (_analyzer->isFinished())
         {
-            FileHash hash =
-                    analyzeAndRegisterFileInternal(filePath, _fullIndexationNumber);
-
-            if (hash.isNull())
-            {
-                qDebug() << "file analysis FAILED:" << filePath;
-            }
+            _fullIndexationStatus = FullIndexationStatus::CheckingForFileRemovals;
+            QtConcurrent::run(this, &Resolver::doFullIndexationCheckForFileRemovals);
         }
+        else
+        {
+            _fullIndexationStatus =
+                    FullIndexationStatus::WaitingForFileAnalysisCompletion;
+        }
+    }
 
-        qDebug() << "full indexation: going to check for files that are now gone";
+    void Resolver::doFullIndexationCheckForFileRemovals()
+    {
+        qDebug() << "full indexation: checking for files that have disappeared";
 
         auto pathsToCheck = getPathsThatDontMatchCurrentFullIndexationNumber();
+        qDebug() << "full indexation:" << pathsToCheck.size()
+                 << "files need checking for their possible disappearance";
+
         for (QString const& path : qAsConst(pathsToCheck))
         {
             checkFileStillExistsAndIsValid(path);
         }
 
+        _fullIndexationStatus = FullIndexationStatus::NotRunning;
         qDebug() << "full indexation finished.";
+        QTimer::singleShot(0, this, [this]() { onFullIndexationFinished(); });
     }
 
     Resolver::HashKnowledge* Resolver::registerHash(const FileHash& hash)
     {
-        if (hash.isNull()) return nullptr; /* invalid hash */
+        if (hash.isNull())
+            return nullptr; /* invalid hash */
 
         QMutexLocker lock(&_lock);
 
@@ -535,77 +1081,6 @@ namespace PMP
         return result;
     }
 
-    FileHash Resolver::analyzeAndRegisterFile(const QString& filename)
-    {
-        return analyzeAndRegisterFileInternal(filename, 0);
-    }
-
-    FileHash Resolver::analyzeAndRegisterFileInternal(const QString& filename,
-                                                      uint fullIndexationNumber)
-    {
-        QFileInfo info(filename);
-
-        FileAnalyzer analyzer(info);
-        analyzer.analyze();
-
-        if (!analyzer.analysisDone())
-            return FileHash(); /* something went wrong, return invalid hash */
-
-        if (analyzer.audioData().trackLengthMilliseconds()
-                > std::numeric_limits<qint32>::max())
-        {
-            qDebug() << "audio too long, not registering:" << filename;
-            return FileHash(); /* file too long, probably not music anyway */
-        }
-
-        auto fileSize = info.size();
-        auto fileLastModified = info.lastModified();
-
-        FileHash finalHash = analyzer.hash();
-        FileHash legacyHash = analyzer.legacyHash();
-
-        QMutexLocker lock(&_lock);
-
-        HashKnowledge* knowledge;
-        if (legacyHash.isNull())
-        {
-            knowledge = registerHash(finalHash);
-        }
-        else if (!_hashKnowledge.value(legacyHash, nullptr))
-        {
-            knowledge = registerHash(finalHash);
-        }
-        else if (!_hashKnowledge.value(finalHash, nullptr))
-        {
-            qDebug() << "registering file under legacy hash:" << info.fileName();
-            knowledge = registerHash(legacyHash);
-        }
-        else
-        {
-            qDebug() << "registering file under final hash, but legacy is present:"
-                     << info.fileName();
-            knowledge = registerHash(finalHash);
-        }
-
-        if (!knowledge)
-        {
-            qDebug() << "failed to register hash for:" << info.fileName();
-            return FileHash(); /* something went wrong, return invalid hash */
-        }
-
-        knowledge->addInfo(analyzer.audioData(), analyzer.tagData());
-
-        if (filename.length() <= 0 || fileSize <= 0 || fileLastModified.isNull())
-        {
-            qDebug() << "failed to register file details for:" << info.fileName();
-            return FileHash(); /* return invalid hash */
-        }
-
-        knowledge->addPath(filename, fileSize, fileLastModified, fullIndexationNumber);
-
-        return knowledge->hash();
-    }
-
     bool Resolver::haveFileForHash(const FileHash& hash)
     {
         QMutexLocker lock(&_lock);
@@ -627,6 +1102,23 @@ namespace PMP
         return knowledge->isStillValid(file);
     }
 
+    Nullable<FileHash> Resolver::getHashForFilePath(QString path)
+    {
+        QMutexLocker lock(&_lock);
+
+        VerifiedFile* file = _paths.value(path, nullptr);
+        if (file)
+        {
+            auto hash = file->_parent->hash();
+            return hash;
+        }
+
+        qDebug() << "path is not yet registered, putting it in the analyzer queue:"
+                 << path;
+        _analyzer->enqueueFile(path);
+        return null;
+    }
+
     void Resolver::checkFileStillExistsAndIsValid(QString path)
     {
         QMutexLocker lock(&_lock);
@@ -636,183 +1128,6 @@ namespace PMP
 
         auto knowledge = file->_parent;
         (void)knowledge->isStillValid(file);
-    }
-
-    QString Resolver::findPathForHash(const FileHash& hash, bool fast)
-    {
-        QMutexLocker lock(&_lock);
-
-        qDebug() << "Resolver::findPathForHash called for hash" << hash;
-
-        auto knowledge = _hashKnowledge.value(hash, nullptr);
-        if (knowledge)
-        {
-            QString path = knowledge->getFile();
-            if (!path.isEmpty())
-            {
-                qDebug() << " returning path that was already known:" << path;
-                return path;
-            }
-        }
-
-        /* stop here if we had to get a result quickly */
-        if (fast)
-        {
-            qDebug() << " no precomputed path available; we give up because no time left";
-            return {};
-        }
-
-        auto db = Database::getDatabaseForCurrentThread();
-        if (!db)
-        {
-            qDebug() << " database not available";
-            return {}; /* database unusable */
-        }
-
-        uint hashId = getID(hash);
-        if (!hashId)
-        {
-            qDebug() << " hash not in database, cannot find path.";
-            return {};
-        }
-
-        qDebug() << " going to see if the file was moved somewhere else";
-
-        auto path = findPathForHashByLikelyFilename(*db, hash, hashId);
-        if (!path.isEmpty())
-        {
-            qDebug() << " found match by filename heuristic:" << path;
-            return path;
-        }
-
-        path = findPathByQuickScanForNewFiles(*db, hash, hashId);
-        if (!path.isEmpty())
-        {
-            qDebug() << " found match by quick scan for new files:" << path;
-            return path;
-        }
-
-        qDebug() << " could not easily locate a file that matches the hash; giving up";
-        return {}; /* not found */
-    }
-
-    QString Resolver::findPathForHashByLikelyFilename(Database& db, const FileHash& hash,
-                                                      uint hashId)
-    {
-        auto filenames = db.getFilenames(hashId);
-        if (filenames.empty()) /* no known filenames */
-            return {};
-
-        qDebug() << " going to look for a matching file using a filename-based heuristic";
-
-        for (QString const& musicPath : qAsConst(_musicPaths))
-        {
-            QDirIterator it(musicPath, QDir::Dirs | QDir::Readable | QDir::NoDotAndDotDot,
-                            QDirIterator::Subdirectories);
-
-            while (it.hasNext())
-            {
-                QFileInfo entry(it.next());
-                if (!entry.isDir()) continue;
-
-                QDir dir(entry.filePath());
-
-                for (QString const& fileShort : qAsConst(filenames))
-                {
-                    if (!dir.exists(fileShort)) continue;
-
-                    QString candidatePath = dir.filePath(fileShort);
-
-                    qDebug() << "  checking out:" << candidatePath;
-
-                    if (_paths.contains(candidatePath))
-                    {
-                        qDebug() << "  ignoring:" << candidatePath;
-                        continue; /* this one will have a different hash */
-                    }
-
-                    FileHash candidateHash =
-                            analyzeAndRegisterFileInternal(candidatePath, 0);
-                    if (candidateHash.isNull()) continue; /* failed to analyze */
-
-                    if (candidateHash == hash)
-                        return candidatePath;
-                }
-            }
-        }
-
-        return {}; /* cannot find a matching file based on name alone */
-    }
-
-    QString Resolver::findPathByQuickScanForNewFiles(Database& db, const FileHash& hash,
-                                                     uint hashId)
-    {
-        /* get likely file sizes */
-        auto previousFileSizes = db.getFileSizes(hashId);
-
-        auto musicPaths = this->musicPaths();
-
-        QVector<QString> newFilesToScan;
-
-        qDebug() << " going to look for a matching file using a filesize-based heuristic";
-
-        /* traverse filesystem to find music files */
-        for (QString const& musicPath : qAsConst(musicPaths))
-        {
-            QDirIterator it(musicPath, QDirIterator::Subdirectories); /* no symlinks */
-
-            while (it.hasNext())
-            {
-                QFileInfo entry(it.next());
-                if (!FileAnalyzer::isFileSupported(entry)) continue;
-
-                auto candidatePath = entry.absoluteFilePath();
-
-                if (_paths.contains(candidatePath))
-                    continue; /* this file is already indexed */
-
-                if (!previousFileSizes.contains(entry.size()))
-                {   /* file size does not indicate a match */
-                    newFilesToScan.append(candidatePath);
-                    continue;
-                }
-
-                qDebug() << "  checking out file with matching size:" << candidatePath;
-
-                auto candidateHash = analyzeAndRegisterFileInternal(candidatePath, 0);
-                if (candidateHash == hash)
-                    return candidatePath;
-            }
-        }
-
-        return findPathByQuickScanOfNewFiles(newFilesToScan, hash);
-    }
-
-    QString Resolver::findPathByQuickScanOfNewFiles(QVector<QString> newFiles,
-                                                    const FileHash& hash)
-    {
-        const int maxNewFilesToScan = 3;
-
-        qDebug() << " going to look for a matching file by examining new files";
-
-        for (int i = 0; i < newFiles.size(); ++i)
-        {
-            if (i >= maxNewFilesToScan)
-            {
-                qDebug() << "  reached maximum number of new files to scan; stopping now";
-                // TODO: put indexation of the remaining files in some kind of work queue
-                break;
-            }
-
-            auto newFilePath = newFiles[i];
-            qDebug() << "  checking out new file:" << newFilePath;
-
-            auto candidateHash = analyzeAndRegisterFileInternal(newFilePath, 0);
-            if (candidateHash == hash)
-                return newFilePath;
-        }
-
-        return {}; /* found nothing */
     }
 
     const AudioData& Resolver::findAudioData(const FileHash& hash)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,40 +22,18 @@
 
 #include "common/abstracthandle.h"
 #include "common/filehash.h"
+#include "common/future.h"
 #include "common/qobjectresourcekeeper.h"
 
 #include <QHash>
 #include <QMutex>
 #include <QList>
 #include <QObject>
-#include <QRunnable>
-//#include <QTemporaryFile>
 
-namespace PMP {
-
+namespace PMP
+{
     class PlayerQueue;
     class Resolver;
-
-    class TrackPreloadTask : public QObject, public QRunnable {
-        Q_OBJECT
-    public:
-        TrackPreloadTask(Resolver* resolver,
-                         uint queueID, FileHash hash, QString filename);
-
-        void run();
-
-    Q_SIGNALS:
-        void preloadFinished(uint queueID, QString cacheFile);
-        void preloadFailed(uint queueID, int reason);
-
-    private:
-        QString tempFilename(uint queueID, QString extension);
-
-        Resolver* _resolver;
-        uint _queueID;
-        FileHash _hash;
-        QString _originalFilename;
-    };
 
     class Preloader;
 
@@ -76,7 +54,8 @@ namespace PMP {
 
     class QueueEntry;
 
-    class Preloader : public QObject {
+    class Preloader : public QObject
+    {
         Q_OBJECT
     private:
         class PreloadTrack;
@@ -110,12 +89,19 @@ namespace PMP {
         void checkForJobsToStart();
 
         void preloadFinished(uint queueID, QString cacheFile);
-        void preloadFailed(uint queueID, int reason);
+        void preloadFailed(uint queueID);
 
     private:
         static const int PRELOAD_RANGE = 5;
 
-        void checkToPreloadTrack(QueueEntry* entry);
+        void checkToPreloadTrack(QSharedPointer<QueueEntry> entry);
+
+        Future<QString, FailureType> preloadAsync(uint queueId, FileHash hash,
+                                                  QString originalFilename);
+        static ResultOrError<QString, FailureType> runPreload(uint queueId,
+                                                              QString originalFilename);
+
+        static QString tempFilename(uint queueId, QString extension);
 
         void doLock(uint queueId);
         void doUnlock(uint queueId);

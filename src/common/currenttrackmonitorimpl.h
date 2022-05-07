@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,14 +26,17 @@
 
 #include <QElapsedTimer>
 
-namespace PMP {
-
+namespace PMP
+{
+    class QueueEntryInfoStorage;
     class ServerConnection;
 
-    class CurrentTrackMonitorImpl : public CurrentTrackMonitor {
+    class CurrentTrackMonitorImpl : public CurrentTrackMonitor
+    {
         Q_OBJECT
     public:
-        explicit CurrentTrackMonitorImpl(ServerConnection* connection);
+        explicit CurrentTrackMonitorImpl(QueueEntryInfoStorage* queueEntryInfoStorage,
+                                         ServerConnection* connection);
 
         PlayerState playerState() const override;
 
@@ -56,17 +59,16 @@ namespace PMP {
         void connectionBroken();
         void receivedPlayerState(PlayerState state, quint8 volume, quint32 queueLength,
                                  quint32 nowPlayingQueueId, quint64 nowPlayingPosition);
-        void receivedQueueEntryHash(quint32 queueId, QueueEntryType type, FileHash hash);
-        void receivedTrackInfo(quint32 queueId, QueueEntryType type,
-                               qint64 lengthMilliseconds, QString title, QString artist);
-        void receivedPossibleFilenames(quint32 queueId, QList<QString> names);
+        void tracksChanged(QList<quint32> queueIds);
 
     private:
         void changeCurrentQueueId(quint32 queueId);
+        void updateTrackFields(bool isNewTrack);
         void changeCurrentTrackPosition(qint64 positionMilliseconds);
         void emitCalculatedTrackProgress();
         void clearTrackInfo();
 
+        QueueEntryInfoStorage* _queueEntryInfoStorage;
         ServerConnection* _connection;
         PlayerState _playerState;
         quint32 _currentQueueId;

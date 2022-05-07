@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,7 +27,6 @@
 #include "common/playercontroller.h"
 #include "common/queuecontroller.h"
 #include "common/queuemonitor.h"
-#include "common/serverconnection.h"
 #include "common/userdatafetcher.h"
 #include "common/util.h"
 
@@ -99,22 +98,20 @@ namespace PMP
         delete _ui;
     }
 
-    void MainWidget::setConnection(ServerConnection* connection,
-                                   ClientServerInterface* clientServerInterface)
+    void MainWidget::setConnection(ClientServerInterface* clientServerInterface)
     {
         _clientServerInterface = clientServerInterface;
         new AutoPersonalModeAction(clientServerInterface);
         _queueMediator = new QueueMediator(clientServerInterface,
                                            &clientServerInterface->queueMonitor(),
                                            clientServerInterface);
-        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+        auto* queueEntryInfoStorage = &clientServerInterface->queueEntryInfoStorage();
         _queueModel =
             new QueueModel(
                 clientServerInterface, clientServerInterface, _queueMediator,
-                queueEntryInfoFetcher
+                queueEntryInfoStorage
             );
-        _historyModel = new PlayerHistoryModel(this, queueEntryInfoFetcher);
-        _historyModel->setConnection(connection);
+        _historyModel = new PlayerHistoryModel(this, _clientServerInterface);
 
         _ui->trackInfoButton->setEnabled(false);
         _ui->userPlayingForLabel->setText("");

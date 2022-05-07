@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,7 @@
 
 #include "preloader.h"
 
+#include "common/concurrent.h"
 #include "common/fileanalyzer.h"
 
 #include "playerqueue.h"
@@ -37,96 +38,8 @@
 #include <QThreadPool>
 #include <QTimer>
 
-namespace PMP {
-
-    /* ========================== TrackPreloadTask ========================== */
-
-    TrackPreloadTask::TrackPreloadTask(Resolver* resolver,
-                                       uint queueID, FileHash hash, QString filename)
-     : _resolver(resolver),
-       _queueID(queueID), _hash(hash), _originalFilename(filename)
-    {
-        //
-    }
-
-    void TrackPreloadTask::run() {
-        QString filename = _originalFilename;
-
-        if (!_hash.isNull()) {
-            if (filename.isEmpty() || !_resolver->pathStillValid(_hash, filename))
-            {
-                filename = _resolver->findPathForHash(_hash, false);
-            }
-        }
-
-        if (filename.isEmpty()) {
-            Q_EMIT preloadFailed(_queueID, 123);
-            return;
-        }
-
-        QFileInfo fileInfo(filename);
-        if (!fileInfo.isFile() || !fileInfo.isReadable()) {
-            Q_EMIT preloadFailed(_queueID, 234);
-            return;
-        }
-
-        QString extension = fileInfo.suffix();
-
-        QFile file(filename);
-        if (!file.open(QIODevice::ReadOnly)) {
-            Q_EMIT preloadFailed(_queueID, 456);
-            return;
-        }
-
-        QByteArray contents = file.readAll();
-        file.close();
-
-        qDebug() << "TrackPreloadTask: read" << contents.size() << "bytes from"
-                 << filename;
-
-        if (!FileAnalyzer::preprocessFileForPlayback(contents, extension)) {
-            Q_EMIT preloadFailed(_queueID, 678);
-            return;
-        }
-
-        QString tempDir;
-        if (QDir::temp().mkpath("PMP-preload-cache")) {
-            tempDir = QDir::temp().absolutePath() + "/PMP-preload-cache";
-        }
-        else {
-            tempDir = QDir::temp().absolutePath();
-        }
-
-        QString saveName = tempDir + "/" + tempFilename(_queueID, extension);
-        QFileInfo saveFileInfo(saveName);
-        if (saveFileInfo.exists()) {
-            /* name collision, give up */
-            Q_EMIT preloadFailed(_queueID, 789);
-            return;
-        }
-
-        QSaveFile saveFile(saveName);
-        if (!saveFile.open(QIODevice::WriteOnly)){
-            Q_EMIT preloadFailed(_queueID, 987);
-            return;
-        }
-
-        saveFile.write(contents);
-        if (!saveFile.commit()) {
-            QFile::remove(saveName);
-            Q_EMIT preloadFailed(_queueID, 876);
-            return;
-        }
-
-        /* success */
-        Q_EMIT preloadFinished(_queueID, saveName);
-    }
-
-    QString TrackPreloadTask::tempFilename(uint queueID, QString extension) {
-        return "P" + QString::number(QCoreApplication::applicationPid())
-                + "-Q" + QString::number(queueID) + "." + extension;
-    }
-
+namespace PMP
+{
     /* ======================== PreloadedFileLock ======================= */
 
     PreloadedFile::PreloadedFile()
@@ -155,7 +68,8 @@ namespace PMP {
             //
         }
 
-        ~PreloadTrack() {
+        ~PreloadTrack()
+        {
             cleanup();
         }
 
@@ -259,7 +173,8 @@ namespace PMP {
         return track->status() == PreloadTrack::Preloaded;
     }
 
-    PreloadedFile Preloader::getPreloadedCacheFile(uint queueID) {
+    PreloadedFile Preloader::getPreloadedCacheFile(uint queueID)
+    {
         auto track = _tracksByQueueID.value(queueID, nullptr);
         if (!track) return PreloadedFile();
 
@@ -284,7 +199,8 @@ namespace PMP {
         );
     }
 
-    void Preloader::cleanupOldFiles() {
+    void Preloader::cleanupOldFiles()
+    {
         QString tempDir = QDir::temp().absolutePath() + "/PMP-preload-cache";
 
         QDir dir(tempDir);
@@ -373,12 +289,13 @@ namespace PMP {
         checkForJobsToStart();
     }
 
-    void Preloader::checkForTracksToPreload() {
+    void Preloader::checkForTracksToPreload()
+    {
         _preloadCheckTimerRunning = false;
         qDebug() << "running preload check";
 
-        const QList<QueueEntry*> queueEntries = _queue->entries(0, PRELOAD_RANGE);
-        for (auto* entry : queueEntries)
+        auto queueEntries = _queue->entries(0, PRELOAD_RANGE);
+        for (auto& entry : queueEntries)
         {
             checkToPreloadTrack(entry);
         }
@@ -386,16 +303,19 @@ namespace PMP {
         checkForJobsToStart();
     }
 
-    void Preloader::checkToPreloadTrack(QueueEntry* entry)
+    void Preloader::checkToPreloadTrack(QSharedPointer<QueueEntry> entry)
     {
-        const FileHash* hash = entry->hash();
-        const QString* filename = entry->filename();
-        if (!hash && !filename) return;
+        if (!entry->isTrack())
+            return;
+
+        FileHash hash = entry->hash().value();
+        Nullable<QString> filename = entry->filename();
 
         auto id = entry->queueID();
         auto track = _tracksByQueueID.value(id, nullptr);
 
-        if (track && track->status() == PreloadTrack::Preloaded) {
+        if (track && track->status() == PreloadTrack::Preloaded)
+        {
             if (QFileInfo::exists(track->getCachedFile()))
                 return; /* preloaded file is present */
 
@@ -410,50 +330,153 @@ namespace PMP {
 
         qDebug() << "putting queue ID" << id << "on the list for preloading";
 
-        track =
-            new PreloadTrack(hash ? *hash : FileHash(), filename ? *filename : "");
+        track = new PreloadTrack(hash, filename.valueOr({}));
 
         _tracksByQueueID.insert(id, track);
         _tracksToPreload.append(id);
     }
 
-    void Preloader::checkForJobsToStart() {
+    Future<QString, FailureType> Preloader::preloadAsync(uint queueId, FileHash hash,
+                                                         QString originalFilename)
+    {
+        if (!originalFilename.isEmpty()
+                && _resolver->pathStillValid(hash, originalFilename))
+        {
+            return Concurrent::run<QString, FailureType>(
+                [queueId, originalFilename]()
+                {
+                    return runPreload(queueId, originalFilename);
+                }
+            );
+        }
+
+        qDebug() << "Preloader: don't have a filename yet for queue ID" << queueId
+                 << "which has hash" << hash;
+
+        return
+            _resolver->findPathForHashAsync(hash)
+                .thenAsync<QString, FailureType>(
+                    [queueId](QString path)
+                    {
+                        qDebug() << "Preloader: found path" << path
+                                 << "for queue ID" << queueId;
+
+                        return runPreload(queueId, path);
+                    },
+                    [](FailureType) { return failure; }
+                );
+    }
+
+    ResultOrError<QString, FailureType> Preloader::runPreload(uint queueId,
+                                                              QString originalFilename)
+    {
+        qDebug() << "Preloader: will process" << originalFilename
+                 << "for queue ID" << queueId;
+
+        QFileInfo fileInfo(originalFilename);
+        if (!fileInfo.isFile() || !fileInfo.isReadable())
+        {
+            qWarning() << "Preloader: not a file or not readable:" << originalFilename;
+            return failure;
+        }
+
+        QString extension = fileInfo.suffix();
+
+        QFile file(originalFilename);
+        if (!file.open(QIODevice::ReadOnly))
+        {
+            qWarning() << "Preloader: failed to open file:" << originalFilename;
+            return failure;
+        }
+
+        QByteArray contents = file.readAll();
+        file.close();
+
+        qDebug() << "Preloader: read" << contents.size() << "bytes from"
+                 << originalFilename << "for queue ID" << queueId;
+
+        if (!FileAnalyzer::preprocessFileForPlayback(contents, extension))
+        {
+            qWarning() << "Preloader: failed to preprocess file" << originalFilename;
+            return failure;
+        }
+
+        QString tempDir;
+        if (QDir::temp().mkpath("PMP-preload-cache"))
+            tempDir = QDir::temp().absolutePath() + "/PMP-preload-cache";
+        else
+            tempDir = QDir::temp().absolutePath();
+
+        QString saveName = tempDir + "/" + tempFilename(queueId, extension);
+        QFileInfo saveFileInfo(saveName);
+        if (saveFileInfo.exists())
+        {
+            qWarning() << "Preloader: name collision for temp file" << saveName;
+            return failure;
+        }
+
+        QSaveFile saveFile(saveName);
+        if (!saveFile.open(QIODevice::WriteOnly))
+        {
+            qWarning() << "Preloader: failed to open temp file for writing:" << saveName;
+            return failure;
+        }
+
+        saveFile.write(contents);
+        if (!saveFile.commit())
+        {
+            QFile::remove(saveName);
+            qWarning() << "Preloader: failed to commit changes to temp file" << saveName;
+            return failure;
+        }
+
+        /* success */
+        qDebug() << "Preloader: successfully preloaded file for queue ID" << queueId
+                 << "into temp file:" << saveName;
+        return saveName;
+    }
+
+    QString Preloader::tempFilename(uint queueId, QString extension)
+    {
+        return "P" + QString::number(QCoreApplication::applicationPid())
+                + "-Q" + QString::number(queueId) + "." + extension;
+    }
+
+    void Preloader::checkForJobsToStart()
+    {
         uint iterations = 0;
-        while (_jobsRunning < 2 && !_tracksToPreload.empty()) {
+        while (_jobsRunning < 2 && !_tracksToPreload.empty())
+        {
              /* iteration limit to prevent blocking for too long */
             if (iterations >= 5) break;
             iterations++;
 
-            auto id = _tracksToPreload.first();
+            auto queueId = _tracksToPreload.first();
             _tracksToPreload.removeFirst();
 
-            auto track = _tracksByQueueID.value(id, nullptr);
+            auto track = _tracksByQueueID.value(queueId, nullptr);
             if (!track) continue; /* already removed */
             if (track->status() != PreloadTrack::Status::Initial) continue;
 
-            qDebug() << "starting track preload task for QID" << id;
+            qDebug() << "starting track preload task for QID" << queueId;
 
             track->setToLoading();
 
-            auto task =
-                new TrackPreloadTask(
-                    _resolver, id, track->hash(), track->originalFilename()
-                );
-
-            connect(
-                task, &TrackPreloadTask::preloadFailed, this, &Preloader::preloadFailed
-            );
-            connect(
-                task, &TrackPreloadTask::preloadFinished,
-                this, &Preloader::preloadFinished
-            );
-
-            QThreadPool::globalInstance()->start(task);
+            auto future = preloadAsync(queueId, track->hash(), track->originalFilename());
             _jobsRunning++;
+
+            future.addResultListener(
+                this, [this, queueId](QString path) { preloadFinished(queueId, path); }
+            );
+
+            future.addFailureListener(
+                this, [this, queueId](FailureType) { preloadFailed(queueId); }
+            );
         }
     }
 
-    void Preloader::scheduleCheckForCacheEntriesToDelete() {
+    void Preloader::scheduleCheckForCacheEntriesToDelete()
+    {
         if (_cacheExpirationCheckTimerRunning) return;
 
         _cacheExpirationCheckTimerRunning = true;
@@ -462,11 +485,13 @@ namespace PMP {
         QTimer::singleShot(500, this, &Preloader::checkForCacheExpiration);
     }
 
-    void Preloader::checkForCacheExpiration() {
+    void Preloader::checkForCacheExpiration()
+    {
         _cacheExpirationCheckTimerRunning = false;
 
         int max = 3;
-        for (int i = 0; i < max && i < _tracksRemoved.size(); ++i) {
+        for (int i = 0; i < max && i < _tracksRemoved.size(); ++i)
+        {
             auto id = _tracksRemoved[i];
 
             if (_lockedQueueIds.contains(id)) continue;
@@ -495,8 +520,9 @@ namespace PMP {
         }
     }
 
-    void Preloader::preloadFailed(uint queueID, int reason) {
-        qDebug() << "preload job FAILED for QID" << queueID << "with reason" << reason;
+    void Preloader::preloadFailed(uint queueID)
+    {
+        qDebug() << "Preloader: preload job FAILED for QID" << queueID;
 
         _jobsRunning--;
 
@@ -534,8 +560,9 @@ namespace PMP {
         scheduleCheckForCacheEntriesToDelete();
     }
 
-    void Preloader::preloadFinished(uint queueID, QString cacheFile) {
-        qDebug() << "preload job finished for QID" << queueID
+    void Preloader::preloadFinished(uint queueID, QString cacheFile)
+    {
+        qDebug() << "Preloader: preload job finished for QID" << queueID
                  << ": saved as" << cacheFile;
 
         _jobsRunning--;

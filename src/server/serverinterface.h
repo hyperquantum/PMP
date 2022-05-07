@@ -21,6 +21,7 @@
 #define PMP_SERVERINTERFACE_H
 
 #include "common/filehash.h"
+#include "common/future.h"
 #include "common/queueindextype.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/specialqueueitemtype.h"
@@ -70,11 +71,13 @@ namespace PMP
         QUuid getServerUuid() const;
         QString getServerCaption() const;
 
-        quint32 userLoggedIn() const { return _userLoggedIn; }
+        ResultOrError<QUuid, Result> getDatabaseUuid() const;
+
         bool isLoggedIn() const { return _userLoggedIn > 0; }
+        quint32 userLoggedIn() const { return _userLoggedIn; }
         void setLoggedIn(quint32 userId, QString userLogin);
 
-        void reloadServerSettings(uint clientReference);
+        SimpleFuture<ResultMessageErrorCode> reloadServerSettings();
 
         void switchToPersonalMode();
         void switchToPublicMode();
@@ -93,6 +96,8 @@ namespace PMP
 
         PlayerStateOverview getPlayerStateOverview();
 
+        Future<QList<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
+
         Result enqueue(FileHash hash);
         Result insertAtFront(FileHash hash);
         Result insertBreakAtFrontIfNotExists();
@@ -101,8 +106,8 @@ namespace PMP
                                       quint32 clientReference);
         Result duplicateQueueEntry(uint id, quint32 clientReference);
         Result insertAtIndex(qint32 index,
-                             std::function<QueueEntry* (uint)> queueEntryCreator,
-                             quint32 clientReference);
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                       quint32 clientReference);
         void moveQueueEntry(uint id, int upDownOffset);
         void removeQueueEntry(uint id);
         void trimQueue();
@@ -124,9 +129,6 @@ namespace PMP
         void serverCaptionChanged();
         void serverClockTimeSendingPulse();
         void serverShuttingDown();
-
-        void serverSettingsReloadResultEvent(uint clientReference,
-                                             ResultMessageErrorCode errorCode);
 
         void delayedStartActiveChanged();
 
