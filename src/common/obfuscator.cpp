@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,8 +21,8 @@
 
 #include <QDateTime>
 
-namespace PMP {
-
+namespace PMP
+{
     Obfuscator::Obfuscator(quint64 key)
      : _key(key)
     {
@@ -47,7 +47,8 @@ namespace PMP {
     {
         QByteArray bytes = char(_randomByte) + input;
 
-        for(int i = 0; i < bytes.size(); ++i) {
+        for(int i = 0; i < bytes.size(); ++i)
+        {
             quint8 count = 1 + (i % 7); // use 7, not 8
             uint value = uchar(bytes[i]);
             uint shifted = value >> count | value << (8 - count);
@@ -55,7 +56,8 @@ namespace PMP {
         }
 
         char lastByte = 77;
-        for(int i = 0; i < bytes.size(); ++i) {
+        for(int i = 0; i < bytes.size(); ++i)
+        {
             char keyByte = _keyArray[i % 8];
 
             bytes[i] = bytes[i] ^ lastByte ^ keyByte;
@@ -70,7 +72,8 @@ namespace PMP {
         QByteArray bytes = input;
 
         char lastByte = 77;
-        for(int i = 0; i < bytes.size(); ++i) {
+        for(int i = 0; i < bytes.size(); ++i)
+        {
             char keyByte = _keyArray[i % 8];
 
             char beforeDecryption = bytes[i];
@@ -78,7 +81,8 @@ namespace PMP {
             lastByte = beforeDecryption;
         }
 
-        for(int i = 0; i < bytes.size(); ++i) {
+        for(int i = 0; i < bytes.size(); ++i)
+        {
             quint8 count = 1 + (i % 7); // use 7, not 8
             uint value = uchar(bytes[i]);
             uint shifted = value << count | value >> (8 - count);
@@ -89,5 +93,4 @@ namespace PMP {
 
         return bytes;
     }
-
 }

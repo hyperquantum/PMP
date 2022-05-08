@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,9 +22,10 @@
 
 #include <QByteArray>
 
-namespace PMP {
-
-    class Obfuscator {
+namespace PMP
+{
+    class Obfuscator
+    {
     public:
         Obfuscator(quint64 key);
 
