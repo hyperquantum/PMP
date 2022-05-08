@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,8 +28,8 @@
 #include <QtDebug>
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     ScrobblingHost::ScrobblerData::ScrobblerData()
      : enabled(false), status(ScrobblerStatus::Unknown), scrobbler(nullptr)
     {
@@ -44,7 +44,8 @@ namespace PMP {
         //
     }
 
-    void ScrobblingHost::enableScrobbling() {
+    void ScrobblingHost::enableScrobbling()
+    {
         if (_hostEnabled)
             return; /* already enabled */
 
@@ -53,8 +54,10 @@ namespace PMP {
         load();
     }
 
-    void ScrobblingHost::load() {
-        if (!_hostEnabled) {
+    void ScrobblingHost::load()
+    {
+        if (!_hostEnabled)
+        {
             qWarning() << "host not enabled, not going to load anything";
             return;
         }
@@ -62,26 +65,31 @@ namespace PMP {
         qDebug() << "(re)loading scrobbling settings for all users";
 
         auto db = Database::getDatabaseForCurrentThread();
-        if (!db) {
+        if (!db)
+        {
             /* can't load */
             return;
         }
 
         auto userData = db->getUsersScrobblingData();
 
-        for(auto& data : userData) {
+        for(auto& data : userData)
+        {
             loadScrobblers(data);
         }
     }
 
-    void ScrobblingHost::wakeUpForUser(uint userId) {
-        if (!_hostEnabled) {
+    void ScrobblingHost::wakeUpForUser(uint userId)
+    {
+        if (!_hostEnabled)
+        {
             qWarning() << "host not enabled, not going to wake up";
             return;
         }
 
         auto action =
-            [this, userId](ScrobblingProvider provider) {
+            [this, userId](ScrobblingProvider provider)
+            {
                 auto scrobbler = _scrobblersData[userId][provider].scrobbler;
 
                 /* wake up with a delay, to give the database enough time to store the
@@ -97,7 +105,8 @@ namespace PMP {
                                                    ScrobblingProvider provider,
                                                    bool enabled)
     {
-        if (!_hostEnabled) {
+        if (!_hostEnabled)
+        {
             qWarning() << "host not enabled, not touching the provider";
             return;
         }
@@ -105,7 +114,8 @@ namespace PMP {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) { return; }
 
-        switch (provider) {
+        switch (provider)
+        {
             case ScrobblingProvider::LastFm:
                 db->setLastFmScrobblingEnabled(userId, enabled);
                 break;
@@ -124,8 +134,10 @@ namespace PMP {
             emit scrobblingProviderEnabledChanged(userId, provider, enabled);
     }
 
-    void ScrobblingHost::retrieveScrobblingProviderInfo(uint userId) {
-        if (!_hostEnabled) {
+    void ScrobblingHost::retrieveScrobblingProviderInfo(uint userId)
+    {
+        if (!_hostEnabled)
+        {
             qWarning() << "host not enabled, not sending provider info";
             return;
         }
@@ -135,16 +147,19 @@ namespace PMP {
         /* Last.FM info; no other providers available yet */
         auto provider = ScrobblingProvider::LastFm;
         auto& data = _scrobblersData[userId][ScrobblingProvider::LastFm];
-        if (data.enabled) {
+        if (data.enabled)
+        {
             emit scrobblingProviderInfoSignal(userId, provider, true, data.status);
         }
-        else {
+        else
+        {
             emit scrobblingProviderInfoSignal(userId, provider, false,
                                               ScrobblerStatus::Unknown);
         }
     }
 
-    /*void ScrobblingHost::setNowPlayingNothing(uint userId) {
+    /*void ScrobblingHost::setNowPlayingNothing(uint userId)
+    {
         auto scrobbler = _scrobblers.value(userId, nullptr);
         if (!scrobbler) return;
 
@@ -159,7 +174,8 @@ namespace PMP {
             return;
 
         auto action =
-            [=](ScrobblingProvider provider) {
+            [=](ScrobblingProvider provider)
+            {
                 auto scrobbler = _scrobblersData[userId][provider].scrobbler;
                 if (!scrobbler) return;
 
@@ -170,7 +186,8 @@ namespace PMP {
         doForAllProviders(action);
     }
 
-    void ScrobblingHost::loadScrobblers(UserScrobblingDataRecord const& record) {
+    void ScrobblingHost::loadScrobblers(UserScrobblingDataRecord const& record)
+    {
         /* for all providers (currently only Last.FM) ... */
         loadScrobbler(record, ScrobblingProvider::LastFm, record.enableLastFmScrobbling);
     }
@@ -187,10 +204,12 @@ namespace PMP {
     void ScrobblingHost::enableDisableScrobbler(uint userId, ScrobblingProvider provider,
                                                 bool enabled)
     {
-        if (enabled) {
+        if (enabled)
+        {
             createScrobblerIfNotExists(userId, provider);
         }
-        else {
+        else
+        {
             destroyScrobblerIfExists(userId, provider);
         }
     }
@@ -204,7 +223,8 @@ namespace PMP {
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) { return; }
 
-        switch (provider) {
+        switch (provider)
+        {
             case ScrobblingProvider::LastFm:
             {
                 auto lastFmData = db->getUserLastFmScrobblingData(userId);
@@ -254,7 +274,8 @@ namespace PMP {
         connect(
             lastFmBackend, &LastFmScrobblingBackend::gotAuthenticationResult,
             this,
-            [userId, this](bool success, ClientRequestOrigin origin) {
+            [userId, this](bool success, ClientRequestOrigin origin)
+            {
                 emit this->gotAuthenticationResult(userId, ScrobblingProvider::LastFm,
                                                    origin, success);
             }
@@ -262,17 +283,20 @@ namespace PMP {
         connect(
             lastFmBackend, &LastFmScrobblingBackend::errorOccurredDuringAuthentication,
             this,
-            [userId, this](ClientRequestOrigin origin) {
+            [userId, this](ClientRequestOrigin origin)
+            {
                 emit this->errorOccurredDuringAuthentication(userId, origin);
             }
         );
 
-        if (!data.lastFmUser.isEmpty()) {
+        if (!data.lastFmUser.isEmpty())
+        {
             lastFmBackend->setUsername(data.lastFmUser);
         }
 
         auto sessionKey = decodeToken(data.lastFmSessionKey);
-        if (!sessionKey.isEmpty()) {
+        if (!sessionKey.isEmpty())
+        {
             lastFmBackend->setSessionKey(sessionKey);
         }
 
@@ -287,7 +311,8 @@ namespace PMP {
         connect(
             scrobbler, &Scrobbler::statusChanged,
             this,
-            [this, userId, provider](ScrobblerStatus status) {
+            [this, userId, provider](ScrobblerStatus status)
+            {
                 auto& data = _scrobblersData[userId][provider];
                 if (data.status == status) return;
 
@@ -310,5 +335,4 @@ namespace PMP {
     {
         action(ScrobblingProvider::LastFm);
     }
-
 }

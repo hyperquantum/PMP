@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,9 +25,10 @@
 #include <QtDebug>
 #include <QVector>
 
-namespace PMP {
-
-    class LastFmScrobblingDataProvider::TrackForScrobbling : public TrackToScrobble {
+namespace PMP
+{
+    class LastFmScrobblingDataProvider::TrackForScrobbling : public TrackToScrobble
+    {
     public:
         TrackForScrobbling(LastFmScrobblingDataProvider* parent, quint32 id,
                            QDateTime timestamp, QString title, QString artist,
@@ -55,11 +56,13 @@ namespace PMP {
         QString _album;
     };
 
-    void LastFmScrobblingDataProvider::TrackForScrobbling::scrobbledSuccessfully() {
+    void LastFmScrobblingDataProvider::TrackForScrobbling::scrobbledSuccessfully()
+    {
         _parent->scrobbledSuccessfully(_id);
     }
 
-    void LastFmScrobblingDataProvider::TrackForScrobbling::scrobbleIgnored() {
+    void LastFmScrobblingDataProvider::TrackForScrobbling::scrobbleIgnored()
+    {
         _parent->scrobbleIgnored(_id);
     }
 
@@ -79,7 +82,8 @@ namespace PMP {
         if (!database)
             return {}; /* no database connection */
 
-        if (_fetchedUpTo == 0) {
+        if (_fetchedUpTo == 0)
+        {
             bool ok;
             _scrobbledUpTo = database->getLastFmScrobbledUpTo(_user, &ok);
             _fetchedUpTo = _scrobbledUpTo;
@@ -101,14 +105,16 @@ namespace PMP {
 
         QVector<uint> hashIds;
         hashIds.reserve(history.size());
-        Q_FOREACH(auto historyRecord, history) {
+        Q_FOREACH(auto historyRecord, history)
+        {
             hashIds << historyRecord.hashId;
         }
 
         QVector<std::shared_ptr<TrackToScrobble>> result;
         result.reserve(history.size());
 
-        Q_FOREACH(auto historyRecord, history) {
+        Q_FOREACH(auto historyRecord, history)
+        {
             auto trackInfo = _resolver->getHashTrackInfo(historyRecord.hashId);
 
             /* it's possible that we don't have artist/title/album info yet/anymore, and
@@ -116,7 +122,8 @@ namespace PMP {
                really fix that, because we can't pause scrobbling potentially forever
                while waiting for title/artist/album info on a track that we may never see
                again. */
-            if (trackInfo.title().isEmpty() || trackInfo.artist().isEmpty()) {
+            if (trackInfo.title().isEmpty() || trackInfo.artist().isEmpty())
+            {
                 qDebug() << "cannot scrobble history record" << historyRecord.id
                          << "with hash ID" << historyRecord.hashId
                          << "because artist/title info is incomplete or missing";
@@ -135,26 +142,31 @@ namespace PMP {
         return result;
     }
 
-    void LastFmScrobblingDataProvider::scrobbledSuccessfully(quint32 id) {
+    void LastFmScrobblingDataProvider::scrobbledSuccessfully(quint32 id)
+    {
         _scrobbledUpTo = qMax(_scrobbledUpTo, id);
         updateScrobbledUpTo();
     }
 
-    void LastFmScrobblingDataProvider::scrobbleIgnored(quint32 id) {
+    void LastFmScrobblingDataProvider::scrobbleIgnored(quint32 id)
+    {
         /* just like a successful scrobble */
         _scrobbledUpTo = qMax(_scrobbledUpTo, id);
         updateScrobbledUpTo();
     }
 
-    void LastFmScrobblingDataProvider::updateScrobbledUpTo() {
+    void LastFmScrobblingDataProvider::updateScrobbledUpTo()
+    {
         auto database = Database::getDatabaseForCurrentThread();
-        if (!database) {
+        if (!database)
+        {
              /* no database connection */
             qWarning() << "could not update scrobbled-up-to: database unavailable";
             return;
         }
 
-        if (!database->updateLastFmScrobbledUpTo(_user, _scrobbledUpTo)) {
+        if (!database->updateLastFmScrobbledUpTo(_user, _scrobbledUpTo))
+        {
             qWarning() << "could not update scrobbled-up-to";
         }
     }

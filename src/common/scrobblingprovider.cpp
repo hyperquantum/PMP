@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,10 +21,12 @@
 
 #include <QDebug>
 
-namespace PMP {
-
-    QDebug operator<<(QDebug debug, ScrobblingProvider provider) {
-        switch (provider) {
+namespace PMP
+{
+    QDebug operator<<(QDebug debug, ScrobblingProvider provider)
+    {
+        switch (provider)
+        {
             case ScrobblingProvider::LastFm:
                 debug << "ScrobblingProvider::LastFm";
                 return debug;
@@ -37,5 +39,4 @@ namespace PMP {
         debug << int(provider);
         return debug;
     }
-
 }

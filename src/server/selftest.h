@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,11 +20,12 @@
 #ifndef PMP_SELFTEST_H
 #define PMP_SELFTEST_H
 
-namespace PMP {
-
+namespace PMP
+{
     class ServerHealthMonitor;
 
-    class SelfTest {
+    class SelfTest
+    {
     public:
         static void runSelfTest(ServerHealthMonitor& serverHealthMonitor);
 
@@ -36,4 +37,4 @@ namespace PMP {
         SelfTest();
     };
 }
-#endif // SELFTEST_H
+#endif

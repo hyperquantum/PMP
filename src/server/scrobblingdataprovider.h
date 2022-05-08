@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,11 +26,12 @@
 
 #include <memory>
 
-namespace PMP {
-
+namespace PMP
+{
     class TrackToScrobble;
 
-    class ScrobblingDataProvider {
+    class ScrobblingDataProvider
+    {
     public:
         virtual ~ScrobblingDataProvider();
 

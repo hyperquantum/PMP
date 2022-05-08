@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,11 +24,12 @@
 
 #include <QtGlobal>
 
-namespace PMP {
-
+namespace PMP
+{
     class Resolver;
 
-    class LastFmScrobblingDataProvider : public ScrobblingDataProvider {
+    class LastFmScrobblingDataProvider : public ScrobblingDataProvider
+    {
     public:
         LastFmScrobblingDataProvider(quint32 user, Resolver* resolver);
 
@@ -46,6 +47,5 @@ namespace PMP {
         quint32 _scrobbledUpTo;
         quint32 _fetchedUpTo;
     };
-
 }
 #endif

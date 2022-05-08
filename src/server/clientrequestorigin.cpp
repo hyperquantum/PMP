@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,8 +19,7 @@
 
 #include "clientrequestorigin.h"
 
-namespace PMP {
-
+namespace PMP
+{
     const ClientRequestOrigin ClientRequestOrigin::none;
-
 }

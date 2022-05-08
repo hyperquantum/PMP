@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,8 +23,8 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     QString TokenEncoder::encodeToken(QString token)
     {
         return token;
@@ -42,5 +42,4 @@ namespace PMP {
 
         return QString();
     }
-
 }

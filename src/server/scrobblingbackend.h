@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,9 +23,10 @@
 #include <QObject>
 #include <QtDebug>
 
-namespace PMP {
-
-    enum class ScrobblingBackendState {
+namespace PMP
+{
+    enum class ScrobblingBackendState
+    {
         NotInitialized = 0,
         WaitingForUserCredentials,
         ReadyForScrobbling,
@@ -34,7 +35,8 @@ namespace PMP {
 
     QDebug operator<<(QDebug debug, ScrobblingBackendState state);
 
-    enum class ScrobbleResult {
+    enum class ScrobbleResult
+    {
         Success = 0,
         Ignored,
         Error
@@ -42,7 +44,8 @@ namespace PMP {
 
     QDebug operator<<(QDebug debug, ScrobbleResult result);
 
-    class ScrobblingBackend : public QObject {
+    class ScrobblingBackend : public QObject
+    {
         Q_OBJECT
     public:
         ScrobblingBackend();
@@ -58,15 +61,18 @@ namespace PMP {
         virtual void scrobbleTrack(QDateTime timestamp, QString title, QString artist,
                                    QString album, int trackDurationSeconds = -1) = 0;
 
-        int getDelayInMillisecondsBetweenSubsequentScrobbles() const {
+        int getDelayInMillisecondsBetweenSubsequentScrobbles() const
+        {
             return _delayInMillisecondsBetweenSubsequentScrobbles;
         }
 
-        int getInitialBackoffMillisecondsForUnavailability() const {
+        int getInitialBackoffMillisecondsForUnavailability() const
+        {
             return _initialBackoffMillisecondsForUnavailability;
         }
 
-        int getInitialBackoffMillisecondsForErrorReply() const {
+        int getInitialBackoffMillisecondsForErrorReply() const
+        {
             return _initialBackoffMillisecondsForErrorReply;
         }
 

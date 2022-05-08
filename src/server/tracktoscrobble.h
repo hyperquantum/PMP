@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,9 +23,10 @@
 #include <QDateTime>
 #include <QString>
 
-namespace PMP {
-
-    class TrackToScrobble {
+namespace PMP
+{
+    class TrackToScrobble
+    {
     public:
         TrackToScrobble();
         virtual ~TrackToScrobble();

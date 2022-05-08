@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,8 +32,8 @@
 #include <QNetworkRequest>
 #include <QUrlQuery>
 
-namespace PMP {
-
+namespace PMP
+{
     LastFmRequestHandler::LastFmRequestHandler(LastFmScrobblingBackend* parent,
                                                QNetworkReply* pendingReply,
                                                QString xmlTagName)
@@ -45,16 +45,19 @@ namespace PMP {
         );
     }
 
-    LastFmRequestHandler::~LastFmRequestHandler() {
+    LastFmRequestHandler::~LastFmRequestHandler()
+    {
         _reply->deleteLater();
     }
 
-    void LastFmRequestHandler::requestFinished() {
+    void LastFmRequestHandler::requestFinished()
+    {
         auto error = _reply->error();
         auto replyData = _reply->readAll();
         auto replyText = QString::fromUtf8(replyData);
 
-        if (error != QNetworkReply::NoError) {
+        if (error != QNetworkReply::NoError)
+        {
             qWarning() << "Last.Fm reply has network error " << error
                        << "with error text:" << _reply->errorString();
         }
@@ -63,7 +66,8 @@ namespace PMP {
                  << replyText.size() << "characters:\n"
                  << replyText;
 
-        if (error != QNetworkReply::NoError && replyText.size() == 0) {
+        if (error != QNetworkReply::NoError && replyText.size() == 0)
+        {
             onNetworkError(error, _reply->errorString());
             return;
         }
@@ -90,15 +94,18 @@ namespace PMP {
         onGenericError();
     }
 
-    void LastFmRequestHandler::onParseError() {
+    void LastFmRequestHandler::onParseError()
+    {
         onGenericError();
     }
 
-    void LastFmRequestHandler::parseReply(QByteArray bytes) {
+    void LastFmRequestHandler::parseReply(QByteArray bytes)
+    {
         QDomDocument dom;
         QString xmlParseError;
         int xmlErrorLine;
-        if (!dom.setContent(bytes, &xmlParseError, &xmlErrorLine)) {
+        if (!dom.setContent(bytes, &xmlParseError, &xmlErrorLine))
+        {
             qWarning() << "Could not parse the Last.Fm reply as valid XML;"
                        << "error at line" << xmlErrorLine << ":" << xmlParseError;
             onParseError();
@@ -106,37 +113,44 @@ namespace PMP {
         }
 
         auto lfmElement = dom.documentElement();
-        if (lfmElement.isNull() || lfmElement.tagName() != "lfm") {
+        if (lfmElement.isNull() || lfmElement.tagName() != "lfm")
+        {
             qWarning() << "Last.Fm reply XML does not have <lfm> root element";
             onParseError();
             return;
         }
 
         auto status = lfmElement.attribute("status");
-        if (status != "ok") {
+        if (status != "ok")
+        {
             qDebug() << "Last.Fm reply indicates that the request failed";
             auto errorElement = lfmElement.firstChildElement("error");
-            if (errorElement.isNull()) {
+            if (errorElement.isNull())
+            {
                 qWarning() << "Last.Fm failure reply has no <error> element";
                 onParseError();
             }
-            else {
+            else
+            {
                 handleErrorReply(errorElement);
             }
             return;
         }
 
         auto childNode = lfmElement.firstChildElement(_xmlTagName);
-        if (childNode.isNull()) {
+        if (childNode.isNull())
+        {
             qWarning() << "Last.Fm reply does not have " << _xmlTagName << "element";
             onParseError();
         }
-        else {
+        else
+        {
             handleOkReply(childNode);
         }
     }
 
-    void LastFmRequestHandler::handleErrorReply(const QDomElement& errorElement) {
+    void LastFmRequestHandler::handleErrorReply(const QDomElement& errorElement)
+    {
         auto errorCodeText = errorElement.attribute("code");
         qDebug() << "received LFM error status;"
                  << "code:" << errorCodeText << ";"
@@ -144,7 +158,8 @@ namespace PMP {
 
         bool ok;
         int errorCode = errorCodeText.toInt(&ok);
-        if (!ok) {
+        if (!ok)
+        {
             qWarning() << "could not convert Last.Fm error code to a number";
             onParseError();
             return;
@@ -153,10 +168,12 @@ namespace PMP {
         handleErrorCode(errorCode);
     }
 
-    void LastFmRequestHandler::handleErrorCode(int lastFmErrorCode) {
+    void LastFmRequestHandler::handleErrorCode(int lastFmErrorCode)
+    {
         /* we only handle generic error codes here */
 
-        switch (lastFmErrorCode) {
+        switch (lastFmErrorCode)
+        {
             case 9: /* invalid session key, need to re-authenticate */
                 qWarning() << "LFM reports session key not valid (or not anymore)";
                 emit mustInvalidateSessionKey();
@@ -211,7 +228,8 @@ namespace PMP {
         auto nameNode = childElement.firstChildElement("name");
         auto keyNode = childElement.firstChildElement("key");
 
-        if (nameNode.isNull() || keyNode.isNull()) {
+        if (nameNode.isNull() || keyNode.isNull())
+        {
             qWarning() << "Last.Fm session node is missing name or key";
             onParseError();
             return;
@@ -226,18 +244,22 @@ namespace PMP {
         emit authenticationSuccessful(userName, sessionKey);
     }
 
-    void LastFmAuthenticationRequestHandler::handleErrorCode(int lastFmErrorCode) {
-        if (lastFmErrorCode == 4) /* authentication failed */ {
+    void LastFmAuthenticationRequestHandler::handleErrorCode(int lastFmErrorCode)
+    {
+        if (lastFmErrorCode == 4) /* authentication failed */
+        {
             qDebug() << "LFM authentication failed";
             emit authenticationRejected();
         }
-        else {
+        else
+        {
             /* generic error, let the base class handle it */
             LastFmRequestHandler::handleErrorCode(lastFmErrorCode);
         }
     }
 
-    void LastFmAuthenticationRequestHandler::onGenericError() {
+    void LastFmAuthenticationRequestHandler::onGenericError()
+    {
         emit authenticationError();
     }
 
@@ -251,14 +273,16 @@ namespace PMP {
         //
     }
 
-    void LastFmNowPlayingRequestHandler::handleOkReply(const QDomElement& childElement) {
+    void LastFmNowPlayingRequestHandler::handleOkReply(const QDomElement& childElement)
+    {
         Q_UNUSED(childElement)
 
         /* don't parse the reply, just assume that it was successful */
         emit nowPlayingUpdateSuccessful();
     }
 
-    void LastFmNowPlayingRequestHandler::onGenericError() {
+    void LastFmNowPlayingRequestHandler::onGenericError()
+    {
         emit nowPlayingUpdateFailed();
     }
 
@@ -272,7 +296,8 @@ namespace PMP {
         //
     }
 
-    void LastFmScrobbleRequestHandler::handleOkReply(const QDomElement& childElement) {
+    void LastFmScrobbleRequestHandler::handleOkReply(const QDomElement& childElement)
+    {
         /* it should have exactly one "scrobble" element */
         auto scrobbleElement = childElement.firstChildElement("scrobble");
         if (scrobbleElement.isNull()
@@ -336,7 +361,8 @@ namespace PMP {
             emit scrobbleIgnored();
     }
 
-    void LastFmScrobbleRequestHandler::onGenericError() {
+    void LastFmScrobbleRequestHandler::onGenericError()
+    {
         emit scrobbleError();
     }
 
@@ -356,11 +382,13 @@ namespace PMP {
     const char* LastFmScrobblingBackend::contentTypeForPostRequest =
                                                       "application/x-www-form-urlencoded";
 
-    bool LastFmScrobblingBackend::needsSsl() const {
+    bool LastFmScrobblingBackend::needsSsl() const
+    {
         return true;
     }
 
-    void LastFmScrobblingBackend::initialize() {
+    void LastFmScrobblingBackend::initialize()
+    {
         ScrobblingBackend::initialize();
 
         leaveState(ScrobblingBackendState::NotInitialized);
@@ -370,7 +398,8 @@ namespace PMP {
                                                               QString password,
                                                               ClientRequestOrigin origin)
     {
-        if (_username != usernameOrEmail) {
+        if (_username != usernameOrEmail)
+        {
             _username.clear();
         }
 
@@ -379,7 +408,8 @@ namespace PMP {
         connect(
             handler, &LastFmAuthenticationRequestHandler::authenticationSuccessful,
             this,
-            [this, origin](QString userName, QString sessionKey) {
+            [this, origin](QString userName, QString sessionKey)
+            {
                 _username = userName;
                 _sessionKey = sessionKey;
                 updateState();
@@ -398,24 +428,28 @@ namespace PMP {
         );
     }
 
-    void LastFmScrobblingBackend::setUsername(const QString& username) {
+    void LastFmScrobblingBackend::setUsername(const QString& username)
+    {
         if (_username == username) return; /* no change */
 
         _username = username;
     }
 
-    void LastFmScrobblingBackend::setSessionKey(const QString& sessionKey) {
+    void LastFmScrobblingBackend::setSessionKey(const QString& sessionKey)
+    {
         if (_sessionKey == sessionKey) return; /* no change */
         _sessionKey = sessionKey;
 
         updateState();
     }
 
-    QString LastFmScrobblingBackend::username() const {
+    QString LastFmScrobblingBackend::username() const
+    {
         return _username;
     }
 
-    QString LastFmScrobblingBackend::sessionKey() const {
+    QString LastFmScrobblingBackend::sessionKey() const
+    {
         return _sessionKey;
     }
 
@@ -489,12 +523,14 @@ namespace PMP {
     {
         QVector<QPair<QString, QString>> parameters;
         parameters << QPair<QString, QString>("method", "track.updateNowPlaying");
-        if (!album.isEmpty()) {
+        if (!album.isEmpty())
+        {
             parameters << QPair<QString, QString>("album", album);
         }
         parameters << QPair<QString, QString>("api_key", apiKey);
         parameters << QPair<QString, QString>("artist", artist);
-        if (trackDurationSeconds > 0) {
+        if (trackDurationSeconds > 0)
+        {
             auto durationText = QString::number(trackDurationSeconds);
             parameters << QPair<QString, QString>("duration", durationText);
         }
@@ -522,12 +558,14 @@ namespace PMP {
 
         QVector<QPair<QString, QString>> parameters;
         parameters << QPair<QString, QString>("method", "track.scrobble");
-        if (!album.isEmpty()) {
+        if (!album.isEmpty())
+        {
             parameters << QPair<QString, QString>("album", album);
         }
         parameters << QPair<QString, QString>("api_key", apiKey);
         parameters << QPair<QString, QString>("artist", artist);
-        if (trackDurationSeconds > 0) {
+        if (trackDurationSeconds > 0)
+        {
             auto durationText = QString::number(trackDurationSeconds);
             parameters << QPair<QString, QString>("duration", durationText);
         }
@@ -547,7 +585,8 @@ namespace PMP {
     {
         signCall(parameters);
 
-        if (!_networkAccessManager) {
+        if (!_networkAccessManager)
+        {
             _networkAccessManager = new QNetworkAccessManager(this);
         }
 
@@ -570,7 +609,8 @@ namespace PMP {
         return _networkAccessManager->post(request, parametersString);
     }
 
-    void LastFmScrobblingBackend::disposeOfNetworkAccessManager() {
+    void LastFmScrobblingBackend::disposeOfNetworkAccessManager()
+    {
         qDebug() << "forcing NetworkAccessManager to be recreated next time";
         auto networkAccessManager = _networkAccessManager;
         _networkAccessManager = nullptr;
@@ -596,7 +636,8 @@ namespace PMP {
         connect(
             handler, &LastFmRequestHandler::mustInvalidateSessionKey,
             this,
-            [this]() {
+            [this]()
+            {
                 _sessionKey = "";
                 updateState();
             }
@@ -608,7 +649,8 @@ namespace PMP {
         std::sort(parameters.begin(), parameters.end());
 
         QByteArray signData;
-        Q_FOREACH(auto parameter, parameters) {
+        Q_FOREACH(auto parameter, parameters)
+        {
             signData += parameter.first.toUtf8();
             signData += parameter.second.toUtf8();
         }
@@ -622,10 +664,12 @@ namespace PMP {
         parameters << QPair<QString, QString>("api_sig", hash.toHex());
     }
 
-    void LastFmScrobblingBackend::updateState() {
+    void LastFmScrobblingBackend::updateState()
+    {
         auto oldState = state();
 
-        switch (oldState) {
+        switch (oldState)
+        {
             case ScrobblingBackendState::NotInitialized:
             case ScrobblingBackendState::PermanentFatalError:
                 /* these states need to be switched away from explicitly */
@@ -643,15 +687,16 @@ namespace PMP {
         if (state() != oldState)
             return;
 
-        if (!_sessionKey.isEmpty()) {
+        if (!_sessionKey.isEmpty())
+        {
             setState(ScrobblingBackendState::ReadyForScrobbling);
             return;
         }
 
-        if (state() != ScrobblingBackendState::WaitingForUserCredentials) {
+        if (state() != ScrobblingBackendState::WaitingForUserCredentials)
+        {
             setState(ScrobblingBackendState::WaitingForUserCredentials);
             return;
         }
     }
-
 }

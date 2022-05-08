@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,12 +28,13 @@
 #include <QObject>
 #include <QThread>
 
-namespace PMP {
-
+namespace PMP
+{
     class Resolver;
     class ScrobblingHost;
 
-    class ScrobblingController : public QObject {
+    class ScrobblingController : public QObject
+    {
         Q_OBJECT
     public:
         ScrobblingController();
@@ -54,7 +55,8 @@ namespace PMP {
                                        int trackDurationSeconds = -1);
     };
 
-    class UserScrobblingController : public QObject {
+    class UserScrobblingController : public QObject
+    {
         Q_OBJECT
     public:
         UserScrobblingController(uint userId);
@@ -82,7 +84,8 @@ namespace PMP {
         uint _userId;
     };
 
-    class Scrobbling : public QObject {
+    class Scrobbling : public QObject
+    {
         Q_OBJECT
     public:
         explicit Scrobbling(QObject* parent, Resolver* resolver);

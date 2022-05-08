@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,19 +23,20 @@
 #include <QDebug>
 #include <QHashFunctions>
 
-namespace PMP {
-
-    enum class ScrobblingProvider {
+namespace PMP
+{
+    enum class ScrobblingProvider
+    {
         Unknown = 0,
         LastFm,
     };
 
     QDebug operator<<(QDebug debug, ScrobblingProvider provider);
 
-    inline uint qHash(ScrobblingProvider provider, uint seed) {
+    inline uint qHash(ScrobblingProvider provider, uint seed)
+    {
         return ::qHash(static_cast<int>(provider), seed);
     }
-
 }
 
 Q_DECLARE_METATYPE(PMP::ScrobblingProvider)

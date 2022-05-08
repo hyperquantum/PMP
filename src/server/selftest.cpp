@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,24 +24,26 @@
 #include <QSslSocket>
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     void SelfTest::runSelfTest(ServerHealthMonitor& serverHealthMonitor)
     {
         testSsl(serverHealthMonitor);
     }
 
-    bool SelfTest::testSslLibrariesPresent() {
+    bool SelfTest::testSslLibrariesPresent()
+    {
         auto sslVersionString = QSslSocket::sslLibraryVersionString();
 
         return !sslVersionString.isEmpty();
     }
 
-    void SelfTest::testSsl(ServerHealthMonitor& serverHealthMonitor) {
-        if (!testSslLibrariesPresent()) {
+    void SelfTest::testSsl(ServerHealthMonitor& serverHealthMonitor)
+    {
+        if (!testSslLibrariesPresent())
+        {
             qWarning() << "SELF-TEST: could not find SSL libraries";
             serverHealthMonitor.setSslLibrariesMissing();
         }
     }
-
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,9 +22,10 @@
 
 #include <QDebug>
 
-namespace PMP {
-
-    enum class ScrobblerStatus {
+namespace PMP
+{
+    enum class ScrobblerStatus
+    {
         Unknown = 0,
         Green,
         Yellow,
@@ -33,7 +34,6 @@ namespace PMP {
     };
 
     QDebug operator<<(QDebug debug, ScrobblerStatus status);
-
 }
 
 Q_DECLARE_METATYPE(PMP::ScrobblerStatus)

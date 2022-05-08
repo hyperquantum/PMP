@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,11 +32,12 @@
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP {
-
+namespace PMP
+{
     class ScrobblingDataProvider;
 
-    class Scrobbler : public QObject {
+    class Scrobbler : public QObject
+    {
         Q_OBJECT
     public:
         Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,

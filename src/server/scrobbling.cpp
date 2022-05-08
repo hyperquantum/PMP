@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,18 +23,20 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     ScrobblingController::ScrobblingController()
     {
         //
     }
 
-    void ScrobblingController::enableScrobbling() {
+    void ScrobblingController::enableScrobbling()
+    {
         emit enableScrobblingRequested();
     }
 
-    void ScrobblingController::wakeUp(uint userId) {
+    void ScrobblingController::wakeUp(uint userId)
+    {
         emit wakeUpRequested(userId);
     }
 
@@ -55,7 +57,8 @@ namespace PMP {
         //
     }
 
-    void UserScrobblingController::wakeUp() {
+    void UserScrobblingController::wakeUp()
+    {
         qDebug() << "UserScrobblingController::wakeUp called for user" << _userId;
         emit wakeUpRequested(_userId);
     }
@@ -71,7 +74,8 @@ namespace PMP {
         emit providerEnableOrDisableRequested(_userId, provider, enabled);
     }
 
-    void UserScrobblingController::requestScrobblingProviderInfo() {
+    void UserScrobblingController::requestScrobblingProviderInfo()
+    {
         qDebug()
             << "UserScrobblingController::requestScrobblingProviderInfo called for user"
             << _userId;
@@ -81,7 +85,7 @@ namespace PMP {
 
     /* ============================================================================ */
 
-    Scrobbling::Scrobbling(QObject *parent, Resolver* resolver)
+    Scrobbling::Scrobbling(QObject* parent, Resolver* resolver)
         : QObject(parent), _resolver(resolver), _host(nullptr), _controller(nullptr)
     {
         _thread.setObjectName("ScrobblingThread");
@@ -108,16 +112,19 @@ namespace PMP {
         _thread.start();
     }
 
-    Scrobbling::~Scrobbling() {
+    Scrobbling::~Scrobbling()
+    {
         _thread.quit();
         _thread.wait();
     }
 
-    ScrobblingController* Scrobbling::getController() {
+    ScrobblingController* Scrobbling::getController()
+    {
         return _controller;
     }
 
-    UserScrobblingController* Scrobbling::getControllerForUser(uint userId) {
+    UserScrobblingController* Scrobbling::getControllerForUser(uint userId)
+    {
         auto controller = _userControllers.value(userId, nullptr);
         if (controller) return controller;
 

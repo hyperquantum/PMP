@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,8 +23,8 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     ScrobblingBackend::ScrobblingBackend()
      : QObject(nullptr),
        _delayInMillisecondsBetweenSubsequentScrobbles(100 /* 100 ms */),
@@ -35,25 +35,30 @@ namespace PMP {
         //
     }
 
-    ScrobblingBackend::~ScrobblingBackend() {
+    ScrobblingBackend::~ScrobblingBackend()
+    {
         qDebug() << "running ~ScrobblingBackend()";
     }
 
-    void ScrobblingBackend::initialize() {
+    void ScrobblingBackend::initialize()
+    {
         bool needsSslLibraries = needsSsl();
 
-        if (needsSslLibraries && !SelfTest::testSslLibrariesPresent()) {
+        if (needsSslLibraries && !SelfTest::testSslLibrariesPresent())
+        {
             qWarning() << "this scrobbling backend will not work without SSL libraries";
             setState(ScrobblingBackendState::PermanentFatalError);
         }
     }
 
-    void ScrobblingBackend::setState(ScrobblingBackendState newState) {
+    void ScrobblingBackend::setState(ScrobblingBackendState newState)
+    {
         if (_state == newState) return; /* no change */
 
         auto oldState = _state;
 
-        if (newState == ScrobblingBackendState::PermanentFatalError) {
+        if (newState == ScrobblingBackendState::PermanentFatalError)
+        {
             qWarning() << "backend is switching to state" << newState;
         }
 
@@ -79,8 +84,10 @@ namespace PMP {
         _initialBackoffMillisecondsForErrorReply = qMax(0, timeMilliseconds);
     }
 
-    QDebug operator<<(QDebug debug, ScrobblingBackendState state) {
-        switch (state) {
+    QDebug operator<<(QDebug debug, ScrobblingBackendState state)
+    {
+        switch (state)
+        {
             case ScrobblingBackendState::NotInitialized:
                 debug << "ScrobblingBackendState::NotInitialized";
                 break;
@@ -101,8 +108,10 @@ namespace PMP {
         return debug;
     }
 
-    QDebug operator<<(QDebug debug, ScrobbleResult result) {
-        switch (result) {
+    QDebug operator<<(QDebug debug, ScrobbleResult result)
+    {
+        switch (result)
+        {
             case ScrobbleResult::Success:
                 debug << "ScrobbleResult::Success";
                 break;
@@ -116,5 +125,4 @@ namespace PMP {
 
         return debug;
     }
-
 }

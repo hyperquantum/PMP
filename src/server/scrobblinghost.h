@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,8 +32,8 @@
 
 #include <functional>
 
-namespace PMP {
-
+namespace PMP
+{
     class LastFmScrobblingDataRecord;
     class Resolver;
     class Scrobbler;
@@ -41,7 +41,8 @@ namespace PMP {
     enum class ScrobblingProvider;
     class UserScrobblingDataRecord;
 
-    class ScrobblingHost : public QObject {
+    class ScrobblingHost : public QObject
+    {
         Q_OBJECT
     public:
         ScrobblingHost(Resolver* resolver);
@@ -73,7 +74,8 @@ namespace PMP {
                                                PMP::ClientRequestOrigin origin);
 
     private:
-        struct ScrobblerData {
+        struct ScrobblerData
+        {
             ScrobblerData();
 
             bool enabled;
@@ -102,6 +104,5 @@ namespace PMP {
         QHash<uint, QHash<ScrobblingProvider, ScrobblerData>> _scrobblersData;
         bool _hostEnabled;
     };
-
 }
 #endif

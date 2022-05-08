@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,11 +33,12 @@
 QT_FORWARD_DECLARE_CLASS(QDomElement)
 QT_FORWARD_DECLARE_CLASS(QNetworkAccessManager)
 
-namespace PMP {
-
+namespace PMP
+{
     class LastFmScrobblingBackend;
 
-    class LastFmRequestHandler : public QObject {
+    class LastFmRequestHandler : public QObject
+    {
         Q_OBJECT
 
     Q_SIGNALS:
@@ -71,7 +72,8 @@ namespace PMP {
         QString _xmlTagName;
     };
 
-    class LastFmAuthenticationRequestHandler : public LastFmRequestHandler {
+    class LastFmAuthenticationRequestHandler : public LastFmRequestHandler
+    {
         Q_OBJECT
     public:
         LastFmAuthenticationRequestHandler(LastFmScrobblingBackend* parent,
@@ -88,7 +90,8 @@ namespace PMP {
         void onGenericError() override;
     };
 
-    class LastFmNowPlayingRequestHandler : public LastFmRequestHandler {
+    class LastFmNowPlayingRequestHandler : public LastFmRequestHandler
+    {
         Q_OBJECT
     public:
         LastFmNowPlayingRequestHandler(LastFmScrobblingBackend* parent,
@@ -103,7 +106,8 @@ namespace PMP {
         void onGenericError() override;
     };
 
-    class LastFmScrobbleRequestHandler : public LastFmRequestHandler {
+    class LastFmScrobbleRequestHandler : public LastFmRequestHandler
+    {
         Q_OBJECT
     public:
         LastFmScrobbleRequestHandler(LastFmScrobblingBackend* parent,

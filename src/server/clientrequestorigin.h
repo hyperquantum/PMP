@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,9 +23,10 @@
 #include <QMetaType>
 #include <QtGlobal>
 
-namespace PMP {
-
-    class ClientRequestOrigin {
+namespace PMP
+{
+    class ClientRequestOrigin
+    {
     public:
         ClientRequestOrigin()
          : _connectionReference(0), _clientReference(0)
@@ -42,7 +43,8 @@ namespace PMP {
         uint connectionReference() const { return _connectionReference; }
         uint clientReference() const { return _clientReference; }
 
-        bool matchesConnection(uint connectionReference) const {
+        bool matchesConnection(uint connectionReference) const
+        {
             return _connectionReference == connectionReference;
         }
 
