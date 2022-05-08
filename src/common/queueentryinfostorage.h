@@ -90,7 +90,7 @@ namespace PMP
         void tracksChanged(QList<quint32> queueIDs);
 
     protected:
-        explicit QueueEntryInfoStorage(QObject* parent) {}
+        explicit QueueEntryInfoStorage(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

@@ -44,7 +44,7 @@ namespace PMP
 
     void ReloadServerSettingsCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        //
+        Q_UNUSED(clientServerInterface)
     }
 
     void ReloadServerSettingsCommand::start(ClientServerInterface* clientServerInterface)
@@ -68,7 +68,7 @@ namespace PMP
 
     void DelayedStartAtCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        //
+        Q_UNUSED(clientServerInterface)
     }
 
     void DelayedStartAtCommand::start(ClientServerInterface* clientServerInterface)
@@ -94,7 +94,7 @@ namespace PMP
 
     void DelayedStartWaitCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        //
+        Q_UNUSED(clientServerInterface)
     }
 
     void DelayedStartWaitCommand::start(ClientServerInterface* clientServerInterface)
@@ -114,7 +114,7 @@ namespace PMP
 
     void DelayedStartCancelCommand::setUp(ClientServerInterface* clientServerInterface)
     {
-        //
+        Q_UNUSED(clientServerInterface)
     }
 
     void DelayedStartCancelCommand::start(ClientServerInterface* clientServerInterface)
