@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -92,9 +92,12 @@ TestObfuscator::TestObfuscator()
 
 void TestObfuscator::roundtrip()
 {
-    for (quint8 randomByte : _randomBytes) {
-        for (quint64 key : _keys) {
-            for (QByteArray input : _inputs) {
+    for (quint8 randomByte : _randomBytes)
+    {
+        for (quint64 key : _keys)
+        {
+            for (QByteArray input : _inputs)
+            {
 
                 Obfuscator encryptingObfuscator(key);
                 encryptingObfuscator.setRandomByte(randomByte);
@@ -115,9 +118,12 @@ void TestObfuscator::roundtrip()
 
 void TestObfuscator::notNoOp()
 {
-    for (quint8 randomByte : _randomBytes) {
-        for (quint64 key : _keys) {
-            for (QByteArray input : _inputs) {
+    for (quint8 randomByte : _randomBytes)
+    {
+        for (quint64 key : _keys)
+        {
+            for (QByteArray input : _inputs)
+            {
 
                 Obfuscator encryptingObfuscator(key);
                 encryptingObfuscator.setRandomByte(randomByte);
@@ -201,12 +207,14 @@ void TestObfuscator::randomByteMatters()
 
     // verify that the random bytes are unique
     std::sort(randomBytes.begin(), randomBytes.end());
-    for(int i = 1; i < randomBytes.size(); ++i) {
+    for(int i = 1; i < randomBytes.size(); ++i)
+    {
         QVERIFY(randomBytes[i - 1] != randomBytes[i]);
     }
 
     QVector<QByteArray> results;
-    for (quint8 randomByte : randomBytes) {
+    for (quint8 randomByte : randomBytes)
+    {
         Obfuscator o(key);
         o.setRandomByte(randomByte);
         results.append(o.encrypt(input).mid(1));
@@ -214,7 +222,8 @@ void TestObfuscator::randomByteMatters()
 
     // verify that the encrypted strings are unique
     std::sort(results.begin(), results.end());
-    for(int i = 1; i < results.size(); ++i) {
+    for(int i = 1; i < results.size(); ++i)
+    {
         QVERIFY(results[i - 1] != results[i]);
     }
 }
@@ -245,12 +254,14 @@ void TestObfuscator::keyMatters()
 
     // verify that the keys are unique
     std::sort(keys.begin(), keys.end());
-    for(int i = 1; i < keys.size(); ++i) {
+    for(int i = 1; i < keys.size(); ++i)
+    {
         QVERIFY(keys[i - 1] != keys[i]);
     }
 
     QVector<QByteArray> results;
-    for (quint64 key : keys) {
+    for (quint64 key : keys)
+    {
         Obfuscator o(key);
         o.setRandomByte(randomByte);
         results.append(o.encrypt(input));
@@ -258,7 +269,8 @@ void TestObfuscator::keyMatters()
 
     // verify that the encrypted strings are unique
     std::sort(results.begin(), results.end());
-    for(int i = 1; i < results.size(); ++i) {
+    for(int i = 1; i < results.size(); ++i)
+    {
         QVERIFY(results[i - 1] != results[i]);
     }
 }

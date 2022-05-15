@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,8 @@
 #include <QObject>
 #include <QVector>
 
-class TestObfuscator : public QObject {
+class TestObfuscator : public QObject
+{
     Q_OBJECT
 public:
     TestObfuscator();

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,7 +44,8 @@ void TestTokenEncoder::roundtrip()
            << "ffddsgfg586151515dsgsdg8451gssg"
            << "cdef0ab32";
 
-    for (auto token : tokens) {
+    for (auto token : tokens)
+    {
         auto encoded = TokenEncoder::encodeToken(token);
         auto decoded = TokenEncoder::decodeToken(encoded);
 
