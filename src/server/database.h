@@ -169,6 +169,7 @@ namespace PMP
         bool setLastFmScrobblingEnabled(quint32 userId, bool enabled = true);
         quint32 getLastFmScrobbledUpTo(quint32 userId, bool* ok);
         bool updateLastFmScrobbledUpTo(quint32 userId, quint32 newValue);
+        bool updateUserScrobblingSessionKeys(UserScrobblingDataRecord const& record);
 
         UserDynamicModePreferencesRecord getUserDynamicModePreferences(quint32 userId,
                                                                        bool* ok);

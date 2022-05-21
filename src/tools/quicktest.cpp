@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,6 +24,7 @@
 #include "server/database.h"
 #include "server/lastfmscrobblingbackend.h"
 #include "server/serversettings.h"
+#include "server/tokenencoder.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -52,6 +53,15 @@ int main(int argc, char* argv[])
 
     QTextStream out(stdout);
     qDebug() << "Qt version:" << qVersion();
+
+    for (int i = 0; i < 10; ++i)
+    {
+        auto encoded = TokenEncoder::encodeToken("Flub");
+        qDebug() << "encoded:" << encoded;
+
+        auto decoded = TokenEncoder::decodeToken(encoded);
+        qDebug() << "decoded:" << decoded;
+    }
 
     /*
     qDebug() << "Local hostname:" << QHostInfo::localHostName();
@@ -123,6 +133,7 @@ int main(int argc, char* argv[])
              << preferences.trackRepetitionAvoidanceIntervalSeconds << "seconds";
     */
 
+    /*
     auto d1 = QDateTime::currentDateTimeUtc();
     QThread::msleep(200);
     auto d2 = QDateTime::currentDateTimeUtc();
@@ -139,6 +150,7 @@ int main(int argc, char* argv[])
     auto d1R = QDateTime::fromMSecsSinceEpoch(msSinceEpoch, Qt::UTC);
 
     qDebug() << d1R.toString(Qt::ISODateWithMs);
+    */
 
     return 0;
 }

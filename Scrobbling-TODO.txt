@@ -1,5 +1,4 @@
 * add GUI for entering Last.fm user credentials
-* don't store Last.FM session key in plain text in the database
 * handle timeouts
 * handle failed requests properly (OpenSSL missing or connection problem)
 * make sure OpenSSL libraries are included in binary releases

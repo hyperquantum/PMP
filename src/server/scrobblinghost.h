@@ -34,6 +34,7 @@
 
 namespace PMP
 {
+    class Database;
     class LastFmScrobblingDataRecord;
     class Resolver;
     class Scrobbler;
@@ -85,6 +86,8 @@ namespace PMP
 
         void doForAllProviders(std::function<void (ScrobblingProvider)> action);
 
+        void ensureObfuscated(UserScrobblingDataRecord& record, Database& db);
+
         void loadScrobblers(UserScrobblingDataRecord const& record);
         void loadScrobbler(UserScrobblingDataRecord const& record,
                            ScrobblingProvider provider, bool enabled);
@@ -96,7 +99,6 @@ namespace PMP
                                          LastFmScrobblingDataRecord const& data);
         void installScrobblerSignalHandlers(uint userId, ScrobblingProvider provider,
                                             Scrobbler* scrobbler);
-        QString decodeToken(QString token) const;
 
         Resolver* _resolver;
         //QHash<uint, Scrobbler*> _lastFmScrobblers;

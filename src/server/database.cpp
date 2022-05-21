@@ -1069,6 +1069,23 @@ namespace PMP
         return executeVoid(preparer);
     }
 
+    bool Database::updateUserScrobblingSessionKeys(const UserScrobblingDataRecord& record)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "UPDATE pmp_user "
+                    "SET LastFmSessionKey=? "
+                    "WHERE UserId=?"
+                );
+                q.addBindValue(record.lastFmSessionKey);
+                q.addBindValue(record.userId);
+            };
+
+        return executeVoid(preparer);
+    }
+
     QString Database::buildParamsList(unsigned paramsCount)
     {
         QString s;

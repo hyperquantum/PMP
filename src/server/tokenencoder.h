@@ -27,11 +27,16 @@ namespace PMP
     class TokenEncoder
     {
     public:
+        static bool ensureIsEncoded(QString& token);
+
         static QString encodeToken(QString token);
         static QString decodeToken(QString token);
 
     private:
         TokenEncoder();
+
+        constexpr static char const _keyChars[] = "02469AbcfGijmNQrStwW";
+        static quint64 getKey(char keyChar);
     };
 }
 #endif

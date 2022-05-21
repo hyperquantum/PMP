@@ -29,9 +29,12 @@ public:
     TestTokenEncoder() {}
 
 private Q_SLOTS:
+    void ensureIsEncodedDoesNotChangeEmptyString();
+    void ensureIsEncodedDoesNotChangeEncodedString();
+    void ensureIsEncodedChangesPlainTextString();
+    void encodeUsesObfuscation();
     void decodeEmpty();
     void decodePlainText();
     void roundtrip();
-
 };
 #endif

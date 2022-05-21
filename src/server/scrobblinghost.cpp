@@ -75,8 +75,23 @@ namespace PMP
 
         for(auto& data : userData)
         {
+            ensureObfuscated(data, *db);
             loadScrobblers(data);
         }
+    }
+
+    void ScrobblingHost::ensureObfuscated(UserScrobblingDataRecord& record, Database& db)
+    {
+        bool recordChanged = TokenEncoder::ensureIsEncoded(record.lastFmSessionKey);
+
+        if (!recordChanged)
+            return;
+
+        if (db.updateUserScrobblingSessionKeys(record))
+            qDebug() << "encrypted scrobbling session tokens for user" << record.userId;
+        else
+            qWarning() << "failed to save encrypted scrobbling session tokens for user"
+                       << record.userId;
     }
 
     void ScrobblingHost::wakeUpForUser(uint userId)
@@ -294,7 +309,7 @@ namespace PMP
             lastFmBackend->setUsername(data.lastFmUser);
         }
 
-        auto sessionKey = decodeToken(data.lastFmSessionKey);
+        auto sessionKey = TokenEncoder::decodeToken(data.lastFmSessionKey);
         if (!sessionKey.isEmpty())
         {
             lastFmBackend->setSessionKey(sessionKey);
@@ -323,11 +338,6 @@ namespace PMP
                 emit scrobblerStatusChanged(userId, provider, status);
             }
         );
-    }
-
-    QString ScrobblingHost::decodeToken(QString token) const
-    {
-        return TokenEncoder::decodeToken(token);
     }
 
     void ScrobblingHost::doForAllProviders(

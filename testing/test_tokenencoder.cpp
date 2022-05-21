@@ -26,6 +26,54 @@
 
 using namespace PMP;
 
+void TestTokenEncoder::ensureIsEncodedDoesNotChangeEmptyString()
+{
+    QString empty = "";
+
+    auto changed = TokenEncoder::ensureIsEncoded(empty);
+
+    QVERIFY(!changed);
+    QCOMPARE(empty, QString());
+}
+
+void TestTokenEncoder::ensureIsEncodedDoesNotChangeEncodedString()
+{
+    QString original = "?2xHWS9WQ=";
+    QString text = original;
+
+    auto changed = TokenEncoder::ensureIsEncoded(text);
+
+    QVERIFY(!changed);
+    QCOMPARE(text, original);
+}
+
+void TestTokenEncoder::ensureIsEncodedChangesPlainTextString()
+{
+    QString text = "Abcdef123";
+
+    auto changed = TokenEncoder::ensureIsEncoded(text);
+
+    QVERIFY(changed);
+    QVERIFY(text.startsWith('?'));
+}
+
+void TestTokenEncoder::encodeUsesObfuscation()
+{
+    QVector<QString> tokens;
+    tokens << "~"
+           << "*"
+           << "+"
+           << "unlikely";
+
+    for (auto& token : qAsConst(tokens))
+    {
+        auto encoded = TokenEncoder::encodeToken(token);
+
+        QVERIFY(encoded.startsWith("?"));
+        QVERIFY(!encoded.contains(token));
+    }
+}
+
 void TestTokenEncoder::decodeEmpty()
 {
     QCOMPARE(TokenEncoder::decodeToken(""), QString(""));
@@ -40,11 +88,13 @@ void TestTokenEncoder::decodePlainText()
 void TestTokenEncoder::roundtrip()
 {
     QVector<QString> tokens;
-    tokens << "AbCdEfGhIjKlMnOp"
+    tokens << "()"
+           << "AbCdEfGhIjKlMnOp"
            << "ffddsgfg586151515dsgsdg8451gssg"
-           << "cdef0ab32";
+           << "cdef0ab32"
+           << "plain hot tomato soup";
 
-    for (auto token : tokens)
+    for (auto& token : qAsConst(tokens))
     {
         auto encoded = TokenEncoder::encodeToken(token);
         auto decoded = TokenEncoder::decodeToken(encoded);
