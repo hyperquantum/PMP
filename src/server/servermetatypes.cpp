@@ -19,6 +19,7 @@
 
 #include "analyzer.h"
 #include "userdataforhashesfetcher.h"
+#include "userdatafortracksfetcher.h"
 
 #include <QMetaType>
 #include <QVector>
@@ -36,7 +37,9 @@ namespace PMP
             qRegisterMetaType<PMP::FileHashes>();
             qRegisterMetaType<PMP::FileInfo>();
             qRegisterMetaType<PMP::UserDataForHash>();
+            qRegisterMetaType<PMP::UserDataForHashId>();
             qRegisterMetaType<QVector<PMP::UserDataForHash>>();
+            qRegisterMetaType<QVector<PMP::UserDataForHashId>>();
         }
 
         static ServerMetatypesInit GlobalVariable;

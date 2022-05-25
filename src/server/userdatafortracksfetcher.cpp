@@ -75,23 +75,4 @@ namespace PMP
 
         Q_EMIT finishedWithResult(_userId, results);
     }
-
-    /* =========================== UserDataForHashInit =========================== */
-
-    /* utility object to automatically do the qRegisterMetaType call at program startup */
-    class UserDataForTracksInit
-    {
-    public:
-        UserDataForTracksInit()
-        {
-            //qDebug() << "UserDataForTracksInit running";
-            qRegisterMetaType<PMP::UserDataForHashId>("PMP::UserDataForHashId");
-            qRegisterMetaType<QList<PMP::UserDataForHashId>>(
-                                                         "QList<PMP::UserDataForHashId>");
-            qRegisterMetaType<QVector<PMP::UserDataForHashId>>(
-                                                       "QVector<PMP::UserDataForHashId>");
-        }
-    };
-
-    static UserDataForTracksInit userDataForTracksInit;
 }
