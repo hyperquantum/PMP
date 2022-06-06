@@ -362,7 +362,7 @@ namespace PMP
         return _db.isOpen();
     }
 
-    void Database::registerHash(const FileHash& hash)
+    ResultOrError<SuccessType, FailureType> Database::registerHash(const FileHash& hash)
     {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
@@ -371,20 +371,25 @@ namespace PMP
             [=] (QSqlQuery& q)
             {
                 q.prepare(
-                    "INSERT IGNORE INTO pmp_hash(InputLength, `SHA1`, `MD5`) "
-                    "VALUES(?,?,?)"
+                    "INSERT INTO pmp_hash(InputLength, `SHA1`, `MD5`) "
+                    "VALUES(?,?,?) "
+                    "ON DUPLICATE KEY UPDATE InputLength=InputLength"
                 );
                 q.addBindValue(hash.length());
                 q.addBindValue(sha1);
                 q.addBindValue(md5);
             };
 
-        if (!executeVoid(preparer)) { /* error */
-            qDebug() << "Database::registerHash : insert failed!" << Qt::endl;
+        if (!executeVoid(preparer))
+        {
+            qWarning() << "Database::registerHash : insert failed!" << Qt::endl;
+            return failure;
         }
+
+        return success;
     }
 
-    uint Database::getHashID(const FileHash& hash)
+    ResultOrError<uint, FailureType> Database::getHashId(const FileHash& hash)
     {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
@@ -402,10 +407,10 @@ namespace PMP
             };
 
         uint id;
-        if (!executeScalar(preparer, id, 0)) /* error */
+        if (!executeScalar(preparer, id, 0))
         {
             qDebug() << "Database::getHashID : query failed!" << Qt::endl;
-            return 0;
+            return failure;
         }
 
         return id;
@@ -723,8 +728,12 @@ namespace PMP
         return true;
     }
 
-    void Database::addToHistory(quint32 hashId, quint32 userId, QDateTime start,
-                                QDateTime end, int permillage, bool validForScoring)
+    ResultOrError<SuccessType, FailureType> Database::addToHistory(quint32 hashId,
+                                                                   quint32 userId,
+                                                                   QDateTime start,
+                                                                   QDateTime end,
+                                                                   int permillage,
+                                                                   bool validForScoring)
     {
 //        qDebug() << "  Database::addToHistory called\n"
 //                 << "   hash" << hashId << " user" << userId << " perm" << permillage
@@ -750,11 +759,11 @@ namespace PMP
 
         if (!executeVoid(preparer)) /* error */
         {
-            qDebug() << "Database::addToHistory : query FAILED!" << Qt::endl;
-            return;
+            qWarning() << "Database::addToHistory : insert failed!" << Qt::endl;
+            return failure;
         }
 
-        return;
+        return success;
     }
 
     QDateTime Database::getLastHeard(quint32 hashId, quint32 userId)
@@ -822,18 +831,25 @@ namespace PMP
         return result;
     }
 
-    QVector<HashHistoryStats> Database::getHashHistoryStats(quint32 userId,
-                                                            QList<quint32> hashIds)
+    ResultOrError<QVector<HashHistoryStats>, FailureType> Database::getHashHistoryStats(
+                                                                 quint32 userId,
+                                                                 QVector<quint32> hashIds)
     {
+        QVector<HashHistoryStats> result;
+
         if (hashIds.isEmpty())
-            return {};
+            return result;
+
+        result.reserve(hashIds.size());
 
         QSqlQuery q(_db);
         q.prepare(
-            "SELECT ha.HashID, hi.PrevHeard, hi2.ScoreHeardCount, hi2.ScorePermillage "
+            "SELECT ha.HashID, hi.LastHistoryId, hi.PrevHeard, hi2.ScoreHeardCount,"
+            "       hi2.ScorePermillage "
             "FROM pmp_hash AS ha"
             " LEFT JOIN"
-            "  (SELECT HashID, MAX(End) AS PrevHeard FROM pmp_history"
+            "  (SELECT HashID, MAX(HistoryID) AS LastHistoryId, MAX(End) AS PrevHeard"
+            "   FROM pmp_history"
             "   WHERE UserID=? GROUP BY HashID) AS hi"
             "  ON ha.HashID=hi.HashID"
             " LEFT JOIN"
@@ -851,28 +867,27 @@ namespace PMP
             q.addBindValue(hashId);
         }
 
-        QVector<HashHistoryStats> result;
-        result.reserve(hashIds.size());
-
         if (!executeQuery(q)) /* error */
         {
             qDebug() << "Database::getHashHistoryStats : could not execute; "
                      << q.lastError().text() << Qt::endl;
-            return result;
+            return failure;
         }
 
         while (q.next())
         {
             quint32 hashID = q.value(0).toUInt();
+            uint lastHistoryId = getUInt(q.value(1), 0);
             QDateTime prevHeard = getUtcDateTime(q.value(1));
             quint32 scoreHeardCount = (quint32)getUInt(q.value(2), 0);
             qint32 scorePermillage = (qint32)getInt(q.value(3), -1);
 
             HashHistoryStats stats;
+            stats.lastHistoryId = lastHistoryId;
             stats.hashId = hashID;
             stats.lastHeard = prevHeard;
             stats.scoreHeardCount = scoreHeardCount;
-            stats.score = calculateScore(scorePermillage, scoreHeardCount);
+            stats.averagePermillage = scorePermillage;
 
             result.append(stats);
         }
@@ -1184,17 +1199,5 @@ namespace PMP
         auto dateTime = v.toDateTime();
         dateTime.setTimeSpec(Qt::UTC);
         return dateTime;
-    }
-
-    qint16 Database::calculateScore(qint32 permillageFromDB, quint32 heardCount)
-    {
-        if (permillageFromDB < 0 || heardCount < 3) return -1;
-
-        if (permillageFromDB > 1000) permillageFromDB = 1000;
-
-        if (heardCount >= 100) return permillageFromDB;
-
-        quint16 permillage = (quint16)permillageFromDB;
-        return (permillage * heardCount + 500) / (heardCount + 1);
     }
 }

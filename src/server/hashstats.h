@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,34 +17,35 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_ADDTOHISTORYTASK_H
-#define PMP_ADDTOHISTORYTASK_H
+#ifndef PMP_HASHSTATS_H
+#define PMP_HASHSTATS_H
 
-#include "playerhistoryentry.h"
+#include "common/filehash.h"
 
-#include <QObject>
-#include <QRunnable>
-#include <QSharedPointer>
+#include "trackstats.h"
 
 namespace PMP
 {
-    class Resolver;
-
-    class AddToHistoryTask : public QObject, public QRunnable
+    class HashStats
     {
-        Q_OBJECT
     public:
-        AddToHistoryTask(Resolver* resolver, QSharedPointer<PlayerHistoryEntry> entry);
+        HashStats() {}
 
-        void run();
+        HashStats(FileHash const& hash, TrackStats const& stats)
+         : _hash(hash), _stats(stats)
+        {
+            //
+        }
 
-    Q_SIGNALS:
-        void updatedHashUserStats(uint hashID, quint32 user,
-                                  QDateTime previouslyHeard, qint16 score);
+        FileHash const& hash() const { return _hash; }
+        TrackStats const& stats() const { return _stats; }
 
     private:
-        Resolver* _resolver;
-        QSharedPointer<PlayerHistoryEntry> _entry;
+        FileHash _hash;
+        TrackStats _stats;
     };
 }
+
+Q_DECLARE_METATYPE(PMP::HashStats)
+
 #endif

@@ -17,7 +17,6 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "common/concurrent.h"
 #include "common/logging.h"
 #include "common/util.h"
 #include "common/version.h"
@@ -26,6 +25,8 @@
 #include "database.h"
 #include "delayedstart.h"
 #include "generator.h"
+#include "hashidregistrar.h"
+#include "hashrelations.h"
 #include "history.h"
 #include "player.h"
 #include "playerqueue.h"
@@ -178,13 +179,15 @@ int runServer(QCoreApplication& app, bool doIndexation)
         serverHealthMonitor.setDatabaseUnavailable();
     }
 
-    Resolver resolver;
+    HashIdRegistrar hashIdRegistrar;
+    HashRelations hashRelations;
+    Resolver resolver(&hashIdRegistrar, &hashRelations);
 
     Users users;
     Player player(nullptr, &resolver, serverSettings.defaultVolume());
     DelayedStart delayedStart(&player);
     PlayerQueue& queue = player.queue();
-    History history(&player);
+    History history(&player, &hashIdRegistrar, &hashRelations);
 
     CollectionMonitor collectionMonitor;
     QObject::connect(
@@ -225,8 +228,8 @@ int runServer(QCoreApplication& app, bool doIndexation)
 
     Server server(nullptr, &serverSettings, serverInstanceIdentifier);
     bool listening =
-        server.listen(&player, &generator, &history, &users, &collectionMonitor,
-                      &serverHealthMonitor, &delayedStart,
+        server.listen(&player, &generator, &history, &hashIdRegistrar, &users,
+                      &collectionMonitor, &serverHealthMonitor, &delayedStart,
                       QHostAddress::Any, 23432);
 
     if (!listening)

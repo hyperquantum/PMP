@@ -24,6 +24,8 @@
 #include "common/fileanalyzer.h"
 
 #include "database.h"
+#include "hashidregistrar.h"
+#include "hashrelations.h"
 
 #include <QDirIterator>
 #include <QFileInfo>
@@ -37,85 +39,6 @@
 
 namespace PMP
 {
-    /* ========================== HashIdRegistrar ========================== */
-
-    Future<SuccessType, FailureType> HashIdRegistrar::loadAllFromDatabase()
-    {
-        auto work =
-            [this]() -> ResultOrError<SuccessType, FailureType>
-            {
-                auto db = Database::getDatabaseForCurrentThread();
-                if (!db) return failure; /* database not available */
-
-                auto hashesResult = db->getHashes();
-                if (hashesResult.failed())
-                    return failure;
-
-                const auto hashes = hashesResult.result();
-
-                QMutexLocker lock(&_mutex);
-                for (auto& pair : hashes)
-                {
-                    _hashes.insert(pair.second, pair.first);
-                    _ids.insert(pair.first, pair.second);
-                }
-
-                qDebug() << "HashIdRegistrar: loaded" << hashes.count()
-                         << "hashes from the database";
-                return success;
-            };
-
-        return Concurrent::run<SuccessType, FailureType>(work);
-    }
-
-    Future<uint, FailureType> HashIdRegistrar::getOrCreateId(FileHash hash)
-    {
-        {
-            QMutexLocker lock(&_mutex);
-            auto id = _hashes.value(hash, 0);
-            if (id > 0)
-                return Future<uint, FailureType>::fromResult(id);
-        }
-
-        auto work =
-            [this, hash]() -> ResultOrError<uint, FailureType>
-            {
-                auto db = Database::getDatabaseForCurrentThread();
-                if (!db) return failure; /* database not available */
-
-                db->registerHash(hash);
-                uint id = db->getHashID(hash);
-                if (id <= 0)
-                {
-                    qWarning() << "HashIdRegistrar: failed to get/register hash" << hash;
-                    return failure;
-                }
-
-                QMutexLocker lock(&_mutex);
-                _hashes.insert(hash, id);
-                _ids.insert(id, hash);
-                qDebug() << "HashIdRegistrar: got ID" << id << "for hash" << hash;
-                return id;
-            };
-
-        return Concurrent::run<uint, FailureType>(work);
-    }
-
-    QVector<QPair<uint, FileHash>> HashIdRegistrar::getAllLoaded()
-    {
-        QMutexLocker lock(&_mutex);
-
-        QVector<QPair<uint, FileHash>> result;
-        result.reserve(_ids.size());
-
-        for (auto it = _ids.begin(); it != _ids.end(); ++it)
-        {
-            result << qMakePair(it.key(), it.value());
-        }
-
-        return result;
-    }
-
     /* ========================== FileLocations ========================== */
 
     void FileLocations::insert(uint id, QString path)
@@ -782,15 +705,15 @@ namespace PMP
 
     /* ========================== Resolver ========================== */
 
-    Resolver::Resolver()
-     : _analyzer(nullptr),
-       _fileFinder(nullptr),
+    Resolver::Resolver(HashIdRegistrar* hashIdRegistrar, HashRelations* hashRelations)
+     : _hashIdRegistrar(hashIdRegistrar),
+       _hashRelations(hashRelations),
        _lock(QMutex::Recursive),
        _fullIndexationNumber(1),
        _fullIndexationStatus(FullIndexationStatus::NotRunning)
     {
         _analyzer = new Analyzer(this);
-        _fileFinder = new FileFinder(this, &_hashIdRegistrar, &_fileLocations, _analyzer);
+        _fileFinder = new FileFinder(this, _hashIdRegistrar, &_fileLocations, _analyzer);
 
         connect(_analyzer, &Analyzer::fileAnalysisFailed,
                 this, &Resolver::onFileAnalysisFailed);
@@ -799,14 +722,14 @@ namespace PMP
         connect(_analyzer, &Analyzer::finished,
                 this, &Resolver::onAnalyzerFinished);
 
-        auto dbLoadingFuture = _hashIdRegistrar.loadAllFromDatabase();
+        auto dbLoadingFuture = _hashIdRegistrar->loadAllFromDatabase();
         dbLoadingFuture.addResultListener(
             this,
             [this](SuccessType)
             {
                 qDebug() << "Resolver: successfully loaded hashes from the database";
 
-                auto allHashes = _hashIdRegistrar.getAllLoaded();
+                auto allHashes = _hashIdRegistrar->getAllLoaded();
 
                 uint newHashesCount = 0;
                 QMutexLocker lock(&_lock);
@@ -885,57 +808,80 @@ namespace PMP
 
     void Resolver::onFileAnalysisCompleted(QString path, FileAnalysis analysis)
     {
-        auto hashes = analysis.hashes();
+        const auto hashes = analysis.hashes();
+        const auto allHashes = hashes.allHashes();
 
-        QMutexLocker lock(&_lock);
+        _hashIdRegistrar->getOrCreateIds(allHashes)
+            .addListener(
+                this,
+                [this, path, analysis, hashes, allHashes](
+                                   ResultOrError<QVector<uint>, FailureType> maybeHashIds)
+                {
+                    if (maybeHashIds.failed())
+                    {
+                        qWarning() << "Resolver: failed to get IDs for hashes for path"
+                                   << path;
+                        return;
+                    }
 
-        HashKnowledge* knowledge;
-        if (!hashes.multipleHashes())
-        {
-            knowledge = registerHash(hashes.main());
-        }
-        else
-        {
-            knowledge = nullptr;
-            for (auto const& hash : hashes.allHashes())
-            {
-                auto k = _hashKnowledge.value(hash, nullptr);
-                if (!k)
-                    continue;
+                    auto hashIds = maybeHashIds.result();
 
-                if (!knowledge)
-                    knowledge = k;
-                else
-                    qDebug() << "detected multiple hashes in use for file" << path << ":"
-                             << knowledge->hash() << "and" << k->hash();
-            }
+                    if (hashIds.size() > 1)
+                        _hashRelations->markAsEquivalent(hashIds);
 
-            if (!knowledge)
-            {
-                knowledge = registerHash(hashes.main());
-            }
-        }
+                    QMutexLocker lock(&_lock);
 
-        if (!knowledge)
-        {
-            qDebug() << "failed to register hash for:" << path;
-            return;
-        }
+                    HashKnowledge* knowledge;
+                    if (!hashes.multipleHashes())
+                    {
+                        knowledge = registerHash(hashes.main());
+                    }
+                    else
+                    {
+                        knowledge = nullptr;
+                        for (auto const& hash : allHashes)
+                        {
+                            auto k = _hashKnowledge.value(hash, nullptr);
+                            if (!k)
+                                continue;
 
-        knowledge->addInfo(analysis.audioData(), analysis.tagData());
+                            if (!knowledge)
+                                knowledge = k;
+                            else
+                                qDebug() << "detected multiple hashes in use for file"
+                                         << path << ":" << knowledge->hash() << "and"
+                                         << k->hash();
+                        }
 
-        auto fileInfo = analysis.fileInfo();
+                        if (!knowledge)
+                        {
+                            knowledge = registerHash(hashes.main());
+                        }
+                    }
 
-        if (fileInfo.path().length() <= 0
-                || fileInfo.size() <= 0
-                || fileInfo.lastModifiedUtc().isNull())
-        {
-            qDebug() << "cannot register file details for:" << path;
-            return;
-        }
+                    if (!knowledge)
+                    {
+                        qWarning() << "Resolver: failed to register hash for:" << path;
+                        return;
+                    }
 
-        knowledge->addPath(fileInfo.path(), fileInfo.size(), fileInfo.lastModifiedUtc(),
-                           _fullIndexationNumber);
+                    knowledge->addInfo(analysis.audioData(), analysis.tagData());
+
+                    auto fileInfo = analysis.fileInfo();
+
+                    if (fileInfo.path().length() <= 0
+                            || fileInfo.size() <= 0
+                            || fileInfo.lastModifiedUtc().isNull())
+                    {
+                        qWarning() << "Resolver: cannot register file details for:"
+                                   << path;
+                        return;
+                    }
+
+                    knowledge->addPath(fileInfo.path(), fileInfo.size(),
+                                       fileInfo.lastModifiedUtc(), _fullIndexationNumber);
+                }
+            );
     }
 
     void Resolver::onAnalyzerFinished()
@@ -964,14 +910,14 @@ namespace PMP
             }
         }
 
-        auto idFuture = _hashIdRegistrar.getOrCreateId(hash);
+        auto idFuture = _hashIdRegistrar->getOrCreateId(hash);
 
         // TODO : check if we have it in the locations cache
 
         auto pathFuture =
             idFuture.thenFuture<QString, FailureType>(
                 [this, hash](uint id) { return _fileFinder->findHashAsync(id, hash); },
-                [](FailureType) { return failure; }
+                failureIdentityFunction
             );
 
         return pathFuture;
@@ -1053,9 +999,11 @@ namespace PMP
         if (!db) return knowledge; /* database not available */
 
         db->registerHash(hash);
-        uint id = db->getHashID(hash);
-        if (id <= 0) return knowledge; /* something went wrong */
+        auto idOrError = db->getHashId(hash);
+        if (idOrError.failed() || idOrError.result() <= 0)
+            return knowledge; /* something went wrong */
 
+        auto id = idOrError.result();
         knowledge->setId(id);
         _idToHash[id] = knowledge;
 

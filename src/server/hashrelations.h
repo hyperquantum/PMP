@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,40 +17,38 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_USERDATAFORTRACKSFETCHER_H
-#define PMP_USERDATAFORTRACKSFETCHER_H
+#ifndef PMP_HASHRELATIONS_H
+#define PMP_HASHRELATIONS_H
 
-#include <QDateTime>
-#include <QObject>
-#include <QRunnable>
+#include "common/filehash.h"
+
+#include <QHash>
+#include <QMutex>
+#include <QSharedPointer>
+#include <QSet>
 #include <QVector>
 
 namespace PMP
 {
-    struct UserDataForHashId
+    class HashRelations
     {
-        uint hashId;
-        QDateTime previouslyHeard;
-        qint16 score;
-    };
-
-    class UserDataForTracksFetcher : public QObject, public QRunnable
-    {
-        Q_OBJECT
     public:
-        UserDataForTracksFetcher(quint32 userId, QVector<uint> hashIds);
+        HashRelations();
 
-        void run();
+        void markAsEquivalent(QVector<uint> hashes);
 
-    Q_SIGNALS:
-        void finishedWithResult(quint32 userId, QVector<PMP::UserDataForHashId> results);
+        /// Return other hashes that are equivalent to the hash specified; the result does
+        /// not include the original hash.
+        QSet<uint> getOtherHashesEquivalentTo(uint hashId);
 
     private:
-        quint32 _userId;
-        QVector<uint> _hashIds;
+        struct Entry
+        {
+            QSet<uint> equivalentHashes;
+        };
+
+        QMutex _mutex;
+        QHash<uint, QSharedPointer<Entry>> _hashes;
     };
 }
-
-Q_DECLARE_METATYPE(PMP::UserDataForHashId)
-
 #endif

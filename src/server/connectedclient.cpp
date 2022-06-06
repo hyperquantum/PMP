@@ -25,7 +25,6 @@
 #include "common/version.h"
 
 #include "collectionmonitor.h"
-#include "history.h"
 #include "player.h"
 #include "playerqueue.h"
 #include "queueentry.h"
@@ -46,12 +45,11 @@ namespace PMP
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
-                                     History* history,
                                      Users* users,
                                      CollectionMonitor* collectionMonitor,
                                      ServerHealthMonitor* serverHealthMonitor)
      : _socket(socket), _serverInterface(serverInterface),
-       _player(player), _history(history),
+       _player(player),
        _users(users), _collectionMonitor(collectionMonitor),
        _serverHealthMonitor(serverHealthMonitor),
        _clientProtocolNo(-1),
@@ -197,8 +195,12 @@ namespace PMP
         );
 
         connect(
-            _history, &History::updatedHashUserStats,
-            this, &ConnectedClient::onUserHashStatsUpdated
+            _serverInterface, &ServerInterface::hashUserDataChangedOrAvailable,
+            this,
+            [this](quint32 userId, QVector<HashStats> stats)
+            {
+                sendHashUserDataMessage(userId, stats);
+            }
         );
 
         connect(
@@ -863,6 +865,63 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendHashUserDataMessage(quint32 userId,
+                                                  QVector<HashStats> stats)
+    {
+        const int maxSize = (1 << 16) - 1;
+
+        /* not too big? */
+        if (stats.size() > maxSize)
+        {
+            /* TODO: maybe delay the second part? */
+            sendHashUserDataMessage(userId, stats.mid(0, maxSize));
+            sendHashUserDataMessage(userId, stats.mid(maxSize));
+            return;
+        }
+
+        qint16 fields = 1 /* previously heard */ | 2 /* score */;
+        fields &=
+            NetworkProtocol::getHashUserDataFieldsMaskForProtocolVersion(
+                                                                       _clientProtocolNo);
+        bool sendPreviouslyHeard = fields & 1;
+        bool sendScore = fields & 2;
+        uint fieldsSize = (sendPreviouslyHeard ? 8 : 0) + (sendScore ? 2 : 0);
+
+        qDebug() << "sending user track data for" << stats.size()
+                 << "hashes; fields:" << fields;
+
+        QByteArray message;
+        message.reserve(
+            2 + 2 + 4 + 4
+                + stats.size() * (NetworkProtocol::FILEHASH_BYTECOUNT + fieldsSize)
+        );
+
+        NetworkProtocol::append2Bytes(message, ServerMessageType::HashUserDataMessage);
+        NetworkUtil::append2Bytes(message, stats.size());
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append2Bytes(message, fields);
+        NetworkUtil::append4Bytes(message, userId);
+
+        for (auto& stat : qAsConst(stats))
+        {
+            NetworkProtocol::appendHash(message, stat.hash());
+
+            if (sendPreviouslyHeard)
+            {
+                NetworkUtil::append8ByteMaybeEmptyQDateTimeMsSinceEpoch(
+                    message, stat.stats().lastHeard()
+                );
+            }
+
+            if (sendScore)
+            {
+                NetworkUtil::append2Bytes(message, (quint16)stat.stats().score());
+            }
+        }
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendQueueEntryRemovedMessage(qint32 offset, quint32 queueID)
     {
         QByteArray message;
@@ -1320,67 +1379,6 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::userDataForHashesFetchCompleted(quint32 userId,
-                                                         QVector<UserDataForHash> results,
-                                                          bool havePreviouslyHeard,
-                                                          bool haveScore)
-    {
-        const int maxSize = (1 << 16) - 1;
-
-        /* not too big? */
-        if (results.size() > maxSize)
-        {
-            /* TODO: maybe delay the second part? */
-            userDataForHashesFetchCompleted(
-                userId, results.mid(0, maxSize), havePreviouslyHeard, haveScore
-            );
-            userDataForHashesFetchCompleted(
-                userId, results.mid(maxSize), havePreviouslyHeard, haveScore
-            );
-            return;
-        }
-
-        qint16 fields = (havePreviouslyHeard ? 1 : 0) | (haveScore ? 2 : 0);
-        fields &=
-            NetworkProtocol::getHashUserDataFieldsMaskForProtocolVersion(
-                                                                       _clientProtocolNo);
-        uint fieldsSize = (havePreviouslyHeard ? 8 : 0) + (haveScore ? 2 : 0);
-
-        qDebug() << "sending user data for" << results.size()
-                 << "hashes; fields:" << fields;
-
-        QByteArray message;
-        message.reserve(
-            2 + 2 + 4 + 4
-                + results.size() * (NetworkProtocol::FILEHASH_BYTECOUNT + fieldsSize)
-        );
-
-        NetworkProtocol::append2Bytes(message, ServerMessageType::HashUserDataMessage);
-        NetworkUtil::append2Bytes(message, results.size());
-        NetworkUtil::append2Bytes(message, 0); /* filler */
-        NetworkUtil::append2Bytes(message, fields);
-        NetworkUtil::append4Bytes(message, userId);
-
-        for (auto& result : qAsConst(results))
-        {
-            NetworkProtocol::appendHash(message, result.hash);
-
-            if (havePreviouslyHeard)
-            {
-                NetworkUtil::append8ByteMaybeEmptyQDateTimeMsSinceEpoch(
-                    message, result.previouslyHeard
-                );
-            }
-
-            if (haveScore)
-            {
-                NetworkUtil::append2Bytes(message, (quint16)result.score);
-            }
-        }
-
-        sendBinaryMessage(message);
-    }
-
     void ConnectedClient::onHashAvailabilityChanged(QVector<FileHash> available,
                                                     QVector<FileHash> unavailable)
     {
@@ -1619,25 +1617,6 @@ namespace PMP
         Q_UNUSED(user)
 
         sendUserPlayingForModeMessage();
-    }
-
-    void ConnectedClient::onUserHashStatsUpdated(uint hashID, quint32 user,
-                                                 QDateTime previouslyHeard, qint16 score)
-    {
-        qDebug() << "ConnectedClient::onUserHashStatsUpdated; user:" << user
-                 << " hash:" << hashID
-                 << " prevHeard:" << previouslyHeard << " score:" << score;
-
-        UserDataForHash data;
-        data.hash = _player->resolver().getHashByID(hashID);
-        if (data.hash.isNull()) return; /* invalid ID */
-
-        data.previouslyHeard = previouslyHeard;
-        data.score = score;
-
-        QVector<UserDataForHash> dataList;
-        dataList << data;
-        userDataForHashesFetchCompleted(user, dataList, true, true);
     }
 
     void ConnectedClient::onFullIndexationRunStatusChanged(bool running)
@@ -2606,17 +2585,7 @@ namespace PMP
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
         }
 
-        auto fetcher =
-            new UserDataForHashesFetcher(
-                userId, hashes,
-                (fields & 1) == 1, (fields & 2) == 2,
-                _player->resolver()
-            );
-        connect(
-            fetcher, &UserDataForHashesFetcher::finishedWithResult,
-            this, &ConnectedClient::userDataForHashesFetchCompleted
-        );
-        QThreadPool::globalInstance()->start(fetcher);
+        _serverInterface->requestHashUserData(userId, hashes);
     }
 
     void ConnectedClient::parsePlayerHistoryRequest(const QByteArray& message)

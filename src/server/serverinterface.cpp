@@ -20,17 +20,21 @@
 #include "serverinterface.h"
 
 #include "common/concurrent.h"
+#include "common/containerutil.h"
 #include "common/promise.h"
 
 #include "database.h"
 #include "delayedstart.h"
 #include "generator.h"
+#include "hashidregistrar.h"
+#include "history.h"
 #include "player.h"
 #include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
 #include "server.h"
 #include "serversettings.h"
+#include "users.h"
 
 #include <QtDebug>
 
@@ -38,12 +42,18 @@ namespace PMP
 {
     ServerInterface::ServerInterface(ServerSettings* serverSettings, Server* server,
                                      Player* player, Generator* generator,
+                                     History* history,
+                                     HashIdRegistrar* hashIdRegistrar,
+                                     Users* users,
                                      DelayedStart* delayedStart)
      : _userLoggedIn(0),
        _serverSettings(serverSettings),
        _server(server),
        _player(player),
        _generator(generator),
+       _history(history),
+       _hashIdRegistrar(hashIdRegistrar),
+       _users(users),
        _delayedStart(delayedStart)
     {
         connect(
@@ -89,6 +99,11 @@ namespace PMP
         connect(
             _generator, &Generator::waveFinished,
             this, &ServerInterface::onDynamicModeWaveEnded
+        );
+
+        connect(
+            _history, &History::hashStatisticsChanged,
+            this, &ServerInterface::onHashStatisticsChanged
         );
     }
 
@@ -458,6 +473,34 @@ namespace PMP
         _player->resolver().startFullIndexation();
     }
 
+    void ServerInterface::requestHashUserData(quint32 userId, QVector<FileHash> hashes)
+    {
+        if (!isLoggedIn()) return;
+
+        if (userId != 0 && !_users->checkUserIdExists(userId))
+            return;
+
+        /* we make sure not to trigger registration of unknown hashes */
+        const auto existingHashes = _hashIdRegistrar->getExistingIdsOnly(hashes);
+
+        QVector<HashStats> hashStatsAlreadyAvailable;
+        hashStatsAlreadyAvailable.reserve(existingHashes.size());
+
+        for (auto const& idAndHash : existingHashes)
+        {
+            auto statsOrNull = _history->getUserStats(idAndHash.first, userId);
+            if (statsOrNull == null)
+                continue; /* stats will arrive after a delay */
+
+            HashStats stats(idAndHash.second, statsOrNull.value());
+            hashStatsAlreadyAvailable.append(stats);
+        }
+
+        /* if possible, reply immediately with the information that is already known */
+        if (!hashStatsAlreadyAvailable.isEmpty())
+            Q_EMIT hashUserDataChangedOrAvailable(userId, hashStatsAlreadyAvailable);
+    }
+
     void ServerInterface::shutDownServer()
     {
         if (!isLoggedIn()) return;
@@ -544,6 +587,11 @@ namespace PMP
                                           waveProgress, waveProgressTotal);
     }
 
+    void ServerInterface::onHashStatisticsChanged(quint32 userId, QVector<uint> hashIds)
+    {
+        addUserHashDataNotification(userId, hashIds);
+    }
+
     int ServerInterface::toNormalIndex(const PlayerQueue& queue,
                                        QueueIndexType indexType, int index)
     {
@@ -568,5 +616,65 @@ namespace PMP
             {
                 _queueEntryInsertionsPending[queueId] = clientReference;
             };
+    }
+
+    void ServerInterface::addUserHashDataNotification(quint32 userId,
+                                                      QVector<uint> hashIds)
+    {
+        ContainerUtil::addToSet(hashIds, _userHashDataNotificationsPending[userId]);
+
+        if (_userHashDataNotificationTimerRunning.value(userId, false) == false)
+        {
+            _userHashDataNotificationTimerRunning[userId] = true;
+            QTimer::singleShot(
+                100,
+                this,
+                [this, userId]()
+                {
+                    _userHashDataNotificationTimerRunning[userId] = false;
+                    sendUserHashDataNotifications(userId);
+                }
+            );
+        }
+    }
+
+    void ServerInterface::sendUserHashDataNotifications(quint32 userId)
+    {
+        QVector<HashStats> statsToSend;
+
+        {
+            auto const& hashesPendingForUser = _userHashDataNotificationsPending[userId];
+
+            if (hashesPendingForUser.isEmpty())
+                return;
+
+            statsToSend.reserve(hashesPendingForUser.size());
+
+            for (auto hashId : hashesPendingForUser)
+            {
+                auto hashOrNull = _hashIdRegistrar->getHashForId(hashId);
+                if (hashOrNull == null)
+                {
+                    qWarning() << "ServerInterface: could not get hash for hash ID"
+                               << hashId;
+                    continue;
+                }
+
+                auto statsOrNull = _history->getUserStats(hashId, userId);
+                if (statsOrNull == null)
+                {
+                    qWarning() << "ServerInterface: stats have disappeared for hash ID"
+                               << hashId << "and user ID" << userId;
+                    continue;
+                }
+
+                statsToSend.append(HashStats(hashOrNull.value(), statsOrNull.value()));
+            }
+        }
+
+        _userHashDataNotificationsPending.remove(userId);
+
+        if (!statsToSend.isEmpty())
+            Q_EMIT hashUserDataChangedOrAvailable(userId, statsToSend);
     }
 }

@@ -42,20 +42,8 @@
 namespace PMP
 {
     class Database;
-
-    class HashIdRegistrar
-    {
-    public:
-        Future<SuccessType, FailureType> loadAllFromDatabase();
-        Future<uint, FailureType> getOrCreateId(FileHash hash);
-
-        QVector<QPair<uint, FileHash>> getAllLoaded();
-
-    private:
-        QMutex _mutex;
-        QHash<FileHash, uint> _hashes;
-        QHash<uint, FileHash> _ids;
-    };
+    class HashIdRegistrar;
+    class HashRelations;
 
     class FileLocations
     {
@@ -115,7 +103,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        Resolver();
+        Resolver(HashIdRegistrar* hashIdRegistrar, HashRelations* hashRelations);
 
         void setMusicPaths(QStringList paths);
         QStringList musicPaths();
@@ -174,9 +162,10 @@ namespace PMP
         void doFullIndexationCheckForFileRemovals();
 
         FileLocations _fileLocations;
-        Analyzer* _analyzer;
-        FileFinder* _fileFinder;
-        HashIdRegistrar _hashIdRegistrar;
+        Analyzer* _analyzer { nullptr };
+        FileFinder* _fileFinder { nullptr };
+        HashIdRegistrar* _hashIdRegistrar { nullptr };
+        HashRelations* _hashRelations { nullptr };
 
         QMutex _lock;
 

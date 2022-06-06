@@ -27,11 +27,13 @@
 #include "common/specialqueueitemtype.h"
 #include "common/startstopeventstatus.h"
 
+#include "hashstats.h"
 #include "result.h"
 #include "serverplayerstate.h"
 
 #include <QObject>
 #include <QHash>
+#include <QSet>
 #include <QString>
 #include <QUuid>
 
@@ -40,13 +42,15 @@
 namespace PMP
 {
     class DelayedStart;
-    class FileHash;
     class Generator;
+    class HashIdRegistrar;
+    class History;
     class Player;
     class PlayerQueue;
     class QueueEntry;
     class Server;
     class ServerSettings;
+    class Users;
 
     struct PlayerStateOverview
     {
@@ -63,7 +67,9 @@ namespace PMP
         Q_OBJECT
     public:
         ServerInterface(ServerSettings* serverSettings, Server* server, Player* player,
-                        Generator* generator, DelayedStart* delayedStart);
+                        Generator* generator, History* history,
+                        HashIdRegistrar* hashIdRegistrar, Users* users,
+                        DelayedStart* delayedStart);
 
         ~ServerInterface();
 
@@ -120,6 +126,8 @@ namespace PMP
 
         void startFullIndexation();
 
+        void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
+
         void shutDownServer();
         void shutDownServer(QString serverPassword);
 
@@ -142,6 +150,8 @@ namespace PMP
                                         int waveDeliveredCount,
                                         int waveTotalCount);
 
+        void hashUserDataChangedOrAvailable(quint32 userId, QVector<HashStats> tracks);
+
     private Q_SLOTS:
         void onQueueEntryAdded(qint32 offset, quint32 queueId);
 
@@ -151,11 +161,15 @@ namespace PMP
         void onDynamicModeWaveProgress(int tracksDelivered, int tracksTotal);
         void onDynamicModeWaveEnded();
 
+        void onHashStatisticsChanged(quint32 userId, QVector<uint> hashIds);
+
     private:
         int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType,
                                 int index);
         std::function<void (uint)> createQueueInsertionIdNotifier(
                                                                  quint32 clientReference);
+        void addUserHashDataNotification(quint32 userId, QVector<uint> hashIds);
+        void sendUserHashDataNotifications(quint32 userId);
 
         quint32 _userLoggedIn;
         QString _userLoggedInName;
@@ -163,8 +177,14 @@ namespace PMP
         Server* _server;
         Player* _player;
         Generator* _generator;
+        History* _history;
+        HashIdRegistrar* _hashIdRegistrar;
+        Users* _users;
         DelayedStart* _delayedStart;
         QHash<quint32, quint32> _queueEntryInsertionsPending;
+        QHash<quint32, QSet<uint>> _userHashDataNotificationsPending;
+        QHash<quint32, bool> _userHashDataNotificationTimerRunning;
     };
 }
+
 #endif

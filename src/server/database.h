@@ -57,8 +57,8 @@ namespace PMP
 
         bool isConnectionOpen() const;
 
-        void registerHash(const FileHash& hash);
-        uint getHashID(const FileHash& hash);
+        ResultOrError<SuccessType, FailureType> registerHash(const FileHash& hash);
+        ResultOrError<uint, FailureType> getHashId(const FileHash& hash);
         ResultOrError<QList<QPair<uint,FileHash>>, FailureType> getHashes(
                                                                    uint largerThanID = 0);
 
@@ -79,13 +79,19 @@ namespace PMP
         bool setUserDynamicModePreferences(quint32 userId,
                           DatabaseRecords::UserDynamicModePreferences const& preferences);
 
-        void addToHistory(quint32 hashId, quint32 userId, QDateTime start, QDateTime end,
-                          int permillage, bool validForScoring);
+        ResultOrError<SuccessType, FailureType> addToHistory(quint32 hashId,
+                                                             quint32 userId,
+                                                             QDateTime start,
+                                                             QDateTime end,
+                                                             int permillage,
+                                                             bool validForScoring);
         QDateTime getLastHeard(quint32 hashId, quint32 userId);
         QList<QPair<quint32, QDateTime>> getLastHeard(quint32 userId,
                                                       QList<quint32> hashIds);
-        QVector<DatabaseRecords::HashHistoryStats> getHashHistoryStats(quint32 userId,
-                                                                 QList<quint32> hashIds);
+        ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
+                                                                      getHashHistoryStats(
+                                                                quint32 userId,
+                                                                QVector<quint32> hashIds);
 
         static QSharedPointer<Database> getDatabaseForCurrentThread();
         static QUuid getDatabaseUuid();
@@ -120,8 +126,6 @@ namespace PMP
         static int getInt(QVariant v, int nullValue);
         static uint getUInt(QVariant v, uint nullValue);
         static QDateTime getUtcDateTime(QVariant v);
-
-        static qint16 calculateScore(qint32 permillageFromDB, quint32 heardCount);
 
         static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
         static void printInitializationError(QTextStream& out, QSqlDatabase& db);

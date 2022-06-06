@@ -45,6 +45,7 @@ namespace PMP
     };
 
     constexpr FailureType failure = {};
+    constexpr FailureType failureIdentityFunction(FailureType) { return failure; }
 
     template<class ResultType, class ErrorType>
     class ResultOrError
@@ -87,5 +88,24 @@ namespace PMP
         Nullable<ResultType> _result;
         Nullable<ErrorType> _error;
     };
+
+    /* not supported by MSVC unfortunately :-(
+#define TRY(expression)                          \
+    ({                                           \
+        auto try_argument_result = (expression); \
+        if (try_argument_result.failed())        \
+            return try_argument_result.error();  \
+        try_argument_result.value();             \
+    })
+    */
+
+#define TRY_ASSIGN(variableName, expression)            \
+    auto _try_expr_for_ ## variableName = (expression); \
+    if ( _try_expr_for_ ## variableName .failed())      \
+    {                                                   \
+        return _try_expr_for_ ## variableName .error(); \
+    }                                                   \
+    auto variableName = _try_expr_for_ ## variableName .result();
+
 }
 #endif

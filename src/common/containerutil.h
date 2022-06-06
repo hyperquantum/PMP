@@ -29,6 +29,18 @@ namespace PMP
     class ContainerUtil
     {
     public:
+        template<typename T> static QVector<T> toVector(QSet<T> const& set,
+                                                        int customReserveSize = -1)
+        {
+            QVector<T> v;
+            v.reserve(customReserveSize >= 0 ? customReserveSize : set.size());
+
+            for (T const& element : set)
+                v.append(element);
+
+            return v;
+        }
+
         template<typename T> static void addToSet(QList<T> const& list, QSet<T>& set)
         {
             for (T const& element : list)
