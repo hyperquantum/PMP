@@ -39,6 +39,7 @@ namespace PMP
         FutureResult(T&& result) : _result(result) {}
 
     private:
+        template<class T1, class T2> friend class Future;
         friend class SimpleFuture<T>;
 
         T _result;
@@ -210,6 +211,12 @@ namespace PMP
             );
 
             return Future<ResultType, ErrorType2>(newStorage);
+        }
+
+        Future(FutureResult<ResultType>&& result)
+         : _storage { FutureStorage<ResultType, ErrorType>::create() }
+        {
+            _storage->setResult(result._result);
         }
 
         static Future fromResult(ResultType result)
