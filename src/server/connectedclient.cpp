@@ -2047,7 +2047,7 @@ namespace PMP
             QByteArray loginBytes = message.mid(8);
             QString login = QString::fromUtf8(loginBytes);
 
-            User user;
+            DatabaseRecords::User user;
             bool userLookup = _users->getUserByLogin(login, user);
 
             if (!userLookup) /* user does not exist */
@@ -2095,7 +2095,7 @@ namespace PMP
             QByteArray loginBytes = message.mid(12, loginLength);
             QString login = QString::fromUtf8(loginBytes);
 
-            User user;
+            DatabaseRecords::User user;
             bool userLookup = _users->getUserByLogin(login, user);
 
             if (!userLookup) /* user does not exist */

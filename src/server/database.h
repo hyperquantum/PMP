@@ -45,36 +45,6 @@ QT_FORWARD_DECLARE_CLASS(QTextStream)
 
 namespace PMP
 {
-    class User
-    {
-    public:
-        User()
-         : id(0), login("")
-        {
-            //
-        }
-
-        User(quint32 id, QString login, QByteArray salt, QByteArray password)
-         : id(id), login(login), salt(salt), password(password)
-        {
-            //
-        }
-
-        static User fromDb(quint32 id, QString login, QString salt, QString password)
-        {
-            return User(
-                id, login,
-                QByteArray::fromBase64(salt.toLatin1()),
-                QByteArray::fromBase64(password.toLatin1())
-            );
-        }
-
-        quint32 id;
-        QString login;
-        QByteArray salt;
-        QByteArray password;
-    };
-
     struct DatabaseConnectionSettings;
     class ServerSettings;
 
@@ -107,9 +77,9 @@ namespace PMP
         void registerFileSizeSeen(uint hashId, qint64 size, int currentYear);
         ResultOrError<QList<qint64>, FailureType> getFileSizes(uint hashID);
 
-        QList<User> getUsers();
+        QList<DatabaseRecords::User> getUsers();
         bool checkUserExists(QString userName);
-        quint32 registerNewUser(User& user);
+        quint32 registerNewUser(DatabaseRecords::User& user);
 
         DatabaseRecords::UserDynamicModePreferences getUserDynamicModePreferences(
                                                                            quint32 userId,

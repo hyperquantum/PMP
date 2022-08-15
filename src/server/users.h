@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,8 +22,9 @@
 
 #include "common/networkprotocol.h"
 
-#include "database.h"  // for User :-/
+#include "databaserecords.h"
 
+#include <QHash>
 #include <QObject>
 #include <QPair>
 #include <QString>
@@ -50,8 +51,8 @@ namespace PMP
 
         QVector<UserIdAndLogin> getUsers();
         QString getUserLogin(quint32 userId) const;
-        bool getUserByLogin(QString login, User& user);
-        static bool checkUserLoginPassword(User const& user,
+        bool getUserByLogin(QString login, DatabaseRecords::User& user);
+        static bool checkUserLoginPassword(DatabaseRecords::User const& user,
                                            QByteArray const& sessionSalt,
                                            QByteArray const& hashedPassword);
 
@@ -68,7 +69,7 @@ namespace PMP
     private:
         void loadUsers();
 
-        QHash<quint32, User> _usersById;
+        QHash<quint32, DatabaseRecords::User> _usersById;
         QHash<QString, quint32> _userIdsByLogin;
     };
 }

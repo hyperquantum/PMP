@@ -20,12 +20,43 @@
 #ifndef PMP_DATABASERECORDS_H
 #define PMP_DATABASERECORDS_H
 
-#include <QtGlobal>
+#include <QByteArray>
+#include <QString>
 
 namespace PMP
 {
     namespace DatabaseRecords
     {
+        class User
+        {
+        public:
+            User()
+             : id(0), login("")
+            {
+                //
+            }
+
+            User(quint32 id, QString login, QByteArray salt, QByteArray password)
+             : id(id), login(login), salt(salt), password(password)
+            {
+                //
+            }
+
+            static User fromDb(quint32 id, QString login, QString salt, QString password)
+            {
+                return User(
+                    id, login,
+                    QByteArray::fromBase64(salt.toLatin1()),
+                    QByteArray::fromBase64(password.toLatin1())
+                );
+            }
+
+            quint32 id;
+            QString login;
+            QByteArray salt;
+            QByteArray password;
+        };
+
         class UserDynamicModePreferences
         {
         public:

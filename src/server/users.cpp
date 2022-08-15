@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -69,7 +69,7 @@ namespace PMP
         return it->login;
     }
 
-    bool Users::getUserByLogin(QString login, User& user)
+    bool Users::getUserByLogin(QString login, DatabaseRecords::User& user)
     {
         quint32 id = _userIdsByLogin.value(login.toLower(), 0);
         if (id == 0) return false;
@@ -78,7 +78,8 @@ namespace PMP
         return true;
     }
 
-    bool Users::checkUserLoginPassword(const User& user, const QByteArray &sessionSalt,
+    bool Users::checkUserLoginPassword(const DatabaseRecords::User& user,
+                                       const QByteArray &sessionSalt,
                                        const QByteArray& hashedPassword)
     {
         QByteArray expected =
@@ -160,7 +161,7 @@ namespace PMP
             return QPair<Users::ErrorCode, quint32>(DatabaseProblem, 0);
         }
 
-        User u(0, accountName, salt, hashedPassword);
+        DatabaseRecords::User u(0, accountName, salt, hashedPassword);
 
         u.id = db->registerNewUser(u);
         if (u.id <= 0)
