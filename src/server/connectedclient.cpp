@@ -19,7 +19,6 @@
 
 #include "connectedclient.h"
 
-#include "common/concurrent.h"
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
@@ -31,7 +30,6 @@
 #include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
-#include "server.h"
 #include "serverhealthmonitor.h"
 #include "serverinterface.h"
 #include "users.h"
