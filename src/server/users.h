@@ -20,7 +20,7 @@
 #ifndef PMP_USERS_H
 #define PMP_USERS_H
 
-#include "common/networkprotocol.h"
+#include "common/resultmessageerrorcode.h"
 
 #include "databaserecords.h"
 

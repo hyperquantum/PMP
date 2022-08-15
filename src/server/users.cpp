@@ -19,6 +19,8 @@
 
 #include "users.h"
 
+#include "common/networkprotocol.h"
+
 #include "database.h"
 
 #include <QtGlobal>
