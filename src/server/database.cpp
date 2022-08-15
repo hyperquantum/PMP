@@ -29,6 +29,8 @@
 #include <QtDebug>
 #include <QTextStream>
 
+using namespace PMP::DatabaseRecords;
+
 namespace PMP
 {
     QString Database::_hostname;
@@ -653,9 +655,8 @@ namespace PMP
         return userId;
     }
 
-    UserDynamicModePreferencesRecord Database::getUserDynamicModePreferences(
-                                                                           quint32 userId,
-                                                                           bool* ok)
+    UserDynamicModePreferences Database::getUserDynamicModePreferences(quint32 userId,
+                                                                       bool* ok)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -668,7 +669,7 @@ namespace PMP
                 q.addBindValue(userId);
             };
 
-        UserDynamicModePreferencesRecord result;
+        UserDynamicModePreferences result;
 
         auto resultGetter =
             [&result] (QSqlQuery& q)
@@ -698,7 +699,7 @@ namespace PMP
     }
 
     bool Database::setUserDynamicModePreferences(quint32 userId,
-                                      UserDynamicModePreferencesRecord const& preferences)
+                                            UserDynamicModePreferences const& preferences)
     {
         auto preparer =
             [=] (QSqlQuery& q)

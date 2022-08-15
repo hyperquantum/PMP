@@ -20,6 +20,8 @@
 #ifndef PMP_DATABASE_H
 #define PMP_DATABASE_H
 
+#include "databaserecords.h"
+
 #include "common/filehash.h"
 #include "common/resultorerror.h"
 
@@ -73,19 +75,6 @@ namespace PMP
         QByteArray password;
     };
 
-    class UserDynamicModePreferencesRecord
-    {
-    public:
-        UserDynamicModePreferencesRecord()
-         : dynamicModeEnabled(true), trackRepetitionAvoidanceIntervalSeconds(3600 /*1hr*/)
-        {
-            //
-        }
-
-        bool dynamicModeEnabled;
-        qint32 trackRepetitionAvoidanceIntervalSeconds;
-    };
-
     struct DatabaseConnectionSettings;
     class ServerSettings;
 
@@ -122,10 +111,11 @@ namespace PMP
         bool checkUserExists(QString userName);
         quint32 registerNewUser(User& user);
 
-        UserDynamicModePreferencesRecord getUserDynamicModePreferences(quint32 userId,
-                                                                       bool* ok);
+        DatabaseRecords::UserDynamicModePreferences getUserDynamicModePreferences(
+                                                                           quint32 userId,
+                                                                           bool* ok);
         bool setUserDynamicModePreferences(quint32 userId,
-                                     UserDynamicModePreferencesRecord const& preferences);
+                          DatabaseRecords::UserDynamicModePreferences const& preferences);
 
         void addToHistory(quint32 hashId, quint32 userId, QDateTime start, QDateTime end,
                           int permillage, bool validForScoring);
