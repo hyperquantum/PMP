@@ -822,8 +822,8 @@ namespace PMP
         return result;
     }
 
-    QVector<Database::HashHistoryStats> Database::getHashHistoryStats(quint32 userId,
-                                                                   QList<quint32> hashIds)
+    QVector<HashHistoryStats> Database::getHashHistoryStats(quint32 userId,
+                                                            QList<quint32> hashIds)
     {
         if (hashIds.isEmpty())
             return {};

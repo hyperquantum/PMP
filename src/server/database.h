@@ -51,14 +51,6 @@ namespace PMP
     class Database
     {
     public:
-        struct HashHistoryStats
-        {
-            quint32 hashId;
-            quint32 scoreHeardCount;
-            QDateTime lastHeard;
-            qint16 score;
-        };
-
         static bool init(QTextStream& out, ServerSettings const& serverSettings);
         static bool init(QTextStream& out,
                          DatabaseConnectionSettings const& connectionSettings);
@@ -92,8 +84,8 @@ namespace PMP
         QDateTime getLastHeard(quint32 hashId, quint32 userId);
         QList<QPair<quint32, QDateTime>> getLastHeard(quint32 userId,
                                                       QList<quint32> hashIds);
-        QVector<HashHistoryStats> getHashHistoryStats(quint32 userId,
-                                                      QList<quint32> hashIds);
+        QVector<DatabaseRecords::HashHistoryStats> getHashHistoryStats(quint32 userId,
+                                                                 QList<quint32> hashIds);
 
         static QSharedPointer<Database> getDatabaseForCurrentThread();
         static QUuid getDatabaseUuid();

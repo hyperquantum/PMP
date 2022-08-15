@@ -21,12 +21,21 @@
 #define PMP_DATABASERECORDS_H
 
 #include <QByteArray>
+#include <QDateTime>
 #include <QString>
 
 namespace PMP
 {
     namespace DatabaseRecords
     {
+        struct HashHistoryStats
+        {
+            quint32 hashId;
+            quint32 scoreHeardCount;
+            QDateTime lastHeard;
+            qint16 score;
+        };
+
         class User
         {
         public:
