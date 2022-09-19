@@ -70,7 +70,7 @@ namespace PMP
 
     void History::scheduleUserStatsFetchingIfMissing(uint hashId, quint32 userId)
     {
-        if (hashId == 0 || userId == 0)
+        if (hashId == 0)
         {
             qWarning() << "History: invalid parameter(s): hashId" << hashId
                        << "user" << userId;
