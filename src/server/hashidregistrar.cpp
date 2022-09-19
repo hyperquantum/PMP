@@ -25,8 +25,6 @@
 
 namespace PMP
 {
-    /* ========================== HashIdRegistrar ========================== */
-
     Future<SuccessType, FailureType> HashIdRegistrar::loadAllFromDatabase()
     {
         auto work =
