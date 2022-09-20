@@ -20,7 +20,7 @@
 #ifndef PMP_COMMANDS_H
 #define PMP_COMMANDS_H
 
-#include "common/playerstate.h"
+#include "common/filehash.h"
 #include "common/queueindextype.h"
 #include "common/requestid.h"
 #include "common/specialqueueitemtype.h"
@@ -288,6 +288,22 @@ namespace PMP
         quint32 _queueId;
         qint16 _moveOffset;
         bool _wasMoved;
+    };
+
+    class TrackStatsCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        TrackStatsCommand(FileHash const& hash);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        FileHash _hash;
     };
 
 }
