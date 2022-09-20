@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,12 +29,13 @@
 #include <QPair>
 #include <QSet>
 
-namespace PMP {
-
+namespace PMP
+{
     class CollectionWatcher;
     class ServerConnection;
 
-    class UserDataFetcher : public QObject {
+    class UserDataFetcher : public QObject
+    {
         Q_OBJECT
     public:
         struct HashData;
@@ -59,7 +60,8 @@ namespace PMP {
         void sendPendingNotifications();
 
     private:
-        class UserData {
+        class UserData
+        {
         public:
             UserData()
              : _autoFetchEnabled(false)
@@ -69,17 +71,20 @@ namespace PMP {
 
             bool isAutoFetchEnabled() const { return _autoFetchEnabled; }
 
-            void setAutoFetchEnabled(bool newValue) {
+            void setAutoFetchEnabled(bool newValue)
+            {
                 _autoFetchEnabled = newValue;
             }
 
             HashData& getOrCreateHash(FileHash const& hash) { return _hashes[hash]; }
 
-            bool haveHash(FileHash const& hash) const {
+            bool haveHash(FileHash const& hash) const
+            {
                 return _hashes.contains(hash);
             }
 
-            HashData const* getHash(FileHash const& hash) const {
+            HashData const* getHash(FileHash const& hash) const
+            {
                 auto it = _hashes.find(hash);
                 if (it == _hashes.constEnd()) return nullptr;
 
@@ -100,7 +105,8 @@ namespace PMP {
         QSet<quint32> _pendingNotificationsUsers;
     };
 
-    struct UserDataFetcher::HashData {
+    struct UserDataFetcher::HashData
+    {
         HashData()
          : previouslyHeardReceived(false), scoreReceived(false)
         {
