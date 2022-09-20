@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,8 +24,8 @@
 
 #include <QtDebug>
 
-namespace PMP {
-
+namespace PMP
+{
     CollectionWatcherImpl::CollectionWatcherImpl(ServerConnection* connection)
      : CollectionWatcher(connection),
        _connection(connection),
@@ -69,7 +69,8 @@ namespace PMP {
     {
         qDebug() << "download: received part with" << tracks.size() << "tracks";
 
-        for (auto const& track : tracks) {
+        for (auto const& track : tracks)
+        {
             if (_collectionHash.contains(track.hash()))
                 continue; /* don't update */
 
@@ -101,7 +102,8 @@ namespace PMP {
     void CollectionWatcherImpl::onCollectionTracksChanged(
                                                      QVector<CollectionTrackInfo> changes)
     {
-        for (auto const& track : changes) {
+        for (auto const& track : changes)
+        {
             updateTrackData(track);
         }
     }
@@ -133,11 +135,14 @@ namespace PMP {
     void CollectionWatcherImpl::updateTrackAvailability(QVector<FileHash> hashes,
                                                         bool available)
     {
-        for (auto const& hash : hashes) {
+        for (auto const& hash : hashes)
+        {
             auto it = _collectionHash.find(hash);
 
-            if (it != _collectionHash.end()) {
-                if (it.value().isAvailable() != available) {
+            if (it != _collectionHash.end())
+            {
+                if (it.value().isAvailable() != available)
+                {
                     it.value().setAvailable(available);
                     Q_EMIT trackAvailabilityChanged(hash, available);
                 }
@@ -165,7 +170,8 @@ namespace PMP {
     {
         auto it = _collectionHash.find(track.hash());
 
-        if (it == _collectionHash.end()) { /* the track is unknown to us */
+        if (it == _collectionHash.end()) /* the track is unknown to us */
+        {
             _collectionHash.insert(track.hash(), track);
             Q_EMIT newTrackReceived(track);
             return;
@@ -177,5 +183,4 @@ namespace PMP {
         it.value() = track;
         Q_EMIT trackDataChanged(track);
     }
-
 }
