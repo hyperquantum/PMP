@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,6 +22,7 @@
 #include "collectionwatcher.h"
 #include "serverconnection.h"
 
+#include <QtDebug>
 #include <QTimer>
 
 namespace PMP {
@@ -54,6 +55,8 @@ namespace PMP {
 
         if (userData.isAutoFetchEnabled())
             return; /* no change */
+
+        qDebug() << "UserDataFetcher: enabling auto fetch for user" << userId;
 
         userData.setAutoFetchEnabled(true);
 
