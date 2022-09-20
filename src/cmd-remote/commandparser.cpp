@@ -99,6 +99,12 @@ namespace PMP
         if (gotParseError()) return;
 
         parseCommand(commandWithArgs);
+
+        if (command() == nullptr && !gotParseError())
+        {
+            /* this actually indicates a bug in the command parser */
+            _errorMessage = "Command not understood (internal error)";
+        }
     }
 
     void CommandParser::splitMultipleCommandsInOne(QVector<QString>& commandWithArgs)
