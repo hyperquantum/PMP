@@ -2630,7 +2630,8 @@ namespace PMP
                                                                 QByteArray const& message)
     {
         qint32 messageLength = message.length();
-        if (messageLength < 8) {
+        if (messageLength < 8)
+        {
             qDebug() << "invalid message detected: length is too short";
             return; /* invalid message */
         }
@@ -2641,7 +2642,8 @@ namespace PMP
         int expectedMessageLength =
             8 + (availableCount + unavailableCount) * NetworkProtocol::FILEHASH_BYTECOUNT;
 
-        if (messageLength != expectedMessageLength) {
+        if (messageLength != expectedMessageLength)
+        {
             qDebug() << "invalid message detected: length does not match expected length";
             return; /* invalid message */
         }
@@ -2650,10 +2652,12 @@ namespace PMP
 
         QVector<FileHash> available;
         available.reserve(availableCount);
-        for (int i = 0; i < availableCount; ++i) {
+        for (int i = 0; i < availableCount; ++i)
+        {
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok) {
+            if (!ok)
+            {
                 qDebug() << "invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
@@ -2669,10 +2673,12 @@ namespace PMP
 
         QVector<FileHash> unavailable;
         unavailable.reserve(unavailableCount);
-        for (int i = 0; i < unavailableCount; ++i) {
+        for (int i = 0; i < unavailableCount; ++i)
+        {
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok) {
+            if (!ok)
+            {
                 qDebug() << "invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
@@ -2692,13 +2698,17 @@ namespace PMP
         if (available.empty() && unavailable.empty())
             return;
 
-        if (available.size() <= 3) {
-            for (auto const& hash : available) {
+        if (available.size() <= 3)
+        {
+            for (auto const& hash : available)
+            {
                 qDebug() << " available:" << hash;
             }
         }
-        if (unavailable.size() <= 3) {
-            for (auto const& hash : unavailable) {
+        if (unavailable.size() <= 3)
+        {
+            for (auto const& hash : unavailable)
+            {
                 qDebug() << " unavailable:" << hash;
             }
         }
@@ -2710,9 +2720,8 @@ namespace PMP
                                                       ServerMessageType messageType)
     {
         qint32 messageLength = message.length();
-        if (messageLength < 4) {
+        if (messageLength < 4)
             return; /* invalid message */
-        }
 
         bool isNotification =
             messageType == ServerMessageType::CollectionChangeNotificationMessage;
@@ -2726,23 +2735,22 @@ namespace PMP
 
         int trackCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         if (trackCount == 0 || messageLength < offset + fixedInfoLengthPerTrack)
-        {
             return; /* irrelevant or invalid message */
-        }
 
         CollectionFetcher* collectionFetcher = nullptr;
-        if (!isNotification) {
+        if (!isNotification)
+        {
             quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
             collectionFetcher = _collectionFetchers.value(clientReference, nullptr);
-            if (!collectionFetcher) {
+            if (!collectionFetcher)
                 return; /* irrelevant or invalid message */
-            }
         }
 
         QList<int> offsets;
         offsets.append(offset);
 
-        while (true) {
+        while (true)
+        {
             /* set pointer past hash and availability */
             int current = offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1;
             int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
@@ -2751,7 +2759,8 @@ namespace PMP
             current += 2;
             int albumSize = 0;
             //qint32 trackLength = 0;
-            if (withAlbumAndTrackLength) {
+            if (withAlbumAndTrackLength)
+            {
                 albumSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
                 current += 2;
                 //trackLength = (qint32)NetworkUtil::get4Bytes(message, current);
@@ -2766,9 +2775,8 @@ namespace PMP
                 return; /* invalid message */
             }
 
-            if (current + titleSize + artistSize + albumSize == messageLength) {
+            if (current + titleSize + artistSize + albumSize == messageLength)
                 break; /* end of message */
-            }
 
             /* at least one more track info follows */
 
@@ -2776,9 +2784,7 @@ namespace PMP
             offset = current + titleSize + artistSize + albumSize;
 
             if (offset + fixedInfoLengthPerTrack > messageLength)
-            {
                 return;  /* invalid message */
-            }
 
             offsets.append(offset);
         }
@@ -2787,7 +2793,8 @@ namespace PMP
                  << "; notification?" << (isNotification ? "Y" : "N")
                  << "; with album & length?" << (withAlbumAndTrackLength ? "Y" : "N");
 
-        if (trackCount != offsets.size()) {
+        if (trackCount != offsets.size())
+        {
             qDebug() << " invalid message detected: offsets size:" << offsets.size();
             return; /* invalid message */
         }
@@ -2795,12 +2802,14 @@ namespace PMP
         /* now read all track info's */
         QVector<CollectionTrackInfo> infos;
         infos.reserve(trackCount);
-        for (int i = 0; i < trackCount; ++i) {
+        for (int i = 0; i < trackCount; ++i)
+        {
             offset = offsets[i];
 
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
-            if (!ok) {
+            if (!ok)
+            {
                 qDebug() << " invalid message detected: did not read hash correctly;"
                          << "  ok=" << (ok ? "true" : "false");
                 return; /* invalid message */
@@ -2813,7 +2822,8 @@ namespace PMP
             offset += 5;
             int albumSize = 0;
             qint32 trackLengthInMs = -1;
-            if (withAlbumAndTrackLength) {
+            if (withAlbumAndTrackLength)
+            {
                 albumSize = NetworkUtil::get2BytesUnsignedToInt(message, offset);
                 trackLengthInMs = NetworkUtil::get4BytesSigned(message, offset + 2);
                 offset += 6;
@@ -2824,7 +2834,8 @@ namespace PMP
             QString artist = NetworkUtil::getUtf8String(message, offset, artistSize);
             offset += artistSize;
             QString album = "";
-            if (withAlbumAndTrackLength) {
+            if (withAlbumAndTrackLength)
+            {
                 album = NetworkUtil::getUtf8String(message, offset, albumSize);
             }
 
@@ -2838,8 +2849,10 @@ namespace PMP
 
         if (infos.empty()) return;
 
-        if (infos.size() <= 3) {
-            for (auto const& info : infos) {
+        if (infos.size() <= 3)
+        {
+            for (auto const& info : infos)
+            {
                 auto length = info.lengthInMilliseconds();
                 qDebug() << " track: hash:" << info.hash() << "; title:" << info.title()
                          << "; artist:" << info.artist()
@@ -2849,18 +2862,17 @@ namespace PMP
             }
         }
 
-        if (isNotification) {
+        if (isNotification)
             Q_EMIT collectionTracksChanged(infos);
-        }
-        else {
+        else
             Q_EMIT collectionFetcher->receivedData(infos);
-        }
     }
 
     void ServerConnection::parseHashUserDataMessage(const QByteArray& message)
     {
         int messageLength = message.length();
-        if (messageLength < 12) {
+        if (messageLength < 12)
+        {
             qWarning() << "ServerConnection::parseHashUserDataMessage : invalid msg (1)";
             return; /* invalid message */
         }
@@ -2870,9 +2882,8 @@ namespace PMP
         quint32 userId = NetworkUtil::get4Bytes(message, 8);
         int offset = 12;
 
-        if ((fields & 3) != fields || fields == 0) {
+        if ((fields & 3) != fields || fields == 0)
             return; /* has unsupported fields or none */
-        }
 
         bool havePreviouslyHeard = (fields & 1) == 1;
         bool haveScore = (fields & 2) == 2;
@@ -2882,7 +2893,8 @@ namespace PMP
                 + (havePreviouslyHeard ? 8 : 0)
                 + (haveScore ? 2 : 0);
 
-        if ((messageLength - offset) != hashCount * bytesPerHash) {
+        if ((messageLength - offset) != hashCount * bytesPerHash)
+        {
             qWarning() << "ServerConnection::parseHashUserDataMessage: invalid msg (2)";
             return; /* invalid message */
         }
@@ -2891,7 +2903,8 @@ namespace PMP
                  << "; user:" << userId << "; fields:" << fields;
 
         bool ok;
-        for (int i = 0; i < hashCount; ++i) {
+        for (int i = 0; i < hashCount; ++i)
+        {
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
             if (!ok) return; /* invalid message */
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
@@ -2899,7 +2912,8 @@ namespace PMP
             QDateTime previouslyHeard;
             qint16 score = -1;
 
-            if (havePreviouslyHeard) {
+            if (havePreviouslyHeard)
+            {
                 previouslyHeard =
                     NetworkUtil::getMaybeEmptyQDateTimeFrom8ByteMsSinceEpoch(
                         message, offset
@@ -2907,12 +2921,14 @@ namespace PMP
                 offset += 8;
             }
 
-            if (haveScore) {
+            if (haveScore)
+            {
                 score = NetworkUtil::get2BytesSigned(message, offset);
                 offset += 2;
             }
 
-            if (hash.isNull()) {
+            if (hash.isNull())
+            {
                 qWarning() << "received user data for null hash; ignoring";
                 continue;
             }
@@ -2926,9 +2942,8 @@ namespace PMP
     {
         qDebug() << "parsing player history entry message";
 
-        if (message.length() != 4 + 28) {
+        if (message.length() != 4 + 28)
             return; /* invalid message */
-        }
 
         quint32 queueID = NetworkUtil::get4Bytes(message, 4);
         quint32 user = NetworkUtil::get4Bytes(message, 8);
@@ -2953,20 +2968,19 @@ namespace PMP
     {
         qDebug() << "parsing player history list message";
 
-        if (message.length() < 4) {
+        if (message.length() < 4)
             return; /* invalid message */
-        }
 
         int entryCount = NetworkUtil::getByteUnsignedToInt(message, 3);
 
-        if (message.length() != 4 + entryCount * 28) {
+        if (message.length() != 4 + entryCount * 28)
             return; /* invalid message */
-        }
 
         int offset = 4;
         QVector<PlayerHistoryTrackInfo> entries;
         entries.reserve(entryCount);
-        for(int i = 0; i < entryCount; ++i) {
+        for(int i = 0; i < entryCount; ++i)
+        {
             auto queueID = NetworkUtil::get4Bytes(message, offset);
             auto user = NetworkUtil::get4Bytes(message, offset + 4);
             auto started =
