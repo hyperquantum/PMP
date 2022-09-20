@@ -20,6 +20,8 @@
 #ifndef PMP_COMMANDPARSER_H
 #define PMP_COMMANDPARSER_H
 
+#include "common/filehash.h"
+
 #include <QDate>
 #include <QString>
 #include <QTime>
@@ -92,6 +94,11 @@ namespace PMP
             bool tryParseInt(int& number) const;
             bool tryParseTime(QTime& time) const;
             bool tryParseDate(QDate& date) const;
+            FileHash tryParseTrackHash() const;
+
+            static QByteArray tryDecodeHexWithExpectedLength(QString const& text,
+                                                             int expectedLength);
+            static bool isHexEncoded(QByteArray const& bytes);
 
         private:
             QVector<QString> _arguments;
@@ -109,6 +116,7 @@ namespace PMP
         void parseDelayedStartCommand(CommandArguments arguments);
         void parseDelayedStartAt(CommandArguments& arguments);
         void parseDelayedStartWait(CommandArguments& arguments);
+        void parseTrackStatsCommand(CommandArguments arguments);
 
         template <class SomeCommand>
         void handleCommandNotRequiringArguments(QVector<QString> commandWithArgs);

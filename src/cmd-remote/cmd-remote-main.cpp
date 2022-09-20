@@ -57,6 +57,7 @@ usage:
     delayedstart wait <number> <time unit>: activate delayed start (see below)
     delayedstart at [<date>] <time>: activate delayed start (see below)
     delayedstart abort|cancel: cancel delayed start (see below)
+    trackstats <hash>: get track statistics
 
   'login' command:
     login: forces authentication to occur; prompts for username and password
@@ -114,16 +115,27 @@ usage:
     start is cancelled automatically when playback is started before the
     deadline.
 
+  'trackstats' command:
+    trackstats <hash>: get track statistics for the current user
+
+    Retrieves 'last heard' and 'score' for the current user and the track
+    that was specified as an argument.
+    The track hash can be obtained with the 'track info' dialog in the
+    GUI Remote or the command-line hash tool.
+
   NOTICE:
     Some commands require a fairly recent version of the PMP server in order
     to work.
     The 'shutdown' command no longer supports arguments.
 
   Authentication:
-    All commands that have side-effects require authentication. They will
-    prompt for username and password in the console. One exception to this
-    principle is the 'queue' command; it requires authentication although
-    it has no side-effects. This may change in the future.
+    All commands that have side-effects or access data that is user-specific
+    require authentication. One exception to this principle is the 'queue'
+    command; it requires authentication although it really should not. This
+    may change in the future.
+    Commands that require authentication will prompt for username and
+    password in the console. The 'login' command can be used for
+    non-interactive authentication.
     It used to be possible to run the 'shutdown' command with the
     server password as its argument and without logging in as a PMP user,
     but that is no longer possible. Support for this could be added again
