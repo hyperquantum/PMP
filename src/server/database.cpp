@@ -96,7 +96,7 @@ namespace PMP
         if (maybeUuid.succeeded())
         {
             _uuid = maybeUuid.result();
-            out << " UUID is" << _uuid.toString() << Qt::endl;
+            out << " UUID is " << _uuid.toString() << Qt::endl;
         }
         else
         {
