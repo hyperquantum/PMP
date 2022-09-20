@@ -37,7 +37,7 @@ namespace PMP
     public:
         virtual bool willCauseDisconnect() const override;
 
-        virtual void execute(ClientServerInterface* clientServerInterface) override;
+        virtual void execute(ClientServerInterface* clientServerInterface) final;
 
     protected:
         CommandBase();
