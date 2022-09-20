@@ -147,11 +147,11 @@ usage:
     {{PROGRAMNAME}} localhost login MyUsername : play
     {{PROGRAMNAME}} localhost login MyUsername - : play <passwordfile
     {{PROGRAMNAME}} localhost login - : play <credentialsfile
-    {{PROGRAMNAME}} delayedstart wait 1 minute
-    {{PROGRAMNAME}} delayedstart wait 90 seconds
-    {{PROGRAMNAME}} delayedstart at 15:30
-    {{PROGRAMNAME}} delayedstart at 9:30:00
-    {{PROGRAMNAME}} delayedstart at 2022-02-28 00:00
+    {{PROGRAMNAME}} localhost delayedstart wait 1 minute
+    {{PROGRAMNAME}} localhost delayedstart wait 90 seconds
+    {{PROGRAMNAME}} localhost delayedstart at 15:30
+    {{PROGRAMNAME}} localhost delayedstart at 9:30:00
+    {{PROGRAMNAME}} localhost delayedstart at 2022-02-28 00:00
 )"""";
 
 void printVersion(QTextStream& out)
