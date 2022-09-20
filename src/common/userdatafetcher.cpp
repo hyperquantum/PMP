@@ -25,8 +25,8 @@
 #include <QtDebug>
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     /* ============================== UserDataFetcher ============================== */
 
     UserDataFetcher::UserDataFetcher(QObject* parent,
@@ -50,7 +50,8 @@ namespace PMP {
         );
     }
 
-    void UserDataFetcher::enableAutoFetchForUser(quint32 userId) {
+    void UserDataFetcher::enableAutoFetchForUser(quint32 userId)
+    {
         auto& userData = _userData[userId];
 
         if (userData.isAutoFetchEnabled())
@@ -68,13 +69,15 @@ namespace PMP {
         QHash<FileHash, CollectionTrackInfo> collection =
                 _collectionWatcher->getCollection();
 
-        for (auto it = collection.constBegin(); it != collection.constEnd(); ++it) {
+        for (auto it = collection.constBegin(); it != collection.constEnd(); ++it)
+        {
             if (!userData.haveHash(it.key()))
                 needToRequestData(userId, it.key());
         }
     }
 
-    //void UserDataFetcher::connected() {
+    //void UserDataFetcher::connected()
+    //{
     //    //
     //}
 
@@ -90,8 +93,10 @@ namespace PMP {
         return nullptr;
     }
 
-    void UserDataFetcher::onNewTrackReceived(CollectionTrackInfo track) {
-        for (auto it = _userData.constBegin(); it != _userData.constEnd(); ++it) {
+    void UserDataFetcher::onNewTrackReceived(CollectionTrackInfo track)
+    {
+        for (auto it = _userData.constBegin(); it != _userData.constEnd(); ++it)
+        {
             auto& userData = it.value();
 
             if (userData.isAutoFetchEnabled() && !userData.haveHash(track.hash()))
@@ -113,7 +118,8 @@ namespace PMP {
 
         _pendingNotificationsUsers << userId;
 
-        if (first) {
+        if (first)
+        {
             QTimer::singleShot(100, this, &UserDataFetcher::sendPendingNotifications);
         }
 
@@ -146,12 +152,14 @@ namespace PMP {
         _pendingNotificationsUsers.clear();
     }
 
-    void UserDataFetcher::needToRequestData(quint32 userId, const FileHash& hash) {
+    void UserDataFetcher::needToRequestData(quint32 userId, const FileHash& hash)
+    {
         bool first = _hashesToFetchForUsers.isEmpty();
 
         _hashesToFetchForUsers[userId] << hash;
 
-        if (first) {
+        if (first)
+        {
             QTimer::singleShot(100, this, &UserDataFetcher::sendPendingRequests);
         }
     }
