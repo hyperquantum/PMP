@@ -132,4 +132,4 @@ TECHNICAL IDEAS
 
 CODE IMPROVEMENTS
 
- *
+ * move unicode characters from util.h into their own header file
