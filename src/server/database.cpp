@@ -878,9 +878,9 @@ namespace PMP
         {
             quint32 hashID = q.value(0).toUInt();
             uint lastHistoryId = getUInt(q.value(1), 0);
-            QDateTime prevHeard = getUtcDateTime(q.value(1));
-            quint32 scoreHeardCount = (quint32)getUInt(q.value(2), 0);
-            qint32 scorePermillage = (qint32)getInt(q.value(3), -1);
+            QDateTime prevHeard = getUtcDateTime(q.value(2));
+            quint32 scoreHeardCount = (quint32)getUInt(q.value(3), 0);
+            qint32 scorePermillage = (qint32)getInt(q.value(4), -1);
 
             HashHistoryStats stats;
             stats.lastHistoryId = lastHistoryId;
