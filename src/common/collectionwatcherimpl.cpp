@@ -29,6 +29,7 @@ namespace PMP
     CollectionWatcherImpl::CollectionWatcherImpl(ServerConnection* connection)
      : CollectionWatcher(connection),
        _connection(connection),
+       _autoDownload(false),
        _downloading(false)
     {
         connect(
@@ -42,6 +43,17 @@ namespace PMP
 
         if (_connection->isConnected())
             onConnected();
+    }
+
+    void CollectionWatcherImpl::enableCollectionDownloading()
+    {
+        if (_autoDownload)
+            return; /* no action needed */
+
+        _autoDownload = true;
+
+        if (_connection->isConnected())
+            startDownload();
     }
 
     QHash<FileHash, CollectionTrackInfo> CollectionWatcherImpl::getCollection()
@@ -61,7 +73,8 @@ namespace PMP
 
     void CollectionWatcherImpl::onConnected()
     {
-        startDownload();
+        if (_autoDownload)
+            startDownload();
     }
 
     void CollectionWatcherImpl::onCollectionPartReceived(

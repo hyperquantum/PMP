@@ -35,6 +35,8 @@ namespace PMP
     public:
         explicit CollectionWatcherImpl(ServerConnection* connection);
 
+        void enableCollectionDownloading() override;
+
         QHash<FileHash, CollectionTrackInfo> getCollection() override;
         CollectionTrackInfo getTrack(FileHash const& hash) override;
 
@@ -54,6 +56,7 @@ namespace PMP
 
         ServerConnection* _connection;
         QHash<FileHash, CollectionTrackInfo> _collectionHash;
+        bool _autoDownload;
         bool _downloading;
     };
 }

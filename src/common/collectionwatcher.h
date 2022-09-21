@@ -33,6 +33,8 @@ namespace PMP
     public:
         virtual ~CollectionWatcher() {}
 
+        virtual void enableCollectionDownloading() = 0;
+
         virtual QHash<FileHash, CollectionTrackInfo> getCollection() = 0;
         virtual CollectionTrackInfo getTrack(FileHash const& hash) = 0;
 

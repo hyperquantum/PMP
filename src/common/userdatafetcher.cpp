@@ -66,8 +66,8 @@ namespace PMP
         /* manual fetch process: iterate through the entire collection and make sure that
                                  each track is fetched */
 
-        QHash<FileHash, CollectionTrackInfo> collection =
-                _collectionWatcher->getCollection();
+        _collectionWatcher->enableCollectionDownloading();
+        auto collection = _collectionWatcher->getCollection();
 
         for (auto it = collection.constBegin(); it != collection.constEnd(); ++it)
         {
@@ -97,10 +97,11 @@ namespace PMP
     {
         for (auto it = _userData.constBegin(); it != _userData.constEnd(); ++it)
         {
+            auto userId = it.key();
             auto& userData = it.value();
 
             if (userData.isAutoFetchEnabled() && !userData.haveHash(track.hash()))
-                needToRequestData(it.key(), track.hash());
+                needToRequestData(userId, track.hash());
         }
     }
 
