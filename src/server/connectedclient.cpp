@@ -2627,6 +2627,8 @@ namespace PMP
 
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
 
+        qDebug() << "received collection fetch request; client ref:" << clientReference;
+
         if (!isLoggedIn())
         {
             /* client needs to be authenticated for this */

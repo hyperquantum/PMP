@@ -2933,6 +2933,10 @@ namespace PMP
                 continue;
             }
 
+            qDebug() << "received hash user data: user:" << userId
+                     << " hash:" << hash.toString() << "prev-heard:" << previouslyHeard
+                     << " score:" << score;
+
             // TODO: fixme: receiver cannot know which fields were not received now
             Q_EMIT receivedHashUserData(hash, userId, previouslyHeard, score);
         }

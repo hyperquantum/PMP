@@ -192,21 +192,31 @@ namespace PMP
                                              QVector<HashHistoryStats> const& fetchResult)
     {
         QVector<uint> hashesUpdated;
-        hashesUpdated.reserve(fetchResult.size());
+        hashesUpdated.reserve(hashesToFetch.size());
 
         for (auto const& historyStats : fetchResult)
         {
-            auto& hashData = getOrCreateHashEntry(userId, historyStats.hashId);
+            auto hashId = historyStats.hashId;
+            auto& hashData = getOrCreateHashEntry(userId, hashId);
             auto stats = toTrackStats(historyStats);
+
+            qDebug() << "HistoryStatistics: applying stats for user" << userId
+                     << "and hash ID" << hashId
+                     << "; last history ID:" << historyStats.lastHistoryId
+                     << "; avg. permillage:" << historyStats.averagePermillage
+                     << "; last heard:" << historyStats.lastHeard;
 
             bool updated = hashData.updateIndividualStatsWithNewerOnes(stats);
             if (updated)
-                hashesUpdated.append(historyStats.hashId);
+                hashesUpdated.append(hashId);
         }
 
         for (auto hashIdToFetch : hashesToFetch)
         {
             auto& hashData = getOrCreateHashEntry(userId, hashIdToFetch);
+
+            qDebug() << "HistoryStatistics: no playback history present for user"
+                     << userId << "and hash ID" << hashIdToFetch;
 
             bool updated = hashData.updateMissingIndividualStatsToNeverPlayed();
             if (updated)
@@ -232,6 +242,12 @@ namespace PMP
         }
 
         auto newGroupStats = TrackStats::combined(trackStatsList);
+
+        qDebug() << "HistoryStatistics: group stats (re)calculated for user" << userId
+                 << "and hash IDs" << hashIds
+                 << ": last history ID:" << newGroupStats.lastHistoryId()
+                 << " last heard:" << newGroupStats.lastHeard()
+                 << " permillage:" << newGroupStats.getScoreOr(-1);
 
         for (auto hashId : hashIds)
         {

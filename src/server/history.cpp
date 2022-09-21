@@ -106,6 +106,9 @@ namespace PMP
         if (_userDataBeingFetched[userId].contains(hashId))
             return; /* already being fetched */
 
+        qDebug() << "History: scheduling fetch for user" << userId
+                 << "and hash ID" << hashId;
+
         _userDataBeingFetched[userId] << hashId;
 
         auto* statistics = _statistics;
@@ -129,6 +132,11 @@ namespace PMP
                 {
                     qWarning() << "History: failed to fetch statistics for user" << userId
                                << "and hash ID" << hashId;
+                }
+                else
+                {
+                    qDebug() << "History: fetch done for user" << userId
+                             << "and hash ID" << hashId;
                 }
             }
         );
