@@ -79,6 +79,14 @@ namespace PMP
             return _error.value();
         }
 
+        ResultOrError<SuccessType, FailureType> toSuccessOrFailure() const
+        {
+            if (succeeded())
+                return success;
+            else
+                return failure;
+        }
+
     private:
         constexpr ResultOrError(Nullable<ResultType>&& result,
                                 Nullable<ErrorType>&& error)

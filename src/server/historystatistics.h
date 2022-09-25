@@ -20,6 +20,7 @@
 #ifndef PMP_HISTORYSTATISTICS_H
 #define PMP_HISTORYSTATISTICS_H
 
+#include "common/future.h"
 #include "common/resultorerror.h"
 
 #include "databaserecords.h"
@@ -31,10 +32,57 @@
 #include <QSet>
 #include <QVector>
 
+QT_FORWARD_DECLARE_CLASS(QThreadPool)
+
 namespace PMP
 {
     class HashRelations;
 
+    class HistoryStatisticsCalculator : public QObject
+    {
+        Q_OBJECT
+    public:
+        HistoryStatisticsCalculator(QObject* parent, HashRelations* hashRelations);
+        ~HistoryStatisticsCalculator();
+
+        Future<SuccessType, FailureType> addToHistory(quint32 userId,
+                                                      quint32 hashId,
+                                                      QDateTime start,
+                                                      QDateTime end,
+                                                      int permillage,
+                                                      bool validForScoring);
+
+        Nullable<TrackStats> getStatsIfAvailable(quint32 userId, uint hashId);
+        void scheduleFetchIfMissing(quint32 userId, uint hashId);
+
+    Q_SIGNALS:
+        void hashStatisticsChanged(quint32 userId, QVector<uint> hashIds);
+
+    private:
+        struct UserHashStatisticsEntry
+        {
+            TrackStats individualStats;
+            TrackStats groupStats;
+        };
+
+        struct UserStatisticsEntry
+        {
+            QHash<uint, UserHashStatisticsEntry> hashData;
+            QSet<uint> hashesInProgress;
+        };
+
+        static ResultOrError<TrackStats, FailureType> fetchInternal(
+                                                  HistoryStatisticsCalculator* calculator,
+                                                  quint32 userId,
+                                                  QVector<uint> hashIdsInGroup);
+
+        QThreadPool* _threadPool;
+        HashRelations* _hashRelations;
+        QMutex _mutex;
+        QHash<quint32, UserStatisticsEntry> _userData;
+    };
+
+    /*
     class HistoryStatistics : public QObject
     {
         Q_OBJECT
@@ -129,5 +177,6 @@ namespace PMP
         QMutex _mutex;
         QHash<quint32, UserStatisticsEntry> _userData;
     };
+    */
 }
 #endif

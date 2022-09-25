@@ -67,16 +67,12 @@ namespace PMP
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
 
     private:
-        void scheduleFetch(uint hashId, quint32 userId);
-
-        QThreadPool* _threadPool;
         Player* _player;
         HashIdRegistrar* _hashIdRegistrar;
         HashRelations* _hashRelations;
-        HistoryStatistics* _statistics;
+        HistoryStatisticsCalculator* _statistics;
         QHash<FileHash, QDateTime> _lastPlayHash;
         QSharedPointer<QueueEntry const> _nowPlaying;
-        QHash<quint32, QSet<uint>> _userDataBeingFetched;
     };
 }
 #endif

@@ -34,15 +34,12 @@ namespace PMP
 {
     History::History(Player* player, HashIdRegistrar* hashIdRegistrar,
                      HashRelations* hashRelations)
-     : _threadPool(new QThreadPool(this)),
-       _player(player),
+     : _player(player),
        _hashIdRegistrar(hashIdRegistrar),
        _hashRelations(hashRelations),
-       _statistics(new HistoryStatistics(this, hashRelations)),
+       _statistics(new HistoryStatisticsCalculator(this, hashRelations)),
        _nowPlaying(nullptr)
     {
-        _threadPool->setMaxThreadCount(2);
-
         connect(
             player, &Player::currentTrackChanged,
             this, &History::currentTrackChanged
@@ -52,15 +49,14 @@ namespace PMP
             this, &History::newHistoryEntry
         );
         connect(
-            _statistics, &HistoryStatistics::hashStatisticsChanged,
+            _statistics, &HistoryStatisticsCalculator::hashStatisticsChanged,
             this, &History::hashStatisticsChanged
         );
     }
 
     History::~History()
     {
-        _threadPool->clear();
-        _threadPool->waitForDone();
+        //
     }
 
     QDateTime History::lastPlayedGloballySinceStartup(FileHash const& hash) const
@@ -77,10 +73,7 @@ namespace PMP
             return;
         }
 
-        if (_statistics->wasFetchedAlready(userId, hashId))
-            return;
-
-        scheduleFetch(hashId, userId);
+        _statistics->scheduleFetchIfMissing(userId, hashId);
     }
 
     Nullable<TrackStats> History::getUserStats(uint hashId, quint32 userId)
@@ -91,55 +84,7 @@ namespace PMP
             return null;
         }
 
-        auto maybeStats = _statistics->tryGet(userId, hashId);
-        if (maybeStats.hasValue())
-            return maybeStats.value();
-
-        /* we will need to fetch the data from the database first */
-        scheduleFetch(hashId, userId);
-
-        return null;
-    }
-
-    void History::scheduleFetch(uint hashId, quint32 userId)
-    {
-        if (_userDataBeingFetched[userId].contains(hashId))
-            return; /* already being fetched */
-
-        qDebug() << "History: scheduling fetch for user" << userId
-                 << "and hash ID" << hashId;
-
-        _userDataBeingFetched[userId] << hashId;
-
-        auto* statistics = _statistics;
-
-        auto future =
-            Concurrent::run<TrackStats, FailureType>(
-                _threadPool,
-                [statistics, userId, hashId]()
-                {
-                    return statistics->getOrFetch(userId, hashId);
-                }
-            );
-
-        future.addListener(
-            this,
-            [this, userId, hashId](ResultOrError<TrackStats, FailureType> result)
-            {
-                _userDataBeingFetched[userId].remove(hashId);
-
-                if (result.failed())
-                {
-                    qWarning() << "History: failed to fetch statistics for user" << userId
-                               << "and hash ID" << hashId;
-                }
-                else
-                {
-                    qDebug() << "History: fetch done for user" << userId
-                             << "and hash ID" << hashId;
-                }
-            }
-        );
+        return _statistics->getStatsIfAvailable(userId, hashId);
     }
 
     void History::currentTrackChanged(QSharedPointer<QueueEntry const> newTrack)
@@ -172,7 +117,7 @@ namespace PMP
         auto* statistics = _statistics;
 
         _hashIdRegistrar->getOrCreateId(hash)
-            .thenAsync<SuccessType, FailureType>(
+            .thenFuture<SuccessType, FailureType>(
                 [statistics, entry](uint hashId)
                 {
                     uint userId = entry->user();

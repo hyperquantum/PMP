@@ -37,6 +37,8 @@ namespace PMP
 
         void markAsEquivalent(QVector<uint> hashes);
 
+        QVector<uint> getEquivalencyGroup(uint hashId);
+
         /// Return other hashes that are equivalent to the hash specified; the result does
         /// not include the original hash.
         QSet<uint> getOtherHashesEquivalentTo(uint hashId);

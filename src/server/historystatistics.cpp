@@ -19,10 +19,13 @@
 
 #include "historystatistics.h"
 
+#include "common/concurrent.h"
 #include "common/containerutil.h"
 
 #include "database.h"
 #include "hashrelations.h"
+
+#include <QThreadPool>
 
 using PMP::DatabaseRecords::HashHistoryStats;
 
@@ -42,6 +45,186 @@ namespace PMP
         }
     }
 
+    /* ===== HistoryStatisticsCalculator ===== */
+
+    HistoryStatisticsCalculator::HistoryStatisticsCalculator(QObject* parent,
+                                                             HashRelations* hashRelations)
+     : QObject(parent),
+       _threadPool(new QThreadPool(this)),
+       _hashRelations(hashRelations)
+    {
+        _threadPool->setMaxThreadCount(2);
+    }
+
+    HistoryStatisticsCalculator::~HistoryStatisticsCalculator()
+    {
+        _threadPool->clear();
+        _threadPool->waitForDone();
+    }
+
+    Future<SuccessType, FailureType> HistoryStatisticsCalculator::addToHistory(
+                                                                     quint32 userId,
+                                                                     quint32 hashId,
+                                                                     QDateTime start,
+                                                                     QDateTime end,
+                                                                     int permillage,
+                                                                     bool validForScoring)
+    {
+        auto future =
+            Concurrent::run<SuccessType, FailureType>(
+                /* do not specify a thread pool, it cannot wait */
+                [this, userId, hashId, start, end, permillage, validForScoring]()
+                    -> ResultOrError<SuccessType, FailureType>
+                {
+                    auto db = Database::getDatabaseForCurrentThread();
+                    if (!db)
+                        return failure;
+
+                    auto added = db->addToHistory(hashId, userId, start, end, permillage,
+                                                  validForScoring);
+                    if (added.failed())
+                        return failure;
+
+                    const auto hashesInGroup =
+                            _hashRelations->getEquivalencyGroup(hashId);
+
+                    auto result = fetchInternal(this, userId, hashesInGroup);
+                    return result.toSuccessOrFailure();
+                }
+            );
+
+        return future;
+    }
+
+    Nullable<TrackStats> HistoryStatisticsCalculator::getStatsIfAvailable(quint32 userId,
+                                                                          uint hashId)
+    {
+        QMutexLocker lock(&_mutex);
+
+        auto& userData = _userData[userId];
+        auto it = userData.hashData.constFind(hashId);
+        if (it != userData.hashData.constEnd())
+            return it.value().groupStats;
+
+        if (userData.hashesInProgress.contains(hashId))
+            return null;
+
+        const auto hashesInGroup = _hashRelations->getEquivalencyGroup(hashId);
+
+        for (auto hashId : hashesInGroup)
+            userData.hashesInProgress << hashId;
+
+        Concurrent::run<TrackStats, FailureType>(
+            _threadPool,
+            [this, userId, hashesInGroup]()
+            {
+                return fetchInternal(this, userId, hashesInGroup);
+            }
+        );
+
+        return null;
+    }
+
+    void HistoryStatisticsCalculator::scheduleFetchIfMissing(quint32 userId, uint hashId)
+    {
+        QMutexLocker lock(&_mutex);
+
+        auto& userData = _userData[userId];
+        if (userData.hashesInProgress.contains(hashId))
+            return;
+
+        const auto hashesInGroup = _hashRelations->getEquivalencyGroup(hashId);
+
+        bool anyMissing = false;
+        for (auto hashId : hashesInGroup)
+        {
+            if (userData.hashData.contains(hashId))
+                continue;
+
+            anyMissing = true;
+            break;
+        }
+
+        if (!anyMissing)
+            return;
+
+        for (auto hashId : hashesInGroup)
+            userData.hashesInProgress << hashId;
+
+        Concurrent::run<TrackStats, FailureType>(
+            _threadPool,
+            [this, userId, hashesInGroup]()
+            {
+                return fetchInternal(this, userId, hashesInGroup);
+            }
+        );
+    }
+
+    ResultOrError<TrackStats, FailureType> HistoryStatisticsCalculator::fetchInternal(
+                                                  HistoryStatisticsCalculator* calculator,
+                                                  quint32 userId,
+                                                  QVector<uint> hashIdsInGroup)
+    {
+        qDebug() << "HistoryStatisticsCalculator: starting fetch for user" << userId
+                 << "and hash IDs" << hashIdsInGroup;
+
+        auto db = Database::getDatabaseForCurrentThread();
+        if (!db)
+            return failure;
+
+        auto historyStatsOrFailure = db->getHashHistoryStats(userId, hashIdsInGroup);
+        if (historyStatsOrFailure.failed())
+            return failure;
+
+        const auto multipleHistoryStats = historyStatsOrFailure.result();
+
+        QVector<TrackStats> allIndividual;
+        allIndividual.reserve(hashIdsInGroup.size());
+
+        QMutexLocker lock(&calculator->_mutex);
+        auto& userData = calculator->_userData[userId];
+
+        for (auto& historyStats : multipleHistoryStats)
+        {
+            auto& hashData = userData.hashData[historyStats.hashId];
+            hashData.individualStats = toTrackStats(historyStats);
+        }
+
+        for (auto hashId : qAsConst(hashIdsInGroup))
+        {
+            allIndividual.append(userData.hashData[hashId].individualStats);
+        }
+
+        auto calculatedGroupStats = TrackStats::combined(allIndividual);
+
+        for (auto hashId : qAsConst(hashIdsInGroup))
+        {
+            userData.hashData[hashId].groupStats = calculatedGroupStats;
+            userData.hashesInProgress.remove(hashId);
+        }
+
+        lock.unlock();
+
+        qDebug() << "HistoryStatisticsCalculator: group stats (re)calculated for user"
+                 << userId << "and hash IDs" << hashIdsInGroup
+                 << ": last history ID:" << calculatedGroupStats.lastHistoryId()
+                 << " last heard:" << calculatedGroupStats.lastHeard()
+                 << " permillage:" << calculatedGroupStats.getScoreOr(-1);
+
+        QTimer::singleShot(
+            0, calculator,
+            [calculator, userId, hashIdsInGroup]()
+            {
+                Q_EMIT calculator->hashStatisticsChanged(userId, hashIdsInGroup);
+            }
+        );
+
+        return calculatedGroupStats;
+    }
+
+    /* ===== HistoryStatistics ===== */
+
+    /*
     HistoryStatistics::HistoryStatistics(QObject* parent, HashRelations* hashRelations)
      : QObject(parent),
        _hashRelations(hashRelations)
@@ -115,7 +298,7 @@ namespace PMP
         if (maybeUpdatedHashes.failed())
             return failure;
 
-        if (hashEntry.groupStats.isNull()) /* shouldn't happen */
+        if (hashEntry.groupStats.isNull()) // shouldn't happen
         {
             qWarning() << "HistoryStatistics: stats still missing after successful fetch;"
                        << "user" << userId << " hashId" << hashId;
@@ -266,4 +449,5 @@ namespace PMP
 
         return hashData;
     }
+    */
 }

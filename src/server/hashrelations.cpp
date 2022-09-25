@@ -19,6 +19,8 @@
 
 #include "hashrelations.h"
 
+#include "common/containerutil.h"
+
 namespace PMP
 {
     HashRelations::HashRelations()
@@ -48,6 +50,18 @@ namespace PMP
         }
 
         newEntry->equivalentHashes.unite(QSet<uint>(hashes.begin(), hashes.end()));
+    }
+
+    QVector<uint> HashRelations::getEquivalencyGroup(uint hashId)
+    {
+        QMutexLocker lock(&_mutex);
+
+        auto entry = _hashes.value(hashId);
+        if (entry.isNull())
+            return { hashId };
+
+        const auto ids = entry->equivalentHashes;
+        return ContainerUtil::toVector(ids);
     }
 
     QSet<uint> HashRelations::getOtherHashesEquivalentTo(uint hashId)
