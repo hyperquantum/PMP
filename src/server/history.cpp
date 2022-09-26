@@ -19,10 +19,9 @@
 
 #include "history.h"
 
-#include "common/concurrent.h"
-
 #include "hashidregistrar.h"
 #include "hashrelations.h"
+#include "historystatistics.h"
 #include "player.h"
 #include "queueentry.h"
 

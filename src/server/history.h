@@ -23,8 +23,8 @@
 #include "common/filehash.h"
 #include "common/nullable.h"
 
-#include "historystatistics.h"
 #include "playerhistoryentry.h"
+#include "trackstats.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -40,6 +40,7 @@ namespace PMP
     class FileHash;
     class HashIdRegistrar;
     class HashRelations;
+    class HistoryStatistics;
     class Player;
     class QueueEntry;
 
