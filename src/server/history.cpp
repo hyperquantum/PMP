@@ -37,7 +37,7 @@ namespace PMP
      : _player(player),
        _hashIdRegistrar(hashIdRegistrar),
        _hashRelations(hashRelations),
-       _statistics(new HistoryStatisticsCalculator(this, hashRelations)),
+       _statistics(new HistoryStatistics(this, hashRelations)),
        _nowPlaying(nullptr)
     {
         connect(
@@ -49,7 +49,7 @@ namespace PMP
             this, &History::newHistoryEntry
         );
         connect(
-            _statistics, &HistoryStatisticsCalculator::hashStatisticsChanged,
+            _statistics, &HistoryStatistics::hashStatisticsChanged,
             this, &History::hashStatisticsChanged
         );
     }

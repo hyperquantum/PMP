@@ -37,12 +37,12 @@ namespace PMP
 {
     class HashRelations;
 
-    class HistoryStatisticsCalculator : public QObject
+    class HistoryStatistics : public QObject
     {
         Q_OBJECT
     public:
-        HistoryStatisticsCalculator(QObject* parent, HashRelations* hashRelations);
-        ~HistoryStatisticsCalculator();
+        HistoryStatistics(QObject* parent, HashRelations* hashRelations);
+        ~HistoryStatistics();
 
         Future<SuccessType, FailureType> addToHistory(quint32 userId,
                                                       quint32 hashId,
@@ -71,9 +71,9 @@ namespace PMP
         };
 
         static ResultOrError<TrackStats, FailureType> fetchInternal(
-                                                  HistoryStatisticsCalculator* calculator,
-                                                  quint32 userId,
-                                                  QVector<uint> hashIdsInGroup);
+                                                            HistoryStatistics* calculator,
+                                                            quint32 userId,
+                                                            QVector<uint> hashIdsInGroup);
 
         QThreadPool* _threadPool;
         HashRelations* _hashRelations;

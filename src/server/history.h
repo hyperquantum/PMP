@@ -22,7 +22,6 @@
 
 #include "common/filehash.h"
 #include "common/nullable.h"
-#include "common/resultorerror.h"
 
 #include "historystatistics.h"
 #include "playerhistoryentry.h"
@@ -70,7 +69,7 @@ namespace PMP
         Player* _player;
         HashIdRegistrar* _hashIdRegistrar;
         HashRelations* _hashRelations;
-        HistoryStatisticsCalculator* _statistics;
+        HistoryStatistics* _statistics;
         QHash<FileHash, QDateTime> _lastPlayHash;
         QSharedPointer<QueueEntry const> _nowPlaying;
     };

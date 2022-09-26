@@ -44,8 +44,7 @@ namespace PMP
         }
     }
 
-    HistoryStatisticsCalculator::HistoryStatisticsCalculator(QObject* parent,
-                                                             HashRelations* hashRelations)
+    HistoryStatistics::HistoryStatistics(QObject* parent, HashRelations* hashRelations)
      : QObject(parent),
        _threadPool(new QThreadPool(this)),
        _hashRelations(hashRelations)
@@ -53,14 +52,13 @@ namespace PMP
         _threadPool->setMaxThreadCount(2);
     }
 
-    HistoryStatisticsCalculator::~HistoryStatisticsCalculator()
+    HistoryStatistics::~HistoryStatistics()
     {
         _threadPool->clear();
         _threadPool->waitForDone();
     }
 
-    Future<SuccessType, FailureType> HistoryStatisticsCalculator::addToHistory(
-                                                                     quint32 userId,
+    Future<SuccessType, FailureType> HistoryStatistics::addToHistory(quint32 userId,
                                                                      quint32 hashId,
                                                                      QDateTime start,
                                                                      QDateTime end,
@@ -93,8 +91,8 @@ namespace PMP
         return future;
     }
 
-    Nullable<TrackStats> HistoryStatisticsCalculator::getStatsIfAvailable(quint32 userId,
-                                                                          uint hashId)
+    Nullable<TrackStats> HistoryStatistics::getStatsIfAvailable(quint32 userId,
+                                                                uint hashId)
     {
         QMutexLocker lock(&_mutex);
 
@@ -122,7 +120,7 @@ namespace PMP
         return null;
     }
 
-    void HistoryStatisticsCalculator::scheduleFetchIfMissing(quint32 userId, uint hashId)
+    void HistoryStatistics::scheduleFetchIfMissing(quint32 userId, uint hashId)
     {
         QMutexLocker lock(&_mutex);
 
@@ -157,10 +155,10 @@ namespace PMP
         );
     }
 
-    ResultOrError<TrackStats, FailureType> HistoryStatisticsCalculator::fetchInternal(
-                                                  HistoryStatisticsCalculator* calculator,
-                                                  quint32 userId,
-                                                  QVector<uint> hashIdsInGroup)
+    ResultOrError<TrackStats, FailureType> HistoryStatistics::fetchInternal(
+                                                            HistoryStatistics* calculator,
+                                                            quint32 userId,
+                                                            QVector<uint> hashIdsInGroup)
     {
         qDebug() << "HistoryStatisticsCalculator: starting fetch for user" << userId
                  << "and hash IDs" << hashIdsInGroup;
