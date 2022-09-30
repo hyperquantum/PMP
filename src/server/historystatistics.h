@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -52,7 +52,7 @@ namespace PMP
                                                       bool validForScoring);
 
         Nullable<TrackStats> getStatsIfAvailable(quint32 userId, uint hashId);
-        void scheduleFetchIfMissing(quint32 userId, uint hashId);
+        bool scheduleFetchIfMissing(quint32 userId, uint hashId);
 
     Q_SIGNALS:
         void hashStatisticsChanged(quint32 userId, QVector<uint> hashIds);

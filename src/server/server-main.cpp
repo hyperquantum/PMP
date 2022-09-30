@@ -28,6 +28,7 @@
 #include "hashidregistrar.h"
 #include "hashrelations.h"
 #include "history.h"
+#include "historystatisticsprefetcher.h"
 #include "player.h"
 #include "playerqueue.h"
 #include "preloader.h"
@@ -188,6 +189,8 @@ int runServer(QCoreApplication& app, bool doIndexation)
     DelayedStart delayedStart(&player);
     PlayerQueue& queue = player.queue();
     History history(&player, &hashIdRegistrar, &hashRelations);
+    HistoryStatisticsPrefetcher historyPrefetcher(nullptr, &hashIdRegistrar, &history,
+                                                  &users);
 
     CollectionMonitor collectionMonitor;
     QObject::connect(

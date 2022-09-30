@@ -91,6 +91,7 @@ set(PMP_SERVER_SOURCES
     server/hashrelations.cpp
     server/history.cpp
     server/historystatistics.cpp
+    server/historystatisticsprefetcher.cpp
     server/player.cpp
     server/playerqueue.cpp
     server/preloader.cpp
@@ -117,6 +118,7 @@ set(PMP_SERVER_HEADERS
     server/generator.h
     server/history.h
     server/historystatistics.h
+    server/historystatisticsprefetcher.h
     server/player.h
     server/playerqueue.h
     server/preloader.h

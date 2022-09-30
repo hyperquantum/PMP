@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -120,13 +120,13 @@ namespace PMP
         return null;
     }
 
-    void HistoryStatistics::scheduleFetchIfMissing(quint32 userId, uint hashId)
+    bool HistoryStatistics::scheduleFetchIfMissing(quint32 userId, uint hashId)
     {
         QMutexLocker lock(&_mutex);
 
         auto& userData = _userData[userId];
         if (userData.hashesInProgress.contains(hashId))
-            return;
+            return false;
 
         const auto hashesInGroup = _hashRelations->getEquivalencyGroup(hashId);
 
@@ -141,7 +141,7 @@ namespace PMP
         }
 
         if (!anyMissing)
-            return;
+            return false;
 
         for (auto hashId : hashesInGroup)
             userData.hashesInProgress << hashId;
@@ -153,6 +153,8 @@ namespace PMP
                 return fetchInternal(this, userId, hashesInGroup);
             }
         );
+
+        return true;
     }
 
     ResultOrError<TrackStats, FailureType> HistoryStatistics::fetchInternal(

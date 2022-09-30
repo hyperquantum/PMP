@@ -40,6 +40,7 @@ namespace PMP
         Future<QVector<uint>, FailureType> getOrCreateIds(QVector<FileHash> hashes);
 
         QVector<QPair<uint, FileHash>> getAllLoaded();
+        QVector<uint> getAllIdsLoaded();
         QVector<QPair<uint, FileHash>> getExistingIdsOnly(QVector<FileHash> hashes);
         Nullable<FileHash> getHashForId(uint id);
 

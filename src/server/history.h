@@ -56,7 +56,7 @@ namespace PMP
         /** Get last played time since server startup (non-user-specific) */
         QDateTime lastPlayedGloballySinceStartup(FileHash const& hash) const;
 
-        void scheduleUserStatsFetchingIfMissing(uint hashId, quint32 userId);
+        bool scheduleUserStatsFetchingIfMissing(uint hashId, quint32 userId);
         Nullable<TrackStats> getUserStats(uint hashId, quint32 userId);
 
     Q_SIGNALS:

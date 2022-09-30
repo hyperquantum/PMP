@@ -20,6 +20,7 @@
 #include "hashidregistrar.h"
 
 #include "common/concurrent.h"
+#include "common/containerutil.h"
 
 #include "database.h"
 
@@ -137,6 +138,13 @@ namespace PMP
         }
 
         return result;
+    }
+
+    QVector<uint> HashIdRegistrar::getAllIdsLoaded()
+    {
+        QMutexLocker lock(&_mutex);
+
+        return ContainerUtil::toVector(_ids.keys());
     }
 
     QVector<QPair<uint, FileHash>> HashIdRegistrar::getExistingIdsOnly(
