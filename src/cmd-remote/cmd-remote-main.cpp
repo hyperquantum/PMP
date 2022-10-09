@@ -168,7 +168,16 @@ usage:
 
 void printVersion(QTextStream& out)
 {
-    out << "Party Music Player " PMP_VERSION_DISPLAY << "\n"
+    const auto programNameVersionBuild =
+        QString(VCS_REVISION_LONG).isEmpty()
+            ? QString("Party Music Player %1")
+                .arg(PMP_VERSION_DISPLAY)
+            : QString("Party Music Player %1 build %2 (%3)")
+                .arg(PMP_VERSION_DISPLAY,
+                     VCS_REVISION_LONG,
+                     VCS_BRANCH);
+
+    out << programNameVersionBuild << "\n"
         << Util::getCopyrightLine(true) << "\n"
         << "This is free software; see the source for copying conditions.  There is NO\n"
         << "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
