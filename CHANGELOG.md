@@ -7,27 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 - Server now sends a notification to the client when it detects that a track has disappeared or reappeared.
+- Server now sends a notification to the client when the length of a track changes.
+- Server can now find a file after it has been moved or renamed.
+- Full indexation now detects when a file has been (re)moved.
 - Option to prevent the display from being turned off after a period of user inactivity. Windows-only for now.
-- Music collection view: track highlighting.
+- Music collection view: track highlighting and track filter.
 - Track info dialog. Available as an option in context menus of the queue, the history, and the music collection.
 - "Track info" button for the current track.
-- The current track is now marked in the collection view.
+- Music collection view: put a marker at the current track.
 - Dynamic mode preferences are now saved and restored for each user.
-- The command-line remote now supports user authentication, both interactive and non-interactive.
-- Commandline-remote: new commands "qdel" and "break".
-- Commandline-remote: new options for printing help or version numbers.
+- Command-line remote: support for user authentication, both interactive and non-interactive.
+- Command-line remote: new commands "qdel" and "break".
+- Command-line remote: new options for printing help or version numbers.
+- Server: write status of initial full indexation to the console.
 
 ### Changed
 - Volume control now uses a logarithmic scale.
 - Dynamic mode has been rewritten.
 - "High-scored tracks wave" has been redesigned; track selection has improved, progress is shown, and it can now be stopped before it has completed.
-- Full indexation will now notice when tracks have disappeared from their previously known location.
 - Faster transitions between subsequent tracks.
 - Breakpoints look better now.
 - The track progress bar uses different colors now.
 - Switched to millisecond precision for track lengths.
 - Track lengths are now usually displayed like "03:44.7" instead of "00:03:44".
+- Queue drop indicator is now a line between tracks.
 - The queue now has a size limit; the limit is currently set to 2 million items.
+- Command-line remote: output of "queue" command has changed a little bit.
+- Command-line remote: usage text is now more extensive.
 - Command-line remote: port number is now optional.
 - Naming of log files was changed a bit to allow for better sorting.
 - Log files now start with a line that contains the PMP version number.
