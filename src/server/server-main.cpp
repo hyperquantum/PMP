@@ -141,8 +141,17 @@ int runServer(QCoreApplication& app, bool doIndexation)
 {
     QTextStream out(stdout);
 
+    const auto programNameVersionBuild =
+        QString(VCS_REVISION_LONG).isEmpty()
+            ? QString("Party Music Player %1")
+                .arg(PMP_VERSION_DISPLAY)
+            : QString("Party Music Player %1 build %2 (%3)")
+                .arg(PMP_VERSION_DISPLAY,
+                     VCS_REVISION_LONG,
+                     VCS_BRANCH);
+
     out << Qt::endl
-        << "Party Music Player - version " PMP_VERSION_DISPLAY << Qt::endl
+        << programNameVersionBuild << Qt::endl
         << Util::getCopyrightLine(true) << Qt::endl
         << Qt::endl;
 
