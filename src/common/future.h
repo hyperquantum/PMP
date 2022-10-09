@@ -88,6 +88,23 @@ namespace PMP
             return _storage->getResultOrError();
         }
 
+        Future<SuccessType, FailureType> toTypelessFuture()
+        {
+            auto newStorage = FutureStorage<SuccessType, FailureType>::create();
+
+            _storage->addListener(
+                [newStorage](ResultOrError<ResultType, ErrorType> originalOutcome)
+                {
+                    if (originalOutcome.succeeded())
+                        newStorage->setOutcome(success);
+                    else
+                        newStorage->setOutcome(failure);
+                }
+            );
+
+            return Future<SuccessType, FailureType>(newStorage);
+        }
+
         template<class ResultType2, class ErrorType2>
         Future<ResultType2, ErrorType2> thenFuture(
                 std::function<Future<ResultType2, ErrorType2> (

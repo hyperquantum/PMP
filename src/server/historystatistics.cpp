@@ -120,13 +120,15 @@ namespace PMP
         return null;
     }
 
-    bool HistoryStatistics::scheduleFetchIfMissing(quint32 userId, uint hashId)
+    Future<SuccessType, FailureType> HistoryStatistics::scheduleFetchIfMissing(
+                                                                           quint32 userId,
+                                                                           uint hashId)
     {
         QMutexLocker lock(&_mutex);
 
         auto& userData = _userData[userId];
         if (userData.hashesInProgress.contains(hashId))
-            return false;
+            return FutureError(failure);
 
         const auto hashesInGroup = _hashRelations->getEquivalencyGroup(hashId);
 
@@ -141,20 +143,21 @@ namespace PMP
         }
 
         if (!anyMissing)
-            return false;
+            return FutureResult(success); /* nothing to do */
 
         for (auto hashId : hashesInGroup)
             userData.hashesInProgress << hashId;
 
-        Concurrent::run<TrackStats, FailureType>(
-            _threadPool,
-            [this, userId, hashesInGroup]()
-            {
-                return fetchInternal(this, userId, hashesInGroup);
-            }
-        );
+        auto future =
+            Concurrent::run<TrackStats, FailureType>(
+                _threadPool,
+                [this, userId, hashesInGroup]()
+                {
+                    return fetchInternal(this, userId, hashesInGroup);
+                }
+            );
 
-        return true;
+        return future.toTypelessFuture();
     }
 
     ResultOrError<TrackStats, FailureType> HistoryStatistics::fetchInternal(

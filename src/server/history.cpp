@@ -63,13 +63,15 @@ namespace PMP
         return _lastPlayHash[hash];
     }
 
-    bool History::scheduleUserStatsFetchingIfMissing(uint hashId, quint32 userId)
+    Future<SuccessType, FailureType> History::scheduleUserStatsFetchingIfMissing(
+                                                                           uint hashId,
+                                                                           quint32 userId)
     {
         if (hashId == 0)
         {
             qWarning() << "History: invalid parameter(s): hashId" << hashId
                        << "user" << userId;
-            return false;
+            return FutureError(failure);
         }
 
         return _statistics->scheduleFetchIfMissing(userId, hashId);

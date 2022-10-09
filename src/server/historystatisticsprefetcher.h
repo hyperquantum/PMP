@@ -20,6 +20,9 @@
 #ifndef PMP_HISTORYSTATISTICSPREFETCHER_H
 #define PMP_HISTORYSTATISTICSPREFETCHER_H
 
+#include "common/future.h"
+
+#include <QMutex>
 #include <QObject>
 #include <QVector>
 
@@ -31,6 +34,25 @@ namespace PMP
     class History;
     class Users;
 
+    class WorkThrottle : public QObject
+    {
+        Q_OBJECT
+    public:
+        WorkThrottle(QObject* parent, int maxJobsCount);
+
+        void tryStartJob(std::function<Future<SuccessType, FailureType> ()> jobCreator);
+
+    Q_SIGNALS:
+        void readyForExtraJob();
+
+    private:
+        void onJobFinished();
+
+        QMutex _mutex;
+        int _maxCount;
+        int _currentCount;
+    };
+
     class HistoryStatisticsPrefetcher : public QObject
     {
         Q_OBJECT
@@ -39,18 +61,19 @@ namespace PMP
                                     History* history, Users* users);
 
     private Q_SLOTS:
-        void timeout();
+        void doSomething();
 
     private:
         void prepareList();
-        void prefetchHash(uint hashId);
 
         HashIdRegistrar* _hashIdRegistrar;
         History* _history;
         Users* _users;
         QTimer* _timer;
+        WorkThrottle* _workThrottle;
         QVector<uint> _hashIds;
         int _index { -1 };
+        bool _finished { false };
     };
 }
 #endif

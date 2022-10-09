@@ -52,7 +52,8 @@ namespace PMP
                                                       bool validForScoring);
 
         Nullable<TrackStats> getStatsIfAvailable(quint32 userId, uint hashId);
-        bool scheduleFetchIfMissing(quint32 userId, uint hashId);
+        Future<SuccessType, FailureType> scheduleFetchIfMissing(quint32 userId,
+                                                                uint hashId);
 
     Q_SIGNALS:
         void hashStatisticsChanged(quint32 userId, QVector<uint> hashIds);

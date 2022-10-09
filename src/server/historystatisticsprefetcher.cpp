@@ -29,6 +29,46 @@
 
 namespace PMP
 {
+    WorkThrottle::WorkThrottle(QObject* parent, int maxJobsCount)
+     : QObject(parent),
+       _maxCount(maxJobsCount),
+       _currentCount(0)
+    {
+        if (_maxCount > 0)
+        {
+            QTimer::singleShot(0, this, &WorkThrottle::readyForExtraJob);
+        }
+    }
+
+    void WorkThrottle::tryStartJob(
+                            std::function<Future<SuccessType, FailureType> ()> jobCreator)
+    {
+        {
+            QMutexLocker lock(&_mutex);
+
+            if (_currentCount >= _maxCount)
+                return;
+
+            _currentCount++;
+        }
+
+        auto future = jobCreator();
+        future.addListener(
+            this,
+            [this](ResultOrError<SuccessType, FailureType>) { onJobFinished(); }
+        );
+    }
+
+    void WorkThrottle::onJobFinished()
+    {
+        {
+            QMutexLocker lock(&_mutex);
+            _currentCount--;
+        }
+
+        Q_EMIT readyForExtraJob();
+    }
+
     HistoryStatisticsPrefetcher::HistoryStatisticsPrefetcher(QObject* parent,
                                                          HashIdRegistrar* hashIdRegistrar,
                                                          History* history,
@@ -37,24 +77,47 @@ namespace PMP
        _hashIdRegistrar(hashIdRegistrar),
        _history(history),
        _users(users),
-       _timer(new QTimer(this))
+       _timer(new QTimer(this)),
+       _workThrottle(new WorkThrottle(this, 5))
     {
         connect(_timer, &QTimer::timeout,
-                this, &HistoryStatisticsPrefetcher::timeout);
+                this, &HistoryStatisticsPrefetcher::doSomething);
+
+        connect(_workThrottle, &WorkThrottle::readyForExtraJob,
+                this, &HistoryStatisticsPrefetcher::doSomething);
 
         _timer->start(1000);
     }
 
-    void HistoryStatisticsPrefetcher::timeout()
+    void HistoryStatisticsPrefetcher::doSomething()
     {
-        if (_index >= 0 && _index < _hashIds.size())
+        auto jobCreator =
+            [this]() -> Future<SuccessType, FailureType>
+            {
+                if (_index < 0)
+                {
+                    prepareList();
+                    return FutureResult(success);
+                }
+
+                if (_index < _hashIds.size())
+                {
+                    auto hashId = _hashIds[_index];
+                    _index++;
+
+                    return
+                        _history->scheduleUserStatsFetchingIfMissing(hashId, /*user*/ 0);
+                }
+
+                qDebug() << "HistoryStatisticsPrefetcher: prefetch is complete";
+                _finished = true;
+                _timer->stop();
+                return FutureResult(success);
+            };
+
+        if (!_finished)
         {
-            prefetchHash(_hashIds[_index]);
-            _index++;
-        }
-        else
-        {
-            prepareList();
+            _workThrottle->tryStartJob(jobCreator);
         }
     }
 
@@ -69,25 +132,13 @@ namespace PMP
             _index = -1;
             _timer->setInterval(qMin(10 * 60 * 1000 /* 10 min */,
                                      _timer->interval() * 2));
+            return;
         }
-        else
-        {
-            qDebug() << "HistoryStatisticsPrefetcher: hash list size is"
-                     << _hashIds.size();
 
-            _index = 0;
-            _timer->setInterval(200);
-        }
-    }
+        qDebug() << "HistoryStatisticsPrefetcher: hash list size is"
+                 << _hashIds.size();
 
-    void HistoryStatisticsPrefetcher::prefetchHash(uint hashId)
-    {
-        bool started = _history->scheduleUserStatsFetchingIfMissing(hashId, /* user */ 0);
-
-        if (started)
-        {
-            qDebug() << "HistoryStatisticsPrefetcher: started fetch for hash ID"
-                     << hashId;
-        }
+        _index = 0;
+        _timer->setInterval(200);
     }
 }
