@@ -263,5 +263,7 @@ int runServer(QCoreApplication& app, bool doIndexation)
 
     auto exitCode = app.exec();
 
+    out << "\n"
+        << "Server exiting." << Qt::endl;
     return exitCode;
 }
