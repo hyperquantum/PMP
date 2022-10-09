@@ -153,6 +153,8 @@ int runServer(QCoreApplication& app, bool doIndexation)
     out << Qt::endl
         << programNameVersionBuild << Qt::endl
         << Util::getCopyrightLine(true) << Qt::endl
+        << "This is free software; see the source for copying conditions.  There is NO\n"
+        << "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
         << Qt::endl;
 
     /* set up logging */
