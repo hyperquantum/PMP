@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -231,12 +231,17 @@ namespace PMP {
          /* Windows needs a byte order mark */
         file.write(_byteOrderMark);
 #endif
+        const auto programNameVersionBuild =
+            QString(VCS_REVISION_LONG).isEmpty()
+                ? QString("Party Music Player %1")
+                    .arg(PMP_VERSION_DISPLAY)
+                : QString("Party Music Player %1 build %2 (%3)")
+                    .arg(PMP_VERSION_DISPLAY,
+                         VCS_REVISION_LONG,
+                         VCS_BRANCH);
 
         /* write PMP version */
-        QString firstLine =
-                "# "
-                "Party Music Player " PMP_VERSION_DISPLAY
-                "\n";
+        QString firstLine = "# " + programNameVersionBuild + "\n";
 
         file.write(firstLine.toUtf8());
     }
