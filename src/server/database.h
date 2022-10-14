@@ -93,6 +93,11 @@ namespace PMP
                                                                 quint32 userId,
                                                                 QVector<quint32> hashIds);
 
+        ResultOrError<QVector<QPair<quint32, quint32>>, FailureType> getEquivalences();
+        ResultOrError<SuccessType, FailureType> registerEquivalence(quint32 hashId1,
+                                                                    quint32 hashId2,
+                                                                    int currentYear);
+
         static QSharedPointer<Database> getDatabaseForCurrentThread();
         static QUuid getDatabaseUuid();
 
@@ -137,6 +142,7 @@ namespace PMP
         static bool initFileSizeTable(QSqlQuery& q);
         static bool initUsersTable(QSqlQuery& q);
         static bool initHistoryTable(QSqlQuery& q);
+        static bool initEquivalenceTable(QSqlQuery& q);
 
         static QString _hostname;
         static int _port;

@@ -60,6 +60,8 @@ namespace PMP
         HistoryStatisticsPrefetcher(QObject* parent, HashIdRegistrar* hashIdRegistrar,
                                     History* history, Users* users);
 
+        void start();
+
     private Q_SLOTS:
         void doSomething();
 

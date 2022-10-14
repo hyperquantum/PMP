@@ -827,7 +827,7 @@ namespace PMP
                     auto hashIds = maybeHashIds.result();
 
                     if (hashIds.size() > 1)
-                        _hashRelations->markAsEquivalent(hashIds);
+                        markHashesAsEquivalent(hashIds);
 
                     QMutexLocker lock(&_lock);
 
@@ -1010,6 +1010,35 @@ namespace PMP
         qDebug() << "got ID" << id << "for registered hash" << hash.dumpToString();
 
         return knowledge;
+    }
+
+    void Resolver::markHashesAsEquivalent(QVector<uint> hashes)
+    {
+        if (_hashRelations->areEquivalent(hashes))
+            return;
+
+        _hashRelations->markAsEquivalent(hashes);
+
+        Concurrent::run<SuccessType, FailureType>(
+            [hashes]() -> ResultOrError<SuccessType, FailureType>
+            {
+                auto db = Database::getDatabaseForCurrentThread();
+                if (!db) return failure;
+
+                int currentYear = QDateTime::currentDateTimeUtc().date().year();
+
+                for (int i = 1; i < hashes.size(); ++i)
+                {
+                    auto result =
+                            db->registerEquivalence(hashes[0], hashes[i], currentYear);
+
+                    if (result.failed())
+                        return failure;
+                }
+
+                return success;
+            }
+        );
     }
 
     QVector<QString> Resolver::getPathsThatDontMatchCurrentFullIndexationNumber()

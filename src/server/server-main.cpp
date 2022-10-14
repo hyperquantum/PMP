@@ -17,6 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "common/concurrent.h"
 #include "common/logging.h"
 #include "common/util.h"
 #include "common/version.h"
@@ -111,6 +112,47 @@ static void setUpAndRunInitialIndexation(Resolver& resolver)
     QTextStream out(stdout);
     out << "Running initial full indexation..." << Qt::endl;
     resolver.startFullIndexation();
+}
+
+static void loadEquivalencesAndStartStatisticsPrefetchAsync(HashRelations* hashRelations,
+                                                  HistoryStatisticsPrefetcher* prefetcher)
+{
+    auto equivalencesLoadingFuture =
+        Concurrent::run<SuccessType, FailureType>(
+            [hashRelations]() -> ResultOrError<SuccessType, FailureType>
+            {
+                auto db = Database::getDatabaseForCurrentThread();
+                if (!db) return failure; /* database not available */
+
+                auto equivalencesOrError = db->getEquivalences();
+                if (equivalencesOrError.failed())
+                    return failure;
+
+                auto equivalences = equivalencesOrError.result();
+                hashRelations->loadEquivalences(equivalences);
+                qDebug() << "successfully loaded" << equivalences.size()
+                         << "equivalences from the database";
+                return success;
+            }
+        );
+
+    equivalencesLoadingFuture.addListener(
+        prefetcher,
+        [prefetcher](ResultOrError<SuccessType, FailureType> result)
+        {
+            if (result.failed())
+                qDebug() << "failed to load equivalences from the database";
+
+            prefetcher->start();
+        }
+    );
+}
+
+static void startBackgroundTasks(HashRelations* hashRelations,
+                                 HistoryStatisticsPrefetcher* historyStatisticsPrefetcher)
+{
+    loadEquivalencesAndStartStatisticsPrefetchAsync(hashRelations,
+                                                    historyStatisticsPrefetcher);
 }
 
 static int runServer(QCoreApplication& app, bool doIndexation);
@@ -258,6 +300,8 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     QObject::connect(&server, &Server::shuttingDown, &app, &QCoreApplication::quit);
 
     printStartupSummary(out, serverSettings, server, player);
+
+    startBackgroundTasks(&hashRelations, &historyPrefetcher);
 
     out << "\n"
         << "Server initialization complete." << Qt::endl

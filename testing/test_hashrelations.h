@@ -26,8 +26,10 @@ class TestHashRelations : public QObject
 {
     Q_OBJECT
 private Q_SLOTS:
+    void areEquivalent();
     void getEquivalencyGroup_groupIsTheSameForEachMember();
     void getOtherHashesEquivalentTo_resultDoesNotIncludeArgument();
+    void loadEquivalences();
     void markAsEquivalent();
     void markAsEquivalent_joinsExistingGroups();
 };

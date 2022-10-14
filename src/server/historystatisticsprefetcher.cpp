@@ -86,7 +86,16 @@ namespace PMP
         connect(_workThrottle, &WorkThrottle::readyForExtraJob,
                 this, &HistoryStatisticsPrefetcher::doSomething);
 
-        _timer->start(1000);
+        _timer->setInterval(1000);
+    }
+
+    void HistoryStatisticsPrefetcher::start()
+    {
+        if (_timer->isActive())
+            return;
+
+        qDebug() << "HistoryStatisticsPrefetcher: starting";
+        _timer->start();
     }
 
     void HistoryStatisticsPrefetcher::doSomething()

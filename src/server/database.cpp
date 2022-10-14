@@ -105,11 +105,12 @@ namespace PMP
         }
 
         bool tablesInitialized =
-            initHashTable(q)         /* pmp_hash */
-            && initFilenameTable(q)  /* pmp_filename */
-            && initFileSizeTable(q)  /* pmp_filesize */
-            && initUsersTable(q)     /* pmp_user */
-            && initHistoryTable(q);  /* pmp_history */
+            initHashTable(q)             /* pmp_hash */
+            && initFilenameTable(q)      /* pmp_filename */
+            && initFileSizeTable(q)      /* pmp_filesize */
+            && initUsersTable(q)         /* pmp_user */
+            && initHistoryTable(q)       /* pmp_history */
+            && initEquivalenceTable(q);  /* pmp_equivalence */
 
         if (!tablesInitialized)
         {
@@ -291,6 +292,28 @@ namespace PMP
             ") "
             "ENGINE = InnoDB "
             "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
+        );
+
+        return q.exec();
+    }
+
+    bool Database::initEquivalenceTable(QSqlQuery& q)
+    {
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_equivalence("
+            " `Hash1` INT UNSIGNED NOT NULL,"
+            " `Hash2` INT UNSIGNED NOT NULL,"
+            " `YearAdded` INT NOT NULL,"
+            " CONSTRAINT `FK_pmpequivalencehash1`"
+            "  FOREIGN KEY (`Hash1`)"
+            "   REFERENCES pmp_hash (`HashID`)"
+            "   ON DELETE CASCADE ON UPDATE CASCADE,"
+            " CONSTRAINT `FK_pmpequivalencehash2`"
+            "  FOREIGN KEY (`Hash2`)"
+            "   REFERENCES pmp_hash (`HashID`)"
+            "   ON DELETE CASCADE ON UPDATE CASCADE,"
+            " UNIQUE INDEX `IDX_pmpequivalence` (`Hash1` ASC, `Hash2` ASC) "
+            ") ENGINE = InnoDB"
         );
 
         return q.exec();
@@ -893,6 +916,62 @@ namespace PMP
         }
 
         return result;
+    }
+
+    ResultOrError<QVector<QPair<quint32, quint32>>, FailureType>
+        Database::getEquivalences()
+    {
+        QSqlQuery q(_db);
+        q.prepare("SELECT Hash1, Hash2 FROM pmp_equivalence");
+
+        if (!executeQuery(q)) /* error */
+        {
+            qDebug() << "Database::getEquivalences : could not execute; "
+                     << q.lastError().text() << Qt::endl;
+            return failure;
+        }
+
+        QVector<QPair<quint32, quint32>> result;
+        while (q.next())
+        {
+            quint32 hashId1 = q.value(0).toUInt();
+            quint32 hashId2 = q.value(1).toUInt();
+
+            result.append({ hashId1, hashId2 });
+        };
+
+        return result;
+    }
+
+    ResultOrError<SuccessType, FailureType> Database::registerEquivalence(quint32 hashId1,
+                                                                          quint32 hashId2,
+                                                                          int currentYear)
+    {
+        Q_ASSERT_X(hashId1 != hashId2,
+                   "Database::registerEquivalence",
+                   "hashes must be different");
+
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "INSERT INTO pmp_equivalence(`Hash1`,`Hash2`,`YearAdded`)"
+                    " VALUES(?,?,?)"
+                    " ON DUPLICATE KEY UPDATE `YearAdded`=`YearAdded`"
+                );
+                q.addBindValue(hashId1);
+                q.addBindValue(hashId2);
+                q.addBindValue(currentYear);
+            };
+
+        if (!executeVoid(preparer))
+        {
+            qDebug() << "Database::registerEquivalence : insert/update failed!"
+                     << Qt::endl;
+            return failure;
+        }
+
+        return success;
     }
 
     QString Database::buildParamsList(unsigned paramsCount)

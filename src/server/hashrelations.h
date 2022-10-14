@@ -24,6 +24,7 @@
 
 #include <QHash>
 #include <QMutex>
+#include <QPair>
 #include <QSharedPointer>
 #include <QSet>
 #include <QVector>
@@ -35,7 +36,9 @@ namespace PMP
     public:
         HashRelations();
 
+        void loadEquivalences(QVector<QPair<uint, uint>> equivalences);
         void markAsEquivalent(QVector<uint> hashes);
+        bool areEquivalent(QVector<uint> hashes);
 
         QVector<uint> getEquivalencyGroup(uint hashId);
 

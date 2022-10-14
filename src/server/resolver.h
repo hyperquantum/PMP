@@ -155,6 +155,7 @@ namespace PMP
         class HashKnowledge;
 
         HashKnowledge* registerHash(const FileHash& hash);
+        void markHashesAsEquivalent(QVector<uint> hashes);
         QVector<QString> getPathsThatDontMatchCurrentFullIndexationNumber();
         void checkFileStillExistsAndIsValid(QString path);
 

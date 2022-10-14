@@ -28,6 +28,40 @@ namespace PMP
         //
     }
 
+    void HashRelations::loadEquivalences(QVector<QPair<uint, uint>> equivalences)
+    {
+        if (equivalences.isEmpty())
+            return;
+
+        QMutexLocker lock(&_mutex);
+
+        for (auto pair : equivalences)
+        {
+            auto newEntry = QSharedPointer<Entry>::create();
+
+            {
+                auto const& entry = _hashes[pair.first];
+
+                if (!entry.isNull())
+                    newEntry->equivalentHashes.unite(entry->equivalentHashes);
+            }
+
+            {
+                auto const& entry = _hashes[pair.second];
+
+                if (!entry.isNull())
+                    newEntry->equivalentHashes.unite(entry->equivalentHashes);
+            }
+
+            newEntry->equivalentHashes.unite(QSet<uint>({ pair.first, pair.second }));
+
+            for (uint hash : qAsConst(newEntry->equivalentHashes))
+            {
+                _hashes[hash] = newEntry;
+            }
+        }
+    }
+
     void HashRelations::markAsEquivalent(QVector<uint> hashes)
     {
         if (hashes.isEmpty())
@@ -53,11 +87,32 @@ namespace PMP
         }
     }
 
+    bool HashRelations::areEquivalent(QVector<uint> hashes)
+    {
+        Q_ASSERT_X(hashes.size() >= 2,
+                   "HashRelations::areEquivalent()",
+                   "less than 2 hashes specified");
+
+        QMutexLocker lock(&_mutex);
+
+        auto const& entry = _hashes.value(hashes[0]);
+        if (entry.isNull())
+            return false;
+
+        for (int i = 1; i < hashes.size(); ++i)
+        {
+            if (!entry->equivalentHashes.contains(hashes[i]))
+                return false;
+        }
+
+        return true;
+    }
+
     QVector<uint> HashRelations::getEquivalencyGroup(uint hashId)
     {
         QMutexLocker lock(&_mutex);
 
-        auto entry = _hashes.value(hashId);
+        auto const& entry = _hashes.value(hashId);
         if (entry.isNull())
             return { hashId };
 
@@ -69,7 +124,7 @@ namespace PMP
     {
         QMutexLocker lock(&_mutex);
 
-        auto entry = _hashes.value(hashId);
+        auto const& entry = _hashes.value(hashId);
         if (entry.isNull())
             return {};
 

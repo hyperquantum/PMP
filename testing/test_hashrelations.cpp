@@ -25,6 +25,25 @@
 
 using namespace PMP;
 
+void TestHashRelations::areEquivalent()
+{
+    HashRelations r;
+    QVERIFY(!r.areEquivalent({1, 2}));
+    QVERIFY(!r.areEquivalent({1, 2, 3}));
+
+    r.markAsEquivalent({1, 2});
+    QVERIFY(r.areEquivalent({1, 2}));
+    QVERIFY(!r.areEquivalent({1, 2, 3}));
+
+    r.markAsEquivalent({1, 3});
+    QVERIFY(r.areEquivalent({1, 2}));
+    QVERIFY(r.areEquivalent({1, 2, 3}));
+
+    r.markAsEquivalent({10, 11});
+    QVERIFY(r.areEquivalent({11, 10}));
+    QVERIFY(!r.areEquivalent({2, 10}));
+}
+
 void TestHashRelations::getEquivalencyGroup_groupIsTheSameForEachMember()
 {
     HashRelations r;
@@ -60,6 +79,39 @@ void TestHashRelations::getOtherHashesEquivalentTo_resultDoesNotIncludeArgument(
     QVERIFY(others.contains(9));
 
     QVERIFY(!others.contains(5));
+}
+
+void TestHashRelations::loadEquivalences()
+{
+    HashRelations r;
+    r.loadEquivalences(
+        {
+            {1, 2},
+            {3, 4},
+            {5, 6},
+            {22, 23},
+            {2, 22},
+            {1, 50}
+        }
+    );
+
+    auto g2 = r.getEquivalencyGroup(2);
+    QCOMPARE(g2.size(), 5);
+    QVERIFY(g2.contains(1));
+    QVERIFY(g2.contains(2));
+    QVERIFY(g2.contains(22));
+    QVERIFY(g2.contains(23));
+    QVERIFY(g2.contains(50));
+
+    auto g3 = r.getEquivalencyGroup(3);
+    QCOMPARE(g3.size(), 2);
+    QVERIFY(g3.contains(3));
+    QVERIFY(g3.contains(4));
+
+    auto g6 = r.getEquivalencyGroup(6);
+    QCOMPARE(g6.size(), 2);
+    QVERIFY(g6.contains(5));
+    QVERIFY(g6.contains(6));
 }
 
 void TestHashRelations::markAsEquivalent()
