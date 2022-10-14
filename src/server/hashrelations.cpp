@@ -39,17 +39,18 @@ namespace PMP
 
         for (uint hash : hashes)
         {
-            auto& entry = _hashes[hash];
+            auto const& entry = _hashes[hash];
 
             if (!entry.isNull())
-            {
                 newEntry->equivalentHashes.unite(entry->equivalentHashes);
-            }
-
-            entry = newEntry;
         }
 
         newEntry->equivalentHashes.unite(QSet<uint>(hashes.begin(), hashes.end()));
+
+        for (uint hash : qAsConst(newEntry->equivalentHashes))
+        {
+            _hashes[hash] = newEntry;
+        }
     }
 
     QVector<uint> HashRelations::getEquivalencyGroup(uint hashId)

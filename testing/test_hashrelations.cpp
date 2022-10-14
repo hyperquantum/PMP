@@ -81,4 +81,22 @@ void TestHashRelations::markAsEquivalent()
     QVERIFY(g3.contains(4));
 }
 
+void TestHashRelations::markAsEquivalent_joinsExistingGroups()
+{
+    HashRelations r;
+    r.markAsEquivalent({1, 2, 3, 4, 5});
+    r.markAsEquivalent({30, 40});
+    r.markAsEquivalent({6, 7, 8, 9});
+    r.markAsEquivalent({5, 6});
+
+    auto g1 = r.getEquivalencyGroup(1);
+    QCOMPARE(g1.size(), 9);
+
+    for (int i = 1; i <= 9; ++i)
+        QVERIFY(g1.contains(i));
+
+    QVERIFY(!g1.contains(30));
+    QVERIFY(!g1.contains(40));
+}
+
 QTEST_MAIN(TestHashRelations)

@@ -29,6 +29,7 @@ private Q_SLOTS:
     void getEquivalencyGroup_groupIsTheSameForEachMember();
     void getOtherHashesEquivalentTo_resultDoesNotIncludeArgument();
     void markAsEquivalent();
+    void markAsEquivalent_joinsExistingGroups();
 };
 
 #endif
