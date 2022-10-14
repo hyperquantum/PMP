@@ -91,7 +91,7 @@ namespace
     bool initialIndexation = true;
 }
 
-void setUpAndRunInitialIndexation(Resolver& resolver)
+static void setUpAndRunInitialIndexation(Resolver& resolver)
 {
     QObject::connect(
         &resolver, &Resolver::fullIndexationRunStatusChanged,
@@ -113,7 +113,7 @@ void setUpAndRunInitialIndexation(Resolver& resolver)
     resolver.startFullIndexation();
 }
 
-int runServer(QCoreApplication& app, bool doIndexation);
+static int runServer(QCoreApplication& app, bool doIndexation);
 
 int main(int argc, char* argv[])
 {
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
     return exitCode;
 }
 
-int runServer(QCoreApplication& app, bool doIndexation)
+static int runServer(QCoreApplication& app, bool doIndexation)
 {
     QTextStream out(stdout);
 
