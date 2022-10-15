@@ -1049,6 +1049,7 @@ namespace PMP
         QSqlError error = q.lastError();
         qDebug() << "Database: query failed:" << error.text();
         qDebug() << " error type:" << error.type();
+        qDebug() << " native error code:" << error.nativeErrorCode();
         qDebug() << " error number:" << error.number();
         qDebug() << " db error:" << error.databaseText();
         qDebug() << " driver error:" << error.driverText();
@@ -1086,6 +1087,7 @@ namespace PMP
             QSqlError error2 = q.lastError();
             qDebug() << "  FAILED to re-execute query:" << error2.text();
             qDebug() << "  error type:" << error2.type();
+            qDebug() << "  native error code:" << error2.nativeErrorCode();
             qDebug() << "  error number:" << error2.number();
             qDebug() << "  db error:" << error2.databaseText();
             qDebug() << "  driver error:" << error2.driverText();
@@ -1109,6 +1111,7 @@ namespace PMP
         QSqlError error = q.lastError();
         qDebug() << "Database: query failed:" << error.text();
         qDebug() << " error type:" << error.type();
+        qDebug() << " native error code:" << error.nativeErrorCode();
         qDebug() << " error number:" << error.number();
         qDebug() << " db error:" << error.databaseText();
         qDebug() << " driver error:" << error.driverText();
@@ -1143,6 +1146,7 @@ namespace PMP
                 QSqlError error2 = q.lastError();
                 qDebug() << "  FAILED to re-execute query:" << error2.text();
                 qDebug() << "  error type:" << error2.type();
+                qDebug() << "  native error code:" << error2.nativeErrorCode();
                 qDebug() << "  error number:" << error2.number();
                 qDebug() << "  db error:" << error2.databaseText();
                 qDebug() << "  driver error:" << error2.driverText();
