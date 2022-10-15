@@ -85,9 +85,6 @@ namespace PMP
                                                              QDateTime end,
                                                              int permillage,
                                                              bool validForScoring);
-        QDateTime getLastHeard(quint32 hashId, quint32 userId);
-        QList<QPair<quint32, QDateTime>> getLastHeard(quint32 userId,
-                                                      QList<quint32> hashIds);
         ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
                                                                       getHashHistoryStats(
                                                                 quint32 userId,
