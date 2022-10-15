@@ -85,6 +85,7 @@ namespace PMP
                                                              QDateTime end,
                                                              int permillage,
                                                              bool validForScoring);
+        ResultOrError<quint32, FailureType> getMostRecentRealUserHavingHistory();
         ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
                                                                       getHashHistoryStats(
                                                                 quint32 userId,

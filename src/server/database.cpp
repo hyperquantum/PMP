@@ -789,6 +789,27 @@ namespace PMP
         return success;
     }
 
+    ResultOrError<quint32, FailureType> Database::getMostRecentRealUserHavingHistory()
+    {
+        auto preparer =
+            prepareSimple(
+                "SELECT UserID FROM pmp_history "
+                "WHERE UserID > 0 "
+                "ORDER BY HistoryID DESC "
+                "LIMIT 1"
+            );
+
+        uint userId = 0;
+        if (!executeScalar(preparer, userId, 0))
+        {
+            qDebug() << "Database::getMostRecentRealUserHavingHistory : select failed!"
+                     << Qt::endl;
+            return failure;
+        }
+
+        return userId;
+    }
+
     ResultOrError<QVector<HashHistoryStats>, FailureType> Database::getHashHistoryStats(
                                                                  quint32 userId,
                                                                  QVector<quint32> hashIds)

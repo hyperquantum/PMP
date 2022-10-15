@@ -66,7 +66,13 @@ namespace PMP
         void doSomething();
 
     private:
-        void prepareList();
+        enum class State { Initial, UsersLoading, UsersLoaded, Working, AllDone };
+
+        Future<SuccessType, FailureType> startLoadingUsers();
+        void prepareHashesList();
+        Future<SuccessType, FailureType> fetchNextStatistics();
+
+        void doubleTimerInterval();
 
         HashIdRegistrar* _hashIdRegistrar;
         History* _history;
@@ -74,8 +80,10 @@ namespace PMP
         QTimer* _timer;
         WorkThrottle* _workThrottle;
         QVector<uint> _hashIds;
-        int _index { -1 };
-        bool _finished { false };
+        QVector<uint> _userIds;
+        int _hashIndex { -1 };
+        int _userIndex { -1 };
+        State _state { State::Initial };
     };
 }
 #endif
