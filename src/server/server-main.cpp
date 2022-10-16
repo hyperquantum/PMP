@@ -29,6 +29,7 @@
 #include "hashidregistrar.h"
 #include "hashrelations.h"
 #include "history.h"
+#include "historystatistics.h"
 #include "historystatisticsprefetcher.h"
 #include "player.h"
 #include "playerqueue.h"
@@ -235,13 +236,14 @@ static int runServer(QCoreApplication& app, bool doIndexation)
 
     HashIdRegistrar hashIdRegistrar;
     HashRelations hashRelations;
-    Resolver resolver(&hashIdRegistrar, &hashRelations);
+    HistoryStatistics historyStatistics(nullptr, &hashRelations);
+    Resolver resolver(&hashIdRegistrar, &hashRelations, &historyStatistics);
 
     Users users;
     Player player(nullptr, &resolver, serverSettings.defaultVolume());
     DelayedStart delayedStart(&player);
     PlayerQueue& queue = player.queue();
-    History history(&player, &hashIdRegistrar, &hashRelations);
+    History history(&player, &hashIdRegistrar, &historyStatistics);
     HistoryStatisticsPrefetcher historyPrefetcher(nullptr, &hashIdRegistrar, &history,
                                                   &users);
 

@@ -54,6 +54,7 @@ namespace PMP
         Nullable<TrackStats> getStatsIfAvailable(quint32 userId, uint hashId);
         Future<SuccessType, FailureType> scheduleFetchIfMissing(quint32 userId,
                                                                 uint hashId);
+        void invalidateStatisticsForHashes(QVector<uint> hashIds);
 
     Q_SIGNALS:
         void hashStatisticsChanged(quint32 userId, QVector<uint> hashIds);

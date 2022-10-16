@@ -20,7 +20,6 @@
 #include "history.h"
 
 #include "hashidregistrar.h"
-#include "hashrelations.h"
 #include "historystatistics.h"
 #include "player.h"
 #include "queueentry.h"
@@ -32,11 +31,10 @@
 namespace PMP
 {
     History::History(Player* player, HashIdRegistrar* hashIdRegistrar,
-                     HashRelations* hashRelations)
+                     HistoryStatistics* historyStatistics)
      : _player(player),
        _hashIdRegistrar(hashIdRegistrar),
-       _hashRelations(hashRelations),
-       _statistics(new HistoryStatistics(this, hashRelations)),
+       _statistics(historyStatistics),
        _nowPlaying(nullptr)
     {
         connect(

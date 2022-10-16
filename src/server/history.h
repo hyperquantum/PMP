@@ -40,7 +40,6 @@ namespace PMP
 {
     class FileHash;
     class HashIdRegistrar;
-    class HashRelations;
     class HistoryStatistics;
     class Player;
     class QueueEntry;
@@ -50,7 +49,7 @@ namespace PMP
         Q_OBJECT
     public:
         History(Player* player, HashIdRegistrar* hashIdRegistrar,
-                HashRelations* hashRelations);
+                HistoryStatistics* historyStatistics);
 
         ~History();
 
@@ -71,7 +70,6 @@ namespace PMP
     private:
         Player* _player;
         HashIdRegistrar* _hashIdRegistrar;
-        HashRelations* _hashRelations;
         HistoryStatistics* _statistics;
         QHash<FileHash, QDateTime> _lastPlayHash;
         QSharedPointer<QueueEntry const> _nowPlaying;

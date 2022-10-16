@@ -160,6 +160,19 @@ namespace PMP
         return future.toTypelessFuture();
     }
 
+    void HistoryStatistics::invalidateStatisticsForHashes(QVector<uint> hashIds)
+    {
+        QMutexLocker lock(&_mutex);
+
+        qDebug() << "HistoryStatistics: invalidating statistics for hashes:" << hashIds;
+
+        for (auto& userEntry : _userData)
+        {
+            for (auto hashId : hashIds)
+                userEntry.hashData.remove(hashId);
+        }
+    }
+
     ResultOrError<TrackStats, FailureType> HistoryStatistics::fetchInternal(
                                                             HistoryStatistics* calculator,
                                                             quint32 userId,

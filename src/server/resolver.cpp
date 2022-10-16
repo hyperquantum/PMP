@@ -26,6 +26,7 @@
 #include "database.h"
 #include "hashidregistrar.h"
 #include "hashrelations.h"
+#include "historystatistics.h"
 
 #include <QDirIterator>
 #include <QFileInfo>
@@ -705,9 +706,11 @@ namespace PMP
 
     /* ========================== Resolver ========================== */
 
-    Resolver::Resolver(HashIdRegistrar* hashIdRegistrar, HashRelations* hashRelations)
+    Resolver::Resolver(HashIdRegistrar* hashIdRegistrar, HashRelations* hashRelations,
+                       HistoryStatistics* historyStatistics)
      : _hashIdRegistrar(hashIdRegistrar),
        _hashRelations(hashRelations),
+       _historyStatistics(historyStatistics),
        _lock(QMutex::Recursive),
        _fullIndexationNumber(1),
        _fullIndexationStatus(FullIndexationStatus::NotRunning)
@@ -1018,6 +1021,7 @@ namespace PMP
             return;
 
         _hashRelations->markAsEquivalent(hashes);
+        _historyStatistics->invalidateStatisticsForHashes(hashes);
 
         Concurrent::run<SuccessType, FailureType>(
             [hashes]() -> ResultOrError<SuccessType, FailureType>

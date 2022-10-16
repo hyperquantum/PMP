@@ -44,6 +44,7 @@ namespace PMP
     class Database;
     class HashIdRegistrar;
     class HashRelations;
+    class HistoryStatistics;
 
     class FileLocations
     {
@@ -103,7 +104,8 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        Resolver(HashIdRegistrar* hashIdRegistrar, HashRelations* hashRelations);
+        Resolver(HashIdRegistrar* hashIdRegistrar, HashRelations* hashRelations,
+                 HistoryStatistics* historyStatistics);
 
         void setMusicPaths(QStringList paths);
         QStringList musicPaths();
@@ -167,6 +169,7 @@ namespace PMP
         FileFinder* _fileFinder { nullptr };
         HashIdRegistrar* _hashIdRegistrar { nullptr };
         HashRelations* _hashRelations { nullptr };
+        HistoryStatistics* _historyStatistics { nullptr };
 
         QMutex _lock;
 
