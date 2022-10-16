@@ -165,7 +165,7 @@ namespace PMP
                                                             quint32 userId,
                                                             QVector<uint> hashIdsInGroup)
     {
-        qDebug() << "HistoryStatisticsCalculator: starting fetch for user" << userId
+        qDebug() << "HistoryStatistics: starting fetch for user" << userId
                  << "and hash IDs" << hashIdsInGroup;
 
         auto db = Database::getDatabaseForCurrentThread();
@@ -205,8 +205,8 @@ namespace PMP
 
         lock.unlock();
 
-        qDebug() << "HistoryStatisticsCalculator: group stats (re)calculated for user"
-                 << userId << "and hash IDs" << hashIdsInGroup
+        qDebug() << "HistoryStatistics: group stats (re)calculated for user" << userId
+                 << "and hash IDs" << hashIdsInGroup
                  << ": last history ID:" << calculatedGroupStats.lastHistoryId()
                  << " last heard:" << calculatedGroupStats.lastHeard()
                  << " permillage:" << calculatedGroupStats.getScoreOr(-1);
