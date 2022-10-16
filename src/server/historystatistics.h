@@ -60,6 +60,9 @@ namespace PMP
         void hashStatisticsChanged(quint32 userId, QVector<uint> hashIds);
 
     private:
+        Future<SuccessType, FailureType> scheduleFetch(quint32 userId, uint hashId,
+                                                       bool onlyIfMissing);
+
         struct UserHashStatisticsEntry
         {
             TrackStats individualStats;

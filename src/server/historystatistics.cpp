@@ -124,6 +124,49 @@ namespace PMP
                                                                            quint32 userId,
                                                                            uint hashId)
     {
+        return scheduleFetch(userId, hashId, true);
+    }
+
+    void HistoryStatistics::invalidateStatisticsForHashes(QVector<uint> hashIds)
+    {
+        QMutexLocker lock(&_mutex);
+
+        qDebug() << "HistoryStatistics: invalidating statistics for hashes:" << hashIds;
+
+        QHash<quint32, QVector<uint>> usersWithHashes;
+
+        for (auto userIt = _userData.begin(); userIt != _userData.end(); ++userIt)
+        {
+            auto userId = userIt.key();
+            auto& userEntry = userIt.value();
+
+            for (auto hashId : hashIds)
+            {
+                if (userEntry.hashData.remove(hashId) > 0)
+                {
+                    usersWithHashes[userId].append(hashId);
+                }
+            }
+        }
+
+        lock.unlock();
+
+        for (auto userIt = usersWithHashes.constBegin();
+             userIt != usersWithHashes.constEnd();
+             ++userIt)
+        {
+            auto userId = userIt.key();
+            auto& hashIds = userIt.value();
+
+            for (auto hashId : hashIds)
+                scheduleFetch(userId, hashId, false);
+        }
+    }
+
+    Future<SuccessType, FailureType> HistoryStatistics::scheduleFetch(quint32 userId,
+                                                                      uint hashId,
+                                                                      bool onlyIfMissing)
+    {
         QMutexLocker lock(&_mutex);
 
         auto& userData = _userData[userId];
@@ -132,18 +175,21 @@ namespace PMP
 
         const auto hashesInGroup = _hashRelations->getEquivalencyGroup(hashId);
 
-        bool anyMissing = false;
-        for (auto hashId : hashesInGroup)
+        if (onlyIfMissing)
         {
-            if (userData.hashData.contains(hashId))
-                continue;
+            bool anyMissing = false;
+            for (auto hashId : hashesInGroup)
+            {
+                if (userData.hashData.contains(hashId))
+                    continue;
 
-            anyMissing = true;
-            break;
+                anyMissing = true;
+                break;
+            }
+
+            if (!anyMissing)
+                return FutureResult(success); /* nothing to do */
         }
-
-        if (!anyMissing)
-            return FutureResult(success); /* nothing to do */
 
         for (auto hashId : hashesInGroup)
             userData.hashesInProgress << hashId;
@@ -158,19 +204,6 @@ namespace PMP
             );
 
         return future.toTypelessFuture();
-    }
-
-    void HistoryStatistics::invalidateStatisticsForHashes(QVector<uint> hashIds)
-    {
-        QMutexLocker lock(&_mutex);
-
-        qDebug() << "HistoryStatistics: invalidating statistics for hashes:" << hashIds;
-
-        for (auto& userEntry : _userData)
-        {
-            for (auto hashId : hashIds)
-                userEntry.hashData.remove(hashId);
-        }
     }
 
     ResultOrError<TrackStats, FailureType> HistoryStatistics::fetchInternal(
