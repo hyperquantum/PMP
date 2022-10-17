@@ -195,24 +195,8 @@ namespace PMP
             this, &MainWidget::changeDynamicMode
         );
         connect(
-            _ui->startWaveButton, &QPushButton::clicked,
-            this, &MainWidget::startHighScoredTracksWave
-        );
-        connect(
-            _ui->terminateWaveButton, &QPushButton::clicked,
-            this, &MainWidget::terminateHighScoredTracksWave
-        );
-        connect(
             dynamicModeController, &DynamicModeController::dynamicModeEnabledChanged,
             this, &MainWidget::dynamicModeEnabledChanged
-        );
-        connect(
-            dynamicModeController, &DynamicModeController::waveActiveChanged,
-            this, &MainWidget::waveActiveChanged
-        );
-        connect(
-            dynamicModeController, &DynamicModeController::waveProgressChanged,
-            this, &MainWidget::waveProgressChanged
         );
 
         connect(
@@ -298,8 +282,6 @@ namespace PMP
                              currentTrackMonitor->currentTrackLengthMilliseconds());
         volumeChanged();
         dynamicModeEnabledChanged();
-        waveActiveChanged();
-        waveProgressChanged();
     }
 
     bool MainWidget::eventFilter(QObject* object, QEvent* event)
@@ -864,45 +846,6 @@ namespace PMP
         }
     }
 
-    void MainWidget::startHighScoredTracksWave()
-    {
-        _clientServerInterface->dynamicModeController().startHighScoredTracksWave();
-    }
-
-    void MainWidget::terminateHighScoredTracksWave()
-    {
-        _clientServerInterface->dynamicModeController().terminateHighScoredTracksWave();
-    }
-
-    void MainWidget::waveActiveChanged()
-    {
-        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
-
-        _ui->startWaveButton->setEnabled(dynamicModeController.canStartWave());
-        _ui->terminateWaveButton->setVisible(dynamicModeController.canTerminateWave());
-    }
-
-    void MainWidget::waveProgressChanged()
-    {
-        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
-
-        int progress = dynamicModeController.waveProgress();
-        int progressTotal = dynamicModeController.waveProgressTotal();
-
-        if (progress < 0 || progressTotal <= 0)
-        {
-            _ui->waveProgressValueLabel->setVisible(false);
-        }
-        else
-        {
-            auto text =
-                    QString::number(progress) + " / " + QString::number(progressTotal);
-
-            _ui->waveProgressValueLabel->setText(text);
-            _ui->waveProgressValueLabel->setVisible(true);
-        }
-    }
-
     void MainWidget::enableDisableTrackInfoButton()
     {
         bool haveTrackHash =
@@ -966,5 +909,4 @@ namespace PMP
         connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
         dialog->open();
     }
-
 }

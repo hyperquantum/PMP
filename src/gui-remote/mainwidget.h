@@ -79,11 +79,6 @@ namespace PMP
         void dynamicModeEnabledChanged();
         void changeDynamicMode(int checkState);
 
-        void waveActiveChanged();
-        void waveProgressChanged();
-        void startHighScoredTracksWave();
-        void terminateHighScoredTracksWave();
-
     private:
         void enableDisableTrackInfoButton();
         void enableDisablePlayerControlButtons();

@@ -35,6 +35,19 @@ namespace PMP
         _ui->setupUi(this);
 
         connect(
+            dynamicModeController, &DynamicModeController::waveStatusChanged,
+            this, &DynamicModeParametersDialog::highScoredModeStatusChanged
+        );
+        connect(
+            _ui->terminateButton, &QPushButton::clicked,
+            this, &DynamicModeParametersDialog::terminateHighScoredTracksMode
+        );
+        connect(
+            _ui->startHighScoredModeButton, &QPushButton::clicked,
+            this, &DynamicModeParametersDialog::startHighScoredTracksMode
+        );
+
+        connect(
             dynamicModeController, &DynamicModeController::noRepetitionSpanSecondsChanged,
             this, &DynamicModeParametersDialog::noRepetitionSpanSecondsChanged
         );
@@ -48,12 +61,67 @@ namespace PMP
             this, &DynamicModeParametersDialog::close
         );
 
+        highScoredModeStatusChanged();
         noRepetitionSpanSecondsChanged();
     }
 
     DynamicModeParametersDialog::~DynamicModeParametersDialog()
     {
         delete _ui;
+    }
+
+    void DynamicModeParametersDialog::startHighScoredTracksMode()
+    {
+        _dynamicModeController->startHighScoredTracksWave();
+    }
+
+    void DynamicModeParametersDialog::terminateHighScoredTracksMode()
+    {
+        _dynamicModeController->terminateHighScoredTracksWave();
+    }
+
+    void DynamicModeParametersDialog::highScoredModeStatusChanged()
+    {
+        auto highScoredModeActive = _dynamicModeController->waveActive();
+
+        if (highScoredModeActive.isUnknown())
+        {
+            _ui->modeValueLabel->clear();
+            _ui->terminateButton->setVisible(false);
+            _ui->progressValueLabel->clear();
+            _ui->startHighScoredModeButton->setEnabled(false);
+        }
+        else if (highScoredModeActive.isFalse())
+        {
+            _ui->modeValueLabel->setText(tr("normal mode"));
+            _ui->terminateButton->setVisible(false);
+            _ui->progressValueLabel->setText(tr("N/A"));
+            _ui->startHighScoredModeButton->setEnabled(true);
+        }
+        else
+        {
+            int progress = _dynamicModeController->waveProgress();
+            int progressTotal = _dynamicModeController->waveProgressTotal();
+
+            _ui->modeValueLabel->setText(tr("high-scored tracks mode"));
+            _ui->terminateButton->setVisible(true);
+
+            if (progress < 0 || progressTotal <= 0)
+            {
+                _ui->progressValueLabel->clear();
+            }
+            else
+            {
+                auto progressText =
+                    QString(tr("%1 / %2"))
+                        .arg(QString::number(progress),
+                             QString::number(progressTotal));
+
+                _ui->progressValueLabel->setText(progressText);
+            }
+
+            _ui->startHighScoredModeButton->setEnabled(false);
+        }
     }
 
     void DynamicModeParametersDialog::noRepetitionSpanSecondsChanged()
