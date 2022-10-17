@@ -43,6 +43,8 @@ endif()
 set(VCS_BRANCH "")
 set(VCS_REVISION_LONG "")
 
+set(DETECT_VCS_INFO OFF)
+
 if (EXISTS "${CMAKE_SOURCE_DIR}/.git")
     set(DETECT_VCS_INFO ON)
 
@@ -50,24 +52,28 @@ if (EXISTS "${CMAKE_SOURCE_DIR}/.git")
     if(NOT GIT_EXECUTABLE OR GIT_EXECUTABLE-NOTFOUND)
         set(DETECT_VCS_INFO OFF)
     endif()
+endif()
 
-    if(DETECT_VCS_INFO)
-        execute_process(
-            COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            OUTPUT_VARIABLE VCS_BRANCH
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-        )
+if(DETECT_VCS_INFO)
+    message(STATUS "Getting git branch and revision")
 
-        execute_process(
-            COMMAND ${GIT_EXECUTABLE} describe --long --tags --always
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            OUTPUT_VARIABLE VCS_REVISION_LONG
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-        )
-    endif()
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE VCS_BRANCH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} describe --long --tags --always
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE VCS_REVISION_LONG
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+else()
+    message(STATUS "Source code not under version control")
 endif()
 
 message(STATUS "PMP version (display): ${PMP_VERSION_DISPLAY}")
