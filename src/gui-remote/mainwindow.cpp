@@ -40,13 +40,13 @@
 #include <QAction>
 #include <QApplication>
 #include <QCoreApplication>
-#include <QDesktopWidget>
 #include <QDockWidget>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QScreen>
 #include <QSettings>
 #include <QStatusBar>
 #include <QTimer>
@@ -92,17 +92,21 @@ namespace PMP
             QSettings settings(QCoreApplication::organizationName(),
                                QCoreApplication::applicationName());
 
-            qDebug() << "Before restore:" << this->pos() << " size:" << this->size();
+            auto geometryBeforeRestore = this->geometry();
+            qDebug() << "Geometry before restore:" << geometryBeforeRestore;
 
             settings.beginGroup("mainwindow");
             restoreGeometry(settings.value("geometry").toByteArray());
 
-            // QTBUG-77385
-            ensureWindowNotOffScreen();
+            auto geometryAfterRestore = this->geometry();
+            qDebug() << "Geometry after restore:" << geometryAfterRestore;
+
+            if (geometryBeforeRestore == geometryAfterRestore)
+                applyDefaultSizeAndPositionToWindow();
+            else
+                ensureWindowNotOffScreen(); // QTBUG-77385
 
             restoreState(settings.value("windowstate").toByteArray());
-
-            qDebug() << "After restore:" << this->pos() << " size:" << this->size();
 
             _musicCollectionDock->setVisible(false); /* because of restoreState above */
         }
@@ -342,17 +346,35 @@ namespace PMP
         _leftStatus->setText("");
     }
 
+    void MainWindow::applyDefaultSizeAndPositionToWindow()
+    {
+        auto* screen = QGuiApplication::primaryScreen();
+        if (screen == nullptr)
+        {
+            qWarning() << "No primary screen found!";
+            return;
+        }
+
+        auto availableGeometry = screen->availableGeometry();
+
+        qDebug() << "Applying default position and size to main window";
+
+        resize(availableGeometry.width() * 4 / 5,
+               availableGeometry.height() * 4 / 5);
+
+        move((availableGeometry.width() - width()) / 2 + availableGeometry.left(),
+             (availableGeometry.height() - height()) / 2 + availableGeometry.top());
+    }
+
     void MainWindow::ensureWindowNotOffScreen()
     {
-        if (!this->geometry().intersects(
-                    QApplication::desktop()->screenGeometry(
-                        QApplication::desktop()->screenNumber(this))))
+        auto screen = QGuiApplication::screenAt(this->geometry().center());
+
+        if (screen == nullptr
+                || !screen->availableGeometry().contains(this->geometry().center()))
         {
-            qWarning() << "Need to apply workaround for QTBUG-77385";
-            auto availableGeometry = QApplication::desktop()->availableGeometry(this);
-            resize(availableGeometry.width() / 2, availableGeometry.height() / 2);
-            move((availableGeometry.width() - width()) / 2,
-                 (availableGeometry.height() - height()) / 2);
+            qDebug() << "main window appears to be off-screen (partially or completely)";
+            applyDefaultSizeAndPositionToWindow();
         }
     }
 

@@ -79,6 +79,7 @@ namespace PMP
         void onLeftStatusTimeout();
 
     private:
+        void applyDefaultSizeAndPositionToWindow();
         void ensureWindowNotOffScreen();
 
         bool keyEventFilter(QKeyEvent* event);
