@@ -79,6 +79,8 @@ namespace PMP
         void onLeftStatusTimeout();
 
     private:
+        void ensureWindowNotOffScreen();
+
         bool keyEventFilter(QKeyEvent* event);
         virtual void closeEvent(QCloseEvent* event);
 

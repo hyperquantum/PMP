@@ -98,16 +98,7 @@ namespace PMP
             restoreGeometry(settings.value("geometry").toByteArray());
 
             // QTBUG-77385
-            if (!this->geometry().intersects(
-                        QApplication::desktop()->screenGeometry(
-                            QApplication::desktop()->screenNumber(this))))
-            {
-                qWarning() << "Need to apply workaround for QTBUG-77385";
-                auto availableGeometry = QApplication::desktop()->availableGeometry(this);
-                resize(availableGeometry.width() / 2, availableGeometry.height() / 2);
-                move((availableGeometry.width() - width()) / 2,
-                     (availableGeometry.height() - height()) / 2);
-            }
+            ensureWindowNotOffScreen();
 
             restoreState(settings.value("windowstate").toByteArray());
 
@@ -349,6 +340,20 @@ namespace PMP
     {
         _leftStatusTimer->stop();
         _leftStatus->setText("");
+    }
+
+    void MainWindow::ensureWindowNotOffScreen()
+    {
+        if (!this->geometry().intersects(
+                    QApplication::desktop()->screenGeometry(
+                        QApplication::desktop()->screenNumber(this))))
+        {
+            qWarning() << "Need to apply workaround for QTBUG-77385";
+            auto availableGeometry = QApplication::desktop()->availableGeometry(this);
+            resize(availableGeometry.width() / 2, availableGeometry.height() / 2);
+            move((availableGeometry.width() - width()) / 2,
+                 (availableGeometry.height() - height()) / 2);
+        }
     }
 
     void MainWindow::onStartFullIndexationTriggered()
