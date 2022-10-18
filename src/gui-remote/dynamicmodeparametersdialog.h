@@ -41,6 +41,9 @@ namespace PMP
         ~DynamicModeParametersDialog();
 
     private Q_SLOTS:
+        void dynamicModeEnabledChanged();
+        void changeDynamicModeEnabled(int checkState);
+
         void startHighScoredTracksMode();
         void terminateHighScoredTracksMode();
         void highScoredModeStatusChanged();

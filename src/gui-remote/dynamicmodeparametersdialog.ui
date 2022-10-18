@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>427</width>
-    <height>351</height>
+    <height>413</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="dynamicModeExplanationLabel">
      <property name="text">
-      <string>Dynamic mode automatically adds random track to the end of the queue.</string>
+      <string>Dynamic mode automatically adds random tracks to the end of the queue when there are less than 10 tracks in the queue. The Expand button can be used to add 5 extra tracks, even when dynamic mode is not enabled.</string>
      </property>
      <property name="wordWrap">
       <bool>true</bool>
@@ -33,6 +33,26 @@
       <size>
        <width>20</width>
        <height>15</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="enableDynamicModeCheckBox">
+     <property name="text">
+      <string>enable dynamic mode</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer_4">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>17</width>
+       <height>10</height>
       </size>
      </property>
     </spacer>

@@ -35,6 +35,15 @@ namespace PMP
         _ui->setupUi(this);
 
         connect(
+            dynamicModeController, &DynamicModeController::dynamicModeEnabledChanged,
+            this, &DynamicModeParametersDialog::dynamicModeEnabledChanged
+        );
+        connect(
+            _ui->enableDynamicModeCheckBox, &QCheckBox::stateChanged,
+            this, &DynamicModeParametersDialog::changeDynamicModeEnabled
+        );
+
+        connect(
             dynamicModeController, &DynamicModeController::waveStatusChanged,
             this, &DynamicModeParametersDialog::highScoredModeStatusChanged
         );
@@ -61,6 +70,7 @@ namespace PMP
             this, &DynamicModeParametersDialog::close
         );
 
+        dynamicModeEnabledChanged();
         highScoredModeStatusChanged();
         noRepetitionSpanSecondsChanged();
     }
@@ -68,6 +78,31 @@ namespace PMP
     DynamicModeParametersDialog::~DynamicModeParametersDialog()
     {
         delete _ui;
+    }
+
+    void DynamicModeParametersDialog::dynamicModeEnabledChanged()
+    {
+        auto enabled = _dynamicModeController->dynamicModeEnabled();
+        _ui->enableDynamicModeCheckBox->setEnabled(enabled.isKnown());
+        _ui->enableDynamicModeCheckBox->setChecked(enabled.isTrue());
+    }
+
+    void DynamicModeParametersDialog::changeDynamicModeEnabled(int checkState)
+    {
+        if (checkState == Qt::Checked)
+        {
+            if (!_dynamicModeController->dynamicModeEnabled().isTrue())
+            {
+                _dynamicModeController->enableDynamicMode();
+            }
+        }
+        else
+        {
+            if (!_dynamicModeController->dynamicModeEnabled().isFalse())
+            {
+                _dynamicModeController->disableDynamicMode();
+            }
+        }
     }
 
     void DynamicModeParametersDialog::startHighScoredTracksMode()
