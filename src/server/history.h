@@ -29,9 +29,7 @@
 
 #include <QDateTime>
 #include <QHash>
-#include <QMutex>
 #include <QObject>
-#include <QSet>
 #include <QSharedPointer>
 
 QT_FORWARD_DECLARE_CLASS(QThreadPool)
