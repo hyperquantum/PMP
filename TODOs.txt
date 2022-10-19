@@ -66,7 +66,6 @@ IDEAS
  * music collection: show some kind of indicator for a track that is already present in the queue
  * music collection: show filtered count / total count
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
- * music collection: merge play history statistics for old and new hashes of the same file
  ** dynamic mode: detect and prevent track repetition with different hash values
  ** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
