@@ -72,6 +72,8 @@ namespace PMP
         Q_EMIT readyForExtraJob();
     }
 
+    static const int maxPrefetchJobs = 2;
+
     HistoryStatisticsPrefetcher::HistoryStatisticsPrefetcher(QObject* parent,
                                                          HashIdRegistrar* hashIdRegistrar,
                                                          History* history,
@@ -81,7 +83,7 @@ namespace PMP
        _history(history),
        _users(users),
        _timer(new QTimer(this)),
-       _workThrottle(new WorkThrottle(this, 5))
+       _workThrottle(new WorkThrottle(this, maxPrefetchJobs))
     {
         connect(_timer, &QTimer::timeout,
                 this, &HistoryStatisticsPrefetcher::doSomething);
