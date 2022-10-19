@@ -158,6 +158,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/connectionwidget.cpp
     gui-remote/delayedstartdialog.cpp
     gui-remote/delayedstartnotification.cpp
+    gui-remote/dynamicmodeparametersdialog.cpp
     gui-remote/gui-remote-metatypes.cpp
     gui-remote/loginwidget.cpp
     gui-remote/mainwidget.cpp
@@ -182,6 +183,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/connectionwidget.h
     gui-remote/delayedstartdialog.h
     gui-remote/delayedstartnotification.h
+    gui-remote/dynamicmodeparametersdialog.h
     gui-remote/loginwidget.h
     gui-remote/mainwidget.h
     gui-remote/mainwindow.h
@@ -200,6 +202,7 @@ set(PMP_GUI_REMOTE_UIS
     gui-remote/collectionwidget.ui
     gui-remote/connectionwidget.ui
     gui-remote/delayedstartdialog.ui
+    gui-remote/dynamicmodeparametersdialog.ui
     gui-remote/loginwidget.ui
     gui-remote/mainwidget.ui
     gui-remote/notificationbar.ui
