@@ -30,11 +30,9 @@
 
 #include <QDateTime>
 #include <QHash>
-#include <QMultiHash>
 #include <QMutex>
 #include <QObject>
 #include <QPair>
-#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QVector>
