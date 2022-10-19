@@ -116,6 +116,7 @@ namespace PMP
     }
 
     bool Server::listen(Player* player, Generator* generator, History* history,
+                        HashIdRegistrar* hashIdRegistrar,
                         Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor,
@@ -125,6 +126,7 @@ namespace PMP
         _player = player;
         _generator = generator;
         _history = history;
+        _hashIdRegistrar = hashIdRegistrar;
         _users = users;
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
@@ -172,7 +174,7 @@ namespace PMP
 
         auto connectedClient =
             new ConnectedClient(
-                connection, serverInterface, _player, _history, _users,
+                connection, serverInterface, _player, _users,
                 _collectionMonitor, _serverHealthMonitor
             );
 
@@ -227,7 +229,14 @@ namespace PMP
 
     ServerInterface* Server::createServerInterface()
     {
-        return new ServerInterface(_settings, this, _player, _generator, _delayedStart);
+        return new ServerInterface(_settings,
+                                   this,
+                                   _player,
+                                   _generator,
+                                   _history,
+                                   _hashIdRegistrar,
+                                   _users,
+                                   _delayedStart);
     }
 
     void Server::determineCaption()

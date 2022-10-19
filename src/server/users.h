@@ -50,6 +50,7 @@ namespace PMP
         Users();
 
         QVector<UserIdAndLogin> getUsers();
+        bool checkUserIdExists(quint32 userId) const;
         QString getUserLogin(quint32 userId) const;
         bool getUserByLogin(QString login, DatabaseRecords::User& user);
         static bool checkUserLoginPassword(DatabaseRecords::User const& user,

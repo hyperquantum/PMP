@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,34 +17,21 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_ADDTOHISTORYTASK_H
-#define PMP_ADDTOHISTORYTASK_H
-
-#include "playerhistoryentry.h"
+#ifndef PMP_TESTHASHRELATIONS_H
+#define PMP_TESTHASHRELATIONS_H
 
 #include <QObject>
-#include <QRunnable>
-#include <QSharedPointer>
 
-namespace PMP
+class TestHashRelations : public QObject
 {
-    class Resolver;
+    Q_OBJECT
+private Q_SLOTS:
+    void areEquivalent();
+    void getEquivalencyGroup_groupIsTheSameForEachMember();
+    void getOtherHashesEquivalentTo_resultDoesNotIncludeArgument();
+    void loadEquivalences();
+    void markAsEquivalent();
+    void markAsEquivalent_joinsExistingGroups();
+};
 
-    class AddToHistoryTask : public QObject, public QRunnable
-    {
-        Q_OBJECT
-    public:
-        AddToHistoryTask(Resolver* resolver, QSharedPointer<PlayerHistoryEntry> entry);
-
-        void run();
-
-    Q_SIGNALS:
-        void updatedHashUserStats(uint hashID, quint32 user,
-                                  QDateTime previouslyHeard, qint16 score);
-
-    private:
-        Resolver* _resolver;
-        QSharedPointer<PlayerHistoryEntry> _entry;
-    };
-}
 #endif

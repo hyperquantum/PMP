@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -185,29 +185,30 @@ namespace PMP
                                                       const Candidate& t2)
     {
         auto user = criteria().user();
-        auto userStats1 = history().getUserStats(t1.id(), user);
-        auto userStats2 = history().getUserStats(t2.id(), user);
+        auto maybeUserStats1 = history().getUserStats(t1.id(), user);
+        auto maybeUserStats2 = history().getUserStats(t2.id(), user);
 
-        if (!userStats1 || !userStats2)
+        if (maybeUserStats1.isNull() || maybeUserStats2.isNull())
         {
-            if (userStats1)
+            if (maybeUserStats1.hasValue())
                 return 1; // 1 is better
-            else if (userStats2)
+            else if (maybeUserStats2.hasValue())
                 return -1; // 2 is better
             else
-                return 0; // equally worse
+                return 0; // equally bad
         }
 
-        int permillage1 =
-                userStats1->haveScore() ? userStats1->score : t1.randomPermillageNumber();
-        int permillage2 =
-                userStats2->haveScore() ? userStats2->score : t2.randomPermillageNumber();
+        auto userStats1 = maybeUserStats1.value();
+        auto userStats2 = maybeUserStats2.value();
+
+        int permillage1 = userStats1.getScoreOr(t1.randomPermillageNumber());
+        int permillage2 = userStats2.getScoreOr(t2.randomPermillageNumber());
 
         if (permillage1 < permillage2) return -1; // 2 is better
         if (permillage1 > permillage2) return 1; // 1 is better
 
-        QDateTime lastHeard1 = userStats1->lastHeard;
-        QDateTime lastHeard2 = userStats2->lastHeard;
+        QDateTime lastHeard1 = userStats1.lastHeard();
+        QDateTime lastHeard2 = userStats2.lastHeard();
 
         if (lastHeard1.isValid() && lastHeard2.isValid())
         {
@@ -234,17 +235,18 @@ namespace PMP
 
         // is score within tolerance?
         uint id = candidate.id();
-        auto userStats = history().getUserStats(id, criteria().user());
+        auto maybeUserStats = history().getUserStats(id, criteria().user());
 
-        if (!userStats)
+        if (maybeUserStats.isNull())
             return false;
 
-        auto score = userStats->score;
+        auto userStats = maybeUserStats.value();
+
         auto scoreThreshold = candidate.randomPermillageNumber() - 100;
-        if (score >= 0 && score < scoreThreshold)
+        if (userStats.scoreIsLessThanXPermille(scoreThreshold))
         {
             qDebug() << "rejecting candidate" << id
-                     << "because it has score" << score
+                     << "because it has score" << userStats.score()
                      << "(threshhold:" << scoreThreshold << ")";
             return false;
         }
@@ -261,14 +263,14 @@ namespace PMP
         // are track stats available?
         uint id = candidate.id();
         auto userStats = history().getUserStats(id, criteria().user());
-        if (!userStats)
+        if (userStats.isNull())
         {
             qDebug() << "rejecting candidate" << id
                      << "because we don't have its user data yet";
             return false;
         }
 
-        if (userStats->scoreLessThanXPercent(30))
+        if (userStats.value().scoreIsLessThanXPercent(30))
         {
             /* reject candidates with a very low score */
             return false;

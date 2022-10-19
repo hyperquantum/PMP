@@ -39,6 +39,7 @@ namespace PMP
         FutureResult(T&& result) : _result(result) {}
 
     private:
+        template<class T1, class T2> friend class Future;
         friend class SimpleFuture<T>;
 
         T _result;
@@ -85,6 +86,23 @@ namespace PMP
         ResultOrError<ResultType, ErrorType> resultOrError()
         {
             return _storage->getResultOrError();
+        }
+
+        Future<SuccessType, FailureType> toTypelessFuture()
+        {
+            auto newStorage = FutureStorage<SuccessType, FailureType>::create();
+
+            _storage->addListener(
+                [newStorage](ResultOrError<ResultType, ErrorType> originalOutcome)
+                {
+                    if (originalOutcome.succeeded())
+                        newStorage->setOutcome(success);
+                    else
+                        newStorage->setOutcome(failure);
+                }
+            );
+
+            return Future<SuccessType, FailureType>(newStorage);
         }
 
         template<class ResultType2, class ErrorType2>
@@ -210,6 +228,12 @@ namespace PMP
             );
 
             return Future<ResultType, ErrorType2>(newStorage);
+        }
+
+        Future(FutureResult<ResultType>&& result)
+         : _storage { FutureStorage<ResultType, ErrorType>::create() }
+        {
+            _storage->setResult(result._result);
         }
 
         static Future fromResult(ResultType result)

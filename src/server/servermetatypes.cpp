@@ -18,7 +18,6 @@
 */
 
 #include "analyzer.h"
-#include "userdataforhashesfetcher.h"
 
 #include <QMetaType>
 #include <QVector>
@@ -32,11 +31,11 @@ namespace PMP
     private:
         ServerMetatypesInit()
         {
+            qRegisterMetaType<QVector<uint>>();
+
             qRegisterMetaType<PMP::FileAnalysis>();
             qRegisterMetaType<PMP::FileHashes>();
             qRegisterMetaType<PMP::FileInfo>();
-            qRegisterMetaType<PMP::UserDataForHash>();
-            qRegisterMetaType<QVector<PMP::UserDataForHash>>();
         }
 
         static ServerMetatypesInit GlobalVariable;

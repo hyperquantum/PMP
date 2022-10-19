@@ -287,7 +287,7 @@ namespace PMP
     {
         /* fetch user stats for this track that will soon enter our picture */
         uint id = _resolver->getID(hash);
-        _history->fetchMissingUserStats(id, _criteria.user());
+        _history->scheduleUserStatsFetchingIfMissing(id, _criteria.user());
     }
 
     void Generator::queueEntryRemoved(quint32, quint32)

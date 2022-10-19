@@ -30,10 +30,11 @@ namespace PMP
     {
         struct HashHistoryStats
         {
+            uint lastHistoryId;
             quint32 hashId;
             quint32 scoreHeardCount;
             QDateTime lastHeard;
-            qint16 score;
+            qint16 averagePermillage;
         };
 
         class User

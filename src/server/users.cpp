@@ -63,6 +63,11 @@ namespace PMP
         return result;
     }
 
+    bool Users::checkUserIdExists(quint32 userId) const
+    {
+        return _usersById.contains(userId);
+    }
+
     QString Users::getUserLogin(quint32 userId) const
     {
         auto it = _usersById.find(userId);

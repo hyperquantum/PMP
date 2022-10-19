@@ -32,6 +32,7 @@ namespace PMP
     class CollectionMonitor;
     class DelayedStart;
     class Generator;
+    class HashIdRegistrar;
     class History;
     class Player;
     class ServerHealthMonitor;
@@ -47,6 +48,7 @@ namespace PMP
                const QUuid& serverInstanceIdentifier);
 
         bool listen(Player* player, Generator* generator, History* history,
+                    HashIdRegistrar* hashIdRegistrar,
                     Users* users,
                     CollectionMonitor* collectionMonitor,
                     ServerHealthMonitor* serverHealthMonitor,
@@ -87,6 +89,7 @@ namespace PMP
         Player* _player;
         Generator* _generator;
         History* _history;
+        HashIdRegistrar* _hashIdRegistrar { nullptr };
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;

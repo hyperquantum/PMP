@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,14 +25,17 @@
 #include <QHash>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP
+{
     class ServerConnection;
 
-    class CollectionWatcherImpl : public CollectionWatcher {
+    class CollectionWatcherImpl : public CollectionWatcher
+    {
         Q_OBJECT
     public:
         explicit CollectionWatcherImpl(ServerConnection* connection);
+
+        void enableCollectionDownloading() override;
 
         QHash<FileHash, CollectionTrackInfo> getCollection() override;
         CollectionTrackInfo getTrack(FileHash const& hash) override;
@@ -53,6 +56,7 @@ namespace PMP {
 
         ServerConnection* _connection;
         QHash<FileHash, CollectionTrackInfo> _collectionHash;
+        bool _autoDownload;
         bool _downloading;
     };
 }

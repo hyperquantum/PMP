@@ -26,7 +26,11 @@
 #include "database.h"
 #include "delayedstart.h"
 #include "generator.h"
+#include "hashidregistrar.h"
+#include "hashrelations.h"
 #include "history.h"
+#include "historystatistics.h"
+#include "historystatisticsprefetcher.h"
 #include "player.h"
 #include "playerqueue.h"
 #include "preloader.h"
@@ -89,7 +93,7 @@ namespace
     bool initialIndexation = true;
 }
 
-void setUpAndRunInitialIndexation(Resolver& resolver)
+static void setUpAndRunInitialIndexation(Resolver& resolver)
 {
     QObject::connect(
         &resolver, &Resolver::fullIndexationRunStatusChanged,
@@ -111,7 +115,48 @@ void setUpAndRunInitialIndexation(Resolver& resolver)
     resolver.startFullIndexation();
 }
 
-int runServer(QCoreApplication& app, bool doIndexation);
+static void loadEquivalencesAndStartStatisticsPrefetchAsync(HashRelations* hashRelations,
+                                                  HistoryStatisticsPrefetcher* prefetcher)
+{
+    auto equivalencesLoadingFuture =
+        Concurrent::run<SuccessType, FailureType>(
+            [hashRelations]() -> ResultOrError<SuccessType, FailureType>
+            {
+                auto db = Database::getDatabaseForCurrentThread();
+                if (!db) return failure; /* database not available */
+
+                auto equivalencesOrError = db->getEquivalences();
+                if (equivalencesOrError.failed())
+                    return failure;
+
+                auto equivalences = equivalencesOrError.result();
+                hashRelations->loadEquivalences(equivalences);
+                qDebug() << "successfully loaded" << equivalences.size()
+                         << "equivalences from the database";
+                return success;
+            }
+        );
+
+    equivalencesLoadingFuture.addListener(
+        prefetcher,
+        [prefetcher](ResultOrError<SuccessType, FailureType> result)
+        {
+            if (result.failed())
+                qDebug() << "failed to load equivalences from the database";
+
+            prefetcher->start();
+        }
+    );
+}
+
+static void startBackgroundTasks(HashRelations* hashRelations,
+                                 HistoryStatisticsPrefetcher* historyStatisticsPrefetcher)
+{
+    loadEquivalencesAndStartStatisticsPrefetchAsync(hashRelations,
+                                                    historyStatisticsPrefetcher);
+}
+
+static int runServer(QCoreApplication& app, bool doIndexation);
 
 int main(int argc, char* argv[])
 {
@@ -137,7 +182,7 @@ int main(int argc, char* argv[])
     return exitCode;
 }
 
-int runServer(QCoreApplication& app, bool doIndexation)
+static int runServer(QCoreApplication& app, bool doIndexation)
 {
     QTextStream out(stdout);
 
@@ -189,13 +234,18 @@ int runServer(QCoreApplication& app, bool doIndexation)
         serverHealthMonitor.setDatabaseUnavailable();
     }
 
-    Resolver resolver;
+    HashIdRegistrar hashIdRegistrar;
+    HashRelations hashRelations;
+    HistoryStatistics historyStatistics(nullptr, &hashRelations);
+    Resolver resolver(&hashIdRegistrar, &hashRelations, &historyStatistics);
 
     Users users;
     Player player(nullptr, &resolver, serverSettings.defaultVolume());
     DelayedStart delayedStart(&player);
     PlayerQueue& queue = player.queue();
-    History history(&player);
+    History history(&player, &hashIdRegistrar, &historyStatistics);
+    HistoryStatisticsPrefetcher historyPrefetcher(nullptr, &hashIdRegistrar, &history,
+                                                  &users);
 
     CollectionMonitor collectionMonitor;
     QObject::connect(
@@ -236,8 +286,8 @@ int runServer(QCoreApplication& app, bool doIndexation)
 
     Server server(nullptr, &serverSettings, serverInstanceIdentifier);
     bool listening =
-        server.listen(&player, &generator, &history, &users, &collectionMonitor,
-                      &serverHealthMonitor, &delayedStart,
+        server.listen(&player, &generator, &history, &hashIdRegistrar, &users,
+                      &collectionMonitor, &serverHealthMonitor, &delayedStart,
                       QHostAddress::Any, 23432);
 
     if (!listening)
@@ -252,6 +302,8 @@ int runServer(QCoreApplication& app, bool doIndexation)
     QObject::connect(&server, &Server::shuttingDown, &app, &QCoreApplication::quit);
 
     printStartupSummary(out, serverSettings, server, player);
+
+    startBackgroundTasks(&hashRelations, &historyPrefetcher);
 
     out << "\n"
         << "Server initialization complete." << Qt::endl
