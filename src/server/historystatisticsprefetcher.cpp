@@ -26,7 +26,6 @@
 #include "history.h"
 #include "users.h"
 
-#include <QRandomGenerator>
 #include <QtDebug>
 #include <QTimer>
 
