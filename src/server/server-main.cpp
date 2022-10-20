@@ -210,10 +210,6 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     /* TODO: do a log cleanup regularly, because a server is likely to be run for days,
      *       weeks, or months before being restarted. */
 
-    /* seed random number generator */
-    // FIXME : stop using qrand(), and then we can remove this call to qsrand()
-    qsrand(QTime::currentTime().msec());
-
     ServerHealthMonitor serverHealthMonitor;
 
     ServerSettings serverSettings;
