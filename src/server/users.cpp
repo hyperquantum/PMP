@@ -23,6 +23,7 @@
 
 #include "database.h"
 
+#include <QRandomGenerator>
 #include <QtGlobal>
 
 namespace PMP
@@ -97,11 +98,12 @@ namespace PMP
 
     QByteArray Users::generateSalt()
     {
+        auto* randomGenerator = QRandomGenerator::global();
+
         QByteArray buffer;
         do
         {
-            // FIXME : stop using qrand()
-            buffer.append((char)(qrand() % 256));
+            buffer.append(char(randomGenerator->bounded(256)));
         }
         while (buffer.size() < 24);
 
