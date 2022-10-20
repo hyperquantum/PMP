@@ -27,6 +27,7 @@
 
 #include <QByteArray>
 #include <QHostInfo>
+#include <QRandomGenerator>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QTimer>
@@ -97,6 +98,8 @@ namespace PMP
         const int passwordLength = 8;
         const int consecutiveCharsDistance = 10;
 
+        auto* randomGenerator = QRandomGenerator::global();
+
         QString serverPassword;
         serverPassword.reserve(passwordLength);
         int prevIndex = -consecutiveCharsDistance;
@@ -105,11 +108,12 @@ namespace PMP
             int index;
             do
             {
-                index = qrand() % chars.length(); // FIXME : don't use qrand()
-            } while (qAbs(index - prevIndex) < consecutiveCharsDistance);
+                index = randomGenerator->bounded(chars.length());
+            }
+            while (qAbs(index - prevIndex) < consecutiveCharsDistance);
+
             prevIndex = index;
-            QChar c = chars[index];
-            serverPassword += c;
+            serverPassword += chars[index];
         }
 
         return serverPassword;
