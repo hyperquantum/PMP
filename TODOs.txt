@@ -100,6 +100,7 @@ IDEAS
  * client: ability to reconnect to the server after the connection was broken
  * take clock difference between client and server into account
  * add button to copy title and artist of current track to clipboard
+ * server database backup and restore
 
 
 USER FRIENDLINESS
