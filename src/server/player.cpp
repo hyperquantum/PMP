@@ -249,11 +249,13 @@ namespace PMP
         auto lengthMilliseconds = _track->lengthInMilliseconds();
         if (lengthMilliseconds < 0)
         {
-            qWarning() << "track duration not known, using backend duration";
+            qWarning() << "PlayerInstance" << _identifier
+                       << ": track duration not known, using backend duration";
             lengthMilliseconds = _player->duration();
             if (lengthMilliseconds <= 0)
             {
-                qWarning() << "track duration still unknown";
+                qWarning() << "PlayerInstance" << _identifier
+                           << ": track duration still unknown";
                 return;
             }
         }
