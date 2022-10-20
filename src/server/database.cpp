@@ -1071,7 +1071,6 @@ namespace PMP
         qDebug() << "Database: query failed:" << error.text();
         qDebug() << " error type:" << error.type();
         qDebug() << " native error code:" << error.nativeErrorCode();
-        qDebug() << " error number:" << error.number();
         qDebug() << " db error:" << error.databaseText();
         qDebug() << " driver error:" << error.driverText();
         qDebug() << " sql:" << q.lastQuery();
@@ -1086,7 +1085,7 @@ namespace PMP
             qDebug() << " connection not valid!";
         }
 
-        if (error.number() != 2006) return false;
+        if (error.nativeErrorCode() != "2006") return false;
 
         /* An extended sleep period followed by a resume will result in the error "MySQL
            server has gone away", error code 2006. In that case we try to reopen the
@@ -1109,7 +1108,6 @@ namespace PMP
             qDebug() << "  FAILED to re-execute query:" << error2.text();
             qDebug() << "  error type:" << error2.type();
             qDebug() << "  native error code:" << error2.nativeErrorCode();
-            qDebug() << "  error number:" << error2.number();
             qDebug() << "  db error:" << error2.databaseText();
             qDebug() << "  driver error:" << error2.driverText();
             qDebug() << "  sql:" << q.lastQuery();
@@ -1133,7 +1131,6 @@ namespace PMP
         qDebug() << "Database: query failed:" << error.text();
         qDebug() << " error type:" << error.type();
         qDebug() << " native error code:" << error.nativeErrorCode();
-        qDebug() << " error number:" << error.number();
         qDebug() << " db error:" << error.databaseText();
         qDebug() << " driver error:" << error.driverText();
         qDebug() << " sql:" << q.lastQuery();
@@ -1151,7 +1148,7 @@ namespace PMP
         /* An extended sleep period followed by a resume will result in the error "MySQL
            server has gone away", error code 2006. In that case we try to reopen the
            connection and re-execute the query. */
-        if (error.number() == 2006)
+        if (error.nativeErrorCode() == "2006")
         {
             qDebug() << " will try to re-establish a connection and re-execute the query";
             _db.close();
@@ -1168,7 +1165,6 @@ namespace PMP
                 qDebug() << "  FAILED to re-execute query:" << error2.text();
                 qDebug() << "  error type:" << error2.type();
                 qDebug() << "  native error code:" << error2.nativeErrorCode();
-                qDebug() << "  error number:" << error2.number();
                 qDebug() << "  db error:" << error2.databaseText();
                 qDebug() << "  driver error:" << error2.driverText();
                 qDebug() << "  sql:" << q.lastQuery();
