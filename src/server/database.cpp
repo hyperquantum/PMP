@@ -791,64 +791,61 @@ namespace PMP
                                                                  quint32 userId,
                                                                  QVector<quint32> hashIds)
     {
-        QVector<HashHistoryStats> result;
-
         if (hashIds.isEmpty())
-            return result;
+            return QVector<HashHistoryStats> {};
 
-        result.reserve(hashIds.size());
+        auto preparer =
+            [=](QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT ha.HashID, hi.LastHistoryId, hi.PrevHeard,"
+                    "       hi2.ScoreHeardCount, hi2.ScorePermillage "
+                    "FROM pmp_hash AS ha"
+                    " LEFT JOIN"
+                    "  (SELECT HashID, MAX(HistoryID) AS LastHistoryId,"
+                    "          MAX(End) AS PrevHeard"
+                    "   FROM pmp_history"
+                    "   WHERE UserID=? GROUP BY HashID) AS hi"
+                    "  ON ha.HashID=hi.HashID"
+                    " LEFT JOIN"
+                    "  (SELECT HashID, COUNT(*) AS ScoreHeardCount,"
+                    "   AVG(Permillage) AS ScorePermillage FROM pmp_history"
+                    "   WHERE UserID=? AND ValidForScoring != 0 GROUP BY HashID) AS hi2"
+                    "  ON ha.HashID=hi2.HashID "
+                    "WHERE ha.HashID IN " + buildParamsList(hashIds.size())
+                );
 
-        QSqlQuery q(_db);
-        q.prepare(
-            "SELECT ha.HashID, hi.LastHistoryId, hi.PrevHeard, hi2.ScoreHeardCount,"
-            "       hi2.ScorePermillage "
-            "FROM pmp_hash AS ha"
-            " LEFT JOIN"
-            "  (SELECT HashID, MAX(HistoryID) AS LastHistoryId, MAX(End) AS PrevHeard"
-            "   FROM pmp_history"
-            "   WHERE UserID=? GROUP BY HashID) AS hi"
-            "  ON ha.HashID=hi.HashID"
-            " LEFT JOIN"
-            "  (SELECT HashID, COUNT(*) AS ScoreHeardCount,"
-            "   AVG(Permillage) AS ScorePermillage FROM pmp_history"
-            "   WHERE UserID=? AND ValidForScoring != 0 GROUP BY HashID) AS hi2"
-            "  ON ha.HashID=hi2.HashID "
-            "WHERE ha.HashID IN " + buildParamsList(hashIds.size())
-        );
-        QVariant userIdParam = (userId == 0) ? /*NULL*/QVariant(QVariant::UInt) : userId;
-        q.addBindValue(userIdParam);
-        q.addBindValue(userIdParam); /* twice */
-        for (auto hashId : hashIds)
-        {
-            q.addBindValue(hashId);
-        }
+                QVariant userIdParam =
+                        (userId == 0) ? /*NULL*/QVariant(QVariant::UInt) : userId;
 
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getHashHistoryStats : could not execute; "
-                     << q.lastError().text() << Qt::endl;
-            return failure;
-        }
+                q.addBindValue(userIdParam);
+                q.addBindValue(userIdParam); /* twice */
+                for (auto hashId : qAsConst(hashIds))
+                {
+                    q.addBindValue(hashId);
+                }
+            };
 
-        while (q.next())
-        {
-            quint32 hashID = q.value(0).toUInt();
-            uint lastHistoryId = getUInt(q.value(1), 0);
-            QDateTime prevHeard = getUtcDateTime(q.value(2));
-            quint32 scoreHeardCount = (quint32)getUInt(q.value(3), 0);
-            qint32 scorePermillage = (qint32)getInt(q.value(4), -1);
+        auto extractRecord =
+            [](QSqlQuery& q)
+            {
+                quint32 hashID = q.value(0).toUInt();
+                uint lastHistoryId = getUInt(q.value(1), 0);
+                QDateTime prevHeard = getUtcDateTime(q.value(2));
+                quint32 scoreHeardCount = (quint32)getUInt(q.value(3), 0);
+                qint32 scorePermillage = (qint32)getInt(q.value(4), -1);
 
-            HashHistoryStats stats;
-            stats.lastHistoryId = lastHistoryId;
-            stats.hashId = hashID;
-            stats.lastHeard = prevHeard;
-            stats.scoreHeardCount = scoreHeardCount;
-            stats.averagePermillage = scorePermillage;
+                HashHistoryStats stats;
+                stats.lastHistoryId = lastHistoryId;
+                stats.hashId = hashID;
+                stats.lastHeard = prevHeard;
+                stats.scoreHeardCount = scoreHeardCount;
+                stats.averagePermillage = scorePermillage;
 
-            result.append(stats);
-        }
+                return stats;
+            };
 
-        return result;
+        return executeRecords<HashHistoryStats>(preparer, extractRecord, hashIds.size());
     }
 
     ResultOrError<QVector<QPair<quint32, quint32>>, FailureType>
