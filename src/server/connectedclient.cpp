@@ -1911,85 +1911,7 @@ namespace PMP
             parseInitiateLoginMessage(message);
             break;
         case ClientMessageType::FinishLoginMessage:
-        {
-            if (messageLength <= 12)
-                return; /* invalid message */
-
-            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 4);
-            int userSaltLength = NetworkUtil::getByteUnsignedToInt(message, 5);
-            int sessionSaltLength = NetworkUtil::getByteUnsignedToInt(message, 6);
-            int hashedPasswordLength = NetworkUtil::getByteUnsignedToInt(message, 7);
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 8);
-
-            qDebug() << "received finish-login request; clientRef:"
-                     << clientReference;
-
-            if (messageLength - 12 !=
-                    loginLength + userSaltLength + sessionSaltLength
-                    + hashedPasswordLength)
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference
-                );
-                return; /* invalid message */
-            }
-
-            QByteArray loginBytes = message.mid(12, loginLength);
-            QString login = QString::fromUtf8(loginBytes);
-
-            DatabaseRecords::User user;
-            bool userLookup = _users->getUserByLogin(login, user);
-
-            if (!userLookup) /* user does not exist */
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::UserLoginAuthenticationFailed,
-                    clientReference, 0, loginBytes
-                );
-                return;
-            }
-
-            qDebug() << " user lookup successfull: user id =" << user.id
-                     << "; login =" << user.login;
-
-            QByteArray userSaltFromClient = message.mid(12 + loginLength, userSaltLength);
-            QByteArray sessionSaltFromClient =
-                message.mid(12 + loginLength + userSaltLength, sessionSaltLength);
-
-            if (login != _userAccountLoggingIn
-                || userSaltFromClient != user.salt
-                || sessionSaltFromClient != _sessionSaltForUserLoggingIn)
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::UserAccountLoginMismatch,
-                    clientReference, 0, loginBytes
-                );
-                return;
-            }
-
-            /* clean up state */
-            _userAccountLoggingIn = "";
-            _sessionSaltForUserLoggingIn.clear();
-
-            QByteArray hashedPasswordFromClient =
-                message.mid(12 + loginLength + userSaltLength + sessionSaltLength);
-
-            bool loginSucceeded =
-                Users::checkUserLoginPassword(
-                    user, sessionSaltFromClient, hashedPasswordFromClient
-                );
-
-            if (loginSucceeded)
-            {
-                _serverInterface->setLoggedIn(user.id, user.login);
-                sendSuccessMessage(clientReference, user.id);
-            }
-            else
-            {
-                sendResultMessage(ResultMessageErrorCode::UserLoginAuthenticationFailed,
-                                  clientReference);
-            }
-        }
+            parseFinishLoginMessage(message);
             break;
         case ClientMessageType::CollectionFetchRequestMessage:
             parseCollectionFetchRequestMessage(message);
@@ -2280,6 +2202,87 @@ namespace PMP
         _sessionSaltForUserLoggingIn = sessionSalt;
 
         sendUserLoginSaltMessage(login, userSalt, sessionSalt);
+    }
+
+    void ConnectedClient::parseFinishLoginMessage(const QByteArray& message)
+    {
+        if (message.length() <= 12)
+            return; /* invalid message */
+
+        int loginLength = NetworkUtil::getByteUnsignedToInt(message, 4);
+        int userSaltLength = NetworkUtil::getByteUnsignedToInt(message, 5);
+        int sessionSaltLength = NetworkUtil::getByteUnsignedToInt(message, 6);
+        int hashedPasswordLength = NetworkUtil::getByteUnsignedToInt(message, 7);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 8);
+
+        qDebug() << "received finish-login request; clientRef:"
+                 << clientReference;
+
+        if (message.length() - 12 !=
+                loginLength + userSaltLength + sessionSaltLength
+                + hashedPasswordLength)
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::InvalidMessageStructure, clientReference
+            );
+            return; /* invalid message */
+        }
+
+        QByteArray loginBytes = message.mid(12, loginLength);
+        QString login = QString::fromUtf8(loginBytes);
+
+        DatabaseRecords::User user;
+        bool userLookup = _users->getUserByLogin(login, user);
+
+        if (!userLookup) /* user does not exist */
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                clientReference, 0, loginBytes
+            );
+            return;
+        }
+
+        qDebug() << " user lookup successfull: user id =" << user.id
+                 << "; login =" << user.login;
+
+        QByteArray userSaltFromClient = message.mid(12 + loginLength, userSaltLength);
+        QByteArray sessionSaltFromClient =
+            message.mid(12 + loginLength + userSaltLength, sessionSaltLength);
+
+        if (login != _userAccountLoggingIn
+            || userSaltFromClient != user.salt
+            || sessionSaltFromClient != _sessionSaltForUserLoggingIn)
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::UserAccountLoginMismatch,
+                clientReference, 0, loginBytes
+            );
+            return;
+        }
+
+        /* clean up state */
+        _userAccountLoggingIn = "";
+        _sessionSaltForUserLoggingIn.clear();
+
+        QByteArray hashedPasswordFromClient =
+            message.mid(12 + loginLength + userSaltLength + sessionSaltLength);
+
+        bool loginSucceeded =
+            Users::checkUserLoginPassword(
+                user, sessionSaltFromClient, hashedPasswordFromClient
+            );
+
+        if (loginSucceeded)
+        {
+            _serverInterface->setLoggedIn(user.id, user.login);
+            sendSuccessMessage(clientReference, user.id);
+        }
+        else
+        {
+            sendResultMessage(ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                              clientReference);
+        }
     }
 
     void ConnectedClient::parseActivateDelayedStartRequest(const QByteArray& message)
