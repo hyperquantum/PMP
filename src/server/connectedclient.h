@@ -186,6 +186,7 @@ namespace PMP
         void parseSingleByteActionMessage(QByteArray const& message);
         void parseParameterlessActionMessage(QByteArray const& message);
         void parseInitiateNewUserAccountMessage(QByteArray const& message);
+        void parseFinishNewUserAccountMessage(QByteArray const& message);
         void parseActivateDelayedStartRequest(QByteArray const& message);
         void parsePlayerSeekRequestMessage(QByteArray const& message);
         void parseTrackInfoRequestMessage(QByteArray const& message);

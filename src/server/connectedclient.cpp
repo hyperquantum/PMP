@@ -1905,73 +1905,7 @@ namespace PMP
             parseInitiateNewUserAccountMessage(message);
             break;
         case ClientMessageType::FinishNewUserAccountMessage:
-        {
-            if (messageLength <= 8)
-                return; /* invalid message */
-
-            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
-            int saltLength = NetworkUtil::getByteUnsignedToInt(message, 3);
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-
-            qDebug() << "received finish-new-user-account request; clientRef:"
-                     << clientReference;
-
-            if (messageLength - 8 <= loginLength + saltLength)
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference
-                );
-                return; /* invalid message */
-            }
-
-            QByteArray loginBytes = message.mid(8, loginLength);
-            QString login = QString::fromUtf8(loginBytes);
-            QByteArray saltFromClient = message.mid(8 + loginLength, saltLength);
-
-            if (login != _userAccountRegistering
-                || saltFromClient != _saltForUserAccountRegistering)
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::UserAccountRegistrationMismatch,
-                    clientReference, 0, loginBytes
-                );
-                return;
-            }
-
-            /* clean up state */
-            _userAccountRegistering = "";
-            _saltForUserAccountRegistering.clear();
-
-            QByteArray hashedPasswordFromClient =
-                message.mid(8 + loginLength + saltLength);
-
-            /* simple way to get the expected length of the hashed password */
-            QByteArray hashTest =
-                NetworkProtocol::hashPassword(saltFromClient, "test");
-
-            if (hashedPasswordFromClient.size() != hashTest.size())
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference
-                );
-                return;
-            }
-
-            auto result =
-                _users->registerNewAccount(
-                    login, saltFromClient, hashedPasswordFromClient
-                );
-
-            if (result.succeeded())
-            {
-                sendSuccessMessage(clientReference, result.result());
-            }
-            else
-            {
-                sendResultMessage(Users::toNetworkProtocolError(result.error()),
-                                  clientReference);
-            }
-        }
+            parseFinishNewUserAccountMessage(message);
             break;
         case ClientMessageType::InitiateLoginMessage:
         {
@@ -2273,6 +2207,75 @@ namespace PMP
                 Users::toNetworkProtocolError(result.error()), clientReference, 0,
                 loginBytes
             );
+        }
+    }
+
+    void ConnectedClient::parseFinishNewUserAccountMessage(const QByteArray& message)
+    {
+        if (message.length() <= 8)
+            return; /* invalid message */
+
+        int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
+        int saltLength = NetworkUtil::getByteUnsignedToInt(message, 3);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "received finish-new-user-account request; clientRef:"
+                 << clientReference;
+
+        if (message.length() - 8 <= loginLength + saltLength)
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::InvalidMessageStructure, clientReference
+            );
+            return; /* invalid message */
+        }
+
+        QByteArray loginBytes = message.mid(8, loginLength);
+        QString login = QString::fromUtf8(loginBytes);
+        QByteArray saltFromClient = message.mid(8 + loginLength, saltLength);
+
+        if (login != _userAccountRegistering
+            || saltFromClient != _saltForUserAccountRegistering)
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::UserAccountRegistrationMismatch,
+                clientReference, 0, loginBytes
+            );
+            return;
+        }
+
+        /* clean up state */
+        _userAccountRegistering = "";
+        _saltForUserAccountRegistering.clear();
+
+        QByteArray hashedPasswordFromClient =
+            message.mid(8 + loginLength + saltLength);
+
+        /* simple way to get the expected length of the hashed password */
+        QByteArray hashTest =
+            NetworkProtocol::hashPassword(saltFromClient, "test");
+
+        if (hashedPasswordFromClient.size() != hashTest.size())
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::InvalidMessageStructure, clientReference
+            );
+            return;
+        }
+
+        auto result =
+            _users->registerNewAccount(
+                login, saltFromClient, hashedPasswordFromClient
+            );
+
+        if (result.succeeded())
+        {
+            sendSuccessMessage(clientReference, result.result());
+        }
+        else
+        {
+            sendResultMessage(Users::toNetworkProtocolError(result.error()),
+                              clientReference);
         }
     }
 
