@@ -224,7 +224,7 @@ namespace PMP
         quint32 _lastSentNowPlayingID;
         QString _userAccountRegistering;
         QByteArray _saltForUserAccountRegistering;
-        QString _userAccountLoggingIn;
+        quint32 _userIdLoggingIn { 0 };
         QByteArray _sessionSaltForUserLoggingIn;
         bool _terminated;
         bool _binaryMode;

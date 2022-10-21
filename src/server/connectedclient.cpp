@@ -2198,7 +2198,7 @@ namespace PMP
         QByteArray userSalt = user.salt;
         QByteArray sessionSalt = Users::generateSalt();
 
-        _userAccountLoggingIn = user.login;
+        _userIdLoggingIn = user.id;
         _sessionSaltForUserLoggingIn = sessionSalt;
 
         sendUserLoginSaltMessage(login, userSalt, sessionSalt);
@@ -2256,7 +2256,7 @@ namespace PMP
         qDebug() << " user lookup successfull: user id =" << user.id
                  << "; login =" << user.login;
 
-        if (login != _userAccountLoggingIn
+        if (user.id != _userIdLoggingIn
             || userSaltFromClient != user.salt
             || sessionSaltFromClient != _sessionSaltForUserLoggingIn)
         {
@@ -2268,7 +2268,7 @@ namespace PMP
         }
 
         /* clean up state */
-        _userAccountLoggingIn = "";
+        _userIdLoggingIn = 0;
         _sessionSaltForUserLoggingIn.clear();
 
         bool loginSucceeded =
