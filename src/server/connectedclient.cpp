@@ -1902,39 +1902,7 @@ namespace PMP
             parseQueueEntryMoveRequestMessage(message);
             break;
         case ClientMessageType::InitiateNewUserAccountMessage:
-        {
-            if (messageLength <= 8)
-                return; /* invalid message */
-
-            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-
-            if (messageLength - 8 != loginLength)
-                return; /* invalid message */
-
-            qDebug() << "received initiate-new-user-account request; clientRef:"
-                     << clientReference;
-
-            QByteArray loginBytes = message.mid(8);
-            QString login = QString::fromUtf8(loginBytes);
-
-            auto result = Users::generateSaltForNewAccount(login);
-
-            if (result.succeeded())
-            {
-                auto salt = result.result();
-                _userAccountRegistering = login;
-                _saltForUserAccountRegistering = salt;
-                sendNewUserAccountSaltMessage(login, salt);
-            }
-            else
-            {
-                sendResultMessage(
-                    Users::toNetworkProtocolError(result.error()), clientReference, 0,
-                    loginBytes
-                );
-            }
-        }
+            parseInitiateNewUserAccountMessage(message);
             break;
         case ClientMessageType::FinishNewUserAccountMessage:
         {
@@ -2271,6 +2239,41 @@ namespace PMP
         auto action = static_cast<ParameterlessActionCode>(numericActionCode);
 
         handleParameterlessAction(action, clientReference);
+    }
+
+    void ConnectedClient::parseInitiateNewUserAccountMessage(const QByteArray& message)
+    {
+        if (message.length() <= 8)
+            return; /* invalid message */
+
+        int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        if (message.length() - 8 != loginLength)
+            return; /* invalid message */
+
+        qDebug() << "received initiate-new-user-account request; clientRef:"
+                 << clientReference;
+
+        QByteArray loginBytes = message.mid(8);
+        QString login = QString::fromUtf8(loginBytes);
+
+        auto result = Users::generateSaltForNewAccount(login);
+
+        if (result.succeeded())
+        {
+            auto salt = result.result();
+            _userAccountRegistering = login;
+            _saltForUserAccountRegistering = salt;
+            sendNewUserAccountSaltMessage(login, salt);
+        }
+        else
+        {
+            sendResultMessage(
+                Users::toNetworkProtocolError(result.error()), clientReference, 0,
+                loginBytes
+            );
+        }
     }
 
     void ConnectedClient::parseActivateDelayedStartRequest(const QByteArray& message)
