@@ -1918,11 +1918,11 @@ namespace PMP
             QByteArray loginBytes = message.mid(8);
             QString login = QString::fromUtf8(loginBytes);
 
-            QByteArray salt;
-            Users::ErrorCode result = Users::generateSaltForNewAccount(login, salt);
+            auto result = Users::generateSaltForNewAccount(login);
 
-            if (result == Users::Successfull)
+            if (result.succeeded())
             {
+                auto salt = result.result();
                 _userAccountRegistering = login;
                 _saltForUserAccountRegistering = salt;
                 sendNewUserAccountSaltMessage(login, salt);
@@ -1930,7 +1930,8 @@ namespace PMP
             else
             {
                 sendResultMessage(
-                    Users::toNetworkProtocolError(result), clientReference, 0, loginBytes
+                    Users::toNetworkProtocolError(result.error()), clientReference, 0,
+                    loginBytes
                 );
             }
         }
@@ -1988,16 +1989,20 @@ namespace PMP
                 return;
             }
 
-            QPair<Users::ErrorCode, quint32> result =
+            auto result =
                 _users->registerNewAccount(
                     login, saltFromClient, hashedPasswordFromClient
                 );
 
-            /* send error or success message */
-            sendResultMessage(
-                Users::toNetworkProtocolError(result.first),
-                clientReference, result.second
-            );
+            if (result.succeeded())
+            {
+                sendSuccessMessage(clientReference, result.result());
+            }
+            else
+            {
+                sendResultMessage(Users::toNetworkProtocolError(result.error()),
+                                  clientReference);
+            }
         }
             break;
         case ClientMessageType::InitiateLoginMessage:

@@ -21,12 +21,12 @@
 #define PMP_USERS_H
 
 #include "common/resultmessageerrorcode.h"
+#include "common/resultorerror.h"
 
 #include "databaserecords.h"
 
 #include <QHash>
 #include <QObject>
-#include <QPair>
 #include <QString>
 #include <QtGlobal>
 #include <QVector>
@@ -41,7 +41,7 @@ namespace PMP
     public:
         enum ErrorCode
         {
-            Successfull = 0,
+            UnknownError = 0,
             InvalidAccountName = 1,
             AccountAlreadyExists = 2,
             DatabaseProblem = 3
@@ -58,10 +58,10 @@ namespace PMP
                                            QByteArray const& hashedPassword);
 
         static QByteArray generateSalt();
-        static ErrorCode generateSaltForNewAccount(QString accountName,
-                                                   QByteArray& salt);
+        static ResultOrError<QByteArray, ErrorCode> generateSaltForNewAccount(
+                                                                    QString accountName);
 
-        QPair<ErrorCode, quint32> registerNewAccount(QString accountName,
+        ResultOrError<quint32, ErrorCode> registerNewAccount(QString accountName,
                                                      QByteArray const& salt,
                                                      QByteArray const& hashedPassword);
 

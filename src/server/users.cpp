@@ -120,8 +120,8 @@ namespace PMP
         return buffer;
     }
 
-    Users::ErrorCode Users::generateSaltForNewAccount(QString accountName,
-                                                      QByteArray& salt)
+    ResultOrError<QByteArray, Users::ErrorCode> Users::generateSaltForNewAccount(
+                                                                    QString accountName)
     {
         QString account = accountName.trimmed();
 
@@ -146,13 +146,13 @@ namespace PMP
             return DatabaseProblem;
         }
 
-        salt = generateSalt();
-
-        return Successfull;
+        auto salt = generateSalt();
+        return salt;
     }
 
-    QPair<Users::ErrorCode, quint32> Users::registerNewAccount(QString accountName,
-                                                               QByteArray const& salt,
+    ResultOrError<quint32, Users::ErrorCode> Users::registerNewAccount(
+                                                        QString accountName,
+                                                        QByteArray const& salt,
                                                         QByteArray const& hashedPassword)
     {
         QString account = accountName.trimmed();
@@ -165,7 +165,7 @@ namespace PMP
             || account.length() == 0 || account.length() > 63
             || account.compare("PUBLIC", Qt::CaseInsensitive) == 0)
         {
-            return QPair<Users::ErrorCode, quint32>(InvalidAccountName, 0);
+            return InvalidAccountName;
         }
 
         auto db = Database::getDatabaseForCurrentThread();
@@ -173,35 +173,35 @@ namespace PMP
         {
             auto userExistsOrError = db->checkUserExists(accountName);
             if (userExistsOrError.failed())
-                return QPair<Users::ErrorCode, quint32>(AccountAlreadyExists, 0);
+                return DatabaseProblem;
 
             if (userExistsOrError.result() == true)
-                return QPair<Users::ErrorCode, quint32>(AccountAlreadyExists, 0);
+                return AccountAlreadyExists;
         }
         else
         {
-            return QPair<Users::ErrorCode, quint32>(DatabaseProblem, 0);
+            return DatabaseProblem;
         }
 
         DatabaseRecords::User u(0, accountName, salt, hashedPassword);
 
         auto newUserIdOrError = db->registerNewUser(u);
         if (newUserIdOrError.failed())
-            return QPair<ErrorCode, quint32>(DatabaseProblem, 0);
+            return DatabaseProblem;
 
         u.id = newUserIdOrError.result();
 
         loadUsers(); /* reload users list */
 
-        return QPair<ErrorCode, quint32>(Successfull, u.id);
+        return u.id;
     }
 
     ResultMessageErrorCode Users::toNetworkProtocolError(ErrorCode code)
     {
         switch (code)
         {
-        case Successfull:
-            return ResultMessageErrorCode::NoError;
+        case UnknownError:
+            return ResultMessageErrorCode::UnknownError;
 
         case InvalidAccountName:
             return ResultMessageErrorCode::InvalidUserAccountName;
