@@ -442,32 +442,29 @@ namespace PMP
     ResultOrError<QVector<QPair<uint, FileHash> >, FailureType> Database::getHashes(
                                                                         uint largerThanID)
     {
-        QSqlQuery q(_db);
-        q.prepare(
-            "SELECT HashID,InputLength,`SHA1`,`MD5` FROM pmp_hash"
-            " WHERE HashID > ? "
-            "ORDER BY HashID"
-        );
-        q.addBindValue(largerThanID);
+        auto preparer =
+            [=](QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT HashID,InputLength,`SHA1`,`MD5` FROM pmp_hash"
+                    " WHERE HashID > ? "
+                    "ORDER BY HashID"
+                );
+                q.addBindValue(largerThanID);
+            };
 
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getHashes : could not execute; "
-                     << q.lastError().text() << Qt::endl;
-            return failure;
-        }
+        auto extractRecord =
+            [](QSqlQuery& q) -> QPair<uint,FileHash>
+            {
+                uint hashID = q.value(0).toUInt();
+                uint length = q.value(1).toUInt();
+                QByteArray sha1 = QByteArray::fromHex(q.value(2).toByteArray());
+                QByteArray md5 = QByteArray::fromHex(q.value(3).toByteArray());
 
-        QVector<QPair<uint,FileHash> > result;
-        while (q.next())
-        {
-            uint hashID = q.value(0).toUInt();
-            uint length = q.value(1).toUInt();
-            QByteArray sha1 = QByteArray::fromHex(q.value(2).toByteArray());
-            QByteArray md5 = QByteArray::fromHex(q.value(3).toByteArray());
-            result.append(QPair<uint,FileHash>(hashID, FileHash(length, sha1, md5)));
-        }
+                return { hashID, FileHash(length, sha1, md5) };
+            };
 
-        return result;
+        return executeRecords<QPair<uint, FileHash>>(preparer, extractRecord);
     }
 
     bool Database::registerFilenameSeen(uint hashId, const QString& filenameWithoutPath,
