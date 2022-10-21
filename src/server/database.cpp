@@ -467,13 +467,14 @@ namespace PMP
         return executeRecords<QPair<uint, FileHash>>(preparer, extractRecord);
     }
 
-    bool Database::registerFilenameSeen(uint hashId, const QString& filenameWithoutPath,
-                                        int currentYear)
+    ResultOrError<SuccessType, FailureType> Database::registerFilenameSeen(uint hashId,
+                                                    const QString& filenameWithoutPath,
+                                                    int currentYear)
     {
         /* We do not support extremely long file names.  Lookup for those files should be
            done by other means. */
         if (filenameWithoutPath.length() > 255)
-            return false;
+            return failure;
 
         /* A race condition could cause duplicate records to be registered; that is
            tolerable however. */
@@ -489,13 +490,13 @@ namespace PMP
         query.addBindValue(filenameWithoutPath);
 
         if (!executeQuery(query))
-            return false;
+            return failure;
 
         if (query.next())
         {
             int oldYear = query.value(0).toInt();
             if (oldYear == currentYear)
-                return true; /* nothing to update */
+                return success; /* nothing to update */
 
             /* Delete existing entries with an older year or without a year. This also
                causes duplicate entries to be cleaned up eventually. */
@@ -507,7 +508,7 @@ namespace PMP
             query.addBindValue(filenameWithoutPath);
 
             if (!executeQuery(query))
-                return false;
+                return failure;
         }
 
         query.prepare(
@@ -519,9 +520,9 @@ namespace PMP
         query.addBindValue(currentYear);
 
         if (!executeQuery(query))
-            return false;
+            return failure;
 
-        return true;
+        return success;
     }
 
     ResultOrError<QVector<QString>, FailureType> Database::getFilenames(uint hashID)
