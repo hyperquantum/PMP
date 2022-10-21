@@ -1170,7 +1170,7 @@ namespace PMP
     }
 
     void ConnectedClient::sendPossibleTrackFilenames(quint32 queueID,
-                                                     QList<QString> const& names)
+                                                     QVector<QString> const& names)
     {
         QByteArray message;
         message.reserve(2 + 4 + names.size() * (4 + 30)); /* only an approximation */
@@ -2378,7 +2378,7 @@ namespace PMP
 
         future.addResultListener(
             this,
-            [this, queueId](QList<QString> result)
+            [this, queueId](QVector<QString> result)
             {
                 sendPossibleTrackFilenames(queueId, result);
             }

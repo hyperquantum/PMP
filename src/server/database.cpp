@@ -527,30 +527,25 @@ namespace PMP
         return true;
     }
 
-    ResultOrError<QList<QString>, FailureType> Database::getFilenames(uint hashID)
+    ResultOrError<QVector<QString>, FailureType> Database::getFilenames(uint hashID)
     {
-        QSqlQuery q(_db);
-        q.prepare( // we use DISTINCT because there's no unique index
-            "SELECT DISTINCT `FilenameWithoutDir` FROM pmp_filename"
-            " WHERE HashID=?"
-        );
-        q.addBindValue(hashID);
+        auto preparer =
+            [=](QSqlQuery& q)
+            {
+                q.prepare( // we use DISTINCT because there's no unique index
+                    "SELECT DISTINCT `FilenameWithoutDir` FROM pmp_filename"
+                    " WHERE HashID=?"
+                );
+                q.addBindValue(hashID);
+            };
 
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getFilenames : could not execute; "
-                     << q.lastError().text() << Qt::endl;
-            return failure;
-        }
+        auto extractRecord =
+            [](QSqlQuery& q)
+            {
+                return q.value(0).toString();
+            };
 
-        QList<QString> result;
-        while (q.next())
-        {
-            QString name = q.value(0).toString();
-            result.append(name);
-        }
-
-        return result;
+        return executeRecords<QString>(preparer, extractRecord);
     }
 
     void Database::registerFileSizeSeen(uint hashId, qint64 size, int currentYear)
@@ -1041,6 +1036,32 @@ namespace PMP
 
         d = QDateTime();
         return false;
+    }
+
+    template<class T>
+    ResultOrError<QVector<T>, FailureType> Database::executeRecords(
+                                            std::function<void (QSqlQuery&)> preparer,
+                                            std::function<T (QSqlQuery&)> extractRecord,
+                                            int recordsToReserveCount)
+    {
+        QVector<T> vector;
+
+        auto resultGetter =
+            [&vector, extractRecord, recordsToReserveCount] (QSqlQuery& q)
+            {
+                if (recordsToReserveCount >= 0)
+                    vector.reserve(recordsToReserveCount);
+
+                while (q.next())
+                {
+                    vector.append(extractRecord(q));
+                }
+            };
+
+        if (executeQuery(preparer, true, resultGetter))
+            return vector;
+
+        return failure;
     }
 
     std::function<void (QSqlQuery&)> Database::prepareSimple(QString sql)

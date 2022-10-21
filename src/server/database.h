@@ -64,7 +64,7 @@ namespace PMP
 
         bool registerFilenameSeen(uint hashId, const QString& filenameWithoutPath,
                                   int currentYear);
-        ResultOrError<QList<QString>, FailureType> getFilenames(uint hashID);
+        ResultOrError<QVector<QString>, FailureType> getFilenames(uint hashID);
 
         void registerFileSizeSeen(uint hashId, qint64 size, int currentYear);
         ResultOrError<QList<qint64>, FailureType> getFileSizes(uint hashID);
@@ -114,6 +114,12 @@ namespace PMP
                            uint& i, uint defaultValue);
         bool executeScalar(std::function<void (QSqlQuery&)> preparer,
                            QDateTime& d);
+
+        template<class T>
+        ResultOrError<QVector<T>, FailureType> executeRecords(
+                                            std::function<void (QSqlQuery&)> preparer,
+                                            std::function<T (QSqlQuery&)> extractRecord,
+                                            int recordsToReserveCount = -1);
 
         bool executeVoid(std::function<void (QSqlQuery&)> preparer);
 

@@ -250,7 +250,7 @@ namespace PMP
         return overview;
     }
 
-    Future<QList<QString>, Result> ServerInterface::getPossibleFilenamesForQueueEntry(
+    Future<QVector<QString>, Result> ServerInterface::getPossibleFilenamesForQueueEntry(
                                                                                   uint id)
     {
         if (id <= 0) /* invalid queue ID */
@@ -267,8 +267,8 @@ namespace PMP
         uint hashId = _player->resolver().getID(hash);
 
         auto future =
-            Concurrent::run<QList<QString>, FailureType>(
-                [hashId]() -> ResultOrError<QList<QString>, FailureType>
+            Concurrent::run<QVector<QString>, FailureType>(
+                [hashId]() -> ResultOrError<QVector<QString>, FailureType>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)

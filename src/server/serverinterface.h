@@ -100,7 +100,7 @@ namespace PMP
 
         PlayerStateOverview getPlayerStateOverview();
 
-        Future<QList<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
+        Future<QVector<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
 
         Result enqueue(FileHash hash);
         Result insertAtFront(FileHash hash);
