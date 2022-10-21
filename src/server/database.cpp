@@ -479,47 +479,61 @@ namespace PMP
         /* A race condition could cause duplicate records to be registered; that is
            tolerable however. */
 
-        QSqlQuery query(_db);
-        query.prepare(
-            "SELECT `YearLastSeen` FROM pmp_filename "
-            "WHERE `HashID`=? AND `FilenameWithoutDir`=? "
-            "ORDER BY COALESCE(`YearLastSeen`, 0) "
-            "LIMIT 1"
-        );
-        query.addBindValue(hashId);
-        query.addBindValue(filenameWithoutPath);
+        /* step 1 - find the oldest year that has been registered (or 0 for NULL) */
 
-        if (!executeQuery(query))
+        auto preparer1 =
+            [=](QSqlQuery& query)
+            {
+                query.prepare(
+                    "SELECT `YearLastSeen` FROM pmp_filename "
+                    "WHERE `HashID`=? AND `FilenameWithoutDir`=? "
+                    "ORDER BY COALESCE(`YearLastSeen`, 0) "
+                    "LIMIT 1"
+                );
+                query.addBindValue(hashId);
+                query.addBindValue(filenameWithoutPath);
+            };
+
+        int oldYear;
+        if (!executeScalar(preparer1, oldYear, -1))
             return failure;
 
-        if (query.next())
-        {
-            int oldYear = query.value(0).toInt();
-            if (oldYear == currentYear)
-                return success; /* nothing to update */
+        if (oldYear == currentYear)
+            return success; /* nothing to update */
 
-            /* Delete existing entries with an older year or without a year. This also
-               causes duplicate entries to be cleaned up eventually. */
-            query.prepare(
-                "DELETE FROM pmp_filename "
-                "WHERE `HashID`=? AND `FilenameWithoutDir`=?"
-            );
-            query.addBindValue(hashId);
-            query.addBindValue(filenameWithoutPath);
+        /* step 2 - delete existing entries with an older year or without a year. This
+                    also causes duplicate entries to be cleaned up eventually. */
 
-            if (!executeQuery(query))
-                return failure;
-        }
+        auto preparer2 =
+            [=](QSqlQuery& query)
+            {
+                query.prepare(
+                    "DELETE FROM pmp_filename "
+                    "WHERE `HashID`=? AND `FilenameWithoutDir`=?"
+                );
+                query.addBindValue(hashId);
+                query.addBindValue(filenameWithoutPath);
+            };
 
-        query.prepare(
-            "INSERT INTO pmp_filename(`HashID`,`FilenameWithoutDir`,`YearLastSeen`) "
-            "VALUES(?,?,?)"
-        );
-        query.addBindValue(hashId);
-        query.addBindValue(filenameWithoutPath);
-        query.addBindValue(currentYear);
+        if (!executeVoid(preparer2))
+            return failure;
 
-        if (!executeQuery(query))
+        /* step 3 - insert the filename with the current year */
+
+        auto preparer3 =
+            [=](QSqlQuery& query)
+            {
+                query.prepare(
+                    "INSERT INTO pmp_filename(`HashID`,`FilenameWithoutDir`,"
+                    "                         `YearLastSeen`) "
+                    "VALUES(?,?,?)"
+                );
+                query.addBindValue(hashId);
+                query.addBindValue(filenameWithoutPath);
+                query.addBindValue(currentYear);
+            };
+
+        if (!executeVoid(preparer3))
             return failure;
 
         return success;
