@@ -1908,49 +1908,7 @@ namespace PMP
             parseFinishNewUserAccountMessage(message);
             break;
         case ClientMessageType::InitiateLoginMessage:
-        {
-            if (messageLength <= 8)
-                return; /* invalid message */
-
-            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-
-            if (messageLength - 8 != loginLength)
-                return; /* invalid message */
-
-            qDebug() << "received initiate-login request; clientRef:"
-                     << clientReference;
-
-            if (isLoggedIn()) /* already logged in */
-            {
-                sendResultMessage(ResultMessageErrorCode::AlreadyLoggedIn,
-                                  clientReference);
-                return;
-            }
-
-            QByteArray loginBytes = message.mid(8);
-            QString login = QString::fromUtf8(loginBytes);
-
-            DatabaseRecords::User user;
-            bool userLookup = _users->getUserByLogin(login, user);
-
-            if (!userLookup) /* user does not exist */
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::UserLoginAuthenticationFailed,
-                    clientReference, 0, loginBytes
-                );
-                return;
-            }
-
-            QByteArray userSalt = user.salt;
-            QByteArray sessionSalt = Users::generateSalt();
-
-            _userAccountLoggingIn = user.login;
-            _sessionSaltForUserLoggingIn = sessionSalt;
-
-            sendUserLoginSaltMessage(login, userSalt, sessionSalt);
-        }
+            parseInitiateLoginMessage(message);
             break;
         case ClientMessageType::FinishLoginMessage:
         {
@@ -2277,6 +2235,51 @@ namespace PMP
             sendResultMessage(Users::toNetworkProtocolError(result.error()),
                               clientReference);
         }
+    }
+
+    void ConnectedClient::parseInitiateLoginMessage(const QByteArray& message)
+    {
+        if (message.length() <= 8)
+            return; /* invalid message */
+
+        int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        if (message.length() - 8 != loginLength)
+            return; /* invalid message */
+
+        qDebug() << "received initiate-login request; clientRef:"
+                 << clientReference;
+
+        if (isLoggedIn()) /* already logged in */
+        {
+            sendResultMessage(ResultMessageErrorCode::AlreadyLoggedIn,
+                              clientReference);
+            return;
+        }
+
+        QByteArray loginBytes = message.mid(8);
+        QString login = QString::fromUtf8(loginBytes);
+
+        DatabaseRecords::User user;
+        bool userLookup = _users->getUserByLogin(login, user);
+
+        if (!userLookup) /* user does not exist */
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                clientReference, 0, loginBytes
+            );
+            return;
+        }
+
+        QByteArray userSalt = user.salt;
+        QByteArray sessionSalt = Users::generateSalt();
+
+        _userAccountLoggingIn = user.login;
+        _sessionSaltForUserLoggingIn = sessionSalt;
+
+        sendUserLoginSaltMessage(login, userSalt, sessionSalt);
     }
 
     void ConnectedClient::parseActivateDelayedStartRequest(const QByteArray& message)
