@@ -1128,64 +1128,6 @@ namespace PMP
         return true;
     }
 
-    bool Database::executeQuery(QSqlQuery& q)
-    {
-        if (q.exec()) return true;
-
-        /* something went wrong */
-
-        QSqlError error = q.lastError();
-        qDebug() << "Database: query failed:" << error.text();
-        qDebug() << " error type:" << error.type();
-        qDebug() << " native error code:" << error.nativeErrorCode();
-        qDebug() << " db error:" << error.databaseText();
-        qDebug() << " driver error:" << error.driverText();
-        qDebug() << " sql:" << q.lastQuery();
-
-        if (!_db.isOpen())
-        {
-            qDebug() << " connection not open!";
-        }
-
-        if (!_db.isValid())
-        {
-            qDebug() << " connection not valid!";
-        }
-
-        /* An extended sleep period followed by a resume will result in the error "MySQL
-           server has gone away", error code 2006. In that case we try to reopen the
-           connection and re-execute the query. */
-        if (error.nativeErrorCode() == "2006")
-        {
-            qDebug() << " will try to re-establish a connection and re-execute the query";
-            _db.close();
-            _db.setDatabaseName("pmp");
-            if (!_db.open())
-            {
-                qDebug() << "  FAILED.  Connection not reopened.";
-                return false;
-            }
-
-            if (!q.exec())
-            {
-                QSqlError error2 = q.lastError();
-                qDebug() << "  FAILED to re-execute query:" << error2.text();
-                qDebug() << "  error type:" << error2.type();
-                qDebug() << "  native error code:" << error2.nativeErrorCode();
-                qDebug() << "  db error:" << error2.databaseText();
-                qDebug() << "  driver error:" << error2.driverText();
-                qDebug() << "  sql:" << q.lastQuery();
-                qDebug() << "  BAILING OUT.";
-                return false;
-            }
-
-            qDebug() << "  SUCCESS!";
-            return true;
-        }
-
-        return false;
-    }
-
     bool Database::addColumnIfNotExists(QSqlQuery& q, QString tableName,
                                         QString columnName, QString type)
     {

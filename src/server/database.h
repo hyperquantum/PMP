@@ -126,7 +126,6 @@ namespace PMP
         bool executeQuery(std::function<void (QSqlQuery&)> preparer,
                           bool processResult,
                           std::function<void (QSqlQuery&)> resultFetcher);
-        bool executeQuery(QSqlQuery& q);
 
         static bool addColumnIfNotExists(QSqlQuery& q, QString tableName,
                                          QString columnName, QString type);
