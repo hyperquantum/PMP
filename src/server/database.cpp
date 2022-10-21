@@ -570,28 +570,23 @@ namespace PMP
 
     ResultOrError<QVector<qint64>, FailureType> Database::getFileSizes(uint hashID)
     {
-        QSqlQuery q(_db);
-        q.prepare(
-            "SELECT `FileSize` FROM pmp_filesize"
-            " WHERE HashID=?"
-        );
-        q.addBindValue(hashID);
+        auto preparer =
+            [=](QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT `FileSize` FROM pmp_filesize"
+                    " WHERE HashID=?"
+                );
+                q.addBindValue(hashID);
+            };
 
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getFileSizes : could not execute; "
-                     << q.lastError().text() << Qt::endl;
-            return failure;
-        }
+        auto extractRecord =
+            [](QSqlQuery& q) -> qint64
+            {
+                return q.value(0).toLongLong();
+            };
 
-        QVector<qint64> result;
-        while (q.next())
-        {
-            qint64 fileSize = q.value(0).toLongLong();
-            result.append(fileSize);
-        }
-
-        return result;
+        return executeRecords<qint64>(preparer, extractRecord);
     }
 
     QVector<User> Database::getUsers()
