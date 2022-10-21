@@ -560,7 +560,9 @@ namespace PMP
         return executeRecords<QString>(preparer, extractRecord);
     }
 
-    void Database::registerFileSizeSeen(uint hashId, qint64 size, int currentYear)
+    ResultOrError<SuccessType, FailureType> Database::registerFileSizeSeen(uint hashId,
+                                                                        qint64 size,
+                                                                        int currentYear)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -579,8 +581,10 @@ namespace PMP
         if (!executeVoid(preparer))
         {
             qDebug() << "Database::registerFileSize : insert/update failed!" << Qt::endl;
-            return;
+            return failure;
         }
+
+        return success;
     }
 
     ResultOrError<QVector<qint64>, FailureType> Database::getFileSizes(uint hashID)
@@ -623,10 +627,10 @@ namespace PMP
         return executeRecords<User>(preparer, extractRecord);
     }
 
-    bool Database::checkUserExists(QString userName)
+    ResultOrError<bool, FailureType> Database::checkUserExists(QString userName)
     {
         auto preparer =
-            [=] (QSqlQuery& q)
+            [=](QSqlQuery& q)
             {
                 q.prepare(
                     "SELECT EXISTS(SELECT * FROM pmp_user WHERE LOWER(`Login`)=LOWER(?))"
@@ -638,13 +642,13 @@ namespace PMP
         if (!executeScalar(preparer, exists, false)) /* error */
         {
             qDebug() << "Database::checkUserExists : query failed!" << Qt::endl;
-            return false; // FIXME ???
+            return failure;
         }
 
         return exists;
     }
 
-    quint32 Database::registerNewUser(User& user)
+    ResultOrError<quint32, FailureType> Database::registerNewUser(User& user)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -660,7 +664,7 @@ namespace PMP
         if (!executeVoid(preparer)) /* error */
         {
             qDebug() << "Database::registerNewUser : insert failed!" << Qt::endl;
-            return 0;
+            return failure;
         }
 
         auto preparer2 = prepareSimple("SELECT LAST_INSERT_ID()");
@@ -669,7 +673,7 @@ namespace PMP
         if (!executeScalar(preparer2, userId, 0))
         {
             qDebug() << "Database::registerNewUser : select failed!" << Qt::endl;
-            return 0;
+            return failure;
         }
 
         return userId;
@@ -718,7 +722,8 @@ namespace PMP
         return result;
     }
 
-    bool Database::setUserDynamicModePreferences(quint32 userId,
+    ResultOrError<SuccessType, FailureType> Database::setUserDynamicModePreferences(
+                                            quint32 userId,
                                             UserDynamicModePreferences const& preferences)
     {
         auto preparer =
@@ -737,10 +742,10 @@ namespace PMP
         if (!executeVoid(preparer))
         {
             qWarning() << "Database::setUserDynamicModePreferences : could not execute";
-            return false;
+            return failure;
         }
 
-        return true;
+        return success;
     }
 
     ResultOrError<SuccessType, FailureType> Database::addToHistory(quint32 hashId,

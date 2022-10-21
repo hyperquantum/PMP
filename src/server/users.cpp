@@ -134,10 +134,12 @@ namespace PMP
         auto db = Database::getDatabaseForCurrentThread();
         if (db)
         {
-            if (db->checkUserExists(accountName))
-            {
+            auto userExistsOrError = db->checkUserExists(accountName);
+            if (userExistsOrError.failed())
+                return DatabaseProblem;
+
+            if (userExistsOrError.result() == true)
                 return AccountAlreadyExists;
-            }
         }
         else
         {
@@ -169,10 +171,12 @@ namespace PMP
         auto db = Database::getDatabaseForCurrentThread();
         if (db)
         {
-            if (db->checkUserExists(accountName))
-            {
+            auto userExistsOrError = db->checkUserExists(accountName);
+            if (userExistsOrError.failed())
                 return QPair<Users::ErrorCode, quint32>(AccountAlreadyExists, 0);
-            }
+
+            if (userExistsOrError.result() == true)
+                return QPair<Users::ErrorCode, quint32>(AccountAlreadyExists, 0);
         }
         else
         {
@@ -181,9 +185,11 @@ namespace PMP
 
         DatabaseRecords::User u(0, accountName, salt, hashedPassword);
 
-        u.id = db->registerNewUser(u);
-        if (u.id <= 0)
+        auto newUserIdOrError = db->registerNewUser(u);
+        if (newUserIdOrError.failed())
             return QPair<ErrorCode, quint32>(DatabaseProblem, 0);
+
+        u.id = newUserIdOrError.result();
 
         loadUsers(); /* reload users list */
 

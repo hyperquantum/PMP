@@ -66,18 +66,21 @@ namespace PMP
                                                     int currentYear);
         ResultOrError<QVector<QString>, FailureType> getFilenames(uint hashID);
 
-        void registerFileSizeSeen(uint hashId, qint64 size, int currentYear);
+        ResultOrError<SuccessType, FailureType> registerFileSizeSeen(uint hashId,
+                                                                     qint64 size,
+                                                                     int currentYear);
         ResultOrError<QVector<qint64>, FailureType> getFileSizes(uint hashID);
 
         ResultOrError<QVector<DatabaseRecords::User>, FailureType> getUsers();
-        bool checkUserExists(QString userName);
-        quint32 registerNewUser(DatabaseRecords::User& user);
+        ResultOrError<bool, FailureType> checkUserExists(QString userName);
+        ResultOrError<quint32, FailureType> registerNewUser(DatabaseRecords::User& user);
 
         DatabaseRecords::UserDynamicModePreferences getUserDynamicModePreferences(
                                                                            quint32 userId,
                                                                            bool* ok);
-        bool setUserDynamicModePreferences(quint32 userId,
-                          DatabaseRecords::UserDynamicModePreferences const& preferences);
+        ResultOrError<SuccessType, FailureType> setUserDynamicModePreferences(
+                        quint32 userId,
+                        DatabaseRecords::UserDynamicModePreferences const& preferences);
 
         ResultOrError<SuccessType, FailureType> addToHistory(quint32 hashId,
                                                              quint32 userId,
