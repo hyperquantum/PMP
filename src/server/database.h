@@ -28,7 +28,6 @@
 #include <QAtomicInt>
 #include <QByteArray>
 #include <QDateTime>
-#include <QList>
 #include <QPair>
 #include <QSharedPointer>
 #include <QString>
@@ -59,7 +58,7 @@ namespace PMP
 
         ResultOrError<SuccessType, FailureType> registerHash(const FileHash& hash);
         ResultOrError<uint, FailureType> getHashId(const FileHash& hash);
-        ResultOrError<QList<QPair<uint,FileHash>>, FailureType> getHashes(
+        ResultOrError<QVector<QPair<uint,FileHash>>, FailureType> getHashes(
                                                                    uint largerThanID = 0);
 
         bool registerFilenameSeen(uint hashId, const QString& filenameWithoutPath,
@@ -67,9 +66,9 @@ namespace PMP
         ResultOrError<QVector<QString>, FailureType> getFilenames(uint hashID);
 
         void registerFileSizeSeen(uint hashId, qint64 size, int currentYear);
-        ResultOrError<QList<qint64>, FailureType> getFileSizes(uint hashID);
+        ResultOrError<QVector<qint64>, FailureType> getFileSizes(uint hashID);
 
-        QList<DatabaseRecords::User> getUsers();
+        QVector<DatabaseRecords::User> getUsers();
         bool checkUserExists(QString userName);
         quint32 registerNewUser(DatabaseRecords::User& user);
 

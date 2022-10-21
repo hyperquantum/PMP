@@ -439,7 +439,7 @@ namespace PMP
         return id;
     }
 
-    ResultOrError<QList<QPair<uint, FileHash> >, FailureType> Database::getHashes(
+    ResultOrError<QVector<QPair<uint, FileHash> >, FailureType> Database::getHashes(
                                                                         uint largerThanID)
     {
         QSqlQuery q(_db);
@@ -457,7 +457,7 @@ namespace PMP
             return failure;
         }
 
-        QList<QPair<uint,FileHash> > result;
+        QVector<QPair<uint,FileHash> > result;
         while (q.next())
         {
             uint hashID = q.value(0).toUInt();
@@ -571,7 +571,7 @@ namespace PMP
         }
     }
 
-    ResultOrError<QList<qint64>, FailureType> Database::getFileSizes(uint hashID)
+    ResultOrError<QVector<qint64>, FailureType> Database::getFileSizes(uint hashID)
     {
         QSqlQuery q(_db);
         q.prepare(
@@ -587,7 +587,7 @@ namespace PMP
             return failure;
         }
 
-        QList<qint64> result;
+        QVector<qint64> result;
         while (q.next())
         {
             qint64 fileSize = q.value(0).toLongLong();
@@ -597,12 +597,12 @@ namespace PMP
         return result;
     }
 
-    QList<User> Database::getUsers()
+    QVector<User> Database::getUsers()
     {
         QSqlQuery q(_db);
         q.prepare("SELECT `UserID`,`Login`,`Salt`,`Password` FROM pmp_user");
 
-        QList<User> result;
+        QVector<User> result;
 
         if (!executeQuery(q)) /* error */
         {
