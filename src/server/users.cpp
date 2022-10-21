@@ -38,7 +38,14 @@ namespace PMP
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return;
 
-        auto const users = db->getUsers();
+        auto usersOrError = db->getUsers();
+        if (usersOrError.failed())
+        {
+            qWarning() << "failed to load users";
+            return;
+        }
+
+        auto const users = usersOrError.result();
 
         _usersById.clear();
         _userIdsByLogin.clear();
@@ -49,6 +56,8 @@ namespace PMP
             _usersById.insert(u.id, u);
             _userIdsByLogin.insert(u.login.toLower(), u.id);
         }
+
+        qDebug() << "Users: loaded" << users.size() << "users";
     }
 
     QVector<UserIdAndLogin> Users::getUsers()

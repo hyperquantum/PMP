@@ -68,7 +68,7 @@ namespace PMP
         void registerFileSizeSeen(uint hashId, qint64 size, int currentYear);
         ResultOrError<QVector<qint64>, FailureType> getFileSizes(uint hashID);
 
-        QVector<DatabaseRecords::User> getUsers();
+        ResultOrError<QVector<DatabaseRecords::User>, FailureType> getUsers();
         bool checkUserExists(QString userName);
         quint32 registerNewUser(DatabaseRecords::User& user);
 

@@ -589,33 +589,23 @@ namespace PMP
         return executeRecords<qint64>(preparer, extractRecord);
     }
 
-    QVector<User> Database::getUsers()
+    ResultOrError<QVector<DatabaseRecords::User>, FailureType> Database::getUsers()
     {
-        QSqlQuery q(_db);
-        q.prepare("SELECT `UserID`,`Login`,`Salt`,`Password` FROM pmp_user");
+        auto preparer =
+                prepareSimple("SELECT `UserID`,`Login`,`Salt`,`Password` FROM pmp_user");
 
-        QVector<User> result;
+        auto extractRecord =
+            [](QSqlQuery& q)
+            {
+                quint32 userID = q.value(0).toUInt();
+                QString login = q.value(1).toString();
+                QString salt = q.value(2).toString();
+                QString password = q.value(3).toString();
 
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getUsers : could not execute; "
-                     << q.lastError().text() << Qt::endl;
-            return result;
-        }
+                return User::fromDb(userID, login, salt, password);
+            };
 
-        while (q.next())
-        {
-            quint32 userID = q.value(0).toUInt();
-            QString login = q.value(1).toString();
-            QString salt = q.value(2).toString();
-            QString password = q.value(3).toString();
-
-            result.append(User::fromDb(userID, login, salt, password));
-        }
-
-        qDebug() << "Database::getUsers() : user count:" << result.size();
-
-        return result;
+        return executeRecords<User>(preparer, extractRecord);
     }
 
     bool Database::checkUserExists(QString userName)
