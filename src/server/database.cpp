@@ -851,26 +851,18 @@ namespace PMP
     ResultOrError<QVector<QPair<quint32, quint32>>, FailureType>
         Database::getEquivalences()
     {
-        QSqlQuery q(_db);
-        q.prepare("SELECT Hash1, Hash2 FROM pmp_equivalence");
+        auto preparer = prepareSimple("SELECT Hash1, Hash2 FROM pmp_equivalence");
 
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getEquivalences : could not execute; "
-                     << q.lastError().text() << Qt::endl;
-            return failure;
-        }
+        auto extractRecord =
+            [](QSqlQuery& q) -> QPair<quint32, quint32>
+            {
+                quint32 hashId1 = q.value(0).toUInt();
+                quint32 hashId2 = q.value(1).toUInt();
 
-        QVector<QPair<quint32, quint32>> result;
-        while (q.next())
-        {
-            quint32 hashId1 = q.value(0).toUInt();
-            quint32 hashId2 = q.value(1).toUInt();
+                return { hashId1, hashId2 };
+            };
 
-            result.append({ hashId1, hashId2 });
-        };
-
-        return result;
+        return executeRecords<QPair<quint32, quint32>>(preparer, extractRecord);
     }
 
     ResultOrError<SuccessType, FailureType> Database::registerEquivalence(quint32 hashId1,
