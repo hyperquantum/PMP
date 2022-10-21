@@ -2170,8 +2170,11 @@ namespace PMP
         if (message.length() - 8 != loginLength)
             return; /* invalid message */
 
-        qDebug() << "received initiate-login request; clientRef:"
-                 << clientReference;
+        QByteArray loginBytes = message.mid(8);
+        QString login = QString::fromUtf8(loginBytes);
+
+        qDebug() << "received initiate-login request; clientRef:" << clientReference
+                 << "; login:" << login;
 
         if (isLoggedIn()) /* already logged in */
         {
@@ -2179,9 +2182,6 @@ namespace PMP
                               clientReference);
             return;
         }
-
-        QByteArray loginBytes = message.mid(8);
-        QString login = QString::fromUtf8(loginBytes);
 
         DatabaseRecords::User user;
         bool userLookup = _users->getUserByLogin(login, user);
@@ -2215,12 +2215,8 @@ namespace PMP
         int hashedPasswordLength = NetworkUtil::getByteUnsignedToInt(message, 7);
         quint32 clientReference = NetworkUtil::get4Bytes(message, 8);
 
-        qDebug() << "received finish-login request; clientRef:"
-                 << clientReference;
-
         if (message.length() - 12 !=
-                loginLength + userSaltLength + sessionSaltLength
-                + hashedPasswordLength)
+                loginLength + userSaltLength + sessionSaltLength + hashedPasswordLength)
         {
             sendResultMessage(
                 ResultMessageErrorCode::InvalidMessageStructure, clientReference
@@ -2228,8 +2224,22 @@ namespace PMP
             return; /* invalid message */
         }
 
-        QByteArray loginBytes = message.mid(12, loginLength);
+        int offset = 12;
+
+        QByteArray loginBytes = message.mid(offset, loginLength);
         QString login = QString::fromUtf8(loginBytes);
+        offset += loginLength;
+
+        QByteArray userSaltFromClient = message.mid(offset, userSaltLength);
+        offset += userSaltLength;
+
+        QByteArray sessionSaltFromClient = message.mid(offset, sessionSaltLength);
+        offset += sessionSaltLength;
+
+        QByteArray hashedPasswordFromClient = message.mid(offset);
+
+        qDebug() << "received finish-login request; clientRef:" << clientReference
+                 << "; login:" << login;
 
         DatabaseRecords::User user;
         bool userLookup = _users->getUserByLogin(login, user);
@@ -2246,10 +2256,6 @@ namespace PMP
         qDebug() << " user lookup successfull: user id =" << user.id
                  << "; login =" << user.login;
 
-        QByteArray userSaltFromClient = message.mid(12 + loginLength, userSaltLength);
-        QByteArray sessionSaltFromClient =
-            message.mid(12 + loginLength + userSaltLength, sessionSaltLength);
-
         if (login != _userAccountLoggingIn
             || userSaltFromClient != user.salt
             || sessionSaltFromClient != _sessionSaltForUserLoggingIn)
@@ -2264,9 +2270,6 @@ namespace PMP
         /* clean up state */
         _userAccountLoggingIn = "";
         _sessionSaltForUserLoggingIn.clear();
-
-        QByteArray hashedPasswordFromClient =
-            message.mid(12 + loginLength + userSaltLength + sessionSaltLength);
 
         bool loginSucceeded =
             Users::checkUserLoginPassword(
