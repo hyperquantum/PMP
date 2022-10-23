@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef DYNAMICMODEPARAMETERSDIALOG_H
-#define DYNAMICMODEPARAMETERSDIALOG_H
+#ifndef PMP_DYNAMICMODEPARAMETERSDIALOG_H
+#define PMP_DYNAMICMODEPARAMETERSDIALOG_H
 
 #include <QDialog>
 #include <QList>
