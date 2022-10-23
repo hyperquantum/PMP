@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,8 +19,8 @@
 
 #include "colors.h"
 
-namespace PMP {
-
+namespace PMP
+{
     Colors::Colors(const QColor& widgetBorder,
                    const QColor& inactiveItemForeground,
                    QVector<QColor> itemBackgroundHighlightColors,
@@ -43,7 +43,8 @@ namespace PMP {
         //
     }
 
-    const Colors& Colors::instance() {
+    const Colors& Colors::instance()
+    {
         return _lightScheme;
     }
 
