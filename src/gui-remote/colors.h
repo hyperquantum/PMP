@@ -33,6 +33,8 @@ namespace PMP
                QVector<QColor> itemBackgroundHighlightColors,
                const QColor& specialQueueItemBackground,
                const QColor& specialQueueItemForeground,
+               const QColor& historyErrorItemBackground,
+               const QColor& historyErrorItemForeground,
                const QColor& trackProgressWidgetEmpty,
                const QColor& trackProgressWidgetBackground,
                const QColor& trackProgressWidgetBorder,
@@ -45,6 +47,8 @@ namespace PMP
         const QVector<QColor> itemBackgroundHighlightColors;
         const QColor specialQueueItemBackground;
         const QColor specialQueueItemForeground;
+        const QColor historyErrorItemBackground;
+        const QColor historyErrorItemForeground;
         const QColor trackProgressWidgetEmpty;
         const QColor trackProgressWidgetBackground;
         const QColor trackProgressWidgetBorder;

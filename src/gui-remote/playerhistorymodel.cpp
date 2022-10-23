@@ -24,6 +24,8 @@
 #include "common/queueentryinfostorage.h"
 #include "common/util.h"
 
+#include "colors.h"
+
 #include <QBrush>
 #include <QBuffer>
 #include <QDataStream>
@@ -173,10 +175,14 @@ namespace PMP
         auto item = _list[index.row()];
 
         if (role == Qt::ForegroundRole)
-            return item->hadError() ? QBrush(Qt::red) : QVariant();
+            return item->hadError()
+                    ? QBrush(Colors::instance().historyErrorItemForeground)
+                    : QVariant();
 
         if (role == Qt::BackgroundRole)
-            return item->hadError() ? QBrush(Qt::white) : QVariant();
+            return item->hadError()
+                    ? QBrush(Colors::instance().historyErrorItemBackground)
+                    : QVariant();
 
         if (role == Qt::DisplayRole)
         {
