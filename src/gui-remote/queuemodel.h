@@ -162,7 +162,7 @@ namespace PMP
         QueueMediator* _source;
         QueueEntryInfoStorage* _infoStorage;
         RegularUiRefresher* _lastHeardRefresher;
-        qint64 _clientClockTimeOffsetMs;
+        qint64 _clientClockTimeOffsetMs { 0 };
         PlayerMode _playerMode;
         quint32 _personalModeUserId;
         int _modelRows;

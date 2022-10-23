@@ -173,7 +173,6 @@ namespace PMP
        _source(source),
        _infoStorage(trackInfoStorage),
        _lastHeardRefresher(new RegularUiRefresher(this)),
-       _clientClockTimeOffsetMs(0),
        _playerMode(PlayerMode::Unknown),
        _personalModeUserId(0),
        _modelRows(0)

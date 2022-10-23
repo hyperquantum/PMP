@@ -97,7 +97,6 @@ IDEAS
  * visualize sound wave
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
  * client: ability to reconnect to the server after the connection was broken
- * take clock difference between client and server into account
  * add button to copy title and artist of current track to clipboard
  * server database backup and restore
 
