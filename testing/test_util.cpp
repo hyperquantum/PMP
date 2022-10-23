@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,11 +19,13 @@
 
 #include "test_util.h"
 
+#include "common/unicodechars.h"
 #include "common/util.h"
 
 #include <QtTest/QTest>
 
 using namespace PMP;
+using namespace PMP::UnicodeChars;
 
 void TestUtil::secondsToHoursMinuteSecondsText()
 {
@@ -198,10 +200,10 @@ void TestUtil::getCopyrightLine()
     QVERIFY(Util::getCopyrightLine(false).contains(QString("Copyright")));
     QVERIFY(Util::getCopyrightLine(true).contains(QString("Copyright")));
 
-    QVERIFY(Util::getCopyrightLine(false).contains(Util::Copyright));
+    QVERIFY(Util::getCopyrightLine(false).contains(copyright));
     QVERIFY(Util::getCopyrightLine(true).contains(QString("(C)")));
 
-    QVERIFY(Util::getCopyrightLine(false).contains(QString("Kevin Andr") + Util::EAcute));
+    QVERIFY(Util::getCopyrightLine(false).contains(QString("Kevin Andr") + eAcute));
     QVERIFY(Util::getCopyrightLine(true).contains(QString("Kevin Andre")));
 
     auto copyrightAscii = Util::getCopyrightLine(true);

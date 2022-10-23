@@ -19,6 +19,7 @@
 
 #include "commandparser.h"
 
+#include "common/unicodechars.h"
 #include "common/util.h"
 
 #include "commands.h"
@@ -59,7 +60,7 @@ namespace PMP
 
     FileHash CommandParser::CommandArguments::tryParseTrackHash() const
     {
-        QString text = current().replace(Util::FigureDash, '-');
+        QString text = current().replace(UnicodeChars::figureDash, '-');
 
         const auto parts = text.split(QChar('-'), Qt::KeepEmptyParts);
         if (parts.size() != 3)

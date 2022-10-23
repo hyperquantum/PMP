@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,6 +26,7 @@
 #include "common/generalcontroller.h"
 #include "common/queuecontroller.h"
 #include "common/userdatafetcher.h"
+#include "common/unicodechars.h"
 #include "common/util.h"
 
 #include <QApplication>
@@ -131,7 +132,7 @@ namespace PMP
 
         QString lastHeardText =
             QString("%1 - %2")
-                .replace('-', Util::EmDash)
+                .replace('-', UnicodeChars::emDash)
                 .arg(howLongAgo.text(),
                      locale.toString(adjustedLastHeard.toLocalTime()));
 

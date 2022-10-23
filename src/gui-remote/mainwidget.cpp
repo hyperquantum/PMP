@@ -25,6 +25,7 @@
 #include "common/dynamicmodecontroller.h"
 #include "common/playercontroller.h"
 #include "common/queuecontroller.h"
+#include "common/unicodechars.h"
 #include "common/util.h"
 
 #include "autopersonalmodeaction.h"
@@ -43,6 +44,8 @@
 #include <QKeyEvent>
 #include <QMenu>
 #include <QSettings>
+
+using namespace PMP::UnicodeChars;
 
 namespace PMP
 {
@@ -317,7 +320,7 @@ namespace PMP
             case PlayerMode::Personal:
                 _ui->playingModeLabel->setText(tr("PERSONAL mode"));
                 _ui->userPlayingForLabel->setText(
-                    QString(Util::EnDash) + " " + userLogin + " " + Util::EnDash
+                    QString(enDash) + " " + userLogin + " " + enDash
                 );
 
                 _ui->toPersonalModeButton->setEnabled(
@@ -710,7 +713,7 @@ namespace PMP
                 if (artist.isEmpty())
                     artist = tr("<unknown artist>");
 
-                auto artistTitleText = artist + " " + Util::EnDash + " " + title;
+                auto artistTitleText = artist + " " + enDash + " " + title;
                 _ui->artistTitleLabel->setText(artistTitleText);
             }
 

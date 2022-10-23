@@ -24,6 +24,7 @@
 #include "common/playercontroller.h"
 #include "common/powermanagement.h"
 #include "common/serverconnection.h"
+#include "common/unicodechars.h"
 #include "common/util.h"
 #include "common/version.h"
 
@@ -70,7 +71,7 @@ namespace PMP
        _powerManagement(new PowerManagement(this))
     {
         setWindowTitle(
-            QString(tr("Party Music Player ")) + Util::EnDash + tr(" Remote")
+            QString(tr("Party Music Player ")) + UnicodeChars::enDash + tr(" Remote")
         );
 
         _musicCollectionDock->setObjectName("musicCollectionDockWidget");
