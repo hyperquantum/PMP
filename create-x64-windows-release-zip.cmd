@@ -95,14 +95,14 @@ IF NOT EXIST "%bin_dir%" (
 :: install PMP dependencies using vcpkg
 IF NOT EXIST "%bin_dir%\ran_vcpkg_already" (
     ECHO Running vcpkg to install PMP dependencies...
-    
+
     CD "%TOOL_VCPKG_BIN_DIR%"
     vcpkg install taglib --triplet x64-windows || GOTO :EOF
     vcpkg install qt5-base[mysqlplugin] --triplet x64-windows || GOTO :EOF
     vcpkg install qt5[essentials] --triplet x64-windows || GOTO :EOF
-    
+
     ECHO(
-    
+
     CD "%scriptdir%"
     CD "%bin_dir%"
     ECHO Hi there. Delete this file if you want to re-run vcpkg. >ran_vcpkg_already
@@ -114,15 +114,15 @@ CD "%scriptdir%"
 IF NOT EXIST "%bin_dir%\ran_cmake_already" (
     ECHO Running CMake...
     CD "%bin_dir%"
-    
+
     "%CMAKE_BIN_DIR%"\cmake.exe ^
         -G "%CMAKE_GENERATOR%" ^
         -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" ^
         -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=%TOOL_VCPKG_BIN_DIR%\scripts\buildsystems\vcpkg.cmake" ^
         -D "CMAKE_BUILD_TYPE:STRING=Release" .. || GOTO :EOF
-    
+
     ECHO(
-    
+
     ECHO Hi there. Delete this file if you want to re-run CMake. >ran_cmake_already
 )
 
