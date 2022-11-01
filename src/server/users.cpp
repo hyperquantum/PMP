@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,8 +19,11 @@
 
 #include "users.h"
 
+#include "common/networkprotocol.h"
+
 #include "database.h"
 
+#include <QRandomGenerator>
 #include <QtGlobal>
 
 namespace PMP
@@ -35,7 +38,14 @@ namespace PMP
         auto db = Database::getDatabaseForCurrentThread();
         if (!db) return;
 
-        auto const users = db->getUsers();
+        auto usersOrError = db->getUsers();
+        if (usersOrError.failed())
+        {
+            qWarning() << "failed to load users";
+            return;
+        }
+
+        auto const users = usersOrError.result();
 
         _usersById.clear();
         _userIdsByLogin.clear();
@@ -46,6 +56,8 @@ namespace PMP
             _usersById.insert(u.id, u);
             _userIdsByLogin.insert(u.login.toLower(), u.id);
         }
+
+        qDebug() << "Users: loaded" << users.size() << "users";
     }
 
     QVector<UserIdAndLogin> Users::getUsers()
@@ -61,6 +73,11 @@ namespace PMP
         return result;
     }
 
+    bool Users::checkUserIdExists(quint32 userId) const
+    {
+        return _usersById.contains(userId);
+    }
+
     QString Users::getUserLogin(quint32 userId) const
     {
         auto it = _usersById.find(userId);
@@ -69,7 +86,7 @@ namespace PMP
         return it->login;
     }
 
-    bool Users::getUserByLogin(QString login, User& user)
+    bool Users::getUserByLogin(QString login, DatabaseRecords::User& user)
     {
         quint32 id = _userIdsByLogin.value(login.toLower(), 0);
         if (id == 0) return false;
@@ -78,7 +95,8 @@ namespace PMP
         return true;
     }
 
-    bool Users::checkUserLoginPassword(const User& user, const QByteArray &sessionSalt,
+    bool Users::checkUserLoginPassword(const DatabaseRecords::User& user,
+                                       const QByteArray &sessionSalt,
                                        const QByteArray& hashedPassword)
     {
         QByteArray expected =
@@ -89,11 +107,12 @@ namespace PMP
 
     QByteArray Users::generateSalt()
     {
+        auto* randomGenerator = QRandomGenerator::global();
+
         QByteArray buffer;
         do
         {
-            // FIXME : stop using qrand()
-            buffer.append((char)(qrand() % 256));
+            buffer.append(char(randomGenerator->bounded(256)));
         }
         while (buffer.size() < 24);
 
@@ -101,8 +120,8 @@ namespace PMP
         return buffer;
     }
 
-    Users::ErrorCode Users::generateSaltForNewAccount(QString accountName,
-                                                      QByteArray& salt)
+    ResultOrError<QByteArray, Users::ErrorCode> Users::generateSaltForNewAccount(
+                                                                    QString accountName)
     {
         QString account = accountName.trimmed();
 
@@ -115,23 +134,25 @@ namespace PMP
         auto db = Database::getDatabaseForCurrentThread();
         if (db)
         {
-            if (db->checkUserExists(accountName))
-            {
+            auto userExistsOrError = db->checkUserExists(accountName);
+            if (userExistsOrError.failed())
+                return DatabaseProblem;
+
+            if (userExistsOrError.result() == true)
                 return AccountAlreadyExists;
-            }
         }
         else
         {
             return DatabaseProblem;
         }
 
-        salt = generateSalt();
-
-        return Successfull;
+        auto salt = generateSalt();
+        return salt;
     }
 
-    QPair<Users::ErrorCode, quint32> Users::registerNewAccount(QString accountName,
-                                                               QByteArray const& salt,
+    ResultOrError<quint32, Users::ErrorCode> Users::registerNewAccount(
+                                                        QString accountName,
+                                                        QByteArray const& salt,
                                                         QByteArray const& hashedPassword)
     {
         QString account = accountName.trimmed();
@@ -144,39 +165,43 @@ namespace PMP
             || account.length() == 0 || account.length() > 63
             || account.compare("PUBLIC", Qt::CaseInsensitive) == 0)
         {
-            return QPair<Users::ErrorCode, quint32>(InvalidAccountName, 0);
+            return InvalidAccountName;
         }
 
         auto db = Database::getDatabaseForCurrentThread();
         if (db)
         {
-            if (db->checkUserExists(accountName))
-            {
-                return QPair<Users::ErrorCode, quint32>(AccountAlreadyExists, 0);
-            }
+            auto userExistsOrError = db->checkUserExists(accountName);
+            if (userExistsOrError.failed())
+                return DatabaseProblem;
+
+            if (userExistsOrError.result() == true)
+                return AccountAlreadyExists;
         }
         else
         {
-            return QPair<Users::ErrorCode, quint32>(DatabaseProblem, 0);
+            return DatabaseProblem;
         }
 
-        User u(0, accountName, salt, hashedPassword);
+        DatabaseRecords::User u(0, accountName, salt, hashedPassword);
 
-        u.id = db->registerNewUser(u);
-        if (u.id <= 0)
-            return QPair<ErrorCode, quint32>(DatabaseProblem, 0);
+        auto newUserIdOrError = db->registerNewUser(u);
+        if (newUserIdOrError.failed())
+            return DatabaseProblem;
+
+        u.id = newUserIdOrError.result();
 
         loadUsers(); /* reload users list */
 
-        return QPair<ErrorCode, quint32>(Successfull, u.id);
+        return u.id;
     }
 
     ResultMessageErrorCode Users::toNetworkProtocolError(ErrorCode code)
     {
         switch (code)
         {
-        case Successfull:
-            return ResultMessageErrorCode::NoError;
+        case UnknownError:
+            return ResultMessageErrorCode::UnknownError;
 
         case InvalidAccountName:
             return ResultMessageErrorCode::InvalidUserAccountName;

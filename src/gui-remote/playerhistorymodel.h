@@ -56,10 +56,12 @@ namespace PMP
         void onReceivedPlayerHistory(QVector<PMP::PlayerHistoryTrackInfo> tracks);
 
         void onTracksChanged(QList<quint32> queueIDs);
+        void markStartedEndedColumnsAsChanged();
 
     private:
         int _historySizeGoal;
         QueueEntryInfoStorage* _infoStorage;
+        qint64 _clientClockTimeOffsetMs;
         QList<QSharedPointer<PlayerHistoryTrackInfo>> _list;
     };
 }

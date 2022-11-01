@@ -288,6 +288,7 @@ namespace PMP {
         );
 
         auto& collectionWatcher = clientServerInterface->collectionWatcher();
+        collectionWatcher.enableCollectionDownloading();
 
         connect(
             &collectionWatcher, &CollectionWatcher::newTrackReceived,

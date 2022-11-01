@@ -30,11 +30,9 @@
 
 #include <QDateTime>
 #include <QHash>
-#include <QMultiHash>
 #include <QMutex>
 #include <QObject>
 #include <QPair>
-#include <QSet>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -42,20 +40,9 @@
 namespace PMP
 {
     class Database;
-
-    class HashIdRegistrar
-    {
-    public:
-        Future<SuccessType, FailureType> loadAllFromDatabase();
-        Future<uint, FailureType> getOrCreateId(FileHash hash);
-
-        QVector<QPair<uint, FileHash>> getAllLoaded();
-
-    private:
-        QMutex _mutex;
-        QHash<FileHash, uint> _hashes;
-        QHash<uint, FileHash> _ids;
-    };
+    class HashIdRegistrar;
+    class HashRelations;
+    class HistoryStatistics;
 
     class FileLocations
     {
@@ -115,7 +102,8 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        Resolver();
+        Resolver(HashIdRegistrar* hashIdRegistrar, HashRelations* hashRelations,
+                 HistoryStatistics* historyStatistics);
 
         void setMusicPaths(QStringList paths);
         QStringList musicPaths();
@@ -168,6 +156,7 @@ namespace PMP
         class HashKnowledge;
 
         HashKnowledge* registerHash(const FileHash& hash);
+        void markHashesAsEquivalent(QVector<uint> hashes);
         QVector<QString> getPathsThatDontMatchCurrentFullIndexationNumber();
         void checkFileStillExistsAndIsValid(QString path);
 
@@ -175,9 +164,11 @@ namespace PMP
         void doFullIndexationCheckForFileRemovals();
 
         FileLocations _fileLocations;
-        Analyzer* _analyzer;
-        FileFinder* _fileFinder;
-        HashIdRegistrar _hashIdRegistrar;
+        Analyzer* _analyzer { nullptr };
+        FileFinder* _fileFinder { nullptr };
+        HashIdRegistrar* _hashIdRegistrar { nullptr };
+        HashRelations* _hashRelations { nullptr };
+        HistoryStatistics* _historyStatistics { nullptr };
 
         QMutex _lock;
 

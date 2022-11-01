@@ -20,7 +20,6 @@
 #include "analyzer.h"
 #include "clientrequestorigin.h"
 #include "scrobblingbackend.h"
-#include "userdataforhashesfetcher.h"
 
 #include <QMetaType>
 #include <QVector>
@@ -34,14 +33,14 @@ namespace PMP
     private:
         ServerMetatypesInit()
         {
+            qRegisterMetaType<QVector<uint>>();
+
             qRegisterMetaType<PMP::ClientRequestOrigin>();
             qRegisterMetaType<PMP::FileAnalysis>();
             qRegisterMetaType<PMP::FileHashes>();
             qRegisterMetaType<PMP::FileInfo>();
             qRegisterMetaType<PMP::ScrobblingBackendState>();
             qRegisterMetaType<PMP::ScrobbleResult>();
-            qRegisterMetaType<PMP::UserDataForHash>();
-            qRegisterMetaType<QVector<PMP::UserDataForHash>>();
         }
 
         static ServerMetatypesInit GlobalVariable;

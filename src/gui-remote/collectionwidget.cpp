@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,8 +22,7 @@
 
 #include "common/clientserverinterface.h"
 #include "common/queuecontroller.h"
-#include "common/serverconnection.h"
-#include "common/util.h"
+#include "common/unicodechars.h"
 
 #include "collectiontablemodel.h"
 #include "colors.h"
@@ -34,8 +33,8 @@
 #include <QtDebug>
 #include <QSettings>
 
-namespace PMP {
-
+namespace PMP
+{
     CollectionWidget::CollectionWidget(QWidget* parent,
                                        ClientServerInterface* clientServerInterface)
      : QWidget(parent),
@@ -223,8 +222,8 @@ namespace PMP {
         auto addItem =
             [comboBox](QString text, TrackCriterium mode)
             {
-                text.replace(">=", Util::GreaterThanOrEqual)
-                    .replace("<=", Util::LessThanOrEqual);
+                text.replace(">=", UnicodeChars::greaterThanOrEqual)
+                    .replace("<=", UnicodeChars::lessThanOrEqual);
 
                 comboBox->addItem(text, QVariant::fromValue(mode));
             };
@@ -293,5 +292,4 @@ namespace PMP {
     {
         return comboBox->currentData().value<TrackCriterium>();
     }
-
 }

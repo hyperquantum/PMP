@@ -181,14 +181,9 @@ namespace PMP
         _waveProgress = progress;
         _waveProgressTotal = progressTotal;
 
-        if (activeChanged)
+        if (activeChanged || progressChanged)
         {
-            Q_EMIT waveActiveChanged();
-        }
-
-        if (progressChanged)
-        {
-            Q_EMIT waveProgressChanged();
+            Q_EMIT waveStatusChanged();
         }
     }
 }

@@ -32,9 +32,9 @@ KNOWN BUGS
  * a "skip" operation should not affect the current track's score if performed by another user
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
  * GUI remote: multimedia keys don't work when a popup dialog is open (like track info)
- * unknown error at login because of username case (in)sensitivity
  * track title/artist/length update in the music collection does not trigger an update of queue entries referencing that track
  * doing a "skip" often creates a burst of noise; need to wait until the old track has stopped before starting the next one
+ * GUI remote: if connection breaks during playback, "position" keeps increasing
 
 
 PERFORMANCE ISSUES
@@ -87,7 +87,6 @@ IDEAS
  * require the server password when registering a new user account
  * track info dialog: show indication if file is available or not
  * track info dialog: show indication if a file was manually added to the queue (and when) or added by dynamic mode
- * track info dialog: show last heard date/time in a friendly way like "18 days ago" next to the actual date and time
  * track info dialog: ability to pick the user whose personal stats are shown
  * track info dialog: display filename(s)
  * track info dialog: should become modeless
@@ -98,8 +97,8 @@ IDEAS
  * visualize sound wave
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
  * client: ability to reconnect to the server after the connection was broken
- * take clock difference between client and server into account
  * add button to copy title and artist of current track to clipboard
+ * server database backup and restore
 
 
 USER FRIENDLINESS

@@ -82,7 +82,6 @@ set(PMP_COMMON_HEADERS
 )
 
 set(PMP_SERVER_SOURCES
-    server/addtohistorytask.cpp
     server/analyzer.cpp
     server/clientrequestorigin.cpp
     server/collectionmonitor.cpp
@@ -92,7 +91,11 @@ set(PMP_SERVER_SOURCES
     server/dynamicmodecriteria.cpp
     server/dynamictrackgenerator.cpp
     server/generator.cpp
+    server/hashidregistrar.cpp
+    server/hashrelations.cpp
     server/history.cpp
+    server/historystatistics.cpp
+    server/historystatisticsprefetcher.cpp
     server/lastfmscrobblingbackend.cpp
     server/lastfmscrobblingdataprovider.cpp
     server/player.cpp
@@ -115,14 +118,12 @@ set(PMP_SERVER_SOURCES
     server/tokenencoder.cpp
     server/trackgeneratorbase.cpp
     server/trackrepetitionchecker.cpp
+    server/trackstats.cpp
     server/tracktoscrobble.cpp
-    server/userdataforhashesfetcher.cpp
-    server/userdatafortracksfetcher.cpp
     server/users.cpp
     server/wavetrackgenerator.cpp
 )
 set(PMP_SERVER_HEADERS
-    server/addtohistorytask.h
     server/analyzer.h
     server/collectionmonitor.h
     server/connectedclient.h
@@ -130,6 +131,8 @@ set(PMP_SERVER_HEADERS
     server/dynamictrackgenerator.h
     server/generator.h
     server/history.h
+    server/historystatistics.h
+    server/historystatisticsprefetcher.h
     server/lastfmscrobblingbackend.h
     server/player.h
     server/playerqueue.h
@@ -146,8 +149,6 @@ set(PMP_SERVER_HEADERS
     server/serversettings.h
     server/trackgeneratorbase.h
     server/trackrepetitionchecker.h
-    server/userdataforhashesfetcher.h
-    server/userdatafortracksfetcher.h
     server/users.h
     server/wavetrackgenerator.h
 )
@@ -176,6 +177,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/connectionwidget.cpp
     gui-remote/delayedstartdialog.cpp
     gui-remote/delayedstartnotification.cpp
+    gui-remote/dynamicmodeparametersdialog.cpp
     gui-remote/gui-remote-metatypes.cpp
     gui-remote/loginwidget.cpp
     gui-remote/mainwidget.cpp
@@ -200,6 +202,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/connectionwidget.h
     gui-remote/delayedstartdialog.h
     gui-remote/delayedstartnotification.h
+    gui-remote/dynamicmodeparametersdialog.h
     gui-remote/loginwidget.h
     gui-remote/mainwidget.h
     gui-remote/mainwindow.h
@@ -218,6 +221,7 @@ set(PMP_GUI_REMOTE_UIS
     gui-remote/collectionwidget.ui
     gui-remote/connectionwidget.ui
     gui-remote/delayedstartdialog.ui
+    gui-remote/dynamicmodeparametersdialog.ui
     gui-remote/loginwidget.ui
     gui-remote/mainwidget.ui
     gui-remote/notificationbar.ui

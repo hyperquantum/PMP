@@ -27,6 +27,7 @@
 
 #include <QByteArray>
 #include <QHostInfo>
+#include <QRandomGenerator>
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QtDebug>
@@ -100,6 +101,8 @@ namespace PMP
         const int passwordLength = 8;
         const int consecutiveCharsDistance = 10;
 
+        auto* randomGenerator = QRandomGenerator::global();
+
         QString serverPassword;
         serverPassword.reserve(passwordLength);
         int prevIndex = -consecutiveCharsDistance;
@@ -108,17 +111,19 @@ namespace PMP
             int index;
             do
             {
-                index = qrand() % chars.length(); // FIXME : don't use qrand()
-            } while (qAbs(index - prevIndex) < consecutiveCharsDistance);
+                index = randomGenerator->bounded(chars.length());
+            }
+            while (qAbs(index - prevIndex) < consecutiveCharsDistance);
+
             prevIndex = index;
-            QChar c = chars[index];
-            serverPassword += c;
+            serverPassword += chars[index];
         }
 
         return serverPassword;
     }
 
     bool Server::listen(Player* player, Generator* generator, History* history,
+                        HashIdRegistrar* hashIdRegistrar,
                         Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor,
@@ -129,6 +134,7 @@ namespace PMP
         _player = player;
         _generator = generator;
         _history = history;
+        _hashIdRegistrar = hashIdRegistrar;
         _users = users;
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
@@ -177,7 +183,7 @@ namespace PMP
 
         auto connectedClient =
             new ConnectedClient(
-                connection, serverInterface, _player, _history, _users,
+                connection, serverInterface, _player, _users,
                 _collectionMonitor, _serverHealthMonitor, _scrobbling
             );
 
@@ -257,13 +263,21 @@ namespace PMP
         qDebug() << "Creating client connection with reference" << connectionReference;
 
         auto serverInterface =
-            new ServerInterface(_settings, this, connectionReference, _player,
-                                _generator, _delayedStart);
-
+                new ServerInterface(_settings,
+                                    this,
+                                    connectionReference,
+                                    _player,
+                                    _generator,
+                                    _history,
+                                    _hashIdRegistrar,
+                                    _users,
+                                    _delayedStart);
+        
         connect(
             serverInterface, &ServerInterface::destroyed,
             this,
-            [this, connectionReference]() {
+            [this, connectionReference]()
+            {
                 this->retireConnectionReference(connectionReference);
             }
         );

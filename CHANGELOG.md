@@ -6,28 +6,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- Ability to reload server settings.
+- Ability to name a server instance.
+- "Scan for servers" button in the server selection screen.
 - Server now sends a notification to the client when it detects that a track has disappeared or reappeared.
+- Server now sends a notification to the client when the length of a track changes.
+- Server can now find a file after it has been moved or renamed.
+- Full indexation now detects when a file has been (re)moved.
 - Option to prevent the display from being turned off after a period of user inactivity. Windows-only for now.
-- Music collection view: track highlighting.
+- Music collection view: track highlighting and track filter.
 - Track info dialog. Available as an option in context menus of the queue, the history, and the music collection.
 - "Track info" button for the current track.
-- The current track is now marked in the collection view.
+- Ability to display time remaining for the track that is playing.
+- Ability to insert a breakpoint at any location in the queue.
+- Ability to insert a barrier into the queue. Barriers are not consumed by the player like breakpoints are.
+- Music collection view: put a marker at the current track.
 - Dynamic mode preferences are now saved and restored for each user.
-- The command-line remote now supports user authentication, both interactive and non-interactive.
-- Commandline-remote: new commands "qdel" and "break".
-- Commandline-remote: new options for printing help or version numbers.
+- Command-line remote: support for user authentication, both interactive and non-interactive.
+- Command-line remote: new commands "qdel" and "break".
+- Command-line remote: new options for printing help or version numbers.
+- Server: write status of initial full indexation to the console.
 
 ### Changed
 - Volume control now uses a logarithmic scale.
 - Dynamic mode has been rewritten.
 - "High-scored tracks wave" has been redesigned; track selection has improved, progress is shown, and it can now be stopped before it has completed.
-- Full indexation will now notice when tracks have disappeared from their previously known location.
+- High-scored tracks wave is now called high-scored tracks mode.
+- High-scored tracks mode will now give up if it cannot find enough tracks that fit the criteria.
 - Faster transitions between subsequent tracks.
 - Breakpoints look better now.
 - The track progress bar uses different colors now.
 - Switched to millisecond precision for track lengths.
 - Track lengths are now usually displayed like "03:44.7" instead of "00:03:44".
+- Queue drop indicator is now a line between tracks.
+- Column "prev. heard" in the queue now uses relative times, and displays the actual time in a tooltip when hovering.
+- Dates/times displayed in the client now take the clock difference between client and server into account.
 - The queue now has a size limit; the limit is currently set to 2 million items.
+- Command-line remote: output of "queue" command has changed a little bit.
+- Command-line remote: usage text is now more extensive.
 - Command-line remote: port number is now optional.
 - Naming of log files was changed a bit to allow for better sorting.
 - Log files now start with a line that contains the PMP version number.
@@ -35,7 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Exit code is now written to the log.
 - Build instructions for Windows have been greatly simplified and now make use of vcpkg.
 - The script for building a Win32 release archive has been replaced with a new one that does a 64-bit build.
-- PMP now requires a C++14 compiler.
+- PMP now requires a C++17 compiler.
 - PMP now requires Qt 5.14 or later.
 - PMP now requires TagLib 1.12 or later.
 

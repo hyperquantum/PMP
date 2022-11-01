@@ -19,6 +19,7 @@
 
 #include "util.h"
 
+#include "common/unicodechars.h"
 #include "common/version.h"
 
 #include <QAtomicInt>
@@ -28,17 +29,6 @@
 
 namespace PMP
 {
-    const QChar Util::Copyright = QChar(0xA9);
-    const QChar Util::EmDash = QChar(0x2014);
-    const QChar Util::EnDash = QChar(0x2013);
-    const QChar Util::EAcute = QChar(0xE9);
-    const QChar Util::EDiaeresis = QChar(0xEB);
-    const QChar Util::FigureDash = QChar(0x2012);
-    const QChar Util::GreaterThanOrEqual = QChar(0x2265);
-    const QChar Util::LessThanOrEqual = QChar(0x2264);
-    const QChar Util::PauseSymbol = QChar(0x23F8);
-    const QChar Util::PlaySymbol = QChar(0x25B6);
-
     unsigned Util::getRandomSeed()
     {
         /* Because std::random_device seems to be not random at all on MINGW 4.8, we use
@@ -367,9 +357,9 @@ namespace PMP
         else
         {
             line =
-                line.arg(Copyright,
-                         QString(PMP_COPYRIGHT_YEARS).replace('-', EnDash),
-                         QString("Kevin Andr") + EAcute);
+                line.arg(UnicodeChars::copyright,
+                         QString(PMP_COPYRIGHT_YEARS).replace('-', UnicodeChars::enDash),
+                         QString("Kevin Andr") + UnicodeChars::eAcute);
         }
 
         return line;
@@ -379,5 +369,4 @@ namespace PMP
     {
         return QByteArray(byteCount, '\0');
     }
-
 }

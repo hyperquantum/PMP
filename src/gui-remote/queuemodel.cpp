@@ -24,6 +24,7 @@
 #include "common/playercontroller.h"
 #include "common/queueentryinfostorage.h"
 #include "common/userdatafetcher.h"
+#include "common/unicodechars.h"
 #include "common/util.h"
 
 #include "colors.h"
@@ -39,6 +40,8 @@
 #include <QMimeData>
 #include <QtDebug>
 #include <QTimer>
+
+using namespace PMP::UnicodeChars;
 
 namespace PMP
 {
@@ -170,7 +173,6 @@ namespace PMP
        _source(source),
        _infoStorage(trackInfoStorage),
        _lastHeardRefresher(new RegularUiRefresher(this)),
-       _clientClockTimeOffsetMs(0),
        _playerMode(PlayerMode::Unknown),
        _personalModeUserId(0),
        _modelRows(0)
@@ -307,19 +309,19 @@ namespace PMP
 
                 case QueueEntryType::BreakPoint:
                     if (col <= 1)
-                        return Util::EmDash + QString(" BREAK ") + Util::EmDash;
+                        return emDash + QString(" BREAK ") + emDash;
 
                     return QString();
 
                 case QueueEntryType::Barrier:
                     if (col <= 1)
-                        return Util::EmDash + QString(" BARRIER ") + Util::EmDash;
+                        return emDash + QString(" BARRIER ") + emDash;
 
                     return QString();
 
                 case QueueEntryType::UnknownSpecialType:
                     if (col <= 1)
-                        return Util::EmDash + QString(" ????? ") + Util::EmDash;
+                        return emDash + QString(" ????? ") + emDash;
 
                     return QString();
                 }

@@ -20,18 +20,17 @@
 #include "mainwidget.h"
 #include "ui_mainwidget.h"
 
-#include "common/audiodata.h"
 #include "common/clientserverinterface.h"
 #include "common/currenttrackmonitor.h"
 #include "common/dynamicmodecontroller.h"
 #include "common/playercontroller.h"
 #include "common/queuecontroller.h"
-#include "common/queuemonitor.h"
-#include "common/userdatafetcher.h"
+#include "common/unicodechars.h"
 #include "common/util.h"
 
 #include "autopersonalmodeaction.h"
 #include "clickablelabel.h"
+#include "dynamicmodeparametersdialog.h"
 #include "playerhistorymodel.h"
 #include "precisetrackprogressmonitor.h"
 #include "queuemediator.h"
@@ -46,16 +45,17 @@
 #include <QMenu>
 #include <QSettings>
 
+using namespace PMP::UnicodeChars;
+
 namespace PMP
 {
-    MainWidget::MainWidget(QWidget *parent) :
-        QWidget(parent),
+    MainWidget::MainWidget(QWidget* parent)
+     : QWidget(parent),
         _ui(new Ui::MainWidget),
         _clientServerInterface(nullptr),
         _trackProgressMonitor(nullptr),
         _queueMediator(nullptr),
         _queueModel(nullptr), _queueContextMenu(nullptr),
-        _noRepetitionUpdating(0),
         _historyModel(nullptr),
         _historyContextMenu(nullptr),
         _showingTimeRemaining(false)
@@ -198,34 +198,14 @@ namespace PMP
             this, &MainWidget::changeDynamicMode
         );
         connect(
-            _ui->startWaveButton, &QPushButton::clicked,
-            this, &MainWidget::startHighScoredTracksWave
-        );
-        connect(
-            _ui->terminateWaveButton, &QPushButton::clicked,
-            this, &MainWidget::terminateHighScoredTracksWave
-        );
-        connect(
-            _ui->noRepetitionComboBox, qOverload<int>(&QComboBox::currentIndexChanged),
-            this, &MainWidget::noRepetitionIndexChanged
-        );
-        connect(
             dynamicModeController, &DynamicModeController::dynamicModeEnabledChanged,
             this, &MainWidget::dynamicModeEnabledChanged
         );
-        connect(
-            dynamicModeController, &DynamicModeController::noRepetitionSpanSecondsChanged,
-            this, &MainWidget::noRepetitionSpanSecondsChanged
-        );
-        connect(
-            dynamicModeController, &DynamicModeController::waveActiveChanged,
-            this, &MainWidget::waveActiveChanged
-        );
-        connect(
-            dynamicModeController, &DynamicModeController::waveProgressChanged,
-            this, &MainWidget::waveProgressChanged
-        );
 
+        connect(
+            _ui->dynamicModeParametersButton, &QPushButton::clicked,
+            this, &MainWidget::dynamicModeParametersButtonClicked
+        );
         connect(
             _ui->expandButton, &QPushButton::clicked,
             dynamicModeController, &DynamicModeController::expandQueue
@@ -305,9 +285,6 @@ namespace PMP
                              currentTrackMonitor->currentTrackLengthMilliseconds());
         volumeChanged();
         dynamicModeEnabledChanged();
-        noRepetitionSpanSecondsChanged();
-        waveActiveChanged();
-        waveProgressChanged();
     }
 
     bool MainWidget::eventFilter(QObject* object, QEvent* event)
@@ -343,7 +320,7 @@ namespace PMP
             case PlayerMode::Personal:
                 _ui->playingModeLabel->setText(tr("PERSONAL mode"));
                 _ui->userPlayingForLabel->setText(
-                    QString(Util::EnDash) + " " + userLogin + " " + Util::EnDash
+                    QString(enDash) + " " + userLogin + " " + enDash
                 );
 
                 _ui->toPersonalModeButton->setEnabled(
@@ -651,53 +628,6 @@ namespace PMP
         _ui->dynamicModeCheckBox->setChecked(enabled.isTrue());
     }
 
-    void MainWidget::noRepetitionSpanSecondsChanged()
-    {
-        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
-
-        auto noRepetitionSpanSeconds = dynamicModeController.noRepetitionSpanSeconds();
-
-        _ui->noRepetitionComboBox->setEnabled(noRepetitionSpanSeconds >= 0);
-
-        if (noRepetitionSpanSeconds < 0)
-        {
-            _noRepetitionUpdating++;
-            _ui->noRepetitionComboBox->setCurrentIndex(-1);
-            _noRepetitionUpdating--;
-            return;
-        }
-
-        int noRepetitionIndex = _ui->noRepetitionComboBox->currentIndex();
-
-        if (noRepetitionIndex >= 0
-                && _noRepetitionList[noRepetitionIndex] == noRepetitionSpanSeconds)
-        {
-            return; /* the right item is selected already */
-        }
-
-        /* search for non-repetition span in list of choices */
-        noRepetitionIndex = -1;
-        for (int i = 0; i < _noRepetitionList.size(); ++i)
-        {
-            if (_noRepetitionList[i] == noRepetitionSpanSeconds)
-            {
-                noRepetitionIndex = i;
-                break;
-            }
-        }
-
-        if (noRepetitionIndex >= 0)
-        { /* found in list */
-            _noRepetitionUpdating++;
-            _ui->noRepetitionComboBox->setCurrentIndex(noRepetitionIndex);
-            _noRepetitionUpdating--;
-        }
-        else
-        { /* not found in list */
-            buildNoRepetitionList(noRepetitionSpanSeconds);
-        }
-    }
-
     void MainWidget::playerStateChanged()
     {
         auto& playerController = _clientServerInterface->playerController();
@@ -783,7 +713,7 @@ namespace PMP
                 if (artist.isEmpty())
                     artist = tr("<unknown artist>");
 
-                auto artistTitleText = artist + " " + Util::EnDash + " " + title;
+                auto artistTitleText = artist + " " + enDash + " " + title;
                 _ui->artistTitleLabel->setText(artistTitleText);
             }
 
@@ -857,6 +787,15 @@ namespace PMP
         showTrackInfoDialog(hash, currentTrackMonitor.currentQueueId());
     }
 
+    void MainWidget::dynamicModeParametersButtonClicked()
+    {
+        auto* dynamicModeController = &_clientServerInterface->dynamicModeController();
+
+        auto dialog = new DynamicModeParametersDialog(this, dynamicModeController);
+        connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+        dialog->open();
+    }
+
     void MainWidget::volumeChanged()
     {
         auto volume = _clientServerInterface->playerController().volume();
@@ -907,157 +846,6 @@ namespace PMP
             {
                 dynamicModeController.disableDynamicMode();
             }
-        }
-    }
-
-    void MainWidget::startHighScoredTracksWave()
-    {
-        _clientServerInterface->dynamicModeController().startHighScoredTracksWave();
-    }
-
-    void MainWidget::terminateHighScoredTracksWave()
-    {
-        _clientServerInterface->dynamicModeController().terminateHighScoredTracksWave();
-    }
-
-    void MainWidget::buildNoRepetitionList(int spanToSelect)
-    {
-        _noRepetitionUpdating++;
-
-        _noRepetitionList.clear();
-        _ui->noRepetitionComboBox->clear();
-
-        _noRepetitionList.append(0);
-        _noRepetitionList.append(3600); // 1 hour
-        _noRepetitionList.append(2 * 3600); // 2 hours
-        _noRepetitionList.append(4 * 3600); // 4 hours
-        _noRepetitionList.append(6 * 3600); // 6 hours
-        _noRepetitionList.append(10 * 3600); // 10 hours
-        _noRepetitionList.append(24 * 3600); // 24 hours
-        _noRepetitionList.append(2 * 24 * 3600); // 48 hours (2 days)
-        _noRepetitionList.append(3 * 24 * 3600); // 72 hours (3 days)
-        _noRepetitionList.append(7 * 24 * 3600); // 7 days
-        _noRepetitionList.append(14 * 24 * 3600); // 14 days
-        _noRepetitionList.append(21 * 24 * 3600); // 21 days (3 weeks)
-        _noRepetitionList.append(28 * 24 * 3600); // 28 days (4 weeks)
-        _noRepetitionList.append(56 * 24 * 3600); // 56 days (8 weeks)
-
-        int indexOfSpanToSelect = -1;
-
-        if (spanToSelect >= 0)
-        {
-            indexOfSpanToSelect = _noRepetitionList.indexOf(spanToSelect);
-            if (indexOfSpanToSelect < 0)
-            {
-                _noRepetitionList.append(spanToSelect);
-                std::sort(_noRepetitionList.begin(), _noRepetitionList.end());
-                indexOfSpanToSelect = _noRepetitionList.indexOf(spanToSelect);
-            }
-        }
-
-        for (auto span : qAsConst(_noRepetitionList))
-        {
-            _ui->noRepetitionComboBox->addItem(noRepetitionTimeString(span));
-        }
-
-        if (indexOfSpanToSelect >= 0)
-        {
-            _ui->noRepetitionComboBox->setCurrentIndex(indexOfSpanToSelect);
-        }
-
-        _noRepetitionUpdating--;
-    }
-
-    QString MainWidget::noRepetitionTimeString(int seconds)
-    {
-        QString output;
-
-        if (seconds > 7 * 24 * 60 * 60)
-        {
-            int weeks = seconds / (7 * 24 * 60 * 60);
-            seconds -= weeks * (7 * 24 * 60 * 60);
-            output += QString::number(weeks);
-            output += (weeks == 1) ? " week" : " weeks";
-        }
-
-        if (seconds > 24 * 60 * 60)
-        {
-            int days = seconds / (24 * 60 * 60);
-            seconds -= days * (24 * 60 * 60);
-            if (output.size() > 0) output += " ";
-            output += QString::number(days);
-            output += (days == 1) ? " day" : " days";
-        }
-
-        if (seconds > 60 * 60)
-        {
-            int hours = seconds / (60 * 60);
-            seconds -= hours * (60 * 60);
-            if (output.size() > 0) output += " ";
-            output += QString::number(hours);
-            output += (hours == 1) ? " hour" : " hours";
-        }
-
-        if (seconds > 60)
-        {
-            int minutes = seconds / 60;
-            seconds -= minutes * 60;
-            if (output.size() > 0) output += " ";
-            output += QString::number(minutes);
-            output += (minutes == 1) ? " minute" : " minutes";
-        }
-
-        if (seconds > 0 || output.size() == 0)
-        {
-            if (output.size() > 0) output += " ";
-            output += QString::number(seconds);
-            output += (seconds == 1) ? " second" : " seconds";
-        }
-
-        return output;
-    }
-
-    void MainWidget::noRepetitionIndexChanged(int index)
-    {
-        if (_noRepetitionUpdating > 0
-            || index < 0 || index >= _noRepetitionList.size())
-        {
-            return;
-        }
-
-        int newSpan = _noRepetitionList[index];
-
-        qDebug() << "noRepetitionIndexChanged: index" << index << "  value" << newSpan;
-
-        _clientServerInterface->dynamicModeController().setNoRepetitionSpan(newSpan);
-    }
-
-    void MainWidget::waveActiveChanged()
-    {
-        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
-
-        _ui->startWaveButton->setEnabled(dynamicModeController.canStartWave());
-        _ui->terminateWaveButton->setVisible(dynamicModeController.canTerminateWave());
-    }
-
-    void MainWidget::waveProgressChanged()
-    {
-        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
-
-        int progress = dynamicModeController.waveProgress();
-        int progressTotal = dynamicModeController.waveProgressTotal();
-
-        if (progress < 0 || progressTotal <= 0)
-        {
-            _ui->waveProgressValueLabel->setVisible(false);
-        }
-        else
-        {
-            auto text =
-                    QString::number(progress) + " / " + QString::number(progressTotal);
-
-            _ui->waveProgressValueLabel->setText(text);
-            _ui->waveProgressValueLabel->setVisible(true);
         }
     }
 
@@ -1124,5 +912,4 @@ namespace PMP
         connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
         dialog->open();
     }
-
 }

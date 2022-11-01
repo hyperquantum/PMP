@@ -152,3 +152,13 @@ add_executable(test_obfuscator test_obfuscator.cpp
 )
 target_link_libraries(test_obfuscator Qt5::Core Qt5::Test)
 add_test(test_obfuscator test_obfuscator)
+
+
+# TestHashRelations
+qt5_wrap_cpp(PMP_TestHashRelations_MOCS test_hashrelations.h)
+add_executable(test_hashrelations test_hashrelations.cpp
+    ${PMP_TestHashRelations_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/server/hashrelations.cpp
+)
+target_link_libraries(test_hashrelations Qt5::Core Qt5::Test)
+add_test(test_hashrelations test_hashrelations)

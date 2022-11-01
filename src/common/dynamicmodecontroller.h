@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -55,10 +55,8 @@ namespace PMP
 
     Q_SIGNALS:
         void dynamicModeEnabledChanged();
+        void waveStatusChanged();
         void noRepetitionSpanSecondsChanged();
-
-        void waveActiveChanged();
-        void waveProgressChanged();
 
     protected:
         explicit DynamicModeController(QObject* parent) : QObject(parent) {}

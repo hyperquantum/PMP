@@ -20,8 +20,6 @@
 #ifndef PMP_TESTNULLABLE_H
 #define PMP_TESTNULLABLE_H
 
-#include "common/nullable.h"
-
 #include <QObject>
 
 class TestNullable : public QObject

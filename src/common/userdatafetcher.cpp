@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,10 +22,11 @@
 #include "collectionwatcher.h"
 #include "serverconnection.h"
 
+#include <QtDebug>
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP
+{
     /* ============================== UserDataFetcher ============================== */
 
     UserDataFetcher::UserDataFetcher(QObject* parent,
@@ -49,11 +50,14 @@ namespace PMP {
         );
     }
 
-    void UserDataFetcher::enableAutoFetchForUser(quint32 userId) {
+    void UserDataFetcher::enableAutoFetchForUser(quint32 userId)
+    {
         auto& userData = _userData[userId];
 
         if (userData.isAutoFetchEnabled())
             return; /* no change */
+
+        qDebug() << "UserDataFetcher: enabling auto fetch for user" << userId;
 
         userData.setAutoFetchEnabled(true);
 
@@ -62,16 +66,18 @@ namespace PMP {
         /* manual fetch process: iterate through the entire collection and make sure that
                                  each track is fetched */
 
-        QHash<FileHash, CollectionTrackInfo> collection =
-                _collectionWatcher->getCollection();
+        _collectionWatcher->enableCollectionDownloading();
+        auto collection = _collectionWatcher->getCollection();
 
-        for (auto it = collection.constBegin(); it != collection.constEnd(); ++it) {
+        for (auto it = collection.constBegin(); it != collection.constEnd(); ++it)
+        {
             if (!userData.haveHash(it.key()))
                 needToRequestData(userId, it.key());
         }
     }
 
-    //void UserDataFetcher::connected() {
+    //void UserDataFetcher::connected()
+    //{
     //    //
     //}
 
@@ -87,12 +93,15 @@ namespace PMP {
         return nullptr;
     }
 
-    void UserDataFetcher::onNewTrackReceived(CollectionTrackInfo track) {
-        for (auto it = _userData.constBegin(); it != _userData.constEnd(); ++it) {
+    void UserDataFetcher::onNewTrackReceived(CollectionTrackInfo track)
+    {
+        for (auto it = _userData.constBegin(); it != _userData.constEnd(); ++it)
+        {
+            auto userId = it.key();
             auto& userData = it.value();
 
             if (userData.isAutoFetchEnabled() && !userData.haveHash(track.hash()))
-                needToRequestData(it.key(), track.hash());
+                needToRequestData(userId, track.hash());
         }
     }
 
@@ -110,7 +119,8 @@ namespace PMP {
 
         _pendingNotificationsUsers << userId;
 
-        if (first) {
+        if (first)
+        {
             QTimer::singleShot(100, this, &UserDataFetcher::sendPendingNotifications);
         }
 
@@ -143,12 +153,14 @@ namespace PMP {
         _pendingNotificationsUsers.clear();
     }
 
-    void UserDataFetcher::needToRequestData(quint32 userId, const FileHash& hash) {
+    void UserDataFetcher::needToRequestData(quint32 userId, const FileHash& hash)
+    {
         bool first = _hashesToFetchForUsers.isEmpty();
 
         _hashesToFetchForUsers[userId] << hash;
 
-        if (first) {
+        if (first)
+        {
             QTimer::singleShot(100, this, &UserDataFetcher::sendPendingRequests);
         }
     }

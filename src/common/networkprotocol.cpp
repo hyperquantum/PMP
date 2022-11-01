@@ -339,6 +339,6 @@ namespace PMP
     {
         if (version < 3) return 1; /* only previously heard */
 
-        return 3; /* previously heard & score */
+        return 1 | 2; /* previously heard & score */
     }
 }

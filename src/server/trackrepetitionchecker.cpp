@@ -80,11 +80,11 @@ namespace PMP
         if (lastPlay.isValid() && lastPlay > maxLastPlay)
             return true;
 
-        auto userStats = _history->getUserStats(id, _userPlayingFor);
-        if (!userStats)
+        auto maybeUserStats = _history->getUserStats(id, _userPlayingFor);
+        if (maybeUserStats.isNull())
             return true;
 
-        lastPlay = userStats->lastHeard;
+        lastPlay = maybeUserStats.value().lastHeard();
         if (lastPlay.isValid() && lastPlay > maxLastPlay)
             return true;
 

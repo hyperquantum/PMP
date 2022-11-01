@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,13 +47,15 @@ int main(int argc, char *argv[])
     QTextStream out(stdout);
     QTextStream err(stderr);
 
-    if (QCoreApplication::arguments().size() < 2)
+    auto arguments = QCoreApplication::arguments();
+
+    if (arguments.size() < 2)
     {
         err << "No arguments given." << Qt::endl;
         return 0;
     }
 
-    QString fileName = QCoreApplication::arguments()[1];
+    QString fileName = arguments[1];
     QFileInfo fileInfo(fileName);
 
     if (!FileAnalyzer::isExtensionSupported(fileInfo.suffix(), true))

@@ -20,9 +20,12 @@
 #include "playerhistorymodel.h"
 
 #include "common/clientserverinterface.h"
+#include "common/generalcontroller.h"
 #include "common/historycontroller.h"
 #include "common/queueentryinfostorage.h"
 #include "common/util.h"
+
+#include "colors.h"
 
 #include <QBrush>
 #include <QBuffer>
@@ -43,7 +46,20 @@ namespace PMP
             this, &PlayerHistoryModel::onTracksChanged
         );
 
+        auto* generalController = &clientServerInterface->generalController();
         auto* historyController = &clientServerInterface->historyController();
+
+        _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
+        connect(
+            generalController, &GeneralController::clientClockTimeOffsetChanged,
+            this,
+            [this, generalController]()
+            {
+                _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
+                markStartedEndedColumnsAsChanged();
+            }
+        );
+
         connect(
             historyController, &HistoryController::receivedPlayerHistoryEntry,
             this, &PlayerHistoryModel::onReceivedPlayerHistoryEntry
@@ -132,6 +148,11 @@ namespace PMP
         Q_EMIT dataChanged(createIndex(0, 0), createIndex(_list.size() - 1, 2));
     }
 
+    void PlayerHistoryModel::markStartedEndedColumnsAsChanged()
+    {
+        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_list.size() - 1, 4));
+    }
+
     int PlayerHistoryModel::rowCount(const QModelIndex& parent) const
     {
         Q_UNUSED(parent);
@@ -173,16 +194,21 @@ namespace PMP
         auto item = _list[index.row()];
 
         if (role == Qt::ForegroundRole)
-            return item->hadError() ? QBrush(Qt::red) : QVariant();
+            return item->hadError()
+                    ? QBrush(Colors::instance().historyErrorItemForeground)
+                    : QVariant();
 
         if (role == Qt::BackgroundRole)
-            return item->hadError() ? QBrush(Qt::white) : QVariant();
+            return item->hadError()
+                    ? QBrush(Colors::instance().historyErrorItemBackground)
+                    : QVariant();
 
         if (role == Qt::DisplayRole)
         {
             int col = index.column();
 
-            auto queueId = _list[index.row()]->queueID();
+            auto entry = _list[index.row()];
+            auto queueId = entry->queueID();
             auto info = _infoStorage->entryInfoByQueueId(queueId);
 
             switch (col)
@@ -209,8 +235,16 @@ namespace PMP
 
                     return Util::millisecondsToShortDisplayTimeText(lengthInMilliseconds);
                 }
-                case 3: return _list[index.row()]->started().toLocalTime();
-                case 4: return _list[index.row()]->ended().toLocalTime();
+                case 3:
+                {
+                    auto started = entry->started().addMSecs(_clientClockTimeOffsetMs);
+                    return started.toLocalTime();
+                }
+                case 4:
+                {
+                    auto ended = entry->ended().addMSecs(_clientClockTimeOffsetMs);
+                    return ended.toLocalTime();
+                }
             }
         }
 

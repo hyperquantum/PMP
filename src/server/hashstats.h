@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,40 +17,35 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_USERDATAFORTRACKSFETCHER_H
-#define PMP_USERDATAFORTRACKSFETCHER_H
+#ifndef PMP_HASHSTATS_H
+#define PMP_HASHSTATS_H
 
-#include <QDateTime>
-#include <QObject>
-#include <QRunnable>
-#include <QVector>
+#include "common/filehash.h"
+
+#include "trackstats.h"
 
 namespace PMP
 {
-    struct UserDataForHashId
+    class HashStats
     {
-        uint hashId;
-        QDateTime previouslyHeard;
-        qint16 score;
-    };
-
-    class UserDataForTracksFetcher : public QObject, public QRunnable
-    {
-        Q_OBJECT
     public:
-        UserDataForTracksFetcher(quint32 userId, QVector<uint> hashIds);
+        HashStats() {}
 
-        void run();
+        HashStats(FileHash const& hash, TrackStats const& stats)
+         : _hash(hash), _stats(stats)
+        {
+            //
+        }
 
-    Q_SIGNALS:
-        void finishedWithResult(quint32 userId, QVector<PMP::UserDataForHashId> results);
+        FileHash const& hash() const { return _hash; }
+        TrackStats const& stats() const { return _stats; }
 
     private:
-        quint32 _userId;
-        QVector<uint> _hashIds;
+        FileHash _hash;
+        TrackStats _stats;
     };
 }
 
-Q_DECLARE_METATYPE(PMP::UserDataForHashId)
+Q_DECLARE_METATYPE(PMP::HashStats)
 
 #endif

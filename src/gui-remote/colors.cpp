@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,13 +19,15 @@
 
 #include "colors.h"
 
-namespace PMP {
-
+namespace PMP
+{
     Colors::Colors(const QColor& widgetBorder,
                    const QColor& inactiveItemForeground,
                    QVector<QColor> itemBackgroundHighlightColors,
                    const QColor& specialQueueItemBackground,
                    const QColor& specialQueueItemForeground,
+                   const QColor& historyErrorItemBackground,
+                   const QColor& historyErrorItemForeground,
                    const QColor& trackProgressWidgetEmpty,
                    const QColor& trackProgressWidgetBackground,
                    const QColor& trackProgressWidgetBorder,
@@ -35,6 +37,8 @@ namespace PMP {
        itemBackgroundHighlightColors(itemBackgroundHighlightColors),
        specialQueueItemBackground(specialQueueItemBackground),
        specialQueueItemForeground(specialQueueItemForeground),
+       historyErrorItemBackground(historyErrorItemBackground),
+       historyErrorItemForeground(historyErrorItemForeground),
        trackProgressWidgetEmpty(trackProgressWidgetEmpty),
        trackProgressWidgetBackground(trackProgressWidgetBackground),
        trackProgressWidgetBorder(trackProgressWidgetBorder),
@@ -43,7 +47,8 @@ namespace PMP {
         //
     }
 
-    const Colors& Colors::instance() {
+    const Colors& Colors::instance()
+    {
         return _lightScheme;
     }
 
@@ -58,6 +63,8 @@ namespace PMP {
             },
             /* specialQueueItemBackground */ QColor::fromRgb(0xFF, 0xC4, 0x73),
             /* specialQueueItemForeground */ Qt::black,
+            /* historyErrorItemBackground */ Qt::white,
+            /* historyErrorItemForeground */ Qt::red,
             /* trackProgressWidgetEmpty */ QColor::fromHsl(207, 255, 230),
             /* trackProgressWidgetBackground */ QColor::fromHsl(207, 255, 230),
             /* trackProgressWidgetBorder */ QColor::fromHsl(207, 255, 180),

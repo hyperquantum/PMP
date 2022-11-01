@@ -8,6 +8,8 @@ PMP is designed to be portable software and should be compatible with most popul
 
 *This is alpha quality software*. Existing features can still be incomplete. Certain 'essential' features that can be found in most music player software might (still) be missing. PMP might contain lots of bugs. Use at your own risk.
 
+![screenshot](screenshots/gui-remote-screenshot.png)
+
 ## Table of Contents
 Contents of this file:
   1. [Features](#1-features)
@@ -175,7 +177,7 @@ Finally you can build PMP itself. Run the following commands in a CMD terminal. 
 
 ```cmd
 > cd PMP\bin
-> "C:\Program Files\CMake\bin\cmake" -G "Visual Studio 16 2019" -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake" -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
+> "C:\Program Files\CMake\bin\cmake" -G "Visual Studio 17 2022" -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake" -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
 > "C:\Program Files\CMake\bin\cmake" --build . --config Debug
 ```
 

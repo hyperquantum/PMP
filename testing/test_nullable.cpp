@@ -19,6 +19,8 @@
 
 #include "test_nullable.h"
 
+#include "common/nullable.h"
+
 #include <QtTest/QTest>
 
 using namespace PMP;

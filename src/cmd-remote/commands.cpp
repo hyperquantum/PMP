@@ -26,6 +26,7 @@
 #include "common/queuecontroller.h"
 #include "common/queueentryinfostorage.h"
 #include "common/queuemonitor.h"
+#include "common/userdatafetcher.h"
 #include "common/util.h"
 
 namespace PMP
@@ -820,4 +821,72 @@ namespace PMP
         clientServerInterface->queueController().moveQueueEntry(_queueId, _moveOffset);
     }
 
+    /* ===== TrackStatsCommand ===== */
+
+    TrackStatsCommand::TrackStatsCommand(const FileHash& hash)
+     : _hash(hash)
+    {
+        //
+    }
+
+    bool TrackStatsCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void TrackStatsCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        auto userDataFetcher = &clientServerInterface->userDataFetcher();
+
+        connect(userDataFetcher, &UserDataFetcher::dataReceivedForUser,
+                this, &TrackStatsCommand::listenerSlot);
+
+        auto userId = clientServerInterface->userLoggedInId();
+        auto username = clientServerInterface->userLoggedInName();
+
+        addStep(
+            [this, userDataFetcher, userId, username]() -> bool
+            {
+                auto* hashData = userDataFetcher->getHashDataForUser(userId, _hash);
+                if (hashData == nullptr)
+                    return false;
+
+                QString output;
+                output.reserve(100);
+
+                output += QString("Hash: %1\n").arg(_hash.toString());
+                output += QString("User: %1\n").arg(username);
+
+                QString lastHeard;
+                if (!hashData->previouslyHeardReceived)
+                    lastHeard = "unknown";
+                else if (hashData->previouslyHeard.isNull())
+                    lastHeard = "never";
+                else
+                    lastHeard =
+                        hashData->previouslyHeard.toLocalTime().toString(Qt::RFC2822Date);
+
+                output += QString("Last heard: %1\n").arg(lastHeard);
+
+                QString score;
+                if (!hashData->scoreReceived)
+                    score = "unknown";
+                else if (hashData->scorePermillage < 0)
+                    score = "N/A";
+                else
+                    score = QString::number(hashData->scorePermillage / 10.0, 'f', 1);
+
+                output += QString("Score: %1").arg(score);
+
+                setCommandExecutionSuccessful(output);
+                return false;
+            }
+        );
+    }
+
+    void TrackStatsCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        Q_UNUSED(clientServerInterface)
+        // no specific start action needed
+    }
 }

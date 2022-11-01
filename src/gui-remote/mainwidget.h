@@ -67,6 +67,7 @@ namespace PMP
         void switchTrackTimeDisplayMode();
 
         void trackInfoButtonClicked();
+        void dynamicModeParametersButtonClicked();
 
         void volumeChanged();
         void decreaseVolume();
@@ -76,14 +77,7 @@ namespace PMP
         void queueContextMenuRequested(const QPoint& position);
 
         void dynamicModeEnabledChanged();
-        void noRepetitionSpanSecondsChanged();
         void changeDynamicMode(int checkState);
-        void noRepetitionIndexChanged(int index);
-
-        void waveActiveChanged();
-        void waveProgressChanged();
-        void startHighScoredTracksWave();
-        void terminateHighScoredTracksWave();
 
     private:
         void enableDisableTrackInfoButton();
@@ -97,17 +91,12 @@ namespace PMP
 
         bool keyEventFilter(QKeyEvent* event);
 
-        void buildNoRepetitionList(int spanToSelect);
-        QString noRepetitionTimeString(int seconds);
-
         Ui::MainWidget* _ui;
         ClientServerInterface* _clientServerInterface;
         PreciseTrackProgressMonitor* _trackProgressMonitor;
         QueueMediator* _queueMediator;
         QueueModel* _queueModel;
         QMenu* _queueContextMenu;
-        QList<int> _noRepetitionList;
-        int _noRepetitionUpdating;
         PlayerHistoryModel* _historyModel;
         QMenu* _historyContextMenu;
         bool _showingTimeRemaining;

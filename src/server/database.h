@@ -20,13 +20,14 @@
 #ifndef PMP_DATABASE_H
 #define PMP_DATABASE_H
 
+#include "databaserecords.h"
+
 #include "common/filehash.h"
 #include "common/resultorerror.h"
 
 #include <QAtomicInt>
 #include <QByteArray>
 #include <QDateTime>
-#include <QList>
 #include <QPair>
 #include <QSharedPointer>
 #include <QString>
@@ -43,37 +44,10 @@ QT_FORWARD_DECLARE_CLASS(QTextStream)
 
 namespace PMP
 {
-    class User
+    // TODO : move these record classes to databaserecords.h
+    
+    class LastFmScrobblingDataRecord
     {
-    public:
-        User()
-         : id(0), login("")
-        {
-            //
-        }
-
-        User(quint32 id, QString login, QByteArray salt, QByteArray password)
-         : id(id), login(login), salt(salt), password(password)
-        {
-            //
-        }
-
-        static User fromDb(quint32 id, QString login, QString salt, QString password)
-        {
-            return User(
-                id, login,
-                QByteArray::fromBase64(salt.toLatin1()),
-                QByteArray::fromBase64(password.toLatin1())
-            );
-        }
-
-        quint32 id;
-        QString login;
-        QByteArray salt;
-        QByteArray password;
-    };
-
-    class LastFmScrobblingDataRecord {
     public:
         LastFmScrobblingDataRecord()
          : enableLastFmScrobbling(false), lastFmScrobbledUpTo(0)
@@ -87,7 +61,8 @@ namespace PMP
         quint32 lastFmScrobbledUpTo;
     };
 
-    class UserScrobblingDataRecord : public LastFmScrobblingDataRecord {
+    class UserScrobblingDataRecord : public LastFmScrobblingDataRecord
+    {
     public:
         UserScrobblingDataRecord()
          : userId(0)
@@ -98,7 +73,8 @@ namespace PMP
         quint32 userId;
     };
 
-    class HistoryRecord {
+    class HistoryRecord
+    {
     public:
         HistoryRecord()
          : id(0), hashId(0), userId(0), permillage(-1), validForScoring(false)
@@ -115,55 +91,38 @@ namespace PMP
         bool validForScoring;
     };
 
-    class UserDynamicModePreferencesRecord
-    {
-    public:
-        UserDynamicModePreferencesRecord()
-         : dynamicModeEnabled(true), trackRepetitionAvoidanceIntervalSeconds(3600 /*1hr*/)
-        {
-            //
-        }
-
-        bool dynamicModeEnabled;
-        qint32 trackRepetitionAvoidanceIntervalSeconds;
-    };
-
     struct DatabaseConnectionSettings;
     class ServerSettings;
 
     class Database
     {
     public:
-        struct HashHistoryStats
-        {
-            quint32 hashId;
-            quint32 scoreHeardCount;
-            QDateTime lastHeard;
-            qint16 score;
-        };
-
         static bool init(QTextStream& out, ServerSettings const& serverSettings);
         static bool init(QTextStream& out,
                          DatabaseConnectionSettings const& connectionSettings);
 
         bool isConnectionOpen() const;
 
-        void registerHash(const FileHash& hash);
-        uint getHashID(const FileHash& hash);
-        ResultOrError<QList<QPair<uint,FileHash>>, FailureType> getHashes(
+        ResultOrError<SuccessType, FailureType> registerHash(const FileHash& hash);
+        ResultOrError<uint, FailureType> getHashId(const FileHash& hash);
+        ResultOrError<QVector<QPair<uint,FileHash>>, FailureType> getHashes(
                                                                    uint largerThanID = 0);
 
-        bool registerFilenameSeen(uint hashId, const QString& filenameWithoutPath,
-                                  int currentYear);
-        ResultOrError<QList<QString>, FailureType> getFilenames(uint hashID);
+        ResultOrError<SuccessType, FailureType> registerFilenameSeen(uint hashId,
+                                                    const QString& filenameWithoutPath,
+                                                    int currentYear);
+        ResultOrError<QVector<QString>, FailureType> getFilenames(uint hashID);
 
-        void registerFileSizeSeen(uint hashId, qint64 size, int currentYear);
-        ResultOrError<QList<qint64>, FailureType> getFileSizes(uint hashID);
+        ResultOrError<SuccessType, FailureType> registerFileSizeSeen(uint hashId,
+                                                                     qint64 size,
+                                                                     int currentYear);
+        ResultOrError<QVector<qint64>, FailureType> getFileSizes(uint hashID);
 
-        QList<User> getUsers();
-        bool checkUserExists(QString userName);
-        quint32 registerNewUser(User& user);
+        ResultOrError<QVector<DatabaseRecords::User>, FailureType> getUsers();
+        ResultOrError<bool, FailureType> checkUserExists(QString userName);
+        ResultOrError<quint32, FailureType> registerNewUser(DatabaseRecords::User& user);
 
+        // TODO : use ResultOrError for all return types
         QVector<UserScrobblingDataRecord> getUsersScrobblingData();
         LastFmScrobblingDataRecord getUserLastFmScrobblingData(quint32 userId);
         bool setLastFmScrobblingEnabled(quint32 userId, bool enabled = true);
@@ -171,22 +130,33 @@ namespace PMP
         bool updateLastFmScrobbledUpTo(quint32 userId, quint32 newValue);
         bool updateUserScrobblingSessionKeys(UserScrobblingDataRecord const& record);
 
-        UserDynamicModePreferencesRecord getUserDynamicModePreferences(quint32 userId,
-                                                                       bool* ok);
-        bool setUserDynamicModePreferences(quint32 userId,
-                                     UserDynamicModePreferencesRecord const& preferences);
+        DatabaseRecords::UserDynamicModePreferences getUserDynamicModePreferences(
+                                                                           quint32 userId,
+                                                                           bool* ok);
+        ResultOrError<SuccessType, FailureType> setUserDynamicModePreferences(
+                        quint32 userId,
+                        DatabaseRecords::UserDynamicModePreferences const& preferences);
 
-        void addToHistory(quint32 hashId, quint32 userId, QDateTime start, QDateTime end,
-                          int permillage, bool validForScoring);
-        QDateTime getLastHeard(quint32 hashId, quint32 userId);
-        QList<QPair<quint32, QDateTime>> getLastHeard(quint32 userId,
-                                                      QList<quint32> hashIds);
-        QVector<HashHistoryStats> getHashHistoryStats(quint32 userId,
-                                                      QList<quint32> hashIds);
+        ResultOrError<SuccessType, FailureType> addToHistory(quint32 hashId,
+                                                             quint32 userId,
+                                                             QDateTime start,
+                                                             QDateTime end,
+                                                             int permillage,
+                                                             bool validForScoring);
+        ResultOrError<quint32, FailureType> getMostRecentRealUserHavingHistory();
+        ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
+                                                                      getHashHistoryStats(
+                                                                quint32 userId,
+                                                                QVector<quint32> hashIds);
         QVector<HistoryRecord> getUserHistoryForScrobbling(quint32 userId,
                                                            quint32 startId,
                                                            QDateTime earliestDateTime,
                                                            int limit);
+
+        ResultOrError<QVector<QPair<quint32, quint32>>, FailureType> getEquivalences();
+        ResultOrError<SuccessType, FailureType> registerEquivalence(quint32 hashId1,
+                                                                    quint32 hashId2,
+                                                                    int currentYear);
 
         static QSharedPointer<Database> getDatabaseForCurrentThread();
         static QUuid getDatabaseUuid();
@@ -207,12 +177,17 @@ namespace PMP
         bool executeScalar(std::function<void (QSqlQuery&)> preparer,
                            QDateTime& d);
 
+        template<class T>
+        ResultOrError<QVector<T>, FailureType> executeRecords(
+                                            std::function<void (QSqlQuery&)> preparer,
+                                            std::function<T (QSqlQuery&)> extractRecord,
+                                            int recordsToReserveCount = -1);
+
         bool executeVoid(std::function<void (QSqlQuery&)> preparer);
 
         bool executeQuery(std::function<void (QSqlQuery&)> preparer,
                           bool processResult,
                           std::function<void (QSqlQuery&)> resultFetcher);
-        bool executeQuery(QSqlQuery& q);
 
         static bool addColumnIfNotExists(QSqlQuery& q, QString tableName,
                                          QString columnName, QString type);
@@ -222,8 +197,6 @@ namespace PMP
         static uint getUInt(QVariant v, uint nullValue);
         static QDateTime getUtcDateTime(QVariant v);
         static QString getString(QVariant v, const char* nullValue);
-
-        static qint16 calculateScore(qint32 permillageFromDB, quint32 heardCount);
 
         static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
         static void printInitializationError(QTextStream& out, QSqlDatabase& db);
@@ -235,6 +208,7 @@ namespace PMP
         static bool initFileSizeTable(QSqlQuery& q);
         static bool initUsersTable(QSqlQuery& q);
         static bool initHistoryTable(QSqlQuery& q);
+        static bool initEquivalenceTable(QSqlQuery& q);
 
         static QString _hostname;
         static int _port;

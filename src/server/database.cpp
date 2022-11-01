@@ -29,6 +29,8 @@
 #include <QtDebug>
 #include <QTextStream>
 
+using namespace PMP::DatabaseRecords;
+
 namespace PMP
 {
     QString Database::_hostname;
@@ -94,7 +96,7 @@ namespace PMP
         if (maybeUuid.succeeded())
         {
             _uuid = maybeUuid.result();
-            out << " UUID is" << _uuid.toString() << Qt::endl;
+            out << " UUID is " << _uuid.toString() << Qt::endl;
         }
         else
         {
@@ -103,11 +105,12 @@ namespace PMP
         }
 
         bool tablesInitialized =
-            initHashTable(q)         /* pmp_hash */
-            && initFilenameTable(q)  /* pmp_filename */
-            && initFileSizeTable(q)  /* pmp_filesize */
-            && initUsersTable(q)     /* pmp_user */
-            && initHistoryTable(q);  /* pmp_history */
+            initHashTable(q)             /* pmp_hash */
+            && initFilenameTable(q)      /* pmp_filename */
+            && initFileSizeTable(q)      /* pmp_filesize */
+            && initUsersTable(q)         /* pmp_user */
+            && initHistoryTable(q)       /* pmp_history */
+            && initEquivalenceTable(q);  /* pmp_equivalence */
 
         if (!tablesInitialized)
         {
@@ -303,6 +306,28 @@ namespace PMP
         return q.exec();
     }
 
+    bool Database::initEquivalenceTable(QSqlQuery& q)
+    {
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_equivalence("
+            " `Hash1` INT UNSIGNED NOT NULL,"
+            " `Hash2` INT UNSIGNED NOT NULL,"
+            " `YearAdded` INT NOT NULL,"
+            " CONSTRAINT `FK_pmpequivalencehash1`"
+            "  FOREIGN KEY (`Hash1`)"
+            "   REFERENCES pmp_hash (`HashID`)"
+            "   ON DELETE CASCADE ON UPDATE CASCADE,"
+            " CONSTRAINT `FK_pmpequivalencehash2`"
+            "  FOREIGN KEY (`Hash2`)"
+            "   REFERENCES pmp_hash (`HashID`)"
+            "   ON DELETE CASCADE ON UPDATE CASCADE,"
+            " UNIQUE INDEX `IDX_pmpequivalence` (`Hash1` ASC, `Hash2` ASC) "
+            ") ENGINE = InnoDB"
+        );
+
+        return q.exec();
+    }
+
     Database::Database(QSqlDatabase db)
      : _db(db)
     {
@@ -369,7 +394,7 @@ namespace PMP
         return _db.isOpen();
     }
 
-    void Database::registerHash(const FileHash& hash)
+    ResultOrError<SuccessType, FailureType> Database::registerHash(const FileHash& hash)
     {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
@@ -378,20 +403,25 @@ namespace PMP
             [=] (QSqlQuery& q)
             {
                 q.prepare(
-                    "INSERT IGNORE INTO pmp_hash(InputLength, `SHA1`, `MD5`) "
-                    "VALUES(?,?,?)"
+                    "INSERT INTO pmp_hash(InputLength, `SHA1`, `MD5`) "
+                    "VALUES(?,?,?) "
+                    "ON DUPLICATE KEY UPDATE InputLength=InputLength"
                 );
                 q.addBindValue(hash.length());
                 q.addBindValue(sha1);
                 q.addBindValue(md5);
             };
 
-        if (!executeVoid(preparer)) { /* error */
-            qDebug() << "Database::registerHash : insert failed!" << Qt::endl;
+        if (!executeVoid(preparer))
+        {
+            qWarning() << "Database::registerHash : insert failed!" << Qt::endl;
+            return failure;
         }
+
+        return success;
     }
 
-    uint Database::getHashID(const FileHash& hash)
+    ResultOrError<uint, FailureType> Database::getHashId(const FileHash& hash)
     {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
@@ -409,130 +439,139 @@ namespace PMP
             };
 
         uint id;
-        if (!executeScalar(preparer, id, 0)) /* error */
+        if (!executeScalar(preparer, id, 0))
         {
             qDebug() << "Database::getHashID : query failed!" << Qt::endl;
-            return 0;
+            return failure;
         }
 
         return id;
     }
 
-    ResultOrError<QList<QPair<uint, FileHash> >, FailureType> Database::getHashes(
+    ResultOrError<QVector<QPair<uint, FileHash> >, FailureType> Database::getHashes(
                                                                         uint largerThanID)
     {
-        QSqlQuery q(_db);
-        q.prepare(
-            "SELECT HashID,InputLength,`SHA1`,`MD5` FROM pmp_hash"
-            " WHERE HashID > ? "
-            "ORDER BY HashID"
-        );
-        q.addBindValue(largerThanID);
+        auto preparer =
+            [=](QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT HashID,InputLength,`SHA1`,`MD5` FROM pmp_hash"
+                    " WHERE HashID > ? "
+                    "ORDER BY HashID"
+                );
+                q.addBindValue(largerThanID);
+            };
 
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getHashes : could not execute; "
-                     << q.lastError().text() << Qt::endl;
-            return failure;
-        }
+        auto extractRecord =
+            [](QSqlQuery& q) -> QPair<uint,FileHash>
+            {
+                uint hashID = q.value(0).toUInt();
+                uint length = q.value(1).toUInt();
+                QByteArray sha1 = QByteArray::fromHex(q.value(2).toByteArray());
+                QByteArray md5 = QByteArray::fromHex(q.value(3).toByteArray());
 
-        QList<QPair<uint,FileHash> > result;
-        while (q.next())
-        {
-            uint hashID = q.value(0).toUInt();
-            uint length = q.value(1).toUInt();
-            QByteArray sha1 = QByteArray::fromHex(q.value(2).toByteArray());
-            QByteArray md5 = QByteArray::fromHex(q.value(3).toByteArray());
-            result.append(QPair<uint,FileHash>(hashID, FileHash(length, sha1, md5)));
-        }
+                return { hashID, FileHash(length, sha1, md5) };
+            };
 
-        return result;
+        return executeRecords<QPair<uint, FileHash>>(preparer, extractRecord);
     }
 
-    bool Database::registerFilenameSeen(uint hashId, const QString& filenameWithoutPath,
-                                        int currentYear)
+    ResultOrError<SuccessType, FailureType> Database::registerFilenameSeen(uint hashId,
+                                                    const QString& filenameWithoutPath,
+                                                    int currentYear)
     {
         /* We do not support extremely long file names.  Lookup for those files should be
            done by other means. */
         if (filenameWithoutPath.length() > 255)
-            return false;
+            return failure;
 
         /* A race condition could cause duplicate records to be registered; that is
            tolerable however. */
 
-        QSqlQuery query(_db);
-        query.prepare(
-            "SELECT `YearLastSeen` FROM pmp_filename "
-            "WHERE `HashID`=? AND `FilenameWithoutDir`=? "
-            "ORDER BY COALESCE(`YearLastSeen`, 0) "
-            "LIMIT 1"
-        );
-        query.addBindValue(hashId);
-        query.addBindValue(filenameWithoutPath);
+        /* step 1 - find the oldest year that has been registered (or 0 for NULL) */
 
-        if (!executeQuery(query))
-            return false;
+        auto preparer1 =
+            [=](QSqlQuery& query)
+            {
+                query.prepare(
+                    "SELECT `YearLastSeen` FROM pmp_filename "
+                    "WHERE `HashID`=? AND `FilenameWithoutDir`=? "
+                    "ORDER BY COALESCE(`YearLastSeen`, 0) "
+                    "LIMIT 1"
+                );
+                query.addBindValue(hashId);
+                query.addBindValue(filenameWithoutPath);
+            };
 
-        if (query.next())
-        {
-            int oldYear = query.value(0).toInt();
-            if (oldYear == currentYear)
-                return true; /* nothing to update */
-
-            /* Delete existing entries with an older year or without a year. This also
-               causes duplicate entries to be cleaned up eventually. */
-            query.prepare(
-                "DELETE FROM pmp_filename "
-                "WHERE `HashID`=? AND `FilenameWithoutDir`=?"
-            );
-            query.addBindValue(hashId);
-            query.addBindValue(filenameWithoutPath);
-
-            if (!executeQuery(query))
-                return false;
-        }
-
-        query.prepare(
-            "INSERT INTO pmp_filename(`HashID`,`FilenameWithoutDir`,`YearLastSeen`) "
-            "VALUES(?,?,?)"
-        );
-        query.addBindValue(hashId);
-        query.addBindValue(filenameWithoutPath);
-        query.addBindValue(currentYear);
-
-        if (!executeQuery(query))
-            return false;
-
-        return true;
-    }
-
-    ResultOrError<QList<QString>, FailureType> Database::getFilenames(uint hashID)
-    {
-        QSqlQuery q(_db);
-        q.prepare( // we use DISTINCT because there's no unique index
-            "SELECT DISTINCT `FilenameWithoutDir` FROM pmp_filename"
-            " WHERE HashID=?"
-        );
-        q.addBindValue(hashID);
-
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getFilenames : could not execute; "
-                     << q.lastError().text() << Qt::endl;
+        int oldYear;
+        if (!executeScalar(preparer1, oldYear, -1))
             return failure;
-        }
 
-        QList<QString> result;
-        while (q.next())
-        {
-            QString name = q.value(0).toString();
-            result.append(name);
-        }
+        if (oldYear == currentYear)
+            return success; /* nothing to update */
 
-        return result;
+        /* step 2 - delete existing entries with an older year or without a year. This
+                    also causes duplicate entries to be cleaned up eventually. */
+
+        auto preparer2 =
+            [=](QSqlQuery& query)
+            {
+                query.prepare(
+                    "DELETE FROM pmp_filename "
+                    "WHERE `HashID`=? AND `FilenameWithoutDir`=?"
+                );
+                query.addBindValue(hashId);
+                query.addBindValue(filenameWithoutPath);
+            };
+
+        if (!executeVoid(preparer2))
+            return failure;
+
+        /* step 3 - insert the filename with the current year */
+
+        auto preparer3 =
+            [=](QSqlQuery& query)
+            {
+                query.prepare(
+                    "INSERT INTO pmp_filename(`HashID`,`FilenameWithoutDir`,"
+                    "                         `YearLastSeen`) "
+                    "VALUES(?,?,?)"
+                );
+                query.addBindValue(hashId);
+                query.addBindValue(filenameWithoutPath);
+                query.addBindValue(currentYear);
+            };
+
+        if (!executeVoid(preparer3))
+            return failure;
+
+        return success;
     }
 
-    void Database::registerFileSizeSeen(uint hashId, qint64 size, int currentYear)
+    ResultOrError<QVector<QString>, FailureType> Database::getFilenames(uint hashID)
+    {
+        auto preparer =
+            [=](QSqlQuery& q)
+            {
+                q.prepare( // we use DISTINCT because there's no unique index
+                    "SELECT DISTINCT `FilenameWithoutDir` FROM pmp_filename"
+                    " WHERE HashID=?"
+                );
+                q.addBindValue(hashID);
+            };
+
+        auto extractRecord =
+            [](QSqlQuery& q)
+            {
+                return q.value(0).toString();
+            };
+
+        return executeRecords<QString>(preparer, extractRecord);
+    }
+
+    ResultOrError<SuccessType, FailureType> Database::registerFileSizeSeen(uint hashId,
+                                                                        qint64 size,
+                                                                        int currentYear)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -551,69 +590,56 @@ namespace PMP
         if (!executeVoid(preparer))
         {
             qDebug() << "Database::registerFileSize : insert/update failed!" << Qt::endl;
-            return;
-        }
-    }
-
-    ResultOrError<QList<qint64>, FailureType> Database::getFileSizes(uint hashID)
-    {
-        QSqlQuery q(_db);
-        q.prepare(
-            "SELECT `FileSize` FROM pmp_filesize"
-            " WHERE HashID=?"
-        );
-        q.addBindValue(hashID);
-
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getFileSizes : could not execute; "
-                     << q.lastError().text() << Qt::endl;
             return failure;
         }
 
-        QList<qint64> result;
-        while (q.next())
-        {
-            qint64 fileSize = q.value(0).toLongLong();
-            result.append(fileSize);
-        }
-
-        return result;
+        return success;
     }
 
-    QList<User> Database::getUsers()
-    {
-        QSqlQuery q(_db);
-        q.prepare("SELECT `UserID`,`Login`,`Salt`,`Password` FROM pmp_user");
-
-        QList<User> result;
-
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getUsers : could not execute; "
-                     << q.lastError().text() << Qt::endl;
-            return result;
-        }
-
-        while (q.next())
-        {
-            quint32 userID = q.value(0).toUInt();
-            QString login = q.value(1).toString();
-            QString salt = q.value(2).toString();
-            QString password = q.value(3).toString();
-
-            result.append(User::fromDb(userID, login, salt, password));
-        }
-
-        qDebug() << "Database::getUsers() : user count:" << result.size();
-
-        return result;
-    }
-
-    bool Database::checkUserExists(QString userName)
+    ResultOrError<QVector<qint64>, FailureType> Database::getFileSizes(uint hashID)
     {
         auto preparer =
-            [=] (QSqlQuery& q)
+            [=](QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT `FileSize` FROM pmp_filesize"
+                    " WHERE HashID=?"
+                );
+                q.addBindValue(hashID);
+            };
+
+        auto extractRecord =
+            [](QSqlQuery& q) -> qint64
+            {
+                return q.value(0).toLongLong();
+            };
+
+        return executeRecords<qint64>(preparer, extractRecord);
+    }
+
+    ResultOrError<QVector<DatabaseRecords::User>, FailureType> Database::getUsers()
+    {
+        auto preparer =
+                prepareSimple("SELECT `UserID`,`Login`,`Salt`,`Password` FROM pmp_user");
+
+        auto extractRecord =
+            [](QSqlQuery& q)
+            {
+                quint32 userID = q.value(0).toUInt();
+                QString login = q.value(1).toString();
+                QString salt = q.value(2).toString();
+                QString password = q.value(3).toString();
+
+                return User::fromDb(userID, login, salt, password);
+            };
+
+        return executeRecords<User>(preparer, extractRecord);
+    }
+
+    ResultOrError<bool, FailureType> Database::checkUserExists(QString userName)
+    {
+        auto preparer =
+            [=](QSqlQuery& q)
             {
                 q.prepare(
                     "SELECT EXISTS(SELECT * FROM pmp_user WHERE LOWER(`Login`)=LOWER(?))"
@@ -625,13 +651,13 @@ namespace PMP
         if (!executeScalar(preparer, exists, false)) /* error */
         {
             qDebug() << "Database::checkUserExists : query failed!" << Qt::endl;
-            return false; // FIXME ???
+            return failure;
         }
 
         return exists;
     }
 
-    quint32 Database::registerNewUser(User& user)
+    ResultOrError<quint32, FailureType> Database::registerNewUser(User& user)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -647,7 +673,7 @@ namespace PMP
         if (!executeVoid(preparer)) /* error */
         {
             qDebug() << "Database::registerNewUser : insert failed!" << Qt::endl;
-            return 0;
+            return failure;
         }
 
         auto preparer2 = prepareSimple("SELECT LAST_INSERT_ID()");
@@ -656,13 +682,14 @@ namespace PMP
         if (!executeScalar(preparer2, userId, 0))
         {
             qDebug() << "Database::registerNewUser : select failed!" << Qt::endl;
-            return 0;
+            return failure;
         }
 
         return userId;
     }
 
-    QVector<UserScrobblingDataRecord> Database::getUsersScrobblingData() {
+    QVector<UserScrobblingDataRecord> Database::getUsersScrobblingData()
+    {
         auto preparer =
             prepareSimple(
                 "SELECT `UserID`,`EnableLastFmScrobbling`,`LastFmUser`,"
@@ -673,8 +700,10 @@ namespace PMP
         QVector<UserScrobblingDataRecord> result;
 
         auto resultGetter =
-            [&result] (QSqlQuery& q) {
-                while (q.next()) {
+            [&result] (QSqlQuery& q)
+            {
+                while (q.next())
+                {
                     UserScrobblingDataRecord record;
                     record.userId = q.value(0).toUInt();
                     record.enableLastFmScrobbling = getBool(q.value(1), false);
@@ -686,7 +715,8 @@ namespace PMP
                 }
             };
 
-        if (!executeQuery(preparer, true, resultGetter)) { /* error */
+        if (!executeQuery(preparer, true, resultGetter)) /* error */
+        {
             qWarning() << "Database::getUsersScrobblingData : could not execute";
             return {};
         }
@@ -694,9 +724,11 @@ namespace PMP
         return result;
     }
 
-    LastFmScrobblingDataRecord Database::getUserLastFmScrobblingData(quint32 userId) {
+    LastFmScrobblingDataRecord Database::getUserLastFmScrobblingData(quint32 userId)
+    {
         auto preparer =
-            [=] (QSqlQuery& q) {
+            [=] (QSqlQuery& q)
+            {
                 q.prepare(
                     "SELECT `EnableLastFmScrobbling`,`LastFmUser`,"
                     "  `LastFmSessionKey`,`LastFmScrobbledUpTo` "
@@ -709,8 +741,10 @@ namespace PMP
         LastFmScrobblingDataRecord result;
 
         auto resultGetter =
-            [&result] (QSqlQuery& q) {
-                if (q.next()) {
+            [&result] (QSqlQuery& q)
+            {
+                if (q.next())
+                {
                     result.enableLastFmScrobbling = getBool(q.value(0), false);
                     result.lastFmUser = getString(q.value(1), "");
                     result.lastFmSessionKey = getString(q.value(2), "");
@@ -718,7 +752,8 @@ namespace PMP
                 }
             };
 
-        if (!executeQuery(preparer, true, resultGetter)) { /* error */
+        if (!executeQuery(preparer, true, resultGetter)) /* error */
+        {
             qWarning() << "Database::getUserLastFmScrobblingData : could not execute";
             return {};
         }
@@ -726,9 +761,8 @@ namespace PMP
         return result;
     }
 
-    UserDynamicModePreferencesRecord Database::getUserDynamicModePreferences(
-                                                                           quint32 userId,
-                                                                           bool* ok)
+    UserDynamicModePreferences Database::getUserDynamicModePreferences(quint32 userId,
+                                                                       bool* ok)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -741,7 +775,7 @@ namespace PMP
                 q.addBindValue(userId);
             };
 
-        UserDynamicModePreferencesRecord result;
+        UserDynamicModePreferences result;
 
         auto resultGetter =
             [&result] (QSqlQuery& q)
@@ -770,8 +804,9 @@ namespace PMP
         return result;
     }
 
-    bool Database::setUserDynamicModePreferences(quint32 userId,
-                                      UserDynamicModePreferencesRecord const& preferences)
+    ResultOrError<SuccessType, FailureType> Database::setUserDynamicModePreferences(
+                                            quint32 userId,
+                                            UserDynamicModePreferences const& preferences)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -789,14 +824,18 @@ namespace PMP
         if (!executeVoid(preparer))
         {
             qWarning() << "Database::setUserDynamicModePreferences : could not execute";
-            return false;
+            return failure;
         }
 
-        return true;
+        return success;
     }
 
-    void Database::addToHistory(quint32 hashId, quint32 userId, QDateTime start,
-                                QDateTime end, int permillage, bool validForScoring)
+    ResultOrError<SuccessType, FailureType> Database::addToHistory(quint32 hashId,
+                                                                   quint32 userId,
+                                                                   QDateTime start,
+                                                                   QDateTime end,
+                                                                   int permillage,
+                                                                   bool validForScoring)
     {
 //        qDebug() << "  Database::addToHistory called\n"
 //                 << "   hash" << hashId << " user" << userId << " perm" << permillage
@@ -822,134 +861,141 @@ namespace PMP
 
         if (!executeVoid(preparer)) /* error */
         {
-            qDebug() << "Database::addToHistory : query FAILED!" << Qt::endl;
-            return;
+            qWarning() << "Database::addToHistory : insert failed!" << Qt::endl;
+            return failure;
         }
 
-        return;
+        return success;
     }
 
-    QDateTime Database::getLastHeard(quint32 hashId, quint32 userId)
+    ResultOrError<quint32, FailureType> Database::getMostRecentRealUserHavingHistory()
     {
+        auto preparer =
+            prepareSimple(
+                "SELECT UserID FROM pmp_history "
+                "WHERE UserID > 0 "
+                "ORDER BY HistoryID DESC "
+                "LIMIT 1"
+            );
+
+        uint userId = 0;
+        if (!executeScalar(preparer, userId, 0))
+        {
+            qDebug() << "Database::getMostRecentRealUserHavingHistory : select failed!"
+                     << Qt::endl;
+            return failure;
+        }
+
+        return userId;
+    }
+
+    ResultOrError<QVector<HashHistoryStats>, FailureType> Database::getHashHistoryStats(
+                                                                 quint32 userId,
+                                                                 QVector<quint32> hashIds)
+    {
+        if (hashIds.isEmpty())
+            return QVector<HashHistoryStats> {};
+
+        auto preparer =
+            [=](QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT ha.HashID, hi.LastHistoryId, hi.PrevHeard,"
+                    "       hi2.ScoreHeardCount, hi2.ScorePermillage "
+                    "FROM pmp_hash AS ha"
+                    " LEFT JOIN"
+                    "  (SELECT HashID, MAX(HistoryID) AS LastHistoryId,"
+                    "          MAX(End) AS PrevHeard"
+                    "   FROM pmp_history"
+                    "   WHERE UserID=? GROUP BY HashID) AS hi"
+                    "  ON ha.HashID=hi.HashID"
+                    " LEFT JOIN"
+                    "  (SELECT HashID, COUNT(*) AS ScoreHeardCount,"
+                    "   AVG(Permillage) AS ScorePermillage FROM pmp_history"
+                    "   WHERE UserID=? AND ValidForScoring != 0 GROUP BY HashID) AS hi2"
+                    "  ON ha.HashID=hi2.HashID "
+                    "WHERE ha.HashID IN " + buildParamsList(hashIds.size())
+                );
+
+                QVariant userIdParam =
+                        (userId == 0) ? /*NULL*/QVariant(QVariant::UInt) : userId;
+
+                q.addBindValue(userIdParam);
+                q.addBindValue(userIdParam); /* twice */
+                for (auto hashId : qAsConst(hashIds))
+                {
+                    q.addBindValue(hashId);
+                }
+            };
+
+        auto extractRecord =
+            [](QSqlQuery& q)
+            {
+                quint32 hashID = q.value(0).toUInt();
+                uint lastHistoryId = getUInt(q.value(1), 0);
+                QDateTime prevHeard = getUtcDateTime(q.value(2));
+                quint32 scoreHeardCount = (quint32)getUInt(q.value(3), 0);
+                qint32 scorePermillage = (qint32)getInt(q.value(4), -1);
+
+                HashHistoryStats stats;
+                stats.lastHistoryId = lastHistoryId;
+                stats.hashId = hashID;
+                stats.lastHeard = prevHeard;
+                stats.scoreHeardCount = scoreHeardCount;
+                stats.averagePermillage = scorePermillage;
+
+                return stats;
+            };
+
+        return executeRecords<HashHistoryStats>(preparer, extractRecord, hashIds.size());
+    }
+
+    ResultOrError<QVector<QPair<quint32, quint32>>, FailureType>
+        Database::getEquivalences()
+    {
+        auto preparer = prepareSimple("SELECT Hash1, Hash2 FROM pmp_equivalence");
+
+        auto extractRecord =
+            [](QSqlQuery& q) -> QPair<quint32, quint32>
+            {
+                quint32 hashId1 = q.value(0).toUInt();
+                quint32 hashId2 = q.value(1).toUInt();
+
+                return { hashId1, hashId2 };
+            };
+
+        return executeRecords<QPair<quint32, quint32>>(preparer, extractRecord);
+    }
+
+    ResultOrError<SuccessType, FailureType> Database::registerEquivalence(quint32 hashId1,
+                                                                          quint32 hashId2,
+                                                                          int currentYear)
+    {
+        Q_ASSERT_X(hashId1 != hashId2,
+                   "Database::registerEquivalence",
+                   "hashes must be different");
+
         auto preparer =
             [=] (QSqlQuery& q)
             {
-                q.prepare("SELECT MAX(End) FROM pmp_history WHERE HashID=? AND UserID=?");
-                q.addBindValue(hashId);
-                q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
+                q.prepare(
+                    "INSERT INTO pmp_equivalence(`Hash1`,`Hash2`,`YearAdded`)"
+                    " VALUES(?,?,?)"
+                    " ON DUPLICATE KEY UPDATE `YearAdded`=`YearAdded`"
+                );
+                q.addBindValue(hashId1);
+                q.addBindValue(hashId2);
+                q.addBindValue(currentYear);
             };
 
-        QDateTime lastHeard;
-        if (!executeScalar(preparer, lastHeard)) /* error */
+        if (!executeVoid(preparer))
         {
-            qDebug() << "Database::getLastHeard : query failed!" << Qt::endl;
-            return QDateTime(); // FIXME ???
+            qDebug() << "Database::registerEquivalence : insert/update failed!"
+                     << Qt::endl;
+            return failure;
         }
 
-        lastHeard.setTimeSpec(Qt::UTC); /* make sure it is treated as UTC */
-
-        return lastHeard;
-    }
-
-    QList<QPair<quint32, QDateTime>> Database::getLastHeard(quint32 userId,
-                                                            QList<quint32> hashIds)
-    {
-        if (hashIds.isEmpty())
-            return {};
-
-        QSqlQuery q(_db);
-        q.prepare(
-            "SELECT ha.HashID, hi.PrevHeard "
-            "FROM pmp_hash AS ha"
-            " LEFT JOIN"
-            "  (SELECT HashID, MAX(End) AS PrevHeard FROM pmp_history"
-            "   WHERE UserID=? GROUP BY HashID) AS hi "
-            "ON ha.HashID=hi.HashID "
-            "WHERE ha.HashID IN " + buildParamsList(hashIds.size())
-        );
-        q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
-        for (auto hashId : hashIds)
-        {
-            q.addBindValue(hashId);
-        }
-
-        QList<QPair<quint32, QDateTime>> result;
-        result.reserve(hashIds.size());
-
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getLastHeard (bulk) : could not execute; "
-                     << q.lastError().text() << Qt::endl;
-            return result;
-        }
-
-        while (q.next())
-        {
-            quint32 hashID = q.value(0).toUInt();
-            QDateTime prevHeard = getUtcDateTime(q.value(1));
-
-            result.append(QPair<quint32, QDateTime>(hashID, prevHeard));
-        }
-
-        return result;
-    }
-
-    QVector<Database::HashHistoryStats> Database::getHashHistoryStats(quint32 userId,
-                                                                   QList<quint32> hashIds)
-    {
-        if (hashIds.isEmpty())
-            return {};
-
-        QSqlQuery q(_db);
-        q.prepare(
-            "SELECT ha.HashID, hi.PrevHeard, hi2.ScoreHeardCount, hi2.ScorePermillage "
-            "FROM pmp_hash AS ha"
-            " LEFT JOIN"
-            "  (SELECT HashID, MAX(End) AS PrevHeard FROM pmp_history"
-            "   WHERE UserID=? GROUP BY HashID) AS hi"
-            "  ON ha.HashID=hi.HashID"
-            " LEFT JOIN"
-            "  (SELECT HashID, COUNT(*) AS ScoreHeardCount,"
-            "   AVG(Permillage) AS ScorePermillage FROM pmp_history"
-            "   WHERE UserID=? AND ValidForScoring != 0 GROUP BY HashID) AS hi2"
-            "  ON ha.HashID=hi2.HashID "
-            "WHERE ha.HashID IN " + buildParamsList(hashIds.size())
-        );
-        QVariant userIdParam = (userId == 0) ? /*NULL*/QVariant(QVariant::UInt) : userId;
-        q.addBindValue(userIdParam);
-        q.addBindValue(userIdParam); /* twice */
-        for (auto hashId : hashIds)
-        {
-            q.addBindValue(hashId);
-        }
-
-        QVector<HashHistoryStats> result;
-        result.reserve(hashIds.size());
-
-        if (!executeQuery(q)) /* error */
-        {
-            qDebug() << "Database::getHashHistoryStats : could not execute; "
-                     << q.lastError().text() << Qt::endl;
-            return result;
-        }
-
-        while (q.next())
-        {
-            quint32 hashID = q.value(0).toUInt();
-            QDateTime prevHeard = getUtcDateTime(q.value(1));
-            quint32 scoreHeardCount = (quint32)getUInt(q.value(2), 0);
-            qint32 scorePermillage = (qint32)getInt(q.value(3), -1);
-
-            HashHistoryStats stats;
-            stats.hashId = hashID;
-            stats.lastHeard = prevHeard;
-            stats.scoreHeardCount = scoreHeardCount;
-            stats.score = calculateScore(scorePermillage, scoreHeardCount);
-
-            result.append(stats);
-        }
-
-        return result;
+        return success;
     }
 
     QVector<HistoryRecord> Database::getUserHistoryForScrobbling(quint32 userId,
@@ -1199,6 +1245,32 @@ namespace PMP
         return false;
     }
 
+    template<class T>
+    ResultOrError<QVector<T>, FailureType> Database::executeRecords(
+                                            std::function<void (QSqlQuery&)> preparer,
+                                            std::function<T (QSqlQuery&)> extractRecord,
+                                            int recordsToReserveCount)
+    {
+        QVector<T> vector;
+
+        auto resultGetter =
+            [&vector, extractRecord, recordsToReserveCount] (QSqlQuery& q)
+            {
+                if (recordsToReserveCount >= 0)
+                    vector.reserve(recordsToReserveCount);
+
+                while (q.next())
+                {
+                    vector.append(extractRecord(q));
+                }
+            };
+
+        if (executeQuery(preparer, true, resultGetter))
+            return vector;
+
+        return failure;
+    }
+
     std::function<void (QSqlQuery&)> Database::prepareSimple(QString sql)
     {
         return [=] (QSqlQuery& q) { q.prepare(sql); };
@@ -1226,7 +1298,7 @@ namespace PMP
         QSqlError error = q.lastError();
         qDebug() << "Database: query failed:" << error.text();
         qDebug() << " error type:" << error.type();
-        qDebug() << " error number:" << error.number();
+        qDebug() << " native error code:" << error.nativeErrorCode();
         qDebug() << " db error:" << error.databaseText();
         qDebug() << " driver error:" << error.driverText();
         qDebug() << " sql:" << q.lastQuery();
@@ -1241,7 +1313,7 @@ namespace PMP
             qDebug() << " connection not valid!";
         }
 
-        if (error.number() != 2006) return false;
+        if (error.nativeErrorCode() != "2006") return false;
 
         /* An extended sleep period followed by a resume will result in the error "MySQL
            server has gone away", error code 2006. In that case we try to reopen the
@@ -1263,7 +1335,7 @@ namespace PMP
             QSqlError error2 = q.lastError();
             qDebug() << "  FAILED to re-execute query:" << error2.text();
             qDebug() << "  error type:" << error2.type();
-            qDebug() << "  error number:" << error2.number();
+            qDebug() << "  native error code:" << error2.nativeErrorCode();
             qDebug() << "  db error:" << error2.databaseText();
             qDebug() << "  driver error:" << error2.driverText();
             qDebug() << "  sql:" << q.lastQuery();
@@ -1275,64 +1347,6 @@ namespace PMP
 
         if (processResult) resultFetcher(q);
         return true;
-    }
-
-    bool Database::executeQuery(QSqlQuery& q)
-    {
-        if (q.exec()) return true;
-
-        /* something went wrong */
-
-        QSqlError error = q.lastError();
-        qDebug() << "Database: query failed:" << error.text();
-        qDebug() << " error type:" << error.type();
-        qDebug() << " error number:" << error.number();
-        qDebug() << " db error:" << error.databaseText();
-        qDebug() << " driver error:" << error.driverText();
-        qDebug() << " sql:" << q.lastQuery();
-
-        if (!_db.isOpen())
-        {
-            qDebug() << " connection not open!";
-        }
-
-        if (!_db.isValid())
-        {
-            qDebug() << " connection not valid!";
-        }
-
-        /* An extended sleep period followed by a resume will result in the error "MySQL
-           server has gone away", error code 2006. In that case we try to reopen the
-           connection and re-execute the query. */
-        if (error.number() == 2006)
-        {
-            qDebug() << " will try to re-establish a connection and re-execute the query";
-            _db.close();
-            _db.setDatabaseName("pmp");
-            if (!_db.open())
-            {
-                qDebug() << "  FAILED.  Connection not reopened.";
-                return false;
-            }
-
-            if (!q.exec())
-            {
-                QSqlError error2 = q.lastError();
-                qDebug() << "  FAILED to re-execute query:" << error2.text();
-                qDebug() << "  error type:" << error2.type();
-                qDebug() << "  error number:" << error2.number();
-                qDebug() << "  db error:" << error2.databaseText();
-                qDebug() << "  driver error:" << error2.driverText();
-                qDebug() << "  sql:" << q.lastQuery();
-                qDebug() << "  BAILING OUT.";
-                return false;
-            }
-
-            qDebug() << "  SUCCESS!";
-            return true;
-        }
-
-        return false;
     }
 
     bool Database::addColumnIfNotExists(QSqlQuery& q, QString tableName,
@@ -1396,17 +1410,5 @@ namespace PMP
     {
         if (v.isNull()) return nullValue;
         return v.toString();
-    }
-
-    qint16 Database::calculateScore(qint32 permillageFromDB, quint32 heardCount)
-    {
-        if (permillageFromDB < 0 || heardCount < 3) return -1;
-
-        if (permillageFromDB > 1000) permillageFromDB = 1000;
-
-        if (heardCount >= 100) return permillageFromDB;
-
-        quint16 permillage = (quint16)permillageFromDB;
-        return (permillage * heardCount + 500) / (heardCount + 1);
     }
 }
