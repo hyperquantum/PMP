@@ -23,7 +23,7 @@ SET TOOL_7Z_BIN_DIR=%programfiles%\7-Zip
 SET TOOL_VCPKG_BIN_DIR=C:\src\vcpkg
 
 :: CMake Generator
-SET CMAKE_GENERATOR=Visual Studio 16 2019
+SET CMAKE_GENERATOR=Visual Studio 17 2022
 
 ECHO(
 ECHO #                                    #
