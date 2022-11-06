@@ -44,6 +44,7 @@ PERFORMANCE ISSUES
 
 IDEAS
 
+ * login: don't display user accounts that haven't been used in a long time
  ** player: option for single track mode (vs. continuous play)
  * player: 'load track' action that loads a track but does not start playing; this allows seek before playing
  ** player: 'play again next' action for the song that is currently playing
