@@ -6,7 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- Delayed start.
 - Ability to reload server settings.
+- Setting for database port number.
 - Ability to name a server instance.
 - "Scan for servers" button in the server selection screen.
 - Server now sends a notification to the client when it detects that a track has disappeared or reappeared.
@@ -23,13 +25,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Music collection view: put a marker at the current track.
 - Dynamic mode preferences are now saved and restored for each user.
 - Command-line remote: support for user authentication, both interactive and non-interactive.
-- Command-line remote: new commands "qdel" and "break".
+- Command-line remote: new commands "qdel", "break", "delayedstart", and "trackstats".
 - Command-line remote: new options for printing help or version numbers.
 - Server: write status of initial full indexation to the console.
 
 ### Changed
 - Volume control now uses a logarithmic scale.
 - Dynamic mode has been rewritten.
+- Dynamic mode settings have been moved to a separate dialog.
 - "High-scored tracks wave" has been redesigned; track selection has improved, progress is shown, and it can now be stopped before it has completed.
 - High-scored tracks wave is now called high-scored tracks mode.
 - High-scored tracks mode will now give up if it cannot find enough tracks that fit the criteria.
@@ -40,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Track lengths are now usually displayed like "03:44.7" instead of "00:03:44".
 - Queue drop indicator is now a line between tracks.
 - Column "prev. heard" in the queue now uses relative times, and displays the actual time in a tooltip when hovering.
+- Positioning of the main window at startup has been improved.
 - Dates/times displayed in the client now take the clock difference between client and server into account.
 - The queue now has a size limit; the limit is currently set to 2 million items.
 - Command-line remote: output of "queue" command has changed a little bit.
@@ -52,6 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Build instructions for Windows have been greatly simplified and now make use of vcpkg.
 - The script for building a Win32 release archive has been replaced with a new one that does a 64-bit build.
 - PMP now requires a C++17 compiler.
+- PMP now requires CMake 2.8 or later.
 - PMP now requires Qt 5.14 or later.
 - PMP now requires TagLib 1.12 or later.
 
@@ -63,6 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - When starting the client its main window sometimes appeared outside the visible screen area.
 - All broken commands in the command-line remote have been fixed.
 - Off-by-one error in bounds check when moving an item in the queue could lead to a crash of the server.
+- Artist and title briefly "unknown" at the start of a track.
+- For files that have two different hashes, both hashes are now used for calculating track statistics.
 
 ## 0.0.6 - 2018-12-26
 ### Added
