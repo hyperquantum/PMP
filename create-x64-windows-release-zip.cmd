@@ -115,7 +115,7 @@ IF NOT EXIST "%bin_dir%\ran_cmake_already" (
     ECHO Running CMake...
     CD "%bin_dir%"
 
-    "%CMAKE_BIN_DIR%"\cmake.exe ^
+    "%CMAKE_BIN_DIR%\cmake.exe" ^
         -G "%CMAKE_GENERATOR%" ^
         -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" ^
         -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=%TOOL_VCPKG_BIN_DIR%\scripts\buildsystems\vcpkg.cmake" ^
@@ -146,7 +146,7 @@ ECHO(
 :: create ZIP archive
 ECHO Creating ZIP file...
 CD "%scriptdir%\%zipsrcfull_dir%"
-"%TOOL_7Z_BIN_DIR%"\7z.exe a -tzip "%full_zip%" %ziproot_dir%"
+"%TOOL_7Z_BIN_DIR%\7z.exe" a -tzip "%full_zip%" %ziproot_dir%"
 CD "%scriptdir%"
 MOVE "%zipsrcfull_dir%\%full_zip%" . >NUL
 RD /q /s "%zipsrcfull_dir%"
