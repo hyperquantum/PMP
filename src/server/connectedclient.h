@@ -23,6 +23,7 @@
 #include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
+#include "common/startstopeventstatus.h"
 
 #include "hashstats.h"
 #include "playerhistoryentry.h"

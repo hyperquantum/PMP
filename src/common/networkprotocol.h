@@ -24,7 +24,6 @@
 #include "queueentrytype.h"
 #include "resultmessageerrorcode.h"
 #include "specialqueueitemtype.h"
-#include "startstopeventstatus.h"
 
 #include <QByteArray>
 #include <QString>

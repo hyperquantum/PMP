@@ -24,6 +24,7 @@
 #include "networkutil.h"
 #include "promise.h"
 #include "servercapabilitiesimpl.h"
+#include "startstopeventstatus.h"
 #include "util.h"
 
 #include <QtDebug>
