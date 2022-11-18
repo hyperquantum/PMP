@@ -20,7 +20,6 @@
 #include "commandparser.h"
 
 #include "common/unicodechars.h"
-#include "common/util.h"
 
 #include "commands.h"
 
@@ -334,6 +333,10 @@ namespace PMP
         else if (command == "trackstats")
         {
             parseTrackStatsCommand(args);
+        }
+        else if (command == "serverversion")
+        {
+            handleCommandNotRequiringArguments<ServerVersionCommand>(commandWithArgs);
         }
         else if (command == "shutdown")
         {
@@ -688,5 +691,4 @@ namespace PMP
     {
         return QDateTime::currentDateTimeUtc() < time.toUTC();
     }
-
 }

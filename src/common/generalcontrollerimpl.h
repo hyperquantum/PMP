@@ -22,6 +22,8 @@
 
 #include "generalcontroller.h"
 
+#include "lazypromisedvalue.h"
+
 namespace PMP
 {
     class ServerConnection;
@@ -38,6 +40,8 @@ namespace PMP
 
         SimpleFuture<ResultMessageErrorCode> reloadServerSettings() override;
 
+        Future<VersionInfo, ResultMessageErrorCode> getServerVersionInfo() override;
+
     public Q_SLOTS:
         void shutdownServer() override;
 
@@ -49,8 +53,9 @@ namespace PMP
 
     private:
         ServerConnection* _connection;
-        qint64 _clientClockTimeOffsetMs;
+        qint64 _clientClockTimeOffsetMs { 0 };
         ServerHealthStatus _serverHealthStatus;
+        LazyPromisedValue<VersionInfo, ResultMessageErrorCode> _serverVersionInfo;
     };
 }
 #endif

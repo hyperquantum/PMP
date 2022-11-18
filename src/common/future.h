@@ -256,6 +256,19 @@ namespace PMP
             return Future(storage);
         }
 
+        static Future fromResultOrError(
+                ResultOrError<ResultType, ErrorType> resultOrError)
+        {
+            auto storage { FutureStorage<ResultType, ErrorType>::create() };
+
+            if (resultOrError.succeeded())
+                storage->setResult(resultOrError.result());
+            else
+                storage->setError(resultOrError.error());
+
+            return Future(storage);
+        }
+
     private:
         Future(QSharedPointer<FutureStorage<ResultType, ErrorType>> storage)
          : _storage(storage)

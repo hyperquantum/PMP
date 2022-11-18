@@ -33,6 +33,22 @@ namespace PMP
 {
     // TODO : remove useless constructors
 
+    struct VersionInfo;
+
+    class ServerVersionCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        bool requiresAuthentication() const override;
+
+    protected:
+        void setUp(ClientServerInterface* clientServerInterface) override;
+        void start(ClientServerInterface* clientServerInterface) override;
+
+    private:
+        void printVersion(VersionInfo const& versionInfo);
+    };
+
     class ReloadServerSettingsCommand : public CommandBase
     {
         Q_OBJECT

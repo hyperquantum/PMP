@@ -32,6 +32,11 @@ namespace PMP
         _serverProtocolNumber = serverProtocolNumber;
     }
 
+    bool ServerCapabilitiesImpl::supportsSendingVersionInfo() const
+    {
+        return _serverProtocolNumber >= 22;
+    }
+
     bool ServerCapabilitiesImpl::supportsReloadingServerSettings() const
     {
         return _serverProtocolNumber >= 15;

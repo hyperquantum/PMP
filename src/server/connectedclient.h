@@ -125,6 +125,7 @@ namespace PMP
         void sendKeepAliveReply(quint8 blob);
         void sendProtocolExtensionsMessage();
         void sendEventNotificationMessage(ServerEventCode eventCode);
+        void sendServerVersionInfoMessage();
         void sendServerInstanceIdentifier();
         void sendDatabaseIdentifier();
         void sendUsersList();

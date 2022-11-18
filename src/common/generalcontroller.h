@@ -23,6 +23,7 @@
 #include "future.h"
 #include "resultmessageerrorcode.h"
 #include "serverhealthstatus.h"
+#include "versioninfo.h"
 
 #include <QObject>
 
@@ -39,6 +40,8 @@ namespace PMP
         virtual qint64 clientClockTimeOffsetMs() const = 0;
 
         virtual SimpleFuture<ResultMessageErrorCode> reloadServerSettings() = 0;
+
+        virtual Future<VersionInfo, ResultMessageErrorCode> getServerVersionInfo() = 0;
 
     public Q_SLOTS:
         virtual void shutdownServer() = 0;

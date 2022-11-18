@@ -17,26 +17,23 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVERCAPABILITIES_H
-#define PMP_SERVERCAPABILITIES_H
+#ifndef PMP_VERSIONINFO_H
+#define PMP_VERSIONINFO_H
+
+#include <QMetaType>
+#include <QString>
 
 namespace PMP
 {
-    class ServerCapabilities
+    struct VersionInfo
     {
-    public:
-        virtual ~ServerCapabilities() {}
-
-        virtual bool supportsSendingVersionInfo() const = 0;
-        virtual bool supportsReloadingServerSettings() const = 0;
-        virtual bool supportsDelayedStart() const = 0;
-        virtual bool supportsQueueEntryDuplication() const = 0;
-        virtual bool supportsDynamicModeWaveTermination() const = 0;
-        virtual bool supportsInsertingBreaksAtAnyIndex() const = 0;
-        virtual bool supportsInsertingBarriers() const = 0;
-
-    protected:
-        ServerCapabilities() {}
+        QString programName;
+        QString versionForDisplay;
+        QString vcsBuild;
+        QString vcsBranch;
     };
 }
+
+Q_DECLARE_METATYPE(PMP::VersionInfo)
+
 #endif

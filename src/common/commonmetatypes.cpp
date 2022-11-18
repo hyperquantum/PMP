@@ -31,6 +31,7 @@
 #include "tagdata.h"
 #include "userloginerror.h"
 #include "userregistrationerror.h"
+#include "versioninfo.h"
 
 namespace PMP
 {
@@ -55,6 +56,7 @@ namespace PMP
             qRegisterMetaType<PMP::TagData>();
             qRegisterMetaType<PMP::UserLoginError>();
             qRegisterMetaType<PMP::UserRegistrationError>();
+            qRegisterMetaType<PMP::VersionInfo>();
         }
 
     private:

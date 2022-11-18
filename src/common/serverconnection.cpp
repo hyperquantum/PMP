@@ -390,7 +390,7 @@ namespace PMP
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 21;
+    const quint16 ServerConnection::ClientProtocolNo = 22;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -1416,6 +1416,11 @@ namespace PMP
         sendSingleByteAction(16); /* 16 = request for server name */
     }
 
+    void ServerConnection::sendVersionInfoRequest()
+    {
+        sendSingleByteAction(60); /* 60 = request for server version information */
+    }
+
     void ServerConnection::sendDelayedStartInfoRequest()
     {
         sendSingleByteAction(19); /* 19 = request for delayed start information */
@@ -1796,6 +1801,9 @@ namespace PMP
         case ServerMessageType::ServerClockMessage:
             parseServerClockMessage(message);
             break;
+        case ServerMessageType::ServerVersionInfoMessage:
+            parseServerVersionInfoMessage(message);
+            break;
         default:
             qDebug() << "received unknown binary message type"
                      << static_cast<int>(messageType)
@@ -1938,6 +1946,52 @@ namespace PMP
         qDebug() << "received server instance identifier:" << uuid;
 
         Q_EMIT receivedServerInstanceIdentifier(uuid);
+    }
+
+    void ServerConnection::parseServerVersionInfoMessage(const QByteArray& message)
+    {
+        if (message.length() < 8)
+        {
+            invalidMessageReceived(message, "server-version-info");
+            return; /* invalid message */
+        }
+
+        int programNameByteCount = NetworkUtil::getByteUnsignedToInt(message, 4);
+        int versionDisplayByteCount = NetworkUtil::getByteUnsignedToInt(message, 5);
+        int vcsBuildByteCount = NetworkUtil::getByteUnsignedToInt(message, 6);
+        int vcsBranchByteCount = NetworkUtil::getByteUnsignedToInt(message, 7);
+
+        int offset = 8;
+
+        if (message.length() !=
+                offset + programNameByteCount + versionDisplayByteCount
+                    + vcsBuildByteCount + vcsBranchByteCount)
+        {
+            invalidMessageReceived(message, "server-version-info", "counts don't match");
+            return; /* invalid message */
+        }
+
+        auto programName = NetworkUtil::getUtf8String(message, offset,
+                                                      programNameByteCount);
+        offset += programNameByteCount;
+        auto versionDisplay = NetworkUtil::getUtf8String(message, offset,
+                                                         versionDisplayByteCount);
+        offset += versionDisplayByteCount;
+        auto vcsBuild = NetworkUtil::getUtf8String(message, offset, vcsBuildByteCount);
+        offset += vcsBuildByteCount;
+        auto vcsBranch = NetworkUtil::getUtf8String(message, offset, vcsBranchByteCount);
+
+        qDebug() << "received server version:" << programName
+                 << "version" << versionDisplay << "build" << vcsBuild
+                 << "branch" << vcsBranch;
+
+        VersionInfo info;
+        info.programName = programName;
+        info.versionForDisplay = versionDisplay;
+        info.vcsBuild = vcsBuild;
+        info.vcsBranch = vcsBranch;
+
+        Q_EMIT receivedServerVersionInfo(info);
     }
 
     void ServerConnection::parseServerNameMessage(QByteArray const& message)

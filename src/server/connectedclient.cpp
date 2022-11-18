@@ -41,7 +41,7 @@ namespace PMP
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 21;
+    const qint16 ConnectedClient::ServerProtocolNo = 22;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -737,6 +737,34 @@ namespace PMP
                                       ServerMessageType::ServerEventNotificationMessage);
         NetworkUtil::appendByte(message, numericEventCode);
         NetworkUtil::appendByte(message, 0); /* unused */
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendServerVersionInfoMessage()
+    {
+        auto versionInfo = _serverInterface->getServerVersionInfo();
+
+        auto programNameBytes = versionInfo.programName.left(63).toUtf8();
+        auto versionDisplayBytes = versionInfo.versionForDisplay.left(63).toUtf8();
+        auto vcsBuildBytes = versionInfo.vcsBuild.left(63).toUtf8();
+        auto vcsBranchBytes = versionInfo.vcsBranch.left(63).toUtf8();
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4
+                        + programNameBytes.size() + versionDisplayBytes.size()
+                        + vcsBuildBytes.size() + vcsBranchBytes.size());
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::ServerVersionInfoMessage);
+        NetworkUtil::append2Bytes(message, 0); // filler
+        NetworkUtil::appendByteUnsigned(message, programNameBytes.size());
+        NetworkUtil::appendByteUnsigned(message, versionDisplayBytes.size());
+        NetworkUtil::appendByteUnsigned(message, vcsBuildBytes.size());
+        NetworkUtil::appendByteUnsigned(message, vcsBranchBytes.size());
+        message += programNameBytes;
+        message += versionDisplayBytes;
+        message += vcsBuildBytes;
+        message += vcsBranchBytes;
 
         sendBinaryMessage(message);
     }
@@ -2777,6 +2805,10 @@ namespace PMP
         case 51:
             qDebug() << "received SUBSCRIBE TO SERVER HEALTH UPDATES command";
             enableHealthEvents(GeneralOrSpecific::Specific);
+            break;
+        case 60:
+            qDebug() << "received request for server version information";
+            sendServerVersionInfoMessage();
             break;
         case 99:
             qDebug() << "received SHUTDOWN command";
