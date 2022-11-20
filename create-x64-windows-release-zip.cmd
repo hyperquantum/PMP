@@ -143,6 +143,9 @@ robocopy "%scriptdir%\%bin_dir%\%bin_to_release_dir%" "%dist_dir%" /s >NUL
 DEL /q "%dist_dir%\quicktest.exe" || GOTO :EOF
 ECHO(
 
+:: copy extra files
+COPY *LICENSE* "%dist_dir%" >NUL
+
 :: create ZIP archive
 ECHO Creating ZIP file...
 CD "%scriptdir%\%zipsrcfull_dir%"
