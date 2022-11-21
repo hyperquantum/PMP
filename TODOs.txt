@@ -55,6 +55,7 @@ IDEAS
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * queue: ability to insert a track at a random position in the queue
  * queue: show error marker for a track that has no known file
+ * queue: show marker for tracks that occur more than once in the queue
  * queue: join title and artist columns when displaying filename
  * queue: save the contents of the queue on server shutdown and restore it at the next server startup
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
