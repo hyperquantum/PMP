@@ -35,8 +35,8 @@ SET scriptdir=%~dp0
 SET bin_dir=x64-windows-release-bin
 SET bin_to_release_dir=src\Release
 SET zipsrcfull_dir=x64-windows-archive-full
-SET ziproot_dir=PMP_win64
-SET full_zip=PMP_win64.zip
+SET ziproot_dir=PMP-win64
+SET full_zip=PMP-win64.zip
 
 ECHO ---------------------- Settings ----------------------
 ECHO Script directory: %scriptdir%
