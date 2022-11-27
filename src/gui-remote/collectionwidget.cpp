@@ -21,6 +21,7 @@
 #include "ui_collectionwidget.h"
 
 #include "common/clientserverinterface.h"
+#include "common/collectionwatcher.h"
 #include "common/queuecontroller.h"
 #include "common/unicodechars.h"
 
@@ -28,6 +29,7 @@
 #include "colors.h"
 #include "colorswitcher.h"
 #include "trackinfodialog.h"
+#include "waitingspinnerwidget.h"
 
 #include <QMenu>
 #include <QtDebug>
@@ -70,6 +72,13 @@ namespace PMP
             _ui->collectionTableView, &QTableView::customContextMenuRequested,
             this, &CollectionWidget::collectionContextMenuRequested
         );
+
+        auto* collectionWatcher = &_clientServerInterface->collectionWatcher();
+        connect(
+            collectionWatcher, &CollectionWatcher::downloadingInProgressChanged,
+            this, [this]() { updateSpinnerVisibility(); }
+        );
+        updateSpinnerVisibility();
 
         {
             QSettings settings(QCoreApplication::organizationName(),
@@ -191,6 +200,26 @@ namespace PMP
 
         auto popupPosition = _ui->collectionTableView->viewport()->mapToGlobal(position);
         _collectionContextMenu->popup(popupPosition);
+    }
+
+    void CollectionWidget::updateSpinnerVisibility()
+    {
+        bool downloading =
+                _clientServerInterface->collectionWatcher().downloadingInProgress();
+
+        if (downloading)
+        {
+            if (!_spinner)
+                _spinner = new WaitingSpinnerWidget(this, true, false);
+
+            _spinner->start();
+        }
+        else if (_spinner)
+        {
+            _spinner->stop();
+            _spinner->deleteLater();
+            _spinner = nullptr;
+        }
     }
 
     void CollectionWidget::initTrackFilterComboBox()

@@ -56,6 +56,11 @@ namespace PMP
             startDownload();
     }
 
+    bool CollectionWatcherImpl::downloadingInProgress() const
+    {
+        return _downloading;
+    }
+
     QHash<FileHash, CollectionTrackInfo> CollectionWatcherImpl::getCollection()
     {
         return _collectionHash;
@@ -96,12 +101,14 @@ namespace PMP
     {
         qDebug() << "collection download completed";
         _downloading = false;
+        Q_EMIT downloadingInProgressChanged();
     }
 
     void CollectionWatcherImpl::onCollectionDownloadError()
     {
         qWarning() << "collection download failed";
         _downloading = false;
+        Q_EMIT downloadingInProgressChanged();
     }
 
     void CollectionWatcherImpl::onCollectionTracksAvailabilityChanged(
@@ -143,6 +150,8 @@ namespace PMP
 
         _connection->fetchCollection(fetcher);
         _downloading = true;
+
+        Q_EMIT downloadingInProgressChanged();
     }
 
     void CollectionWatcherImpl::updateTrackAvailability(QVector<FileHash> hashes,
