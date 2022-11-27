@@ -100,7 +100,7 @@ namespace PMP
     {
         updatePosition();
         QPainter painter(this);
-        painter.fillRect(this->rect(), Qt::transparent);
+        painter.fillRect(this->rect(), Qt::white);
         painter.setRenderHint(QPainter::Antialiasing, true);
 
         if (_currentCounter >= _numberOfLines)
