@@ -31,6 +31,49 @@
 
 namespace PMP
 {
+    /* ===== ServerVersionCommand ===== */
+
+    bool ServerVersionCommand::requiresAuthentication() const
+    {
+        return false;
+    }
+
+    void ServerVersionCommand::setUp(ClientServerInterface* clientServerInterface)
+    {
+        Q_UNUSED(clientServerInterface)
+    }
+
+    void ServerVersionCommand::start(ClientServerInterface* clientServerInterface)
+    {
+        auto future = clientServerInterface->generalController().getServerVersionInfo();
+
+        future.addFailureListener(
+            this,
+            [this](ResultMessageErrorCode errorCode)
+            {
+                setCommandExecutionResult(errorCode);
+            }
+        );
+
+        future.addResultListener(
+            this,
+            [this](VersionInfo versionInfo)
+            {
+                printVersion(versionInfo);
+            }
+        );
+    }
+
+    void ServerVersionCommand::printVersion(const VersionInfo& versionInfo)
+    {
+        QString text =
+            versionInfo.programName % "\n"
+                % "version: " % versionInfo.versionForDisplay % "\n"
+                % "build: " % versionInfo.vcsBuild % " - " % versionInfo.vcsBranch;
+
+        setCommandExecutionSuccessful(text);
+    }
+
     /* ===== ReloadServerSettingsCommand ===== */
 
     ReloadServerSettingsCommand::ReloadServerSettingsCommand()

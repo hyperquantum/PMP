@@ -25,6 +25,7 @@
 #include "common/networkprotocol.h"
 #include "common/scrobblerstatus.h"
 #include "common/scrobblingprovider.h"
+#include "common/startstopeventstatus.h"
 
 #include "clientrequestorigin.h"
 #include "hashstats.h"
@@ -138,6 +139,7 @@ namespace PMP
         void sendKeepAliveReply(quint8 blob);
         void sendProtocolExtensionsMessage();
         void sendEventNotificationMessage(ServerEventCode eventCode);
+        void sendServerVersionInfoMessage();
         void sendServerInstanceIdentifier();
         void sendDatabaseIdentifier();
         void sendUsersList();

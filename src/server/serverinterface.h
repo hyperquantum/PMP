@@ -26,6 +26,7 @@
 #include "common/resultmessageerrorcode.h"
 #include "common/specialqueueitemtype.h"
 #include "common/startstopeventstatus.h"
+#include "common/versioninfo.h"
 
 #include "hashstats.h"
 #include "result.h"
@@ -76,6 +77,7 @@ namespace PMP
 
         QUuid getServerUuid() const;
         QString getServerCaption() const;
+        VersionInfo getServerVersionInfo() const;
 
         ResultOrError<QUuid, Result> getDatabaseUuid() const;
 

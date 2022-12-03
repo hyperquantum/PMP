@@ -58,6 +58,7 @@ usage:
     delayedstart at [<date>] <time>: activate delayed start (see below)
     delayedstart abort|cancel: cancel delayed start (see below)
     trackstats <hash>: get track statistics
+    serverversion: get server version information
 
   'login' command:
     login: forces authentication to occur; prompts for username and password

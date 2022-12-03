@@ -36,6 +36,7 @@ namespace PMP
         explicit CollectionWatcherImpl(ServerConnection* connection);
 
         void enableCollectionDownloading() override;
+        bool downloadingInProgress() const override;
 
         QHash<FileHash, CollectionTrackInfo> getCollection() override;
         CollectionTrackInfo getTrack(FileHash const& hash) override;

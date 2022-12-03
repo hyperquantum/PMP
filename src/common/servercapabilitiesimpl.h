@@ -31,6 +31,7 @@ namespace PMP
 
         void setServerProtocolNumber(int serverProtocolNumber);
 
+        bool supportsSendingVersionInfo() const override;
         bool supportsReloadingServerSettings() const override;
         bool supportsDelayedStart() const override;
         bool supportsQueueEntryDuplication() const override;

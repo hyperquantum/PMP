@@ -34,6 +34,7 @@
 #include "tribool.h"
 #include "userloginerror.h"
 #include "userregistrationerror.h"
+#include "versioninfo.h"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -120,6 +121,7 @@ namespace PMP
         void sendDatabaseIdentifierRequest();
         void sendServerInstanceIdentifierRequest();
         void sendServerNameRequest();
+        void sendVersionInfoRequest();
         void sendDelayedStartInfoRequest();
 
         void requestPlayerState();
@@ -184,6 +186,7 @@ namespace PMP
 
         void receivedDatabaseIdentifier(QUuid uuid);
         void receivedServerInstanceIdentifier(QUuid uuid);
+        void receivedServerVersionInfo(VersionInfo versionInfo);
         void receivedServerName(quint8 nameType, QString name);
         void receivedClientClockTimeOffset(qint64 clientClockTimeOffsetMs);
 
@@ -312,6 +315,7 @@ namespace PMP
         void parseServerProtocolExtensionsMessage(QByteArray const& message);
         void parseServerEventNotificationMessage(QByteArray const& message);
         void parseServerInstanceIdentifierMessage(QByteArray const& message);
+        void parseServerVersionInfoMessage(QByteArray const& message);
         void parseServerNameMessage(QByteArray const& message);
         void parseDatabaseIdentifierMessage(QByteArray const& message);
         void parseServerHealthMessage(QByteArray const& message);

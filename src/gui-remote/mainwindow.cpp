@@ -729,7 +729,7 @@ namespace PMP
                                          &_clientServerInterface->generalController());
 
         _notificationBar = new NotificationBar(mainCentralWidget);
-        _notificationBar->showNotification(delayedStartNotification);
+        _notificationBar->addNotification(delayedStartNotification);
 
         _mainWidget = new MainWidget(mainCentralWidget);
         _mainWidget->setConnection(_clientServerInterface);

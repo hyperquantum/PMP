@@ -192,6 +192,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/trackprogresswidget.cpp
     gui-remote/useraccountcreationwidget.cpp
     gui-remote/userpickerwidget.cpp
+    gui-remote/waitingspinnerwidget.cpp
 )
 set(PMP_GUI_REMOTE_HEADERS
     gui-remote/autopersonalmodeaction.h
@@ -216,6 +217,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/trackprogresswidget.h
     gui-remote/useraccountcreationwidget.h
     gui-remote/userpickerwidget.h
+    gui-remote/waitingspinnerwidget.h
 )
 set(PMP_GUI_REMOTE_UIS
     gui-remote/collectionwidget.ui

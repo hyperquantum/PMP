@@ -37,37 +37,49 @@ namespace PMP
 
     NotificationBar::NotificationBar(QWidget* parent)
      : QFrame(parent),
-       _ui(new Ui::NotificationBar),
-       _notification(nullptr)
+       _ui(new Ui::NotificationBar)
     {
         _ui->setupUi(this);
 
+        _ui->notificationTextLabel->setTextFormat(Qt::PlainText);
+
         setVisible(false);
+
+        connect(
+            _ui->scrollBar, &QScrollBar::valueChanged,
+            this, &NotificationBar::onScrollBarValueChanged
+        );
+        connect(
+            _ui->firstActionButton, &QPushButton::clicked,
+            this, &NotificationBar::onNotificationAction1Clicked
+        );
     }
 
     NotificationBar::~NotificationBar()
     {
-        _notification->deleteLater();
         delete _ui;
     }
 
-    void NotificationBar::showNotification(Notification* notification)
+    void NotificationBar::addNotification(Notification* notification)
     {
-        if (_notification == notification)
-            return;
-
-        if (_notification)
-            delete _notification;
-
-        _notification = notification;
-
         if (notification == nullptr)
-        {
-            setVisible(false);
             return;
-        }
 
-        setUpNotification();
+        auto index = _notifications.indexOf(notification);
+        if (index >= 0)
+            return;
+
+        connectSlots(notification);
+
+        _notifications.append(notification);
+
+        if (!notification->visible())
+            return;
+
+        _visibleNotifications.append(notification);
+        _visibleNotificationIndex = _visibleNotifications.size() - 1;
+
+        updateUiAfterVisibleIndexChanged();
     }
 
     QSize NotificationBar::minimumSizeHint() const
@@ -116,58 +128,143 @@ namespace PMP
         return QSize(width, height);
     }
 
-    void NotificationBar::setUpNotification()
+    Notification* NotificationBar::getVisibleNotification() const
     {
-        connect(
-            _notification, &Notification::destroyed,
-            this,
-            [this](QObject* sender)
-            {
-                if (sender != _notification)
-                    return;
+        if (_visibleNotificationIndex < 0
+                || _visibleNotificationIndex >= _visibleNotifications.size())
+        {
+            return nullptr;
+        }
 
-                _notification = nullptr;
-                setVisible(false);
-            }
-        );
-        connect(
-            _notification, &Notification::visibleChanged,
-            this, [this]() { setVisible(_notification->visible()); }
-        );
-        connect(
-            _notification, &Notification::notificationTextChanged,
-            this,
-            [this]()
-            {
-                _ui->notificationTextLabel->setText(_notification->notificationText());
-            }
-        );
-
-        _ui->notificationTextLabel->setTextFormat(Qt::PlainText);
-        _ui->notificationTextLabel->setText(_notification->notificationText());
-
-        setUpFirstActionButton();
-
-        setVisible(_notification->visible());
+        return _visibleNotifications[_visibleNotificationIndex];
     }
 
-    void NotificationBar::setUpFirstActionButton()
+    void NotificationBar::connectSlots(Notification* notification)
     {
-        QString action1Text = _notification->actionButton1Text();
+        connect(
+            notification, &Notification::destroyed,
+            this,
+            [this, notification](QObject* sender)
+            {
+                if (sender != notification)
+                    return;
+
+                onNotificationDestroyed(notification);
+            }
+        );
+
+        connect(
+            notification, &Notification::visibleChanged,
+            this, [this, notification]() { onNotificationVisibleChanged(notification); }
+        );
+
+        connect(
+            notification, &Notification::notificationTextChanged,
+            this, [this, notification]() { onNotificationTextChanged(notification); }
+        );
+    }
+
+    void NotificationBar::onNotificationDestroyed(Notification* notification)
+    {
+        int visibleIndex = _visibleNotifications.indexOf(notification);
+        if (visibleIndex >= 0)
+        {
+            _visibleNotifications.removeAt(visibleIndex);
+
+            if (_visibleNotificationIndex >= _visibleNotifications.size())
+                _visibleNotificationIndex--;
+
+            updateUiAfterVisibleIndexChanged();
+        }
+
+        int notificationsIndex = _notifications.indexOf(notification);
+        if (notificationsIndex >= 0)
+            _notifications.removeAt(notificationsIndex);
+    }
+
+    void NotificationBar::onNotificationVisibleChanged(Notification* notification)
+    {
+        int index = _visibleNotifications.indexOf(notification);
+        bool mustBeVisible = notification->visible();
+
+        if (mustBeVisible == (index >= 0))
+            return; /* no visibility change */
+
+        if (index < 0)
+        {
+            _visibleNotifications.append(notification);
+            _visibleNotificationIndex = _visibleNotifications.size() - 1;
+        }
+        else
+        {
+            _visibleNotifications.removeAt(index);
+
+            if (_visibleNotificationIndex >= _visibleNotifications.size())
+                _visibleNotificationIndex--;
+        }
+
+        updateUiAfterVisibleIndexChanged();
+    }
+
+    void NotificationBar::onNotificationTextChanged(Notification* notification)
+    {
+        auto* visibleNotification = getVisibleNotification();
+        if (visibleNotification != notification)
+            return;
+
+        _ui->notificationTextLabel->setText(notification->notificationText());
+    }
+
+    void NotificationBar::onScrollBarValueChanged()
+    {
+        if (_scrollBarUpdating)
+            return;
+
+        _visibleNotificationIndex = _ui->scrollBar->value();
+        updateUiAfterVisibleIndexChanged();
+    }
+
+    void NotificationBar::onNotificationAction1Clicked()
+    {
+        auto* notification = getVisibleNotification();
+        if (notification == nullptr)
+            return;
+
+        notification->actionButton1Pushed();
+    }
+
+    void NotificationBar::updateUiAfterVisibleIndexChanged()
+    {
+        auto* notification = getVisibleNotification();
+
+        if (notification == nullptr)
+        {
+            setVisible(false);
+            return;
+        }
+
+        Q_ASSERT_X(_scrollBarUpdating == false,
+                   "NotificationBar::updateUiAfterVisibleIndexChanged",
+                   "scrollbar is already being updated");
+        _scrollBarUpdating = true;
+        _ui->scrollBar->setMaximum(_visibleNotifications.size() - 1);
+        _ui->scrollBar->setValue(_visibleNotificationIndex);
+        _ui->scrollBar->setVisible(_visibleNotifications.size() > 1);
+        _scrollBarUpdating = false;
+
+        _ui->notificationTextLabel->setText(notification->notificationText());
+
+        auto action1Text = notification->actionButton1Text();
         if (action1Text.isEmpty())
         {
             _ui->firstActionButton->setVisible(false);
         }
         else
         {
-            connect(
-                _ui->firstActionButton, &QPushButton::clicked,
-                _notification, &Notification::actionButton1Pushed
-            );
-
             _ui->firstActionButton->setText(action1Text);
             _ui->firstActionButton->setVisible(true);
         }
-    }
 
+        setVisible(true);
+    }
 }

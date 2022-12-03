@@ -19,14 +19,17 @@
 
 #include "generalcontrollerimpl.h"
 
+#include "servercapabilities.h"
 #include "serverconnection.h"
+
+#include <QSharedPointer>
 
 namespace PMP
 {
     GeneralControllerImpl::GeneralControllerImpl(ServerConnection* connection)
      : GeneralController(connection),
        _connection(connection),
-       _clientClockTimeOffsetMs(0)
+       _serverVersionInfo([this]() { _connection->sendVersionInfoRequest(); })
     {
         connect(
             _connection, &ServerConnection::connected,
@@ -44,6 +47,11 @@ namespace PMP
         connect(
             _connection, &ServerConnection::receivedClientClockTimeOffset,
             this, &GeneralControllerImpl::receivedClientClockTimeOffset
+        );
+        connect(
+            _connection, &ServerConnection::receivedServerVersionInfo,
+            this,
+            [this](VersionInfo versionInfo) { _serverVersionInfo.setResult(versionInfo); }
         );
 
         if (_connection->isConnected())
@@ -65,6 +73,15 @@ namespace PMP
         return _connection->reloadServerSettings();
     }
 
+    Future<VersionInfo, ResultMessageErrorCode>
+        GeneralControllerImpl::getServerVersionInfo()
+    {
+        if (!_connection->serverCapabilities().supportsSendingVersionInfo())
+            _serverVersionInfo.setError(ResultMessageErrorCode::ServerTooOld);
+
+        return _serverVersionInfo.future();
+    }
+
     void GeneralControllerImpl::shutdownServer()
     {
         _connection->shutdownServer();
@@ -77,7 +94,7 @@ namespace PMP
 
     void GeneralControllerImpl::connectionBroken()
     {
-        //
+        _serverVersionInfo.reset();
     }
 
     void GeneralControllerImpl::serverHealthReceived()
@@ -104,5 +121,4 @@ namespace PMP
         _clientClockTimeOffsetMs = clientClockTimeOffsetMs;
         Q_EMIT clientClockTimeOffsetChanged();
     }
-
 }

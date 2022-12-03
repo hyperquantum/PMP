@@ -34,11 +34,13 @@ namespace PMP
         virtual ~CollectionWatcher() {}
 
         virtual void enableCollectionDownloading() = 0;
+        virtual bool downloadingInProgress() const = 0;
 
         virtual QHash<FileHash, CollectionTrackInfo> getCollection() = 0;
         virtual CollectionTrackInfo getTrack(FileHash const& hash) = 0;
 
     Q_SIGNALS:
+        void downloadingInProgressChanged();
         void newTrackReceived(CollectionTrackInfo track);
         void trackAvailabilityChanged(FileHash hash, bool isAvailable);
         void trackDataChanged(CollectionTrackInfo track);

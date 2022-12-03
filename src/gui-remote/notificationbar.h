@@ -21,6 +21,7 @@
 #define PMP_NOTIFICATIONBAR_H
 
 #include <QFrame>
+#include <QVector>
 
 namespace Ui
 {
@@ -59,17 +60,49 @@ namespace PMP
         explicit NotificationBar(QWidget* parent = nullptr);
         ~NotificationBar();
 
-        void showNotification(Notification* notification);
+        void addNotification(Notification* notification);
 
         QSize minimumSizeHint() const override;
         QSize sizeHint() const override;
 
     private:
-        void setUpNotification();
-        void setUpFirstActionButton();
+        Notification* getVisibleNotification() const;
+        void connectSlots(Notification* notification);
+        void onNotificationDestroyed(Notification* notification);
+        void onNotificationVisibleChanged(Notification* notification);
+        void onNotificationTextChanged(Notification* notification);
+        void onScrollBarValueChanged();
+        void onNotificationAction1Clicked();
+        void updateUiAfterVisibleIndexChanged();
 
         Ui::NotificationBar* _ui;
-        Notification* _notification;
+        int _visibleNotificationIndex { -1 };
+        bool _scrollBarUpdating { false };
+        QVector<Notification*> _notifications;
+        QVector<Notification*> _visibleNotifications;
     };
+
+    /*
+    class TestNotification : public Notification
+    {
+        Q_OBJECT
+    public:
+        TestNotification(QString text) : _text(text) {}
+
+        QString notificationText() const override { return _text; }
+
+        QString actionButton1Text() const override { return "Dismiss"; }
+
+        bool visible() const override { return true; }
+
+        void actionButton1Pushed() override
+        {
+            this->deleteLater();
+        }
+
+    private:
+        QString _text;
+    };
+    */
 }
 #endif

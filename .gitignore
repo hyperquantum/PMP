@@ -13,6 +13,6 @@ CMakeLists.txt.user
 testing/*_MODIFIED.data
 
 # output and temp files of Win64 release script
-PMP_win64.zip
+PMP-win64.zip
 x64-windows-archive-full/
 x64-windows-release-bin/
