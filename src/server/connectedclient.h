@@ -27,7 +27,6 @@
 #include "common/scrobblingprovider.h"
 #include "common/startstopeventstatus.h"
 
-#include "clientrequestorigin.h"
 #include "hashstats.h"
 #include "playerhistoryentry.h"
 #include "result.h"
