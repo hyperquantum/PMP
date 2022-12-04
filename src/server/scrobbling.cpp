@@ -25,25 +25,25 @@
 
 namespace PMP
 {
-    ScrobblingController::ScrobblingController()
+    GlobalScrobblingController::GlobalScrobblingController()
     {
         //
     }
 
-    void ScrobblingController::enableScrobbling()
+    void GlobalScrobblingController::enableScrobbling()
     {
         emit enableScrobblingRequested();
     }
 
-    void ScrobblingController::wakeUp(uint userId)
+    void GlobalScrobblingController::wakeUp(uint userId)
     {
         emit wakeUpRequested(userId);
     }
 
-    void ScrobblingController::updateNowPlaying(uint userId, QDateTime startTime,
-                                                QString title, QString artist,
-                                                QString album,
-                                                int trackDurationSeconds)
+    void GlobalScrobblingController::updateNowPlaying(uint userId, QDateTime startTime,
+                                                      QString title, QString artist,
+                                                      QString album,
+                                                      int trackDurationSeconds)
     {
         emit nowPlayingUpdateRequested(userId, startTime, title, artist, album,
                                        trackDurationSeconds);
@@ -95,17 +95,17 @@ namespace PMP
         connect(&_thread, &QThread::finished, _host, &QObject::deleteLater);
         //connect(&_thread, &QThread::started, _host, &ScrobblingHost::load);
 
-        _controller = new ScrobblingController();
+        _controller = new GlobalScrobblingController();
         connect(
-            _controller, &ScrobblingController::wakeUpRequested,
+            _controller, &GlobalScrobblingController::wakeUpRequested,
             _host, &ScrobblingHost::wakeUpForUser
         );
         connect(
-            _controller, &ScrobblingController::enableScrobblingRequested,
+            _controller, &GlobalScrobblingController::enableScrobblingRequested,
             _host, &ScrobblingHost::enableScrobbling
         );
         connect(
-            _controller, &ScrobblingController::nowPlayingUpdateRequested,
+            _controller, &GlobalScrobblingController::nowPlayingUpdateRequested,
             _host, &ScrobblingHost::setNowPlayingTrack
         );
 
@@ -118,7 +118,7 @@ namespace PMP
         _thread.wait();
     }
 
-    ScrobblingController* Scrobbling::getController()
+    GlobalScrobblingController* Scrobbling::getController()
     {
         return _controller;
     }

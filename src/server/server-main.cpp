@@ -275,7 +275,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     auto scrobblingController = scrobbling.getController();
     QObject::connect(
         &player, &Player::startedPlaying,
-        scrobblingController, &ScrobblingController::updateNowPlaying
+        scrobblingController, &GlobalScrobblingController::updateNowPlaying
     );
     QObject::connect(
         &player, &Player::newHistoryEntry,

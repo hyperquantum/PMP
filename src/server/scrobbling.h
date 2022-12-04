@@ -33,11 +33,11 @@ namespace PMP
     class Resolver;
     class ScrobblingHost;
 
-    class ScrobblingController : public QObject
+    class GlobalScrobblingController : public QObject
     {
         Q_OBJECT
     public:
-        ScrobblingController();
+        GlobalScrobblingController();
 
     public slots:
         void enableScrobbling();
@@ -91,14 +91,14 @@ namespace PMP
         explicit Scrobbling(QObject* parent, Resolver* resolver);
         ~Scrobbling();
 
-        ScrobblingController* getController();
+        GlobalScrobblingController* getController();
         UserScrobblingController* getControllerForUser(uint userId);
 
     private:
         Resolver* _resolver;
         ScrobblingHost* _host;
         QThread _thread;
-        ScrobblingController* _controller;
+        GlobalScrobblingController* _controller;
         QHash<uint, UserScrobblingController*> _userControllers;
     };
 }
