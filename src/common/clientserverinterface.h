@@ -31,6 +31,7 @@ namespace PMP
     class DynamicModeController;
     class GeneralController;
     class HistoryController;
+    class ScrobblingController;
     class ServerConnection;
     class PlayerController;
     class QueueController;
@@ -63,6 +64,8 @@ namespace PMP
         CollectionWatcher& collectionWatcher();
         UserDataFetcher& userDataFetcher();
 
+        ScrobblingController& scrobblingController();
+
         bool isLoggedIn() const;
         quint32 userLoggedInId() const;
         QString userLoggedInName() const;
@@ -86,6 +89,7 @@ namespace PMP
         HistoryController* _historyController { nullptr };
         CollectionWatcher* _collectionWatcher { nullptr };
         UserDataFetcher* _userDataFetcher { nullptr };
+        ScrobblingController* _scrobblingController { nullptr };
         bool _connected;
     };
 }

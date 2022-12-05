@@ -41,6 +41,7 @@ set(PMP_COMMON_SOURCES
     common/queueentryinfostorageimpl.cpp
     common/queuemonitor.cpp
     common/scrobblerstatus.cpp
+    common/scrobblingcontrollerimpl.cpp
     common/scrobblingprovider.cpp
     common/servercapabilitiesimpl.cpp
     common/serverconnection.cpp
@@ -76,6 +77,8 @@ set(PMP_COMMON_HEADERS
     common/queueentryinfostorage.h
     common/queueentryinfostorageimpl.h
     common/queuemonitor.h
+    common/scrobblingcontroller.h
+    common/scrobblingcontrollerimpl.h
     common/serverconnection.h
     common/serverdiscoverer.h
     common/userdatafetcher.h

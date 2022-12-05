@@ -23,6 +23,7 @@
 #include "common/generalcontroller.h"
 #include "common/playercontroller.h"
 #include "common/powermanagement.h"
+#include "common/scrobblingcontroller.h"
 #include "common/serverconnection.h"
 #include "common/unicodechars.h"
 #include "common/util.h"
@@ -68,8 +69,7 @@ namespace PMP
        _loginWidget(nullptr),
        _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
-       _powerManagement(new PowerManagement(this)),
-       _lastFmStatus(ScrobblerStatus::Unknown)
+       _powerManagement(new PowerManagement(this))
     {
         setWindowTitle(
             QString(tr("Party Music Player ")) + UnicodeChars::enDash + tr(" Remote")
@@ -355,16 +355,22 @@ namespace PMP
 
     void MainWindow::updateScrobblingStatus()
     {
-        _lastFmEnabledAction->setChecked(_lastFmEnabled.isTrue());
-        _lastFmEnabledAction->setEnabled(true);
+        auto& scrobblingController = _clientServerInterface->scrobblingController();
 
-        if (!_lastFmEnabled.isTrue())
+        auto lastFmEnabled = scrobblingController.lastFmEnabled();
+
+        _lastFmEnabledAction->setChecked(lastFmEnabled == true);
+        _lastFmEnabledAction->setEnabled(true); // TODO : use capabilities to decide this
+
+        if (lastFmEnabled == false)
         {
             _scrobblingStatusLabel->setVisible(false);
             return;
         }
 
-        switch (_lastFmStatus)
+        auto lastFmStatus = scrobblingController.lastFmStatus();
+
+        switch (lastFmStatus)
         {
         case ScrobblerStatus::Unknown:
             _scrobblingStatusLabel->setText(tr("Last.fm status: unknown"));
@@ -382,7 +388,7 @@ namespace PMP
             _scrobblingStatusLabel->setText(tr("Last.fm status: NEED LOGIN"));
             break;
         default:
-            qWarning() << "Scrobbler status not recognized:" << _lastFmStatus;
+            qWarning() << "Scrobbler status not recognized:" << lastFmStatus;
             _scrobblingStatusLabel->setText(tr("Last.fm status: unknown"));
             break;
         }
@@ -509,10 +515,8 @@ namespace PMP
     {
         auto checked = _lastFmEnabledAction->isChecked();
 
-        if (checked)
-            _connection->enableScrobblingForCurrentUser(ScrobblingProvider::LastFm);
-        else
-            _connection->disableScrobblingForCurrentUser(ScrobblingProvider::LastFm);
+        auto& scrobblingController = _clientServerInterface->scrobblingController();
+        scrobblingController.setLastFmScrobblingEnabled(checked);
     }
 
     void MainWindow::updatePowerManagement()
@@ -831,47 +835,11 @@ namespace PMP
         _serverAdminMenu->menuAction()->setVisible(true);
         _userMenu->menuAction()->setVisible(true);
 
+        auto* scrobblingController = &_clientServerInterface->scrobblingController();
         connect(
-            _connection, &ServerConnection::scrobblingProviderInfoReceived,
-            this,
-            [this](ScrobblingProvider provider, ScrobblerStatus status, bool enabled)
-            {
-                if (provider != ScrobblingProvider::LastFm)
-                    return;
-
-                _lastFmStatus = status;
-                _lastFmEnabled = enabled;
-                updateScrobblingStatus();
-            }
+            scrobblingController, &ScrobblingController::lastFmInfoChanged,
+            this, &MainWindow::updateScrobblingStatus
         );
-
-        connect(
-            _connection, &ServerConnection::scrobblingProviderEnabledChanged,
-            this,
-            [this](ScrobblingProvider provider, bool enabled)
-            {
-                if (provider != ScrobblingProvider::LastFm)
-                    return;
-
-                _lastFmEnabled = enabled;
-                updateScrobblingStatus();
-            }
-        );
-
-        connect(
-            _connection, &ServerConnection::scrobblerStatusChanged,
-            this,
-            [this](ScrobblingProvider provider, ScrobblerStatus status)
-            {
-                if (provider != ScrobblingProvider::LastFm)
-                    return;
-
-                _lastFmStatus = status;
-                updateScrobblingStatus();
-            }
-        );
-
-        _connection->requestScrobblingProviderInfoForCurrentUser();
     }
 
     void MainWindow::onLoginCancel()

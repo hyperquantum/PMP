@@ -22,9 +22,6 @@
 
 #include "common/resultmessageerrorcode.h"
 
-#include "common/scrobblerstatus.h"
-#include "common/tribool.h"
-
 #include <QAbstractSocket>
 #include <QMainWindow>
 
@@ -130,9 +127,6 @@ namespace PMP
         QMenu* _viewMenu;
 
         PowerManagement* _powerManagement;
-
-        ScrobblerStatus _lastFmStatus;
-        TriBool _lastFmEnabled;
     };
 }
 #endif
