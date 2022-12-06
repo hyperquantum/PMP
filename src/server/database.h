@@ -42,7 +42,7 @@
 QT_FORWARD_DECLARE_CLASS(QSqlQuery)
 QT_FORWARD_DECLARE_CLASS(QTextStream)
 
-namespace PMP
+namespace PMP::Server
 {
     struct DatabaseConnectionSettings;
     class ServerSettings;

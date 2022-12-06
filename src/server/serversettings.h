@@ -25,7 +25,7 @@
 
 QT_FORWARD_DECLARE_CLASS(QSettings)
 
-namespace PMP
+namespace PMP::Server
 {
     struct DatabaseConnectionSettings
     {

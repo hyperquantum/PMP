@@ -46,6 +46,7 @@
 #include <QThreadPool>
 
 using namespace PMP;
+using namespace PMP::Server;
 
 namespace
 {

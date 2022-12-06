@@ -29,9 +29,9 @@
 #include <QtDebug>
 #include <QTextStream>
 
-using namespace PMP::DatabaseRecords;
+using namespace PMP::Server::DatabaseRecords;
 
-namespace PMP
+namespace PMP::Server
 {
     QString Database::_hostname;
     int Database::_port;

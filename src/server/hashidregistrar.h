@@ -28,7 +28,7 @@
 #include <QPair>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Server
 {
     class Database;
 

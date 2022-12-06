@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,7 +19,7 @@
 
 #include "serverhealthmonitor.h"
 
-namespace PMP
+namespace PMP::Server
 {
     ServerHealthMonitor::ServerHealthMonitor(QObject* parent)
      : QObject(parent), _databaseUnavailable(false)

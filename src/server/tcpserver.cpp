@@ -35,7 +35,7 @@
 
 #define QT_USE_QSTRINGBUILDER
 
-namespace PMP
+namespace PMP::Server
 {
     TcpServer::TcpServer(QObject* parent, ServerSettings* serverSettings,
                    const QUuid& serverInstanceIdentifier)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,13 +20,13 @@
 #ifndef PMP_SERVERPLAYERSTATE_H
 #define PMP_SERVERPLAYERSTATE_H
 
-namespace PMP {
-
-    enum class ServerPlayerState {
+namespace PMP::Server
+{
+    enum class ServerPlayerState
+    {
         Stopped = 0,
         Playing,
         Paused
     };
-
 }
 #endif

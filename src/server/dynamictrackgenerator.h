@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,7 @@
 
 #include <QQueue>
 
-namespace PMP
+namespace PMP::Server
 {
     class DynamicTrackGenerator : public TrackGeneratorBase
     {

@@ -26,9 +26,9 @@
 
 #include <QThreadPool>
 
-using PMP::DatabaseRecords::HashHistoryStats;
+using PMP::Server::DatabaseRecords::HashHistoryStats;
 
-namespace PMP
+namespace PMP::Server
 {
     namespace
     {

@@ -24,7 +24,7 @@
 #include <QStandardPaths>
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Server
 {
     ServerSettings::ServerSettings()
     {

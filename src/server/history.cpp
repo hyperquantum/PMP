@@ -28,7 +28,7 @@
 #include <QThreadPool>
 #include <QTimer>
 
-namespace PMP
+namespace PMP::Server
 {
     History::History(Player* player, HashIdRegistrar* hashIdRegistrar,
                      HistoryStatistics* historyStatistics)

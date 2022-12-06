@@ -22,7 +22,7 @@
 
 #include <QtGlobal>
 
-namespace PMP
+namespace PMP::Server
 {
     enum class ResultCode
     {

@@ -25,7 +25,7 @@
 #include <QtDebug>
 #include <QThreadPool>
 
-namespace PMP
+namespace PMP::Server
 {
     Analyzer::Analyzer(QObject* parent)
      : QObject(parent),

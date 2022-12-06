@@ -29,7 +29,7 @@
 #include <QtDebug>
 #include <QTimer>
 
-namespace PMP
+namespace PMP::Server
 {
     WorkThrottle::WorkThrottle(QObject* parent, int maxJobsCount)
      : QObject(parent),

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,9 +22,10 @@
 
 #include <QtGlobal>
 
-namespace PMP {
-
-    class DynamicModeCriteria {
+namespace PMP::Server
+{
+    class DynamicModeCriteria
+    {
     public:
         DynamicModeCriteria();
 
@@ -51,6 +52,5 @@ namespace PMP {
     {
         return !(first == second);
     }
-
 }
 #endif

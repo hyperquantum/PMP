@@ -26,7 +26,7 @@
 #include <QtDebug>
 #include <QtGlobal>
 
-namespace PMP
+namespace PMP::Server
 {
     PlayerInstance::PlayerInstance(QObject* parent, int identifier, Preloader* preloader,
                                    Resolver* resolver)

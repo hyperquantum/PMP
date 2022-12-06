@@ -30,7 +30,7 @@
 #include <QTimer>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Server
 {
     class DynamicTrackGenerator;
     class History;

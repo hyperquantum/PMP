@@ -27,7 +27,7 @@ QT_FORWARD_DECLARE_CLASS(QTcpServer)
 QT_FORWARD_DECLARE_CLASS(QTimer)
 QT_FORWARD_DECLARE_CLASS(QUdpSocket)
 
-namespace PMP
+namespace PMP::Server
 {
     class CollectionMonitor;
     class DelayedStart;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,7 +27,7 @@
 
 #include <algorithm>
 
-namespace PMP
+namespace PMP::Server
 {
     const int RandomTracksSource::UPCOMING_NOTIFY_BATCH_COUNT = 10;
     const int RandomTracksSource::UPCOMING_NOTIFY_TARGET_COUNT = 250;

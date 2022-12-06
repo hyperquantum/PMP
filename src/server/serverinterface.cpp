@@ -39,7 +39,7 @@
 
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Server
 {
     ServerInterface::ServerInterface(ServerSettings* serverSettings, TcpServer* server,
                                      Player* player, Generator* generator,

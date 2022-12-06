@@ -25,7 +25,7 @@
 #include <QDateTime>
 #include <QtGlobal>
 
-namespace PMP
+namespace PMP::Server
 {
     class PlayerHistoryEntry
     {

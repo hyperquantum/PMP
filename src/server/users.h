@@ -31,7 +31,7 @@
 #include <QtGlobal>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Server
 {
     typedef QPair<quint32, QString> UserIdAndLogin;
 

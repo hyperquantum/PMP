@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,10 +28,11 @@
 #include <QPair>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP::Server
+{
     /*! class that monitors the collection on behalf of connected remotes */
-    class CollectionMonitor : public QObject {
+    class CollectionMonitor : public QObject
+    {
         Q_OBJECT
     public:
         CollectionMonitor(QObject* parent = 0);

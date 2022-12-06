@@ -38,7 +38,7 @@
 #include <QThreadPool>
 #include <QTimer>
 
-namespace PMP
+namespace PMP::Server
 {
     /* ======================== PreloadedFileLock ======================= */
 

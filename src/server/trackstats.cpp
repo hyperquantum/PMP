@@ -19,7 +19,7 @@
 
 #include "trackstats.h"
 
-namespace PMP
+namespace PMP::Server
 {
     TrackStats TrackStats::fromHistory(uint lastHistoryId, QDateTime lastHeard,
                                        quint32 scoreHeardCount, qint16 averagePermillage)

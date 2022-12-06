@@ -37,7 +37,7 @@
 #include <QThreadPool>
 #include <QTimer>
 
-namespace PMP
+namespace PMP::Server
 {
     /* ====================== ConnectedClient ====================== */
 
@@ -1005,13 +1005,13 @@ namespace PMP
     {
         switch (entry->kind())
         {
-        case PMP::QueueEntryKind::Track:
+        case QueueEntryKind::Track:
             break; /* handled below */
 
-        case PMP::QueueEntryKind::Break:
+        case QueueEntryKind::Break:
             return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Break);
 
-        case PMP::QueueEntryKind::Barrier:
+        case QueueEntryKind::Barrier:
             return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Barrier);
         }
 

@@ -33,7 +33,7 @@
 
 #include <algorithm>
 
-namespace PMP
+namespace PMP::Server
 {
     namespace
     {
