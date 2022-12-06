@@ -17,7 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "server.h"
+#include "tcpserver.h"
 
 #include "common/networkutil.h"
 
@@ -37,7 +37,7 @@
 
 namespace PMP
 {
-    Server::Server(QObject* parent, ServerSettings* serverSettings,
+    TcpServer::TcpServer(QObject* parent, ServerSettings* serverSettings,
                    const QUuid& serverInstanceIdentifier)
      : QObject(parent),
        _uuid(serverInstanceIdentifier),
@@ -75,22 +75,23 @@ namespace PMP
 
         connect(
             _server, &QTcpServer::newConnection,
-            this, &Server::newConnectionReceived
+            this, &TcpServer::newConnectionReceived
         );
 
-        connect(_udpSocket, &QUdpSocket::readyRead, this, &Server::readPendingDatagrams);
+        connect(_udpSocket, &QUdpSocket::readyRead,
+                this, &TcpServer::readPendingDatagrams);
 
-        connect(_broadcastTimer, &QTimer::timeout, this, &Server::sendBroadcast);
+        connect(_broadcastTimer, &QTimer::timeout, this, &TcpServer::sendBroadcast);
 
         auto* serverClockTimePulseTimer = new QTimer(this);
         connect(
             serverClockTimePulseTimer, &QTimer::timeout,
-            this, &Server::serverClockTimeSendingPulse
+            this, &TcpServer::serverClockTimeSendingPulse
         );
         serverClockTimePulseTimer->start(60 * 60 * 1000); /* hourly */
     }
 
-    QString Server::generateServerPassword()
+    QString TcpServer::generateServerPassword()
     {
         const QString chars =
             "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz123456789!@#%&*()+=:<>?/-";
@@ -119,7 +120,7 @@ namespace PMP
         return serverPassword;
     }
 
-    bool Server::listen(Player* player, Generator* generator, History* history,
+    bool TcpServer::listen(Player* player, Generator* generator, History* history,
                         HashIdRegistrar* hashIdRegistrar,
                         Users* users,
                         CollectionMonitor* collectionMonitor,
@@ -154,23 +155,23 @@ namespace PMP
         return true;
     }
 
-    QString Server::errorString() const
+    QString TcpServer::errorString() const
     {
         return _server->errorString();
     }
 
-    quint16 Server::port() const
+    quint16 TcpServer::port() const
     {
         return _server->serverPort();
     }
 
-    void Server::shutdown()
+    void TcpServer::shutdown()
     {
         _broadcastTimer->stop();
         Q_EMIT shuttingDown();
     }
 
-    void Server::newConnectionReceived()
+    void TcpServer::newConnectionReceived()
     {
         QTcpSocket* connection = _server->nextPendingConnection();
 
@@ -200,7 +201,7 @@ namespace PMP
         connectedClient->setParent(this);
     }
 
-    void Server::sendBroadcast()
+    void TcpServer::sendBroadcast()
     {
         QByteArray datagram = "PMPSERVERANNOUNCEv01 ";
         NetworkUtil::append2Bytes(datagram, port());
@@ -209,7 +210,7 @@ namespace PMP
         _udpSocket->flush();
     }
 
-    void Server::readPendingDatagrams()
+    void TcpServer::readPendingDatagrams()
     {
         while (_udpSocket->hasPendingDatagrams())
         {
@@ -231,7 +232,7 @@ namespace PMP
         }
     }
 
-    ServerInterface* Server::createServerInterface()
+    ServerInterface* TcpServer::createServerInterface()
     {
         return new ServerInterface(_settings,
                                    this,
@@ -243,7 +244,7 @@ namespace PMP
                                    _delayedStart);
     }
 
-    void Server::determineCaption()
+    void TcpServer::determineCaption()
     {
         QString caption = _settings->serverCaption();
 

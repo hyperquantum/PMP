@@ -33,15 +33,15 @@
 #include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
-#include "server.h"
 #include "serversettings.h"
+#include "tcpserver.h"
 #include "users.h"
 
 #include <QtDebug>
 
 namespace PMP
 {
-    ServerInterface::ServerInterface(ServerSettings* serverSettings, Server* server,
+    ServerInterface::ServerInterface(ServerSettings* serverSettings, TcpServer* server,
                                      Player* player, Generator* generator,
                                      History* history,
                                      HashIdRegistrar* hashIdRegistrar,
@@ -58,15 +58,15 @@ namespace PMP
        _delayedStart(delayedStart)
     {
         connect(
-            _server, &Server::captionChanged,
+            _server, &TcpServer::captionChanged,
             this, &ServerInterface::serverCaptionChanged
         );
         connect(
-            _server, &Server::serverClockTimeSendingPulse,
+            _server, &TcpServer::serverClockTimeSendingPulse,
             this, &ServerInterface::serverClockTimeSendingPulse
         );
         connect(
-            _server, &Server::shuttingDown,
+            _server, &TcpServer::shuttingDown,
             this, &ServerInterface::serverShuttingDown
         );
 

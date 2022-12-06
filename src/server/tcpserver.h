@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVER_H
-#define PMP_SERVER_H
+#ifndef PMP_TCPSERVER_H
+#define PMP_TCPSERVER_H
 
 #include <QHostAddress>
 #include <QUuid>
@@ -40,11 +40,11 @@ namespace PMP
     class ServerSettings;
     class Users;
 
-    class Server : public QObject
+    class TcpServer : public QObject
     {
         Q_OBJECT
     public:
-        Server(QObject* parent, ServerSettings* serverSettings,
+        TcpServer(QObject* parent, ServerSettings* serverSettings,
                const QUuid& serverInstanceIdentifier);
 
         bool listen(Player* player, Generator* generator, History* history,

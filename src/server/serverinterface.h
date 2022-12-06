@@ -49,8 +49,8 @@ namespace PMP
     class Player;
     class PlayerQueue;
     class QueueEntry;
-    class Server;
     class ServerSettings;
+    class TcpServer;
     class Users;
 
     struct PlayerStateOverview
@@ -67,7 +67,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        ServerInterface(ServerSettings* serverSettings, Server* server, Player* player,
+        ServerInterface(ServerSettings* serverSettings, TcpServer* server, Player* player,
                         Generator* generator, History* history,
                         HashIdRegistrar* hashIdRegistrar, Users* users,
                         DelayedStart* delayedStart);
@@ -176,7 +176,7 @@ namespace PMP
         quint32 _userLoggedIn;
         QString _userLoggedInName;
         ServerSettings* _serverSettings;
-        Server* _server;
+        TcpServer* _server;
         Player* _player;
         Generator* _generator;
         History* _history;

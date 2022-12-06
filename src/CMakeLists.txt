@@ -98,11 +98,11 @@ set(PMP_SERVER_SOURCES
     server/queueentry.cpp
     server/randomtrackssource.cpp
     server/resolver.cpp
-    server/server.cpp
     server/serverhealthmonitor.cpp
     server/serverinterface.cpp
     server/servermetatypes.cpp
     server/serversettings.cpp
+    server/tcpserver.cpp
     server/trackgeneratorbase.cpp
     server/trackrepetitionchecker.cpp
     server/trackstats.cpp
@@ -124,10 +124,10 @@ set(PMP_SERVER_HEADERS
     server/preloader.h
     server/randomtrackssource.h
     server/resolver.h
-    server/server.h
     server/serverhealthmonitor.h
     server/serverinterface.h
     server/serversettings.h
+    server/tcpserver.h
     server/trackgeneratorbase.h
     server/trackrepetitionchecker.h
     server/users.h
