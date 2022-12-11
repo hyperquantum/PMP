@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CLIENT_H
-#define PMP_CLIENT_H
+#ifndef PMP_COMMANDLINECLIENT_H
+#define PMP_COMMANDLINECLIENT_H
 
 #include "common/userloginerror.h"
 
@@ -34,11 +34,11 @@ namespace PMP
     class Command;
     class ServerConnection;
 
-    class Client : public QObject
+    class CommandlineClient : public QObject
     {
         Q_OBJECT
     public:
-        Client(QObject* parent, QTextStream* out, QTextStream* err,
+        CommandlineClient(QObject* parent, QTextStream* out, QTextStream* err,
                QString server, quint16 port, QString username, QString password,
                Command* command);
 

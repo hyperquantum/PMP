@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,7 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "client.h"
+#include "commandlineclient.h"
 
 #include "common/clientserverinterface.h"
 #include "common/serverconnection.h"
@@ -28,9 +28,10 @@
 
 namespace PMP
 {
-    Client::Client(QObject* parent, QTextStream* out, QTextStream* err,
-                   QString server, quint16 port, QString username, QString password,
-                   Command* command)
+    CommandlineClient::CommandlineClient(QObject* parent, QTextStream* out,
+                                         QTextStream* err, QString server, quint16 port,
+                                         QString username, QString password,
+                                         Command* command)
      : QObject(parent),
        _out(out),
        _err(err),
@@ -50,7 +51,7 @@ namespace PMP
 
         connect(
             _serverConnection, &ServerConnection::connected,
-            this, &Client::connected
+            this, &CommandlineClient::connected
         );
         connect(
             _serverConnection, &ServerConnection::cannotConnect,
@@ -85,7 +86,7 @@ namespace PMP
 
         connect(
             _serverConnection, &ServerConnection::userLoggedInSuccessfully,
-            this, &Client::executeCommand
+            this, &CommandlineClient::executeCommand
         );
         connect(
             _serverConnection, &ServerConnection::userLoginError,
@@ -127,12 +128,12 @@ namespace PMP
         );
     }
 
-    void Client::start()
+    void CommandlineClient::start()
     {
         _serverConnection->connectToHost(_server, _port);
     }
 
-    void Client::connected()
+    void CommandlineClient::connected()
     {
         if (_username.isEmpty())
         {
@@ -144,14 +145,14 @@ namespace PMP
         }
     }
 
-    void Client::executeCommand()
+    void CommandlineClient::executeCommand()
     {
         _expectingDisconnect = _command->willCauseDisconnect();
 
         _command->execute(_clientServerInterface);
     }
 
-    QString Client::toString(UserLoginError error)
+    QString CommandlineClient::toString(UserLoginError error)
     {
         switch (error)
         {
