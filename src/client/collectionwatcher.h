@@ -17,27 +17,36 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COLLECTIONFETCHER_H
-#define PMP_COLLECTIONFETCHER_H
+#ifndef PMP_COLLECTIONWATCHER_H
+#define PMP_COLLECTIONWATCHER_H
 
-#include "collectiontrackinfo.h"
+#include "common/collectiontrackinfo.h"
 
+#include <QHash>
 #include <QObject>
-#include <QVector>
 
 namespace PMP
 {
-    class CollectionFetcher : public QObject
+    class CollectionWatcher : public QObject
     {
         Q_OBJECT
     public:
-        CollectionFetcher() {}
-        virtual ~CollectionFetcher() {}
+        virtual ~CollectionWatcher() {}
+
+        virtual void enableCollectionDownloading() = 0;
+        virtual bool downloadingInProgress() const = 0;
+
+        virtual QHash<FileHash, CollectionTrackInfo> getCollection() = 0;
+        virtual CollectionTrackInfo getTrack(FileHash const& hash) = 0;
 
     Q_SIGNALS:
-        void receivedData(QVector<CollectionTrackInfo> data);
-        void completed();
-        void errorOccurred();
+        void downloadingInProgressChanged();
+        void newTrackReceived(CollectionTrackInfo track);
+        void trackAvailabilityChanged(FileHash hash, bool isAvailable);
+        void trackDataChanged(CollectionTrackInfo track);
+
+    protected:
+        explicit CollectionWatcher(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

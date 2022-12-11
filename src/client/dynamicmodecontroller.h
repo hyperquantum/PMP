@@ -20,7 +20,7 @@
 #ifndef PMP_DYNAMICMODECONTROLLER_H
 #define PMP_DYNAMICMODECONTROLLER_H
 
-#include "tribool.h"
+#include "common/tribool.h"
 
 #include <QObject>
 

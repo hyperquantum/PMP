@@ -20,8 +20,8 @@
 #ifndef PMP_USERDATAFETCHER_H
 #define PMP_USERDATAFETCHER_H
 
-#include "collectiontrackinfo.h"
-#include "filehash.h"
+#include "common/collectiontrackinfo.h"
+#include "common/filehash.h"
 
 #include <QDateTime>
 #include <QHash>

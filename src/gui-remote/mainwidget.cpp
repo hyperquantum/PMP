@@ -20,13 +20,14 @@
 #include "mainwidget.h"
 #include "ui_mainwidget.h"
 
-#include "common/clientserverinterface.h"
-#include "common/currenttrackmonitor.h"
-#include "common/dynamicmodecontroller.h"
-#include "common/playercontroller.h"
-#include "common/queuecontroller.h"
 #include "common/unicodechars.h"
 #include "common/util.h"
+
+#include "client/clientserverinterface.h"
+#include "client/currenttrackmonitor.h"
+#include "client/dynamicmodecontroller.h"
+#include "client/playercontroller.h"
+#include "client/queuecontroller.h"
 
 #include "autopersonalmodeaction.h"
 #include "clickablelabel.h"

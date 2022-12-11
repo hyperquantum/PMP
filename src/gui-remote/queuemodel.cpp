@@ -19,13 +19,14 @@
 
 #include "queuemodel.h"
 
-#include "common/clientserverinterface.h"
-#include "common/generalcontroller.h"
-#include "common/playercontroller.h"
-#include "common/queueentryinfostorage.h"
-#include "common/userdatafetcher.h"
 #include "common/unicodechars.h"
 #include "common/util.h"
+
+#include "client/clientserverinterface.h"
+#include "client/generalcontroller.h"
+#include "client/playercontroller.h"
+#include "client/queueentryinfostorage.h"
+#include "client/userdatafetcher.h"
 
 #include "colors.h"
 

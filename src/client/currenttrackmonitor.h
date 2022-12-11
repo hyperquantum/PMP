@@ -20,9 +20,9 @@
 #ifndef PMP_CURRENTTRACKMONITOR_H
 #define PMP_CURRENTTRACKMONITOR_H
 
-#include "filehash.h"
-#include "tribool.h"
-#include "playerstate.h"
+#include "common/filehash.h"
+#include "common/tribool.h"
+#include "common/playerstate.h"
 
 #include <QObject>
 

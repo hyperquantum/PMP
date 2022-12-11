@@ -19,8 +19,8 @@
 
 #include "commandlineclient.h"
 
-#include "common/clientserverinterface.h"
-#include "common/serverconnection.h"
+#include "client/clientserverinterface.h"
+#include "client/serverconnection.h"
 
 #include "command.h"
 

@@ -20,7 +20,7 @@
 #ifndef PMP_HISTORYCONTROLLER_H
 #define PMP_HISTORYCONTROLLER_H
 
-#include "playerhistorytrackinfo.h"
+#include "common/playerhistorytrackinfo.h"
 
 #include <QObject>
 #include <QVector>

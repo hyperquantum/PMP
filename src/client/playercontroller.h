@@ -21,11 +21,10 @@
 #define PMP_PLAYERCONTROLLER_H
 
 #include "common/tribool.h"
-
-#include "future.h"
-#include "playermode.h"
-#include "playerstate.h"
-#include "resultmessageerrorcode.h"
+#include "common/future.h"
+#include "common/playermode.h"
+#include "common/playerstate.h"
+#include "common/resultmessageerrorcode.h"
 
 #include <QDateTime>
 #include <QObject>

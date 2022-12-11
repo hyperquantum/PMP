@@ -22,8 +22,6 @@
 
 #include "currenttrackmonitor.h"
 
-#include "queueentrytype.h"
-
 #include <QElapsedTimer>
 
 namespace PMP

@@ -19,14 +19,15 @@
 
 #include "mainwindow.h"
 
-#include "common/clientserverinterface.h"
-#include "common/generalcontroller.h"
-#include "common/playercontroller.h"
 #include "common/powermanagement.h"
-#include "common/serverconnection.h"
 #include "common/unicodechars.h"
 #include "common/util.h"
 #include "common/version.h"
+
+#include "client/clientserverinterface.h"
+#include "client/generalcontroller.h"
+#include "client/playercontroller.h"
+#include "client/serverconnection.h"
 
 #include "collectionwidget.h"
 #include "connectionwidget.h"

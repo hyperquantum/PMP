@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,11 +20,11 @@
 #ifndef PMP_QUEUECONTROLLER_H
 #define PMP_QUEUECONTROLLER_H
 
-#include "filehash.h"
-#include "queueindextype.h"
-#include "requestid.h"
-#include "resultmessageerrorcode.h"
-#include "specialqueueitemtype.h"
+#include "common/filehash.h"
+#include "common/queueindextype.h"
+#include "common/requestid.h"
+#include "common/resultmessageerrorcode.h"
+#include "common/specialqueueitemtype.h"
 
 #include <QObject>
 

@@ -19,11 +19,12 @@
 
 #include "playerhistorymodel.h"
 
-#include "common/clientserverinterface.h"
-#include "common/generalcontroller.h"
-#include "common/historycontroller.h"
-#include "common/queueentryinfostorage.h"
 #include "common/util.h"
+
+#include "client/clientserverinterface.h"
+#include "client/generalcontroller.h"
+#include "client/historycontroller.h"
+#include "client/queueentryinfostorage.h"
 
 #include "colors.h"
 

@@ -20,9 +20,9 @@
 #ifndef PMP_QUEUEENTRYINFOSTORAGE_H
 #define PMP_QUEUEENTRYINFOSTORAGE_H
 
-#include "filehash.h"
-#include "queueentrytype.h"
-#include "tribool.h"
+#include "common/filehash.h"
+#include "common/queueentrytype.h"
+#include "common/tribool.h"
 
 #include <QObject>
 

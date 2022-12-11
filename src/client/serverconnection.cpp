@@ -19,13 +19,14 @@
 
 #include "serverconnection.h"
 
+#include "common/networkprotocol.h"
+#include "common/networkutil.h"
+#include "common/promise.h"
+#include "common/startstopeventstatus.h"
+#include "common/util.h"
+
 #include "collectionfetcher.h"
-#include "networkprotocol.h"
-#include "networkutil.h"
-#include "promise.h"
 #include "servercapabilitiesimpl.h"
-#include "startstopeventstatus.h"
-#include "util.h"
 
 #include <QtDebug>
 #include <QTimer>

@@ -22,7 +22,7 @@
 
 #include "generalcontroller.h"
 
-#include "lazypromisedvalue.h"
+#include "common/lazypromisedvalue.h"
 
 namespace PMP
 {

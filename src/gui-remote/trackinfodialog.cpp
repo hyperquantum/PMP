@@ -20,14 +20,15 @@
 #include "trackinfodialog.h"
 #include "ui_trackinfodialog.h"
 
-#include "common/clientserverinterface.h"
 #include "common/collectiontrackinfo.h"
-#include "common/collectionwatcher.h"
-#include "common/generalcontroller.h"
-#include "common/queuecontroller.h"
-#include "common/userdatafetcher.h"
 #include "common/unicodechars.h"
 #include "common/util.h"
+
+#include "client/clientserverinterface.h"
+#include "client/collectionwatcher.h"
+#include "client/generalcontroller.h"
+#include "client/queuecontroller.h"
+#include "client/userdatafetcher.h"
 
 #include <QApplication>
 #include <QClipboard>

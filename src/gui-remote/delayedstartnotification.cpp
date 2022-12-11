@@ -19,9 +19,10 @@
 
 #include "delayedstartnotification.h"
 
-#include "common/generalcontroller.h"
-#include "common/playercontroller.h"
 #include "common/util.h"
+
+#include "client/generalcontroller.h"
+#include "client/playercontroller.h"
 
 #include <QTimer>
 

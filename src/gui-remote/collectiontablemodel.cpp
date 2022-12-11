@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,12 +19,13 @@
 
 #include "collectiontablemodel.h"
 
-#include "common/clientserverinterface.h"
-#include "common/collectionwatcher.h"
-#include "common/currenttrackmonitor.h"
-#include "common/playercontroller.h"
-#include "common/userdatafetcher.h"
 #include "common/util.h"
+
+#include "client/clientserverinterface.h"
+#include "client/collectionwatcher.h"
+#include "client/currenttrackmonitor.h"
+#include "client/playercontroller.h"
+#include "client/userdatafetcher.h"
 
 #include "colors.h"
 

@@ -19,15 +19,16 @@
 
 #include "commands.h"
 
-#include "common/clientserverinterface.h"
-#include "common/currenttrackmonitor.h"
-#include "common/generalcontroller.h"
-#include "common/playercontroller.h"
-#include "common/queuecontroller.h"
-#include "common/queueentryinfostorage.h"
-#include "common/queuemonitor.h"
-#include "common/userdatafetcher.h"
 #include "common/util.h"
+
+#include "client/clientserverinterface.h"
+#include "client/currenttrackmonitor.h"
+#include "client/generalcontroller.h"
+#include "client/playercontroller.h"
+#include "client/queuecontroller.h"
+#include "client/queueentryinfostorage.h"
+#include "client/queuemonitor.h"
+#include "client/userdatafetcher.h"
 
 namespace PMP
 {

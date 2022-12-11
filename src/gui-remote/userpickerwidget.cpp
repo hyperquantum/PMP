@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,8 +20,8 @@
 #include "userpickerwidget.h"
 #include "ui_userpickerwidget.h"
 
-#include "common/authenticationcontroller.h"
-#include "common/generalcontroller.h"
+#include "client/authenticationcontroller.h"
+#include "client/generalcontroller.h"
 
 #include <algorithm>
 

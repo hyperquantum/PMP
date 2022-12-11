@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,8 +19,8 @@
 
 #include "autopersonalmodeaction.h"
 
-#include "common/clientserverinterface.h"
-#include "common/playercontroller.h"
+#include "client/clientserverinterface.h"
+#include "client/playercontroller.h"
 
 namespace PMP
 {

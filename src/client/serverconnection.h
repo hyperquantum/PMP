@@ -20,20 +20,20 @@
 #ifndef PMP_SERVERCONNECTION_H
 #define PMP_SERVERCONNECTION_H
 
-#include "collectiontrackinfo.h"
-#include "disconnectreason.h"
-#include "future.h"
-#include "networkprotocol.h"
-#include "playerhistorytrackinfo.h"
-#include "playerstate.h"
-#include "queueindextype.h"
-#include "requestid.h"
-#include "serverhealthstatus.h"
-#include "specialqueueitemtype.h"
-#include "tribool.h"
-#include "userloginerror.h"
-#include "userregistrationerror.h"
-#include "versioninfo.h"
+#include "common/collectiontrackinfo.h"
+#include "common/disconnectreason.h"
+#include "common/future.h"
+#include "common/networkprotocol.h"
+#include "common/playerhistorytrackinfo.h"
+#include "common/playerstate.h"
+#include "common/queueindextype.h"
+#include "common/requestid.h"
+#include "common/serverhealthstatus.h"
+#include "common/specialqueueitemtype.h"
+#include "common/tribool.h"
+#include "common/userloginerror.h"
+#include "common/userregistrationerror.h"
+#include "common/versioninfo.h"
 
 #include <QByteArray>
 #include <QDateTime>

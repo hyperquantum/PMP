@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,9 +20,7 @@
 #include "loginwidget.h"
 #include "ui_loginwidget.h"
 
-#include "common/authenticationcontroller.h"
-#include "common/networkprotocol.h"
-#include "common/serverconnection.h"
+#include "client/authenticationcontroller.h"
 
 #include <QMessageBox>
 

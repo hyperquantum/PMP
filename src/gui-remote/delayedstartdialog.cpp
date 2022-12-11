@@ -20,12 +20,13 @@
 #include "delayedstartdialog.h"
 #include "ui_delayedstartdialog.h"
 
-#include "common/abstractqueuemonitor.h"
-#include "common/clientserverinterface.h"
-#include "common/dynamicmodecontroller.h"
-#include "common/playercontroller.h"
-#include "common/queueentryinfostorage.h"
 #include "common/util.h"
+
+#include "client/abstractqueuemonitor.h"
+#include "client/clientserverinterface.h"
+#include "client/dynamicmodecontroller.h"
+#include "client/playercontroller.h"
+#include "client/queueentryinfostorage.h"
 
 #include <QLocale>
 #include <QMessageBox>

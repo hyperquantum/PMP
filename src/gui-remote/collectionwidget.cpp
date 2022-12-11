@@ -20,10 +20,11 @@
 #include "collectionwidget.h"
 #include "ui_collectionwidget.h"
 
-#include "common/clientserverinterface.h"
-#include "common/collectionwatcher.h"
-#include "common/queuecontroller.h"
 #include "common/unicodechars.h"
+
+#include "client/clientserverinterface.h"
+#include "client/collectionwatcher.h"
+#include "client/queuecontroller.h"
 
 #include "collectiontablemodel.h"
 #include "colors.h"

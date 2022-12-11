@@ -20,10 +20,10 @@
 #ifndef PMP_GENERALCONTROLLER_H
 #define PMP_GENERALCONTROLLER_H
 
-#include "future.h"
-#include "resultmessageerrorcode.h"
-#include "serverhealthstatus.h"
-#include "versioninfo.h"
+#include "common/future.h"
+#include "common/resultmessageerrorcode.h"
+#include "common/serverhealthstatus.h"
+#include "common/versioninfo.h"
 
 #include <QObject>
 
