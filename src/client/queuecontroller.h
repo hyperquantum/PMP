@@ -28,7 +28,7 @@
 
 #include <QObject>
 
-namespace PMP
+namespace PMP::Client
 {
     class QueueController : public QObject
     {

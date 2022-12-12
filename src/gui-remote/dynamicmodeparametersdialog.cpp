@@ -24,6 +24,8 @@
 
 #include <QtDebug>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     DynamicModeParametersDialog::DynamicModeParametersDialog(QWidget* parent,

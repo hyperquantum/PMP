@@ -22,7 +22,7 @@
 #include "servercapabilities.h"
 #include "serverconnection.h"
 
-namespace PMP
+namespace PMP::Client
 {
     QueueControllerImpl::QueueControllerImpl(ServerConnection* connection)
      : QueueController(connection),

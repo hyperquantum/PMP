@@ -24,17 +24,21 @@
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP
+namespace PMP::Client
 {
     class GeneralController;
     class PlayerController;
+}
 
+namespace PMP
+{
     class DelayedStartNotification : public Notification
     {
         Q_OBJECT
     public:
-        DelayedStartNotification(QObject* parent, PlayerController* playerController,
-                                 GeneralController* generalController);
+        DelayedStartNotification(QObject* parent,
+                                 Client::PlayerController* playerController,
+                                 Client::GeneralController* generalController);
 
         QString notificationText() const override { return _text; }
 
@@ -50,8 +54,8 @@ namespace PMP
     private:
         static QString deadlineText(QDateTime deadline);
 
-        PlayerController* _playerController;
-        GeneralController* _generalController;
+        Client::PlayerController* _playerController;
+        Client::GeneralController* _generalController;
         QTimer* _countDownTimer;
         QString _text;
         bool _visible;

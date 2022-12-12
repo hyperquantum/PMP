@@ -42,6 +42,7 @@
 #include <QtDebug>
 #include <QTimer>
 
+using namespace PMP::Client;
 using namespace PMP::UnicodeChars;
 
 namespace PMP

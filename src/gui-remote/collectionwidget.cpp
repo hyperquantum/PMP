@@ -36,6 +36,8 @@
 #include <QtDebug>
 #include <QSettings>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     CollectionWidget::CollectionWidget(QWidget* parent,

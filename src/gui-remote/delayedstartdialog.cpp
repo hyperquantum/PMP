@@ -32,9 +32,10 @@
 #include <QMessageBox>
 #include <QTimer>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
-
     PlayDurationCalculator::PlayDurationCalculator(QObject* parent,
                                              ClientServerInterface* clientServerInterface)
      : QObject(parent),

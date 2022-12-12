@@ -25,7 +25,7 @@
 #include <QObject>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Client
 {
     class CollectionFetcher : public QObject
     {

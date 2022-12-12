@@ -20,7 +20,7 @@
 #ifndef PMP_SERVERCAPABILITIES_H
 #define PMP_SERVERCAPABILITIES_H
 
-namespace PMP
+namespace PMP::Client
 {
     class ServerCapabilities
     {

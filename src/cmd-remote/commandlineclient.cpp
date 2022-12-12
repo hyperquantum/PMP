@@ -26,6 +26,8 @@
 
 #include <QTimer>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     CommandlineClient::CommandlineClient(QObject* parent, QTextStream* out,

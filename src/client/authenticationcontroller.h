@@ -27,7 +27,7 @@
 #include <QObject>
 #include <QPair>
 
-namespace PMP
+namespace PMP::Client
 {
     class AuthenticationController : public QObject
     {

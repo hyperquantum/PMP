@@ -29,7 +29,7 @@
 #include <QPair>
 #include <QSet>
 
-namespace PMP
+namespace PMP::Client
 {
     class CollectionWatcher;
     class ServerConnection;

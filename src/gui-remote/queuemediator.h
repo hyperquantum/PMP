@@ -22,19 +22,23 @@
 
 #include "client/abstractqueuemonitor.h"
 
-namespace PMP
+namespace PMP::Client
 {
     class AbstractQueueMonitor;
     class ClientServerInterface;
-    class FileHash;
     class QueueController;
+}
 
-    class QueueMediator : public AbstractQueueMonitor
+namespace PMP
+{
+    class FileHash;
+
+    class QueueMediator : public Client::AbstractQueueMonitor
     {
         Q_OBJECT
     public:
         QueueMediator(QObject* parent, AbstractQueueMonitor* monitor,
-                      ClientServerInterface* clientServerInterface);
+                      Client::ClientServerInterface* clientServerInterface);
 
         void setFetchLimit(int count) override;
 
@@ -61,7 +65,7 @@ namespace PMP
         void trackMovedAtServer(int fromIndex, int toIndex, quint32 queueID);
 
     private:
-        QueueController& queueController() const;
+        Client::QueueController& queueController() const;
 
         class Operation;
         class InfoOperation;
@@ -74,7 +78,7 @@ namespace PMP
         bool handleServerOperation(Operation* op);
 
         AbstractQueueMonitor* _sourceMonitor;
-        ClientServerInterface* _clientServerInterface;
+        Client::ClientServerInterface* _clientServerInterface;
         int _queueLength;
         QList<quint32> _myQueue;
         QList<Operation*> _pendingOperations;

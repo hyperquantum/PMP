@@ -24,7 +24,7 @@
 
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Client
 {
     CollectionWatcherImpl::CollectionWatcherImpl(ServerConnection* connection)
      : CollectionWatcher(connection),

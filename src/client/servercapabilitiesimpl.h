@@ -22,7 +22,7 @@
 
 #include "servercapabilities.h"
 
-namespace PMP
+namespace PMP::Client
 {
     class ServerCapabilitiesImpl : public ServerCapabilities
     {

@@ -22,7 +22,7 @@
 
 #include "historycontroller.h"
 
-namespace PMP
+namespace PMP::Client
 {
     class ServerConnection;
 

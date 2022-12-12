@@ -27,7 +27,7 @@
 
 #include <QObject>
 
-namespace PMP
+namespace PMP::Client
 {
     class GeneralController : public QObject
     {

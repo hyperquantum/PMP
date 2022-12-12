@@ -19,7 +19,7 @@
 
 #include "servercapabilitiesimpl.h"
 
-namespace PMP
+namespace PMP::Client
 {
     ServerCapabilitiesImpl::ServerCapabilitiesImpl()
      : _serverProtocolNumber(0)

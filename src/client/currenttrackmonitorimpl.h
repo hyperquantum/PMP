@@ -24,7 +24,7 @@
 
 #include <QElapsedTimer>
 
-namespace PMP
+namespace PMP::Client
 {
     class QueueEntryInfoStorage;
     class ServerConnection;

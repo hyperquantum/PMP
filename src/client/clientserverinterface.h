@@ -22,7 +22,7 @@
 
 #include <QObject>
 
-namespace PMP
+namespace PMP::Client
 {
     class AbstractQueueMonitor;
     class AuthenticationController;

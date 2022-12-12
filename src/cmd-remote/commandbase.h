@@ -37,7 +37,7 @@ namespace PMP
     public:
         virtual bool willCauseDisconnect() const override;
 
-        virtual void execute(ClientServerInterface* clientServerInterface) final;
+        virtual void execute(Client::ClientServerInterface* clientServerInterface) final;
 
     protected:
         CommandBase();
@@ -52,8 +52,8 @@ namespace PMP
                                              SimpleFuture<ResultMessageErrorCode> future);
 
         // TODO : combine setUp and start into one function
-        virtual void setUp(ClientServerInterface* clientServerInterface) = 0;
-        virtual void start(ClientServerInterface* clientServerInterface) = 0;
+        virtual void setUp(Client::ClientServerInterface* clientServerInterface) = 0;
+        virtual void start(Client::ClientServerInterface* clientServerInterface) = 0;
 
     protected Q_SLOTS:
         void listenerSlot();

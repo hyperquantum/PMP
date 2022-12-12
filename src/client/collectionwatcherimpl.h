@@ -25,7 +25,7 @@
 #include <QHash>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Client
 {
     class ServerConnection;
 

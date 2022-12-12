@@ -25,6 +25,8 @@
 
 #include <algorithm>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     UserPickerWidget::UserPickerWidget(QWidget* parent,

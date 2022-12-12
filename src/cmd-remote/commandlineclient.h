@@ -28,11 +28,15 @@
 
 QT_FORWARD_DECLARE_CLASS(QTextStream)
 
-namespace PMP
+namespace PMP::Client
 {
     class ClientServerInterface;
-    class Command;
     class ServerConnection;
+}
+
+namespace PMP
+{
+    class Command;
 
     class CommandlineClient : public QObject
     {
@@ -61,8 +65,8 @@ namespace PMP
         quint16 _port;
         QString _username;
         QString _password;
-        QPointer<ServerConnection> _serverConnection;
-        QPointer<ClientServerInterface> _clientServerInterface;
+        QPointer<Client::ServerConnection> _serverConnection;
+        QPointer<Client::ClientServerInterface> _clientServerInterface;
         QPointer<Command> _command;
         bool _expectingDisconnect;
     };

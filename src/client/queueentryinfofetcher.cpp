@@ -26,7 +26,7 @@
 #include <QtDebug>
 #include <QTimer>
 
-namespace PMP
+namespace PMP::Client
 {
     namespace
     {

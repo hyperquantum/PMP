@@ -35,6 +35,8 @@
 #include <QLocale>
 #include <QtDebug>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     TrackInfoDialog::TrackInfoDialog(QWidget* parent,

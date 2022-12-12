@@ -54,6 +54,8 @@
 #include <QTimer>
 #include <QVBoxLayout>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     MainWindow::MainWindow(QWidget* parent)

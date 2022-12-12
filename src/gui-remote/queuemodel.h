@@ -30,13 +30,17 @@
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP
+namespace PMP::Client
 {
     class ClientServerInterface;
     class QueueEntryInfo;
     class QueueEntryInfoStorage;
-    class QueueMediator;
     class UserDataFetcher;
+}
+
+namespace PMP
+{
+    class QueueMediator;
 
     class RegularUiRefresher : public QObject
     {
@@ -98,8 +102,9 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
-                   QueueMediator* source, QueueEntryInfoStorage* trackInfoStorage);
+        QueueModel(QObject* parent, Client::ClientServerInterface* clientServerInterface,
+                   QueueMediator* source,
+                   Client::QueueEntryInfoStorage* trackInfoStorage);
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -149,7 +154,7 @@ namespace PMP
             }
         };
 
-        QVariant trackModelData(QueueEntryInfo* info, int col, int role) const;
+        QVariant trackModelData(Client::QueueEntryInfo* info, int col, int role) const;
         bool dropQueueItemMimeData(const QMimeData* data, Qt::DropAction action, int row);
         bool dropFileHashMimeData(const QMimeData* data, int row);
 
@@ -158,9 +163,9 @@ namespace PMP
 
         //Track* trackAt(const QModelIndex& index) const;
 
-        UserDataFetcher* _userDataFetcher;
+        Client::UserDataFetcher* _userDataFetcher;
         QueueMediator* _source;
-        QueueEntryInfoStorage* _infoStorage;
+        Client::QueueEntryInfoStorage* _infoStorage;
         RegularUiRefresher* _lastHeardRefresher;
         qint64 _clientClockTimeOffsetMs { 0 };
         PlayerMode _playerMode;

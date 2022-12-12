@@ -24,7 +24,7 @@
 #include <QObject>
 #include <QUuid>
 
-namespace PMP
+namespace PMP::Client
 {
     class AbstractQueueMonitor : public QObject
     {

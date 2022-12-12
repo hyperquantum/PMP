@@ -23,7 +23,7 @@
 
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Client
 {
     PlayerControllerImpl::PlayerControllerImpl(ServerConnection* connection)
      : PlayerController(connection),

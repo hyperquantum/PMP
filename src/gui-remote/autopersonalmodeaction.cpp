@@ -22,9 +22,10 @@
 #include "client/clientserverinterface.h"
 #include "client/playercontroller.h"
 
+using namespace PMP::Client;
+
 namespace PMP
 {
-
     AutoPersonalModeAction::AutoPersonalModeAction(
             ClientServerInterface* clientServerInterface)
      : QObject(clientServerInterface),

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,8 +34,14 @@
 
 #include <functional>
 
-namespace PMP {
+namespace PMP::Client
+{
+    class ClientServerInterface;
+    class UserDataFetcher;
+}
 
+namespace PMP
+{
     enum class TrackCriterium
     {
         None = 0,
@@ -55,12 +61,10 @@ namespace PMP {
         LengthAtLeastFiveMinutes,
     };
 
-    class UserDataFetcher;
-
     class TrackJudge
     {
     public:
-        TrackJudge(UserDataFetcher& userDataFetcher)
+        TrackJudge(Client::UserDataFetcher& userDataFetcher)
          : _criterium(TrackCriterium::None),
            _userId(0),
            _haveUserId(false),
@@ -95,17 +99,15 @@ namespace PMP {
         TrackCriterium _criterium;
         quint32 _userId;
         bool _haveUserId;
-        UserDataFetcher& _userDataFetcher;
+        Client::UserDataFetcher& _userDataFetcher;
     };
-
-    class ClientServerInterface;
 
     class CollectionViewContext : public QObject
     {
         Q_OBJECT
     public:
         CollectionViewContext(QObject* parent,
-                              ClientServerInterface* clientServerInterface);
+                              Client::ClientServerInterface* clientServerInterface);
 
         quint32 userId() const { return _userId; }
 
@@ -121,7 +123,7 @@ namespace PMP {
         Q_OBJECT
     public:
         SortedCollectionTableModel(QObject* parent,
-                                   ClientServerInterface* clientServerInterface,
+                                   Client::ClientServerInterface* clientServerInterface,
                                    CollectionViewContext* collectionViewContext);
 
         void setHighlightCriterium(TrackCriterium criterium);
@@ -218,7 +220,7 @@ namespace PMP {
     public:
         FilteredCollectionTableModel(QObject* parent,
                                      SortedCollectionTableModel* source,
-                                     ClientServerInterface* clientServerInterface,
+                                     Client::ClientServerInterface* clientServerInterface,
                                      CollectionViewContext* collectionViewContext);
 
         void setTrackFilter(TrackCriterium criterium);

@@ -30,6 +30,8 @@
 #include "client/queuemonitor.h"
 #include "client/userdatafetcher.h"
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     /* ===== ServerVersionCommand ===== */

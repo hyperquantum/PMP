@@ -46,6 +46,7 @@
 #include <QMenu>
 #include <QSettings>
 
+using namespace PMP::Client;
 using namespace PMP::UnicodeChars;
 
 namespace PMP

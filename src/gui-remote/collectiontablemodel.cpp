@@ -39,8 +39,10 @@
 #include <algorithm>
 #include <functional>
 
-namespace PMP {
+using namespace PMP::Client;
 
+namespace PMP
+{
     void TrackJudge::setUserId(quint32 userId)
     {
         _userId = userId;

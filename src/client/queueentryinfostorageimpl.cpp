@@ -23,7 +23,7 @@
 
 #include "serverconnection.h"
 
-namespace PMP
+namespace PMP::Client
 {
     QueueEntryInfoStorageImpl::QueueEntryInfoStorageImpl(ServerConnection* connection)
      : QueueEntryInfoStorage(connection),

@@ -24,7 +24,7 @@
 
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Client
 {
     CurrentTrackMonitorImpl::CurrentTrackMonitorImpl(
                                              QueueEntryInfoStorage* queueEntryInfoStorage,

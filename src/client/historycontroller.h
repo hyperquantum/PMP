@@ -25,7 +25,7 @@
 #include <QObject>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Client
 {
     class HistoryController : public QObject
     {

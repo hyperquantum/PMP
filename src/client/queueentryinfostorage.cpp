@@ -19,7 +19,7 @@
 
 #include "queueentryinfostorage.h"
 
-namespace PMP
+namespace PMP::Client
 {
     QueueEntryInfo::QueueEntryInfo(quint32 queueID)
      : _queueID(queueID), _type(QueueEntryType::Unknown), _lengthMilliseconds(-1)

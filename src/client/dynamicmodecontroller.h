@@ -24,7 +24,7 @@
 
 #include <QObject>
 
-namespace PMP
+namespace PMP::Client
 {
     class DynamicModeController : public QObject
     {

@@ -22,9 +22,10 @@
 #include <QtDebug>
 #include <QTimer>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
-
     bool CommandBase::willCauseDisconnect() const
     {
         // most commands won't

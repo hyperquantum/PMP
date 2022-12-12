@@ -30,7 +30,7 @@
 #include <QObject>
 #include <QString>
 
-namespace PMP
+namespace PMP::Client
 {
     class PlayerController : public QObject
     {

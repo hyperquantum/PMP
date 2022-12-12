@@ -26,7 +26,7 @@
 
 #include <QObject>
 
-namespace PMP
+namespace PMP::Client
 {
     class QueueEntryInfo : public QObject
     {

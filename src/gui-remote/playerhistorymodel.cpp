@@ -34,6 +34,8 @@
 #include <QMimeData>
 #include <QVector>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     PlayerHistoryModel::PlayerHistoryModel(QObject* parent,

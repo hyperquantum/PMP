@@ -47,7 +47,7 @@
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP
+namespace PMP::Client
 {
     class CollectionFetcher;
     class ServerCapabilities;

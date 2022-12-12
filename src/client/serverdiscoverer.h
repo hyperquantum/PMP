@@ -30,7 +30,7 @@
 
 QT_FORWARD_DECLARE_CLASS(QUdpSocket)
 
-namespace PMP
+namespace PMP::Client
 {
     class ServerConnection;
     class ServerProbe;

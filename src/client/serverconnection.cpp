@@ -31,7 +31,7 @@
 #include <QtDebug>
 #include <QTimer>
 
-namespace PMP
+namespace PMP::Client
 {
     class ServerConnection::ResultMessageData
     {

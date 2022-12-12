@@ -23,8 +23,10 @@
 
 #include <QTimer>
 
-namespace PMP {
+using namespace PMP::Client;
 
+namespace PMP
+{
     PreciseTrackProgressMonitor::PreciseTrackProgressMonitor(
                                                  CurrentTrackMonitor* currentTrackMonitor)
      : QObject(currentTrackMonitor),

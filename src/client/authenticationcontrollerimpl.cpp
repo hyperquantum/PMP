@@ -21,7 +21,7 @@
 
 #include "serverconnection.h"
 
-namespace PMP
+namespace PMP::Client
 {
     AuthenticationControllerImpl::AuthenticationControllerImpl(
                                                              ServerConnection* connection)

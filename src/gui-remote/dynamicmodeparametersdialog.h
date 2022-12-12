@@ -28,16 +28,19 @@ namespace Ui
     class DynamicModeParametersDialog;
 }
 
-namespace PMP
+namespace PMP::Client
 {
     class DynamicModeController;
+}
 
+namespace PMP
+{
     class DynamicModeParametersDialog : public QDialog
     {
         Q_OBJECT
     public:
         DynamicModeParametersDialog(QWidget* parent,
-                                    DynamicModeController* dynamicModeController);
+                                    Client::DynamicModeController* dynamicModeController);
         ~DynamicModeParametersDialog();
 
     private Q_SLOTS:
@@ -56,7 +59,7 @@ namespace PMP
         QString noRepetitionTimeString(int seconds);
 
         Ui::DynamicModeParametersDialog* _ui;
-        DynamicModeController* _dynamicModeController;
+        Client::DynamicModeController* _dynamicModeController;
         int _noRepetitionUpdating { 0 };
         QList<int> _noRepetitionList;
     };

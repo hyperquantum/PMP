@@ -22,7 +22,7 @@
 #include "servercapabilities.h"
 #include "serverconnection.h"
 
-namespace PMP
+namespace PMP::Client
 {
     DynamicModeControllerImpl::DynamicModeControllerImpl(ServerConnection* connection)
      : DynamicModeController(connection),

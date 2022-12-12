@@ -27,6 +27,8 @@
 #include <QIntValidator>
 #include <QMessageBox>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     ConnectionWidget::ConnectionWidget(QWidget* parent)

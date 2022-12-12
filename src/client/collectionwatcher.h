@@ -25,7 +25,7 @@
 #include <QHash>
 #include <QObject>
 
-namespace PMP
+namespace PMP::Client
 {
     class CollectionWatcher : public QObject
     {

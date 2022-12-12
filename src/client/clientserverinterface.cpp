@@ -33,7 +33,7 @@
 #include "serverconnection.h"
 #include "userdatafetcher.h"
 
-namespace PMP
+namespace PMP::Client
 {
     ClientServerInterface::ClientServerInterface(ServerConnection* connection)
      : QObject(connection),

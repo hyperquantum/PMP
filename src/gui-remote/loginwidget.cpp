@@ -24,6 +24,8 @@
 
 #include <QMessageBox>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     LoginWidget::LoginWidget(QWidget* parent,

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,19 +32,25 @@ namespace Ui
     class TrackInfoDialog;
 }
 
-namespace PMP
+namespace PMP::Client
 {
     class ClientServerInterface;
+}
+
+namespace PMP
+{
     class FileHash;
 
     class TrackInfoDialog : public QDialog
     {
         Q_OBJECT
     public:
-        TrackInfoDialog(QWidget* parent, ClientServerInterface* clientServerInterface,
+        TrackInfoDialog(QWidget* parent,
+                        Client::ClientServerInterface* clientServerInterface,
                         FileHash const& hash, quint32 queueId = 0);
 
-        TrackInfoDialog(QWidget* parent, ClientServerInterface* clientServerInterface,
+        TrackInfoDialog(QWidget* parent,
+                        Client::ClientServerInterface* clientServerInterface,
                         CollectionTrackInfo const& track);
 
         ~TrackInfoDialog();
@@ -68,7 +74,7 @@ namespace PMP
         void clearUserData();
 
         Ui::TrackInfoDialog* _ui;
-        ClientServerInterface* _clientServerInterface;
+        Client::ClientServerInterface* _clientServerInterface;
         QTimer* _lastHeardUpdateTimer;
         FileHash _trackHash;
         QDateTime _lastHeard;

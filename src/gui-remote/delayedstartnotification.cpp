@@ -26,6 +26,8 @@
 
 #include <QTimer>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     DelayedStartNotification::DelayedStartNotification(QObject* parent,

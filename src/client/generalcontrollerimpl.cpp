@@ -24,7 +24,7 @@
 
 #include <QSharedPointer>
 
-namespace PMP
+namespace PMP::Client
 {
     GeneralControllerImpl::GeneralControllerImpl(ServerConnection* connection)
      : GeneralController(connection),

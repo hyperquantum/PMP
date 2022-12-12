@@ -22,7 +22,7 @@
 
 #include "playercontroller.h"
 
-namespace PMP
+namespace PMP::Client
 {
     class ServerConnection;
 

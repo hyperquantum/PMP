@@ -26,6 +26,8 @@
 
 #include <QMessageBox>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
     UserAccountCreationWidget::UserAccountCreationWidget(QWidget *parent,

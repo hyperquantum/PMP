@@ -29,7 +29,7 @@
 #include <QTimer>
 #include <QUdpSocket>
 
-namespace PMP
+namespace PMP::Client
 {
     ServerDiscoverer::ServerDiscoverer(QObject* parent)
      : QObject(parent),
