@@ -30,8 +30,8 @@
 
 namespace PMP::Client
 {
-    class ClientServerInterface;
     class QueueEntryInfoStorage;
+    class ServerInterface;
 }
 
 namespace PMP
@@ -40,8 +40,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        PlayerHistoryModel(QObject* parent,
-                           Client::ClientServerInterface* clientServerInterface);
+        PlayerHistoryModel(QObject* parent, Client::ServerInterface* serverInterface);
 
         FileHash trackHashAt(int rowIndex) const;
 

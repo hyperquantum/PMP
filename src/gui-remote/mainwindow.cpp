@@ -24,10 +24,10 @@
 #include "common/util.h"
 #include "common/version.h"
 
-#include "client/clientserverinterface.h"
 #include "client/generalcontroller.h"
 #include "client/playercontroller.h"
 #include "client/serverconnection.h"
+#include "client/serverinterface.h"
 
 #include "collectionwidget.h"
 #include "connectionwidget.h"
@@ -66,7 +66,7 @@ namespace PMP
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
        _connection(nullptr),
-       _clientServerInterface(nullptr),
+       _serverInterface(nullptr),
        _userPickerWidget(nullptr),
        _loginWidget(nullptr),
        _mainWidget(nullptr),
@@ -153,7 +153,7 @@ namespace PMP
             this,
             [this]()
             {
-                auto* dialog = new DelayedStartDialog(this, _clientServerInterface);
+                auto* dialog = new DelayedStartDialog(this, _serverInterface);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
                 dialog->open();
             }
@@ -262,7 +262,7 @@ namespace PMP
         //qDebug() << "got key:" << event->key();
 
         /* we need an active connection for the actions of the multimedia buttons */
-        if (!_clientServerInterface || !_clientServerInterface->connected())
+        if (!_serverInterface || !_serverInterface->connected())
             return false;
 
         switch (event->key())
@@ -270,7 +270,7 @@ namespace PMP
             case Qt::Key_MediaNext:
             {
                 qDebug() << "got Next button";
-                auto& controller = _clientServerInterface->playerController();
+                auto& controller = _serverInterface->playerController();
 
                 if (controller.canSkip())
                     controller.skip();
@@ -279,7 +279,7 @@ namespace PMP
             case Qt::Key_MediaPause:
             {
                 qDebug() << "got Pause button";
-                auto& controller = _clientServerInterface->playerController();
+                auto& controller = _serverInterface->playerController();
 
                 if (controller.canPause())
                     controller.pause();
@@ -288,7 +288,7 @@ namespace PMP
             case Qt::Key_MediaPlay:
             {
                 qDebug() << "got Play button";
-                auto& controller = _clientServerInterface->playerController();
+                auto& controller = _serverInterface->playerController();
 
                 if (controller.canPlay())
                     controller.play();
@@ -299,7 +299,7 @@ namespace PMP
             case Qt::Key_MediaTogglePlayPause:
             {
                 qDebug() << "got Play/Pause button";
-                auto& controller = _clientServerInterface->playerController();
+                auto& controller = _serverInterface->playerController();
 
                 if (controller.canPlay())
                     controller.play();
@@ -314,11 +314,11 @@ namespace PMP
 
     void MainWindow::updateRightStatus()
     {
-        if (!_clientServerInterface || !_clientServerInterface->connected())
+        if (!_serverInterface || !_serverInterface->connected())
         {
             _rightStatus->setText(tr("Not connected."));
         }
-        else if (!_clientServerInterface->isLoggedIn())
+        else if (!_serverInterface->isLoggedIn())
         {
             _rightStatus->setText(tr("Connected."));
         }
@@ -329,8 +329,7 @@ namespace PMP
         else
         {
             _rightStatus->setText(
-                QString(tr("Logged in as %1."))
-                        .arg(_clientServerInterface->userLoggedInName())
+                QString(tr("Logged in as %1.")).arg(_serverInterface->userLoggedInName())
             );
         }
     }
@@ -389,7 +388,7 @@ namespace PMP
 
     void MainWindow::onReloadServerSettingsTriggered()
     {
-        auto future =  _clientServerInterface->generalController().reloadServerSettings();
+        auto future =  _serverInterface->generalController().reloadServerSettings();
 
         future.addResultListener(
             this,
@@ -447,13 +446,12 @@ namespace PMP
 
         if (buttonClicked == QMessageBox::Cancel) return;
 
-        _clientServerInterface->generalController().shutdownServer();
+        _serverInterface->generalController().shutdownServer();
     }
 
     void MainWindow::updatePowerManagement()
     {
-        auto playerState =
-                _clientServerInterface->playerController().playerState();
+        auto playerState = _serverInterface->playerController().playerState();
         bool isPlaying = playerState == PlayerState::Playing;
 
         bool keepDisplayActiveOption = _keepDisplayActiveAction->isChecked();
@@ -507,12 +505,12 @@ namespace PMP
     void MainWindow::onDoConnect(QString server, uint port)
     {
         _connection = new ServerConnection(this);
-        _clientServerInterface = new ClientServerInterface(_connection);
+        _serverInterface = new ServerInterface(_connection);
 
-        auto* generalController = &_clientServerInterface->generalController();
+        auto* generalController = &_serverInterface->generalController();
 
         connect(
-            _clientServerInterface, &ClientServerInterface::connectedChanged,
+            _serverInterface, &ServerInterface::connectedChanged,
             this, &MainWindow::onConnectedChanged
         );
 
@@ -534,7 +532,7 @@ namespace PMP
             [this](bool running)
             {
                 _startFullIndexationAction->setEnabled(
-                    !running && _clientServerInterface->isLoggedIn()
+                    !running && _serverInterface->isLoggedIn()
                 );
                 updateRightStatus();
             }
@@ -557,7 +555,7 @@ namespace PMP
             }
         );
         connect(
-            &_clientServerInterface->playerController(),
+            &_serverInterface->playerController(),
             &PlayerController::playerStateChanged,
             this, &MainWindow::updatePowerManagement
         );
@@ -569,7 +567,7 @@ namespace PMP
     {
         updateRightStatus();
 
-        if (_clientServerInterface && _clientServerInterface->connected())
+        if (_serverInterface && _serverInterface->connected())
         {
             showUserAccountPicker();
         }
@@ -585,8 +583,8 @@ namespace PMP
     void MainWindow::showUserAccountPicker()
     {
         _userPickerWidget =
-                new UserPickerWidget(this, &_clientServerInterface->generalController(),
-                                     &_clientServerInterface->authenticationController());
+                new UserPickerWidget(this, &_serverInterface->generalController(),
+                                     &_serverInterface->authenticationController());
 
         connect(
             _userPickerWidget, &UserPickerWidget::accountClicked,
@@ -625,7 +623,7 @@ namespace PMP
 
     void MainWindow::onServerHealthChanged()
     {
-        auto serverHealth = _clientServerInterface->generalController().serverHealth();
+        auto serverHealth = _serverInterface->generalController().serverHealth();
 
         if (!serverHealth.anyProblems())
             return;
@@ -652,14 +650,14 @@ namespace PMP
 
         auto* delayedStartNotification =
             new DelayedStartNotification(this,
-                                         &_clientServerInterface->playerController(),
-                                         &_clientServerInterface->generalController());
+                                         &_serverInterface->playerController(),
+                                         &_serverInterface->generalController());
 
         _notificationBar = new NotificationBar(mainCentralWidget);
         _notificationBar->addNotification(delayedStartNotification);
 
         _mainWidget = new MainWidget(mainCentralWidget);
-        _mainWidget->setConnection(_clientServerInterface);
+        _mainWidget->setConnection(_serverInterface);
 
         auto centralVerticalLayout = new QVBoxLayout(mainCentralWidget);
         centralVerticalLayout->setContentsMargins(0, 0, 0, 0);
@@ -669,7 +667,7 @@ namespace PMP
         setCentralWidget(mainCentralWidget);
 
         auto collectionWidget =
-                new CollectionWidget(_musicCollectionDock, _clientServerInterface);
+                new CollectionWidget(_musicCollectionDock, _serverInterface);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 
@@ -689,8 +687,7 @@ namespace PMP
 
     void MainWindow::onCreateAccountClicked()
     {
-        auto* authenticationController =
-                &_clientServerInterface->authenticationController();
+        auto* authenticationController = &_serverInterface->authenticationController();
 
         _userAccountCreationWidget =
             new UserAccountCreationWidget(this, authenticationController);
@@ -727,7 +724,7 @@ namespace PMP
     {
         _loginWidget =
                 new LoginWidget(this,
-                                &_clientServerInterface->authenticationController(),
+                                &_serverInterface->authenticationController(),
                                 login);
 
         connect(

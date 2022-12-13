@@ -24,7 +24,7 @@
 
 namespace PMP::Client
 {
-    class ClientServerInterface;
+    class ServerInterface;
 }
 
 namespace PMP
@@ -38,7 +38,7 @@ namespace PMP
         virtual bool requiresAuthentication() const = 0;
         virtual bool willCauseDisconnect() const = 0;
 
-        virtual void execute(Client::ClientServerInterface* clientServerInterface) = 0;
+        virtual void execute(Client::ServerInterface* serverInterface) = 0;
 
     Q_SIGNALS:
         void executionSuccessful(QString output = "");

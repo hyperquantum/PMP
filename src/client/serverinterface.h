@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CLIENTSERVERINTERFACE_H
-#define PMP_CLIENTSERVERINTERFACE_H
+#ifndef PMP_CLIENT_SERVERINTERFACE_H
+#define PMP_CLIENT_SERVERINTERFACE_H
 
 #include <QObject>
 
@@ -38,11 +38,11 @@ namespace PMP::Client
     class QueueEntryInfoStorage;
     class UserDataFetcher;
 
-    class ClientServerInterface : public QObject
+    class ServerInterface : public QObject
     {
         Q_OBJECT
     public:
-        explicit ClientServerInterface(ServerConnection* connection);
+        explicit ServerInterface(ServerConnection* connection);
 
         AuthenticationController& authenticationController();
 

@@ -33,7 +33,7 @@ namespace Ui
 
 namespace PMP::Client
 {
-    class ClientServerInterface;
+    class ServerInterface;
 }
 
 namespace PMP
@@ -44,8 +44,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        DelayedStartDialog(QWidget* parent,
-                           Client::ClientServerInterface* clientServerInterface);
+        DelayedStartDialog(QWidget* parent, Client::ServerInterface* serverInterface);
         ~DelayedStartDialog();
 
     public Q_SLOTS:
@@ -57,7 +56,7 @@ namespace PMP
 
     private:
         Ui::DelayedStartDialog* _ui;
-        Client::ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         PlayDurationCalculator* _playDurationCalculator;
     };
 
@@ -65,8 +64,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        PlayDurationCalculator(QObject* parent,
-                               Client::ClientServerInterface* clientServerInterface);
+        PlayDurationCalculator(QObject* parent, Client::ServerInterface* serverInterface);
 
         bool calculationFinished() const { return !_calculating; }
         Nullable<qint64> duration() const { return _duration; }
@@ -81,7 +79,7 @@ namespace PMP
     private:
         static void calculate(PlayDurationCalculator* calculator);
 
-        Client::ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         TriBool _dynamicModeEnabled;
         Nullable<int> _breakIndex;
         Nullable<qint64> _duration;

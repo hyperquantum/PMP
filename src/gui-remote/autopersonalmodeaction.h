@@ -25,7 +25,7 @@
 
 namespace PMP::Client
 {
-    class ClientServerInterface;
+    class ServerInterface;
 }
 
 namespace PMP
@@ -34,12 +34,12 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        AutoPersonalModeAction(Client::ClientServerInterface* clientServerInterface);
+        AutoPersonalModeAction(Client::ServerInterface* serverInterface);
 
     private:
         void check();
 
-        Client::ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         bool _needToCheck;
     };
 }

@@ -32,7 +32,7 @@ namespace Ui
 
 namespace PMP::Client
 {
-    class ClientServerInterface;
+    class ServerInterface;
 }
 
 namespace PMP
@@ -50,8 +50,7 @@ namespace PMP
         Q_OBJECT
 
     public:
-        CollectionWidget(QWidget* parent,
-                         Client::ClientServerInterface* clientServerInterface);
+        CollectionWidget(QWidget* parent, Client::ServerInterface* serverInterface);
         ~CollectionWidget();
 
     private Q_SLOTS:
@@ -74,7 +73,7 @@ namespace PMP
         Ui::CollectionWidget* _ui;
         WaitingSpinnerWidget* _spinner { nullptr };
         ColorSwitcher* _colorSwitcher;
-        Client::ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         CollectionViewContext* _collectionViewContext;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;

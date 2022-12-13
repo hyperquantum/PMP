@@ -19,20 +19,19 @@
 
 #include "autopersonalmodeaction.h"
 
-#include "client/clientserverinterface.h"
 #include "client/playercontroller.h"
+#include "client/serverinterface.h"
 
 using namespace PMP::Client;
 
 namespace PMP
 {
-    AutoPersonalModeAction::AutoPersonalModeAction(
-            ClientServerInterface* clientServerInterface)
-     : QObject(clientServerInterface),
-       _clientServerInterface(clientServerInterface),
+    AutoPersonalModeAction::AutoPersonalModeAction(ServerInterface* serverInterface)
+     : QObject(serverInterface),
+       _serverInterface(serverInterface),
        _needToCheck(true)
     {
-        auto playerController = &_clientServerInterface->playerController();
+        auto playerController = &_serverInterface->playerController();
 
         connect(
             playerController, &PlayerController::playerStateChanged,
@@ -51,7 +50,7 @@ namespace PMP
         if (!_needToCheck)
             return;
 
-        auto& playerController = _clientServerInterface->playerController();
+        auto& playerController = _serverInterface->playerController();
         auto playerState = playerController.playerState();
         auto playerMode = playerController.playerMode();
 

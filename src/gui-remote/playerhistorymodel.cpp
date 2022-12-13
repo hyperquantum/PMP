@@ -21,10 +21,10 @@
 
 #include "common/util.h"
 
-#include "client/clientserverinterface.h"
 #include "client/generalcontroller.h"
 #include "client/historycontroller.h"
 #include "client/queueentryinfostorage.h"
+#include "client/serverinterface.h"
 
 #include "colors.h"
 
@@ -39,18 +39,18 @@ using namespace PMP::Client;
 namespace PMP
 {
     PlayerHistoryModel::PlayerHistoryModel(QObject* parent,
-                                           ClientServerInterface* clientServerInterface)
+                                           ServerInterface* serverInterface)
      : QAbstractTableModel(parent),
        _historySizeGoal(20),
-       _infoStorage(&clientServerInterface->queueEntryInfoStorage())
+       _infoStorage(&serverInterface->queueEntryInfoStorage())
     {
         connect(
             _infoStorage, &QueueEntryInfoStorage::tracksChanged,
             this, &PlayerHistoryModel::onTracksChanged
         );
 
-        auto* generalController = &clientServerInterface->generalController();
-        auto* historyController = &clientServerInterface->historyController();
+        auto* generalController = &serverInterface->generalController();
+        auto* historyController = &serverInterface->historyController();
 
         _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
         connect(
@@ -73,11 +73,11 @@ namespace PMP
         );
 
         connect(
-            clientServerInterface, &ClientServerInterface::connectedChanged,
+            serverInterface, &ServerInterface::connectedChanged,
             this,
-            [this, clientServerInterface, historyController]()
+            [this, serverInterface, historyController]()
             {
-                if (clientServerInterface->connected())
+                if (serverInterface->connected())
                 {
                     historyController->sendPlayerHistoryRequest(_historySizeGoal);
                 }
@@ -90,7 +90,7 @@ namespace PMP
             }
         );
 
-        if (clientServerInterface->connected())
+        if (serverInterface->connected())
             historyController->sendPlayerHistoryRequest(_historySizeGoal);
     }
 

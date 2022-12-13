@@ -49,8 +49,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         void printVersion(VersionInfo const& versionInfo);
@@ -65,8 +65,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         RequestID _requestId;
@@ -81,8 +81,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         QDateTime _startTime;
@@ -98,8 +98,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         qint64 _delayMilliseconds;
@@ -113,8 +113,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         RequestID _requestId;
@@ -129,8 +129,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
     };
 
     class PauseCommand : public CommandBase
@@ -142,8 +142,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
     };
 
     class SkipCommand : public CommandBase
@@ -155,8 +155,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         quint32 _currentQueueId;
@@ -171,8 +171,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
     };
 
     class QueueCommand : public CommandBase
@@ -184,8 +184,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         void printQueue(Client::AbstractQueueMonitor* queueMonitor,
@@ -205,8 +205,8 @@ namespace PMP
         bool willCauseDisconnect() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         //QString _serverPassword;
@@ -221,8 +221,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
     };
 
     class SetVolumeCommand : public CommandBase
@@ -234,8 +234,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         int _volume;
@@ -250,8 +250,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
     };
 
     class QueueInsertSpecialItemCommand : public CommandBase
@@ -264,8 +264,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         SpecialQueueItemType _itemType;
@@ -283,8 +283,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         quint32 _queueId;
@@ -300,8 +300,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         quint32 _queueId;
@@ -318,8 +318,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ClientServerInterface* clientServerInterface) override;
-        void start(Client::ClientServerInterface* clientServerInterface) override;
+        void setUp(Client::ServerInterface* serverInterface) override;
+        void start(Client::ServerInterface* serverInterface) override;
 
     private:
         FileHash _hash;

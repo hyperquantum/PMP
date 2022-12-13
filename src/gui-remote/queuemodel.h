@@ -32,9 +32,9 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP::Client
 {
-    class ClientServerInterface;
     class QueueEntryInfo;
     class QueueEntryInfoStorage;
+    class ServerInterface;
     class UserDataFetcher;
 }
 
@@ -102,7 +102,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        QueueModel(QObject* parent, Client::ClientServerInterface* clientServerInterface,
+        QueueModel(QObject* parent, Client::ServerInterface* serverInterface,
                    QueueMediator* source,
                    Client::QueueEntryInfoStorage* trackInfoStorage);
 

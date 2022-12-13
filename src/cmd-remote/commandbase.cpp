@@ -32,11 +32,11 @@ namespace PMP
         return false;
     }
 
-    void CommandBase::execute(ClientServerInterface* clientServerInterface)
+    void CommandBase::execute(ServerInterface* serverInterface)
     {
-        setUp(clientServerInterface);
+        setUp(serverInterface);
 
-        start(clientServerInterface);
+        start(serverInterface);
         qDebug() << "CommandBase: called start()";
 
         // initial quick check

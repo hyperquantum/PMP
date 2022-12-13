@@ -33,8 +33,8 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP::Client
 {
-    class ClientServerInterface;
     class ServerConnection;
+    class ServerInterface;
 }
 
 namespace PMP
@@ -105,7 +105,7 @@ namespace PMP
 
         ConnectionWidget* _connectionWidget;
         Client::ServerConnection* _connection;
-        Client::ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         UserPickerWidget* _userPickerWidget;
         UserAccountCreationWidget* _userAccountCreationWidget;
         LoginWidget* _loginWidget;

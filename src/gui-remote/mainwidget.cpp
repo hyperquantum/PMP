@@ -23,11 +23,11 @@
 #include "common/unicodechars.h"
 #include "common/util.h"
 
-#include "client/clientserverinterface.h"
 #include "client/currenttrackmonitor.h"
 #include "client/dynamicmodecontroller.h"
 #include "client/playercontroller.h"
 #include "client/queuecontroller.h"
+#include "client/serverinterface.h"
 
 #include "autopersonalmodeaction.h"
 #include "clickablelabel.h"
@@ -54,7 +54,7 @@ namespace PMP
     MainWidget::MainWidget(QWidget* parent)
      : QWidget(parent),
         _ui(new Ui::MainWidget),
-        _clientServerInterface(nullptr),
+        _serverInterface(nullptr),
         _trackProgressMonitor(nullptr),
         _queueMediator(nullptr),
         _queueModel(nullptr), _queueContextMenu(nullptr),
@@ -100,24 +100,24 @@ namespace PMP
         delete _ui;
     }
 
-    void MainWidget::setConnection(ClientServerInterface* clientServerInterface)
+    void MainWidget::setConnection(ServerInterface* serverInterface)
     {
-        _clientServerInterface = clientServerInterface;
-        new AutoPersonalModeAction(clientServerInterface);
-        _queueMediator = new QueueMediator(clientServerInterface,
-                                           &clientServerInterface->queueMonitor(),
-                                           clientServerInterface);
-        auto* queueEntryInfoStorage = &clientServerInterface->queueEntryInfoStorage();
+        _serverInterface = serverInterface;
+        new AutoPersonalModeAction(serverInterface);
+        _queueMediator = new QueueMediator(serverInterface,
+                                           &serverInterface->queueMonitor(),
+                                           serverInterface);
+        auto* queueEntryInfoStorage = &serverInterface->queueEntryInfoStorage();
         _queueModel =
             new QueueModel(
-                clientServerInterface, clientServerInterface, _queueMediator,
+                serverInterface, serverInterface, _queueMediator,
                 queueEntryInfoStorage
             );
-        _historyModel = new PlayerHistoryModel(this, _clientServerInterface);
+        _historyModel = new PlayerHistoryModel(this, _serverInterface);
 
         _ui->trackInfoButton->setEnabled(false);
         _ui->userPlayingForLabel->setText("");
-        _ui->toPersonalModeButton->setText(_clientServerInterface->userLoggedInName());
+        _ui->toPersonalModeButton->setText(_serverInterface->userLoggedInName());
         _ui->toPublicModeButton->setEnabled(false);
         _ui->toPersonalModeButton->setEnabled(false);
         _ui->playButton->setEnabled(false);
@@ -136,11 +136,11 @@ namespace PMP
         _ui->historyTableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _ui->historyTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
-        auto* playerController = &clientServerInterface->playerController();
-        auto* currentTrackMonitor = &clientServerInterface->currentTrackMonitor();
+        auto* playerController = &serverInterface->playerController();
+        auto* currentTrackMonitor = &serverInterface->currentTrackMonitor();
         _trackProgressMonitor = new PreciseTrackProgressMonitor(currentTrackMonitor);
-        auto* queueController = &clientServerInterface->queueController();
-        auto* dynamicModeController = &clientServerInterface->dynamicModeController();
+        auto* queueController = &serverInterface->queueController();
+        auto* dynamicModeController = &serverInterface->dynamicModeController();
 
         connect(
             _historyModel, &PlayerHistoryModel::rowsInserted,
@@ -304,7 +304,7 @@ namespace PMP
 
     void MainWidget::playerModeChanged()
     {
-        auto& playerController = _clientServerInterface->playerController();
+        auto& playerController = _serverInterface->playerController();
 
         auto mode = playerController.playerMode();
         auto userId = playerController.personalModeUserId();
@@ -326,7 +326,7 @@ namespace PMP
                 );
 
                 _ui->toPersonalModeButton->setEnabled(
-                            userId != _clientServerInterface->userLoggedInId());
+                                            userId != _serverInterface->userLoggedInId());
 
                 _ui->toPublicModeButton->setEnabled(true);
                 break;
@@ -356,8 +356,7 @@ namespace PMP
 
                     if (queueID > 0)
                     {
-                        _clientServerInterface->queueController().deleteQueueEntry(
-                                                                                 queueID);
+                        _serverInterface->queueController().deleteQueueEntry(queueID);
                         return true;
                     }
                 }
@@ -398,7 +397,7 @@ namespace PMP
             [this, hash]()
             {
                 qDebug() << "history context menu: enqueue (front) triggered";
-                _clientServerInterface->queueController().insertQueueEntryAtFront(hash);
+                _serverInterface->queueController().insertQueueEntryAtFront(hash);
             }
         );
 
@@ -409,7 +408,7 @@ namespace PMP
             [this, hash]()
             {
                 qDebug() << "history context menu: enqueue (end) triggered";
-                _clientServerInterface->queueController().insertQueueEntryAtEnd(hash);
+                _serverInterface->queueController().insertQueueEntryAtEnd(hash);
             }
         );
 
@@ -439,7 +438,7 @@ namespace PMP
             return;
         }
 
-        auto* queueController = &_clientServerInterface->queueController();
+        auto* queueController = &_serverInterface->queueController();
 
         int row = index.row();
         auto track = _queueModel->trackAt(index);
@@ -623,7 +622,7 @@ namespace PMP
 
     void MainWidget::dynamicModeEnabledChanged()
     {
-        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
+        auto& dynamicModeController = _serverInterface->dynamicModeController();
 
         auto enabled = dynamicModeController.dynamicModeEnabled();
         _ui->dynamicModeCheckBox->setEnabled(enabled.isKnown());
@@ -632,7 +631,7 @@ namespace PMP
 
     void MainWidget::playerStateChanged()
     {
-        auto& playerController = _clientServerInterface->playerController();
+        auto& playerController = _serverInterface->playerController();
 
         enableDisablePlayerControlButtons();
 
@@ -660,7 +659,7 @@ namespace PMP
 
     void MainWidget::queueLengthChanged()
     {
-        auto& playerController = _clientServerInterface->playerController();
+        auto& playerController = _serverInterface->playerController();
 
         /* the "play" and "skip" buttons depend on the presence of a next track */
         enableDisablePlayerControlButtons();
@@ -676,7 +675,7 @@ namespace PMP
 
     void MainWidget::currentTrackInfoChanged()
     {
-        auto& currentTrackMonitor = _clientServerInterface->currentTrackMonitor();
+        auto& currentTrackMonitor = _serverInterface->currentTrackMonitor();
 
         if (currentTrackMonitor.isTrackPresent().isUnknown())
         {
@@ -781,7 +780,7 @@ namespace PMP
 
     void MainWidget::trackInfoButtonClicked()
     {
-        auto& currentTrackMonitor = _clientServerInterface->currentTrackMonitor();
+        auto& currentTrackMonitor = _serverInterface->currentTrackMonitor();
 
         auto hash = currentTrackMonitor.currentTrackHash();
         if (hash.isNull()) return;
@@ -791,7 +790,7 @@ namespace PMP
 
     void MainWidget::dynamicModeParametersButtonClicked()
     {
-        auto* dynamicModeController = &_clientServerInterface->dynamicModeController();
+        auto* dynamicModeController = &_serverInterface->dynamicModeController();
 
         auto dialog = new DynamicModeParametersDialog(this, dynamicModeController);
         connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
@@ -800,7 +799,7 @@ namespace PMP
 
     void MainWidget::volumeChanged()
     {
-        auto volume = _clientServerInterface->playerController().volume();
+        auto volume = _serverInterface->playerController().volume();
         _ui->volumeValueLabel->setText(QString::number(volume));
 
         _ui->volumeDecreaseButton->setEnabled(volume > 0);
@@ -809,31 +808,31 @@ namespace PMP
 
     void MainWidget::decreaseVolume()
     {
-        auto volume = _clientServerInterface->playerController().volume();
+        auto volume = _serverInterface->playerController().volume();
 
         if (volume > 0)
         {
             auto newVolume = volume > 5 ? volume - 5 : 0;
 
-            _clientServerInterface->playerController().setVolume(newVolume);
+            _serverInterface->playerController().setVolume(newVolume);
         }
     }
 
     void MainWidget::increaseVolume()
     {
-        auto volume = _clientServerInterface->playerController().volume();
+        auto volume = _serverInterface->playerController().volume();
 
         if (volume >= 0)
         {
             auto newVolume = volume < 95 ? volume + 5 : 100;
 
-            _clientServerInterface->playerController().setVolume(newVolume);
+            _serverInterface->playerController().setVolume(newVolume);
         }
     }
 
     void MainWidget::changeDynamicMode(int checkState)
     {
-        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
+        auto& dynamicModeController = _serverInterface->dynamicModeController();
 
         if (checkState == Qt::Checked)
         {
@@ -854,14 +853,14 @@ namespace PMP
     void MainWidget::enableDisableTrackInfoButton()
     {
         bool haveTrackHash =
-               !_clientServerInterface->currentTrackMonitor().currentTrackHash().isNull();
+               !_serverInterface->currentTrackMonitor().currentTrackHash().isNull();
 
         _ui->trackInfoButton->setEnabled(haveTrackHash);
     }
 
     void MainWidget::enableDisablePlayerControlButtons()
     {
-        auto& playerController = _clientServerInterface->playerController();
+        auto& playerController = _serverInterface->playerController();
 
         _ui->playButton->setEnabled(playerController.canPlay());
         _ui->pauseButton->setEnabled(playerController.canPause());
@@ -870,7 +869,7 @@ namespace PMP
 
     void MainWidget::updateTrackTimeDisplay()
     {
-        auto* currentTrackMonitor = &_clientServerInterface->currentTrackMonitor();
+        auto* currentTrackMonitor = &_serverInterface->currentTrackMonitor();
 
         auto position = currentTrackMonitor->currentTrackProgressMilliseconds();
         auto trackLength = currentTrackMonitor->currentTrackLengthMilliseconds();
@@ -910,7 +909,7 @@ namespace PMP
 
     void MainWidget::showTrackInfoDialog(FileHash hash, quint32 queueId)
     {
-        auto dialog = new TrackInfoDialog(this, _clientServerInterface, hash, queueId);
+        auto dialog = new TrackInfoDialog(this, _serverInterface, hash, queueId);
         connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
         dialog->open();
     }

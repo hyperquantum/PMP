@@ -21,7 +21,6 @@
 #define PMP_COLLECTIONTABLEMODEL_H
 
 #include "common/collectiontrackinfo.h"
-#include "common/playermode.h"
 #include "common/playerstate.h"
 #include "common/tribool.h"
 
@@ -36,7 +35,7 @@
 
 namespace PMP::Client
 {
-    class ClientServerInterface;
+    class ServerInterface;
     class UserDataFetcher;
 }
 
@@ -106,8 +105,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        CollectionViewContext(QObject* parent,
-                              Client::ClientServerInterface* clientServerInterface);
+        CollectionViewContext(QObject* parent, Client::ServerInterface* serverInterface);
 
         quint32 userId() const { return _userId; }
 
@@ -123,7 +121,7 @@ namespace PMP
         Q_OBJECT
     public:
         SortedCollectionTableModel(QObject* parent,
-                                   Client::ClientServerInterface* clientServerInterface,
+                                   Client::ServerInterface* serverInterface,
                                    CollectionViewContext* collectionViewContext);
 
         void setHighlightCriterium(TrackCriterium criterium);
@@ -220,7 +218,7 @@ namespace PMP
     public:
         FilteredCollectionTableModel(QObject* parent,
                                      SortedCollectionTableModel* source,
-                                     Client::ClientServerInterface* clientServerInterface,
+                                     Client::ServerInterface* serverInterface,
                                      CollectionViewContext* collectionViewContext);
 
         void setTrackFilter(TrackCriterium criterium);

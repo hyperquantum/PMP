@@ -37,7 +37,6 @@ set(PMP_COMMON_HEADERS
 
 set(PMP_CLIENT_SOURCES
     client/authenticationcontrollerimpl.cpp
-    client/clientserverinterface.cpp
     client/collectionwatcherimpl.cpp
     client/currenttrackmonitorimpl.cpp
     client/dynamicmodecontrollerimpl.cpp
@@ -52,13 +51,13 @@ set(PMP_CLIENT_SOURCES
     client/servercapabilitiesimpl.cpp
     client/serverconnection.cpp
     client/serverdiscoverer.cpp
+    client/serverinterface.cpp
     client/userdatafetcher.cpp
 )
 set(PMP_CLIENT_HEADERS
     client/abstractqueuemonitor.h
     client/authenticationcontroller.h
     client/authenticationcontrollerimpl.h
-    client/clientserverinterface.h
     client/collectionfetcher.h
     client/collectionwatcher.h
     client/collectionwatcherimpl.h
@@ -80,6 +79,7 @@ set(PMP_CLIENT_HEADERS
     client/queuemonitor.h
     client/serverconnection.h
     client/serverdiscoverer.h
+    client/serverinterface.h
     client/userdatafetcher.h
 )
 

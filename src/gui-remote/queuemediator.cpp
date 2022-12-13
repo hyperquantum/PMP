@@ -19,8 +19,8 @@
 
 #include "queuemediator.h"
 
-#include "client/clientserverinterface.h"
 #include "client/queuecontroller.h"
+#include "client/serverinterface.h"
 
 #include <QtDebug>
 
@@ -362,10 +362,10 @@ namespace PMP
     /* ========================== QueueMediator ========================== */
 
     QueueMediator::QueueMediator(QObject* parent, AbstractQueueMonitor* monitor,
-                                 ClientServerInterface* clientServerInterface)
+                                 ServerInterface* serverInterface)
      : AbstractQueueMonitor(parent),
        _sourceMonitor(monitor),
-       _clientServerInterface(clientServerInterface)
+       _serverInterface(serverInterface)
     {
         _myQueue = monitor->knownQueuePart();
         _queueLength = monitor->queueLength();
@@ -502,7 +502,7 @@ namespace PMP
 
     QueueController& QueueMediator::queueController() const
     {
-        return _clientServerInterface->queueController();
+        return _serverInterface->queueController();
     }
 
     bool QueueMediator::doLocalOperation(Operation* op)

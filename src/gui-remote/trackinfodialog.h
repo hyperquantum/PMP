@@ -34,7 +34,7 @@ namespace Ui
 
 namespace PMP::Client
 {
-    class ClientServerInterface;
+    class ServerInterface;
 }
 
 namespace PMP
@@ -46,11 +46,11 @@ namespace PMP
         Q_OBJECT
     public:
         TrackInfoDialog(QWidget* parent,
-                        Client::ClientServerInterface* clientServerInterface,
+                        Client::ServerInterface* serverInterface,
                         FileHash const& hash, quint32 queueId = 0);
 
         TrackInfoDialog(QWidget* parent,
-                        Client::ClientServerInterface* clientServerInterface,
+                        Client::ServerInterface* serverInterface,
                         CollectionTrackInfo const& track);
 
         ~TrackInfoDialog();
@@ -74,7 +74,7 @@ namespace PMP
         void clearUserData();
 
         Ui::TrackInfoDialog* _ui;
-        Client::ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         QTimer* _lastHeardUpdateTimer;
         FileHash _trackHash;
         QDateTime _lastHeard;

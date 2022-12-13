@@ -22,10 +22,10 @@
 #include "common/unicodechars.h"
 #include "common/util.h"
 
-#include "client/clientserverinterface.h"
 #include "client/generalcontroller.h"
 #include "client/playercontroller.h"
 #include "client/queueentryinfostorage.h"
+#include "client/serverinterface.h"
 #include "client/userdatafetcher.h"
 
 #include "colors.h"
@@ -168,10 +168,10 @@ namespace PMP
         timer->deleteLater();
     }
 
-    QueueModel::QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
+    QueueModel::QueueModel(QObject* parent, ServerInterface* serverInterface,
                            QueueMediator* source, QueueEntryInfoStorage* trackInfoStorage)
      : QAbstractTableModel(parent),
-       _userDataFetcher(&clientServerInterface->userDataFetcher()),
+       _userDataFetcher(&serverInterface->userDataFetcher()),
        _source(source),
        _infoStorage(trackInfoStorage),
        _lastHeardRefresher(new RegularUiRefresher(this)),
@@ -181,10 +181,10 @@ namespace PMP
     {
         _modelRows = _source->queueLength();
 
-        (void)clientServerInterface->queueEntryInfoFetcher(); /* speed things up */
+        (void)serverInterface->queueEntryInfoFetcher(); /* speed things up */
 
-        auto generalController = &clientServerInterface->generalController();
-        auto playerController = &clientServerInterface->playerController();
+        auto generalController = &serverInterface->generalController();
+        auto playerController = &serverInterface->playerController();
 
         _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
         connect(

@@ -25,8 +25,8 @@
 namespace PMP::Client
 {
     class AbstractQueueMonitor;
-    class ClientServerInterface;
     class QueueController;
+    class ServerInterface;
 }
 
 namespace PMP
@@ -38,7 +38,7 @@ namespace PMP
         Q_OBJECT
     public:
         QueueMediator(QObject* parent, AbstractQueueMonitor* monitor,
-                      Client::ClientServerInterface* clientServerInterface);
+                      Client::ServerInterface* serverInterface);
 
         void setFetchLimit(int count) override;
 
@@ -78,7 +78,7 @@ namespace PMP
         bool handleServerOperation(Operation* op);
 
         AbstractQueueMonitor* _sourceMonitor;
-        Client::ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         int _queueLength;
         QList<quint32> _myQueue;
         QList<Operation*> _pendingOperations;

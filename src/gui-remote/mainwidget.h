@@ -34,9 +34,9 @@ namespace Ui
 
 namespace PMP::Client
 {
-    class ClientServerInterface;
     class QueueEntryInfoFetcher;
     class QueueMonitor;
+    class ServerInterface;
     class UserDataFetcher;
 }
 
@@ -54,7 +54,7 @@ namespace PMP
         explicit MainWidget(QWidget *parent = 0);
         ~MainWidget();
 
-        void setConnection(Client::ClientServerInterface* clientServerInterface);
+        void setConnection(Client::ServerInterface* serverInterface);
 
     protected:
         bool eventFilter(QObject*, QEvent*);
@@ -96,7 +96,7 @@ namespace PMP
         bool keyEventFilter(QKeyEvent* event);
 
         Ui::MainWidget* _ui;
-        Client::ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         PreciseTrackProgressMonitor* _trackProgressMonitor;
         QueueMediator* _queueMediator;
         QueueModel* _queueModel;

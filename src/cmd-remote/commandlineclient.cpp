@@ -19,8 +19,8 @@
 
 #include "commandlineclient.h"
 
-#include "client/clientserverinterface.h"
 #include "client/serverconnection.h"
+#include "client/serverinterface.h"
 
 #include "command.h"
 
@@ -42,14 +42,14 @@ namespace PMP
        _username(username),
        _password(password),
        _serverConnection(nullptr),
-       _clientServerInterface(nullptr),
+       _serverInterface(nullptr),
        _command(command),
        _expectingDisconnect(false)
     {
         // TODO : don't subscribe to _all_ events anymore
         _serverConnection =
                 new ServerConnection(this, ServerEventSubscription::AllEvents);
-        _clientServerInterface = new ClientServerInterface(_serverConnection);
+        _serverInterface = new ServerInterface(_serverConnection);
 
         connect(
             _serverConnection, &ServerConnection::connected,
@@ -151,7 +151,7 @@ namespace PMP
     {
         _expectingDisconnect = _command->willCauseDisconnect();
 
-        _command->execute(_clientServerInterface);
+        _command->execute(_serverInterface);
     }
 
     QString CommandlineClient::toString(UserLoginError error)
