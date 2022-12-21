@@ -30,9 +30,14 @@ namespace Ui
     class CollectionWidget;
 }
 
+namespace PMP::Client
+{
+    class ServerInterface;
+}
+
 namespace PMP
 {
-    class ClientServerInterface;
+
     class CollectionViewContext;
     class ColorSwitcher;
     class FilteredCollectionTableModel;
@@ -45,7 +50,7 @@ namespace PMP
         Q_OBJECT
 
     public:
-        CollectionWidget(QWidget* parent, ClientServerInterface* clientServerInterface);
+        CollectionWidget(QWidget* parent, Client::ServerInterface* serverInterface);
         ~CollectionWidget();
 
     private Q_SLOTS:
@@ -68,7 +73,7 @@ namespace PMP
         Ui::CollectionWidget* _ui;
         WaitingSpinnerWidget* _spinner { nullptr };
         ColorSwitcher* _colorSwitcher;
-        ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         CollectionViewContext* _collectionViewContext;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;

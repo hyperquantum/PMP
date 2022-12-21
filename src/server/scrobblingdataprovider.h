@@ -26,7 +26,7 @@
 
 #include <memory>
 
-namespace PMP
+namespace PMP::Server
 {
     class TrackToScrobble;
 

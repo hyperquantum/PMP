@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2019, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,6 +29,7 @@
 #include <memory>
 
 using namespace PMP;
+using namespace PMP::Server;
 
 // ================================= BackendMock ================================= //
 
@@ -163,7 +164,8 @@ DataProviderMock::DataProviderMock()
     //
 }
 
-void DataProviderMock::add(std::shared_ptr<PMP::TrackToScrobble> track) {
+void DataProviderMock::add(std::shared_ptr<TrackToScrobble> track)
+{
     _tracksToScrobble.enqueue(track);
 }
 

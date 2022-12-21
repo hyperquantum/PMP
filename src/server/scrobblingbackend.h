@@ -23,7 +23,7 @@
 #include <QObject>
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Server
 {
     enum class ScrobblingBackendState
     {
@@ -77,14 +77,14 @@ namespace PMP
         }
 
     Q_SIGNALS:
-        void stateChanged(PMP::ScrobblingBackendState newState,
-                          PMP::ScrobblingBackendState oldState);
+        void stateChanged(PMP::Server::ScrobblingBackendState newState,
+                          PMP::Server::ScrobblingBackendState oldState);
         void gotNowPlayingResult(bool success);
-        void gotScrobbleResult(PMP::ScrobbleResult result);
+        void gotScrobbleResult(PMP::Server::ScrobbleResult result);
         void serviceTemporarilyUnavailable();
 
-    protected slots:
-        void setState(PMP::ScrobblingBackendState newState);
+    protected Q_SLOTS:
+        void setState(PMP::Server::ScrobblingBackendState newState);
         void setDelayInMillisecondsBetweenSubsequentScrobbles(int timeMilliseconds);
         void setInitialBackoffMillisecondsForUnavailability(int timeMilliseconds);
         void setInitialBackoffMillisecondsForErrorReply(int timeMilliseconds);
@@ -100,7 +100,7 @@ namespace PMP
     };
 }
 
-Q_DECLARE_METATYPE(PMP::ScrobblingBackendState)
-Q_DECLARE_METATYPE(PMP::ScrobbleResult)
+Q_DECLARE_METATYPE(PMP::Server::ScrobblingBackendState)
+Q_DECLARE_METATYPE(PMP::Server::ScrobbleResult)
 
 #endif

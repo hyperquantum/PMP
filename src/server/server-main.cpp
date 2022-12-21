@@ -38,9 +38,9 @@
 #include "resolver.h"
 #include "scrobbling.h"
 #include "selftest.h"
-#include "server.h"
 #include "serverhealthmonitor.h"
 #include "serversettings.h"
+#include "tcpserver.h"
 #include "users.h"
 
 #include <QCoreApplication>
@@ -48,6 +48,7 @@
 #include <QThreadPool>
 
 using namespace PMP;
+using namespace PMP::Server;
 
 namespace
 {
@@ -63,7 +64,7 @@ namespace
     }
 
     void printStartupSummary(QTextStream& out, ServerSettings const& serverSettings,
-                             Server const& server, Player const& player)
+                             TcpServer const& server, Player const& player)
     {
         out << "Server instance identifier: " << server.uuid().toString() << "\n";
         out << "Server caption: " << server.caption() << "\n";
@@ -233,7 +234,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     }
 
     SelfTest::runSelfTest(serverHealthMonitor);
-    
+
     HashIdRegistrar hashIdRegistrar;
     HashRelations hashRelations;
     HistoryStatistics historyStatistics(nullptr, &hashRelations);
@@ -308,7 +309,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     /* unique server instance ID (not to be confused with the unique ID of the database)*/
     QUuid serverInstanceIdentifier = QUuid::createUuid();
 
-    Server server(nullptr, &serverSettings, serverInstanceIdentifier);
+    TcpServer server(nullptr, &serverSettings, serverInstanceIdentifier);
     bool listening =
         server.listen(&player, &generator, &history, &hashIdRegistrar, &users,
                       &collectionMonitor, &serverHealthMonitor, &scrobbling,
@@ -324,7 +325,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     qDebug() << "Started listening to TCP port:" << server.port();
 
     // exit when the server instance signals it
-    QObject::connect(&server, &Server::shuttingDown, &app, &QCoreApplication::quit);
+    QObject::connect(&server, &TcpServer::shuttingDown, &app, &QCoreApplication::quit);
 
     printStartupSummary(out, serverSettings, server, player);
 

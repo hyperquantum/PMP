@@ -37,6 +37,7 @@
 #include <QThread>
 
 using namespace PMP;
+using namespace PMP::Server;
 
 int main(int argc, char* argv[])
 {

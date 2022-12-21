@@ -38,7 +38,10 @@ QT_FORWARD_DECLARE_CLASS(QThreadPool)
 namespace PMP
 {
     class FileAnalyzer;
+}
 
+namespace PMP::Server
+{
     class FileHashes
     {
     public:
@@ -148,7 +151,7 @@ namespace PMP
 
     Q_SIGNALS:
         void fileAnalysisFailed(QString path);
-        void fileAnalysisCompleted(QString path, PMP::FileAnalysis analysis);
+        void fileAnalysisCompleted(QString path, PMP::Server::FileAnalysis analysis);
         void finished();
 
     private:
@@ -170,8 +173,8 @@ namespace PMP
     };
 }
 
-Q_DECLARE_METATYPE(PMP::FileHashes)
-Q_DECLARE_METATYPE(PMP::FileInfo)
-Q_DECLARE_METATYPE(PMP::FileAnalysis)
+Q_DECLARE_METATYPE(PMP::Server::FileHashes)
+Q_DECLARE_METATYPE(PMP::Server::FileInfo)
+Q_DECLARE_METATYPE(PMP::Server::FileAnalysis)
 
 #endif

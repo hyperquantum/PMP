@@ -30,7 +30,7 @@
 
 #include <functional>
 
-namespace PMP
+namespace PMP::Server
 {
     class PlayerQueue;
     class Resolver;

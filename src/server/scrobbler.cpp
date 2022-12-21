@@ -25,7 +25,7 @@
 #include <QDebug>
 #include <QTimer>
 
-namespace PMP
+namespace PMP::Server
 {
     Scrobbler::Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,
                          ScrobblingBackend* backend)

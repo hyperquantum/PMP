@@ -22,7 +22,7 @@
 
 #include <QDateTime>
 
-namespace PMP
+namespace PMP::Server
 {
     class TrackStats
     {

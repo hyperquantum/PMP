@@ -22,20 +22,21 @@
 #include <QtDebug>
 #include <QTimer>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
-
     bool CommandBase::willCauseDisconnect() const
     {
         // most commands won't
         return false;
     }
 
-    void CommandBase::execute(ClientServerInterface* clientServerInterface)
+    void CommandBase::execute(ServerInterface* serverInterface)
     {
-        setUp(clientServerInterface);
+        setUp(serverInterface);
 
-        start(clientServerInterface);
+        start(serverInterface);
         qDebug() << "CommandBase: called start()";
 
         // initial quick check

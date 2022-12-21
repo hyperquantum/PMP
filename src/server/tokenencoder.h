@@ -22,7 +22,7 @@
 
 #include <QString>
 
-namespace PMP
+namespace PMP::Server
 {
     class TokenEncoder
     {

@@ -28,7 +28,7 @@
 #include <QtDebug>
 #include <QTimer>
 
-namespace PMP
+namespace PMP::Server
 {
     ScrobblingHost::ScrobblerData::ScrobblerData()
      : enabled(false), status(ScrobblerStatus::Unknown), scrobbler(nullptr)

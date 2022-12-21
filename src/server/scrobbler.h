@@ -32,7 +32,7 @@
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP
+namespace PMP::Server
 {
     class ScrobblingDataProvider;
 
@@ -60,9 +60,9 @@ namespace PMP
         void timeoutTimerTimedOut();
         void backoffTimerTimedOut();
         void gotNowPlayingResult(bool success);
-        void gotScrobbleResult(PMP::ScrobbleResult result);
-        void backendStateChanged(PMP::ScrobblingBackendState newState,
-                                 PMP::ScrobblingBackendState oldState);
+        void gotScrobbleResult(PMP::Server::ScrobbleResult result);
+        void backendStateChanged(PMP::Server::ScrobblingBackendState newState,
+                                 PMP::Server::ScrobblingBackendState oldState);
         void serviceTemporarilyUnavailable();
         void reevaluateStatus();
 

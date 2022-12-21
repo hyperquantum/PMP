@@ -34,12 +34,16 @@
 
 namespace PMP
 {
+    enum class ScrobblingProvider;
+}
+
+namespace PMP::Server
+{
     class Database;
     class LastFmScrobblingDataRecord;
     class Resolver;
     class Scrobbler;
     enum class ScrobblingBackendState;
-    enum class ScrobblingProvider;
     class UserScrobblingDataRecord;
 
     class ScrobblingHost : public QObject
@@ -70,9 +74,10 @@ namespace PMP
                                               PMP::ScrobblingProvider provider,
                                               bool enabled);
         void gotAuthenticationResult(uint userId, PMP::ScrobblingProvider provider,
-                                     PMP::ClientRequestOrigin origin, bool success);
+                                     PMP::Server::ClientRequestOrigin origin,
+                                     bool success);
         void errorOccurredDuringAuthentication(uint userId,
-                                               PMP::ClientRequestOrigin origin);
+                                               PMP::Server::ClientRequestOrigin origin);
 
     private:
         struct ScrobblerData

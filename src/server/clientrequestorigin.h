@@ -23,7 +23,7 @@
 #include <QMetaType>
 #include <QtGlobal>
 
-namespace PMP
+namespace PMP::Server
 {
     class ClientRequestOrigin
     {
@@ -56,6 +56,6 @@ namespace PMP
     };
 }
 
-Q_DECLARE_METATYPE(PMP::ClientRequestOrigin)
+Q_DECLARE_METATYPE(PMP::Server::ClientRequestOrigin)
 
 #endif

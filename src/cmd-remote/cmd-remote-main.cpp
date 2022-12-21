@@ -21,8 +21,8 @@
 #include "common/version.h"
 #include "common/util.h"
 
-#include "client.h"
 #include "command.h"
+#include "commandlineclient.h"
 #include "commandparser.h"
 #include "console.h"
 
@@ -367,10 +367,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Client client(nullptr, &out, &err, server, portNumber,
-                  authentication.username, authentication.password, command);
+    CommandlineClient client(nullptr, &out, &err, server, portNumber,
+                             authentication.username, authentication.password, command);
     QObject::connect(
-        &client, &Client::exitClient,
+        &client, &CommandlineClient::exitClient,
         &app, &QCoreApplication::exit
     );
 

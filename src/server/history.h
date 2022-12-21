@@ -34,9 +34,8 @@
 
 QT_FORWARD_DECLARE_CLASS(QThreadPool)
 
-namespace PMP
+namespace PMP::Server
 {
-    class FileHash;
     class HashIdRegistrar;
     class HistoryStatistics;
     class Player;

@@ -24,7 +24,7 @@
 
 #include "trackstats.h"
 
-namespace PMP
+namespace PMP::Server
 {
     class HashStats
     {
@@ -46,6 +46,6 @@ namespace PMP
     };
 }
 
-Q_DECLARE_METATYPE(PMP::HashStats)
+Q_DECLARE_METATYPE(PMP::Server::HashStats)
 
 #endif

@@ -28,7 +28,7 @@
 #include <QObject>
 #include <QThread>
 
-namespace PMP
+namespace PMP::Server
 {
     class Resolver;
     class ScrobblingHost;

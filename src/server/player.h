@@ -29,7 +29,7 @@
 #include <QMediaPlayer>
 #include <QQueue>
 
-namespace PMP
+namespace PMP::Server
 {
     class Resolver;
 

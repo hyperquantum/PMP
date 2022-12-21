@@ -24,7 +24,7 @@
 #include <QDateTime>
 #include <QString>
 
-namespace PMP
+namespace PMP::Server
 {
     namespace DatabaseRecords
     {

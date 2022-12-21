@@ -19,7 +19,7 @@
 
 #include "scrobblingdataprovider.h"
 
-namespace PMP
+namespace PMP::Server
 {
     ScrobblingDataProvider::ScrobblingDataProvider()
     {

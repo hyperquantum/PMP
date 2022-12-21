@@ -32,7 +32,7 @@
 #include <QNetworkRequest>
 #include <QUrlQuery>
 
-namespace PMP
+namespace PMP::Server
 {
     LastFmRequestHandler::LastFmRequestHandler(LastFmScrobblingBackend* parent,
                                                QNetworkReply* pendingReply,

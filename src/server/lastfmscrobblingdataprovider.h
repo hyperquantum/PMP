@@ -24,7 +24,7 @@
 
 #include <QtGlobal>
 
-namespace PMP
+namespace PMP::Server
 {
     class Resolver;
 

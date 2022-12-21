@@ -23,7 +23,7 @@
 
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Server
 {
     GlobalScrobblingController::GlobalScrobblingController()
     {

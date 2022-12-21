@@ -24,7 +24,7 @@
 #include <QMetaType>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Server
 {
     /** Utility object to automatically do the qRegisterMetaType calls at program
      *  startup */
@@ -35,12 +35,12 @@ namespace PMP
         {
             qRegisterMetaType<QVector<uint>>();
 
-            qRegisterMetaType<PMP::ClientRequestOrigin>();
-            qRegisterMetaType<PMP::FileAnalysis>();
-            qRegisterMetaType<PMP::FileHashes>();
-            qRegisterMetaType<PMP::FileInfo>();
-            qRegisterMetaType<PMP::ScrobblingBackendState>();
-            qRegisterMetaType<PMP::ScrobbleResult>();
+            qRegisterMetaType<PMP::Server::ClientRequestOrigin>();
+            qRegisterMetaType<PMP::Server::FileAnalysis>();
+            qRegisterMetaType<PMP::Server::FileHashes>();
+            qRegisterMetaType<PMP::Server::FileInfo>();
+            qRegisterMetaType<PMP::Server::ScrobblingBackendState>();
+            qRegisterMetaType<PMP::Server::ScrobbleResult>();
         }
 
         static ServerMetatypesInit GlobalVariable;

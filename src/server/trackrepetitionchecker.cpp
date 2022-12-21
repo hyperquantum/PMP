@@ -23,7 +23,7 @@
 #include "playerqueue.h"
 #include "queueentry.h"
 
-namespace PMP
+namespace PMP::Server
 {
     TrackRepetitionChecker::TrackRepetitionChecker(QObject* parent, PlayerQueue* queue,
                                                    History* history)

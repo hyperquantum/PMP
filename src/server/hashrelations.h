@@ -29,7 +29,7 @@
 #include <QSet>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Server
 {
     class HashRelations
     {

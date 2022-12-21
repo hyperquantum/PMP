@@ -39,6 +39,10 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 namespace PMP
 {
     class FileHash;
+}
+
+namespace PMP::Server
+{
     class PlayerHistoryEntry;
     class QueueEntry;
     class Resolver;

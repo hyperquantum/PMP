@@ -19,7 +19,7 @@
 
 #include "clientrequestorigin.h"
 
-namespace PMP
+namespace PMP::Server
 {
     const ClientRequestOrigin ClientRequestOrigin::none;
 }

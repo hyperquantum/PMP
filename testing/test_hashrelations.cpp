@@ -23,7 +23,7 @@
 
 #include <QtTest/QTest>
 
-using namespace PMP;
+using namespace PMP::Server;
 
 void TestHashRelations::areEquivalent()
 {

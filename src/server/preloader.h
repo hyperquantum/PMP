@@ -30,7 +30,7 @@
 #include <QList>
 #include <QObject>
 
-namespace PMP
+namespace PMP::Server
 {
     class PlayerQueue;
     class Resolver;

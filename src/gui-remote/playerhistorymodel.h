@@ -28,16 +28,19 @@
 #include <QSharedPointer>
 #include <QVector>
 
+namespace PMP::Client
+{
+    class QueueEntryInfoStorage;
+    class ServerInterface;
+}
+
 namespace PMP
 {
-    class ClientServerInterface;
-    class QueueEntryInfoStorage;
-
     class PlayerHistoryModel : public QAbstractTableModel
     {
         Q_OBJECT
     public:
-        PlayerHistoryModel(QObject* parent, ClientServerInterface* clientServerInterface);
+        PlayerHistoryModel(QObject* parent, Client::ServerInterface* serverInterface);
 
         FileHash trackHashAt(int rowIndex) const;
 
@@ -60,7 +63,7 @@ namespace PMP
 
     private:
         int _historySizeGoal;
-        QueueEntryInfoStorage* _infoStorage;
+        Client::QueueEntryInfoStorage* _infoStorage;
         qint64 _clientClockTimeOffsetMs;
         QList<QSharedPointer<PlayerHistoryTrackInfo>> _list;
     };

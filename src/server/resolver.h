@@ -37,7 +37,7 @@
 #include <QStringList>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Server
 {
     class Database;
     class HashIdRegistrar;
@@ -73,7 +73,7 @@ namespace PMP
         Future<QString, FailureType> findHashAsync(uint id, FileHash hash);
 
     private Q_SLOTS:
-        void fileAnalysisCompleted(QString path, PMP::FileAnalysis analysis);
+        void fileAnalysisCompleted(QString path, PMP::Server::FileAnalysis analysis);
 
     private:
         void markAsCompleted(uint id);

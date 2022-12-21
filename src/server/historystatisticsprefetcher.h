@@ -28,7 +28,7 @@
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP
+namespace PMP::Server
 {
     class HashIdRegistrar;
     class History;

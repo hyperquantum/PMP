@@ -21,7 +21,7 @@
 
 #include "common/containerutil.h"
 
-namespace PMP
+namespace PMP::Server
 {
     HashRelations::HashRelations()
     {

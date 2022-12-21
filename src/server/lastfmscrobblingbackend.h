@@ -33,7 +33,7 @@
 QT_FORWARD_DECLARE_CLASS(QDomElement)
 QT_FORWARD_DECLARE_CLASS(QNetworkAccessManager)
 
-namespace PMP
+namespace PMP::Server
 {
     class LastFmScrobblingBackend;
 

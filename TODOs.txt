@@ -44,6 +44,7 @@ PERFORMANCE ISSUES
 
 IDEAS
 
+ * UI: move server selection, user account creation and authentication to pop-up dialogs
  * login: don't display user accounts that haven't been used in a long time
  ** player: option for single track mode (vs. continuous play)
  * player: 'load track' action that loads a track but does not start playing; this allows seek before playing

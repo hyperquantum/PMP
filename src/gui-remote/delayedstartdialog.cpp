@@ -20,32 +20,34 @@
 #include "delayedstartdialog.h"
 #include "ui_delayedstartdialog.h"
 
-#include "common/abstractqueuemonitor.h"
-#include "common/clientserverinterface.h"
-#include "common/dynamicmodecontroller.h"
-#include "common/playercontroller.h"
-#include "common/queueentryinfostorage.h"
 #include "common/util.h"
+
+#include "client/abstractqueuemonitor.h"
+#include "client/dynamicmodecontroller.h"
+#include "client/playercontroller.h"
+#include "client/queueentryinfostorage.h"
+#include "client/serverinterface.h"
 
 #include <QLocale>
 #include <QMessageBox>
 #include <QTimer>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
-
     PlayDurationCalculator::PlayDurationCalculator(QObject* parent,
-                                             ClientServerInterface* clientServerInterface)
+                                                   ServerInterface* serverInterface)
      : QObject(parent),
-       _clientServerInterface(clientServerInterface),
+       _serverInterface(serverInterface),
        _calculating(false),
        _mustRestartCalculation(false)
     {
-        auto* dynamicModeController = &_clientServerInterface->dynamicModeController();
+        auto* dynamicModeController = &_serverInterface->dynamicModeController();
         connect(dynamicModeController, &DynamicModeController::dynamicModeEnabledChanged,
                 this, &PlayDurationCalculator::onDynamicModeEnabledChanged);
 
-        auto* queueMonitor = &clientServerInterface->queueMonitor();
+        auto* queueMonitor = &serverInterface->queueMonitor();
         connect(queueMonitor, &AbstractQueueMonitor::queueResetted,
                 this, &PlayDurationCalculator::triggerRecalculation);
         connect(
@@ -99,7 +101,7 @@ namespace PMP
             }
         );
 
-        auto* queueEntryInfoStorage = &clientServerInterface->queueEntryInfoStorage();
+        auto* queueEntryInfoStorage = &serverInterface->queueEntryInfoStorage();
         connect(queueEntryInfoStorage, &QueueEntryInfoStorage::tracksChanged,
                 this, &PlayDurationCalculator::triggerRecalculation);
 
@@ -111,7 +113,7 @@ namespace PMP
         if (_breakIndex.hasValue())
             return; // dynamic mode status does not affect our calculation
 
-        auto& dynamicModeController = _clientServerInterface->dynamicModeController();
+        auto& dynamicModeController = _serverInterface->dynamicModeController();
         auto dynamicModeEnabled = dynamicModeController.dynamicModeEnabled();
 
         if (dynamicModeEnabled.isTrue())
@@ -144,12 +146,12 @@ namespace PMP
 
     void PlayDurationCalculator::calculate(PlayDurationCalculator* calculator)
     {
-        auto* clientServerInterface = calculator->_clientServerInterface;
+        auto* serverInterface = calculator->_serverInterface;
 
-        auto& dynamicModeController = clientServerInterface->dynamicModeController();
+        auto& dynamicModeController = serverInterface->dynamicModeController();
 
-        auto& queueMonitor = clientServerInterface->queueMonitor();
-        auto& queueEntryInfoStorage = clientServerInterface->queueEntryInfoStorage();
+        auto& queueMonitor = serverInterface->queueMonitor();
+        auto& queueEntryInfoStorage = serverInterface->queueEntryInfoStorage();
 
         Nullable<int> breakIndex;
         Nullable<qint64> duration;
@@ -218,11 +220,11 @@ namespace PMP
     /* ====================================== */
 
     DelayedStartDialog::DelayedStartDialog(QWidget* parent,
-                                           ClientServerInterface* clientServerInterface)
+                                           ServerInterface* serverInterface)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
        _ui(new Ui::DelayedStartDialog),
-       _clientServerInterface(clientServerInterface),
-       _playDurationCalculator(new PlayDurationCalculator(this, clientServerInterface))
+       _serverInterface(serverInterface),
+       _playDurationCalculator(new PlayDurationCalculator(this, serverInterface))
     {
         _ui->setupUi(this);
 
@@ -289,7 +291,7 @@ namespace PMP
             }
 
             auto future =
-                _clientServerInterface->playerController().activateDelayedStart(deadline);
+                _serverInterface->playerController().activateDelayedStart(deadline);
 
             future.addResultListener(
                 this,
@@ -315,7 +317,7 @@ namespace PMP
             }
 
             auto future =
-                _clientServerInterface->playerController().activateDelayedStart(
+                _serverInterface->playerController().activateDelayedStart(
                                                                        millisecondsTotal);
             future.addResultListener(
                 this,

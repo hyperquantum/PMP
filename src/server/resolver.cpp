@@ -38,7 +38,7 @@
 #include <algorithm>
 #include <limits>
 
-namespace PMP
+namespace PMP::Server
 {
     /* ========================== FileLocations ========================== */
 

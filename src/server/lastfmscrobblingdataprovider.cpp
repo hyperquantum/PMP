@@ -25,7 +25,7 @@
 #include <QtDebug>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Server
 {
     class LastFmScrobblingDataProvider::TrackForScrobbling : public TrackToScrobble
     {

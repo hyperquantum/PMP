@@ -24,7 +24,7 @@
 #include <QRandomGenerator>
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Server
 {
     bool TokenEncoder::ensureIsEncoded(QString& token)
     {

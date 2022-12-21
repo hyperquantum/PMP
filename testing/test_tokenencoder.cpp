@@ -25,6 +25,7 @@
 #include <QVector>
 
 using namespace PMP;
+using namespace PMP::Server;
 
 void TestTokenEncoder::ensureIsEncodedDoesNotChangeEmptyString()
 {

@@ -20,7 +20,7 @@
 #ifndef PMP_SELFTEST_H
 #define PMP_SELFTEST_H
 
-namespace PMP
+namespace PMP::Server
 {
     class ServerHealthMonitor;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,7 +29,8 @@
 
 #include <memory>
 
-class BackendMock : public PMP::ScrobblingBackend {
+class BackendMock : public PMP::Server::ScrobblingBackend
+{
     Q_OBJECT
 public:
     BackendMock(bool requireAuthentication);
@@ -74,7 +75,8 @@ private:
     bool _apiTokenWillBeAcceptedByApi;
 };
 
-class TrackToScrobbleMock : public PMP::TrackToScrobble {
+class TrackToScrobbleMock : public PMP::Server::TrackToScrobble
+{
 public:
     TrackToScrobbleMock(QDateTime timestamp, QString title, QString artist);
 
@@ -97,17 +99,18 @@ private:
     bool _cannotBeScrobbled;
 };
 
-class DataProviderMock : public PMP::ScrobblingDataProvider {
+class DataProviderMock : public PMP::Server::ScrobblingDataProvider
+{
 public:
     DataProviderMock();
 
-    void add(std::shared_ptr<PMP::TrackToScrobble> track);
+    void add(std::shared_ptr<PMP::Server::TrackToScrobble> track);
     void add(QVector<std::shared_ptr<TrackToScrobbleMock>> tracks);
 
-    QVector<std::shared_ptr<PMP::TrackToScrobble>> getNextTracksToScrobble() override;
+    QVector<std::shared_ptr<PMP::Server::TrackToScrobble>> getNextTracksToScrobble() override;
 
 private:
-    QQueue<std::shared_ptr<PMP::TrackToScrobble>> _tracksToScrobble;
+    QQueue<std::shared_ptr<PMP::Server::TrackToScrobble>> _tracksToScrobble;
 };
 
 class TestScrobbler : public QObject {

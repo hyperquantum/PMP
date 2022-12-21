@@ -31,15 +31,19 @@ QT_FORWARD_DECLARE_CLASS(QLabel)
 QT_FORWARD_DECLARE_CLASS(QMenu)
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
+namespace PMP::Client
+{
+    class ServerConnection;
+    class ServerInterface;
+}
+
 namespace PMP
 {
-    class ClientServerInterface;
     class ConnectionWidget;
     class LoginWidget;
     class MainWidget;
     class NotificationBar;
     class PowerManagement;
-    class ServerConnection;
     class UserAccountCreationWidget;
     class UserPickerWidget;
 
@@ -103,8 +107,8 @@ namespace PMP
         QTimer* _leftStatusTimer;
 
         ConnectionWidget* _connectionWidget;
-        ServerConnection* _connection;
-        ClientServerInterface* _clientServerInterface;
+        Client::ServerConnection* _connection;
+        Client::ServerInterface* _serverInterface;
         UserPickerWidget* _userPickerWidget;
         UserAccountCreationWidget* _userAccountCreationWidget;
         LoginWidget* _loginWidget;

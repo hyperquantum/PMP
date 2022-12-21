@@ -20,10 +20,11 @@
 #include "collectionwidget.h"
 #include "ui_collectionwidget.h"
 
-#include "common/clientserverinterface.h"
-#include "common/collectionwatcher.h"
-#include "common/queuecontroller.h"
 #include "common/unicodechars.h"
+
+#include "client/collectionwatcher.h"
+#include "client/queuecontroller.h"
+#include "client/serverinterface.h"
 
 #include "collectiontablemodel.h"
 #include "colors.h"
@@ -35,21 +36,22 @@
 #include <QtDebug>
 #include <QSettings>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
-    CollectionWidget::CollectionWidget(QWidget* parent,
-                                       ClientServerInterface* clientServerInterface)
+    CollectionWidget::CollectionWidget(QWidget* parent, ServerInterface* serverInterface)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
        _colorSwitcher(nullptr),
-       _clientServerInterface(clientServerInterface),
-       _collectionViewContext(new CollectionViewContext(this, clientServerInterface)),
+       _serverInterface(serverInterface),
+       _collectionViewContext(new CollectionViewContext(this, serverInterface)),
        _collectionSourceModel(new SortedCollectionTableModel(this,
-                                                             clientServerInterface,
+                                                             serverInterface,
                                                              _collectionViewContext)),
        _collectionDisplayModel(new FilteredCollectionTableModel(this,
                                                                 _collectionSourceModel,
-                                                                clientServerInterface,
+                                                                serverInterface,
                                                                 _collectionViewContext)),
        _collectionContextMenu(nullptr)
     {
@@ -73,7 +75,7 @@ namespace PMP
             this, &CollectionWidget::collectionContextMenuRequested
         );
 
-        auto* collectionWatcher = &_clientServerInterface->collectionWatcher();
+        auto* collectionWatcher = &_serverInterface->collectionWatcher();
         connect(
             collectionWatcher, &CollectionWatcher::downloadingInProgressChanged,
             this, [this]() { updateSpinnerVisibility(); }
@@ -169,7 +171,7 @@ namespace PMP
             this,
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (front) triggered";
-                _clientServerInterface->queueController().insertQueueEntryAtFront(hash);
+                _serverInterface->queueController().insertQueueEntryAtFront(hash);
             }
         );
 
@@ -180,7 +182,7 @@ namespace PMP
             this,
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (end) triggered";
-                _clientServerInterface->queueController().insertQueueEntryAtEnd(hash);
+                _serverInterface->queueController().insertQueueEntryAtEnd(hash);
             }
         );
 
@@ -192,7 +194,7 @@ namespace PMP
             this,
             [this, track]() {
                 qDebug() << "collection context menu: track info triggered";
-                auto dialog = new TrackInfoDialog(this, _clientServerInterface, track);
+                auto dialog = new TrackInfoDialog(this, _serverInterface, track);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
                 dialog->open();
             }
@@ -204,8 +206,7 @@ namespace PMP
 
     void CollectionWidget::updateSpinnerVisibility()
     {
-        bool downloading =
-                _clientServerInterface->collectionWatcher().downloadingInProgress();
+        bool downloading = _serverInterface->collectionWatcher().downloadingInProgress();
 
         if (downloading)
         {

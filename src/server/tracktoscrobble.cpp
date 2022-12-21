@@ -17,10 +17,11 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include "tracktoscrobble.h"
 
-namespace PMP
+// TODO : remove this unnecessary cpp file
+
+namespace PMP::Server
 {
     TrackToScrobble::TrackToScrobble()
     {

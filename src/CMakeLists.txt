@@ -19,69 +19,74 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(PMP_COMMON_SOURCES
     common/audiodata.cpp
-    common/authenticationcontrollerimpl.cpp
-    common/clientserverinterface.cpp
-    common/collectionwatcherimpl.cpp
     common/commonmetatypes.cpp
-    common/currenttrackmonitorimpl.cpp
-    common/dynamicmodecontrollerimpl.cpp
     common/fileanalyzer.cpp
     common/filehash.cpp
-    common/generalcontrollerimpl.cpp
-    common/historycontrollerimpl.cpp
     common/logging.cpp
     common/networkprotocol.cpp
     common/networkutil.cpp
     common/obfuscator.cpp
-    common/playercontrollerimpl.cpp
     common/powermanagement.cpp
-    common/queuecontrollerimpl.cpp
-    common/queueentryinfofetcher.cpp
-    common/queueentryinfostorage.cpp
-    common/queueentryinfostorageimpl.cpp
-    common/queuemonitor.cpp
     common/scrobblerstatus.cpp
-    common/scrobblingcontrollerimpl.cpp
     common/scrobblingprovider.cpp
-    common/servercapabilitiesimpl.cpp
-    common/serverconnection.cpp
-    common/serverdiscoverer.cpp
     common/startstopeventstatus.cpp
     common/tagdata.cpp
     common/tribool.cpp
-    common/userdatafetcher.cpp
     common/util.cpp
 )
 set(PMP_COMMON_HEADERS
-    common/abstractqueuemonitor.h
-    common/authenticationcontroller.h
-    common/authenticationcontrollerimpl.h
-    common/clientserverinterface.h
-    common/collectionfetcher.h
-    common/collectionwatcher.h
-    common/collectionwatcherimpl.h
-    common/currenttrackmonitor.h
-    common/currenttrackmonitorimpl.h
-    common/dynamicmodecontroller.h
-    common/dynamicmodecontrollerimpl.h
-    common/generalcontroller.h
-    common/generalcontrollerimpl.h
-    common/historycontroller.h
-    common/historycontrollerimpl.h
-    common/playercontroller.h
-    common/playercontrollerimpl.h
     common/powermanagement.h
-    common/queuecontroller.h
-    common/queuecontrollerimpl.h
-    common/queueentryinfofetcher.h
-    common/queueentryinfostorage.h
-    common/queueentryinfostorageimpl.h
-    common/queuemonitor.h
-    common/scrobblingcontroller.h
-    common/scrobblingcontrollerimpl.h
-    common/serverconnection.h
-    common/serverdiscoverer.h
-    common/userdatafetcher.h
+)
+
+set(PMP_CLIENT_SOURCES
+    client/authenticationcontrollerimpl.cpp
+    client/collectionwatcherimpl.cpp
+    client/currenttrackmonitorimpl.cpp
+    client/dynamicmodecontrollerimpl.cpp
+    client/generalcontrollerimpl.cpp
+    client/historycontrollerimpl.cpp
+    client/playercontrollerimpl.cpp
+    client/queuecontrollerimpl.cpp
+    client/queueentryinfofetcher.cpp
+    client/queueentryinfostorage.cpp
+    client/queueentryinfostorageimpl.cpp
+    client/queuemonitor.cpp
+    client/scrobblingcontrollerimpl.cpp
+    client/servercapabilitiesimpl.cpp
+    client/serverconnection.cpp
+    client/serverdiscoverer.cpp
+    client/serverinterface.cpp
+    client/userdatafetcher.cpp
+)
+set(PMP_CLIENT_HEADERS
+    client/abstractqueuemonitor.h
+    client/authenticationcontroller.h
+    client/authenticationcontrollerimpl.h
+    client/collectionfetcher.h
+    client/collectionwatcher.h
+    client/collectionwatcherimpl.h
+    client/currenttrackmonitor.h
+    client/currenttrackmonitorimpl.h
+    client/dynamicmodecontroller.h
+    client/dynamicmodecontrollerimpl.h
+    client/generalcontroller.h
+    client/generalcontrollerimpl.h
+    client/historycontroller.h
+    client/historycontrollerimpl.h
+    client/playercontroller.h
+    client/playercontrollerimpl.h
+    client/queuecontroller.h
+    client/queuecontrollerimpl.h
+    client/queueentryinfofetcher.h
+    client/queueentryinfostorage.h
+    client/queueentryinfostorageimpl.h
+    client/queuemonitor.h
+    client/scrobblingcontroller.h
+    client/scrobblingcontrollerimpl.h
+    client/serverconnection.h
+    client/serverdiscoverer.h
+    client/serverinterface.h
+    client/userdatafetcher.h
 )
 
 set(PMP_SERVER_SOURCES
@@ -113,11 +118,11 @@ set(PMP_SERVER_SOURCES
     server/scrobblingdataprovider.cpp
     server/scrobblinghost.cpp
     server/selftest.cpp
-    server/server.cpp
     server/serverhealthmonitor.cpp
     server/serverinterface.cpp
     server/servermetatypes.cpp
     server/serversettings.cpp
+    server/tcpserver.cpp
     server/tokenencoder.cpp
     server/trackgeneratorbase.cpp
     server/trackrepetitionchecker.cpp
@@ -146,10 +151,10 @@ set(PMP_SERVER_HEADERS
     server/scrobbling.h
     server/scrobblingbackend.h
     server/scrobblinghost.h
-    server/server.h
     server/serverhealthmonitor.h
     server/serverinterface.h
     server/serversettings.h
+    server/tcpserver.h
     server/trackgeneratorbase.h
     server/trackrepetitionchecker.h
     server/users.h
@@ -157,16 +162,16 @@ set(PMP_SERVER_HEADERS
 )
 
 set(PMP_CMD_REMOTE_SOURCES
-    cmd-remote/client.cpp
     cmd-remote/commandbase.cpp
+    cmd-remote/commandlineclient.cpp
     cmd-remote/commandparser.cpp
     cmd-remote/commands.cpp
     cmd-remote/console.cpp
 )
 set(PMP_CMD_REMOTE_HEADERS
-    cmd-remote/client.h
     cmd-remote/command.h
     cmd-remote/commandbase.h
+    cmd-remote/commandlineclient.h
     cmd-remote/commands.h
 )
 
@@ -239,6 +244,7 @@ set(PMP_GUI_REMOTE_RESOURCES
 )
 
 qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
+qt5_wrap_cpp(PMP_CLIENT_MOCS ${PMP_CLIENT_HEADERS})
 qt5_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
 qt5_wrap_cpp(PMP_CMD_REMOTE_MOCS ${PMP_CMD_REMOTE_HEADERS})
 qt5_wrap_cpp(PMP_GUI_REMOTE_MOCS ${PMP_GUI_REMOTE_HEADERS})
@@ -275,6 +281,7 @@ add_executable(PMP-Server
 add_executable(PMP-Cmd-Remote
     cmd-remote/cmd-remote-main.cpp
     ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS}
+    ${PMP_CLIENT_SOURCES} ${PMP_CLIENT_MOCS}
     ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 add_executable(PMP-GUI-Remote
@@ -283,6 +290,7 @@ add_executable(PMP-GUI-Remote
     ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
     ${PMP_GUI_REMOTE_UICS}
     ${PMP_GUI_REMOTE_QRCS}
+    ${PMP_CLIENT_SOURCES} ${PMP_CLIENT_MOCS}
     ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 

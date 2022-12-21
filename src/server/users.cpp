@@ -26,7 +26,7 @@
 #include <QRandomGenerator>
 #include <QtGlobal>
 
-namespace PMP
+namespace PMP::Server
 {
     Users::Users()
     {

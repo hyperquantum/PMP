@@ -24,7 +24,7 @@
 #include <QSslSocket>
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Server
 {
     void SelfTest::runSelfTest(ServerHealthMonitor& serverHealthMonitor)
     {

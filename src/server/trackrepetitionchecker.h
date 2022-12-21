@@ -24,7 +24,7 @@
 
 #include <QObject>
 
-namespace PMP
+namespace PMP::Server
 {
     class History;
     class PlayerQueue;

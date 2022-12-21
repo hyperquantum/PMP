@@ -40,7 +40,7 @@
 
 #include <functional>
 
-namespace PMP
+namespace PMP::Server
 {
     class DelayedStart;
     class Generator;
@@ -49,8 +49,8 @@ namespace PMP
     class Player;
     class PlayerQueue;
     class QueueEntry;
-    class Server;
     class ServerSettings;
+    class TcpServer;
     class Users;
 
     struct PlayerStateOverview
@@ -67,7 +67,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        ServerInterface(ServerSettings* serverSettings, Server* server,
+        ServerInterface(ServerSettings* serverSettings, TcpServer* server,
                         uint connectionReference, Player* player,
                         Generator* generator, History* history,
                         HashIdRegistrar* hashIdRegistrar, Users* users,
@@ -178,7 +178,7 @@ namespace PMP
         quint32 _userLoggedIn;
         QString _userLoggedInName;
         ServerSettings* _serverSettings;
-        Server* _server;
+        TcpServer* _server;
         Player* _player;
         Generator* _generator;
         History* _history;
@@ -190,5 +190,4 @@ namespace PMP
         QHash<quint32, bool> _userHashDataNotificationTimerRunning;
     };
 }
-
 #endif

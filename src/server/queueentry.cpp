@@ -19,13 +19,12 @@
 
 #include "queueentry.h"
 
-#include "playerqueue.h"
 #include "resolver.h"
 
 #include <QFileInfo>
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Server
 {
     QueueEntry::QueueEntry(uint queueId, FileHash hash)
      : _queueID(queueId),

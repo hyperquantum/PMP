@@ -20,9 +20,11 @@
 #include "dynamicmodeparametersdialog.h"
 #include "ui_dynamicmodeparametersdialog.h"
 
-#include "common/dynamicmodecontroller.h"
+#include "client/dynamicmodecontroller.h"
 
 #include <QtDebug>
+
+using namespace PMP::Client;
 
 namespace PMP
 {

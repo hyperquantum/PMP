@@ -24,7 +24,7 @@
 
 #include "database.h"
 
-namespace PMP
+namespace PMP::Server
 {
     Future<SuccessType, FailureType> HashIdRegistrar::loadAllFromDatabase()
     {

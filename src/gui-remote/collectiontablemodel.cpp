@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,12 +19,13 @@
 
 #include "collectiontablemodel.h"
 
-#include "common/clientserverinterface.h"
-#include "common/collectionwatcher.h"
-#include "common/currenttrackmonitor.h"
-#include "common/playercontroller.h"
-#include "common/userdatafetcher.h"
 #include "common/util.h"
+
+#include "client/collectionwatcher.h"
+#include "client/currenttrackmonitor.h"
+#include "client/playercontroller.h"
+#include "client/serverinterface.h"
+#include "client/userdatafetcher.h"
 
 #include "colors.h"
 
@@ -38,8 +39,10 @@
 #include <algorithm>
 #include <functional>
 
-namespace PMP {
+using namespace PMP::Client;
 
+namespace PMP
+{
     void TrackJudge::setUserId(quint32 userId)
     {
         _userId = userId;
@@ -162,11 +165,11 @@ namespace PMP {
     // ============================================================================ //
 
     CollectionViewContext::CollectionViewContext(QObject* parent,
-                                             ClientServerInterface* clientServerInterface)
+                                                 ServerInterface* serverInterface)
      : QObject(parent),
        _userId(0)
     {
-        auto* playerController = &clientServerInterface->playerController();
+        auto* playerController = &serverInterface->playerController();
 
         connect(
             playerController, &PlayerController::playerModeChanged,
@@ -245,13 +248,13 @@ namespace PMP {
     // ============================================================================ //
 
     SortedCollectionTableModel::SortedCollectionTableModel(QObject* parent,
-                                             ClientServerInterface* clientServerInterface,
+                                             ServerInterface* serverInterface,
                                              CollectionViewContext* collectionViewContext)
      : QAbstractTableModel(parent),
        _highlightColorIndex(0),
        _sortBy(0),
        _sortOrder(Qt::AscendingOrder),
-       _highlightingTrackJudge(clientServerInterface->userDataFetcher())
+       _highlightingTrackJudge(serverInterface->userDataFetcher())
     {
         _collator.setCaseSensitivity(Qt::CaseInsensitive);
         _collator.setNumericMode(true);
@@ -259,7 +262,7 @@ namespace PMP {
         /* we need to ignore symbols such as quotes, spaces and parentheses */
         _collator.setIgnorePunctuation(true);
 
-        auto* playerController = &clientServerInterface->playerController();
+        auto* playerController = &serverInterface->playerController();
         _playerState = playerController->playerState();
         connect(
             playerController, &PlayerController::playerStateChanged,
@@ -287,7 +290,7 @@ namespace PMP {
             }
         );
 
-        auto& collectionWatcher = clientServerInterface->collectionWatcher();
+        auto& collectionWatcher = serverInterface->collectionWatcher();
         collectionWatcher.enableCollectionDownloading();
 
         connect(
@@ -303,14 +306,14 @@ namespace PMP {
             this, &SortedCollectionTableModel::onTrackDataChanged
         );
 
-        auto& userDataFetcher = clientServerInterface->userDataFetcher();
+        auto& userDataFetcher = serverInterface->userDataFetcher();
 
         connect(
             &userDataFetcher, &UserDataFetcher::userTrackDataChanged,
             this, &SortedCollectionTableModel::onUserTrackDataChanged
         );
 
-        auto* currentTrackMonitor = &clientServerInterface->currentTrackMonitor();
+        auto* currentTrackMonitor = &serverInterface->currentTrackMonitor();
         _currentTrackHash = currentTrackMonitor->currentTrackHash();
         connect(
             currentTrackMonitor, &CurrentTrackMonitor::currentTrackInfoChanged,
@@ -994,10 +997,10 @@ namespace PMP {
 
     FilteredCollectionTableModel::FilteredCollectionTableModel(QObject* parent,
                                              SortedCollectionTableModel* source,
-                                             ClientServerInterface* clientServerInterface,
+                                             ServerInterface* serverInterface,
                                              CollectionViewContext* collectionViewContext)
      : _source(source),
-       _filteringTrackJudge(clientServerInterface->userDataFetcher())
+       _filteringTrackJudge(serverInterface->userDataFetcher())
     {
         Q_UNUSED(parent)
         setFilterCaseSensitivity(Qt::CaseInsensitive);
