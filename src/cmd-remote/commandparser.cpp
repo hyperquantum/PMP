@@ -22,6 +22,7 @@
 #include "common/unicodechars.h"
 
 #include "commands.h"
+#include "scrobblingcommands.h"
 
 #include <limits>
 
@@ -337,6 +338,10 @@ namespace PMP
         else if (command == "serverversion")
         {
             handleCommandNotRequiringArguments<ServerVersionCommand>(commandWithArgs);
+        }
+        else if (command == "scrobbling")
+        {
+            parseScrobblingCommand(args);
         }
         else if (command == "shutdown")
         {
@@ -685,6 +690,64 @@ namespace PMP
         }
 
         _command = new TrackStatsCommand(hash);
+    }
+
+    void CommandParser::parseScrobblingCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Command 'scrobbling' requires arguments!";
+            return;
+        }
+
+        if (arguments.current() == "enable")
+        {
+            parseScrobblingEnableOrDisableCommand(arguments, true);
+        }
+        else if (arguments.current() == "disable")
+        {
+            parseScrobblingEnableOrDisableCommand(arguments, false);
+        }
+        else
+        {
+            _errorMessage = "Expected 'enable' or 'disable' after 'scrobbling'!";
+        }
+    }
+
+    void CommandParser::parseScrobblingEnableOrDisableCommand(CommandArguments& arguments,
+                                                              bool enable)
+    {
+        // current is enable or disable
+        arguments.advance();
+
+        if (arguments.noCurrent())
+        {
+            auto previousArg = arguments.previous();
+            _errorMessage =
+                    QString("Expected 'lastfm' or 'last.fm' after '%1'").arg(previousArg);
+            return;
+        }
+
+        ScrobblingProvider provider;
+        if (arguments.currentIsOneOf({"lastfm", "last.fm"}))
+        {
+            provider = ScrobblingProvider::LastFm;
+        }
+        else
+        {
+            _errorMessage =
+                    QString("Expected 'lastfm' or 'last.fm' instead of '%1'")
+                        .arg(arguments.current());
+            return;
+        }
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new ScrobblingActivationCommand(provider, enable);
     }
 
     bool CommandParser::isInFuture(QDateTime time)

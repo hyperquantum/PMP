@@ -52,6 +52,7 @@ usage:
     qdel <QID>: delete an entry from the queue
     qmove <QID> <-diff>: move a track up in the queue (e.g. -3)
     qmove <QID> <+diff>: move a track down in the queue (eg. +2)
+    scrobbling enable|disable <provider>: enable scrobbling for the current user
     shutdown: shut down the server program
     reloadserversettings: instruct the server to reload its settings file
     delayedstart wait <number> <time unit>: activate delayed start (see below)
@@ -88,6 +89,19 @@ usage:
     A barrier is like a break, but is never consumed. Playback just stops
     when the current track finishes and the first item in the queue is a
     barrier.
+
+  'scrobbling' command:
+    scrobbling enable <provider>: enable scrobbling for the current user
+    scrobbling disable <provider>: disable scrobbling for the current user
+
+    Enables or disables scrobbling for the current PMP user account.
+    Disabling scrobbling will not exclude any tracks for scrobbling, it will
+    only suspend scrobbling temporarily until it is enabled again.
+    Only Last.FM is currently supported. Use "lastfm" or "last.fm" without
+    quotes as the provider.
+    When enabling scrobbling for the first time, you will need to specify
+    your username and password for the scrobbling service (Last.FM). This
+    cannot be done with the command-line remote yet.
 
   'delayedstart' command:
     delayedstart abort: cancel delayed start
