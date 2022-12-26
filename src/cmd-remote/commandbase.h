@@ -51,9 +51,7 @@ namespace PMP
         void addCommandExecutionFutureListener(
                                              SimpleFuture<ResultMessageErrorCode> future);
 
-        // TODO : combine setUp and start into one function
-        virtual void setUp(Client::ServerInterface* serverInterface) = 0;
-        virtual void start(Client::ServerInterface* serverInterface) = 0;
+        virtual void run(Client::ServerInterface* serverInterface) = 0;
 
     protected Q_SLOTS:
         void listenerSlot();

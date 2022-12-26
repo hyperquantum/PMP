@@ -34,10 +34,8 @@ namespace PMP
 
     void CommandBase::execute(ServerInterface* serverInterface)
     {
-        setUp(serverInterface);
-
-        start(serverInterface);
-        qDebug() << "CommandBase: called start()";
+        run(serverInterface);
+        qDebug() << "CommandBase: called run()";
 
         // initial quick check
         if (!_steps.isEmpty())

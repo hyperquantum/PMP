@@ -41,12 +41,7 @@ namespace PMP
         return false;
     }
 
-    void ServerVersionCommand::setUp(ServerInterface* serverInterface)
-    {
-        Q_UNUSED(serverInterface)
-    }
-
-    void ServerVersionCommand::start(ServerInterface* serverInterface)
+    void ServerVersionCommand::run(ServerInterface* serverInterface)
     {
         auto future = serverInterface->generalController().getServerVersionInfo();
 
@@ -89,12 +84,7 @@ namespace PMP
         return true;
     }
 
-    void ReloadServerSettingsCommand::setUp(ServerInterface* serverInterface)
-    {
-        Q_UNUSED(serverInterface)
-    }
-
-    void ReloadServerSettingsCommand::start(ServerInterface* serverInterface)
+    void ReloadServerSettingsCommand::run(ServerInterface* serverInterface)
     {
         auto future = serverInterface->generalController().reloadServerSettings();
         addCommandExecutionFutureListener(future);
@@ -113,12 +103,7 @@ namespace PMP
         return true;
     }
 
-    void DelayedStartAtCommand::setUp(ServerInterface* serverInterface)
-    {
-        Q_UNUSED(serverInterface)
-    }
-
-    void DelayedStartAtCommand::start(ServerInterface* serverInterface)
+    void DelayedStartAtCommand::run(ServerInterface* serverInterface)
     {
         auto future =
             serverInterface->playerController().activateDelayedStart(_startTime);
@@ -139,12 +124,7 @@ namespace PMP
         return true;
     }
 
-    void DelayedStartWaitCommand::setUp(ServerInterface* serverInterface)
-    {
-        Q_UNUSED(serverInterface)
-    }
-
-    void DelayedStartWaitCommand::start(ServerInterface* serverInterface)
+    void DelayedStartWaitCommand::run(ServerInterface* serverInterface)
     {
         auto future =
             serverInterface->playerController().activateDelayedStart(
@@ -159,12 +139,7 @@ namespace PMP
         return true;
     }
 
-    void DelayedStartCancelCommand::setUp(ServerInterface* serverInterface)
-    {
-        Q_UNUSED(serverInterface)
-    }
-
-    void DelayedStartCancelCommand::start(ServerInterface* serverInterface)
+    void DelayedStartCancelCommand::run(ServerInterface* serverInterface)
     {
         auto future = serverInterface->playerController().deactivateDelayedStart();
         addCommandExecutionFutureListener(future);
@@ -182,7 +157,7 @@ namespace PMP
         return true;
     }
 
-    void PlayCommand::setUp(ServerInterface* serverInterface)
+    void PlayCommand::run(ServerInterface* serverInterface)
     {
         auto* playerController = &serverInterface->playerController();
 
@@ -198,11 +173,8 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void PlayCommand::start(ServerInterface* serverInterface)
-    {
-        serverInterface->playerController().play();
+        playerController->play();
     }
 
     /* ===== PauseCommand ===== */
@@ -217,7 +189,7 @@ namespace PMP
         return true;
     }
 
-    void PauseCommand::setUp(ServerInterface* serverInterface)
+    void PauseCommand::run(ServerInterface* serverInterface)
     {
         auto* playerController = &serverInterface->playerController();
 
@@ -233,11 +205,8 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void PauseCommand::start(ServerInterface* serverInterface)
-    {
-        serverInterface->playerController().pause();
+        playerController->pause();
     }
 
     /* ===== SkipCommand ===== */
@@ -253,7 +222,7 @@ namespace PMP
         return true;
     }
 
-    void SkipCommand::setUp(ServerInterface* serverInterface)
+    void SkipCommand::run(ServerInterface* serverInterface)
     {
         auto* playerController = &serverInterface->playerController();
 
@@ -290,12 +259,6 @@ namespace PMP
         );
     }
 
-    void SkipCommand::start(ServerInterface* serverInterface)
-    {
-        Q_UNUSED(serverInterface)
-        // no specific start action needed
-    }
-
     /* ===== NowPlayingCommand ===== */
 
     NowPlayingCommand::NowPlayingCommand()
@@ -308,7 +271,7 @@ namespace PMP
         return false;
     }
 
-    void NowPlayingCommand::setUp(ServerInterface* serverInterface)
+    void NowPlayingCommand::run(ServerInterface* serverInterface)
     {
         auto* currentTrackMonitor = &serverInterface->currentTrackMonitor();
 
@@ -368,12 +331,6 @@ namespace PMP
         );
     }
 
-    void NowPlayingCommand::start(ServerInterface* serverInterface)
-    {
-        Q_UNUSED(serverInterface)
-        // no specific start action needed
-    }
-
     /* ===== QueueCommand ===== */
 
     QueueCommand::QueueCommand()
@@ -387,7 +344,7 @@ namespace PMP
         return true;
     }
 
-    void QueueCommand::setUp(ServerInterface* serverInterface)
+    void QueueCommand::run(ServerInterface* serverInterface)
     {
         auto* queueMonitor = &serverInterface->queueMonitor();
         queueMonitor->setFetchLimit(_fetchLimit);
@@ -435,12 +392,6 @@ namespace PMP
                 return false;
             }
         );
-    }
-
-    void QueueCommand::start(ServerInterface* serverInterface)
-    {
-        Q_UNUSED(serverInterface)
-        // no specific start action needed
     }
 
     void QueueCommand::printQueue(AbstractQueueMonitor* queueMonitor,
@@ -563,7 +514,7 @@ namespace PMP
         return true;
     }
 
-    void ShutdownCommand::setUp(ServerInterface* serverInterface)
+    void ShutdownCommand::run(ServerInterface* serverInterface)
     {
         connect(serverInterface, &ServerInterface::connectedChanged,
                 this, &ShutdownCommand::listenerSlot);
@@ -577,10 +528,7 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void ShutdownCommand::start(ServerInterface* serverInterface)
-    {
         serverInterface->generalController().shutdownServer();
     }
 
@@ -596,7 +544,7 @@ namespace PMP
         return false;
     }
 
-    void GetVolumeCommand::setUp(ServerInterface* serverInterface)
+    void GetVolumeCommand::run(ServerInterface* serverInterface)
     {
         auto* playerController = &serverInterface->playerController();
 
@@ -616,12 +564,6 @@ namespace PMP
         );
     }
 
-    void GetVolumeCommand::start(ServerInterface* serverInterface)
-    {
-        Q_UNUSED(serverInterface)
-        // no specific start action needed
-    }
-
     /* ===== SetVolumeCommand ===== */
 
     SetVolumeCommand::SetVolumeCommand(int volume)
@@ -635,7 +577,7 @@ namespace PMP
         return true;
     }
 
-    void SetVolumeCommand::setUp(ServerInterface* serverInterface)
+    void SetVolumeCommand::run(ServerInterface* serverInterface)
     {
         auto* playerController = &serverInterface->playerController();
 
@@ -651,11 +593,8 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void SetVolumeCommand::start(ServerInterface* serverInterface)
-    {
-        serverInterface->playerController().setVolume(_volume);
+        playerController->setVolume(_volume);
     }
 
     /* ===== BreakCommand =====*/
@@ -670,7 +609,7 @@ namespace PMP
         return true;
     }
 
-    void BreakCommand::setUp(ServerInterface* serverInterface)
+    void BreakCommand::run(ServerInterface* serverInterface)
     {
         auto* queueMonitor = &serverInterface->queueMonitor();
         queueMonitor->setFetchLimit(1);
@@ -706,10 +645,7 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void BreakCommand::start(ServerInterface* serverInterface)
-    {
         serverInterface->queueController().insertBreakAtFrontIfNotExists();
     }
 
@@ -731,8 +667,7 @@ namespace PMP
         return true;
     }
 
-    void QueueInsertSpecialItemCommand::setUp(
-                                             ServerInterface* serverInterface)
+    void QueueInsertSpecialItemCommand::run(ServerInterface* serverInterface)
     {
         auto* queueController = &serverInterface->queueController();
 
@@ -757,15 +692,9 @@ namespace PMP
                     setCommandExecutionResult(errorCode);
             }
         );
-    }
-
-    void QueueInsertSpecialItemCommand::start(
-                                             ServerInterface* serverInterface)
-    {
-        auto& queueController = serverInterface->queueController();
 
         _requestId =
-                queueController.insertSpecialItemAtIndex(_itemType, _index, _indexType);
+                queueController->insertSpecialItemAtIndex(_itemType, _index, _indexType);
     }
 
     /* ===== QueueDeleteCommand ===== */
@@ -782,7 +711,7 @@ namespace PMP
         return true;
     }
 
-    void QueueDeleteCommand::setUp(ServerInterface* serverInterface)
+    void QueueDeleteCommand::run(ServerInterface* serverInterface)
     {
         auto* queueController = &serverInterface->queueController();
 
@@ -810,11 +739,8 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void QueueDeleteCommand::start(ServerInterface* serverInterface)
-    {
-        serverInterface->queueController().deleteQueueEntry(_queueId);
+        queueController->deleteQueueEntry(_queueId);
     }
 
     /* ===== QueueMoveCommand ===== */
@@ -832,7 +758,7 @@ namespace PMP
         return true;
     }
 
-    void QueueMoveCommand::setUp(ServerInterface* serverInterface)
+    void QueueMoveCommand::run(ServerInterface* serverInterface)
     {
         auto* queueController = &serverInterface->queueController();
 
@@ -860,11 +786,8 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void QueueMoveCommand::start(ServerInterface* serverInterface)
-    {
-        serverInterface->queueController().moveQueueEntry(_queueId, _moveOffset);
+        queueController->moveQueueEntry(_queueId, _moveOffset);
     }
 
     /* ===== TrackStatsCommand ===== */
@@ -880,7 +803,7 @@ namespace PMP
         return true;
     }
 
-    void TrackStatsCommand::setUp(ServerInterface* serverInterface)
+    void TrackStatsCommand::run(ServerInterface* serverInterface)
     {
         auto userDataFetcher = &serverInterface->userDataFetcher();
 
@@ -928,11 +851,5 @@ namespace PMP
                 return false;
             }
         );
-    }
-
-    void TrackStatsCommand::start(ServerInterface* serverInterface)
-    {
-        Q_UNUSED(serverInterface)
-        // no specific start action needed
     }
 }
