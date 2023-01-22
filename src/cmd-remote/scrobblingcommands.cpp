@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,7 +39,7 @@ namespace PMP
         return true;
     }
 
-    void ScrobblingActivationCommand::setUp(Client::ServerInterface* serverInterface)
+    void ScrobblingActivationCommand::run(Client::ServerInterface* serverInterface)
     {
         auto* scrobblingController = &serverInterface->scrobblingController();
 
@@ -55,10 +55,7 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void ScrobblingActivationCommand::start(Client::ServerInterface* serverInterface)
-    {
         serverInterface->scrobblingController().setLastFmScrobblingEnabled(_enable);
     }
 }

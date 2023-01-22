@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,8 +35,7 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(Client::ServerInterface* serverInterface) override;
-        void start(Client::ServerInterface* serverInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
 
     private:
         ScrobblingProvider _provider;
