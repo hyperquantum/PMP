@@ -9,9 +9,11 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-      - name: Install dependencies
+      - name: Update packages
+        run: sudo apt-get update
+      - name: Install packages PMP depends on
         run: >
-          sudo apt-get install -y
+          sudo apt-get install -y --fix-missing
           libtag1-dev
           default-libmysqlclient-dev
           qtbase5-dev
