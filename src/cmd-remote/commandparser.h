@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,8 @@
 #define PMP_COMMANDPARSER_H
 
 #include "common/filehash.h"
+#include "common/nullable.h"
+#include "common/scrobblingprovider.h"
 
 #include <QDate>
 #include <QString>
@@ -128,6 +130,9 @@ namespace PMP
         void parseScrobblingCommand(CommandArguments arguments);
         void parseScrobblingEnableOrDisableCommand(CommandArguments& arguments,
                                                    bool enable);
+        void parseScrobblingStatusCommand(CommandArguments& arguments);
+        Nullable<ScrobblingProvider> parseScrobblingProviderName(
+                                                             CommandArguments& arguments);
 
         template <class SomeCommand>
         void handleCommandNotRequiringArguments(QVector<QString> commandWithArgs);

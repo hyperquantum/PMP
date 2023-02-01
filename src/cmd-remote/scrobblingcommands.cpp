@@ -26,6 +26,8 @@ using namespace PMP::Client;
 
 namespace PMP
 {
+    /* ===== ScrobblingActivationCommand ===== */
+
     ScrobblingActivationCommand::ScrobblingActivationCommand(ScrobblingProvider provider,
                                                              bool enable)
      : _provider(provider),
@@ -57,5 +59,62 @@ namespace PMP
         );
 
         serverInterface->scrobblingController().setLastFmScrobblingEnabled(_enable);
+    }
+
+    /* ===== ScrobblingStatusCommand ===== */
+
+    ScrobblingStatusCommand::ScrobblingStatusCommand(ScrobblingProvider provider)
+     : _provider(provider)
+    {
+        //
+    }
+
+    bool ScrobblingStatusCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void ScrobblingStatusCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto* scrobblingController = &serverInterface->scrobblingController();
+
+        connect(scrobblingController, &ScrobblingController::lastFmInfoChanged,
+                this, &ScrobblingStatusCommand::listenerSlot);
+
+        addStep(
+            [this, scrobblingController]() -> bool
+            {
+                if (scrobblingController->lastFmEnabled() == null)
+                    return false;
+
+                if (scrobblingController->lastFmEnabled() == false)
+                {
+                    setCommandExecutionSuccessful("disabled");
+                }
+                else
+                {
+                    switch (scrobblingController->lastFmStatus())
+                    {
+                    case ScrobblerStatus::Unknown:
+                        setCommandExecutionSuccessful("unknown"); /* FIXME */
+                        break;
+                    case ScrobblerStatus::Green:
+                        setCommandExecutionSuccessful("green");
+                        break;
+                    case ScrobblerStatus::Yellow:
+                        setCommandExecutionSuccessful("yellow");
+                        break;
+                    case ScrobblerStatus::Red:
+                        setCommandExecutionSuccessful("red");
+                        break;
+                    case ScrobblerStatus::WaitingForUserCredentials:
+                        setCommandExecutionSuccessful("waiting for user credentials");
+                        break;
+                    }
+                }
+
+                return false;
+            }
+        );
     }
 }

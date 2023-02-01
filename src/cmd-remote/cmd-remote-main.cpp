@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -53,6 +53,7 @@ usage:
     qmove <QID> <-diff>: move a track up in the queue (e.g. -3)
     qmove <QID> <+diff>: move a track down in the queue (eg. +2)
     scrobbling enable|disable <provider>: enable scrobbling for the current user
+    scrobbling status <provider>: get scrobbling status
     shutdown: shut down the server program
     reloadserversettings: instruct the server to reload its settings file
     delayedstart wait <number> <time unit>: activate delayed start (see below)
@@ -93,6 +94,7 @@ usage:
   'scrobbling' command:
     scrobbling enable <provider>: enable scrobbling for the current user
     scrobbling disable <provider>: disable scrobbling for the current user
+    scrobbling status <provider>: get scrobbling status for the current user
 
     Enables or disables scrobbling for the current PMP user account.
     Disabling scrobbling will not exclude any tracks for scrobbling, it will

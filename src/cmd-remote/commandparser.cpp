@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -708,38 +708,28 @@ namespace PMP
         {
             parseScrobblingEnableOrDisableCommand(arguments, false);
         }
+        else if (arguments.current() == "status")
+        {
+            parseScrobblingStatusCommand(arguments);
+        }
         else
         {
-            _errorMessage = "Expected 'enable' or 'disable' after 'scrobbling'!";
+            _errorMessage =
+                    "Expected 'enable' or 'disable' or 'status' after 'scrobbling'!";
         }
     }
 
     void CommandParser::parseScrobblingEnableOrDisableCommand(CommandArguments& arguments,
                                                               bool enable)
     {
-        // current is enable or disable
+        // current is "enable" or "disable"
         arguments.advance();
 
-        if (arguments.noCurrent())
-        {
-            auto previousArg = arguments.previous();
-            _errorMessage =
-                    QString("Expected 'lastfm' or 'last.fm' after '%1'").arg(previousArg);
+        auto providerOrNull = parseScrobblingProviderName(arguments);
+        if (providerOrNull == null)
             return;
-        }
 
-        ScrobblingProvider provider;
-        if (arguments.currentIsOneOf({"lastfm", "last.fm"}))
-        {
-            provider = ScrobblingProvider::LastFm;
-        }
-        else
-        {
-            _errorMessage =
-                    QString("Expected 'lastfm' or 'last.fm' instead of '%1'")
-                        .arg(arguments.current());
-            return;
-        }
+        auto provider = providerOrNull.value();
 
         if (arguments.haveMore())
         {
@@ -748,6 +738,53 @@ namespace PMP
         }
 
         _command = new ScrobblingActivationCommand(provider, enable);
+    }
+
+    void CommandParser::parseScrobblingStatusCommand(CommandArguments& arguments)
+    {
+        // current is "status"
+        arguments.advance();
+
+        auto providerOrNull = parseScrobblingProviderName(arguments);
+        if (providerOrNull == null)
+            return;
+
+        auto provider = providerOrNull.value();
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new ScrobblingStatusCommand(provider);
+    }
+
+    Nullable<ScrobblingProvider> CommandParser::parseScrobblingProviderName(
+                                                              CommandArguments& arguments)
+    {
+        if (arguments.haveCurrent())
+        {
+            if (arguments.currentIsOneOf({"lastfm", "last.fm"}))
+            {
+                return ScrobblingProvider::LastFm;
+            }
+        }
+
+        if (arguments.noCurrent())
+        {
+            _errorMessage =
+                QString("Expected 'lastfm' or 'last.fm' after '%1'")
+                    .arg(arguments.previous());
+        }
+        else
+        {
+            _errorMessage =
+                QString("Expected 'lastfm' or 'last.fm' instead of '%1'")
+                    .arg(arguments.current());
+        }
+
+        return null;
     }
 
     bool CommandParser::isInFuture(QDateTime time)
