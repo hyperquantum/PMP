@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,7 +30,7 @@
 #include <QTimer>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Server
 {
     class DynamicTrackGenerator;
     class History;
@@ -66,9 +66,9 @@ namespace PMP
         void startWave();
         void terminateWave();
 
-        void currentTrackChanged(QueueEntry const* newTrack);
-        void setUserGeneratingFor(quint32 user);
+        void currentTrackChanged(QSharedPointer<QueueEntry const> newTrack);
 
+        void setUserGeneratingFor(quint32 user);
         void setNoRepetitionSpanSeconds(int seconds);
 
     Q_SIGNALS:

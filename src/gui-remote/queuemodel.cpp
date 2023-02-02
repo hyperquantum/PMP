@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,12 +19,14 @@
 
 #include "queuemodel.h"
 
-#include "common/clientserverinterface.h"
-#include "common/generalcontroller.h"
-#include "common/playercontroller.h"
-#include "common/queueentryinfofetcher.h"
-#include "common/userdatafetcher.h"
+#include "common/unicodechars.h"
 #include "common/util.h"
+
+#include "client/generalcontroller.h"
+#include "client/playercontroller.h"
+#include "client/queueentryinfostorage.h"
+#include "client/serverinterface.h"
+#include "client/userdatafetcher.h"
 
 #include "colors.h"
 
@@ -39,6 +41,9 @@
 #include <QMimeData>
 #include <QtDebug>
 #include <QTimer>
+
+using namespace PMP::Client;
+using namespace PMP::UnicodeChars;
 
 namespace PMP
 {
@@ -163,22 +168,23 @@ namespace PMP
         timer->deleteLater();
     }
 
-    QueueModel::QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
-                           QueueMediator* source, QueueEntryInfoFetcher* trackInfoFetcher)
+    QueueModel::QueueModel(QObject* parent, ServerInterface* serverInterface,
+                           QueueMediator* source, QueueEntryInfoStorage* trackInfoStorage)
      : QAbstractTableModel(parent),
-       _userDataFetcher(&clientServerInterface->userDataFetcher()),
+       _userDataFetcher(&serverInterface->userDataFetcher()),
        _source(source),
-       _infoFetcher(trackInfoFetcher),
+       _infoStorage(trackInfoStorage),
        _lastHeardRefresher(new RegularUiRefresher(this)),
-       _clientClockTimeOffsetMs(0),
        _playerMode(PlayerMode::Unknown),
        _personalModeUserId(0),
        _modelRows(0)
     {
         _modelRows = _source->queueLength();
 
-        auto generalController = &clientServerInterface->generalController();
-        auto playerController = &clientServerInterface->playerController();
+        (void)serverInterface->queueEntryInfoFetcher(); /* speed things up */
+
+        auto generalController = &serverInterface->generalController();
+        auto playerController = &serverInterface->playerController();
 
         _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
         connect(
@@ -204,7 +210,7 @@ namespace PMP
             this, &QueueModel::entriesReceived
         );
         connect(
-            _infoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+            _infoStorage, &QueueEntryInfoStorage::tracksChanged,
             this, &QueueModel::tracksChanged
         );
         connect(
@@ -279,10 +285,10 @@ namespace PMP
 
         int col = index.column();
 
-        quint32 queueID = trackIdAt(index);
+        quint32 queueId = trackIdAt(index);
 
         QueueEntryInfo* info =
-            queueID ? _infoFetcher->entryInfoByQID(queueID) : nullptr;
+            queueId ? _infoStorage->entryInfoByQueueId(queueId) : nullptr;
 
         /* handle real track entries in a separate function */
         if (info && info->type() == QueueEntryType::Track)
@@ -305,19 +311,19 @@ namespace PMP
 
                 case QueueEntryType::BreakPoint:
                     if (col <= 1)
-                        return Util::EmDash + QString(" BREAK ") + Util::EmDash;
+                        return emDash + QString(" BREAK ") + emDash;
 
                     return QString();
 
                 case QueueEntryType::Barrier:
                     if (col <= 1)
-                        return Util::EmDash + QString(" BARRIER ") + Util::EmDash;
+                        return emDash + QString(" BARRIER ") + emDash;
 
                     return QString();
 
                 case QueueEntryType::UnknownSpecialType:
                     if (col <= 1)
-                        return Util::EmDash + QString(" ????? ") + Util::EmDash;
+                        return emDash + QString(" ????? ") + emDash;
 
                     return QString();
                 }
@@ -717,7 +723,8 @@ namespace PMP
 
         auto queueId = track->_queueID;
 
-        QueueEntryInfo* info = queueId ? _infoFetcher->entryInfoByQID(queueId) : nullptr;
+        QueueEntryInfo* info =
+                queueId ? _infoStorage->entryInfoByQueueId(queueId) : nullptr;
 
         if (info == nullptr)
             return QueueTrack();

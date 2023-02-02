@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -63,6 +63,13 @@ add_hashtest(
 )
 
 
+# TestNullable
+qt5_wrap_cpp(PMP_TestNullable_MOCS test_nullable.h)
+add_executable(test_nullable test_nullable.cpp ${PMP_TestNullable_MOCS})
+target_link_libraries(test_nullable Qt5::Core Qt5::Test)
+add_test(test_nullable test_nullable)
+
+
 # TestFileHash
 qt5_wrap_cpp(PMP_TestFileHash_MOCS test_filehash.h)
 add_executable(test_filehash test_filehash.cpp
@@ -105,3 +112,13 @@ add_executable(test_networkprotocol test_networkprotocol.cpp
 )
 target_link_libraries(test_networkprotocol Qt5::Core Qt5::Test)
 add_test(test_networkprotocol test_networkprotocol)
+
+
+# TestHashRelations
+qt5_wrap_cpp(PMP_TestHashRelations_MOCS test_hashrelations.h)
+add_executable(test_hashrelations test_hashrelations.cpp
+    ${PMP_TestHashRelations_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/server/hashrelations.cpp
+)
+target_link_libraries(test_hashrelations Qt5::Core Qt5::Test)
+add_test(test_hashrelations test_hashrelations)

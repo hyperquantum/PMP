@@ -25,13 +25,10 @@
 #include "common/version.h"
 
 #include "collectionmonitor.h"
-#include "database.h"
-#include "history.h"
 #include "player.h"
 #include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
-#include "server.h"
 #include "serverhealthmonitor.h"
 #include "serverinterface.h"
 #include "users.h"
@@ -40,26 +37,27 @@
 #include <QThreadPool>
 #include <QTimer>
 
-namespace PMP
+namespace PMP::Server
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 19;
+    const qint16 ConnectedClient::ServerProtocolNo = 22;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
-                                     History* history,
                                      Users* users,
                                      CollectionMonitor* collectionMonitor,
                                      ServerHealthMonitor* serverHealthMonitor)
      : _socket(socket), _serverInterface(serverInterface),
-       _player(player), _history(history),
+       _player(player),
        _users(users), _collectionMonitor(collectionMonitor),
        _serverHealthMonitor(serverHealthMonitor),
        _clientProtocolNo(-1),
        _lastSentNowPlayingID(0),
-       _terminated(false), _binaryMode(false),
-       _eventsEnabled(false), _healthEventsEnabled(false),
+       _terminated(false),
+       _binaryMode(false),
+       _eventsEnabled(false),
+       _healthEventsEnabled(false),
        _pendingPlayerStatus(false)
     {
         _serverInterface->setParent(this);
@@ -72,10 +70,6 @@ namespace PMP
                 qDebug() << "server shutting down; terminating this connection";
                 terminateConnection();
             }
-        );
-        connect(
-            _serverInterface, &ServerInterface::serverSettingsReloadResultEvent,
-            this, &ConnectedClient::serverSettingsReloadResultEvent
         );
 
         connect(
@@ -121,9 +115,13 @@ namespace PMP
 
     void ConnectedClient::enableEvents()
     {
-        if (_eventsEnabled) return;
+        if (_eventsEnabled)
+            return;
 
         qDebug() << "enabling event notifications";
+
+        enableHealthEvents(GeneralOrSpecific::General);
+
         _eventsEnabled = true;
 
         auto queue = &_player->queue();
@@ -149,6 +147,11 @@ namespace PMP
         connect(
             _player, &Player::userPlayingForChanged,
             this, &ConnectedClient::onUserPlayingForChanged
+        );
+
+        connect(
+            _serverInterface, &ServerInterface::delayedStartActiveChanged,
+            this, &ConnectedClient::onDelayedStartActiveChanged
         );
 
         connect(
@@ -192,8 +195,12 @@ namespace PMP
         );
 
         connect(
-            _history, &History::updatedHashUserStats,
-            this, &ConnectedClient::onUserHashStatsUpdated
+            _serverInterface, &ServerInterface::hashUserDataChangedOrAvailable,
+            this,
+            [this](quint32 userId, QVector<HashStats> stats)
+            {
+                sendHashUserDataMessage(userId, stats);
+            }
         );
 
         connect(
@@ -206,23 +213,17 @@ namespace PMP
             this, &ConnectedClient::sendServerClockMessage
         );
         sendServerClockMessage();
-
-        if (!_healthEventsEnabled)
-        {
-            connect(
-                _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
-                this, &ConnectedClient::serverHealthChanged
-            );
-
-            sendServerHealthMessageIfNotEverythingOkay();
-        }
     }
 
-    void ConnectedClient::enableHealthEvents()
+    void ConnectedClient::enableHealthEvents(GeneralOrSpecific howEnabled)
     {
-        auto healthEventsWereAlreadyEnabled = _eventsEnabled | _healthEventsEnabled;
-        _healthEventsEnabled = true;
-        if (healthEventsWereAlreadyEnabled) return; /* nothing to do */
+        auto healthEventsWereEnabledAlready = _eventsEnabled | _healthEventsEnabled;
+
+        if (howEnabled == GeneralOrSpecific::Specific)
+            _healthEventsEnabled = true;
+
+        if (healthEventsWereEnabledAlready)
+            return; /* nothing to do */
 
         connect(
             _serverHealthMonitor, &ServerHealthMonitor::serverHealthChanged,
@@ -610,9 +611,10 @@ namespace PMP
     {
         //qDebug() << "sending state info";
 
-        ServerPlayerState state = _player->state();
+        auto playerStateOverview = _serverInterface->getPlayerStateOverview();
+
         quint8 stateNum = 0;
-        switch (state)
+        switch (playerStateOverview.playerState)
         {
         case ServerPlayerState::Stopped:
             stateNum = 1;
@@ -625,26 +627,21 @@ namespace PMP
             break;
         }
 
-        quint64 position = _player->playPosition();
-        quint8 volume = _player->volume();
-
-        qint32 queueLength = _player->queue().length();
-
-        QueueEntry const* nowPlaying = _player->nowPlaying();
-        quint32 queueID = nowPlaying ? nowPlaying->queueID() : 0;
+        if (_clientProtocolNo >= 20 && playerStateOverview.delayedStartActive)
+            stateNum |= 128;
 
         QByteArray message;
         message.reserve(20);
         NetworkProtocol::append2Bytes(message, ServerMessageType::PlayerStateMessage);
         NetworkUtil::appendByte(message, stateNum);
-        NetworkUtil::appendByte(message, volume);
-        NetworkUtil::append4Bytes(message, queueLength);
-        NetworkUtil::append4Bytes(message, queueID);
-        NetworkUtil::append8Bytes(message, position);
+        NetworkUtil::appendByte(message, playerStateOverview.volume);
+        NetworkUtil::append4Bytes(message, playerStateOverview.queueLength);
+        NetworkUtil::append4Bytes(message, playerStateOverview.nowPlayingQueueId);
+        NetworkUtil::append8Bytes(message, playerStateOverview.trackPosition);
 
         sendBinaryMessage(message);
 
-        _lastSentNowPlayingID = queueID;
+        _lastSentNowPlayingID = playerStateOverview.nowPlayingQueueId;
     }
 
     void ConnectedClient::sendVolumeMessage()
@@ -744,6 +741,34 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendServerVersionInfoMessage()
+    {
+        auto versionInfo = _serverInterface->getServerVersionInfo();
+
+        auto programNameBytes = versionInfo.programName.left(63).toUtf8();
+        auto versionDisplayBytes = versionInfo.versionForDisplay.left(63).toUtf8();
+        auto vcsBuildBytes = versionInfo.vcsBuild.left(63).toUtf8();
+        auto vcsBranchBytes = versionInfo.vcsBranch.left(63).toUtf8();
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4
+                        + programNameBytes.size() + versionDisplayBytes.size()
+                        + vcsBuildBytes.size() + vcsBranchBytes.size());
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::ServerVersionInfoMessage);
+        NetworkUtil::append2Bytes(message, 0); // filler
+        NetworkUtil::appendByteUnsigned(message, programNameBytes.size());
+        NetworkUtil::appendByteUnsigned(message, versionDisplayBytes.size());
+        NetworkUtil::appendByteUnsigned(message, vcsBuildBytes.size());
+        NetworkUtil::appendByteUnsigned(message, vcsBranchBytes.size());
+        message += programNameBytes;
+        message += versionDisplayBytes;
+        message += vcsBuildBytes;
+        message += vcsBranchBytes;
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendServerInstanceIdentifier()
     {
         QUuid uuid = _serverInterface->getServerUuid();
@@ -759,11 +784,12 @@ namespace PMP
 
     void ConnectedClient::sendDatabaseIdentifier()
     {
-        auto db = Database::getDatabaseForCurrentThread();
-        if (!db)
-            return; /* database unusable */
+        auto maybeUuid = _serverInterface->getDatabaseUuid();
 
-        QUuid uuid = db->getDatabaseIdentifier();
+        if (maybeUuid.failed())
+            return;
+
+        auto uuid = maybeUuid.result();
 
         QByteArray message;
         message.reserve(2 + 16);
@@ -817,8 +843,7 @@ namespace PMP
             length = queueLength - startOffset;
         }
 
-        const QList<QueueEntry*> entries =
-            queue.entries(startOffset, (length == 0) ? -1 : length);
+        auto entries = queue.entries(startOffset, (length == 0) ? -1 : length);
 
         QByteArray message;
         message.reserve(10 + entries.length() * 4);
@@ -826,7 +851,7 @@ namespace PMP
         NetworkUtil::append4Bytes(message, queueLength);
         NetworkUtil::append4Bytes(message, startOffset);
 
-        for (auto* entry : entries)
+        for (auto& entry : entries)
         {
             NetworkUtil::append4Bytes(message, entry->queueID());
         }
@@ -863,6 +888,63 @@ namespace PMP
             NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry->ended());
             NetworkUtil::append2BytesSigned(message, permillage);
             NetworkUtil::append2Bytes(message, status);
+        }
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendHashUserDataMessage(quint32 userId,
+                                                  QVector<HashStats> stats)
+    {
+        const int maxSize = (1 << 16) - 1;
+
+        /* not too big? */
+        if (stats.size() > maxSize)
+        {
+            /* TODO: maybe delay the second part? */
+            sendHashUserDataMessage(userId, stats.mid(0, maxSize));
+            sendHashUserDataMessage(userId, stats.mid(maxSize));
+            return;
+        }
+
+        qint16 fields = 1 /* previously heard */ | 2 /* score */;
+        fields &=
+            NetworkProtocol::getHashUserDataFieldsMaskForProtocolVersion(
+                                                                       _clientProtocolNo);
+        bool sendPreviouslyHeard = fields & 1;
+        bool sendScore = fields & 2;
+        uint fieldsSize = (sendPreviouslyHeard ? 8 : 0) + (sendScore ? 2 : 0);
+
+        qDebug() << "sending user track data for" << stats.size()
+                 << "hashes; fields:" << fields;
+
+        QByteArray message;
+        message.reserve(
+            2 + 2 + 4 + 4
+                + stats.size() * (NetworkProtocol::FILEHASH_BYTECOUNT + fieldsSize)
+        );
+
+        NetworkProtocol::append2Bytes(message, ServerMessageType::HashUserDataMessage);
+        NetworkUtil::append2Bytes(message, stats.size());
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append2Bytes(message, fields);
+        NetworkUtil::append4Bytes(message, userId);
+
+        for (auto& stat : qAsConst(stats))
+        {
+            NetworkProtocol::appendHash(message, stat.hash());
+
+            if (sendPreviouslyHeard)
+            {
+                NetworkUtil::append8ByteMaybeEmptyQDateTimeMsSinceEpoch(
+                    message, stat.stats().lastHeard()
+                );
+            }
+
+            if (sendScore)
+            {
+                NetworkUtil::append2Bytes(message, (quint16)stat.stats().score());
+            }
         }
 
         sendBinaryMessage(message);
@@ -919,17 +1001,17 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    quint16 ConnectedClient::createTrackStatusFor(QueueEntry* entry)
+    quint16 ConnectedClient::createTrackStatusFor(QSharedPointer<QueueEntry> entry)
     {
         switch (entry->kind())
         {
-        case PMP::QueueEntryKind::Track:
+        case QueueEntryKind::Track:
             break; /* handled below */
 
-        case PMP::QueueEntryKind::Break:
+        case QueueEntryKind::Break:
             return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Break);
 
-        case PMP::QueueEntryKind::Barrier:
+        case QueueEntryKind::Barrier:
             return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Barrier);
         }
 
@@ -944,7 +1026,7 @@ namespace PMP
 
     void ConnectedClient::sendQueueEntryInfoMessage(quint32 queueID)
     {
-        QueueEntry* track = _player->queue().lookup(queueID);
+        auto track = _player->queue().lookup(queueID);
         if (track == nullptr) { return; /* sorry, cannot send */ }
 
         track->checkTrackData(_player->resolver());
@@ -1021,7 +1103,7 @@ namespace PMP
 
         for(quint32 queueID : queueIDs)
         {
-            QueueEntry* track = queue.lookup(queueID);
+            auto track = queue.lookup(queueID);
             auto trackStatus =
                 track ? createTrackStatusFor(track)
                       : NetworkProtocol::createTrackStatusUnknownId();
@@ -1034,7 +1116,7 @@ namespace PMP
 
         for(quint32 queueID : queueIDs)
         {
-            QueueEntry* track = queue.lookup(queueID);
+            auto track = queue.lookup(queueID);
             if (track == 0) { continue; /* ID not found */ }
 
             track->checkTrackData(_player->resolver());
@@ -1097,29 +1179,26 @@ namespace PMP
 
         /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
 
-        FileHash emptyHash;
-
         for (auto queueID : queueIDs)
         {
-            QueueEntry* track = queue.lookup(queueID);
+            auto track = queue.lookup(queueID);
             auto trackStatus =
                 track ? createTrackStatusFor(track)
                       : NetworkProtocol::createTrackStatusUnknownId();
 
-            const FileHash* hash = track ? track->hash() : &emptyHash;
-            hash = hash ? hash : &emptyHash;
+            auto hash = track ? track->hash() : null;
 
             NetworkUtil::append4Bytes(message, queueID);
             NetworkUtil::append2Bytes(message, trackStatus);
             NetworkUtil::append2Bytes(message, 0); /* filler */
-            NetworkProtocol::appendHash(message, *hash);
+            NetworkProtocol::appendHash(message, hash);
         }
 
         sendBinaryMessage(message);
     }
 
     void ConnectedClient::sendPossibleTrackFilenames(quint32 queueID,
-                                                     QList<QString> const& names)
+                                                     QVector<QString> const& names)
     {
         QByteArray message;
         message.reserve(2 + 4 + names.size() * (4 + 30)); /* only an approximation */
@@ -1328,67 +1407,6 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::userDataForHashesFetchCompleted(quint32 userId,
-                                                         QVector<UserDataForHash> results,
-                                                          bool havePreviouslyHeard,
-                                                          bool haveScore)
-    {
-        const int maxSize = (1 << 16) - 1;
-
-        /* not too big? */
-        if (results.size() > maxSize)
-        {
-            /* TODO: maybe delay the second part? */
-            userDataForHashesFetchCompleted(
-                userId, results.mid(0, maxSize), havePreviouslyHeard, haveScore
-            );
-            userDataForHashesFetchCompleted(
-                userId, results.mid(maxSize), havePreviouslyHeard, haveScore
-            );
-            return;
-        }
-
-        qint16 fields = (havePreviouslyHeard ? 1 : 0) | (haveScore ? 2 : 0);
-        fields &=
-            NetworkProtocol::getHashUserDataFieldsMaskForProtocolVersion(
-                                                                       _clientProtocolNo);
-        uint fieldsSize = (havePreviouslyHeard ? 8 : 0) + (haveScore ? 2 : 0);
-
-        qDebug() << "sending user data for" << results.size()
-                 << "hashes; fields:" << fields;
-
-        QByteArray message;
-        message.reserve(
-            2 + 2 + 4 + 4
-                + results.size() * (NetworkProtocol::FILEHASH_BYTECOUNT + fieldsSize)
-        );
-
-        NetworkProtocol::append2Bytes(message, ServerMessageType::HashUserDataMessage);
-        NetworkUtil::append2Bytes(message, results.size());
-        NetworkUtil::append2Bytes(message, 0); /* filler */
-        NetworkUtil::append2Bytes(message, fields);
-        NetworkUtil::append4Bytes(message, userId);
-
-        for (auto& result : qAsConst(results))
-        {
-            NetworkProtocol::appendHash(message, result.hash);
-
-            if (havePreviouslyHeard)
-            {
-                NetworkUtil::append8ByteMaybeEmptyQDateTimeMsSinceEpoch(
-                    message, result.previouslyHeard
-                );
-            }
-
-            if (haveScore)
-            {
-                NetworkUtil::append2Bytes(message, (quint16)result.score);
-            }
-        }
-
-        sendBinaryMessage(message);
-    }
-
     void ConnectedClient::onHashAvailabilityChanged(QVector<FileHash> available,
                                                     QVector<FileHash> unavailable)
     {
@@ -1463,6 +1481,34 @@ namespace PMP
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendDelayedStartInfoMessage()
+    {
+        /* only send it if the client will understand it */
+        if (_clientProtocolNo < 21)
+            return;
+
+        qint64 msTimeRemaining =
+                _serverInterface->getDelayedStartTimeRemainingMilliseconds();
+
+        if (msTimeRemaining < 0)
+        {
+            qWarning() << "delayed start time remaining is negative, cannot send info";
+            return;
+        }
+
+        qint64 msSinceEpoch = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+
+        QByteArray message;
+        message.reserve(2 + 2 + 8 + 8);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::DelayedStartInfoMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append8BytesSigned(message, msSinceEpoch);
+        NetworkUtil::append8BytesSigned(message, msTimeRemaining);
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
         sendResultMessage(ResultMessageErrorCode::NoError, clientReference, intData);
@@ -1480,39 +1526,54 @@ namespace PMP
         switch (result.code())
         {
         case ResultCode::Success:
-            sendResultMessage(ResultMessageErrorCode::NoError, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::NoError, clientReference);
+            return;
+        case ResultCode::NoOp:
+            sendResultMessage(ResultMessageErrorCode::AlreadyDone, clientReference);
             return;
         case ResultCode::NotLoggedIn:
-            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference);
+            return;
+        case ResultCode::OperationAlreadyRunning:
+            sendResultMessage(ResultMessageErrorCode::OperationAlreadyRunning,
+                              clientReference);
             return;
         case ResultCode::HashIsNull:
-            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
             return;
         case ResultCode::QueueEntryIdNotFound:
             sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
                               static_cast<quint32>(result.intArg()));
             return;
         case ResultCode::QueueIndexOutOfRange:
-            sendResultMessage(ResultMessageErrorCode::InvalidQueueIndex, clientReference,
-                              0);
+            sendResultMessage(ResultMessageErrorCode::InvalidQueueIndex, clientReference);
             return;
         case ResultCode::QueueMaxSizeExceeded:
             sendResultMessage(ResultMessageErrorCode::MaximumQueueSizeExceeded,
-                              clientReference, 0);
+                              clientReference);
             return;
         case ResultCode::QueueItemTypeInvalid:
             sendResultMessage(ResultMessageErrorCode::InvalidQueueItemType,
-                              clientReference, 0);
+                              clientReference);
+            return;
+        case ResultCode::DelayOutOfRange:
+            sendResultMessage(ResultMessageErrorCode::InvalidTimeSpan, clientReference);
             return;
         case ResultCode::InternalError:
             sendResultMessage(ResultMessageErrorCode::NonFatalInternalServerError,
-                              clientReference, 0);
+                              clientReference);
             return;
         }
 
         qWarning() << "Unhandled ResultCode" << int(result.code())
                    << "for client-ref" << clientReference;
-        sendResultMessage(ResultMessageErrorCode::UnknownError, clientReference, 0);
+        sendResultMessage(ResultMessageErrorCode::UnknownError, clientReference);
+    }
+
+    void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
+                                            quint32 clientReference)
+    {
+        return sendResultMessage(errorType, clientReference, 0);
     }
 
     void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
@@ -1554,7 +1615,7 @@ namespace PMP
     void ConnectedClient::serverSettingsReloadResultEvent(uint clientReference,
                                                          ResultMessageErrorCode errorCode)
     {
-        sendResultMessage(errorCode, clientReference, 0);
+        sendResultMessage(errorCode, clientReference);
     }
 
     void ConnectedClient::volumeChanged(int volume)
@@ -1584,25 +1645,6 @@ namespace PMP
         Q_UNUSED(user)
 
         sendUserPlayingForModeMessage();
-    }
-
-    void ConnectedClient::onUserHashStatsUpdated(uint hashID, quint32 user,
-                                                 QDateTime previouslyHeard, qint16 score)
-    {
-        qDebug() << "ConnectedClient::onUserHashStatsUpdated; user:" << user
-                 << " hash:" << hashID
-                 << " prevHeard:" << previouslyHeard << " score:" << score;
-
-        UserDataForHash data;
-        data.hash = _player->resolver().getHashByID(hashID);
-        if (data.hash.isNull()) return; /* invalid ID */
-
-        data.previouslyHeard = previouslyHeard;
-        data.score = score;
-
-        QVector<UserDataForHash> dataList;
-        dataList << data;
-        userDataForHashesFetchCompleted(user, dataList, true, true);
     }
 
     void ConnectedClient::onFullIndexationRunStatusChanged(bool running)
@@ -1637,7 +1679,7 @@ namespace PMP
         }
     }
 
-    void ConnectedClient::currentTrackChanged(QueueEntry const* entry)
+    void ConnectedClient::currentTrackChanged(QSharedPointer<QueueEntry const> entry)
     {
         if (_binaryMode)
         {
@@ -1652,7 +1694,7 @@ namespace PMP
         }
 
         int seconds = static_cast<int>(entry->lengthInMilliseconds() / 1000);
-        FileHash const* hash = entry->hash();
+        auto hash = entry->hash().value();
 
         sendTextCommand(
             "nowplaying track\n QID: " + QString::number(entry->queueID())
@@ -1660,9 +1702,9 @@ namespace PMP
              + "\n title: " + entry->title()
              + "\n artist: " + entry->artist()
              + "\n length: " + (seconds < 0 ? "?" : QString::number(seconds)) + " sec"
-             + "\n hash length: " + (!hash ? "?" : QString::number(hash->length()))
-             + "\n hash SHA-1: " + (!hash ? "?" : hash->SHA1().toHex())
-             + "\n hash MD5: " + (!hash ? "?" : hash->MD5().toHex())
+             + "\n hash length: " + QString::number(hash.length())
+             + "\n hash SHA-1: " + hash.SHA1().toHex()
+             + "\n hash MD5: " + hash.MD5().toHex()
         );
     }
 
@@ -1685,10 +1727,18 @@ namespace PMP
         //sendTextCommand("position " + QString::number(position));
     }
 
+    void ConnectedClient::onDelayedStartActiveChanged()
+    {
+        if (_clientProtocolNo >= 21 && _serverInterface->delayedStartActive())
+            sendDelayedStartInfoMessage();
+        else
+            sendPlayerStateMessage();
+    }
+
     void ConnectedClient::sendTextualQueueInfo()
     {
         PlayerQueue& queue = _player->queue();
-        const QList<QueueEntry*> queueContent = queue.entries(0, 10);
+        const auto queueContent = queue.entries(0, 10);
 
         QString command =
             "queue length " + QString::number(queue.length())
@@ -1698,7 +1748,7 @@ namespace PMP
 
         Resolver& resolver = _player->resolver();
         uint index = 0;
-        for (auto entry : queueContent)
+        for (auto& entry : queueContent)
         {
             ++index;
             entry->checkTrackData(resolver);
@@ -1870,6 +1920,9 @@ namespace PMP
         case ClientMessageType::PossibleFilenamesForQueueEntryRequestMessage:
             parsePossibleFilenamesForQueueEntryRequestMessage(message);
             break;
+        case ClientMessageType::ActivateDelayedStartRequest:
+            parseActivateDelayedStartRequest(message);
+            break;
         case ClientMessageType::PlayerSeekRequestMessage:
             parsePlayerSeekRequestMessage(message);
             break;
@@ -1877,229 +1930,16 @@ namespace PMP
             parseQueueEntryMoveRequestMessage(message);
             break;
         case ClientMessageType::InitiateNewUserAccountMessage:
-        {
-            if (messageLength <= 8)
-                return; /* invalid message */
-
-            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-
-            if (messageLength - 8 != loginLength)
-                return; /* invalid message */
-
-            qDebug() << "received initiate-new-user-account request; clientRef:"
-                     << clientReference;
-
-            QByteArray loginBytes = message.mid(8);
-            QString login = QString::fromUtf8(loginBytes);
-
-            QByteArray salt;
-            Users::ErrorCode result = Users::generateSaltForNewAccount(login, salt);
-
-            if (result == Users::Successfull)
-            {
-                _userAccountRegistering = login;
-                _saltForUserAccountRegistering = salt;
-                sendNewUserAccountSaltMessage(login, salt);
-            }
-            else
-            {
-                sendResultMessage(
-                    Users::toNetworkProtocolError(result), clientReference, 0, loginBytes
-                );
-            }
-        }
+            parseInitiateNewUserAccountMessage(message);
             break;
         case ClientMessageType::FinishNewUserAccountMessage:
-        {
-            if (messageLength <= 8)
-                return; /* invalid message */
-
-            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
-            int saltLength = NetworkUtil::getByteUnsignedToInt(message, 3);
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-
-            qDebug() << "received finish-new-user-account request; clientRef:"
-                     << clientReference;
-
-            if (messageLength - 8 <= loginLength + saltLength)
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
-                );
-                return; /* invalid message */
-            }
-
-            QByteArray loginBytes = message.mid(8, loginLength);
-            QString login = QString::fromUtf8(loginBytes);
-            QByteArray saltFromClient = message.mid(8 + loginLength, saltLength);
-
-            if (login != _userAccountRegistering
-                || saltFromClient != _saltForUserAccountRegistering)
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::UserAccountRegistrationMismatch,
-                    clientReference, 0, loginBytes
-                );
-                return;
-            }
-
-            /* clean up state */
-            _userAccountRegistering = "";
-            _saltForUserAccountRegistering.clear();
-
-            QByteArray hashedPasswordFromClient =
-                message.mid(8 + loginLength + saltLength);
-
-            /* simple way to get the expected length of the hashed password */
-            QByteArray hashTest =
-                NetworkProtocol::hashPassword(saltFromClient, "test");
-
-            if (hashedPasswordFromClient.size() != hashTest.size())
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
-                );
-                return;
-            }
-
-            QPair<Users::ErrorCode, quint32> result =
-                _users->registerNewAccount(
-                    login, saltFromClient, hashedPasswordFromClient
-                );
-
-            /* send error or success message */
-            sendResultMessage(
-                Users::toNetworkProtocolError(result.first),
-                clientReference, result.second
-            );
-        }
+            parseFinishNewUserAccountMessage(message);
             break;
         case ClientMessageType::InitiateLoginMessage:
-        {
-            if (messageLength <= 8)
-                return; /* invalid message */
-
-            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-
-            if (messageLength - 8 != loginLength)
-                return; /* invalid message */
-
-            qDebug() << "received initiate-login request; clientRef:"
-                     << clientReference;
-
-            if (isLoggedIn()) /* already logged in */
-            {
-                sendResultMessage(ResultMessageErrorCode::AlreadyLoggedIn,
-                                  clientReference, 0);
-                return;
-            }
-
-            QByteArray loginBytes = message.mid(8);
-            QString login = QString::fromUtf8(loginBytes);
-
-            User user;
-            bool userLookup = _users->getUserByLogin(login, user);
-
-            if (!userLookup) /* user does not exist */
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::UserLoginAuthenticationFailed,
-                    clientReference, 0, loginBytes
-                );
-                return;
-            }
-
-            QByteArray userSalt = user.salt;
-            QByteArray sessionSalt = Users::generateSalt();
-
-            _userAccountLoggingIn = user.login;
-            _sessionSaltForUserLoggingIn = sessionSalt;
-
-            sendUserLoginSaltMessage(login, userSalt, sessionSalt);
-        }
+            parseInitiateLoginMessage(message);
             break;
         case ClientMessageType::FinishLoginMessage:
-        {
-            if (messageLength <= 12)
-                return; /* invalid message */
-
-            int loginLength = NetworkUtil::getByteUnsignedToInt(message, 4);
-            int userSaltLength = NetworkUtil::getByteUnsignedToInt(message, 5);
-            int sessionSaltLength = NetworkUtil::getByteUnsignedToInt(message, 6);
-            int hashedPasswordLength = NetworkUtil::getByteUnsignedToInt(message, 7);
-            quint32 clientReference = NetworkUtil::get4Bytes(message, 8);
-
-            qDebug() << "received finish-login request; clientRef:"
-                     << clientReference;
-
-            if (messageLength - 12 !=
-                    loginLength + userSaltLength + sessionSaltLength
-                    + hashedPasswordLength)
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::InvalidMessageStructure, clientReference, 0
-                );
-                return; /* invalid message */
-            }
-
-            QByteArray loginBytes = message.mid(12, loginLength);
-            QString login = QString::fromUtf8(loginBytes);
-
-            User user;
-            bool userLookup = _users->getUserByLogin(login, user);
-
-            if (!userLookup) /* user does not exist */
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::UserLoginAuthenticationFailed,
-                    clientReference, 0, loginBytes
-                );
-                return;
-            }
-
-            qDebug() << " user lookup successfull: user id =" << user.id
-                     << "; login =" << user.login;
-
-            QByteArray userSaltFromClient = message.mid(12 + loginLength, userSaltLength);
-            QByteArray sessionSaltFromClient =
-                message.mid(12 + loginLength + userSaltLength, sessionSaltLength);
-
-            if (login != _userAccountLoggingIn
-                || userSaltFromClient != user.salt
-                || sessionSaltFromClient != _sessionSaltForUserLoggingIn)
-            {
-                sendResultMessage(
-                    ResultMessageErrorCode::UserAccountLoginMismatch,
-                    clientReference, 0, loginBytes
-                );
-                return;
-            }
-
-            /* clean up state */
-            _userAccountLoggingIn = "";
-            _sessionSaltForUserLoggingIn.clear();
-
-            QByteArray hashedPasswordFromClient =
-                message.mid(12 + loginLength + userSaltLength + sessionSaltLength);
-
-            bool loginSucceeded =
-                Users::checkUserLoginPassword(
-                    user, sessionSaltFromClient, hashedPasswordFromClient
-                );
-
-            if (loginSucceeded)
-            {
-                _serverInterface->setLoggedIn(user.id, user.login);
-                sendSuccessMessage(clientReference, user.id);
-            }
-            else
-            {
-                sendResultMessage(ResultMessageErrorCode::UserLoginAuthenticationFailed,
-                                  clientReference, 0);
-            }
-        }
+            parseFinishLoginMessage(message);
             break;
         case ClientMessageType::CollectionFetchRequestMessage:
             parseCollectionFetchRequestMessage(message);
@@ -2243,12 +2083,258 @@ namespace PMP
         handleParameterlessAction(action, clientReference);
     }
 
+    void ConnectedClient::parseInitiateNewUserAccountMessage(const QByteArray& message)
+    {
+        if (message.length() <= 8)
+            return; /* invalid message */
+
+        int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        if (message.length() - 8 != loginLength)
+            return; /* invalid message */
+
+        qDebug() << "received initiate-new-user-account request; clientRef:"
+                 << clientReference;
+
+        QByteArray loginBytes = message.mid(8);
+        QString login = QString::fromUtf8(loginBytes);
+
+        auto result = Users::generateSaltForNewAccount(login);
+
+        if (result.succeeded())
+        {
+            auto salt = result.result();
+            _userAccountRegistering = login;
+            _saltForUserAccountRegistering = salt;
+            sendNewUserAccountSaltMessage(login, salt);
+        }
+        else
+        {
+            sendResultMessage(
+                Users::toNetworkProtocolError(result.error()), clientReference, 0,
+                loginBytes
+            );
+        }
+    }
+
+    void ConnectedClient::parseFinishNewUserAccountMessage(const QByteArray& message)
+    {
+        if (message.length() <= 8)
+            return; /* invalid message */
+
+        int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
+        int saltLength = NetworkUtil::getByteUnsignedToInt(message, 3);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "received finish-new-user-account request; clientRef:"
+                 << clientReference;
+
+        if (message.length() - 8 <= loginLength + saltLength)
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::InvalidMessageStructure, clientReference
+            );
+            return; /* invalid message */
+        }
+
+        QByteArray loginBytes = message.mid(8, loginLength);
+        QString login = QString::fromUtf8(loginBytes);
+        QByteArray saltFromClient = message.mid(8 + loginLength, saltLength);
+
+        if (login != _userAccountRegistering
+            || saltFromClient != _saltForUserAccountRegistering)
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::UserAccountRegistrationMismatch,
+                clientReference, 0, loginBytes
+            );
+            return;
+        }
+
+        /* clean up state */
+        _userAccountRegistering = "";
+        _saltForUserAccountRegistering.clear();
+
+        QByteArray hashedPasswordFromClient =
+            message.mid(8 + loginLength + saltLength);
+
+        /* simple way to get the expected length of the hashed password */
+        QByteArray hashTest =
+            NetworkProtocol::hashPassword(saltFromClient, "test");
+
+        if (hashedPasswordFromClient.size() != hashTest.size())
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::InvalidMessageStructure, clientReference
+            );
+            return;
+        }
+
+        auto result =
+            _users->registerNewAccount(
+                login, saltFromClient, hashedPasswordFromClient
+            );
+
+        if (result.succeeded())
+        {
+            sendSuccessMessage(clientReference, result.result());
+        }
+        else
+        {
+            sendResultMessage(Users::toNetworkProtocolError(result.error()),
+                              clientReference);
+        }
+    }
+
+    void ConnectedClient::parseInitiateLoginMessage(const QByteArray& message)
+    {
+        if (message.length() <= 8)
+            return; /* invalid message */
+
+        int loginLength = NetworkUtil::getByteUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        if (message.length() - 8 != loginLength)
+            return; /* invalid message */
+
+        QByteArray loginBytes = message.mid(8);
+        QString login = QString::fromUtf8(loginBytes);
+
+        qDebug() << "received initiate-login request; clientRef:" << clientReference
+                 << "; login:" << login;
+
+        if (isLoggedIn()) /* already logged in */
+        {
+            sendResultMessage(ResultMessageErrorCode::AlreadyLoggedIn,
+                              clientReference);
+            return;
+        }
+
+        DatabaseRecords::User user;
+        bool userLookup = _users->getUserByLogin(login, user);
+
+        if (!userLookup) /* user does not exist */
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                clientReference, 0, loginBytes
+            );
+            return;
+        }
+
+        QByteArray userSalt = user.salt;
+        QByteArray sessionSalt = Users::generateSalt();
+
+        _userIdLoggingIn = user.id;
+        _sessionSaltForUserLoggingIn = sessionSalt;
+
+        sendUserLoginSaltMessage(login, userSalt, sessionSalt);
+    }
+
+    void ConnectedClient::parseFinishLoginMessage(const QByteArray& message)
+    {
+        if (message.length() <= 12)
+            return; /* invalid message */
+
+        int loginLength = NetworkUtil::getByteUnsignedToInt(message, 4);
+        int userSaltLength = NetworkUtil::getByteUnsignedToInt(message, 5);
+        int sessionSaltLength = NetworkUtil::getByteUnsignedToInt(message, 6);
+        int hashedPasswordLength = NetworkUtil::getByteUnsignedToInt(message, 7);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 8);
+
+        if (message.length() - 12 !=
+                loginLength + userSaltLength + sessionSaltLength + hashedPasswordLength)
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::InvalidMessageStructure, clientReference
+            );
+            return; /* invalid message */
+        }
+
+        int offset = 12;
+
+        QByteArray loginBytes = message.mid(offset, loginLength);
+        QString login = QString::fromUtf8(loginBytes);
+        offset += loginLength;
+
+        QByteArray userSaltFromClient = message.mid(offset, userSaltLength);
+        offset += userSaltLength;
+
+        QByteArray sessionSaltFromClient = message.mid(offset, sessionSaltLength);
+        offset += sessionSaltLength;
+
+        QByteArray hashedPasswordFromClient = message.mid(offset);
+
+        qDebug() << "received finish-login request; clientRef:" << clientReference
+                 << "; login:" << login;
+
+        DatabaseRecords::User user;
+        bool userLookup = _users->getUserByLogin(login, user);
+
+        if (!userLookup) /* user does not exist */
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                clientReference, 0, loginBytes
+            );
+            return;
+        }
+
+        qDebug() << " user lookup successfull: user id =" << user.id
+                 << "; login =" << user.login;
+
+        if (user.id != _userIdLoggingIn
+            || userSaltFromClient != user.salt
+            || sessionSaltFromClient != _sessionSaltForUserLoggingIn)
+        {
+            sendResultMessage(
+                ResultMessageErrorCode::UserAccountLoginMismatch,
+                clientReference, 0, loginBytes
+            );
+            return;
+        }
+
+        /* clean up state */
+        _userIdLoggingIn = 0;
+        _sessionSaltForUserLoggingIn.clear();
+
+        bool loginSucceeded =
+            Users::checkUserLoginPassword(
+                user, sessionSaltFromClient, hashedPasswordFromClient
+            );
+
+        if (loginSucceeded)
+        {
+            _serverInterface->setLoggedIn(user.id, user.login);
+            sendSuccessMessage(clientReference, user.id);
+        }
+        else
+        {
+            sendResultMessage(ResultMessageErrorCode::UserLoginAuthenticationFailed,
+                              clientReference);
+        }
+    }
+
+    void ConnectedClient::parseActivateDelayedStartRequest(const QByteArray& message)
+    {
+        if (message.length() != 16)
+            return; /* invalid message */
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        qint64 delayMilliseconds = NetworkUtil::get8BytesSigned(message, 8);
+
+        qDebug() << "received delayed start activation request; delay:"
+                 << delayMilliseconds << "ms; client-ref:" << clientReference;
+
+        auto result = _serverInterface->activateDelayedStart(delayMilliseconds);
+        sendResultMessage(result, clientReference);
+    }
+
     void ConnectedClient::parsePlayerSeekRequestMessage(const QByteArray& message)
     {
         if (message.length() != 14)
             return; /* invalid message */
-
-        if (!isLoggedIn()) return; /* client needs to be authenticated for this */
 
         quint32 queueID = NetworkUtil::get4Bytes(message, 2);
         qint64 position = NetworkUtil::get8BytesSigned(message, 6);
@@ -2333,35 +2419,18 @@ namespace PMP
         if (message.length() != 6)
             return; /* invalid message */
 
-        quint32 queueID = NetworkUtil::get4Bytes(message, 2);
-        qDebug() << "received request for possible filenames of QID" << queueID;
+        quint32 queueId = NetworkUtil::get4Bytes(message, 2);
+        qDebug() << "received request for possible filenames of QID" << queueId;
 
-        if (queueID <= 0)
-            return; /* invalid queue ID */
+        auto future = _serverInterface->getPossibleFilenamesForQueueEntry(queueId);
 
-        QueueEntry* entry = _player->queue().lookup(queueID);
-        if (entry == nullptr)
-            return; /* not found :-/ */
-
-        const FileHash* hash = entry->hash();
-        if (hash == nullptr)
-        {
-            /* hash not found */
-            /* TODO: register callback to resume this once the hash becomes known */
-            return;
-        }
-
-        uint hashID = _player->resolver().getID(*hash);
-
-        /* FIXME: do this in another thread, it will slow down the main thread */
-
-        auto db = Database::getDatabaseForCurrentThread();
-        if (!db)
-            return; /* database unusable */
-
-        QList<QString> filenames = db->getFilenames(hashID);
-
-        sendPossibleTrackFilenames(queueID, filenames);
+        future.addResultListener(
+            this,
+            [this, queueId](QVector<QString> result)
+            {
+                sendPossibleTrackFilenames(queueId, result);
+            }
+        );
     }
 
     void ConnectedClient::parseQueueFetchRequestMessage(const QByteArray& message)
@@ -2564,17 +2633,7 @@ namespace PMP
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
         }
 
-        auto fetcher =
-            new UserDataForHashesFetcher(
-                userId, hashes,
-                (fields & 1) == 1, (fields & 2) == 2,
-                _player->resolver()
-            );
-        connect(
-            fetcher, &UserDataForHashesFetcher::finishedWithResult,
-            this, &ConnectedClient::userDataForHashesFetchCompleted
-        );
-        QThreadPool::globalInstance()->start(fetcher);
+        _serverInterface->requestHashUserData(userId, hashes);
     }
 
     void ConnectedClient::parsePlayerHistoryRequest(const QByteArray& message)
@@ -2616,10 +2675,12 @@ namespace PMP
 
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
 
+        qDebug() << "received collection fetch request; client ref:" << clientReference;
+
         if (!isLoggedIn())
         {
             /* client needs to be authenticated for this */
-            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference, 0);
+            sendResultMessage(ResultMessageErrorCode::NotLoggedIn, clientReference);
             return;
         }
 
@@ -2696,6 +2757,11 @@ namespace PMP
             qDebug() << "received request for list of protocol extensions";
             sendProtocolExtensionsMessage();
             break;
+        case 19:
+            qDebug() << "received request for delayed start info";
+            if (_serverInterface->delayedStartActive())
+                sendDelayedStartInfoMessage();
+            break;
         case 20: /* enable dynamic mode */
             qDebug() << "received ENABLE DYNAMIC MODE command";
             _serverInterface->enableDynamicMode();
@@ -2738,7 +2804,11 @@ namespace PMP
             break;
         case 51:
             qDebug() << "received SUBSCRIBE TO SERVER HEALTH UPDATES command";
-            enableHealthEvents();
+            enableHealthEvents(GeneralOrSpecific::Specific);
+            break;
+        case 60:
+            qDebug() << "received request for server version information";
+            sendServerVersionInfoMessage();
             break;
         case 99:
             qDebug() << "received SHUTDOWN command";
@@ -2756,18 +2826,34 @@ namespace PMP
     {
         switch (code)
         {
-        case PMP::ParameterlessActionCode::Reserved:
+        case ParameterlessActionCode::Reserved:
             break; /* not to be used, treat as invalid */
 
-        case PMP::ParameterlessActionCode::ReloadServerSettings:
-            _serverInterface->reloadServerSettings(clientReference);
+        case ParameterlessActionCode::ReloadServerSettings:
+        {
+            auto future = _serverInterface->reloadServerSettings();
+            future.addResultListener(
+                this,
+                [this, clientReference](ResultMessageErrorCode error)
+                {
+                    Q_EMIT serverSettingsReloadResultEvent(clientReference, error);
+                }
+            );
+
             return;
+        }
+        case ParameterlessActionCode::DeactivateDelayedStart:
+            {
+                auto result = _serverInterface->deactivateDelayedStart();
+                sendResultMessage(result, clientReference);
+                return;
+            }
         }
 
         qDebug() << "code of parameterless action not recognized: code="
                  << static_cast<int>(code) << " client-ref=" << clientReference;
 
-        sendResultMessage(ResultMessageErrorCode::UnknownAction, clientReference, 0);
+        sendResultMessage(ResultMessageErrorCode::UnknownAction, clientReference);
     }
 
     void ConnectedClient::handleCollectionFetchRequest(uint clientReference)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,18 +31,21 @@ namespace Ui
     class UserPickerWidget;
 }
 
-namespace PMP
+namespace PMP::Client
 {
     class AuthenticationController;
     class GeneralController;
+}
 
+namespace PMP
+{
     class UserPickerWidget : public QWidget
     {
         Q_OBJECT
     public:
         UserPickerWidget(QWidget* parent,
-                         GeneralController* generalController,
-                         AuthenticationController* authenticationController);
+                         Client::GeneralController* generalController,
+                         Client::AuthenticationController* authenticationController);
         ~UserPickerWidget();
 
     Q_SIGNALS:
@@ -56,8 +59,8 @@ namespace PMP
         void checkServerHealth();
 
         Ui::UserPickerWidget* _ui;
-        GeneralController* _generalController;
-        AuthenticationController* _authenticationController;
+        Client::GeneralController* _generalController;
+        Client::AuthenticationController* _authenticationController;
         bool _serverProblemsPreventLogin;
     };
 }

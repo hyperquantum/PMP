@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,37 +19,60 @@
 
 #include "serverinterface.h"
 
+#include "common/concurrent.h"
+#include "common/containerutil.h"
+#include "common/promise.h"
+#include "common/version.h"
+
+#include "database.h"
+#include "delayedstart.h"
 #include "generator.h"
+#include "hashidregistrar.h"
+#include "history.h"
 #include "player.h"
 #include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
-#include "server.h"
 #include "serversettings.h"
+#include "tcpserver.h"
+#include "users.h"
 
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Server
 {
-    ServerInterface::ServerInterface(ServerSettings* serverSettings, Server* server,
-                                     Player* player, Generator* generator)
+    ServerInterface::ServerInterface(ServerSettings* serverSettings, TcpServer* server,
+                                     Player* player, Generator* generator,
+                                     History* history,
+                                     HashIdRegistrar* hashIdRegistrar,
+                                     Users* users,
+                                     DelayedStart* delayedStart)
      : _userLoggedIn(0),
        _serverSettings(serverSettings),
        _server(server),
        _player(player),
-       _generator(generator)
+       _generator(generator),
+       _history(history),
+       _hashIdRegistrar(hashIdRegistrar),
+       _users(users),
+       _delayedStart(delayedStart)
     {
         connect(
-            _server, &Server::captionChanged,
+            _server, &TcpServer::captionChanged,
             this, &ServerInterface::serverCaptionChanged
         );
         connect(
-            _server, &Server::serverClockTimeSendingPulse,
+            _server, &TcpServer::serverClockTimeSendingPulse,
             this, &ServerInterface::serverClockTimeSendingPulse
         );
         connect(
-            _server, &Server::shuttingDown,
+            _server, &TcpServer::shuttingDown,
             this, &ServerInterface::serverShuttingDown
+        );
+
+        connect(
+            _delayedStart, &DelayedStart::delayedStartActiveChanged,
+            this, &ServerInterface::delayedStartActiveChanged
         );
 
         auto* queue = &_player->queue();
@@ -78,6 +101,11 @@ namespace PMP
             _generator, &Generator::waveFinished,
             this, &ServerInterface::onDynamicModeWaveEnded
         );
+
+        connect(
+            _history, &History::hashStatisticsChanged,
+            this, &ServerInterface::onHashStatisticsChanged
+        );
     }
 
     ServerInterface::~ServerInterface()
@@ -95,28 +123,49 @@ namespace PMP
         return _server->caption();
     }
 
+    VersionInfo ServerInterface::getServerVersionInfo() const
+    {
+        VersionInfo info;
+        info.programName = PMP_PRODUCT_NAME;
+        info.versionForDisplay = PMP_VERSION_DISPLAY;
+        info.vcsBuild = VCS_REVISION_LONG;
+        info.vcsBranch = VCS_BRANCH;
+
+        return info;
+    }
+
+    ResultOrError<QUuid, Result> ServerInterface::getDatabaseUuid() const
+    {
+        auto uuid = Database::getDatabaseUuid();
+
+        if (uuid.isNull())
+            return Error::internalError();
+
+        return uuid;
+    }
+
     void ServerInterface::setLoggedIn(quint32 userId, QString userLogin)
     {
         _userLoggedIn = userId;
         _userLoggedInName = userLogin;
     }
 
-    void ServerInterface::reloadServerSettings(uint clientReference)
+    SimpleFuture<ResultMessageErrorCode> ServerInterface::reloadServerSettings()
     {
-        ResultMessageErrorCode errorCode;
+        SimplePromise<ResultMessageErrorCode> promise;
 
         // TODO : in the future allow reloading if the database is not connected yet
         if (!isLoggedIn())
         {
-            errorCode = ResultMessageErrorCode::NotLoggedIn;
+            promise.setResult(ResultMessageErrorCode::NotLoggedIn);
         }
         else
         {
             _serverSettings->load();
-            errorCode = ResultMessageErrorCode::NoError;
+            promise.setResult(ResultMessageErrorCode::NoError);
         }
 
-        Q_EMIT serverSettingsReloadResultEvent(clientReference, errorCode);
+        return promise.future();
     }
 
     void ServerInterface::switchToPersonalMode()
@@ -136,6 +185,32 @@ namespace PMP
         qDebug() << "ServerInterface: switching to public mode";
 
         _player->setUserPlayingFor(0);
+    }
+
+    Result ServerInterface::activateDelayedStart(qint64 delayMilliseconds)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _delayedStart->activate(delayMilliseconds);
+    }
+
+    Result ServerInterface::deactivateDelayedStart()
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _delayedStart->deactivate();
+    }
+
+    bool ServerInterface::delayedStartActive() const
+    {
+        return _delayedStart->isActive();
+    }
+
+    qint64 ServerInterface::getDelayedStartTimeRemainingMilliseconds() const
+    {
+        return _delayedStart->timeRemainingMilliseconds();
     }
 
     void ServerInterface::play()
@@ -172,6 +247,53 @@ namespace PMP
         _player->setVolume(volumePercentage);
     }
 
+    PlayerStateOverview ServerInterface::getPlayerStateOverview()
+    {
+        auto nowPlaying = _player->nowPlaying();
+
+        PlayerStateOverview overview;
+        overview.playerState = _player->state();
+        overview.nowPlayingQueueId = nowPlaying ? nowPlaying->queueID() : 0;
+        overview.trackPosition = _player->playPosition();
+        overview.volume = _player->volume();
+        overview.queueLength = _player->queue().length();
+        overview.delayedStartActive = _delayedStart->isActive();
+
+        return overview;
+    }
+
+    Future<QVector<QString>, Result> ServerInterface::getPossibleFilenamesForQueueEntry(
+                                                                                  uint id)
+    {
+        if (id <= 0) /* invalid queue ID */
+            return FutureError(Error::queueEntryIdNotFound(0));
+
+        auto entry = _player->queue().lookup(id);
+        if (entry == nullptr) /* ID not found */
+            return FutureError(Error::queueEntryIdNotFound(id));
+
+        if (!entry->isTrack())
+            return FutureError(Error::queueItemTypeInvalid());
+
+        auto hash = entry->hash().value();
+        uint hashId = _player->resolver().getID(hash);
+
+        auto future =
+            Concurrent::run<QVector<QString>, FailureType>(
+                [hashId]() -> ResultOrError<QVector<QString>, FailureType>
+                {
+                    auto db = Database::getDatabaseForCurrentThread();
+                    if (!db)
+                        return failure; /* database unusable */
+
+                    return db->getFilenames(hashId);
+                }
+            )
+            .convertError<Result>([](FailureType) { return Error::internalError(); });
+
+        return future;
+    }
+
     Result ServerInterface::enqueue(FileHash hash)
     {
         if (!isLoggedIn())
@@ -198,7 +320,7 @@ namespace PMP
             return Error::notLoggedIn();
 
         auto& queue = _player->queue();
-        auto* firstEntry = queue.peek();
+        auto firstEntry = queue.peek();
         if (firstEntry && firstEntry->kind() == QueueEntryKind::Break)
             return Success(); /* already present, nothing to do */
 
@@ -245,8 +367,8 @@ namespace PMP
     }
 
     Result ServerInterface::insertAtIndex(qint32 index,
-                                      std::function<QueueEntry* (uint)> queueEntryCreator,
-                                          quint32 clientReference)
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                       quint32 clientReference)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();
@@ -363,6 +485,34 @@ namespace PMP
         _player->resolver().startFullIndexation();
     }
 
+    void ServerInterface::requestHashUserData(quint32 userId, QVector<FileHash> hashes)
+    {
+        if (!isLoggedIn()) return;
+
+        if (userId != 0 && !_users->checkUserIdExists(userId))
+            return;
+
+        /* we make sure not to trigger registration of unknown hashes */
+        const auto existingHashes = _hashIdRegistrar->getExistingIdsOnly(hashes);
+
+        QVector<HashStats> hashStatsAlreadyAvailable;
+        hashStatsAlreadyAvailable.reserve(existingHashes.size());
+
+        for (auto const& idAndHash : existingHashes)
+        {
+            auto statsOrNull = _history->getUserStats(idAndHash.first, userId);
+            if (statsOrNull == null)
+                continue; /* stats will arrive after a delay */
+
+            HashStats stats(idAndHash.second, statsOrNull.value());
+            hashStatsAlreadyAvailable.append(stats);
+        }
+
+        /* if possible, reply immediately with the information that is already known */
+        if (!hashStatsAlreadyAvailable.isEmpty())
+            Q_EMIT hashUserDataChangedOrAvailable(userId, hashStatsAlreadyAvailable);
+    }
+
     void ServerInterface::shutDownServer()
     {
         if (!isLoggedIn()) return;
@@ -449,6 +599,11 @@ namespace PMP
                                           waveProgress, waveProgressTotal);
     }
 
+    void ServerInterface::onHashStatisticsChanged(quint32 userId, QVector<uint> hashIds)
+    {
+        addUserHashDataNotification(userId, hashIds);
+    }
+
     int ServerInterface::toNormalIndex(const PlayerQueue& queue,
                                        QueueIndexType indexType, int index)
     {
@@ -473,5 +628,65 @@ namespace PMP
             {
                 _queueEntryInsertionsPending[queueId] = clientReference;
             };
+    }
+
+    void ServerInterface::addUserHashDataNotification(quint32 userId,
+                                                      QVector<uint> hashIds)
+    {
+        ContainerUtil::addToSet(hashIds, _userHashDataNotificationsPending[userId]);
+
+        if (_userHashDataNotificationTimerRunning.value(userId, false) == false)
+        {
+            _userHashDataNotificationTimerRunning[userId] = true;
+            QTimer::singleShot(
+                100,
+                this,
+                [this, userId]()
+                {
+                    _userHashDataNotificationTimerRunning[userId] = false;
+                    sendUserHashDataNotifications(userId);
+                }
+            );
+        }
+    }
+
+    void ServerInterface::sendUserHashDataNotifications(quint32 userId)
+    {
+        QVector<HashStats> statsToSend;
+
+        {
+            auto const& hashesPendingForUser = _userHashDataNotificationsPending[userId];
+
+            if (hashesPendingForUser.isEmpty())
+                return;
+
+            statsToSend.reserve(hashesPendingForUser.size());
+
+            for (auto hashId : hashesPendingForUser)
+            {
+                auto hashOrNull = _hashIdRegistrar->getHashForId(hashId);
+                if (hashOrNull == null)
+                {
+                    qWarning() << "ServerInterface: could not get hash for hash ID"
+                               << hashId;
+                    continue;
+                }
+
+                auto statsOrNull = _history->getUserStats(hashId, userId);
+                if (statsOrNull == null)
+                {
+                    qWarning() << "ServerInterface: stats have disappeared for hash ID"
+                               << hashId << "and user ID" << userId;
+                    continue;
+                }
+
+                statsToSend.append(HashStats(hashOrNull.value(), statsOrNull.value()));
+            }
+        }
+
+        _userHashDataNotificationsPending.remove(userId);
+
+        if (!statsToSend.isEmpty())
+            Q_EMIT hashUserDataChangedOrAvailable(userId, statsToSend);
     }
 }

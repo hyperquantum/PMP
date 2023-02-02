@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,8 +23,8 @@
 #include "playerqueue.h"
 #include "queueentry.h"
 
-namespace PMP {
-
+namespace PMP::Server
+{
     TrackRepetitionChecker::TrackRepetitionChecker(QObject* parent, PlayerQueue* queue,
                                                    History* history)
      : QObject(parent),
@@ -62,12 +62,12 @@ namespace PMP {
             return false;
 
         // check occurrence in 'now playing'
-        QueueEntry const* trackNowPlaying = _currentTrack;
-        if (trackNowPlaying) {
-            FileHash const* currentHash = trackNowPlaying->hash();
-            if (currentHash && hash == *currentHash) {
+        auto trackNowPlaying = _currentTrack;
+        if (trackNowPlaying)
+        {
+            auto currentHash = trackNowPlaying->hash().value();
+            if (hash == currentHash)
                 return true;
-            }
         }
 
         // check last play time, taking the future queue position into account
@@ -76,15 +76,15 @@ namespace PMP {
                 QDateTime::currentDateTimeUtc().addMSecs(millisecondsCounted)
                                                .addSecs(-_noRepetitionSpanSeconds);
 
-        QDateTime lastPlay = _history->lastPlayed(hash);
+        QDateTime lastPlay = _history->lastPlayedGloballySinceStartup(hash);
         if (lastPlay.isValid() && lastPlay > maxLastPlay)
             return true;
 
-        auto userStats = _history->getUserStats(id, _userPlayingFor);
-        if (!userStats)
+        auto maybeUserStats = _history->getUserStats(id, _userPlayingFor);
+        if (maybeUserStats.isNull())
             return true;
 
-        lastPlay = userStats->lastHeard;
+        lastPlay = maybeUserStats.value().lastHeard();
         if (lastPlay.isValid() && lastPlay > maxLastPlay)
             return true;
 
@@ -106,9 +106,9 @@ namespace PMP {
         Q_EMIT noRepetitionSpanSecondsChanged();
     }
 
-    void TrackRepetitionChecker::currentTrackChanged(const QueueEntry* newTrack)
+    void TrackRepetitionChecker::currentTrackChanged(
+                                                QSharedPointer<const QueueEntry> newTrack)
     {
         _currentTrack = newTrack;
     }
-
 }

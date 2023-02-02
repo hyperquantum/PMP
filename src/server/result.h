@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,13 +22,16 @@
 
 #include <QtGlobal>
 
-namespace PMP
+namespace PMP::Server
 {
     enum class ResultCode
     {
         Success = 0,
+        NoOp /**< Successful action that had no effect */,
 
         NotLoggedIn,
+
+        OperationAlreadyRunning,
 
         HashIsNull,
 
@@ -36,6 +39,7 @@ namespace PMP
         QueueIndexOutOfRange,
         QueueMaxSizeExceeded,
         QueueItemTypeInvalid,
+        DelayOutOfRange,
 
         InternalError,
     };
@@ -50,7 +54,8 @@ namespace PMP
         ResultCode code() const { return _code; }
         qint64 intArg() const { return _intArg; }
 
-        bool notSuccessful() const { return _code != ResultCode::Success; }
+        bool notSuccessful() const { return _code != ResultCode::Success &&
+                                            _code != ResultCode::NoOp; }
 
         Result& operator=(Result const& result) = default;
         Result& operator=(Result&& result) = default;
@@ -85,23 +90,47 @@ namespace PMP
         Success() : Result(ResultCode::Success) {}
     };
 
+    class NoOp : public Result
+    {
+    public:
+        NoOp() : Result(ResultCode::NoOp) {}
+    };
+
     class Error : public Result
     {
     public:
-        static Error notLoggedIn() { return ResultCode::NotLoggedIn; }
+        static Result notLoggedIn() { return Error(ResultCode::NotLoggedIn); }
 
-        static Error hashIsNull() { return ResultCode::HashIsNull; }
+        static Result operationAlreadyRunning()
+        {
+            return Error(ResultCode::OperationAlreadyRunning);
+        }
 
-        static Error queueEntryIdNotFound(uint id)
+        static Result hashIsNull() { return Error(ResultCode::HashIsNull); }
+
+        static Result queueEntryIdNotFound(uint id)
         {
             return Error(ResultCode::QueueEntryIdNotFound, id);
         }
 
-        static Error queueIndexOutOfRange() { return ResultCode::QueueIndexOutOfRange; }
-        static Error queueMaxSizeExceeded() { return ResultCode::QueueMaxSizeExceeded; }
-        static Error queueItemTypeInvalid() { return ResultCode::QueueItemTypeInvalid; }
+        static Result queueIndexOutOfRange()
+        {
+            return Error(ResultCode::QueueIndexOutOfRange);
+        }
 
-        static Error internalError() { return ResultCode::InternalError; }
+        static Result queueMaxSizeExceeded()
+        {
+            return Error(ResultCode::QueueMaxSizeExceeded);
+        }
+
+        static Result queueItemTypeInvalid()
+        {
+            return Error(ResultCode::QueueItemTypeInvalid);
+        }
+
+        static Result delayOutOfRange() { return Error(ResultCode::DelayOutOfRange); }
+
+        static Result internalError() { return Error(ResultCode::InternalError); }
 
     private:
         Error(ResultCode code) : Result(code) {}

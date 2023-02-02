@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,20 +30,27 @@ namespace Ui
     class CollectionWidget;
 }
 
+namespace PMP::Client
+{
+    class ServerInterface;
+}
+
 namespace PMP
 {
-    class ClientServerInterface;
+
     class CollectionViewContext;
     class ColorSwitcher;
     class FilteredCollectionTableModel;
     class SortedCollectionTableModel;
     enum class TrackCriterium;
+    class WaitingSpinnerWidget;
 
-    class CollectionWidget : public QWidget {
+    class CollectionWidget : public QWidget
+    {
         Q_OBJECT
 
     public:
-        CollectionWidget(QWidget* parent, ClientServerInterface* clientServerInterface);
+        CollectionWidget(QWidget* parent, Client::ServerInterface* serverInterface);
         ~CollectionWidget();
 
     private Q_SLOTS:
@@ -53,6 +60,7 @@ namespace PMP
         void collectionContextMenuRequested(const QPoint& position);
 
     private:
+        void updateSpinnerVisibility();
         void initTrackFilterComboBox();
         void initTrackHighlightingComboBox();
         void fillTrackCriteriaComboBox(QComboBox* comboBox);
@@ -63,8 +71,9 @@ namespace PMP
         TrackCriterium getTrackCriteriumFromComboBox(QComboBox* comboBox) const;
 
         Ui::CollectionWidget* _ui;
+        WaitingSpinnerWidget* _spinner { nullptr };
         ColorSwitcher* _colorSwitcher;
-        ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         CollectionViewContext* _collectionViewContext;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;

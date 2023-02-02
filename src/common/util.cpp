@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,7 @@
 
 #include "util.h"
 
+#include "common/unicodechars.h"
 #include "common/version.h"
 
 #include <QAtomicInt>
@@ -28,17 +29,6 @@
 
 namespace PMP
 {
-    const QChar Util::Copyright = QChar(0xA9);
-    const QChar Util::EmDash = QChar(0x2014);
-    const QChar Util::EnDash = QChar(0x2013);
-    const QChar Util::EAcute = QChar(0xE9);
-    const QChar Util::EDiaeresis = QChar(0xEB);
-    const QChar Util::FigureDash = QChar(0x2012);
-    const QChar Util::GreaterThanOrEqual = QChar(0x2265);
-    const QChar Util::LessThanOrEqual = QChar(0x2264);
-    const QChar Util::PauseSymbol = QChar(0x23F8);
-    const QChar Util::PlaySymbol = QChar(0x25B6);
-
     unsigned Util::getRandomSeed()
     {
         /* Because std::random_device seems to be not random at all on MINGW 4.8, we use
@@ -126,6 +116,35 @@ namespace PMP
                 + ":" + QString::number(min).rightJustified(2, '0')
                 + ":" + QString::number(sec).rightJustified(2, '0')
                 + "." + QString::number(partialSeconds).rightJustified(3, '0');
+    }
+
+    QString Util::getCountdownTimeText(qint64 millisecondsRemaining)
+    {
+        if (millisecondsRemaining < 0)
+            millisecondsRemaining = 0;
+
+        int totalSeconds = int(millisecondsRemaining / 1000);
+        int seconds = totalSeconds % 60;
+
+        int totalMinutes = totalSeconds / 60;
+        int minutes = totalMinutes % 60;
+
+        int hours = totalMinutes / 60;
+
+        return QString::number(hours).rightJustified(2, '0')
+                + ":" + QString::number(minutes).rightJustified(2, '0')
+                + ":" + QString::number(seconds).rightJustified(2, '0');
+    }
+
+    int Util::getCountdownUpdateIntervalMs(qint64 millisecondsRemaining)
+    {
+        if (millisecondsRemaining < 0)
+            millisecondsRemaining = -millisecondsRemaining;
+
+        if (millisecondsRemaining < 10 * 1000)
+            return 250;
+
+        return 1000;
     }
 
     QString Util::getHowLongAgoText(SimpleDuration howLongAgo)
@@ -338,9 +357,9 @@ namespace PMP
         else
         {
             line =
-                line.arg(Copyright,
-                         QString(PMP_COPYRIGHT_YEARS).replace('-', EnDash),
-                         QString("Kevin Andr") + EAcute);
+                line.arg(UnicodeChars::copyright,
+                         QString(PMP_COPYRIGHT_YEARS).replace('-', UnicodeChars::enDash),
+                         QString("Kevin Andr") + UnicodeChars::eAcute);
         }
 
         return line;
@@ -350,5 +369,4 @@ namespace PMP
     {
         return QByteArray(byteCount, '\0');
     }
-
 }

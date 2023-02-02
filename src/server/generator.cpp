@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,7 +33,7 @@
 
 #include <algorithm>
 
-namespace PMP
+namespace PMP::Server
 {
     namespace
     {
@@ -244,7 +244,7 @@ namespace PMP
         _waveTrackGenerator->terminateWave();
     }
 
-    void Generator::currentTrackChanged(QueueEntry const* newTrack)
+    void Generator::currentTrackChanged(QSharedPointer<QueueEntry const> newTrack)
     {
         _repetitionChecker->currentTrackChanged(newTrack);
     }
@@ -287,7 +287,7 @@ namespace PMP
     {
         /* fetch user stats for this track that will soon enter our picture */
         uint id = _resolver->getID(hash);
-        _history->fetchMissingUserStats(id, _criteria.user());
+        _history->scheduleUserStatsFetchingIfMissing(id, _criteria.user());
     }
 
     void Generator::queueEntryRemoved(quint32, quint32)
@@ -394,7 +394,7 @@ namespace PMP
         if (!database)
             return; /* problem */
 
-        UserDynamicModePreferencesRecord preferences;
+        DatabaseRecords::UserDynamicModePreferences preferences;
         preferences.dynamicModeEnabled = _enabled;
         preferences.trackRepetitionAvoidanceIntervalSeconds =
                                                       _criteria.noRepetitionSpanSeconds();

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,7 @@
 #ifndef PMP_COMMANDBASE_H
 #define PMP_COMMANDBASE_H
 
+#include "common/future.h"
 #include "common/resultmessageerrorcode.h"
 
 #include "command.h"
@@ -36,7 +37,7 @@ namespace PMP
     public:
         virtual bool willCauseDisconnect() const override;
 
-        virtual void execute(ClientServerInterface* clientServerInterface) override;
+        virtual void execute(Client::ServerInterface* serverInterface) final;
 
     protected:
         CommandBase();
@@ -47,10 +48,10 @@ namespace PMP
         void setCommandExecutionSuccessful(QString output = "");
         void setCommandExecutionFailed(int resultCode, QString errorOutput);
         void setCommandExecutionResult(ResultMessageErrorCode errorCode);
+        void addCommandExecutionFutureListener(
+                                             SimpleFuture<ResultMessageErrorCode> future);
 
-        // TODO : combine setUp and start into one function
-        virtual void setUp(ClientServerInterface* clientServerInterface) = 0;
-        virtual void start(ClientServerInterface* clientServerInterface) = 0;
+        virtual void run(Client::ServerInterface* serverInterface) = 0;
 
     protected Q_SLOTS:
         void listenerSlot();

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,12 +19,116 @@
 
 #include "commandparser.h"
 
+#include "common/unicodechars.h"
+
 #include "commands.h"
 
 #include <limits>
 
 namespace PMP
 {
+    /* ===== CommandArguments ===== */
+
+    bool CommandParser::CommandArguments::currentIsOneOf(QVector<QString> options) const
+    {
+        return options.contains(current());
+    }
+
+    bool CommandParser::CommandArguments::tryParseInt(int& number) const
+    {
+        bool ok;
+        number = current().toInt(&ok);
+        return ok;
+    }
+
+    bool CommandParser::CommandArguments::tryParseTime(QTime& time) const
+    {
+        time = QTime::fromString(current(), "H:m");
+        if (time.isValid())
+            return true;
+
+        time = QTime::fromString(current(), "H:m:s");
+        return time.isValid();
+    }
+
+    bool CommandParser::CommandArguments::tryParseDate(QDate& date) const
+    {
+        date = QDate::fromString(current(), "yyyy-MM-dd");
+        return date.isValid();
+    }
+
+    FileHash CommandParser::CommandArguments::tryParseTrackHash() const
+    {
+        QString text = current().replace(UnicodeChars::figureDash, '-');
+
+        const auto parts = text.split(QChar('-'), Qt::KeepEmptyParts);
+        if (parts.size() != 3)
+            return {};
+
+        bool ok;
+        uint length = parts[0].toUInt(&ok);
+        if (!ok || length == 0)
+            return {};
+
+        QByteArray sha1 = tryDecodeHexWithExpectedLength(parts[1], 40);
+        if (sha1.isEmpty())
+            return {};
+
+        QByteArray md5 = tryDecodeHexWithExpectedLength(parts[2], 32);
+        if (md5.isEmpty())
+            return {};
+
+        return FileHash(length, sha1, md5);
+    }
+
+    QByteArray CommandParser::CommandArguments::tryDecodeHexWithExpectedLength(
+                                                                      const QString& text,
+                                                                      int expectedLength)
+    {
+        if (text.length() != expectedLength)
+            return {};
+
+        QByteArray hex = text.toLatin1();
+
+         /* check again (non-latin1 chars may have been removed) */
+        if (hex.length() != expectedLength)
+            return {};
+
+        if (!isHexEncoded(hex))
+            return {};
+
+        QByteArray decoded = QByteArray::fromHex(hex);
+        if (decoded.length() * 2 != expectedLength)
+            return {};
+
+        return decoded;
+    }
+
+    bool CommandParser::CommandArguments::isHexEncoded(const QByteArray& bytes)
+    {
+        if (bytes.length() % 2 != 0)
+            return false;
+
+        for (int i = 0; i < bytes.length(); ++i)
+        {
+            switch (bytes.at(i))
+            {
+            case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
+            case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
+            case '0': case '1': case '2': case '3': case '4':
+            case '5': case '6': case '7': case '8': case '9':
+                continue; /* valid character */
+
+            default:
+                return false; /* invalid character */
+            }
+        }
+
+        return true;
+    }
+
+    /* ===== CommandParser ===== */
+
     CommandParser::CommandParser()
      : _command(nullptr),
        _authenticationMode(AuthenticationMode::Implicit)
@@ -70,6 +174,12 @@ namespace PMP
         if (gotParseError()) return;
 
         parseCommand(commandWithArgs);
+
+        if (command() == nullptr && !gotParseError())
+        {
+            /* this actually indicates a bug in the command parser */
+            _errorMessage = "Command not understood (internal error)";
+        }
     }
 
     void CommandParser::splitMultipleCommandsInOne(QVector<QString>& commandWithArgs)
@@ -216,6 +326,18 @@ namespace PMP
         {
             parseInsertCommand(args);
         }
+        else if (command == "delayedstart")
+        {
+            parseDelayedStartCommand(args);
+        }
+        else if (command == "trackstats")
+        {
+            parseTrackStatsCommand(args);
+        }
+        else if (command == "serverversion")
+        {
+            handleCommandNotRequiringArguments<ServerVersionCommand>(commandWithArgs);
+        }
         else if (command == "shutdown")
         {
             if (argsCount == 0)
@@ -316,6 +438,10 @@ namespace PMP
 
             _command = new QueueMoveCommand(queueId, moveDiff);
         }
+        else if (command == "login")
+        {
+            _errorMessage = "The 'login' command can only be used as the first command";
+        }
         else if (command == ":")
         {
             _errorMessage = "Expected command before \":\" separator";
@@ -408,4 +534,161 @@ namespace PMP
                                                      insertionIndexType);
     }
 
+    void CommandParser::parseDelayedStartCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Command 'delayedstart' requires arguments!";
+            return;
+        }
+
+        if (arguments.currentIsOneOf({"abort", "cancel"}))
+        {
+            if (arguments.haveMore())
+            {
+                _errorMessage = "Command has too many arguments!";
+                return;
+            }
+
+            _command = new DelayedStartCancelCommand();
+        }
+        else if (arguments.current() == "at")
+        {
+            arguments.advance();
+            parseDelayedStartAt(arguments);
+        }
+        else if (arguments.current() == "wait")
+        {
+            arguments.advance();
+            parseDelayedStartWait(arguments);
+        }
+        else
+        {
+            _errorMessage =
+                "Expected 'abort' or 'cancel' or 'at' or 'wait' after 'delayedstart'!";
+        }
+    }
+
+    void CommandParser::parseDelayedStartAt(CommandArguments& arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Expected more arguments after 'at'!";
+            return;
+        }
+
+        bool dateSpecified;
+        QDate date;
+        if (arguments.tryParseDate(date))
+        {
+            dateSpecified = true;
+            arguments.advance();
+        }
+        else
+        {
+            dateSpecified = false;
+            date = QDate::currentDate();
+        }
+
+        QTime time;
+        if (!arguments.tryParseTime(time))
+        {
+            if (dateSpecified)
+                _errorMessage = "Expected time after date!";
+            else
+                _errorMessage = "Expected date or time after 'at'!";
+
+            return;
+        }
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        QDateTime dateTime(date, time);
+        if (!isInFuture(dateTime))
+        {
+            _errorMessage = "Start time must be in the future!";
+            return;
+        }
+
+        _command = new DelayedStartAtCommand(dateTime);
+    }
+
+    void CommandParser::parseDelayedStartWait(CommandArguments& arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Expected more arguments after 'wait'!";
+            return;
+        }
+
+        int number;
+        if (!arguments.tryParseInt(number))
+        {
+            _errorMessage = "Expected valid number after 'wait'!";
+            return;
+        }
+        if (number <= 0 || number > 1000000)
+        {
+            _errorMessage = "Number after 'wait' must be in the range 1 - 1000000!";
+            return;
+        }
+
+        if (arguments.currentIsLast())
+        {
+            _errorMessage = "Expected time unit after the number!";
+            return;
+        }
+
+        arguments.advance();
+
+        qint64 unitMilliseconds = -1;
+        if (arguments.currentIsOneOf({"s", "seconds", "second"}))
+            unitMilliseconds = 1000;
+        else if (arguments.currentIsOneOf({"min", "minutes", "minute"}))
+            unitMilliseconds = 60 * 1000;
+        else if (arguments.currentIsOneOf({"h", "hours", "hour"}))
+            unitMilliseconds = 60 * 60 * 1000;
+        else if (arguments.currentIsOneOf({"ms", "milliseconds", "millisecond"}))
+            unitMilliseconds = 1;
+        else
+        {
+            _errorMessage = QString("Invalid time unit: '%1'").arg(arguments.current());
+            return;
+        }
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new DelayedStartWaitCommand(number * unitMilliseconds);
+    }
+
+    void CommandParser::parseTrackStatsCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent() || arguments.haveMore())
+        {
+            _errorMessage = "Command 'trackstats' requires exactly one argument!";
+            return;
+        }
+
+        auto hash = arguments.tryParseTrackHash();
+        if (hash.isNull())
+        {
+            _errorMessage = QString("Not a track hash: %1").arg(arguments.current());
+            return;
+        }
+
+        _command = new TrackStatsCommand(hash);
+    }
+
+    bool CommandParser::isInFuture(QDateTime time)
+    {
+        return QDateTime::currentDateTimeUtc() < time.toUTC();
+    }
 }

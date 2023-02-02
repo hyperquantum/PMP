@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,13 +24,14 @@
 
 #include <QObject>
 
-namespace PMP {
-
+namespace PMP::Server
+{
     class History;
     class PlayerQueue;
     class QueueEntry;
 
-    class TrackRepetitionChecker : public QObject {
+    class TrackRepetitionChecker : public QObject
+    {
         Q_OBJECT
     public:
         TrackRepetitionChecker(QObject* parent, PlayerQueue* queue, History* history);
@@ -44,13 +45,13 @@ namespace PMP {
         void setUserGeneratingFor(quint32 user);
         void setNoRepetitionSpanSeconds(int seconds);
 
-        void currentTrackChanged(QueueEntry const* newTrack);
+        void currentTrackChanged(QSharedPointer<QueueEntry const> newTrack);
 
     Q_SIGNALS:
         void noRepetitionSpanSecondsChanged();
 
     private:
-        QueueEntry const* _currentTrack;
+        QSharedPointer<QueueEntry const> _currentTrack;
         PlayerQueue* _queue;
         History* _history;
         int _noRepetitionSpanSeconds;

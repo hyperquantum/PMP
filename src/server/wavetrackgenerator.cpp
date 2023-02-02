@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,7 @@
 
 #include <QTimer>
 
-namespace PMP
+namespace PMP::Server
 {
     namespace
     {
@@ -269,11 +269,13 @@ namespace PMP
                                                    const Candidate& t2)
     {
         auto user = criteria().user();
-        auto userStats1 = history().getUserStats(t1.id(), user);
-        auto userStats2 = history().getUserStats(t2.id(), user);
 
-        int permillage1 = userStats1->haveScore() ? userStats1->score : 0;
-        int permillage2 = userStats2->haveScore() ? userStats2->score : 0;
+        /* we know user stats ARE available because of the basic filter */
+        auto userStats1 = history().getUserStats(t1.id(), user).value();
+        auto userStats2 = history().getUserStats(t2.id(), user).value();
+
+        int permillage1 = userStats1.getScoreOr(0);
+        int permillage2 = userStats2.getScoreOr(0);
 
         if (permillage1 < permillage2) return -1; // 2 is better
         if (permillage1 > permillage2) return 1; // 1 is better
@@ -289,21 +291,23 @@ namespace PMP
 
         // are track stats available?
         uint id = candidate.id();
-        auto userStats = history().getUserStats(id, criteria().user());
-        if (!userStats)
+        auto maybeUserStats = history().getUserStats(id, criteria().user());
+        if (maybeUserStats.isNull())
         {
             qDebug() << "rejecting candidate" << id
                      << "because we don't have its user data yet";
             return false;
         }
 
+        auto userStats = maybeUserStats.value();
+
         /* reject candidates that do not have a score yet */
-        if (!userStats->haveScore())
+        if (!userStats.haveScore())
         {
             return false;
         }
 
-        if (userStats->scoreLessThanXPercent(60))
+        if (userStats.scoreIsLessThanXPercent(60))
         {
             /* candidate's score does not measure up to a reasonable minimum */
             return false;

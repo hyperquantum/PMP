@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,21 +20,25 @@
 #ifndef PMP_QUEUEMEDIATOR_H
 #define PMP_QUEUEMEDIATOR_H
 
-#include "common/abstractqueuemonitor.h"
+#include "client/abstractqueuemonitor.h"
+
+namespace PMP::Client
+{
+    class AbstractQueueMonitor;
+    class QueueController;
+    class ServerInterface;
+}
 
 namespace PMP
 {
-    class AbstractQueueMonitor;
-    class ClientServerInterface;
     class FileHash;
-    class QueueController;
 
-    class QueueMediator : public AbstractQueueMonitor
+    class QueueMediator : public Client::AbstractQueueMonitor
     {
         Q_OBJECT
     public:
         QueueMediator(QObject* parent, AbstractQueueMonitor* monitor,
-                      ClientServerInterface* clientServerInterface);
+                      Client::ServerInterface* serverInterface);
 
         void setFetchLimit(int count) override;
 
@@ -61,7 +65,7 @@ namespace PMP
         void trackMovedAtServer(int fromIndex, int toIndex, quint32 queueID);
 
     private:
-        QueueController& queueController() const;
+        Client::QueueController& queueController() const;
 
         class Operation;
         class InfoOperation;
@@ -74,7 +78,7 @@ namespace PMP
         bool handleServerOperation(Operation* op);
 
         AbstractQueueMonitor* _sourceMonitor;
-        ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         int _queueLength;
         QList<quint32> _myQueue;
         QList<Operation*> _pendingOperations;

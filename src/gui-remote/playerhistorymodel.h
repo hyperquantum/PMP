@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,17 +28,19 @@
 #include <QSharedPointer>
 #include <QVector>
 
-namespace PMP {
+namespace PMP::Client
+{
+    class QueueEntryInfoStorage;
+    class ServerInterface;
+}
 
-    class QueueEntryInfoFetcher;
-    class ServerConnection;
-
-    class PlayerHistoryModel : public QAbstractTableModel {
+namespace PMP
+{
+    class PlayerHistoryModel : public QAbstractTableModel
+    {
         Q_OBJECT
     public:
-        PlayerHistoryModel(QObject* parent, QueueEntryInfoFetcher* trackInfoFetcher);
-
-        void setConnection(ServerConnection* connection);
+        PlayerHistoryModel(QObject* parent, Client::ServerInterface* serverInterface);
 
         FileHash trackHashAt(int rowIndex) const;
 
@@ -57,10 +59,12 @@ namespace PMP {
         void onReceivedPlayerHistory(QVector<PMP::PlayerHistoryTrackInfo> tracks);
 
         void onTracksChanged(QList<quint32> queueIDs);
+        void markStartedEndedColumnsAsChanged();
 
     private:
         int _historySizeGoal;
-        QueueEntryInfoFetcher* _infoFetcher;
+        Client::QueueEntryInfoStorage* _infoStorage;
+        qint64 _clientClockTimeOffsetMs;
         QList<QSharedPointer<PlayerHistoryTrackInfo>> _list;
     };
 }

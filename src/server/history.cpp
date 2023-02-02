@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,27 +19,23 @@
 
 #include "history.h"
 
-#include "addtohistorytask.h"
+#include "hashidregistrar.h"
+#include "historystatistics.h"
 #include "player.h"
 #include "queueentry.h"
-#include "resolver.h"
-#include "userdatafortracksfetcher.h"
 
 #include <QtDebug>
 #include <QThreadPool>
 #include <QTimer>
 
-namespace PMP {
-
-    namespace {
-        static const int fetchingTimerFreqMs = 20;
-    }
-
-    History::History(Player* player)
+namespace PMP::Server
+{
+    History::History(Player* player, HashIdRegistrar* hashIdRegistrar,
+                     HistoryStatistics* historyStatistics)
      : _player(player),
-       _nowPlaying(0),
-       _fetchRequestsScheduledCount(0),
-       _fetchTimerRunning(false)
+       _hashIdRegistrar(hashIdRegistrar),
+       _statistics(historyStatistics),
+       _nowPlaying(nullptr)
     {
         connect(
             player, &Player::currentTrackChanged,
@@ -49,168 +45,88 @@ namespace PMP {
             player, &Player::newHistoryEntry,
             this, &History::newHistoryEntry
         );
+        connect(
+            _statistics, &HistoryStatistics::hashStatisticsChanged,
+            this, &History::hashStatisticsChanged
+        );
     }
 
-    QDateTime History::lastPlayed(FileHash const& hash) const {
+    History::~History()
+    {
+        //
+    }
+
+    QDateTime History::lastPlayedGloballySinceStartup(FileHash const& hash) const
+    {
         return _lastPlayHash[hash];
     }
 
-    bool History::fetchMissingUserStats(uint hashID, quint32 user) {
-        if (hashID == 0 || _userStats[user].contains(hashID)) return false;
-
-        scheduleFetch(hashID, user);
-        return true;
-    }
-
-    History::HashStats const* History::getUserStats(uint hashID, quint32 user) {
-        if (hashID == 0) return nullptr;
-
-        QHash<uint, HashStats>& userData = _userStats[user];
-
-        auto hashDataIterator = userData.find(hashID);
-        if (hashDataIterator != userData.end()) {
-            return &hashDataIterator.value();
-        }
-
-        /* we will need to fetch the data from the database first */
-        scheduleFetch(hashID, user);
-
-        return nullptr;
-    }
-
-    void History::scheduleFetch(uint hashID, quint32 user)
+    Future<SuccessType, FailureType> History::scheduleUserStatsFetchingIfMissing(
+                                                                           uint hashId,
+                                                                           quint32 userId)
     {
-        _fetchRequestsScheduledCount++;
-
-        QHash<uint, bool>& hashes = _userStatsFetching[user];
-
-        auto hashDataIterator = hashes.find(hashID);
-        if (hashDataIterator == hashes.end()) {
-            hashes[hashID] = false; /* add as not yet fetched */
-        }
-
-        /*if (_fetchRequestsScheduledCount >= 10) {
-            // don't wait, start right now
-            sendFetchRequests();
-        }
-        else */
-        if (!_fetchTimerRunning) {
-            _fetchTimerRunning = true;
-            QTimer::singleShot(
-                fetchingTimerFreqMs,
-                this,
-                [this]() {
-                    _fetchTimerRunning = false;
-                    sendFetchRequests();
-                }
-            );
-        }
-    }
-
-    void History::sendFetchRequests() {
-        for (auto user : _userStatsFetching.keys())
+        if (hashId == 0)
         {
-            QHash<uint, bool>& hashes = _userStatsFetching[user];
-
-            QVector<uint> hashesToFetch;
-            hashesToFetch.reserve(hashes.size());
-            for (auto hash : hashes.keys())
-            {
-                bool& beingFetched = hashes[hash];
-                if (!beingFetched) {
-                    hashesToFetch.append(hash);
-                    beingFetched = true;
-                }
-            }
-
-            /* nothing to fetch for this user? */
-            if (hashesToFetch.isEmpty()) continue;
-
-            /* something to fetch */
-
-            auto fetcher = new UserDataForTracksFetcher(user, hashesToFetch);
-            connect(
-                fetcher, &UserDataForTracksFetcher::finishedWithResult,
-                this, &History::onFetchCompleted
-            );
-            QThreadPool::globalInstance()->start(fetcher);
+            qWarning() << "History: invalid parameter(s): hashId" << hashId
+                       << "user" << userId;
+            return FutureError(failure);
         }
 
-        _fetchRequestsScheduledCount = 0;
+        return _statistics->scheduleFetchIfMissing(userId, hashId);
     }
 
-    void History::currentTrackChanged(QueueEntry const* newTrack) {
-        if (_nowPlaying != 0 && newTrack != _nowPlaying) {
-            const FileHash* hash = _nowPlaying->hash();
-            /* TODO: make sure hash is known, so history won't get lost */
-            if (hash) {
-                _lastPlayHash[*hash] = QDateTime::currentDateTimeUtc();
+    Nullable<TrackStats> History::getUserStats(uint hashId, quint32 userId)
+    {
+        if (hashId == 0)
+        {
+            qWarning() << "History: got request for user stats of hash ID zero";
+            return null;
+        }
+
+        return _statistics->getStatsIfAvailable(userId, hashId);
+    }
+
+    void History::currentTrackChanged(QSharedPointer<QueueEntry const> newTrack)
+    {
+        if (_nowPlaying != nullptr && newTrack != _nowPlaying)
+        {
+            Nullable<FileHash> hash = _nowPlaying->hash();
+            if (hash.hasValue())
+            {
+                _lastPlayHash[hash.value()] = QDateTime::currentDateTimeUtc();
             }
         }
 
         _nowPlaying = newTrack;
     }
 
-    void History::newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry) {
+    void History::newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry)
+    {
         if (entry->permillage() <= 0 && entry->hadError())
             return;
 
         FileHash hash = entry->hash();
-        if (hash.isNull()) {
+        if (hash.isNull())
+        {
             qWarning() << "cannot save history for queue ID" << entry->queueID()
                        << "because hash is unavailabe";
             return;
         }
 
-        auto task = new AddToHistoryTask(&_player->resolver(), entry);
+        auto* statistics = _statistics;
 
-        connect(
-            task, &AddToHistoryTask::updatedHashUserStats,
-            this, &History::onHashUserStatsUpdated
-        );
+        _hashIdRegistrar->getOrCreateId(hash)
+            .thenFuture<SuccessType, FailureType>(
+                [statistics, entry](uint hashId)
+                {
+                    uint userId = entry->user();
+                    bool validForScoring = !(entry->hadError() || entry->hadSeek());
 
-        QThreadPool::globalInstance()->start(task);
+                    return statistics->addToHistory(userId, hashId, entry->started(),
+                                                    entry->ended(), entry->permillage(),
+                                                    validForScoring);
+                },
+                failureIdentityFunction
+            );
     }
-
-    void History::onHashUserStatsUpdated(uint hashID, quint32 user,
-                                         QDateTime previouslyHeard, qint16 score)
-    {
-        HashStats& existingStats = _userStats[user][hashID];
-
-        if (previouslyHeard == existingStats.lastHeard
-                && score == existingStats.score)
-        {
-            return; /* no change */
-        }
-
-        existingStats.lastHeard = previouslyHeard;
-        existingStats.score = score;
-
-        Q_EMIT updatedHashUserStats(hashID, user, previouslyHeard, score);
-    }
-
-    void History::onFetchCompleted(quint32 userId, QVector<UserDataForHashId> results)
-    {
-        QHash<uint, bool>& hashesForFetching = _userStatsFetching[userId];
-        QHash<uint, HashStats>& statsForUser = _userStats[userId];
-
-        for (auto const& hashData : results)
-        {
-            auto hashId = hashData.hashId;
-
-            hashesForFetching.remove(hashId);
-
-            HashStats& stats = statsForUser[hashId];
-
-            if (stats.lastHeard != hashData.previouslyHeard
-                    || stats.score != hashData.score)
-            {
-                stats.lastHeard = hashData.previouslyHeard;
-                stats.score = hashData.score;
-
-                Q_EMIT updatedHashUserStats(hashId, userId, stats.lastHeard, stats.score);
-            }
-        }
-    }
-
 }

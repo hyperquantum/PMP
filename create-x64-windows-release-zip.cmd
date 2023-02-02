@@ -23,7 +23,7 @@ SET TOOL_7Z_BIN_DIR=%programfiles%\7-Zip
 SET TOOL_VCPKG_BIN_DIR=C:\src\vcpkg
 
 :: CMake Generator
-SET CMAKE_GENERATOR=Visual Studio 16 2019
+SET CMAKE_GENERATOR=Visual Studio 17 2022
 
 ECHO(
 ECHO #                                    #
@@ -35,8 +35,8 @@ SET scriptdir=%~dp0
 SET bin_dir=x64-windows-release-bin
 SET bin_to_release_dir=src\Release
 SET zipsrcfull_dir=x64-windows-archive-full
-SET ziproot_dir=PMP_win64
-SET full_zip=PMP_win64.zip
+SET ziproot_dir=PMP-win64
+SET full_zip=PMP-win64.zip
 
 ECHO ---------------------- Settings ----------------------
 ECHO Script directory: %scriptdir%
@@ -95,14 +95,14 @@ IF NOT EXIST "%bin_dir%" (
 :: install PMP dependencies using vcpkg
 IF NOT EXIST "%bin_dir%\ran_vcpkg_already" (
     ECHO Running vcpkg to install PMP dependencies...
-    
+
     CD "%TOOL_VCPKG_BIN_DIR%"
     vcpkg install taglib --triplet x64-windows || GOTO :EOF
     vcpkg install qt5-base[mysqlplugin] --triplet x64-windows || GOTO :EOF
     vcpkg install qt5[essentials] --triplet x64-windows || GOTO :EOF
-    
+
     ECHO(
-    
+
     CD "%scriptdir%"
     CD "%bin_dir%"
     ECHO Hi there. Delete this file if you want to re-run vcpkg. >ran_vcpkg_already
@@ -114,15 +114,15 @@ CD "%scriptdir%"
 IF NOT EXIST "%bin_dir%\ran_cmake_already" (
     ECHO Running CMake...
     CD "%bin_dir%"
-    
-    "%CMAKE_BIN_DIR%"\cmake.exe ^
+
+    "%CMAKE_BIN_DIR%\cmake.exe" ^
         -G "%CMAKE_GENERATOR%" ^
         -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" ^
         -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=%TOOL_VCPKG_BIN_DIR%\scripts\buildsystems\vcpkg.cmake" ^
         -D "CMAKE_BUILD_TYPE:STRING=Release" .. || GOTO :EOF
-    
+
     ECHO(
-    
+
     ECHO Hi there. Delete this file if you want to re-run CMake. >ran_cmake_already
 )
 
@@ -143,10 +143,13 @@ robocopy "%scriptdir%\%bin_dir%\%bin_to_release_dir%" "%dist_dir%" /s >NUL
 DEL /q "%dist_dir%\quicktest.exe" || GOTO :EOF
 ECHO(
 
+:: copy extra files
+COPY *LICENSE* "%dist_dir%" >NUL
+
 :: create ZIP archive
 ECHO Creating ZIP file...
 CD "%scriptdir%\%zipsrcfull_dir%"
-"%TOOL_7Z_BIN_DIR%"\7z.exe a -tzip "%full_zip%" %ziproot_dir%"
+"%TOOL_7Z_BIN_DIR%\7z.exe" a -tzip "%full_zip%" %ziproot_dir%"
 CD "%scriptdir%"
 MOVE "%zipsrcfull_dir%\%full_zip%" . >NUL
 RD /q /s "%zipsrcfull_dir%"

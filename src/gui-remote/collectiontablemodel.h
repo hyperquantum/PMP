@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,6 @@
 #define PMP_COLLECTIONTABLEMODEL_H
 
 #include "common/collectiontrackinfo.h"
-#include "common/playermode.h"
 #include "common/playerstate.h"
 #include "common/tribool.h"
 
@@ -34,8 +33,14 @@
 
 #include <functional>
 
-namespace PMP {
+namespace PMP::Client
+{
+    class ServerInterface;
+    class UserDataFetcher;
+}
 
+namespace PMP
+{
     enum class TrackCriterium
     {
         None = 0,
@@ -55,12 +60,10 @@ namespace PMP {
         LengthAtLeastFiveMinutes,
     };
 
-    class UserDataFetcher;
-
     class TrackJudge
     {
     public:
-        TrackJudge(UserDataFetcher& userDataFetcher)
+        TrackJudge(Client::UserDataFetcher& userDataFetcher)
          : _criterium(TrackCriterium::None),
            _userId(0),
            _haveUserId(false),
@@ -95,17 +98,14 @@ namespace PMP {
         TrackCriterium _criterium;
         quint32 _userId;
         bool _haveUserId;
-        UserDataFetcher& _userDataFetcher;
+        Client::UserDataFetcher& _userDataFetcher;
     };
-
-    class ClientServerInterface;
 
     class CollectionViewContext : public QObject
     {
         Q_OBJECT
     public:
-        CollectionViewContext(QObject* parent,
-                              ClientServerInterface* clientServerInterface);
+        CollectionViewContext(QObject* parent, Client::ServerInterface* serverInterface);
 
         quint32 userId() const { return _userId; }
 
@@ -121,7 +121,7 @@ namespace PMP {
         Q_OBJECT
     public:
         SortedCollectionTableModel(QObject* parent,
-                                   ClientServerInterface* clientServerInterface,
+                                   Client::ServerInterface* serverInterface,
                                    CollectionViewContext* collectionViewContext);
 
         void setHighlightCriterium(TrackCriterium criterium);
@@ -218,7 +218,7 @@ namespace PMP {
     public:
         FilteredCollectionTableModel(QObject* parent,
                                      SortedCollectionTableModel* source,
-                                     ClientServerInterface* clientServerInterface,
+                                     Client::ServerInterface* serverInterface,
                                      CollectionViewContext* collectionViewContext);
 
         void setTrackFilter(TrackCriterium criterium);

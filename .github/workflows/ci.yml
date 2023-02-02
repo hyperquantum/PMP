@@ -1,0 +1,26 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+
+  Build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Update packages
+        run: sudo apt-get update
+      - name: Install packages PMP depends on
+        run: >
+          sudo apt-get install -y --fix-missing
+          libtag1-dev
+          default-libmysqlclient-dev
+          qtbase5-dev
+          qtmultimedia5-dev
+      - name: Run CMake
+        working-directory: bin
+        run: cmake -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
+      - name: Run make
+        working-directory: bin
+        run: make -j2 -k

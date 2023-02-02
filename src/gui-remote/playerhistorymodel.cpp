@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,9 +19,14 @@
 
 #include "playerhistorymodel.h"
 
-#include "common/queueentryinfofetcher.h"
-#include "common/serverconnection.h"
 #include "common/util.h"
+
+#include "client/generalcontroller.h"
+#include "client/historycontroller.h"
+#include "client/queueentryinfostorage.h"
+#include "client/serverinterface.h"
+
+#include "colors.h"
 
 #include <QBrush>
 #include <QBuffer>
@@ -29,69 +34,108 @@
 #include <QMimeData>
 #include <QVector>
 
-namespace PMP {
+using namespace PMP::Client;
 
+namespace PMP
+{
     PlayerHistoryModel::PlayerHistoryModel(QObject* parent,
-                                           QueueEntryInfoFetcher* trackInfoFetcher)
-     : QAbstractTableModel(parent), _historySizeGoal(15), _infoFetcher(trackInfoFetcher)
+                                           ServerInterface* serverInterface)
+     : QAbstractTableModel(parent),
+       _historySizeGoal(20),
+       _infoStorage(&serverInterface->queueEntryInfoStorage())
     {
         connect(
-            _infoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+            _infoStorage, &QueueEntryInfoStorage::tracksChanged,
             this, &PlayerHistoryModel::onTracksChanged
         );
-    }
 
-    void PlayerHistoryModel::setConnection(ServerConnection* connection) {
+        auto* generalController = &serverInterface->generalController();
+        auto* historyController = &serverInterface->historyController();
+
+        _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
         connect(
-            connection, &ServerConnection::receivedPlayerHistoryEntry,
+            generalController, &GeneralController::clientClockTimeOffsetChanged,
+            this,
+            [this, generalController]()
+            {
+                _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
+                markStartedEndedColumnsAsChanged();
+            }
+        );
+
+        connect(
+            historyController, &HistoryController::receivedPlayerHistoryEntry,
             this, &PlayerHistoryModel::onReceivedPlayerHistoryEntry
         );
         connect(
-            connection, &ServerConnection::receivedPlayerHistory,
+            historyController, &HistoryController::receivedPlayerHistory,
             this, &PlayerHistoryModel::onReceivedPlayerHistory
         );
 
-        connection->sendPlayerHistoryRequest(_historySizeGoal);
+        connect(
+            serverInterface, &ServerInterface::connectedChanged,
+            this,
+            [this, serverInterface, historyController]()
+            {
+                if (serverInterface->connected())
+                {
+                    historyController->sendPlayerHistoryRequest(_historySizeGoal);
+                }
+                else if (!_list.empty())
+                {
+                    beginRemoveRows({}, 0, _list.size() - 1);
+                    _list.clear();
+                    endRemoveRows();
+                }
+            }
+        );
+
+        if (serverInterface->connected())
+            historyController->sendPlayerHistoryRequest(_historySizeGoal);
     }
 
-    void PlayerHistoryModel::onReceivedPlayerHistoryEntry(PlayerHistoryTrackInfo track) {
+    void PlayerHistoryModel::onReceivedPlayerHistoryEntry(PlayerHistoryTrackInfo track)
+    {
         int index = _list.size();
 
-        beginInsertRows(QModelIndex(), index, index);
+        beginInsertRows({}, index, index);
         auto entry = QSharedPointer<PlayerHistoryTrackInfo>::create(track);
         _list.append(entry);
         endInsertRows();
 
         /* trim the history list if it gets too big */
-        while (_list.size() > _historySizeGoal && _historySizeGoal >= 0) {
+        while (_list.size() > _historySizeGoal && _historySizeGoal >= 0)
+        {
             auto oldestEntry = _list.first();
 
-            beginRemoveRows(QModelIndex(), 0, 0);
+            beginRemoveRows({}, 0, 0);
             _list.removeFirst();
             endRemoveRows();
 
-            _infoFetcher->dropInfoFor(oldestEntry->queueID());
+            _infoStorage->dropInfoFor(oldestEntry->queueID());
         }
     }
 
     void PlayerHistoryModel::onReceivedPlayerHistory(
                                                    QVector<PlayerHistoryTrackInfo> tracks)
     {
-        if (_list.size() > 0) {
-            beginRemoveRows(QModelIndex(), 0, _list.size() - 1);
+        if (_list.size() > 0)
+        {
+            beginRemoveRows({}, 0, _list.size() - 1);
             _list.clear();
             endRemoveRows();
         }
 
         /* if we received more than we want, discard the rest */
-        if (tracks.size() > _historySizeGoal && _historySizeGoal >= 0) {
+        if (tracks.size() > _historySizeGoal && _historySizeGoal >= 0)
+        {
             tracks = tracks.mid(tracks.size() - _historySizeGoal, _historySizeGoal);
         }
 
         if (tracks.empty())
             return;
 
-        beginInsertRows(QModelIndex(), 0, tracks.size() - 1);
+        beginInsertRows({}, 0, tracks.size() - 1);
         for (auto& track : qAsConst(tracks))
         {
             _list.append(QSharedPointer<PlayerHistoryTrackInfo>::create(track));
@@ -99,20 +143,28 @@ namespace PMP {
         endInsertRows();
     }
 
-    void PlayerHistoryModel::onTracksChanged(QList<quint32> queueIDs) {
+    void PlayerHistoryModel::onTracksChanged(QList<quint32> queueIDs)
+    {
         Q_UNUSED(queueIDs);
 
         /* we don't know the indexes, so we say everything changed */
         Q_EMIT dataChanged(createIndex(0, 0), createIndex(_list.size() - 1, 2));
     }
 
-    int PlayerHistoryModel::rowCount(const QModelIndex& parent) const {
+    void PlayerHistoryModel::markStartedEndedColumnsAsChanged()
+    {
+        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_list.size() - 1, 4));
+    }
+
+    int PlayerHistoryModel::rowCount(const QModelIndex& parent) const
+    {
         Q_UNUSED(parent);
 
         return _list.size();
     }
 
-    int PlayerHistoryModel::columnCount(const QModelIndex& parent) const {
+    int PlayerHistoryModel::columnCount(const QModelIndex& parent) const
+    {
         Q_UNUSED(parent);
 
         /* Title, Artist, Length, Started, Ended */
@@ -122,8 +174,10 @@ namespace PMP {
     QVariant PlayerHistoryModel::headerData(int section, Qt::Orientation orientation,
                                             int role) const
     {
-        if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
-            switch (section) {
+        if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
+        {
+            switch (section)
+            {
                 case 0: return QString(tr("Title"));
                 case 1: return QString(tr("Artist"));
                 case 2: return QString(tr("Length"));
@@ -132,61 +186,76 @@ namespace PMP {
             }
         }
 
-        return QVariant();
+        return {};
     }
 
-    QVariant PlayerHistoryModel::data(const QModelIndex& index, int role) const {
-        if (!index.isValid() || index.row() < 0 || index.row() >= _list.size()) {
-            return QVariant();
-        }
+    QVariant PlayerHistoryModel::data(const QModelIndex& index, int role) const
+    {
+        if (!index.isValid() || index.row() < 0 || index.row() >= _list.size())
+            return {};
 
         auto item = _list[index.row()];
 
-        if (role == Qt::ForegroundRole) {
-            return item->hadError() ? QBrush(Qt::red) : QVariant();
-        }
+        if (role == Qt::ForegroundRole)
+            return item->hadError()
+                    ? QBrush(Colors::instance().historyErrorItemForeground)
+                    : QVariant();
 
-        if (role == Qt::BackgroundRole) {
-            return item->hadError() ? QBrush(Qt::white) : QVariant();
-        }
+        if (role == Qt::BackgroundRole)
+            return item->hadError()
+                    ? QBrush(Colors::instance().historyErrorItemBackground)
+                    : QVariant();
 
-        if (role == Qt::DisplayRole) {
+        if (role == Qt::DisplayRole)
+        {
             int col = index.column();
 
-            auto queueID = _list[index.row()]->queueID();
-            auto info = _infoFetcher->entryInfoByQID(queueID);
+            auto entry = _list[index.row()];
+            auto queueId = entry->queueID();
+            auto info = _infoStorage->entryInfoByQueueId(queueId);
 
-            switch (col) {
+            switch (col)
+            {
                 case 0:
                 {
-                    if (!info) return QVariant();
+                    if (!info) return {};
 
                     QString title = info->title();
                     return (title != "") ? title : info->informativeFilename();
                 }
                 case 1:
                 {
-                    if (!info) return QVariant();
+                    if (!info) return {};
+
                     return info->artist();
                 }
                 case 2:
                 {
-                    if (!info) return QVariant();
+                    if (!info) return {};
 
                     int lengthInMilliseconds = info->lengthInMilliseconds();
                     if (lengthInMilliseconds < 0) { return "?"; }
 
                     return Util::millisecondsToShortDisplayTimeText(lengthInMilliseconds);
                 }
-                case 3: return _list[index.row()]->started().toLocalTime();
-                case 4: return _list[index.row()]->ended().toLocalTime();
+                case 3:
+                {
+                    auto started = entry->started().addMSecs(_clientClockTimeOffsetMs);
+                    return started.toLocalTime();
+                }
+                case 4:
+                {
+                    auto ended = entry->ended().addMSecs(_clientClockTimeOffsetMs);
+                    return ended.toLocalTime();
+                }
             }
         }
 
-        return QVariant();
+        return {};
     }
 
-    Qt::ItemFlags PlayerHistoryModel::flags(const QModelIndex& index) const {
+    Qt::ItemFlags PlayerHistoryModel::flags(const QModelIndex& index) const
+    {
         Q_UNUSED(index);
 
         Qt::ItemFlags f(Qt::ItemIsSelectable | Qt::ItemIsEnabled
@@ -204,17 +273,19 @@ namespace PMP {
         return Qt::CopyAction;
     }
 
-    FileHash PlayerHistoryModel::trackHashAt(int rowIndex) const {
-        if (rowIndex < 0 || rowIndex >= _list.size()) return FileHash();
+    FileHash PlayerHistoryModel::trackHashAt(int rowIndex) const
+    {
+        if (rowIndex < 0 || rowIndex >= _list.size()) return {};
 
-        auto queueID = _list[rowIndex]->queueID();
-        auto info = _infoFetcher->entryInfoByQID(queueID);
-        if (!info) return FileHash();
+        auto queueId = _list[rowIndex]->queueID();
+        auto info = _infoStorage->entryInfoByQueueId(queueId);
+        if (!info) return {};
 
         return info->hash();
     }
 
-    QMimeData* PlayerHistoryModel::mimeData(const QModelIndexList& indexes) const {
+    QMimeData* PlayerHistoryModel::mimeData(const QModelIndexList& indexes) const
+    {
         qDebug() << "mimeData called; indexes count =" << indexes.size();
 
         if (indexes.isEmpty()) return nullptr;
@@ -232,15 +303,17 @@ namespace PMP {
             if (row == prevRow) continue;
             prevRow = row;
 
-            auto queueID = _list[row]->queueID();
-            auto info = _infoFetcher->entryInfoByQID(queueID);
-            if (!info) {
+            auto queueId = _list[row]->queueID();
+            auto info = _infoStorage->entryInfoByQueueId(queueId);
+            if (!info)
+            {
                 qDebug() << " ignoring track without info";
                 continue;
             }
 
             auto& hash = info->hash();
-            if (hash.isNull()) {
+            if (hash.isNull())
+            {
                 qDebug() << " ignoring empty hash";
                 continue;
             }
@@ -253,7 +326,8 @@ namespace PMP {
         if (hashes.empty()) return nullptr;
 
         stream << (quint32)hashes.size();
-        for (int i = 0; i < hashes.size(); ++i) {
+        for (int i = 0; i < hashes.size(); ++i)
+        {
             stream << (quint64)hashes[i].length();
             stream << hashes[i].SHA1();
             stream << hashes[i].MD5();
@@ -266,5 +340,4 @@ namespace PMP {
         data->setData("application/x-pmp-filehash", buffer.data());
         return data;
     }
-
 }

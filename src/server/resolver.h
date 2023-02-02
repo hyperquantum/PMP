@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,11 +23,13 @@
 #include "common/audiodata.h"
 #include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
+#include "common/future.h"
+#include "common/tagdata.h"
+
+#include "analyzer.h"
 
 #include <QDateTime>
-#include <QFutureWatcher>
 #include <QHash>
-#include <QMultiHash>
 #include <QMutex>
 #include <QObject>
 #include <QPair>
@@ -35,16 +37,73 @@
 #include <QStringList>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Server
 {
     class Database;
-    class TagData;
+    class HashIdRegistrar;
+    class HashRelations;
+    class HistoryStatistics;
+
+    class FileLocations
+    {
+    public:
+        void insert(uint id, QString path);
+        void remove(uint id, QString path);
+
+        QList<uint> getIdsByPath(QString path);
+        QStringList getPathsById(uint id);
+
+        bool pathHasAtLeastOneId(QString path);
+
+    private:
+        QMutex _mutex;
+        QHash<uint, QStringList> _idToPaths;
+        QHash<QString, QList<uint>> _pathToIds;
+    };
+
+    class FileFinder : public QObject
+    {
+        Q_OBJECT
+    public:
+        FileFinder(QObject* parent, HashIdRegistrar* hashIdRegistrar,
+                   FileLocations* fileLocations, Analyzer* analyzer);
+
+        void setMusicPaths(QStringList paths);
+
+        Future<QString, FailureType> findHashAsync(uint id, FileHash hash);
+
+    private Q_SLOTS:
+        void fileAnalysisCompleted(QString path, PMP::Server::FileAnalysis analysis);
+
+    private:
+        void markAsCompleted(uint id);
+
+        ResultOrError<QString, FailureType> findHashInternal(uint id, FileHash hash);
+
+        QString findPathForHashByLikelyFilename(Database& db, uint id,
+                                                FileHash const& hash);
+
+        QString findPathByQuickScanForNewFiles(Database& db, uint id,
+                                               const FileHash& hash);
+
+        QString findPathByQuickScanOfNewFiles(QVector<QString> newFiles,
+                                              const FileHash& hash);
+
+        QMutex _mutex;
+        HashIdRegistrar* _hashIdRegistrar;
+        FileLocations* _fileLocations;
+        Analyzer* _analyzer;
+        QThreadPool* _threadPool;
+        QStringList _musicPaths;
+        QHash<uint, Future<QString, FailureType>> _inProgress;
+    };
 
     class Resolver : public QObject
     {
         Q_OBJECT
     public:
-        Resolver();
+        Resolver(HashIdRegistrar* hashIdRegistrar, HashRelations* hashRelations,
+                 HistoryStatistics* historyStatistics);
 
         void setMusicPaths(QStringList paths);
         QStringList musicPaths();
@@ -52,11 +111,11 @@ namespace PMP
         bool startFullIndexation();
         bool fullIndexationRunning();
 
-        FileHash analyzeAndRegisterFile(const QString& filename);
+        Future<QString, FailureType> findPathForHashAsync(FileHash hash);
 
         bool haveFileForHash(const FileHash& hash);
-        QString findPathForHash(const FileHash& hash, bool fast);
         bool pathStillValid(const FileHash& hash, QString path);
+        Nullable<FileHash> getHashForFilePath(QString path);
 
         const AudioData& findAudioData(const FileHash& hash);
         const TagData* findTagData(const FileHash& hash);
@@ -71,6 +130,9 @@ namespace PMP
 
     private Q_SLOTS:
         void onFullIndexationFinished();
+        void onFileAnalysisFailed(QString path);
+        void onFileAnalysisCompleted(QString path, FileAnalysis analysis);
+        void onAnalyzerFinished();
 
     Q_SIGNALS:
         void fullIndexationRunStatusChanged(bool running);
@@ -81,23 +143,31 @@ namespace PMP
                                 QString album, qint32 lengthInMilliseconds);
 
     private:
+        enum class FullIndexationStatus
+        {
+            NotRunning,
+            FileSystemTraversal,
+            WaitingForFileAnalysisCompletion,
+            CheckingForFileRemovals,
+        };
+
         struct VerifiedFile;
         class HashKnowledge;
 
-        FileHash analyzeAndRegisterFileInternal(const QString& filename,
-                                                uint fullIndexationNumber);
         HashKnowledge* registerHash(const FileHash& hash);
+        void markHashesAsEquivalent(QVector<uint> hashes);
         QVector<QString> getPathsThatDontMatchCurrentFullIndexationNumber();
         void checkFileStillExistsAndIsValid(QString path);
 
-        QString findPathForHashByLikelyFilename(Database& db, const FileHash& hash,
-                                                uint hashId);
-        QString findPathByQuickScanForNewFiles(Database& db, const FileHash& hash,
-                                               uint hashId);
-        QString findPathByQuickScanOfNewFiles(QVector<QString> newFiles,
-                                              const FileHash& hash);
+        void doFullIndexationFileSystemTraversal();
+        void doFullIndexationCheckForFileRemovals();
 
-        void doFullIndexation();
+        FileLocations _fileLocations;
+        Analyzer* _analyzer { nullptr };
+        FileFinder* _fileFinder { nullptr };
+        HashIdRegistrar* _hashIdRegistrar { nullptr };
+        HashRelations* _hashRelations { nullptr };
+        HistoryStatistics* _historyStatistics { nullptr };
 
         QMutex _lock;
 
@@ -109,8 +179,7 @@ namespace PMP
         QHash<QString, VerifiedFile*> _paths;
 
         uint _fullIndexationNumber;
-        bool _fullIndexationRunning;
-        QFutureWatcher<void> _fullIndexationWatcher;
+        FullIndexationStatus _fullIndexationStatus;
 
         AudioData _emptyAudioData;
     };

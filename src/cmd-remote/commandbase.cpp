@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,21 +22,20 @@
 #include <QtDebug>
 #include <QTimer>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
-
     bool CommandBase::willCauseDisconnect() const
     {
         // most commands won't
         return false;
     }
 
-    void CommandBase::execute(ClientServerInterface* clientServerInterface)
+    void CommandBase::execute(ServerInterface* serverInterface)
     {
-        setUp(clientServerInterface);
-
-        start(clientServerInterface);
-        qDebug() << "CommandBase: called start()";
+        run(serverInterface);
+        qDebug() << "CommandBase: called run()";
 
         // initial quick check
         if (!_steps.isEmpty())
@@ -95,6 +94,7 @@ namespace PMP
         switch (errorCode)
         {
         case ResultMessageErrorCode::NoError:
+        case ResultMessageErrorCode::AlreadyDone:
             setCommandExecutionSuccessful();
             return;
 
@@ -134,8 +134,20 @@ namespace PMP
             errorOutput = "invalid queue index";
             break;
 
+        case ResultMessageErrorCode::InvalidQueueItemType:
+            errorOutput = "invalid queue item type";
+            break;
+
+        case ResultMessageErrorCode::InvalidTimeSpan:
+            errorOutput = "invalid time span";
+            break;
+
         case PMP::ResultMessageErrorCode::MaximumQueueSizeExceeded:
             errorOutput = "maximum queue size would be exceeded";
+            break;
+
+        case ResultMessageErrorCode::OperationAlreadyRunning:
+            errorOutput = "operation cannot be started because it is already running";
             break;
 
         case ResultMessageErrorCode::DatabaseProblem:
@@ -164,6 +176,15 @@ namespace PMP
         }
 
         setCommandExecutionFailed(3, "Command failed: " + errorOutput);
+    }
+
+    void CommandBase::addCommandExecutionFutureListener(
+                                              SimpleFuture<ResultMessageErrorCode> future)
+    {
+        future.addResultListener(
+            this,
+            [this](ResultMessageErrorCode code) { setCommandExecutionResult(code); }
+        );
     }
 
     void CommandBase::listenerSlot()

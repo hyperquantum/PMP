@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,15 +23,18 @@
 #include <QColor>
 #include <QVector>
 
-namespace PMP {
-
-    class Colors {
+namespace PMP
+{
+    class Colors
+    {
     public:
         Colors(const QColor& widgetBorder,
                const QColor& inactiveItemForeground,
                QVector<QColor> itemBackgroundHighlightColors,
                const QColor& specialQueueItemBackground,
                const QColor& specialQueueItemForeground,
+               const QColor& historyErrorItemBackground,
+               const QColor& historyErrorItemForeground,
                const QColor& trackProgressWidgetEmpty,
                const QColor& trackProgressWidgetBackground,
                const QColor& trackProgressWidgetBorder,
@@ -45,6 +48,8 @@ namespace PMP {
         const QVector<QColor> itemBackgroundHighlightColors;
         const QColor specialQueueItemBackground;
         const QColor specialQueueItemForeground;
+        const QColor historyErrorItemBackground;
+        const QColor historyErrorItemForeground;
         const QColor trackProgressWidgetEmpty;
         const QColor trackProgressWidgetBackground;
         const QColor trackProgressWidgetBorder;

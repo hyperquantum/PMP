@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,6 +26,8 @@ namespace PMP
                    QVector<QColor> itemBackgroundHighlightColors,
                    const QColor& specialQueueItemBackground,
                    const QColor& specialQueueItemForeground,
+                   const QColor& historyErrorItemBackground,
+                   const QColor& historyErrorItemForeground,
                    const QColor& trackProgressWidgetEmpty,
                    const QColor& trackProgressWidgetBackground,
                    const QColor& trackProgressWidgetBorder,
@@ -36,6 +38,8 @@ namespace PMP
        itemBackgroundHighlightColors(itemBackgroundHighlightColors),
        specialQueueItemBackground(specialQueueItemBackground),
        specialQueueItemForeground(specialQueueItemForeground),
+       historyErrorItemBackground(historyErrorItemBackground),
+       historyErrorItemForeground(historyErrorItemForeground),
        trackProgressWidgetEmpty(trackProgressWidgetEmpty),
        trackProgressWidgetBackground(trackProgressWidgetBackground),
        trackProgressWidgetBorder(trackProgressWidgetBorder),
@@ -62,6 +66,8 @@ namespace PMP
             },
             /* specialQueueItemBackground */ QColor::fromRgb(0xFF, 0xC4, 0x73),
             /* specialQueueItemForeground */ Qt::black,
+            /* historyErrorItemBackground */ Qt::white,
+            /* historyErrorItemForeground */ Qt::red,
             /* trackProgressWidgetEmpty */ QColor::fromHsl(207, 255, 230),
             /* trackProgressWidgetBackground */ QColor::fromHsl(207, 255, 230),
             /* trackProgressWidgetBorder */ QColor::fromHsl(207, 255, 180),
@@ -80,6 +86,8 @@ namespace PMP
             },
             /* specialQueueItemBackground */ QColor::fromRgb(50, 65, 75),
             /* specialQueueItemForeground */ QColor::fromRgb(20, 140, 210),
+            /* historyErrorItemBackground */ Qt::darkRed,
+            /* historyErrorItemForeground */ Qt::lightGray,
             /* trackProgressWidgetEmpty */ QColor::fromRgb(50, 65, 75),
             /* trackProgressWidgetBackground */ QColor::fromRgb(25, 35, 45),
             /* trackProgressWidgetBorder */ QColor::fromRgb(50, 65, 75),

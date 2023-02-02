@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,8 +21,8 @@
 #include "common/version.h"
 #include "common/util.h"
 
-#include "client.h"
 #include "command.h"
+#include "commandlineclient.h"
 #include "commandparser.h"
 #include "console.h"
 
@@ -39,6 +39,7 @@ usage:
   {{PROGRAMNAME}} <server-name-or-ip> [<server-port>] <login-command> : <command>
 
   commands:
+    login: force authentication before running the next command (see below)
     play: start/resume playback
     pause: pause playback
     skip: jump to next track in the queue
@@ -53,6 +54,11 @@ usage:
     qmove <QID> <+diff>: move a track down in the queue (eg. +2)
     shutdown: shut down the server program
     reloadserversettings: instruct the server to reload its settings file
+    delayedstart wait <number> <time unit>: activate delayed start (see below)
+    delayedstart at [<date>] <time>: activate delayed start (see below)
+    delayedstart abort|cancel: cancel delayed start (see below)
+    trackstats <hash>: get track statistics
+    serverversion: get server version information
 
   'login' command:
     login: forces authentication to occur; prompts for username and password
@@ -83,16 +89,54 @@ usage:
     when the current track finishes and the first item in the queue is a
     barrier.
 
+  'delayedstart' command:
+    delayedstart abort: cancel delayed start
+    delayedstart cancel: cancel delayed start
+    delayedstart wait <number> <time unit>: activate delayed start
+    delayedstart at [<date>] <time>: activate delayed start
+
+    Delayed start causes playback to start in the future, based on a timer.
+    After the timer runs out, PMP starts playing as if the user had issued
+    the 'play' command. Delayed start should not be affected by changes to
+    the clock time on the server or the client after activation.
+    Use 'wait' for specifying an exact delay between issuing the command
+    and the time when playback will start. Time unit can be hours, minutes,
+    seconds, or milliseconds. The countdown will start when the server
+    receives the command, not earlier; keep that in mind if you need to
+    type username or password in the console for authentication purposes.
+    Reading username and password from standard input is recommended (see
+    the 'login' command).
+    Use 'at' for specifying the exact date and time when playback needs to
+    start. If the date is omitted, the current date is assumed. The time is
+    local client clock time and expected to be in format 'H:m' or 'H:m:s'.
+    Only 24-hours notation is supported, no AM or PM. The date is expected
+    to be in format 'yyyy-MM-dd'.
+    A delayed start that has been activated but whose deadline has not been
+    reached yet can still be cancelled with 'cancel' or 'abort'. Delayed
+    start is cancelled automatically when playback is started before the
+    deadline.
+
+  'trackstats' command:
+    trackstats <hash>: get track statistics for the current user
+
+    Retrieves 'last heard' and 'score' for the current user and the track
+    that was specified as an argument.
+    The track hash can be obtained with the 'track info' dialog in the
+    GUI Remote or the command-line hash tool.
+
   NOTICE:
     Some commands require a fairly recent version of the PMP server in order
     to work.
     The 'shutdown' command no longer supports arguments.
 
   Authentication:
-    All commands that have side-effects require authentication. They will
-    prompt for username and password in the console. One exception to this
-    principle is the 'queue' command; it requires authentication although
-    it has no side-effects. This may change in the future.
+    All commands that have side-effects or access data that is user-specific
+    require authentication. One exception to this principle is the 'queue'
+    command; it requires authentication although it really should not. This
+    may change in the future.
+    Commands that require authentication will prompt for username and
+    password in the console. The 'login' command can be used for
+    non-interactive authentication.
     It used to be possible to run the 'shutdown' command with the
     server password as its argument and without logging in as a PMP user,
     but that is no longer possible. Support for this could be added again
@@ -116,11 +160,25 @@ usage:
     {{PROGRAMNAME}} localhost login MyUsername : play
     {{PROGRAMNAME}} localhost login MyUsername - : play <passwordfile
     {{PROGRAMNAME}} localhost login - : play <credentialsfile
+    {{PROGRAMNAME}} localhost delayedstart wait 1 minute
+    {{PROGRAMNAME}} localhost delayedstart wait 90 seconds
+    {{PROGRAMNAME}} localhost delayedstart at 15:30
+    {{PROGRAMNAME}} localhost delayedstart at 9:30:00
+    {{PROGRAMNAME}} localhost delayedstart at 2022-02-28 00:00
 )"""";
 
 void printVersion(QTextStream& out)
 {
-    out << "Party Music Player " PMP_VERSION_DISPLAY << "\n"
+    const auto programNameVersionBuild =
+        QString(VCS_REVISION_LONG).isEmpty()
+            ? QString("Party Music Player %1")
+                .arg(PMP_VERSION_DISPLAY)
+            : QString("Party Music Player %1 build %2 (%3)")
+                .arg(PMP_VERSION_DISPLAY,
+                     VCS_REVISION_LONG,
+                     VCS_BRANCH);
+
+    out << programNameVersionBuild << "\n"
         << Util::getCopyrightLine(true) << "\n"
         << "This is free software; see the source for copying conditions.  There is NO\n"
         << "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
@@ -309,10 +367,10 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    Client client(nullptr, &out, &err, server, portNumber,
-                  authentication.username, authentication.password, command);
+    CommandlineClient client(nullptr, &out, &err, server, portNumber,
+                             authentication.username, authentication.password, command);
     QObject::connect(
-        &client, &Client::exitClient,
+        &client, &CommandlineClient::exitClient,
         &app, &QCoreApplication::exit
     );
 

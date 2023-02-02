@@ -4,9 +4,10 @@ cd $(dirname "$0")
 
 wc -l \
   src/common/*.h src/common/*.cpp \
-  src/server/*.h src/server/*.cpp \
+  src/client/*.h src/client/*.cpp \
   src/cmd-remote/*.h src/cmd-remote/*.cpp \
   src/gui-remote/*.h src/gui-remote/*.cpp \
+  src/server/*.h src/server/*.cpp \
   src/tools/*.cpp \
   CMakeLists.txt src/CMakeLists.txt \
  | sort -n

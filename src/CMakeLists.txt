@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2022, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -19,122 +19,137 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(PMP_COMMON_SOURCES
     common/audiodata.cpp
-    common/authenticationcontrollerimpl.cpp
-    common/clientserverinterface.cpp
-    common/collectionwatcherimpl.cpp
     common/commonmetatypes.cpp
-    common/currenttrackmonitorimpl.cpp
-    common/dynamicmodecontrollerimpl.cpp
     common/fileanalyzer.cpp
     common/filehash.cpp
-    common/generalcontrollerimpl.cpp
     common/logging.cpp
     common/networkprotocol.cpp
     common/networkutil.cpp
-    common/playercontrollerimpl.cpp
     common/powermanagement.cpp
-    common/queuecontrollerimpl.cpp
-    common/queueentryinfofetcher.cpp
-    common/queuemonitor.cpp
-    common/serverconnection.cpp
-    common/serverdiscoverer.cpp
     common/startstopeventstatus.cpp
     common/tagdata.cpp
     common/tribool.cpp
-    common/userdatafetcher.cpp
     common/util.cpp
 )
 set(PMP_COMMON_HEADERS
-    common/abstractqueuemonitor.h
-    common/authenticationcontroller.h
-    common/authenticationcontrollerimpl.h
-    common/clientserverinterface.h
-    common/collectionfetcher.h
-    common/collectionwatcher.h
-    common/collectionwatcherimpl.h
-    common/currenttrackmonitor.h
-    common/currenttrackmonitorimpl.h
-    common/dynamicmodecontroller.h
-    common/dynamicmodecontrollerimpl.h
-    common/generalcontroller.h
-    common/generalcontrollerimpl.h
-    common/playercontroller.h
-    common/playercontrollerimpl.h
     common/powermanagement.h
-    common/queuecontroller.h
-    common/queuecontrollerimpl.h
-    common/queueentryinfofetcher.h
-    common/queueindextype.h
-    common/queuemonitor.h
-    common/serverconnection.h
-    common/serverdiscoverer.h
-    common/specialqueueitemtype.h
-    common/userdatafetcher.h
+)
+
+set(PMP_CLIENT_SOURCES
+    client/authenticationcontrollerimpl.cpp
+    client/collectionwatcherimpl.cpp
+    client/currenttrackmonitorimpl.cpp
+    client/dynamicmodecontrollerimpl.cpp
+    client/generalcontrollerimpl.cpp
+    client/historycontrollerimpl.cpp
+    client/playercontrollerimpl.cpp
+    client/queuecontrollerimpl.cpp
+    client/queueentryinfofetcher.cpp
+    client/queueentryinfostorage.cpp
+    client/queueentryinfostorageimpl.cpp
+    client/queuemonitor.cpp
+    client/servercapabilitiesimpl.cpp
+    client/serverconnection.cpp
+    client/serverdiscoverer.cpp
+    client/serverinterface.cpp
+    client/userdatafetcher.cpp
+)
+set(PMP_CLIENT_HEADERS
+    client/abstractqueuemonitor.h
+    client/authenticationcontroller.h
+    client/authenticationcontrollerimpl.h
+    client/collectionfetcher.h
+    client/collectionwatcher.h
+    client/collectionwatcherimpl.h
+    client/currenttrackmonitor.h
+    client/currenttrackmonitorimpl.h
+    client/dynamicmodecontroller.h
+    client/dynamicmodecontrollerimpl.h
+    client/generalcontroller.h
+    client/generalcontrollerimpl.h
+    client/historycontroller.h
+    client/historycontrollerimpl.h
+    client/playercontroller.h
+    client/playercontrollerimpl.h
+    client/queuecontroller.h
+    client/queuecontrollerimpl.h
+    client/queueentryinfofetcher.h
+    client/queueentryinfostorage.h
+    client/queueentryinfostorageimpl.h
+    client/queuemonitor.h
+    client/serverconnection.h
+    client/serverdiscoverer.h
+    client/serverinterface.h
+    client/userdatafetcher.h
 )
 
 set(PMP_SERVER_SOURCES
-    server/addtohistorytask.cpp
+    server/analyzer.cpp
     server/collectionmonitor.cpp
     server/connectedclient.cpp
     server/database.cpp
+    server/delayedstart.cpp
     server/dynamicmodecriteria.cpp
     server/dynamictrackgenerator.cpp
     server/generator.cpp
+    server/hashidregistrar.cpp
+    server/hashrelations.cpp
     server/history.cpp
+    server/historystatistics.cpp
+    server/historystatisticsprefetcher.cpp
     server/player.cpp
     server/playerqueue.cpp
     server/preloader.cpp
     server/queueentry.cpp
     server/randomtrackssource.cpp
     server/resolver.cpp
-    server/server.cpp
     server/serverhealthmonitor.cpp
     server/serverinterface.cpp
     server/servermetatypes.cpp
     server/serversettings.cpp
+    server/tcpserver.cpp
     server/trackgeneratorbase.cpp
     server/trackrepetitionchecker.cpp
-    server/userdataforhashesfetcher.cpp
-    server/userdatafortracksfetcher.cpp
+    server/trackstats.cpp
     server/users.cpp
     server/wavetrackgenerator.cpp
 )
 set(PMP_SERVER_HEADERS
-    server/addtohistorytask.h
+    server/analyzer.h
     server/collectionmonitor.h
     server/connectedclient.h
+    server/delayedstart.h
     server/dynamictrackgenerator.h
     server/generator.h
     server/history.h
+    server/historystatistics.h
+    server/historystatisticsprefetcher.h
     server/player.h
     server/playerqueue.h
     server/preloader.h
-    server/queueentry.h
     server/randomtrackssource.h
     server/resolver.h
-    server/server.h
     server/serverhealthmonitor.h
     server/serverinterface.h
     server/serversettings.h
+    server/tcpserver.h
     server/trackgeneratorbase.h
     server/trackrepetitionchecker.h
-    server/userdataforhashesfetcher.h
-    server/userdatafortracksfetcher.h
     server/users.h
     server/wavetrackgenerator.h
 )
 
 set(PMP_CMD_REMOTE_SOURCES
-    cmd-remote/client.cpp
     cmd-remote/commandbase.cpp
+    cmd-remote/commandlineclient.cpp
     cmd-remote/commandparser.cpp
     cmd-remote/commands.cpp
     cmd-remote/console.cpp
 )
 set(PMP_CMD_REMOTE_HEADERS
-    cmd-remote/client.h
     cmd-remote/command.h
     cmd-remote/commandbase.h
+    cmd-remote/commandlineclient.h
     cmd-remote/commands.h
 )
 
@@ -146,10 +161,14 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/colors.cpp
     gui-remote/colorswitcher.cpp
     gui-remote/connectionwidget.cpp
+    gui-remote/delayedstartdialog.cpp
+    gui-remote/delayedstartnotification.cpp
+    gui-remote/dynamicmodeparametersdialog.cpp
     gui-remote/gui-remote-metatypes.cpp
     gui-remote/loginwidget.cpp
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp
+    gui-remote/notificationbar.cpp
     gui-remote/playerhistorymodel.cpp
     gui-remote/precisetrackprogressmonitor.cpp
     gui-remote/queuemediator.cpp
@@ -159,6 +178,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/trackprogresswidget.cpp
     gui-remote/useraccountcreationwidget.cpp
     gui-remote/userpickerwidget.cpp
+    gui-remote/waitingspinnerwidget.cpp
 )
 set(PMP_GUI_REMOTE_HEADERS
     gui-remote/autopersonalmodeaction.h
@@ -167,9 +187,13 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/collectionwidget.h
     gui-remote/colorswitcher.h
     gui-remote/connectionwidget.h
+    gui-remote/delayedstartdialog.h
+    gui-remote/delayedstartnotification.h
+    gui-remote/dynamicmodeparametersdialog.h
     gui-remote/loginwidget.h
     gui-remote/mainwidget.h
     gui-remote/mainwindow.h
+    gui-remote/notificationbar.h
     gui-remote/playerhistorymodel.h
     gui-remote/precisetrackprogressmonitor.h
     gui-remote/queuemediator.h
@@ -179,12 +203,16 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/trackprogresswidget.h
     gui-remote/useraccountcreationwidget.h
     gui-remote/userpickerwidget.h
+    gui-remote/waitingspinnerwidget.h
 )
 set(PMP_GUI_REMOTE_UIS
     gui-remote/collectionwidget.ui
     gui-remote/connectionwidget.ui
+    gui-remote/delayedstartdialog.ui
+    gui-remote/dynamicmodeparametersdialog.ui
     gui-remote/loginwidget.ui
     gui-remote/mainwidget.ui
+    gui-remote/notificationbar.ui
     gui-remote/trackinfodialog.ui
     gui-remote/useraccountcreationwidget.ui
     gui-remote/userpickerwidget.ui
@@ -195,6 +223,7 @@ set(PMP_GUI_REMOTE_RESOURCES
 )
 
 qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
+qt5_wrap_cpp(PMP_CLIENT_MOCS ${PMP_CLIENT_HEADERS})
 qt5_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
 qt5_wrap_cpp(PMP_CMD_REMOTE_MOCS ${PMP_CMD_REMOTE_HEADERS})
 qt5_wrap_cpp(PMP_GUI_REMOTE_MOCS ${PMP_GUI_REMOTE_HEADERS})
@@ -231,6 +260,7 @@ add_executable(PMP-Server
 add_executable(PMP-Cmd-Remote
     cmd-remote/cmd-remote-main.cpp
     ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS}
+    ${PMP_CLIENT_SOURCES} ${PMP_CLIENT_MOCS}
     ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 add_executable(PMP-GUI-Remote
@@ -239,6 +269,7 @@ add_executable(PMP-GUI-Remote
     ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
     ${PMP_GUI_REMOTE_UICS}
     ${PMP_GUI_REMOTE_QRCS}
+    ${PMP_CLIENT_SOURCES} ${PMP_CLIENT_MOCS}
     ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
 

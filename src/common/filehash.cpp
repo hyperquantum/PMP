@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,7 +19,7 @@
 
 #include "filehash.h"
 
-#include "util.h"
+#include "unicodechars.h"
 
 #include <QCryptographicHash>
 
@@ -55,8 +55,7 @@ namespace PMP
 
     QString FileHash::toFancyString() const
     {
-        auto dash = Util::FigureDash;
-        return toStringInternal(dash);
+        return toStringInternal(UnicodeChars::figureDash);
     }
 
     QString FileHash::dumpToString() const
@@ -76,5 +75,4 @@ namespace PMP
 
         return QString::number(_length) + dash + _sha1.toHex() + dash + _md5.toHex();
     }
-
 }

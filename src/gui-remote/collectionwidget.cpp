@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,35 +20,38 @@
 #include "collectionwidget.h"
 #include "ui_collectionwidget.h"
 
-#include "common/clientserverinterface.h"
-#include "common/queuecontroller.h"
-#include "common/serverconnection.h"
-#include "common/util.h"
+#include "common/unicodechars.h"
+
+#include "client/collectionwatcher.h"
+#include "client/queuecontroller.h"
+#include "client/serverinterface.h"
 
 #include "collectiontablemodel.h"
 #include "colors.h"
 #include "colorswitcher.h"
 #include "trackinfodialog.h"
+#include "waitingspinnerwidget.h"
 
 #include <QMenu>
 #include <QtDebug>
 #include <QSettings>
 
-namespace PMP {
+using namespace PMP::Client;
 
-    CollectionWidget::CollectionWidget(QWidget* parent,
-                                       ClientServerInterface* clientServerInterface)
+namespace PMP
+{
+    CollectionWidget::CollectionWidget(QWidget* parent, ServerInterface* serverInterface)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
        _colorSwitcher(nullptr),
-       _clientServerInterface(clientServerInterface),
-       _collectionViewContext(new CollectionViewContext(this, clientServerInterface)),
+       _serverInterface(serverInterface),
+       _collectionViewContext(new CollectionViewContext(this, serverInterface)),
        _collectionSourceModel(new SortedCollectionTableModel(this,
-                                                             clientServerInterface,
+                                                             serverInterface,
                                                              _collectionViewContext)),
        _collectionDisplayModel(new FilteredCollectionTableModel(this,
                                                                 _collectionSourceModel,
-                                                                clientServerInterface,
+                                                                serverInterface,
                                                                 _collectionViewContext)),
        _collectionContextMenu(nullptr)
     {
@@ -71,6 +74,13 @@ namespace PMP {
             _ui->collectionTableView, &QTableView::customContextMenuRequested,
             this, &CollectionWidget::collectionContextMenuRequested
         );
+
+        auto* collectionWatcher = &_serverInterface->collectionWatcher();
+        connect(
+            collectionWatcher, &CollectionWatcher::downloadingInProgressChanged,
+            this, [this]() { updateSpinnerVisibility(); }
+        );
+        updateSpinnerVisibility();
 
         {
             QSettings settings(QCoreApplication::organizationName(),
@@ -161,7 +171,7 @@ namespace PMP {
             this,
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (front) triggered";
-                _clientServerInterface->queueController().insertQueueEntryAtFront(hash);
+                _serverInterface->queueController().insertQueueEntryAtFront(hash);
             }
         );
 
@@ -172,7 +182,7 @@ namespace PMP {
             this,
             [this, hash]() {
                 qDebug() << "collection context menu: enqueue (end) triggered";
-                _clientServerInterface->queueController().insertQueueEntryAtEnd(hash);
+                _serverInterface->queueController().insertQueueEntryAtEnd(hash);
             }
         );
 
@@ -184,7 +194,7 @@ namespace PMP {
             this,
             [this, track]() {
                 qDebug() << "collection context menu: track info triggered";
-                auto dialog = new TrackInfoDialog(this, _clientServerInterface, track);
+                auto dialog = new TrackInfoDialog(this, _serverInterface, track);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
                 dialog->open();
             }
@@ -192,6 +202,25 @@ namespace PMP {
 
         auto popupPosition = _ui->collectionTableView->viewport()->mapToGlobal(position);
         _collectionContextMenu->popup(popupPosition);
+    }
+
+    void CollectionWidget::updateSpinnerVisibility()
+    {
+        bool downloading = _serverInterface->collectionWatcher().downloadingInProgress();
+
+        if (downloading)
+        {
+            if (!_spinner)
+                _spinner = new WaitingSpinnerWidget(this, true, false);
+
+            _spinner->start();
+        }
+        else if (_spinner)
+        {
+            _spinner->stop();
+            _spinner->deleteLater();
+            _spinner = nullptr;
+        }
     }
 
     void CollectionWidget::initTrackFilterComboBox()
@@ -223,8 +252,8 @@ namespace PMP {
         auto addItem =
             [comboBox](QString text, TrackCriterium mode)
             {
-                text.replace(">=", Util::GreaterThanOrEqual)
-                    .replace("<=", Util::LessThanOrEqual);
+                text.replace(">=", UnicodeChars::greaterThanOrEqual)
+                    .replace("<=", UnicodeChars::lessThanOrEqual);
 
                 comboBox->addItem(text, QVariant::fromValue(mode));
             };
@@ -293,5 +322,4 @@ namespace PMP {
     {
         return comboBox->currentData().value<TrackCriterium>();
     }
-
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,16 +20,40 @@
 #ifndef PMP_COMMANDS_H
 #define PMP_COMMANDS_H
 
-#include "common/playerstate.h"
+#include "common/filehash.h"
 #include "common/queueindextype.h"
 #include "common/requestid.h"
 #include "common/specialqueueitemtype.h"
 
 #include "commandbase.h"
 
+#include <QDateTime>
+
+namespace PMP::Client
+{
+    class AbstractQueueMonitor;
+    class QueueEntryInfo;
+    class QueueEntryInfoStorage;
+}
+
 namespace PMP
 {
     // TODO : remove useless constructors
+
+    struct VersionInfo;
+
+    class ServerVersionCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        void printVersion(VersionInfo const& versionInfo);
+    };
 
     class ReloadServerSettingsCommand : public CommandBase
     {
@@ -40,8 +64,52 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        RequestID _requestId;
+    };
+
+    class DelayedStartAtCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        DelayedStartAtCommand(QDateTime startTime);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        QDateTime _startTime;
+        RequestID _requestId;
+    };
+
+    class DelayedStartWaitCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        DelayedStartWaitCommand(qint64 delayMilliseconds);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        qint64 _delayMilliseconds;
+        RequestID _requestId;
+    };
+
+    class DelayedStartCancelCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
 
     private:
         RequestID _requestId;
@@ -56,8 +124,7 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
     };
 
     class PauseCommand : public CommandBase
@@ -69,8 +136,7 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
     };
 
     class SkipCommand : public CommandBase
@@ -82,8 +148,7 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
 
     private:
         quint32 _currentQueueId;
@@ -98,13 +163,8 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
     };
-
-    class AbstractQueueMonitor;
-    class QueueEntryInfo;
-    class QueueEntryInfoFetcher;
 
     class QueueCommand : public CommandBase
     {
@@ -115,13 +175,12 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
 
     private:
-        void printQueue(AbstractQueueMonitor* queueMonitor,
-                        QueueEntryInfoFetcher* queueEntryInfoFetcher);
-        QString getSpecialEntryText(QueueEntryInfo const* entry) const;
+        void printQueue(Client::AbstractQueueMonitor* queueMonitor,
+                        Client::QueueEntryInfoStorage* queueEntryInfoStorage);
+        QString getSpecialEntryText(Client::QueueEntryInfo const* entry) const;
 
         int _fetchLimit;
     };
@@ -136,8 +195,7 @@ namespace PMP
         bool willCauseDisconnect() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
 
     private:
         //QString _serverPassword;
@@ -152,8 +210,7 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
     };
 
     class SetVolumeCommand : public CommandBase
@@ -165,8 +222,7 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
 
     private:
         int _volume;
@@ -181,8 +237,7 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
     };
 
     class QueueInsertSpecialItemCommand : public CommandBase
@@ -195,8 +250,7 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
 
     private:
         SpecialQueueItemType _itemType;
@@ -214,8 +268,7 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
 
     private:
         quint32 _queueId;
@@ -231,8 +284,7 @@ namespace PMP
         bool requiresAuthentication() const override;
 
     protected:
-        void setUp(ClientServerInterface* clientServerInterface) override;
-        void start(ClientServerInterface* clientServerInterface) override;
+        void run(Client::ServerInterface* serverInterface) override;
 
     private:
         quint32 _queueId;
@@ -240,5 +292,19 @@ namespace PMP
         bool _wasMoved;
     };
 
+    class TrackStatsCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        TrackStatsCommand(FileHash const& hash);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        FileHash _hash;
+    };
 }
 #endif

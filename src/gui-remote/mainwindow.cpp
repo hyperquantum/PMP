@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,49 +19,62 @@
 
 #include "mainwindow.h"
 
-#include "common/clientserverinterface.h"
-#include "common/generalcontroller.h"
-#include "common/playercontroller.h"
 #include "common/powermanagement.h"
-#include "common/serverconnection.h"
+#include "common/unicodechars.h"
 #include "common/util.h"
 #include "common/version.h"
 
+#include "client/generalcontroller.h"
+#include "client/playercontroller.h"
+#include "client/serverconnection.h"
+#include "client/serverinterface.h"
+
 #include "collectionwidget.h"
 #include "connectionwidget.h"
+#include "delayedstartdialog.h"
+#include "delayedstartnotification.h"
 #include "loginwidget.h"
 #include "mainwidget.h"
+#include "notificationbar.h"
 #include "useraccountcreationwidget.h"
 #include "userpickerwidget.h"
 
 #include <QAction>
 #include <QApplication>
 #include <QCoreApplication>
-#include <QDesktopWidget>
 #include <QDockWidget>
 #include <QKeyEvent>
 #include <QLabel>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QScreen>
 #include <QSettings>
 #include <QStatusBar>
 #include <QTimer>
+#include <QVBoxLayout>
+
+using namespace PMP::Client;
 
 namespace PMP
 {
     MainWindow::MainWindow(QWidget* parent)
      : QMainWindow(parent),
+       _notificationBar(nullptr),
+       _leftStatus(nullptr),
+       _rightStatus(nullptr),
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
        _connection(nullptr),
-       _clientServerInterface(nullptr),
-       _userPickerWidget(nullptr), _loginWidget(nullptr), _mainWidget(nullptr),
+       _serverInterface(nullptr),
+       _userPickerWidget(nullptr),
+       _loginWidget(nullptr),
+       _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
        _powerManagement(new PowerManagement(this))
     {
         setWindowTitle(
-            QString(tr("Party Music Player ")) + Util::EnDash + tr(" Remote")
+            QString(tr("Party Music Player ")) + UnicodeChars::enDash + tr(" Remote")
         );
 
         _musicCollectionDock->setObjectName("musicCollectionDockWidget");
@@ -83,26 +96,21 @@ namespace PMP
             QSettings settings(QCoreApplication::organizationName(),
                                QCoreApplication::applicationName());
 
-            qDebug() << "Before restore:" << this->pos() << " size:" << this->size();
+            auto geometryBeforeRestore = this->geometry();
+            qDebug() << "Geometry before restore:" << geometryBeforeRestore;
 
             settings.beginGroup("mainwindow");
             restoreGeometry(settings.value("geometry").toByteArray());
 
-            // QTBUG-77385
-            if (!this->geometry().intersects(
-                        QApplication::desktop()->screenGeometry(
-                            QApplication::desktop()->screenNumber(this))))
-            {
-                qWarning() << "Need to apply workaround for QTBUG-77385";
-                auto availableGeometry = QApplication::desktop()->availableGeometry(this);
-                resize(availableGeometry.width() / 2, availableGeometry.height() / 2);
-                move((availableGeometry.width() - width()) / 2,
-                     (availableGeometry.height() - height()) / 2);
-            }
+            auto geometryAfterRestore = this->geometry();
+            qDebug() << "Geometry after restore:" << geometryAfterRestore;
+
+            if (geometryBeforeRestore == geometryAfterRestore)
+                applyDefaultSizeAndPositionToWindow();
+            else
+                ensureWindowNotOffScreen(); // QTBUG-77385
 
             restoreState(settings.value("windowstate").toByteArray());
-
-            qDebug() << "After restore:" << this->pos() << " size:" << this->size();
 
             _musicCollectionDock->setVisible(false); /* because of restoreState above */
         }
@@ -139,6 +147,18 @@ namespace PMP
         _closeAction = new QAction(tr("&Close remote"), this);
         connect(_closeAction, &QAction::triggered, this, &MainWindow::close);
 
+        _activateDelayedStartAction = new QAction(tr("Activate &delayed start..."));
+        connect(
+            _activateDelayedStartAction, &QAction::triggered,
+            this,
+            [this]()
+            {
+                auto* dialog = new DelayedStartDialog(this, _serverInterface);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->open();
+            }
+        );
+
         _keepDisplayActiveAction =
                 new QAction(tr("Keep &display active during playback"), this);
         _keepDisplayActiveAction->setCheckable(true);
@@ -161,6 +181,7 @@ namespace PMP
     {
         /* Top-level menus */
         QMenu* pmpMenu = menuBar()->addMenu(tr("&PMP"));
+        _actionsMenu = menuBar()->addMenu(tr("&Actions"));
         _viewMenu = menuBar()->addMenu(tr("&View"));
         QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
 
@@ -175,6 +196,9 @@ namespace PMP
         _serverAdminMenu->addSeparator();
         _serverAdminMenu->addAction(_shutdownServerAction);
 
+        /* "Actions" menu members */
+        _actionsMenu->addAction(_activateDelayedStartAction);
+
         /* "View" menu members */
         _viewMenu->addAction(_musicCollectionDock->toggleViewAction());
         _viewMenu->addSeparator();
@@ -186,6 +210,7 @@ namespace PMP
 
         /* Menu visibility */
         _serverAdminMenu->menuAction()->setVisible(false); /* needs active connection */
+        _actionsMenu->menuAction()->setVisible(false);
         _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
     }
 
@@ -237,7 +262,7 @@ namespace PMP
         //qDebug() << "got key:" << event->key();
 
         /* we need an active connection for the actions of the multimedia buttons */
-        if (!_clientServerInterface || !_clientServerInterface->connected())
+        if (!_serverInterface || !_serverInterface->connected())
             return false;
 
         switch (event->key())
@@ -245,7 +270,7 @@ namespace PMP
             case Qt::Key_MediaNext:
             {
                 qDebug() << "got Next button";
-                auto& controller = _clientServerInterface->playerController();
+                auto& controller = _serverInterface->playerController();
 
                 if (controller.canSkip())
                     controller.skip();
@@ -254,7 +279,7 @@ namespace PMP
             case Qt::Key_MediaPause:
             {
                 qDebug() << "got Pause button";
-                auto& controller = _clientServerInterface->playerController();
+                auto& controller = _serverInterface->playerController();
 
                 if (controller.canPause())
                     controller.pause();
@@ -263,7 +288,7 @@ namespace PMP
             case Qt::Key_MediaPlay:
             {
                 qDebug() << "got Play button";
-                auto& controller = _clientServerInterface->playerController();
+                auto& controller = _serverInterface->playerController();
 
                 if (controller.canPlay())
                     controller.play();
@@ -274,7 +299,7 @@ namespace PMP
             case Qt::Key_MediaTogglePlayPause:
             {
                 qDebug() << "got Play/Pause button";
-                auto& controller = _clientServerInterface->playerController();
+                auto& controller = _serverInterface->playerController();
 
                 if (controller.canPlay())
                     controller.play();
@@ -289,11 +314,11 @@ namespace PMP
 
     void MainWindow::updateRightStatus()
     {
-        if (!_clientServerInterface || !_clientServerInterface->connected())
+        if (!_serverInterface || !_serverInterface->connected())
         {
             _rightStatus->setText(tr("Not connected."));
         }
-        else if (!_clientServerInterface->isLoggedIn())
+        else if (!_serverInterface->isLoggedIn())
         {
             _rightStatus->setText(tr("Connected."));
         }
@@ -304,8 +329,7 @@ namespace PMP
         else
         {
             _rightStatus->setText(
-                QString(tr("Logged in as %1."))
-                        .arg(_clientServerInterface->userLoggedInName())
+                QString(tr("Logged in as %1.")).arg(_serverInterface->userLoggedInName())
             );
         }
     }
@@ -325,6 +349,38 @@ namespace PMP
         _leftStatus->setText("");
     }
 
+    void MainWindow::applyDefaultSizeAndPositionToWindow()
+    {
+        auto* screen = QGuiApplication::primaryScreen();
+        if (screen == nullptr)
+        {
+            qWarning() << "No primary screen found!";
+            return;
+        }
+
+        auto availableGeometry = screen->availableGeometry();
+
+        qDebug() << "Applying default position and size to main window";
+
+        resize(availableGeometry.width() * 4 / 5,
+               availableGeometry.height() * 4 / 5);
+
+        move((availableGeometry.width() - width()) / 2 + availableGeometry.left(),
+             (availableGeometry.height() - height()) / 2 + availableGeometry.top());
+    }
+
+    void MainWindow::ensureWindowNotOffScreen()
+    {
+        auto screen = QGuiApplication::screenAt(this->geometry().center());
+
+        if (screen == nullptr
+                || !screen->availableGeometry().contains(this->geometry().center()))
+        {
+            qDebug() << "main window appears to be off-screen (partially or completely)";
+            applyDefaultSizeAndPositionToWindow();
+        }
+    }
+
     void MainWindow::onStartFullIndexationTriggered()
     {
         if (_connection) { _connection->startFullIndexation(); }
@@ -332,7 +388,15 @@ namespace PMP
 
     void MainWindow::onReloadServerSettingsTriggered()
     {
-        _clientServerInterface->generalController().reloadServerSettings();
+        auto future =  _serverInterface->generalController().reloadServerSettings();
+
+        future.addResultListener(
+            this,
+            [this](ResultMessageErrorCode code)
+            {
+                reloadServerSettingsResultReceived(code);
+            }
+        );
     }
 
     void MainWindow::reloadServerSettingsResultReceived(ResultMessageErrorCode errorCode)
@@ -382,13 +446,12 @@ namespace PMP
 
         if (buttonClicked == QMessageBox::Cancel) return;
 
-        _clientServerInterface->generalController().shutdownServer();
+        _serverInterface->generalController().shutdownServer();
     }
 
     void MainWindow::updatePowerManagement()
     {
-        auto playerState =
-                _clientServerInterface->playerController().playerState();
+        auto playerState = _serverInterface->playerController().playerState();
         bool isPlaying = playerState == PlayerState::Playing;
 
         bool keepDisplayActiveOption = _keepDisplayActiveAction->isChecked();
@@ -398,6 +461,15 @@ namespace PMP
 
     void MainWindow::onAboutPmpAction()
     {
+        const auto programNameVersionBuild =
+            QString(VCS_REVISION_LONG).isEmpty()
+                ? tr("Party Music Player <b>version %1</b>")
+                    .arg(PMP_VERSION_DISPLAY)
+                : tr("Party Music Player <b>version %1</b> build %2 (%3)")
+                    .arg(PMP_VERSION_DISPLAY,
+                         VCS_REVISION_LONG,
+                         VCS_BRANCH);
+
         QString aboutText =
             tr(
                 "<html>"
@@ -411,14 +483,14 @@ namespace PMP
                 " License (GPLv3).</p>"
                 "<p>Website: <a href=\"%1\">%1</a></p>"
                 "<p>Report bugs at: <a href=\"%2\">%2</a></p>"
-                "<p>Party Music Player <b>version %3</b><br>"
+                "<p>%3<br>" /* program name, version, and possibly build info */
                 "%4</p>" /* copyright line */
                 "<p>Using Qt version %5</p>"
                 "</html>"
             )
             .arg(PMP_WEBSITE,
                  PMP_BUGREPORT_LOCATION,
-                 PMP_VERSION_DISPLAY,
+                 programNameVersionBuild,
                  Util::getCopyrightLine(false),
                  QT_VERSION_STR);
 
@@ -433,12 +505,12 @@ namespace PMP
     void MainWindow::onDoConnect(QString server, uint port)
     {
         _connection = new ServerConnection(this);
-        _clientServerInterface = new ClientServerInterface(_connection);
+        _serverInterface = new ServerInterface(_connection);
 
-        auto* generalController = &_clientServerInterface->generalController();
+        auto* generalController = &_serverInterface->generalController();
 
         connect(
-            _clientServerInterface, &ClientServerInterface::connectedChanged,
+            _serverInterface, &ServerInterface::connectedChanged,
             this, &MainWindow::onConnectedChanged
         );
 
@@ -460,7 +532,7 @@ namespace PMP
             [this](bool running)
             {
                 _startFullIndexationAction->setEnabled(
-                    !running && _clientServerInterface->isLoggedIn()
+                    !running && _serverInterface->isLoggedIn()
                 );
                 updateRightStatus();
             }
@@ -483,11 +555,7 @@ namespace PMP
             }
         );
         connect(
-            generalController, &GeneralController::serverSettingsReloadResultEvent,
-            this, &MainWindow::reloadServerSettingsResultReceived
-        );
-        connect(
-            &_clientServerInterface->playerController(),
+            &_serverInterface->playerController(),
             &PlayerController::playerStateChanged,
             this, &MainWindow::updatePowerManagement
         );
@@ -499,7 +567,7 @@ namespace PMP
     {
         updateRightStatus();
 
-        if (_clientServerInterface && _clientServerInterface->connected())
+        if (_serverInterface && _serverInterface->connected())
         {
             showUserAccountPicker();
         }
@@ -515,8 +583,8 @@ namespace PMP
     void MainWindow::showUserAccountPicker()
     {
         _userPickerWidget =
-                new UserPickerWidget(this, &_clientServerInterface->generalController(),
-                                     &_clientServerInterface->authenticationController());
+                new UserPickerWidget(this, &_serverInterface->generalController(),
+                                     &_serverInterface->authenticationController());
 
         connect(
             _userPickerWidget, &UserPickerWidget::accountClicked,
@@ -555,7 +623,7 @@ namespace PMP
 
     void MainWindow::onServerHealthChanged()
     {
-        auto serverHealth = _clientServerInterface->generalController().serverHealth();
+        auto serverHealth = _serverInterface->generalController().serverHealth();
 
         if (!serverHealth.anyProblems())
             return;
@@ -578,15 +646,32 @@ namespace PMP
 
     void MainWindow::showMainWidget()
     {
-        _mainWidget = new MainWidget(this);
-        _mainWidget->setConnection(_connection, _clientServerInterface);
-        setCentralWidget(_mainWidget);
+        auto* mainCentralWidget = new QWidget(this);
+
+        auto* delayedStartNotification =
+            new DelayedStartNotification(this,
+                                         &_serverInterface->playerController(),
+                                         &_serverInterface->generalController());
+
+        _notificationBar = new NotificationBar(mainCentralWidget);
+        _notificationBar->addNotification(delayedStartNotification);
+
+        _mainWidget = new MainWidget(mainCentralWidget);
+        _mainWidget->setConnection(_serverInterface);
+
+        auto centralVerticalLayout = new QVBoxLayout(mainCentralWidget);
+        centralVerticalLayout->setContentsMargins(0, 0, 0, 0);
+        centralVerticalLayout->addWidget(_notificationBar);
+        centralVerticalLayout->addWidget(_mainWidget);
+
+        setCentralWidget(mainCentralWidget);
 
         auto collectionWidget =
-                new CollectionWidget(_musicCollectionDock, _clientServerInterface);
+                new CollectionWidget(_musicCollectionDock, _serverInterface);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 
+        _actionsMenu->menuAction()->setVisible(true);
         _viewMenu->menuAction()->setVisible(true);
 
         {
@@ -602,8 +687,7 @@ namespace PMP
 
     void MainWindow::onCreateAccountClicked()
     {
-        auto* authenticationController =
-                &_clientServerInterface->authenticationController();
+        auto* authenticationController = &_serverInterface->authenticationController();
 
         _userAccountCreationWidget =
             new UserAccountCreationWidget(this, authenticationController);
@@ -640,7 +724,7 @@ namespace PMP
     {
         _loginWidget =
                 new LoginWidget(this,
-                                &_clientServerInterface->authenticationController(),
+                                &_serverInterface->authenticationController(),
                                 login);
 
         connect(

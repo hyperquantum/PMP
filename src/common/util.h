@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -79,39 +79,12 @@ namespace PMP
     public:
         static unsigned getRandomSeed();
 
-        /*! The copyright symbol */
-        static const QChar Copyright;
-
-        /*! The EM DASH (U+2014) character */
-        static const QChar EmDash;
-
-        /*! The EN DASH (U+2013) character */
-        static const QChar EnDash;
-
-        /*! The LATIN SMALL LETTER E WITH ACUTE (U+E9) */
-        static const QChar EAcute;
-
-        /*! The LATIN SMALL LETTER E WITH DIAERESIS (U+00EB) */
-        static const QChar EDiaeresis;
-
-        /*! The FIGURE DASH (U+2012) character */
-        static const QChar FigureDash;
-
-        /*! The "GREATER-THAN OR EQUAL TO" symbol (U+2265) */
-        static const QChar GreaterThanOrEqual;
-
-        /*! The "LESS-THAN OR EQUAL TO" symbol (U+2264) */
-        static const QChar LessThanOrEqual;
-
-        /*! Pause symbol (U+23F8) */
-        static const QChar PauseSymbol;
-
-        /*! Play symbol (U+25B6) */
-        static const QChar PlaySymbol;
-
         static QString secondsToHoursMinuteSecondsText(qint32 totalSeconds);
         static QString millisecondsToShortDisplayTimeText(qint64 milliseconds);
         static QString millisecondsToLongDisplayTimeText(qint64 milliseconds);
+
+        static QString getCountdownTimeText(qint64 millisecondsRemaining);
+        static int getCountdownUpdateIntervalMs(qint64 millisecondsRemaining);
 
         static QString getHowLongAgoText(SimpleDuration howLongAgo);
 

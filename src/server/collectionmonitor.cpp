@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,8 +22,8 @@
 #include <QtDebug>
 #include <QTimer>
 
-namespace PMP {
-
+namespace PMP::Server
+{
     CollectionMonitor::CollectionMonitor(QObject* parent)
      : QObject(parent),
        _pendingTagNotificationCount(0)

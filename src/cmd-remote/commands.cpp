@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,17 +19,59 @@
 
 #include "commands.h"
 
-#include "common/clientserverinterface.h"
-#include "common/currenttrackmonitor.h"
-#include "common/generalcontroller.h"
-#include "common/playercontroller.h"
-#include "common/queuecontroller.h"
-#include "common/queueentryinfofetcher.h"
-#include "common/queuemonitor.h"
 #include "common/util.h"
+
+#include "client/currenttrackmonitor.h"
+#include "client/generalcontroller.h"
+#include "client/playercontroller.h"
+#include "client/queuecontroller.h"
+#include "client/queueentryinfostorage.h"
+#include "client/queuemonitor.h"
+#include "client/serverinterface.h"
+#include "client/userdatafetcher.h"
+
+using namespace PMP::Client;
 
 namespace PMP
 {
+    /* ===== ServerVersionCommand ===== */
+
+    bool ServerVersionCommand::requiresAuthentication() const
+    {
+        return false;
+    }
+
+    void ServerVersionCommand::run(ServerInterface* serverInterface)
+    {
+        auto future = serverInterface->generalController().getServerVersionInfo();
+
+        future.addFailureListener(
+            this,
+            [this](ResultMessageErrorCode errorCode)
+            {
+                setCommandExecutionResult(errorCode);
+            }
+        );
+
+        future.addResultListener(
+            this,
+            [this](VersionInfo versionInfo)
+            {
+                printVersion(versionInfo);
+            }
+        );
+    }
+
+    void ServerVersionCommand::printVersion(const VersionInfo& versionInfo)
+    {
+        QString text =
+            versionInfo.programName % "\n"
+                % "version: " % versionInfo.versionForDisplay % "\n"
+                % "build: " % versionInfo.vcsBuild % " - " % versionInfo.vcsBranch;
+
+        setCommandExecutionSuccessful(text);
+    }
+
     /* ===== ReloadServerSettingsCommand ===== */
 
     ReloadServerSettingsCommand::ReloadServerSettingsCommand()
@@ -42,26 +84,65 @@ namespace PMP
         return true;
     }
 
-    void ReloadServerSettingsCommand::setUp(ClientServerInterface* clientServerInterface)
+    void ReloadServerSettingsCommand::run(ServerInterface* serverInterface)
     {
-        auto* generalController = &clientServerInterface->generalController();
-
-        connect(
-            generalController, &GeneralController::serverSettingsReloadResultEvent,
-            this,
-            [this](ResultMessageErrorCode errorCode, RequestID requestId)
-            {
-                if (requestId != _requestId)
-                    return; /* not for us */
-
-                setCommandExecutionResult(errorCode);
-            }
-        );
+        auto future = serverInterface->generalController().reloadServerSettings();
+        addCommandExecutionFutureListener(future);
     }
 
-    void ReloadServerSettingsCommand::start(ClientServerInterface* clientServerInterface)
+    /* ===== DelayedStartAtCommand ===== */
+
+    DelayedStartAtCommand::DelayedStartAtCommand(QDateTime startTime)
+     : _startTime(startTime)
     {
-        _requestId = clientServerInterface->generalController().reloadServerSettings();
+        //
+    }
+
+    bool DelayedStartAtCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void DelayedStartAtCommand::run(ServerInterface* serverInterface)
+    {
+        auto future =
+            serverInterface->playerController().activateDelayedStart(_startTime);
+
+        addCommandExecutionFutureListener(future);
+    }
+
+    /* ===== DelayedStartWaitCommand ===== */
+
+    DelayedStartWaitCommand::DelayedStartWaitCommand(qint64 delayMilliseconds)
+     : _delayMilliseconds(delayMilliseconds)
+    {
+        //
+    }
+
+    bool DelayedStartWaitCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void DelayedStartWaitCommand::run(ServerInterface* serverInterface)
+    {
+        auto future =
+            serverInterface->playerController().activateDelayedStart(
+                                                                      _delayMilliseconds);
+        addCommandExecutionFutureListener(future);
+    }
+
+    /* ===== DeactivateDelayedCancelCommand ===== */
+
+    bool DelayedStartCancelCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void DelayedStartCancelCommand::run(ServerInterface* serverInterface)
+    {
+        auto future = serverInterface->playerController().deactivateDelayedStart();
+        addCommandExecutionFutureListener(future);
     }
 
     /* ===== PlayCommand ===== */
@@ -76,9 +157,9 @@ namespace PMP
         return true;
     }
 
-    void PlayCommand::setUp(ClientServerInterface* clientServerInterface)
+    void PlayCommand::run(ServerInterface* serverInterface)
     {
-        auto* playerController = &clientServerInterface->playerController();
+        auto* playerController = &serverInterface->playerController();
 
         connect(playerController, &PlayerController::playerStateChanged,
                 this, &PlayCommand::listenerSlot);
@@ -92,11 +173,8 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void PlayCommand::start(ClientServerInterface* clientServerInterface)
-    {
-        clientServerInterface->playerController().play();
+        playerController->play();
     }
 
     /* ===== PauseCommand ===== */
@@ -111,9 +189,9 @@ namespace PMP
         return true;
     }
 
-    void PauseCommand::setUp(ClientServerInterface* clientServerInterface)
+    void PauseCommand::run(ServerInterface* serverInterface)
     {
-        auto* playerController = &clientServerInterface->playerController();
+        auto* playerController = &serverInterface->playerController();
 
         connect(playerController, &PlayerController::playerStateChanged,
                 this, &PauseCommand::listenerSlot);
@@ -127,11 +205,8 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void PauseCommand::start(ClientServerInterface* clientServerInterface)
-    {
-        clientServerInterface->playerController().pause();
+        playerController->pause();
     }
 
     /* ===== SkipCommand ===== */
@@ -147,9 +222,9 @@ namespace PMP
         return true;
     }
 
-    void SkipCommand::setUp(ClientServerInterface* clientServerInterface)
+    void SkipCommand::run(ServerInterface* serverInterface)
     {
-        auto* playerController = &clientServerInterface->playerController();
+        auto* playerController = &serverInterface->playerController();
 
         connect(playerController, &PlayerController::playerStateChanged,
                 this, &SkipCommand::listenerSlot);
@@ -184,12 +259,6 @@ namespace PMP
         );
     }
 
-    void SkipCommand::start(ClientServerInterface* clientServerInterface)
-    {
-        Q_UNUSED(clientServerInterface)
-        // no specific start action needed
-    }
-
     /* ===== NowPlayingCommand ===== */
 
     NowPlayingCommand::NowPlayingCommand()
@@ -202,9 +271,9 @@ namespace PMP
         return false;
     }
 
-    void NowPlayingCommand::setUp(ClientServerInterface* clientServerInterface)
+    void NowPlayingCommand::run(ServerInterface* serverInterface)
     {
-        auto* currentTrackMonitor = &clientServerInterface->currentTrackMonitor();
+        auto* currentTrackMonitor = &serverInterface->currentTrackMonitor();
 
         connect(currentTrackMonitor, &CurrentTrackMonitor::currentTrackChanged,
                 this, &NowPlayingCommand::listenerSlot);
@@ -262,12 +331,6 @@ namespace PMP
         );
     }
 
-    void NowPlayingCommand::start(ClientServerInterface* clientServerInterface)
-    {
-        Q_UNUSED(clientServerInterface)
-        // no specific start action needed
-    }
-
     /* ===== QueueCommand ===== */
 
     QueueCommand::QueueCommand()
@@ -281,20 +344,22 @@ namespace PMP
         return true;
     }
 
-    void QueueCommand::setUp(ClientServerInterface* clientServerInterface)
+    void QueueCommand::run(ServerInterface* serverInterface)
     {
-        auto* queueMonitor = &clientServerInterface->queueMonitor();
+        auto* queueMonitor = &serverInterface->queueMonitor();
         queueMonitor->setFetchLimit(_fetchLimit);
 
-        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+        auto* queueEntryInfoStorage = &serverInterface->queueEntryInfoStorage();
+
+        (void)serverInterface->queueEntryInfoFetcher(); /* speed things up */
 
         connect(queueMonitor, &QueueMonitor::fetchCompleted,
                 this, &QueueCommand::listenerSlot);
-        connect(queueEntryInfoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+        connect(queueEntryInfoStorage, &QueueEntryInfoStorage::tracksChanged,
                 this, &QueueCommand::listenerSlot);
 
         addStep(
-            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> bool
             {
                 if (!queueMonitor->isFetchCompleted())
                     return false;
@@ -306,7 +371,7 @@ namespace PMP
                     if (queueId == 0)
                         return false; /* download incomplete, shouldn't happen */
 
-                    auto entry = queueEntryInfoFetcher->entryInfoByQID(queueId);
+                    auto entry = queueEntryInfoStorage->entryInfoByQueueId(queueId);
                     if (!entry || entry->type() == QueueEntryType::Unknown)
                         return false; /* info not available yet */
 
@@ -321,22 +386,16 @@ namespace PMP
             }
         );
         addStep(
-            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> bool
             {
-                printQueue(queueMonitor, queueEntryInfoFetcher);
+                printQueue(queueMonitor, queueEntryInfoStorage);
                 return false;
             }
         );
     }
 
-    void QueueCommand::start(ClientServerInterface* clientServerInterface)
-    {
-        Q_UNUSED(clientServerInterface)
-        // no specific start action needed
-    }
-
     void QueueCommand::printQueue(AbstractQueueMonitor* queueMonitor,
-                                  QueueEntryInfoFetcher* queueEntryInfoFetcher)
+                                  QueueEntryInfoStorage* queueEntryInfoStorage)
     {
         QString output;
         output.reserve(80 + 80 + 80 * _fetchLimit);
@@ -362,7 +421,7 @@ namespace PMP
             output += QString::number(queueId).rightJustified(7);
             output += "|";
 
-            auto entry = queueEntryInfoFetcher->entryInfoByQID(queueId);
+            auto entry = queueEntryInfoStorage->entryInfoByQueueId(queueId);
             if (!entry)
             {
                 output += "??????????"; /* info not available yet, unlikely but possible*/
@@ -455,25 +514,22 @@ namespace PMP
         return true;
     }
 
-    void ShutdownCommand::setUp(ClientServerInterface* clientServerInterface)
+    void ShutdownCommand::run(ServerInterface* serverInterface)
     {
-        connect(clientServerInterface, &ClientServerInterface::connectedChanged,
+        connect(serverInterface, &ServerInterface::connectedChanged,
                 this, &ShutdownCommand::listenerSlot);
 
         addStep(
-            [this, clientServerInterface]() -> bool
+            [this, serverInterface]() -> bool
             {
-                if (!clientServerInterface->connected())
+                if (!serverInterface->connected())
                     setCommandExecutionSuccessful();
 
                 return false;
             }
         );
-    }
 
-    void ShutdownCommand::start(ClientServerInterface* clientServerInterface)
-    {
-        clientServerInterface->generalController().shutdownServer();
+        serverInterface->generalController().shutdownServer();
     }
 
     /* ===== GetVolumeCommand ===== */
@@ -488,9 +544,9 @@ namespace PMP
         return false;
     }
 
-    void GetVolumeCommand::setUp(ClientServerInterface* clientServerInterface)
+    void GetVolumeCommand::run(ServerInterface* serverInterface)
     {
-        auto* playerController = &clientServerInterface->playerController();
+        auto* playerController = &serverInterface->playerController();
 
         connect(playerController, &PlayerController::volumeChanged,
                 this, &GetVolumeCommand::listenerSlot);
@@ -508,12 +564,6 @@ namespace PMP
         );
     }
 
-    void GetVolumeCommand::start(ClientServerInterface* clientServerInterface)
-    {
-        Q_UNUSED(clientServerInterface)
-        // no specific start action needed
-    }
-
     /* ===== SetVolumeCommand ===== */
 
     SetVolumeCommand::SetVolumeCommand(int volume)
@@ -527,9 +577,9 @@ namespace PMP
         return true;
     }
 
-    void SetVolumeCommand::setUp(ClientServerInterface* clientServerInterface)
+    void SetVolumeCommand::run(ServerInterface* serverInterface)
     {
-        auto* playerController = &clientServerInterface->playerController();
+        auto* playerController = &serverInterface->playerController();
 
         connect(playerController, &PlayerController::volumeChanged,
                 this, &SetVolumeCommand::listenerSlot);
@@ -543,11 +593,8 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void SetVolumeCommand::start(ClientServerInterface* clientServerInterface)
-    {
-        clientServerInterface->playerController().setVolume(_volume);
+        playerController->setVolume(_volume);
     }
 
     /* ===== BreakCommand =====*/
@@ -562,20 +609,20 @@ namespace PMP
         return true;
     }
 
-    void BreakCommand::setUp(ClientServerInterface* clientServerInterface)
+    void BreakCommand::run(ServerInterface* serverInterface)
     {
-        auto* queueMonitor = &clientServerInterface->queueMonitor();
+        auto* queueMonitor = &serverInterface->queueMonitor();
         queueMonitor->setFetchLimit(1);
 
-        auto* queueEntryInfoFetcher = &clientServerInterface->queueEntryInfoFetcher();
+        auto* queueEntryInfoStorage = &serverInterface->queueEntryInfoStorage();
 
         connect(queueMonitor, &QueueMonitor::fetchCompleted,
                 this, &BreakCommand::listenerSlot);
-        connect(queueEntryInfoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+        connect(queueEntryInfoStorage, &QueueEntryInfoStorage::tracksChanged,
                 this, &BreakCommand::listenerSlot);
 
         addStep(
-            [this, queueMonitor, queueEntryInfoFetcher]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> bool
             {
                 if (!queueMonitor->isFetchCompleted())
                     return false;
@@ -587,7 +634,7 @@ namespace PMP
                 if (firstEntryId == 0)
                     return false; /* shouldn't happen */
 
-                auto firstEntry = queueEntryInfoFetcher->entryInfoByQID(firstEntryId);
+                auto firstEntry = queueEntryInfoStorage->entryInfoByQueueId(firstEntryId);
                 if (!firstEntry)
                     return false;
 
@@ -598,11 +645,8 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void BreakCommand::start(ClientServerInterface* clientServerInterface)
-    {
-        clientServerInterface->queueController().insertBreakAtFrontIfNotExists();
+        serverInterface->queueController().insertBreakAtFrontIfNotExists();
     }
 
     /* ===== QueueInsertSpecialItemCommand ===== */
@@ -623,15 +667,18 @@ namespace PMP
         return true;
     }
 
-    void QueueInsertSpecialItemCommand::setUp(ClientServerInterface* clientServerInterface)
+    void QueueInsertSpecialItemCommand::run(ServerInterface* serverInterface)
     {
-        auto* queueController = &clientServerInterface->queueController();
+        auto* queueController = &serverInterface->queueController();
 
         connect(
             queueController, &QueueController::queueEntryAdded,
             this,
             [this](qint32 index, quint32 queueId, RequestID requestId)
             {
+                Q_UNUSED(index)
+                Q_UNUSED(queueId)
+
                 if (requestId == _requestId)
                     setCommandExecutionSuccessful();
             }
@@ -645,15 +692,9 @@ namespace PMP
                     setCommandExecutionResult(errorCode);
             }
         );
-    }
-
-    void QueueInsertSpecialItemCommand::start(
-                                             ClientServerInterface* clientServerInterface)
-    {
-        auto& queueController = clientServerInterface->queueController();
 
         _requestId =
-                queueController.insertSpecialItemAtIndex(_itemType, _index, _indexType);
+                queueController->insertSpecialItemAtIndex(_itemType, _index, _indexType);
     }
 
     /* ===== QueueDeleteCommand ===== */
@@ -670,9 +711,9 @@ namespace PMP
         return true;
     }
 
-    void QueueDeleteCommand::setUp(ClientServerInterface* clientServerInterface)
+    void QueueDeleteCommand::run(ServerInterface* serverInterface)
     {
-        auto* queueController = &clientServerInterface->queueController();
+        auto* queueController = &serverInterface->queueController();
 
         connect(
             queueController, &QueueController::queueEntryRemoved,
@@ -698,11 +739,8 @@ namespace PMP
                 return false;
             }
         );
-    }
 
-    void QueueDeleteCommand::start(ClientServerInterface* clientServerInterface)
-    {
-        clientServerInterface->queueController().deleteQueueEntry(_queueId);
+        queueController->deleteQueueEntry(_queueId);
     }
 
     /* ===== QueueMoveCommand ===== */
@@ -720,9 +758,9 @@ namespace PMP
         return true;
     }
 
-    void QueueMoveCommand::setUp(ClientServerInterface* clientServerInterface)
+    void QueueMoveCommand::run(ServerInterface* serverInterface)
     {
-        auto* queueController = &clientServerInterface->queueController();
+        auto* queueController = &serverInterface->queueController();
 
         connect(
             queueController, &QueueController::queueEntryMoved,
@@ -748,10 +786,70 @@ namespace PMP
                 return false;
             }
         );
+
+        queueController->moveQueueEntry(_queueId, _moveOffset);
     }
 
-    void QueueMoveCommand::start(ClientServerInterface* clientServerInterface)
+    /* ===== TrackStatsCommand ===== */
+
+    TrackStatsCommand::TrackStatsCommand(const FileHash& hash)
+     : _hash(hash)
     {
-        clientServerInterface->queueController().moveQueueEntry(_queueId, _moveOffset);
+        //
+    }
+
+    bool TrackStatsCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void TrackStatsCommand::run(ServerInterface* serverInterface)
+    {
+        auto userDataFetcher = &serverInterface->userDataFetcher();
+
+        connect(userDataFetcher, &UserDataFetcher::dataReceivedForUser,
+                this, &TrackStatsCommand::listenerSlot);
+
+        auto userId = serverInterface->userLoggedInId();
+        auto username = serverInterface->userLoggedInName();
+
+        addStep(
+            [this, userDataFetcher, userId, username]() -> bool
+            {
+                auto* hashData = userDataFetcher->getHashDataForUser(userId, _hash);
+                if (hashData == nullptr)
+                    return false;
+
+                QString output;
+                output.reserve(100);
+
+                output += QString("Hash: %1\n").arg(_hash.toString());
+                output += QString("User: %1\n").arg(username);
+
+                QString lastHeard;
+                if (!hashData->previouslyHeardReceived)
+                    lastHeard = "unknown";
+                else if (hashData->previouslyHeard.isNull())
+                    lastHeard = "never";
+                else
+                    lastHeard =
+                        hashData->previouslyHeard.toLocalTime().toString(Qt::RFC2822Date);
+
+                output += QString("Last heard: %1\n").arg(lastHeard);
+
+                QString score;
+                if (!hashData->scoreReceived)
+                    score = "unknown";
+                else if (hashData->scorePermillage < 0)
+                    score = "N/A";
+                else
+                    score = QString::number(hashData->scorePermillage / 10.0, 'f', 1);
+
+                output += QString("Score: %1").arg(score);
+
+                setCommandExecutionSuccessful(output);
+                return false;
+            }
+        );
     }
 }
