@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,7 +31,10 @@ namespace PMP
                    const QColor& trackProgressWidgetEmpty,
                    const QColor& trackProgressWidgetBackground,
                    const QColor& trackProgressWidgetBorder,
-                   const QColor& trackProgressWidgetProgress)
+                   const QColor& trackProgressWidgetProgress,
+                   const QColor& linkText,
+                   const QColor& spinnerBackground,
+                   const QColor& spinnerLines)
      : widgetBorder(widgetBorder),
        inactiveItemForeground(inactiveItemForeground),
        itemBackgroundHighlightColors(itemBackgroundHighlightColors),
@@ -42,7 +45,10 @@ namespace PMP
        trackProgressWidgetEmpty(trackProgressWidgetEmpty),
        trackProgressWidgetBackground(trackProgressWidgetBackground),
        trackProgressWidgetBorder(trackProgressWidgetBorder),
-       trackProgressWidgetProgress(trackProgressWidgetProgress)
+       trackProgressWidgetProgress(trackProgressWidgetProgress),
+       linkText(linkText),
+       spinnerBackground(spinnerBackground),
+       spinnerLines(spinnerLines)
     {
         //
     }
@@ -68,7 +74,10 @@ namespace PMP
             /* trackProgressWidgetEmpty */ QColor::fromHsl(207, 255, 230),
             /* trackProgressWidgetBackground */ QColor::fromHsl(207, 255, 230),
             /* trackProgressWidgetBorder */ QColor::fromHsl(207, 255, 180),
-            /* trackProgressWidgetProgress */ QColor::fromHsl(207, 255, 180)
+            /* trackProgressWidgetProgress */ QColor::fromHsl(207, 255, 180),
+            /* linkText */ Qt::darkGreen, // TODO : find a real color
+            /* spinnerBackground */ Qt::white,
+            /* spinnerLines */ Qt::black
         );
 
 }
