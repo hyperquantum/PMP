@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,6 +35,7 @@
 
 namespace PMP::Client
 {
+    class QueueHashesMonitor;
     class ServerInterface;
     class UserDataFetcher;
 }
@@ -155,6 +156,7 @@ namespace PMP
         void onTrackDataChanged(CollectionTrackInfo track);
         void onUserTrackDataChanged(quint32 userId, FileHash hash);
         void currentTrackInfoChanged(FileHash hash);
+        void onHashInQueuePresenceChanged(FileHash hash);
 
     private:
         void updateTrackAvailability(FileHash hash, bool isAvailable);
@@ -168,6 +170,7 @@ namespace PMP
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track);
         int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track,
                                             int searchRangeBegin, int searchRangeEnd);
+        int findOuterIndexForHash(FileHash const& hash);
         void markLeftColumnAsChanged();
         void markEverythingAsChanged();
 
@@ -210,6 +213,7 @@ namespace PMP
         TrackJudge _highlightingTrackJudge;
         FileHash _currentTrackHash;
         PlayerState _playerState;
+        Client::QueueHashesMonitor* _queueHashesMonitor;
     };
 
     class FilteredCollectionTableModel : public QSortFilterProxyModel

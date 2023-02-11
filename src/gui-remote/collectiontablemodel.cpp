@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,6 +24,7 @@
 #include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
 #include "client/playercontroller.h"
+#include "client/queuehashesmonitor.h"
 #include "client/serverinterface.h"
 #include "client/userdatafetcher.h"
 
@@ -254,7 +255,9 @@ namespace PMP
        _highlightColorIndex(0),
        _sortBy(0),
        _sortOrder(Qt::AscendingOrder),
-       _highlightingTrackJudge(serverInterface->userDataFetcher())
+       _highlightingTrackJudge(serverInterface->userDataFetcher()),
+       _queueHashesMonitor(new QueueHashesMonitor(this, &serverInterface->queueMonitor(),
+                                               &serverInterface->queueEntryInfoStorage()))
     {
         _collator.setCaseSensitivity(Qt::CaseInsensitive);
         _collator.setNumericMode(true);
@@ -322,6 +325,9 @@ namespace PMP
                 currentTrackInfoChanged(currentTrackMonitor->currentTrackHash());
             }
         );
+
+        connect(_queueHashesMonitor, &QueueHashesMonitor::hashInQueuePresenceChanged,
+                this, &SortedCollectionTableModel::onHashInQueuePresenceChanged);
 
         addWhenModelEmpty(collectionWatcher.getCollection().values());
     }
@@ -557,11 +563,9 @@ namespace PMP
         Q_UNUSED(userId)
         /* ignore the user ID for change notifications */
 
-        auto innerIndex = _hashesToInnerIndexes.value(hash, -1);
-        if (innerIndex < 0)
+        auto outerIndex = findOuterIndexForHash(hash);
+        if (outerIndex < 0)
             return; /* track is not in the list */
-
-        auto outerIndex = _innerToOuterIndexMap[innerIndex];
 
         Q_EMIT dataChanged(createIndex(outerIndex, 0),
                            createIndex(outerIndex, 4 - 1));
@@ -574,6 +578,16 @@ namespace PMP
 
         _currentTrackHash = hash;
         markLeftColumnAsChanged();
+    }
+
+    void SortedCollectionTableModel::onHashInQueuePresenceChanged(FileHash hash)
+    {
+        auto outerIndex = findOuterIndexForHash(hash);
+        if (outerIndex < 0)
+            return; /* track is not in the list */
+
+        Q_EMIT dataChanged(createIndex(outerIndex, 0),
+                           createIndex(outerIndex, 0));
     }
 
     int SortedCollectionTableModel::findOuterIndexMapIndexForInsert(
@@ -609,6 +623,16 @@ namespace PMP
         else {
             return findOuterIndexMapIndexForInsert(track, middleIndex, searchRangeEnd);
         }
+    }
+
+    int SortedCollectionTableModel::findOuterIndexForHash(const FileHash& hash)
+    {
+        auto innerIndex = _hashesToInnerIndexes.value(hash, -1);
+        if (innerIndex < 0)
+            return -1; /* track is not in the list */
+
+        auto outerIndex = _innerToOuterIndexMap[innerIndex];
+        return outerIndex;
     }
 
     void SortedCollectionTableModel::markLeftColumnAsChanged()
@@ -874,10 +898,12 @@ namespace PMP
                 }
                 break;
             case Qt::DecorationRole:
-                if (index.column() == 0 && index.row() < _tracks.size()) {
+                if (index.column() == 0 && index.row() < _tracks.size())
+                {
                     auto track = trackAt(index);
 
-                    if (track->hash() == _currentTrackHash) {
+                    if (track->hash() == _currentTrackHash)
+                    {
                         switch (_playerState) {
                             case PlayerState::Playing:
                                 return QIcon(":/mediabuttons/Play.png");
@@ -888,6 +914,10 @@ namespace PMP
                             default:
                                 break;
                         }
+                    }
+                    else if (_queueHashesMonitor->isPresentInQueue(track->hash()))
+                    {
+                        return QIcon(":/mediabuttons/queue.svg");
                     }
                 }
                 break;
@@ -923,7 +953,8 @@ namespace PMP
         return {};
     }
 
-    Qt::ItemFlags SortedCollectionTableModel::flags(const QModelIndex& index) const {
+    Qt::ItemFlags SortedCollectionTableModel::flags(const QModelIndex& index) const
+    {
         Q_UNUSED(index)
         Qt::ItemFlags f(Qt::ItemIsSelectable | Qt::ItemIsEnabled
                         | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled);

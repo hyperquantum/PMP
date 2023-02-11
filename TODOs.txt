@@ -65,7 +65,6 @@ IDEAS
  * music collection: new filters "not in the queue"/"in the queue"
  * music collection: add a clear button for the filter
  * music collection: provide fast partial indexation that only detects new files
- * music collection: show some kind of indicator for a track that is already present in the queue
  * music collection: show filtered count / total count
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  *** dynamic mode: detect and prevent track repetition with different hash values

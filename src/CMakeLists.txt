@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2022, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2023, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -47,6 +47,7 @@ set(PMP_CLIENT_SOURCES
     client/queueentryinfofetcher.cpp
     client/queueentryinfostorage.cpp
     client/queueentryinfostorageimpl.cpp
+    client/queuehashesmonitor.cpp
     client/queuemonitor.cpp
     client/servercapabilitiesimpl.cpp
     client/serverconnection.cpp
@@ -76,6 +77,7 @@ set(PMP_CLIENT_HEADERS
     client/queueentryinfofetcher.h
     client/queueentryinfostorage.h
     client/queueentryinfostorageimpl.h
+    client/queuehashesmonitor.h
     client/queuemonitor.h
     client/serverconnection.h
     client/serverdiscoverer.h
