@@ -87,6 +87,8 @@ IDEAS
  *** 'play now' option in the context menus of the music collection, the history, and maybe the queue
  * dark theme for the client
  * require the server password when registering a new user account
+ * track info dialog: show indication if file is now playing
+ * track info dialog: show indication if file is in the queue
  * track info dialog: show indication if file is available or not
  * track info dialog: show indication if a file was manually added to the queue (and when) or added by dynamic mode
  * track info dialog: ability to pick the user whose personal stats are shown
