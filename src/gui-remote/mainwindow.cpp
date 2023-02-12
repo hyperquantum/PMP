@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,6 +26,7 @@
 
 #include "client/generalcontroller.h"
 #include "client/playercontroller.h"
+#include "client/queuehashesmonitor.h"
 #include "client/serverconnection.h"
 #include "client/serverinterface.h"
 
@@ -666,8 +667,14 @@ namespace PMP
 
         setCentralWidget(mainCentralWidget);
 
+        auto queueHashesMonitor =
+                new QueueHashesMonitor(_serverInterface,
+                                       &_serverInterface->queueMonitor(),
+                                       &_serverInterface->queueEntryInfoStorage());
+
         auto collectionWidget =
-                new CollectionWidget(_musicCollectionDock, _serverInterface);
+                new CollectionWidget(_musicCollectionDock, _serverInterface,
+                                     queueHashesMonitor);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 

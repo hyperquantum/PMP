@@ -62,7 +62,6 @@ IDEAS
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
  * music collection: make it possible to have two filters at the same time
- * music collection: new filters "not in the queue"/"in the queue"
  * music collection: add a clear button for the filter
  * music collection: provide fast partial indexation that only detects new files
  * music collection: show filtered count / total count

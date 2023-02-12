@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,12 +32,12 @@ namespace Ui
 
 namespace PMP::Client
 {
+    class QueueHashesMonitor;
     class ServerInterface;
 }
 
 namespace PMP
 {
-
     class CollectionViewContext;
     class ColorSwitcher;
     class FilteredCollectionTableModel;
@@ -50,7 +50,8 @@ namespace PMP
         Q_OBJECT
 
     public:
-        CollectionWidget(QWidget* parent, Client::ServerInterface* serverInterface);
+        CollectionWidget(QWidget* parent, Client::ServerInterface* serverInterface,
+                         Client::QueueHashesMonitor* queueHashesMonitor);
         ~CollectionWidget();
 
     private Q_SLOTS:

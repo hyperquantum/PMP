@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -40,7 +40,8 @@ using namespace PMP::Client;
 
 namespace PMP
 {
-    CollectionWidget::CollectionWidget(QWidget* parent, ServerInterface* serverInterface)
+    CollectionWidget::CollectionWidget(QWidget* parent, ServerInterface* serverInterface,
+                                       QueueHashesMonitor* queueHashesMonitor)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
        _colorSwitcher(nullptr),
@@ -48,10 +49,12 @@ namespace PMP
        _collectionViewContext(new CollectionViewContext(this, serverInterface)),
        _collectionSourceModel(new SortedCollectionTableModel(this,
                                                              serverInterface,
+                                                             queueHashesMonitor,
                                                              _collectionViewContext)),
        _collectionDisplayModel(new FilteredCollectionTableModel(this,
                                                                 _collectionSourceModel,
                                                                 serverInterface,
+                                                                queueHashesMonitor,
                                                                 _collectionViewContext)),
        _collectionContextMenu(nullptr)
     {
@@ -282,6 +285,9 @@ namespace PMP
 
         addItem(tr("length <= 1 min."), TrackCriterium::LengthMaximumOneMinute);
         addItem(tr("length >= 5 min."), TrackCriterium::LengthAtLeastFiveMinutes);
+
+        addItem(tr("not in the queue"), TrackCriterium::NotInTheQueue);
+        addItem(tr("in the queue"), TrackCriterium::InTheQueue);
 
         comboBox->setCurrentIndex(0);
     }

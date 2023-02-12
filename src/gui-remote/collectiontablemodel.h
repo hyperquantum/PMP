@@ -59,16 +59,20 @@ namespace PMP
         ScoreAtLeast95,
         LengthMaximumOneMinute,
         LengthAtLeastFiveMinutes,
+        NotInTheQueue,
+        InTheQueue,
     };
 
     class TrackJudge
     {
     public:
-        TrackJudge(Client::UserDataFetcher& userDataFetcher)
+        TrackJudge(Client::UserDataFetcher& userDataFetcher,
+                   Client::QueueHashesMonitor& queueHashesMonitor)
          : _criterium(TrackCriterium::None),
            _userId(0),
            _haveUserId(false),
-           _userDataFetcher(userDataFetcher)
+           _userDataFetcher(userDataFetcher),
+           _queueHashesMonitor(queueHashesMonitor)
         {
             //
         }
@@ -100,6 +104,7 @@ namespace PMP
         quint32 _userId;
         bool _haveUserId;
         Client::UserDataFetcher& _userDataFetcher;
+        Client::QueueHashesMonitor& _queueHashesMonitor;
     };
 
     class CollectionViewContext : public QObject
@@ -123,6 +128,7 @@ namespace PMP
     public:
         SortedCollectionTableModel(QObject* parent,
                                    Client::ServerInterface* serverInterface,
+                                   Client::QueueHashesMonitor* queueHashesMonitor,
                                    CollectionViewContext* collectionViewContext);
 
         void setHighlightCriterium(TrackCriterium criterium);
@@ -223,6 +229,7 @@ namespace PMP
         FilteredCollectionTableModel(QObject* parent,
                                      SortedCollectionTableModel* source,
                                      Client::ServerInterface* serverInterface,
+                                     Client::QueueHashesMonitor* queueHashesMonitor,
                                      CollectionViewContext* collectionViewContext);
 
         void setTrackFilter(TrackCriterium criterium);

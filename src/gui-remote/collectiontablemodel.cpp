@@ -116,6 +116,12 @@ namespace PMP
             case TrackCriterium::LengthAtLeastFiveMinutes:
                 if (!track.lengthIsKnown()) return TriBool::unknown;
                 return track.lengthInMilliseconds() >= 5 * 60 * 1000;
+
+            case TrackCriterium::NotInTheQueue:
+                return !_queueHashesMonitor.isPresentInQueue(track.hash());
+
+            case TrackCriterium::InTheQueue:
+                return _queueHashesMonitor.isPresentInQueue(track.hash());
         }
 
         return false;
@@ -250,14 +256,14 @@ namespace PMP
 
     SortedCollectionTableModel::SortedCollectionTableModel(QObject* parent,
                                              ServerInterface* serverInterface,
+                                             QueueHashesMonitor* queueHashesMonitor,
                                              CollectionViewContext* collectionViewContext)
      : QAbstractTableModel(parent),
        _highlightColorIndex(0),
        _sortBy(0),
        _sortOrder(Qt::AscendingOrder),
-       _highlightingTrackJudge(serverInterface->userDataFetcher()),
-       _queueHashesMonitor(new QueueHashesMonitor(this, &serverInterface->queueMonitor(),
-                                               &serverInterface->queueEntryInfoStorage()))
+       _highlightingTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor),
+       _queueHashesMonitor(queueHashesMonitor)
     {
         _collator.setCaseSensitivity(Qt::CaseInsensitive);
         _collator.setNumericMode(true);
@@ -347,7 +353,8 @@ namespace PMP
 
     bool SortedCollectionTableModel::usesUserData(TrackCriterium mode)
     {
-        switch (mode) {
+        switch (mode)
+        {
             case TrackCriterium::NeverHeard:
             case TrackCriterium::LastHeardNotInLast1000Days:
             case TrackCriterium::LastHeardNotInLast365Days:
@@ -365,6 +372,8 @@ namespace PMP
             case TrackCriterium::None:
             case TrackCriterium::LengthMaximumOneMinute:
             case TrackCriterium::LengthAtLeastFiveMinutes:
+            case TrackCriterium::NotInTheQueue:
+            case TrackCriterium::InTheQueue:
                 break;
         }
 
@@ -582,6 +591,10 @@ namespace PMP
 
     void SortedCollectionTableModel::onHashInQueuePresenceChanged(FileHash hash)
     {
+        qDebug() << "hash in queue presence changed: " << hash
+                 << "present?"
+                 << (_queueHashesMonitor->isPresentInQueue(hash) ? "yes" : "no");
+
         auto outerIndex = findOuterIndexForHash(hash);
         if (outerIndex < 0)
             return; /* track is not in the list */
@@ -1029,9 +1042,10 @@ namespace PMP
     FilteredCollectionTableModel::FilteredCollectionTableModel(QObject* parent,
                                              SortedCollectionTableModel* source,
                                              ServerInterface* serverInterface,
+                                             QueueHashesMonitor* queueHashesMonitor,
                                              CollectionViewContext* collectionViewContext)
      : _source(source),
-       _filteringTrackJudge(serverInterface->userDataFetcher())
+       _filteringTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor)
     {
         Q_UNUSED(parent)
         setFilterCaseSensitivity(Qt::CaseInsensitive);
