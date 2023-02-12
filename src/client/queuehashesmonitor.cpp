@@ -22,6 +22,8 @@
 #include "abstractqueuemonitor.h"
 #include "queueentryinfostorage.h"
 
+#include <QtDebug>
+
 namespace PMP::Client
 {
     QueueHashesMonitor::QueueHashesMonitor(QObject* parent,
@@ -31,6 +33,16 @@ namespace PMP::Client
        _queueMonitor(queueMonitor),
        _queueEntryInfoStorage(queueEntryInfoStorage)
     {
+        int queueCapacity = qMax(20, queueMonitor->queueLength() + 10);
+        _queueIdToHash.reserve(queueCapacity);
+        _hashToQueueIds.reserve(queueCapacity);
+
+        connect(queueMonitor, &AbstractQueueMonitor::queueResetted,
+                this, &QueueHashesMonitor::onQueueResetted);
+
+        connect(queueMonitor, &AbstractQueueMonitor::entriesReceived,
+                this, &QueueHashesMonitor::onEntriesReceived);
+
         connect(queueMonitor, &AbstractQueueMonitor::trackAdded,
                 this, &QueueHashesMonitor::onTrackAdded);
 
@@ -39,6 +51,8 @@ namespace PMP::Client
 
         connect(queueEntryInfoStorage, &QueueEntryInfoStorage::tracksChanged,
                 this, &QueueHashesMonitor::onTracksChanged);
+
+        onEntriesReceived(-1 /* index not used */, queueMonitor->knownQueuePart());
     }
 
     bool QueueHashesMonitor::isPresentInQueue(FileHash hash) const
@@ -53,79 +67,103 @@ namespace PMP::Client
     void QueueHashesMonitor::onQueueResetted(int queueLength)
     {
         Q_UNUSED(queueLength)
-        // we'll do nothing for now
+        qDebug() << "QueueHashesMonitor::onQueueResetted; length:" << queueLength;
+
+        auto queueIds = _queueIdToHash.keys();
+        for (auto queueId : queueIds)
+        {
+            disassociateHashFromQueueId(queueId, true);
+        }
+
+        int queueCapacity = queueLength + 10;
+        _queueIdToHash.reserve(queueCapacity);
+        _hashToQueueIds.reserve(queueCapacity);
     }
 
     void QueueHashesMonitor::onEntriesReceived(int index, QList<quint32> entries)
     {
         Q_UNUSED(index)
+        qDebug() << "QueueHashesMonitor::onEntriesReceived; index:" << index
+                 << " entries:" << entries;
 
-        onTracksChanged(entries);
+        for (auto queueId : entries)
+        {
+            onTrackAdded(-1 /* index not used */, queueId);
+        }
     }
 
     void QueueHashesMonitor::onTrackAdded(int index, quint32 queueId)
     {
         Q_UNUSED(index)
+        qDebug() << "QueueHashesMonitor::onTrackAdded; index:" << index
+                 << " QID:" << queueId;
+
+        FileHash hash;
 
         auto entryInfo = _queueEntryInfoStorage->entryInfoByQueueId(queueId);
-        if (entryInfo == nullptr)
-            return;
+        if (entryInfo != nullptr)
+            hash = entryInfo->hash();
 
-        auto hash = entryInfo->hash();
-        if (hash.isNull())
-            return;
-
-        associateHashWithQueueId(hash, queueId);
+        associateHashWithQueueId(hash, queueId, true);
     }
 
     void QueueHashesMonitor::onTrackRemoved(int index, quint32 queueId)
     {
         Q_UNUSED(index)
+        qDebug() << "QueueHashesMonitor::onTrackRemoved; index:" << index
+                 << " QID:" << queueId;
 
-        disassociateHashFromQueueId(queueId);
+        disassociateHashFromQueueId(queueId, true);
     }
 
     void QueueHashesMonitor::onTracksChanged(QList<quint32> queueIds)
     {
+        qDebug() << "QueueHashesMonitor::onTracksChanged; queueIds:" << queueIds;
+
         for (auto queueId : queueIds)
         {
             auto entryInfo = _queueEntryInfoStorage->entryInfoByQueueId(queueId);
 
             if (entryInfo == nullptr || entryInfo->hash().isNull())
-                disassociateHashFromQueueId(queueId);
+                disassociateHashFromQueueId(queueId, false);
             else
-                associateHashWithQueueId(entryInfo->hash(), queueId);
+                associateHashWithQueueId(entryInfo->hash(), queueId, false);
         }
     }
 
     void QueueHashesMonitor::associateHashWithQueueId(const FileHash& hash,
-                                                      quint32 queueId)
+                                                      quint32 queueId, bool canAdd)
     {
-        if (hash.isNull())
-            return;
-
         FileHash previousHash;
         bool previousHashPresenceChanged = false;
+        bool hashPresenceChanged = false;
 
         auto it = _queueIdToHash.constFind(queueId);
-
         if (it != _queueIdToHash.constEnd())
         {
             if (it.value() == hash)
                 return;
 
             previousHash = it.value();
-            auto& otherHashQueueIds = _hashToQueueIds[previousHash];
-            otherHashQueueIds.remove(queueId);
-
-            if (otherHashQueueIds.isEmpty())
-                previousHashPresenceChanged = true;
+            if (!previousHash.isNull())
+            {
+                auto& otherHashQueueIds = _hashToQueueIds[previousHash];
+                otherHashQueueIds.remove(queueId);
+                previousHashPresenceChanged = otherHashQueueIds.isEmpty();
+            }
         }
 
-        _queueIdToHash.insert(queueId, hash);
-        auto& hashQueueIds = _hashToQueueIds[hash];
-        hashQueueIds.insert(queueId);
-        bool hashPresenceChanged = hashQueueIds.size() == 1;
+        if (canAdd || it != _queueIdToHash.constEnd())
+        {
+            _queueIdToHash.insert(queueId, hash);
+
+            if (!hash.isNull())
+            {
+                auto& hashQueueIds = _hashToQueueIds[hash];
+                hashQueueIds.insert(queueId);
+                hashPresenceChanged = hashQueueIds.size() == 1;
+            }
+        }
 
         if (previousHashPresenceChanged)
             Q_EMIT hashInQueuePresenceChanged(previousHash);
@@ -134,22 +172,28 @@ namespace PMP::Client
             Q_EMIT hashInQueuePresenceChanged(hash);
     }
 
-    void QueueHashesMonitor::disassociateHashFromQueueId(quint32 queueId)
+    void QueueHashesMonitor::disassociateHashFromQueueId(quint32 queueId, bool canRemove)
     {
         auto it = _queueIdToHash.constFind(queueId);
 
         if (it == _queueIdToHash.constEnd())
             return;
 
-        auto hash = it.value();
+        auto previousHash = it.value();
 
-        _queueIdToHash.erase(it);
+        if (canRemove)
+            _queueIdToHash.erase(it);
+        else
+            _queueIdToHash[queueId] = FileHash();
 
-        auto& queueIds = _hashToQueueIds[hash];
-        queueIds.remove(queueId);
-        bool hashPresenceChanged = queueIds.isEmpty();
+        if (!previousHash.isNull())
+        {
+            auto& queueIds = _hashToQueueIds[previousHash];
+            queueIds.remove(queueId);
+            bool hashPresenceChanged = queueIds.isEmpty();
 
-        if (hashPresenceChanged)
-            Q_EMIT hashInQueuePresenceChanged(hash);
+            if (hashPresenceChanged)
+                Q_EMIT hashInQueuePresenceChanged(previousHash);
+        }
     }
 }

@@ -52,8 +52,8 @@ namespace PMP::Client
         void onTracksChanged(QList<quint32> queueIds);
 
     private:
-        void associateHashWithQueueId(FileHash const& hash, quint32 queueId);
-        void disassociateHashFromQueueId(quint32 queueId);
+        void associateHashWithQueueId(FileHash const& hash, quint32 queueId, bool canAdd);
+        void disassociateHashFromQueueId(quint32 queueId, bool canRemove);
 
         AbstractQueueMonitor* _queueMonitor;
         QueueEntryInfoStorage* _queueEntryInfoStorage;
