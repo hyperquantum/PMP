@@ -52,13 +52,67 @@ namespace PMP
         _userDataFetcher.enableAutoFetchForUser(userId);
     }
 
-    TriBool TrackJudge::trackSatisfiesCriterium(CollectionTrackInfo const& track,
-                                                bool resultForNone) const
+    bool TrackJudge::criteriumUsesUserData() const
     {
-        switch (_criterium)
+        return usesUserData(_criterium1) || usesUserData(_criterium2);
+    }
+
+    bool TrackJudge::criteriumResultsInAllTracks() const
+    {
+        return _criterium1 == TrackCriterium::AllTracks
+                && _criterium2 == TrackCriterium::AllTracks;
+    }
+
+    TriBool TrackJudge::trackSatisfiesCriteria(CollectionTrackInfo const& track) const
+    {
+        auto satifiesCriterium1 = trackSatisfiesCriterium(track, _criterium1);
+        if (satifiesCriterium1.isFalse())
+            return false;
+
+        auto satifiesCriterium2 = trackSatisfiesCriterium(track, _criterium2);
+        return satifiesCriterium1 & satifiesCriterium2;
+    }
+
+    bool TrackJudge::usesUserData(TrackCriterium criterium)
+    {
+        switch (criterium)
         {
-            case TrackCriterium::None:
-                return resultForNone;
+            case TrackCriterium::NeverHeard:
+            case TrackCriterium::LastHeardNotInLast1000Days:
+            case TrackCriterium::LastHeardNotInLast365Days:
+            case TrackCriterium::LastHeardNotInLast180Days:
+            case TrackCriterium::LastHeardNotInLast90Days:
+            case TrackCriterium::LastHeardNotInLast30Days:
+            case TrackCriterium::LastHeardNotInLast10Days:
+            case TrackCriterium::WithoutScore:
+            case TrackCriterium::ScoreMaximum30:
+            case TrackCriterium::ScoreAtLeast85:
+            case TrackCriterium::ScoreAtLeast90:
+            case TrackCriterium::ScoreAtLeast95:
+                return true;
+
+            case TrackCriterium::AllTracks:
+            case TrackCriterium::NoTracks:
+            case TrackCriterium::LengthMaximumOneMinute:
+            case TrackCriterium::LengthAtLeastFiveMinutes:
+            case TrackCriterium::NotInTheQueue:
+            case TrackCriterium::InTheQueue:
+                break;
+        }
+
+        return false;
+    }
+
+    TriBool TrackJudge::trackSatisfiesCriterium(const CollectionTrackInfo& track,
+                                                TrackCriterium criterium) const
+    {
+        switch (criterium)
+        {
+            case TrackCriterium::AllTracks:
+                return true;
+
+            case TrackCriterium::NoTracks:
+                return false;
 
             case TrackCriterium::NeverHeard:
             {
@@ -284,6 +338,7 @@ namespace PMP
             }
         );
 
+        _highlightingTrackJudge.setCriterium1(TrackCriterium::NoTracks);
         _highlightingTrackJudge.setUserId(collectionViewContext->userId());
         connect(
             collectionViewContext, &CollectionViewContext::userIdChanged,
@@ -292,7 +347,7 @@ namespace PMP
             {
                 _highlightingTrackJudge.setUserId(collectionViewContext->userId());
 
-                if (usesUserData(_highlightingTrackJudge.getCriterium()))
+                if (_highlightingTrackJudge.criteriumUsesUserData())
                 {
                     markEverythingAsChanged();
                 }
@@ -340,7 +395,7 @@ namespace PMP
 
     void SortedCollectionTableModel::setHighlightCriterium(TrackCriterium criterium)
     {
-        _highlightingTrackJudge.setCriterium(criterium);
+        _highlightingTrackJudge.setCriterium1(criterium);
 
         /* notify the outside world that potentially everything has changed */
         markEverythingAsChanged();
@@ -349,35 +404,6 @@ namespace PMP
     int SortedCollectionTableModel::highlightColorIndex() const
     {
         return _highlightColorIndex;
-    }
-
-    bool SortedCollectionTableModel::usesUserData(TrackCriterium mode)
-    {
-        switch (mode)
-        {
-            case TrackCriterium::NeverHeard:
-            case TrackCriterium::LastHeardNotInLast1000Days:
-            case TrackCriterium::LastHeardNotInLast365Days:
-            case TrackCriterium::LastHeardNotInLast180Days:
-            case TrackCriterium::LastHeardNotInLast90Days:
-            case TrackCriterium::LastHeardNotInLast30Days:
-            case TrackCriterium::LastHeardNotInLast10Days:
-            case TrackCriterium::WithoutScore:
-            case TrackCriterium::ScoreMaximum30:
-            case TrackCriterium::ScoreAtLeast85:
-            case TrackCriterium::ScoreAtLeast90:
-            case TrackCriterium::ScoreAtLeast95:
-                return true;
-
-            case TrackCriterium::None:
-            case TrackCriterium::LengthMaximumOneMinute:
-            case TrackCriterium::LengthAtLeastFiveMinutes:
-            case TrackCriterium::NotInTheQueue:
-            case TrackCriterium::InTheQueue:
-                break;
-        }
-
-        return false;
     }
 
     bool SortedCollectionTableModel::lessThan(int index1, int index2) const {
@@ -946,7 +972,7 @@ namespace PMP
                 {
                     auto track = trackAt(index);
                     auto judgement =
-                           _highlightingTrackJudge.trackSatisfiesCriterium(*track, false);
+                           _highlightingTrackJudge.trackSatisfiesCriteria(*track);
 
                     if (judgement.isTrue())
                     {
@@ -1064,9 +1090,11 @@ namespace PMP
         setSourceModel(source);
     }
 
-    void FilteredCollectionTableModel::setTrackFilter(TrackCriterium criterium)
+    void FilteredCollectionTableModel::setTrackFilters(TrackCriterium criterium1,
+                                                       TrackCriterium criterium2)
     {
-        _filteringTrackJudge.setCriterium(criterium);
+        _filteringTrackJudge.setCriterium1(criterium1);
+        _filteringTrackJudge.setCriterium2(criterium2);
         invalidateFilter();
     }
 
@@ -1090,10 +1118,9 @@ namespace PMP
     bool FilteredCollectionTableModel::filterAcceptsRow(int sourceRow,
                                                     const QModelIndex& sourceParent) const
     {
-        (void)sourceParent;
+        Q_UNUSED(sourceParent)
 
-        if (_searchParts.empty()
-                && _filteringTrackJudge.getCriterium() == TrackCriterium::None)
+        if (_searchParts.empty() && _filteringTrackJudge.criteriumResultsInAllTracks())
         {
             return true; /* not filtered */
         }
@@ -1111,7 +1138,7 @@ namespace PMP
             }
         }
 
-        return _filteringTrackJudge.trackSatisfiesCriterium(*track, true).isTrue();
+        return _filteringTrackJudge.trackSatisfiesCriteria(*track).isTrue();
     }
 
 }

@@ -36,17 +36,21 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="0">
+     <item row="3" column="0">
       <widget class="QLabel" name="highlightTracksLabel">
        <property name="text">
         <string>Highlight tracks:</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
+     <item row="3" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QComboBox" name="highlightTracksComboBox"/>
+        <widget class="QComboBox" name="highlightTracksComboBox">
+         <property name="maxVisibleItems">
+          <number>15</number>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QPushButton" name="highlightColorButton"/>
@@ -61,7 +65,25 @@
       </widget>
      </item>
      <item row="1" column="1">
-      <widget class="QComboBox" name="filterTracksComboBox"/>
+      <widget class="QComboBox" name="filterTracksComboBox">
+       <property name="maxVisibleItems">
+        <number>15</number>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QLabel" name="filterTracks2Label">
+       <property name="text">
+        <string>Filter 2:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QComboBox" name="filterTracks2ComboBox">
+       <property name="maxVisibleItems">
+        <number>15</number>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

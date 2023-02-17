@@ -44,7 +44,8 @@ namespace PMP
 {
     enum class TrackCriterium
     {
-        None = 0,
+        AllTracks = 0,
+        NoTracks,
         NeverHeard,
         LastHeardNotInLast1000Days,
         LastHeardNotInLast365Days,
@@ -68,7 +69,8 @@ namespace PMP
     public:
         TrackJudge(Client::UserDataFetcher& userDataFetcher,
                    Client::QueueHashesMonitor& queueHashesMonitor)
-         : _criterium(TrackCriterium::None),
+         : _criterium1(TrackCriterium::AllTracks),
+           _criterium2(TrackCriterium::AllTracks),
            _userId(0),
            _haveUserId(false),
            _userDataFetcher(userDataFetcher),
@@ -83,13 +85,20 @@ namespace PMP
             return _userId == userId && _haveUserId;
         }
 
-        void setCriterium(TrackCriterium mode) { _criterium = mode; }
-        TrackCriterium getCriterium() const { return _criterium; }
+        void setCriterium1(TrackCriterium criterium) { _criterium1 = criterium; }
+        void setCriterium2(TrackCriterium criterium) { _criterium2 = criterium; }
 
-        TriBool trackSatisfiesCriterium(CollectionTrackInfo const& track,
-                                        bool resultForNone) const;
+        bool criteriumUsesUserData() const;
+        bool criteriumResultsInAllTracks() const;
+
+        TriBool trackSatisfiesCriteria(CollectionTrackInfo const& track) const;
 
     private:
+        static bool usesUserData(TrackCriterium criterium);
+
+        TriBool trackSatisfiesCriterium(CollectionTrackInfo const& track,
+                                        TrackCriterium criterium) const;
+
         TriBool trackSatisfiesScoreCriterium(CollectionTrackInfo const& track,
                               std::function<TriBool(int)> scorePermillageEvaluator) const;
 
@@ -100,7 +109,8 @@ namespace PMP
                                                          CollectionTrackInfo const& track,
                                                          int days) const;
 
-        TrackCriterium _criterium;
+        TrackCriterium _criterium1;
+        TrackCriterium _criterium2;
         quint32 _userId;
         bool _haveUserId;
         Client::UserDataFetcher& _userDataFetcher;
@@ -180,8 +190,6 @@ namespace PMP
         void markLeftColumnAsChanged();
         void markEverythingAsChanged();
 
-        static bool usesUserData(TrackCriterium mode);
-
         bool lessThan(int index1, int index2) const;
         bool lessThan(CollectionTrackInfo const& track1,
                       CollectionTrackInfo const& track2) const;
@@ -232,7 +240,7 @@ namespace PMP
                                      Client::QueueHashesMonitor* queueHashesMonitor,
                                      CollectionViewContext* collectionViewContext);
 
-        void setTrackFilter(TrackCriterium criterium);
+        void setTrackFilters(TrackCriterium criterium1, TrackCriterium criterium2);
 
         virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 

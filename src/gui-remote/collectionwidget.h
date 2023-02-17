@@ -62,12 +62,12 @@ namespace PMP
 
     private:
         void updateSpinnerVisibility();
-        void initTrackFilterComboBox();
+        void initTrackFilterComboBoxes();
         void initTrackHighlightingComboBox();
-        void fillTrackCriteriaComboBox(QComboBox* comboBox);
+        void fillTrackCriteriaComboBox(QComboBox* comboBox,
+                                       TrackCriterium criteriumForNone);
         void initTrackHighlightingColorSwitcher();
 
-        TrackCriterium getCurrentTrackFilter() const;
         TrackCriterium getCurrentHighlightMode() const;
         TrackCriterium getTrackCriteriumFromComboBox(QComboBox* comboBox) const;
 

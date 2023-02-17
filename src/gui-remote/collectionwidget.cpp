@@ -60,7 +60,7 @@ namespace PMP
     {
         _ui->setupUi(this);
 
-        initTrackFilterComboBox();
+        initTrackFilterComboBoxes();
         initTrackHighlightingComboBox();
         initTrackHighlightingColorSwitcher();
 
@@ -129,20 +129,28 @@ namespace PMP
     {
         Q_UNUSED(index)
 
-        auto filter = getCurrentTrackFilter();
+        auto filter1 = getTrackCriteriumFromComboBox(_ui->filterTracksComboBox);
+        auto filter2 = getTrackCriteriumFromComboBox(_ui->filterTracks2ComboBox);
 
-        _collectionDisplayModel->setTrackFilter(filter);
+        bool shouldDisplayFilter2 =
+                filter1 != TrackCriterium::AllTracks
+                    || filter2 != TrackCriterium::AllTracks;
+
+        _ui->filterTracks2Label->setVisible(shouldDisplayFilter2);
+        _ui->filterTracks2ComboBox->setVisible(shouldDisplayFilter2);
+
+        _collectionDisplayModel->setTrackFilters(filter1, filter2);
     }
 
     void CollectionWidget::highlightTracksIndexChanged(int index)
     {
         Q_UNUSED(index)
 
-        auto mode = getCurrentHighlightMode();
+        auto highlightMode = getCurrentHighlightMode();
 
-        _colorSwitcher->setVisible(mode != TrackCriterium::None);
+        _colorSwitcher->setVisible(highlightMode != TrackCriterium::NoTracks);
 
-        _collectionSourceModel->setHighlightCriterium(mode);
+        _collectionSourceModel->setHighlightCriterium(highlightMode);
     }
 
     void CollectionWidget::highlightColorIndexChanged()
@@ -226,23 +234,28 @@ namespace PMP
         }
     }
 
-    void CollectionWidget::initTrackFilterComboBox()
+    void CollectionWidget::initTrackFilterComboBoxes()
     {
-        auto combo = _ui->filterTracksComboBox;
+        auto comboBoxInit =
+            [this](QComboBox* comboBox)
+            {
+                fillTrackCriteriaComboBox(comboBox, TrackCriterium::AllTracks);
 
-        fillTrackCriteriaComboBox(combo);
+                connect(
+                    comboBox, qOverload<int>(&QComboBox::currentIndexChanged),
+                    this, &CollectionWidget::filterTracksIndexChanged
+                );
+            };
 
-        connect(
-            combo, qOverload<int>(&QComboBox::currentIndexChanged),
-            this, &CollectionWidget::filterTracksIndexChanged
-        );
+        comboBoxInit(_ui->filterTracksComboBox);
+        comboBoxInit(_ui->filterTracks2ComboBox);
     }
 
     void CollectionWidget::initTrackHighlightingComboBox()
     {
         auto combo = _ui->highlightTracksComboBox;
 
-        fillTrackCriteriaComboBox(combo);
+        fillTrackCriteriaComboBox(combo, TrackCriterium::NoTracks);
 
         connect(
             combo, qOverload<int>(&QComboBox::currentIndexChanged),
@@ -250,7 +263,8 @@ namespace PMP
         );
     }
 
-    void CollectionWidget::fillTrackCriteriaComboBox(QComboBox* comboBox)
+    void CollectionWidget::fillTrackCriteriaComboBox(QComboBox* comboBox,
+                                                     TrackCriterium criteriumForNone)
     {
         auto addItem =
             [comboBox](QString text, TrackCriterium mode)
@@ -261,7 +275,7 @@ namespace PMP
                 comboBox->addItem(text, QVariant::fromValue(mode));
             };
 
-        addItem(tr("none"), TrackCriterium::None);
+        addItem(tr("none"), criteriumForNone);
 
         addItem(tr("never heard"), TrackCriterium::NeverHeard);
         addItem(tr("not heard in the last 1000 days"),
@@ -298,7 +312,7 @@ namespace PMP
 
         _colorSwitcher = new ColorSwitcher();
         _colorSwitcher->setColors(colors.itemBackgroundHighlightColors);
-        _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackCriterium::None);
+        _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackCriterium::NoTracks);
 
         connect(
             _colorSwitcher, &ColorSwitcher::colorIndexChanged,
@@ -311,11 +325,6 @@ namespace PMP
         delete layoutItem;
         delete _ui->highlightColorButton;
         _ui->highlightColorButton = nullptr;
-    }
-
-    TrackCriterium CollectionWidget::getCurrentTrackFilter() const
-    {
-        return getTrackCriteriumFromComboBox(_ui->filterTracksComboBox);
     }
 
     TrackCriterium CollectionWidget::getCurrentHighlightMode() const
