@@ -177,6 +177,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/queuemodel.cpp
     gui-remote/scoreformatdelegate.cpp
     gui-remote/trackinfodialog.cpp
+    gui-remote/trackjudge.cpp
     gui-remote/trackprogresswidget.cpp
     gui-remote/useraccountcreationwidget.cpp
     gui-remote/userpickerwidget.cpp
