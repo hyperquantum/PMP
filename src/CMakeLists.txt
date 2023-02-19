@@ -43,6 +43,7 @@ set(PMP_CLIENT_SOURCES
     client/dynamicmodecontrollerimpl.cpp
     client/generalcontrollerimpl.cpp
     client/historycontrollerimpl.cpp
+    client/localhashidrepository.cpp
     client/playercontrollerimpl.cpp
     client/queuecontrollerimpl.cpp
     client/queueentryinfofetcher.cpp
