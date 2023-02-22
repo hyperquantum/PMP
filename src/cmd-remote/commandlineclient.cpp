@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,7 @@
 
 #include "commandlineclient.h"
 
+#include "client/localhashidrepository.h"
 #include "client/serverconnection.h"
 #include "client/serverinterface.h"
 
@@ -41,6 +42,7 @@ namespace PMP
        _port(port),
        _username(username),
        _password(password),
+       _hashIdRepository(new LocalHashIdRepository()),
        _serverConnection(nullptr),
        _serverInterface(nullptr),
        _command(command),
@@ -48,7 +50,9 @@ namespace PMP
     {
         // TODO : don't subscribe to _all_ events anymore
         _serverConnection =
-                new ServerConnection(this, ServerEventSubscription::AllEvents);
+                new ServerConnection(this,
+                                     _hashIdRepository,
+                                     ServerEventSubscription::AllEvents);
         _serverInterface = new ServerInterface(_serverConnection);
 
         connect(
@@ -128,6 +132,11 @@ namespace PMP
                 Q_EMIT exitClient(resultCode);
             }
         );
+    }
+
+    CommandlineClient::~CommandlineClient()
+    {
+        delete _hashIdRepository;
     }
 
     void CommandlineClient::start()

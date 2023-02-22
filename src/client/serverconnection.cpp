@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,6 +26,7 @@
 #include "common/util.h"
 
 #include "collectionfetcher.h"
+#include "localhashidrepository.h"
 #include "servercapabilitiesimpl.h"
 
 #include <QtDebug>
@@ -397,8 +398,10 @@ namespace PMP::Client
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
 
     ServerConnection::ServerConnection(QObject* parent,
+                                       LocalHashIdRepository* hashIdRepository,
                                        ServerEventSubscription eventSubscription)
      : QObject(parent),
+       _hashIdRepository(hashIdRepository),
        _serverCapabilities(new ServerCapabilitiesImpl()),
        _disconnectReason(DisconnectReason::Unknown),
        _keepAliveTimer(new QTimer(this)),
@@ -2525,6 +2528,9 @@ namespace PMP::Client
 
             auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
 
+            if (hash.isNull() == false)
+                _hashIdRepository->getOrRegisterId(hash);
+
             Q_EMIT receivedQueueEntryHash(queueID, type, hash);
         }
     }
@@ -2897,6 +2903,8 @@ namespace PMP::Client
 
             /* workaround for server bug; we shouldn't be receiving these */
             if (hash.length() == 0) continue;
+
+            _hashIdRepository->getOrRegisterId(hash);
 
             CollectionTrackInfo info(hash, availabilityByte & 1, title, artist, album,
                                      trackLengthInMs);

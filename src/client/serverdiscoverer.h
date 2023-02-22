@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,6 +32,7 @@ QT_FORWARD_DECLARE_CLASS(QUdpSocket)
 
 namespace PMP::Client
 {
+    class LocalHashIdRepository;
     class ServerConnection;
     class ServerProbe;
 
@@ -71,6 +72,7 @@ namespace PMP::Client
             QString name;
         };
 
+        LocalHashIdRepository* _localHashIdRepository;
         QList<QHostAddress> _localHostNetworkAddresses;
         QUdpSocket* _socket;
         QSet<QPair<QHostAddress, quint16>> _addressesBeingProbed;
@@ -82,7 +84,8 @@ namespace PMP::Client
     {
         Q_OBJECT
     public:
-        ServerProbe(QObject* parent, QHostAddress const& address, quint16 port);
+        ServerProbe(QObject* parent, QHostAddress const& address, quint16 port,
+                    LocalHashIdRepository* localHashIdRepository);
 
     Q_SIGNALS:
         void foundServer(QHostAddress address, quint16 port,

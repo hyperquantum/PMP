@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVERCONNECTION_H
-#define PMP_SERVERCONNECTION_H
+#ifndef PMP_CLIENT_SERVERCONNECTION_H
+#define PMP_CLIENT_SERVERCONNECTION_H
 
 #include "common/collectiontrackinfo.h"
 #include "common/disconnectreason.h"
@@ -50,6 +50,7 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 namespace PMP::Client
 {
     class CollectionFetcher;
+    class LocalHashIdRepository;
     class ServerCapabilities;
     class ServerCapabilitiesImpl;
 
@@ -84,10 +85,13 @@ namespace PMP::Client
         class DuplicationResultHandler;
 
     public:
-        explicit ServerConnection(QObject* parent = nullptr,
+        explicit ServerConnection(QObject* parent,
+                                  LocalHashIdRepository* hashIdRepository,
                                   ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
         ~ServerConnection();
+
+        LocalHashIdRepository* hashIdRepository() const { return _hashIdRepository; }
 
         void connectToHost(QString const& host, quint16 port);
         void disconnect();
@@ -346,6 +350,7 @@ namespace PMP::Client
         static const int KeepAliveIntervalMs;
         static const int KeepAliveReplyTimeoutMs;
 
+        LocalHashIdRepository* _hashIdRepository;
         ServerCapabilitiesImpl* _serverCapabilities;
         DisconnectReason _disconnectReason;
         QElapsedTimer _timeSinceLastMessageReceived;

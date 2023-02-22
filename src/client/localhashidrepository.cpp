@@ -22,6 +22,7 @@
 #include "common/filehash.h"
 
 #include <QMutexLocker>
+#include <QtDebug>
 
 namespace PMP::Client
 {
@@ -42,6 +43,12 @@ namespace PMP::Client
 
         _hashToId.insert(hash, id.value());
         _idToHash.insert(id.value(), hash);
+
+        if (_lastId % 500 == 0)
+        {
+            qDebug() << "registered local hash ID" << _lastId;
+        }
+
         return id;
     }
 
