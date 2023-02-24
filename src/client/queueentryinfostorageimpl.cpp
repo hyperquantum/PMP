@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -74,7 +74,7 @@ namespace PMP::Client
                      << queueId;
             sendInfoRequest(queueId);
         }
-        else if (info->hash().isNull()
+        else if (info->hashId().isZero()
                  && !info->isTrack().isFalse()
                  && !_hashRequestsSent.contains(queueId))
         {
@@ -143,10 +143,10 @@ namespace PMP::Client
 
     void QueueEntryInfoStorageImpl::receivedQueueEntryHash(quint32 queueID,
                                                            QueueEntryType type,
-                                                           FileHash hash)
+                                                           LocalHashId hashId)
     {
         qDebug() << "QueueEntryInfoStorageImpl: received hash for QID" << queueID << ":"
-                 << hash;
+                 << hashId;
 
         _hashRequestsSent.remove(queueID);
 
@@ -158,13 +158,13 @@ namespace PMP::Client
         }
         else
         {
-            if (info->type() == type && info->hash() == hash)
+            if (info->type() == type && info->hashId() == hashId)
             {
                 return; /* no change */
             }
         }
 
-        info->setHash(type, hash);
+        info->setHash(type, hashId);
 
         enqueueTrackChangeNotification(queueID);
     }

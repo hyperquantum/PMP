@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COLLECTIONWATCHERIMPL_H
-#define PMP_COLLECTIONWATCHERIMPL_H
+#ifndef PMP_CLIENT_COLLECTIONWATCHERIMPL_H
+#define PMP_CLIENT_COLLECTIONWATCHERIMPL_H
 
 #include "collectionwatcher.h"
 
@@ -38,25 +38,26 @@ namespace PMP::Client
         void enableCollectionDownloading() override;
         bool downloadingInProgress() const override;
 
-        QHash<FileHash, CollectionTrackInfo> getCollection() override;
-        CollectionTrackInfo getTrack(FileHash const& hash) override;
+        QHash<LocalHashId, CollectionTrackInfo> getCollection() override;
+        CollectionTrackInfo getTrack(LocalHashId hashId) override;
 
     private Q_SLOTS:
         void onConnected();
         void onCollectionPartReceived(QVector<CollectionTrackInfo> tracks);
         void onCollectionDownloadCompleted();
         void onCollectionDownloadError();
-        void onCollectionTracksAvailabilityChanged(QVector<PMP::FileHash> available,
-                                                   QVector<PMP::FileHash> unavailable);
-        void onCollectionTracksChanged(QVector<PMP::CollectionTrackInfo> changes);
+        void onCollectionTracksAvailabilityChanged(
+                                           QVector<PMP::Client::LocalHashId> available,
+                                           QVector<PMP::Client::LocalHashId> unavailable);
+        void onCollectionTracksChanged(QVector<PMP::Client::CollectionTrackInfo> changes);
 
     private:
         void startDownload();
-        void updateTrackAvailability(QVector<FileHash> hashes, bool available);
+        void updateTrackAvailability(QVector<LocalHashId> hashes, bool available);
         void updateTrackData(CollectionTrackInfo const& track);
 
         ServerConnection* _connection;
-        QHash<FileHash, CollectionTrackInfo> _collectionHash;
+        QHash<LocalHashId, CollectionTrackInfo> _collectionHash;
         bool _autoDownload;
         bool _downloading;
     };

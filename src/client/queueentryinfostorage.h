@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,12 +17,13 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_QUEUEENTRYINFOSTORAGE_H
-#define PMP_QUEUEENTRYINFOSTORAGE_H
+#ifndef PMP_CLIENT_QUEUEENTRYINFOSTORAGE_H
+#define PMP_CLIENT_QUEUEENTRYINFOSTORAGE_H
 
-#include "common/filehash.h"
 #include "common/queueentrytype.h"
 #include "common/tribool.h"
+
+#include "localhashid.h"
 
 #include <QObject>
 
@@ -32,9 +33,9 @@ namespace PMP::Client
     {
         Q_OBJECT
     public:
-        QueueEntryInfo(quint32 queueID);
+        QueueEntryInfo(quint32 queueId);
 
-        quint32 queueID() const { return _queueID; }
+        quint32 queueId() const { return _queueId; }
 
         TriBool isTrack() const
         {
@@ -48,7 +49,7 @@ namespace PMP::Client
         }
 
         QueueEntryType type() const { return _type; }
-        const FileHash& hash() const { return _hash; }
+        LocalHashId hashId() const { return _hashId; }
         int lengthInMilliseconds() const { return _lengthMilliseconds; }
         QString artist() const { return _artist; }
         QString title() const { return _title; }
@@ -56,15 +57,15 @@ namespace PMP::Client
         bool needFilename() const;
         QString informativeFilename() const { return _informativeFilename; }
 
-        void setHash(QueueEntryType type, const FileHash& hash);
+        void setHash(QueueEntryType type, LocalHashId hashId);
         void setInfo(QueueEntryType type, qint64 lengthInMilliseconds,
                      QString const& title, QString const& artist);
         bool setPossibleFilenames(QList<QString> const& names);
 
     private:
-        quint32 _queueID;
+        quint32 _queueId;
         QueueEntryType _type;
-        FileHash _hash;
+        LocalHashId _hashId;
         qint64 _lengthMilliseconds;
         QString _title;
         QString _artist;

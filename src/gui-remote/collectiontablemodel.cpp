@@ -19,10 +19,12 @@
 
 #include "collectiontablemodel.h"
 
+#include "common/filehash.h"
 #include "common/util.h"
 
 #include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
+#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/queuehashesmonitor.h"
 #include "client/serverinterface.h"
@@ -85,19 +87,22 @@ namespace PMP
     public:
 
         template <typename T>
-        static int compare(T const& first, T const& second) {
+        static int compare(T const& first, T const& second)
+        {
             if (first < second) return -1;
             if (second < first) return 1;
             return 0;
         }
 
         template <typename T>
-        static int compare(T const& first, T const& second, bool descending) {
+        static int compare(T const& first, T const& second, bool descending)
+        {
             return descending ? compare(second, first) : compare(first, second);
         }
 
         template <typename T>
-        static int compare(T const& first, T const& second, Qt::SortOrder sortOrder) {
+        static int compare(T const& first, T const& second, Qt::SortOrder sortOrder)
+        {
             return compare(first, second, sortOrder == Qt::DescendingOrder);
         }
 
@@ -116,11 +121,6 @@ namespace PMP
         {
             return compare(first, second, comparer, sortOrder == Qt::DescendingOrder);
         }
-
-        /*static int compare<>(QString const& first, QString const& second) {
-            return first.compare(second);
-        }*/
-
     };
 
     }
@@ -132,6 +132,7 @@ namespace PMP
                                              QueueHashesMonitor* queueHashesMonitor,
                                              CollectionViewContext* collectionViewContext)
      : QAbstractTableModel(parent),
+       _hashIdRepository(serverInterface->hashIdRepository()),
        _highlightColorIndex(0),
        _sortBy(0),
        _sortOrder(Qt::AscendingOrder),
@@ -152,7 +153,7 @@ namespace PMP
             [this, playerController]() {
                 _playerState = playerController->playerState();
 
-                if (!_currentTrackHash.isNull())
+                if (!_currentTrackHash.isZero())
                     markLeftColumnAsChanged();
             }
         );
@@ -301,11 +302,7 @@ namespace PMP
             if (artistComparison != 0) return artistComparison;
         }
 
-        return Comparisons::compare(
-            track1.hash(), track2.hash(),
-            std::function<int(FileHash const&, FileHash const&)>(&PMP::compare),
-            sortOrder
-        );
+        return Comparisons::compare(track1.hashId(), track2.hashId(), sortOrder);
     }
 
     int SortedCollectionTableModel::compareArtists(const CollectionTrackInfo& track1,
@@ -333,7 +330,7 @@ namespace PMP
             if (titleComparison != 0) return titleComparison;
         }
 
-        return PMP::compare(track1.hash(), track2.hash());
+        return Comparisons::compare(track1.hashId(), track2.hashId());
     }
 
     int SortedCollectionTableModel::compareLengths(const CollectionTrackInfo& track1,
@@ -364,7 +361,7 @@ namespace PMP
         int artistComparison = compareStrings(artist1, artist2, sortOrder);
         if (artistComparison != 0) return artistComparison;
 
-        return PMP::compare(track1.hash(), track2.hash());
+        return Comparisons::compare(track1.hashId(), track2.hashId());
     }
 
     int SortedCollectionTableModel::compareAlbums(const CollectionTrackInfo& track1,
@@ -393,7 +390,7 @@ namespace PMP
         int titleComparison = compareStrings(title1, title2, sortOrder);
         if (titleComparison != 0) return titleComparison;
 
-        return PMP::compare(track1.hash(), track2.hash());
+        return Comparisons::compare(track1.hashId(), track2.hashId());
     }
 
     void SortedCollectionTableModel::onNewTrackReceived(CollectionTrackInfo track)
@@ -401,10 +398,10 @@ namespace PMP
         addOrUpdateTrack(track);
     }
 
-    void SortedCollectionTableModel::onTrackAvailabilityChanged(FileHash hash,
+    void SortedCollectionTableModel::onTrackAvailabilityChanged(LocalHashId hashId,
                                                                 bool isAvailable)
     {
-        updateTrackAvailability(hash, isAvailable);
+        updateTrackAvailability(hashId, isAvailable);
     }
 
     void SortedCollectionTableModel::onTrackDataChanged(CollectionTrackInfo track)
@@ -412,12 +409,13 @@ namespace PMP
         addOrUpdateTrack(track);
     }
 
-    void SortedCollectionTableModel::onUserTrackDataChanged(quint32 userId, FileHash hash)
+    void SortedCollectionTableModel::onUserTrackDataChanged(quint32 userId,
+                                                            LocalHashId hashId)
     {
         Q_UNUSED(userId)
         /* ignore the user ID for change notifications */
 
-        auto outerIndex = findOuterIndexForHash(hash);
+        auto outerIndex = findOuterIndexForHash(hashId);
         if (outerIndex < 0)
             return; /* track is not in the list */
 
@@ -425,22 +423,22 @@ namespace PMP
                            createIndex(outerIndex, 4 - 1));
     }
 
-    void SortedCollectionTableModel::currentTrackInfoChanged(FileHash hash)
+    void SortedCollectionTableModel::currentTrackInfoChanged(LocalHashId hashId)
     {
-        if (_currentTrackHash == hash)
+        if (_currentTrackHash == hashId)
             return;
 
-        _currentTrackHash = hash;
+        _currentTrackHash = hashId;
         markLeftColumnAsChanged();
     }
 
-    void SortedCollectionTableModel::onHashInQueuePresenceChanged(FileHash hash)
+    void SortedCollectionTableModel::onHashInQueuePresenceChanged(LocalHashId hashId)
     {
-        qDebug() << "hash in queue presence changed: " << hash
+        qDebug() << "hash in queue presence changed: " << hashId
                  << "present?"
-                 << (_queueHashesMonitor->isPresentInQueue(hash) ? "yes" : "no");
+                 << (_queueHashesMonitor->isPresentInQueue(hashId) ? "yes" : "no");
 
-        auto outerIndex = findOuterIndexForHash(hash);
+        auto outerIndex = findOuterIndexForHash(hashId);
         if (outerIndex < 0)
             return; /* track is not in the list */
 
@@ -483,9 +481,9 @@ namespace PMP
         }
     }
 
-    int SortedCollectionTableModel::findOuterIndexForHash(const FileHash& hash)
+    int SortedCollectionTableModel::findOuterIndexForHash(LocalHashId hashId)
     {
-        auto innerIndex = _hashesToInnerIndexes.value(hash, -1);
+        auto innerIndex = _hashesToInnerIndexes.value(hashId, -1);
         if (innerIndex < 0)
             return -1; /* track is not in the list */
 
@@ -500,10 +498,10 @@ namespace PMP
         );
     }
 
-    void SortedCollectionTableModel::updateTrackAvailability(FileHash hash,
+    void SortedCollectionTableModel::updateTrackAvailability(LocalHashId hashId,
                                                              bool isAvailable)
     {
-        auto hashIterator = _hashesToInnerIndexes.find(hash);
+        auto hashIterator = _hashesToInnerIndexes.find(hashId);
         if (hashIterator == _hashesToInnerIndexes.end())
             return; /* not supposed to happen, ignore it */
 
@@ -521,21 +519,21 @@ namespace PMP
             return;
 
         QVector<CollectionTrackInfo*> trackList;
-        QHash<FileHash, int> hashIndexer;
+        QHash<LocalHashId, int> hashIndexer;
         trackList.reserve(trackCollection.size());
         hashIndexer.reserve(trackCollection.size());
 
         for (int i = 0; i < trackCollection.size(); ++i) {
             CollectionTrackInfo const& track = trackCollection[i];
 
-            if (hashIndexer.contains(track.hash()))
+            if (hashIndexer.contains(track.hashId()))
                 continue; /* already present */
 
             if (!track.isAvailable() && track.titleAndArtistUnknown())
                 continue; /* not interesting enough to add */
 
             auto trackObj = new CollectionTrackInfo(track);
-            hashIndexer.insert(track.hash(), trackList.size());
+            hashIndexer.insert(track.hashId(), trackList.size());
             trackList.append(trackObj);
         }
 
@@ -556,7 +554,7 @@ namespace PMP
     void SortedCollectionTableModel::addOrUpdateTrack(CollectionTrackInfo const& track)
     {
         /* hash already present? */
-        auto hashIterator = _hashesToInnerIndexes.find(track.hash());
+        auto hashIterator = _hashesToInnerIndexes.find(track.hashId());
         if (hashIterator != _hashesToInnerIndexes.end())
         {
             auto innerIndex = hashIterator.value();
@@ -578,7 +576,7 @@ namespace PMP
         auto trackObj = new CollectionTrackInfo(track);
         int innerIndex = _tracks.size();
         _tracks.append(trackObj);
-        _hashesToInnerIndexes.insert(track.hash(), innerIndex);
+        _hashesToInnerIndexes.insert(track.hashId(), innerIndex);
         _outerToInnerIndexMap.insert(indexToInsertAt, innerIndex);
         _innerToOuterIndexMap.append(indexToInsertAt);
 
@@ -599,7 +597,7 @@ namespace PMP
                    << "; artist:" << newTrackData.artist()
                    << "; album:" << newTrackData.album()
                    << "; available:" << (newTrackData.isAvailable() ? "yes" : "no")
-                   << "; hash:" << newTrackData.hash();
+                   << "; hash ID:" << newTrackData.hashId();
 
         int oldOuterIndex = _innerToOuterIndexMap[innerIndex];
         int newOuterIndex = findOuterIndexMapIndexForInsert(newTrackData);
@@ -760,7 +758,7 @@ namespace PMP
                 {
                     auto track = trackAt(index);
 
-                    if (track->hash() == _currentTrackHash)
+                    if (track->hashId() == _currentTrackHash)
                     {
                         switch (_playerState) {
                             case PlayerState::Playing:
@@ -773,7 +771,7 @@ namespace PMP
                                 break;
                         }
                     }
-                    else if (_queueHashesMonitor->isPresentInQueue(track->hash()))
+                    else if (_queueHashesMonitor->isPresentInQueue(track->hashId()))
                     {
                         return QIcon(":/mediabuttons/queue.svg");
                     }
@@ -848,16 +846,19 @@ namespace PMP
             if (row == prevRow) continue;
             prevRow = row;
 
-            auto& hash = trackAt(row)->hash();
+            auto hashId = trackAt(row)->hashId();
+            auto hash = _hashIdRepository->getHash(hashId);
+
             qDebug() << " row" << row << "; col" << index.column()
-                     << "; hash" << hash.dumpToString();
+                     << "; hash ID" << hashId << "; hash" << hash;
             hashes.append(hash);
         }
 
         if (hashes.empty()) return nullptr;
 
         stream << quint32(hashes.size());
-        for (int i = 0; i < hashes.size(); ++i) {
+        for (int i = 0; i < hashes.size(); ++i)
+        {
             stream << quint64(hashes[i].length());
             stream << hashes[i].SHA1();
             stream << hashes[i].MD5();

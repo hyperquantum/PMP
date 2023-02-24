@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -61,14 +61,14 @@ namespace PMP::Client
         return _downloading;
     }
 
-    QHash<FileHash, CollectionTrackInfo> CollectionWatcherImpl::getCollection()
+    QHash<LocalHashId, CollectionTrackInfo> CollectionWatcherImpl::getCollection()
     {
         return _collectionHash;
     }
 
-    CollectionTrackInfo CollectionWatcherImpl::getTrack(const FileHash& hash)
+    CollectionTrackInfo CollectionWatcherImpl::getTrack(LocalHashId hashId)
     {
-        auto it = _collectionHash.find(hash);
+        auto it = _collectionHash.find(hashId);
 
         if (it == _collectionHash.end())
             return CollectionTrackInfo();
@@ -89,10 +89,10 @@ namespace PMP::Client
 
         for (auto const& track : tracks)
         {
-            if (_collectionHash.contains(track.hash()))
+            if (_collectionHash.contains(track.hashId()))
                 continue; /* don't update */
 
-            _collectionHash.insert(track.hash(), track);
+            _collectionHash.insert(track.hashId(), track);
             Q_EMIT newTrackReceived(track);
         }
     }
@@ -112,8 +112,8 @@ namespace PMP::Client
     }
 
     void CollectionWatcherImpl::onCollectionTracksAvailabilityChanged(
-                                                            QVector<FileHash> available,
-                                                            QVector<FileHash> unavailable)
+                                                         QVector<LocalHashId> available,
+                                                         QVector<LocalHashId> unavailable)
     {
         updateTrackAvailability(available, true);
         updateTrackAvailability(unavailable, false);
@@ -154,7 +154,7 @@ namespace PMP::Client
         Q_EMIT downloadingInProgressChanged();
     }
 
-    void CollectionWatcherImpl::updateTrackAvailability(QVector<FileHash> hashes,
+    void CollectionWatcherImpl::updateTrackAvailability(QVector<LocalHashId> hashes,
                                                         bool available)
     {
         for (auto const& hash : hashes)
@@ -190,11 +190,11 @@ namespace PMP::Client
 
     void CollectionWatcherImpl::updateTrackData(const CollectionTrackInfo& track)
     {
-        auto it = _collectionHash.find(track.hash());
+        auto it = _collectionHash.find(track.hashId());
 
         if (it == _collectionHash.end()) /* the track is unknown to us */
         {
-            _collectionHash.insert(track.hash(), track);
+            _collectionHash.insert(track.hashId(), track);
             Q_EMIT newTrackReceived(track);
             return;
         }

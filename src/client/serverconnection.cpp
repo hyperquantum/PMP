@@ -906,8 +906,10 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::insertQueueEntryAtFront(FileHash const& hash)
+    void ServerConnection::insertQueueEntryAtFront(LocalHashId hashId)
     {
+        auto hash = _hashIdRepository->getHash(hashId);
+
         QByteArray message;
         message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
         NetworkProtocol::append2Bytes(message,
@@ -918,8 +920,10 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    void ServerConnection::insertQueueEntryAtEnd(FileHash const& hash)
+    void ServerConnection::insertQueueEntryAtEnd(LocalHashId hashId)
     {
+        auto hash = _hashIdRepository->getHash(hashId);
+
         QByteArray message;
         message.reserve(2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT);
         NetworkProtocol::append2Bytes(message,
@@ -1029,12 +1033,14 @@ namespace PMP::Client
                                          ParameterlessActionCode::DeactivateDelayedStart);
     }
 
-    RequestID ServerConnection::insertQueueEntryAtIndex(const FileHash& hash,
+    RequestID ServerConnection::insertQueueEntryAtIndex(LocalHashId hashId,
                                                         quint32 index)
     {
-        if (hash.isNull())
+        if (hashId.isZero())
             return signalRequestError(ResultMessageErrorCode::InvalidHash,
                                       &ServerConnection::queueEntryInsertionFailed);
+
+        auto hash = _hashIdRepository->getHash(hashId);
 
         auto handler = new TrackInsertionResultHandler(this, index);
         auto ref = getNewReference();
@@ -1180,15 +1186,17 @@ namespace PMP::Client
     }
 
     void ServerConnection::sendHashUserDataRequest(quint32 userId,
-                                                   const QList<FileHash>& hashes)
+                                                   const QList<LocalHashId>& hashes)
     {
         if (hashes.empty()) return;
 
-        if (hashes.size() == 1) {
+        if (hashes.size() == 1)
+        {
             qDebug() << "sending bulk user data request for hash" << hashes[0]
                      << "for user" << userId;
         }
-        else {
+        else
+        {
             qDebug() << "sending bulk user data request for" << hashes.size()
                      << "hashes for user" << userId;
         }
@@ -1200,11 +1208,12 @@ namespace PMP::Client
         NetworkUtil::append2Bytes(message, 2 | 1); /* request prev. heard & score */
         NetworkUtil::append4Bytes(message, userId); /* user ID */
 
-        for (auto& hash : hashes)
+        for (auto& hashId : hashes)
         {
-            if (hash.isNull())
+            if (hashId.isZero())
                 qWarning() << "request contains null hash";
 
+            auto hash = _hashIdRepository->getHash(hashId);
             NetworkProtocol::appendHash(message, hash);
         }
 
@@ -2528,10 +2537,11 @@ namespace PMP::Client
 
             auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
 
+            LocalHashId hashId;
             if (hash.isNull() == false)
-                _hashIdRepository->getOrRegisterId(hash);
+                hashId = _hashIdRepository->getOrRegisterId(hash);
 
-            Q_EMIT receivedQueueEntryHash(queueID, type, hash);
+            Q_EMIT receivedQueueEntryHash(queueID, type, hashId);
         }
     }
 
@@ -2712,7 +2722,7 @@ namespace PMP::Client
 
         int offset = 8;
 
-        QVector<FileHash> available;
+        QVector<LocalHashId> available;
         available.reserve(availableCount);
         for (int i = 0; i < availableCount; ++i)
         {
@@ -2730,10 +2740,11 @@ namespace PMP::Client
             /* workaround for server bug; we shouldn't be receiving these */
             if (hash.length() == 0) continue;
 
-            available.append(hash);
+            auto hashId = _hashIdRepository->getOrRegisterId(hash);
+            available.append(hashId);
         }
 
-        QVector<FileHash> unavailable;
+        QVector<LocalHashId> unavailable;
         unavailable.reserve(unavailableCount);
         for (int i = 0; i < unavailableCount; ++i)
         {
@@ -2751,7 +2762,8 @@ namespace PMP::Client
             /* workaround for server bug; we shouldn't be receiving these */
             if (hash.length() == 0) continue;
 
-            unavailable.append(hash);
+            auto hashId = _hashIdRepository->getOrRegisterId(hash);
+            unavailable.append(hashId);
         }
 
         qDebug() << "got track availability changes: " << available.size() << "available,"
@@ -2904,9 +2916,9 @@ namespace PMP::Client
             /* workaround for server bug; we shouldn't be receiving these */
             if (hash.length() == 0) continue;
 
-            _hashIdRepository->getOrRegisterId(hash);
+            auto hashId = _hashIdRepository->getOrRegisterId(hash);
 
-            CollectionTrackInfo info(hash, availabilityByte & 1, title, artist, album,
+            CollectionTrackInfo info(hashId, availabilityByte & 1, title, artist, album,
                                      trackLengthInMs);
             infos.append(info);
         }
@@ -2918,7 +2930,9 @@ namespace PMP::Client
             for (auto const& info : infos)
             {
                 auto length = info.lengthInMilliseconds();
-                qDebug() << " track: hash:" << info.hash() << "; title:" << info.title()
+                qDebug() << " track: hash ID:" << info.hashId()
+                         << "; hash:" << _hashIdRepository->getHash(info.hashId())
+                         << "; title:" << info.title()
                          << "; artist:" << info.artist()
                          << "; length:"
                          << Util::millisecondsToShortDisplayTimeText(length)
@@ -2997,12 +3011,14 @@ namespace PMP::Client
                 continue;
             }
 
+            auto hashId = _hashIdRepository->getOrRegisterId(hash);
+
             qDebug() << "received hash user data: user:" << userId
                      << " hash:" << hash.toString() << "prev-heard:" << previouslyHeard
                      << " score:" << score;
 
             // TODO: fixme: receiver cannot know which fields were not received now
-            Q_EMIT receivedHashUserData(hash, userId, previouslyHeard, score);
+            Q_EMIT receivedHashUserData(hashId, userId, previouslyHeard, score);
         }
     }
 

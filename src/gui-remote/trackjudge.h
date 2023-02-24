@@ -28,14 +28,13 @@
 
 namespace PMP::Client
 {
+    class CollectionTrackInfo;
     class QueueHashesMonitor;
     class UserDataFetcher;
 }
 
 namespace PMP
 {
-    class CollectionTrackInfo;
-
     enum class TrackCriterium
     {
         AllTracks = 0,
@@ -85,23 +84,24 @@ namespace PMP
         bool criteriumUsesUserData() const;
         bool criteriumResultsInAllTracks() const;
 
-        TriBool trackSatisfiesCriteria(CollectionTrackInfo const& track) const;
+        TriBool trackSatisfiesCriteria(Client::CollectionTrackInfo const& track) const;
 
     private:
         static bool usesUserData(TrackCriterium criterium);
 
-        TriBool trackSatisfiesCriterium(CollectionTrackInfo const& track,
+        TriBool trackSatisfiesCriterium(Client::CollectionTrackInfo const& track,
                                         TrackCriterium criterium) const;
 
-        TriBool trackSatisfiesScoreCriterium(CollectionTrackInfo const& track,
+        TriBool trackSatisfiesScoreCriterium(Client::CollectionTrackInfo const& track,
                               std::function<TriBool(int)> scorePermillageEvaluator) const;
 
-        TriBool trackSatisfiesLastHeardDateCriterium(CollectionTrackInfo const& track,
+        TriBool trackSatisfiesLastHeardDateCriterium(
+                                   Client::CollectionTrackInfo const& track,
                                    std::function<TriBool(QDateTime)> dateEvaluator) const;
 
         TriBool trackSatisfiesNotHeardInTheLastXDaysCriterium(
-                                                         CollectionTrackInfo const& track,
-                                                         int days) const;
+                                                 Client::CollectionTrackInfo const& track,
+                                                 int days) const;
 
         TrackCriterium _criterium1;
         TrackCriterium _criterium2;

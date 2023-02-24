@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,6 +18,7 @@
 */
 
 #include "analyzer.h"
+#include "collectiontrackinfo.h"
 
 #include <QMetaType>
 #include <QVector>
@@ -33,6 +34,7 @@ namespace PMP::Server
         {
             qRegisterMetaType<QVector<uint>>();
 
+            qRegisterMetaType<PMP::Server::CollectionTrackInfo>();
             qRegisterMetaType<PMP::Server::FileAnalysis>();
             qRegisterMetaType<PMP::Server::FileHashes>();
             qRegisterMetaType<PMP::Server::FileInfo>();

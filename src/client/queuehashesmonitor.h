@@ -20,7 +20,7 @@
 #ifndef PMP_CLIENT_QUEUEHASHESMONITOR_H
 #define PMP_CLIENT_QUEUEHASHESMONITOR_H
 
-#include "common/filehash.h"
+#include "localhashid.h"
 
 #include <QHash>
 #include <QList>
@@ -39,10 +39,10 @@ namespace PMP::Client
         QueueHashesMonitor(QObject* parent, AbstractQueueMonitor* queueMonitor,
                            QueueEntryInfoStorage* queueEntryInfoStorage);
 
-        bool isPresentInQueue(FileHash hash) const;
+        bool isPresentInQueue(LocalHashId hashId) const;
 
     Q_SIGNALS:
-        void hashInQueuePresenceChanged(FileHash hash);
+        void hashInQueuePresenceChanged(LocalHashId hashId);
 
     private Q_SLOTS:
         void onQueueResetted(int queueLength);
@@ -52,13 +52,13 @@ namespace PMP::Client
         void onTracksChanged(QList<quint32> queueIds);
 
     private:
-        void associateHashWithQueueId(FileHash const& hash, quint32 queueId, bool canAdd);
+        void associateHashWithQueueId(LocalHashId hashId, quint32 queueId, bool canAdd);
         void disassociateHashFromQueueId(quint32 queueId, bool canRemove);
 
         AbstractQueueMonitor* _queueMonitor;
         QueueEntryInfoStorage* _queueEntryInfoStorage;
-        QHash<FileHash, QSet<quint32>> _hashToQueueIds;
-        QHash<quint32, FileHash> _queueIdToHash;
+        QHash<LocalHashId, QSet<quint32>> _hashToQueueIds;
+        QHash<quint32, LocalHashId> _queueIdToHash;
     };
 }
 #endif

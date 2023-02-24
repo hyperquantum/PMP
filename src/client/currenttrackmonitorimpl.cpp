@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,7 +35,7 @@ namespace PMP::Client
        _playerState(PlayerState::Unknown),
        _currentQueueId(0),
        _progressAtTimerStart(0),
-       _currentHash(),
+       _currentHashId{},
        _haveReceivedCurrentTrack(false),
        _currentTrackLengthMilliseconds(-1)
     {
@@ -88,9 +88,9 @@ namespace PMP::Client
         return progress;
     }
 
-    FileHash CurrentTrackMonitorImpl::currentTrackHash() const
+    LocalHashId CurrentTrackMonitorImpl::currentTrackHash() const
     {
-        return _currentHash;
+        return _currentHashId;
     }
 
     QString CurrentTrackMonitorImpl::currentTrackTitle() const
@@ -175,7 +175,7 @@ namespace PMP::Client
 
     void CurrentTrackMonitorImpl::updateTrackFields(bool isNewTrack)
     {
-        FileHash hash;
+        LocalHashId hashId;
         QString title;
         QString artist;
         QString possibleFilename;
@@ -184,7 +184,7 @@ namespace PMP::Client
         auto* entry = _queueEntryInfoStorage->entryInfoByQueueId(_currentQueueId);
         if (entry)
         {
-            hash = entry->hash();
+            hashId = entry->hashId();
             title = entry->title();
             artist = entry->artist();
             possibleFilename = entry->informativeFilename();
@@ -193,13 +193,13 @@ namespace PMP::Client
 
         bool lengthChanged = lengthMilliseconds != _currentTrackLengthMilliseconds;
         bool fieldsChanged =
-                hash != _currentHash
+                hashId != _currentHashId
                 || title != _currentTrackTitle
                 || artist != _currentTrackArtist
                 || possibleFilename != _currentTrackPossibleFilename
                 || lengthChanged;
 
-        _currentHash = hash;
+        _currentHashId = hashId;
         _currentTrackTitle = title;
         _currentTrackArtist = artist;
         _currentTrackPossibleFilename = possibleFilename;
@@ -246,7 +246,7 @@ namespace PMP::Client
 
     void CurrentTrackMonitorImpl::clearTrackInfo()
     {
-        _currentHash = FileHash();
+        _currentHashId = {};
         _currentTrackTitle.clear();
         _currentTrackArtist.clear();
         _currentTrackPossibleFilename.clear();

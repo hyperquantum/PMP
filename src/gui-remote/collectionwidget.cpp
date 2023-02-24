@@ -169,7 +169,7 @@ namespace PMP
         if (!trackPointer) return;
 
         auto track = *trackPointer;
-        FileHash hash = track.hash();
+        auto hashId = track.hashId();
 
         if (_collectionContextMenu)
             delete _collectionContextMenu;
@@ -180,9 +180,10 @@ namespace PMP
         connect(
             enqueueFrontAction, &QAction::triggered,
             this,
-            [this, hash]() {
+            [this, hashId]()
+            {
                 qDebug() << "collection context menu: enqueue (front) triggered";
-                _serverInterface->queueController().insertQueueEntryAtFront(hash);
+                _serverInterface->queueController().insertQueueEntryAtFront(hashId);
             }
         );
 
@@ -191,9 +192,10 @@ namespace PMP
         connect(
             enqueueEndAction, &QAction::triggered,
             this,
-            [this, hash]() {
+            [this, hashId]()
+            {
                 qDebug() << "collection context menu: enqueue (end) triggered";
-                _serverInterface->queueController().insertQueueEntryAtEnd(hash);
+                _serverInterface->queueController().insertQueueEntryAtEnd(hashId);
             }
         );
 

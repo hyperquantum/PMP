@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,15 +17,15 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COLLECTIONTRACKINFO_H
-#define PMP_COLLECTIONTRACKINFO_H
+#ifndef PMP_CLIENT_COLLECTIONTRACKINFO_H
+#define PMP_CLIENT_COLLECTIONTRACKINFO_H
 
-#include "filehash.h"
+#include "localhashid.h"
 
 #include <QMetaType>
 #include <QString>
 
-namespace PMP
+namespace PMP::Client
 {
     class CollectionTrackInfo
     {
@@ -36,22 +36,22 @@ namespace PMP
             //
         }
 
-        CollectionTrackInfo(FileHash const& hash, bool isAvailable)
-         : _hash(hash), _isAvailable(isAvailable), _lengthInMs(-1)
+        CollectionTrackInfo(LocalHashId hashId, bool isAvailable)
+         : _hashId(hashId), _isAvailable(isAvailable), _lengthInMs(-1)
         {
             //
         }
 
-        CollectionTrackInfo(FileHash const& hash, bool isAvailable,
+        CollectionTrackInfo(LocalHashId hashId, bool isAvailable,
                             QString const& title, QString const& artist,
                             QString const& album, qint32 lengthInMilliseconds)
-         : _hash(hash), _isAvailable(isAvailable), _lengthInMs(lengthInMilliseconds),
+         : _hashId(hashId), _isAvailable(isAvailable), _lengthInMs(lengthInMilliseconds),
            _title(title), _artist(artist), _album(album)
         {
             //
         }
 
-        const FileHash& hash() const { return _hash; }
+        constexpr LocalHashId hashId() const { return _hashId; }
 
         void setAvailable(bool available) { _isAvailable = available; }
         bool isAvailable() const { return _isAvailable; }
@@ -73,7 +73,7 @@ namespace PMP
         }
 
     private:
-        FileHash _hash;
+        LocalHashId _hashId;
         bool _isAvailable;
         qint32 _lengthInMs;
         QString _title, _artist, _album;
@@ -82,7 +82,7 @@ namespace PMP
     inline bool operator==(const CollectionTrackInfo& me,
                            const CollectionTrackInfo& other)
     {
-        return me.hash() == other.hash()
+        return me.hashId() == other.hashId()
             && me.isAvailable() == other.isAvailable()
             && me.lengthInMilliseconds() == other.lengthInMilliseconds()
             && me.title() == other.title()
@@ -97,6 +97,6 @@ namespace PMP
     }
 }
 
-Q_DECLARE_METATYPE(PMP::CollectionTrackInfo)
+Q_DECLARE_METATYPE(PMP::Client::CollectionTrackInfo)
 
 #endif

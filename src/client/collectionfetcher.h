@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,10 +17,10 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COLLECTIONFETCHER_H
-#define PMP_COLLECTIONFETCHER_H
+#ifndef PMP_CLIENT_COLLECTIONFETCHER_H
+#define PMP_CLIENT_COLLECTIONFETCHER_H
 
-#include "common/collectiontrackinfo.h"
+#include "collectiontrackinfo.h"
 
 #include <QObject>
 #include <QVector>

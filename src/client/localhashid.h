@@ -36,12 +36,12 @@ namespace PMP::Client
 
         LocalHashId& operator=(LocalHashId const&) = default;
 
-        constexpr bool operator==(LocalHashId const& other)
+        constexpr bool operator==(LocalHashId const& other) const
         {
             return _id == other._id;
         }
 
-        constexpr bool operator!=(LocalHashId const& other)
+        constexpr bool operator!=(LocalHashId const& other) const
         {
             return !(*this == other);
         }
@@ -50,13 +50,18 @@ namespace PMP::Client
         unsigned int _id;
     };
 
+    inline constexpr bool operator<(LocalHashId hashId1, LocalHashId hashId2)
+    {
+        return hashId1.value() < hashId2.value();
+    }
+
     inline QDebug operator<<(QDebug debug, const PMP::Client::LocalHashId id)
     {
         debug << id.value();
         return debug;
     }
 
-    constexpr inline size_t qHash(LocalHashId id, size_t seed)
+    constexpr inline uint qHash(LocalHashId const& id)
     {
         return id.value();
     }

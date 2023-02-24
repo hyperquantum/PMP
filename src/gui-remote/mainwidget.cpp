@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -378,8 +378,8 @@ namespace PMP
         }
 
         int row = index.row();
-        auto hash = _historyModel->trackHashAt(row);
-        if (hash.isNull())
+        auto hashId = _historyModel->trackHashAt(row);
+        if (hashId.isZero())
         {
             qDebug() << "history: no hash known for track at row" << row;
             return;
@@ -394,10 +394,10 @@ namespace PMP
         connect(
             enqueueFrontAction, &QAction::triggered,
             this,
-            [this, hash]()
+            [this, hashId]()
             {
                 qDebug() << "history context menu: enqueue (front) triggered";
-                _serverInterface->queueController().insertQueueEntryAtFront(hash);
+                _serverInterface->queueController().insertQueueEntryAtFront(hashId);
             }
         );
 
@@ -405,10 +405,10 @@ namespace PMP
         connect(
             enqueueEndAction, &QAction::triggered,
             this,
-            [this, hash]()
+            [this, hashId]()
             {
                 qDebug() << "history context menu: enqueue (end) triggered";
-                _serverInterface->queueController().insertQueueEntryAtEnd(hash);
+                _serverInterface->queueController().insertQueueEntryAtEnd(hashId);
             }
         );
 
@@ -418,10 +418,10 @@ namespace PMP
         connect(
             trackInfoAction, &QAction::triggered,
             this,
-            [this, hash]()
+            [this, hashId]()
             {
                 qDebug() << "history context menu: track info triggered";
-                showTrackInfoDialog(hash);
+                showTrackInfoDialog(hashId);
             }
         );
 
@@ -598,7 +598,7 @@ namespace PMP
         _queueContextMenu->addSeparator();
 
         QAction* trackInfoAction = _queueContextMenu->addAction(tr("Track info"));
-        if (track.hash().isNull())
+        if (track.hashId().isZero())
         {
             trackInfoAction->setEnabled(false);
         }
@@ -612,7 +612,7 @@ namespace PMP
                     qDebug() << "queue context menu: track info action triggered for item"
                              << track.queueId();
 
-                    showTrackInfoDialog(track.hash(), track.queueId());
+                    showTrackInfoDialog(track.hashId(), track.queueId());
                 }
             );
         }
@@ -783,7 +783,8 @@ namespace PMP
         auto& currentTrackMonitor = _serverInterface->currentTrackMonitor();
 
         auto hash = currentTrackMonitor.currentTrackHash();
-        if (hash.isNull()) return;
+        if (hash.isZero())
+            return;
 
         showTrackInfoDialog(hash, currentTrackMonitor.currentQueueId());
     }
@@ -853,7 +854,7 @@ namespace PMP
     void MainWidget::enableDisableTrackInfoButton()
     {
         bool haveTrackHash =
-               !_serverInterface->currentTrackMonitor().currentTrackHash().isNull();
+               !_serverInterface->currentTrackMonitor().currentTrackHash().isZero();
 
         _ui->trackInfoButton->setEnabled(haveTrackHash);
     }
@@ -907,9 +908,9 @@ namespace PMP
         _ui->positionValueLabel->setText(text);
     }
 
-    void MainWidget::showTrackInfoDialog(FileHash hash, quint32 queueId)
+    void MainWidget::showTrackInfoDialog(LocalHashId hashId, quint32 queueId)
     {
-        auto dialog = new TrackInfoDialog(this, _serverInterface, hash, queueId);
+        auto dialog = new TrackInfoDialog(this, _serverInterface, hashId, queueId);
         connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
         dialog->open();
     }

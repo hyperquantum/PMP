@@ -17,6 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "collectiontrackinfo.h"
 #include "localhashid.h"
 
 namespace PMP::Client
@@ -28,6 +29,7 @@ namespace PMP::Client
     protected:
         ClientMetatypesInit()
         {
+            qRegisterMetaType<PMP::Client::CollectionTrackInfo>();
             qRegisterMetaType<PMP::Client::LocalHashId>();
         }
 

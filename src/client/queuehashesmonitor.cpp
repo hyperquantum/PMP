@@ -55,9 +55,9 @@ namespace PMP::Client
         onEntriesReceived(-1 /* index not used */, queueMonitor->knownQueuePart());
     }
 
-    bool QueueHashesMonitor::isPresentInQueue(FileHash hash) const
+    bool QueueHashesMonitor::isPresentInQueue(LocalHashId hashId) const
     {
-        auto it = _hashToQueueIds.constFind(hash);
+        auto it = _hashToQueueIds.constFind(hashId);
         if (it == _hashToQueueIds.constEnd())
             return false;
 
@@ -98,13 +98,13 @@ namespace PMP::Client
         qDebug() << "QueueHashesMonitor::onTrackAdded; index:" << index
                  << " QID:" << queueId;
 
-        FileHash hash;
+        LocalHashId hashId;
 
         auto entryInfo = _queueEntryInfoStorage->entryInfoByQueueId(queueId);
         if (entryInfo != nullptr)
-            hash = entryInfo->hash();
+            hashId = entryInfo->hashId();
 
-        associateHashWithQueueId(hash, queueId, true);
+        associateHashWithQueueId(hashId, queueId, true);
     }
 
     void QueueHashesMonitor::onTrackRemoved(int index, quint32 queueId)
@@ -124,28 +124,28 @@ namespace PMP::Client
         {
             auto entryInfo = _queueEntryInfoStorage->entryInfoByQueueId(queueId);
 
-            if (entryInfo == nullptr || entryInfo->hash().isNull())
+            if (entryInfo == nullptr || entryInfo->hashId().isZero())
                 disassociateHashFromQueueId(queueId, false);
             else
-                associateHashWithQueueId(entryInfo->hash(), queueId, false);
+                associateHashWithQueueId(entryInfo->hashId(), queueId, false);
         }
     }
 
-    void QueueHashesMonitor::associateHashWithQueueId(const FileHash& hash,
+    void QueueHashesMonitor::associateHashWithQueueId(LocalHashId hashId,
                                                       quint32 queueId, bool canAdd)
     {
-        FileHash previousHash;
+        LocalHashId previousHash;
         bool previousHashPresenceChanged = false;
         bool hashPresenceChanged = false;
 
         auto it = _queueIdToHash.constFind(queueId);
         if (it != _queueIdToHash.constEnd())
         {
-            if (it.value() == hash)
+            if (it.value() == hashId)
                 return;
 
             previousHash = it.value();
-            if (!previousHash.isNull())
+            if (!previousHash.isZero())
             {
                 auto& otherHashQueueIds = _hashToQueueIds[previousHash];
                 otherHashQueueIds.remove(queueId);
@@ -155,11 +155,11 @@ namespace PMP::Client
 
         if (canAdd || it != _queueIdToHash.constEnd())
         {
-            _queueIdToHash.insert(queueId, hash);
+            _queueIdToHash.insert(queueId, hashId);
 
-            if (!hash.isNull())
+            if (!hashId.isZero())
             {
-                auto& hashQueueIds = _hashToQueueIds[hash];
+                auto& hashQueueIds = _hashToQueueIds[hashId];
                 hashQueueIds.insert(queueId);
                 hashPresenceChanged = hashQueueIds.size() == 1;
             }
@@ -169,7 +169,7 @@ namespace PMP::Client
             Q_EMIT hashInQueuePresenceChanged(previousHash);
 
         if (hashPresenceChanged)
-            Q_EMIT hashInQueuePresenceChanged(hash);
+            Q_EMIT hashInQueuePresenceChanged(hashId);
     }
 
     void QueueHashesMonitor::disassociateHashFromQueueId(quint32 queueId, bool canRemove)
@@ -184,9 +184,9 @@ namespace PMP::Client
         if (canRemove)
             _queueIdToHash.erase(it);
         else
-            _queueIdToHash[queueId] = FileHash();
+            _queueIdToHash[queueId] = LocalHashId();
 
-        if (!previousHash.isNull())
+        if (!previousHash.isZero())
         {
             auto& queueIds = _hashToQueueIds[previousHash];
             queueIds.remove(queueId);

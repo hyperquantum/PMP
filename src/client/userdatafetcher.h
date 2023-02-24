@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,11 +17,10 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_USERDATAFETCHER_H
-#define PMP_USERDATAFETCHER_H
+#ifndef PMP_CLIENT_USERDATAFETCHER_H
+#define PMP_CLIENT_USERDATAFETCHER_H
 
-#include "common/collectiontrackinfo.h"
-#include "common/filehash.h"
+#include "collectiontrackinfo.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -45,16 +44,16 @@ namespace PMP::Client
 
         void enableAutoFetchForUser(quint32 userId);
 
-        HashData const* getHashDataForUser(quint32 userId, FileHash const& hash);
+        HashData const* getHashDataForUser(quint32 userId, LocalHashId hashId);
 
     Q_SIGNALS:
         void dataReceivedForUser(quint32 userId);
-        void userTrackDataChanged(quint32 userId, FileHash hash);
+        void userTrackDataChanged(quint32 userId, LocalHashId hashId);
 
     private Q_SLOTS:
         //void connected();
         void onNewTrackReceived(CollectionTrackInfo track);
-        void receivedHashUserData(FileHash hash, quint32 userId,
+        void receivedHashUserData(LocalHashId hashId, quint32 userId,
                                   QDateTime previouslyHeard, qint16 scorePermillage);
         void sendPendingRequests();
         void sendPendingNotifications();
@@ -76,32 +75,32 @@ namespace PMP::Client
                 _autoFetchEnabled = newValue;
             }
 
-            HashData& getOrCreateHash(FileHash const& hash) { return _hashes[hash]; }
+            HashData& getOrCreateHash(LocalHashId hashId) { return _hashes[hashId]; }
 
-            bool haveHash(FileHash const& hash) const
+            bool haveHash(LocalHashId hashId) const
             {
-                return _hashes.contains(hash);
+                return _hashes.contains(hashId);
             }
 
-            HashData const* getHash(FileHash const& hash) const
+            HashData const* getHash(LocalHashId hashId) const
             {
-                auto it = _hashes.find(hash);
+                auto it = _hashes.find(hashId);
                 if (it == _hashes.constEnd()) return nullptr;
 
                 return &it.value();
             }
 
         private:
-            QHash<FileHash, HashData> _hashes;
+            QHash<LocalHashId, HashData> _hashes;
             bool _autoFetchEnabled;
         };
 
-        void needToRequestData(quint32 userId, FileHash const& hash);
+        void needToRequestData(quint32 userId, LocalHashId hashId);
 
         CollectionWatcher* _collectionWatcher;
         ServerConnection* _connection;
         QHash<quint32, UserData> _userData;
-        QHash<quint32, QSet<FileHash> > _hashesToFetchForUsers;
+        QHash<quint32, QSet<LocalHashId>> _hashesToFetchForUsers;
         QSet<quint32> _pendingNotificationsUsers;
     };
 
