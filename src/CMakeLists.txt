@@ -37,11 +37,13 @@ set(PMP_COMMON_HEADERS
 
 set(PMP_CLIENT_SOURCES
     client/authenticationcontrollerimpl.cpp
+    client/clientmetatypes.cpp
     client/collectionwatcherimpl.cpp
     client/currenttrackmonitorimpl.cpp
     client/dynamicmodecontrollerimpl.cpp
     client/generalcontrollerimpl.cpp
     client/historycontrollerimpl.cpp
+    client/localhashidrepository.cpp
     client/playercontrollerimpl.cpp
     client/queuecontrollerimpl.cpp
     client/queueentryinfofetcher.cpp

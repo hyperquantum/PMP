@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,7 @@
 
 #include "client/currenttrackmonitor.h"
 #include "client/generalcontroller.h"
+#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/queuecontroller.h"
 #include "client/queueentryinfostorage.h"
@@ -274,6 +275,7 @@ namespace PMP
     void NowPlayingCommand::run(ServerInterface* serverInterface)
     {
         auto* currentTrackMonitor = &serverInterface->currentTrackMonitor();
+        auto* hashIdRepository = serverInterface->hashIdRepository();
 
         connect(currentTrackMonitor, &CurrentTrackMonitor::currentTrackChanged,
                 this, &NowPlayingCommand::listenerSlot);
@@ -281,7 +283,7 @@ namespace PMP
                 this, &NowPlayingCommand::listenerSlot);
 
         addStep(
-            [this, currentTrackMonitor]() -> bool
+            [this, currentTrackMonitor, hashIdRepository]() -> bool
             {
                 auto isTrackPresent = currentTrackMonitor->isTrackPresent();
 
@@ -292,7 +294,7 @@ namespace PMP
                 }
 
                 if (isTrackPresent.isUnknown()
-                        || currentTrackMonitor->currentTrackHash().isNull())
+                        || currentTrackMonitor->currentTrackHash().isZero())
                     return false;
 
                 auto title = currentTrackMonitor->currentTrackTitle();
@@ -310,7 +312,8 @@ namespace PMP
                         lengthMilliseconds < 0
                             ? ""
                             : Util::millisecondsToLongDisplayTimeText(lengthMilliseconds);
-                auto hashString = currentTrackMonitor->currentTrackHash().toString();
+                auto hash =
+                    hashIdRepository->getHash(currentTrackMonitor->currentTrackHash());
 
                 QString output;
                 output.reserve(100);
@@ -323,7 +326,7 @@ namespace PMP
                 if (title.isEmpty() && artist.isEmpty())
                     output += " possible filename: " + possibleFileName + "\n";
 
-                output += " hash: " + hashString; // no newline at the end here
+                output += " hash: " + hash.toString(); // no newline at the end here
 
                 setCommandExecutionSuccessful(output);
                 return false;
@@ -805,6 +808,8 @@ namespace PMP
 
     void TrackStatsCommand::run(ServerInterface* serverInterface)
     {
+        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
+
         auto userDataFetcher = &serverInterface->userDataFetcher();
 
         connect(userDataFetcher, &UserDataFetcher::dataReceivedForUser,
@@ -814,9 +819,9 @@ namespace PMP
         auto username = serverInterface->userLoggedInName();
 
         addStep(
-            [this, userDataFetcher, userId, username]() -> bool
+            [this, userDataFetcher, userId, username, hashId]() -> bool
             {
-                auto* hashData = userDataFetcher->getHashDataForUser(userId, _hash);
+                auto* hashData = userDataFetcher->getHashDataForUser(userId, hashId);
                 if (hashData == nullptr)
                     return false;
 

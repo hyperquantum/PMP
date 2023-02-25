@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,10 +19,12 @@
 
 #include "playerhistorymodel.h"
 
+#include "common/filehash.h"
 #include "common/util.h"
 
 #include "client/generalcontroller.h"
 #include "client/historycontroller.h"
+#include "client/localhashidrepository.h"
 #include "client/queueentryinfostorage.h"
 #include "client/serverinterface.h"
 
@@ -42,6 +44,7 @@ namespace PMP
                                            ServerInterface* serverInterface)
      : QAbstractTableModel(parent),
        _historySizeGoal(20),
+       _hashIdRepository(serverInterface->hashIdRepository()),
        _infoStorage(&serverInterface->queueEntryInfoStorage())
     {
         connect(
@@ -273,7 +276,7 @@ namespace PMP
         return Qt::CopyAction;
     }
 
-    FileHash PlayerHistoryModel::trackHashAt(int rowIndex) const
+    LocalHashId PlayerHistoryModel::trackHashAt(int rowIndex) const
     {
         if (rowIndex < 0 || rowIndex >= _list.size()) return {};
 
@@ -281,7 +284,7 @@ namespace PMP
         auto info = _infoStorage->entryInfoByQueueId(queueId);
         if (!info) return {};
 
-        return info->hash();
+        return info->hashId();
     }
 
     QMimeData* PlayerHistoryModel::mimeData(const QModelIndexList& indexes) const
@@ -311,14 +314,17 @@ namespace PMP
                 continue;
             }
 
-            auto& hash = info->hash();
-            if (hash.isNull())
+            auto hashId = info->hashId();
+            if (hashId.isZero())
             {
-                qDebug() << " ignoring empty hash";
+                qDebug() << " ignoring zero hash ID";
                 continue;
             }
 
+            auto hash = _hashIdRepository->getHash(hashId);
+
             qDebug() << " row" << row << "; col" << index.column()
+                     << "; hash ID" << hashId
                      << "; hash" << hash.dumpToString();
             hashes.append(hash);
         }

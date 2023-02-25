@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -82,14 +82,15 @@ namespace PMP::Client
     //}
 
     UserDataFetcher::HashData const* UserDataFetcher::getHashDataForUser(quint32 userId,
-                                                                     const FileHash& hash)
+                                                                       LocalHashId hashId)
     {
-        if (hash.isNull()) return nullptr;
+        if (hashId.isZero())
+            return nullptr;
 
-        HashData const* hashData = _userData[userId].getHash(hash);
+        HashData const* hashData = _userData[userId].getHash(hashId);
         if (hashData) return hashData;
 
-        needToRequestData(userId, hash);
+        needToRequestData(userId, hashId);
         return nullptr;
     }
 
@@ -100,16 +101,16 @@ namespace PMP::Client
             auto userId = it.key();
             auto& userData = it.value();
 
-            if (userData.isAutoFetchEnabled() && !userData.haveHash(track.hash()))
-                needToRequestData(userId, track.hash());
+            if (userData.isAutoFetchEnabled() && !userData.haveHash(track.hashId()))
+                needToRequestData(userId, track.hashId());
         }
     }
 
-    void UserDataFetcher::receivedHashUserData(FileHash hash, quint32 userId,
+    void UserDataFetcher::receivedHashUserData(LocalHashId hashId, quint32 userId,
                                                QDateTime previouslyHeard,
                                                qint16 scorePermillage)
     {
-        HashData& hashData = _userData[userId].getOrCreateHash(hash);
+        HashData& hashData = _userData[userId].getOrCreateHash(hashId);
         hashData.previouslyHeard = previouslyHeard;
         hashData.previouslyHeardReceived = true;
         hashData.scorePermillage = scorePermillage;
@@ -124,7 +125,7 @@ namespace PMP::Client
             QTimer::singleShot(100, this, &UserDataFetcher::sendPendingNotifications);
         }
 
-        Q_EMIT userTrackDataChanged(userId, hash);
+        Q_EMIT userTrackDataChanged(userId, hashId);
     }
 
     void UserDataFetcher::sendPendingRequests()
@@ -153,11 +154,11 @@ namespace PMP::Client
         _pendingNotificationsUsers.clear();
     }
 
-    void UserDataFetcher::needToRequestData(quint32 userId, const FileHash& hash)
+    void UserDataFetcher::needToRequestData(quint32 userId, LocalHashId hashId)
     {
         bool first = _hashesToFetchForUsers.isEmpty();
 
-        _hashesToFetchForUsers[userId] << hash;
+        _hashesToFetchForUsers[userId] << hashId;
 
         if (first)
         {

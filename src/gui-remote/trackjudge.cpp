@@ -19,8 +19,11 @@
 
 #include "trackjudge.h"
 
+#include "client/collectiontrackinfo.h"
 #include "client/queuehashesmonitor.h"
 #include "client/userdatafetcher.h"
+
+using namespace PMP::Client;
 
 namespace PMP
 {
@@ -152,10 +155,10 @@ namespace PMP
                 return track.lengthInMilliseconds() >= 5 * 60 * 1000;
 
             case TrackCriterium::NotInTheQueue:
-                return !_queueHashesMonitor.isPresentInQueue(track.hash());
+                return !_queueHashesMonitor.isPresentInQueue(track.hashId());
 
             case TrackCriterium::InTheQueue:
-                return _queueHashesMonitor.isPresentInQueue(track.hash());
+                return _queueHashesMonitor.isPresentInQueue(track.hashId());
         }
 
         return false;
@@ -167,7 +170,8 @@ namespace PMP
     {
         if (!_haveUserId) return TriBool::unknown;
 
-        auto hashDataForUser = _userDataFetcher.getHashDataForUser(_userId, track.hash());
+        auto hashDataForUser =
+                _userDataFetcher.getHashDataForUser(_userId, track.hashId());
 
         if (!hashDataForUser || !hashDataForUser->scoreReceived)
             return TriBool::unknown;
@@ -181,7 +185,8 @@ namespace PMP
     {
         if (!_haveUserId) return TriBool::unknown;
 
-        auto hashDataForUser = _userDataFetcher.getHashDataForUser(_userId, track.hash());
+        auto hashDataForUser =
+                _userDataFetcher.getHashDataForUser(_userId, track.hashId());
 
         if (!hashDataForUser || !hashDataForUser->previouslyHeardReceived)
             return TriBool::unknown;
