@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,13 +27,6 @@
 #include <QTextStream>
 
 using namespace PMP;
-
-QString hashToString(const FileHash& hash)
-{
-    return QString::number(hash.length())
-            + "-" + hash.SHA1().toHex()
-            + "-" + hash.MD5().toHex();
-}
 
 int main(int argc, char *argv[])
 {
@@ -110,11 +103,11 @@ int main(int argc, char *argv[])
     out << "artist:  " << analyzer.tagData().artist() << Qt::endl;
     out << "comment: " << analyzer.tagData().comment() << Qt::endl;
 
-    out << "track hash: " << hashToString(finalHash) << Qt::endl;
+    out << "track hash: " << finalHash.toString() << Qt::endl;
 
     if (!legacyHash.isNull())
     {
-        out << "legacy hash: " << hashToString(legacyHash) << Qt::endl;
+        out << "legacy hash: " << legacyHash.toString() << Qt::endl;
     }
 
     return 0;
