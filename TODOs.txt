@@ -25,7 +25,7 @@ KNOWN BUGS
  * when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
  * GUI remote: tracks can be dragged using the right mouse button (not just the left button)
  * GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
- * hash calculation is wrong for MP3 files containing an APE tag
+ * hash calculation does not skip padding bytes
  * preloaded tracks are sometimes deleted before they are used because they are old
  * player fails to play preloaded entries of which the file has been deleted already
  * GUI remote: searching the music collection for "e" does not return results having "ë"
