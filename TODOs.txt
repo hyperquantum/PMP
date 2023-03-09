@@ -68,7 +68,7 @@ IDEAS
  *** dynamic mode: detect and prevent track repetition with different hash values
  *** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
- * dynamic mode: try to enqueue "new" tracks and tracks without score regularly
+ ** dynamic mode: try to enqueue "new" tracks and tracks without score regularly
  * power management: close connections when the server machine enters sleep mode
  * power management: don't let the server machine go to sleep while music is playing
  *** thumbs up/down buttons for the song that is playing and for the history, to affect the score a little bit
@@ -92,7 +92,7 @@ IDEAS
  * track info dialog: ability to pick the user whose personal stats are shown
  * track info dialog: display filename(s)
  * track info dialog: should become modeless
- ** track info dialog: show personal play history for that track
+ *** track info dialog: show personal play history for that track
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner
@@ -105,8 +105,10 @@ IDEAS
  * command-line remote: add a command for switching between public mode and personal mode
  * command-line remote: add a command for turning dynamic mode on/off
  * command-line remote: add a command for manually inserting a track into the queue
+ * command-line remote: add a command for seeking (going to a specific time in the current track)
  * command-line remote: extend the "trackstats" command to accept queue IDs
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
+ * hash tool: by default only output the hash of the file, no other information
 
 
 USER FRIENDLINESS
