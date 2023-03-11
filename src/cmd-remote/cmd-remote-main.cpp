@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -167,6 +167,13 @@ usage:
     {{PROGRAMNAME}} localhost delayedstart at 2022-02-28 00:00
 )"""";
 
+static const char * const versionTextTemplate = R""""(
+{{PROGRAMNAMEVERSIONBUILD}}
+{{COPYRIGHT}}
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+)"""";
+
 void printVersion(QTextStream& out)
 {
     const auto programNameVersionBuild =
@@ -178,11 +185,12 @@ void printVersion(QTextStream& out)
                      VCS_REVISION_LONG,
                      VCS_BRANCH);
 
-    out << programNameVersionBuild << "\n"
-        << Util::getCopyrightLine(true) << "\n"
-        << "This is free software; see the source for copying conditions.  There is NO\n"
-        << "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
-        << Qt::flush;
+    QString versionText = versionTextTemplate;
+    versionText = versionText.trimmed();
+    versionText.replace("{{PROGRAMNAMEVERSIONBUILD}}", programNameVersionBuild);
+    versionText.replace("{{COPYRIGHT}}", Util::getCopyrightLine(true));
+
+    out << versionText << Qt::endl;
 }
 
 void printUsage(QTextStream& out)
