@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+- PMP now requires CMake 3.21 or later.
 
 ### Fixed
 
