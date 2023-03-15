@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -23,12 +23,8 @@ configure_file(${CMAKE_SOURCE_DIR}/src/common/version.h.in common/version.h)
 
 add_executable(PMP_hash_test
     hash_test.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/audiodata.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/fileanalyzer.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/tagdata.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/util.cpp
 )
+target_link_libraries(PMP_hash_test $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(PMP_hash_test Qt5::Core)
 target_link_libraries(PMP_hash_test ${TAGLIB_LIBRARIES})
 
@@ -72,12 +68,10 @@ add_test(test_nullable test_nullable)
 
 # TestFileHash
 qt5_wrap_cpp(PMP_TestFileHash_MOCS test_filehash.h)
-add_executable(test_filehash test_filehash.cpp
-    ${PMP_TestFileHash_MOCS}
-    ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/util.cpp
-)
+add_executable(test_filehash test_filehash.cpp ${PMP_TestFileHash_MOCS})
+target_link_libraries(test_filehash $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(test_filehash Qt5::Core Qt5::Test)
+target_link_libraries(test_filehash ${TAGLIB_LIBRARIES})
 add_test(test_filehash test_filehash)
 
 
@@ -105,12 +99,10 @@ add_test(test_networkutil test_networkutil)
 qt5_wrap_cpp(PMP_TestNetworkProtocol_MOCS test_networkprotocol.h)
 add_executable(test_networkprotocol test_networkprotocol.cpp
     ${PMP_TestNetworkProtocol_MOCS}
-    ${CMAKE_SOURCE_DIR}/src/common/networkprotocol.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/networkutil.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/util.cpp
 )
+target_link_libraries(test_networkprotocol $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(test_networkprotocol Qt5::Core Qt5::Test)
+target_link_libraries(test_networkprotocol ${TAGLIB_LIBRARIES})
 add_test(test_networkprotocol test_networkprotocol)
 
 

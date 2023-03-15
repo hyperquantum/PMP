@@ -240,41 +240,67 @@ if (NOT ENABLE_WIN32_CONSOLE)
   set(PMP_WIN32_FLAG WIN32)
 endif (NOT ENABLE_WIN32_CONSOLE)
 
+add_library(PmpCommon OBJECT
+    ${PMP_COMMON_SOURCES}
+    ${PMP_COMMON_MOCS}
+)
+target_link_libraries(PmpCommon Qt5::Core)
+
+add_library(PmpClient OBJECT
+    ${PMP_CLIENT_SOURCES}
+    ${PMP_CLIENT_MOCS}
+)
+target_link_libraries(PmpClient Qt5::Core Qt5::Network)
+
+add_library(PmpServer OBJECT
+    ${PMP_SERVER_SOURCES}
+    ${PMP_SERVER_MOCS}
+)
+target_link_libraries(PmpServer Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
+
 add_executable(PMP-HashTool
     tools/hash-main.cpp
-    common/audiodata.cpp
-    common/commonmetatypes.cpp
-    common/fileanalyzer.cpp
-    common/filehash.cpp
-    common/tagdata.cpp
-    common/util.cpp
+)
+target_link_libraries(PMP-HashTool
+    $<TARGET_OBJECTS:PmpCommon>
 )
 
 add_executable(quicktest
     tools/quicktest.cpp
-    ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS}
-    ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
+)
+target_link_libraries(quicktest
+    $<TARGET_OBJECTS:PmpServer>
+    $<TARGET_OBJECTS:PmpClient>
+    $<TARGET_OBJECTS:PmpCommon>
 )
 
 add_executable(PMP-Server
     server/server-main.cpp
-    ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS}
-    ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
+target_link_libraries(PMP-Server
+    $<TARGET_OBJECTS:PmpServer>
+    $<TARGET_OBJECTS:PmpCommon>
+)
+
 add_executable(PMP-Cmd-Remote
     cmd-remote/cmd-remote-main.cpp
     ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS}
-    ${PMP_CLIENT_SOURCES} ${PMP_CLIENT_MOCS}
-    ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
 )
+target_link_libraries(PMP-Cmd-Remote
+    $<TARGET_OBJECTS:PmpClient>
+    $<TARGET_OBJECTS:PmpCommon>
+)
+
 add_executable(PMP-GUI-Remote
     ${PMP_WIN32_FLAG}
     gui-remote/gui-remote-main.cpp
     ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
     ${PMP_GUI_REMOTE_UICS}
     ${PMP_GUI_REMOTE_QRCS}
-    ${PMP_CLIENT_SOURCES} ${PMP_CLIENT_MOCS}
-    ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS}
+)
+target_link_libraries(PMP-GUI-Remote
+    $<TARGET_OBJECTS:PmpClient>
+    $<TARGET_OBJECTS:PmpCommon>
 )
 
 # Qt dependencies for each executable
