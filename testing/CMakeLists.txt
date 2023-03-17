@@ -59,6 +59,19 @@ add_hashtest(
 )
 
 
+# TestCommandParser
+qt5_wrap_cpp(PMP_TestCommandParser_MOCS
+    test_commandparser.h
+)
+add_executable(test_commandparser test_commandparser.cpp ${PMP_TestCommandParser_MOCS})
+target_link_libraries(test_commandparser $<TARGET_OBJECTS:PmpCmdRemote>)
+target_link_libraries(test_commandparser $<TARGET_OBJECTS:PmpClient>)
+target_link_libraries(test_commandparser $<TARGET_OBJECTS:PmpCommon>)
+target_link_libraries(test_commandparser Qt5::Core Qt5::Network Qt5::Test)
+target_link_libraries(test_commandparser ${TAGLIB_LIBRARIES})
+add_test(test_commandparser test_commandparser)
+
+
 # TestNullable
 qt5_wrap_cpp(PMP_TestNullable_MOCS test_nullable.h)
 add_executable(test_nullable test_nullable.cpp ${PMP_TestNullable_MOCS})

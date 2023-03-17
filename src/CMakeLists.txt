@@ -240,22 +240,16 @@ if (NOT ENABLE_WIN32_CONSOLE)
   set(PMP_WIN32_FLAG WIN32)
 endif (NOT ENABLE_WIN32_CONSOLE)
 
-add_library(PmpCommon OBJECT
-    ${PMP_COMMON_SOURCES}
-    ${PMP_COMMON_MOCS}
-)
+add_library(PmpCommon OBJECT ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS})
 target_link_libraries(PmpCommon Qt5::Core)
 
-add_library(PmpClient OBJECT
-    ${PMP_CLIENT_SOURCES}
-    ${PMP_CLIENT_MOCS}
-)
+add_library(PmpClient OBJECT ${PMP_CLIENT_SOURCES} ${PMP_CLIENT_MOCS})
 target_link_libraries(PmpClient Qt5::Core Qt5::Network)
 
-add_library(PmpServer OBJECT
-    ${PMP_SERVER_SOURCES}
-    ${PMP_SERVER_MOCS}
-)
+add_library(PmpCmdRemote OBJECT ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS})
+target_link_libraries(PmpCmdRemote Qt5::Core Qt5::Network)
+
+add_library(PmpServer OBJECT ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS})
 target_link_libraries(PmpServer Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
 
 add_executable(PMP-HashTool
