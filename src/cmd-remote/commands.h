@@ -178,8 +178,8 @@ namespace PMP
         void run(Client::ServerInterface* serverInterface) override;
 
     private:
-        void printQueue(Client::AbstractQueueMonitor* queueMonitor,
-                        Client::QueueEntryInfoStorage* queueEntryInfoStorage);
+        StepResult printQueue(Client::AbstractQueueMonitor* queueMonitor,
+                              Client::QueueEntryInfoStorage* queueEntryInfoStorage);
         QString getSpecialEntryText(Client::QueueEntryInfo const* entry) const;
 
         int _fetchLimit;

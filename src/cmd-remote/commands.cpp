@@ -166,12 +166,12 @@ namespace PMP
                 this, &PlayCommand::listenerSlot);
 
         addStep(
-            [this, playerController]() -> bool
+            [playerController]() -> StepResult
             {
                 if (playerController->playerState() == PlayerState::Playing)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -198,12 +198,12 @@ namespace PMP
                 this, &PauseCommand::listenerSlot);
 
         addStep(
-            [this, playerController]() -> bool
+            [playerController]() -> StepResult
             {
                 if (playerController->playerState() == PlayerState::Paused)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -233,29 +233,28 @@ namespace PMP
                 this, &SkipCommand::listenerSlot);
 
         addStep(
-            [this, playerController]() -> bool
+            [this, playerController]() -> StepResult
             {
                 if (playerController->playerState() == PlayerState::Unknown)
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 if (playerController->canSkip())
                 {
                     _currentQueueId = playerController->currentQueueId();
                     playerController->skip();
+                    return StepResult::stepCompleted();
                 }
                 else
-                    setCommandExecutionFailed(3, "player cannot skip now");
-
-                return true;
+                    return StepResult::commandFailed(3, "player cannot skip now");
             }
         );
         addStep(
-            [this, playerController]() -> bool
+            [this, playerController]() -> StepResult
             {
                 if (playerController->currentQueueId() != _currentQueueId)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
     }
@@ -283,19 +282,18 @@ namespace PMP
                 this, &NowPlayingCommand::listenerSlot);
 
         addStep(
-            [this, currentTrackMonitor, hashIdRepository]() -> bool
+            [currentTrackMonitor, hashIdRepository]() -> StepResult
             {
                 auto isTrackPresent = currentTrackMonitor->isTrackPresent();
 
                 if (isTrackPresent.isFalse())
-                {
-                    setCommandExecutionSuccessful("Now playing: nothing");
-                    return false;
-                }
+                    return StepResult::commandSuccessful("Now playing: nothing");
 
                 if (isTrackPresent.isUnknown()
                         || currentTrackMonitor->currentTrackHash().isZero())
-                    return false;
+                {
+                    return StepResult::stepIncomplete();
+                }
 
                 auto title = currentTrackMonitor->currentTrackTitle();
                 auto artist = currentTrackMonitor->currentTrackArtist();
@@ -303,7 +301,7 @@ namespace PMP
                         currentTrackMonitor->currentTrackPossibleFilename();
 
                 if (title.isEmpty() && artist.isEmpty() && possibleFileName.isEmpty())
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 auto queueId = currentTrackMonitor->currentQueueId();
                 auto lengthMilliseconds =
@@ -328,8 +326,7 @@ namespace PMP
 
                 output += " hash: " + hash.toString(); // no newline at the end here
 
-                setCommandExecutionSuccessful(output);
-                return false;
+                return StepResult::commandSuccessful(output);
             }
         );
     }
@@ -362,21 +359,21 @@ namespace PMP
                 this, &QueueCommand::listenerSlot);
 
         addStep(
-            [this, queueMonitor, queueEntryInfoStorage]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> StepResult
             {
                 if (!queueMonitor->isFetchCompleted())
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 bool needToWaitForFilename = false;
                 for (int i = 0; i < queueMonitor->queueLength() && i < _fetchLimit; ++i)
                 {
                     auto queueId = queueMonitor->queueEntry(i);
-                    if (queueId == 0)
-                        return false; /* download incomplete, shouldn't happen */
+                    if (queueId == 0) /* download incomplete, shouldn't happen */
+                        return StepResult::stepIncomplete();
 
                     auto entry = queueEntryInfoStorage->entryInfoByQueueId(queueId);
                     if (!entry || entry->type() == QueueEntryType::Unknown)
-                        return false; /* info not available yet */
+                        return StepResult::stepIncomplete(); /* info not available yet */
 
                     if (entry->needFilename())
                         needToWaitForFilename = true;
@@ -385,20 +382,19 @@ namespace PMP
                 if (needToWaitForFilename)
                     setStepDelay(50);
 
-                return true;
+                return StepResult::stepCompleted();
             }
         );
         addStep(
-            [this, queueMonitor, queueEntryInfoStorage]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> StepResult
             {
-                printQueue(queueMonitor, queueEntryInfoStorage);
-                return false;
+                return printQueue(queueMonitor, queueEntryInfoStorage);
             }
         );
     }
 
-    void QueueCommand::printQueue(AbstractQueueMonitor* queueMonitor,
-                                  QueueEntryInfoStorage* queueEntryInfoStorage)
+    CommandBase::StepResult QueueCommand::printQueue(AbstractQueueMonitor* queueMonitor,
+                                             QueueEntryInfoStorage* queueEntryInfoStorage)
     {
         QString output;
         output.reserve(80 + 80 + 80 * _fetchLimit);
@@ -471,7 +467,7 @@ namespace PMP
             output += "\n...";
         }
 
-        setCommandExecutionSuccessful(output);
+        return StepResult::commandSuccessful(output);
     }
 
     QString QueueCommand::getSpecialEntryText(const QueueEntryInfo* entry) const
@@ -523,12 +519,12 @@ namespace PMP
                 this, &ShutdownCommand::listenerSlot);
 
         addStep(
-            [this, serverInterface]() -> bool
+            [serverInterface]() -> StepResult
             {
                 if (!serverInterface->connected())
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -555,14 +551,17 @@ namespace PMP
                 this, &GetVolumeCommand::listenerSlot);
 
         addStep(
-            [this, playerController]() -> bool
+            [playerController]() -> StepResult
             {
                 auto volume = playerController->volume();
 
                 if (volume >= 0)
-                    setCommandExecutionSuccessful("Volume: " + QString::number(volume));
+                {
+                    auto output = "Volume: " + QString::number(volume);
+                    return StepResult::commandSuccessful(output);
+                }
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
     }
@@ -588,12 +587,12 @@ namespace PMP
                 this, &SetVolumeCommand::listenerSlot);
 
         addStep(
-            [this, playerController]() -> bool
+            [this, playerController]() -> StepResult
             {
                 if (playerController->volume() == _volume)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -625,27 +624,26 @@ namespace PMP
                 this, &BreakCommand::listenerSlot);
 
         addStep(
-            [this, queueMonitor, queueEntryInfoStorage]() -> bool
+            [queueMonitor, queueEntryInfoStorage]() -> StepResult
             {
                 if (!queueMonitor->isFetchCompleted())
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 if (queueMonitor->queueLength() == 0)
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 auto firstEntryId = queueMonitor->queueEntry(0);
                 if (firstEntryId == 0)
-                    return false; /* shouldn't happen */
+                    return StepResult::stepIncomplete(); /* shouldn't happen */
 
                 auto firstEntry = queueEntryInfoStorage->entryInfoByQueueId(firstEntryId);
                 if (!firstEntry)
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 if (firstEntry->type() != QueueEntryType::BreakPoint)
-                    return false;
+                    return StepResult::stepIncomplete();
 
-                setCommandExecutionSuccessful();
-                return false;
+                return StepResult::commandSuccessful();
             }
         );
 
@@ -734,12 +732,12 @@ namespace PMP
         );
 
         addStep(
-            [this]() -> bool
+            [this]() -> StepResult
             {
                 if (_wasDeleted)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -781,12 +779,12 @@ namespace PMP
         );
 
         addStep(
-            [this]() -> bool
+            [this]() -> StepResult
             {
                 if (_wasMoved)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -819,11 +817,11 @@ namespace PMP
         auto username = serverInterface->userLoggedInName();
 
         addStep(
-            [this, userDataFetcher, userId, username, hashId]() -> bool
+            [this, userDataFetcher, userId, username, hashId]() -> StepResult
             {
                 auto* hashData = userDataFetcher->getHashDataForUser(userId, hashId);
                 if (hashData == nullptr)
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 QString output;
                 output.reserve(100);
@@ -852,8 +850,7 @@ namespace PMP
 
                 output += QString("Score: %1").arg(score);
 
-                setCommandExecutionSuccessful(output);
-                return false;
+                return StepResult::commandSuccessful(output);
             }
         );
     }
