@@ -106,6 +106,7 @@ IDEAS
  * command-line remote: add a command for turning dynamic mode on/off
  * command-line remote: add a command for manually inserting a track into the queue
  * command-line remote: add a command for seeking (going to a specific time in the current track)
+ * command-line remote: extend the "nowplaying" command to also print album
  * command-line remote: extend the "trackstats" command to accept queue IDs
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
  * hash tool: by default only output the hash of the file, no other information
