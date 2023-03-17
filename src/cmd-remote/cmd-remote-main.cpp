@@ -47,6 +47,8 @@ usage:
     volume <number>: set volume percentage (0-100)
     nowplaying: get info about the track currently playing
     queue: print queue length and the first tracks waiting in the queue
+    personalmode: switch to personal mode
+    publicmode: switch to public mode
     break: insert a break at the front of the queue if not present there yet
     insert <item-type> <position>: insert an item into the queue (see below)
     qdel <QID>: delete an entry from the queue
@@ -148,6 +150,8 @@ usage:
     client.
 
   Examples:
+    {{PROGRAMNAME}} localhost nowplaying
+    {{PROGRAMNAME}} localhost personalmode
     {{PROGRAMNAME}} localhost queue
     {{PROGRAMNAME}} ::1 volume
     {{PROGRAMNAME}} localhost volume 100
@@ -155,7 +159,6 @@ usage:
     {{PROGRAMNAME}} localhost insert break index 2
     {{PROGRAMNAME}} localhost insert barrier front
     {{PROGRAMNAME}} localhost qmove 42 +3
-    {{PROGRAMNAME}} localhost nowplaying
     {{PROGRAMNAME}} localhost login : nowplaying
     {{PROGRAMNAME}} localhost login MyUsername : play
     {{PROGRAMNAME}} localhost login MyUsername - : play <passwordfile

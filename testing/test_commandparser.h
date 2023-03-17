@@ -49,6 +49,12 @@ private Q_SLOTS:
     void queueCommandCanBeParsed();
     void queueCommandDoesNotAcceptArguments();
 
+    void personalmodeCommandCanBeParsed();
+    void personalmodeCommandDoesNotAcceptArguments();
+
+    void publicmodeCommandCanBeParsed();
+    void publicmodeCommandDoesNotAcceptArguments();
+
     void reloadserversettingsCommandCanBeParsed();
     void reloadserversettingsCommandDoesNotAcceptArguments();
 

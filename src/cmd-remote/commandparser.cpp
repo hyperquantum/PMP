@@ -317,6 +317,14 @@ namespace PMP
         {
             handleCommandNotRequiringArguments<QueueCommand>(commandWithArgs);
         }
+        else if (command == "personalmode")
+        {
+            handleCommandNotRequiringArguments<PersonalModeCommand>(commandWithArgs);
+        }
+        else if (command == "publicmode")
+        {
+            handleCommandNotRequiringArguments<PublicModeCommand>(commandWithArgs);
+        }
         else if (command == "reloadserversettings")
         {
             handleCommandNotRequiringArguments<ReloadServerSettingsCommand>(

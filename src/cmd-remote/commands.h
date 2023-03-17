@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -68,6 +68,26 @@ namespace PMP
 
     private:
         RequestID _requestId;
+    };
+
+    class PersonalModeCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+    };
+
+    class PublicModeCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
     };
 
     class DelayedStartAtCommand : public CommandBase

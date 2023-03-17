@@ -102,7 +102,6 @@ IDEAS
  * add button to copy title and artist of current track to clipboard
  * server database backup and restore
  * detect track BPM automatically
- * command-line remote: add a command for switching between public mode and personal mode
  * command-line remote: add a command for turning dynamic mode on/off
  * command-line remote: add a command for manually inserting a track into the queue
  * command-line remote: add a command for seeking (going to a specific time in the current track)

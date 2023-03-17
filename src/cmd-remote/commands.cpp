@@ -21,6 +21,7 @@
 
 #include "common/util.h"
 
+#include "client/authenticationcontroller.h"
 #include "client/currenttrackmonitor.h"
 #include "client/generalcontroller.h"
 #include "client/localhashidrepository.h"
@@ -89,6 +90,67 @@ namespace PMP
     {
         auto future = serverInterface->generalController().reloadServerSettings();
         addCommandExecutionFutureListener(future);
+    }
+
+    /* ===== PersonalModeCommand ===== */
+
+    bool PersonalModeCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void PersonalModeCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto myUserId = serverInterface->authenticationController().userLoggedInId();
+
+        auto* playerController = &serverInterface->playerController();
+        connect(playerController, &PlayerController::playerModeChanged,
+                this, &PersonalModeCommand::listenerSlot);
+
+        addStep(
+            [myUserId, playerController]() -> StepResult
+            {
+                auto playerMode = playerController->playerMode();
+
+                if (playerMode != PlayerMode::Personal
+                        || playerController->personalModeUserId() != myUserId)
+                {
+                    return StepResult::stepIncomplete();
+                }
+
+                return StepResult::commandSuccessful();
+            }
+        );
+
+        playerController->switchToPersonalMode();
+    }
+
+    /* ===== PublicModeCommand ===== */
+
+    bool PublicModeCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void PublicModeCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto* playerController = &serverInterface->playerController();
+        connect(playerController, &PlayerController::playerModeChanged,
+                this, &PublicModeCommand::listenerSlot);
+
+        addStep(
+            [playerController]() -> StepResult
+            {
+                auto playerMode = playerController->playerMode();
+
+                if (playerMode == PlayerMode::Public)
+                    return StepResult::commandSuccessful();
+
+                return StepResult::stepIncomplete();
+            }
+        );
+
+        playerController->switchToPublicMode();
     }
 
     /* ===== DelayedStartAtCommand ===== */
@@ -854,4 +916,5 @@ namespace PMP
             }
         );
     }
+
 }

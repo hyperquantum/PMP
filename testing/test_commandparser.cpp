@@ -110,6 +110,26 @@ void TestCommandParser::queueCommandDoesNotAcceptArguments()
     verifyParseError({"queue", "xyz"});
 }
 
+void TestCommandParser::personalmodeCommandCanBeParsed()
+{
+    verifySuccessfulParsingOf<PersonalModeCommand>({"personalmode"});
+}
+
+void TestCommandParser::personalmodeCommandDoesNotAcceptArguments()
+{
+    verifyParseError({"personalmode", "xyz"});
+}
+
+void TestCommandParser::publicmodeCommandCanBeParsed()
+{
+    verifySuccessfulParsingOf<PublicModeCommand>({"publicmode"});
+}
+
+void TestCommandParser::publicmodeCommandDoesNotAcceptArguments()
+{
+    verifyParseError({"publicmode", "xyz"});
+}
+
 void TestCommandParser::reloadserversettingsCommandCanBeParsed()
 {
     verifySuccessfulParsingOf<ReloadServerSettingsCommand>({"reloadserversettings"});
