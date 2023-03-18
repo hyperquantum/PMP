@@ -55,6 +55,9 @@ private Q_SLOTS:
     void publicmodeCommandCanBeParsed();
     void publicmodeCommandDoesNotAcceptArguments();
 
+    void dynamicmodeCommandTestValid();
+    void dynamicmodeCommandTestInvalid();
+
     void reloadserversettingsCommandCanBeParsed();
     void reloadserversettingsCommandDoesNotAcceptArguments();
 

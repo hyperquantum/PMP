@@ -23,6 +23,7 @@
 
 #include "client/authenticationcontroller.h"
 #include "client/currenttrackmonitor.h"
+#include "client/dynamicmodecontroller.h"
 #include "client/generalcontroller.h"
 #include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
@@ -151,6 +152,39 @@ namespace PMP
         );
 
         playerController->switchToPublicMode();
+    }
+
+    /* ===== DynamicModeActivationCommand ===== */
+
+    DynamicModeActivationCommand::DynamicModeActivationCommand(bool enable)
+     : _enable(enable)
+    {
+        //
+    }
+
+    bool DynamicModeActivationCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void DynamicModeActivationCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto* dynamicModeController = &serverInterface->dynamicModeController();
+
+        connect(dynamicModeController, &DynamicModeController::dynamicModeEnabledChanged,
+                this, &DynamicModeActivationCommand::listenerSlot);
+
+        addStep(
+            [this, dynamicModeController]() -> StepResult
+            {
+                if (dynamicModeController->dynamicModeEnabled().isIdenticalTo(_enable))
+                    return StepResult::commandSuccessful();
+
+                return StepResult::stepIncomplete();
+            }
+        );
+
+        dynamicModeController->setDynamicModeEnabled(_enable);
     }
 
     /* ===== DelayedStartAtCommand ===== */

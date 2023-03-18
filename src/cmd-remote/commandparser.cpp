@@ -325,6 +325,10 @@ namespace PMP
         {
             handleCommandNotRequiringArguments<PublicModeCommand>(commandWithArgs);
         }
+        else if (command == "dynamicmode")
+        {
+            parseDynamicModeCommand(args);
+        }
         else if (command == "reloadserversettings")
         {
             handleCommandNotRequiringArguments<ReloadServerSettingsCommand>(
@@ -693,6 +697,37 @@ namespace PMP
         }
 
         _command = new TrackStatsCommand(hash);
+    }
+
+    void CommandParser::parseDynamicModeCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Command 'dynamicmode' requires at least one argument!";
+            return;
+        }
+
+        if (arguments.currentIsOneOf({"on", "off"}))
+        {
+            bool isOn = arguments.current() == "on";
+            arguments.advance();
+            parseDynamicModeOnOrOff(arguments, isOn);
+        }
+        else
+        {
+            _errorMessage = "Expected 'on' or 'off' after 'dynamicmode'!";
+        }
+    }
+
+    void CommandParser::parseDynamicModeOnOrOff(CommandArguments& arguments, bool isOn)
+    {
+        if (arguments.haveCurrent())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new DynamicModeActivationCommand(isOn);
     }
 
     bool CommandParser::isInFuture(QDateTime time)

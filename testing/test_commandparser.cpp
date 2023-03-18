@@ -130,6 +130,21 @@ void TestCommandParser::publicmodeCommandDoesNotAcceptArguments()
     verifyParseError({"publicmode", "xyz"});
 }
 
+void TestCommandParser::dynamicmodeCommandTestValid()
+{
+    verifySuccessfulParsingOf<DynamicModeActivationCommand>({"dynamicmode", "on"});
+    verifySuccessfulParsingOf<DynamicModeActivationCommand>({"dynamicmode", "off"});
+}
+
+void TestCommandParser::dynamicmodeCommandTestInvalid()
+{
+    verifyParseError({"dynamicmode"});
+
+    verifyParseError({"dynamicmode", "abcd"});
+    verifyParseError({"dynamicmode", "on", "on"});
+    verifyParseError({"dynamicmode", "off", "off"});
+}
+
 void TestCommandParser::reloadserversettingsCommandCanBeParsed()
 {
     verifySuccessfulParsingOf<ReloadServerSettingsCommand>({"reloadserversettings"});

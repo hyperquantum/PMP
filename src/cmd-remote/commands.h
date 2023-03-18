@@ -90,6 +90,21 @@ namespace PMP
         void run(Client::ServerInterface* serverInterface) override;
     };
 
+    class DynamicModeActivationCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        explicit DynamicModeActivationCommand(bool enable);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        bool _enable;
+    };
+
     class DelayedStartAtCommand : public CommandBase
     {
         Q_OBJECT

@@ -49,6 +49,7 @@ usage:
     queue: print queue length and the first tracks waiting in the queue
     personalmode: switch to personal mode
     publicmode: switch to public mode
+    dynamicmode on|off: enable/disable dynamic mode (auto queue fill)
     break: insert a break at the front of the queue if not present there yet
     insert <item-type> <position>: insert an item into the queue (see below)
     qdel <QID>: delete an entry from the queue
@@ -152,6 +153,7 @@ usage:
   Examples:
     {{PROGRAMNAME}} localhost nowplaying
     {{PROGRAMNAME}} localhost personalmode
+    {{PROGRAMNAME}} localhost dynamicmode on
     {{PROGRAMNAME}} localhost queue
     {{PROGRAMNAME}} ::1 volume
     {{PROGRAMNAME}} localhost volume 100

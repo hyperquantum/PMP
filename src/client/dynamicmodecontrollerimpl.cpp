@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -86,6 +86,14 @@ namespace PMP::Client
     int DynamicModeControllerImpl::waveProgressTotal() const
     {
         return _waveProgressTotal;
+    }
+
+    void DynamicModeControllerImpl::setDynamicModeEnabled(bool enabled)
+    {
+        if (enabled)
+            enableDynamicMode();
+        else
+            disableDynamicMode();
     }
 
     void DynamicModeControllerImpl::enableDynamicMode()
