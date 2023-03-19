@@ -41,8 +41,6 @@ namespace PMP::Client
 
 namespace PMP
 {
-    // TODO : remove useless constructors
-
     struct VersionInfo;
 
     class StatusCommand : public CommandBase
@@ -172,8 +170,6 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        PlayCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
@@ -184,8 +180,6 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        PauseCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
@@ -196,23 +190,19 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        SkipCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;
 
     private:
-        quint32 _currentQueueId;
+        quint32 _currentQueueId { 0 };
     };
 
     class NowPlayingCommand : public CommandBase
     {
         Q_OBJECT
     public:
-        NowPlayingCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
@@ -223,8 +213,6 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        QueueCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
@@ -235,7 +223,7 @@ namespace PMP
                               Client::QueueEntryInfoStorage* queueEntryInfoStorage);
         QString getSpecialEntryText(Client::QueueEntryInfo const* entry) const;
 
-        int _fetchLimit;
+        int _fetchLimit { 10 };
     };
 
     class ShutdownCommand : public CommandBase
@@ -258,8 +246,6 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        GetVolumeCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
@@ -285,8 +271,6 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        BreakCommand();
-
         bool requiresAuthentication() const override;
 
     protected:

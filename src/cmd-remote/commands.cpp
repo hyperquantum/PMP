@@ -376,11 +376,6 @@ namespace PMP
 
     /* ===== PlayCommand ===== */
 
-    PlayCommand::PlayCommand()
-    {
-        //
-    }
-
     bool PlayCommand::requiresAuthentication() const
     {
         return true;
@@ -408,11 +403,6 @@ namespace PMP
 
     /* ===== PauseCommand ===== */
 
-    PauseCommand::PauseCommand()
-    {
-        //
-    }
-
     bool PauseCommand::requiresAuthentication() const
     {
         return true;
@@ -439,12 +429,6 @@ namespace PMP
     }
 
     /* ===== SkipCommand ===== */
-
-    SkipCommand::SkipCommand()
-     : _currentQueueId(0)
-    {
-        //
-    }
 
     bool SkipCommand::requiresAuthentication() const
     {
@@ -488,11 +472,6 @@ namespace PMP
     }
 
     /* ===== NowPlayingCommand ===== */
-
-    NowPlayingCommand::NowPlayingCommand()
-    {
-        //
-    }
 
     bool NowPlayingCommand::requiresAuthentication() const
     {
@@ -562,12 +541,6 @@ namespace PMP
     }
 
     /* ===== QueueCommand ===== */
-
-    QueueCommand::QueueCommand()
-     : _fetchLimit(10)
-    {
-        //
-    }
 
     bool QueueCommand::requiresAuthentication() const
     {
@@ -763,11 +736,6 @@ namespace PMP
 
     /* ===== GetVolumeCommand ===== */
 
-    GetVolumeCommand::GetVolumeCommand()
-    {
-        //
-    }
-
     bool GetVolumeCommand::requiresAuthentication() const
     {
         return false;
@@ -830,11 +798,6 @@ namespace PMP
     }
 
     /* ===== BreakCommand =====*/
-
-    BreakCommand::BreakCommand()
-    {
-        //
-    }
 
     bool BreakCommand::requiresAuthentication() const
     {
