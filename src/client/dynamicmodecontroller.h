@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -42,6 +42,7 @@ namespace PMP::Client
         virtual int waveProgressTotal() const = 0;
 
     public Q_SLOTS:
+        virtual void setDynamicModeEnabled(bool enabled) = 0;
         virtual void enableDynamicMode() = 0;
         virtual void disableDynamicMode() = 0;
 

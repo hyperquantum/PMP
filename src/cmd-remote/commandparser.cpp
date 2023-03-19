@@ -293,7 +293,11 @@ namespace PMP
         auto args = commandWithArgs.mid(1);
         auto argsCount = args.size();
 
-        if (command == "play")
+        if (command == "status")
+        {
+            handleCommandNotRequiringArguments<StatusCommand>(commandWithArgs);
+        }
+        else if (command == "play")
         {
             handleCommandNotRequiringArguments<PlayCommand>(commandWithArgs);
         }
@@ -316,6 +320,18 @@ namespace PMP
         else if (command == "queue")
         {
             handleCommandNotRequiringArguments<QueueCommand>(commandWithArgs);
+        }
+        else if (command == "personalmode")
+        {
+            handleCommandNotRequiringArguments<PersonalModeCommand>(commandWithArgs);
+        }
+        else if (command == "publicmode")
+        {
+            handleCommandNotRequiringArguments<PublicModeCommand>(commandWithArgs);
+        }
+        else if (command == "dynamicmode")
+        {
+            parseDynamicModeCommand(args);
         }
         else if (command == "reloadserversettings")
         {
@@ -685,6 +701,37 @@ namespace PMP
         }
 
         _command = new TrackStatsCommand(hash);
+    }
+
+    void CommandParser::parseDynamicModeCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Command 'dynamicmode' requires at least one argument!";
+            return;
+        }
+
+        if (arguments.currentIsOneOf({"on", "off"}))
+        {
+            bool isOn = arguments.current() == "on";
+            arguments.advance();
+            parseDynamicModeOnOrOff(arguments, isOn);
+        }
+        else
+        {
+            _errorMessage = "Expected 'on' or 'off' after 'dynamicmode'!";
+        }
+    }
+
+    void CommandParser::parseDynamicModeOnOrOff(CommandArguments& arguments, bool isOn)
+    {
+        if (arguments.haveCurrent())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new DynamicModeActivationCommand(isOn);
     }
 
     bool CommandParser::isInFuture(QDateTime time)

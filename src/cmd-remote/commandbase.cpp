@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -63,7 +63,7 @@ namespace PMP
         //
     }
 
-    void CommandBase::addStep(std::function<bool ()> step)
+    void CommandBase::addStep(std::function<StepResult ()> step)
     {
         _steps.append(step);
     }
@@ -192,26 +192,66 @@ namespace PMP
         if (_finishedOrFailed)
             return;
 
-        bool canAdvance = _steps[_currentStep]();
+        auto const& stepResult = _steps[_currentStep]();
+
+        switch (stepResult.type())
+        {
+        case StepResultType::StepIncomplete:
+            return;
+
+        case StepResultType::StepCompleted:
+            break; /* we will go to the next step */
+
+        case StepResultType::CommandFinished:
+            applyFinishedCommandFromStepResult(stepResult);
+            return;
+        }
+
+        if (_currentStep >= _steps.size() - 1)
+        {
+            qWarning() << "Step" << (_currentStep + 1)
+                       << "reports step completion, but there is no next step";
+            reportInternalError();
+            return;
+        }
 
         if (_finishedOrFailed)
             return;
 
-        if (!canAdvance)
-            return;
-
         _currentStep++;
-
-        if (_currentStep >= _steps.size())
-        {
-            qWarning() << "Step number" << _currentStep
-                       << "should be less than" << _steps.size();
-            Q_EMIT executionFailed(3, "internal error");
-            return;
-        }
 
         // we advanced, so try the next step right now, don't wait for signals
         QTimer::singleShot(_stepDelayMilliseconds, this, &CommandBase::listenerSlot);
     }
 
+    void CommandBase::reportInternalError()
+    {
+        _finishedOrFailed = true;
+        Q_EMIT executionFailed(3, "internal error");
+    }
+
+    void CommandBase::applyFinishedCommandFromStepResult(const StepResult& stepResult)
+    {
+        auto errorCodeOrNull = stepResult.commandErrorCode();
+
+        if (errorCodeOrNull == null)
+        {
+            if (_finishedOrFailed)
+                return; /* result/error has been set already */
+
+            qWarning() << "Step reported command completion, but no result/error was set";
+            reportInternalError();
+            return;
+        }
+
+        auto errorCode = errorCodeOrNull.value();
+        if (errorCode == 0)
+        {
+            setCommandExecutionSuccessful(stepResult.commandOutput());
+        }
+        else
+        {
+            setCommandExecutionFailed(errorCode, stepResult.commandOutput());
+        }
+    }
 }

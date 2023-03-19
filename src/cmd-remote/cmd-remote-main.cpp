@@ -40,6 +40,7 @@ usage:
 
   commands:
     login: force authentication before running the next command (see below)
+    status: get status information, like volume, queue length... (see below)
     play: start/resume playback
     pause: pause playback
     skip: jump to next track in the queue
@@ -47,6 +48,9 @@ usage:
     volume <number>: set volume percentage (0-100)
     nowplaying: get info about the track currently playing
     queue: print queue length and the first tracks waiting in the queue
+    personalmode: switch to personal mode
+    publicmode: switch to public mode
+    dynamicmode on|off: enable/disable dynamic mode (auto queue fill)
     break: insert a break at the front of the queue if not present there yet
     insert <item-type> <position>: insert an item into the queue (see below)
     qdel <QID>: delete an entry from the queue
@@ -71,6 +75,12 @@ usage:
     When reading username and password from standard input, it is assumed
     that the first line of the input is the username and the second line is
     the password.
+
+  'status' command:
+    This command does not require arguments and can be used without
+    authenticating first. It provides general information about the server,
+    like: is a track loaded, is something playing, what is the volume, what
+    is the length of the queue, is dynamic mode active, etc.
 
   'insert' command:
     insert break front: insert a break at the front of the queue
@@ -148,6 +158,10 @@ usage:
     client.
 
   Examples:
+    {{PROGRAMNAME}} localhost status
+    {{PROGRAMNAME}} localhost nowplaying
+    {{PROGRAMNAME}} localhost personalmode
+    {{PROGRAMNAME}} localhost dynamicmode on
     {{PROGRAMNAME}} localhost queue
     {{PROGRAMNAME}} ::1 volume
     {{PROGRAMNAME}} localhost volume 100
@@ -155,7 +169,6 @@ usage:
     {{PROGRAMNAME}} localhost insert break index 2
     {{PROGRAMNAME}} localhost insert barrier front
     {{PROGRAMNAME}} localhost qmove 42 +3
-    {{PROGRAMNAME}} localhost nowplaying
     {{PROGRAMNAME}} localhost login : nowplaying
     {{PROGRAMNAME}} localhost login MyUsername : play
     {{PROGRAMNAME}} localhost login MyUsername - : play <passwordfile
