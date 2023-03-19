@@ -50,6 +50,16 @@ void verifyParseError(QVector<QString> commandWithArgs)
     QVERIFY(parser.command() == nullptr);
 }
 
+void TestCommandParser::statusCommandCanBeParsed()
+{
+    verifySuccessfulParsingOf<StatusCommand>({"status"});
+}
+
+void TestCommandParser::statusCommandDoesNotAcceptArguments()
+{
+    verifyParseError({"status", "xyz"});
+}
+
 void TestCommandParser::playCommandCanBeParsed()
 {
     verifySuccessfulParsingOf<PlayCommand>({"play"});

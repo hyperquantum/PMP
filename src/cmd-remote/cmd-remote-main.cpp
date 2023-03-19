@@ -40,6 +40,7 @@ usage:
 
   commands:
     login: force authentication before running the next command (see below)
+    status: get status information, like volume, queue length... (see below)
     play: start/resume playback
     pause: pause playback
     skip: jump to next track in the queue
@@ -74,6 +75,12 @@ usage:
     When reading username and password from standard input, it is assumed
     that the first line of the input is the username and the second line is
     the password.
+
+  'status' command:
+    This command does not require arguments and can be used without
+    authenticating first. It provides general information about the server,
+    like: is a track loaded, is something playing, what is the volume, what
+    is the length of the queue, is dynamic mode active, etc.
 
   'insert' command:
     insert break front: insert a break at the front of the queue
@@ -151,6 +158,7 @@ usage:
     client.
 
   Examples:
+    {{PROGRAMNAME}} localhost status
     {{PROGRAMNAME}} localhost nowplaying
     {{PROGRAMNAME}} localhost personalmode
     {{PROGRAMNAME}} localhost dynamicmode on

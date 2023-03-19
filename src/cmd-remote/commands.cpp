@@ -37,6 +37,138 @@ using namespace PMP::Client;
 
 namespace PMP
 {
+    /* ===== StatusCommand ===== */
+
+    bool StatusCommand::requiresAuthentication() const
+    {
+        return false;
+    }
+
+    void StatusCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto* playerController = &serverInterface->playerController();
+        auto* currentTrackMonitor = &serverInterface->currentTrackMonitor();
+        auto* dynamicModeController = &serverInterface->dynamicModeController();
+
+        connect(playerController, &PlayerController::playerStateChanged,
+                this, &StatusCommand::listenerSlot);
+        connect(playerController, &PlayerController::playerModeChanged,
+                this, &StatusCommand::listenerSlot);
+        connect(currentTrackMonitor, &CurrentTrackMonitor::currentTrackChanged,
+                this, &StatusCommand::listenerSlot);
+        connect(dynamicModeController, &DynamicModeController::dynamicModeEnabledChanged,
+                this, &StatusCommand::listenerSlot);
+
+        addStep(
+            [this, playerController, currentTrackMonitor, dynamicModeController]()
+            {
+                if (playerController->playerState() == PlayerState::Unknown
+                        || playerController->playerMode() == PlayerMode::Unknown
+                        || dynamicModeController->dynamicModeEnabled().isUnknown())
+                {
+                    return StepResult::stepIncomplete();
+                }
+
+                return printStatus(playerController, currentTrackMonitor,
+                                   dynamicModeController);
+            }
+        );
+    }
+
+    CommandBase::StepResult StatusCommand::printStatus(
+                                    Client::PlayerController* playerController,
+                                    Client::CurrentTrackMonitor* currentTrackMonitor,
+                                    Client::DynamicModeController* dynamicModeController)
+    {
+        QString output;
+        output.reserve(40 * 9);
+
+        auto trackLoaded = currentTrackMonitor->isTrackPresent();
+        if (trackLoaded.isTrue())
+            output += "track loaded: yes";
+        else if (trackLoaded.isFalse())
+            output += "track loaded: no";
+        else
+            output += "track loaded: (unknown)";
+
+        output += "\n";
+        switch (playerController->playerState())
+        {
+        case PlayerState::Playing:
+            output += "playing: yes";
+            output += "\n";
+            output += "paused: no";
+            break;
+        case PlayerState::Stopped:
+            output += "playing: no";
+            output += "\n";
+            output += "paused: no";
+            break;
+        case PlayerState::Paused:
+            output += "playing: no";
+            output += "\n";
+            output += "paused: yes";
+            break;
+        case PlayerState::Unknown:
+        default:
+            qWarning() << "Player state is unknown or unhandled value";
+            output += "playing: (unknown)";
+            output += "\n";
+            output += "paused: (unknown)";
+            break;
+        }
+
+        output += "\n";
+        auto volume = playerController->volume();
+        if (volume >= 0)
+            output += QString("volume: %1").arg(QString::number(volume));
+        else
+            output += "volume: (unknown)";
+
+        output += "\n";
+        output += "queue length: ";
+        output += QString::number(playerController->queueLength());
+
+        output += "\n";
+        switch (playerController->playerMode())
+        {
+        case PlayerMode::Personal:
+            output += "public mode: no";
+            output += "\n";
+            output += "personal mode: yes";
+            output += "\n";
+            output += "personal mode user: ";
+            output += playerController->personalModeUserLogin();
+            break;
+        case PlayerMode::Public:
+            output += "public mode: yes";
+            output += "\n";
+            output += "personal mode: no";
+            output += "\n";
+            output += "personal mode user: N/A";
+            break;
+        case PlayerMode::Unknown:
+        default:
+            output += "public mode: (unknown)";
+            output += "\n";
+            output += "personal mode: (unknown)";
+            output += "\n";
+            output += "personal mode user: (unknown)";
+            break;
+        }
+
+        output += "\n";
+        auto dynamicModeEnabled = dynamicModeController->dynamicModeEnabled();
+        if (dynamicModeEnabled.isTrue())
+            output += "dynamic mode: on";
+        else if (dynamicModeEnabled.isFalse())
+            output += "dynamic mode: off";
+        else
+            output += "dynamic mode: (unknown)";
+
+        return StepResult::commandSuccessful(output);
+    }
+
     /* ===== ServerVersionCommand ===== */
 
     bool ServerVersionCommand::requiresAuthentication() const

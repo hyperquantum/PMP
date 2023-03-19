@@ -32,6 +32,9 @@
 namespace PMP::Client
 {
     class AbstractQueueMonitor;
+    class CurrentTrackMonitor;
+    class DynamicModeController;
+    class PlayerController;
     class QueueEntryInfo;
     class QueueEntryInfoStorage;
 }
@@ -41,6 +44,21 @@ namespace PMP
     // TODO : remove useless constructors
 
     struct VersionInfo;
+
+    class StatusCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        StepResult printStatus(Client::PlayerController* playerController,
+                               Client::CurrentTrackMonitor* currentTrackMonitor,
+                               Client::DynamicModeController* dynamicModeController);
+    };
 
     class ServerVersionCommand : public CommandBase
     {

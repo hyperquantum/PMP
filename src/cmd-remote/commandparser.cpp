@@ -293,7 +293,11 @@ namespace PMP
         auto args = commandWithArgs.mid(1);
         auto argsCount = args.size();
 
-        if (command == "play")
+        if (command == "status")
+        {
+            handleCommandNotRequiringArguments<StatusCommand>(commandWithArgs);
+        }
+        else if (command == "play")
         {
             handleCommandNotRequiringArguments<PlayCommand>(commandWithArgs);
         }

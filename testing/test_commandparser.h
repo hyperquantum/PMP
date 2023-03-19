@@ -31,6 +31,9 @@ class TestCommandParser : public QObject
 {
     Q_OBJECT
 private Q_SLOTS:
+    void statusCommandCanBeParsed();
+    void statusCommandDoesNotAcceptArguments();
+
     void playCommandCanBeParsed();
     void playCommandDoesNotAcceptArguments();
 
