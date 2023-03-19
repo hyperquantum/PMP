@@ -525,6 +525,7 @@ namespace PMP
 
                 auto title = currentTrackMonitor->currentTrackTitle();
                 auto artist = currentTrackMonitor->currentTrackArtist();
+                //auto album = currentTrackMonitor->currentTrackAlbum(); NOT AVAILABLE YET
                 auto possibleFileName =
                         currentTrackMonitor->currentTrackPossibleFilename();
 
@@ -547,6 +548,7 @@ namespace PMP
                 output += " QID: " + QString::number(queueId) + "\n";
                 output += " title: " + title + "\n";
                 output += " artist: " + artist + "\n";
+                //output += " album: " + album + "\n";
                 output += " length: " + lengthString + "\n";
 
                 if (title.isEmpty() && artist.isEmpty())
