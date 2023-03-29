@@ -78,8 +78,18 @@ namespace PMP
             return _userId == userId && _haveUserId;
         }
 
-        void setCriterium1(TrackCriterium criterium) { _criterium1 = criterium; }
-        void setCriterium2(TrackCriterium criterium) { _criterium2 = criterium; }
+        bool setCriteria(TrackCriterium criterium1, TrackCriterium criterium2)
+        {
+            if (criterium1 == _criterium1 &&
+                criterium2 == _criterium2)
+            {
+                return false;
+            }
+
+            _criterium1 = criterium1;
+            _criterium2 = criterium2;
+            return true;
+        }
 
         bool criteriumUsesUserData() const;
         bool criteriumResultsInAllTracks() const;

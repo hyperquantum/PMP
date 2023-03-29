@@ -158,7 +158,8 @@ namespace PMP
             }
         );
 
-        _highlightingTrackJudge.setCriterium1(TrackCriterium::NoTracks);
+        _highlightingTrackJudge.setCriteria(TrackCriterium::NoTracks,
+                                            TrackCriterium::AllTracks);
         _highlightingTrackJudge.setUserId(collectionViewContext->userId());
         connect(
             collectionViewContext, &CollectionViewContext::userIdChanged,
@@ -215,7 +216,7 @@ namespace PMP
 
     void SortedCollectionTableModel::setHighlightCriterium(TrackCriterium criterium)
     {
-        _highlightingTrackJudge.setCriterium1(criterium);
+        _highlightingTrackJudge.setCriteria(criterium, TrackCriterium::AllTracks);
 
         /* notify the outside world that potentially everything has changed */
         markEverythingAsChanged();
@@ -913,9 +914,10 @@ namespace PMP
     void FilteredCollectionTableModel::setTrackFilters(TrackCriterium criterium1,
                                                        TrackCriterium criterium2)
     {
-        _filteringTrackJudge.setCriterium1(criterium1);
-        _filteringTrackJudge.setCriterium2(criterium2);
-        invalidateFilter();
+        bool changed = _filteringTrackJudge.setCriteria(criterium1, criterium2);
+
+        if (changed)
+            invalidateFilter();
     }
 
     void FilteredCollectionTableModel::sort(int column, Qt::SortOrder order)
