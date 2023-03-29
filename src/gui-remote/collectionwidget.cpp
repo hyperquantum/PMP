@@ -125,10 +125,8 @@ namespace PMP
         delete _ui;
     }
 
-    void CollectionWidget::filterTracksIndexChanged(int index)
+    void CollectionWidget::filterTracksIndexChanged()
     {
-        Q_UNUSED(index)
-
         auto filter1 = getTrackCriteriumFromComboBox(_ui->filterTracksComboBox);
         auto filter2 = getTrackCriteriumFromComboBox(_ui->filterTracks2ComboBox);
 
@@ -251,6 +249,8 @@ namespace PMP
 
         comboBoxInit(_ui->filterTracksComboBox);
         comboBoxInit(_ui->filterTracks2ComboBox);
+
+        filterTracksIndexChanged();
     }
 
     void CollectionWidget::initTrackHighlightingComboBox()

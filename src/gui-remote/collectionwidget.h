@@ -55,7 +55,7 @@ namespace PMP
         ~CollectionWidget();
 
     private Q_SLOTS:
-        void filterTracksIndexChanged(int index);
+        void filterTracksIndexChanged();
         void highlightTracksIndexChanged(int index);
         void highlightColorIndexChanged();
         void collectionContextMenuRequested(const QPoint& position);
