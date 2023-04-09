@@ -1539,6 +1539,7 @@ namespace PMP::Server
                               clientReference);
             return;
         case ResultCode::HashIsNull:
+        case ResultCode::HashIsUnknown:
             sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
             return;
         case ResultCode::QueueEntryIdNotFound:
