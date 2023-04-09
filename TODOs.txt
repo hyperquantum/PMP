@@ -103,7 +103,6 @@ IDEAS
  * add button to copy title and artist of current track to clipboard
  * server database backup and restore
  * detect track BPM automatically
- * command-line remote: add a command for manually inserting a track into the queue
  * command-line remote: add a command for seeking (going to a specific time in the current track)
  * command-line remote: add a command for printing recent player history
  * command-line remote: extend the "nowplaying" command to also print album

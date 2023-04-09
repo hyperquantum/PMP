@@ -112,7 +112,7 @@ namespace PMP
         void splitMultipleCommandsInOne(QVector<QString>& commandWithArgs);
         void parseExplicitLoginAndSeparator(QVector<QString>& commandWithArgs);
         void parseCommand(QVector<QString> commandWithArgs);
-        void parseInsertCommand(QVector<QString> arguments);
+        void parseInsertCommand(CommandArguments arguments);
         void parseDelayedStartCommand(CommandArguments arguments);
         void parseDelayedStartAt(CommandArguments& arguments);
         void parseDelayedStartWait(CommandArguments& arguments);

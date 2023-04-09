@@ -66,5 +66,8 @@ private Q_SLOTS:
 
     void shutdownCommandCanBeParsed();
     void shutdownCommandDoesNotAcceptArguments();
+
+    void insertCommandTestValid();
+    void insertCommandTestInvalid();
 };
 #endif

@@ -52,7 +52,7 @@ usage:
     publicmode: switch to public mode
     dynamicmode on|off: enable/disable dynamic mode (auto queue fill)
     break: insert a break at the front of the queue if not present there yet
-    insert <item-type> <position>: insert an item into the queue (see below)
+    insert <item> <position>: insert an item into the queue (see below)
     qdel <QID>: delete an entry from the queue
     qmove <QID> <-diff>: move a track up in the queue (e.g. -3)
     qmove <QID> <+diff>: move a track down in the queue (eg. +2)
@@ -83,13 +83,19 @@ usage:
     is the length of the queue, is dynamic mode active, etc.
 
   'insert' command:
-    insert break front: insert a break at the front of the queue
-    insert break end: insert a break at the end of the queue
-    insert break index <number>: insert a break at the specified index
-    insert barrier end: insert a barrier at the end of the queue
+    insert break <position>: insert a break into the queue
+    insert barrier <position>: insert a barrier into the queue
+    insert <hash> <position>: insert a track into the queue
+    insert <item> front: insert something at the front of the queue
+    insert <item> end: insert something at the end of the queue
+    insert <item> index <number>: insert something at a specific index
 
-    The numeric index is zero-based, meaning that 0 indicates the front of
-    the queue.
+    This command inserts a single item into the queue at a specific
+    position. The item to be inserted can be a track, a break, or a
+    barrier. The position can be the front of the queue, the end of the
+    queue, or a specific index counted from the front. The index is
+    zero-based, meaning that index 0 refers to the front of the queue,
+    index 1 indicates after the first existing item, etc.
     Inserting a break or a barrier with the 'insert' command requires a
     fairly recent version of the PMP server in order to work. Older servers
     do not support barriers, and they only support inserting a break at the
@@ -97,7 +103,10 @@ usage:
     yet at that location (see the 'break' command).
     A barrier is like a break, but is never consumed. Playback just stops
     when the current track finishes and the first item in the queue is a
-    barrier.
+    barrier. The barrier will remain in the queue until it is deleted by
+    the user.
+    The hash of a track can be obtained with the 'track info' dialog in the
+    GUI Remote or with the command-line hash tool.
 
   'delayedstart' command:
     delayedstart abort: cancel delayed start
@@ -131,8 +140,8 @@ usage:
 
     Retrieves 'last heard' and 'score' for the current user and the track
     that was specified as an argument.
-    The track hash can be obtained with the 'track info' dialog in the
-    GUI Remote or the command-line hash tool.
+    The hash of a track can be obtained with the 'track info' dialog in the
+    GUI Remote or with the command-line hash tool.
 
   NOTICE:
     Some commands require a fairly recent version of the PMP server in order

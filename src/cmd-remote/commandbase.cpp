@@ -58,13 +58,16 @@ namespace PMP
     CommandBase::CommandBase()
      : _currentStep(0),
        _stepDelayMilliseconds(0),
-       _finishedOrFailed(false)
+       _finishedOrFailed(false),
+       _stepsCompleted(true)
     {
         //
     }
 
     void CommandBase::addStep(std::function<StepResult ()> step)
     {
+        _stepsCompleted = false;
+
         _steps.append(step);
     }
 
@@ -189,7 +192,7 @@ namespace PMP
 
     void CommandBase::listenerSlot()
     {
-        if (_finishedOrFailed)
+        if (_finishedOrFailed || _stepsCompleted)
             return;
 
         auto const& stepResult = _steps[_currentStep]();
@@ -200,18 +203,18 @@ namespace PMP
             return;
 
         case StepResultType::StepCompleted:
-            break; /* we will go to the next step */
+            if (_currentStep < _steps.size() - 1)
+            {
+                break; /* we will go to the next step */
+            }
+            else
+            {
+                _stepsCompleted = true;
+                return;
+            }
 
         case StepResultType::CommandFinished:
             applyFinishedCommandFromStepResult(stepResult);
-            return;
-        }
-
-        if (_currentStep >= _steps.size() - 1)
-        {
-            qWarning() << "Step" << (_currentStep + 1)
-                       << "reports step completion, but there is no next step";
-            reportInternalError();
             return;
         }
 
@@ -232,26 +235,32 @@ namespace PMP
 
     void CommandBase::applyFinishedCommandFromStepResult(const StepResult& stepResult)
     {
-        auto errorCodeOrNull = stepResult.commandErrorCode();
-
-        if (errorCodeOrNull == null)
+        auto resultCodeOrNull = stepResult.commandResult();
+        if (resultCodeOrNull != null)
         {
-            if (_finishedOrFailed)
-                return; /* result/error has been set already */
-
-            qWarning() << "Step reported command completion, but no result/error was set";
-            reportInternalError();
+            setCommandExecutionResult(resultCodeOrNull.value());
             return;
         }
 
-        auto errorCode = errorCodeOrNull.value();
-        if (errorCode == 0)
+        auto exitCodeOrNull = stepResult.commandExitCode();
+        if (exitCodeOrNull != null)
         {
-            setCommandExecutionSuccessful(stepResult.commandOutput());
+            auto errorCode = exitCodeOrNull.value();
+            if (errorCode == 0)
+            {
+                setCommandExecutionSuccessful(stepResult.commandOutput());
+            }
+            else
+            {
+                setCommandExecutionFailed(errorCode, stepResult.commandOutput());
+            }
+            return;
         }
-        else
-        {
-            setCommandExecutionFailed(errorCode, stepResult.commandOutput());
-        }
+
+        if (_finishedOrFailed)
+            return; /* result/error has been set already */
+
+        qWarning() << "Step reported command completion, but no result/error was set";
+        reportInternalError();
     }
 }

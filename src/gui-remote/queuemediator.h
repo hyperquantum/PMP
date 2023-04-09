@@ -43,6 +43,11 @@ namespace PMP
 
         QUuid serverUuid() const override;
 
+        bool isQueueLengthKnown() const override
+        {
+            return _sourceMonitor->isQueueLengthKnown();
+        }
+
         int queueLength() const override { return _queueLength; }
         quint32 queueEntry(int index) override;
         QList<quint32> knownQueuePart() const override { return _myQueue; }
