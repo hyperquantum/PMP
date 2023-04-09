@@ -2537,10 +2537,7 @@ namespace PMP::Server
 
         qDebug() << " request contains hash:" << hash.dumpToString();
 
-        auto entryCreator = QueueEntryCreators::hash(hash);
-
-        auto result =
-                _serverInterface->insertAtIndex(index, entryCreator, clientReference);
+        auto result = _serverInterface->insertTrack(hash, index, clientReference);
 
         /* success is handled by the queue insertion event, failure is handled here */
         if (!result)

@@ -107,13 +107,11 @@ namespace PMP::Server
         Result insertTrackAtEnd(FileHash hash);
         Result insertTrackAtFront(FileHash hash);
         Result insertBreakAtFrontIfNotExists();
+        Result insertTrack(FileHash hash, int index, quint32 clientReference);
         Result insertSpecialQueueItem(SpecialQueueItemType itemType,
                                       QueueIndexType indexType, int index,
                                       quint32 clientReference);
         Result duplicateQueueEntry(uint id, quint32 clientReference);
-        Result insertAtIndex(qint32 index,
-                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
-                       quint32 clientReference);
         void moveQueueEntry(uint id, int upDownOffset);
         void removeQueueEntry(uint id);
         void trimQueue();
@@ -170,6 +168,9 @@ namespace PMP::Server
                                 int index);
         std::function<void (uint)> createQueueInsertionIdNotifier(
                                                                  quint32 clientReference);
+        Result insertAtIndex(qint32 index,
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                       quint32 clientReference);
         void addUserHashDataNotification(quint32 userId, QVector<uint> hashIds);
         void sendUserHashDataNotifications(quint32 userId);
 

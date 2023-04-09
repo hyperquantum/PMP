@@ -327,6 +327,13 @@ namespace PMP::Server
         return queue.insertBreakAtFront();
     }
 
+    Result ServerInterface::insertTrack(FileHash hash, int index, quint32 clientReference)
+    {
+        auto entryCreator = QueueEntryCreators::hash(hash);
+
+        return insertAtIndex(index, entryCreator, clientReference);
+    }
+
     Result ServerInterface::insertSpecialQueueItem(SpecialQueueItemType itemType,
                                                    QueueIndexType indexType, int index,
                                                    quint32 clientReference)
