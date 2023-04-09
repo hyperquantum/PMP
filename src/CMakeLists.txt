@@ -278,9 +278,9 @@ target_link_libraries(PMP-Server
 
 add_executable(PMP-Cmd-Remote
     cmd-remote/cmd-remote-main.cpp
-    ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS}
 )
 target_link_libraries(PMP-Cmd-Remote
+    $<TARGET_OBJECTS:PmpCmdRemote>
     $<TARGET_OBJECTS:PmpClient>
     $<TARGET_OBJECTS:PmpCommon>
 )

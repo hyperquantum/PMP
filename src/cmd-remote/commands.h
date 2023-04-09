@@ -296,6 +296,45 @@ namespace PMP
         RequestID _requestId;
     };
 
+    class QueueInsertTrackCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        QueueInsertTrackCommand(FileHash const& hash, int index,
+                                QueueIndexType indexType);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        void insertNormal(Client::ServerInterface* serverInterface);
+        void insertReversed(Client::ServerInterface* serverInterface);
+
+        FileHash _hash;
+        int _index;
+        QueueIndexType _indexType;
+        RequestID _requestId;
+    };
+
+    class InsertCommandBuilder
+    {
+    public:
+        void setItem(SpecialQueueItemType specialItemType);
+        void setItem(FileHash hash);
+
+        void setPosition(QueueIndexType indexType, int index);
+
+        Command* buildCommand();
+
+    private:
+        Nullable<SpecialQueueItemType> _queueItemType;
+        QueueIndexType _indexType { QueueIndexType::Normal };
+        int _index { -1 };
+        FileHash _hash;
+    };
+
     class QueueDeleteCommand : public CommandBase
     {
         Q_OBJECT

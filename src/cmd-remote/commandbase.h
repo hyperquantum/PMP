@@ -67,6 +67,7 @@ namespace PMP
         int _stepDelayMilliseconds;
         QVector<std::function<StepResult ()>> _steps;
         bool _finishedOrFailed;
+        bool _stepsCompleted;
     };
 
     class CommandBase::StepResult
@@ -102,8 +103,14 @@ namespace PMP
             return StepResult(errorCode, errorMessage);
         }
 
+        static StepResult commandFailed(ResultMessageErrorCode error)
+        {
+            return StepResult(error);
+        }
+
         StepResultType type() const { return _type; }
-        Nullable<int> commandErrorCode() const { return _commandErrorCode; }
+        Nullable<ResultMessageErrorCode> commandResult() const { return _commandResult; }
+        Nullable<int> commandExitCode() const { return _commandExitCode; }
         QString commandOutput() const { return _commandOutput; }
 
     private:
@@ -113,23 +120,31 @@ namespace PMP
             //
         }
 
-        StepResult(int commandErrorCode)
+        StepResult(int commandExitCode)
          : _type(StepResultType::CommandFinished),
-           _commandErrorCode(commandErrorCode)
+           _commandExitCode(commandExitCode)
         {
             //
         }
 
-        StepResult(int commandErrorCode, QString output)
+        StepResult(int commandExitCode, QString output)
          : _type(StepResultType::CommandFinished),
-           _commandErrorCode(commandErrorCode),
+           _commandExitCode(commandExitCode),
            _commandOutput(output)
         {
             //
         }
 
+        StepResult(ResultMessageErrorCode error)
+         : _type(StepResultType::CommandFinished),
+           _commandResult(error)
+        {
+            //
+        }
+
         StepResultType _type;
-        Nullable<int> _commandErrorCode;
+        Nullable<ResultMessageErrorCode> _commandResult;
+        Nullable<int> _commandExitCode;
         QString _commandOutput;
     };
 }

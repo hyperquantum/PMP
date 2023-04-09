@@ -891,6 +891,140 @@ namespace PMP
                 queueController->insertSpecialItemAtIndex(_itemType, _index, _indexType);
     }
 
+    /* ===== QueueInsertTrackCommand ===== */
+
+    QueueInsertTrackCommand::QueueInsertTrackCommand(const FileHash& hash, int index,
+                                                     QueueIndexType indexType)
+     : _hash(hash),
+       _index(index),
+       _indexType(indexType)
+    {
+        //
+    }
+
+    bool QueueInsertTrackCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void QueueInsertTrackCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto* queueController = &serverInterface->queueController();
+
+        connect(
+            queueController, &QueueController::queueEntryAdded,
+            this,
+            [this](qint32 index, quint32 queueId, RequestID requestId)
+            {
+                Q_UNUSED(index)
+                Q_UNUSED(queueId)
+
+                if (requestId == _requestId)
+                    setCommandExecutionSuccessful();
+            }
+        );
+        connect(
+            queueController, &QueueController::queueEntryInsertionFailed,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId == _requestId)
+                    setCommandExecutionResult(errorCode);
+            }
+        );
+
+        if (_indexType == QueueIndexType::Reverse)
+        {
+            insertReversed(serverInterface);
+        }
+        else
+        {
+            insertNormal(serverInterface);
+        }
+    }
+
+    void QueueInsertTrackCommand::insertNormal(Client::ServerInterface* serverInterface)
+    {
+        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
+
+        _requestId =
+            serverInterface->queueController().insertQueueEntryAtIndex(hashId, _index);
+    }
+
+    void QueueInsertTrackCommand::insertReversed(Client::ServerInterface* serverInterface)
+    {
+        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
+
+        auto* queueController = &serverInterface->queueController();
+
+        auto* queueMonitor = &serverInterface->queueMonitor();
+        queueMonitor->setFetchLimit(1);
+
+        connect(queueMonitor, &QueueMonitor::queueLengthChanged,
+                this, &QueueInsertTrackCommand::listenerSlot);
+
+        addStep(
+            [this, hashId, queueMonitor, queueController]() -> StepResult
+            {
+                if (!queueMonitor->isQueueLengthKnown())
+                    return StepResult::stepIncomplete();
+
+                auto insertionIndex = queueMonitor->queueLength() - _index;
+                if (insertionIndex < 0)
+                {
+                    auto error = ResultMessageErrorCode::InvalidQueueIndex;
+                    return StepResult::commandFailed(error);
+                }
+
+                _requestId =
+                    queueController->insertQueueEntryAtIndex(hashId, insertionIndex);
+
+                return StepResult::stepCompleted();
+            }
+        );
+    }
+
+    /* ===== InsertCommandBuilder ===== */
+
+    void InsertCommandBuilder::setItem(SpecialQueueItemType specialItemType)
+    {
+        _queueItemType = specialItemType;
+        _hash = {};
+    }
+
+    void InsertCommandBuilder::setItem(FileHash hash)
+    {
+        Q_ASSERT_X(!hash.isNull(), "InsertCommandBuilder", "hash is null");
+
+        _hash = hash;
+    }
+
+    void InsertCommandBuilder::setPosition(QueueIndexType indexType, int index)
+    {
+        Q_ASSERT_X(index >= 0, "InsertCommandBuilder", "index is negative");
+
+        _indexType = indexType;
+        _index = index;
+    }
+
+    Command* InsertCommandBuilder::buildCommand()
+    {
+        Q_ASSERT_X(_queueItemType.hasValue() || !_hash.isNull(),
+                   "InsertCommandBuilder", "item is not set");
+
+        Q_ASSERT_X(_index >= 0, "InsertCommandBuilder", "position is not set");
+
+        if (_queueItemType.hasValue())
+        {
+            return new QueueInsertSpecialItemCommand(_queueItemType.value(),
+                                                     _index, _indexType);
+        }
+        else
+        {
+            return new QueueInsertTrackCommand(_hash, _index, _indexType);
+        }
+    }
+
     /* ===== QueueDeleteCommand ===== */
 
     QueueDeleteCommand::QueueDeleteCommand(quint32 queueId)

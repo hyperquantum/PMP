@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -42,6 +42,7 @@ namespace PMP::Client
        _queueFetchTargetCount(initialQueueFetchLength),
        _queueFetchLimit(-1),
        _queueRequestedEntryCount(0),
+       _queueLengthIsKnown(false),
        _fetchCompletedEmitted(false)
     {
         connect(
@@ -95,7 +96,8 @@ namespace PMP::Client
 
     void QueueMonitor::connectionBroken()
     {
-        updateQueueLength(0, false);
+        if (updateQueueLength(-1, false))
+            Q_EMIT queueLengthChanged();
     }
 
     void QueueMonitor::doReset(int queueLength)
@@ -103,7 +105,9 @@ namespace PMP::Client
         qDebug() << "QueueMonitor: resetting queue to length" << queueLength;
 
         _fetchCompletedEmitted = false;
-        updateQueueLength(queueLength, true);
+
+        if (updateQueueLength(queueLength, true))
+            Q_EMIT queueLengthChanged();
     }
 
     void QueueMonitor::receivedServerInstanceIdentifier(QUuid uuid)
@@ -134,7 +138,8 @@ namespace PMP::Client
 
         /* See if queue length has changed; this happens at first load or when
          * inconsistencies are discovered. */
-        updateQueueLength(queueLength, false);
+        if (updateQueueLength(queueLength, false))
+            Q_EMIT queueLengthChanged();
 
         if (queueIDs.size() == 0)
         {
@@ -204,6 +209,7 @@ namespace PMP::Client
             _queueRequestedEntryCount++;
 
         Q_EMIT trackAdded((int)offset, queueId);
+        Q_EMIT queueLengthChanged();
     }
 
     void QueueMonitor::queueEntryRemoved(qint32 offset, quint32 queueId)
@@ -235,7 +241,6 @@ namespace PMP::Client
             }
             else
             {
-                /* TODO: error recovery */
                 qWarning() << "QueueMonitor: queueEntryRemoved: ID does not match;"
                            << "offset=" << offset << "; received ID=" << queueId
                            << "; found ID=" << _queue[offset];
@@ -253,6 +258,7 @@ namespace PMP::Client
         }
 
         Q_EMIT trackRemoved(index, queueId);
+        Q_EMIT queueLengthChanged();
     }
 
     void QueueMonitor::queueEntryMoved(qint32 fromOffset, qint32 toOffset,
@@ -377,10 +383,23 @@ namespace PMP::Client
         checkIfWeNeedToFetchMore();
     }
 
-    void QueueMonitor::updateQueueLength(int queueLength, bool forceReload)
+    bool QueueMonitor::updateQueueLength(int queueLength, bool forceReload)
     {
+        bool lengthChanged = false;
+        if (queueLength < -1 && _queueLengthIsKnown)
+        {
+            _queueLengthIsKnown = false;
+            queueLength = 0;
+            lengthChanged = true;
+        }
+        else if (queueLength >= 0 && !_queueLengthIsKnown)
+        {
+            _queueLengthIsKnown = true;
+            lengthChanged = true;
+        }
+
         if (queueLength == _queueLength && !forceReload)
-            return; /* no change */
+            return lengthChanged; /* no relevant change */
 
         qDebug() << "QueueMonitor: queue length changing from" << _queueLength
                  << "to" << queueLength;
@@ -396,12 +415,21 @@ namespace PMP::Client
         }
 
         Q_EMIT queueResetted(queueLength);
+        return true;
     }
 
     void QueueMonitor::sendInitialQueueFetchRequest()
     {
-        _queueRequestedEntryCount = initialQueueFetchLength;
-        _connection->sendQueueFetchRequest(0, initialQueueFetchLength);
+        int length = initialQueueFetchLength;
+
+        if (_queueFetchLimit >= 0 && _queueFetchLimit < length)
+            length = _queueFetchLimit;
+
+        if (length <= 0)
+            length = 1; /* we need at least one so we can get the length of the queue */
+
+        _queueRequestedEntryCount = length;
+        _connection->sendQueueFetchRequest(0, length);
     }
 
     bool QueueMonitor::verifyQueueContentsOldAndNew(int startIndex,

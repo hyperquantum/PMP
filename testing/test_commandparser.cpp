@@ -175,4 +175,67 @@ void TestCommandParser::shutdownCommandDoesNotAcceptArguments()
     verifyParseError({"shutdown", "xyz"});
 }
 
+void TestCommandParser::insertCommandTestValid()
+{
+    const auto hash =
+        "12345-abcdef123456abcdef123456abcdef1234567890-abcdef123456abcdef123456abcdef00";
+
+    verifySuccessfulParsingOf<QueueInsertSpecialItemCommand>({"insert","break","front"});
+    verifySuccessfulParsingOf<QueueInsertSpecialItemCommand>({"insert","barrier","front"});
+    verifySuccessfulParsingOf<QueueInsertTrackCommand>({"insert",hash,"front"});
+
+    verifySuccessfulParsingOf<QueueInsertSpecialItemCommand>({"insert","break","end"});
+    verifySuccessfulParsingOf<QueueInsertSpecialItemCommand>({"insert","barrier","end"});
+    verifySuccessfulParsingOf<QueueInsertTrackCommand>({"insert",hash,"end"});
+
+    verifySuccessfulParsingOf<QueueInsertSpecialItemCommand>({"insert","break","index","0"});
+    verifySuccessfulParsingOf<QueueInsertSpecialItemCommand>({"insert","break","index","12"});
+    verifySuccessfulParsingOf<QueueInsertSpecialItemCommand>({"insert","barrier","index","0"});
+    verifySuccessfulParsingOf<QueueInsertSpecialItemCommand>({"insert","barrier","index","12"});
+    verifySuccessfulParsingOf<QueueInsertTrackCommand>({"insert",hash,"index","0"});
+    verifySuccessfulParsingOf<QueueInsertTrackCommand>({"insert",hash,"index","12"});
+}
+
+void TestCommandParser::insertCommandTestInvalid()
+{
+    const auto hash =
+        "12345-abcdef123456abcdef123456abcdef1234567890-abcdef123456abcdef123456abcdef00";
+
+    verifyParseError({"insert"});
+
+    verifyParseError({"insert", "xyz"});
+    verifyParseError({"insert", "break"});
+    verifyParseError({"insert", "barrier"});
+    verifyParseError({"insert", hash});
+
+    verifyParseError({"insert", "xyz", "front"});
+    verifyParseError({"insert", "xyz", "end"});
+    verifyParseError({"insert", "xyz", "index"});
+    verifyParseError({"insert", "xyz", "index", "3"});
+
+    verifyParseError({"insert", "break", "xyz"});
+    verifyParseError({"insert", "barrier", "xyz"});
+    verifyParseError({"insert", hash, "xyz"});
+
+    verifyParseError({"insert", "break", "front", "xyz"});
+    verifyParseError({"insert", "barrier", "end", "xyz"});
+    verifyParseError({"insert", hash, "end", "xyz"});
+
+    verifyParseError({"insert", "break", "index"});
+    verifyParseError({"insert", "barrier", "index"});
+    verifyParseError({"insert", hash, "index"});
+
+    verifyParseError({"insert", "break", "index", "xyz"});
+    verifyParseError({"insert", "barrier", "index", "xyz"});
+    verifyParseError({"insert", hash, "index", "xyz"});
+
+    verifyParseError({"insert", "break", "index", "-2"});
+    verifyParseError({"insert", "barrier", "index", "-2"});
+    verifyParseError({"insert", hash, "index", "-2"});
+
+    verifyParseError({"insert", "break", "index", "3", "xyz"});
+    verifyParseError({"insert", "barrier", "index", "3", "xyz"});
+    verifyParseError({"insert", hash, "index", "3", "xyz"});
+}
+
 QTEST_MAIN(TestCommandParser)
