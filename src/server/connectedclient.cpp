@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -2470,11 +2470,11 @@ namespace PMP::Server
 
         if (messageType == ClientMessageType::AddHashToEndOfQueueRequestMessage)
         {
-            _serverInterface->enqueue(hash);
+            _serverInterface->insertTrackAtEnd(hash);
         }
         else if (messageType == ClientMessageType::AddHashToFrontOfQueueRequestMessage)
         {
-            _serverInterface->insertAtFront(hash);
+            _serverInterface->insertTrackAtFront(hash);
         }
         else
         {

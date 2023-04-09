@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -104,8 +104,8 @@ namespace PMP::Server
 
         Future<QVector<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
 
-        Result enqueue(FileHash hash);
-        Result insertAtFront(FileHash hash);
+        Result insertTrackAtEnd(FileHash hash);
+        Result insertTrackAtFront(FileHash hash);
         Result insertBreakAtFrontIfNotExists();
         Result insertSpecialQueueItem(SpecialQueueItemType itemType,
                                       QueueIndexType indexType, int index,
