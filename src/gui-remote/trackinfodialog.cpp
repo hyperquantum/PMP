@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,12 +20,12 @@
 #include "trackinfodialog.h"
 #include "ui_trackinfodialog.h"
 
-#include "common/collectiontrackinfo.h"
 #include "common/unicodechars.h"
 #include "common/util.h"
 
 #include "client/collectionwatcher.h"
 #include "client/generalcontroller.h"
+#include "client/localhashidrepository.h"
 #include "client/queuecontroller.h"
 #include "client/serverinterface.h"
 #include "client/userdatafetcher.h"
@@ -41,13 +41,13 @@ namespace PMP
 {
     TrackInfoDialog::TrackInfoDialog(QWidget* parent,
                                      ServerInterface* serverInterface,
-                                     const FileHash& hash,
+                                     LocalHashId hashId,
                                      quint32 queueId)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
         _ui(new Ui::TrackInfoDialog),
         _serverInterface(serverInterface),
         _lastHeardUpdateTimer(new QTimer(this)),
-        _trackHash(hash),
+        _trackHashId(hashId),
         _queueId(queueId)
     {
         init();
@@ -55,9 +55,9 @@ namespace PMP
         fillQueueId();
         fillHash();
 
-        auto trackInfo = serverInterface->collectionWatcher().getTrack(hash);
+        auto trackInfo = serverInterface->collectionWatcher().getTrack(hashId);
 
-        if (trackInfo.hash().isNull())
+        if (trackInfo.hashId().isZero())
         { /* not found? */
             clearTrackDetails();
         }
@@ -66,7 +66,7 @@ namespace PMP
             fillTrackDetails(trackInfo);
         }
 
-        fillUserData(_trackHash);
+        fillUserData(_trackHashId);
     }
 
     TrackInfoDialog::TrackInfoDialog(QWidget* parent,
@@ -76,14 +76,14 @@ namespace PMP
         _ui(new Ui::TrackInfoDialog),
         _serverInterface(serverInterface),
         _lastHeardUpdateTimer(new QTimer(this)),
-        _trackHash(track.hash()),
+        _trackHashId(track.hashId()),
         _queueId(0)
     {
         init();
 
         fillHash();
         fillTrackDetails(track);
-        fillUserData(_trackHash);
+        fillUserData(_trackHashId);
     }
 
     TrackInfoDialog::~TrackInfoDialog()
@@ -94,7 +94,7 @@ namespace PMP
 
     void TrackInfoDialog::newTrackReceived(CollectionTrackInfo track)
     {
-        if (track.hash() != _trackHash)
+        if (track.hashId() != _trackHashId)
             return;
 
         fillTrackDetails(track);
@@ -102,7 +102,7 @@ namespace PMP
 
     void TrackInfoDialog::trackDataChanged(CollectionTrackInfo track)
     {
-        if (track.hash() != _trackHash)
+        if (track.hashId() != _trackHashId)
             return;
 
         fillTrackDetails(track);
@@ -113,7 +113,7 @@ namespace PMP
         if (userId != _serverInterface->userLoggedInId())
             return;
 
-        fillUserData(_trackHash);
+        fillUserData(_trackHashId);
     }
 
     void TrackInfoDialog::updateLastHeard()
@@ -193,7 +193,7 @@ namespace PMP
             this,
             [this, queueController]()
             {
-                queueController->insertQueueEntryAtFront(_trackHash);
+                queueController->insertQueueEntryAtFront(_trackHashId);
             }
         );
         connect(
@@ -201,7 +201,7 @@ namespace PMP
             this,
             [this, queueController]()
             {
-                queueController->insertQueueEntryAtEnd(_trackHash);
+                queueController->insertQueueEntryAtEnd(_trackHashId);
             }
         );
 
@@ -210,7 +210,8 @@ namespace PMP
             this,
             [this]()
             {
-                QApplication::clipboard()->setText(_trackHash.toString());
+                auto hash = _serverInterface->hashIdRepository()->getHash(_trackHashId);
+                QApplication::clipboard()->setText(hash.toString());
             }
         );
 
@@ -227,7 +228,7 @@ namespace PMP
     void TrackInfoDialog::enableDisableButtons()
     {
         auto connected = _serverInterface->connected();
-        auto haveHash = !_trackHash.isNull();
+        auto haveHash = !_trackHashId.isZero();
 
         _ui->addToQueueFrontButton->setEnabled(connected && haveHash);
         _ui->addToQueueEndButton->setEnabled(connected && haveHash);
@@ -245,7 +246,8 @@ namespace PMP
 
     void TrackInfoDialog::fillHash()
     {
-        _ui->hashValueLabel->setText(_trackHash.toFancyString());
+        auto hash = _serverInterface->hashIdRepository()->getHash(_trackHashId);
+        _ui->hashValueLabel->setText(hash.toFancyString());
     }
 
     void TrackInfoDialog::fillTrackDetails(const CollectionTrackInfo& trackInfo)
@@ -268,7 +270,7 @@ namespace PMP
         _ui->lengthValueLabel->setText(lengthText);
     }
 
-    void TrackInfoDialog::fillUserData(const FileHash& hash)
+    void TrackInfoDialog::fillUserData(LocalHashId hashId)
     {
         if (!_serverInterface->isLoggedIn())
         {
@@ -281,7 +283,7 @@ namespace PMP
 
         auto userId = _serverInterface->userLoggedInId();
         auto userData =
-               _serverInterface->userDataFetcher().getHashDataForUser(userId, hash);
+               _serverInterface->userDataFetcher().getHashDataForUser(userId, hashId);
 
         if (userData == nullptr)
         {

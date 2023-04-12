@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -245,12 +245,11 @@ namespace PMP
         if (length < 128U) return false;
 
         auto position = length - 128;
-        if (data.at(position) != 'T'
-            || data.at(position + 1) != 'A'
-            || data.at(position + 2) != 'G')
-        {
+        if (data.mid(position, 3) != "TAG")
             return false; /* ID3v1 not found */
-        }
+
+        if (position >= 3 && data.mid(position - 3, 8) == "APETAGEX")
+            return false; /* this tag is an APEv2, not an ID3v1 */
 
         data = data.mid(0, position);
         return true;
@@ -258,18 +257,26 @@ namespace PMP
 
     bool FileAnalyzer::stripAPE(TagLib::ByteVector& data)
     {
-        // TODO FIXME : this does not work (correctly)
+        const unsigned int headerOrFooterSize = 32;
 
         auto length = data.size();
-        if (length < 32U) return false;
+        if (length < headerOrFooterSize) return false;
 
-        auto position = length - 32;
-        if (data.mid(position, 8) != "APETAGEX")
-        {
+        auto footerPosition = length - headerOrFooterSize;
+        if (data.mid(footerPosition, 8) != "APETAGEX")
             return false; /* APE not found */
-        }
 
-        data = data.mid(0, position);
+        auto tagSizeExcludingHeader = data.toUInt(footerPosition + 12, false);
+        auto flags = data.toUInt(footerPosition + 20, false);
+        auto headerPresent = bool((flags & 0x80000000) == 0x80000000);
+
+        auto apeStartPosition =
+                footerPosition + headerOrFooterSize - tagSizeExcludingHeader;
+
+        if (headerPresent)
+            apeStartPosition -= headerOrFooterSize;
+
+        data = data.mid(0, apeStartPosition);
         return true;
     }
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,8 +20,9 @@
 #ifndef PMP_QUEUEMODEL_H
 #define PMP_QUEUEMODEL_H
 
-#include "common/filehash.h"
 #include "common/playermode.h"
+
+#include "client/localhashid.h"
 
 #include <QAbstractTableModel>
 #include <QHash>
@@ -32,6 +33,7 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP::Client
 {
+    class LocalHashIdRepository;
     class QueueEntryInfo;
     class QueueEntryInfoStorage;
     class ServerInterface;
@@ -80,21 +82,21 @@ namespace PMP
             //
         }
 
-        QueueTrack(quint32 queueId, const FileHash& hash)
-         : _id(queueId), _hash(hash), _real(true)
+        QueueTrack(quint32 queueId, Client::LocalHashId hashId)
+         : _id(queueId), _hashId(hashId), _real(true)
         {
             //
         }
 
         quint32 queueId() const { return _id; }
-        FileHash hash() const { return _hash; }
+        Client::LocalHashId hashId() const { return _hashId; }
 
         bool isNull() const { return _id == 0; }
         bool isRealTrack() const { return _real; }
 
     private:
         quint32 _id;
-        FileHash _hash;
+        Client::LocalHashId _hashId;
         bool _real;
     };
 
@@ -161,8 +163,7 @@ namespace PMP
         void markLastHeardColumnAsChanged();
         void markUserDataColumnsAsChanged();
 
-        //Track* trackAt(const QModelIndex& index) const;
-
+        Client::LocalHashIdRepository* _hashIdRepository;
         Client::UserDataFetcher* _userDataFetcher;
         QueueMediator* _source;
         Client::QueueEntryInfoStorage* _infoStorage;

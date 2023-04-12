@@ -293,7 +293,11 @@ namespace PMP
         auto args = commandWithArgs.mid(1);
         auto argsCount = args.size();
 
-        if (command == "play")
+        if (command == "status")
+        {
+            handleCommandNotRequiringArguments<StatusCommand>(commandWithArgs);
+        }
+        else if (command == "play")
         {
             handleCommandNotRequiringArguments<PlayCommand>(commandWithArgs);
         }
@@ -316,6 +320,18 @@ namespace PMP
         else if (command == "queue")
         {
             handleCommandNotRequiringArguments<QueueCommand>(commandWithArgs);
+        }
+        else if (command == "personalmode")
+        {
+            handleCommandNotRequiringArguments<PersonalModeCommand>(commandWithArgs);
+        }
+        else if (command == "publicmode")
+        {
+            handleCommandNotRequiringArguments<PublicModeCommand>(commandWithArgs);
+        }
+        else if (command == "dynamicmode")
+        {
+            parseDynamicModeCommand(args);
         }
         else if (command == "reloadserversettings")
         {
@@ -456,67 +472,68 @@ namespace PMP
         }
     }
 
-    void CommandParser::parseInsertCommand(QVector<QString> arguments)
+    void CommandParser::parseInsertCommand(CommandArguments arguments)
     {
-        if (arguments.isEmpty())
+        if (arguments.noCurrent())
         {
             _errorMessage = "Command 'insert' requires arguments!";
             return;
         }
 
-        int argumentIndex = 0;
+        InsertCommandBuilder commandBuilder;
 
-        SpecialQueueItemType itemType;
-        if (arguments[argumentIndex] == "break")
+        if (arguments.current() == "break")
         {
-            itemType = SpecialQueueItemType::Break;
+            commandBuilder.setItem(SpecialQueueItemType::Break);
         }
-        else if (arguments[argumentIndex] == "barrier")
+        else if (arguments.current() == "barrier")
         {
-            itemType = SpecialQueueItemType::Barrier;
+            commandBuilder.setItem(SpecialQueueItemType::Barrier);
         }
         else
         {
-            _errorMessage =
-                    "First argument of command 'insert' must be 'break' or 'barrier'!";
-            return;
+            auto hash = arguments.tryParseTrackHash();
+            if (hash.isNull())
+            {
+                _errorMessage =
+                    "First argument of command 'insert' must be 'break' or 'barrier' or a hash!";
+                return;
+            }
+            commandBuilder.setItem(hash);
         }
 
-        argumentIndex++;
-        if (arguments.size() <= argumentIndex)
+        if (arguments.currentIsLast())
         {
             _errorMessage = "Command 'insert' requires at least one more argument!";
             return;
         }
 
-        int insertionIndex;
-        auto insertionIndexType = QueueIndexType::Normal;
+        arguments.advance();
 
-        if (arguments[argumentIndex] == "front")
+        if (arguments.current() == "front")
         {
-            insertionIndex = 0;
+            commandBuilder.setPosition(QueueIndexType::Normal, 0);
         }
-        else if (arguments[argumentIndex] == "end")
+        else if (arguments.current() == "end")
         {
-            insertionIndex = 0;
-            insertionIndexType = QueueIndexType::Reverse;
+            commandBuilder.setPosition(QueueIndexType::Reverse, 0);
         }
-        else if (arguments[argumentIndex] == "index")
+        else if (arguments.current() == "index")
         {
-            argumentIndex++;
-            if (arguments.size() <= argumentIndex)
+            if (arguments.currentIsLast())
             {
                 _errorMessage = "No actual index provided after 'index'!";
                 return;
             }
+            arguments.advance();
 
-            bool ok;
-            insertionIndex = arguments[argumentIndex].toInt(&ok);
-            if (!ok || insertionIndex < 0)
+            int insertionIndex;
+            if (!arguments.tryParseInt(insertionIndex) || insertionIndex < 0)
             {
                 _errorMessage = "Index must be a non-negative number!";
                 return;
             }
+            commandBuilder.setPosition(QueueIndexType::Normal, insertionIndex);
         }
         else
         {
@@ -524,14 +541,13 @@ namespace PMP
             return;
         }
 
-        if (argumentIndex + 1 < arguments.size())
+        if (arguments.haveMore())
         {
             _errorMessage = "Command has too many arguments!";
             return;
         }
 
-        _command = new QueueInsertSpecialItemCommand(itemType, insertionIndex,
-                                                     insertionIndexType);
+        _command = commandBuilder.buildCommand();
     }
 
     void CommandParser::parseDelayedStartCommand(CommandArguments arguments)
@@ -685,6 +701,37 @@ namespace PMP
         }
 
         _command = new TrackStatsCommand(hash);
+    }
+
+    void CommandParser::parseDynamicModeCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Command 'dynamicmode' requires at least one argument!";
+            return;
+        }
+
+        if (arguments.currentIsOneOf({"on", "off"}))
+        {
+            bool isOn = arguments.current() == "on";
+            arguments.advance();
+            parseDynamicModeOnOrOff(arguments, isOn);
+        }
+        else
+        {
+            _errorMessage = "Expected 'on' or 'off' after 'dynamicmode'!";
+        }
+    }
+
+    void CommandParser::parseDynamicModeOnOrOff(CommandArguments& arguments, bool isOn)
+    {
+        if (arguments.haveCurrent())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new DynamicModeActivationCommand(isOn);
     }
 
     bool CommandParser::isInFuture(QDateTime time)

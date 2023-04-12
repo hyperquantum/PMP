@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,12 +17,13 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CURRENTTRACKMONITOR_H
-#define PMP_CURRENTTRACKMONITOR_H
+#ifndef PMP_CLIENT_CURRENTTRACKMONITOR_H
+#define PMP_CLIENT_CURRENTTRACKMONITOR_H
 
-#include "common/filehash.h"
 #include "common/tribool.h"
 #include "common/playerstate.h"
+
+#include "localhashid.h"
 
 #include <QObject>
 
@@ -40,7 +41,7 @@ namespace PMP::Client
         virtual quint32 currentQueueId() const = 0;
         virtual qint64 currentTrackProgressMilliseconds() const = 0;
 
-        virtual FileHash currentTrackHash() const = 0;
+        virtual LocalHashId currentTrackHash() const = 0;
 
         virtual QString currentTrackTitle() const = 0;
         virtual QString currentTrackArtist() const = 0;

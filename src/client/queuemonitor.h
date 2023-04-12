@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,6 +36,7 @@ namespace PMP::Client
 
         QUuid serverUuid() const override { return _serverUuid; }
 
+        bool isQueueLengthKnown() const override { return _queueLengthIsKnown; }
         int queueLength() const override { return _queueLength; }
         quint32 queueEntry(int index) override;
         QList<quint32> knownQueuePart() const override { return _queue; }
@@ -58,7 +59,7 @@ namespace PMP::Client
 
     private:
         void gotRequestForEntryAtIndex(int index);
-        void updateQueueLength(int queueLength, bool forceReload);
+        bool updateQueueLength(int queueLength, bool forceReload);
         void sendInitialQueueFetchRequest();
         bool verifyQueueContentsOldAndNew(int startIndex,
                                           const QList<quint32>& newContent);
@@ -73,6 +74,7 @@ namespace PMP::Client
         int _queueFetchLimit;
         int _queueRequestedEntryCount;
         QList<quint32> _queue; // no need for a QQueue, a QList will suffice
+        bool _queueLengthIsKnown;
         bool _fetchCompletedEmitted;
     };
 }

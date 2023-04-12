@@ -25,7 +25,7 @@ KNOWN BUGS
  * when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
  * GUI remote: tracks can be dragged using the right mouse button (not just the left button)
  * GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
- * hash calculation is wrong for MP3 files containing an APE tag
+ * hash calculation does not skip padding bytes
  * preloaded tracks are sometimes deleted before they are used because they are old
  * player fails to play preloaded entries of which the file has been deleted already
  * GUI remote: searching the music collection for "e" does not return results having "ë"
@@ -39,7 +39,7 @@ KNOWN BUGS
 
 PERFORMANCE ISSUES
 
- *
+ * GUI remote: searching/filtering in the music collection can be slow
 
 
 IDEAS
@@ -61,16 +61,14 @@ IDEAS
  * queue: save the contents of the queue on server shutdown and restore it at the next server startup
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
- * music collection: new filters "not in the queue"/"in the queue"
  * music collection: add a clear button for the filter
  * music collection: provide fast partial indexation that only detects new files
- * music collection: show some kind of indicator for a track that is already present in the queue
  * music collection: show filtered count / total count
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  *** dynamic mode: detect and prevent track repetition with different hash values
  *** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
- * dynamic mode: try to enqueue "new" tracks and tracks without score regularly
+ ** dynamic mode: try to enqueue "new" tracks and tracks without score regularly
  * power management: close connections when the server machine enters sleep mode
  * power management: don't let the server machine go to sleep while music is playing
  *** thumbs up/down buttons for the song that is playing and for the history, to affect the score a little bit
@@ -87,12 +85,15 @@ IDEAS
  *** 'play now' option in the context menus of the music collection, the history, and maybe the queue
  * dark theme for the client
  * require the server password when registering a new user account
+ * track info dialog: show indication if file is now playing
+ * track info dialog: show indication if file is in the queue
  * track info dialog: show indication if file is available or not
  * track info dialog: show indication if a file was manually added to the queue (and when) or added by dynamic mode
  * track info dialog: ability to pick the user whose personal stats are shown
  * track info dialog: display filename(s)
  * track info dialog: should become modeless
- ** track info dialog: show personal play history for that track
+ * track info dialog: last heard: display "almost 3 months" ago instead of "2 months ago" when applicable
+ *** track info dialog: show personal play history for that track
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner
@@ -101,6 +102,13 @@ IDEAS
  * client: ability to reconnect to the server after the connection was broken
  * add button to copy title and artist of current track to clipboard
  * server database backup and restore
+ * detect track BPM automatically
+ * command-line remote: add a command for seeking (going to a specific time in the current track)
+ * command-line remote: add a command for printing recent player history
+ * command-line remote: extend the "nowplaying" command to also print album
+ * command-line remote: extend the "trackstats" command to accept queue IDs
+ * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
+ * hash tool: by default only output the hash of the file, no other information
 
 
 USER FRIENDLINESS

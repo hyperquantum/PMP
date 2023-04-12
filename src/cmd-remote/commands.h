@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,15 +32,31 @@
 namespace PMP::Client
 {
     class AbstractQueueMonitor;
+    class CurrentTrackMonitor;
+    class DynamicModeController;
+    class PlayerController;
     class QueueEntryInfo;
     class QueueEntryInfoStorage;
 }
 
 namespace PMP
 {
-    // TODO : remove useless constructors
-
     struct VersionInfo;
+
+    class StatusCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        StepResult printStatus(Client::PlayerController* playerController,
+                               Client::CurrentTrackMonitor* currentTrackMonitor,
+                               Client::DynamicModeController* dynamicModeController);
+    };
 
     class ServerVersionCommand : public CommandBase
     {
@@ -68,6 +84,41 @@ namespace PMP
 
     private:
         RequestID _requestId;
+    };
+
+    class PersonalModeCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+    };
+
+    class PublicModeCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+    };
+
+    class DynamicModeActivationCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        explicit DynamicModeActivationCommand(bool enable);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        bool _enable;
     };
 
     class DelayedStartAtCommand : public CommandBase
@@ -119,8 +170,6 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        PlayCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
@@ -131,8 +180,6 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        PauseCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
@@ -143,23 +190,19 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        SkipCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;
 
     private:
-        quint32 _currentQueueId;
+        quint32 _currentQueueId { 0 };
     };
 
     class NowPlayingCommand : public CommandBase
     {
         Q_OBJECT
     public:
-        NowPlayingCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
@@ -170,19 +213,17 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        QueueCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;
 
     private:
-        void printQueue(Client::AbstractQueueMonitor* queueMonitor,
-                        Client::QueueEntryInfoStorage* queueEntryInfoStorage);
+        StepResult printQueue(Client::AbstractQueueMonitor* queueMonitor,
+                              Client::QueueEntryInfoStorage* queueEntryInfoStorage);
         QString getSpecialEntryText(Client::QueueEntryInfo const* entry) const;
 
-        int _fetchLimit;
+        int _fetchLimit { 10 };
     };
 
     class ShutdownCommand : public CommandBase
@@ -205,8 +246,6 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        GetVolumeCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
@@ -232,8 +271,6 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        BreakCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
@@ -257,6 +294,45 @@ namespace PMP
         int _index;
         QueueIndexType _indexType;
         RequestID _requestId;
+    };
+
+    class QueueInsertTrackCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        QueueInsertTrackCommand(FileHash const& hash, int index,
+                                QueueIndexType indexType);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        void insertNormal(Client::ServerInterface* serverInterface);
+        void insertReversed(Client::ServerInterface* serverInterface);
+
+        FileHash _hash;
+        int _index;
+        QueueIndexType _indexType;
+        RequestID _requestId;
+    };
+
+    class InsertCommandBuilder
+    {
+    public:
+        void setItem(SpecialQueueItemType specialItemType);
+        void setItem(FileHash hash);
+
+        void setPosition(QueueIndexType indexType, int index);
+
+        Command* buildCommand();
+
+    private:
+        Nullable<SpecialQueueItemType> _queueItemType;
+        QueueIndexType _indexType { QueueIndexType::Normal };
+        int _index { -1 };
+        FileHash _hash;
     };
 
     class QueueDeleteCommand : public CommandBase

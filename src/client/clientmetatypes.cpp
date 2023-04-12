@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,31 +17,25 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "analyzer.h"
 #include "collectiontrackinfo.h"
+#include "localhashid.h"
 
-#include <QMetaType>
-#include <QVector>
-
-namespace PMP::Server
+namespace PMP::Client
 {
     /** Utility object to automatically do the qRegisterMetaType calls at program
      *  startup */
-    class ServerMetatypesInit
+    class ClientMetatypesInit
     {
-    private:
-        ServerMetatypesInit()
+    protected:
+        ClientMetatypesInit()
         {
-            qRegisterMetaType<QVector<uint>>();
-
-            qRegisterMetaType<PMP::Server::CollectionTrackInfo>();
-            qRegisterMetaType<PMP::Server::FileAnalysis>();
-            qRegisterMetaType<PMP::Server::FileHashes>();
-            qRegisterMetaType<PMP::Server::FileInfo>();
+            qRegisterMetaType<PMP::Client::CollectionTrackInfo>();
+            qRegisterMetaType<PMP::Client::LocalHashId>();
         }
 
-        static ServerMetatypesInit GlobalVariable;
+    private:
+        static ClientMetatypesInit GlobalVariable;
     };
 
-    ServerMetatypesInit ServerMetatypesInit::GlobalVariable;
+    ClientMetatypesInit ClientMetatypesInit::GlobalVariable;
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,6 +34,7 @@ namespace PMP::Server
         OperationAlreadyRunning,
 
         HashIsNull,
+        HashIsUnknown,
 
         QueueEntryIdNotFound,
         QueueIndexOutOfRange,
@@ -107,6 +108,7 @@ namespace PMP::Server
         }
 
         static Result hashIsNull() { return Error(ResultCode::HashIsNull); }
+        static Result hashIsUnknown() { return Error(ResultCode::HashIsUnknown); }
 
         static Result queueEntryIdNotFound(uint id)
         {

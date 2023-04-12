@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,8 +20,7 @@
 #ifndef PMP_TRACKINFODIALOG_H
 #define PMP_TRACKINFODIALOG_H
 
-#include "common/collectiontrackinfo.h"
-#include "common/filehash.h"
+#include "client/collectiontrackinfo.h"
 
 #include <QDateTime>
 #include <QDialog>
@@ -39,25 +38,23 @@ namespace PMP::Client
 
 namespace PMP
 {
-    class FileHash;
-
     class TrackInfoDialog : public QDialog
     {
         Q_OBJECT
     public:
         TrackInfoDialog(QWidget* parent,
                         Client::ServerInterface* serverInterface,
-                        FileHash const& hash, quint32 queueId = 0);
+                        Client::LocalHashId hashId, quint32 queueId = 0);
 
         TrackInfoDialog(QWidget* parent,
                         Client::ServerInterface* serverInterface,
-                        CollectionTrackInfo const& track);
+                        Client::CollectionTrackInfo const& track);
 
         ~TrackInfoDialog();
 
     private Q_SLOTS:
-        void newTrackReceived(CollectionTrackInfo track);
-        void trackDataChanged(CollectionTrackInfo track);
+        void newTrackReceived(Client::CollectionTrackInfo track);
+        void trackDataChanged(Client::CollectionTrackInfo track);
         void dataReceivedForUser(quint32 userId);
         void updateLastHeard();
 
@@ -68,15 +65,15 @@ namespace PMP
 
         void fillQueueId();
         void fillHash();
-        void fillTrackDetails(CollectionTrackInfo const& trackInfo);
-        void fillUserData(const FileHash& hash);
+        void fillTrackDetails(Client::CollectionTrackInfo const& trackInfo);
+        void fillUserData(Client::LocalHashId hashId);
         void clearTrackDetails();
         void clearUserData();
 
         Ui::TrackInfoDialog* _ui;
         Client::ServerInterface* _serverInterface;
         QTimer* _lastHeardUpdateTimer;
-        FileHash _trackHash;
+        Client::LocalHashId _trackHashId;
         QDateTime _lastHeard;
         quint32 _queueId;
     };

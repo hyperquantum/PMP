@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,8 +21,11 @@
 
 #include "common/util.h"
 
+#include "client/authenticationcontroller.h"
 #include "client/currenttrackmonitor.h"
+#include "client/dynamicmodecontroller.h"
 #include "client/generalcontroller.h"
+#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/queuecontroller.h"
 #include "client/queueentryinfostorage.h"
@@ -34,6 +37,138 @@ using namespace PMP::Client;
 
 namespace PMP
 {
+    /* ===== StatusCommand ===== */
+
+    bool StatusCommand::requiresAuthentication() const
+    {
+        return false;
+    }
+
+    void StatusCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto* playerController = &serverInterface->playerController();
+        auto* currentTrackMonitor = &serverInterface->currentTrackMonitor();
+        auto* dynamicModeController = &serverInterface->dynamicModeController();
+
+        connect(playerController, &PlayerController::playerStateChanged,
+                this, &StatusCommand::listenerSlot);
+        connect(playerController, &PlayerController::playerModeChanged,
+                this, &StatusCommand::listenerSlot);
+        connect(currentTrackMonitor, &CurrentTrackMonitor::currentTrackChanged,
+                this, &StatusCommand::listenerSlot);
+        connect(dynamicModeController, &DynamicModeController::dynamicModeEnabledChanged,
+                this, &StatusCommand::listenerSlot);
+
+        addStep(
+            [this, playerController, currentTrackMonitor, dynamicModeController]()
+            {
+                if (playerController->playerState() == PlayerState::Unknown
+                        || playerController->playerMode() == PlayerMode::Unknown
+                        || dynamicModeController->dynamicModeEnabled().isUnknown())
+                {
+                    return StepResult::stepIncomplete();
+                }
+
+                return printStatus(playerController, currentTrackMonitor,
+                                   dynamicModeController);
+            }
+        );
+    }
+
+    CommandBase::StepResult StatusCommand::printStatus(
+                                    Client::PlayerController* playerController,
+                                    Client::CurrentTrackMonitor* currentTrackMonitor,
+                                    Client::DynamicModeController* dynamicModeController)
+    {
+        QString output;
+        output.reserve(40 * 9);
+
+        auto trackLoaded = currentTrackMonitor->isTrackPresent();
+        if (trackLoaded.isTrue())
+            output += "track loaded: yes";
+        else if (trackLoaded.isFalse())
+            output += "track loaded: no";
+        else
+            output += "track loaded: (unknown)";
+
+        output += "\n";
+        switch (playerController->playerState())
+        {
+        case PlayerState::Playing:
+            output += "playing: yes";
+            output += "\n";
+            output += "paused: no";
+            break;
+        case PlayerState::Stopped:
+            output += "playing: no";
+            output += "\n";
+            output += "paused: no";
+            break;
+        case PlayerState::Paused:
+            output += "playing: no";
+            output += "\n";
+            output += "paused: yes";
+            break;
+        case PlayerState::Unknown:
+        default:
+            qWarning() << "Player state is unknown or unhandled value";
+            output += "playing: (unknown)";
+            output += "\n";
+            output += "paused: (unknown)";
+            break;
+        }
+
+        output += "\n";
+        auto volume = playerController->volume();
+        if (volume >= 0)
+            output += QString("volume: %1").arg(QString::number(volume));
+        else
+            output += "volume: (unknown)";
+
+        output += "\n";
+        output += "queue length: ";
+        output += QString::number(playerController->queueLength());
+
+        output += "\n";
+        switch (playerController->playerMode())
+        {
+        case PlayerMode::Personal:
+            output += "public mode: no";
+            output += "\n";
+            output += "personal mode: yes";
+            output += "\n";
+            output += "personal mode user: ";
+            output += playerController->personalModeUserLogin();
+            break;
+        case PlayerMode::Public:
+            output += "public mode: yes";
+            output += "\n";
+            output += "personal mode: no";
+            output += "\n";
+            output += "personal mode user: N/A";
+            break;
+        case PlayerMode::Unknown:
+        default:
+            output += "public mode: (unknown)";
+            output += "\n";
+            output += "personal mode: (unknown)";
+            output += "\n";
+            output += "personal mode user: (unknown)";
+            break;
+        }
+
+        output += "\n";
+        auto dynamicModeEnabled = dynamicModeController->dynamicModeEnabled();
+        if (dynamicModeEnabled.isTrue())
+            output += "dynamic mode: on";
+        else if (dynamicModeEnabled.isFalse())
+            output += "dynamic mode: off";
+        else
+            output += "dynamic mode: (unknown)";
+
+        return StepResult::commandSuccessful(output);
+    }
+
     /* ===== ServerVersionCommand ===== */
 
     bool ServerVersionCommand::requiresAuthentication() const
@@ -88,6 +223,100 @@ namespace PMP
     {
         auto future = serverInterface->generalController().reloadServerSettings();
         addCommandExecutionFutureListener(future);
+    }
+
+    /* ===== PersonalModeCommand ===== */
+
+    bool PersonalModeCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void PersonalModeCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto myUserId = serverInterface->authenticationController().userLoggedInId();
+
+        auto* playerController = &serverInterface->playerController();
+        connect(playerController, &PlayerController::playerModeChanged,
+                this, &PersonalModeCommand::listenerSlot);
+
+        addStep(
+            [myUserId, playerController]() -> StepResult
+            {
+                auto playerMode = playerController->playerMode();
+
+                if (playerMode != PlayerMode::Personal
+                        || playerController->personalModeUserId() != myUserId)
+                {
+                    return StepResult::stepIncomplete();
+                }
+
+                return StepResult::commandSuccessful();
+            }
+        );
+
+        playerController->switchToPersonalMode();
+    }
+
+    /* ===== PublicModeCommand ===== */
+
+    bool PublicModeCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void PublicModeCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto* playerController = &serverInterface->playerController();
+        connect(playerController, &PlayerController::playerModeChanged,
+                this, &PublicModeCommand::listenerSlot);
+
+        addStep(
+            [playerController]() -> StepResult
+            {
+                auto playerMode = playerController->playerMode();
+
+                if (playerMode == PlayerMode::Public)
+                    return StepResult::commandSuccessful();
+
+                return StepResult::stepIncomplete();
+            }
+        );
+
+        playerController->switchToPublicMode();
+    }
+
+    /* ===== DynamicModeActivationCommand ===== */
+
+    DynamicModeActivationCommand::DynamicModeActivationCommand(bool enable)
+     : _enable(enable)
+    {
+        //
+    }
+
+    bool DynamicModeActivationCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void DynamicModeActivationCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto* dynamicModeController = &serverInterface->dynamicModeController();
+
+        connect(dynamicModeController, &DynamicModeController::dynamicModeEnabledChanged,
+                this, &DynamicModeActivationCommand::listenerSlot);
+
+        addStep(
+            [this, dynamicModeController]() -> StepResult
+            {
+                if (dynamicModeController->dynamicModeEnabled().isIdenticalTo(_enable))
+                    return StepResult::commandSuccessful();
+
+                return StepResult::stepIncomplete();
+            }
+        );
+
+        dynamicModeController->setDynamicModeEnabled(_enable);
     }
 
     /* ===== DelayedStartAtCommand ===== */
@@ -147,11 +376,6 @@ namespace PMP
 
     /* ===== PlayCommand ===== */
 
-    PlayCommand::PlayCommand()
-    {
-        //
-    }
-
     bool PlayCommand::requiresAuthentication() const
     {
         return true;
@@ -165,12 +389,12 @@ namespace PMP
                 this, &PlayCommand::listenerSlot);
 
         addStep(
-            [this, playerController]() -> bool
+            [playerController]() -> StepResult
             {
                 if (playerController->playerState() == PlayerState::Playing)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -178,11 +402,6 @@ namespace PMP
     }
 
     /* ===== PauseCommand ===== */
-
-    PauseCommand::PauseCommand()
-    {
-        //
-    }
 
     bool PauseCommand::requiresAuthentication() const
     {
@@ -197,12 +416,12 @@ namespace PMP
                 this, &PauseCommand::listenerSlot);
 
         addStep(
-            [this, playerController]() -> bool
+            [playerController]() -> StepResult
             {
                 if (playerController->playerState() == PlayerState::Paused)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -210,12 +429,6 @@ namespace PMP
     }
 
     /* ===== SkipCommand ===== */
-
-    SkipCommand::SkipCommand()
-     : _currentQueueId(0)
-    {
-        //
-    }
 
     bool SkipCommand::requiresAuthentication() const
     {
@@ -232,39 +445,33 @@ namespace PMP
                 this, &SkipCommand::listenerSlot);
 
         addStep(
-            [this, playerController]() -> bool
+            [this, playerController]() -> StepResult
             {
                 if (playerController->playerState() == PlayerState::Unknown)
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 if (playerController->canSkip())
                 {
                     _currentQueueId = playerController->currentQueueId();
                     playerController->skip();
+                    return StepResult::stepCompleted();
                 }
                 else
-                    setCommandExecutionFailed(3, "player cannot skip now");
-
-                return true;
+                    return StepResult::commandFailed(3, "player cannot skip now");
             }
         );
         addStep(
-            [this, playerController]() -> bool
+            [this, playerController]() -> StepResult
             {
                 if (playerController->currentQueueId() != _currentQueueId)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
     }
 
     /* ===== NowPlayingCommand ===== */
-
-    NowPlayingCommand::NowPlayingCommand()
-    {
-        //
-    }
 
     bool NowPlayingCommand::requiresAuthentication() const
     {
@@ -274,6 +481,7 @@ namespace PMP
     void NowPlayingCommand::run(ServerInterface* serverInterface)
     {
         auto* currentTrackMonitor = &serverInterface->currentTrackMonitor();
+        auto* hashIdRepository = serverInterface->hashIdRepository();
 
         connect(currentTrackMonitor, &CurrentTrackMonitor::currentTrackChanged,
                 this, &NowPlayingCommand::listenerSlot);
@@ -281,27 +489,27 @@ namespace PMP
                 this, &NowPlayingCommand::listenerSlot);
 
         addStep(
-            [this, currentTrackMonitor]() -> bool
+            [currentTrackMonitor, hashIdRepository]() -> StepResult
             {
                 auto isTrackPresent = currentTrackMonitor->isTrackPresent();
 
                 if (isTrackPresent.isFalse())
-                {
-                    setCommandExecutionSuccessful("Now playing: nothing");
-                    return false;
-                }
+                    return StepResult::commandSuccessful("Now playing: nothing");
 
                 if (isTrackPresent.isUnknown()
-                        || currentTrackMonitor->currentTrackHash().isNull())
-                    return false;
+                        || currentTrackMonitor->currentTrackHash().isZero())
+                {
+                    return StepResult::stepIncomplete();
+                }
 
                 auto title = currentTrackMonitor->currentTrackTitle();
                 auto artist = currentTrackMonitor->currentTrackArtist();
+                //auto album = currentTrackMonitor->currentTrackAlbum(); NOT AVAILABLE YET
                 auto possibleFileName =
                         currentTrackMonitor->currentTrackPossibleFilename();
 
                 if (title.isEmpty() && artist.isEmpty() && possibleFileName.isEmpty())
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 auto queueId = currentTrackMonitor->currentQueueId();
                 auto lengthMilliseconds =
@@ -310,7 +518,8 @@ namespace PMP
                         lengthMilliseconds < 0
                             ? ""
                             : Util::millisecondsToLongDisplayTimeText(lengthMilliseconds);
-                auto hashString = currentTrackMonitor->currentTrackHash().toString();
+                auto hash =
+                    hashIdRepository->getHash(currentTrackMonitor->currentTrackHash());
 
                 QString output;
                 output.reserve(100);
@@ -318,26 +527,20 @@ namespace PMP
                 output += " QID: " + QString::number(queueId) + "\n";
                 output += " title: " + title + "\n";
                 output += " artist: " + artist + "\n";
+                //output += " album: " + album + "\n";
                 output += " length: " + lengthString + "\n";
 
                 if (title.isEmpty() && artist.isEmpty())
                     output += " possible filename: " + possibleFileName + "\n";
 
-                output += " hash: " + hashString; // no newline at the end here
+                output += " hash: " + hash.toString(); // no newline at the end here
 
-                setCommandExecutionSuccessful(output);
-                return false;
+                return StepResult::commandSuccessful(output);
             }
         );
     }
 
     /* ===== QueueCommand ===== */
-
-    QueueCommand::QueueCommand()
-     : _fetchLimit(10)
-    {
-        //
-    }
 
     bool QueueCommand::requiresAuthentication() const
     {
@@ -359,21 +562,21 @@ namespace PMP
                 this, &QueueCommand::listenerSlot);
 
         addStep(
-            [this, queueMonitor, queueEntryInfoStorage]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> StepResult
             {
                 if (!queueMonitor->isFetchCompleted())
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 bool needToWaitForFilename = false;
                 for (int i = 0; i < queueMonitor->queueLength() && i < _fetchLimit; ++i)
                 {
                     auto queueId = queueMonitor->queueEntry(i);
-                    if (queueId == 0)
-                        return false; /* download incomplete, shouldn't happen */
+                    if (queueId == 0) /* download incomplete, shouldn't happen */
+                        return StepResult::stepIncomplete();
 
                     auto entry = queueEntryInfoStorage->entryInfoByQueueId(queueId);
                     if (!entry || entry->type() == QueueEntryType::Unknown)
-                        return false; /* info not available yet */
+                        return StepResult::stepIncomplete(); /* info not available yet */
 
                     if (entry->needFilename())
                         needToWaitForFilename = true;
@@ -382,20 +585,19 @@ namespace PMP
                 if (needToWaitForFilename)
                     setStepDelay(50);
 
-                return true;
+                return StepResult::stepCompleted();
             }
         );
         addStep(
-            [this, queueMonitor, queueEntryInfoStorage]() -> bool
+            [this, queueMonitor, queueEntryInfoStorage]() -> StepResult
             {
-                printQueue(queueMonitor, queueEntryInfoStorage);
-                return false;
+                return printQueue(queueMonitor, queueEntryInfoStorage);
             }
         );
     }
 
-    void QueueCommand::printQueue(AbstractQueueMonitor* queueMonitor,
-                                  QueueEntryInfoStorage* queueEntryInfoStorage)
+    CommandBase::StepResult QueueCommand::printQueue(AbstractQueueMonitor* queueMonitor,
+                                             QueueEntryInfoStorage* queueEntryInfoStorage)
     {
         QString output;
         output.reserve(80 + 80 + 80 * _fetchLimit);
@@ -468,7 +670,7 @@ namespace PMP
             output += "\n...";
         }
 
-        setCommandExecutionSuccessful(output);
+        return StepResult::commandSuccessful(output);
     }
 
     QString QueueCommand::getSpecialEntryText(const QueueEntryInfo* entry) const
@@ -520,12 +722,12 @@ namespace PMP
                 this, &ShutdownCommand::listenerSlot);
 
         addStep(
-            [this, serverInterface]() -> bool
+            [serverInterface]() -> StepResult
             {
                 if (!serverInterface->connected())
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -533,11 +735,6 @@ namespace PMP
     }
 
     /* ===== GetVolumeCommand ===== */
-
-    GetVolumeCommand::GetVolumeCommand()
-    {
-        //
-    }
 
     bool GetVolumeCommand::requiresAuthentication() const
     {
@@ -552,14 +749,17 @@ namespace PMP
                 this, &GetVolumeCommand::listenerSlot);
 
         addStep(
-            [this, playerController]() -> bool
+            [playerController]() -> StepResult
             {
                 auto volume = playerController->volume();
 
                 if (volume >= 0)
-                    setCommandExecutionSuccessful("Volume: " + QString::number(volume));
+                {
+                    auto output = "Volume: " + QString::number(volume);
+                    return StepResult::commandSuccessful(output);
+                }
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
     }
@@ -585,12 +785,12 @@ namespace PMP
                 this, &SetVolumeCommand::listenerSlot);
 
         addStep(
-            [this, playerController]() -> bool
+            [this, playerController]() -> StepResult
             {
                 if (playerController->volume() == _volume)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -598,11 +798,6 @@ namespace PMP
     }
 
     /* ===== BreakCommand =====*/
-
-    BreakCommand::BreakCommand()
-    {
-        //
-    }
 
     bool BreakCommand::requiresAuthentication() const
     {
@@ -622,27 +817,26 @@ namespace PMP
                 this, &BreakCommand::listenerSlot);
 
         addStep(
-            [this, queueMonitor, queueEntryInfoStorage]() -> bool
+            [queueMonitor, queueEntryInfoStorage]() -> StepResult
             {
                 if (!queueMonitor->isFetchCompleted())
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 if (queueMonitor->queueLength() == 0)
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 auto firstEntryId = queueMonitor->queueEntry(0);
                 if (firstEntryId == 0)
-                    return false; /* shouldn't happen */
+                    return StepResult::stepIncomplete(); /* shouldn't happen */
 
                 auto firstEntry = queueEntryInfoStorage->entryInfoByQueueId(firstEntryId);
                 if (!firstEntry)
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 if (firstEntry->type() != QueueEntryType::BreakPoint)
-                    return false;
+                    return StepResult::stepIncomplete();
 
-                setCommandExecutionSuccessful();
-                return false;
+                return StepResult::commandSuccessful();
             }
         );
 
@@ -697,6 +891,140 @@ namespace PMP
                 queueController->insertSpecialItemAtIndex(_itemType, _index, _indexType);
     }
 
+    /* ===== QueueInsertTrackCommand ===== */
+
+    QueueInsertTrackCommand::QueueInsertTrackCommand(const FileHash& hash, int index,
+                                                     QueueIndexType indexType)
+     : _hash(hash),
+       _index(index),
+       _indexType(indexType)
+    {
+        //
+    }
+
+    bool QueueInsertTrackCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void QueueInsertTrackCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto* queueController = &serverInterface->queueController();
+
+        connect(
+            queueController, &QueueController::queueEntryAdded,
+            this,
+            [this](qint32 index, quint32 queueId, RequestID requestId)
+            {
+                Q_UNUSED(index)
+                Q_UNUSED(queueId)
+
+                if (requestId == _requestId)
+                    setCommandExecutionSuccessful();
+            }
+        );
+        connect(
+            queueController, &QueueController::queueEntryInsertionFailed,
+            this,
+            [this](ResultMessageErrorCode errorCode, RequestID requestId)
+            {
+                if (requestId == _requestId)
+                    setCommandExecutionResult(errorCode);
+            }
+        );
+
+        if (_indexType == QueueIndexType::Reverse)
+        {
+            insertReversed(serverInterface);
+        }
+        else
+        {
+            insertNormal(serverInterface);
+        }
+    }
+
+    void QueueInsertTrackCommand::insertNormal(Client::ServerInterface* serverInterface)
+    {
+        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
+
+        _requestId =
+            serverInterface->queueController().insertQueueEntryAtIndex(hashId, _index);
+    }
+
+    void QueueInsertTrackCommand::insertReversed(Client::ServerInterface* serverInterface)
+    {
+        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
+
+        auto* queueController = &serverInterface->queueController();
+
+        auto* queueMonitor = &serverInterface->queueMonitor();
+        queueMonitor->setFetchLimit(1);
+
+        connect(queueMonitor, &QueueMonitor::queueLengthChanged,
+                this, &QueueInsertTrackCommand::listenerSlot);
+
+        addStep(
+            [this, hashId, queueMonitor, queueController]() -> StepResult
+            {
+                if (!queueMonitor->isQueueLengthKnown())
+                    return StepResult::stepIncomplete();
+
+                auto insertionIndex = queueMonitor->queueLength() - _index;
+                if (insertionIndex < 0)
+                {
+                    auto error = ResultMessageErrorCode::InvalidQueueIndex;
+                    return StepResult::commandFailed(error);
+                }
+
+                _requestId =
+                    queueController->insertQueueEntryAtIndex(hashId, insertionIndex);
+
+                return StepResult::stepCompleted();
+            }
+        );
+    }
+
+    /* ===== InsertCommandBuilder ===== */
+
+    void InsertCommandBuilder::setItem(SpecialQueueItemType specialItemType)
+    {
+        _queueItemType = specialItemType;
+        _hash = {};
+    }
+
+    void InsertCommandBuilder::setItem(FileHash hash)
+    {
+        Q_ASSERT_X(!hash.isNull(), "InsertCommandBuilder", "hash is null");
+
+        _hash = hash;
+    }
+
+    void InsertCommandBuilder::setPosition(QueueIndexType indexType, int index)
+    {
+        Q_ASSERT_X(index >= 0, "InsertCommandBuilder", "index is negative");
+
+        _indexType = indexType;
+        _index = index;
+    }
+
+    Command* InsertCommandBuilder::buildCommand()
+    {
+        Q_ASSERT_X(_queueItemType.hasValue() || !_hash.isNull(),
+                   "InsertCommandBuilder", "item is not set");
+
+        Q_ASSERT_X(_index >= 0, "InsertCommandBuilder", "position is not set");
+
+        if (_queueItemType.hasValue())
+        {
+            return new QueueInsertSpecialItemCommand(_queueItemType.value(),
+                                                     _index, _indexType);
+        }
+        else
+        {
+            return new QueueInsertTrackCommand(_hash, _index, _indexType);
+        }
+    }
+
     /* ===== QueueDeleteCommand ===== */
 
     QueueDeleteCommand::QueueDeleteCommand(quint32 queueId)
@@ -731,12 +1059,12 @@ namespace PMP
         );
 
         addStep(
-            [this]() -> bool
+            [this]() -> StepResult
             {
                 if (_wasDeleted)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -778,12 +1106,12 @@ namespace PMP
         );
 
         addStep(
-            [this]() -> bool
+            [this]() -> StepResult
             {
                 if (_wasMoved)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -805,6 +1133,8 @@ namespace PMP
 
     void TrackStatsCommand::run(ServerInterface* serverInterface)
     {
+        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
+
         auto userDataFetcher = &serverInterface->userDataFetcher();
 
         connect(userDataFetcher, &UserDataFetcher::dataReceivedForUser,
@@ -814,11 +1144,11 @@ namespace PMP
         auto username = serverInterface->userLoggedInName();
 
         addStep(
-            [this, userDataFetcher, userId, username]() -> bool
+            [this, userDataFetcher, userId, username, hashId]() -> StepResult
             {
-                auto* hashData = userDataFetcher->getHashDataForUser(userId, _hash);
+                auto* hashData = userDataFetcher->getHashDataForUser(userId, hashId);
                 if (hashData == nullptr)
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 QString output;
                 output.reserve(100);
@@ -847,9 +1177,9 @@ namespace PMP
 
                 output += QString("Score: %1").arg(score);
 
-                setCommandExecutionSuccessful(output);
-                return false;
+                return StepResult::commandSuccessful(output);
             }
         );
     }
+
 }

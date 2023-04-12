@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,6 +33,7 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP::Client
 {
+    class LocalHashIdRepository;
     class ServerConnection;
     class ServerInterface;
 }
@@ -104,6 +105,7 @@ namespace PMP
         QTimer* _leftStatusTimer;
 
         ConnectionWidget* _connectionWidget;
+        Client::LocalHashIdRepository* _hashIdRepository;
         Client::ServerConnection* _connection;
         Client::ServerInterface* _serverInterface;
         UserPickerWidget* _userPickerWidget;

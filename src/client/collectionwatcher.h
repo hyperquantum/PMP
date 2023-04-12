@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,10 +17,10 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COLLECTIONWATCHER_H
-#define PMP_COLLECTIONWATCHER_H
+#ifndef PMP_CLIENT_COLLECTIONWATCHER_H
+#define PMP_CLIENT_COLLECTIONWATCHER_H
 
-#include "common/collectiontrackinfo.h"
+#include "collectiontrackinfo.h"
 
 #include <QHash>
 #include <QObject>
@@ -36,13 +36,13 @@ namespace PMP::Client
         virtual void enableCollectionDownloading() = 0;
         virtual bool downloadingInProgress() const = 0;
 
-        virtual QHash<FileHash, CollectionTrackInfo> getCollection() = 0;
-        virtual CollectionTrackInfo getTrack(FileHash const& hash) = 0;
+        virtual QHash<LocalHashId, CollectionTrackInfo> getCollection() = 0;
+        virtual CollectionTrackInfo getTrack(LocalHashId hashId) = 0;
 
     Q_SIGNALS:
         void downloadingInProgressChanged();
         void newTrackReceived(CollectionTrackInfo track);
-        void trackAvailabilityChanged(FileHash hash, bool isAvailable);
+        void trackAvailabilityChanged(LocalHashId hashId, bool isAvailable);
         void trackDataChanged(CollectionTrackInfo track);
 
     protected:

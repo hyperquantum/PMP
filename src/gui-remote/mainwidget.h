@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,8 +20,9 @@
 #ifndef PMP_MAINWIDGET_H
 #define PMP_MAINWIDGET_H
 
-#include "common/filehash.h"
 #include "common/playerstate.h"
+
+#include "client/localhashid.h"
 
 #include <QWidget>
 
@@ -91,7 +92,7 @@ namespace PMP
         void updateTrackTimeDisplay(qint64 positionInMilliseconds,
                                     qint64 trackLengthInMilliseconds);
 
-        void showTrackInfoDialog(FileHash hash, quint32 queueId = 0);
+        void showTrackInfoDialog(Client::LocalHashId hashId, quint32 queueId = 0);
 
         bool keyEventFilter(QKeyEvent* event);
 

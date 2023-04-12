@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_QUEUECONTROLLERIMPL_H
-#define PMP_QUEUECONTROLLERIMPL_H
+#ifndef PMP_CLIENT_QUEUECONTROLLERIMPL_H
+#define PMP_CLIENT_QUEUECONTROLLERIMPL_H
 
 #include "queuecontroller.h"
 
@@ -38,9 +38,9 @@ namespace PMP::Client
 
     public Q_SLOTS:
         void insertBreakAtFrontIfNotExists() override;
-        void insertQueueEntryAtFront(FileHash hash) override;
-        void insertQueueEntryAtEnd(FileHash hash) override;
-        RequestID insertQueueEntryAtIndex(FileHash hash, quint32 index) override;
+        void insertQueueEntryAtFront(LocalHashId hashId) override;
+        void insertQueueEntryAtEnd(LocalHashId hashId) override;
+        RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index) override;
         RequestID insertSpecialItemAtIndex(SpecialQueueItemType itemType, int index,
                                            QueueIndexType indexType) override;
         void deleteQueueEntry(uint queueId) override;

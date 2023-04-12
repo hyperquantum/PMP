@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -112,11 +112,13 @@ namespace PMP
         void splitMultipleCommandsInOne(QVector<QString>& commandWithArgs);
         void parseExplicitLoginAndSeparator(QVector<QString>& commandWithArgs);
         void parseCommand(QVector<QString> commandWithArgs);
-        void parseInsertCommand(QVector<QString> arguments);
+        void parseInsertCommand(CommandArguments arguments);
         void parseDelayedStartCommand(CommandArguments arguments);
         void parseDelayedStartAt(CommandArguments& arguments);
         void parseDelayedStartWait(CommandArguments& arguments);
         void parseTrackStatsCommand(CommandArguments arguments);
+        void parseDynamicModeCommand(CommandArguments arguments);
+        void parseDynamicModeOnOrOff(CommandArguments& arguments, bool isOn);
 
         template <class SomeCommand>
         void handleCommandNotRequiringArguments(QVector<QString> commandWithArgs);

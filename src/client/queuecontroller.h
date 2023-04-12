@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,14 +17,15 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_QUEUECONTROLLER_H
-#define PMP_QUEUECONTROLLER_H
+#ifndef PMP_CLIENT_QUEUECONTROLLER_H
+#define PMP_CLIENT_QUEUECONTROLLER_H
 
-#include "common/filehash.h"
 #include "common/queueindextype.h"
 #include "common/requestid.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/specialqueueitemtype.h"
+
+#include "client/localhashid.h"
 
 #include <QObject>
 
@@ -42,9 +43,9 @@ namespace PMP::Client
 
     public Q_SLOTS:
         virtual void insertBreakAtFrontIfNotExists() = 0;
-        virtual void insertQueueEntryAtFront(FileHash hash) = 0;
-        virtual void insertQueueEntryAtEnd(FileHash hash) = 0;
-        virtual RequestID insertQueueEntryAtIndex(FileHash hash, quint32 index) = 0;
+        virtual void insertQueueEntryAtFront(LocalHashId hashId) = 0;
+        virtual void insertQueueEntryAtEnd(LocalHashId hashId) = 0;
+        virtual RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index) = 0;
         virtual RequestID insertSpecialItemAtIndex(SpecialQueueItemType itemType,
                                                    int index,
                                    QueueIndexType indexType = QueueIndexType::Normal) = 0;
