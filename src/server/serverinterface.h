@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -106,16 +106,14 @@ namespace PMP::Server
 
         Future<QVector<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
 
-        Result enqueue(FileHash hash);
-        Result insertAtFront(FileHash hash);
+        Result insertTrackAtEnd(FileHash hash);
+        Result insertTrackAtFront(FileHash hash);
         Result insertBreakAtFrontIfNotExists();
+        Result insertTrack(FileHash hash, int index, quint32 clientReference);
         Result insertSpecialQueueItem(SpecialQueueItemType itemType,
                                       QueueIndexType indexType, int index,
                                       quint32 clientReference);
         Result duplicateQueueEntry(uint id, quint32 clientReference);
-        Result insertAtIndex(qint32 index,
-                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
-                       quint32 clientReference);
         void moveQueueEntry(uint id, int upDownOffset);
         void removeQueueEntry(uint id);
         void trimQueue();
@@ -171,6 +169,9 @@ namespace PMP::Server
         int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType, int index);
         std::function<void (uint)> createQueueInsertionIdNotifier(
                                                                  quint32 clientReference);
+        Result insertAtIndex(qint32 index,
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                       quint32 clientReference);
         void addUserHashDataNotification(quint32 userId, QVector<uint> hashIds);
         void sendUserHashDataNotifications(quint32 userId);
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,27 +27,27 @@ namespace PMP
     class RequestID
     {
     public:
-        RequestID() : _rawId(0) {}
-        explicit RequestID(uint rawId) : _rawId(rawId) {}
+        constexpr RequestID() : _rawId(0) {}
+        constexpr explicit RequestID(uint rawId) : _rawId(rawId) {}
 
-        bool isValid() const { return _rawId > 0; }
-        uint rawId() const { return _rawId; }
+        constexpr bool isValid() const { return _rawId > 0; }
+        constexpr uint rawId() const { return _rawId; }
 
     private:
         uint _rawId;
     };
 
-    inline bool operator==(const RequestID& me, const RequestID& other)
+    constexpr inline bool operator==(const RequestID& me, const RequestID& other)
     {
         return me.rawId() == other.rawId();
     }
 
-    inline bool operator!=(const RequestID& me, const RequestID& other)
+    constexpr inline bool operator!=(const RequestID& me, const RequestID& other)
     {
         return !(me == other);
     }
 
-    inline uint qHash(const RequestID& requestId)
+    constexpr inline uint qHash(const RequestID& requestId)
     {
         return requestId.rawId();
     }

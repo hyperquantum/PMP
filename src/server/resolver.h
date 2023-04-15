@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,16 +17,16 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_RESOLVER_H
-#define PMP_RESOLVER_H
+#ifndef PMP_SERVER_RESOLVER_H
+#define PMP_SERVER_RESOLVER_H
 
 #include "common/audiodata.h"
-#include "common/collectiontrackinfo.h"
 #include "common/filehash.h"
 #include "common/future.h"
 #include "common/tagdata.h"
 
 #include "analyzer.h"
+#include "collectiontrackinfo.h"
 
 #include <QDateTime>
 #include <QHash>

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,10 +19,12 @@
 
 #include "queuemodel.h"
 
+#include "common/filehash.h"
 #include "common/unicodechars.h"
 #include "common/util.h"
 
 #include "client/generalcontroller.h"
+#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/queueentryinfostorage.h"
 #include "client/serverinterface.h"
@@ -171,6 +173,7 @@ namespace PMP
     QueueModel::QueueModel(QObject* parent, ServerInterface* serverInterface,
                            QueueMediator* source, QueueEntryInfoStorage* trackInfoStorage)
      : QAbstractTableModel(parent),
+       _hashIdRepository(serverInterface->hashIdRepository()),
        _userDataFetcher(&serverInterface->userDataFetcher()),
        _source(source),
        _infoStorage(trackInfoStorage),
@@ -368,13 +371,13 @@ namespace PMP
                         return Qt::AlignRight + Qt::AlignVCenter;
                     case 4:
                     {
-                        auto& hash = info->hash();
-                        if (hash.isNull() || _playerMode == PlayerMode::Unknown)
+                        auto hashId = info->hashId();
+                        if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
                         auto hashData =
                             _userDataFetcher->getHashDataForUser(
-                                _personalModeUserId, hash
+                                _personalModeUserId, hashId
                             );
 
                         if (!hashData || !hashData->scoreReceived)
@@ -391,12 +394,12 @@ namespace PMP
             case Qt::ToolTipRole:
                 if (col == 3) /* prev. heard */
                 {
-                    auto& hash = info->hash();
-                    if (hash.isNull() || _playerMode == PlayerMode::Unknown)
+                    auto hashId = info->hashId();
+                    if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
                         return QString(); /* unknown */
 
                     auto hashData =
-                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hashId);
 
                     if (!hashData || !hashData->previouslyHeardReceived
                                   || hashData->previouslyHeard.isNull())
@@ -437,12 +440,12 @@ namespace PMP
             }
             case 3:
             {
-                auto& hash = info->hash();
-                if (hash.isNull() || _playerMode == PlayerMode::Unknown)
+                auto hashId = info->hashId();
+                if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hashId);
 
                 if (!hashData || !hashData->previouslyHeardReceived)
                     return QVariant();
@@ -455,18 +458,18 @@ namespace PMP
 
                 auto howLongAgo = Util::getHowLongAgoInfo(adjustedLastHeard);
 
-                _lastHeardRefresher->setRefresh(info->queueID(), howLongAgo.intervalMs());
+                _lastHeardRefresher->setRefresh(info->queueId(), howLongAgo.intervalMs());
 
                 return howLongAgo.text();
             }
             case 4:
             {
-                auto& hash = info->hash();
-                if (hash.isNull() || _playerMode == PlayerMode::Unknown)
+                auto hashId = info->hashId();
+                if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hashId);
 
                 if (!hashData || !hashData->scoreReceived)
                     return QVariant();
@@ -618,14 +621,18 @@ namespace PMP
         stream >> md5;
 
         FileHash hash(hashLength, sha1, md5);
-        if (hash.isNull()) return false;
+        if (hash.isNull())
+            return false;
+
+        auto hashId = _hashIdRepository->getOrRegisterId(hash);
 
         int newIndex = (row < 0) ? _modelRows : row;
 
         qDebug() << " inserting at index" << newIndex
-                 << "filehash:" << hash.dumpToString();
+                 << " hash ID" << hashId
+                 << " hash:" << hash.toString();
 
-        _source->insertFileAsync(newIndex, hash);
+        _source->insertFileAsync(newIndex, hashId);
         return true;
     }
 
@@ -732,9 +739,9 @@ namespace PMP
         if (info->type() != QueueEntryType::Track)
             return QueueTrack(queueId, false);
 
-        auto& hash = info->hash();
+        auto hashId = info->hashId();
 
-        return QueueTrack(queueId, hash);
+        return QueueTrack(queueId, hashId);
     }
 
     void QueueModel::playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,

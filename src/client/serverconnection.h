@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,10 +17,9 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVERCONNECTION_H
-#define PMP_SERVERCONNECTION_H
+#ifndef PMP_CLIENT_SERVERCONNECTION_H
+#define PMP_CLIENT_SERVERCONNECTION_H
 
-#include "common/collectiontrackinfo.h"
 #include "common/disconnectreason.h"
 #include "common/future.h"
 #include "common/networkprotocol.h"
@@ -35,6 +34,9 @@
 #include "common/userloginerror.h"
 #include "common/userregistrationerror.h"
 #include "common/versioninfo.h"
+
+#include "collectiontrackinfo.h"
+#include "localhashid.h"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -51,6 +53,7 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 namespace PMP::Client
 {
     class CollectionFetcher;
+    class LocalHashIdRepository;
     class ServerCapabilities;
     class ServerCapabilitiesImpl;
 
@@ -85,10 +88,13 @@ namespace PMP::Client
         class DuplicationResultHandler;
 
     public:
-        explicit ServerConnection(QObject* parent = nullptr,
+        explicit ServerConnection(QObject* parent,
+                                  LocalHashIdRepository* hashIdRepository,
                                   ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
         ~ServerConnection();
+
+        LocalHashIdRepository* hashIdRepository() const { return _hashIdRepository; }
 
         void connectToHost(QString const& host, quint16 port);
         void disconnect();
@@ -110,7 +116,7 @@ namespace PMP::Client
         SimpleFuture<ResultMessageErrorCode> activateDelayedStart(
                                                                 qint64 delayMilliseconds);
         SimpleFuture<ResultMessageErrorCode> deactivateDelayedStart();
-        RequestID insertQueueEntryAtIndex(FileHash const& hash, quint32 index);
+        RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index);
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
@@ -148,15 +154,15 @@ namespace PMP::Client
         void deleteQueueEntry(uint queueID);
         void moveQueueEntry(uint queueID, qint16 offsetDiff);
 
-        void insertQueueEntryAtFront(FileHash const& hash);
-        void insertQueueEntryAtEnd(FileHash const& hash);
+        void insertQueueEntryAtFront(LocalHashId hashId);
+        void insertQueueEntryAtEnd(LocalHashId hashId);
 
         void sendQueueEntryInfoRequest(uint queueID);
         void sendQueueEntryInfoRequest(QList<uint> const& queueIDs);
 
         void sendQueueEntryHashRequest(QList<uint> const& queueIDs);
 
-        void sendHashUserDataRequest(quint32 userId, QList<FileHash> const& hashes);
+        void sendHashUserDataRequest(quint32 userId, QList<LocalHashId> const& hashes);
 
         void sendPossibleFilenamesRequest(uint queueID);
 
@@ -214,8 +220,9 @@ namespace PMP::Client
         void queueEntryMoved(qint32 fromOffset, qint32 toOffset, quint32 queueId);
         void receivedTrackInfo(quint32 queueId, QueueEntryType type,
                                qint64 lengthMilliseconds, QString title, QString artist);
-        void receivedQueueEntryHash(quint32 queueId, QueueEntryType type, FileHash hash);
-        void receivedHashUserData(FileHash hash, quint32 userId,
+        void receivedQueueEntryHash(quint32 queueId, QueueEntryType type,
+                                    LocalHashId hashId);
+        void receivedHashUserData(LocalHashId hashId, quint32 userId,
                                   QDateTime previouslyHeard, qint16 scorePermillage);
         void receivedPossibleFilenames(quint32 queueId, QList<QString> names);
 
@@ -232,9 +239,10 @@ namespace PMP::Client
         void fullIndexationStarted();
         void fullIndexationFinished();
 
-        void collectionTracksAvailabilityChanged(QVector<PMP::FileHash> available,
-                                                 QVector<PMP::FileHash> unavailable);
-        void collectionTracksChanged(QVector<PMP::CollectionTrackInfo> changes);
+        void collectionTracksAvailabilityChanged(
+                                           QVector<PMP::Client::LocalHashId> available,
+                                           QVector<PMP::Client::LocalHashId> unavailable);
+        void collectionTracksChanged(QVector<PMP::Client::CollectionTrackInfo> changes);
 
         void scrobblingProviderInfoReceived(ScrobblingProvider provider,
                                             ScrobblerStatus status, bool enabled);
@@ -366,6 +374,7 @@ namespace PMP::Client
         static const int KeepAliveIntervalMs;
         static const int KeepAliveReplyTimeoutMs;
 
+        LocalHashIdRepository* _hashIdRepository;
         ServerCapabilitiesImpl* _serverCapabilities;
         DisconnectReason _disconnectReason;
         QElapsedTimer _timeSinceLastMessageReceived;

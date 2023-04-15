@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -48,7 +48,8 @@ namespace PMP::Client
         void connected();
         void connectionBroken();
 
-        void receivedQueueEntryHash(quint32 queueID, QueueEntryType type, FileHash hash);
+        void receivedQueueEntryHash(quint32 queueID, QueueEntryType type,
+                                    LocalHashId hashId);
         void receivedTrackInfo(quint32 queueID, QueueEntryType type,
                                qint64 lengthMilliseconds, QString title, QString artist);
         void receivedPossibleFilenames(quint32 queueID, QList<QString> names);
@@ -66,6 +67,5 @@ namespace PMP::Client
         QSet<quint32> _infoRequestsSent;
         QSet<quint32> _hashRequestsSent;
     };
-
 }
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -40,7 +40,8 @@ using namespace PMP::Client;
 
 namespace PMP
 {
-    CollectionWidget::CollectionWidget(QWidget* parent, ServerInterface* serverInterface)
+    CollectionWidget::CollectionWidget(QWidget* parent, ServerInterface* serverInterface,
+                                       QueueHashesMonitor* queueHashesMonitor)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
        _colorSwitcher(nullptr),
@@ -48,16 +49,18 @@ namespace PMP
        _collectionViewContext(new CollectionViewContext(this, serverInterface)),
        _collectionSourceModel(new SortedCollectionTableModel(this,
                                                              serverInterface,
+                                                             queueHashesMonitor,
                                                              _collectionViewContext)),
        _collectionDisplayModel(new FilteredCollectionTableModel(this,
                                                                 _collectionSourceModel,
                                                                 serverInterface,
+                                                                queueHashesMonitor,
                                                                 _collectionViewContext)),
        _collectionContextMenu(nullptr)
     {
         _ui->setupUi(this);
 
-        initTrackFilterComboBox();
+        initTrackFilterComboBoxes();
         initTrackHighlightingComboBox();
         initTrackHighlightingColorSwitcher();
 
@@ -122,24 +125,30 @@ namespace PMP
         delete _ui;
     }
 
-    void CollectionWidget::filterTracksIndexChanged(int index)
+    void CollectionWidget::filterTracksIndexChanged()
     {
-        Q_UNUSED(index)
+        auto filter1 = getTrackCriteriumFromComboBox(_ui->filterTracksComboBox);
+        auto filter2 = getTrackCriteriumFromComboBox(_ui->filterTracks2ComboBox);
 
-        auto filter = getCurrentTrackFilter();
+        bool shouldDisplayFilter2 =
+                filter1 != TrackCriterium::AllTracks
+                    || filter2 != TrackCriterium::AllTracks;
 
-        _collectionDisplayModel->setTrackFilter(filter);
+        _ui->filterTracks2Label->setVisible(shouldDisplayFilter2);
+        _ui->filterTracks2ComboBox->setVisible(shouldDisplayFilter2);
+
+        _collectionDisplayModel->setTrackFilters(filter1, filter2);
     }
 
     void CollectionWidget::highlightTracksIndexChanged(int index)
     {
         Q_UNUSED(index)
 
-        auto mode = getCurrentHighlightMode();
+        auto highlightMode = getCurrentHighlightMode();
 
-        _colorSwitcher->setVisible(mode != TrackCriterium::None);
+        _colorSwitcher->setVisible(highlightMode != TrackCriterium::NoTracks);
 
-        _collectionSourceModel->setHighlightCriterium(mode);
+        _collectionSourceModel->setHighlightCriterium(highlightMode);
     }
 
     void CollectionWidget::highlightColorIndexChanged()
@@ -158,7 +167,7 @@ namespace PMP
         if (!trackPointer) return;
 
         auto track = *trackPointer;
-        FileHash hash = track.hash();
+        auto hashId = track.hashId();
 
         if (_collectionContextMenu)
             delete _collectionContextMenu;
@@ -169,9 +178,10 @@ namespace PMP
         connect(
             enqueueFrontAction, &QAction::triggered,
             this,
-            [this, hash]() {
+            [this, hashId]()
+            {
                 qDebug() << "collection context menu: enqueue (front) triggered";
-                _serverInterface->queueController().insertQueueEntryAtFront(hash);
+                _serverInterface->queueController().insertQueueEntryAtFront(hashId);
             }
         );
 
@@ -180,9 +190,10 @@ namespace PMP
         connect(
             enqueueEndAction, &QAction::triggered,
             this,
-            [this, hash]() {
+            [this, hashId]()
+            {
                 qDebug() << "collection context menu: enqueue (end) triggered";
-                _serverInterface->queueController().insertQueueEntryAtEnd(hash);
+                _serverInterface->queueController().insertQueueEntryAtEnd(hashId);
             }
         );
 
@@ -223,23 +234,30 @@ namespace PMP
         }
     }
 
-    void CollectionWidget::initTrackFilterComboBox()
+    void CollectionWidget::initTrackFilterComboBoxes()
     {
-        auto combo = _ui->filterTracksComboBox;
+        auto comboBoxInit =
+            [this](QComboBox* comboBox)
+            {
+                fillTrackCriteriaComboBox(comboBox, TrackCriterium::AllTracks);
 
-        fillTrackCriteriaComboBox(combo);
+                connect(
+                    comboBox, qOverload<int>(&QComboBox::currentIndexChanged),
+                    this, &CollectionWidget::filterTracksIndexChanged
+                );
+            };
 
-        connect(
-            combo, qOverload<int>(&QComboBox::currentIndexChanged),
-            this, &CollectionWidget::filterTracksIndexChanged
-        );
+        comboBoxInit(_ui->filterTracksComboBox);
+        comboBoxInit(_ui->filterTracks2ComboBox);
+
+        filterTracksIndexChanged();
     }
 
     void CollectionWidget::initTrackHighlightingComboBox()
     {
         auto combo = _ui->highlightTracksComboBox;
 
-        fillTrackCriteriaComboBox(combo);
+        fillTrackCriteriaComboBox(combo, TrackCriterium::NoTracks);
 
         connect(
             combo, qOverload<int>(&QComboBox::currentIndexChanged),
@@ -247,7 +265,8 @@ namespace PMP
         );
     }
 
-    void CollectionWidget::fillTrackCriteriaComboBox(QComboBox* comboBox)
+    void CollectionWidget::fillTrackCriteriaComboBox(QComboBox* comboBox,
+                                                     TrackCriterium criteriumForNone)
     {
         auto addItem =
             [comboBox](QString text, TrackCriterium mode)
@@ -258,7 +277,7 @@ namespace PMP
                 comboBox->addItem(text, QVariant::fromValue(mode));
             };
 
-        addItem(tr("none"), TrackCriterium::None);
+        addItem(tr("none"), criteriumForNone);
 
         addItem(tr("never heard"), TrackCriterium::NeverHeard);
         addItem(tr("not heard in the last 1000 days"),
@@ -283,6 +302,9 @@ namespace PMP
         addItem(tr("length <= 1 min."), TrackCriterium::LengthMaximumOneMinute);
         addItem(tr("length >= 5 min."), TrackCriterium::LengthAtLeastFiveMinutes);
 
+        addItem(tr("not in the queue"), TrackCriterium::NotInTheQueue);
+        addItem(tr("in the queue"), TrackCriterium::InTheQueue);
+
         comboBox->setCurrentIndex(0);
     }
 
@@ -292,7 +314,7 @@ namespace PMP
 
         _colorSwitcher = new ColorSwitcher();
         _colorSwitcher->setColors(colors.itemBackgroundHighlightColors);
-        _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackCriterium::None);
+        _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackCriterium::NoTracks);
 
         connect(
             _colorSwitcher, &ColorSwitcher::colorIndexChanged,
@@ -305,11 +327,6 @@ namespace PMP
         delete layoutItem;
         delete _ui->highlightColorButton;
         _ui->highlightColorButton = nullptr;
-    }
-
-    TrackCriterium CollectionWidget::getCurrentTrackFilter() const
-    {
-        return getTrackCriteriumFromComboBox(_ui->filterTracksComboBox);
     }
 
     TrackCriterium CollectionWidget::getCurrentHighlightMode() const

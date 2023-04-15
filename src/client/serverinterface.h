@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,12 +31,13 @@ namespace PMP::Client
     class DynamicModeController;
     class GeneralController;
     class HistoryController;
-    class ScrobblingController;
-    class ServerConnection;
+    class LocalHashIdRepository;
     class PlayerController;
     class QueueController;
     class QueueEntryInfoFetcher;
     class QueueEntryInfoStorage;
+    class ScrobblingController;
+    class ServerConnection;
     class UserDataFetcher;
 
     class ServerInterface : public QObject
@@ -44,6 +45,8 @@ namespace PMP::Client
         Q_OBJECT
     public:
         explicit ServerInterface(ServerConnection* connection);
+
+        LocalHashIdRepository* hashIdRepository() const;
 
         AuthenticationController& authenticationController();
 

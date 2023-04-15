@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -37,6 +37,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 
 #include "waitingspinnerwidget.h"
+
+#include "colors.h"
 
 // Standard includes
 #include <cmath>
@@ -77,7 +79,6 @@ namespace PMP
 
     void WaitingSpinnerWidget::initialize()
     {
-        _color = Qt::black;
         _roundness = 100.0;
         _minimumTrailOpacity = 3.14159265358979323846;
         _trailFadePercentage = 80.0;
@@ -98,9 +99,13 @@ namespace PMP
 
     void WaitingSpinnerWidget::paintEvent(QPaintEvent *)
     {
+        auto& colors = Colors::instance();
+        QColor backgroundColor = colors.spinnerBackground;
+        QColor lineColor = colors.spinnerLines;
+
         updatePosition();
         QPainter painter(this);
-        painter.fillRect(this->rect(), Qt::white);
+        painter.fillRect(this->rect(), backgroundColor);
         painter.setRenderHint(QPainter::Antialiasing, true);
 
         if (_currentCounter >= _numberOfLines)
@@ -122,7 +127,7 @@ namespace PMP
                     lineCountDistanceFromPrimary(i, _currentCounter, _numberOfLines);
             QColor color =
                     currentLineColor(distance, _numberOfLines, _trailFadePercentage,
-                                     _minimumTrailOpacity, _color);
+                                     _minimumTrailOpacity, lineColor);
             painter.setBrush(color);
             // TODO improve the way rounded rect is painted
             painter.drawRoundedRect(
@@ -192,11 +197,6 @@ namespace PMP
         updateSize();
     }
 
-    QColor WaitingSpinnerWidget::color()
-    {
-        return _color;
-    }
-
     qreal WaitingSpinnerWidget::roundness()
     {
         return _roundness;
@@ -245,11 +245,6 @@ namespace PMP
     void WaitingSpinnerWidget::setRoundness(qreal roundness)
     {
         _roundness = std::max(0.0, std::min(100.0, roundness));
-    }
-
-    void WaitingSpinnerWidget::setColor(QColor color)
-    {
-        _color = color;
     }
 
     void WaitingSpinnerWidget::setRevolutionsPerSecond(qreal revolutionsPerSecond)

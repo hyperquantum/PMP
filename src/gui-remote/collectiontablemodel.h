@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,9 +20,11 @@
 #ifndef PMP_COLLECTIONTABLEMODEL_H
 #define PMP_COLLECTIONTABLEMODEL_H
 
-#include "common/collectiontrackinfo.h"
 #include "common/playerstate.h"
-#include "common/tribool.h"
+
+#include "client/collectiontrackinfo.h"
+
+#include "trackjudge.h"
 
 #include <QAbstractTableModel>
 #include <QCollator>
@@ -31,76 +33,16 @@
 #include <QSortFilterProxyModel>
 #include <QVector>
 
-#include <functional>
-
 namespace PMP::Client
 {
+    class LocalHashIdRepository;
+    class QueueHashesMonitor;
     class ServerInterface;
     class UserDataFetcher;
 }
 
 namespace PMP
 {
-    enum class TrackCriterium
-    {
-        None = 0,
-        NeverHeard,
-        LastHeardNotInLast1000Days,
-        LastHeardNotInLast365Days,
-        LastHeardNotInLast180Days,
-        LastHeardNotInLast90Days,
-        LastHeardNotInLast30Days,
-        LastHeardNotInLast10Days,
-        WithoutScore,
-        ScoreMaximum30,
-        ScoreAtLeast85,
-        ScoreAtLeast90,
-        ScoreAtLeast95,
-        LengthMaximumOneMinute,
-        LengthAtLeastFiveMinutes,
-    };
-
-    class TrackJudge
-    {
-    public:
-        TrackJudge(Client::UserDataFetcher& userDataFetcher)
-         : _criterium(TrackCriterium::None),
-           _userId(0),
-           _haveUserId(false),
-           _userDataFetcher(userDataFetcher)
-        {
-            //
-        }
-
-        void setUserId(quint32 userId);
-        bool isUserIdSetTo(quint32 userId) const
-        {
-            return _userId == userId && _haveUserId;
-        }
-
-        void setCriterium(TrackCriterium mode) { _criterium = mode; }
-        TrackCriterium getCriterium() const { return _criterium; }
-
-        TriBool trackSatisfiesCriterium(CollectionTrackInfo const& track,
-                                        bool resultForNone) const;
-
-    private:
-        TriBool trackSatisfiesScoreCriterium(CollectionTrackInfo const& track,
-                              std::function<TriBool(int)> scorePermillageEvaluator) const;
-
-        TriBool trackSatisfiesLastHeardDateCriterium(CollectionTrackInfo const& track,
-                                   std::function<TriBool(QDateTime)> dateEvaluator) const;
-
-        TriBool trackSatisfiesNotHeardInTheLastXDaysCriterium(
-                                                         CollectionTrackInfo const& track,
-                                                         int days) const;
-
-        TrackCriterium _criterium;
-        quint32 _userId;
-        bool _haveUserId;
-        Client::UserDataFetcher& _userDataFetcher;
-    };
-
     class CollectionViewContext : public QObject
     {
         Q_OBJECT
@@ -122,6 +64,7 @@ namespace PMP
     public:
         SortedCollectionTableModel(QObject* parent,
                                    Client::ServerInterface* serverInterface,
+                                   Client::QueueHashesMonitor* queueHashesMonitor,
                                    CollectionViewContext* collectionViewContext);
 
         void setHighlightCriterium(TrackCriterium criterium);
@@ -133,8 +76,8 @@ namespace PMP
         int sortColumn() const;
         Qt::SortOrder sortOrder() const;
 
-        CollectionTrackInfo* trackAt(const QModelIndex& index) const;
-        CollectionTrackInfo* trackAt(int rowIndex) const;
+        Client::CollectionTrackInfo* trackAt(const QModelIndex& index) const;
+        Client::CollectionTrackInfo* trackAt(int rowIndex) const;
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -150,57 +93,58 @@ namespace PMP
         void setHighlightColorIndex(int colorIndex);
 
     private Q_SLOTS:
-        void onNewTrackReceived(CollectionTrackInfo track);
-        void onTrackAvailabilityChanged(FileHash hash, bool isAvailable);
-        void onTrackDataChanged(CollectionTrackInfo track);
-        void onUserTrackDataChanged(quint32 userId, FileHash hash);
-        void currentTrackInfoChanged(FileHash hash);
+        void onNewTrackReceived(Client::CollectionTrackInfo track);
+        void onTrackAvailabilityChanged(Client::LocalHashId hashId, bool isAvailable);
+        void onTrackDataChanged(Client::CollectionTrackInfo track);
+        void onUserTrackDataChanged(quint32 userId, Client::LocalHashId hashId);
+        void currentTrackInfoChanged(Client::LocalHashId hashId);
+        void onHashInQueuePresenceChanged(Client::LocalHashId hashId);
 
     private:
-        void updateTrackAvailability(FileHash hash, bool isAvailable);
+        void updateTrackAvailability(Client::LocalHashId hashId, bool isAvailable);
         template<class T> void addWhenModelEmpty(T trackCollection);
-        void addOrUpdateTrack(CollectionTrackInfo const& track);
-        void addTrack(CollectionTrackInfo const& track);
-        void updateTrack(int innerIndex, CollectionTrackInfo const& newTrackData);
+        void addOrUpdateTrack(Client::CollectionTrackInfo const& track);
+        void addTrack(Client::CollectionTrackInfo const& track);
+        void updateTrack(int innerIndex, Client::CollectionTrackInfo const& newTrackData);
         void buildIndexMaps();
         void rebuildInnerMap(int outerStartIndex = 0);
         void rebuildInnerMap(int outerStartIndex, int outerEndIndex);
-        int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track);
-        int findOuterIndexMapIndexForInsert(CollectionTrackInfo const& track,
+        int findOuterIndexMapIndexForInsert(Client::CollectionTrackInfo const& track);
+        int findOuterIndexMapIndexForInsert(Client::CollectionTrackInfo const& track,
                                             int searchRangeBegin, int searchRangeEnd);
+        int findOuterIndexForHash(Client::LocalHashId hashId);
         void markLeftColumnAsChanged();
         void markEverythingAsChanged();
 
-        static bool usesUserData(TrackCriterium mode);
-
         bool lessThan(int index1, int index2) const;
-        bool lessThan(CollectionTrackInfo const& track1,
-                      CollectionTrackInfo const& track2) const;
+        bool lessThan(Client::CollectionTrackInfo const& track1,
+                      Client::CollectionTrackInfo const& track2) const;
 
         int compareStrings(const QString& s1, const QString& s2,
                            Qt::SortOrder sortOrder) const;
 
-        int compareTracks(const CollectionTrackInfo& track1,
-                          const CollectionTrackInfo& track2) const;
+        int compareTracks(const Client::CollectionTrackInfo& track1,
+                          const Client::CollectionTrackInfo& track2) const;
 
-        int compareTitles(const CollectionTrackInfo& track1,
-                          const CollectionTrackInfo& track2,
+        int compareTitles(const Client::CollectionTrackInfo& track1,
+                          const Client::CollectionTrackInfo& track2,
                           Qt::SortOrder sortOrder) const;
 
-        int compareArtists(const CollectionTrackInfo& track1,
-                           const CollectionTrackInfo& track2,
+        int compareArtists(const Client::CollectionTrackInfo& track1,
+                           const Client::CollectionTrackInfo& track2,
                            Qt::SortOrder sortOrder) const;
 
-        int compareLengths(const CollectionTrackInfo& track1,
-                           const CollectionTrackInfo& track2,
+        int compareLengths(const Client::CollectionTrackInfo& track1,
+                           const Client::CollectionTrackInfo& track2,
                            Qt::SortOrder sortOrder) const;
 
-        int compareAlbums(const CollectionTrackInfo& track1,
-                          const CollectionTrackInfo& track2,
+        int compareAlbums(const Client::CollectionTrackInfo& track1,
+                          const Client::CollectionTrackInfo& track2,
                           Qt::SortOrder sortOrder) const;
 
-        QVector<CollectionTrackInfo*> _tracks;
-        QHash<FileHash, int> _hashesToInnerIndexes;
+        Client::LocalHashIdRepository* _hashIdRepository;
+        QVector<Client::CollectionTrackInfo*> _tracks;
+        QHash<Client::LocalHashId, int> _hashesToInnerIndexes;
         QVector<int> _innerToOuterIndexMap;
         QVector<int> _outerToInnerIndexMap;
         QCollator _collator;
@@ -208,8 +152,9 @@ namespace PMP
         int _sortBy;
         Qt::SortOrder _sortOrder;
         TrackJudge _highlightingTrackJudge;
-        FileHash _currentTrackHash;
+        Client::LocalHashId _currentTrackHash;
         PlayerState _playerState;
+        Client::QueueHashesMonitor* _queueHashesMonitor;
     };
 
     class FilteredCollectionTableModel : public QSortFilterProxyModel
@@ -219,13 +164,14 @@ namespace PMP
         FilteredCollectionTableModel(QObject* parent,
                                      SortedCollectionTableModel* source,
                                      Client::ServerInterface* serverInterface,
+                                     Client::QueueHashesMonitor* queueHashesMonitor,
                                      CollectionViewContext* collectionViewContext);
 
-        void setTrackFilter(TrackCriterium criterium);
+        void setTrackFilters(TrackCriterium criterium1, TrackCriterium criterium2);
 
         virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 
-        CollectionTrackInfo* trackAt(const QModelIndex& index) const;
+        Client::CollectionTrackInfo* trackAt(const QModelIndex& index) const;
 
     public Q_SLOTS:
         void setSearchText(QString search);

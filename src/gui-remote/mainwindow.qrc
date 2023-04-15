@@ -3,5 +3,6 @@
         <file>Pause.png</file>
         <file>Play.png</file>
         <file>Skip.png</file>
+        <file>queue.svg</file>
     </qresource>
 </RCC>

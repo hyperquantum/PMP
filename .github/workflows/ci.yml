@@ -24,3 +24,6 @@ jobs:
       - name: Run make
         working-directory: bin
         run: make -j2 -k
+      - name: Run CTest
+        working-directory: bin
+        run: ctest -V --no-tests=error

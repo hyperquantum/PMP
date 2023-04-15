@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,28 +44,34 @@
 
 using namespace PMP;
 
-QString checksum(TagLib::ByteVector const& data) {
+QString checksum(TagLib::ByteVector const& data)
+{
     QCryptographicHash sha1Hasher(QCryptographicHash::Sha1);
     sha1Hasher.addData(data.data(), data.size());
 
     return sha1Hasher.result().toHex();
 }
 
-QString getHashAsString(const FileHash& hash) {
-    if (hash.isNull()) return "empty";
+QString getHashAsString(const FileHash& hash)
+{
+    if (hash.isNull())
+        return "empty";
 
     return QString::number(hash.length())
             + "-" + hash.MD5().toHex() + "-" + hash.SHA1().toHex();
 }
 
-TagLib::File* createFileObject(TagLib::ByteVectorStream& fileStream, QString extension) {
+TagLib::File* createFileObject(TagLib::ByteVectorStream& fileStream, QString extension)
+{
     QString lowercaseExtension = extension.toLower();
 
-    if (lowercaseExtension == "mp3") {
+    if (lowercaseExtension == "mp3")
+    {
         return new TagLib::MPEG::File(&fileStream,
                                       TagLib::ID3v2::FrameFactory::instance());
     }
-    else if (lowercaseExtension == "flac") {
+    else if (lowercaseExtension == "flac")
+    {
         return new TagLib::FLAC::File(&fileStream,
                                       TagLib::ID3v2::FrameFactory::instance());
     }
@@ -74,7 +80,8 @@ TagLib::File* createFileObject(TagLib::ByteVectorStream& fileStream, QString ext
     return nullptr;
 }
 
-QList<std::function<void (TagLib::ID3v1::Tag*)> > getId3v1Modifiers() {
+QList<std::function<void (TagLib::ID3v1::Tag*)> > getId3v1Modifiers()
+{
     QList<std::function<void (TagLib::ID3v1::Tag*)> > modifiers;
 
     modifiers.append([](TagLib::ID3v1::Tag* id3v1) { id3v1->setTitle("T7777tttt77"); });
@@ -86,7 +93,8 @@ QList<std::function<void (TagLib::ID3v1::Tag*)> > getId3v1Modifiers() {
     return modifiers;
 }
 
-QList<std::function<void (TagLib::ID3v2::Tag*)> > getId3v2Modifiers() {
+QList<std::function<void (TagLib::ID3v2::Tag*)> > getId3v2Modifiers()
+{
     QList<std::function<void (TagLib::ID3v2::Tag*)> > modifiers;
 
     modifiers.append([](TagLib::ID3v2::Tag* id3v2) { id3v2->setTitle("Qqqqq1234qq"); });
@@ -98,7 +106,8 @@ QList<std::function<void (TagLib::ID3v2::Tag*)> > getId3v2Modifiers() {
     return modifiers;
 }
 
-QList<std::function<void (TagLib::APE::Tag*)> > getApeModifiers() {
+QList<std::function<void (TagLib::APE::Tag*)> > getApeModifiers()
+{
     QList<std::function<void (TagLib::APE::Tag*)> > modifiers;
 
     modifiers.append([](TagLib::APE::Tag* ape) { ape->setTitle("AaaaaaBbbbb"); });
@@ -110,7 +119,8 @@ QList<std::function<void (TagLib::APE::Tag*)> > getApeModifiers() {
     return modifiers;
 }
 
-QList<std::function<void (TagLib::Ogg::XiphComment*)> > getXiphModifiers() {
+QList<std::function<void (TagLib::Ogg::XiphComment*)> > getXiphModifiers()
+{
     QList<std::function<void (TagLib::Ogg::XiphComment*)> > modifiers;
 
     modifiers.append([](TagLib::Ogg::XiphComment* xc) { xc->setTitle("KkkkkkLllll"); });
@@ -130,7 +140,8 @@ QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers()
     for (auto id3v1Modifier : id3v1Modifiers)
     {
         modifiers.append(
-            [id3v1Modifier](TagLib::MPEG::File* file) {
+            [id3v1Modifier](TagLib::MPEG::File* file)
+            {
                 id3v1Modifier(file->ID3v1Tag(true));
             }
         );
@@ -140,7 +151,8 @@ QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers()
     for (auto id3v2Modifier : id3v2Modifiers)
     {
         modifiers.append(
-            [id3v2Modifier](TagLib::MPEG::File* file) {
+            [id3v2Modifier](TagLib::MPEG::File* file)
+            {
                 id3v2Modifier(file->ID3v2Tag(true));
             }
         );
@@ -150,7 +162,8 @@ QList<std::function<void (TagLib::MPEG::File*)> > getMp3Modifiers()
     for (auto apeModifier : apeModifiers)
     {
         modifiers.append(
-            [apeModifier](TagLib::MPEG::File* file) {
+            [apeModifier](TagLib::MPEG::File* file)
+            {
                 apeModifier(file->APETag(true));
             }
         );
@@ -167,7 +180,8 @@ QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers()
     for (auto id3v1Modifier : id3v1Modifiers)
     {
         modifiers.append(
-            [id3v1Modifier](TagLib::FLAC::File* file) {
+            [id3v1Modifier](TagLib::FLAC::File* file)
+            {
                 id3v1Modifier(file->ID3v1Tag(true));
             }
         );
@@ -177,7 +191,8 @@ QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers()
     for (auto id3v2Modifier : id3v2Modifiers)
     {
         modifiers.append(
-            [id3v2Modifier](TagLib::FLAC::File* file) {
+            [id3v2Modifier](TagLib::FLAC::File* file)
+            {
                 id3v2Modifier(file->ID3v2Tag(true));
             }
         );
@@ -187,7 +202,8 @@ QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers()
     for (auto xiphModifier : xiphModifiers)
     {
         modifiers.append(
-            [xiphModifier](TagLib::FLAC::File* file) {
+            [xiphModifier](TagLib::FLAC::File* file)
+            {
                 xiphModifier(file->xiphComment(true));
             }
         );
@@ -196,7 +212,8 @@ QList<std::function<void (TagLib::FLAC::File*)> > getFlacModifiers()
     return modifiers;
 }
 
-QList<std::function<void (TagLib::File*)> > getModifiers(QString extension) {
+QList<std::function<void (TagLib::File*)> > getModifiers(QString extension)
+{
     QList<std::function<void (TagLib::File*)> > modifiers;
 
     modifiers.append([](TagLib::File* file) { file->tag()->setTitle("Ooooooooo"); });
@@ -213,7 +230,8 @@ QList<std::function<void (TagLib::File*)> > getModifiers(QString extension) {
         for (auto mp3Modifier : mp3Modifiers)
         {
             modifiers.append(
-                [mp3Modifier](TagLib::File* file) {
+                [mp3Modifier](TagLib::File* file)
+                {
                     mp3Modifier(static_cast<TagLib::MPEG::File*>(file));
                 }
             );
@@ -225,7 +243,8 @@ QList<std::function<void (TagLib::File*)> > getModifiers(QString extension) {
         for (auto flacModifier : flacModifiers)
         {
             modifiers.append(
-                [flacModifier](TagLib::File* file) {
+                [flacModifier](TagLib::File* file)
+                {
                     flacModifier(static_cast<TagLib::FLAC::File*>(file));
                 }
             );
@@ -235,7 +254,8 @@ QList<std::function<void (TagLib::File*)> > getModifiers(QString extension) {
     return modifiers;
 }
 
-class FileTester {
+class FileTester
+{
 public:
     FileTester(QString filename, QString expectedResult)
      : _out(stdout), _err(stderr), _error(false), _filename(filename),
@@ -244,14 +264,16 @@ public:
         QFileInfo fileInfo(filename);
         _extension = fileInfo.suffix();
 
-        if (!FileAnalyzer::isExtensionSupported(_extension, true)) {
+        if (!FileAnalyzer::isExtensionSupported(_extension, true))
+        {
             _err << "File extension not supported: " << _extension << Qt::endl;
             _error = true;
             return;
         }
 
         QFile file(filename);
-        if (!file.open(QIODevice::ReadOnly)) {
+        if (!file.open(QIODevice::ReadOnly))
+        {
             _err << "Could not open file: " << filename << Qt::endl;
             _error = true;
             return;
@@ -260,7 +282,8 @@ public:
         FileAnalyzer analyzer(fileInfo);
         analyzer.analyze();
 
-        if (!analyzer.analysisDone()) {
+        if (!analyzer.analysisDone())
+        {
             if (expectedResult == "invalid") return; /* OK */
 
             _err << "File analysis FAILED unexpectedly for " << filename << Qt::endl;
@@ -270,7 +293,8 @@ public:
 
         _originalResult = getHashAsString(analyzer.hash());
 
-        if (_originalResult != expectedResult) {
+        if (_originalResult != expectedResult)
+        {
             _err << "Hash MISMATCH!" << Qt::endl
                  << "Filename: " << filename << Qt::endl
                  << "Expected: " << expectedResult << Qt::endl
@@ -286,7 +310,8 @@ public:
 
     bool error() const { return _error; }
 
-    const TagLib::ByteVector& originalFileContents() const {
+    const TagLib::ByteVector& originalFileContents() const
+    {
         return _originalFileContents;
     }
 
@@ -294,7 +319,8 @@ public:
 
     const QString& originalResult() const { return _originalResult; }
 
-    bool testModifications(QList<std::function<void (TagLib::File*)> > modifiers) {
+    bool testModifications(QList<std::function<void (TagLib::File*)> > modifiers)
+    {
         QVector<TagLib::ByteVector> transformed;
 
         /* Single data transformations */
@@ -312,13 +338,15 @@ public:
         {
             FileAnalyzer analyzer(modifiedData, extension());
             analyzer.analyze();
-            if (!analyzer.analysisDone()) {
+            if (!analyzer.analysisDone())
+            {
                 _err << "File analysis FAILED on modified data!" << Qt::endl;
                 return false;
             }
 
             QString modifiedHash = getHashAsString(analyzer.hash());
-            if (modifiedHash != _expectedResult) {
+            if (modifiedHash != _expectedResult)
+            {
                 _err << "Hash MISMATCH after modification!" << Qt::endl
                      << "Filename: " << _filename << Qt::endl
                      << "Expected: " << _expectedResult << Qt::endl
@@ -355,19 +383,22 @@ private:
             auto modifiedData = applyModification(originalFileContents(), modifier);
             _out << "Modified data checksum: " << checksum(modifiedData) << Qt::endl;
 
-            if (modifiedData.size() == 0) {
+            if (modifiedData.size() == 0)
+            {
                 _err << "Problem: modification went wrong, returned no result"
                      << Qt::endl;
                 return QVector<TagLib::ByteVector>();
             }
 
-            if (modifiedData == originalFileContents()) {
+            if (modifiedData == originalFileContents())
+            {
                 _err << "Problem: modification ineffective; test would be unreliable"
                      << Qt::endl;
                 return QVector<TagLib::ByteVector>();
             }
 
-            if (transformed.contains(modifiedData)) {
+            if (transformed.contains(modifiedData))
+            {
                 _err << "Problem: modification not unique; test would be unreliable"
                      << Qt::endl;
                 return QVector<TagLib::ByteVector>();
@@ -390,7 +421,8 @@ private:
         for (const auto& modifier1 : modifiers)
         {
             auto modifiedData1 = applyModification(originalFileContents(), modifier1);
-            if (modifiedData1.size() == 0) {
+            if (modifiedData1.size() == 0)
+            {
                 _err << "Problem: modification went wrong, returned no result"
                      << Qt::endl;
                 return QVector<TagLib::ByteVector>();
@@ -400,13 +432,15 @@ private:
             {
                 auto modifiedData2 = applyModification(modifiedData1, modifier2);
                 _out << "Modified data checksum: " << checksum(modifiedData2) << Qt::endl;
-                if (modifiedData2.size() == 0) {
+                if (modifiedData2.size() == 0)
+                {
                     _err << "Problem: modification went wrong, returned no result"
                          << Qt::endl;
                     return QVector<TagLib::ByteVector>();
                 }
 
-                if (modifiedData2 == originalFileContents()) {
+                if (modifiedData2 == originalFileContents())
+                {
                     _err << "Problem: combined modification is no-op" << Qt::endl;
                     return QVector<TagLib::ByteVector>();
                 }
@@ -418,9 +452,11 @@ private:
         return transformed;
     }
 
-    void writeDebugFile(QString filename, const TagLib::ByteVector& contents) {
+    void writeDebugFile(QString filename, const TagLib::ByteVector& contents)
+    {
         QSaveFile file(filename);
-        if (!file.open(QIODevice::WriteOnly)) {
+        if (!file.open(QIODevice::WriteOnly))
+        {
             _err << "Could not open file for writing: " << filename << Qt::endl;
             return;
         }
@@ -454,7 +490,8 @@ private:
 
         modifier(scratchFile);
 
-        if (!scratchFile->save()) {
+        if (!scratchFile->save())
+        {
             _err << "Problem when saving modified scratch file to scratch stream"
                  << Qt::endl;
             return TagLib::ByteVector();
@@ -474,8 +511,8 @@ private:
     QString _originalResult;
 };
 
-int main(int argc, char *argv[]) {
-
+int main(int argc, char *argv[])
+{
     QCoreApplication a(argc, argv);
 
     QCoreApplication::setApplicationName("Party Music Player - Hash test executable");

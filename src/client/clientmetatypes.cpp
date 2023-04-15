@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,27 +17,25 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CLIENT_COLLECTIONFETCHER_H
-#define PMP_CLIENT_COLLECTIONFETCHER_H
-
 #include "collectiontrackinfo.h"
-
-#include <QObject>
-#include <QVector>
+#include "localhashid.h"
 
 namespace PMP::Client
 {
-    class CollectionFetcher : public QObject
+    /** Utility object to automatically do the qRegisterMetaType calls at program
+     *  startup */
+    class ClientMetatypesInit
     {
-        Q_OBJECT
-    public:
-        CollectionFetcher() {}
-        virtual ~CollectionFetcher() {}
+    protected:
+        ClientMetatypesInit()
+        {
+            qRegisterMetaType<PMP::Client::CollectionTrackInfo>();
+            qRegisterMetaType<PMP::Client::LocalHashId>();
+        }
 
-    Q_SIGNALS:
-        void receivedData(QVector<CollectionTrackInfo> data);
-        void completed();
-        void errorOccurred();
+    private:
+        static ClientMetatypesInit GlobalVariable;
     };
+
+    ClientMetatypesInit ClientMetatypesInit::GlobalVariable;
 }
-#endif

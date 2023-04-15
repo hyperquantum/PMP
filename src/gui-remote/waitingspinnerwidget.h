@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -70,7 +70,6 @@ namespace PMP
         void stop();
 
     public:
-        void setColor(QColor color);
         void setRoundness(qreal roundness);
         void setMinimumTrailOpacity(qreal minimumTrailOpacity);
         void setTrailFadePercentage(qreal trail);
@@ -81,7 +80,6 @@ namespace PMP
         void setInnerRadius(int radius);
         void setText(QString text);
 
-        QColor color();
         qreal roundness();
         qreal minimumTrailOpacity();
         qreal trailFadePercentage();
@@ -112,7 +110,6 @@ namespace PMP
         void updatePosition();
 
     private:
-        QColor  _color;
         qreal   _roundness; // 0..100
         qreal   _minimumTrailOpacity;
         qreal   _trailFadePercentage;

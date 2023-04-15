@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,7 +25,9 @@
 #include "common/version.h"
 
 #include "client/generalcontroller.h"
+#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
+#include "client/queuehashesmonitor.h"
 #include "client/scrobblingcontroller.h"
 #include "client/serverconnection.h"
 #include "client/serverinterface.h"
@@ -66,6 +68,7 @@ namespace PMP
        _rightStatus(nullptr),
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
+       _hashIdRepository(new LocalHashIdRepository()),
        _connection(nullptr),
        _serverInterface(nullptr),
        _userPickerWidget(nullptr),
@@ -121,7 +124,7 @@ namespace PMP
 
     MainWindow::~MainWindow()
     {
-        //
+        delete _hashIdRepository;
     }
 
     void MainWindow::createActions()
@@ -576,7 +579,7 @@ namespace PMP
 
     void MainWindow::onDoConnect(QString server, uint port)
     {
-        _connection = new ServerConnection(this);
+        _connection = new ServerConnection(this, _hashIdRepository);
         _serverInterface = new ServerInterface(_connection);
 
         auto* generalController = &_serverInterface->generalController();
@@ -746,8 +749,14 @@ namespace PMP
 
         setCentralWidget(mainCentralWidget);
 
+        auto queueHashesMonitor =
+                new QueueHashesMonitor(_serverInterface,
+                                       &_serverInterface->queueMonitor(),
+                                       &_serverInterface->queueEntryInfoStorage());
+
         auto collectionWidget =
-                new CollectionWidget(_musicCollectionDock, _serverInterface);
+                new CollectionWidget(_musicCollectionDock, _serverInterface,
+                                     queueHashesMonitor);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -1658,6 +1658,7 @@ namespace PMP::Server
                               clientReference);
             return;
         case ResultCode::HashIsNull:
+        case ResultCode::HashIsUnknown:
             sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
             return;
         case ResultCode::QueueEntryIdNotFound:
@@ -2602,11 +2603,11 @@ namespace PMP::Server
 
         if (messageType == ClientMessageType::AddHashToEndOfQueueRequestMessage)
         {
-            _serverInterface->enqueue(hash);
+            _serverInterface->insertTrackAtEnd(hash);
         }
         else if (messageType == ClientMessageType::AddHashToFrontOfQueueRequestMessage)
         {
-            _serverInterface->insertAtFront(hash);
+            _serverInterface->insertTrackAtFront(hash);
         }
         else
         {
@@ -2669,10 +2670,7 @@ namespace PMP::Server
 
         qDebug() << " request contains hash:" << hash.dumpToString();
 
-        auto entryCreator = QueueEntryCreators::hash(hash);
-
-        auto result =
-                _serverInterface->insertAtIndex(index, entryCreator, clientReference);
+        auto result = _serverInterface->insertTrack(hash, index, clientReference);
 
         /* success is handled by the queue insertion event, failure is handled here */
         if (!result)

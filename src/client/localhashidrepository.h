@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,27 +17,31 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CLIENT_COLLECTIONFETCHER_H
-#define PMP_CLIENT_COLLECTIONFETCHER_H
+#ifndef PMP_CLIENT_LOCALHASHIDREPOSITORY_H
+#define PMP_CLIENT_LOCALHASHIDREPOSITORY_H
 
-#include "collectiontrackinfo.h"
+#include "common/filehash.h"
 
-#include <QObject>
-#include <QVector>
+#include "localhashid.h"
+
+#include <QHash>
+#include <QMutex>
 
 namespace PMP::Client
 {
-    class CollectionFetcher : public QObject
+    class LocalHashIdRepository
     {
-        Q_OBJECT
     public:
-        CollectionFetcher() {}
-        virtual ~CollectionFetcher() {}
+        LocalHashId getOrRegisterId(FileHash const& hash);
+        LocalHashId getId(FileHash const& hash) const;
 
-    Q_SIGNALS:
-        void receivedData(QVector<CollectionTrackInfo> data);
-        void completed();
-        void errorOccurred();
+        FileHash getHash(LocalHashId id) const;
+
+    private:
+        mutable QMutex _mutex;
+        uint _lastId {0};
+        QHash<FileHash, uint> _hashToId;
+        QHash<uint, FileHash> _idToHash;
     };
 }
 #endif

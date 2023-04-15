@@ -178,7 +178,7 @@ Finally you can build PMP itself. Run the following commands in a CMD terminal. 
 ```cmd
 > cd PMP\bin
 > "C:\Program Files\CMake\bin\cmake" -G "Visual Studio 17 2022" -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake" -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
-> "C:\Program Files\CMake\bin\cmake" --build . --config Debug
+> "C:\Program Files\CMake\bin\cmake" --build . --config Debug -j 2
 ```
 
 

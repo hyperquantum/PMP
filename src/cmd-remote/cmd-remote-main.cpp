@@ -40,6 +40,7 @@ usage:
 
   commands:
     login: force authentication before running the next command (see below)
+    status: get status information, like volume, queue length... (see below)
     play: start/resume playback
     pause: pause playback
     skip: jump to next track in the queue
@@ -47,8 +48,11 @@ usage:
     volume <number>: set volume percentage (0-100)
     nowplaying: get info about the track currently playing
     queue: print queue length and the first tracks waiting in the queue
+    personalmode: switch to personal mode
+    publicmode: switch to public mode
+    dynamicmode on|off: enable/disable dynamic mode (auto queue fill)
     break: insert a break at the front of the queue if not present there yet
-    insert <item-type> <position>: insert an item into the queue (see below)
+    insert <item> <position>: insert an item into the queue (see below)
     qdel <QID>: delete an entry from the queue
     qmove <QID> <-diff>: move a track up in the queue (e.g. -3)
     qmove <QID> <+diff>: move a track down in the queue (eg. +2)
@@ -74,14 +78,26 @@ usage:
     that the first line of the input is the username and the second line is
     the password.
 
-  'insert' command:
-    insert break front: insert a break at the front of the queue
-    insert break end: insert a break at the end of the queue
-    insert break index <number>: insert a break at the specified index
-    insert barrier end: insert a barrier at the end of the queue
+  'status' command:
+    This command does not require arguments and can be used without
+    authenticating first. It provides general information about the server,
+    like: is a track loaded, is something playing, what is the volume, what
+    is the length of the queue, is dynamic mode active, etc.
 
-    The numeric index is zero-based, meaning that 0 indicates the front of
-    the queue.
+  'insert' command:
+    insert break <position>: insert a break into the queue
+    insert barrier <position>: insert a barrier into the queue
+    insert <hash> <position>: insert a track into the queue
+    insert <item> front: insert something at the front of the queue
+    insert <item> end: insert something at the end of the queue
+    insert <item> index <number>: insert something at a specific index
+
+    This command inserts a single item into the queue at a specific
+    position. The item to be inserted can be a track, a break, or a
+    barrier. The position can be the front of the queue, the end of the
+    queue, or a specific index counted from the front. The index is
+    zero-based, meaning that index 0 refers to the front of the queue,
+    index 1 indicates after the first existing item, etc.
     Inserting a break or a barrier with the 'insert' command requires a
     fairly recent version of the PMP server in order to work. Older servers
     do not support barriers, and they only support inserting a break at the
@@ -89,7 +105,10 @@ usage:
     yet at that location (see the 'break' command).
     A barrier is like a break, but is never consumed. Playback just stops
     when the current track finishes and the first item in the queue is a
-    barrier.
+    barrier. The barrier will remain in the queue until it is deleted by
+    the user.
+    The hash of a track can be obtained with the 'track info' dialog in the
+    GUI Remote or with the command-line hash tool.
 
   'scrobbling' command:
     scrobbling enable <provider>: enable scrobbling for the current user
@@ -137,8 +156,8 @@ usage:
 
     Retrieves 'last heard' and 'score' for the current user and the track
     that was specified as an argument.
-    The track hash can be obtained with the 'track info' dialog in the
-    GUI Remote or the command-line hash tool.
+    The hash of a track can be obtained with the 'track info' dialog in the
+    GUI Remote or with the command-line hash tool.
 
   NOTICE:
     Some commands require a fairly recent version of the PMP server in order
@@ -164,6 +183,10 @@ usage:
     client.
 
   Examples:
+    {{PROGRAMNAME}} localhost status
+    {{PROGRAMNAME}} localhost nowplaying
+    {{PROGRAMNAME}} localhost personalmode
+    {{PROGRAMNAME}} localhost dynamicmode on
     {{PROGRAMNAME}} localhost queue
     {{PROGRAMNAME}} ::1 volume
     {{PROGRAMNAME}} localhost volume 100
@@ -171,7 +194,6 @@ usage:
     {{PROGRAMNAME}} localhost insert break index 2
     {{PROGRAMNAME}} localhost insert barrier front
     {{PROGRAMNAME}} localhost qmove 42 +3
-    {{PROGRAMNAME}} localhost nowplaying
     {{PROGRAMNAME}} localhost login : nowplaying
     {{PROGRAMNAME}} localhost login MyUsername : play
     {{PROGRAMNAME}} localhost login MyUsername - : play <passwordfile
@@ -181,6 +203,13 @@ usage:
     {{PROGRAMNAME}} localhost delayedstart at 15:30
     {{PROGRAMNAME}} localhost delayedstart at 9:30:00
     {{PROGRAMNAME}} localhost delayedstart at 2022-02-28 00:00
+)"""";
+
+static const char * const versionTextTemplate = R""""(
+{{PROGRAMNAMEVERSIONBUILD}}
+{{COPYRIGHT}}
+This is free software; see the source for copying conditions.  There is NO
+warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 )"""";
 
 void printVersion(QTextStream& out)
@@ -194,11 +223,12 @@ void printVersion(QTextStream& out)
                      VCS_REVISION_LONG,
                      VCS_BRANCH);
 
-    out << programNameVersionBuild << "\n"
-        << Util::getCopyrightLine(true) << "\n"
-        << "This is free software; see the source for copying conditions.  There is NO\n"
-        << "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
-        << Qt::flush;
+    QString versionText = versionTextTemplate;
+    versionText = versionText.trimmed();
+    versionText.replace("{{PROGRAMNAMEVERSIONBUILD}}", programNameVersionBuild);
+    versionText.replace("{{COPYRIGHT}}", Util::getCopyrightLine(true));
+
+    out << versionText << Qt::endl;
 }
 
 void printUsage(QTextStream& out)

@@ -49,12 +49,12 @@ namespace PMP
                 this, &ScrobblingActivationCommand::listenerSlot);
 
         addStep(
-            [this, scrobblingController]() -> bool
+            [this, scrobblingController]() -> StepResult
             {
                 if (scrobblingController->lastFmEnabled() == _enable)
-                    setCommandExecutionSuccessful();
+                    return StepResult::commandSuccessful();
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
 
@@ -82,38 +82,33 @@ namespace PMP
                 this, &ScrobblingStatusCommand::listenerSlot);
 
         addStep(
-            [this, scrobblingController]() -> bool
+            [scrobblingController]() -> StepResult
             {
                 if (scrobblingController->lastFmEnabled() == null)
-                    return false;
+                    return StepResult::stepIncomplete();
 
                 if (scrobblingController->lastFmEnabled() == false)
+                    return StepResult::commandSuccessful("disabled");
+
+                switch (scrobblingController->lastFmStatus())
                 {
-                    setCommandExecutionSuccessful("disabled");
-                }
-                else
-                {
-                    switch (scrobblingController->lastFmStatus())
-                    {
-                    case ScrobblerStatus::Unknown:
-                        setCommandExecutionSuccessful("unknown"); /* FIXME */
-                        break;
-                    case ScrobblerStatus::Green:
-                        setCommandExecutionSuccessful("green");
-                        break;
-                    case ScrobblerStatus::Yellow:
-                        setCommandExecutionSuccessful("yellow");
-                        break;
-                    case ScrobblerStatus::Red:
-                        setCommandExecutionSuccessful("red");
-                        break;
-                    case ScrobblerStatus::WaitingForUserCredentials:
-                        setCommandExecutionSuccessful("waiting for user credentials");
-                        break;
-                    }
+                case ScrobblerStatus::Unknown:
+                    return StepResult::commandSuccessful("unknown"); /* FIXME */
+
+                case ScrobblerStatus::Green:
+                    return StepResult::commandSuccessful("green");
+
+                case ScrobblerStatus::Yellow:
+                    return StepResult::commandSuccessful("yellow");
+
+                case ScrobblerStatus::Red:
+                    return StepResult::commandSuccessful("red");
+
+                case ScrobblerStatus::WaitingForUserCredentials:
+                    return StepResult::commandSuccessful("waiting for user credentials");
                 }
 
-                return false;
+                return StepResult::stepIncomplete();
             }
         );
     }

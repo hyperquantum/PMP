@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -67,6 +67,11 @@ namespace PMP::Client
             },
             Qt::QueuedConnection
         );
+    }
+
+    LocalHashIdRepository* ServerInterface::hashIdRepository() const
+    {
+        return _connection->hashIdRepository();
     }
 
     AuthenticationController& ServerInterface::authenticationController()

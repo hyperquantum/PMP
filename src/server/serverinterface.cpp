@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -296,20 +296,26 @@ namespace PMP::Server
         return future;
     }
 
-    Result ServerInterface::enqueue(FileHash hash)
+    Result ServerInterface::insertTrackAtEnd(FileHash hash)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();
+
+        if (_hashIdRegistrar->isRegistered(hash) == false)
+            return Error::hashIsUnknown();
 
         auto& queue = _player->queue();
 
         return queue.enqueue(hash);
     }
 
-    Result ServerInterface::insertAtFront(FileHash hash)
+    Result ServerInterface::insertTrackAtFront(FileHash hash)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();
+
+        if (_hashIdRegistrar->isRegistered(hash) == false)
+            return Error::hashIsUnknown();
 
         auto& queue = _player->queue();
 
@@ -327,6 +333,19 @@ namespace PMP::Server
             return Success(); /* already present, nothing to do */
 
         return queue.insertBreakAtFront();
+    }
+
+    Result ServerInterface::insertTrack(FileHash hash, int index, quint32 clientReference)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        if (_hashIdRegistrar->isRegistered(hash) == false)
+            return Error::hashIsUnknown();
+
+        auto entryCreator = QueueEntryCreators::hash(hash);
+
+        return insertAtIndex(index, entryCreator, clientReference);
     }
 
     Result ServerInterface::insertSpecialQueueItem(SpecialQueueItemType itemType,
@@ -372,9 +391,6 @@ namespace PMP::Server
                        std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
                        quint32 clientReference)
     {
-        if (!isLoggedIn())
-            return Error::notLoggedIn();
-
         auto& queue = _player->queue();
 
         return queue.insertAtIndex(index, queueEntryCreator,
