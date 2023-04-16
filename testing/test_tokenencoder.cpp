@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -61,17 +61,23 @@ void TestTokenEncoder::ensureIsEncodedChangesPlainTextString()
 void TestTokenEncoder::encodeUsesObfuscation()
 {
     QVector<QString> tokens;
-    tokens << "~"
-           << "*"
-           << "+"
-           << "unlikely";
+
+    /* "?" and Base64 encoding characters are omitted */
+    tokens << "~" << "*" << "!" << "@" << "#" << ":" << "\\" << "$" << "%" << "^" << "&"
+           << "(" << ")" << "[" << "]" << "{" << "}" << "<" << ">" << "|" << "\"" << "'"
+           << "," << "." << "`" << "_" << "-" << ";" << " "
+           << "r6xFSEWtFg" << "4CAuXc8t9b" << "sports car" << "GRs40tjegO"
+           << "LmNoPqRsTuVwXyZ" << "unlikely" << "FwyI2bLTgaqMZ27a" << "SBKOhurrYQytfisU";
 
     for (auto& token : qAsConst(tokens))
     {
-        auto encoded = TokenEncoder::encodeToken(token);
+        for (int i = 0; i < 100; ++i)
+        {
+            auto encoded = TokenEncoder::encodeToken(token);
 
-        QVERIFY(encoded.startsWith("?"));
-        QVERIFY(!encoded.contains(token));
+            QVERIFY(encoded.startsWith("?"));
+            QVERIFY(!encoded.contains(token));
+        }
     }
 }
 
