@@ -149,12 +149,14 @@ set(PMP_CMD_REMOTE_SOURCES
     cmd-remote/commandparser.cpp
     cmd-remote/commands.cpp
     cmd-remote/console.cpp
+    cmd-remote/queuecommands.cpp
 )
 set(PMP_CMD_REMOTE_HEADERS
     cmd-remote/command.h
     cmd-remote/commandbase.h
     cmd-remote/commandlineclient.h
     cmd-remote/commands.h
+    cmd-remote/queuecommands.h
 )
 
 set(PMP_GUI_REMOTE_SOURCES

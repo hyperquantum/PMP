@@ -22,6 +22,7 @@
 #include "cmd-remote/command.h"
 #include "cmd-remote/commands.h"
 #include "cmd-remote/commandparser.h"
+#include "cmd-remote/queuecommands.h"
 
 #include <QtTest/QTest>
 

@@ -21,9 +21,7 @@
 #define PMP_COMMANDS_H
 
 #include "common/filehash.h"
-#include "common/queueindextype.h"
 #include "common/requestid.h"
-#include "common/specialqueueitemtype.h"
 
 #include "commandbase.h"
 
@@ -209,23 +207,6 @@ namespace PMP
         void run(Client::ServerInterface* serverInterface) override;
     };
 
-    class QueueCommand : public CommandBase
-    {
-        Q_OBJECT
-    public:
-        bool requiresAuthentication() const override;
-
-    protected:
-        void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-        StepResult printQueue(Client::AbstractQueueMonitor* queueMonitor,
-                              Client::QueueEntryInfoStorage* queueEntryInfoStorage);
-        QString getSpecialEntryText(Client::QueueEntryInfo const* entry) const;
-
-        int _fetchLimit { 10 };
-    };
-
     class ShutdownCommand : public CommandBase
     {
         Q_OBJECT
@@ -265,107 +246,6 @@ namespace PMP
 
     private:
         int _volume;
-    };
-
-    class BreakCommand : public CommandBase
-    {
-        Q_OBJECT
-    public:
-        bool requiresAuthentication() const override;
-
-    protected:
-        void run(Client::ServerInterface* serverInterface) override;
-    };
-
-    class QueueInsertSpecialItemCommand : public CommandBase
-    {
-        Q_OBJECT
-    public:
-        QueueInsertSpecialItemCommand(SpecialQueueItemType itemType, int index,
-                                      QueueIndexType indexType);
-
-        bool requiresAuthentication() const override;
-
-    protected:
-        void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-        SpecialQueueItemType _itemType;
-        int _index;
-        QueueIndexType _indexType;
-        RequestID _requestId;
-    };
-
-    class QueueInsertTrackCommand : public CommandBase
-    {
-        Q_OBJECT
-    public:
-        QueueInsertTrackCommand(FileHash const& hash, int index,
-                                QueueIndexType indexType);
-
-        bool requiresAuthentication() const override;
-
-    protected:
-        void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-        void insertNormal(Client::ServerInterface* serverInterface);
-        void insertReversed(Client::ServerInterface* serverInterface);
-
-        FileHash _hash;
-        int _index;
-        QueueIndexType _indexType;
-        RequestID _requestId;
-    };
-
-    class InsertCommandBuilder
-    {
-    public:
-        void setItem(SpecialQueueItemType specialItemType);
-        void setItem(FileHash hash);
-
-        void setPosition(QueueIndexType indexType, int index);
-
-        Command* buildCommand();
-
-    private:
-        Nullable<SpecialQueueItemType> _queueItemType;
-        QueueIndexType _indexType { QueueIndexType::Normal };
-        int _index { -1 };
-        FileHash _hash;
-    };
-
-    class QueueDeleteCommand : public CommandBase
-    {
-        Q_OBJECT
-    public:
-        QueueDeleteCommand(quint32 queueId);
-
-        bool requiresAuthentication() const override;
-
-    protected:
-        void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-        quint32 _queueId;
-        bool _wasDeleted;
-    };
-
-    class QueueMoveCommand : public CommandBase
-    {
-        Q_OBJECT
-    public:
-        QueueMoveCommand(quint32 queueId, qint16 moveOffset);
-
-        bool requiresAuthentication() const override;
-
-    protected:
-        void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-        quint32 _queueId;
-        qint16 _moveOffset;
-        bool _wasMoved;
     };
 
     class TrackStatsCommand : public CommandBase
