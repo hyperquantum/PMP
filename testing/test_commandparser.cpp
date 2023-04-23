@@ -21,8 +21,8 @@
 
 #include "cmd-remote/administrativecommands.h"
 #include "cmd-remote/command.h"
-#include "cmd-remote/commands.h"
 #include "cmd-remote/commandparser.h"
+#include "cmd-remote/miscellaneouscommands.h"
 #include "cmd-remote/playercommands.h"
 #include "cmd-remote/queuecommands.h"
 

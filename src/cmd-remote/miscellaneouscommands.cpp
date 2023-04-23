@@ -17,7 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "commands.h"
+#include "miscellaneouscommands.h"
 
 #include "client/authenticationcontroller.h"
 #include "client/currenttrackmonitor.h"

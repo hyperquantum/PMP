@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COMMANDS_H
-#define PMP_COMMANDS_H
+#ifndef PMP_MISCELLANEOUSCOMMANDS_H
+#define PMP_MISCELLANEOUSCOMMANDS_H
 
 #include "common/filehash.h"
 

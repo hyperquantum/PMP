@@ -22,7 +22,7 @@
 #include "common/unicodechars.h"
 
 #include "administrativecommands.h"
-#include "commands.h"
+#include "miscellaneouscommands.h"
 #include "playercommands.h"
 #include "queuecommands.h"
 
