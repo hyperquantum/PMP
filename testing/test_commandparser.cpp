@@ -19,6 +19,7 @@
 
 #include "test_commandparser.h"
 
+#include "cmd-remote/administrativecommands.h"
 #include "cmd-remote/command.h"
 #include "cmd-remote/commands.h"
 #include "cmd-remote/commandparser.h"

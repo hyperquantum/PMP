@@ -21,6 +21,7 @@
 
 #include "common/unicodechars.h"
 
+#include "administrativecommands.h"
 #include "commands.h"
 #include "queuecommands.h"
 

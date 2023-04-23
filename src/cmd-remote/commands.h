@@ -39,8 +39,6 @@ namespace PMP::Client
 
 namespace PMP
 {
-    struct VersionInfo;
-
     class StatusCommand : public CommandBase
     {
         Q_OBJECT
@@ -54,34 +52,6 @@ namespace PMP
         StepResult printStatus(Client::PlayerController* playerController,
                                Client::CurrentTrackMonitor* currentTrackMonitor,
                                Client::DynamicModeController* dynamicModeController);
-    };
-
-    class ServerVersionCommand : public CommandBase
-    {
-        Q_OBJECT
-    public:
-        bool requiresAuthentication() const override;
-
-    protected:
-        void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-        void printVersion(VersionInfo const& versionInfo);
-    };
-
-    class ReloadServerSettingsCommand : public CommandBase
-    {
-        Q_OBJECT
-    public:
-        ReloadServerSettingsCommand();
-
-        bool requiresAuthentication() const override;
-
-    protected:
-        void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-        RequestID _requestId;
     };
 
     class PersonalModeCommand : public CommandBase
@@ -205,22 +175,6 @@ namespace PMP
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;
-    };
-
-    class ShutdownCommand : public CommandBase
-    {
-        Q_OBJECT
-    public:
-        ShutdownCommand(/*QString serverPassword*/);
-
-        bool requiresAuthentication() const override;
-        bool willCauseDisconnect() const override;
-
-    protected:
-        void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-        //QString _serverPassword;
     };
 
     class GetVolumeCommand : public CommandBase

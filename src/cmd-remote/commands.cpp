@@ -24,7 +24,6 @@
 #include "client/authenticationcontroller.h"
 #include "client/currenttrackmonitor.h"
 #include "client/dynamicmodecontroller.h"
-#include "client/generalcontroller.h"
 #include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/serverinterface.h"
@@ -164,62 +163,6 @@ namespace PMP
             output += "dynamic mode: (unknown)";
 
         return StepResult::commandSuccessful(output);
-    }
-
-    /* ===== ServerVersionCommand ===== */
-
-    bool ServerVersionCommand::requiresAuthentication() const
-    {
-        return false;
-    }
-
-    void ServerVersionCommand::run(ServerInterface* serverInterface)
-    {
-        auto future = serverInterface->generalController().getServerVersionInfo();
-
-        future.addFailureListener(
-            this,
-            [this](ResultMessageErrorCode errorCode)
-            {
-                setCommandExecutionResult(errorCode);
-            }
-        );
-
-        future.addResultListener(
-            this,
-            [this](VersionInfo versionInfo)
-            {
-                printVersion(versionInfo);
-            }
-        );
-    }
-
-    void ServerVersionCommand::printVersion(const VersionInfo& versionInfo)
-    {
-        QString text =
-            versionInfo.programName % "\n"
-                % "version: " % versionInfo.versionForDisplay % "\n"
-                % "build: " % versionInfo.vcsBuild % " - " % versionInfo.vcsBranch;
-
-        setCommandExecutionSuccessful(text);
-    }
-
-    /* ===== ReloadServerSettingsCommand ===== */
-
-    ReloadServerSettingsCommand::ReloadServerSettingsCommand()
-    {
-        //
-    }
-
-    bool ReloadServerSettingsCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
-    void ReloadServerSettingsCommand::run(ServerInterface* serverInterface)
-    {
-        auto future = serverInterface->generalController().reloadServerSettings();
-        addCommandExecutionFutureListener(future);
     }
 
     /* ===== PersonalModeCommand ===== */
@@ -535,42 +478,6 @@ namespace PMP
                 return StepResult::commandSuccessful(output);
             }
         );
-    }
-
-    /* ===== ShutdownCommand ===== */
-
-    ShutdownCommand::ShutdownCommand(/*QString serverPassword*/)
-    // : _serverPassword(serverPassword)
-    {
-        //
-    }
-
-    bool ShutdownCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
-    bool ShutdownCommand::willCauseDisconnect() const
-    {
-        return true;
-    }
-
-    void ShutdownCommand::run(ServerInterface* serverInterface)
-    {
-        connect(serverInterface, &ServerInterface::connectedChanged,
-                this, &ShutdownCommand::listenerSlot);
-
-        addStep(
-            [serverInterface]() -> StepResult
-            {
-                if (!serverInterface->connected())
-                    return StepResult::commandSuccessful();
-
-                return StepResult::stepIncomplete();
-            }
-        );
-
-        serverInterface->generalController().shutdownServer();
     }
 
     /* ===== GetVolumeCommand ===== */
