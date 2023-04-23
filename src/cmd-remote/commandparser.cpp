@@ -23,6 +23,7 @@
 
 #include "administrativecommands.h"
 #include "commands.h"
+#include "playercommands.h"
 #include "queuecommands.h"
 
 #include <limits>

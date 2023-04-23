@@ -17,28 +17,48 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COMMANDS_H
-#define PMP_COMMANDS_H
+#ifndef PMP_PLAYERCOMMANDS_H
+#define PMP_PLAYERCOMMANDS_H
 
-#include "common/filehash.h"
+#include "common/requestid.h"
 
 #include "commandbase.h"
 
-#include <QDateTime>
-
-namespace PMP::Client
-{
-    class AbstractQueueMonitor;
-    class CurrentTrackMonitor;
-    class DynamicModeController;
-    class PlayerController;
-    class QueueEntryInfo;
-    class QueueEntryInfoStorage;
-}
-
 namespace PMP
 {
-    class StatusCommand : public CommandBase
+    class DelayedStartAtCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        DelayedStartAtCommand(QDateTime startTime);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        QDateTime _startTime;
+        RequestID _requestId;
+    };
+
+    class DelayedStartWaitCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        DelayedStartWaitCommand(qint64 delayMilliseconds);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        qint64 _delayMilliseconds;
+        RequestID _requestId;
+    };
+
+    class DelayedStartCancelCommand : public CommandBase
     {
         Q_OBJECT
     public:
@@ -48,12 +68,10 @@ namespace PMP
         void run(Client::ServerInterface* serverInterface) override;
 
     private:
-        StepResult printStatus(Client::PlayerController* playerController,
-                               Client::CurrentTrackMonitor* currentTrackMonitor,
-                               Client::DynamicModeController* dynamicModeController);
+        RequestID _requestId;
     };
 
-    class PersonalModeCommand : public CommandBase
+    class PlayCommand : public CommandBase
     {
         Q_OBJECT
     public:
@@ -63,7 +81,7 @@ namespace PMP
         void run(Client::ServerInterface* serverInterface) override;
     };
 
-    class PublicModeCommand : public CommandBase
+    class PauseCommand : public CommandBase
     {
         Q_OBJECT
     public:
@@ -73,22 +91,20 @@ namespace PMP
         void run(Client::ServerInterface* serverInterface) override;
     };
 
-    class DynamicModeActivationCommand : public CommandBase
+    class SkipCommand : public CommandBase
     {
         Q_OBJECT
     public:
-        explicit DynamicModeActivationCommand(bool enable);
-
         bool requiresAuthentication() const override;
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;
 
     private:
-        bool _enable;
+        quint32 _currentQueueId { 0 };
     };
 
-    class GetVolumeCommand : public CommandBase
+    class NowPlayingCommand : public CommandBase
     {
         Q_OBJECT
     public:
@@ -96,36 +112,6 @@ namespace PMP
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;
-    };
-
-    class SetVolumeCommand : public CommandBase
-    {
-        Q_OBJECT
-    public:
-        SetVolumeCommand(int volume);
-
-        bool requiresAuthentication() const override;
-
-    protected:
-        void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-        int _volume;
-    };
-
-    class TrackStatsCommand : public CommandBase
-    {
-        Q_OBJECT
-    public:
-        TrackStatsCommand(FileHash const& hash);
-
-        bool requiresAuthentication() const override;
-
-    protected:
-        void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-        FileHash _hash;
     };
 }
 #endif
