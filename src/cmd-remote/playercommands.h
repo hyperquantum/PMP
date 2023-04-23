@@ -30,7 +30,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        DelayedStartAtCommand(QDateTime startTime);
+        explicit DelayedStartAtCommand(QDateTime startTime);
 
         bool requiresAuthentication() const override;
 
@@ -46,7 +46,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        DelayedStartWaitCommand(qint64 delayMilliseconds);
+        explicit DelayedStartWaitCommand(qint64 delayMilliseconds);
 
         bool requiresAuthentication() const override;
 

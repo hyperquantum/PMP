@@ -125,7 +125,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        QueueDeleteCommand(quint32 queueId);
+        explicit QueueDeleteCommand(quint32 queueId);
 
         bool requiresAuthentication() const override;
 

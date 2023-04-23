@@ -99,7 +99,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        SetVolumeCommand(int volume);
+        explicit SetVolumeCommand(int volume);
 
         bool requiresAuthentication() const override;
 
@@ -114,7 +114,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        TrackStatsCommand(FileHash const& hash);
+        explicit TrackStatsCommand(FileHash const& hash);
 
         bool requiresAuthentication() const override;
 
