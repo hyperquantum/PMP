@@ -45,8 +45,6 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        ReloadServerSettingsCommand();
-
         bool requiresAuthentication() const override;
 
     protected:
@@ -60,16 +58,11 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        ShutdownCommand(/*QString serverPassword*/);
-
         bool requiresAuthentication() const override;
         bool willCauseDisconnect() const override;
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-        //QString _serverPassword;
     };
 }
 #endif

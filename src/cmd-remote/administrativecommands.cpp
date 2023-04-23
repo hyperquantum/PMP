@@ -66,11 +66,6 @@ namespace PMP
 
     /* ===== ReloadServerSettingsCommand ===== */
 
-    ReloadServerSettingsCommand::ReloadServerSettingsCommand()
-    {
-        //
-    }
-
     bool ReloadServerSettingsCommand::requiresAuthentication() const
     {
         return true;
@@ -83,12 +78,6 @@ namespace PMP
     }
 
     /* ===== ShutdownCommand ===== */
-
-    ShutdownCommand::ShutdownCommand(/*QString serverPassword*/)
-    // : _serverPassword(serverPassword)
-    {
-        //
-    }
 
     bool ShutdownCommand::requiresAuthentication() const
     {
