@@ -28,12 +28,9 @@
 
 namespace PMP::Client
 {
-    class AbstractQueueMonitor;
     class CurrentTrackMonitor;
     class DynamicModeController;
     class PlayerController;
-    class QueueEntryInfo;
-    class QueueEntryInfoStorage;
 }
 
 namespace PMP
