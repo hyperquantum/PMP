@@ -78,6 +78,16 @@ namespace PMP
             this, &CollectionWidget::collectionContextMenuRequested
         );
 
+        connect(
+            _collectionDisplayModel, &FilteredCollectionTableModel::rowsInserted,
+            this, &CollectionWidget::rowCountChanged
+        );
+        connect(
+            _collectionDisplayModel, &FilteredCollectionTableModel::rowsRemoved,
+            this, &CollectionWidget::rowCountChanged
+        );
+        rowCountChanged();
+
         auto* collectionWatcher = &_serverInterface->collectionWatcher();
         connect(
             collectionWatcher, &CollectionWatcher::downloadingInProgressChanged,
@@ -213,6 +223,13 @@ namespace PMP
 
         auto popupPosition = _ui->collectionTableView->viewport()->mapToGlobal(position);
         _collectionContextMenu->popup(popupPosition);
+    }
+
+    void CollectionWidget::rowCountChanged()
+    {
+        auto rowCount = _collectionDisplayModel->rowCount();
+
+        _ui->trackCountLabel->setText(tr("%n track(s) shown", "", rowCount));
     }
 
     void CollectionWidget::updateSpinnerVisibility()
