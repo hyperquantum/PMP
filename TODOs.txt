@@ -63,7 +63,6 @@ IDEAS
  * play history: add context: was there no user interaction for a long time?
  * music collection: add a clear button for the filter
  * music collection: provide fast partial indexation that only detects new files
- * music collection: show filtered count / total count
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  *** dynamic mode: detect and prevent track repetition with different hash values
  *** dynamic mode: artist repetition avoidance
