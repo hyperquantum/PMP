@@ -59,6 +59,7 @@ namespace PMP
         void highlightTracksIndexChanged(int index);
         void highlightColorIndexChanged();
         void collectionContextMenuRequested(const QPoint& position);
+        void rowCountChanged();
 
     private:
         void updateSpinnerVisibility();
