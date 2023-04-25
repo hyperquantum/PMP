@@ -80,6 +80,7 @@ namespace PMP
             case TrackCriterium::LengthAtLeastFiveMinutes:
             case TrackCriterium::NotInTheQueue:
             case TrackCriterium::InTheQueue:
+            case TrackCriterium::NoLongerAvailable:
                 break;
         }
 
@@ -159,6 +160,9 @@ namespace PMP
 
             case TrackCriterium::InTheQueue:
                 return _queueHashesMonitor.isPresentInQueue(track.hashId());
+
+            case TrackCriterium::NoLongerAvailable:
+                return track.isAvailable() == false;
         }
 
         return false;

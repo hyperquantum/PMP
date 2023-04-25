@@ -322,6 +322,8 @@ namespace PMP
         addItem(tr("not in the queue"), TrackCriterium::NotInTheQueue);
         addItem(tr("in the queue"), TrackCriterium::InTheQueue);
 
+        addItem(tr("no longer available"), TrackCriterium::NoLongerAvailable);
+
         comboBox->setCurrentIndex(0);
     }
 
