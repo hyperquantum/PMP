@@ -55,6 +55,7 @@ namespace PMP
         LengthAtLeastFiveMinutes,
         NotInTheQueue,
         InTheQueue,
+        NoLongerAvailable,
     };
 
     class TrackJudge
