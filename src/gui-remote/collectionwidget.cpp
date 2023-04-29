@@ -309,14 +309,18 @@ namespace PMP
                 TrackCriterium::LastHeardNotInLast30Days);
         addItem(tr("not heard in the last 10 days"),
                 TrackCriterium::LastHeardNotInLast10Days);
+        addItem(tr("heard at least once"), TrackCriterium::HeardAtLeastOnce);
 
         addItem(tr("without score"), TrackCriterium::WithoutScore);
-        addItem(tr("score <= 30"), TrackCriterium::ScoreMaximum30);
+        addItem(tr("with score"), TrackCriterium::WithScore);
+        addItem(tr("score < 30"), TrackCriterium::ScoreLessThan30);
+        addItem(tr("score < 50"), TrackCriterium::ScoreLessThan50);
+        addItem(tr("score >= 80"), TrackCriterium::ScoreAtLeast80);
         addItem(tr("score >= 85"), TrackCriterium::ScoreAtLeast85);
         addItem(tr("score >= 90"), TrackCriterium::ScoreAtLeast90);
         addItem(tr("score >= 95"), TrackCriterium::ScoreAtLeast95);
 
-        addItem(tr("length <= 1 min."), TrackCriterium::LengthMaximumOneMinute);
+        addItem(tr("length < 1 min."), TrackCriterium::LengthLessThanOneMinute);
         addItem(tr("length >= 5 min."), TrackCriterium::LengthAtLeastFiveMinutes);
 
         addItem(tr("not in the queue"), TrackCriterium::NotInTheQueue);

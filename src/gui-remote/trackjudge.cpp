@@ -67,8 +67,12 @@ namespace PMP
             case TrackCriterium::LastHeardNotInLast90Days:
             case TrackCriterium::LastHeardNotInLast30Days:
             case TrackCriterium::LastHeardNotInLast10Days:
+            case TrackCriterium::HeardAtLeastOnce:
             case TrackCriterium::WithoutScore:
-            case TrackCriterium::ScoreMaximum30:
+            case TrackCriterium::WithScore:
+            case TrackCriterium::ScoreLessThan30:
+            case TrackCriterium::ScoreLessThan50:
+            case TrackCriterium::ScoreAtLeast80:
             case TrackCriterium::ScoreAtLeast85:
             case TrackCriterium::ScoreAtLeast90:
             case TrackCriterium::ScoreAtLeast95:
@@ -76,7 +80,7 @@ namespace PMP
 
             case TrackCriterium::AllTracks:
             case TrackCriterium::NoTracks:
-            case TrackCriterium::LengthMaximumOneMinute:
+            case TrackCriterium::LengthLessThanOneMinute:
             case TrackCriterium::LengthAtLeastFiveMinutes:
             case TrackCriterium::NotInTheQueue:
             case TrackCriterium::InTheQueue:
@@ -121,15 +125,36 @@ namespace PMP
             case TrackCriterium::LastHeardNotInLast10Days:
                 return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 10);
 
+            case TrackCriterium::HeardAtLeastOnce:
+            {
+                auto evaluator = [](QDateTime prevHeard) { return prevHeard.isValid(); };
+                return trackSatisfiesLastHeardDateCriterium(track, evaluator);
+            }
             case TrackCriterium::WithoutScore:
             {
                 auto evaluator = [](int permillage) { return permillage < 0; };
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackCriterium::ScoreMaximum30:
+            case TrackCriterium::WithScore:
+            {
+                auto evaluator = [](int permillage) { return permillage >= 0; };
+                return trackSatisfiesScoreCriterium(track, evaluator);
+            }
+            case TrackCriterium::ScoreLessThan30:
             {
                 auto evaluator =
-                    [](int permillage) { return permillage >= 0 && permillage <= 300; };
+                    [](int permillage) { return permillage >= 0 && permillage < 300; };
+                return trackSatisfiesScoreCriterium(track, evaluator);
+            }
+            case TrackCriterium::ScoreLessThan50:
+            {
+                auto evaluator =
+                    [](int permillage) { return permillage >= 0 && permillage < 500; };
+                return trackSatisfiesScoreCriterium(track, evaluator);
+            }
+            case TrackCriterium::ScoreAtLeast80:
+            {
+                auto evaluator = [](int permillage) { return permillage >= 800; };
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
             case TrackCriterium::ScoreAtLeast85:
@@ -147,9 +172,9 @@ namespace PMP
                 auto evaluator = [](int permillage) { return permillage >= 950; };
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackCriterium::LengthMaximumOneMinute:
+            case TrackCriterium::LengthLessThanOneMinute:
                 if (!track.lengthIsKnown()) return TriBool::unknown;
-                return track.lengthInMilliseconds() <= 60 * 1000;
+                return track.lengthInMilliseconds() < 60 * 1000;
 
             case TrackCriterium::LengthAtLeastFiveMinutes:
                 if (!track.lengthIsKnown()) return TriBool::unknown;
