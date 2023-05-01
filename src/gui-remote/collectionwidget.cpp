@@ -297,30 +297,42 @@ namespace PMP
         addItem(tr("none"), criteriumForNone);
 
         addItem(tr("never heard"), TrackCriterium::NeverHeard);
-        addItem(tr("not heard in the last 1000 days"),
-                TrackCriterium::LastHeardNotInLast1000Days);
-        addItem(tr("not heard in the last 365 days"),
-                TrackCriterium::LastHeardNotInLast365Days);
+        addItem(tr("not heard in the last 5 years"),
+                TrackCriterium::NotHeardInLast5Years);
+        addItem(tr("not heard in the last 3 years"),
+                TrackCriterium::NotHeardInLast3Years);
+        addItem(tr("not heard in the last 2 years"),
+                TrackCriterium::NotHeardInLast2Years);
+        addItem(tr("not heard in the last year"),
+                TrackCriterium::NotHeardInLastYear);
         addItem(tr("not heard in the last 180 days"),
-                TrackCriterium::LastHeardNotInLast180Days);
+                TrackCriterium::NotHeardInLast180Days);
         addItem(tr("not heard in the last 90 days"),
-                TrackCriterium::LastHeardNotInLast90Days);
+                TrackCriterium::NotHeardInLast90Days);
         addItem(tr("not heard in the last 30 days"),
-                TrackCriterium::LastHeardNotInLast30Days);
+                TrackCriterium::NotHeardInLast30Days);
         addItem(tr("not heard in the last 10 days"),
-                TrackCriterium::LastHeardNotInLast10Days);
+                TrackCriterium::NotHeardInLast10Days);
+        addItem(tr("heard at least once"), TrackCriterium::HeardAtLeastOnce);
 
         addItem(tr("without score"), TrackCriterium::WithoutScore);
-        addItem(tr("score <= 30"), TrackCriterium::ScoreMaximum30);
+        addItem(tr("with score"), TrackCriterium::WithScore);
+        addItem(tr("score < 30"), TrackCriterium::ScoreLessThan30);
+        addItem(tr("score < 50"), TrackCriterium::ScoreLessThan50);
+        addItem(tr("score >= 80"), TrackCriterium::ScoreAtLeast80);
         addItem(tr("score >= 85"), TrackCriterium::ScoreAtLeast85);
         addItem(tr("score >= 90"), TrackCriterium::ScoreAtLeast90);
         addItem(tr("score >= 95"), TrackCriterium::ScoreAtLeast95);
 
-        addItem(tr("length <= 1 min."), TrackCriterium::LengthMaximumOneMinute);
+        addItem(tr("length < 1 min."), TrackCriterium::LengthLessThanOneMinute);
         addItem(tr("length >= 5 min."), TrackCriterium::LengthAtLeastFiveMinutes);
 
         addItem(tr("not in the queue"), TrackCriterium::NotInTheQueue);
         addItem(tr("in the queue"), TrackCriterium::InTheQueue);
+
+        addItem(tr("without title"), TrackCriterium::WithoutTitle);
+        addItem(tr("without artist"), TrackCriterium::WithoutArtist);
+        addItem(tr("without album"), TrackCriterium::WithoutAlbum);
 
         addItem(tr("no longer available"), TrackCriterium::NoLongerAvailable);
 
