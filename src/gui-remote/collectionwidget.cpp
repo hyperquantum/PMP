@@ -297,18 +297,22 @@ namespace PMP
         addItem(tr("none"), criteriumForNone);
 
         addItem(tr("never heard"), TrackCriterium::NeverHeard);
-        addItem(tr("not heard in the last 1000 days"),
-                TrackCriterium::LastHeardNotInLast1000Days);
-        addItem(tr("not heard in the last 365 days"),
-                TrackCriterium::LastHeardNotInLast365Days);
+        addItem(tr("not heard in the last 5 years"),
+                TrackCriterium::NotHeardInLast5Years);
+        addItem(tr("not heard in the last 3 years"),
+                TrackCriterium::NotHeardInLast3Years);
+        addItem(tr("not heard in the last 2 years"),
+                TrackCriterium::NotHeardInLast2Years);
+        addItem(tr("not heard in the last year"),
+                TrackCriterium::NotHeardInLastYear);
         addItem(tr("not heard in the last 180 days"),
-                TrackCriterium::LastHeardNotInLast180Days);
+                TrackCriterium::NotHeardInLast180Days);
         addItem(tr("not heard in the last 90 days"),
-                TrackCriterium::LastHeardNotInLast90Days);
+                TrackCriterium::NotHeardInLast90Days);
         addItem(tr("not heard in the last 30 days"),
-                TrackCriterium::LastHeardNotInLast30Days);
+                TrackCriterium::NotHeardInLast30Days);
         addItem(tr("not heard in the last 10 days"),
-                TrackCriterium::LastHeardNotInLast10Days);
+                TrackCriterium::NotHeardInLast10Days);
         addItem(tr("heard at least once"), TrackCriterium::HeardAtLeastOnce);
 
         addItem(tr("without score"), TrackCriterium::WithoutScore);

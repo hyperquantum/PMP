@@ -40,12 +40,14 @@ namespace PMP
         AllTracks = 0,
         NoTracks,
         NeverHeard,
-        LastHeardNotInLast1000Days,
-        LastHeardNotInLast365Days,
-        LastHeardNotInLast180Days,
-        LastHeardNotInLast90Days,
-        LastHeardNotInLast30Days,
-        LastHeardNotInLast10Days,
+        NotHeardInLast5Years,
+        NotHeardInLast3Years,
+        NotHeardInLast2Years,
+        NotHeardInLastYear,
+        NotHeardInLast180Days,
+        NotHeardInLast90Days,
+        NotHeardInLast30Days,
+        NotHeardInLast10Days,
         HeardAtLeastOnce,
         WithoutScore,
         WithScore,
@@ -117,6 +119,10 @@ namespace PMP
         TriBool trackSatisfiesNotHeardInTheLastXDaysCriterium(
                                                  Client::CollectionTrackInfo const& track,
                                                  int days) const;
+
+        TriBool trackSatisfiesNotHeardInTheLastXYearsCriterium(
+                                                 Client::CollectionTrackInfo const& track,
+                                                 int years) const;
 
         TrackCriterium _criterium1;
         TrackCriterium _criterium2;

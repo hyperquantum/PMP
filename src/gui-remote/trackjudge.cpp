@@ -61,12 +61,14 @@ namespace PMP
         switch (criterium)
         {
             case TrackCriterium::NeverHeard:
-            case TrackCriterium::LastHeardNotInLast1000Days:
-            case TrackCriterium::LastHeardNotInLast365Days:
-            case TrackCriterium::LastHeardNotInLast180Days:
-            case TrackCriterium::LastHeardNotInLast90Days:
-            case TrackCriterium::LastHeardNotInLast30Days:
-            case TrackCriterium::LastHeardNotInLast10Days:
+            case TrackCriterium::NotHeardInLast5Years:
+            case TrackCriterium::NotHeardInLast3Years:
+            case TrackCriterium::NotHeardInLast2Years:
+            case TrackCriterium::NotHeardInLastYear:
+            case TrackCriterium::NotHeardInLast180Days:
+            case TrackCriterium::NotHeardInLast90Days:
+            case TrackCriterium::NotHeardInLast30Days:
+            case TrackCriterium::NotHeardInLast10Days:
             case TrackCriterium::HeardAtLeastOnce:
             case TrackCriterium::WithoutScore:
             case TrackCriterium::WithScore:
@@ -107,22 +109,28 @@ namespace PMP
                 auto evaluator = [](QDateTime prevHeard) { return !prevHeard.isValid(); };
                 return trackSatisfiesLastHeardDateCriterium(track, evaluator);
             }
-            case TrackCriterium::LastHeardNotInLast1000Days:
-                return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 1000);
+            case TrackCriterium::NotHeardInLast5Years:
+                return trackSatisfiesNotHeardInTheLastXYearsCriterium(track, 5);
 
-            case TrackCriterium::LastHeardNotInLast365Days:
-                return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 365);
+            case TrackCriterium::NotHeardInLast3Years:
+                return trackSatisfiesNotHeardInTheLastXYearsCriterium(track, 3);
 
-            case TrackCriterium::LastHeardNotInLast180Days:
+            case TrackCriterium::NotHeardInLast2Years:
+                return trackSatisfiesNotHeardInTheLastXYearsCriterium(track, 2);
+
+            case TrackCriterium::NotHeardInLastYear:
+                return trackSatisfiesNotHeardInTheLastXYearsCriterium(track, 1);
+
+            case TrackCriterium::NotHeardInLast180Days:
                 return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 180);
 
-            case TrackCriterium::LastHeardNotInLast90Days:
+            case TrackCriterium::NotHeardInLast90Days:
                 return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 90);
 
-            case TrackCriterium::LastHeardNotInLast30Days:
+            case TrackCriterium::NotHeardInLast30Days:
                 return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 30);
 
-            case TrackCriterium::LastHeardNotInLast10Days:
+            case TrackCriterium::NotHeardInLast10Days:
                 return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 10);
 
             case TrackCriterium::HeardAtLeastOnce:
@@ -232,6 +240,20 @@ namespace PMP
             {
                 return !prevHeard.isValid()
                         || prevHeard <= QDateTime::currentDateTimeUtc().addDays(-days);
+            };
+
+        return trackSatisfiesLastHeardDateCriterium(track, evaluator);
+    }
+
+    TriBool TrackJudge::trackSatisfiesNotHeardInTheLastXYearsCriterium(
+                                                         const CollectionTrackInfo& track,
+                                                         int years) const
+    {
+        auto evaluator =
+            [years](QDateTime prevHeard)
+            {
+                return !prevHeard.isValid()
+                        || prevHeard <= QDateTime::currentDateTimeUtc().addYears(-years);
             };
 
         return trackSatisfiesLastHeardDateCriterium(track, evaluator);
