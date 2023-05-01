@@ -61,6 +61,9 @@ namespace PMP
         LengthAtLeastFiveMinutes,
         NotInTheQueue,
         InTheQueue,
+        WithoutTitle,
+        WithoutArtist,
+        WithoutAlbum,
         NoLongerAvailable,
     };
 
@@ -105,6 +108,7 @@ namespace PMP
 
     private:
         static bool usesUserData(TrackCriterium criterium);
+        static bool isTextFieldEmpty(QString contents);
 
         TriBool trackSatisfiesCriterium(Client::CollectionTrackInfo const& track,
                                         TrackCriterium criterium) const;

@@ -86,11 +86,19 @@ namespace PMP
             case TrackCriterium::LengthAtLeastFiveMinutes:
             case TrackCriterium::NotInTheQueue:
             case TrackCriterium::InTheQueue:
+            case TrackCriterium::WithoutTitle:
+            case TrackCriterium::WithoutArtist:
+            case TrackCriterium::WithoutAlbum:
             case TrackCriterium::NoLongerAvailable:
                 break;
         }
 
         return false;
+    }
+
+    bool TrackJudge::isTextFieldEmpty(QString contents)
+    {
+        return contents.trimmed().isEmpty();
     }
 
     TriBool TrackJudge::trackSatisfiesCriterium(const CollectionTrackInfo& track,
@@ -193,6 +201,15 @@ namespace PMP
 
             case TrackCriterium::InTheQueue:
                 return _queueHashesMonitor.isPresentInQueue(track.hashId());
+
+            case TrackCriterium::WithoutTitle:
+                return isTextFieldEmpty(track.title());
+
+            case TrackCriterium::WithoutArtist:
+                return isTextFieldEmpty(track.artist());
+
+            case TrackCriterium::WithoutAlbum:
+                return isTextFieldEmpty(track.album());
 
             case TrackCriterium::NoLongerAvailable:
                 return track.isAvailable() == false;

@@ -330,6 +330,10 @@ namespace PMP
         addItem(tr("not in the queue"), TrackCriterium::NotInTheQueue);
         addItem(tr("in the queue"), TrackCriterium::InTheQueue);
 
+        addItem(tr("without title"), TrackCriterium::WithoutTitle);
+        addItem(tr("without artist"), TrackCriterium::WithoutArtist);
+        addItem(tr("without album"), TrackCriterium::WithoutAlbum);
+
         addItem(tr("no longer available"), TrackCriterium::NoLongerAvailable);
 
         comboBox->setCurrentIndex(0);
