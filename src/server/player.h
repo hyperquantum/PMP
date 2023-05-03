@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,7 +29,7 @@
 #include <QMediaPlayer>
 #include <QQueue>
 
-namespace PMP
+namespace PMP::Server
 {
     class Resolver;
 
@@ -40,7 +40,7 @@ namespace PMP
         PlayerInstance(QObject* parent, int identifier, Preloader* preloader,
                        Resolver* resolver);
 
-        QueueEntry* track() const { return _track; }
+        QSharedPointer<QueueEntry> track() const { return _track; }
         bool availableForNewTrack() const;
 
         bool trackSetSuccessfully() const { return _mediaSet; }
@@ -49,7 +49,7 @@ namespace PMP
 
     public Q_SLOTS:
         void setVolume(int volume);
-        void setTrack(QueueEntry* queueEntry, bool onlyIfPreloaded);
+        void setTrack(QSharedPointer<QueueEntry> queueEntry, bool onlyIfPreloaded);
         void play();
         void pause();
         void stop();
@@ -78,7 +78,7 @@ namespace PMP
         QMediaPlayer* _player;
         Preloader* _preloader;
         Resolver* _resolver;
-        QueueEntry* _track;
+        QSharedPointer<QueueEntry> _track;
         PreloadedFile _preloadedFile;
         qint64 _positionWhenStopped;
         int _identifier;
@@ -99,7 +99,7 @@ namespace PMP
 
         bool playing() const;
         ServerPlayerState state() const;
-        QueueEntry const* nowPlaying() const;
+        QSharedPointer<QueueEntry const> nowPlaying() const;
         uint nowPlayingQID() const;
         qint64 playPosition() const;
         quint32 userPlayingFor() const;
@@ -126,7 +126,7 @@ namespace PMP
 
     Q_SIGNALS:
         void stateChanged(ServerPlayerState state);
-        void currentTrackChanged(QueueEntry const* newTrack);
+        void currentTrackChanged(QSharedPointer<QueueEntry const> newTrack);
         void positionChanged(qint64 position);
         void volumeChanged(int volume);
         void userPlayingForChanged(quint32 user);
@@ -154,14 +154,18 @@ namespace PMP
         bool startNext(bool stopCurrent, bool playNext);
         PlayerInstance* createNewPlayerInstance();
         void prepareForFirstTrackFromQueue();
-        bool tryPrepareTrack(PlayerInstance* playerInstance, QueueEntry* entry,
+        bool tryPrepareTrack(PlayerInstance* playerInstance,
+                             QSharedPointer<QueueEntry> entry,
                              bool onlyIfPreloaded);
-        bool tryStartNextTrack(PlayerInstance* playerInstance, QueueEntry* entry,
+        bool tryStartNextTrack(PlayerInstance* playerInstance,
+                               QSharedPointer<QueueEntry> entry,
                                bool startPlaying);
-        void putInHistoryOrder(QueueEntry* entry);
-        void addToHistory(QueueEntry* entry, int permillage, bool hadError, bool hadSeek);
+        void putInHistoryOrder(QSharedPointer<QueueEntry> entry);
+        void addToHistory(QSharedPointer<QueueEntry> entry, int permillage, bool hadError,
+                          bool hadSeek);
         void performHistoryActions(QSharedPointer<PlayerHistoryEntry> historyEntry);
-        static int calcPermillagePlayed(QueueEntry* track, qint64 positionReached,
+        static int calcPermillagePlayed(QSharedPointer<QueueEntry> track,
+                                        qint64 positionReached,
                                         bool seeked);
 
         PlayerInstance* _oldInstance1;
@@ -171,7 +175,7 @@ namespace PMP
         Resolver* _resolver;
         PlayerQueue _queue;
         Preloader _preloader;
-        QueueEntry* _nowPlaying;
+        QSharedPointer<QueueEntry> _nowPlaying;
         QQueue<uint> _historyOrder;
         QHash<uint, QSharedPointer<PlayerHistoryEntry>> _pendingHistory;
         int _instanceIdentifier;

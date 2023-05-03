@@ -23,7 +23,7 @@
 #include "playerqueue.h"
 #include "queueentry.h"
 
-namespace PMP
+namespace PMP::Server
 {
     TrackRepetitionChecker::TrackRepetitionChecker(QObject* parent, PlayerQueue* queue,
                                                    History* history)
@@ -62,11 +62,11 @@ namespace PMP
             return false;
 
         // check occurrence in 'now playing'
-        QueueEntry const* trackNowPlaying = _currentTrack;
+        auto trackNowPlaying = _currentTrack;
         if (trackNowPlaying)
         {
-            FileHash const* currentHash = trackNowPlaying->hash();
-            if (currentHash && hash == *currentHash)
+            auto currentHash = trackNowPlaying->hash().value();
+            if (hash == currentHash)
                 return true;
         }
 
@@ -80,11 +80,11 @@ namespace PMP
         if (lastPlay.isValid() && lastPlay > maxLastPlay)
             return true;
 
-        auto userStats = _history->getUserStats(id, _userPlayingFor);
-        if (!userStats)
+        auto maybeUserStats = _history->getUserStats(id, _userPlayingFor);
+        if (maybeUserStats.isNull())
             return true;
 
-        lastPlay = userStats->lastHeard;
+        lastPlay = maybeUserStats.value().lastHeard();
         if (lastPlay.isValid() && lastPlay > maxLastPlay)
             return true;
 
@@ -106,7 +106,8 @@ namespace PMP
         Q_EMIT noRepetitionSpanSecondsChanged();
     }
 
-    void TrackRepetitionChecker::currentTrackChanged(const QueueEntry* newTrack)
+    void TrackRepetitionChecker::currentTrackChanged(
+                                                QSharedPointer<const QueueEntry> newTrack)
     {
         _currentTrack = newTrack;
     }

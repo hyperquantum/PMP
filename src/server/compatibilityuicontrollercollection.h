@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,7 +23,7 @@
 #include <QHash>
 #include <QObject>
 
-namespace PMP
+namespace PMP::Server
 {
     class CompatibilityUiController;
     class ServerInterface;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_COMPATIBILITYINTERFACEVIEW_H
 #define PMP_COMPATIBILITYINTERFACEVIEW_H
 
-#include "common/compatibilityinterfaceviewcreator.h"
+#include "client/compatibilityinterfaceviewcreator.h"
 
 #include <QObject>
 #include <QPointer>
@@ -29,18 +29,22 @@
 QT_FORWARD_DECLARE_CLASS(QMenu)
 QT_FORWARD_DECLARE_CLASS(QPushButton)
 
-namespace PMP
+namespace PMP::Client
 {
     class CompatibilityInterface;
     class CompatibilityInterfaceAction;
+}
 
-    class CompatibilityInterfaceViewCreatorImpl : public CompatibilityInterfaceViewCreator
+namespace PMP
+{
+    class CompatibilityInterfaceViewCreatorImpl
+            : public Client::CompatibilityInterfaceViewCreator
     {
         Q_OBJECT
     public:
         CompatibilityInterfaceViewCreatorImpl(QWidget* parent, QMenu* menu);
 
-        void createViewForInterface(CompatibilityInterface* interface) override;
+        void createViewForInterface(Client::CompatibilityInterface* interface) override;
 
     Q_SIGNALS:
         void interfaceMenuActionAdded();
@@ -54,7 +58,8 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        CompatibilityInterfaceView(QWidget* parent, CompatibilityInterface* interface,
+        CompatibilityInterfaceView(QWidget* parent,
+                                   Client::CompatibilityInterface* interface,
                                    QMenu* menu);
 
     Q_SIGNALS:
@@ -66,11 +71,11 @@ namespace PMP
     private:
         void createWindow();
         void focusWindow();
-        void triggerInterfaceAction(CompatibilityInterfaceAction* action,
+        void triggerInterfaceAction(Client::CompatibilityInterfaceAction* action,
                                     QPushButton* button);
 
         QWidget* _parent;
-        CompatibilityInterface* _interface;
+        Client::CompatibilityInterface* _interface;
         QPointer<QWidget> _window;
     };
 }

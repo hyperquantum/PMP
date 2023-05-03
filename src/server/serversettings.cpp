@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,7 @@
 #include <QStandardPaths>
 #include <QtDebug>
 
-namespace PMP
+namespace PMP::Server
 {
     ServerSettings::ServerSettings()
     {
@@ -161,6 +161,26 @@ namespace PMP
         else
         {
             newConnectionSettings.hostname = hostnameSetting.toString();
+        }
+
+        QVariant portSetting = settings.value("Database/port");
+        int port = -1;
+        if (portSetting.isValid() && !portSetting.toString().isEmpty())
+        {
+            bool ok;
+            port = portSetting.toString().toInt(&ok);
+            if (!ok || port <= 0 || port > 0xFFFF)
+            {
+                qWarning() << "server settings: ignoring invalid database port; must be a number from 1 to 65535";
+            }
+            else
+            {
+                newConnectionSettings.port = port;
+            }
+        }
+        if (port <= 0)
+        {
+            settings.setValue("Database/port", "");
         }
 
         QVariant usernameSetting = settings.value("Database/username");

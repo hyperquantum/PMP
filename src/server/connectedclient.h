@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,18 +17,19 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CONNECTEDCLIENT_H
-#define PMP_CONNECTEDCLIENT_H
+#ifndef PMP_SERVER_CONNECTEDCLIENT_H
+#define PMP_SERVER_CONNECTEDCLIENT_H
 
-#include "common/collectiontrackinfo.h"
 #include "common/compatibilityui.h"
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
+#include "common/startstopeventstatus.h"
 
+#include "collectiontrackinfo.h"
+#include "hashstats.h"
 #include "playerhistoryentry.h"
 #include "result.h"
 #include "serverplayerstate.h"
-#include "userdataforhashesfetcher.h"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -38,16 +39,14 @@
 #include <QTcpSocket>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Server
 {
     class CollectionMonitor;
     class CollectionSender;
     class CompatibilityUiControllerCollection;
-    class History;
     class Player;
     class QueueEntry;
     class Resolver;
-    class Server;
     class ServerInterface;
     class ServerHealthMonitor;
     class Users;
@@ -57,7 +56,7 @@ namespace PMP
         Q_OBJECT
     public:
         ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
-                        Player* player, History* history, Users* users,
+                        Player* player, Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor);
 
@@ -86,7 +85,7 @@ namespace PMP
                                           int waveDeliveredCount,
                                           int waveTotalCount);
         void playerStateChanged(ServerPlayerState state);
-        void currentTrackChanged(QueueEntry const* entry);
+        void currentTrackChanged(QSharedPointer<QueueEntry const> entry);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
         void trackPositionChanged(qint64 position);
         void onDelayedStartActiveChanged();
@@ -103,8 +102,6 @@ namespace PMP
                                           quint32 clientReference);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
         void onUserPlayingForChanged(quint32 user);
-        void onUserHashStatsUpdated(uint hashID, quint32 user,
-                                    QDateTime previouslyHeard, qint16 score);
         void onFullIndexationRunStatusChanged(bool running);
         void onCollectionTrackInfoBatchToSend(uint clientReference,
                                               QVector<CollectionTrackInfo> tracks);
@@ -112,10 +109,6 @@ namespace PMP
         void onHashAvailabilityChanged(QVector<PMP::FileHash> available,
                                        QVector<PMP::FileHash> unavailable);
         void onHashInfoChanged(QVector<CollectionTrackInfo> changes);
-
-        void userDataForHashesFetchCompleted(quint32 userId,
-                                             QVector<PMP::UserDataForHash> results,
-                                             bool havePreviouslyHeard, bool haveScore);
 
     private:
         enum class GeneralOrSpecific { General, Specific };
@@ -140,6 +133,7 @@ namespace PMP
         void sendKeepAliveReply(quint8 blob);
         void sendProtocolExtensionsMessage();
         void sendEventNotificationMessage(ServerEventCode eventCode);
+        void sendServerVersionInfoMessage();
         void sendServerInstanceIdentifier();
         void sendDatabaseIdentifier();
         void sendUsersList();
@@ -157,8 +151,8 @@ namespace PMP
         void sendQueueEntryInfoMessage(quint32 queueID);
         void sendQueueEntryInfoMessage(QList<quint32> const& queueIDs);
         void sendQueueEntryHashMessage(QList<quint32> const& queueIDs);
-        quint16 createTrackStatusFor(QueueEntry* entry);
-        void sendPossibleTrackFilenames(quint32 queueID, QList<QString> const& names);
+        quint16 createTrackStatusFor(QSharedPointer<QueueEntry> entry);
+        void sendPossibleTrackFilenames(quint32 queueID, QVector<QString> const& names);
         void sendNewUserAccountSaltMessage(QString login, QByteArray const& salt);
         void sendSuccessMessage(quint32 clientReference, quint32 intData);
         void sendSuccessMessage(quint32 clientReference, quint32 intData,
@@ -178,10 +172,12 @@ namespace PMP
                                        QVector<CollectionTrackInfo> tracks);
         void sendNewHistoryEntryMessage(QSharedPointer<PlayerHistoryEntry> entry);
         void sendQueueHistoryMessage(int limit);
+        void sendHashUserDataMessage(quint32 userId, QVector<HashStats> stats);
         void sendServerNameMessage();
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
         void sendServerClockMessage();
+        void sendDelayedStartInfoMessage();
         void sendCompatibilityInterfacesAnnouncement();
         void sendCompatibilityInterfaceLanguageSelectionConfirmation(
                                                           quint32 clientReference,
@@ -208,6 +204,10 @@ namespace PMP
         void parseClientProtocolExtensionsMessage(QByteArray const& message);
         void parseSingleByteActionMessage(QByteArray const& message);
         void parseParameterlessActionMessage(QByteArray const& message);
+        void parseInitiateNewUserAccountMessage(QByteArray const& message);
+        void parseFinishNewUserAccountMessage(QByteArray const& message);
+        void parseInitiateLoginMessage(QByteArray const& message);
+        void parseFinishLoginMessage(QByteArray const& message);
         void parseActivateDelayedStartRequest(QByteArray const& message);
         void parsePlayerSeekRequestMessage(QByteArray const& message);
         void parseTrackInfoRequestMessage(QByteArray const& message);
@@ -238,7 +238,6 @@ namespace PMP
         QTcpSocket* _socket;
         ServerInterface* _serverInterface;
         Player* _player;
-        History* _history;
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;
@@ -250,7 +249,7 @@ namespace PMP
         quint32 _lastSentNowPlayingID;
         QString _userAccountRegistering;
         QByteArray _saltForUserAccountRegistering;
-        QString _userAccountLoggingIn;
+        quint32 _userIdLoggingIn { 0 };
         QByteArray _sessionSaltForUserLoggingIn;
         bool _terminated;
         bool _binaryMode;

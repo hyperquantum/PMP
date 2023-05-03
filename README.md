@@ -1,12 +1,14 @@
 ﻿# Party Music Player [![license][license-badge]][LICENSE]
 
-Copyright (C) 2011-2022  Kevin André
+Copyright (C) 2011-2023  Kevin André
 
 Party Music Player, abbreviated as PMP, is a multi-user client-server music system. The server is responsible for playing music, and a separate program, a 'remote', is used to connect to the server and instruct it what to do. PMP has an advanced file tracking mechanism; it can deal with moved/renamed and duplicate files without any problems.
 
 PMP is designed to be portable software and should be compatible with most popular operating systems in use today. Only Windows has been tested recently. Linux has been tested in the past. Others like Mac OS X, BSD... have never been tested but should work as well.
 
 *This is alpha quality software*. Existing features can still be incomplete. Certain 'essential' features that can be found in most music player software might (still) be missing. PMP might contain lots of bugs. Use at your own risk.
+
+![screenshot](screenshots/gui-remote-screenshot.png)
 
 ## Table of Contents
 Contents of this file:
@@ -59,7 +61,7 @@ Contents of this file:
 ### Build-time Dependencies
 
  * C++ compiler with support for C++ 2014
- * CMake 3.1 or higher
+ * CMake 3.8 or higher
 
 Building on Windows is done using [vcpkg](https://github.com/microsoft/vcpkg).
 
@@ -171,8 +173,8 @@ Finally you can build PMP itself. Run the following commands in a CMD terminal. 
 
 ```cmd
 > cd PMP\bin
-> "C:\Program Files\CMake\bin\cmake" -G "Visual Studio 16 2019" -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake" -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
-> "C:\Program Files\CMake\bin\cmake" --build . --config Debug
+> "C:\Program Files\CMake\bin\cmake" -G "Visual Studio 17 2022" -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake" -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
+> "C:\Program Files\CMake\bin\cmake" --build . --config Debug -j 2
 ```
 
 

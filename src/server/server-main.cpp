@@ -17,6 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "common/concurrent.h"
 #include "common/logging.h"
 #include "common/util.h"
 #include "common/version.h"
@@ -25,15 +26,19 @@
 #include "database.h"
 #include "delayedstart.h"
 #include "generator.h"
+#include "hashidregistrar.h"
+#include "hashrelations.h"
 #include "history.h"
+#include "historystatistics.h"
+#include "historystatisticsprefetcher.h"
 #include "player.h"
 #include "playerqueue.h"
 #include "preloader.h"
 #include "queueentry.h"
 #include "resolver.h"
-#include "server.h"
 #include "serverhealthmonitor.h"
 #include "serversettings.h"
+#include "tcpserver.h"
 #include "users.h"
 
 #include <QCoreApplication>
@@ -41,6 +46,7 @@
 #include <QThreadPool>
 
 using namespace PMP;
+using namespace PMP::Server;
 
 namespace
 {
@@ -56,7 +62,7 @@ namespace
     }
 
     void printStartupSummary(QTextStream& out, ServerSettings const& serverSettings,
-                             Server const& server, Player const& player)
+                             TcpServer const& server, Player const& player)
     {
         out << "Server instance identifier: " << server.uuid().toString() << "\n";
         out << "Server caption: " << server.caption() << "\n";
@@ -83,6 +89,76 @@ namespace
     }
 }
 
+namespace
+{
+    bool initialIndexation = true;
+}
+
+static void setUpAndRunInitialIndexation(Resolver& resolver)
+{
+    QObject::connect(
+        &resolver, &Resolver::fullIndexationRunStatusChanged,
+        &resolver,
+        [](bool running)
+        {
+            if (running || !initialIndexation)
+                return;
+
+            initialIndexation = false;
+            QTextStream out(stdout);
+            out << "Indexation finished." << Qt::endl
+                << Qt::endl;
+        }
+    );
+
+    QTextStream out(stdout);
+    out << "Running initial full indexation..." << Qt::endl;
+    resolver.startFullIndexation();
+}
+
+static void loadEquivalencesAndStartStatisticsPrefetchAsync(HashRelations* hashRelations,
+                                                  HistoryStatisticsPrefetcher* prefetcher)
+{
+    auto equivalencesLoadingFuture =
+        Concurrent::run<SuccessType, FailureType>(
+            [hashRelations]() -> ResultOrError<SuccessType, FailureType>
+            {
+                auto db = Database::getDatabaseForCurrentThread();
+                if (!db) return failure; /* database not available */
+
+                auto equivalencesOrError = db->getEquivalences();
+                if (equivalencesOrError.failed())
+                    return failure;
+
+                auto equivalences = equivalencesOrError.result();
+                hashRelations->loadEquivalences(equivalences);
+                qDebug() << "successfully loaded" << equivalences.size()
+                         << "equivalences from the database";
+                return success;
+            }
+        );
+
+    equivalencesLoadingFuture.addListener(
+        prefetcher,
+        [prefetcher](ResultOrError<SuccessType, FailureType> result)
+        {
+            if (result.failed())
+                qDebug() << "failed to load equivalences from the database";
+
+            prefetcher->start();
+        }
+    );
+}
+
+static void startBackgroundTasks(HashRelations* hashRelations,
+                                 HistoryStatisticsPrefetcher* historyStatisticsPrefetcher)
+{
+    loadEquivalencesAndStartStatisticsPrefetchAsync(hashRelations,
+                                                    historyStatisticsPrefetcher);
+}
+
+static int runServer(QCoreApplication& app, bool doIndexation);
+
 int main(int argc, char* argv[])
 {
     QCoreApplication app(argc, argv);
@@ -92,8 +168,6 @@ int main(int argc, char* argv[])
     QCoreApplication::setOrganizationName(PMP_ORGANIZATION_NAME);
     QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
 
-    QTextStream out(stdout);
-
     bool doIndexation = true;
     const QStringList args = QCoreApplication::arguments();
     for (auto& arg : args)
@@ -102,9 +176,31 @@ int main(int argc, char* argv[])
             doIndexation = false;
     }
 
+    auto exitCode = runServer(app, doIndexation);
+
+    qDebug() << "Exiting with code" << exitCode;
+
+    return exitCode;
+}
+
+static int runServer(QCoreApplication& app, bool doIndexation)
+{
+    QTextStream out(stdout);
+
+    const auto programNameVersionBuild =
+        QString(VCS_REVISION_LONG).isEmpty()
+            ? QString("Party Music Player %1")
+                .arg(PMP_VERSION_DISPLAY)
+            : QString("Party Music Player %1 build %2 (%3)")
+                .arg(PMP_VERSION_DISPLAY,
+                     VCS_REVISION_LONG,
+                     VCS_BRANCH);
+
     out << Qt::endl
-        << "Party Music Player - version " PMP_VERSION_DISPLAY << Qt::endl
+        << programNameVersionBuild << Qt::endl
         << Util::getCopyrightLine(true) << Qt::endl
+        << "This is free software; see the source for copying conditions.  There is NO\n"
+        << "warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n"
         << Qt::endl;
 
     /* set up logging */
@@ -114,10 +210,6 @@ int main(int argc, char* argv[])
     Logging::cleanupOldLogfiles();
     /* TODO: do a log cleanup regularly, because a server is likely to be run for days,
      *       weeks, or months before being restarted. */
-
-    /* seed random number generator */
-    // FIXME : stop using qrand(), and then we can remove this call to qsrand()
-    qsrand(QTime::currentTime().msec());
 
     ServerHealthMonitor serverHealthMonitor;
 
@@ -139,13 +231,18 @@ int main(int argc, char* argv[])
         serverHealthMonitor.setDatabaseUnavailable();
     }
 
-    Resolver resolver;
+    HashIdRegistrar hashIdRegistrar;
+    HashRelations hashRelations;
+    HistoryStatistics historyStatistics(nullptr, &hashRelations);
+    Resolver resolver(&hashIdRegistrar, &hashRelations, &historyStatistics);
 
     Users users;
     Player player(nullptr, &resolver, serverSettings.defaultVolume());
     DelayedStart delayedStart(&player);
     PlayerQueue& queue = player.queue();
-    History history(&player);
+    History history(&player, &hashIdRegistrar, &historyStatistics);
+    HistoryStatisticsPrefetcher historyPrefetcher(nullptr, &hashIdRegistrar, &history,
+                                                  &users);
 
     CollectionMonitor collectionMonitor;
     QObject::connect(
@@ -184,10 +281,10 @@ int main(int argc, char* argv[])
     /* unique server instance ID (not to be confused with the unique ID of the database)*/
     QUuid serverInstanceIdentifier = QUuid::createUuid();
 
-    Server server(nullptr, &serverSettings, serverInstanceIdentifier);
+    TcpServer server(nullptr, &serverSettings, serverInstanceIdentifier);
     bool listening =
-        server.listen(&player, &generator, &history, &users, &collectionMonitor,
-                      &serverHealthMonitor, &delayedStart,
+        server.listen(&player, &generator, &history, &hashIdRegistrar, &users,
+                      &collectionMonitor, &serverHealthMonitor, &delayedStart,
                       QHostAddress::Any, 23432);
 
     if (!listening)
@@ -199,9 +296,11 @@ int main(int argc, char* argv[])
     qDebug() << "Started listening to TCP port:" << server.port();
 
     // exit when the server instance signals it
-    QObject::connect(&server, &Server::shuttingDown, &app, &QCoreApplication::quit);
+    QObject::connect(&server, &TcpServer::shuttingDown, &app, &QCoreApplication::quit);
 
     printStartupSummary(out, serverSettings, server, player);
+
+    startBackgroundTasks(&hashRelations, &historyPrefetcher);
 
     out << "\n"
         << "Server initialization complete." << Qt::endl
@@ -209,30 +308,11 @@ int main(int argc, char* argv[])
 
     /* start indexation of the media directories */
     if (databaseInitializationSucceeded && doIndexation)
-    {
-        bool initialIndexation = true;
-
-        QObject::connect(
-            &resolver, &Resolver::fullIndexationRunStatusChanged,
-            &resolver,
-            [&out, &initialIndexation](bool running)
-            {
-                if (running || !initialIndexation)
-                    return;
-
-                initialIndexation = false;
-                out << "Indexation finished." << Qt::endl
-                    << Qt::endl;
-            }
-        );
-
-        out << "Running initial full indexation..." << Qt::endl;
-        resolver.startFullIndexation();
-    }
+        setUpAndRunInitialIndexation(resolver);
 
     auto exitCode = app.exec();
 
-    qDebug() << "Exiting with code" << exitCode;
-
+    out << "\n"
+        << "Server exiting." << Qt::endl;
     return exitCode;
 }

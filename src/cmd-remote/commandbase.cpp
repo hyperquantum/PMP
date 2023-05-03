@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,21 +22,20 @@
 #include <QtDebug>
 #include <QTimer>
 
+using namespace PMP::Client;
+
 namespace PMP
 {
-
     bool CommandBase::willCauseDisconnect() const
     {
         // most commands won't
         return false;
     }
 
-    void CommandBase::execute(ClientServerInterface* clientServerInterface)
+    void CommandBase::execute(ServerInterface* serverInterface)
     {
-        setUp(clientServerInterface);
-
-        start(clientServerInterface);
-        qDebug() << "CommandBase: called start()";
+        run(serverInterface);
+        qDebug() << "CommandBase: called run()";
 
         // initial quick check
         if (!_steps.isEmpty())
@@ -59,13 +58,16 @@ namespace PMP
     CommandBase::CommandBase()
      : _currentStep(0),
        _stepDelayMilliseconds(0),
-       _finishedOrFailed(false)
+       _finishedOrFailed(false),
+       _stepsCompleted(true)
     {
         //
     }
 
-    void CommandBase::addStep(std::function<bool ()> step)
+    void CommandBase::addStep(std::function<StepResult ()> step)
     {
+        _stepsCompleted = false;
+
         _steps.append(step);
     }
 
@@ -179,31 +181,86 @@ namespace PMP
         setCommandExecutionFailed(3, "Command failed: " + errorOutput);
     }
 
+    void CommandBase::addCommandExecutionFutureListener(
+                                              SimpleFuture<ResultMessageErrorCode> future)
+    {
+        future.addResultListener(
+            this,
+            [this](ResultMessageErrorCode code) { setCommandExecutionResult(code); }
+        );
+    }
+
     void CommandBase::listenerSlot()
     {
-        if (_finishedOrFailed)
+        if (_finishedOrFailed || _stepsCompleted)
             return;
 
-        bool canAdvance = _steps[_currentStep]();
+        auto const& stepResult = _steps[_currentStep]();
 
-        if (_finishedOrFailed)
+        switch (stepResult.type())
+        {
+        case StepResultType::StepIncomplete:
             return;
 
-        if (!canAdvance)
+        case StepResultType::StepCompleted:
+            if (_currentStep < _steps.size() - 1)
+            {
+                break; /* we will go to the next step */
+            }
+            else
+            {
+                _stepsCompleted = true;
+                return;
+            }
+
+        case StepResultType::CommandFinished:
+            applyFinishedCommandFromStepResult(stepResult);
+            return;
+        }
+
+        if (_finishedOrFailed)
             return;
 
         _currentStep++;
-
-        if (_currentStep >= _steps.size())
-        {
-            qWarning() << "Step number" << _currentStep
-                       << "should be less than" << _steps.size();
-            Q_EMIT executionFailed(3, "internal error");
-            return;
-        }
 
         // we advanced, so try the next step right now, don't wait for signals
         QTimer::singleShot(_stepDelayMilliseconds, this, &CommandBase::listenerSlot);
     }
 
+    void CommandBase::reportInternalError()
+    {
+        _finishedOrFailed = true;
+        Q_EMIT executionFailed(3, "internal error");
+    }
+
+    void CommandBase::applyFinishedCommandFromStepResult(const StepResult& stepResult)
+    {
+        auto resultCodeOrNull = stepResult.commandResult();
+        if (resultCodeOrNull != null)
+        {
+            setCommandExecutionResult(resultCodeOrNull.value());
+            return;
+        }
+
+        auto exitCodeOrNull = stepResult.commandExitCode();
+        if (exitCodeOrNull != null)
+        {
+            auto errorCode = exitCodeOrNull.value();
+            if (errorCode == 0)
+            {
+                setCommandExecutionSuccessful(stepResult.commandOutput());
+            }
+            else
+            {
+                setCommandExecutionFailed(errorCode, stepResult.commandOutput());
+            }
+            return;
+        }
+
+        if (_finishedOrFailed)
+            return; /* result/error has been set already */
+
+        qWarning() << "Step reported command completion, but no result/error was set";
+        reportInternalError();
+    }
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,13 +28,6 @@
 
 using namespace PMP;
 
-QString hashToString(const FileHash& hash)
-{
-    return QString::number(hash.length())
-            + "-" + hash.SHA1().toHex()
-            + "-" + hash.MD5().toHex();
-}
-
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
@@ -47,13 +40,15 @@ int main(int argc, char *argv[])
     QTextStream out(stdout);
     QTextStream err(stderr);
 
-    if (QCoreApplication::arguments().size() < 2)
+    auto arguments = QCoreApplication::arguments();
+
+    if (arguments.size() < 2)
     {
         err << "No arguments given." << Qt::endl;
         return 0;
     }
 
-    QString fileName = QCoreApplication::arguments()[1];
+    QString fileName = arguments[1];
     QFileInfo fileInfo(fileName);
 
     if (!FileAnalyzer::isExtensionSupported(fileInfo.suffix(), true))
@@ -108,11 +103,11 @@ int main(int argc, char *argv[])
     out << "artist:  " << analyzer.tagData().artist() << Qt::endl;
     out << "comment: " << analyzer.tagData().comment() << Qt::endl;
 
-    out << "track hash: " << hashToString(finalHash) << Qt::endl;
+    out << "track hash: " << finalHash.toString() << Qt::endl;
 
     if (!legacyHash.isNull())
     {
-        out << "legacy hash: " << hashToString(legacyHash) << Qt::endl;
+        out << "legacy hash: " << legacyHash.toString() << Qt::endl;
     }
 
     return 0;

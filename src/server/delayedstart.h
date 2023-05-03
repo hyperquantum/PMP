@@ -27,7 +27,7 @@
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP
+namespace PMP::Server
 {
     class Player;
 
@@ -40,6 +40,8 @@ namespace PMP
         bool isActive() const { return _delayedStartActive; }
         Result activate(int delayMilliseconds);
         Result deactivate();
+
+        qint64 timeRemainingMilliseconds() const;
 
     Q_SIGNALS:
         void delayedStartActiveChanged();

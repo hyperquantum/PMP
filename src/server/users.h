@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,17 +20,18 @@
 #ifndef PMP_USERS_H
 #define PMP_USERS_H
 
-#include "common/networkprotocol.h"
+#include "common/resultmessageerrorcode.h"
+#include "common/resultorerror.h"
 
-#include "database.h"  // for User :-/
+#include "databaserecords.h"
 
+#include <QHash>
 #include <QObject>
-#include <QPair>
 #include <QString>
 #include <QtGlobal>
 #include <QVector>
 
-namespace PMP
+namespace PMP::Server
 {
     typedef QPair<quint32, QString> UserIdAndLogin;
 
@@ -40,7 +41,7 @@ namespace PMP
     public:
         enum ErrorCode
         {
-            Successfull = 0,
+            UnknownError = 0,
             InvalidAccountName = 1,
             AccountAlreadyExists = 2,
             DatabaseProblem = 3
@@ -49,17 +50,18 @@ namespace PMP
         Users();
 
         QVector<UserIdAndLogin> getUsers();
+        bool checkUserIdExists(quint32 userId) const;
         QString getUserLogin(quint32 userId) const;
-        bool getUserByLogin(QString login, User& user);
-        static bool checkUserLoginPassword(User const& user,
+        bool getUserByLogin(QString login, DatabaseRecords::User& user);
+        static bool checkUserLoginPassword(DatabaseRecords::User const& user,
                                            QByteArray const& sessionSalt,
                                            QByteArray const& hashedPassword);
 
         static QByteArray generateSalt();
-        static ErrorCode generateSaltForNewAccount(QString accountName,
-                                                   QByteArray& salt);
+        static ResultOrError<QByteArray, ErrorCode> generateSaltForNewAccount(
+                                                                    QString accountName);
 
-        QPair<ErrorCode, quint32> registerNewAccount(QString accountName,
+        ResultOrError<quint32, ErrorCode> registerNewAccount(QString accountName,
                                                      QByteArray const& salt,
                                                      QByteArray const& hashedPassword);
 
@@ -68,7 +70,7 @@ namespace PMP
     private:
         void loadUsers();
 
-        QHash<quint32, User> _usersById;
+        QHash<quint32, DatabaseRecords::User> _usersById;
         QHash<QString, quint32> _userIdsByLogin;
     };
 }

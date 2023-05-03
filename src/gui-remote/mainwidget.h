@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,8 +20,9 @@
 #ifndef PMP_MAINWIDGET_H
 #define PMP_MAINWIDGET_H
 
-#include "common/filehash.h"
 #include "common/playerstate.h"
+
+#include "client/localhashid.h"
 
 #include <QWidget>
 
@@ -32,17 +33,20 @@ namespace Ui
     class MainWidget;
 }
 
+namespace PMP::Client
+{
+    class QueueEntryInfoFetcher;
+    class QueueMonitor;
+    class ServerInterface;
+    class UserDataFetcher;
+}
+
 namespace PMP
 {
-    class ClientServerInterface;
     class PlayerHistoryModel;
     class PreciseTrackProgressMonitor;
-    class QueueEntryInfoFetcher;
     class QueueMediator;
     class QueueModel;
-    class QueueMonitor;
-    class ServerConnection;
-    class UserDataFetcher;
 
     class MainWidget : public QWidget
     {
@@ -51,8 +55,7 @@ namespace PMP
         explicit MainWidget(QWidget *parent = 0);
         ~MainWidget();
 
-        void setConnection(ServerConnection* connection,
-                           ClientServerInterface* clientServerInterface);
+        void setConnection(Client::ServerInterface* serverInterface);
 
     protected:
         bool eventFilter(QObject*, QEvent*);
@@ -69,6 +72,7 @@ namespace PMP
         void switchTrackTimeDisplayMode();
 
         void trackInfoButtonClicked();
+        void dynamicModeParametersButtonClicked();
 
         void volumeChanged();
         void decreaseVolume();
@@ -78,14 +82,7 @@ namespace PMP
         void queueContextMenuRequested(const QPoint& position);
 
         void dynamicModeEnabledChanged();
-        void noRepetitionSpanSecondsChanged();
         void changeDynamicMode(int checkState);
-        void noRepetitionIndexChanged(int index);
-
-        void waveActiveChanged();
-        void waveProgressChanged();
-        void startHighScoredTracksWave();
-        void terminateHighScoredTracksWave();
 
     private:
         void enableDisableTrackInfoButton();
@@ -95,21 +92,16 @@ namespace PMP
         void updateTrackTimeDisplay(qint64 positionInMilliseconds,
                                     qint64 trackLengthInMilliseconds);
 
-        void showTrackInfoDialog(FileHash hash, quint32 queueId = 0);
+        void showTrackInfoDialog(Client::LocalHashId hashId, quint32 queueId = 0);
 
         bool keyEventFilter(QKeyEvent* event);
 
-        void buildNoRepetitionList(int spanToSelect);
-        QString noRepetitionTimeString(int seconds);
-
         Ui::MainWidget* _ui;
-        ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         PreciseTrackProgressMonitor* _trackProgressMonitor;
         QueueMediator* _queueMediator;
         QueueModel* _queueModel;
         QMenu* _queueContextMenu;
-        QList<int> _noRepetitionList;
-        int _noRepetitionUpdating;
         PlayerHistoryModel* _historyModel;
         QMenu* _historyContextMenu;
         bool _showingTimeRemaining;

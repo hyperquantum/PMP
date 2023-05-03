@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,41 +30,52 @@ namespace Ui
     class CollectionWidget;
 }
 
+namespace PMP::Client
+{
+    class QueueHashesMonitor;
+    class ServerInterface;
+}
+
 namespace PMP
 {
-    class ClientServerInterface;
     class CollectionViewContext;
     class ColorSwitcher;
     class FilteredCollectionTableModel;
     class SortedCollectionTableModel;
     enum class TrackCriterium;
+    class WaitingSpinnerWidget;
 
-    class CollectionWidget : public QWidget {
+    class CollectionWidget : public QWidget
+    {
         Q_OBJECT
 
     public:
-        CollectionWidget(QWidget* parent, ClientServerInterface* clientServerInterface);
+        CollectionWidget(QWidget* parent, Client::ServerInterface* serverInterface,
+                         Client::QueueHashesMonitor* queueHashesMonitor);
         ~CollectionWidget();
 
     private Q_SLOTS:
-        void filterTracksIndexChanged(int index);
+        void filterTracksIndexChanged();
         void highlightTracksIndexChanged(int index);
         void highlightColorIndexChanged();
         void collectionContextMenuRequested(const QPoint& position);
+        void rowCountChanged();
 
     private:
-        void initTrackFilterComboBox();
+        void updateSpinnerVisibility();
+        void initTrackFilterComboBoxes();
         void initTrackHighlightingComboBox();
-        void fillTrackCriteriaComboBox(QComboBox* comboBox);
+        void fillTrackCriteriaComboBox(QComboBox* comboBox,
+                                       TrackCriterium criteriumForNone);
         void initTrackHighlightingColorSwitcher();
 
-        TrackCriterium getCurrentTrackFilter() const;
         TrackCriterium getCurrentHighlightMode() const;
         TrackCriterium getTrackCriteriumFromComboBox(QComboBox* comboBox) const;
 
         Ui::CollectionWidget* _ui;
+        WaitingSpinnerWidget* _spinner { nullptr };
         ColorSwitcher* _colorSwitcher;
-        ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         CollectionViewContext* _collectionViewContext;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;

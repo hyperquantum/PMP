@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,10 +21,10 @@
 #define PMP_NETWORKPROTOCOL_H
 
 #include "compatibilityui.h"
+#include "nullable.h"
 #include "queueentrytype.h"
 #include "resultmessageerrorcode.h"
 #include "specialqueueitemtype.h"
-#include "startstopeventstatus.h"
 
 #include <QByteArray>
 #include <QString>
@@ -55,7 +55,9 @@ Changes for each version:
   18: client msg 24, server msg 3 & 4 & 21: barriers
   19: client msg 25, server msg 32: keep-alive messages
   20: client msg 26, server msg 1, parameterless action 40, error codes 2 & 25 & 51: delayed start
-  21: single byte request 52, server msgs 33-39, client msgs 27-29: compatibility interfaces
+  21: single byte request 19, server msg 33: delayed start deadline information
+  22: single byte request 60, server msg 34: requesting server version information
+  23: single byte request 52, server msgs 35-41, client msgs 27-29: compatibility interfaces
 */
 
 namespace PMP
@@ -98,13 +100,15 @@ namespace PMP
         ServerExtensionsMessage = 30,
         ServerClockMessage = 31,
         KeepAliveMessage = 32,
-        CompatibilityInterfaceAnnouncement = 33,
-        CompatibilityInterfaceLanguageSelectionConfirmation = 34,
-        CompatibilityInterfaceDefinition = 35,
-        CompatibilityInterfaceStateUpdate = 36,
-        CompatibilityInterfaceActionStateUpdate = 37,
-        CompatibilityInterfaceTextUpdate = 38,
-        CompatibilityInterfaceActionTextUpdate = 39,
+        DelayedStartInfoMessage = 33,
+        ServerVersionInfoMessage = 34,
+        CompatibilityInterfaceAnnouncement = 35,
+        CompatibilityInterfaceLanguageSelectionConfirmation = 36,
+        CompatibilityInterfaceDefinition = 37,
+        CompatibilityInterfaceStateUpdate = 38,
+        CompatibilityInterfaceActionStateUpdate = 39,
+        CompatibilityInterfaceTextUpdate = 40,
+        CompatibilityInterfaceActionTextUpdate = 41,
     };
 
     enum class ClientMessageType
@@ -304,7 +308,7 @@ namespace PMP
         static QueueEntryType trackStatusToQueueEntryType(quint16 status);
 
         static const int FILEHASH_BYTECOUNT = 8 /*length*/ + 20 /*SHA-1*/ + 16 /*MD5*/;
-        static void appendHash(QByteArray& buffer, const FileHash& hash);
+        static void appendHash(QByteArray& buffer, Nullable<FileHash> hash);
         static FileHash getHash(const QByteArray& buffer, int position, bool* ok);
 
         static qint16 getHashUserDataFieldsMaskForProtocolVersion(int version);

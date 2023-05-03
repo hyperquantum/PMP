@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,12 +19,16 @@
 
 #include "queuemodel.h"
 
-#include "common/clientserverinterface.h"
-#include "common/generalcontroller.h"
-#include "common/playercontroller.h"
-#include "common/queueentryinfofetcher.h"
-#include "common/userdatafetcher.h"
+#include "common/filehash.h"
+#include "common/unicodechars.h"
 #include "common/util.h"
+
+#include "client/generalcontroller.h"
+#include "client/localhashidrepository.h"
+#include "client/playercontroller.h"
+#include "client/queueentryinfostorage.h"
+#include "client/serverinterface.h"
+#include "client/userdatafetcher.h"
 
 #include "colors.h"
 
@@ -39,6 +43,9 @@
 #include <QMimeData>
 #include <QtDebug>
 #include <QTimer>
+
+using namespace PMP::Client;
+using namespace PMP::UnicodeChars;
 
 namespace PMP
 {
@@ -163,22 +170,24 @@ namespace PMP
         timer->deleteLater();
     }
 
-    QueueModel::QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
-                           QueueMediator* source, QueueEntryInfoFetcher* trackInfoFetcher)
+    QueueModel::QueueModel(QObject* parent, ServerInterface* serverInterface,
+                           QueueMediator* source, QueueEntryInfoStorage* trackInfoStorage)
      : QAbstractTableModel(parent),
-       _userDataFetcher(&clientServerInterface->userDataFetcher()),
+       _hashIdRepository(serverInterface->hashIdRepository()),
+       _userDataFetcher(&serverInterface->userDataFetcher()),
        _source(source),
-       _infoFetcher(trackInfoFetcher),
+       _infoStorage(trackInfoStorage),
        _lastHeardRefresher(new RegularUiRefresher(this)),
-       _clientClockTimeOffsetMs(0),
        _playerMode(PlayerMode::Unknown),
        _personalModeUserId(0),
        _modelRows(0)
     {
         _modelRows = _source->queueLength();
 
-        auto generalController = &clientServerInterface->generalController();
-        auto playerController = &clientServerInterface->playerController();
+        (void)serverInterface->queueEntryInfoFetcher(); /* speed things up */
+
+        auto generalController = &serverInterface->generalController();
+        auto playerController = &serverInterface->playerController();
 
         _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
         connect(
@@ -204,7 +213,7 @@ namespace PMP
             this, &QueueModel::entriesReceived
         );
         connect(
-            _infoFetcher, &QueueEntryInfoFetcher::tracksChanged,
+            _infoStorage, &QueueEntryInfoStorage::tracksChanged,
             this, &QueueModel::tracksChanged
         );
         connect(
@@ -279,10 +288,10 @@ namespace PMP
 
         int col = index.column();
 
-        quint32 queueID = trackIdAt(index);
+        quint32 queueId = trackIdAt(index);
 
         QueueEntryInfo* info =
-            queueID ? _infoFetcher->entryInfoByQID(queueID) : nullptr;
+            queueId ? _infoStorage->entryInfoByQueueId(queueId) : nullptr;
 
         /* handle real track entries in a separate function */
         if (info && info->type() == QueueEntryType::Track)
@@ -305,19 +314,19 @@ namespace PMP
 
                 case QueueEntryType::BreakPoint:
                     if (col <= 1)
-                        return Util::EmDash + QString(" BREAK ") + Util::EmDash;
+                        return emDash + QString(" BREAK ") + emDash;
 
                     return QString();
 
                 case QueueEntryType::Barrier:
                     if (col <= 1)
-                        return Util::EmDash + QString(" BARRIER ") + Util::EmDash;
+                        return emDash + QString(" BARRIER ") + emDash;
 
                     return QString();
 
                 case QueueEntryType::UnknownSpecialType:
                     if (col <= 1)
-                        return Util::EmDash + QString(" ????? ") + Util::EmDash;
+                        return emDash + QString(" ????? ") + emDash;
 
                     return QString();
                 }
@@ -362,13 +371,13 @@ namespace PMP
                         return Qt::AlignRight + Qt::AlignVCenter;
                     case 4:
                     {
-                        auto& hash = info->hash();
-                        if (hash.isNull() || _playerMode == PlayerMode::Unknown)
+                        auto hashId = info->hashId();
+                        if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
                         auto hashData =
                             _userDataFetcher->getHashDataForUser(
-                                _personalModeUserId, hash
+                                _personalModeUserId, hashId
                             );
 
                         if (!hashData || !hashData->scoreReceived)
@@ -385,12 +394,12 @@ namespace PMP
             case Qt::ToolTipRole:
                 if (col == 3) /* prev. heard */
                 {
-                    auto& hash = info->hash();
-                    if (hash.isNull() || _playerMode == PlayerMode::Unknown)
+                    auto hashId = info->hashId();
+                    if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
                         return QString(); /* unknown */
 
                     auto hashData =
-                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hashId);
 
                     if (!hashData || !hashData->previouslyHeardReceived
                                   || hashData->previouslyHeard.isNull())
@@ -431,12 +440,12 @@ namespace PMP
             }
             case 3:
             {
-                auto& hash = info->hash();
-                if (hash.isNull() || _playerMode == PlayerMode::Unknown)
+                auto hashId = info->hashId();
+                if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hashId);
 
                 if (!hashData || !hashData->previouslyHeardReceived)
                     return QVariant();
@@ -449,18 +458,18 @@ namespace PMP
 
                 auto howLongAgo = Util::getHowLongAgoInfo(adjustedLastHeard);
 
-                _lastHeardRefresher->setRefresh(info->queueID(), howLongAgo.intervalMs());
+                _lastHeardRefresher->setRefresh(info->queueId(), howLongAgo.intervalMs());
 
                 return howLongAgo.text();
             }
             case 4:
             {
-                auto& hash = info->hash();
-                if (hash.isNull() || _playerMode == PlayerMode::Unknown)
+                auto hashId = info->hashId();
+                if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hash);
+                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hashId);
 
                 if (!hashData || !hashData->scoreReceived)
                     return QVariant();
@@ -612,14 +621,18 @@ namespace PMP
         stream >> md5;
 
         FileHash hash(hashLength, sha1, md5);
-        if (hash.isNull()) return false;
+        if (hash.isNull())
+            return false;
+
+        auto hashId = _hashIdRepository->getOrRegisterId(hash);
 
         int newIndex = (row < 0) ? _modelRows : row;
 
         qDebug() << " inserting at index" << newIndex
-                 << "filehash:" << hash.dumpToString();
+                 << " hash ID" << hashId
+                 << " hash:" << hash.toString();
 
-        _source->insertFileAsync(newIndex, hash);
+        _source->insertFileAsync(newIndex, hashId);
         return true;
     }
 
@@ -717,7 +730,8 @@ namespace PMP
 
         auto queueId = track->_queueID;
 
-        QueueEntryInfo* info = queueId ? _infoFetcher->entryInfoByQID(queueId) : nullptr;
+        QueueEntryInfo* info =
+                queueId ? _infoStorage->entryInfoByQueueId(queueId) : nullptr;
 
         if (info == nullptr)
             return QueueTrack();
@@ -725,9 +739,9 @@ namespace PMP
         if (info->type() != QueueEntryType::Track)
             return QueueTrack(queueId, false);
 
-        auto& hash = info->hash();
+        auto hashId = info->hashId();
 
-        return QueueTrack(queueId, hash);
+        return QueueTrack(queueId, hashId);
     }
 
     void QueueModel::playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,

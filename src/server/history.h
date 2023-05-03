@@ -21,18 +21,23 @@
 #define PMP_HISTORY_H
 
 #include "common/filehash.h"
+#include "common/future.h"
+#include "common/nullable.h"
 
 #include "playerhistoryentry.h"
-#include "userdatafortracksfetcher.h" // for UserDataForHashId
+#include "trackstats.h"
 
 #include <QDateTime>
 #include <QHash>
 #include <QObject>
 #include <QSharedPointer>
 
-namespace PMP
+QT_FORWARD_DECLARE_CLASS(QThreadPool)
+
+namespace PMP::Server
 {
-    class FileHash;
+    class HashIdRegistrar;
+    class HistoryStatistics;
     class Player;
     class QueueEntry;
 
@@ -40,53 +45,31 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        struct HashStats
-        {
-            QDateTime lastHeard;
-            qint16 score;
+        History(Player* player, HashIdRegistrar* hashIdRegistrar,
+                HistoryStatistics* historyStatistics);
 
-            bool haveScore() const { return score >= 0; }
-
-            bool scoreLessThanXPercent(int percent) const
-            {
-                if (!haveScore())
-                    return false; // unknown score doesn't count
-
-                // remember that score is per 1000
-                return score < 10 * percent;
-            }
-        };
-
-        History(Player* player);
+        ~History();
 
         /** Get last played time since server startup (non-user-specific) */
         QDateTime lastPlayedGloballySinceStartup(FileHash const& hash) const;
 
-        bool fetchMissingUserStats(uint hashID, quint32 user);
-        HashStats const* getUserStats(uint hashID, quint32 user);
+        Future<SuccessType, FailureType> scheduleUserStatsFetchingIfMissing(uint hashId,
+                                                                         quint32 userId);
+        Nullable<TrackStats> getUserStats(uint hashId, quint32 userId);
 
     Q_SIGNALS:
-        void updatedHashUserStats(uint hashID, quint32 user,
-                                  QDateTime previouslyHeard, qint16 score);
+        void hashStatisticsChanged(quint32 userId, QVector<uint> hashIds);
 
     private Q_SLOTS:
-        void currentTrackChanged(QueueEntry const* newTrack);
+        void currentTrackChanged(QSharedPointer<QueueEntry const> newTrack);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
-        void onHashUserStatsUpdated(uint hashID, quint32 user,
-                                    QDateTime previouslyHeard, qint16 score);
-        void sendFetchRequests();
-        void onFetchCompleted(quint32 userId, QVector<PMP::UserDataForHashId> results);
 
     private:
-        void scheduleFetch(uint hashID, quint32 user);
-
         Player* _player;
+        HashIdRegistrar* _hashIdRegistrar;
+        HistoryStatistics* _statistics;
         QHash<FileHash, QDateTime> _lastPlayHash;
-        QueueEntry const* _nowPlaying;
-        QHash<quint32, QHash<uint, HashStats>> _userStats;
-        QHash<quint32, QHash<uint, bool>> _userStatsFetching;
-        int _fetchRequestsScheduledCount;
-        bool _fetchTimerRunning;
+        QSharedPointer<QueueEntry const> _nowPlaying;
     };
 }
 #endif

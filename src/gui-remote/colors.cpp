@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,31 +19,42 @@
 
 #include "colors.h"
 
-namespace PMP {
-
+namespace PMP
+{
     Colors::Colors(const QColor& widgetBorder,
                    const QColor& inactiveItemForeground,
                    QVector<QColor> itemBackgroundHighlightColors,
                    const QColor& specialQueueItemBackground,
                    const QColor& specialQueueItemForeground,
+                   const QColor& historyErrorItemBackground,
+                   const QColor& historyErrorItemForeground,
                    const QColor& trackProgressWidgetEmpty,
                    const QColor& trackProgressWidgetBackground,
                    const QColor& trackProgressWidgetBorder,
-                   const QColor& trackProgressWidgetProgress)
+                   const QColor& trackProgressWidgetProgress,
+                   const QColor& linkText,
+                   const QColor& spinnerBackground,
+                   const QColor& spinnerLines)
      : widgetBorder(widgetBorder),
        inactiveItemForeground(inactiveItemForeground),
        itemBackgroundHighlightColors(itemBackgroundHighlightColors),
        specialQueueItemBackground(specialQueueItemBackground),
        specialQueueItemForeground(specialQueueItemForeground),
+       historyErrorItemBackground(historyErrorItemBackground),
+       historyErrorItemForeground(historyErrorItemForeground),
        trackProgressWidgetEmpty(trackProgressWidgetEmpty),
        trackProgressWidgetBackground(trackProgressWidgetBackground),
        trackProgressWidgetBorder(trackProgressWidgetBorder),
-       trackProgressWidgetProgress(trackProgressWidgetProgress)
+       trackProgressWidgetProgress(trackProgressWidgetProgress),
+       linkText(linkText),
+       spinnerBackground(spinnerBackground),
+       spinnerLines(spinnerLines)
     {
         //
     }
 
-    const Colors& Colors::instance() {
+    const Colors& Colors::instance()
+    {
         return _lightScheme;
     }
 
@@ -58,10 +69,15 @@ namespace PMP {
             },
             /* specialQueueItemBackground */ QColor::fromRgb(0xFF, 0xC4, 0x73),
             /* specialQueueItemForeground */ Qt::black,
+            /* historyErrorItemBackground */ Qt::white,
+            /* historyErrorItemForeground */ Qt::red,
             /* trackProgressWidgetEmpty */ QColor::fromHsl(207, 255, 230),
             /* trackProgressWidgetBackground */ QColor::fromHsl(207, 255, 230),
             /* trackProgressWidgetBorder */ QColor::fromHsl(207, 255, 180),
-            /* trackProgressWidgetProgress */ QColor::fromHsl(207, 255, 180)
+            /* trackProgressWidgetProgress */ QColor::fromHsl(207, 255, 180),
+            /* linkText */ Qt::darkGreen, // TODO : find a real color
+            /* spinnerBackground */ Qt::white,
+            /* spinnerLines */ Qt::black
         );
 
 }

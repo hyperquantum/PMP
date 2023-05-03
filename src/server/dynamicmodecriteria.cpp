@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,13 +19,12 @@
 
 #include "dynamicmodecriteria.h"
 
-namespace PMP {
-
+namespace PMP::Server
+{
     DynamicModeCriteria::DynamicModeCriteria()
      : _noRepetitionSpan(0),
        _user(0)
     {
         //
     }
-
 }

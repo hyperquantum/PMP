@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,7 +22,7 @@
 
 #include <QtGlobal>
 
-namespace PMP
+namespace PMP::Server
 {
     enum class ResultCode
     {
@@ -34,6 +34,7 @@ namespace PMP
         OperationAlreadyRunning,
 
         HashIsNull,
+        HashIsUnknown,
 
         QueueEntryIdNotFound,
         QueueIndexOutOfRange,
@@ -99,26 +100,39 @@ namespace PMP
     class Error : public Result
     {
     public:
-        static Error notLoggedIn() { return ResultCode::NotLoggedIn; }
+        static Result notLoggedIn() { return Error(ResultCode::NotLoggedIn); }
 
-        static Error operationAlreadyRunning()
+        static Result operationAlreadyRunning()
         {
-            return ResultCode::OperationAlreadyRunning;
+            return Error(ResultCode::OperationAlreadyRunning);
         }
 
-        static Error hashIsNull() { return ResultCode::HashIsNull; }
+        static Result hashIsNull() { return Error(ResultCode::HashIsNull); }
+        static Result hashIsUnknown() { return Error(ResultCode::HashIsUnknown); }
 
-        static Error queueEntryIdNotFound(uint id)
+        static Result queueEntryIdNotFound(uint id)
         {
             return Error(ResultCode::QueueEntryIdNotFound, id);
         }
 
-        static Error queueIndexOutOfRange() { return ResultCode::QueueIndexOutOfRange; }
-        static Error queueMaxSizeExceeded() { return ResultCode::QueueMaxSizeExceeded; }
-        static Error queueItemTypeInvalid() { return ResultCode::QueueItemTypeInvalid; }
-        static Error delayOutOfRange() { return ResultCode::DelayOutOfRange; }
+        static Result queueIndexOutOfRange()
+        {
+            return Error(ResultCode::QueueIndexOutOfRange);
+        }
 
-        static Error internalError() { return ResultCode::InternalError; }
+        static Result queueMaxSizeExceeded()
+        {
+            return Error(ResultCode::QueueMaxSizeExceeded);
+        }
+
+        static Result queueItemTypeInvalid()
+        {
+            return Error(ResultCode::QueueItemTypeInvalid);
+        }
+
+        static Result delayOutOfRange() { return Error(ResultCode::DelayOutOfRange); }
+
+        static Result internalError() { return Error(ResultCode::InternalError); }
 
     private:
         Error(ResultCode code) : Result(code) {}

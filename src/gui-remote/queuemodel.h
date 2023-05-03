@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,21 +20,29 @@
 #ifndef PMP_QUEUEMODEL_H
 #define PMP_QUEUEMODEL_H
 
-#include "common/filehash.h"
 #include "common/playermode.h"
+
+#include "client/localhashid.h"
 
 #include <QAbstractTableModel>
 #include <QHash>
 #include <QList>
 #include <QSet>
 
+QT_FORWARD_DECLARE_CLASS(QTimer)
+
+namespace PMP::Client
+{
+    class LocalHashIdRepository;
+    class QueueEntryInfo;
+    class QueueEntryInfoStorage;
+    class ServerInterface;
+    class UserDataFetcher;
+}
+
 namespace PMP
 {
-    class ClientServerInterface;
-    class QueueEntryInfo;
-    class QueueEntryInfoFetcher;
     class QueueMediator;
-    class UserDataFetcher;
 
     class RegularUiRefresher : public QObject
     {
@@ -74,21 +82,21 @@ namespace PMP
             //
         }
 
-        QueueTrack(quint32 queueId, const FileHash& hash)
-         : _id(queueId), _hash(hash), _real(true)
+        QueueTrack(quint32 queueId, Client::LocalHashId hashId)
+         : _id(queueId), _hashId(hashId), _real(true)
         {
             //
         }
 
         quint32 queueId() const { return _id; }
-        FileHash hash() const { return _hash; }
+        Client::LocalHashId hashId() const { return _hashId; }
 
         bool isNull() const { return _id == 0; }
         bool isRealTrack() const { return _real; }
 
     private:
         quint32 _id;
-        FileHash _hash;
+        Client::LocalHashId _hashId;
         bool _real;
     };
 
@@ -96,8 +104,9 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        QueueModel(QObject* parent, ClientServerInterface* clientServerInterface,
-                   QueueMediator* source, QueueEntryInfoFetcher* trackInfoFetcher);
+        QueueModel(QObject* parent, Client::ServerInterface* serverInterface,
+                   QueueMediator* source,
+                   Client::QueueEntryInfoStorage* trackInfoStorage);
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -147,20 +156,19 @@ namespace PMP
             }
         };
 
-        QVariant trackModelData(QueueEntryInfo* info, int col, int role) const;
+        QVariant trackModelData(Client::QueueEntryInfo* info, int col, int role) const;
         bool dropQueueItemMimeData(const QMimeData* data, Qt::DropAction action, int row);
         bool dropFileHashMimeData(const QMimeData* data, int row);
 
         void markLastHeardColumnAsChanged();
         void markUserDataColumnsAsChanged();
 
-        //Track* trackAt(const QModelIndex& index) const;
-
-        UserDataFetcher* _userDataFetcher;
+        Client::LocalHashIdRepository* _hashIdRepository;
+        Client::UserDataFetcher* _userDataFetcher;
         QueueMediator* _source;
-        QueueEntryInfoFetcher* _infoFetcher;
+        Client::QueueEntryInfoStorage* _infoStorage;
         RegularUiRefresher* _lastHeardRefresher;
-        qint64 _clientClockTimeOffsetMs;
+        qint64 _clientClockTimeOffsetMs { 0 };
         PlayerMode _playerMode;
         quint32 _personalModeUserId;
         int _modelRows;

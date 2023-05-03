@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2021, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -23,12 +23,8 @@ configure_file(${CMAKE_SOURCE_DIR}/src/common/version.h.in common/version.h)
 
 add_executable(PMP_hash_test
     hash_test.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/audiodata.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/fileanalyzer.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/tagdata.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/util.cpp
 )
+target_link_libraries(PMP_hash_test $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(PMP_hash_test Qt5::Core)
 target_link_libraries(PMP_hash_test ${TAGLIB_LIBRARIES})
 
@@ -63,14 +59,32 @@ add_hashtest(
 )
 
 
+# TestCommandParser
+qt5_wrap_cpp(PMP_TestCommandParser_MOCS
+    test_commandparser.h
+)
+add_executable(test_commandparser test_commandparser.cpp ${PMP_TestCommandParser_MOCS})
+target_link_libraries(test_commandparser $<TARGET_OBJECTS:PmpCmdRemote>)
+target_link_libraries(test_commandparser $<TARGET_OBJECTS:PmpClient>)
+target_link_libraries(test_commandparser $<TARGET_OBJECTS:PmpCommon>)
+target_link_libraries(test_commandparser Qt5::Core Qt5::Network Qt5::Test)
+target_link_libraries(test_commandparser ${TAGLIB_LIBRARIES})
+add_test(test_commandparser test_commandparser)
+
+
+# TestNullable
+qt5_wrap_cpp(PMP_TestNullable_MOCS test_nullable.h)
+add_executable(test_nullable test_nullable.cpp ${PMP_TestNullable_MOCS})
+target_link_libraries(test_nullable Qt5::Core Qt5::Test)
+add_test(test_nullable test_nullable)
+
+
 # TestFileHash
 qt5_wrap_cpp(PMP_TestFileHash_MOCS test_filehash.h)
-add_executable(test_filehash test_filehash.cpp
-    ${PMP_TestFileHash_MOCS}
-    ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/util.cpp
-)
+add_executable(test_filehash test_filehash.cpp ${PMP_TestFileHash_MOCS})
+target_link_libraries(test_filehash $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(test_filehash Qt5::Core Qt5::Test)
+target_link_libraries(test_filehash ${TAGLIB_LIBRARIES})
 add_test(test_filehash test_filehash)
 
 
@@ -99,10 +113,18 @@ add_test(test_networkutil test_networkutil)
 qt5_wrap_cpp(PMP_TestNetworkProtocol_MOCS test_networkprotocol.h)
 add_executable(test_networkprotocol test_networkprotocol.cpp
     ${PMP_TestNetworkProtocol_MOCS}
-    ${CMAKE_SOURCE_DIR}/src/common/networkprotocol.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/networkutil.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/filehash.cpp
-    ${CMAKE_SOURCE_DIR}/src/common/util.cpp
 )
+target_link_libraries(test_networkprotocol $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(test_networkprotocol Qt5::Core Qt5::Test)
+target_link_libraries(test_networkprotocol ${TAGLIB_LIBRARIES})
 add_test(test_networkprotocol test_networkprotocol)
+
+
+# TestHashRelations
+qt5_wrap_cpp(PMP_TestHashRelations_MOCS test_hashrelations.h)
+add_executable(test_hashrelations test_hashrelations.cpp
+    ${PMP_TestHashRelations_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/server/hashrelations.cpp
+)
+target_link_libraries(test_hashrelations Qt5::Core Qt5::Test)
+add_test(test_hashrelations test_hashrelations)

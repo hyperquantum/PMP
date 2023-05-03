@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,14 +27,17 @@
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
-namespace PMP {
-
+namespace PMP::Client
+{
     class CurrentTrackMonitor;
+}
 
+namespace PMP
+{
     class PreciseTrackProgressMonitor : public QObject {
         Q_OBJECT
     public:
-        PreciseTrackProgressMonitor(CurrentTrackMonitor* currentTrackMonitor);
+        PreciseTrackProgressMonitor(Client::CurrentTrackMonitor* currentTrackMonitor);
 
         ~PreciseTrackProgressMonitor();
 
@@ -54,7 +57,7 @@ namespace PMP {
 
         static const int TIMER_INTERVAL = 40; /* 25 times per second */
 
-        CurrentTrackMonitor* _currentTrackMonitor;
+        Client::CurrentTrackMonitor* _currentTrackMonitor;
         QTimer* _refreshTimer;
         PlayerState _playerState;
         quint32 _currentQueueId;

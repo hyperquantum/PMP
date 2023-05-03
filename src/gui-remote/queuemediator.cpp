@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,12 +19,12 @@
 
 #include "queuemediator.h"
 
-#include "common/clientserverinterface.h"
-#include "common/queuecontroller.h"
-#include "common/queuemonitor.h"
-#include "common/serverconnection.h"
+#include "client/queuecontroller.h"
+#include "client/serverinterface.h"
 
 #include <QtDebug>
+
+using namespace PMP::Client;
 
 namespace PMP
 {
@@ -362,10 +362,10 @@ namespace PMP
     /* ========================== QueueMediator ========================== */
 
     QueueMediator::QueueMediator(QObject* parent, AbstractQueueMonitor* monitor,
-                                 ClientServerInterface* clientServerInterface)
+                                 ServerInterface* serverInterface)
      : AbstractQueueMonitor(parent),
        _sourceMonitor(monitor),
-       _clientServerInterface(clientServerInterface)
+       _serverInterface(serverInterface)
     {
         _myQueue = monitor->knownQueuePart();
         _queueLength = monitor->queueLength();
@@ -441,9 +441,9 @@ namespace PMP
         moveTrack(fromIndex, toIndex, queueId);
     }
 
-    void QueueMediator::insertFileAsync(int index, const FileHash& hash)
+    void QueueMediator::insertFileAsync(int index, LocalHashId hashId)
     {
-        queueController().insertQueueEntryAtIndex(hash, index);
+        queueController().insertQueueEntryAtIndex(hashId, index);
     }
 
     void QueueMediator::duplicateEntryAsync(quint32 queueID)
@@ -502,7 +502,7 @@ namespace PMP
 
     QueueController& QueueMediator::queueController() const
     {
-        return _clientServerInterface->queueController();
+        return _serverInterface->queueController();
     }
 
     bool QueueMediator::doLocalOperation(Operation* op)

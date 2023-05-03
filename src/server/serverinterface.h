@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,31 +21,37 @@
 #define PMP_SERVERINTERFACE_H
 
 #include "common/filehash.h"
+#include "common/future.h"
 #include "common/queueindextype.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/specialqueueitemtype.h"
 #include "common/startstopeventstatus.h"
+#include "common/versioninfo.h"
 
+#include "hashstats.h"
 #include "result.h"
 #include "serverplayerstate.h"
 
 #include <QObject>
 #include <QHash>
+#include <QSet>
 #include <QString>
 #include <QUuid>
 
 #include <functional>
 
-namespace PMP
+namespace PMP::Server
 {
     class DelayedStart;
-    class FileHash;
     class Generator;
+    class HashIdRegistrar;
+    class History;
     class Player;
     class PlayerQueue;
     class QueueEntry;
-    class Server;
     class ServerSettings;
+    class TcpServer;
+    class Users;
 
     struct PlayerStateOverview
     {
@@ -61,25 +67,32 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        ServerInterface(ServerSettings* serverSettings, Server* server, Player* player,
-                        Generator* generator, DelayedStart* delayedStart);
+        ServerInterface(ServerSettings* serverSettings, TcpServer* server, Player* player,
+                        Generator* generator, History* history,
+                        HashIdRegistrar* hashIdRegistrar, Users* users,
+                        DelayedStart* delayedStart);
 
         ~ServerInterface();
 
         QUuid getServerUuid() const;
         QString getServerCaption() const;
+        VersionInfo getServerVersionInfo() const;
+
+        ResultOrError<QUuid, Result> getDatabaseUuid() const;
 
         quint32 userLoggedIn() const { return _userLoggedIn; }
         bool isLoggedIn() const { return _userLoggedIn > 0; }
         void setLoggedIn(quint32 userId, QString userLogin);
 
-        void reloadServerSettings(uint clientReference);
+        SimpleFuture<ResultMessageErrorCode> reloadServerSettings();
 
         void switchToPersonalMode();
         void switchToPublicMode();
 
         Result activateDelayedStart(qint64 delayMilliseconds);
         Result deactivateDelayedStart();
+        bool delayedStartActive() const;
+        qint64 getDelayedStartTimeRemainingMilliseconds() const;
 
         void play();
         void pause();
@@ -90,16 +103,16 @@ namespace PMP
 
         PlayerStateOverview getPlayerStateOverview();
 
-        Result enqueue(FileHash hash);
-        Result insertAtFront(FileHash hash);
+        Future<QVector<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
+
+        Result insertTrackAtEnd(FileHash hash);
+        Result insertTrackAtFront(FileHash hash);
         Result insertBreakAtFrontIfNotExists();
+        Result insertTrack(FileHash hash, int index, quint32 clientReference);
         Result insertSpecialQueueItem(SpecialQueueItemType itemType,
                                       QueueIndexType indexType, int index,
                                       quint32 clientReference);
         Result duplicateQueueEntry(uint id, quint32 clientReference);
-        Result insertAtIndex(qint32 index,
-                             std::function<QueueEntry* (uint)> queueEntryCreator,
-                             quint32 clientReference);
         void moveQueueEntry(uint id, int upDownOffset);
         void removeQueueEntry(uint id);
         void trimQueue();
@@ -115,6 +128,8 @@ namespace PMP
         void startFullIndexation();
         bool isFullIndexationRunning();
 
+        void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
+
         void shutDownServer();
         void shutDownServer(QString serverPassword);
 
@@ -122,9 +137,6 @@ namespace PMP
         void serverCaptionChanged();
         void serverClockTimeSendingPulse();
         void serverShuttingDown();
-
-        void serverSettingsReloadResultEvent(uint clientReference,
-                                             ResultMessageErrorCode errorCode);
 
         void delayedStartActiveChanged();
 
@@ -142,6 +154,8 @@ namespace PMP
 
         void fullIndexationRunStatusChanged(bool running);
 
+        void hashUserDataChangedOrAvailable(quint32 userId, QVector<HashStats> tracks);
+
     private Q_SLOTS:
         void onQueueEntryAdded(qint32 offset, quint32 queueId);
 
@@ -151,20 +165,32 @@ namespace PMP
         void onDynamicModeWaveProgress(int tracksDelivered, int tracksTotal);
         void onDynamicModeWaveEnded();
 
+        void onHashStatisticsChanged(quint32 userId, QVector<uint> hashIds);
+
     private:
         int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType,
                                 int index);
         std::function<void (uint)> createQueueInsertionIdNotifier(
                                                                  quint32 clientReference);
+        Result insertAtIndex(qint32 index,
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                       quint32 clientReference);
+        void addUserHashDataNotification(quint32 userId, QVector<uint> hashIds);
+        void sendUserHashDataNotifications(quint32 userId);
 
         quint32 _userLoggedIn;
         QString _userLoggedInName;
         ServerSettings* _serverSettings;
-        Server* _server;
+        TcpServer* _server;
         Player* _player;
         Generator* _generator;
+        History* _history;
+        HashIdRegistrar* _hashIdRegistrar;
+        Users* _users;
         DelayedStart* _delayedStart;
         QHash<quint32, quint32> _queueEntryInsertionsPending;
+        QHash<quint32, QSet<uint>> _userHashDataNotificationsPending;
+        QHash<quint32, bool> _userHashDataNotificationTimerRunning;
     };
 }
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,9 +25,10 @@
 #include <QDateTime>
 #include <QtGlobal>
 
-namespace PMP {
-
-    class PlayerHistoryEntry {
+namespace PMP::Server
+{
+    class PlayerHistoryEntry
+    {
     public:
         PlayerHistoryEntry(uint queueId, FileHash hash, uint user,
                            QDateTime started, QDateTime ended,

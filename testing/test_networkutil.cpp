@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #include "test_networkutil.h"
 
 #include "common/networkutil.h"
-#include "common/util.h"
+#include "common/unicodechars.h"
 
 #include <QtTest/QTest>
 
@@ -648,7 +648,7 @@ void TestNetworkUtil::getUtf8Bytes()
     QCOMPARE(array[10], 'k');
     QCOMPARE(array[11], 'l');
 
-    array = NetworkUtil::getUtf8Bytes(QString("abcdefghijk") + Util::PlaySymbol, 12);
+    array = NetworkUtil::getUtf8Bytes(QString("abcdefghijk") + UnicodeChars::playSymbol, 12);
 
     QCOMPARE(array.size(), 11);
     QCOMPARE(array[0], 'a');

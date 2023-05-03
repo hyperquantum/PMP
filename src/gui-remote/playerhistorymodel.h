@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,27 +20,31 @@
 #ifndef PMP_PLAYERHISTORYMODEL_H
 #define PMP_PLAYERHISTORYMODEL_H
 
-#include "common/filehash.h"
 #include "common/playerhistorytrackinfo.h"
+
+#include "client/localhashid.h"
 
 #include <QAbstractTableModel>
 #include <QList>
 #include <QSharedPointer>
 #include <QVector>
 
-namespace PMP {
+namespace PMP::Client
+{
+    class LocalHashIdRepository;
+    class QueueEntryInfoStorage;
+    class ServerInterface;
+}
 
-    class QueueEntryInfoFetcher;
-    class ServerConnection;
-
-    class PlayerHistoryModel : public QAbstractTableModel {
+namespace PMP
+{
+    class PlayerHistoryModel : public QAbstractTableModel
+    {
         Q_OBJECT
     public:
-        PlayerHistoryModel(QObject* parent, QueueEntryInfoFetcher* trackInfoFetcher);
+        PlayerHistoryModel(QObject* parent, Client::ServerInterface* serverInterface);
 
-        void setConnection(ServerConnection* connection);
-
-        FileHash trackHashAt(int rowIndex) const;
+        Client::LocalHashId trackHashAt(int rowIndex) const;
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -57,10 +61,13 @@ namespace PMP {
         void onReceivedPlayerHistory(QVector<PMP::PlayerHistoryTrackInfo> tracks);
 
         void onTracksChanged(QList<quint32> queueIDs);
+        void markStartedEndedColumnsAsChanged();
 
     private:
         int _historySizeGoal;
-        QueueEntryInfoFetcher* _infoFetcher;
+        Client::LocalHashIdRepository* _hashIdRepository;
+        Client::QueueEntryInfoStorage* _infoStorage;
+        qint64 _clientClockTimeOffsetMs;
         QList<QSharedPointer<PlayerHistoryTrackInfo>> _list;
     };
 }

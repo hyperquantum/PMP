@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,10 +17,10 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COLLECTIONMONITOR_H
-#define PMP_COLLECTIONMONITOR_H
+#ifndef PMP_SERVER_COLLECTIONMONITOR_H
+#define PMP_SERVER_COLLECTIONMONITOR_H
 
-#include "common/collectiontrackinfo.h"
+#include "collectiontrackinfo.h"
 
 #include <QHash>
 #include <QMetaType>
@@ -28,13 +28,14 @@
 #include <QPair>
 #include <QVector>
 
-namespace PMP {
-
+namespace PMP::Server
+{
     /*! class that monitors the collection on behalf of connected remotes */
-    class CollectionMonitor : public QObject {
+    class CollectionMonitor : public QObject
+    {
         Q_OBJECT
     public:
-        CollectionMonitor(QObject* parent = 0);
+        CollectionMonitor(QObject* parent = nullptr);
 
     public Q_SLOTS:
         void hashBecameAvailable(PMP::FileHash hash);
@@ -45,7 +46,7 @@ namespace PMP {
     Q_SIGNALS:
         void hashAvailabilityChanged(QVector<PMP::FileHash> available,
                                      QVector<PMP::FileHash> unavailable);
-        void hashInfoChanged(QVector<PMP::CollectionTrackInfo> changes);
+        void hashInfoChanged(QVector<PMP::Server::CollectionTrackInfo> changes);
 
     private Q_SLOTS:
         void emitNotifications();
@@ -55,7 +56,8 @@ namespace PMP {
         void emitFullNotifications(QVector<FileHash> hashes);
         void emitAvailabilityNotifications(QVector<FileHash> hashes);
 
-        struct HashInfo {
+        struct HashInfo
+        {
             bool isAvailable;
             QString title, artist, album;
             qint32 lengthInMilliseconds;
@@ -67,7 +69,8 @@ namespace PMP {
             }
         };
 
-        struct Changed {
+        struct Changed
+        {
             bool availability;
             bool tags;
 

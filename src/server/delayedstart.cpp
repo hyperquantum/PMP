@@ -24,7 +24,7 @@
 #include <QtDebug>
 #include <QTimer>
 
-namespace PMP
+namespace PMP::Server
 {
     namespace
     {
@@ -81,6 +81,14 @@ namespace PMP
         _timer->stop();
         Q_EMIT delayedStartActiveChanged();
         return Success();
+    }
+
+    qint64 DelayedStart::timeRemainingMilliseconds() const
+    {
+        if (!_delayedStartActive)
+            return -1;
+
+        return  _startDeadline.remainingTime();
     }
 
     void DelayedStart::scheduleTimer()

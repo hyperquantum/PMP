@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,7 +19,7 @@
 
 #include "compatibilityinterfaceview.h"
 
-#include "common/compatibilityinterface.h"
+#include "client/compatibilityinterface.h"
 
 #include <QAction>
 #include <QLabel>
@@ -30,7 +30,6 @@
 
 namespace PMP
 {
-
     /* ======= CompatibilityInterfaceViewCreatorImpl =======*/
 
     CompatibilityInterfaceViewCreatorImpl::CompatibilityInterfaceViewCreatorImpl(
@@ -44,7 +43,7 @@ namespace PMP
     }
 
     void CompatibilityInterfaceViewCreatorImpl::createViewForInterface(
-                                                        CompatibilityInterface* interface)
+                                                Client::CompatibilityInterface* interface)
     {
         new CompatibilityInterfaceView(_parent, interface, _menu);
         Q_EMIT interfaceMenuActionAdded();
@@ -53,8 +52,8 @@ namespace PMP
     /* ======= CompatibilityInterfaceView =======*/
 
     CompatibilityInterfaceView::CompatibilityInterfaceView(QWidget* parent,
-                                                        CompatibilityInterface* interface,
-                                                        QMenu* menu)
+                                                Client::CompatibilityInterface* interface,
+                                                QMenu* menu)
      : QObject(parent),
        _parent(parent),
        _interface(interface)
@@ -97,7 +96,7 @@ namespace PMP
         verticalLayout->addWidget(descriptionLabel);
 
         connect(
-            _interface, &CompatibilityInterface::textChanged,
+            _interface, &Client::CompatibilityInterface::textChanged,
             window,
             [this, captionLabel, descriptionLabel]()
             {
@@ -118,11 +117,11 @@ namespace PMP
             verticalLayout->addWidget(button);
 
             connect(
-                action, &CompatibilityInterfaceAction::captionChanged,
+                action, &Client::CompatibilityInterfaceAction::captionChanged,
                 button, [action, button]() { button->setText(action->caption()); }
             );
             connect(
-                action, &CompatibilityInterfaceAction::stateChanged,
+                action, &Client::CompatibilityInterfaceAction::stateChanged,
                 button,
                 [action, button]()
                 {
@@ -155,13 +154,12 @@ namespace PMP
     }
 
     void CompatibilityInterfaceView::triggerInterfaceAction(
-                                                     CompatibilityInterfaceAction* action,
-                                                     QPushButton* button)
+                                             Client::CompatibilityInterfaceAction* action,
+                                             QPushButton* button)
     {
         if (action->state().disableWhenTriggered())
             button->setEnabled(false);
 
         action->triggerAction();
     }
-
 }

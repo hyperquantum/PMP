@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 #define PMP_CONTAINERUTIL_H
 
 #include <QHash>
+#include <QList>
 #include <QSet>
 #include <QVector>
 
@@ -41,10 +42,22 @@ namespace PMP
             return v;
         }
 
-        template<typename T> static QVector<T> toVector(QSet<T> const& set)
+        template<typename T> static QVector<T> toVector(QList<T> const& list)
         {
             QVector<T> v;
-            v.reserve(set.size());
+            v.reserve(list.size());
+
+            for (T const& element : list)
+                v.append(element);
+
+            return v;
+        }
+
+        template<typename T> static QVector<T> toVector(QSet<T> const& set,
+                                                        int customReserveSize = -1)
+        {
+            QVector<T> v;
+            v.reserve(customReserveSize >= 0 ? customReserveSize : set.size());
 
             for (T const& element : set)
                 v.append(element);
@@ -59,12 +72,17 @@ namespace PMP
             return vector;
         }
 
+        template<typename T> static void addToSet(QList<T> const& list, QSet<T>& set)
+        {
+            for (T const& element : list)
+                set << element;
+        }
+
         template<typename T> static void addToSet(QVector<T> const& vector, QSet<T>& set)
         {
             for (T const& element : vector)
                 set.insert(element);
         }
-
     };
 }
 #endif

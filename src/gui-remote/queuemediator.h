@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,25 +20,33 @@
 #ifndef PMP_QUEUEMEDIATOR_H
 #define PMP_QUEUEMEDIATOR_H
 
-#include "common/abstractqueuemonitor.h"
+#include "client/abstractqueuemonitor.h"
+#include "client/localhashid.h"
+
+namespace PMP::Client
+{
+    class AbstractQueueMonitor;
+    class QueueController;
+    class ServerInterface;
+}
 
 namespace PMP
 {
-    class AbstractQueueMonitor;
-    class ClientServerInterface;
-    class FileHash;
-    class QueueController;
-
-    class QueueMediator : public AbstractQueueMonitor
+    class QueueMediator : public Client::AbstractQueueMonitor
     {
         Q_OBJECT
     public:
         QueueMediator(QObject* parent, AbstractQueueMonitor* monitor,
-                      ClientServerInterface* clientServerInterface);
+                      Client::ServerInterface* serverInterface);
 
         void setFetchLimit(int count) override;
 
         QUuid serverUuid() const override;
+
+        bool isQueueLengthKnown() const override
+        {
+            return _sourceMonitor->isQueueLengthKnown();
+        }
 
         int queueLength() const override { return _queueLength; }
         quint32 queueEntry(int index) override;
@@ -49,7 +57,7 @@ namespace PMP
         void moveTrack(int fromIndex, int toIndex, quint32 queueID);
         void moveTrackToEnd(int fromIndex, quint32 queueId);
 
-        void insertFileAsync(int index, const FileHash& hash);
+        void insertFileAsync(int index, Client::LocalHashId hashId);
         void duplicateEntryAsync(quint32 queueID);
         bool canDuplicateEntry(quint32 queueID) const;
 
@@ -61,7 +69,7 @@ namespace PMP
         void trackMovedAtServer(int fromIndex, int toIndex, quint32 queueID);
 
     private:
-        QueueController& queueController() const;
+        Client::QueueController& queueController() const;
 
         class Operation;
         class InfoOperation;
@@ -74,7 +82,7 @@ namespace PMP
         bool handleServerOperation(Operation* op);
 
         AbstractQueueMonitor* _sourceMonitor;
-        ClientServerInterface* _clientServerInterface;
+        Client::ServerInterface* _serverInterface;
         int _queueLength;
         QList<quint32> _myQueue;
         QList<Operation*> _pendingOperations;

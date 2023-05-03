@@ -24,7 +24,7 @@
 
 #include <QObject>
 
-namespace PMP
+namespace PMP::Server
 {
     class History;
     class PlayerQueue;
@@ -45,13 +45,13 @@ namespace PMP
         void setUserGeneratingFor(quint32 user);
         void setNoRepetitionSpanSeconds(int seconds);
 
-        void currentTrackChanged(QueueEntry const* newTrack);
+        void currentTrackChanged(QSharedPointer<QueueEntry const> newTrack);
 
     Q_SIGNALS:
         void noRepetitionSpanSecondsChanged();
 
     private:
-        QueueEntry const* _currentTrack;
+        QSharedPointer<QueueEntry const> _currentTrack;
         PlayerQueue* _queue;
         History* _history;
         int _noRepetitionSpanSeconds;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,6 +39,10 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 namespace PMP
 {
     class FileHash;
+}
+
+namespace PMP::Server
+{
     class PlayerHistoryEntry;
     class QueueEntry;
     class Resolver;
@@ -85,30 +89,30 @@ namespace PMP
         int firstTrackIndex() const { return _firstTrackIndex; }
         uint firstTrackQueueId() const { return _firstTrackQueueId; }
 
-        QueueEntry* peek() const;
+        QSharedPointer<QueueEntry> peek() const;
         bool firstEntryIsBarrier() const;
-        QueueEntry* peekFirstTrackEntry() const;
-        QueueEntry* lookup(quint32 queueID);
+        QSharedPointer<QueueEntry> peekFirstTrackEntry() const;
+        QSharedPointer<QueueEntry> lookup(quint32 queueID);
         int findIndex(quint32 queueID);
-        QueueEntry* entryAtIndex(int index) const;
-        QList<QueueEntry*> entries(int startoffset, int maxCount);
+        QSharedPointer<QueueEntry> entryAtIndex(int index) const;
+        QList<QSharedPointer<QueueEntry>> entries(int startoffset, int maxCount);
 
-        Result enqueue(QString const& filename);
         Result enqueue(FileHash hash);
-        Result enqueue(std::function<QueueEntry* (uint)> queueEntryCreator);
+        Result enqueue(std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
 
         Result insertAtFront(FileHash hash);
         Result insertBreakAtFront();
-        Result insertAtFront(std::function<QueueEntry* (uint)> queueEntryCreator);
+        Result insertAtFront(
+                      std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
 
         Result insertAtIndex(qint32 index, FileHash hash);
         Result insertAtIndex(qint32 index,
-                             std::function<QueueEntry* (uint)> queueEntryCreator);
+                      std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
         Result insertAtIndex(qint32 index, SpecialQueueItemType itemType,
                              std::function<void (uint)> queueIdNotifier);
         Result insertAtIndex(qint32 index,
-                             std::function<QueueEntry* (uint)> queueEntryCreator,
-                             std::function<void (uint)> queueIdNotifier);
+                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                       std::function<void (uint)> queueIdNotifier);
 
         QList<QSharedPointer<PlayerHistoryEntry> > recentHistory(int limit);
 
@@ -116,7 +120,7 @@ namespace PMP
         //void clear(bool doNotifications);
         void trim(int length);
 
-        QueueEntry* dequeue();
+        QSharedPointer<QueueEntry> dequeue();
         bool remove(quint32 queueID);
         bool removeAtIndex(int index);
         bool moveById(quint32 queueID, qint16 indexDiff);
@@ -143,8 +147,8 @@ namespace PMP
         uint _nextQueueID;
         int _firstTrackIndex;
         uint _firstTrackQueueId;
-        QHash<quint32, QueueEntry*> _idLookup;
-        QQueue<QueueEntry*> _queue;
+        QHash<quint32, QSharedPointer<QueueEntry>> _idLookup;
+        QQueue<QSharedPointer<QueueEntry>> _queue;
         QQueue<QSharedPointer<PlayerHistoryEntry>> _history;
         Resolver* _resolver;
         QTimer* _queueFrontChecker;

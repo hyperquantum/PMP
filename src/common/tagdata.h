@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,7 @@
 #ifndef PMP_TAGDATA_H
 #define PMP_TAGDATA_H
 
+#include <QMetaType>
 #include <QString>
 
 namespace PMP
@@ -56,4 +57,7 @@ namespace PMP
         QString _comment;
     };
 }
+
+Q_DECLARE_METATYPE(PMP::TagData)
+
 #endif
