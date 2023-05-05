@@ -21,7 +21,10 @@
 
 #include "common/unicodechars.h"
 
-#include "commands.h"
+#include "administrativecommands.h"
+#include "miscellaneouscommands.h"
+#include "playercommands.h"
+#include "queuecommands.h"
 #include "scrobblingcommands.h"
 
 #include <limits>
