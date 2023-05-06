@@ -551,7 +551,7 @@ namespace PMP::Server
     }
 
     void ConnectedClient::appendScrobblingMessageStart(QByteArray& buffer,
-                                     NetworkProtocol::ScrobblingServerMessage messageType)
+                                                  ScrobblingServerMessageType messageType)
     {
         auto id = _scrobblingSupportThis.id;
         auto type = static_cast<quint8>(messageType);
@@ -1553,7 +1553,7 @@ namespace PMP::Server
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4);
         appendScrobblingMessageStart(message,
-                           NetworkProtocol::ScrobblingServerMessage::ProviderInfoMessage);
+                                     ScrobblingServerMessageType::ProviderInfoMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
         NetworkUtil::appendByte(message, NetworkProtocol::encode(provider));
         NetworkUtil::appendByte(message, NetworkProtocol::encode(status));
@@ -1574,7 +1574,7 @@ namespace PMP::Server
         QByteArray message;
         message.reserve(2 + 1 + 1 + 4);
         appendScrobblingMessageStart(message,
-                           NetworkProtocol::ScrobblingServerMessage::StatusChangeMessage);
+                                     ScrobblingServerMessageType::StatusChangeMessage);
         NetworkUtil::appendByte(message, NetworkProtocol::encode(provider));
         NetworkUtil::appendByte(message, NetworkProtocol::encode(newStatus));
         NetworkUtil::append4Bytes(message, userId);
@@ -1592,7 +1592,7 @@ namespace PMP::Server
         QByteArray message;
         message.reserve(2 + 1 + 1 + 4);
         appendScrobblingMessageStart(message,
-                  NetworkProtocol::ScrobblingServerMessage::ProviderEnabledChangeMessage);
+                               ScrobblingServerMessageType::ProviderEnabledChangeMessage);
         NetworkUtil::appendByte(message, NetworkProtocol::encode(provider));
         NetworkUtil::appendByte(message, enabled ? 1 : 0);
         NetworkUtil::append4Bytes(message, userId);
@@ -2107,12 +2107,14 @@ namespace PMP::Server
         //    case 3: parseExtensionMessage3(message); break;
         //    }
         //}
-        if (extensionId == _scrobblingSupportOther.id) {
-            switch (static_cast<NetworkProtocol::ScrobblingClientMessage>(messageType)) {
-            case NetworkProtocol::ScrobblingClientMessage::ProviderInfoRequestMessage:
+        if (extensionId == _scrobblingSupportOther.id)
+        {
+            switch (static_cast<ScrobblingClientMessageType>(messageType))
+            {
+            case ScrobblingClientMessageType::ProviderInfoRequestMessage:
                 parseCurrentUserScrobblingProviderInfoRequestMessage(message);
                 return;
-            case NetworkProtocol::ScrobblingClientMessage::EnableDisableRequestMessage:
+            case ScrobblingClientMessageType::EnableDisableRequestMessage:
                 parseUserScrobblingEnableDisableRequest(message);
                 return;
             }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -103,6 +103,13 @@ namespace PMP
         ServerVersionInfoMessage = 34,
     };
 
+    enum class ScrobblingServerMessageType : quint8
+    {
+        ProviderInfoMessage = 1,
+        StatusChangeMessage = 2,
+        ProviderEnabledChangeMessage = 3,
+    };
+
     enum class ClientMessageType
     {
         None = 0,
@@ -132,6 +139,12 @@ namespace PMP
         InsertSpecialQueueItemRequest = 24,
         KeepAliveMessage = 25,
         ActivateDelayedStartRequest = 26,
+    };
+
+    enum class ScrobblingClientMessageType : quint8
+    {
+        ProviderInfoRequestMessage = 1,
+        EnableDisableRequestMessage = 2,
     };
 
     enum class ServerEventCode
@@ -188,17 +201,6 @@ namespace PMP
             {
                 //
             }
-        };
-
-        enum class ScrobblingServerMessage : quint8 {
-            ProviderInfoMessage = 1,
-            StatusChangeMessage = 2,
-            ProviderEnabledChangeMessage = 3,
-        };
-
-        enum class ScrobblingClientMessage : quint8 {
-            ProviderInfoRequestMessage = 1,
-            EnableDisableRequestMessage = 2,
         };
 
         static void append2Bytes(QByteArray& buffer, ServerMessageType messageType);

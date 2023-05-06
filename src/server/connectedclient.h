@@ -133,7 +133,7 @@ namespace PMP::Server
         void sendTextCommand(QString const& command);
         void handleBinaryModeSwitchRequest();
         void appendScrobblingMessageStart(QByteArray& buffer,
-                                    NetworkProtocol::ScrobblingServerMessage messageType);
+                                          ScrobblingServerMessageType messageType);
         void sendBinaryMessage(QByteArray const& message);
         void sendKeepAliveReply(quint8 blob);
         void sendProtocolExtensionsMessage();

@@ -764,7 +764,7 @@ namespace PMP::Client
     }
 
     void ServerConnection::appendScrobblingMessageStart(QByteArray& buffer,
-                                     NetworkProtocol::ScrobblingClientMessage messageType)
+                                                ScrobblingClientMessageType messageType)
     {
         auto id = _scrobblingSupportThis.id;
         auto type = static_cast<quint8>(messageType);
@@ -1410,7 +1410,7 @@ namespace PMP::Client
         QByteArray message;
         message.reserve(2 + 2);
         appendScrobblingMessageStart(message,
-                    NetworkProtocol::ScrobblingClientMessage::ProviderInfoRequestMessage);
+                                 ScrobblingClientMessageType::ProviderInfoRequestMessage);
         NetworkUtil::append2Bytes(message, 0); /* filler */
 
         sendBinaryMessage(message);
@@ -1426,7 +1426,7 @@ namespace PMP::Client
         QByteArray message;
         message.reserve(2 + 2);
         appendScrobblingMessageStart(message,
-                   NetworkProtocol::ScrobblingClientMessage::EnableDisableRequestMessage);
+                                ScrobblingClientMessageType::EnableDisableRequestMessage);
         NetworkUtil::appendByte(message, NetworkProtocol::encode(provider));
         NetworkUtil::appendByte(message, enable ? 1 : 0);
 
@@ -1898,15 +1898,17 @@ namespace PMP::Client
         //    case 3: parseExtensionMessage3(message); break;
         //    }
         //}
-        if (extensionId == _scrobblingSupportOther.id) {
-            switch (static_cast<NetworkProtocol::ScrobblingServerMessage>(messageType)) {
-            case NetworkProtocol::ScrobblingServerMessage::StatusChangeMessage:
+        if (extensionId == _scrobblingSupportOther.id)
+        {
+            switch (static_cast<ScrobblingServerMessageType>(messageType))
+            {
+            case ScrobblingServerMessageType::StatusChangeMessage:
                 parseScrobblerStatusChangeMessage(message);
                 return;
-            case NetworkProtocol::ScrobblingServerMessage::ProviderEnabledChangeMessage:
+            case ScrobblingServerMessageType::ProviderEnabledChangeMessage:
                 parseScrobblingProviderEnabledChangeMessage(message);
                 return;
-            case NetworkProtocol::ScrobblingServerMessage::ProviderInfoMessage:
+            case ScrobblingServerMessageType::ProviderInfoMessage:
                 parseScrobblingProviderInfoMessage(message);
                 return;
             }

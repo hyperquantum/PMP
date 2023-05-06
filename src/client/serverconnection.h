@@ -271,7 +271,7 @@ namespace PMP::Client
 
         void sendTextCommand(QString const& command);
         void appendScrobblingMessageStart(QByteArray& buffer,
-                                    NetworkProtocol::ScrobblingClientMessage messageType);
+                                          ScrobblingClientMessageType messageType);
         void sendBinaryMessage(QByteArray const& message);
         void sendKeepAliveMessage();
         void sendProtocolExtensionsMessage();
