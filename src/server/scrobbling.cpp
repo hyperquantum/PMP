@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,12 +32,12 @@ namespace PMP::Server
 
     void GlobalScrobblingController::enableScrobbling()
     {
-        emit enableScrobblingRequested();
+        Q_EMIT enableScrobblingRequested();
     }
 
     void GlobalScrobblingController::wakeUp(uint userId)
     {
-        emit wakeUpRequested(userId);
+        Q_EMIT wakeUpRequested(userId);
     }
 
     void GlobalScrobblingController::updateNowPlaying(uint userId, QDateTime startTime,
@@ -45,8 +45,8 @@ namespace PMP::Server
                                                       QString album,
                                                       int trackDurationSeconds)
     {
-        emit nowPlayingUpdateRequested(userId, startTime, title, artist, album,
-                                       trackDurationSeconds);
+        Q_EMIT nowPlayingUpdateRequested(userId, startTime, title, artist, album,
+                                         trackDurationSeconds);
     }
 
     /* ============================================================================ */
@@ -60,7 +60,7 @@ namespace PMP::Server
     void UserScrobblingController::wakeUp()
     {
         qDebug() << "UserScrobblingController::wakeUp called for user" << _userId;
-        emit wakeUpRequested(_userId);
+        Q_EMIT wakeUpRequested(_userId);
     }
 
     void UserScrobblingController::setScrobblingProviderEnabled(
@@ -71,7 +71,7 @@ namespace PMP::Server
             << "UserScrobblingController::setScrobblingProviderEnabled called for user"
             << _userId << "and provider" << provider << "with enabled=" << enabled;
 
-        emit providerEnableOrDisableRequested(_userId, provider, enabled);
+        Q_EMIT providerEnableOrDisableRequested(_userId, provider, enabled);
     }
 
     void UserScrobblingController::requestScrobblingProviderInfo()
@@ -80,7 +80,7 @@ namespace PMP::Server
             << "UserScrobblingController::requestScrobblingProviderInfo called for user"
             << _userId;
 
-        emit scrobblingProviderInfoRequested(_userId);
+        Q_EMIT scrobblingProviderInfoRequested(_userId);
     }
 
     /* ============================================================================ */
@@ -154,7 +154,7 @@ namespace PMP::Server
             {
                 if (eventUserId != userId) return; /* user does not match */
 
-                emit controller->scrobblingProviderInfo(provider, status, enabled);
+                Q_EMIT controller->scrobblingProviderInfo(provider, status, enabled);
             }
         );
 
@@ -166,7 +166,7 @@ namespace PMP::Server
             {
                 if (eventUserId != userId) return; /* user does not match */
 
-                emit controller->scrobblerStatusChanged(provider, status);
+                Q_EMIT controller->scrobblerStatusChanged(provider, status);
             }
         );
 
@@ -178,7 +178,7 @@ namespace PMP::Server
             {
                 if (eventUserId != userId) return; /* user does not match */
 
-                emit controller->scrobblingProviderEnabledChanged(provider, enabled);
+                Q_EMIT controller->scrobblingProviderEnabledChanged(provider, enabled);
             }
         );
 

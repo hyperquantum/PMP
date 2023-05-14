@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -63,7 +63,7 @@ namespace PMP::Server
         }
 
         _state = newState;
-        emit stateChanged(newState, oldState);
+        Q_EMIT stateChanged(newState, oldState);
     }
 
     void ScrobblingBackend::setDelayInMillisecondsBetweenSubsequentScrobbles(

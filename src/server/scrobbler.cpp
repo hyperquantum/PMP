@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -344,7 +344,7 @@ namespace PMP::Server
 
         _status = newStatus;
         if (oldStatus != newStatus)
-            emit statusChanged(newStatus);
+            Q_EMIT statusChanged(newStatus);
     }
 
     void Scrobbler::startBackoffTimer(int initialBackoffMilliseconds)
@@ -382,5 +382,4 @@ namespace PMP::Server
             _tracksToScrobble.insert(0, trackPtr);
         }
     }
-
 }

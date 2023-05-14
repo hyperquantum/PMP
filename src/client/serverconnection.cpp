@@ -3196,7 +3196,7 @@ namespace PMP::Client
         if (userId != _userLoggedInId)
             return; /* not supposed to happen, and we're probably also not interested */
 
-        emit scrobblingProviderInfoReceived(provider, status, enabled);
+        Q_EMIT scrobblingProviderInfoReceived(provider, status, enabled);
     }
 
     void ServerConnection::parseScrobblerStatusChangeMessage(QByteArray const& message) {
@@ -3217,7 +3217,7 @@ namespace PMP::Client
         if (userId != _userLoggedInId)
             return; /* not supposed to happen, and we're probably also not interested */
 
-        emit scrobblerStatusChanged(provider, status);
+        Q_EMIT scrobblerStatusChanged(provider, status);
     }
 
     void ServerConnection::parseScrobblingProviderEnabledChangeMessage(
@@ -3239,7 +3239,7 @@ namespace PMP::Client
         if (userId != _userLoggedInId)
             return; /* not supposed to happen, and we're not interested anyway */
 
-        emit scrobblingProviderEnabledChanged(provider, enabled);
+        Q_EMIT scrobblingProviderEnabledChanged(provider, enabled);
     }
 
     void ServerConnection::handleResultMessage(quint16 errorCode, quint32 clientReference,

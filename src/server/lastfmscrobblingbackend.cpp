@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -88,7 +88,7 @@ namespace PMP::Server
             qDebug() << "detected 'Network access is disabled' problem;"
                      << "applying workaround";
 
-            emit mustRecreateNetworkManager();
+            Q_EMIT mustRecreateNetworkManager();
         }
 
         onGenericError();
@@ -176,36 +176,36 @@ namespace PMP::Server
         {
             case 9: /* invalid session key, need to re-authenticate */
                 qWarning() << "LFM reports session key not valid (or not anymore)";
-                emit mustInvalidateSessionKey();
+                Q_EMIT mustInvalidateSessionKey();
                 break;
 
             case 8: case 11: case 16:
                 /* retry request later */
                 qWarning() << "LFM error code" << lastFmErrorCode
                            << ": should try again later";
-                emit shouldTryAgainLater();
+                Q_EMIT shouldTryAgainLater();
                 break;
 
             case 2: case 3: case 5: case 6: case 7: case 13: case 27:
                 qWarning() << "LFM error code" << lastFmErrorCode
                            << ": probably a bug in the request";
-                emit fatalError();
+                Q_EMIT fatalError();
                 break;
 
             case 10: case 26: /* invalid/suspended API key */
                 qWarning() << "LFM error code" << lastFmErrorCode
                            << ": problem with our API key";
-                emit fatalError();
+                Q_EMIT fatalError();
                 break;
 
             case 29: /* rate limit exceeded */
                 qWarning() << "LFM reports rate limit exceeded";
-                emit shouldTryAgainLater();
+                Q_EMIT shouldTryAgainLater();
                 break;
 
             default:
                 qWarning() << "unknown/unhandled LFM error code" << lastFmErrorCode;
-                emit fatalError();
+                Q_EMIT fatalError();
                 break;
         }
 
@@ -241,7 +241,7 @@ namespace PMP::Server
         auto userName = nameNode.text();
         auto sessionKey = keyNode.text();
 
-        emit authenticationSuccessful(userName, sessionKey);
+        Q_EMIT authenticationSuccessful(userName, sessionKey);
     }
 
     void LastFmAuthenticationRequestHandler::handleErrorCode(int lastFmErrorCode)
@@ -249,7 +249,7 @@ namespace PMP::Server
         if (lastFmErrorCode == 4) /* authentication failed */
         {
             qDebug() << "LFM authentication failed";
-            emit authenticationRejected();
+            Q_EMIT authenticationRejected();
         }
         else
         {
@@ -260,7 +260,7 @@ namespace PMP::Server
 
     void LastFmAuthenticationRequestHandler::onGenericError()
     {
-        emit authenticationError();
+        Q_EMIT authenticationError();
     }
 
     /* ============================================================================ */
@@ -278,12 +278,12 @@ namespace PMP::Server
         Q_UNUSED(childElement)
 
         /* don't parse the reply, just assume that it was successful */
-        emit nowPlayingUpdateSuccessful();
+        Q_EMIT nowPlayingUpdateSuccessful();
     }
 
     void LastFmNowPlayingRequestHandler::onGenericError()
     {
-        emit nowPlayingUpdateFailed();
+        Q_EMIT nowPlayingUpdateFailed();
     }
 
     /* ============================================================================ */
@@ -303,14 +303,14 @@ namespace PMP::Server
         if (scrobbleElement.isNull()
                 || !scrobbleElement.nextSiblingElement("scrobble").isNull())
         {
-            emit scrobbleError();
+            Q_EMIT scrobbleError();
             return;
         }
 
         auto timestampElement = scrobbleElement.firstChildElement("timestamp");
         if (timestampElement.isNull())
         {
-            emit scrobbleError();
+            Q_EMIT scrobbleError();
             return;
         }
 
@@ -318,7 +318,7 @@ namespace PMP::Server
         auto timestampNumber = timestampElement.text().toLongLong(&ok);
         if (!ok)
         {
-            emit scrobbleError();
+            Q_EMIT scrobbleError();
             return;
         }
 
@@ -326,7 +326,7 @@ namespace PMP::Server
             scrobbleElement.firstChildElement("ignoredMessage");
         if (ignoredMessageElement.isNull())
         {
-            emit scrobbleError();
+            Q_EMIT scrobbleError();
             return;
         }
 
@@ -334,7 +334,7 @@ namespace PMP::Server
         auto ignoredReason = ignoredMessageElement.attribute("code").toInt(&ok);
         if (!ok)
         {
-            emit scrobbleError();
+            Q_EMIT scrobbleError();
             return;
         }
 
@@ -356,14 +356,14 @@ namespace PMP::Server
                  << " album:" << albumText;
 
         if (scrobbleAccepted)
-            emit scrobbleSuccessful();
+            Q_EMIT scrobbleSuccessful();
         else
-            emit scrobbleIgnored();
+            Q_EMIT scrobbleIgnored();
     }
 
     void LastFmScrobbleRequestHandler::onGenericError()
     {
-        emit scrobbleError();
+        Q_EMIT scrobbleError();
     }
 
     /* ============================================================================ */
@@ -413,18 +413,18 @@ namespace PMP::Server
                 _username = userName;
                 _sessionKey = sessionKey;
                 updateState();
-                emit gotAuthenticationResult(true, origin);
+                Q_EMIT gotAuthenticationResult(true, origin);
             }
         );
         connect(
             handler, &LastFmAuthenticationRequestHandler::authenticationRejected,
             this,
-            [this, origin]() { emit gotAuthenticationResult(false, origin); }
+            [this, origin]() { Q_EMIT gotAuthenticationResult(false, origin); }
         );
         connect(
             handler, &LastFmAuthenticationRequestHandler::authenticationError,
             this,
-            [this, origin]() { emit errorOccurredDuringAuthentication(origin); }
+            [this, origin]() { Q_EMIT errorOccurredDuringAuthentication(origin); }
         );
     }
 
@@ -482,11 +482,11 @@ namespace PMP::Server
 
         connect(
             handler, &LastFmNowPlayingRequestHandler::nowPlayingUpdateSuccessful,
-            this, [this]() { emit this->gotNowPlayingResult(true); }
+            this, [this]() { Q_EMIT this->gotNowPlayingResult(true); }
         );
         connect(
             handler, &LastFmNowPlayingRequestHandler::nowPlayingUpdateFailed,
-            this, [this]() { emit this->gotNowPlayingResult(false); }
+            this, [this]() { Q_EMIT this->gotNowPlayingResult(false); }
         );
     }
 
@@ -502,15 +502,15 @@ namespace PMP::Server
 
         connect(
             handler, &LastFmScrobbleRequestHandler::scrobbleSuccessful,
-            this, [this]() { emit this->gotScrobbleResult(ScrobbleResult::Success); }
+            this, [this]() { Q_EMIT this->gotScrobbleResult(ScrobbleResult::Success); }
         );
         connect(
             handler, &LastFmScrobbleRequestHandler::scrobbleIgnored,
-            this, [this]() { emit this->gotScrobbleResult(ScrobbleResult::Ignored); }
+            this, [this]() { Q_EMIT this->gotScrobbleResult(ScrobbleResult::Ignored); }
         );
         connect(
             handler, &LastFmScrobbleRequestHandler::scrobbleError,
-            this, [this]() { emit this->gotScrobbleResult(ScrobbleResult::Error); }
+            this, [this]() { Q_EMIT this->gotScrobbleResult(ScrobbleResult::Error); }
         );
     }
 

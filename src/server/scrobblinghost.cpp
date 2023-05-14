@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -146,7 +146,7 @@ namespace PMP::Server
         enableDisableScrobbler(userId, provider, enabled);
 
         if (enabledChanged)
-            emit scrobblingProviderEnabledChanged(userId, provider, enabled);
+            Q_EMIT scrobblingProviderEnabledChanged(userId, provider, enabled);
     }
 
     void ScrobblingHost::retrieveScrobblingProviderInfo(uint userId)
@@ -164,11 +164,11 @@ namespace PMP::Server
         auto& data = _scrobblersData[userId][ScrobblingProvider::LastFm];
         if (data.enabled)
         {
-            emit scrobblingProviderInfoSignal(userId, provider, true, data.status);
+            Q_EMIT scrobblingProviderInfoSignal(userId, provider, true, data.status);
         }
         else
         {
-            emit scrobblingProviderInfoSignal(userId, provider, false,
+            Q_EMIT scrobblingProviderInfoSignal(userId, provider, false,
                                               ScrobblerStatus::Unknown);
         }
     }
@@ -291,7 +291,7 @@ namespace PMP::Server
             this,
             [userId, this](bool success, ClientRequestOrigin origin)
             {
-                emit this->gotAuthenticationResult(userId, ScrobblingProvider::LastFm,
+                Q_EMIT this->gotAuthenticationResult(userId, ScrobblingProvider::LastFm,
                                                    origin, success);
             }
         );
@@ -300,7 +300,7 @@ namespace PMP::Server
             this,
             [userId, this](ClientRequestOrigin origin)
             {
-                emit this->errorOccurredDuringAuthentication(userId, origin);
+                Q_EMIT this->errorOccurredDuringAuthentication(userId, origin);
             }
         );
 
@@ -335,7 +335,7 @@ namespace PMP::Server
                          << "for user" << userId << "and provider" << provider;
 
                 data.status = status;
-                emit scrobblerStatusChanged(userId, provider, status);
+                Q_EMIT scrobblerStatusChanged(userId, provider, status);
             }
         );
     }

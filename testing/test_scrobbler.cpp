@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -105,7 +105,7 @@ void BackendMock::scrobbleTrack(QDateTime timestamp, QString title, QString arti
 
     if (_temporaryUnavailabilitiesToStageAtScrobbleTime > 0) {
         _temporaryUnavailabilitiesToStageAtScrobbleTime--;
-        emit serviceTemporarilyUnavailable();
+        Q_EMIT serviceTemporarilyUnavailable();
         return;
     }
 
@@ -138,23 +138,23 @@ void BackendMock::pretendAuthenticationResultReceived() {
 
 void BackendMock::pretendSuccessfulNowPlaying() {
     _nowPlayingUpdatedCount++;
-    emit gotNowPlayingResult(true);
+    Q_EMIT gotNowPlayingResult(true);
 }
 
 void BackendMock::pretendSuccessfulScrobble() {
     _scrobbledSuccessfullyCount++;
-    emit gotScrobbleResult(ScrobbleResult::Success);
+    Q_EMIT gotScrobbleResult(ScrobbleResult::Success);
 }
 
 void BackendMock::pretendScrobbleFailedBecauseTokenNoLongerValid() {
     _haveApiToken = false;
     setState(ScrobblingBackendState::WaitingForUserCredentials);
-    emit gotScrobbleResult(ScrobbleResult::Error);
+    Q_EMIT gotScrobbleResult(ScrobbleResult::Error);
 }
 
 void BackendMock::pretendScrobbleFailedBecauseTrackIgnored() {
     _tracksIgnoredCount++;
-    emit gotScrobbleResult(ScrobbleResult::Ignored);
+    Q_EMIT gotScrobbleResult(ScrobbleResult::Ignored);
 }
 
 // ================================= DataProviderMock ================================= //
