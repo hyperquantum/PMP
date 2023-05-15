@@ -827,7 +827,8 @@ namespace PMP::Client
         NetworkUtil::appendByte(message, 0); /* filler */
         NetworkUtil::appendByte(message, extensionCount);
 
-        for(auto extension : extensions) {
+        for(auto extension : qAsConst(extensions))
+        {
             QByteArray nameBytes = extension->name.toUtf8();
             quint8 nameBytesCount = static_cast<quint8>(nameBytes.size());
 
@@ -1891,8 +1892,10 @@ namespace PMP::Client
     {
         /* parse extensions here */
 
-        //if (extensionId == _knownExtensionOther.id) {
-        //    switch (messageType) {
+        //if (extensionId == _knownExtensionOther.id)
+        //{
+        //    switch (messageType)
+        //    {
         //    case 1: parseExtensionMessage1(message); break;
         //    case 2: parseExtensionMessage2(message); break;
         //    case 3: parseExtensionMessage3(message); break;
@@ -3176,8 +3179,10 @@ namespace PMP::Client
         Q_EMIT receivedPlayerHistory(entries);
     }
 
-    void ServerConnection::parseScrobblingProviderInfoMessage(QByteArray const& message) {
-        if (message.length() != 12) {
+    void ServerConnection::parseScrobblingProviderInfoMessage(QByteArray const& message)
+    {
+        if (message.length() != 12)
+        {
             qWarning() << "invalid message; length incorrect";
             return;
         }
@@ -3199,8 +3204,10 @@ namespace PMP::Client
         Q_EMIT scrobblingProviderInfoReceived(provider, status, enabled);
     }
 
-    void ServerConnection::parseScrobblerStatusChangeMessage(QByteArray const& message) {
-        if (message.length() != 8) {
+    void ServerConnection::parseScrobblerStatusChangeMessage(QByteArray const& message)
+    {
+        if (message.length() != 8)
+        {
             qWarning() << "invalid message; length incorrect";
             return;
         }
@@ -3223,7 +3230,8 @@ namespace PMP::Client
     void ServerConnection::parseScrobblingProviderEnabledChangeMessage(
                                                                 QByteArray const& message)
     {
-        if (message.length() != 8) {
+        if (message.length() != 8)
+        {
             qWarning() << "invalid message; length incorrect";
             return;
         }
@@ -3314,10 +3322,12 @@ namespace PMP::Client
 
             _serverExtensionNames[extension.id] = extension.name;
 
-            //if (extension.name == "known_extension_name") {
+            //if (extension.name == "known_extension_name")
+            //{
             //    _knownExtensionOther = extension;
             //}
-            if (extension.name == "scrobbling") {
+            if (extension.name == "scrobbling")
+            {
                 _scrobblingSupportOther = extension;
             }
         }

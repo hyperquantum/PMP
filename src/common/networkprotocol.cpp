@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -64,8 +64,10 @@ namespace PMP
         NetworkUtil::append2Bytes(buffer, encodedMessageType);
     }
 
-    quint8 NetworkProtocol::encode(ScrobblingProvider provider) {
-        switch (provider) {
+    quint8 NetworkProtocol::encode(ScrobblingProvider provider)
+    {
+        switch (provider)
+        {
             case ScrobblingProvider::Unknown:
                 return 0;
             case ScrobblingProvider::LastFm:
@@ -77,7 +79,8 @@ namespace PMP
 
     ScrobblingProvider NetworkProtocol::decodeScrobblingProvider(quint8 provider)
     {
-        switch (provider) {
+        switch (provider)
+        {
             case 1:
                 return ScrobblingProvider::LastFm;
             case 0:
@@ -86,8 +89,10 @@ namespace PMP
         }
     }
 
-    quint8 NetworkProtocol::encode(ScrobblerStatus status) {
-        switch (status) {
+    quint8 NetworkProtocol::encode(ScrobblerStatus status)
+    {
+        switch (status)
+        {
             case ScrobblerStatus::Green:
                 return 1;
             case ScrobblerStatus::Yellow:
@@ -103,8 +108,10 @@ namespace PMP
         return 0;
     }
 
-    ScrobblerStatus NetworkProtocol::decodeScrobblerStatus(quint8 status) {
-        switch (status) {
+    ScrobblerStatus NetworkProtocol::decodeScrobblerStatus(quint8 status)
+    {
+        switch (status)
+        {
             case 1:
                 return ScrobblerStatus::Green;
             case 2:

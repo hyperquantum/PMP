@@ -2801,9 +2801,8 @@ namespace PMP::Server
         if (!isLoggedIn()) { return; /* client needs to be authenticated for this */ }
 
         auto filler = NetworkUtil::get2Bytes(message, 2);
-        if (filler != 0) {
+        if (filler != 0)
             return; /* invalid message */
-        }
 
         fetchScrobblingProviderInfoForCurrentUser();
     }
@@ -3065,7 +3064,8 @@ namespace PMP::Server
             //{
             //    _knownExtensionOther = extension;
             //}
-            if (extension.name == "scrobbling") {
+            if (extension.name == "scrobbling")
+            {
                 _scrobblingSupportOther = extension;
             }
         }
