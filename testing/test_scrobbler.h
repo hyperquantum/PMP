@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,7 +44,7 @@ public:
     int scrobbledSuccessfullyCount() const { return _scrobbledSuccessfullyCount; }
     int tracksIgnoredCount() const { return _tracksIgnoredCount; }
 
-public slots:
+public Q_SLOTS:
     void initialize() override;
 
     void updateNowPlaying(QString title, QString artist, QString album,
@@ -56,7 +56,7 @@ public slots:
 protected:
     bool needsSsl() const override { return false; }
 
-private slots:
+private Q_SLOTS:
     void pretendAuthenticationResultReceived();
     void pretendSuccessfulNowPlaying();
     void pretendSuccessfulScrobble();
@@ -115,7 +115,7 @@ private:
 
 class TestScrobbler : public QObject {
     Q_OBJECT
-private slots:
+private Q_SLOTS:
     void simpleNowPlayingUpdate();
     void nowPlayingWithAuthentication();
     void nowPlayingWithTrackToScrobble();

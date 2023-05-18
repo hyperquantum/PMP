@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -45,7 +45,7 @@ namespace PMP::Server
 
         ScrobblerStatus status() const { return _status; }
 
-    public slots:
+    public Q_SLOTS:
         void wakeUp();
         void nowPlayingNothing();
         void nowPlayingTrack(QDateTime startTime,
@@ -56,7 +56,7 @@ namespace PMP::Server
     Q_SIGNALS:
         void statusChanged(PMP::ScrobblerStatus status);
 
-    private slots:
+    private Q_SLOTS:
         void timeoutTimerTimedOut();
         void backoffTimerTimedOut();
         void gotNowPlayingResult(bool success);

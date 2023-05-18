@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -52,7 +52,7 @@ namespace PMP::Server
     public:
         ScrobblingHost(Resolver* resolver);
 
-    public slots:
+    public Q_SLOTS:
         void enableScrobbling();
         void load();
         void wakeUpForUser(uint userId);
