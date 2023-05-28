@@ -42,7 +42,7 @@ namespace PMP::Server
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 22;
+    const qint16 ConnectedClient::ServerProtocolNo = 23;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -1715,6 +1715,33 @@ namespace PMP::Server
         NetworkUtil::append4Bytes(message, intData);
 
         message += blobData;
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendExtensionResultMessage(quint8 extensionId,
+                                                     quint8 resultCode,
+                                                     quint32 clientReference)
+    {
+        if (_clientProtocolNo < 23) /* client does not support this message */
+        {
+            /* Send a regular result message with a generic (error) code.
+               We assume that zero indicates success */
+
+            if (resultCode == 0)
+                sendResultMessage(ResultMessageErrorCode::NoError, clientReference);
+            else
+                sendResultMessage(ResultMessageErrorCode::UnknownError, clientReference);
+
+            return;
+        }
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::ExtensionResultMessage);
+        NetworkUtil::appendByte(message, extensionId);
+        NetworkUtil::appendByte(message, resultCode);
+        NetworkUtil::append4Bytes(message, clientReference);
 
         sendBinaryMessage(message);
     }

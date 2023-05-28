@@ -58,6 +58,7 @@ Changes for each version:
   20: client msg 26, server msg 1, parameterless action 40, error codes 2 & 25 & 51: delayed start
   21: single byte request 19, server msg 33: delayed start deadline information
   22: single byte request 60, server msg 34: requesting server version information
+  23: server msg 35, error code 241: more features for protocol extensions
 */
 
 namespace PMP
@@ -101,6 +102,7 @@ namespace PMP
         KeepAliveMessage = 32,
         DelayedStartInfoMessage = 33,
         ServerVersionInfoMessage = 34,
+        ExtensionResultMessage = 35,
     };
 
     enum class ScrobblingServerMessageType : quint8

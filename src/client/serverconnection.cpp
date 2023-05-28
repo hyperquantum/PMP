@@ -65,6 +65,7 @@ namespace PMP::Client
         virtual ~ResultHandler();
 
         virtual void handleResult(ResultMessageData const& data) = 0;
+        virtual void handleExtensionResult(quint8 extensionId, quint8 resultCode);
 
         virtual void handleQueueEntryAdditionConfirmation(quint32 clientReference,
                                                           qint32 index, quint32 queueID);
@@ -80,6 +81,14 @@ namespace PMP::Client
     ServerConnection::ResultHandler::~ResultHandler()
     {
         //
+    }
+
+    void ServerConnection::ResultHandler::handleExtensionResult(quint8 extensionId,
+                                                                quint8 resultCode)
+    {
+        qWarning() << "ResultHandler cannot deal with handle extension result message;"
+                   << "extension ID:" << uint(resultCode)
+                   << "; result code:" << uint(resultCode);
     }
 
     ServerConnection::ResultHandler::ResultHandler(ServerConnection* parent)
@@ -392,7 +401,7 @@ namespace PMP::Client
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 22;
+    const quint16 ServerConnection::ClientProtocolNo = 23;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -1785,6 +1794,9 @@ namespace PMP::Client
         case ServerMessageType::ServerExtensionsMessage:
             parseServerProtocolExtensionsMessage(message);
             break;
+        case PMP::ServerMessageType::ExtensionResultMessage:
+            parseServerProtocolExtensionResultMessage(message);
+            break;
         case ServerMessageType::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
             break;
@@ -1924,6 +1936,24 @@ namespace PMP::Client
                    << _serverExtensionNames.value(extensionId, "?");
     }
 
+    void ServerConnection::handleExtensionResultMessage(quint8 extensionId,
+                                                        quint8 resultCode,
+                                                        quint32 clientReference)
+    {
+        auto resultHandler = _resultHandlers.take(clientReference);
+        if (resultHandler)
+        {
+            resultHandler->handleExtensionResult(extensionId, resultCode);
+            delete resultHandler;
+            return;
+        }
+
+        qWarning() << "extension result message cannot be handled, no handler found;"
+                   << "client-ref:" << clientReference
+                   << "; extension ID:" << uint(extensionId)
+                   << "; result code:" << uint(resultCode);
+    }
+
     void ServerConnection::parseKeepAliveMessage(QByteArray const& message)
     {
         if (message.length() != 4)
@@ -1939,9 +1969,8 @@ namespace PMP::Client
 
     void ServerConnection::parseSimpleResultMessage(QByteArray const& message)
     {
-        if (message.length() < 12) {
+        if (message.length() < 12)
             return; /* invalid message */
-        }
 
         quint16 errorCode = NetworkUtil::get2Bytes(message, 2);
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
@@ -1955,11 +1984,27 @@ namespace PMP::Client
         handleResultMessage(errorCode, clientReference, intData, blobData);
     }
 
+    void ServerConnection::parseServerProtocolExtensionResultMessage(
+                                                                const QByteArray& message)
+    {
+        if (message.length() != 8)
+            return; /* invalid message */
+
+        quint8 extensionId = NetworkUtil::getByte(message, 2);
+        quint8 resultCode = NetworkUtil::getByte(message, 3);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "received extension result/error message; extension ID:"
+                 << extensionId << "; result code:" << resultCode
+                 << "; client-ref:" << clientReference;
+
+        handleExtensionResultMessage(extensionId, resultCode, clientReference);
+    }
+
     void ServerConnection::parseServerProtocolExtensionsMessage(QByteArray const& message)
     {
-        if (message.length() < 4) {
+        if (message.length() < 4)
             return; /* invalid message */
-        }
 
         /* be strict about reserved space */
         int filler = NetworkUtil::getByteUnsignedToInt(message, 2);
