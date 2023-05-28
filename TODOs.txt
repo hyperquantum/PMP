@@ -45,6 +45,7 @@ PERFORMANCE ISSUES
 IDEAS
 
  * UI: move server selection, user account creation and authentication to pop-up dialogs
+ * server selection: display servers recently used after verifying that they are still available
  * login: don't display user accounts that haven't been used in a long time
  ** player: option for single track mode (vs. continuous play)
  * player: 'load track' action that loads a track but does not start playing; this allows seek before playing
@@ -64,6 +65,7 @@ IDEAS
  * music collection: add a clear button for the filter
  * music collection: provide fast partial indexation that only detects new files
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
+ * music collection: add quick search function, for searching while leaving the current filters unchanged
  *** dynamic mode: detect and prevent track repetition with different hash values
  *** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
@@ -108,6 +110,7 @@ IDEAS
  * command-line remote: extend the "trackstats" command to accept queue IDs
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
  * hash tool: by default only output the hash of the file, no other information
+ * rename "GUI Remote" to "Desktop Remote"
 
 
 USER FRIENDLINESS
