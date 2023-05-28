@@ -275,6 +275,8 @@ namespace PMP::Client
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 extensionMessageType,
                                     QByteArray const& message);
+        void handleExtensionResultMessage(quint8 extensionId, quint8 resultCode,
+                                          quint32 clientReference);
         void handleResultMessage(quint16 errorCode, quint32 clientReference,
                                  quint32 intData, QByteArray const& blobData);
         void registerServerProtocolExtensions(
@@ -303,6 +305,7 @@ namespace PMP::Client
         void parseKeepAliveMessage(QByteArray const& message);
 
         void parseSimpleResultMessage(QByteArray const& message);
+        void parseServerProtocolExtensionResultMessage(QByteArray const& message);
 
         void parseServerProtocolExtensionsMessage(QByteArray const& message);
         void parseServerEventNotificationMessage(QByteArray const& message);

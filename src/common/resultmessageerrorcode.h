@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -54,6 +54,10 @@ namespace PMP
         /// The server does not support the requested action because it is too old.
         /// This error code will probably only ever be used client-side.
         ServerTooOld = 240,
+
+        /// The server does not support the requested action because the protocol
+        /// extension the action is a part of is not supported by the server.
+        ExtensionNotSupported = 241,
 
         NonFatalInternalServerError = 254,
         UnknownError = 255

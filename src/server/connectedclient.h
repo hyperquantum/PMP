@@ -155,6 +155,8 @@ namespace PMP::Server
                                quint32 intData);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
                                quint32 intData, QByteArray const& blobData);
+        void sendExtensionResultMessage(quint8 extensionId, quint8 resultCode,
+                                        quint32 clientReference);
         void sendNonFatalInternalErrorResultMessage(quint32 clientReference);
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
