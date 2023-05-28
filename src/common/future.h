@@ -105,6 +105,27 @@ namespace PMP
             return Future<SuccessType, FailureType>(newStorage);
         }
 
+        template<class T>
+        SimpleFuture<T> toSimpleFuture(
+            std::function<T (ResultType)> resultConversion,
+            std::function<T (ErrorType)> errorConversion)
+        {
+            auto newStorage = FutureStorage<T, FailureType>::create();
+
+            _storage->addListener(
+                [newStorage, resultConversion, errorConversion](
+                    ResultOrError<ResultType, ErrorType> originalOutcome)
+                {
+                    if (originalOutcome.succeeded())
+                        newStorage->setOutcome(resultConversion(originalOutcome.result()));
+                    else
+                        newStorage->setOutcome(errorConversion(originalOutcome.error()));
+                }
+            );
+
+            return SimpleFuture<T>(newStorage);
+        }
+
         template<class ResultType2, class ErrorType2>
         Future<ResultType2, ErrorType2> thenFuture(
                 std::function<Future<ResultType2, ErrorType2> (
@@ -312,6 +333,7 @@ namespace PMP
             //
         }
 
+        template<class T1, class T2> friend class Future;
         friend class SimplePromise<T>;
 
         QSharedPointer<FutureStorage<T, FailureType>> _storage;
