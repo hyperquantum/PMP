@@ -230,20 +230,25 @@ namespace PMP
         _noRepetitionList.clear();
         _ui->trackRepetitionComboBox->clear();
 
+        const int seconds = 1;
+        const int minutes = 60 * seconds;
+        const int hours = 60 * minutes;
+        const int days = 24 * hours;
+        const int weeks = 7 * days;
         _noRepetitionList.append(0);
-        _noRepetitionList.append(3600); // 1 hour
-        _noRepetitionList.append(2 * 3600); // 2 hours
-        _noRepetitionList.append(4 * 3600); // 4 hours
-        _noRepetitionList.append(6 * 3600); // 6 hours
-        _noRepetitionList.append(10 * 3600); // 10 hours
-        _noRepetitionList.append(24 * 3600); // 24 hours
-        _noRepetitionList.append(2 * 24 * 3600); // 48 hours (2 days)
-        _noRepetitionList.append(3 * 24 * 3600); // 72 hours (3 days)
-        _noRepetitionList.append(7 * 24 * 3600); // 7 days
-        _noRepetitionList.append(2 * 7 * 24 * 3600); // 2 weeks
-        _noRepetitionList.append(3 * 7 * 24 * 3600); // 3 weeks
-        _noRepetitionList.append(4 * 7 * 24 * 3600); // 4 weeks
-        _noRepetitionList.append(8 * 7 * 24 * 3600); // 8 weeks
+        _noRepetitionList.append(1 * hours);
+        _noRepetitionList.append(2 * hours);
+        _noRepetitionList.append(4 * hours);
+        _noRepetitionList.append(6 * hours);
+        _noRepetitionList.append(10 * hours);
+        _noRepetitionList.append(24 * hours);
+        _noRepetitionList.append(2 * days);
+        _noRepetitionList.append(3 * days);
+        _noRepetitionList.append(7 * days);
+        _noRepetitionList.append(2 * weeks);
+        _noRepetitionList.append(3 * weeks);
+        _noRepetitionList.append(4 * weeks);
+        _noRepetitionList.append(8 * weeks);
 
         int indexOfSpanToSelect = -1;
 
