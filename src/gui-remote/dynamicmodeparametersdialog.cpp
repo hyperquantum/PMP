@@ -249,6 +249,7 @@ namespace PMP
         _noRepetitionList.append(3 * weeks);
         _noRepetitionList.append(4 * weeks);
         _noRepetitionList.append(8 * weeks);
+        _noRepetitionList.append(12 * weeks);
 
         int indexOfSpanToSelect = -1;
 
