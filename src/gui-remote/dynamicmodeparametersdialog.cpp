@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -240,10 +240,10 @@ namespace PMP
         _noRepetitionList.append(2 * 24 * 3600); // 48 hours (2 days)
         _noRepetitionList.append(3 * 24 * 3600); // 72 hours (3 days)
         _noRepetitionList.append(7 * 24 * 3600); // 7 days
-        _noRepetitionList.append(14 * 24 * 3600); // 14 days
-        _noRepetitionList.append(21 * 24 * 3600); // 21 days (3 weeks)
-        _noRepetitionList.append(28 * 24 * 3600); // 28 days (4 weeks)
-        _noRepetitionList.append(56 * 24 * 3600); // 56 days (8 weeks)
+        _noRepetitionList.append(2 * 7 * 24 * 3600); // 2 weeks
+        _noRepetitionList.append(3 * 7 * 24 * 3600); // 3 weeks
+        _noRepetitionList.append(4 * 7 * 24 * 3600); // 4 weeks
+        _noRepetitionList.append(8 * 7 * 24 * 3600); // 8 weeks
 
         int indexOfSpanToSelect = -1;
 
