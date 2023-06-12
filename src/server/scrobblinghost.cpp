@@ -44,6 +44,30 @@ namespace PMP::Server
         //
     }
 
+    SimpleFuture<Result> ScrobblingHost::authenticateForProvider(uint userId,
+                                                            ScrobblingProvider provider,
+                                                            QString user,
+                                                            QString password)
+    {
+        if (!_hostEnabled)
+            return FutureResult(Error::scrobblingSystemDisabled());
+
+        auto& data = _scrobblersData[userId][provider];
+
+        if (data.enabled == false)
+        {
+            return FutureResult(Error::scrobblingProviderNotEnabled());
+        }
+
+        if (data.scrobbler == nullptr)
+        {
+            qWarning() << "scrobbler not created??";
+            return FutureResult(Error::internalError());
+        }
+
+        return data.scrobbler->authenticateWithCredentials(user, password);
+    }
+
     void ScrobblingHost::enableScrobbling()
     {
         if (_hostEnabled)
@@ -287,20 +311,16 @@ namespace PMP::Server
         auto lastFmBackend = new LastFmScrobblingBackend();
 
         connect(
-            lastFmBackend, &LastFmScrobblingBackend::gotAuthenticationResult,
+            lastFmBackend, &LastFmScrobblingBackend::authenticatedSuccessfully,
             this,
-            [userId, this](bool success, ClientRequestOrigin origin)
+            [userId](QString username, QString sessionKey)
             {
-                Q_EMIT this->gotAuthenticationResult(userId, ScrobblingProvider::LastFm,
-                                                   origin, success);
-            }
-        );
-        connect(
-            lastFmBackend, &LastFmScrobblingBackend::errorOccurredDuringAuthentication,
-            this,
-            [userId, this](ClientRequestOrigin origin)
-            {
-                Q_EMIT this->errorOccurredDuringAuthentication(userId, origin);
+                auto encodedSessionKey = TokenEncoder::encodeToken(sessionKey);
+
+                auto db = Database::getDatabaseForCurrentThread();
+                if (!db) { return; }
+
+                db->updateLastFmAuthentication(userId, username, encodedSessionKey);
             }
         );
 

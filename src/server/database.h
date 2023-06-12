@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -128,6 +128,8 @@ namespace PMP::Server
         bool setLastFmScrobblingEnabled(quint32 userId, bool enabled = true);
         quint32 getLastFmScrobbledUpTo(quint32 userId, bool* ok);
         bool updateLastFmScrobbledUpTo(quint32 userId, quint32 newValue);
+        bool updateLastFmAuthentication(quint32 userId, QString lastFmUsername,
+                                        QString lastFmSessionKey);
         bool updateUserScrobblingSessionKeys(UserScrobblingDataRecord const& record);
 
         DatabaseRecords::UserDynamicModePreferences getUserDynamicModePreferences(

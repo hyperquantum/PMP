@@ -24,6 +24,7 @@ set(PMP_COMMON_SOURCES
     common/filehash.cpp
     common/logging.cpp
     common/networkprotocol.cpp
+    common/networkprotocolextensions.cpp
     common/networkutil.cpp
     common/obfuscator.cpp
     common/powermanagement.cpp

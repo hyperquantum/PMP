@@ -22,6 +22,7 @@
 
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
+#include "common/networkprotocolextensions.h"
 #include "common/scrobblerstatus.h"
 #include "common/scrobblingprovider.h"
 #include "common/startstopeventstatus.h"
@@ -162,6 +163,8 @@ namespace PMP::Server
         void sendSuccessMessage(quint32 clientReference, quint32 intData);
         void sendSuccessMessage(quint32 clientReference, quint32 intData,
                                 QByteArray const& blobData);
+        void sendScrobblingResultMessage(ScrobblingResultMessageCode code,
+                                         quint32 clientReference);
         void sendResultMessage(Result const& result, quint32 clientReference);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
@@ -170,6 +173,9 @@ namespace PMP::Server
                                quint32 intData, QByteArray const& blobData);
         void sendExtensionResultMessage(quint8 extensionId, quint8 resultCode,
                                         quint32 clientReference);
+        void sendExtensionResultMessageAsRegularResultMessage(quint8 extensionId,
+                                                              quint8 resultCode,
+                                                              quint32 clientReference);
         void sendNonFatalInternalErrorResultMessage(quint32 clientReference);
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
@@ -186,7 +192,6 @@ namespace PMP::Server
         void sendServerClockMessage();
         void sendDelayedStartInfoMessage();
 
-        void fetchScrobblingProviderInfoForCurrentUser();
         void sendScrobblingProviderInfoMessage(quint32 userId,
                                                ScrobblingProvider provider,
                                                ScrobblerStatus status, bool enabled);
@@ -202,8 +207,6 @@ namespace PMP::Server
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 messageType,
                                     QByteArray const& message);
-        void registerClientProtocolExtensions(
-                           const QVector<NetworkProtocol::ProtocolExtension>& extensions);
         void handleSingleByteAction(quint8 action);
         void handleParameterlessAction(ParameterlessActionCode code,
                                        quint32 clientReference);
@@ -236,6 +239,7 @@ namespace PMP::Server
         void parseCurrentUserScrobblingProviderInfoRequestMessage(
                                                                QByteArray const& message);
         void parseUserScrobblingEnableDisableRequest(QByteArray const& message);
+        void parseScrobblingAuthenticationRequestMessage(QByteArray const& message);
         void parseGeneratorNonRepetitionChangeMessage(QByteArray const& message);
         void parseCollectionFetchRequestMessage(QByteArray const& message);
 
@@ -252,9 +256,8 @@ namespace PMP::Server
         Scrobbling* _scrobbling;
         QByteArray _textReadBuffer;
         int _clientProtocolNo;
-        QHash<quint8, QString> _clientExtensionNames;
-        const NetworkProtocol::ProtocolExtension _scrobblingSupportThis;
-        NetworkProtocol::ProtocolExtensionSupport _scrobblingSupportOther;
+        NetworkProtocolExtensionSupportMap _extensionsThis;
+        NetworkProtocolExtensionSupportMap _extensionsOther;
         quint32 _lastSentNowPlayingID;
         QString _userAccountRegistering;
         QByteArray _saltForUserAccountRegistering;

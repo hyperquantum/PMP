@@ -112,4 +112,33 @@ namespace PMP
             }
         );
     }
+
+    /* ===== ScrobblingAuthenticateCommand =====*/
+
+    ScrobblingAuthenticateCommand::ScrobblingAuthenticateCommand(
+                                                            ScrobblingProvider provider)
+     : _provider(provider)
+    {
+        CredentialsPrompt prompt;
+        prompt.providerName = toString(provider);
+
+        enableInteractiveCredentialsPrompt(prompt);
+    }
+
+    bool ScrobblingAuthenticateCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void ScrobblingAuthenticateCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto credentials = getCredentialsEntered();
+
+        auto future =
+            serverInterface->scrobblingController().authenticateLastFm(
+                credentials.username, credentials.password
+            );
+
+        addCommandExecutionFutureListener(future);
+    }
 }

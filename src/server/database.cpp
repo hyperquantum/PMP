@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -1111,6 +1111,25 @@ namespace PMP::Server
                 q.addBindValue(newValue);
                 q.addBindValue(userId);
             };
+
+        return executeVoid(preparer);
+    }
+
+    bool Database::updateLastFmAuthentication(quint32 userId, QString lastFmUsername,
+                                              QString lastFmSessionKey)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+        {
+            q.prepare(
+                "UPDATE pmp_user "
+                "SET LastFmUser=?, LastFmSessionKey=? "
+                "WHERE UserId=?"
+                );
+            q.addBindValue(lastFmUsername);
+            q.addBindValue(lastFmSessionKey);
+            q.addBindValue(userId);
+        };
 
         return executeVoid(preparer);
     }

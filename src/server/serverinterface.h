@@ -24,6 +24,7 @@
 #include "common/future.h"
 #include "common/queueindextype.h"
 #include "common/resultmessageerrorcode.h"
+#include "common/scrobblingprovider.h"
 #include "common/specialqueueitemtype.h"
 #include "common/startstopeventstatus.h"
 #include "common/versioninfo.h"
@@ -49,6 +50,7 @@ namespace PMP::Server
     class Player;
     class PlayerQueue;
     class QueueEntry;
+    class Scrobbling;
     class ServerSettings;
     class TcpServer;
     class Users;
@@ -71,7 +73,7 @@ namespace PMP::Server
                         uint connectionReference, Player* player,
                         Generator* generator, History* history,
                         HashIdRegistrar* hashIdRegistrar, Users* users,
-                        DelayedStart* delayedStart);
+                        DelayedStart* delayedStart, Scrobbling* scrobbling);
 
         ~ServerInterface();
 
@@ -89,6 +91,12 @@ namespace PMP::Server
 
         void switchToPersonalMode();
         void switchToPublicMode();
+
+        void requestScrobblingInfo();
+        void setScrobblingProviderEnabled(ScrobblingProvider provider, bool enabled);
+        SimpleFuture<Result> authenticateScrobblingProvider(ScrobblingProvider provider,
+                                                            QString user,
+                                                            QString password);
 
         Result activateDelayedStart(qint64 delayMilliseconds);
         Result deactivateDelayedStart();
@@ -186,6 +194,7 @@ namespace PMP::Server
         HashIdRegistrar* _hashIdRegistrar;
         Users* _users;
         DelayedStart* _delayedStart;
+        Scrobbling* _scrobbling;
         QHash<quint32, quint32> _queueEntryInsertionsPending;
         QHash<quint32, QSet<uint>> _userHashDataNotificationsPending;
         QHash<quint32, bool> _userHashDataNotificationTimerRunning;

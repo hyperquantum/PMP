@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,20 @@
 
 namespace PMP
 {
+    QString toString(ScrobblingProvider provider)
+    {
+        switch (provider)
+        {
+        case ScrobblingProvider::LastFm:
+            return "Last.fm";
+
+        case ScrobblingProvider::Unknown:
+            return "unknown";
+        }
+
+        return "provider " + QString::number(int(provider));
+    }
+
     QDebug operator<<(QDebug debug, ScrobblingProvider provider)
     {
         switch (provider)

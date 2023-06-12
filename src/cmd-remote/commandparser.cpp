@@ -731,10 +731,14 @@ namespace PMP
         {
             parseScrobblingStatusCommand(arguments);
         }
+        else if (arguments.current() == "authenticate")
+        {
+            parseScrobblingAuthenticateCommand(arguments);
+        }
         else
         {
             _errorMessage =
-                    "Expected 'enable' or 'disable' or 'status' after 'scrobbling'!";
+                "Expected 'enable' or 'disable' or 'status' or 'authenticate' after 'scrobbling'!";
         }
     }
 
@@ -777,6 +781,26 @@ namespace PMP
         }
 
         _command = new ScrobblingStatusCommand(provider);
+    }
+
+    void CommandParser::parseScrobblingAuthenticateCommand(CommandArguments& arguments)
+    {
+        // current is "authenticate"
+        arguments.advance();
+
+        auto providerOrNull = parseScrobblingProviderName(arguments);
+        if (providerOrNull == null)
+            return;
+
+        auto provider = providerOrNull.value();
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new ScrobblingAuthenticateCommand(provider);
     }
 
     Nullable<ScrobblingProvider> CommandParser::parseScrobblingProviderName(

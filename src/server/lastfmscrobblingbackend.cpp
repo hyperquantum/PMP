@@ -222,6 +222,12 @@ namespace PMP::Server
         //
     }
 
+    Future<LastFmAuthenticationResult, Result>
+        LastFmAuthenticationRequestHandler::future() const
+    {
+        return _promise.future();
+    }
+
     void LastFmAuthenticationRequestHandler::handleOkReply(
                                                           const QDomElement& childElement)
     {
@@ -238,10 +244,11 @@ namespace PMP::Server
         qDebug() << "session.name:" << nameNode.text();
         qDebug() << "session.key:" << keyNode.text();
 
-        auto userName = nameNode.text();
-        auto sessionKey = keyNode.text();
+        LastFmAuthenticationResult result;
+        result.username = nameNode.text();
+        result.sessionKey = keyNode.text();
 
-        Q_EMIT authenticationSuccessful(userName, sessionKey);
+        _promise.setResult(result);
     }
 
     void LastFmAuthenticationRequestHandler::handleErrorCode(int lastFmErrorCode)
@@ -249,7 +256,7 @@ namespace PMP::Server
         if (lastFmErrorCode == 4) /* authentication failed */
         {
             qDebug() << "LFM authentication failed";
-            Q_EMIT authenticationRejected();
+            _promise.setError(Error::scrobblingAuthenticationFailed());
         }
         else
         {
@@ -260,7 +267,7 @@ namespace PMP::Server
 
     void LastFmAuthenticationRequestHandler::onGenericError()
     {
-        Q_EMIT authenticationError();
+        _promise.setError(Error::unspecifiedScrobblingBackendError());
     }
 
     /* ============================================================================ */
@@ -378,7 +385,7 @@ namespace PMP::Server
     const char* LastFmScrobblingBackend::apiKey = "fc44ba796d201052f53f92818834f907";
     const char* LastFmScrobblingBackend::apiSecret = "3e58b46e070c34718686e0dfbd02d22f";
     const char* LastFmScrobblingBackend::userAgent =
-                    "Party Music Player " PMP_VERSION_DISPLAY " (LFM scrobbler v0.0.1)";
+                    "Party Music Player " PMP_VERSION_DISPLAY " (LFM scrobbler v0.0.2)";
     const char* LastFmScrobblingBackend::contentTypeForPostRequest =
                                                       "application/x-www-form-urlencoded";
 
@@ -394,9 +401,9 @@ namespace PMP::Server
         leaveState(ScrobblingBackendState::NotInitialized);
     }
 
-    void LastFmScrobblingBackend::authenticateWithCredentials(QString usernameOrEmail,
-                                                              QString password,
-                                                              ClientRequestOrigin origin)
+    SimpleFuture<Result> LastFmScrobblingBackend::authenticateWithCredentials(
+                                                                QString usernameOrEmail,
+                                                                QString password)
     {
         if (_username != usernameOrEmail)
         {
@@ -405,27 +412,24 @@ namespace PMP::Server
 
         auto handler = doGetMobileTokenCall(usernameOrEmail, password);
 
-        connect(
-            handler, &LastFmAuthenticationRequestHandler::authenticationSuccessful,
+        auto future = handler->future();
+
+        future.addResultListener(
             this,
-            [this, origin](QString userName, QString sessionKey)
+            [this, usernameOrEmail](LastFmAuthenticationResult result)
             {
-                _username = userName;
-                _sessionKey = sessionKey;
+                _username = result.username;
+                _sessionKey = result.sessionKey;
                 updateState();
-                Q_EMIT gotAuthenticationResult(true, origin);
+                Q_EMIT authenticatedSuccessfully(result.username, result.sessionKey);
             }
         );
-        connect(
-            handler, &LastFmAuthenticationRequestHandler::authenticationRejected,
-            this,
-            [this, origin]() { Q_EMIT gotAuthenticationResult(false, origin); }
-        );
-        connect(
-            handler, &LastFmAuthenticationRequestHandler::authenticationError,
-            this,
-            [this, origin]() { Q_EMIT errorOccurredDuringAuthentication(origin); }
-        );
+
+        return
+            future.toSimpleFuture<Result>(
+                [](LastFmAuthenticationResult) { return Success(); },
+                [](Result result) { return result; }
+            );
     }
 
     void LastFmScrobblingBackend::setUsername(const QString& username)

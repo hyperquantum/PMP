@@ -131,6 +131,7 @@ namespace PMP
         void parseScrobblingEnableOrDisableCommand(CommandArguments& arguments,
                                                    bool enable);
         void parseScrobblingStatusCommand(CommandArguments& arguments);
+        void parseScrobblingAuthenticateCommand(CommandArguments& arguments);
         Nullable<ScrobblingProvider> parseScrobblingProviderName(
                                                              CommandArguments& arguments);
         void parseDynamicModeCommand(CommandArguments arguments);

@@ -20,8 +20,11 @@
 #ifndef PMP_SCROBBLING_H
 #define PMP_SCROBBLING_H
 
+#include "common/future.h"
 #include "common/scrobblerstatus.h"
 #include "common/scrobblingprovider.h"
+
+#include "result.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -93,6 +96,11 @@ namespace PMP::Server
 
         GlobalScrobblingController* getController();
         UserScrobblingController* getControllerForUser(uint userId);
+
+        SimpleFuture<Result> authenticateForProvider(uint userId,
+                                                     ScrobblingProvider provider,
+                                                     QString user,
+                                                     QString password);
 
     private:
         Resolver* _resolver;

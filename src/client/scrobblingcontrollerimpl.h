@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,6 +34,9 @@ namespace PMP::Client
 
         Nullable<bool> lastFmEnabled() const override;
         ScrobblerStatus lastFmStatus() const override;
+
+        SimpleFuture<AnyResultMessageCode> authenticateLastFm(QString usernameOrEmail,
+                                                              QString password) override;
 
     public Q_SLOTS:
         void setLastFmScrobblingEnabled(bool enabled) override;

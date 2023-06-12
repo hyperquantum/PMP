@@ -22,8 +22,11 @@
 
 #include "clientrequestorigin.h"
 
+#include "common/future.h"
 #include "common/scrobblerstatus.h"
 #include "common/scrobblingprovider.h"
+
+#include "result.h"
 
 #include <QDateTime>
 #include <QObject>
@@ -51,6 +54,11 @@ namespace PMP::Server
         Q_OBJECT
     public:
         ScrobblingHost(Resolver* resolver);
+
+        SimpleFuture<Result> authenticateForProvider(uint userId,
+                                                     ScrobblingProvider provider,
+                                                     QString user,
+                                                     QString password);
 
     public Q_SLOTS:
         void enableScrobbling();
@@ -106,8 +114,6 @@ namespace PMP::Server
                                             Scrobbler* scrobbler);
 
         Resolver* _resolver;
-        //QHash<uint, Scrobbler*> _lastFmScrobblers;
-        //QHash<uint, ScrobblerStatus> _lastFmScrobblerStatuses;
         QHash<uint, QHash<ScrobblingProvider, ScrobblerData>> _scrobblersData;
         bool _hostEnabled;
     };

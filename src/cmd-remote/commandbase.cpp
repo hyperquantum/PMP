@@ -19,6 +19,8 @@
 
 #include "commandbase.h"
 
+#include "console.h"
+
 #include <QtDebug>
 #include <QTimer>
 
@@ -34,6 +36,11 @@ namespace PMP
 
     void CommandBase::execute(ServerInterface* serverInterface)
     {
+        if (_credentialsToAsk.hasValue())
+        {
+            promptForCredentials(_credentialsToAsk.value());
+        }
+
         run(serverInterface);
         qDebug() << "CommandBase: called run()";
 
@@ -64,6 +71,16 @@ namespace PMP
         //
     }
 
+    void CommandBase::enableInteractiveCredentialsPrompt(CredentialsPrompt prompt)
+    {
+        _credentialsToAsk = prompt;
+    }
+
+    CommandBase::CredentialsEntered CommandBase::getCredentialsEntered()
+    {
+        return _credentialsEntered.value();
+    }
+
     void CommandBase::addStep(std::function<StepResult ()> step)
     {
         _stepsCompleted = false;
@@ -88,6 +105,16 @@ namespace PMP
         qDebug() << "CommandBase: command reported failure, code:" << resultCode;
         _finishedOrFailed = true;
         Q_EMIT executionFailed(resultCode, errorOutput);
+    }
+
+    void CommandBase::setCommandExecutionResult(AnyResultMessageCode code)
+    {
+        if (std::holds_alternative<ResultMessageErrorCode>(code))
+            setCommandExecutionResult(std::get<ResultMessageErrorCode>(code));
+        else if (std::holds_alternative<ScrobblingResultMessageCode>(code))
+            setCommandExecutionResult(std::get<ScrobblingResultMessageCode>(code));
+        else
+            Q_UNREACHABLE();
     }
 
     void CommandBase::setCommandExecutionResult(ResultMessageErrorCode errorCode)
@@ -161,6 +188,10 @@ namespace PMP
             errorOutput = "server is too old and does not support this action";
             break;
 
+        case ResultMessageErrorCode::ExtensionNotSupported:
+            errorOutput = "server does not support this feature";
+            break;
+
         case ResultMessageErrorCode::NonFatalInternalServerError:
             errorOutput = "internal server error (non-fatal)";
             break;
@@ -181,12 +212,41 @@ namespace PMP
         setCommandExecutionFailed(3, "Command failed: " + errorOutput);
     }
 
+    void CommandBase::setCommandExecutionResult(ScrobblingResultMessageCode code)
+    {
+        QString errorOutput;
+
+        switch (code)
+        {
+        case ScrobblingResultMessageCode::NoError:
+            setCommandExecutionSuccessful();
+            return;
+        case ScrobblingResultMessageCode::ScrobblingSystemDisabled:
+            errorOutput = "scrobbling system in the server is disabled";
+            break;
+        case ScrobblingResultMessageCode::ScrobblingProviderInvalid:
+            errorOutput = "invalid scrobbling provider";
+            break;
+        case ScrobblingResultMessageCode::ScrobblingProviderNotEnabled:
+            errorOutput = "scrobbling provider not enabled";
+            break;
+        case ScrobblingResultMessageCode::ScrobblingAuthenticationFailed:
+            errorOutput = "scrobbling authentication failed";
+            break;
+        case ScrobblingResultMessageCode::UnspecifiedScrobblingBackendError:
+            errorOutput = "unspecified scrobbling error";
+            break;
+        }
+
+        setCommandExecutionFailed(3, "Command failed: " + errorOutput);
+    }
+
     void CommandBase::addCommandExecutionFutureListener(
-                                              SimpleFuture<ResultMessageErrorCode> future)
+                                                SimpleFuture<AnyResultMessageCode> future)
     {
         future.addResultListener(
             this,
-            [this](ResultMessageErrorCode code) { setCommandExecutionResult(code); }
+            [this](AnyResultMessageCode code) { setCommandExecutionResult(code); }
         );
     }
 
@@ -225,6 +285,28 @@ namespace PMP
 
         // we advanced, so try the next step right now, don't wait for signals
         QTimer::singleShot(_stepDelayMilliseconds, this, &CommandBase::listenerSlot);
+    }
+
+    void CommandBase::promptForCredentials(const CredentialsPrompt& prompt)
+    {
+        QString usernamePrompt, passwordPrompt;
+
+        if (prompt.providerName.isEmpty())
+        {
+            usernamePrompt = "username: ";
+            passwordPrompt = "password: ";
+        }
+        else
+        {
+            usernamePrompt = prompt.providerName + " username: ";
+            passwordPrompt = prompt.providerName + " password: ";
+        }
+
+        CredentialsEntered credentials;
+        credentials.username = Console::prompt(usernamePrompt);
+        credentials.password = Console::promptForPassword(passwordPrompt);
+
+        _credentialsEntered = credentials;
     }
 
     void CommandBase::reportInternalError()

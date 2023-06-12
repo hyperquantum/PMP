@@ -20,7 +20,6 @@
 #ifndef PMP_TESTSCROBBLER_H
 #define PMP_TESTSCROBBLER_H
 
-#include "server/scrobbler.h"
 #include "server/scrobblingbackend.h"
 #include "server/scrobblingdataprovider.h"
 #include "server/tracktoscrobble.h"
@@ -34,6 +33,10 @@ class BackendMock : public PMP::Server::ScrobblingBackend
     Q_OBJECT
 public:
     BackendMock(bool requireAuthentication);
+
+    PMP::SimpleFuture<PMP::Server::Result> authenticateWithCredentials(
+                                                               QString usernameOrEmail,
+                                                               QString password) override;
 
     void setTemporaryUnavailabilitiesToStageForScrobbles(int count);
 
@@ -113,7 +116,8 @@ private:
     QQueue<std::shared_ptr<PMP::Server::TrackToScrobble>> _tracksToScrobble;
 };
 
-class TestScrobbler : public QObject {
+class TestScrobbler : public QObject
+{
     Q_OBJECT
 private Q_SLOTS:
     void simpleNowPlayingUpdate();

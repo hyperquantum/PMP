@@ -58,6 +58,7 @@ usage:
     qmove <QID> <+diff>: move a track down in the queue (eg. +2)
     scrobbling enable|disable <provider>: enable scrobbling for the current user
     scrobbling status <provider>: get scrobbling status
+    scrobbling authenticate <provider>: enter credentials for scrobbling
     shutdown: shut down the server program
     reloadserversettings: instruct the server to reload its settings file
     delayedstart wait <number> <time unit>: activate delayed start (see below)
@@ -114,15 +115,33 @@ usage:
     scrobbling enable <provider>: enable scrobbling for the current user
     scrobbling disable <provider>: disable scrobbling for the current user
     scrobbling status <provider>: get scrobbling status for the current user
+    scrobbling authenticate <provider>: enter credentials for scrobbling
 
-    Enables or disables scrobbling for the current PMP user account.
-    Disabling scrobbling will not exclude any tracks for scrobbling, it will
-    only suspend scrobbling temporarily until it is enabled again.
+    This command controls scrobbling for the user running the command (you).
+    It can be used to turn scrobbling on or off, to get the current status
+    of the scrobbling mechanism, and to enter user credentials for the
+    scrobbling provider. A provider always needs to be specified, so each
+    operation will only apply to that provider.
+
     Only Last.FM is currently supported. Use "lastfm" or "last.fm" without
     quotes as the provider.
-    When enabling scrobbling for the first time, you will need to specify
-    your username and password for the scrobbling service (Last.FM). This
-    cannot be done with the command-line remote yet.
+
+    Disabling scrobbling will not exclude any tracks for scrobbling; it will
+    only suspend scrobbling temporarily until it is enabled again.
+
+    Scrobbling must be enabled first before attempting to authenticate. The
+    authentication for scrobbling can only be done interactively; username
+    and password cannot be read from standard input. Authentication is only
+    needed once; the PMP server will store a security token for all future
+    access to the scrobbling provider. The 'scrobbling status' command will
+    indicate if authentication is necessary.
+
+    IMPORTANT: the authentication command for scrobbling will send your
+    credentials for the scrobbling provider (Last.fm) to the PMP server.
+    Do not run this command if the PMP server and remote are not on the
+    same local network or if untrusted parties have access to the local
+    network. The connection between the PMP server and the remote is not
+    encrypted, so your credentials could be intercepted by an attacker.
 
   'delayedstart' command:
     delayedstart abort: cancel delayed start

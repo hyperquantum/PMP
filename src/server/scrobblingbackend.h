@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,10 @@
 
 #ifndef PMP_SCROBBLINGBACKEND_H
 #define PMP_SCROBBLINGBACKEND_H
+
+#include "common/future.h"
+
+#include "result.h"
 
 #include <QObject>
 #include <QtDebug>
@@ -60,6 +64,9 @@ namespace PMP::Server
 
         virtual void scrobbleTrack(QDateTime timestamp, QString title, QString artist,
                                    QString album, int trackDurationSeconds = -1) = 0;
+
+        virtual SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
+                                                                 QString password) = 0;
 
         int getDelayInMillisecondsBetweenSubsequentScrobbles() const
         {

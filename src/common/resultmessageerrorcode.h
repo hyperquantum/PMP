@@ -20,6 +20,11 @@
 #ifndef PMP_RESULTMESSAGEERRORCODE_H
 #define PMP_RESULTMESSAGEERRORCODE_H
 
+#include <QString>
+#include <QtGlobal>
+
+#include <variant>
+
 namespace PMP
 {
     enum class ResultMessageErrorCode
@@ -63,10 +68,71 @@ namespace PMP
         UnknownError = 255
     };
 
-    inline bool succeeded(ResultMessageErrorCode errorCode)
+    inline constexpr bool succeeded(ResultMessageErrorCode errorCode)
     {
         return errorCode == ResultMessageErrorCode::NoError
-            || errorCode == ResultMessageErrorCode::AlreadyDone;
+               || errorCode == ResultMessageErrorCode::AlreadyDone;
+    }
+
+    inline QString errorCodeString(ResultMessageErrorCode errorCode)
+    {
+        return QString("GE%1").arg(static_cast<int>(errorCode));
+    }
+
+    enum class ScrobblingResultMessageCode : quint8
+    {
+        NoError = 0,
+        ScrobblingSystemDisabled = 1,
+        ScrobblingProviderInvalid = 2,
+        ScrobblingProviderNotEnabled = 3,
+        ScrobblingAuthenticationFailed = 4,
+        UnspecifiedScrobblingBackendError = 5,
+    };
+
+    inline constexpr bool succeeded(ScrobblingResultMessageCode code)
+    {
+        return code == ScrobblingResultMessageCode::NoError;
+    }
+
+    inline QString errorCodeString(ScrobblingResultMessageCode code)
+    {
+        return QString("SC%1").arg(static_cast<int>(code));
+    }
+
+    typedef std::variant<ResultMessageErrorCode, ScrobblingResultMessageCode> AnyResultMessageCode;
+
+    inline constexpr bool succeeded(AnyResultMessageCode code)
+    {
+        if (std::holds_alternative<ResultMessageErrorCode>(code))
+            return succeeded(std::get<ResultMessageErrorCode>(code));
+
+        if (std::holds_alternative<ScrobblingResultMessageCode>(code))
+            return succeeded(std::get<ScrobblingResultMessageCode>(code));
+
+        Q_UNREACHABLE();
+    }
+
+    inline QString errorCodeString(AnyResultMessageCode code)
+    {
+        if (std::holds_alternative<ResultMessageErrorCode>(code))
+            return errorCodeString(std::get<ResultMessageErrorCode>(code));
+
+        if (std::holds_alternative<ScrobblingResultMessageCode>(code))
+            return errorCodeString(std::get<ScrobblingResultMessageCode>(code));
+
+        Q_UNREACHABLE();
+    }
+
+    inline constexpr bool operator==(AnyResultMessageCode anyCode,
+                                     ResultMessageErrorCode errorCode)
+    {
+        if (errorCode == ResultMessageErrorCode::NoError)
+            return succeeded(anyCode);
+
+        if (std::holds_alternative<ResultMessageErrorCode>(anyCode))
+            return std::get<ResultMessageErrorCode>(anyCode) == errorCode;
+
+        return false;
     }
 }
 #endif

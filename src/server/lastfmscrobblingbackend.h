@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,7 +22,9 @@
 
 #include "scrobblingbackend.h"
 
-#include "clientrequestorigin.h"
+#include "common/promise.h"
+
+#include "result.h"
 
 #include <QDateTime>
 #include <QNetworkReply>
@@ -72,6 +74,12 @@ namespace PMP::Server
         QString _xmlTagName;
     };
 
+    struct LastFmAuthenticationResult
+    {
+        QString username;
+        QString sessionKey;
+    };
+
     class LastFmAuthenticationRequestHandler : public LastFmRequestHandler
     {
         Q_OBJECT
@@ -79,15 +87,15 @@ namespace PMP::Server
         LastFmAuthenticationRequestHandler(LastFmScrobblingBackend* parent,
                                            QNetworkReply* pendingReply);
 
-    Q_SIGNALS:
-        void authenticationSuccessful(QString userName, QString sessionKey);
-        void authenticationRejected();
-        void authenticationError();
+        Future<LastFmAuthenticationResult, Result> future() const;
 
     protected:
         void handleOkReply(const QDomElement& childElement) override;
         void handleErrorCode(int lastFmErrorCode) override;
         void onGenericError() override;
+
+    private:
+        Promise<LastFmAuthenticationResult, Result> _promise;
     };
 
     class LastFmNowPlayingRequestHandler : public LastFmRequestHandler
@@ -142,14 +150,14 @@ namespace PMP::Server
                            QString artist, QString album,
                            int trackDurationSeconds = -1) override;
 
+        SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
+                                                         QString password) override;
+
     public slots:
         void initialize() override;
-        void authenticateWithCredentials(QString usernameOrEmail, QString password,
-                                         ClientRequestOrigin origin);
 
     Q_SIGNALS:
-        void gotAuthenticationResult(bool success, ClientRequestOrigin origin);
-        void errorOccurredDuringAuthentication(ClientRequestOrigin origin);
+        void authenticatedSuccessfully(QString username, QString sessionKey);
 
     protected:
         bool needsSsl() const override;

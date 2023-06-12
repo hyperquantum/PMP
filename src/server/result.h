@@ -42,6 +42,13 @@ namespace PMP::Server
         QueueItemTypeInvalid,
         DelayOutOfRange,
 
+        ScrobblingSystemDisabled,
+        ScrobblingProviderInvalid,
+        ScrobblingProviderNotEnabled,
+        ScrobblingAuthenticationFailed,
+        UnspecifiedScrobblingBackendError,
+
+        NotImplementedError,
         InternalError,
     };
 
@@ -132,6 +139,32 @@ namespace PMP::Server
 
         static Result delayOutOfRange() { return Error(ResultCode::DelayOutOfRange); }
 
+        static Result scrobblingSystemDisabled()
+        {
+            return Error(ResultCode::ScrobblingSystemDisabled);
+        }
+
+        static Result scrobblingProviderInvalid()
+        {
+            return Error(ResultCode::ScrobblingProviderInvalid);
+        }
+
+        static Result scrobblingProviderNotEnabled()
+        {
+            return Error(ResultCode::ScrobblingProviderNotEnabled);
+        }
+
+        static Result scrobblingAuthenticationFailed()
+        {
+            return Error(ResultCode::ScrobblingAuthenticationFailed);
+        }
+
+        static Result unspecifiedScrobblingBackendError()
+        {
+            return Error(ResultCode::UnspecifiedScrobblingBackendError);
+        }
+
+        static Result notImplemented() { return Error(ResultCode::NotImplementedError); }
         static Result internalError() { return Error(ResultCode::InternalError); }
 
     private:

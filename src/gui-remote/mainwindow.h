@@ -75,7 +75,7 @@ namespace PMP
 
         void onStartFullIndexationTriggered();
         void onReloadServerSettingsTriggered();
-        void reloadServerSettingsResultReceived(ResultMessageErrorCode errorCode);
+        void reloadServerSettingsResultReceived(AnyResultMessageCode errorCode);
         void onShutdownServerTriggered();
         void onLastFmTriggered();
         void updatePowerManagement();

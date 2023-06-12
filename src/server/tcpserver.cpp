@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -272,7 +272,8 @@ namespace PMP::Server
                                     _history,
                                     _hashIdRegistrar,
                                     _users,
-                                    _delayedStart);
+                                    _delayedStart,
+                                    _scrobbling);
 
         connect(
             serverInterface, &ServerInterface::destroyed,

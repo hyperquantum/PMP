@@ -46,6 +46,12 @@ BackendMock::BackendMock(bool requireAuthentication)
     setInitialBackoffMillisecondsForErrorReply(30);
 }
 
+SimpleFuture<Result> BackendMock::authenticateWithCredentials(QString usernameOrEmail,
+                                                              QString password)
+{
+    return FutureResult(Error::notImplemented());
+}
+
 void BackendMock::initialize()
 {
     if (!_requireAuthentication || _haveApiToken)

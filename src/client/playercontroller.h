@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -54,11 +54,11 @@ namespace PMP::Client
         virtual int volume() const = 0;
 
         virtual QDateTime delayedStartServerDeadline() = 0;
-        virtual SimpleFuture<ResultMessageErrorCode> activateDelayedStart(
+        virtual SimpleFuture<AnyResultMessageCode> activateDelayedStart(
                                                             qint64 delayMilliseconds) = 0;
-        virtual SimpleFuture<ResultMessageErrorCode> activateDelayedStart(
+        virtual SimpleFuture<AnyResultMessageCode> activateDelayedStart(
                                                                  QDateTime startTime) = 0;
-        virtual SimpleFuture<ResultMessageErrorCode> deactivateDelayedStart() = 0;
+        virtual SimpleFuture<AnyResultMessageCode> deactivateDelayedStart() = 0;
 
     public Q_SLOTS:
         virtual void play() = 0;

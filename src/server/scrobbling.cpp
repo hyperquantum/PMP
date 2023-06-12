@@ -19,6 +19,8 @@
 
 #include "scrobbling.h"
 
+#include "common/async.h"
+
 #include "scrobblinghost.h"
 
 #include <QtDebug>
@@ -184,5 +186,21 @@ namespace PMP::Server
 
         _userControllers.insert(userId, controller);
         return controller;
+    }
+
+    SimpleFuture<Result> Scrobbling::authenticateForProvider(uint userId,
+                                                             ScrobblingProvider provider,
+                                                             QString user,
+                                                             QString password)
+    {
+        return
+            Async::invokeSimpleFuture<Result>(
+                _host,
+                [host = _host, userId, provider, user, password]()
+                {
+                    return host->authenticateForProvider(userId, provider, user,
+                                                         password);
+                }
+            );
     }
 }

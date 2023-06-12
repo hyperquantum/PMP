@@ -459,14 +459,14 @@ namespace PMP
 
         future.addResultListener(
             this,
-            [this](ResultMessageErrorCode code)
+            [this](AnyResultMessageCode code)
             {
                 reloadServerSettingsResultReceived(code);
             }
         );
     }
 
-    void MainWindow::reloadServerSettingsResultReceived(ResultMessageErrorCode errorCode)
+    void MainWindow::reloadServerSettingsResultReceived(AnyResultMessageCode errorCode)
     {
         QMessageBox msgBox;
 
@@ -490,7 +490,7 @@ namespace PMP
         else
         {
             msgBox.setInformativeText(
-                tr("Error code: %1").arg(static_cast<int>(errorCode))
+                tr("Error code: %1").arg(errorCodeString(errorCode))
             );
         }
 

@@ -56,5 +56,20 @@ namespace PMP
     private:
         ScrobblingProvider _provider;
     };
+
+    class ScrobblingAuthenticateCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        ScrobblingAuthenticateCommand(ScrobblingProvider provider);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        ScrobblingProvider _provider;
+    };
 }
 #endif
