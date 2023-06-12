@@ -89,7 +89,7 @@ namespace PMP
             _storage->setResult(result);
         }
 
-        void connectToResultFrom(SimpleFuture<T>& future)
+        void connectToResultFrom(SimpleFuture<T> const& future)
         {
             future._storage->addResultListener(
                 [storage = _storage](T result) { storage->setResult(result); }
