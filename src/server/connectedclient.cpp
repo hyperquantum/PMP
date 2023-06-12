@@ -1770,6 +1770,8 @@ namespace PMP::Server
                                                                 quint8 resultCode,
                                                                 quint32 clientReference)
     {
+        Q_UNUSED(extensionId);
+
         /* Send a regular result message with a generic (error) code.
            We assume that the extension-specific code zero indicates success. */
 

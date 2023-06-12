@@ -49,6 +49,9 @@ BackendMock::BackendMock(bool requireAuthentication)
 SimpleFuture<Result> BackendMock::authenticateWithCredentials(QString usernameOrEmail,
                                                               QString password)
 {
+    Q_UNUSED(usernameOrEmail);
+    Q_UNUSED(password);
+
     return FutureResult(Error::notImplemented());
 }
 
