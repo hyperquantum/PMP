@@ -57,7 +57,13 @@ namespace PMP
 
         /// The server does not support the requested action because the protocol
         /// extension the action is a part of is not supported by the server.
+        /// This error code will probably only ever be used client-side.
         ExtensionNotSupported = 241,
+
+        /// The action could not be completed because the connection to the server was
+        /// broken before the action could be completed.
+        /// This error code will probably only ever be used client-side.
+        ConnectionToServerBroken = 242,
 
         NonFatalInternalServerError = 254,
         UnknownError = 255

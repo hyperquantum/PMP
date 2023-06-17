@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,8 @@
 #ifndef PMP_AUTHENTICATIONCONTROLLER_H
 #define PMP_AUTHENTICATIONCONTROLLER_H
 
+#include "common/future.h"
+#include "common/resultmessageerrorcode.h"
 #include "common/userloginerror.h"
 #include "common/userregistrationerror.h"
 
@@ -29,17 +31,27 @@
 
 namespace PMP::Client
 {
+    struct UserAccount
+    {
+        UserAccount() : userId(0), username("") {}
+        UserAccount(uint userId, QString username) : userId(userId), username(username) {}
+
+        uint userId;
+        QString username;
+    };
+
     class AuthenticationController : public QObject
     {
         Q_OBJECT
     public:
         virtual ~AuthenticationController() {}
 
+        virtual Future<QList<UserAccount>, ResultMessageErrorCode> getUserAccounts() = 0;
         virtual void sendUserAccountsFetchRequest() = 0;
 
         virtual void createNewUserAccount(QString login, QString password) = 0;
-        virtual void login(QString login, QString password) = 0;
 
+        virtual void login(QString login, QString password) = 0;
         virtual bool isLoggedIn() const = 0;
         virtual quint32 userLoggedInId() const = 0;
         virtual QString userLoggedInName() const = 0;
