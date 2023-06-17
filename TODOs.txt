@@ -94,7 +94,7 @@ IDEAS
  * track info dialog: display filename(s)
  * track info dialog: should become modeless
  * track info dialog: last heard: display "almost 3 months" ago instead of "2 months ago" when applicable
- *** track info dialog: show personal play history for that track
+ **** track info dialog: show personal play history for that track
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner
