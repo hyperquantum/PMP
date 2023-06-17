@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -825,21 +825,19 @@ namespace PMP::Server
                     "  (SELECT HashID, MAX(HistoryID) AS LastHistoryId,"
                     "          MAX(End) AS PrevHeard"
                     "   FROM pmp_history"
-                    "   WHERE UserID=? GROUP BY HashID) AS hi"
+                    "   WHERE COALESCE(UserID, 0)=? GROUP BY HashID) AS hi"
                     "  ON ha.HashID=hi.HashID"
                     " LEFT JOIN"
                     "  (SELECT HashID, COUNT(*) AS ScoreHeardCount,"
                     "   AVG(Permillage) AS ScorePermillage FROM pmp_history"
-                    "   WHERE UserID=? AND ValidForScoring != 0 GROUP BY HashID) AS hi2"
+                    "   WHERE COALESCE(UserID, 0)=? AND ValidForScoring != 0"
+                    "   GROUP BY HashID) AS hi2"
                     "  ON ha.HashID=hi2.HashID "
                     "WHERE ha.HashID IN " + buildParamsList(hashIds.size())
                 );
 
-                QVariant userIdParam =
-                        (userId == 0) ? /*NULL*/QVariant(QVariant::UInt) : userId;
-
-                q.addBindValue(userIdParam);
-                q.addBindValue(userIdParam); /* twice */
+                q.addBindValue(userId);
+                q.addBindValue(userId); /* twice */
                 for (auto hashId : qAsConst(hashIds))
                 {
                     q.addBindValue(hashId);
