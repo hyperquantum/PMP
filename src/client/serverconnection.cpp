@@ -2123,9 +2123,8 @@ namespace PMP::Client
 
     void ServerConnection::parseUsersListMessage(QByteArray const& message)
     {
-        if (message.length() < 4) {
+        if (message.length() < 4)
             return; /* invalid message */
-        }
 
         QList<QPair<uint, QString> > users;
 
@@ -2135,19 +2134,18 @@ namespace PMP::Client
         qDebug() << " message length=" << message.length();
 
         int offset = 4;
-        for (int i = 0; i < userCount; ++i) {
-            if (message.length() - offset < 5) {
+        for (int i = 0; i < userCount; ++i)
+        {
+            if (message.length() - offset < 5)
                 return; /* invalid message */
-            }
 
             quint32 userId = NetworkUtil::get4Bytes(message, offset);
             offset += 4;
             int loginNameByteCount =
                     NetworkUtil::getByteUnsignedToInt(message, offset);
             offset += 1;
-            if (message.length() - offset < loginNameByteCount) {
+            if (message.length() - offset < loginNameByteCount)
                 return; /* invalid message */
-            }
 
             QString login =
                 NetworkUtil::getUtf8String(message, offset, loginNameByteCount);
@@ -2164,16 +2162,14 @@ namespace PMP::Client
 
     void ServerConnection::parseNewUserAccountSaltMessage(QByteArray const& message)
     {
-        if (message.length() < 4) {
+        if (message.length() < 4)
             return; /* invalid message */
-        }
 
         int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 2);
         int saltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 3);
 
-        if (message.length() != 4 + loginBytesSize + saltBytesSize) {
+        if (message.length() != 4 + loginBytesSize + saltBytesSize)
             return; /* invalid message */
-        }
 
         qDebug() << "received salt for new user account";
 
@@ -2185,9 +2181,8 @@ namespace PMP::Client
 
     void ServerConnection::parseUserLoginSaltMessage(QByteArray const& message)
     {
-        if (message.length() < 8) {
+        if (message.length() < 8)
             return; /* invalid message */
-        }
 
         int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 4);
         int userSaltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 5);
