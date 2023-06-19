@@ -214,6 +214,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/trackprogresswidget.cpp
     gui-remote/useraccountcreationwidget.cpp
     gui-remote/userpickerwidget.cpp
+    gui-remote/userscrobblingdialog.cpp
     gui-remote/waitingspinnerwidget.cpp
 )
 set(PMP_GUI_REMOTE_HEADERS
@@ -239,6 +240,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/trackprogresswidget.h
     gui-remote/useraccountcreationwidget.h
     gui-remote/userpickerwidget.h
+    gui-remote/userscrobblingdialog.h
     gui-remote/waitingspinnerwidget.h
 )
 set(PMP_GUI_REMOTE_UIS
@@ -252,6 +254,7 @@ set(PMP_GUI_REMOTE_UIS
     gui-remote/trackinfodialog.ui
     gui-remote/useraccountcreationwidget.ui
     gui-remote/userpickerwidget.ui
+    gui-remote/userscrobblingdialog.ui
 )
 set(PMP_GUI_REMOTE_RESOURCES
     gui-remote/mainwindow.qrc

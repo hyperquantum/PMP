@@ -77,7 +77,6 @@ namespace PMP
         void onReloadServerSettingsTriggered();
         void reloadServerSettingsResultReceived(AnyResultMessageCode errorCode);
         void onShutdownServerTriggered();
-        void onLastFmTriggered();
         void updatePowerManagement();
         void onAboutPmpAction();
         void onAboutQtAction();
@@ -95,7 +94,7 @@ namespace PMP
         void createMenus();
         void createStatusbar();
         void updateRightStatus();
-        void updateScrobblingStatus();
+        void updateScrobblingUi();
         void setLeftStatus(int intervalMs, QString text);
         void showUserAccountPicker();
         void showLoginWidget(QString login);
@@ -121,7 +120,7 @@ namespace PMP
         QAction* _shutdownServerAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
-        QAction* _lastFmEnabledAction;
+        QAction* _scrobblingAction;
         QAction* _activateDelayedStartAction;
         QAction* _keepDisplayActiveAction;
         QAction* _aboutPmpAction;

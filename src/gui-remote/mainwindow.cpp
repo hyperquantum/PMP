@@ -41,6 +41,7 @@
 #include "notificationbar.h"
 #include "useraccountcreationwidget.h"
 #include "userpickerwidget.h"
+#include "userscrobblingdialog.h"
 
 #include <QAction>
 #include <QApplication>
@@ -151,12 +152,16 @@ namespace PMP
         _closeAction = new QAction(tr("&Close remote"), this);
         connect(_closeAction, &QAction::triggered, this, &MainWindow::close);
 
-        _lastFmEnabledAction = new QAction(tr("&Last.FM"), this);
-        _lastFmEnabledAction->setCheckable(true);
-        _lastFmEnabledAction->setEnabled(false); /* disable until Last.FM info received */
+        _scrobblingAction = new QAction(tr("&Scrobbling..."));
         connect(
-            _lastFmEnabledAction, &QAction::triggered,
-            this, &MainWindow::onLastFmTriggered
+            _scrobblingAction, &QAction::triggered,
+            this,
+            [this]()
+            {
+                auto* dialog = new UserScrobblingDialog(this, _serverInterface);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->open();
+            }
         );
 
         _activateDelayedStartAction = new QAction(tr("Activate &delayed start..."));
@@ -210,10 +215,7 @@ namespace PMP
         _serverAdminMenu->addAction(_shutdownServerAction);
 
         /* "User" menu members */
-        auto scrobblingMenu = _userMenu->addMenu(tr("&Scrobbling"));
-
-        /* "User"/"Scrobbling" menu members */
-        scrobblingMenu->addAction(_lastFmEnabledAction);
+        _userMenu->addAction(_scrobblingAction);
 
         /* "Actions" menu members */
         _actionsMenu->addAction(_activateDelayedStartAction);
@@ -358,14 +360,13 @@ namespace PMP
         }
     }
 
-    void MainWindow::updateScrobblingStatus()
+    void MainWindow::updateScrobblingUi()
     {
         auto& scrobblingController = _serverInterface->scrobblingController();
 
         auto lastFmEnabled = scrobblingController.lastFmEnabled();
 
-        _lastFmEnabledAction->setChecked(lastFmEnabled == true);
-        _lastFmEnabledAction->setEnabled(true); // TODO : use capabilities to decide this
+        _scrobblingAction->setEnabled(lastFmEnabled != null);
 
         if (lastFmEnabled == false)
         {
@@ -514,14 +515,6 @@ namespace PMP
         if (buttonClicked == QMessageBox::Cancel) return;
 
         _serverInterface->generalController().shutdownServer();
-    }
-
-    void MainWindow::onLastFmTriggered()
-    {
-        auto checked = _lastFmEnabledAction->isChecked();
-
-        auto& scrobblingController = _serverInterface->scrobblingController();
-        scrobblingController.setLastFmScrobblingEnabled(checked);
     }
 
     void MainWindow::updatePowerManagement()
@@ -847,8 +840,10 @@ namespace PMP
         auto* scrobblingController = &_serverInterface->scrobblingController();
         connect(
             scrobblingController, &ScrobblingController::lastFmInfoChanged,
-            this, &MainWindow::updateScrobblingStatus
+            this, &MainWindow::updateScrobblingUi
         );
+
+        updateScrobblingUi();
     }
 
     void MainWindow::onLoginCancel()
