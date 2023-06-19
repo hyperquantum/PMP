@@ -23,6 +23,7 @@
 #include "common/unicodechars.h"
 #include "common/util.h"
 
+#include "client/authenticationcontroller.h"
 #include "client/collectionwatcher.h"
 #include "client/generalcontroller.h"
 #include "client/localhashidrepository.h"
@@ -66,7 +67,7 @@ namespace PMP
             fillTrackDetails(trackInfo);
         }
 
-        fillUserData(_trackHashId);
+        fillUserData(_trackHashId, _userId);
     }
 
     TrackInfoDialog::TrackInfoDialog(QWidget* parent,
@@ -76,19 +77,17 @@ namespace PMP
         _ui(new Ui::TrackInfoDialog),
         _serverInterface(serverInterface),
         _lastHeardUpdateTimer(new QTimer(this)),
-        _trackHashId(track.hashId()),
-        _queueId(0)
+        _trackHashId(track.hashId())
     {
         init();
 
         fillHash();
         fillTrackDetails(track);
-        fillUserData(_trackHashId);
+        fillUserData(_trackHashId, _userId);
     }
 
     TrackInfoDialog::~TrackInfoDialog()
     {
-        qDebug() << "TrackInfoDialog being destructed";
         delete _ui;
     }
 
@@ -110,10 +109,10 @@ namespace PMP
 
     void TrackInfoDialog::dataReceivedForUser(quint32 userId)
     {
-        if (userId != _serverInterface->userLoggedInId())
+        if (userId != _userId)
             return;
 
-        fillUserData(_trackHashId);
+        fillUserData(_trackHashId, _userId);
     }
 
     void TrackInfoDialog::updateLastHeard()
@@ -150,6 +149,29 @@ namespace PMP
     void TrackInfoDialog::init()
     {
         _ui->setupUi(this);
+
+        connect(
+            _ui->userComboBox, qOverload<int>(&QComboBox::currentIndexChanged),
+            this,
+            [this]()
+            {
+                if (_updatingUsersList)
+                    return;
+
+                auto userId = _ui->userComboBox->currentData().value<int>();
+                _userId = userId;
+
+                fillUserData(_trackHashId, _userId);
+            }
+        );
+
+        _userId = _serverInterface->userLoggedInId();
+
+        _serverInterface->authenticationController()
+            .getUserAccounts()
+            .addResultListener(
+                this, [this](QList<UserAccount> accounts) { fillUserComboBox(accounts); }
+            );
 
         if (_queueId == 0)
         {
@@ -225,6 +247,39 @@ namespace PMP
         _ui->closeButton->setFocus();
     }
 
+    void TrackInfoDialog::fillUserComboBox(QList<UserAccount> accounts)
+    {
+        _updatingUsersList = true;
+
+        auto* combo = _ui->userComboBox;
+        combo->clear();
+
+        int indexToSelect = -1;
+
+        combo->addItem(tr("Public"), QVariant::fromValue(int(0)));
+        if (_userId == 0) { indexToSelect = 0; }
+
+        auto myUserId = _serverInterface->authenticationController().userLoggedInId();
+        auto myUsername = _serverInterface->authenticationController().userLoggedInName();
+        combo->addItem(myUsername, QVariant::fromValue(myUserId));
+        if (_userId == myUserId) { indexToSelect = 1; }
+
+        for (auto const& account : accounts)
+        {
+            if (account.userId == myUserId) continue; /* already added before the loop */
+
+            if (account.userId == _userId && indexToSelect < 0)
+                indexToSelect = combo->count();
+
+            combo->addItem(account.username, QVariant::fromValue(account.userId));
+        }
+
+        if (indexToSelect >= 0)
+            combo->setCurrentIndex(indexToSelect);
+
+        _updatingUsersList = false;
+    }
+
     void TrackInfoDialog::enableDisableButtons()
     {
         auto connected = _serverInterface->connected();
@@ -270,18 +325,14 @@ namespace PMP
         _ui->lengthValueLabel->setText(lengthText);
     }
 
-    void TrackInfoDialog::fillUserData(LocalHashId hashId)
+    void TrackInfoDialog::fillUserData(LocalHashId hashId, quint32 userId)
     {
         if (!_serverInterface->isLoggedIn())
         {
-            _ui->usernameValueLabel->clear();
             clearUserData();
             return;
         }
 
-        _ui->usernameValueLabel->setText(_serverInterface->userLoggedInName());
-
-        auto userId = _serverInterface->userLoggedInId();
         auto userData =
                _serverInterface->userDataFetcher().getHashDataForUser(userId, hashId);
 

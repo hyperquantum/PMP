@@ -60,8 +60,8 @@ Contents of this file:
 
 ### Build-time Dependencies
 
- * C++ compiler with support for C++ 2014
- * CMake 3.8 or higher
+ * C++ compiler with support for C++ 2017
+ * CMake 3.21 or higher
 
 Building on Windows is done using [vcpkg](https://github.com/microsoft/vcpkg).
 

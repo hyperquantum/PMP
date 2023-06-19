@@ -2026,9 +2026,14 @@ namespace PMP::Server
 
             if (_socket->bytesAvailable() - sizeof(lengthBytes) < messageLength)
             {
-                qDebug() << "waiting for incoming message with length" << messageLength
-                         << " --- only partially received";
+                qDebug() << "ConnectedClient: waiting for incoming message with length"
+                         << messageLength << " --- only partially received";
                 break; /* message not complete yet */
+            }
+
+            if (messageLength > 100 * 1024)
+            {
+                qDebug() << "ConnectedClient: received message larger than 100 kB";
             }
 
             //qDebug() << "received complete binary message with length" << messageLength;

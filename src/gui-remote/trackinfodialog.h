@@ -20,10 +20,12 @@
 #ifndef PMP_TRACKINFODIALOG_H
 #define PMP_TRACKINFODIALOG_H
 
+#include "client/authenticationcontroller.h"
 #include "client/collectiontrackinfo.h"
 
 #include <QDateTime>
 #include <QDialog>
+#include <QList>
 #include <QTimer>
 
 namespace Ui
@@ -60,13 +62,14 @@ namespace PMP
 
     private:
         void init();
+        void fillUserComboBox(QList<Client::UserAccount> accounts);
 
         void enableDisableButtons();
 
         void fillQueueId();
         void fillHash();
         void fillTrackDetails(Client::CollectionTrackInfo const& trackInfo);
-        void fillUserData(Client::LocalHashId hashId);
+        void fillUserData(Client::LocalHashId hashId, quint32 userId);
         void clearTrackDetails();
         void clearUserData();
 
@@ -75,7 +78,9 @@ namespace PMP
         QTimer* _lastHeardUpdateTimer;
         Client::LocalHashId _trackHashId;
         QDateTime _lastHeard;
-        quint32 _queueId;
+        quint32 _queueId { 0 };
+        quint32 _userId { 0 };
+        bool _updatingUsersList { false };
     };
 }
 #endif
