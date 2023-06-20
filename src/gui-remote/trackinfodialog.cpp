@@ -31,6 +31,8 @@
 #include "client/serverinterface.h"
 #include "client/userdatafetcher.h"
 
+#include "userforstatisticsdisplay.h"
+
 #include <QApplication>
 #include <QClipboard>
 #include <QLocale>
@@ -42,11 +44,13 @@ namespace PMP
 {
     TrackInfoDialog::TrackInfoDialog(QWidget* parent,
                                      ServerInterface* serverInterface,
+                                     UserForStatisticsDisplay* userForStatisticsDisplay,
                                      LocalHashId hashId,
                                      quint32 queueId)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
         _ui(new Ui::TrackInfoDialog),
         _serverInterface(serverInterface),
+        _userStatisticsDisplay(userForStatisticsDisplay),
         _lastHeardUpdateTimer(new QTimer(this)),
         _trackHashId(hashId),
         _queueId(queueId)
@@ -72,10 +76,12 @@ namespace PMP
 
     TrackInfoDialog::TrackInfoDialog(QWidget* parent,
                                      ServerInterface* serverInterface,
+                                     UserForStatisticsDisplay* userForStatisticsDisplay,
                                      const CollectionTrackInfo& track)
      : QDialog(parent, Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
         _ui(new Ui::TrackInfoDialog),
         _serverInterface(serverInterface),
+        _userStatisticsDisplay(userForStatisticsDisplay),
         _lastHeardUpdateTimer(new QTimer(this)),
         _trackHashId(track.hashId())
     {
@@ -165,7 +171,7 @@ namespace PMP
             }
         );
 
-        _userId = _serverInterface->userLoggedInId();
+        _userId = _userStatisticsDisplay->userId().valueOr(0);
 
         _serverInterface->authenticationController()
             .getUserAccounts()

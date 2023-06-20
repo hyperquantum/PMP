@@ -25,14 +25,13 @@
 
 #include "client/generalcontroller.h"
 #include "client/localhashidrepository.h"
-#include "client/playercontroller.h"
 #include "client/queueentryinfostorage.h"
 #include "client/serverinterface.h"
 #include "client/userdatafetcher.h"
 
 #include "colors.h"
-
 #include "queuemediator.h"
+#include "userforstatisticsdisplay.h"
 
 #include <QBuffer>
 #include <QBrush>
@@ -171,15 +170,15 @@ namespace PMP
     }
 
     QueueModel::QueueModel(QObject* parent, ServerInterface* serverInterface,
-                           QueueMediator* source, QueueEntryInfoStorage* trackInfoStorage)
+                           QueueMediator* source, QueueEntryInfoStorage* trackInfoStorage,
+                           UserForStatisticsDisplay* userForStats)
      : QAbstractTableModel(parent),
        _hashIdRepository(serverInterface->hashIdRepository()),
        _userDataFetcher(&serverInterface->userDataFetcher()),
        _source(source),
        _infoStorage(trackInfoStorage),
+       _userForStats(userForStats),
        _lastHeardRefresher(new RegularUiRefresher(this)),
-       _playerMode(PlayerMode::Unknown),
-       _personalModeUserId(0),
        _modelRows(0)
     {
         _modelRows = _source->queueLength();
@@ -187,7 +186,6 @@ namespace PMP
         (void)serverInterface->queueEntryInfoFetcher(); /* speed things up */
 
         auto generalController = &serverInterface->generalController();
-        auto playerController = &serverInterface->playerController();
 
         _clientClockTimeOffsetMs = generalController->clientClockTimeOffsetMs();
         connect(
@@ -200,10 +198,6 @@ namespace PMP
             }
         );
 
-        connect(
-            playerController, &PlayerController::playerModeChanged,
-            this, &QueueModel::playerModeChanged
-        );
         connect(
             _source, &AbstractQueueMonitor::queueResetted,
             this, &QueueModel::queueResetted
@@ -234,12 +228,13 @@ namespace PMP
         );
 
         connect(
+            _userForStats, &UserForStatisticsDisplay::userChanged,
+            this, [this]() { markUserDataColumnsAsChanged(); }
+        );
+        connect(
             _lastHeardRefresher, &RegularUiRefresher::timeout,
             this, [this]() { markLastHeardColumnAsChanged(); }
         );
-
-        _playerMode = playerController->playerMode();
-        _personalModeUserId = playerController->personalModeUserId();
     }
 
     int QueueModel::rowCount(const QModelIndex& parent) const
@@ -369,16 +364,16 @@ namespace PMP
                 {
                     case 2:
                         return Qt::AlignRight + Qt::AlignVCenter;
-                    case 4:
+                    case 4: /* score */
                     {
                         auto hashId = info->hashId();
-                        if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
+                        auto userId = _userForStats->userId();
+
+                        if (hashId.isZero() || userId == null)
                             return Qt::AlignLeft + Qt::AlignVCenter;
 
                         auto hashData =
-                            _userDataFetcher->getHashDataForUser(
-                                _personalModeUserId, hashId
-                            );
+                            _userDataFetcher->getHashDataForUser(userId.value(), hashId);
 
                         if (!hashData || !hashData->scoreReceived)
                             return Qt::AlignLeft + Qt::AlignVCenter;
@@ -395,11 +390,13 @@ namespace PMP
                 if (col == 3) /* prev. heard */
                 {
                     auto hashId = info->hashId();
-                    if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
+                    auto userId = _userForStats->userId();
+
+                    if (hashId.isZero() || userId == null)
                         return QString(); /* unknown */
 
                     auto hashData =
-                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hashId);
+                        _userDataFetcher->getHashDataForUser(userId.value(), hashId);
 
                     if (!hashData || !hashData->previouslyHeardReceived
                                   || hashData->previouslyHeard.isNull())
@@ -438,14 +435,16 @@ namespace PMP
                 if (lengthInMilliseconds < 0) { return "?"; }
                 return Util::millisecondsToShortDisplayTimeText(lengthInMilliseconds);
             }
-            case 3:
+            case 3: /* last heard */
             {
                 auto hashId = info->hashId();
-                if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
+                auto userId = _userForStats->userId();
+
+                if (hashId.isZero() || userId == null)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hashId);
+                        _userDataFetcher->getHashDataForUser(userId.value(), hashId);
 
                 if (!hashData || !hashData->previouslyHeardReceived)
                     return QVariant();
@@ -462,14 +461,16 @@ namespace PMP
 
                 return howLongAgo.text();
             }
-            case 4:
+            case 4: /* score */
             {
                 auto hashId = info->hashId();
-                if (hashId.isZero() || _playerMode == PlayerMode::Unknown)
+                auto userId = _userForStats->userId();
+
+                if (hashId.isZero() || userId == null)
                     return QVariant(); /* unknown */
 
                 auto hashData =
-                        _userDataFetcher->getHashDataForUser(_personalModeUserId, hashId);
+                        _userDataFetcher->getHashDataForUser(userId.value(), hashId);
 
                 if (!hashData || !hashData->scoreReceived)
                     return QVariant();
@@ -742,17 +743,6 @@ namespace PMP
         auto hashId = info->hashId();
 
         return QueueTrack(queueId, hashId);
-    }
-
-    void QueueModel::playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,
-                                       QString personalModeUserLogin)
-    {
-        Q_UNUSED(personalModeUserLogin)
-
-        _playerMode = playerMode;
-        _personalModeUserId = personalModeUserId;
-
-        markUserDataColumnsAsChanged();
     }
 
     void QueueModel::queueResetted(int queueLength)

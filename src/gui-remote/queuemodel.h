@@ -43,6 +43,7 @@ namespace PMP::Client
 namespace PMP
 {
     class QueueMediator;
+    class UserForStatisticsDisplay;
 
     class RegularUiRefresher : public QObject
     {
@@ -106,7 +107,8 @@ namespace PMP
     public:
         QueueModel(QObject* parent, Client::ServerInterface* serverInterface,
                    QueueMediator* source,
-                   Client::QueueEntryInfoStorage* trackInfoStorage);
+                   Client::QueueEntryInfoStorage* trackInfoStorage,
+                   UserForStatisticsDisplay* userForStats);
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -127,8 +129,6 @@ namespace PMP
         QueueTrack trackAt(const QModelIndex& index) const;
 
     private Q_SLOTS:
-        void playerModeChanged(PlayerMode playerMode, quint32 personalModeUserId,
-                               QString personalModeUserLogin);
         void userDataReceivedForUser(quint32 userId);
 
         void queueResetted(int queueLength);
@@ -137,9 +137,6 @@ namespace PMP
         void trackAdded(int index, quint32 queueID);
         void trackRemoved(int index, quint32 queueID);
         void trackMoved(int fromIndex, int toIndex, quint32 queueID);
-//        void tracksInserted(int firstIndex, int lastIndex);
-//        void tracksRemoved(int firstIndex, int lastIndex);
-//        void tracksChanged(int firstIndex, int lastIndex);
 
     private:
         struct Track
@@ -167,10 +164,9 @@ namespace PMP
         Client::UserDataFetcher* _userDataFetcher;
         QueueMediator* _source;
         Client::QueueEntryInfoStorage* _infoStorage;
+        UserForStatisticsDisplay* _userForStats;
         RegularUiRefresher* _lastHeardRefresher;
         qint64 _clientClockTimeOffsetMs { 0 };
-        PlayerMode _playerMode;
-        quint32 _personalModeUserId;
         int _modelRows;
         QList<Track*> _tracks;
     };

@@ -43,20 +43,7 @@ namespace PMP::Client
 
 namespace PMP
 {
-    class CollectionViewContext : public QObject
-    {
-        Q_OBJECT
-    public:
-        CollectionViewContext(QObject* parent, Client::ServerInterface* serverInterface);
-
-        quint32 userId() const { return _userId; }
-
-    Q_SIGNALS:
-        void userIdChanged();
-
-    private:
-        quint32 _userId;
-    };
+    class UserForStatisticsDisplay;
 
     class SortedCollectionTableModel : public QAbstractTableModel
     {
@@ -65,7 +52,7 @@ namespace PMP
         SortedCollectionTableModel(QObject* parent,
                                    Client::ServerInterface* serverInterface,
                                    Client::QueueHashesMonitor* queueHashesMonitor,
-                                   CollectionViewContext* collectionViewContext);
+                                   UserForStatisticsDisplay* userForStatisticsDisplay);
 
         void setHighlightCriterium(TrackCriterium criterium);
         int highlightColorIndex() const;
@@ -165,7 +152,7 @@ namespace PMP
                                      SortedCollectionTableModel* source,
                                      Client::ServerInterface* serverInterface,
                                      Client::QueueHashesMonitor* queueHashesMonitor,
-                                     CollectionViewContext* collectionViewContext);
+                                     UserForStatisticsDisplay* userForStatisticsDisplay);
 
         void setTrackFilters(TrackCriterium criterium1, TrackCriterium criterium2);
 

@@ -41,21 +41,22 @@ using namespace PMP::Client;
 namespace PMP
 {
     CollectionWidget::CollectionWidget(QWidget* parent, ServerInterface* serverInterface,
-                                       QueueHashesMonitor* queueHashesMonitor)
+                                       QueueHashesMonitor* queueHashesMonitor,
+                                       UserForStatisticsDisplay* userForStatisticsDisplay)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
        _colorSwitcher(nullptr),
        _serverInterface(serverInterface),
-       _collectionViewContext(new CollectionViewContext(this, serverInterface)),
+       _userStatisticsDisplay(userForStatisticsDisplay),
        _collectionSourceModel(new SortedCollectionTableModel(this,
                                                              serverInterface,
                                                              queueHashesMonitor,
-                                                             _collectionViewContext)),
+                                                             userForStatisticsDisplay)),
        _collectionDisplayModel(new FilteredCollectionTableModel(this,
                                                                 _collectionSourceModel,
                                                                 serverInterface,
                                                                 queueHashesMonitor,
-                                                                _collectionViewContext)),
+                                                               userForStatisticsDisplay)),
        _collectionContextMenu(nullptr)
     {
         _ui->setupUi(this);
@@ -215,7 +216,8 @@ namespace PMP
             this,
             [this, track]() {
                 qDebug() << "collection context menu: track info triggered";
-                auto dialog = new TrackInfoDialog(this, _serverInterface, track);
+                auto dialog = new TrackInfoDialog(this, _serverInterface,
+                                                  _userStatisticsDisplay, track);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
                 dialog->open();
             }

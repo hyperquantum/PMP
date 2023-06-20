@@ -39,6 +39,7 @@
 #include "mainwidget.h"
 #include "notificationbar.h"
 #include "useraccountcreationwidget.h"
+#include "userforstatisticsdisplay.h"
 #include "userpickerwidget.h"
 
 #include <QAction>
@@ -659,8 +660,11 @@ namespace PMP
         _notificationBar = new NotificationBar(mainCentralWidget);
         _notificationBar->addNotification(delayedStartNotification);
 
+        auto* userForStatisticsDisplay =
+            new UserForStatisticsDisplay(this, _serverInterface);
+
         _mainWidget = new MainWidget(mainCentralWidget);
-        _mainWidget->setConnection(_serverInterface);
+        _mainWidget->setConnection(_serverInterface, userForStatisticsDisplay);
 
         auto centralVerticalLayout = new QVBoxLayout(mainCentralWidget);
         centralVerticalLayout->setContentsMargins(0, 0, 0, 0);
@@ -676,7 +680,7 @@ namespace PMP
 
         auto collectionWidget =
                 new CollectionWidget(_musicCollectionDock, _serverInterface,
-                                     queueHashesMonitor);
+                                     queueHashesMonitor, userForStatisticsDisplay);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 

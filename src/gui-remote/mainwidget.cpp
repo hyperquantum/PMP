@@ -38,6 +38,7 @@
 #include "queuemodel.h"
 #include "scoreformatdelegate.h"
 #include "trackinfodialog.h"
+#include "userforstatisticsdisplay.h"
 
 #include <algorithm>
 
@@ -56,8 +57,10 @@ namespace PMP
         _ui(new Ui::MainWidget),
         _serverInterface(nullptr),
         _trackProgressMonitor(nullptr),
+        _userStatisticsDisplay(nullptr),
         _queueMediator(nullptr),
-        _queueModel(nullptr), _queueContextMenu(nullptr),
+        _queueModel(nullptr),
+        _queueContextMenu(nullptr),
         _historyModel(nullptr),
         _historyContextMenu(nullptr),
         _showingTimeRemaining(false)
@@ -100,10 +103,12 @@ namespace PMP
         delete _ui;
     }
 
-    void MainWidget::setConnection(ServerInterface* serverInterface)
+    void MainWidget::setConnection(ServerInterface* serverInterface,
+                                   UserForStatisticsDisplay* userForStatisticsDisplay)
     {
         _serverInterface = serverInterface;
         new AutoPersonalModeAction(serverInterface);
+        _userStatisticsDisplay = userForStatisticsDisplay;
         _queueMediator = new QueueMediator(serverInterface,
                                            &serverInterface->queueMonitor(),
                                            serverInterface);
@@ -111,7 +116,7 @@ namespace PMP
         _queueModel =
             new QueueModel(
                 serverInterface, serverInterface, _queueMediator,
-                queueEntryInfoStorage
+                queueEntryInfoStorage, _userStatisticsDisplay
             );
         _historyModel = new PlayerHistoryModel(this, _serverInterface);
 
@@ -183,6 +188,29 @@ namespace PMP
         connect(
             _ui->skipButton, &QPushButton::clicked,
             playerController, &PlayerController::skip
+        );
+
+        connect(
+            _userStatisticsDisplay, &UserForStatisticsDisplay::userChanged,
+            this, &MainWidget::userForStatisticsDisplayChanged
+        );
+        connect(
+            _ui->displayPersonalStatisticsRadioButton, &QRadioButton::clicked,
+            this,
+            [this]()
+            {
+                if (_ui->displayPersonalStatisticsRadioButton->isChecked())
+                    _userStatisticsDisplay->setPersonal();
+            }
+        );
+        connect(
+            _ui->displayPublicStatisticsRadioButton, &QRadioButton::clicked,
+            this,
+            [this]()
+            {
+                if (_ui->displayPublicStatisticsRadioButton->isChecked())
+                    _userStatisticsDisplay->setPublic();
+            }
         );
 
         connect(
@@ -278,6 +306,7 @@ namespace PMP
 
         /* synchronize UI with initial state */
         playerModeChanged();
+        userForStatisticsDisplayChanged();
         playerStateChanged();
         queueLengthChanged();
         currentTrackInfoChanged();
@@ -312,32 +341,48 @@ namespace PMP
 
         switch (mode)
         {
-            case PlayerMode::Public:
-                _ui->playingModeLabel->setText(tr("PUBLIC mode"));
-                _ui->userPlayingForLabel->setText("~~~");
-                _ui->toPersonalModeButton->setEnabled(true);
-                _ui->toPublicModeButton->setEnabled(false);
-                break;
+        case PlayerMode::Public:
+            _ui->playingModeLabel->setText(tr("PUBLIC mode"));
+            _ui->userPlayingForLabel->setText("~~~");
+            _ui->toPersonalModeButton->setEnabled(true);
+            _ui->toPublicModeButton->setEnabled(false);
 
-            case PlayerMode::Personal:
-                _ui->playingModeLabel->setText(tr("PERSONAL mode"));
-                _ui->userPlayingForLabel->setText(
-                    QString(enDash) + " " + userLogin + " " + enDash
-                );
+            _ui->displayPublicStatisticsRadioButton->setChecked(true);
 
-                _ui->toPersonalModeButton->setEnabled(
-                                            userId != _serverInterface->userLoggedInId());
+            break;
 
-                _ui->toPublicModeButton->setEnabled(true);
-                break;
+        case PlayerMode::Personal:
+            _ui->playingModeLabel->setText(tr("PERSONAL mode"));
+            _ui->userPlayingForLabel->setText(
+                QString(enDash) + " " + userLogin + " " + enDash
+            );
 
-            case PlayerMode::Unknown:
-                _ui->playingModeLabel->setText(tr("mode unknown"));
-                _ui->userPlayingForLabel->setText("???");
-                _ui->toPersonalModeButton->setEnabled(false);
-                _ui->toPublicModeButton->setEnabled(false);
-                break;
+            _ui->toPersonalModeButton->setEnabled(
+                                        userId != _serverInterface->userLoggedInId());
+
+            _ui->toPublicModeButton->setEnabled(true);
+
+            _ui->displayPersonalStatisticsRadioButton->setChecked(true);
+
+            break;
+
+        case PlayerMode::Unknown:
+            _ui->playingModeLabel->setText(tr("mode unknown"));
+            _ui->userPlayingForLabel->setText("???");
+            _ui->toPersonalModeButton->setEnabled(false);
+            _ui->toPublicModeButton->setEnabled(false);
+            break;
         }
+    }
+
+    void MainWidget::userForStatisticsDisplayChanged()
+    {
+        auto isPersonal = _userStatisticsDisplay->isPersonal();
+
+        if (isPersonal == true)
+            _ui->displayPersonalStatisticsRadioButton->setChecked(true);
+        else if (isPersonal == false)
+            _ui->displayPublicStatisticsRadioButton->setChecked(true);
     }
 
     bool MainWidget::keyEventFilter(QKeyEvent* event)
@@ -910,7 +955,8 @@ namespace PMP
 
     void MainWidget::showTrackInfoDialog(LocalHashId hashId, quint32 queueId)
     {
-        auto dialog = new TrackInfoDialog(this, _serverInterface, hashId, queueId);
+        auto dialog = new TrackInfoDialog(this, _serverInterface, _userStatisticsDisplay,
+                                          hashId, queueId);
         connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
         dialog->open();
     }

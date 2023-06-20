@@ -31,6 +31,7 @@
 #include "client/userdatafetcher.h"
 
 #include "colors.h"
+#include "userforstatisticsdisplay.h"
 
 #include <QBrush>
 #include <QBuffer>
@@ -46,44 +47,10 @@ using namespace PMP::Client;
 
 namespace PMP
 {
-    CollectionViewContext::CollectionViewContext(QObject* parent,
-                                                 ServerInterface* serverInterface)
-     : QObject(parent),
-       _userId(0)
-    {
-        auto* playerController = &serverInterface->playerController();
-
-        connect(
-            playerController, &PlayerController::playerModeChanged,
-            this,
-            [this](PlayerMode playerMode, quint32 personalModeUserId)
-            {
-                qDebug() << "CollectionViewContext: received player mode" << playerMode
-                         << "with user ID" << personalModeUserId;
-
-                if (playerMode == PlayerMode::Unknown
-                        || _userId == personalModeUserId)
-                {
-                    return;
-                }
-
-                _userId = personalModeUserId;
-                Q_EMIT userIdChanged();
-            }
-        );
-
-        auto playerMode = playerController->playerMode();
-        if (playerMode != PlayerMode::Unknown)
-        {
-            _userId = playerController->personalModeUserId();
-        }
-    }
-
-    // ============================================================================ //
-
     namespace {
 
-    class Comparisons {
+    class Comparisons
+    {
     public:
 
         template <typename T>
@@ -130,7 +97,7 @@ namespace PMP
     SortedCollectionTableModel::SortedCollectionTableModel(QObject* parent,
                                              ServerInterface* serverInterface,
                                              QueueHashesMonitor* queueHashesMonitor,
-                                             CollectionViewContext* collectionViewContext)
+                                       UserForStatisticsDisplay* userForStatisticsDisplay)
      : QAbstractTableModel(parent),
        _hashIdRepository(serverInterface->hashIdRepository()),
        _highlightColorIndex(0),
@@ -160,13 +127,14 @@ namespace PMP
 
         _highlightingTrackJudge.setCriteria(TrackCriterium::NoTracks,
                                             TrackCriterium::AllTracks);
-        _highlightingTrackJudge.setUserId(collectionViewContext->userId());
+        _highlightingTrackJudge.setUserId(userForStatisticsDisplay->userId().valueOr(0));
         connect(
-            collectionViewContext, &CollectionViewContext::userIdChanged,
+            userForStatisticsDisplay, &UserForStatisticsDisplay::userChanged,
             this,
-            [this, collectionViewContext]()
+            [this, userForStatisticsDisplay]()
             {
-                _highlightingTrackJudge.setUserId(collectionViewContext->userId());
+                _highlightingTrackJudge.setUserId(
+                                           userForStatisticsDisplay->userId().valueOr(0));
 
                 if (_highlightingTrackJudge.criteriumUsesUserData())
                 {
@@ -890,20 +858,21 @@ namespace PMP
                                              SortedCollectionTableModel* source,
                                              ServerInterface* serverInterface,
                                              QueueHashesMonitor* queueHashesMonitor,
-                                             CollectionViewContext* collectionViewContext)
+                                       UserForStatisticsDisplay* userForStatisticsDisplay)
      : _source(source),
        _filteringTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor)
     {
         Q_UNUSED(parent)
         setFilterCaseSensitivity(Qt::CaseInsensitive);
 
-        _filteringTrackJudge.setUserId(collectionViewContext->userId());
+        _filteringTrackJudge.setUserId(userForStatisticsDisplay->userId().valueOr(0));
         connect(
-            collectionViewContext, &CollectionViewContext::userIdChanged,
+            userForStatisticsDisplay, &UserForStatisticsDisplay::userChanged,
             this,
-            [this, collectionViewContext]()
+            [this, userForStatisticsDisplay]()
             {
-                _filteringTrackJudge.setUserId(collectionViewContext->userId());
+                _filteringTrackJudge.setUserId(
+                                           userForStatisticsDisplay->userId().valueOr(0));
                 invalidateFilter();
             }
         );

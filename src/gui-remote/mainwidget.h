@@ -47,6 +47,7 @@ namespace PMP
     class PreciseTrackProgressMonitor;
     class QueueMediator;
     class QueueModel;
+    class UserForStatisticsDisplay;
 
     class MainWidget : public QWidget
     {
@@ -55,13 +56,15 @@ namespace PMP
         explicit MainWidget(QWidget *parent = 0);
         ~MainWidget();
 
-        void setConnection(Client::ServerInterface* serverInterface);
+        void setConnection(Client::ServerInterface* serverInterface,
+                           UserForStatisticsDisplay* userForStatisticsDisplay);
 
     protected:
         bool eventFilter(QObject*, QEvent*);
 
     private Q_SLOTS:
         void playerModeChanged();
+        void userForStatisticsDisplayChanged();
         void playerStateChanged();
         void queueLengthChanged();
         void currentTrackChanged();
@@ -99,6 +102,7 @@ namespace PMP
         Ui::MainWidget* _ui;
         Client::ServerInterface* _serverInterface;
         PreciseTrackProgressMonitor* _trackProgressMonitor;
+        UserForStatisticsDisplay* _userStatisticsDisplay;
         QueueMediator* _queueMediator;
         QueueModel* _queueModel;
         QMenu* _queueContextMenu;
