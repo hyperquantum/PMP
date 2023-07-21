@@ -55,6 +55,7 @@ IDEAS
  * player: 'seek to start of track' action or button
  * player: make track position display less precise while playing, it is too fast for the human eye anyway
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
+ * queue: ability to put pauses of a specified length in the queue
  * queue: ability to insert a track at a random position in the queue
  * queue: show error marker for a track that has no known file
  * queue: show marker for tracks that occur more than once in the queue
