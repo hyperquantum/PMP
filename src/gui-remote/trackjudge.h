@@ -74,6 +74,7 @@ namespace PMP
                    Client::QueueHashesMonitor& queueHashesMonitor)
          : _criterium1(TrackCriterium::AllTracks),
            _criterium2(TrackCriterium::AllTracks),
+           _criterium3(TrackCriterium::AllTracks),
            _userId(0),
            _haveUserId(false),
            _userDataFetcher(userDataFetcher),
@@ -88,16 +89,19 @@ namespace PMP
             return _userId == userId && _haveUserId;
         }
 
-        bool setCriteria(TrackCriterium criterium1, TrackCriterium criterium2)
+        bool setCriteria(TrackCriterium criterium1, TrackCriterium criterium2,
+                         TrackCriterium criterium3)
         {
             if (criterium1 == _criterium1 &&
-                criterium2 == _criterium2)
+                criterium2 == _criterium2 &&
+                criterium3 == _criterium3)
             {
                 return false;
             }
 
             _criterium1 = criterium1;
             _criterium2 = criterium2;
+            _criterium3 = criterium3;
             return true;
         }
 
@@ -130,6 +134,7 @@ namespace PMP
 
         TrackCriterium _criterium1;
         TrackCriterium _criterium2;
+        TrackCriterium _criterium3;
         quint32 _userId;
         bool _haveUserId;
         Client::UserDataFetcher& _userDataFetcher;

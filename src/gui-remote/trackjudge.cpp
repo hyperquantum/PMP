@@ -37,13 +37,16 @@ namespace PMP
 
     bool TrackJudge::criteriumUsesUserData() const
     {
-        return usesUserData(_criterium1) || usesUserData(_criterium2);
+        return usesUserData(_criterium1)
+               || usesUserData(_criterium2)
+               || usesUserData(_criterium3);
     }
 
     bool TrackJudge::criteriumResultsInAllTracks() const
     {
         return _criterium1 == TrackCriterium::AllTracks
-                && _criterium2 == TrackCriterium::AllTracks;
+                && _criterium2 == TrackCriterium::AllTracks
+               && _criterium3 == TrackCriterium::AllTracks;
     }
 
     TriBool TrackJudge::trackSatisfiesCriteria(CollectionTrackInfo const& track) const
@@ -53,7 +56,12 @@ namespace PMP
             return false;
 
         auto satifiesCriterium2 = trackSatisfiesCriterium(track, _criterium2);
-        return satifiesCriterium1 & satifiesCriterium2;
+        if (satifiesCriterium2.isFalse())
+            return false;
+
+        auto satisfiesCriterium3 = trackSatisfiesCriterium(track, _criterium3);
+
+        return satifiesCriterium1 & satifiesCriterium2 & satisfiesCriterium3;
     }
 
     bool TrackJudge::usesUserData(TrackCriterium criterium)

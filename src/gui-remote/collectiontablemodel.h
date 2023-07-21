@@ -154,7 +154,8 @@ namespace PMP
                                      Client::QueueHashesMonitor* queueHashesMonitor,
                                      UserForStatisticsDisplay* userForStatisticsDisplay);
 
-        void setTrackFilters(TrackCriterium criterium1, TrackCriterium criterium2);
+        void setTrackFilters(TrackCriterium criterium1, TrackCriterium criterium2,
+                             TrackCriterium criterium3);
 
         virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 
