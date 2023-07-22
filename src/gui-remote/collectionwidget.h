@@ -38,11 +38,11 @@ namespace PMP::Client
 
 namespace PMP
 {
-    class CollectionViewContext;
     class ColorSwitcher;
     class FilteredCollectionTableModel;
     class SortedCollectionTableModel;
     enum class TrackCriterium;
+    class UserForStatisticsDisplay;
     class WaitingSpinnerWidget;
 
     class CollectionWidget : public QWidget
@@ -51,7 +51,8 @@ namespace PMP
 
     public:
         CollectionWidget(QWidget* parent, Client::ServerInterface* serverInterface,
-                         Client::QueueHashesMonitor* queueHashesMonitor);
+                         Client::QueueHashesMonitor* queueHashesMonitor,
+                         UserForStatisticsDisplay* userForStatisticsDisplay);
         ~CollectionWidget();
 
     private Q_SLOTS:
@@ -76,7 +77,7 @@ namespace PMP
         WaitingSpinnerWidget* _spinner { nullptr };
         ColorSwitcher* _colorSwitcher;
         Client::ServerInterface* _serverInterface;
-        CollectionViewContext* _collectionViewContext;
+        UserForStatisticsDisplay* _userStatisticsDisplay;
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;
         QMenu* _collectionContextMenu;

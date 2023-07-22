@@ -55,6 +55,7 @@ IDEAS
  * player: 'seek to start of track' action or button
  * player: make track position display less precise while playing, it is too fast for the human eye anyway
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
+ * queue: ability to put pauses of a specified length in the queue
  * queue: ability to insert a track at a random position in the queue
  * queue: show error marker for a track that has no known file
  * queue: show marker for tracks that occur more than once in the queue
@@ -62,7 +63,7 @@ IDEAS
  * queue: save the contents of the queue on server shutdown and restore it at the next server startup
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
- * music collection: add a clear button for the filter
+ * music collection: add a clear button for each filter combobox
  * music collection: provide fast partial indexation that only detects new files
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  * music collection: add quick search function, for searching while leaving the current filters unchanged

@@ -40,16 +40,20 @@ namespace PMP::Client
 
 namespace PMP
 {
+    class UserForStatisticsDisplay;
+
     class TrackInfoDialog : public QDialog
     {
         Q_OBJECT
     public:
         TrackInfoDialog(QWidget* parent,
                         Client::ServerInterface* serverInterface,
+                        UserForStatisticsDisplay* userForStatisticsDisplay,
                         Client::LocalHashId hashId, quint32 queueId = 0);
 
         TrackInfoDialog(QWidget* parent,
                         Client::ServerInterface* serverInterface,
+                        UserForStatisticsDisplay* userForStatisticsDisplay,
                         Client::CollectionTrackInfo const& track);
 
         ~TrackInfoDialog();
@@ -75,6 +79,7 @@ namespace PMP
 
         Ui::TrackInfoDialog* _ui;
         Client::ServerInterface* _serverInterface;
+        UserForStatisticsDisplay* _userStatisticsDisplay;
         QTimer* _lastHeardUpdateTimer;
         Client::LocalHashId _trackHashId;
         QDateTime _lastHeard;

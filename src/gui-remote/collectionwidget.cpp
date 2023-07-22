@@ -41,21 +41,22 @@ using namespace PMP::Client;
 namespace PMP
 {
     CollectionWidget::CollectionWidget(QWidget* parent, ServerInterface* serverInterface,
-                                       QueueHashesMonitor* queueHashesMonitor)
+                                       QueueHashesMonitor* queueHashesMonitor,
+                                       UserForStatisticsDisplay* userForStatisticsDisplay)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
        _colorSwitcher(nullptr),
        _serverInterface(serverInterface),
-       _collectionViewContext(new CollectionViewContext(this, serverInterface)),
+       _userStatisticsDisplay(userForStatisticsDisplay),
        _collectionSourceModel(new SortedCollectionTableModel(this,
                                                              serverInterface,
                                                              queueHashesMonitor,
-                                                             _collectionViewContext)),
+                                                             userForStatisticsDisplay)),
        _collectionDisplayModel(new FilteredCollectionTableModel(this,
                                                                 _collectionSourceModel,
                                                                 serverInterface,
                                                                 queueHashesMonitor,
-                                                                _collectionViewContext)),
+                                                               userForStatisticsDisplay)),
        _collectionContextMenu(nullptr)
     {
         _ui->setupUi(this);
@@ -139,15 +140,22 @@ namespace PMP
     {
         auto filter1 = getTrackCriteriumFromComboBox(_ui->filterTracksComboBox);
         auto filter2 = getTrackCriteriumFromComboBox(_ui->filterTracks2ComboBox);
+        auto filter3 = getTrackCriteriumFromComboBox(_ui->filterTracks3ComboBox);
 
-        bool shouldDisplayFilter2 =
-                filter1 != TrackCriterium::AllTracks
-                    || filter2 != TrackCriterium::AllTracks;
+        bool filter1Set = filter1 != TrackCriterium::AllTracks;
+        bool filter2Set = filter2 != TrackCriterium::AllTracks;
+        bool filter3Set = filter3 != TrackCriterium::AllTracks;
+
+        bool shouldDisplayFilter2 = filter1Set || filter2Set || filter3Set;
+        bool shouldDisplayFilter3 = filter2Set || filter3Set;
 
         _ui->filterTracks2Label->setVisible(shouldDisplayFilter2);
         _ui->filterTracks2ComboBox->setVisible(shouldDisplayFilter2);
 
-        _collectionDisplayModel->setTrackFilters(filter1, filter2);
+        _ui->filterTracks3Label->setVisible(shouldDisplayFilter3);
+        _ui->filterTracks3ComboBox->setVisible(shouldDisplayFilter3);
+
+        _collectionDisplayModel->setTrackFilters(filter1, filter2, filter3);
     }
 
     void CollectionWidget::highlightTracksIndexChanged(int index)
@@ -215,7 +223,8 @@ namespace PMP
             this,
             [this, track]() {
                 qDebug() << "collection context menu: track info triggered";
-                auto dialog = new TrackInfoDialog(this, _serverInterface, track);
+                auto dialog = new TrackInfoDialog(this, _serverInterface,
+                                                  _userStatisticsDisplay, track);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
                 dialog->open();
             }
@@ -266,6 +275,7 @@ namespace PMP
 
         comboBoxInit(_ui->filterTracksComboBox);
         comboBoxInit(_ui->filterTracks2ComboBox);
+        comboBoxInit(_ui->filterTracks3ComboBox);
 
         filterTracksIndexChanged();
     }
