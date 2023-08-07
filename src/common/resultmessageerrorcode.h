@@ -105,7 +105,8 @@ namespace PMP
         return QString("SC%1").arg(static_cast<int>(code));
     }
 
-    typedef std::variant<ResultMessageErrorCode, ScrobblingResultMessageCode> AnyResultMessageCode;
+    typedef std::variant<ResultMessageErrorCode,
+                         ScrobblingResultMessageCode> AnyResultMessageCode;
 
     inline constexpr bool succeeded(AnyResultMessageCode code)
     {
@@ -139,6 +140,13 @@ namespace PMP
             return std::get<ResultMessageErrorCode>(anyCode) == errorCode;
 
         return false;
+    }
+
+    inline constexpr bool operator==(AnyResultMessageCode anyCode,
+                                     ScrobblingResultMessageCode errorCode)
+    {
+        return std::holds_alternative<ScrobblingResultMessageCode>(anyCode)
+               && std::get<ScrobblingResultMessageCode>(anyCode) == errorCode;
     }
 }
 #endif

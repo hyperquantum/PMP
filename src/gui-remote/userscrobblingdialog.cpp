@@ -23,6 +23,8 @@
 #include "client/scrobblingcontroller.h"
 #include "client/serverinterface.h"
 
+#include "scrobblingauthenticationdialog.h"
+
 namespace PMP
 {
     UserScrobblingDialog::UserScrobblingDialog(QWidget *parent,
@@ -32,8 +34,6 @@ namespace PMP
        _serverInterface(serverInterface)
     {
         _ui->setupUi(this);
-
-        _ui->lastfmAuthenticateButton->setVisible(false); // temporary
 
         auto* scrobblingController = &_serverInterface->scrobblingController();
 
@@ -56,16 +56,17 @@ namespace PMP
                 scrobblingController->setLastFmScrobblingEnabled(false);
             }
         );
-        /*
         connect(
             _ui->lastfmAuthenticateButton, &QPushButton::clicked,
             this,
-            [this, scrobblingController]()
+            [this]()
             {
-                // TODO : show authentication dialog
+                auto* dialog = new ScrobblingAuthenticationDialog(this, _serverInterface);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->open();
             }
         );
-        */
+
         enableDisableButtons();
         updateStatusLabel();
     }

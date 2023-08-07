@@ -1,4 +1,3 @@
-* add GUI for entering Last.fm user credentials
 * specify album artist when scrobbling
 * handle timeouts
 * handle failed requests properly (OpenSSL missing or connection problem)

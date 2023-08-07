@@ -209,6 +209,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/queuemediator.cpp
     gui-remote/queuemodel.cpp
     gui-remote/scoreformatdelegate.cpp
+    gui-remote/scrobblingauthenticationdialog.cpp
     gui-remote/trackinfodialog.cpp
     gui-remote/trackjudge.cpp
     gui-remote/trackprogresswidget.cpp
@@ -237,6 +238,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/queuemediator.h
     gui-remote/queuemodel.h
     gui-remote/scoreformatdelegate.h
+    gui-remote/scrobblingauthenticationdialog.h
     gui-remote/trackinfodialog.h
     gui-remote/trackprogresswidget.h
     gui-remote/useraccountcreationwidget.h
@@ -253,6 +255,7 @@ set(PMP_GUI_REMOTE_UIS
     gui-remote/loginwidget.ui
     gui-remote/mainwidget.ui
     gui-remote/notificationbar.ui
+    gui-remote/scrobblingauthenticationdialog.ui
     gui-remote/trackinfodialog.ui
     gui-remote/useraccountcreationwidget.ui
     gui-remote/userpickerwidget.ui
