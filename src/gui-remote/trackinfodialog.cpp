@@ -171,6 +171,15 @@ namespace PMP
             }
         );
 
+        if (!_serverInterface->collectionWatcher().isAlbumArtistSupported())
+        {
+            _ui->albumArtistLabel->setVisible(false);
+            _ui->albumArtistValueLabel->setVisible(false);
+            auto* layout = _ui->trackMetadataGroupBox->layout();
+            layout->removeWidget(_ui->albumArtistLabel);
+            layout->removeWidget(_ui->albumArtistValueLabel);
+        }
+
         _userId = _userStatisticsDisplay->userId().valueOr(0);
 
         _serverInterface->authenticationController()
@@ -316,6 +325,7 @@ namespace PMP
         _ui->titleValueLabel->setText(trackInfo.title());
         _ui->artistValueLabel->setText(trackInfo.artist());
         _ui->albumValueLabel->setText(trackInfo.album());
+        _ui->albumArtistValueLabel->setText(trackInfo.albumArtist());
 
         QString lengthText;
         if (trackInfo.lengthIsKnown())
@@ -387,6 +397,7 @@ namespace PMP
         _ui->titleValueLabel->clear();
         _ui->artistValueLabel->clear();
         _ui->albumValueLabel->clear();
+        _ui->albumArtistValueLabel->clear();
         _ui->lengthValueLabel->clear();
     }
 

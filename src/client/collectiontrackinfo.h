@@ -44,9 +44,10 @@ namespace PMP::Client
 
         CollectionTrackInfo(LocalHashId hashId, bool isAvailable,
                             QString const& title, QString const& artist,
-                            QString const& album, qint32 lengthInMilliseconds)
+                            QString const& album, QString const& albumArtist,
+                            qint32 lengthInMilliseconds)
          : _hashId(hashId), _isAvailable(isAvailable), _lengthInMs(lengthInMilliseconds),
-           _title(title), _artist(artist), _album(album)
+            _title(title), _artist(artist), _album(album), _albumArtist(albumArtist)
         {
             //
         }
@@ -59,6 +60,7 @@ namespace PMP::Client
         const QString& title() const { return _title; }
         const QString& artist() const { return _artist; }
         const QString& album() const { return _album; }
+        const QString& albumArtist() const { return _albumArtist; }
         bool lengthIsKnown() const { return _lengthInMs >= 0; }
         qint32 lengthInMilliseconds() const { return _lengthInMs; }
 
@@ -76,7 +78,7 @@ namespace PMP::Client
         LocalHashId _hashId;
         bool _isAvailable;
         qint32 _lengthInMs;
-        QString _title, _artist, _album;
+        QString _title, _artist, _album, _albumArtist;
     };
 
     inline bool operator==(const CollectionTrackInfo& me,
@@ -87,7 +89,8 @@ namespace PMP::Client
             && me.lengthInMilliseconds() == other.lengthInMilliseconds()
             && me.title() == other.title()
             && me.artist() == other.artist()
-            && me.album() == other.album();
+            && me.album() == other.album()
+            && me.albumArtist() == other.albumArtist();
     }
 
     inline bool operator!=(const CollectionTrackInfo& me,

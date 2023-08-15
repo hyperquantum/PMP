@@ -35,6 +35,8 @@ namespace PMP::Client
     public:
         explicit CollectionWatcherImpl(ServerConnection* connection);
 
+        bool isAlbumArtistSupported() const override;
+
         void enableCollectionDownloading() override;
         bool downloadingInProgress() const override;
 

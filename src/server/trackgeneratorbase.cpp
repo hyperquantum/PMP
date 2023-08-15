@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -140,9 +140,10 @@ namespace PMP::Server
             return nullptr;
         }
 
-        const AudioData& audioData = _resolver->findAudioData(hash);
+        auto audioDataFound = _resolver->findAudioData(hash);
 
-        return QSharedPointer<Candidate>::create(_source, id, hash, audioData,
+        return QSharedPointer<Candidate>::create(_source, id, hash,
+                                                 audioDataFound.valueOr({}),
                                                  getRandomPermillage());
     }
 

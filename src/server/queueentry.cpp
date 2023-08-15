@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -125,7 +125,10 @@ namespace PMP::Server
 
         if (!_audioInfo.isComplete())
         {
-            _audioInfo = resolver.findAudioData(_hash);
+            auto audioDataFound = resolver.findAudioData(_hash);
+
+            if (audioDataFound.hasValue())
+                _audioInfo = audioDataFound.value();
         }
     }
 
@@ -137,10 +140,10 @@ namespace PMP::Server
 
         if (_fetchedTagData) return;
 
-        const TagData* tag = resolver.findTagData(_hash);
-        if (tag)
+        auto tagDataFound = resolver.findTagData(_hash);
+        if (tagDataFound.hasValue())
         {
-            _tagData = *tag;
+            _tagData = tagDataFound.value();
             _fetchedTagData = true;
         }
     }

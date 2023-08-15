@@ -401,7 +401,7 @@ namespace PMP::Client
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 23;
+    const quint16 ServerConnection::ClientProtocolNo = 24;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -2843,9 +2843,12 @@ namespace PMP::Client
         int offset = isNotification ? 4 : 8;
 
         bool withAlbumAndTrackLength = _serverProtocolNo >= 7;
+        bool withAlbumArtist = _serverProtocolNo >= 24;
+
         const int fixedInfoLengthPerTrack =
             NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2
-                + (withAlbumAndTrackLength ? 2 + 4 : 0);
+                + (withAlbumAndTrackLength ? 2 + 4 : 0)
+                + (withAlbumArtist ? 2 : 0);
 
         int trackCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         if (trackCount == 0 || messageLength < offset + fixedInfoLengthPerTrack)
@@ -2872,11 +2875,18 @@ namespace PMP::Client
             int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
             current += 2;
             int albumSize = 0;
+            int albumArtistSize = 0;
             //qint32 trackLength = 0;
             if (withAlbumAndTrackLength)
             {
                 albumSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
                 current += 2;
+                if (withAlbumArtist)
+                {
+                    albumArtistSize =
+                            NetworkUtil::get2BytesUnsignedToInt(message, current);
+                    current += 2;
+                }
                 //trackLength = (qint32)NetworkUtil::get4Bytes(message, current);
                 current += 4;
             }
@@ -2884,18 +2894,23 @@ namespace PMP::Client
             if (titleSize > messageLength - current
                 || artistSize > messageLength - current
                 || albumSize > messageLength - current
-                || (titleSize + artistSize + albumSize) > messageLength - current)
+                || albumArtistSize > messageLength - current
+                || (titleSize + artistSize + albumSize + albumArtistSize)
+                                                                > messageLength - current)
             {
                 return; /* invalid message */
             }
 
-            if (current + titleSize + artistSize + albumSize == messageLength)
+            if (current + titleSize + artistSize + albumSize + albumArtistSize
+                                                                        == messageLength)
+            {
                 break; /* end of message */
+            }
 
             /* at least one more track info follows */
 
             /* offset for next track */
-            offset = current + titleSize + artistSize + albumSize;
+            offset = current + titleSize + artistSize + albumSize + albumArtistSize;
 
             if (offset + fixedInfoLengthPerTrack > messageLength)
                 return;  /* invalid message */
@@ -2905,7 +2920,8 @@ namespace PMP::Client
 
         qDebug() << "received collection track info message;  track count:" << trackCount
                  << "; notification?" << (isNotification ? "Y" : "N")
-                 << "; with album & length?" << (withAlbumAndTrackLength ? "Y" : "N");
+                 << "; with album & length?" << (withAlbumAndTrackLength ? "Y" : "N")
+                 << "; with album artist?" << (withAlbumArtist ? "Y" : "N");
 
         if (trackCount != offsets.size())
         {
@@ -2935,22 +2951,35 @@ namespace PMP::Client
             int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 3);
             offset += 5;
             int albumSize = 0;
+            int albumArtistSize = 0;
             qint32 trackLengthInMs = -1;
             if (withAlbumAndTrackLength)
             {
                 albumSize = NetworkUtil::get2BytesUnsignedToInt(message, offset);
-                trackLengthInMs = NetworkUtil::get4BytesSigned(message, offset + 2);
-                offset += 6;
+                offset += 2;
+                if (withAlbumArtist)
+                {
+                    albumArtistSize= NetworkUtil::get2BytesUnsignedToInt(message, offset);
+                    offset += 2;
+                }
+                trackLengthInMs = NetworkUtil::get4BytesSigned(message, offset);
+                offset += 4;
             }
 
             QString title = NetworkUtil::getUtf8String(message, offset, titleSize);
             offset += titleSize;
             QString artist = NetworkUtil::getUtf8String(message, offset, artistSize);
             offset += artistSize;
-            QString album = "";
+            QString album, albumArtist;
             if (withAlbumAndTrackLength)
             {
                 album = NetworkUtil::getUtf8String(message, offset, albumSize);
+                offset += albumSize;
+                if (withAlbumArtist)
+                {
+                    albumArtist =
+                        NetworkUtil::getUtf8String(message, offset, albumArtistSize);
+                }
             }
 
             /* workaround for server bug; we shouldn't be receiving these */
@@ -2959,7 +2988,7 @@ namespace PMP::Client
             auto hashId = _hashIdRepository->getOrRegisterId(hash);
 
             CollectionTrackInfo info(hashId, availabilityByte & 1, title, artist, album,
-                                     trackLengthInMs);
+                                     albumArtist, trackLengthInMs);
             infos.append(info);
         }
 
@@ -2974,6 +3003,8 @@ namespace PMP::Client
                          << "; hash:" << _hashIdRepository->getHash(info.hashId())
                          << "; title:" << info.title()
                          << "; artist:" << info.artist()
+                         << "; album:" << info.album()
+                         << "; album artist:" << info.albumArtist()
                          << "; length:"
                          << Util::millisecondsToShortDisplayTimeText(length)
                          << "; available:" << info.isAvailable();
