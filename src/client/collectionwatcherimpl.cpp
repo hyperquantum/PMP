@@ -20,6 +20,7 @@
 #include "collectionwatcherimpl.h"
 
 #include "collectionfetcher.h"
+#include "servercapabilities.h"
 #include "serverconnection.h"
 
 #include <QtDebug>
@@ -43,6 +44,11 @@ namespace PMP::Client
 
         if (_connection->isConnected())
             onConnected();
+    }
+
+    bool CollectionWatcherImpl::isAlbumArtistSupported() const
+    {
+        return _connection->serverCapabilities().supportsAlbumArtist();
     }
 
     void CollectionWatcherImpl::enableCollectionDownloading()

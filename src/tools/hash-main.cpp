@@ -102,6 +102,7 @@ int main(int argc, char *argv[])
     out << "       title: " << analyzer.tagData().title() << Qt::endl;
     out << "      artist: " << analyzer.tagData().artist() << Qt::endl;
     out << "       album: " << analyzer.tagData().album() << Qt::endl;
+    out << "album artist: " << analyzer.tagData().albumArtist() << Qt::endl;
     out << "     comment: " << analyzer.tagData().comment() << Qt::endl;
 
     out << "  track hash: " << finalHash.toString() << Qt::endl;

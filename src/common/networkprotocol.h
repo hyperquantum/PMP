@@ -57,6 +57,7 @@ Changes for each version:
   21: single byte request 19, server msg 33: delayed start deadline information
   22: single byte request 60, server msg 34: requesting server version information
   23: server msg 35, error code 241: more features for protocol extensions
+  24: server msgs 18 & 19: add album artist to track info
 */
 
 namespace PMP

@@ -41,7 +41,8 @@ namespace PMP::Server
         void hashBecameAvailable(PMP::FileHash hash);
         void hashBecameUnavailable(PMP::FileHash hash);
         void hashTagInfoChanged(PMP::FileHash hash, QString title, QString artist,
-                                QString album, qint32 lengthInMilliseconds);
+                                QString album, QString albumArtist,
+                                qint32 lengthInMilliseconds);
 
     Q_SIGNALS:
         void hashAvailabilityChanged(QVector<PMP::FileHash> available,
@@ -59,7 +60,7 @@ namespace PMP::Server
         struct HashInfo
         {
             bool isAvailable;
-            QString title, artist, album;
+            QString title, artist, album, albumArtist;
             qint32 lengthInMilliseconds;
 
             HashInfo()

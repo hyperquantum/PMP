@@ -41,7 +41,7 @@ namespace PMP::Server
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 23;
+    const qint16 ConnectedClient::ServerProtocolNo = 24;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -1332,11 +1332,14 @@ namespace PMP::Server
         }
 
         bool withAlbumAndTrackLength = _clientProtocolNo >= 7;
+        bool withAlbumArtist = _clientProtocolNo >= 24;
 
         /* estimate how much bytes we will need and reserve that memory in the buffer */
         const int bytesEstimatedPerTrack =
             NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 + 20 + 15
-                + (withAlbumAndTrackLength ? 2 + 15 + 4 : 0);
+                + (withAlbumAndTrackLength ? 2 + 15 + 4 : 0)
+                + (withAlbumArtist ? 2 + 15 : 0);
+
         QByteArray message;
         message.reserve(2 + 2 + 4 + tracks.size() * bytesEstimatedPerTrack);
 
@@ -1358,15 +1361,18 @@ namespace PMP::Server
             QString title = track.title();
             QString artist = track.artist();
             QString album = track.album();
+            QString albumArtist = track.albumArtist();
 
             /* worst case: 4 bytes in UTF-8 for each char */
             title.truncate(maxSize / 4);
             artist.truncate(maxSize / 4);
             album.truncate(maxSize / 4);
+            albumArtist.truncate(maxSize / 4);
 
             QByteArray titleData = title.toUtf8();
             QByteArray artistData = artist.toUtf8();
             QByteArray albumData = album.toUtf8();
+            QByteArray albumArtistData = albumArtist.toUtf8();
 
             NetworkProtocol::appendHash(message, track.hash());
             NetworkUtil::appendByte(message, track.isAvailable() ? 1 : 0);
@@ -1375,13 +1381,23 @@ namespace PMP::Server
             if (withAlbumAndTrackLength)
             {
                 NetworkUtil::append2Bytes(message, (uint)albumData.size());
+                if (withAlbumArtist)
+                {
+                    NetworkUtil::append2Bytes(message, (uint)albumArtistData.size());
+                }
                 NetworkUtil::append4BytesSigned(message, track.lengthInMilliseconds());
             }
 
             message += titleData;
             message += artistData;
             if (withAlbumAndTrackLength)
+            {
                 message += albumData;
+                if (withAlbumArtist)
+                {
+                    message += albumArtistData;
+                }
+            }
         }
 
         sendBinaryMessage(message);
