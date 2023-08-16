@@ -556,8 +556,7 @@ namespace PMP::Server
                                                                  QString album,
                                                                  int trackDurationSeconds)
     {
-        /* 'toSecsSinceEpoch()' requires Qt 5.8, and toTime_t() is deprecated */
-        auto timestampAsUnixTime = timestamp.toMSecsSinceEpoch() / 1000;
+        auto timestampAsUnixTime = timestamp.toSecsSinceEpoch();
         auto timestampText = QString::number(timestampAsUnixTime);
 
         QVector<QPair<QString, QString>> parameters;
