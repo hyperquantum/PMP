@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,7 @@
 #ifndef PMP_CONTAINERUTIL_H
 #define PMP_CONTAINERUTIL_H
 
+#include <QHash>
 #include <QList>
 #include <QSet>
 #include <QVector>
@@ -29,6 +30,18 @@ namespace PMP
     class ContainerUtil
     {
     public:
+        template<typename K, typename V> static QVector<K> keysToVector(
+                                                                   QHash<K,V> const& hash)
+        {
+            QVector<K> v;
+            v.reserve(hash.size());
+
+            for (auto it = hash.keyBegin(); it != hash.keyEnd(); ++it)
+                v.append(*it);
+
+            return v;
+        }
+
         template<typename T> static QVector<T> toVector(QList<T> const& list)
         {
             QVector<T> v;

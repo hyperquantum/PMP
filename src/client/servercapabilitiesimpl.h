@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -38,6 +38,7 @@ namespace PMP::Client
         bool supportsDynamicModeWaveTermination() const override;
         bool supportsInsertingBreaksAtAnyIndex() const override;
         bool supportsInsertingBarriers() const override;
+        bool supportsAlbumArtist() const override;
 
     private:
         int _serverProtocolNumber;

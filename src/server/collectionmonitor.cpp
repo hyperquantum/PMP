@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,6 +18,8 @@
 */
 
 #include "collectionmonitor.h"
+
+#include "common/containerutil.h"
 
 #include <QtDebug>
 #include <QTimer>
@@ -55,7 +57,8 @@ namespace PMP::Server
 
     void CollectionMonitor::hashTagInfoChanged(FileHash hash,
                                                QString title, QString artist,
-                                               QString album, qint32 lengthInMilliseconds)
+                                               QString album, QString albumArtist,
+                                               qint32 lengthInMilliseconds)
     {
         HashInfo& info = _collection[hash];
 
@@ -63,13 +66,15 @@ namespace PMP::Server
                 lengthInMilliseconds == info.lengthInMilliseconds
                     && title == info.title
                     && artist == info.artist
-                    && album == info.album;
+                    && album == info.album
+                    && albumArtist == info.albumArtist;
 
         if (infoStillTheSame) return;
 
         info.title = title;
         info.artist = artist;
         info.album = album;
+        info.albumArtist = albumArtist;
         info.lengthInMilliseconds = lengthInMilliseconds;
 
         Changed& notification = _pendingNotifications[hash];
@@ -99,13 +104,13 @@ namespace PMP::Server
             qDebug() << "CollectionMonitor: going to send" << _pendingNotifications.size()
                      << "full notifications";
 
-            emitFullNotifications(_pendingNotifications.keys().toVector());
+            emitFullNotifications(ContainerUtil::keysToVector(_pendingNotifications));
         }
         else if (_pendingTagNotificationCount == 0) {
             qDebug() << "CollectionMonitor: going to send" << _pendingNotifications.size()
                      << "availability notifications";
 
-            emitAvailabilityNotifications(_pendingNotifications.keys().toVector());
+            emitAvailabilityNotifications(ContainerUtil::keysToVector(_pendingNotifications));
         }
         else {
             /* we need to split the list */
@@ -145,13 +150,15 @@ namespace PMP::Server
         QVector<CollectionTrackInfo> notifications;
         notifications.reserve(hashes.size());
 
-        for (FileHash h : hashes) {
+        for (FileHash const& h : hashes)
+        {
             auto it = _collection.find(h);
             if (it == _collection.end()) continue; /* disappeared?? */
 
             const HashInfo& value = it.value();
             CollectionTrackInfo info(h, value.isAvailable, value.title, value.artist,
-                                     value.album, value.lengthInMilliseconds);
+                                     value.album, value.albumArtist,
+                                     value.lengthInMilliseconds);
             notifications.append(info);
         }
 
@@ -161,7 +168,8 @@ namespace PMP::Server
     void CollectionMonitor::emitAvailabilityNotifications(QVector<FileHash> hashes) {
         QVector<FileHash> available, unavailable;
 
-        for (FileHash h : hashes) {
+        for (FileHash const& h : hashes)
+        {
             auto it = _collection.find(h);
             if (it == _collection.end()) continue; /* disappeared?? */
 

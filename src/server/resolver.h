@@ -23,6 +23,7 @@
 #include "common/audiodata.h"
 #include "common/filehash.h"
 #include "common/future.h"
+#include "common/nullable.h"
 #include "common/tagdata.h"
 
 #include "analyzer.h"
@@ -117,8 +118,8 @@ namespace PMP::Server
         bool pathStillValid(const FileHash& hash, QString path);
         Nullable<FileHash> getHashForFilePath(QString path);
 
-        const AudioData& findAudioData(const FileHash& hash);
-        const TagData* findTagData(const FileHash& hash);
+        Nullable<AudioData> findAudioData(const FileHash& hash);
+        Nullable<TagData> findTagData(const FileHash& hash);
 
         QVector<FileHash> getAllHashes();
         QVector<CollectionTrackInfo> getHashesTrackInfo(QVector<FileHash> hashes);
@@ -141,7 +142,8 @@ namespace PMP::Server
         void hashBecameAvailable(PMP::FileHash hash);
         void hashBecameUnavailable(PMP::FileHash hash);
         void hashTagInfoChanged(PMP::FileHash hash, QString title, QString artist,
-                                QString album, qint32 lengthInMilliseconds);
+                                QString album, QString albumArtist,
+                                qint32 lengthInMilliseconds);
 
     private:
         enum class FullIndexationStatus
@@ -181,8 +183,6 @@ namespace PMP::Server
 
         uint _fullIndexationNumber;
         FullIndexationStatus _fullIndexationStatus;
-
-        AudioData _emptyAudioData;
     };
 }
 #endif

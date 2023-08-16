@@ -33,6 +33,8 @@ namespace PMP::Client
     public:
         virtual ~CollectionWatcher() {}
 
+        virtual bool isAlbumArtistSupported() const = 0;
+
         virtual void enableCollectionDownloading() = 0;
         virtual bool downloadingInProgress() const = 0;
 
