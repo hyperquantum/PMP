@@ -168,6 +168,11 @@ namespace PMP::Server
         return _tagData.album();
     }
 
+    QString QueueEntry::albumArtist() const
+    {
+        return _tagData.albumArtist();
+    }
+
     void QueueEntry::setStartedNow()
     {
         _started = QDateTime::currentDateTimeUtc();

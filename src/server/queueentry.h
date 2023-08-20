@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -72,6 +72,7 @@ namespace PMP::Server
         QString artist() const;
         QString title() const;
         QString album() const;
+        QString albumArtist() const;
 
         int& fileFinderBackoff() { return _fileFinderBackoff; }
         int& fileFinderFailedCount() { return _fileFinderFailedCount; }

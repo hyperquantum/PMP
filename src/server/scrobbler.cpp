@@ -32,8 +32,9 @@ namespace PMP::Server
      : QObject(parent), _dataProvider(dataProvider), _backend(backend),
         _status(ScrobblerStatus::Unknown),
         _timeoutTimer(new QTimer(this)),
-        _backoffTimer(new QTimer(this)), _backoffMilliseconds(0),
-        _nowPlayingTrackDurationSeconds(-1), _nowPlayingPresent(false),
+        _backoffTimer(new QTimer(this)),
+        _backoffMilliseconds(0),
+        _nowPlayingPresent(false),
         _nowPlayingSent(false), _nowPlayingDone(false)
     {
         // TODO: make sure the data provider is cleaned up
@@ -87,22 +88,17 @@ namespace PMP::Server
 
         _nowPlayingPresent = false;
         //_nowPlayingStartTime =
-        _nowPlayingTitle.clear();
-        _nowPlayingArtist.clear();
-        _nowPlayingAlbum.clear();
-        _nowPlayingTrackDurationSeconds = -1;
+        _nowPlayingTrack.clear();
     }
 
-    void Scrobbler::nowPlayingTrack(QDateTime startTime,
-                                    QString const& title, QString const& artist,
-                                    QString const& album, int trackDurationSeconds)
+    void Scrobbler::nowPlayingTrack(QDateTime startTime, ScrobblingTrack track)
     {
         qDebug() << "Scrobbler::nowPlayingTrack() called";
 
         if (_nowPlayingPresent && _nowPlayingStartTime == startTime)
             return; /* still the same */
 
-        if (title.isEmpty() || artist.isEmpty())
+        if (track.title.isEmpty() || track.artist.isEmpty())
         {
             qDebug() << "cannot update 'now playing' because title or artist is missing";
             nowPlayingNothing();
@@ -113,10 +109,7 @@ namespace PMP::Server
         _nowPlayingSent = false;
         _nowPlayingDone = false;
         _nowPlayingStartTime = startTime;
-        _nowPlayingTitle = title;
-        _nowPlayingArtist = artist;
-        _nowPlayingAlbum = album;
-        _nowPlayingTrackDurationSeconds = trackDurationSeconds;
+        _nowPlayingTrack = track;
 
         checkIfWeHaveSomethingToDo();
     }
@@ -193,10 +186,7 @@ namespace PMP::Server
         _timeoutTimer->stop();
         _timeoutTimer->start(5000);
 
-        _backend->updateNowPlaying(
-            _nowPlayingTitle, _nowPlayingArtist, _nowPlayingAlbum,
-            _nowPlayingTrackDurationSeconds
-        );
+        _backend->updateNowPlaying(_nowPlayingTrack);
         /* then we wait for the gotNowPlayingResult event to arrive */
     }
 
@@ -213,9 +203,10 @@ namespace PMP::Server
         _timeoutTimer->stop();
         _timeoutTimer->start(5000);
 
-        _backend->scrobbleTrack(
-            track.timestamp(), track.title(), track.artist(), track.album()
-        );
+        auto scrobblingTrack = convertTrack(*trackPtr);
+        //scrobblingTrack.durationInSeconds = // TODO
+
+        _backend->scrobbleTrack(track.timestamp(), scrobblingTrack);
         /* then we wait for the gotScrobbleResult event to arrive */
     }
 
@@ -351,6 +342,16 @@ namespace PMP::Server
         _status = newStatus;
         if (oldStatus != newStatus)
             Q_EMIT statusChanged(newStatus);
+    }
+
+    ScrobblingTrack Scrobbler::convertTrack(const TrackToScrobble& track)
+    {
+        ScrobblingTrack t(track.title(),
+                          track.artist(),
+                          track.album(),
+                          track.albumArtist());
+
+        return t;
     }
 
     void Scrobbler::startBackoffTimer(int initialBackoffMilliseconds)

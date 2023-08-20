@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -276,7 +276,16 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     auto scrobblingController = scrobbling.getController();
     QObject::connect(
         &player, &Player::startedPlaying,
-        scrobblingController, &GlobalScrobblingController::updateNowPlaying
+        scrobblingController,
+        [scrobblingController](uint userPlayingFor, QDateTime startTime, QString title,
+                               QString artist, QString album, QString albumArtist,
+                               int trackDurationSeconds)
+        {
+            ScrobblingTrack track(title, artist, album, albumArtist);
+            track.durationInSeconds = trackDurationSeconds;
+
+            scrobblingController->updateNowPlaying(userPlayingFor, startTime, track);
+        }
     );
     QObject::connect(
         &player, &Player::newHistoryEntry,

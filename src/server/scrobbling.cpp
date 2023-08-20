@@ -43,12 +43,9 @@ namespace PMP::Server
     }
 
     void GlobalScrobblingController::updateNowPlaying(uint userId, QDateTime startTime,
-                                                      QString title, QString artist,
-                                                      QString album,
-                                                      int trackDurationSeconds)
+                                                      ScrobblingTrack track)
     {
-        Q_EMIT nowPlayingUpdateRequested(userId, startTime, title, artist, album,
-                                         trackDurationSeconds);
+        Q_EMIT nowPlayingUpdateRequested(userId, startTime, track);
     }
 
     /* ============================================================================ */

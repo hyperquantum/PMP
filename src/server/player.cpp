@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -824,7 +824,8 @@ namespace PMP::Server
                 static_cast<int>(queueEntry->lengthInMilliseconds() / 1000);
 
         Q_EMIT startedPlaying(_userPlayingFor, startTime, queueEntry->title(),
-                            queueEntry->artist(), queueEntry->album(), lengthInSeconds);
+                              queueEntry->artist(), queueEntry->album(),
+                              queueEntry->albumArtist(), lengthInSeconds);
     }
 
     void Player::putInHistoryOrder(QSharedPointer<QueueEntry> entry)

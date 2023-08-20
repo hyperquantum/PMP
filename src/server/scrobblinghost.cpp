@@ -206,8 +206,7 @@ namespace PMP::Server
     }*/
 
     void ScrobblingHost::setNowPlayingTrack(uint userId, QDateTime startTime,
-                                            QString title, QString artist, QString album,
-                                            int trackDurationSeconds)
+                                            ScrobblingTrack track)
     {
         if (!_hostEnabled)
             return;
@@ -218,8 +217,7 @@ namespace PMP::Server
                 auto scrobbler = _scrobblersData[userId][provider].scrobbler;
                 if (!scrobbler) return;
 
-                scrobbler->nowPlayingTrack(startTime, title, artist, album,
-                                           trackDurationSeconds);
+                scrobbler->nowPlayingTrack(startTime, track);
             };
 
         doForAllProviders(action);

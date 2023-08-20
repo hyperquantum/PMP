@@ -25,6 +25,7 @@
 #include "common/scrobblingprovider.h"
 
 #include "result.h"
+#include "scrobblingtrack.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -46,16 +47,14 @@ namespace PMP::Server
         void enableScrobbling();
         void wakeUp(uint userId);
         void updateNowPlaying(uint userId, QDateTime startTime,
-                              QString title, QString artist, QString album,
-                              int trackDurationSeconds = -1);
+                              PMP::Server::ScrobblingTrack track);
 
     Q_SIGNALS:
         void enableScrobblingRequested();
         void wakeUpRequested(uint userId);
 
         void nowPlayingUpdateRequested(uint userId, QDateTime startTime,
-                                       QString title, QString artist, QString album,
-                                       int trackDurationSeconds = -1);
+                                       PMP::Server::ScrobblingTrack track);
     };
 
     class UserScrobblingController : public QObject

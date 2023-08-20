@@ -98,22 +98,17 @@ void BackendMock::setApiToken(bool willBeAcceptedByApi)
     }
 }
 
-void BackendMock::updateNowPlaying(QString title, QString artist, QString album,
-                                   int trackDurationSeconds)
+void BackendMock::updateNowPlaying(ScrobblingTrack track)
 {
     if (state() != ScrobblingBackendState::ReadyForScrobbling)
         return;
 
-    (void)title;
-    (void)artist;
-    (void)album;
-    (void)trackDurationSeconds;
+    (void)track;
 
     QTimer::singleShot(10, this, &BackendMock::pretendSuccessfulNowPlaying);
 }
 
-void BackendMock::scrobbleTrack(QDateTime timestamp, QString title, QString artist,
-                                QString album, int trackDurationSeconds)
+void BackendMock::scrobbleTrack(QDateTime timestamp, ScrobblingTrack track)
 {
     if (state() != ScrobblingBackendState::ReadyForScrobbling)
         return;
@@ -139,10 +134,7 @@ void BackendMock::scrobbleTrack(QDateTime timestamp, QString title, QString arti
         return;
     }
 
-    (void)title;
-    (void)artist;
-    (void)album;
-    (void)trackDurationSeconds;
+    (void)track;
 
     QTimer::singleShot(10, this, &BackendMock::pretendSuccessfulScrobble);
 }
@@ -210,9 +202,11 @@ QVector<std::shared_ptr<TrackToScrobble>> DataProviderMock::getNextTracksToScrob
 
 // =============================== TrackToScrobbleMock =============================== //
 
-TrackToScrobbleMock::TrackToScrobbleMock(QDateTime timestamp, QString title,
-                                         QString artist)
-    : _timestamp(timestamp), _title(title), _artist(artist), _album(""),
+TrackToScrobbleMock::TrackToScrobbleMock(QDateTime timestamp, const QString& title,
+                                         QString const& artist, QString const& album,
+                                         QString const& albumArtist)
+    : _timestamp(timestamp), _title(title), _artist(artist), _album(album),
+      _albumArtist(albumArtist),
       _scrobbled(false), _cannotBeScrobbled(false)
 {
     //
@@ -249,7 +243,7 @@ void TestScrobbler::simpleNowPlayingUpdate()
 
     QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
 
-    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), "Title", "Artist", "Alb");
+    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), createTrack());
 
     QTRY_COMPARE(backend->nowPlayingUpdatedCount(), 1);
 }
@@ -262,7 +256,7 @@ void TestScrobbler::nowPlayingWithAuthentication()
 
     QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
 
-    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), "Title", "Artist", "Alb");
+    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), createTrack());
 
     QTRY_COMPARE(backend->state(), ScrobblingBackendState::WaitingForUserCredentials);
     QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
@@ -284,7 +278,7 @@ void TestScrobbler::nowPlayingWithTrackToScrobble()
 
     QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
 
-    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), "Title", "Artist", "Alb");
+    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), createTrack());
 
     QTRY_COMPARE(backend->nowPlayingUpdatedCount(), 1);
 
@@ -299,7 +293,7 @@ void TestScrobbler::nowPlayingWithImmediateScrobble()
 
     QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
 
-    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), "Title", "Artist", "Alb");
+    scrobbler.nowPlayingTrack(makeDateTime(2019, 6, 9, 19, 12), createTrack());
     // no delay here
     auto track = addTrackToScrobble(dataProvider);
     scrobbler.wakeUp();
@@ -493,6 +487,11 @@ void TestScrobbler::retriesAfterTemporaryUnavailability()
     QTRY_COMPARE(backend->state(), ScrobblingBackendState::ReadyForScrobbling);
 }
 
+ScrobblingTrack TestScrobbler::createTrack()
+{
+    return ScrobblingTrack("Title", "Artist", "Album name", "Album artist");
+}
+
 QDateTime TestScrobbler::makeDateTime(int year, int month, int day,
                                       int hours, int minutes)
 {
@@ -516,7 +515,7 @@ std::shared_ptr<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
                                                            QDateTime time,
                                                            QString title, QString artist)
 {
-    auto track = std::make_shared<TrackToScrobbleMock>(time, title, artist);
+    auto track = std::make_shared<TrackToScrobbleMock>(time, title, artist, "", "");
     dataProvider.add(track);
     return track;
 }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,20 +32,21 @@ namespace PMP::Server
     public:
         TrackForScrobbling(LastFmScrobblingDataProvider* parent, quint32 id,
                            QDateTime timestamp, QString title, QString artist,
-                           QString album)
+                           QString album, QString albumArtist)
          : _parent(parent), _id(id), _timestamp(timestamp), _title(title),
-           _artist(artist), _album(album)
+            _artist(artist), _album(album), _albumArtist(albumArtist)
         {
             //
         }
 
-        QDateTime timestamp() const { return _timestamp; }
-        QString title() const { return _title; }
-        QString artist() const { return _artist; }
-        QString album() const { return _album; }
+        QDateTime timestamp() const override { return _timestamp; }
+        QString title() const override { return _title; }
+        QString artist() const override { return _artist; }
+        QString album() const override { return _album; }
+        QString albumArtist() const override { return _albumArtist; }
 
-        void scrobbledSuccessfully();
-        void scrobbleIgnored();
+        void scrobbledSuccessfully() override;
+        void scrobbleIgnored() override;
 
     private:
         LastFmScrobblingDataProvider* _parent;
@@ -54,6 +55,7 @@ namespace PMP::Server
         QString _title;
         QString _artist;
         QString _album;
+        QString _albumArtist;
     };
 
     void LastFmScrobblingDataProvider::TrackForScrobbling::scrobbledSuccessfully()
@@ -95,7 +97,7 @@ namespace PMP::Server
         auto earliestTime = QDateTime::currentDateTimeUtc().addDays(-daysInPast);
         auto fetchSize = 5;
 
-        auto history =
+        const auto history =
                 database->getUserHistoryForScrobbling(_user, _fetchedUpTo + 1,
                                                       earliestTime, fetchSize);
         if (history.empty()) return {}; /* nothing more to scrobble */
@@ -105,7 +107,7 @@ namespace PMP::Server
 
         QVector<uint> hashIds;
         hashIds.reserve(history.size());
-        Q_FOREACH(auto historyRecord, history)
+        for (auto const& historyRecord : history)
         {
             hashIds << historyRecord.hashId;
         }
@@ -113,7 +115,7 @@ namespace PMP::Server
         QVector<std::shared_ptr<TrackToScrobble>> result;
         result.reserve(history.size());
 
-        Q_FOREACH(auto historyRecord, history)
+        for (auto const& historyRecord : history)
         {
             auto trackInfo = _resolver->getHashTrackInfo(historyRecord.hashId);
 
@@ -131,12 +133,13 @@ namespace PMP::Server
             }
 
             auto track =
-                new TrackForScrobbling(
+                std::make_shared<TrackForScrobbling>(
                     this, historyRecord.id, historyRecord.start,
-                        trackInfo.title(), trackInfo.artist(), trackInfo.album()
+                    trackInfo.title(), trackInfo.artist(), trackInfo.album(),
+                    trackInfo.albumArtist()
                 );
 
-            result << std::shared_ptr<TrackToScrobble>(track);
+            result << track;
         }
 
         return result;

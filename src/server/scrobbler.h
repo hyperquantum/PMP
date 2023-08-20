@@ -53,10 +53,7 @@ namespace PMP::Server
     public Q_SLOTS:
         void wakeUp();
         void nowPlayingNothing();
-        void nowPlayingTrack(QDateTime startTime,
-                             QString const& title, QString const& artist,
-                             QString const& album,
-                             int trackDurationSeconds = -1);
+        void nowPlayingTrack(QDateTime startTime, PMP::Server::ScrobblingTrack track);
 
     Q_SIGNALS:
         void statusChanged(PMP::ScrobblerStatus status);
@@ -72,6 +69,7 @@ namespace PMP::Server
         void reevaluateStatus();
 
     private:
+        static ScrobblingTrack convertTrack(TrackToScrobble const& track);
         void checkIfWeHaveSomethingToDo();
         void sendNowPlaying();
         void sendNextScrobble();
@@ -85,12 +83,9 @@ namespace PMP::Server
         std::shared_ptr<TrackToScrobble> _pendingScrobble;
         QTimer* _timeoutTimer;
         QTimer* _backoffTimer;
-        QString _nowPlayingTitle;
-        QString _nowPlayingArtist;
-        QString _nowPlayingAlbum;
+        ScrobblingTrack _nowPlayingTrack;
         QDateTime _nowPlayingStartTime;
         int _backoffMilliseconds;
-        int _nowPlayingTrackDurationSeconds;
         bool _nowPlayingPresent;
         bool _nowPlayingSent;
         bool _nowPlayingDone;

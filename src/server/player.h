@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -134,7 +134,7 @@ namespace PMP::Server
         void userPlayingForChanged(quint32 user);
         void startedPlaying(uint userPlayingFor, QDateTime startTime,
                             QString title, QString artist, QString album,
-                            int trackDurationSeconds);
+                            QString albumArtist, int trackDurationSeconds);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
 
     private Q_SLOTS:

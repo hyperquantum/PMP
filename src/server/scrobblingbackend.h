@@ -23,6 +23,7 @@
 #include "common/future.h"
 
 #include "result.h"
+#include "scrobblingtrack.h"
 
 #include <QObject>
 #include <QtDebug>
@@ -59,11 +60,8 @@ namespace PMP::Server
 
         virtual void initialize();
 
-        virtual void updateNowPlaying(QString title, QString artist, QString album,
-                                      int trackDurationSeconds = -1) = 0;
-
-        virtual void scrobbleTrack(QDateTime timestamp, QString title, QString artist,
-                                   QString album, int trackDurationSeconds = -1) = 0;
+        virtual void updateNowPlaying(ScrobblingTrack track) = 0;
+        virtual void scrobbleTrack(QDateTime timestamp, ScrobblingTrack track) = 0;
 
         virtual SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
                                                                  QString password) = 0;

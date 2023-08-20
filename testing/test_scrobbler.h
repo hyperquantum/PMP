@@ -50,11 +50,10 @@ public:
 public Q_SLOTS:
     void initialize() override;
 
-    void updateNowPlaying(QString title, QString artist, QString album,
-                          int trackDurationSeconds = -1) override;
+    void updateNowPlaying(PMP::Server::ScrobblingTrack track) override;
 
-    void scrobbleTrack(QDateTime timestamp, QString title, QString artist, QString album,
-                       int trackDurationSeconds = -1) override;
+    void scrobbleTrack(QDateTime timestamp,
+                       PMP::Server::ScrobblingTrack track) override;
 
 protected:
     bool needsSsl() const override { return false; }
@@ -81,12 +80,15 @@ private:
 class TrackToScrobbleMock : public PMP::Server::TrackToScrobble
 {
 public:
-    TrackToScrobbleMock(QDateTime timestamp, QString title, QString artist);
+    TrackToScrobbleMock(QDateTime timestamp, QString const& title,
+                        QString const& album, QString const& artist,
+                        QString const& albumArtist);
 
     QDateTime timestamp() const override { return _timestamp; }
     QString title() const override { return _title; }
     QString artist() const override { return _artist; }
     QString album() const override { return _album; }
+    QString albumArtist() const override { return _albumArtist; }
 
     void scrobbledSuccessfully() override;
     void scrobbleIgnored() override;
@@ -97,7 +99,7 @@ public:
 
 private:
     QDateTime _timestamp, _scrobbledTimestamp;
-    QString _title, _artist, _album;
+    QString _title, _artist, _album, _albumArtist;
     bool _scrobbled;
     bool _cannotBeScrobbled;
 };
@@ -133,7 +135,8 @@ private Q_SLOTS:
     void retriesAfterTemporaryUnavailability();
 
 private:
-    QDateTime makeDateTime(int year, int month, int day, int hours, int minutes);
+    static PMP::Server::ScrobblingTrack createTrack();
+    static QDateTime makeDateTime(int year, int month, int day, int hours, int minutes);
     std::shared_ptr<TrackToScrobbleMock> addTrackToScrobble(
                                                           DataProviderMock& dataProvider);
     std::shared_ptr<TrackToScrobbleMock> addTrackToScrobble(

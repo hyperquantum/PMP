@@ -143,12 +143,8 @@ namespace PMP::Server
         QString username() const;
         QString sessionKey() const;
 
-        void updateNowPlaying(QString title, QString artist,
-                              QString album, int trackDurationSeconds = -1) override;
-
-        void scrobbleTrack(QDateTime timestamp, QString title,
-                           QString artist, QString album,
-                           int trackDurationSeconds = -1) override;
+        void updateNowPlaying(ScrobblingTrack track) override;
+        void scrobbleTrack(QDateTime timestamp, ScrobblingTrack track) override;
 
         SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
                                                          QString password) override;
@@ -173,17 +169,11 @@ namespace PMP::Server
                                                                  QString password);
 
         LastFmNowPlayingRequestHandler* doUpdateNowPlayingCall(QString sessionKey,
-                                                               QString title,
-                                                               QString artist,
-                                                               QString album,
-                                                           int trackDurationSeconds = -1);
+                                                               ScrobblingTrack track);
 
         LastFmScrobbleRequestHandler* doScrobbleCall(QString sessionKey,
                                                      QDateTime timestamp,
-                                                     QString title,
-                                                     QString artist,
-                                                     QString album,
-                                                     int trackDurationSeconds = -1);
+                                                     ScrobblingTrack track);
 
         static void signCall(QVector<QPair<QString, QString>>& parameters);
         QNetworkReply* signAndSendPost(QVector<QPair<QString, QString>> parameters);

@@ -27,6 +27,7 @@
 #include "common/scrobblingprovider.h"
 
 #include "result.h"
+#include "scrobblingtrack.h"
 
 #include <QDateTime>
 #include <QObject>
@@ -70,8 +71,7 @@ namespace PMP::Server
 
         //void setNowPlayingNothing(uint userId);
         void setNowPlayingTrack(uint userId, QDateTime startTime,
-                                QString title, QString artist, QString album,
-                                int trackDurationSeconds = -1);
+                                PMP::Server::ScrobblingTrack track);
 
     Q_SIGNALS:
         void scrobblingProviderInfoSignal(uint userId, PMP::ScrobblingProvider provider,

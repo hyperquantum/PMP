@@ -355,12 +355,14 @@ namespace PMP::Server
         auto titleText = scrobbleElement.firstChildElement("track").text();
         auto artistText = scrobbleElement.firstChildElement("artist").text();
         auto albumText = scrobbleElement.firstChildElement("album").text();
+        auto albumArtistText = scrobbleElement.firstChildElement("albumArtist").text();
 
         qDebug() << "scrobble feedback received:\n"
                  << " timestamp: " << QString::number(timestampNumber) << "\n"
                  << " title:" << titleText << "\n"
                  << " artist:" << artistText << "\n"
-                 << " album:" << albumText;
+                 << " album:" << albumText << "\n"
+                 << " album artist:" << albumArtistText;
 
         if (scrobbleAccepted)
             Q_EMIT scrobbleSuccessful();
@@ -385,7 +387,7 @@ namespace PMP::Server
     const char* LastFmScrobblingBackend::apiKey = "fc44ba796d201052f53f92818834f907";
     const char* LastFmScrobblingBackend::apiSecret = "3e58b46e070c34718686e0dfbd02d22f";
     const char* LastFmScrobblingBackend::userAgent =
-                    PMP_PRODUCT_NAME " " PMP_VERSION_DISPLAY " (LFM scrobbler v0.0.2)";
+                    PMP_PRODUCT_NAME " " PMP_VERSION_DISPLAY " (LFM scrobbler v0.0.3)";
     const char* LastFmScrobblingBackend::contentTypeForPostRequest =
                                                       "application/x-www-form-urlencoded";
 
@@ -474,15 +476,12 @@ namespace PMP::Server
         return handler;
     }
 
-    void LastFmScrobblingBackend::updateNowPlaying(QString title, QString artist,
-                                                   QString album,
-                                                   int trackDurationSeconds)
+    void LastFmScrobblingBackend::updateNowPlaying(ScrobblingTrack track)
     {
         if (state() != ScrobblingBackendState::ReadyForScrobbling)
             return;
 
-        auto handler = doUpdateNowPlayingCall(_sessionKey, title, artist, album,
-                                              trackDurationSeconds);
+        auto handler = doUpdateNowPlayingCall(_sessionKey, track);
 
         connect(
             handler, &LastFmNowPlayingRequestHandler::nowPlayingUpdateSuccessful,
@@ -494,15 +493,13 @@ namespace PMP::Server
         );
     }
 
-    void LastFmScrobblingBackend::scrobbleTrack(QDateTime timestamp, QString title,
-                                                QString artist, QString album,
-                                                int trackDurationSeconds)
+    void LastFmScrobblingBackend::scrobbleTrack(QDateTime timestamp,
+                                                ScrobblingTrack track)
     {
         if (state() != ScrobblingBackendState::ReadyForScrobbling)
             return;
 
-        auto handler = doScrobbleCall(_sessionKey, timestamp, title, artist, album,
-                                      trackDurationSeconds);
+        auto handler = doScrobbleCall(_sessionKey, timestamp, track);
 
         connect(
             handler, &LastFmScrobbleRequestHandler::scrobbleSuccessful,
@@ -519,27 +516,28 @@ namespace PMP::Server
     }
 
     LastFmNowPlayingRequestHandler* LastFmScrobblingBackend::doUpdateNowPlayingCall(
-                                                                 QString sessionKey,
-                                                                 QString title,
-                                                                 QString artist,
-                                                                 QString album,
-                                                                 int trackDurationSeconds)
+                                                                    QString sessionKey,
+                                                                    ScrobblingTrack track)
     {
         QVector<QPair<QString, QString>> parameters;
         parameters << QPair<QString, QString>("method", "track.updateNowPlaying");
-        if (!album.isEmpty())
+        if (!track.album.isEmpty())
         {
-            parameters << QPair<QString, QString>("album", album);
+            parameters << QPair<QString, QString>("album", track.album);
+        }
+        if (!track.albumArtist.isEmpty() && track.artist != track.albumArtist)
+        {
+            parameters << QPair<QString, QString>("albumArtist", track.albumArtist);
         }
         parameters << QPair<QString, QString>("api_key", apiKey);
-        parameters << QPair<QString, QString>("artist", artist);
-        if (trackDurationSeconds > 0)
+        parameters << QPair<QString, QString>("artist", track.artist);
+        if (track.durationInSeconds > 0)
         {
-            auto durationText = QString::number(trackDurationSeconds);
+            auto durationText = QString::number(track.durationInSeconds);
             parameters << QPair<QString, QString>("duration", durationText);
         }
         parameters << QPair<QString, QString>("sk", sessionKey);
-        parameters << QPair<QString, QString>("track", title);
+        parameters << QPair<QString, QString>("track", track.title);
 
         auto nowPlayingReply = signAndSendPost(parameters);
 
@@ -549,32 +547,33 @@ namespace PMP::Server
     }
 
     LastFmScrobbleRequestHandler* LastFmScrobblingBackend::doScrobbleCall(
-                                                                 QString sessionKey,
-                                                                 QDateTime timestamp,
-                                                                 QString title,
-                                                                 QString artist,
-                                                                 QString album,
-                                                                 int trackDurationSeconds)
+                                                                    QString sessionKey,
+                                                                    QDateTime timestamp,
+                                                                    ScrobblingTrack track)
     {
         auto timestampAsUnixTime = timestamp.toSecsSinceEpoch();
         auto timestampText = QString::number(timestampAsUnixTime);
 
         QVector<QPair<QString, QString>> parameters;
         parameters << QPair<QString, QString>("method", "track.scrobble");
-        if (!album.isEmpty())
+        if (!track.album.isEmpty())
         {
-            parameters << QPair<QString, QString>("album", album);
+            parameters << QPair<QString, QString>("album", track.album);
+        }
+        if (!track.albumArtist.isEmpty() && track.artist != track.albumArtist)
+        {
+            parameters << QPair<QString, QString>("albumArtist", track.albumArtist);
         }
         parameters << QPair<QString, QString>("api_key", apiKey);
-        parameters << QPair<QString, QString>("artist", artist);
-        if (trackDurationSeconds > 0)
+        parameters << QPair<QString, QString>("artist", track.artist);
+        if (track.durationInSeconds > 0)
         {
-            auto durationText = QString::number(trackDurationSeconds);
+            auto durationText = QString::number(track.durationInSeconds);
             parameters << QPair<QString, QString>("duration", durationText);
         }
         parameters << QPair<QString, QString>("sk", sessionKey);
         parameters << QPair<QString, QString>("timestamp", timestampText);
-        parameters << QPair<QString, QString>("track", title);
+        parameters << QPair<QString, QString>("track", track.title);
 
         auto scrobbleReply = signAndSendPost(parameters);
 
@@ -652,7 +651,7 @@ namespace PMP::Server
         std::sort(parameters.begin(), parameters.end());
 
         QByteArray signData;
-        Q_FOREACH(auto parameter, parameters)
+        for (auto const& parameter : qAsConst(parameters))
         {
             signData += parameter.first.toUtf8();
             signData += parameter.second.toUtf8();
