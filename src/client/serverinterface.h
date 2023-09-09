@@ -42,38 +42,74 @@ namespace PMP::Client
     class ServerInterface : public QObject
     {
         Q_OBJECT
+    protected:
+        ServerInterface() {}
     public:
-        explicit ServerInterface(ServerConnection* connection);
+        ~ServerInterface() {}
 
-        LocalHashIdRepository* hashIdRepository() const;
+        virtual LocalHashIdRepository* hashIdRepository() const = 0;
 
-        AuthenticationController& authenticationController();
+        virtual AuthenticationController& authenticationController() = 0;
 
-        GeneralController& generalController();
+        virtual GeneralController& generalController() = 0;
 
-        PlayerController& playerController();
-        CurrentTrackMonitor& currentTrackMonitor();
+        virtual PlayerController& playerController() = 0;
+        virtual CurrentTrackMonitor& currentTrackMonitor() = 0;
 
-        QueueController& queueController();
-        AbstractQueueMonitor& queueMonitor();
-        QueueEntryInfoStorage& queueEntryInfoStorage();
-        QueueEntryInfoFetcher& queueEntryInfoFetcher();
+        virtual QueueController& queueController() = 0;
+        virtual AbstractQueueMonitor& queueMonitor() = 0;
+        virtual QueueEntryInfoStorage& queueEntryInfoStorage() = 0;
+        virtual QueueEntryInfoFetcher& queueEntryInfoFetcher() = 0;
 
-        DynamicModeController& dynamicModeController();
+        virtual DynamicModeController& dynamicModeController() = 0;
 
-        HistoryController& historyController();
+        virtual HistoryController& historyController() = 0;
 
-        CollectionWatcher& collectionWatcher();
-        UserDataFetcher& userDataFetcher();
+        virtual CollectionWatcher& collectionWatcher() = 0;
+        virtual UserDataFetcher& userDataFetcher() = 0;
 
-        bool isLoggedIn() const;
-        quint32 userLoggedInId() const;
-        QString userLoggedInName() const;
+        virtual bool isLoggedIn() const = 0;
+        virtual quint32 userLoggedInId() const = 0;
+        virtual QString userLoggedInName() const = 0;
 
-        bool connected() const { return _connected; }
+        virtual bool connected() const = 0;
 
     Q_SIGNALS:
         void connectedChanged();
+    };
+
+    class ServerInterfaceImpl : public ServerInterface
+    {
+        Q_OBJECT
+    public:
+        explicit ServerInterfaceImpl(ServerConnection* connection);
+
+        LocalHashIdRepository* hashIdRepository() const override;
+
+        AuthenticationController& authenticationController() override;
+
+        GeneralController& generalController() override;
+
+        PlayerController& playerController() override;
+        CurrentTrackMonitor& currentTrackMonitor() override;
+
+        QueueController& queueController() override;
+        AbstractQueueMonitor& queueMonitor() override;
+        QueueEntryInfoStorage& queueEntryInfoStorage() override;
+        QueueEntryInfoFetcher& queueEntryInfoFetcher() override;
+
+        DynamicModeController& dynamicModeController() override;
+
+        HistoryController& historyController() override;
+
+        CollectionWatcher& collectionWatcher() override;
+        UserDataFetcher& userDataFetcher() override;
+
+        bool isLoggedIn() const override;
+        quint32 userLoggedInId() const override;
+        QString userLoggedInName() const override;
+
+        bool connected() const override { return _connected; }
 
     private:
         ServerConnection* _connection;

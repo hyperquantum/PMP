@@ -509,7 +509,7 @@ namespace PMP
     void MainWindow::onDoConnect(QString server, uint port)
     {
         _connection = new ServerConnection(this, _hashIdRepository);
-        _serverInterface = new ServerInterface(_connection);
+        _serverInterface = new ServerInterfaceImpl(_connection);
 
         auto* generalController = &_serverInterface->generalController();
 
