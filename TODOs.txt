@@ -111,6 +111,7 @@ IDEAS
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
  * hash tool: by default only output the hash of the file, no other information
  * rename "GUI Remote" to "Desktop Remote"
+ * detect different rips of the same track/album and treat them as one, with unified scores
 
 
 USER FRIENDLINESS
