@@ -67,7 +67,7 @@ namespace PMP::Client
                                  each track is fetched */
 
         _collectionWatcher->enableCollectionDownloading();
-        auto collection = _collectionWatcher->getCollection();
+        auto const collection = _collectionWatcher->getCollection();
 
         for (auto it = collection.constBegin(); it != collection.constEnd(); ++it)
         {
@@ -133,11 +133,11 @@ namespace PMP::Client
     {
         if (_hashesToFetchForUsers.isEmpty()) return;
 
-        for (quint32 userId : _hashesToFetchForUsers.keys())
+        for (auto it = _hashesToFetchForUsers.constBegin();
+             it != _hashesToFetchForUsers.constEnd();
+             ++it)
         {
-            _connection->sendHashUserDataRequest(
-                userId, _hashesToFetchForUsers.value(userId).values()
-            );
+            _connection->sendHashUserDataRequest(it.key(), it.value().values());
         }
 
         _hashesToFetchForUsers.clear();
