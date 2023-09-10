@@ -35,14 +35,25 @@ namespace PMP::Client
     class QueueHashesMonitor : public QObject
     {
         Q_OBJECT
+    protected:
+        explicit QueueHashesMonitor(QObject* parent = nullptr) {}
     public:
-        QueueHashesMonitor(QObject* parent, AbstractQueueMonitor* queueMonitor,
-                           QueueEntryInfoStorage* queueEntryInfoStorage);
+        virtual ~QueueHashesMonitor() {}
 
-        bool isPresentInQueue(LocalHashId hashId) const;
+        virtual bool isPresentInQueue(LocalHashId hashId) const = 0;
 
     Q_SIGNALS:
         void hashInQueuePresenceChanged(LocalHashId hashId);
+    };
+
+    class QueueHashesMonitorImpl : public QueueHashesMonitor
+    {
+        Q_OBJECT
+    public:
+        QueueHashesMonitorImpl(QObject* parent, AbstractQueueMonitor* queueMonitor,
+                               QueueEntryInfoStorage* queueEntryInfoStorage);
+
+        bool isPresentInQueue(LocalHashId hashId) const override;
 
     private Q_SLOTS:
         void onQueueResetted(int queueLength);

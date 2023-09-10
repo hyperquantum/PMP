@@ -674,9 +674,9 @@ namespace PMP
         setCentralWidget(mainCentralWidget);
 
         auto queueHashesMonitor =
-                new QueueHashesMonitor(_serverInterface,
-                                       &_serverInterface->queueMonitor(),
-                                       &_serverInterface->queueEntryInfoStorage());
+                new QueueHashesMonitorImpl(_serverInterface,
+                                           &_serverInterface->queueMonitor(),
+                                           &_serverInterface->queueEntryInfoStorage());
 
         auto collectionWidget =
                 new CollectionWidget(_musicCollectionDock, _serverInterface,
