@@ -661,7 +661,7 @@ namespace PMP
         _notificationBar->addNotification(delayedStartNotification);
 
         auto* userForStatisticsDisplay =
-            new UserForStatisticsDisplay(this, _serverInterface);
+            new UserForStatisticsDisplayImpl(this, _serverInterface);
 
         _mainWidget = new MainWidget(mainCentralWidget);
         _mainWidget->setConnection(_serverInterface, userForStatisticsDisplay);

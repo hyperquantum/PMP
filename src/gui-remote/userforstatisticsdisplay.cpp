@@ -29,9 +29,9 @@ using namespace PMP::Client;
 
 namespace PMP
 {
-    UserForStatisticsDisplay::UserForStatisticsDisplay(QObject *parent,
-                                                       ServerInterface* serverInterface)
-      : QObject{parent},
+    UserForStatisticsDisplayImpl::UserForStatisticsDisplayImpl(QObject *parent,
+                                                         ServerInterface* serverInterface)
+     : UserForStatisticsDisplay(parent),
         _serverInterface(serverInterface)
     {
         auto* playerController = &_serverInterface->playerController();
@@ -79,7 +79,7 @@ namespace PMP
         );
     }
 
-    Nullable<quint32> UserForStatisticsDisplay::userId() const
+    Nullable<quint32> UserForStatisticsDisplayImpl::userId() const
     {
         if (_unknown)
             return null;
@@ -87,7 +87,7 @@ namespace PMP
         return _userId;
     }
 
-    Nullable<bool> UserForStatisticsDisplay::isPersonal() const
+    Nullable<bool> UserForStatisticsDisplayImpl::isPersonal() const
     {
         if (_unknown)
             return null;
@@ -95,7 +95,7 @@ namespace PMP
         return _userId > 0;
     }
 
-    void UserForStatisticsDisplay::setPersonal()
+    void UserForStatisticsDisplayImpl::setPersonal()
     {
         auto* authenticationController = &_serverInterface->authenticationController();
         auto loggedInUserId = authenticationController->userLoggedInId();
@@ -112,7 +112,7 @@ namespace PMP
         Q_EMIT userChanged();
     }
 
-    void UserForStatisticsDisplay::setPublic()
+    void UserForStatisticsDisplayImpl::setPublic()
     {
         if (_userId == 0 && !_unknown)
             return; /* no change */

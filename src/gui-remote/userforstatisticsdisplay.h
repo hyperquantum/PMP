@@ -34,18 +34,33 @@ namespace PMP
     class UserForStatisticsDisplay : public QObject
     {
         Q_OBJECT
+    protected:
+        explicit UserForStatisticsDisplay(QObject* parent = nullptr) {}
     public:
-        UserForStatisticsDisplay(QObject* parent,
-                                 Client::ServerInterface* serverInterface);
+        virtual ~UserForStatisticsDisplay() {}
 
-        Nullable<quint32> userId() const;
-        Nullable<bool> isPersonal() const;
+        virtual Nullable<quint32> userId() const = 0;
+        virtual Nullable<bool> isPersonal() const = 0;
 
-        void setPersonal();
-        void setPublic();
+        virtual void setPersonal() = 0;
+        virtual void setPublic() = 0;
 
     Q_SIGNALS:
         void userChanged();
+    };
+
+    class UserForStatisticsDisplayImpl : public UserForStatisticsDisplay
+    {
+        Q_OBJECT
+    public:
+        UserForStatisticsDisplayImpl(QObject* parent,
+                                     Client::ServerInterface* serverInterface);
+
+        Nullable<quint32> userId() const override;
+        Nullable<bool> isPersonal() const override;
+
+        void setPersonal() override;
+        void setPublic() override;
 
     private:
         Client::ServerInterface* _serverInterface;
