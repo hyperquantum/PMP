@@ -36,19 +36,33 @@ namespace PMP::Client
     class UserDataFetcher : public QObject
     {
         Q_OBJECT
+    protected:
+        explicit UserDataFetcher(QObject* parent = nullptr) {}
     public:
+        virtual ~UserDataFetcher() {}
+
         struct HashData;
 
-        UserDataFetcher(QObject* parent, CollectionWatcher* collectionWatcher,
-                        ServerConnection* connection);
+        virtual void enableAutoFetchForUser(quint32 userId) = 0;
 
-        void enableAutoFetchForUser(quint32 userId);
-
-        HashData const* getHashDataForUser(quint32 userId, LocalHashId hashId);
+        virtual HashData const* getHashDataForUser(quint32 userId,
+                                                   LocalHashId hashId) = 0;
 
     Q_SIGNALS:
         void dataReceivedForUser(quint32 userId);
         void userTrackDataChanged(quint32 userId, LocalHashId hashId);
+    };
+
+    class UserDataFetcherImpl : public UserDataFetcher
+    {
+        Q_OBJECT
+    public:
+        UserDataFetcherImpl(QObject* parent, CollectionWatcher* collectionWatcher,
+                            ServerConnection* connection);
+
+        void enableAutoFetchForUser(quint32 userId) override;
+
+        HashData const* getHashDataForUser(quint32 userId, LocalHashId hashId) override;
 
     private Q_SLOTS:
         //void connected();

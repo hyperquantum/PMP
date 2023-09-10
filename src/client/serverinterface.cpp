@@ -172,7 +172,7 @@ namespace PMP::Client
         if (!_userDataFetcher)
         {
             _userDataFetcher =
-                    new UserDataFetcher(this, &collectionWatcher(), _connection);
+                    new UserDataFetcherImpl(this, &collectionWatcher(), _connection);
         }
 
         return *_userDataFetcher;
