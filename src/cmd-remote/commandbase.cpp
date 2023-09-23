@@ -161,6 +161,14 @@ namespace PMP
             errorOutput = "server is too old and does not support this action";
             break;
 
+        case ResultMessageErrorCode::ExtensionNotSupported:
+            errorOutput = "server does not support this feature";
+            break;
+
+        case ResultMessageErrorCode::ConnectionToServerBroken:
+            errorOutput = "connection to the server was lost";
+            break;
+
         case ResultMessageErrorCode::NonFatalInternalServerError:
             errorOutput = "internal server error (non-fatal)";
             break;
