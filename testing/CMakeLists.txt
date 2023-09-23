@@ -140,4 +140,5 @@ target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpCommon
 target_link_libraries(test_sortedcollectiontablemodel Qt5::Gui Qt5::Widgets)
 target_link_libraries(test_sortedcollectiontablemodel Qt5::Core Qt5::Network Qt5::Test)
 target_link_libraries(test_sortedcollectiontablemodel ${TAGLIB_LIBRARIES})
-add_test(test_sortedcollectiontablemodel test_sortedcollectiontablemodel)
+add_test(NAME test_sortedcollectiontablemodel
+         COMMAND test_sortedcollectiontablemodel -platform offscreen)
