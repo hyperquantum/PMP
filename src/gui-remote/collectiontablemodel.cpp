@@ -478,6 +478,11 @@ namespace PMP
         return outerIndex;
     }
 
+    void SortedCollectionTableModel::markRowAsChanged(int index)
+    {
+        Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 4 - 1));
+    }
+
     void SortedCollectionTableModel::markLeftColumnAsChanged()
     {
         Q_EMIT dataChanged(
@@ -589,32 +594,41 @@ namespace PMP
                    << "; hash ID:" << newTrackData.hashId();
 
         int oldOuterIndex = _innerToOuterIndexMap[innerIndex];
-        int newOuterIndex = findOuterIndexMapIndexForInsert(newTrackData);
+        int insertionIndex = findOuterIndexMapIndexForInsert(newTrackData);
 
-        /* moving the track after itself means we need to subtract one from the
-           destination index */
-        if (newOuterIndex > oldOuterIndex)
-            newOuterIndex--;
-
-        if (newOuterIndex != oldOuterIndex)
+        if (insertionIndex >= oldOuterIndex && insertionIndex - 1 <= oldOuterIndex)
         {
-            beginMoveRows(QModelIndex(), oldOuterIndex, oldOuterIndex,
-                          QModelIndex(), newOuterIndex);
+            /* no row move necessary, just update the row */
+            track = newTrackData;
 
-            _outerToInnerIndexMap.move(oldOuterIndex, newOuterIndex);
-
-            /* elements between the old and new index got a new outer index;
-               update the inner to outer map to reflect this */
-            rebuildInnerMap(qMin(oldOuterIndex, newOuterIndex),
-                            qMax(oldOuterIndex, newOuterIndex) + 1);
-
-            endMoveRows();
+            Q_EMIT dataChanged(createIndex(oldOuterIndex, 0),
+                               createIndex(oldOuterIndex, 4 - 1));
+            return;
         }
 
-        track = newTrackData;
+        qDebug() << "track update causing row move:"
+                 << " old index:" << oldOuterIndex
+                 << " insertion index:" << insertionIndex;
 
-        Q_EMIT dataChanged(createIndex(newOuterIndex, 0),
-                           createIndex(newOuterIndex, 4 - 1));
+        bool moving = beginMoveRows(QModelIndex(), oldOuterIndex, oldOuterIndex,
+                                    QModelIndex(), insertionIndex);
+        Q_ASSERT_X(moving, "SortedCollectionTableModel::updateTrack", "row move failed");
+
+        int outerIndexAfterMove =
+            (insertionIndex > oldOuterIndex) ? insertionIndex - 1 : insertionIndex;
+
+        track = newTrackData;
+        _outerToInnerIndexMap.move(oldOuterIndex, outerIndexAfterMove);
+
+        /* elements between the old and new index got a new outer index;
+               update the inner to outer map to reflect this */
+        rebuildInnerMap(qMin(oldOuterIndex, outerIndexAfterMove),
+                        qMax(oldOuterIndex, outerIndexAfterMove) + 1);
+
+        endMoveRows();
+
+        /* not sure if this is really necessary */
+        markRowAsChanged(outerIndexAfterMove);
     }
 
     void SortedCollectionTableModel::sort(int column, Qt::SortOrder order)
@@ -693,6 +707,16 @@ namespace PMP
         if (rowIndex < 0 || rowIndex >= _tracks.size()) { return nullptr; }
 
         return _tracks.at(_outerToInnerIndexMap.at(rowIndex));
+    }
+
+    int SortedCollectionTableModel::trackIndex(Client::LocalHashId hashId) const
+    {
+        auto it = _hashesToInnerIndexes.constFind(hashId);
+        if (it == _hashesToInnerIndexes.constEnd())
+            return -1;
+
+        auto innerIndex = it.value();
+        return _innerToOuterIndexMap[innerIndex];
     }
 
     int SortedCollectionTableModel::rowCount(const QModelIndex& parent) const

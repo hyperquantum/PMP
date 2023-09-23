@@ -257,6 +257,12 @@ target_link_libraries(PmpClient Qt5::Core Qt5::Network)
 add_library(PmpCmdRemote OBJECT ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS})
 target_link_libraries(PmpCmdRemote Qt5::Core Qt5::Network)
 
+add_library(PmpGuiRemote OBJECT
+    ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
+    ${PMP_GUI_REMOTE_UICS} ${PMP_GUI_REMOTE_QRCS}
+)
+target_link_libraries(PmpGuiRemote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
+
 add_library(PmpServer OBJECT ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS})
 target_link_libraries(PmpServer Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
 
@@ -296,11 +302,10 @@ target_link_libraries(PMP-Cmd-Remote
 add_executable(PMP-GUI-Remote
     ${PMP_WIN32_FLAG}
     gui-remote/gui-remote-main.cpp
-    ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
-    ${PMP_GUI_REMOTE_UICS}
-    ${PMP_GUI_REMOTE_QRCS}
+
 )
 target_link_libraries(PMP-GUI-Remote
+    $<TARGET_OBJECTS:PmpGuiRemote>
     $<TARGET_OBJECTS:PmpClient>
     $<TARGET_OBJECTS:PmpCommon>
 )

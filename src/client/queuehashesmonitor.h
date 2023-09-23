@@ -36,7 +36,7 @@ namespace PMP::Client
     {
         Q_OBJECT
     protected:
-        explicit QueueHashesMonitor(QObject* parent = nullptr) {}
+        explicit QueueHashesMonitor(QObject* parent = nullptr) : QObject(parent) {}
     public:
         virtual ~QueueHashesMonitor() {}
 

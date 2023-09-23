@@ -65,6 +65,7 @@ namespace PMP
 
         Client::CollectionTrackInfo const* trackAt(const QModelIndex& index) const;
         Client::CollectionTrackInfo const* trackAt(int rowIndex) const;
+        int trackIndex(Client::LocalHashId hashId) const;
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -100,6 +101,7 @@ namespace PMP
         int findOuterIndexMapIndexForInsert(Client::CollectionTrackInfo const& track,
                                             int searchRangeBegin, int searchRangeEnd);
         int findOuterIndexForHash(Client::LocalHashId hashId);
+        void markRowAsChanged(int index);
         void markLeftColumnAsChanged();
         void markEverythingAsChanged();
 

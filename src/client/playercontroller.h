@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -80,7 +80,7 @@ namespace PMP::Client
         void delayedStartActiveInfoChanged();
 
     protected:
-        explicit PlayerController(QObject* parent) : QObject(parent) {}
+        explicit PlayerController(QObject* parent = nullptr) : QObject(parent) {}
     };
 }
 #endif
