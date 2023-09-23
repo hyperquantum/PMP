@@ -722,7 +722,7 @@ namespace PMP
             }
         }
 
-        return QVariant();
+        return {};
     }
 
     QVariant SortedCollectionTableModel::data(const QModelIndex& index, int role) const
