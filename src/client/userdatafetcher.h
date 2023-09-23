@@ -37,7 +37,7 @@ namespace PMP::Client
     {
         Q_OBJECT
     protected:
-        explicit UserDataFetcher(QObject* parent = nullptr) {}
+        explicit UserDataFetcher(QObject* parent = nullptr) : QObject(parent) {}
     public:
         virtual ~UserDataFetcher() {}
 

@@ -43,6 +43,9 @@ namespace
             [output](const QModelIndex& sourceParent, int sourceStart, int sourceEnd,
                      const QModelIndex& destinationParent, int destinationRow)
             {
+                Q_UNUSED(sourceParent)
+                Q_UNUSED(destinationParent)
+
                 QString s = "M";
                 s += QString::number(sourceStart);
                 s += "-";
@@ -360,13 +363,17 @@ QDateTime PlayerControllerMock::delayedStartServerDeadline()
     NOT_IMPLEMENTED
 }
 
-SimpleFuture<ResultMessageErrorCode> PlayerControllerMock::activateDelayedStart(qint64 delayMilliseconds)
+SimpleFuture<ResultMessageErrorCode> PlayerControllerMock::activateDelayedStart(
+    qint64 delayMilliseconds)
 {
+    Q_UNUSED(delayMilliseconds)
     NOT_IMPLEMENTED
 }
 
-SimpleFuture<ResultMessageErrorCode> PlayerControllerMock::activateDelayedStart(QDateTime startTime)
+SimpleFuture<ResultMessageErrorCode> PlayerControllerMock::activateDelayedStart(
+    QDateTime startTime)
 {
+    Q_UNUSED(startTime)
     NOT_IMPLEMENTED
 }
 
@@ -392,6 +399,7 @@ void PlayerControllerMock::skip()
 
 void PlayerControllerMock::setVolume(int volume)
 {
+    Q_UNUSED(volume)
     NOT_IMPLEMENTED
 }
 
@@ -454,6 +462,7 @@ qint64 CurrentTrackMonitorMock::currentTrackLengthMilliseconds() const
 
 void CurrentTrackMonitorMock::seekTo(qint64 positionInMilliseconds)
 {
+    Q_UNUSED(positionInMilliseconds)
     NOT_IMPLEMENTED
 }
 
@@ -461,6 +470,7 @@ void CurrentTrackMonitorMock::seekTo(qint64 positionInMilliseconds)
 
 bool QueueHashesMonitorMock::isPresentInQueue(PMP::Client::LocalHashId hashId) const
 {
+    Q_UNUSED(hashId)
     return false;
 }
 
@@ -490,12 +500,14 @@ void UserForStatisticsDisplayMock::setPublic()
 
 void UserDataFetcherMock::enableAutoFetchForUser(quint32 userId)
 {
-    //
+    Q_UNUSED(userId)
 }
 
 const UserDataFetcher::HashData* UserDataFetcherMock::getHashDataForUser(quint32 userId,
                                                                        LocalHashId hashId)
 {
+    Q_UNUSED(userId)
+    Q_UNUSED(hashId)
     NOT_IMPLEMENTED
 }
 
@@ -538,6 +550,7 @@ QHash<LocalHashId, CollectionTrackInfo> CollectionWatcherMock::getCollection()
 
 CollectionTrackInfo CollectionWatcherMock::getTrack(LocalHashId hashId)
 {
+    Q_UNUSED(hashId)
     NOT_IMPLEMENTED
 }
 

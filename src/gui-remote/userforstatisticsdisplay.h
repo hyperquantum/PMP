@@ -35,7 +35,7 @@ namespace PMP
     {
         Q_OBJECT
     protected:
-        explicit UserForStatisticsDisplay(QObject* parent = nullptr) {}
+        explicit UserForStatisticsDisplay(QObject* parent = nullptr) : QObject(parent) {}
     public:
         virtual ~UserForStatisticsDisplay() {}
 
