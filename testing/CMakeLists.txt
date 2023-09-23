@@ -127,3 +127,17 @@ add_executable(test_hashrelations test_hashrelations.cpp
 )
 target_link_libraries(test_hashrelations Qt5::Core Qt5::Test)
 add_test(test_hashrelations test_hashrelations)
+
+
+# TestSortedCollectionTableModel
+qt5_wrap_cpp(PMP_TestSortedCollectionTableModel_MOCS test_sortedcollectiontablemodel.h)
+add_executable(test_sortedcollectiontablemodel test_sortedcollectiontablemodel.cpp
+    ${PMP_TestSortedCollectionTableModel_MOCS}
+)
+target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpGuiRemote>)
+target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpClient>)
+target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpCommon>)
+target_link_libraries(test_sortedcollectiontablemodel Qt5::Gui Qt5::Widgets)
+target_link_libraries(test_sortedcollectiontablemodel Qt5::Core Qt5::Network Qt5::Test)
+target_link_libraries(test_sortedcollectiontablemodel ${TAGLIB_LIBRARIES})
+add_test(test_sortedcollectiontablemodel test_sortedcollectiontablemodel)
