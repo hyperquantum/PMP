@@ -87,7 +87,7 @@ namespace PMP::Client
                                                                 quint8 resultCode)
     {
         qWarning() << "ResultHandler cannot deal with handle extension result message;"
-                   << "extension ID:" << uint(resultCode)
+                   << "extension ID:" << uint(extensionId)
                    << "; result code:" << uint(resultCode);
     }
 
