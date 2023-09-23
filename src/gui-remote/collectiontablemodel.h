@@ -63,8 +63,8 @@ namespace PMP
         int sortColumn() const;
         Qt::SortOrder sortOrder() const;
 
-        Client::CollectionTrackInfo* trackAt(const QModelIndex& index) const;
-        Client::CollectionTrackInfo* trackAt(int rowIndex) const;
+        Client::CollectionTrackInfo const* trackAt(const QModelIndex& index) const;
+        Client::CollectionTrackInfo const* trackAt(int rowIndex) const;
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -159,7 +159,7 @@ namespace PMP
 
         virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 
-        Client::CollectionTrackInfo* trackAt(const QModelIndex& index) const;
+        Client::CollectionTrackInfo const* trackAt(const QModelIndex& index) const;
 
     public Q_SLOTS:
         void setSearchText(QString search);

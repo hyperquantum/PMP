@@ -682,13 +682,13 @@ namespace PMP
         }
     }
 
-    CollectionTrackInfo* SortedCollectionTableModel::trackAt(
+    CollectionTrackInfo const* SortedCollectionTableModel::trackAt(
                                                            const QModelIndex& index) const
     {
         return trackAt(index.row());
     }
 
-    CollectionTrackInfo* SortedCollectionTableModel::trackAt(int rowIndex) const
+    CollectionTrackInfo const* SortedCollectionTableModel::trackAt(int rowIndex) const
     {
         if (rowIndex < 0 || rowIndex >= _tracks.size()) { return nullptr; }
 
@@ -929,7 +929,7 @@ namespace PMP
         _source->sort(column, order);
     }
 
-    CollectionTrackInfo* FilteredCollectionTableModel::trackAt(
+    CollectionTrackInfo const* FilteredCollectionTableModel::trackAt(
                                                            const QModelIndex& index) const
     {
         return _source->trackAt(mapToSource(index));
@@ -951,7 +951,7 @@ namespace PMP
             return true; /* not filtered */
         }
 
-        CollectionTrackInfo* track = _source->trackAt(sourceRow);
+        auto* track = _source->trackAt(sourceRow);
 
         if (!_searchParts.empty())
         {
