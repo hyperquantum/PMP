@@ -1,3 +1,4 @@
+* bug: "now playing" is triggered by the backoff mechanism after the track is already finished
 * specify track duration when scrobbling
 * handle timeouts
 * handle failed requests properly (OpenSSL missing or connection problem)
