@@ -187,7 +187,7 @@ void DataProviderMock::add(std::shared_ptr<TrackToScrobble> track)
 void DataProviderMock::add(QVector<std::shared_ptr<TrackToScrobbleMock>> tracks)
 {
     /* cannot use append because of different types, so we use foreach instead */
-    Q_FOREACH(auto track, tracks)
+    for (auto& track : qAsConst(tracks))
     {
         add(track);
     }
@@ -340,7 +340,7 @@ void TestScrobbler::multipleSimpleScrobbles()
 
     tracks << addTrackToScrobble(dataProvider, time, "Title 5", "Artist 5");
 
-    Q_FOREACH(auto track, tracks)
+    for (auto& track : qAsConst(tracks))
     {
         QVERIFY(!track->scrobbled());
     }
@@ -349,7 +349,7 @@ void TestScrobbler::multipleSimpleScrobbles()
     Scrobbler scrobbler(nullptr, &dataProvider, backend);
     scrobbler.wakeUp();
 
-    Q_FOREACH(auto track, tracks)
+    for (auto& track : qAsConst(tracks))
     {
         QTRY_VERIFY(track->scrobbled());
     }
