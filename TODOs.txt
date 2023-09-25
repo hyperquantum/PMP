@@ -35,6 +35,7 @@ KNOWN PROBLEMS
  * track title/artist/length update in the music collection does not trigger an update of queue entries referencing that track
  * doing a "skip" often creates a burst of noise; need to wait until the old track has stopped before starting the next one
  * GUI remote: if connection breaks during playback, "position" keeps increasing
+ * server does not always take an updated title/artist/album into account when a track is changed on disk
 
 
 PERFORMANCE ISSUES
@@ -111,6 +112,7 @@ IDEAS
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
  * hash tool: by default only output the hash of the file, no other information
  * rename "GUI Remote" to "Desktop Remote"
+ * detect different rips of the same track/album and treat them as one, with unified scores
 
 
 USER FRIENDLINESS

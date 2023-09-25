@@ -59,7 +59,7 @@ namespace PMP::Client
                                   qint64 trackLengthInMilliseconds);
 
     protected:
-        explicit CurrentTrackMonitor(QObject* parent) : QObject(parent) {}
+        explicit CurrentTrackMonitor(QObject* parent = nullptr) : QObject(parent) {}
     };
 }
 #endif

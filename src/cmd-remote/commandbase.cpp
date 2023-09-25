@@ -192,6 +192,10 @@ namespace PMP
             errorOutput = "server does not support this feature";
             break;
 
+        case ResultMessageErrorCode::ConnectionToServerBroken:
+            errorOutput = "connection to the server was lost";
+            break;
+
         case ResultMessageErrorCode::NonFatalInternalServerError:
             errorOutput = "internal server error (non-fatal)";
             break;
@@ -207,6 +211,11 @@ namespace PMP
         case ResultMessageErrorCode::UnknownError:
             errorOutput = "unknown error";
             break;
+        }
+
+        if (errorOutput.isEmpty())
+        {
+            errorOutput = QString("error code %1").arg(static_cast<int>(errorCode));
         }
 
         setCommandExecutionFailed(3, "Command failed: " + errorOutput);

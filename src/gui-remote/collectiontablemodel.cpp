@@ -172,7 +172,8 @@ namespace PMP
         connect(
             currentTrackMonitor, &CurrentTrackMonitor::currentTrackInfoChanged,
             this,
-            [this, currentTrackMonitor]() {
+            [this, currentTrackMonitor]()
+            {
                 currentTrackInfoChanged(currentTrackMonitor->currentTrackHash());
             }
         );
@@ -198,7 +199,8 @@ namespace PMP
         return _highlightColorIndex;
     }
 
-    bool SortedCollectionTableModel::lessThan(int index1, int index2) const {
+    bool SortedCollectionTableModel::lessThan(int index1, int index2) const
+    {
         //qDebug() << "lessThan called:" << index1 << "," << index2;
         return compareTracks(*_tracks.at(index1), *_tracks.at(index2)) < 0;
     }
@@ -209,19 +211,23 @@ namespace PMP
         return compareTracks(track1, track2) < 0;
     }
 
-    void SortedCollectionTableModel::sortByTitle() {
+    void SortedCollectionTableModel::sortByTitle()
+    {
         sort(0);
     }
 
-    void SortedCollectionTableModel::sortByArtist() {
+    void SortedCollectionTableModel::sortByArtist()
+    {
         sort(1);
     }
 
-    int SortedCollectionTableModel::sortColumn() const {
+    int SortedCollectionTableModel::sortColumn() const
+    {
         return _sortBy;
     }
 
-    Qt::SortOrder SortedCollectionTableModel::sortOrder() const {
+    Qt::SortOrder SortedCollectionTableModel::sortOrder() const
+    {
         return _sortOrder;
     }
 
@@ -236,7 +242,8 @@ namespace PMP
     int SortedCollectionTableModel::compareTracks(const CollectionTrackInfo& track1,
                                                   const CollectionTrackInfo& track2) const
     {
-        switch (_sortBy) {
+        switch (_sortBy)
+        {
             case 0:
             default:
                 return compareTitles(track1, track2, _sortOrder);
@@ -256,13 +263,15 @@ namespace PMP
         bool empty1 = track1.titleAndArtistUnknown();
         bool empty2 = track2.titleAndArtistUnknown();
 
-        if (empty1 || empty2) {
+        if (empty1 || empty2)
+        {
             if (!empty1) return -1; /* track 1 goes first */
             if (!empty2) return 1; /* track 2 goes first */
 
             /* both are empty; compare other properties */
         }
-        else {
+        else
+        {
             auto title1 = track1.title();
             auto title2 = track2.title();
             int titleComparison = compareStrings(title1, title2, sortOrder);
@@ -284,13 +293,15 @@ namespace PMP
         bool empty1 = track1.titleAndArtistUnknown();
         bool empty2 = track2.titleAndArtistUnknown();
 
-        if (empty1 || empty2) {
+        if (empty1 || empty2)
+        {
             if (!empty1) return -1; /* track 1 goes first */
             if (!empty2) return 1; /* track 2 goes first */
 
             /* both are empty; compare other properties */
         }
-        else {
+        else
+        {
             auto artist1 = track1.artist();
             auto artist2 = track2.artist();
             int artistComparison = compareStrings(artist1, artist2, sortOrder);
@@ -312,13 +323,15 @@ namespace PMP
         auto length1 = track1.lengthInMilliseconds();
         auto length2 = track2.lengthInMilliseconds();
 
-        if (length1 < 0 || length2 < 0) {
+        if (length1 < 0 || length2 < 0)
+        {
             if (length1 >= 0) return -1; /* track 1 goes first */
             if (length2 >= 0) return 1; /* track 2 goes first */
 
             /* both are empty; compare other properties */
         }
-        else {
+        else
+        {
             int comparison = Comparisons::compare(length1, length2, sortOrder);
             if (comparison != 0) return comparison;
         }
@@ -346,13 +359,15 @@ namespace PMP
         bool noAlbum1 = album1.isEmpty();
         bool noAlbum2 = album2.isEmpty();
 
-        if (noAlbum1 || noAlbum2) {
+        if (noAlbum1 || noAlbum2)
+        {
             if (!noAlbum1) return -1; /* track 1 goes first */
             if (!noAlbum2) return 1; /* track 2 goes first */
 
             /* both are empty; compare other properties */
         }
-        else {
+        else
+        {
             int comparison = compareStrings(album1, album2, sortOrder);
             if (comparison != 0) return comparison;
         }
@@ -463,6 +478,11 @@ namespace PMP
         return outerIndex;
     }
 
+    void SortedCollectionTableModel::markRowAsChanged(int index)
+    {
+        Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 4 - 1));
+    }
+
     void SortedCollectionTableModel::markLeftColumnAsChanged()
     {
         Q_EMIT dataChanged(
@@ -495,7 +515,8 @@ namespace PMP
         trackList.reserve(trackCollection.size());
         hashIndexer.reserve(trackCollection.size());
 
-        for (int i = 0; i < trackCollection.size(); ++i) {
+        for (int i = 0; i < trackCollection.size(); ++i)
+        {
             CollectionTrackInfo const& track = trackCollection[i];
 
             if (hashIndexer.contains(track.hashId()))
@@ -511,7 +532,8 @@ namespace PMP
 
         qDebug() << " addWhenModelEmpty: inserting" << trackList.size() << "tracks";
 
-        if (!trackList.empty()) {
+        if (!trackList.empty())
+        {
             _outerToInnerIndexMap.reserve(trackList.size());
             _innerToOuterIndexMap.reserve(trackList.size());
 
@@ -572,35 +594,45 @@ namespace PMP
                    << "; hash ID:" << newTrackData.hashId();
 
         int oldOuterIndex = _innerToOuterIndexMap[innerIndex];
-        int newOuterIndex = findOuterIndexMapIndexForInsert(newTrackData);
+        int insertionIndex = findOuterIndexMapIndexForInsert(newTrackData);
 
-        /* moving the track after itself means we need to subtract one from the
-           destination index */
-        if (newOuterIndex > oldOuterIndex)
-            newOuterIndex--;
-
-        if (newOuterIndex != oldOuterIndex)
+        if (insertionIndex >= oldOuterIndex && insertionIndex - 1 <= oldOuterIndex)
         {
-            beginMoveRows(QModelIndex(), oldOuterIndex, oldOuterIndex,
-                          QModelIndex(), newOuterIndex);
+            /* no row move necessary, just update the row */
+            track = newTrackData;
 
-            _outerToInnerIndexMap.move(oldOuterIndex, newOuterIndex);
-
-            /* elements between the old and new index got a new outer index;
-               update the inner to outer map to reflect this */
-            rebuildInnerMap(qMin(oldOuterIndex, newOuterIndex),
-                            qMax(oldOuterIndex, newOuterIndex) + 1);
-
-            endMoveRows();
+            Q_EMIT dataChanged(createIndex(oldOuterIndex, 0),
+                               createIndex(oldOuterIndex, 4 - 1));
+            return;
         }
 
-        track = newTrackData;
+        qDebug() << "track update causing row move:"
+                 << " old index:" << oldOuterIndex
+                 << " insertion index:" << insertionIndex;
 
-        Q_EMIT dataChanged(createIndex(newOuterIndex, 0),
-                           createIndex(newOuterIndex, 4 - 1));
+        bool moving = beginMoveRows(QModelIndex(), oldOuterIndex, oldOuterIndex,
+                                    QModelIndex(), insertionIndex);
+        Q_ASSERT_X(moving, "SortedCollectionTableModel::updateTrack", "row move failed");
+
+        int outerIndexAfterMove =
+            (insertionIndex > oldOuterIndex) ? insertionIndex - 1 : insertionIndex;
+
+        track = newTrackData;
+        _outerToInnerIndexMap.move(oldOuterIndex, outerIndexAfterMove);
+
+        /* elements between the old and new index got a new outer index;
+               update the inner to outer map to reflect this */
+        rebuildInnerMap(qMin(oldOuterIndex, outerIndexAfterMove),
+                        qMax(oldOuterIndex, outerIndexAfterMove) + 1);
+
+        endMoveRows();
+
+        /* not sure if this is really necessary */
+        markRowAsChanged(outerIndexAfterMove);
     }
 
-    void SortedCollectionTableModel::sort(int column, Qt::SortOrder order) {
+    void SortedCollectionTableModel::sort(int column, Qt::SortOrder order)
+    {
         if (_sortBy == column && _sortOrder == order) return;
 
         _sortBy = column;
@@ -621,17 +653,20 @@ namespace PMP
         markEverythingAsChanged();
     }
 
-    void SortedCollectionTableModel::markEverythingAsChanged() {
+    void SortedCollectionTableModel::markEverythingAsChanged()
+    {
         Q_EMIT dataChanged(
             createIndex(0, 0), createIndex(rowCount() - 1, columnCount() - 1)
         );
     }
 
-    void SortedCollectionTableModel::buildIndexMaps() {
+    void SortedCollectionTableModel::buildIndexMaps()
+    {
         /* generate unsorted maps */
         _innerToOuterIndexMap.resize(_tracks.size());
         _outerToInnerIndexMap.resize(_tracks.size());
-        for (int i = 0; i < _tracks.size(); ++i) {
+        for (int i = 0; i < _tracks.size(); ++i)
+        {
             _innerToOuterIndexMap[i] = i;
             _outerToInnerIndexMap[i] = i;
         }
@@ -661,24 +696,37 @@ namespace PMP
         }
     }
 
-    CollectionTrackInfo* SortedCollectionTableModel::trackAt(
+    CollectionTrackInfo const* SortedCollectionTableModel::trackAt(
                                                            const QModelIndex& index) const
     {
         return trackAt(index.row());
     }
 
-    CollectionTrackInfo* SortedCollectionTableModel::trackAt(int rowIndex) const {
+    CollectionTrackInfo const* SortedCollectionTableModel::trackAt(int rowIndex) const
+    {
         if (rowIndex < 0 || rowIndex >= _tracks.size()) { return nullptr; }
 
         return _tracks.at(_outerToInnerIndexMap.at(rowIndex));
     }
 
-    int SortedCollectionTableModel::rowCount(const QModelIndex& parent) const {
+    int SortedCollectionTableModel::trackIndex(Client::LocalHashId hashId) const
+    {
+        auto it = _hashesToInnerIndexes.constFind(hashId);
+        if (it == _hashesToInnerIndexes.constEnd())
+            return -1;
+
+        auto innerIndex = it.value();
+        return _innerToOuterIndexMap[innerIndex];
+    }
+
+    int SortedCollectionTableModel::rowCount(const QModelIndex& parent) const
+    {
         Q_UNUSED(parent)
         return _outerToInnerIndexMap.size();
     }
 
-    int SortedCollectionTableModel::columnCount(const QModelIndex& parent) const {
+    int SortedCollectionTableModel::columnCount(const QModelIndex& parent) const
+    {
         Q_UNUSED(parent)
         return 4;
     }
@@ -687,8 +735,10 @@ namespace PMP
                                                     Qt::Orientation orientation,
                                                     int role) const
     {
-        if (role == Qt::DisplayRole && orientation == Qt::Horizontal) {
-            switch (section) {
+        if (role == Qt::DisplayRole && orientation == Qt::Horizontal)
+        {
+            switch (section)
+            {
                 case 0: return QString(tr("Title"));
                 case 1: return QString(tr("Artist"));
                 case 2: return QString(tr("Length"));
@@ -696,18 +746,21 @@ namespace PMP
             }
         }
 
-        return QVariant();
+        return {};
     }
 
-    QVariant SortedCollectionTableModel::data(const QModelIndex& index, int role) const {
+    QVariant SortedCollectionTableModel::data(const QModelIndex& index, int role) const
+    {
         switch (role) {
             case Qt::TextAlignmentRole:
-                switch (index.column()) {
+                switch (index.column())
+                {
                     case 2: return Qt::AlignRight + Qt::AlignVCenter;
                 }
                 break;
             case Qt::DisplayRole:
-                if (index.row() < _tracks.size()) {
+                if (index.row() < _tracks.size())
+                {
                     auto track = trackAt(index);
 
                     switch (index.column()) {
@@ -750,7 +803,8 @@ namespace PMP
                 }
                 break;
             case Qt::ForegroundRole:
-                if (index.row() < _tracks.size()) {
+                if (index.row() < _tracks.size())
+                {
                     auto track = trackAt(index);
                     if (!track->isAvailable())
                         return QBrush(Colors::instance().inactiveItemForeground);
@@ -899,7 +953,7 @@ namespace PMP
         _source->sort(column, order);
     }
 
-    CollectionTrackInfo* FilteredCollectionTableModel::trackAt(
+    CollectionTrackInfo const* FilteredCollectionTableModel::trackAt(
                                                            const QModelIndex& index) const
     {
         return _source->trackAt(mapToSource(index));
@@ -921,7 +975,7 @@ namespace PMP
             return true; /* not filtered */
         }
 
-        CollectionTrackInfo* track = _source->trackAt(sourceRow);
+        auto* track = _source->trackAt(sourceRow);
 
         if (!_searchParts.empty())
         {

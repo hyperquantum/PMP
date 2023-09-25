@@ -574,7 +574,7 @@ namespace PMP
     void MainWindow::onDoConnect(QString server, uint port)
     {
         _connection = new ServerConnection(this, _hashIdRepository);
-        _serverInterface = new ServerInterface(_connection);
+        _serverInterface = new ServerInterfaceImpl(_connection);
 
         auto* generalController = &_serverInterface->generalController();
 
@@ -734,7 +734,7 @@ namespace PMP
         _notificationBar->addNotification(delayedStartNotification);
 
         auto* userForStatisticsDisplay =
-            new UserForStatisticsDisplay(this, _serverInterface);
+            new UserForStatisticsDisplayImpl(this, _serverInterface);
 
         _mainWidget = new MainWidget(mainCentralWidget);
         _mainWidget->setConnection(_serverInterface, userForStatisticsDisplay);
@@ -747,9 +747,9 @@ namespace PMP
         setCentralWidget(mainCentralWidget);
 
         auto queueHashesMonitor =
-                new QueueHashesMonitor(_serverInterface,
-                                       &_serverInterface->queueMonitor(),
-                                       &_serverInterface->queueEntryInfoStorage());
+                new QueueHashesMonitorImpl(_serverInterface,
+                                           &_serverInterface->queueMonitor(),
+                                           &_serverInterface->queueEntryInfoStorage());
 
         auto collectionWidget =
                 new CollectionWidget(_musicCollectionDock, _serverInterface,

@@ -29,28 +29,28 @@ namespace PMP::Client
 {
     /* ============================== UserDataFetcher ============================== */
 
-    UserDataFetcher::UserDataFetcher(QObject* parent,
-                                     CollectionWatcher* collectionWatcher,
-                                     ServerConnection* connection)
-     : QObject(parent),
+    UserDataFetcherImpl::UserDataFetcherImpl(QObject* parent,
+                                             CollectionWatcher* collectionWatcher,
+                                             ServerConnection* connection)
+     : UserDataFetcher(parent),
        _collectionWatcher(collectionWatcher),
        _connection(connection)
     {
         //connect(
         //    _connection, &ServerConnection::connected,
-        //    this, &UserDataFetcher::connected
+        //    this, &UserDataFetcherImpl::connected
         //);
         connect(
             _collectionWatcher, &CollectionWatcher::newTrackReceived,
-            this, &UserDataFetcher::onNewTrackReceived
+            this, &UserDataFetcherImpl::onNewTrackReceived
         );
         connect(
             _connection, &ServerConnection::receivedHashUserData,
-            this, &UserDataFetcher::receivedHashUserData
+            this, &UserDataFetcherImpl::receivedHashUserData
         );
     }
 
-    void UserDataFetcher::enableAutoFetchForUser(quint32 userId)
+    void UserDataFetcherImpl::enableAutoFetchForUser(quint32 userId)
     {
         auto& userData = _userData[userId];
 
@@ -67,7 +67,7 @@ namespace PMP::Client
                                  each track is fetched */
 
         _collectionWatcher->enableCollectionDownloading();
-        auto collection = _collectionWatcher->getCollection();
+        auto const collection = _collectionWatcher->getCollection();
 
         for (auto it = collection.constBegin(); it != collection.constEnd(); ++it)
         {
@@ -76,12 +76,13 @@ namespace PMP::Client
         }
     }
 
-    //void UserDataFetcher::connected()
+    //void UserDataFetcherImpl::connected()
     //{
     //    //
     //}
 
-    UserDataFetcher::HashData const* UserDataFetcher::getHashDataForUser(quint32 userId,
+    UserDataFetcher::HashData const* UserDataFetcherImpl::getHashDataForUser(
+                                                                       quint32 userId,
                                                                        LocalHashId hashId)
     {
         if (hashId.isZero())
@@ -94,7 +95,7 @@ namespace PMP::Client
         return nullptr;
     }
 
-    void UserDataFetcher::onNewTrackReceived(CollectionTrackInfo track)
+    void UserDataFetcherImpl::onNewTrackReceived(CollectionTrackInfo track)
     {
         for (auto it = _userData.constBegin(); it != _userData.constEnd(); ++it)
         {
@@ -106,9 +107,9 @@ namespace PMP::Client
         }
     }
 
-    void UserDataFetcher::receivedHashUserData(LocalHashId hashId, quint32 userId,
-                                               QDateTime previouslyHeard,
-                                               qint16 scorePermillage)
+    void UserDataFetcherImpl::receivedHashUserData(LocalHashId hashId, quint32 userId,
+                                                   QDateTime previouslyHeard,
+                                                   qint16 scorePermillage)
     {
         HashData& hashData = _userData[userId].getOrCreateHash(hashId);
         hashData.previouslyHeard = previouslyHeard;
@@ -122,27 +123,27 @@ namespace PMP::Client
 
         if (first)
         {
-            QTimer::singleShot(100, this, &UserDataFetcher::sendPendingNotifications);
+            QTimer::singleShot(100, this, &UserDataFetcherImpl::sendPendingNotifications);
         }
 
         Q_EMIT userTrackDataChanged(userId, hashId);
     }
 
-    void UserDataFetcher::sendPendingRequests()
+    void UserDataFetcherImpl::sendPendingRequests()
     {
         if (_hashesToFetchForUsers.isEmpty()) return;
 
-        for (quint32 userId : _hashesToFetchForUsers.keys())
+        for (auto it = _hashesToFetchForUsers.constBegin();
+             it != _hashesToFetchForUsers.constEnd();
+             ++it)
         {
-            _connection->sendHashUserDataRequest(
-                userId, _hashesToFetchForUsers.value(userId).values()
-            );
+            _connection->sendHashUserDataRequest(it.key(), it.value().values());
         }
 
         _hashesToFetchForUsers.clear();
     }
 
-    void UserDataFetcher::sendPendingNotifications()
+    void UserDataFetcherImpl::sendPendingNotifications()
     {
         if (_pendingNotificationsUsers.isEmpty()) return;
 
@@ -154,7 +155,7 @@ namespace PMP::Client
         _pendingNotificationsUsers.clear();
     }
 
-    void UserDataFetcher::needToRequestData(quint32 userId, LocalHashId hashId)
+    void UserDataFetcherImpl::needToRequestData(quint32 userId, LocalHashId hashId)
     {
         bool first = _hashesToFetchForUsers.isEmpty();
 
@@ -162,7 +163,7 @@ namespace PMP::Client
 
         if (first)
         {
-            QTimer::singleShot(100, this, &UserDataFetcher::sendPendingRequests);
+            QTimer::singleShot(100, this, &UserDataFetcherImpl::sendPendingRequests);
         }
     }
 }

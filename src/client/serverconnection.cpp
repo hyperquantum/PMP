@@ -107,7 +107,7 @@ namespace PMP::Client
                                                 ExtensionResultMessageData const& data)
     {
         qWarning() << "ResultHandler cannot deal with extension result message;"
-                   << "extension ID:" << uint(data.resultCode)
+                   << "extension:" << data.extension
                    << "; result code:" << uint(data.resultCode)
                    << "; client-ref:" << uint(data.clientReference);
 

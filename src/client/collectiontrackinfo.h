@@ -57,7 +57,9 @@ namespace PMP::Client
         void setAvailable(bool available) { _isAvailable = available; }
         bool isAvailable() const { return _isAvailable; }
 
+        void setTitle(QString title) { _title = title; }
         const QString& title() const { return _title; }
+
         const QString& artist() const { return _artist; }
         const QString& album() const { return _album; }
         const QString& albumArtist() const { return _albumArtist; }

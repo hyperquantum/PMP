@@ -36,11 +36,12 @@
 
 namespace PMP::Client
 {
-    ServerInterface::ServerInterface(ServerConnection* connection)
-     : QObject(connection),
-       _connection(connection),
+    ServerInterfaceImpl::ServerInterfaceImpl(ServerConnection* connection)
+     : _connection(connection),
        _connected(connection->isConnected())
     {
+        setParent(connection);
+
         connect(
             connection, &ServerConnection::connected,
             this,
@@ -69,12 +70,12 @@ namespace PMP::Client
         );
     }
 
-    LocalHashIdRepository* ServerInterface::hashIdRepository() const
+    LocalHashIdRepository* ServerInterfaceImpl::hashIdRepository() const
     {
         return _connection->hashIdRepository();
     }
 
-    AuthenticationController& ServerInterface::authenticationController()
+    AuthenticationController& ServerInterfaceImpl::authenticationController()
     {
         if (!_authenticationController)
             _authenticationController = new AuthenticationControllerImpl(_connection);
@@ -82,7 +83,7 @@ namespace PMP::Client
         return *_authenticationController;
     }
 
-    GeneralController& ServerInterface::generalController()
+    GeneralController& ServerInterfaceImpl::generalController()
     {
         if (!_generalController)
             _generalController = new GeneralControllerImpl(_connection);
@@ -90,7 +91,7 @@ namespace PMP::Client
         return *_generalController;
     }
 
-    PlayerController& ServerInterface::playerController()
+    PlayerController& ServerInterfaceImpl::playerController()
     {
         if (!_simplePlayerController)
             _simplePlayerController = new PlayerControllerImpl(_connection);
@@ -98,7 +99,7 @@ namespace PMP::Client
         return *_simplePlayerController;
     }
 
-    CurrentTrackMonitor& ServerInterface::currentTrackMonitor()
+    CurrentTrackMonitor& ServerInterfaceImpl::currentTrackMonitor()
     {
         if (!_currentTrackMonitor)
             _currentTrackMonitor = new CurrentTrackMonitorImpl(&queueEntryInfoStorage(),
@@ -107,7 +108,7 @@ namespace PMP::Client
         return *_currentTrackMonitor;
     }
 
-    QueueController& ServerInterface::queueController()
+    QueueController& ServerInterfaceImpl::queueController()
     {
         if (!_queueController)
             _queueController = new QueueControllerImpl(_connection);
@@ -115,7 +116,7 @@ namespace PMP::Client
         return *_queueController;
     }
 
-    AbstractQueueMonitor& ServerInterface::queueMonitor()
+    AbstractQueueMonitor& ServerInterfaceImpl::queueMonitor()
     {
         if (!_queueMonitor)
             _queueMonitor = new QueueMonitor(_connection);
@@ -123,7 +124,7 @@ namespace PMP::Client
         return *_queueMonitor;
     }
 
-    QueueEntryInfoStorage& ServerInterface::queueEntryInfoStorage()
+    QueueEntryInfoStorage& ServerInterfaceImpl::queueEntryInfoStorage()
     {
         if (!_queueEntryInfoStorage)
             _queueEntryInfoStorage = new QueueEntryInfoStorageImpl(_connection);
@@ -131,7 +132,7 @@ namespace PMP::Client
         return *_queueEntryInfoStorage;
     }
 
-    QueueEntryInfoFetcher& ServerInterface::queueEntryInfoFetcher()
+    QueueEntryInfoFetcher& ServerInterfaceImpl::queueEntryInfoFetcher()
     {
         if (!_queueEntryInfoFetcher)
         {
@@ -143,7 +144,7 @@ namespace PMP::Client
         return *_queueEntryInfoFetcher;
     }
 
-    DynamicModeController& ServerInterface::dynamicModeController()
+    DynamicModeController& ServerInterfaceImpl::dynamicModeController()
     {
         if (!_dynamicModeController)
             _dynamicModeController = new DynamicModeControllerImpl(_connection);
@@ -151,7 +152,7 @@ namespace PMP::Client
         return *_dynamicModeController;
     }
 
-    HistoryController& ServerInterface::historyController()
+    HistoryController& ServerInterfaceImpl::historyController()
     {
         if (!_historyController)
             _historyController = new HistoryControllerImpl(_connection);
@@ -159,7 +160,7 @@ namespace PMP::Client
         return *_historyController;
     }
 
-    CollectionWatcher& ServerInterface::collectionWatcher()
+    CollectionWatcher& ServerInterfaceImpl::collectionWatcher()
     {
         if (!_collectionWatcher)
             _collectionWatcher = new CollectionWatcherImpl(_connection);
@@ -167,18 +168,18 @@ namespace PMP::Client
         return *_collectionWatcher;
     }
 
-    UserDataFetcher& ServerInterface::userDataFetcher()
+    UserDataFetcher& ServerInterfaceImpl::userDataFetcher()
     {
         if (!_userDataFetcher)
         {
             _userDataFetcher =
-                    new UserDataFetcher(this, &collectionWatcher(), _connection);
+                    new UserDataFetcherImpl(this, &collectionWatcher(), _connection);
         }
 
         return *_userDataFetcher;
     }
 
-    ScrobblingController& ServerInterface::scrobblingController()
+    ScrobblingController& ServerInterfaceImpl::scrobblingController()
     {
         if (!_scrobblingController)
             _scrobblingController = new ScrobblingControllerImpl(_connection);
@@ -186,17 +187,17 @@ namespace PMP::Client
         return *_scrobblingController;
     }
 
-    bool ServerInterface::isLoggedIn() const
+    bool ServerInterfaceImpl::isLoggedIn() const
     {
         return _connection->isLoggedIn();
     }
 
-    quint32 ServerInterface::userLoggedInId() const
+    quint32 ServerInterfaceImpl::userLoggedInId() const
     {
         return _connection->userLoggedInId();
     }
 
-    QString ServerInterface::userLoggedInName() const
+    QString ServerInterfaceImpl::userLoggedInName() const
     {
         return _connection->userLoggedInName();
     }

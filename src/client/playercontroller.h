@@ -80,7 +80,7 @@ namespace PMP::Client
         void delayedStartActiveInfoChanged();
 
     protected:
-        explicit PlayerController(QObject* parent) : QObject(parent) {}
+        explicit PlayerController(QObject* parent = nullptr) : QObject(parent) {}
     };
 }
 #endif

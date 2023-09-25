@@ -48,7 +48,7 @@ namespace PMP::Client
         void trackDataChanged(CollectionTrackInfo track);
 
     protected:
-        explicit CollectionWatcher(QObject* parent) : QObject(parent) {}
+        explicit CollectionWatcher(QObject* parent = nullptr) : QObject(parent) {}
     };
 }
 #endif
