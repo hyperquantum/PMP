@@ -105,13 +105,6 @@ namespace PMP::Server
         _fetchedUpTo = history.last().id;
         qDebug() << "fetched tracks to scrobble up to" << _fetchedUpTo;
 
-        QVector<uint> hashIds;
-        hashIds.reserve(history.size());
-        for (auto const& historyRecord : history)
-        {
-            hashIds << historyRecord.hashId;
-        }
-
         QVector<std::shared_ptr<TrackToScrobble>> result;
         result.reserve(history.size());
 
