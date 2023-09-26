@@ -108,7 +108,6 @@ add_executable(test_scrobbler test_scrobbler.cpp
     ${PMP_TestScrobbler_MOCS}
     ${CMAKE_SOURCE_DIR}/src/server/scrobbler.cpp
     ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.cpp
-    ${CMAKE_SOURCE_DIR}/src/server/scrobblingdataprovider.cpp
     ${CMAKE_SOURCE_DIR}/src/server/selftest.cpp
     ${CMAKE_SOURCE_DIR}/src/server/serverhealthmonitor.cpp
     ${CMAKE_SOURCE_DIR}/src/server/tracktoscrobble.cpp

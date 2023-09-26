@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,12 +33,12 @@ namespace PMP::Server
     class ScrobblingDataProvider
     {
     public:
-        virtual ~ScrobblingDataProvider();
+        virtual ~ScrobblingDataProvider() {}
 
         virtual QVector<std::shared_ptr<TrackToScrobble>> getNextTracksToScrobble() = 0;
 
     protected:
-        ScrobblingDataProvider();
+        ScrobblingDataProvider() {}
     };
 }
 #endif
