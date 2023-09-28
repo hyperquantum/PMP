@@ -20,30 +20,27 @@
 #include "lastfmscrobblingdataprovider.h"
 
 #include "database.h"
-#include "resolver.h"
 
 #include <QtDebug>
 #include <QVector>
 
 namespace PMP::Server
 {
-    class LastFmScrobblingDataProvider::TrackForScrobbling : public TrackToScrobble
+    class LastFmScrobblingDataProvider::LastFmTrackToScrobble : public TrackToScrobble
     {
     public:
-        TrackForScrobbling(LastFmScrobblingDataProvider* parent, quint32 id,
-                           QDateTime timestamp, QString title, QString artist,
-                           QString album, QString albumArtist)
-         : _parent(parent), _id(id), _timestamp(timestamp), _title(title),
-            _artist(artist), _album(album), _albumArtist(albumArtist)
+        LastFmTrackToScrobble(LastFmScrobblingDataProvider* parent, quint32 id,
+                              QDateTime timestamp, uint hashId)
+         : _parent(parent),
+            _id(id),
+            _timestamp(timestamp),
+            _hashId(hashId)
         {
             //
         }
 
         QDateTime timestamp() const override { return _timestamp; }
-        QString title() const override { return _title; }
-        QString artist() const override { return _artist; }
-        QString album() const override { return _album; }
-        QString albumArtist() const override { return _albumArtist; }
+        uint hashId() const override { return _hashId; }
 
         void scrobbledSuccessfully() override;
         void scrobbleIgnored() override;
@@ -52,27 +49,25 @@ namespace PMP::Server
         LastFmScrobblingDataProvider* _parent;
         quint32 _id;
         QDateTime _timestamp;
-        QString _title;
-        QString _artist;
-        QString _album;
-        QString _albumArtist;
+        uint _hashId;
     };
 
-    void LastFmScrobblingDataProvider::TrackForScrobbling::scrobbledSuccessfully()
+    void LastFmScrobblingDataProvider::LastFmTrackToScrobble::scrobbledSuccessfully()
     {
         _parent->scrobbledSuccessfully(_id);
     }
 
-    void LastFmScrobblingDataProvider::TrackForScrobbling::scrobbleIgnored()
+    void LastFmScrobblingDataProvider::LastFmTrackToScrobble::scrobbleIgnored()
     {
         _parent->scrobbleIgnored(_id);
     }
 
     /* ============================================================================ */
 
-    LastFmScrobblingDataProvider::LastFmScrobblingDataProvider(quint32 user,
-                                                               Resolver* resolver)
-     : _resolver(resolver), _user(user), _scrobbledUpTo(0), _fetchedUpTo(0)
+    LastFmScrobblingDataProvider::LastFmScrobblingDataProvider(quint32 user)
+     : _user(user),
+        _scrobbledUpTo(0),
+        _fetchedUpTo(0)
     {
         //
     }
@@ -103,33 +98,17 @@ namespace PMP::Server
         if (history.empty()) return {}; /* nothing more to scrobble */
 
         _fetchedUpTo = history.last().id;
-        qDebug() << "fetched tracks to scrobble up to" << _fetchedUpTo;
+        qDebug() << "LastFmScrobblingDataProvider: fetched tracks to scrobble up to"
+                 << _fetchedUpTo;
 
         QVector<std::shared_ptr<TrackToScrobble>> result;
         result.reserve(history.size());
 
         for (auto const& historyRecord : history)
         {
-            auto trackInfo = _resolver->getHashTrackInfo(historyRecord.hashId);
-
-            /* it's possible that we don't have artist/title/album info yet/anymore, and
-               in that case the track will not be scrobbled but simply ignored. We can't
-               really fix that, because we can't pause scrobbling potentially forever
-               while waiting for title/artist/album info on a track that we may never see
-               again. */
-            if (trackInfo.title().isEmpty() || trackInfo.artist().isEmpty())
-            {
-                qDebug() << "cannot scrobble history record" << historyRecord.id
-                         << "with hash ID" << historyRecord.hashId
-                         << "because artist/title info is incomplete or missing";
-                continue;
-            }
-
             auto track =
-                std::make_shared<TrackForScrobbling>(
-                    this, historyRecord.id, historyRecord.start,
-                    trackInfo.title(), trackInfo.artist(), trackInfo.album(),
-                    trackInfo.albumArtist()
+                std::make_shared<LastFmTrackToScrobble>(
+                    this, historyRecord.id, historyRecord.start, historyRecord.hashId
                 );
 
             result << track;

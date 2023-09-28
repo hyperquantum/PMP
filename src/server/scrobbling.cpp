@@ -84,12 +84,15 @@ namespace PMP::Server
 
     /* ============================================================================ */
 
-    Scrobbling::Scrobbling(QObject* parent, Resolver* resolver)
-        : QObject(parent), _resolver(resolver), _host(nullptr), _controller(nullptr)
+    Scrobbling::Scrobbling(QObject* parent, TrackInfoProvider* trackInfoProvider)
+      : QObject(parent),
+        _trackInfoProvider(trackInfoProvider),
+        _host(nullptr),
+        _controller(nullptr)
     {
         _thread.setObjectName("ScrobblingThread");
 
-        _host = new ScrobblingHost(resolver);
+        _host = new ScrobblingHost(trackInfoProvider);
         _host->moveToThread(&_thread);
         connect(&_thread, &QThread::finished, _host, &QObject::deleteLater);
         //connect(&_thread, &QThread::started, _host, &ScrobblingHost::load);

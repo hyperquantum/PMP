@@ -32,10 +32,7 @@ namespace PMP::Server
         virtual ~TrackToScrobble();
 
         virtual QDateTime timestamp() const = 0;
-        virtual QString title() const = 0;
-        virtual QString artist() const = 0;
-        virtual QString album() const = 0;
-        virtual QString albumArtist() const = 0;
+        virtual uint hashId() const = 0;
 
         virtual void scrobbledSuccessfully() = 0;
         virtual void scrobbleIgnored() = 0;

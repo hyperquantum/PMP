@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -226,6 +226,29 @@ namespace PMP
             );
 
             return Future<ResultType2, ErrorType2>(newStorage);
+        }
+
+        template<class ResultType2>
+        Future<ResultType2, ErrorType> convertResult(
+                                 std::function<ResultType2 (ResultType)> resultConversion)
+        {
+            auto newStorage = FutureStorage<ResultType2, ErrorType>::create();
+
+            _storage->addResultListener(
+                [newStorage, resultConversion](ResultType result)
+                {
+                    newStorage->setResult(resultConversion(result));
+                }
+            );
+
+            _storage->addFailureListener(
+                [newStorage](ErrorType error)
+                {
+                    newStorage->setError(error);
+                }
+            );
+
+            return Future<ResultType2, ErrorType>(newStorage);
         }
 
         template<class ErrorType2>

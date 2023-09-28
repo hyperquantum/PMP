@@ -22,6 +22,7 @@
 
 #include "server/scrobblingbackend.h"
 #include "server/scrobblingdataprovider.h"
+#include "server/trackinfoprovider.h"
 #include "server/tracktoscrobble.h"
 
 #include <QQueue>
@@ -80,15 +81,10 @@ private:
 class TrackToScrobbleMock : public PMP::Server::TrackToScrobble
 {
 public:
-    TrackToScrobbleMock(QDateTime timestamp, QString const& title,
-                        QString const& album, QString const& artist,
-                        QString const& albumArtist);
+    TrackToScrobbleMock(QDateTime timestamp, uint hashId);
 
     QDateTime timestamp() const override { return _timestamp; }
-    QString title() const override { return _title; }
-    QString artist() const override { return _artist; }
-    QString album() const override { return _album; }
-    QString albumArtist() const override { return _albumArtist; }
+    uint hashId() const override { return _hashId; }
 
     void scrobbledSuccessfully() override;
     void scrobbleIgnored() override;
@@ -99,7 +95,7 @@ public:
 
 private:
     QDateTime _timestamp, _scrobbledTimestamp;
-    QString _title, _artist, _album, _albumArtist;
+    uint _hashId;
     bool _scrobbled;
     bool _cannotBeScrobbled;
 };
@@ -116,6 +112,22 @@ public:
 
 private:
     QQueue<std::shared_ptr<PMP::Server::TrackToScrobble>> _tracksToScrobble;
+};
+
+class TrackInfoProviderMock : public PMP::Server::TrackInfoProvider
+{
+public:
+    TrackInfoProviderMock();
+
+    PMP::Future<PMP::Server::CollectionTrackInfo, PMP::FailureType> getTrackInfoAsync(
+                                                                    uint hashId) override;
+
+    void registerTrack(uint hashId, QString title, QString artist);
+    void registerTrack(uint hashId, QString title, QString artist, QString album,
+                       QString albumArtist);
+
+private:
+    QHash<uint, PMP::Server::CollectionTrackInfo> _tracks;
 };
 
 class TestScrobbler : public QObject
@@ -144,7 +156,8 @@ private:
                                                            QDateTime time);
     std::shared_ptr<TrackToScrobbleMock> addTrackToScrobble(
                                                            DataProviderMock& dataProvider,
-                                                           QDateTime time,
+                                                TrackInfoProviderMock& trackInfoProvider,
+                                                           QDateTime time, uint hashId,
                                                            QString title, QString artist);
 };
 #endif

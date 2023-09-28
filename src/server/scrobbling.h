@@ -34,8 +34,8 @@
 
 namespace PMP::Server
 {
-    class Resolver;
     class ScrobblingHost;
+    class TrackInfoProvider;
 
     class GlobalScrobblingController : public QObject
     {
@@ -90,7 +90,7 @@ namespace PMP::Server
     {
         Q_OBJECT
     public:
-        explicit Scrobbling(QObject* parent, Resolver* resolver);
+        explicit Scrobbling(QObject* parent, TrackInfoProvider* trackInfoProvider);
         ~Scrobbling();
 
         GlobalScrobblingController* getController();
@@ -102,7 +102,7 @@ namespace PMP::Server
                                                      QString password);
 
     private:
-        Resolver* _resolver;
+        TrackInfoProvider* _trackInfoProvider;
         ScrobblingHost* _host;
         QThread _thread;
         GlobalScrobblingController* _controller;

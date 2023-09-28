@@ -41,6 +41,7 @@
 #include "serverhealthmonitor.h"
 #include "serversettings.h"
 #include "tcpserver.h"
+#include "trackinfoproviderimpl.h"
 #include "users.h"
 
 #include <QCoreApplication>
@@ -272,7 +273,9 @@ static int runServer(QCoreApplication& app, bool doIndexation)
         &generator, &Generator::setUserGeneratingFor
     );
 
-    Scrobbling scrobbling(nullptr, &resolver);
+    TrackInfoProviderImpl trackInfoProvider(&resolver);
+
+    Scrobbling scrobbling(nullptr, &trackInfoProvider);
     auto scrobblingController = scrobbling.getController();
     QObject::connect(
         &player, &Player::startedPlaying,

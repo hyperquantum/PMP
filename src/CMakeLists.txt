@@ -129,6 +129,7 @@ set(PMP_SERVER_SOURCES
     server/tcpserver.cpp
     server/tokenencoder.cpp
     server/trackgeneratorbase.cpp
+    server/trackinfoproviderimpl.cpp
     server/trackrepetitionchecker.cpp
     server/trackstats.cpp
     server/tracktoscrobble.cpp

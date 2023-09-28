@@ -912,6 +912,12 @@ namespace PMP::Server
 
     Future<QString, FailureType> Resolver::findPathForHashAsync(FileHash hash)
     {
+        if (hash.isNull())
+        {
+            qWarning() << "Resolver: cannot find path for null hash";
+            return FutureError(failure);
+        }
+
         {
             QMutexLocker lock(&_lock);
 
@@ -937,6 +943,34 @@ namespace PMP::Server
             );
 
         return pathFuture;
+    }
+
+    Future<QString, FailureType> Resolver::findPathForHashAsync(uint hashId)
+    {
+        FileHash hash;
+
+        {
+            QMutexLocker lock(&_lock);
+
+            auto it = _idToHash.find(hashId);
+            if (it == _idToHash.end())
+            {
+                qWarning() << "Resolver: hash ID" << hashId << "is unknown";
+                return FutureError(failure);
+            }
+
+            hash = it.value()->hash();
+
+            auto path = it.value()->getFile();
+            if (!path.isEmpty())
+            {
+                return Future<QString, FailureType>::fromResult(path);
+            }
+        }
+
+        // TODO : check if we have it in the locations cache
+
+        return _fileFinder->findHashAsync(hashId, hash);
     }
 
     void Resolver::doFullIndexationFileSystemTraversal()

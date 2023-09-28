@@ -28,8 +28,11 @@
 namespace PMP::Server
 {
     Scrobbler::Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,
-                         ScrobblingBackend* backend)
-     : QObject(parent), _dataProvider(dataProvider), _backend(backend),
+                         ScrobblingBackend* backend, TrackInfoProvider* trackInfoProvider)
+     : QObject(parent),
+        _dataProvider(dataProvider),
+        _backend(backend),
+        _trackInfoProvider(trackInfoProvider),
         _status(ScrobblerStatus::Unknown),
         _timeoutTimer(new QTimer(this)),
         _backoffTimer(new QTimer(this)),
@@ -196,18 +199,45 @@ namespace PMP::Server
         if (_tracksToScrobble.empty() || _pendingScrobble) return;
 
         auto trackPtr = _tracksToScrobble.dequeue();
+        auto hashId = trackPtr->hashId();
+        auto timestamp = trackPtr->timestamp();
         _pendingScrobble = trackPtr;
 
-        auto& track = *trackPtr;
-
         _timeoutTimer->stop();
-        _timeoutTimer->start(5000);
+        _timeoutTimer->start(7000);
 
-        auto scrobblingTrack = convertTrack(*trackPtr);
-        //scrobblingTrack.durationInSeconds = // TODO
+        _trackInfoProvider->getTrackInfoAsync(hashId)
+            .addListener(
+                this,
+                [this, hashId, timestamp](
+                        ResultOrError<CollectionTrackInfo, FailureType> outcome)
+                {
+                    ScrobblingTrack track;
 
-        _backend->scrobbleTrack(track.timestamp(), scrobblingTrack);
-        /* then we wait for the gotScrobbleResult event to arrive */
+                    if (outcome.succeeded())
+                    {
+                        auto info = outcome.result();
+                        track.title = info.title();
+                        track.artist = info.artist();
+                        track.album = info.album();
+                        track.albumArtist = info.albumArtist();
+                        track.durationInSeconds = info.lengthInSeconds();
+                    }
+
+                    if (track.title.isEmpty() || track.artist.isEmpty())
+                    {
+                        qDebug() << "cannot scrobble track with hash ID" << hashId
+                                 << "because title or artist is unknown";
+
+                        _timeoutTimer->stop();
+                        _pendingScrobble = nullptr;
+                        return;
+                    }
+
+                    _backend->scrobbleTrack(timestamp, track);
+                    /* then we wait for the gotScrobbleResult event to arrive */
+                }
+            );
     }
 
     void Scrobbler::gotNowPlayingResult(bool success)
@@ -342,16 +372,6 @@ namespace PMP::Server
         _status = newStatus;
         if (oldStatus != newStatus)
             Q_EMIT statusChanged(newStatus);
-    }
-
-    ScrobblingTrack Scrobbler::convertTrack(const TrackToScrobble& track)
-    {
-        ScrobblingTrack t(track.title(),
-                          track.artist(),
-                          track.album(),
-                          track.albumArtist());
-
-        return t;
     }
 
     void Scrobbler::startBackoffTimer(int initialBackoffMilliseconds)

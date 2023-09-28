@@ -45,16 +45,16 @@ namespace PMP::Server
 {
     class Database;
     class LastFmScrobblingDataRecord;
-    class Resolver;
     class Scrobbler;
     enum class ScrobblingBackendState;
+    class TrackInfoProvider;
     class UserScrobblingDataRecord;
 
     class ScrobblingHost : public QObject
     {
         Q_OBJECT
     public:
-        ScrobblingHost(Resolver* resolver);
+        ScrobblingHost(TrackInfoProvider* trackInfoProvider);
 
         SimpleFuture<Result> authenticateForProvider(uint userId,
                                                      ScrobblingProvider provider,
@@ -113,7 +113,7 @@ namespace PMP::Server
         void installScrobblerSignalHandlers(uint userId, ScrobblingProvider provider,
                                             Scrobbler* scrobbler);
 
-        Resolver* _resolver;
+        TrackInfoProvider* _trackInfoProvider;
         QHash<uint, QHash<ScrobblingProvider, ScrobblerData>> _scrobblersData;
         bool _hostEnabled;
     };

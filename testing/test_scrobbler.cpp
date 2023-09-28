@@ -200,14 +200,51 @@ QVector<std::shared_ptr<TrackToScrobble>> DataProviderMock::getNextTracksToScrob
     return result;
 }
 
+// ============================== TrackInfoProviderMock ============================== //
+
+TrackInfoProviderMock::TrackInfoProviderMock()
+{
+    /* create and register the default track to test with */
+
+    CollectionTrackInfo track(FileHash(), true, "Title", "Artist", "Album", "AlbumArtist",
+                              /* length (s):*/ 3 * 60 * 1000);
+
+    _tracks.insert(1, track);
+}
+
+Future<CollectionTrackInfo, FailureType> TrackInfoProviderMock::getTrackInfoAsync(
+                                                                              uint hashId)
+{
+    Q_ASSERT(hashId > 0);
+    Q_ASSERT(_tracks.contains(hashId));
+
+    return FutureResult(_tracks[hashId]);
+}
+
+void TrackInfoProviderMock::registerTrack(uint hashId, QString title, QString artist)
+{
+    registerTrack(hashId, title, artist, "", "");
+}
+
+void TrackInfoProviderMock::registerTrack(uint hashId, QString title, QString artist,
+                                          QString album, QString albumArtist)
+{
+    Q_ASSERT(hashId > 0);
+    Q_ASSERT(!_tracks.contains(hashId));
+
+    CollectionTrackInfo track(FileHash(), true, title, artist, album, albumArtist,
+                              /* length (s):*/ 4 * 60 * 1000);
+
+    _tracks.insert(hashId, track);
+}
+
 // =============================== TrackToScrobbleMock =============================== //
 
-TrackToScrobbleMock::TrackToScrobbleMock(QDateTime timestamp, const QString& title,
-                                         QString const& artist, QString const& album,
-                                         QString const& albumArtist)
-    : _timestamp(timestamp), _title(title), _artist(artist), _album(album),
-      _albumArtist(albumArtist),
-      _scrobbled(false), _cannotBeScrobbled(false)
+TrackToScrobbleMock::TrackToScrobbleMock(QDateTime timestamp, uint hashId)
+  : _timestamp(timestamp),
+    _hashId(hashId),
+    _scrobbled(false),
+    _cannotBeScrobbled(false)
 {
     //
 }
@@ -237,9 +274,10 @@ void TrackToScrobbleMock::scrobbleIgnored()
 
 void TestScrobbler::simpleNowPlayingUpdate()
 {
+    TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
     auto backend = new BackendMock(false);
-    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend, &trackInfoProvider);
 
     QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
 
@@ -250,9 +288,10 @@ void TestScrobbler::simpleNowPlayingUpdate()
 
 void TestScrobbler::nowPlayingWithAuthentication()
 {
+    TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
     auto backend = new BackendMock(true);
-    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend, &trackInfoProvider);
 
     QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
 
@@ -268,13 +307,14 @@ void TestScrobbler::nowPlayingWithAuthentication()
 
 void TestScrobbler::nowPlayingWithTrackToScrobble()
 {
+    TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
     auto track = addTrackToScrobble(dataProvider);
 
     QVERIFY(!track->scrobbled());
 
     auto backend = new BackendMock(false);
-    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend, &trackInfoProvider);
 
     QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
 
@@ -287,9 +327,10 @@ void TestScrobbler::nowPlayingWithTrackToScrobble()
 
 void TestScrobbler::nowPlayingWithImmediateScrobble()
 {
+    TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
     auto backend = new BackendMock(false);
-    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend, &trackInfoProvider);
 
     QCOMPARE(backend->nowPlayingUpdatedCount(), 0);
 
@@ -305,13 +346,14 @@ void TestScrobbler::nowPlayingWithImmediateScrobble()
 
 void TestScrobbler::trivialScrobble()
 {
+    TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
     auto track = addTrackToScrobble(dataProvider);
 
     QVERIFY(!track->scrobbled());
 
     auto backend = new BackendMock(false);
-    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend, &trackInfoProvider);
     scrobbler.wakeUp();
 
     QTRY_VERIFY(track->scrobbled());
@@ -321,24 +363,30 @@ void TestScrobbler::trivialScrobble()
 
 void TestScrobbler::multipleSimpleScrobbles()
 {
+    TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
 
     QVector<std::shared_ptr<TrackToScrobbleMock>> tracks;
     auto time = makeDateTime(2018, 4, 9, 23, 30);
 
-    tracks << addTrackToScrobble(dataProvider, time, "Title 1", "Artist 1");
+    tracks << addTrackToScrobble(dataProvider, trackInfoProvider, time, 2,
+                                 "Title 1", "Artist 1");
     time = time.addSecs(185);
 
-    tracks << addTrackToScrobble(dataProvider, time, "Title 2", "Artist 2");
+    tracks << addTrackToScrobble(dataProvider, trackInfoProvider, time, 3,
+                                 "Title 2", "Artist 2");
     time = time.addSecs(180);
 
-    tracks << addTrackToScrobble(dataProvider, time, "Title 3", "Artist 3");
+    tracks << addTrackToScrobble(dataProvider, trackInfoProvider, time, 4,
+                                 "Title 3", "Artist 3");
     time = time.addSecs(203);
 
-    tracks << addTrackToScrobble(dataProvider, time, "Title 4", "Artist 4");
+    tracks << addTrackToScrobble(dataProvider, trackInfoProvider, time, 5,
+                                 "Title 4", "Artist 4");
     time = time.addSecs(189);
 
-    tracks << addTrackToScrobble(dataProvider, time, "Title 5", "Artist 5");
+    tracks << addTrackToScrobble(dataProvider, trackInfoProvider, time, 6,
+                                 "Title 5", "Artist 5");
 
     for (auto& track : qAsConst(tracks))
     {
@@ -346,7 +394,7 @@ void TestScrobbler::multipleSimpleScrobbles()
     }
 
     auto backend = new BackendMock(false);
-    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend, &trackInfoProvider);
     scrobbler.wakeUp();
 
     for (auto& track : qAsConst(tracks))
@@ -360,13 +408,14 @@ void TestScrobbler::multipleSimpleScrobbles()
 
 void TestScrobbler::scrobbleWithAuthentication()
 {
+    TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
     auto track = addTrackToScrobble(dataProvider);
 
     QVERIFY(!track->scrobbled());
 
     auto backend = new BackendMock(true);
-    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend, &trackInfoProvider);
     scrobbler.wakeUp();
 
     QTRY_COMPARE(backend->state(), ScrobblingBackendState::WaitingForUserCredentials);
@@ -380,6 +429,7 @@ void TestScrobbler::scrobbleWithAuthentication()
 
 void TestScrobbler::scrobbleWithExistingValidToken()
 {
+    TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
     auto track = addTrackToScrobble(dataProvider);
 
@@ -387,7 +437,7 @@ void TestScrobbler::scrobbleWithExistingValidToken()
 
     auto backend = new BackendMock(true);
     backend->setApiToken(true); /* set an active, valid token */
-    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend, &trackInfoProvider);
     scrobbler.wakeUp();
 
     QTRY_VERIFY(track->scrobbled());
@@ -397,6 +447,7 @@ void TestScrobbler::scrobbleWithExistingValidToken()
 
 void TestScrobbler::scrobbleWithTokenChangeAfterInvalidToken()
 {
+    TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
     auto track = addTrackToScrobble(dataProvider);
 
@@ -404,7 +455,7 @@ void TestScrobbler::scrobbleWithTokenChangeAfterInvalidToken()
 
     auto backend = new BackendMock(true);
     backend->setApiToken(false); /* set an active, but invalid, token */
-    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend, &trackInfoProvider);
     scrobbler.wakeUp();
 
     /* first wait for the initialization to complete */
@@ -422,6 +473,7 @@ void TestScrobbler::scrobbleWithTokenChangeAfterInvalidToken()
 
 void TestScrobbler::mustSkipScrobblesThatAreTooOld()
 {
+    TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
 
     QVector<std::shared_ptr<TrackToScrobbleMock>> tracks;
@@ -446,7 +498,7 @@ void TestScrobbler::mustSkipScrobblesThatAreTooOld()
     }
 
     auto backend = new BackendMock(false);
-    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend, &trackInfoProvider);
     scrobbler.wakeUp();
 
     for (int i = 0; i < tracks.size(); ++i)
@@ -468,6 +520,7 @@ void TestScrobbler::mustSkipScrobblesThatAreTooOld()
 
 void TestScrobbler::retriesAfterTemporaryUnavailability()
 {
+    TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
     auto track1 = addTrackToScrobble(dataProvider);
     auto track2 = addTrackToScrobble(dataProvider);
@@ -477,7 +530,7 @@ void TestScrobbler::retriesAfterTemporaryUnavailability()
 
     auto backend = new BackendMock(false);
     backend->setTemporaryUnavailabilitiesToStageForScrobbles(3);
-    Scrobbler scrobbler(nullptr, &dataProvider, backend);
+    Scrobbler scrobbler(nullptr, &dataProvider, backend, &trackInfoProvider);
     scrobbler.wakeUp();
 
     QTRY_VERIFY(track2->scrobbled());
@@ -501,21 +554,31 @@ QDateTime TestScrobbler::makeDateTime(int year, int month, int day,
 std::shared_ptr<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
                                                            DataProviderMock& dataProvider)
 {
-    return addTrackToScrobble(dataProvider, makeDateTime(2018, 10, 10, 17, 33));
+    auto timestamp = makeDateTime(2018, 10, 10, 17, 33);
+
+    return addTrackToScrobble(dataProvider, timestamp);
 }
 
 std::shared_ptr<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
-                                           DataProviderMock& dataProvider, QDateTime time)
+                                                        DataProviderMock& dataProvider,
+                                                        QDateTime time)
 {
-    return addTrackToScrobble(dataProvider, time, "Title", "Artist");
+    auto hashId = 1;
+
+    auto track = std::make_shared<TrackToScrobbleMock>(time, hashId);
+    dataProvider.add(track);
+    return track;
 }
 
 std::shared_ptr<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
                                                            DataProviderMock& dataProvider,
-                                                           QDateTime time,
+                                                TrackInfoProviderMock& trackInfoProvider,
+                                                           QDateTime time, uint hashId,
                                                            QString title, QString artist)
 {
-    auto track = std::make_shared<TrackToScrobbleMock>(time, title, artist, "", "");
+    trackInfoProvider.registerTrack(hashId, title, artist);
+
+    auto track = std::make_shared<TrackToScrobbleMock>(time, hashId);
     dataProvider.add(track);
     return track;
 }

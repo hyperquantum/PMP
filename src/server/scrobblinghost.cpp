@@ -38,8 +38,9 @@ namespace PMP::Server
 
     /* ============================================================================ */
 
-    ScrobblingHost::ScrobblingHost(Resolver* resolver)
-     : _resolver(resolver), _hostEnabled(false)
+    ScrobblingHost::ScrobblingHost(TrackInfoProvider* trackInfoProvider)
+     : _trackInfoProvider(trackInfoProvider),
+        _hostEnabled(false)
     {
         //
     }
@@ -305,7 +306,7 @@ namespace PMP::Server
     {
         qDebug() << "creating Last.FM scrobbler for user with ID" << userId;
 
-        auto dataProvider = new LastFmScrobblingDataProvider(userId, _resolver);
+        auto dataProvider = new LastFmScrobblingDataProvider(userId);
         auto lastFmBackend = new LastFmScrobblingBackend();
 
         connect(
@@ -333,7 +334,9 @@ namespace PMP::Server
             lastFmBackend->setSessionKey(sessionKey);
         }
 
-        auto scrobbler = new Scrobbler(this, dataProvider, lastFmBackend);
+        auto scrobbler =
+            new Scrobbler(this, dataProvider, lastFmBackend, _trackInfoProvider);
+
         return scrobbler;
     }
 

@@ -25,6 +25,7 @@
 
 #include "result.h"
 #include "scrobblingbackend.h"
+#include "trackinfoprovider.h"
 #include "tracktoscrobble.h"
 
 #include <QObject>
@@ -43,7 +44,7 @@ namespace PMP::Server
         Q_OBJECT
     public:
         Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,
-                  ScrobblingBackend* backend);
+                  ScrobblingBackend* backend, TrackInfoProvider* trackInfoProvider);
 
         ScrobblerStatus status() const { return _status; }
 
@@ -69,7 +70,6 @@ namespace PMP::Server
         void reevaluateStatus();
 
     private:
-        static ScrobblingTrack convertTrack(TrackToScrobble const& track);
         void checkIfWeHaveSomethingToDo();
         void sendNowPlaying();
         void sendNextScrobble();
@@ -78,6 +78,7 @@ namespace PMP::Server
 
         ScrobblingDataProvider* _dataProvider;
         ScrobblingBackend* _backend;
+        TrackInfoProvider* _trackInfoProvider;
         ScrobblerStatus _status;
         QQueue<std::shared_ptr<TrackToScrobble>> _tracksToScrobble;
         std::shared_ptr<TrackToScrobble> _pendingScrobble;
