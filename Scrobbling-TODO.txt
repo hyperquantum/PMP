@@ -1,7 +1,6 @@
 * bug: "now playing" is triggered by the backoff mechanism after the track is already finished
 * handle timeouts
 * handle failed requests properly (OpenSSL missing or connection problem)
-* make sure OpenSSL libraries are included in binary releases
 * race condition after track finished playing, between history insert and check for something to scrobble
 
 
