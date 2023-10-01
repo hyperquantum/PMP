@@ -18,6 +18,7 @@
 */
 
 #include "common/fileanalyzer.h"
+#include "common/logging.h"
 #include "common/version.h"
 
 #include <QCoreApplication>
@@ -36,6 +37,10 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationVersion(PMP_VERSION_DISPLAY);
     QCoreApplication::setOrganizationName(PMP_ORGANIZATION_NAME);
     QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
+
+    /* set up logging */
+    Logging::enableTextFileOnlyLogging();
+    Logging::setFilenameTag("HT");
 
     QTextStream out(stdout);
     QTextStream err(stderr);
