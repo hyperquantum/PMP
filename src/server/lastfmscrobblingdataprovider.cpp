@@ -119,12 +119,18 @@ namespace PMP::Server
 
     void LastFmScrobblingDataProvider::scrobbledSuccessfully(quint32 id)
     {
+        qDebug() << "marking history entry" << id
+                 << "as successfully scrobbled to Last.fm  (PMP user ID" << _user << ")";
+
         _scrobbledUpTo = qMax(_scrobbledUpTo, id);
         updateScrobbledUpTo();
     }
 
     void LastFmScrobblingDataProvider::scrobbleIgnored(quint32 id)
     {
+        qDebug() << "marking history entry" << id
+                 << "as already scrobbled to Last.fm  (PMP user ID" << _user << ")";
+
         /* just like a successful scrobble */
         _scrobbledUpTo = qMax(_scrobbledUpTo, id);
         updateScrobbledUpTo();

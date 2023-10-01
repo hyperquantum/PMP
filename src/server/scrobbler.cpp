@@ -81,13 +81,13 @@ namespace PMP::Server
 
     void Scrobbler::wakeUp()
     {
-        qDebug() << "Scrobbler::wakeUp() called";
+        qDebug() << "Scrobbler: wakeUp() called";
         checkIfWeHaveSomethingToDo();
     }
 
     void Scrobbler::nowPlayingNothing()
     {
-        qDebug() << "Scrobbler::nowPlayingNothing() called";
+        qDebug() << "Scrobbler: nowPlayingNothing() called";
 
         _nowPlayingPresent = false;
         //_nowPlayingStartTime =
@@ -96,14 +96,14 @@ namespace PMP::Server
 
     void Scrobbler::nowPlayingTrack(QDateTime startTime, ScrobblingTrack track)
     {
-        qDebug() << "Scrobbler::nowPlayingTrack() called";
+        qDebug() << "Scrobbler: nowPlayingTrack() called";
 
         if (_nowPlayingPresent && _nowPlayingStartTime == startTime)
             return; /* still the same */
 
         if (track.title.isEmpty() || track.artist.isEmpty())
         {
-            qDebug() << "cannot update 'now playing' because title or artist is missing";
+            qDebug() << "Scrobbler: cannot update 'now playing'; title or artist missing";
             nowPlayingNothing();
             return;
         }
@@ -119,7 +119,8 @@ namespace PMP::Server
 
     void Scrobbler::timeoutTimerTimedOut()
     {
-        qDebug() << "timeout event triggered; backend state:" << _backend->state();
+        qDebug() << "Scrobbler: timeout event triggered; backend state:"
+                 << _backend->state();
 
         /* if a track was being scrobbled, reinsert it at the front of the queue */
         reinsertPendingScrobbleAtFrontOfQueue();
@@ -129,13 +130,13 @@ namespace PMP::Server
 
     void Scrobbler::backoffTimerTimedOut()
     {
-        qDebug() << "backoff timer triggered";
+        qDebug() << "Scrobbler: backoff timer triggered";
         checkIfWeHaveSomethingToDo();
     }
 
     void Scrobbler::checkIfWeHaveSomethingToDo()
     {
-        qDebug() << "running checkIfWeHaveSomethingToDo";
+        qDebug() << "Scrobbler: checkIfWeHaveSomethingToDo() called";
         if (_nowPlayingSent && !_nowPlayingDone) return;
         if (_pendingScrobble) return;
         if (_backoffTimer->isActive()) return;
@@ -151,12 +152,13 @@ namespace PMP::Server
         if (!haveTracksToScrobble && !haveNowPlayingToSend)
             return; /* nothing to be done */
 
-        qDebug() << "we have" << _tracksToScrobble.size() << "tracks to scrobble";
+        qDebug() << "Scrobbler: we have" << _tracksToScrobble.size()
+                 << "tracks to scrobble";
 
         if (haveNowPlayingToSend)
-            qDebug() << "we have a 'now playing' to send";
+            qDebug() << "Scrobbler: we have a 'now playing' to send";
 
-        qDebug() << "backend state:" << _backend->state();
+        qDebug() << "Scrobbler: backend state:" << _backend->state();
         switch (_backend->state())
         {
             case ScrobblingBackendState::NotInitialized:
@@ -183,6 +185,8 @@ namespace PMP::Server
     {
         if (!_nowPlayingPresent || _nowPlayingSent) return;
 
+        qDebug() << "Scrobbler: now sending 'now playing'";
+
         _nowPlayingSent = true;
         _nowPlayingDone = false;
 
@@ -195,13 +199,15 @@ namespace PMP::Server
 
     void Scrobbler::sendNextScrobble()
     {
-        qDebug() << "sendNextScrobble; scrobble queue size:" << _tracksToScrobble.size();
         if (_tracksToScrobble.empty() || _pendingScrobble) return;
 
         auto trackPtr = _tracksToScrobble.dequeue();
         auto hashId = trackPtr->hashId();
         auto timestamp = trackPtr->timestamp();
         _pendingScrobble = trackPtr;
+
+        qDebug() << "Scrobbler: now scrobbling track with hash ID" << hashId
+                 << "and timestamp" << timestamp.toLocalTime();
 
         _timeoutTimer->stop();
         _timeoutTimer->start(7000);
@@ -226,13 +232,16 @@ namespace PMP::Server
 
                     if (track.title.isEmpty() || track.artist.isEmpty())
                     {
-                        qDebug() << "cannot scrobble track with hash ID" << hashId
-                                 << "because title or artist is unknown";
+                        qDebug() << "Scrobbler: cannot scrobble track with hash ID"
+                                 << hashId << "because title or artist is unknown";
 
                         _timeoutTimer->stop();
                         _pendingScrobble = nullptr;
                         return;
                     }
+
+                    qDebug() << "Scrobbler: got track information for hash ID" << hashId
+                             << "; will now scrobble the track";
 
                     _backend->scrobbleTrack(timestamp, track);
                     /* then we wait for the gotScrobbleResult event to arrive */
@@ -242,7 +251,8 @@ namespace PMP::Server
 
     void Scrobbler::gotNowPlayingResult(bool success)
     {
-        qDebug() << "received 'now playing' result:" << (success ? "success" : "failure");
+        qDebug() << "Scrobbler: received 'now playing' result:"
+                 << (success ? "success" : "failure");
 
         _timeoutTimer->stop();
 
@@ -262,10 +272,10 @@ namespace PMP::Server
 
     void Scrobbler::gotScrobbleResult(ScrobbleResult result)
     {
-        qDebug() << "received scrobble result:" << result;
+        qDebug() << "Scrobbler: received scrobble result:" << result;
         if (!_pendingScrobble)
         {
-            qDebug() << " did not expect a scrobble result right now";
+            qWarning() << "Scrobbler: did not expect a scrobble result right now";
             return;
         }
 
@@ -306,7 +316,8 @@ namespace PMP::Server
     void Scrobbler::backendStateChanged(ScrobblingBackendState newState,
                                         ScrobblingBackendState oldState)
     {
-        qDebug() << "backend state changed to:" << newState;
+        qDebug() << "Scrobbler: backend state has changed from" << oldState << "to"
+                 << newState;
 
         _timeoutTimer->stop();
 
@@ -331,7 +342,7 @@ namespace PMP::Server
 
     void Scrobbler::serviceTemporarilyUnavailable()
     {
-        qDebug() << "serviceTemporarilyUnavailable() called";
+        qDebug() << "Scrobbler: serviceTemporarilyUnavailable() called";
 
         reinsertPendingScrobbleAtFrontOfQueue();
 
@@ -392,7 +403,9 @@ namespace PMP::Server
             _backoffMilliseconds = qMin(maxInterval, _backoffMilliseconds * 2);
         }
 
-        qDebug() << "starting backoff timer with interval:" << _backoffMilliseconds;
+        qDebug() << "Scrobbler: starting backoff timer with interval:"
+                 << _backoffMilliseconds;
+
         _backoffTimer->start(_backoffMilliseconds);
 
         reevaluateStatus(); /* status may need to become yellow */

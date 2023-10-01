@@ -62,7 +62,7 @@ namespace PMP::Server
 
         if (data.scrobbler == nullptr)
         {
-            qWarning() << "scrobbler not created??";
+            qWarning() << "ScrobblingHost: authenticate: scrobbler not created yet??";
             return FutureResult(Error::internalError());
         }
 
@@ -74,7 +74,7 @@ namespace PMP::Server
         if (_hostEnabled)
             return; /* already enabled */
 
-        qDebug() << "ScrobblingHost now enabled";
+        qDebug() << "ScrobblingHost: scrobbling subsystem now enabled";
         _hostEnabled = true;
         load();
     }
@@ -83,11 +83,11 @@ namespace PMP::Server
     {
         if (!_hostEnabled)
         {
-            qWarning() << "host not enabled, not going to load anything";
+            qWarning() << "ScrobblingHost: host not enabled, not going to load anything";
             return;
         }
 
-        qDebug() << "(re)loading scrobbling settings for all users";
+        qDebug() << "ScrobblingHost: (re)loading scrobbling settings for all users";
 
         auto db = Database::getDatabaseForCurrentThread();
         if (!db)
@@ -123,7 +123,7 @@ namespace PMP::Server
     {
         if (!_hostEnabled)
         {
-            qWarning() << "host not enabled, not going to wake up";
+            qWarning() << "ScrobblingHost: host not enabled, not going to wake up";
             return;
         }
 
@@ -147,7 +147,7 @@ namespace PMP::Server
     {
         if (!_hostEnabled)
         {
-            qWarning() << "host not enabled, not touching the provider";
+            qWarning() << "ScrobblingHost: host not enabled, not touching the provider";
             return;
         }
 
@@ -178,11 +178,11 @@ namespace PMP::Server
     {
         if (!_hostEnabled)
         {
-            qWarning() << "host not enabled, not sending provider info";
+            qWarning() << "ScrobblingHost: host not enabled, not sending provider info";
             return;
         }
 
-        qDebug() << "going to emit scrobblingProviderInfoSignal signal(s)";
+        qDebug() << "ScrobblingHost: going to emit scrobblingProviderInfoSignal(s)";
 
         /* Last.FM info; no other providers available yet */
         auto provider = ScrobblingProvider::LastFm;
@@ -272,7 +272,7 @@ namespace PMP::Server
                 break;
 
             case ScrobblingProvider::Unknown:
-                qWarning() << "cannot create 'Unknown' scrobbling provider";
+                qWarning() << "ScrobblingHost: cannot create provider 'Unknown'";
                 break;
         }
 
@@ -280,7 +280,7 @@ namespace PMP::Server
 
         if (!scrobbler)
         {
-            qWarning() << "failed to create scrobbler for user" << userId
+            qWarning() << "ScrobblingHost: failed to create scrobbler for user" << userId
                        << "and provider" << provider;
             return;
         }
@@ -304,7 +304,8 @@ namespace PMP::Server
     Scrobbler* ScrobblingHost::createLastFmScrobbler(uint userId,
                                                    LastFmScrobblingDataRecord const& data)
     {
-        qDebug() << "creating Last.FM scrobbler for user with ID" << userId;
+        qDebug() << "ScrobblingHost: creating Last.FM scrobbler for user with ID"
+                 << userId;
 
         auto dataProvider = new LastFmScrobblingDataProvider(userId);
         auto lastFmBackend = new LastFmScrobblingBackend();
@@ -352,8 +353,9 @@ namespace PMP::Server
                 auto& data = _scrobblersData[userId][provider];
                 if (data.status == status) return;
 
-                qDebug() << "status changing from" << data.status << "to" << status
-                         << "for user" << userId << "and provider" << provider;
+                qDebug() << "ScrobblingHost: scrobbler status has changed from"
+                         << data.status << "to" << status << "for user" << userId
+                         << "and provider" << provider;
 
                 data.status = status;
                 Q_EMIT scrobblerStatusChanged(userId, provider, status);
