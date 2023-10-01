@@ -99,7 +99,7 @@ namespace PMP {
                                               const QMessageLogContext& context,
                                               const QString& msg)
     {
-        QString time = QTime::currentTime().toString(Qt::ISODateWithMs);/* HH:mm:ss.zzz */
+        QString dateAndTime = QDateTime::currentDateTime().toString(Qt::ISODateWithMs);
         QString sourcefile = stripSourcefilePath(context.file);
 
         QString locationText =
@@ -108,22 +108,22 @@ namespace PMP {
         switch (type)
         {
             case QtDebugMsg:
-                return time % " [D] " % locationText % msg % "\n";
+                return dateAndTime % " [D] " % locationText % msg % "\n";
 
             case QtInfoMsg:
-                return time % " [Info] " % locationText % msg % "\n";
+                return dateAndTime % " [Info] " % locationText % msg % "\n";
 
             case QtWarningMsg:
-                return time % " [Warning] " % locationText % msg % "\n";
+                return dateAndTime % " [Warning] " % locationText % msg % "\n";
 
             case QtCriticalMsg:
-                return time % " [CRITICAL] " % locationText % msg % "\n";
+                return dateAndTime % " [CRITICAL] " % locationText % msg % "\n";
 
             case QtFatalMsg:
-                return time % " [FATAL] " % locationText % msg % "\n";
+                return dateAndTime % " [FATAL] " % locationText % msg % "\n";
         }
 
-        return time % " [???] " % locationText % msg % "\n";
+        return dateAndTime % " [???] " % locationText % msg % "\n";
     }
 
     /* ========================== TextFileLogger ========================== */
