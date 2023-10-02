@@ -10,3 +10,6 @@ When merging the branch:
 * delete "scrobbling" protocol extension and put its content into the main network protocol
 * reorder enum members for scrobbling protocol
 * change User Agent version for our Last.fm scrobbling back end
+* update README.md
+* update TODOs.txt
+* delete this file, move remaining issues to TODOs.txt
