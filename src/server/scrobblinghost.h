@@ -81,11 +81,6 @@ namespace PMP::Server
         void scrobblingProviderEnabledChanged(uint userId,
                                               PMP::ScrobblingProvider provider,
                                               bool enabled);
-        void gotAuthenticationResult(uint userId, PMP::ScrobblingProvider provider,
-                                     PMP::Server::ClientRequestOrigin origin,
-                                     bool success);
-        void errorOccurredDuringAuthentication(uint userId,
-                                               PMP::Server::ClientRequestOrigin origin);
 
     private:
         struct ScrobblerData
