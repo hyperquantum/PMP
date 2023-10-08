@@ -70,6 +70,7 @@ Building on Windows is done using [vcpkg](https://github.com/microsoft/vcpkg).
 
  * MySQL/MariaDB client library (libmysql/libmariadb)
  * Codecs
+ * OpenSSL
 
 PMP currently uses MySQL for storing its data. MariaDB is probably a valid replacement, but this has not been tested yet. The MySQL server should be configured as a developer installation (it uses less memory that way) and should be set to use Unicode (UTF-8) by default. Default storage engine should be InnoDB.
 
@@ -77,9 +78,7 @@ Windows users will need to install the [Xiph codecs](https://xiph.org/dshow/down
 
 Linux users may need to install a GStreamer plugin to get support for MP3 files.
 
-  3. OpenSSL
-
-     PMP needs OpenSSL for Last.fm scrobbling.
+OpenSSL is required for Last.fm scrobbling.
 
 
 ## 3. Running PMP
