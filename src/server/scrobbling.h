@@ -102,6 +102,8 @@ namespace PMP::Server
                                                      QString password);
 
     private:
+        UserScrobblingController* createUserController(uint userId);
+
         TrackInfoProvider* _trackInfoProvider;
         ScrobblingHost* _host;
         QThread _thread;

@@ -130,7 +130,15 @@ namespace PMP::Server
         auto controller = _userControllers.value(userId, nullptr);
         if (controller) return controller;
 
-        controller = new UserScrobblingController(userId);
+        controller = createUserController(userId);
+
+        _userControllers.insert(userId, controller);
+        return controller;
+    }
+
+    UserScrobblingController* Scrobbling::createUserController(uint userId)
+    {
+        auto controller = new UserScrobblingController(userId);
         controller->setParent(this);
 
         connect(
@@ -184,7 +192,6 @@ namespace PMP::Server
             }
         );
 
-        _userControllers.insert(userId, controller);
         return controller;
     }
 
