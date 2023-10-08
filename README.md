@@ -32,6 +32,7 @@ Contents of this file:
    * Creation of user accounts on the server
    * Authentication with username and password when connecting to the server
    * Each user has their own playback history, track scores, and preferences
+   * Scrobbling to Last.fm for each user independently
  * **Advanced file tracking**
    * Tracks are identified by file contents, ignoring irrelevant bits like metadata
    * Known tracks are still recognized after moving or renaming files
@@ -204,7 +205,6 @@ Effort is a rough estimate. Priorities can still change.
 | Feature                                                   | Priority | Effort       |
 | --------------------------------------------------------- | -------- | ------------ |
 | Artist-based track repetition avoidance                   | High     | Medium       |
-| Scrobbling to Last.fm                                     | High     | Large        |
 | Server to server database synchronization                 | High     | Large        |
 | Group song duplicates together and treat them as one      | High     | Large        |
 | Identify song duplicates which have different hash values | High     | Large        |

@@ -7,7 +7,6 @@ Disclaimer:
 
 WORK IN PROGRESS (LONG RUNNING - on different branches in git)
 
- * Last.fm scrobbling support: mostly working, needs some polishing (branch "feature-scrobbling")
  * Compatibility UI (branch "compatibility-ui")
 
 
