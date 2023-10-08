@@ -71,6 +71,8 @@ namespace PMP::Server
 
     private:
         void checkIfWeHaveSomethingToDo();
+        void initializeBackend();
+        void sendScrobblesOrNowPlaying();
         void sendNowPlaying();
         void sendNextScrobble();
         void startBackoffTimer(int initialBackoffMilliseconds);

@@ -141,6 +141,36 @@ namespace PMP::Server
         if (_pendingScrobble) return;
         if (_backoffTimer->isActive()) return;
 
+        auto backendState = _backend->state();
+
+        qDebug() << "Scrobbler: backend state:" << backendState;
+        switch (backendState)
+        {
+        case ScrobblingBackendState::NotInitialized:
+            initializeBackend();
+            break;
+        case ScrobblingBackendState::ReadyForScrobbling:
+            sendScrobblesOrNowPlaying();
+            break;
+        case ScrobblingBackendState::PermanentFatalError:
+            /* TODO */
+            break;
+        case ScrobblingBackendState::WaitingForUserCredentials:
+            /* we will have to wait for (new) credentials; this means waiting until
+               the state of the backend changes again*/
+            break;
+        }
+    }
+
+    void Scrobbler::initializeBackend()
+    {
+        _backend->initialize();
+
+        QTimer::singleShot(0, this, &Scrobbler::wakeUp);
+    }
+
+    void Scrobbler::sendScrobblesOrNowPlaying()
+    {
         if (_tracksToScrobble.empty())
         {
             _tracksToScrobble.append(_dataProvider->getNextTracksToScrobble().toList());
@@ -149,36 +179,21 @@ namespace PMP::Server
         auto haveTracksToScrobble = !_tracksToScrobble.empty();
         auto haveNowPlayingToSend = _nowPlayingPresent && !_nowPlayingSent;
 
-        if (!haveTracksToScrobble && !haveNowPlayingToSend)
-            return; /* nothing to be done */
-
-        qDebug() << "Scrobbler: we have" << _tracksToScrobble.size()
-                 << "tracks to scrobble";
+        if (haveTracksToScrobble)
+        {
+            qDebug() << "Scrobbler: we have" << _tracksToScrobble.size()
+                     << "tracks to scrobble";
+        }
 
         if (haveNowPlayingToSend)
-            qDebug() << "Scrobbler: we have a 'now playing' to send";
-
-        qDebug() << "Scrobbler: backend state:" << _backend->state();
-        switch (_backend->state())
         {
-            case ScrobblingBackendState::NotInitialized:
-                _backend->initialize();
-                QTimer::singleShot(0, this, &Scrobbler::wakeUp);
-                break;
-            case ScrobblingBackendState::ReadyForScrobbling:
-                if (haveTracksToScrobble)
-                    sendNextScrobble();
-                else if (haveNowPlayingToSend)
-                    sendNowPlaying();
-                break;
-            case ScrobblingBackendState::PermanentFatalError:
-                /* TODO */
-                break;
-            case ScrobblingBackendState::WaitingForUserCredentials:
-                /* we will have to wait for (new) credentials; this means waiting until
-                   the state of the backend changes again*/
-                break;
+            qDebug() << "Scrobbler: we have a 'now playing' to send";
         }
+
+        if (haveTracksToScrobble)
+            sendNextScrobble();
+        else if (haveNowPlayingToSend)
+            sendNowPlaying();
     }
 
     void Scrobbler::sendNowPlaying()
@@ -352,7 +367,7 @@ namespace PMP::Server
     void Scrobbler::reevaluateStatus()
     {
         auto oldStatus = _status;
-        auto newStatus = oldStatus;
+        ScrobblerStatus newStatus;
 
         auto backendState = _backend->state();
         switch (backendState)
@@ -371,6 +386,12 @@ namespace PMP::Server
 
             case ScrobblingBackendState::WaitingForUserCredentials:
                 newStatus = ScrobblerStatus::WaitingForUserCredentials;
+                break;
+
+            default:
+                newStatus = oldStatus;
+                qWarning() << "Scrobbler: unknown/unhandled backend status:"
+                           << backendState;
                 break;
         }
 
