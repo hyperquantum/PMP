@@ -247,6 +247,11 @@ namespace PMP
             break;
         }
 
+        if (errorOutput.isEmpty())
+        {
+            errorOutput = QString("error code %1").arg(errorCodeString(code));
+        }
+
         setCommandExecutionFailed(3, "Command failed: " + errorOutput);
     }
 
