@@ -215,7 +215,7 @@ namespace PMP
 
         if (errorOutput.isEmpty())
         {
-            errorOutput = QString("error code %1").arg(static_cast<int>(errorCode));
+            errorOutput = QString("error code %1").arg(errorCodeString(errorCode));
         }
 
         setCommandExecutionFailed(3, "Command failed: " + errorOutput);
