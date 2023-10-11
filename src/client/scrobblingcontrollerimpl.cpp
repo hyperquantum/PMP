@@ -117,5 +117,6 @@ namespace PMP::Client
     {
         _lastFmEnabled = null;
         _lastFmStatus = ScrobblerStatus::Unknown;
+        Q_EMIT lastFmInfoChanged();
     }
 }
