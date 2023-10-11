@@ -18,7 +18,6 @@
 */
 
 #include "analyzer.h"
-#include "clientrequestorigin.h"
 #include "collectiontrackinfo.h"
 #include "scrobblingbackend.h"
 #include "scrobblingtrack.h"
@@ -37,7 +36,6 @@ namespace PMP::Server
         {
             qRegisterMetaType<QVector<uint>>();
 
-            qRegisterMetaType<PMP::Server::ClientRequestOrigin>();
             qRegisterMetaType<PMP::Server::CollectionTrackInfo>();
             qRegisterMetaType<PMP::Server::FileAnalysis>();
             qRegisterMetaType<PMP::Server::FileHashes>();

@@ -20,8 +20,6 @@
 #ifndef PMP_SCROBBLINGHOST_H
 #define PMP_SCROBBLINGHOST_H
 
-#include "clientrequestorigin.h"
-
 #include "common/future.h"
 #include "common/scrobblerstatus.h"
 #include "common/scrobblingprovider.h"

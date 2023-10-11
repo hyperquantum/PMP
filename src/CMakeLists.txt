@@ -96,7 +96,6 @@ set(PMP_CLIENT_HEADERS
 
 set(PMP_SERVER_SOURCES
     server/analyzer.cpp
-    server/clientrequestorigin.cpp
     server/collectionmonitor.cpp
     server/connectedclient.cpp
     server/database.cpp
