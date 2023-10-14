@@ -28,14 +28,16 @@ namespace PMP::Server
     class TrackToScrobble
     {
     public:
-        TrackToScrobble();
-        virtual ~TrackToScrobble();
+        virtual ~TrackToScrobble() {}
 
         virtual QDateTime timestamp() const = 0;
         virtual uint hashId() const = 0;
 
         virtual void scrobbledSuccessfully() = 0;
         virtual void scrobbleIgnored() = 0;
+
+    protected:
+        TrackToScrobble() {}
     };
 }
 #endif
