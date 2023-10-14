@@ -71,7 +71,7 @@ namespace PMP
             return debug;
 
         case NetworkProtocolExtension::Scrobbling:
-            debug << "NetworkProtocolExtension::Stopped";
+            debug << "NetworkProtocolExtension::Scrobbling";
             return debug;
 
         //case NetworkProtocolExtension::ExtensionName1:
