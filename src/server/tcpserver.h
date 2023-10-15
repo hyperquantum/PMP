@@ -21,7 +21,6 @@
 #define PMP_TCPSERVER_H
 
 #include <QHostAddress>
-#include <QSet>
 #include <QUuid>
 
 QT_FORWARD_DECLARE_CLASS(QTcpServer)
