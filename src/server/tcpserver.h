@@ -83,7 +83,6 @@ namespace PMP::Server
         static QString generateServerPassword();
 
         ServerInterface* createServerInterface();
-
         void determineCaption();
 
         QUuid _uuid;
