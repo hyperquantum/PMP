@@ -298,17 +298,6 @@ static int runServer(QCoreApplication& app, bool doIndexation)
             scrobblingController->wakeUp(entry->user());
         }
     );
-    /*
-    QObject::connect(
-        &resolver, &Resolver::fullIndexationRunStatusChanged,
-        scrobblingController,
-        [scrobblingController](bool running)
-        {
-            if (!running) // if indexation completed...
-                scrobblingController->enableScrobbling();
-        }
-    );
-    */
     scrobblingController->enableScrobbling();
 
     resolver.setMusicPaths(serverSettings.musicPaths());
