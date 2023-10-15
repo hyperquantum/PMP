@@ -28,6 +28,9 @@
 #include <QtDebug>
 #include <QTimer>
 
+using PMP::Server::DatabaseRecords::LastFmScrobblingDataRecord;
+using PMP::Server::DatabaseRecords::UserScrobblingDataRecord;
+
 namespace PMP::Server
 {
     ScrobblingHost::ScrobblerData::ScrobblerData()

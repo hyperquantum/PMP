@@ -42,11 +42,15 @@ namespace PMP
 namespace PMP::Server
 {
     class Database;
-    class LastFmScrobblingDataRecord;
     class Scrobbler;
     enum class ScrobblingBackendState;
     class TrackInfoProvider;
-    class UserScrobblingDataRecord;
+
+    namespace DatabaseRecords
+    {
+        class LastFmScrobblingDataRecord;
+        class UserScrobblingDataRecord;
+    }
 
     class ScrobblingHost : public QObject
     {
@@ -92,17 +96,18 @@ namespace PMP::Server
 
         void doForAllProviders(std::function<void (ScrobblingProvider)> action);
 
-        void ensureObfuscated(UserScrobblingDataRecord& record, Database& db);
+        void ensureObfuscated(DatabaseRecords::UserScrobblingDataRecord& record,
+                              Database& db);
 
-        void loadScrobblers(UserScrobblingDataRecord const& record);
-        void loadScrobbler(UserScrobblingDataRecord const& record,
+        void loadScrobblers(DatabaseRecords::UserScrobblingDataRecord const& record);
+        void loadScrobbler(DatabaseRecords::UserScrobblingDataRecord const& record,
                            ScrobblingProvider provider, bool enabled);
         void enableDisableScrobbler(uint userId, ScrobblingProvider provider,
                                     bool enabled);
         void createScrobblerIfNotExists(uint userId, ScrobblingProvider provider);
         void destroyScrobblerIfExists(uint userId, ScrobblingProvider provider);
         Scrobbler* createLastFmScrobbler(uint userId,
-                                         LastFmScrobblingDataRecord const& data);
+                                DatabaseRecords::LastFmScrobblingDataRecord const& data);
         void installScrobblerSignalHandlers(uint userId, ScrobblingProvider provider,
                                             Scrobbler* scrobbler);
 

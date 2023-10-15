@@ -44,53 +44,6 @@ QT_FORWARD_DECLARE_CLASS(QTextStream)
 
 namespace PMP::Server
 {
-    // TODO : move these record classes to databaserecords.h
-    
-    class LastFmScrobblingDataRecord
-    {
-    public:
-        LastFmScrobblingDataRecord()
-         : enableLastFmScrobbling(false), lastFmScrobbledUpTo(0)
-        {
-            //
-        }
-
-        bool enableLastFmScrobbling;
-        QString lastFmUser;
-        QString lastFmSessionKey;
-        quint32 lastFmScrobbledUpTo;
-    };
-
-    class UserScrobblingDataRecord : public LastFmScrobblingDataRecord
-    {
-    public:
-        UserScrobblingDataRecord()
-         : userId(0)
-        {
-            //
-        }
-
-        quint32 userId;
-    };
-
-    class HistoryRecord
-    {
-    public:
-        HistoryRecord()
-         : id(0), hashId(0), userId(0), permillage(-1), validForScoring(false)
-        {
-            //
-        }
-
-        quint32 id;
-        quint32 hashId;
-        quint32 userId;
-        QDateTime start;
-        QDateTime end;
-        qint16 permillage;
-        bool validForScoring;
-    };
-
     struct DatabaseConnectionSettings;
     class ServerSettings;
 
@@ -123,14 +76,16 @@ namespace PMP::Server
         ResultOrError<quint32, FailureType> registerNewUser(DatabaseRecords::User& user);
 
         // TODO : use ResultOrError for all return types
-        QVector<UserScrobblingDataRecord> getUsersScrobblingData();
-        LastFmScrobblingDataRecord getUserLastFmScrobblingData(quint32 userId);
+        QVector<DatabaseRecords::UserScrobblingDataRecord> getUsersScrobblingData();
+        DatabaseRecords::LastFmScrobblingDataRecord getUserLastFmScrobblingData(
+                                                                        quint32 userId);
         bool setLastFmScrobblingEnabled(quint32 userId, bool enabled = true);
         quint32 getLastFmScrobbledUpTo(quint32 userId, bool* ok);
         bool updateLastFmScrobbledUpTo(quint32 userId, quint32 newValue);
         bool updateLastFmAuthentication(quint32 userId, QString lastFmUsername,
                                         QString lastFmSessionKey);
-        bool updateUserScrobblingSessionKeys(UserScrobblingDataRecord const& record);
+        bool updateUserScrobblingSessionKeys(
+                                DatabaseRecords::UserScrobblingDataRecord const& record);
 
         DatabaseRecords::UserDynamicModePreferences getUserDynamicModePreferences(
                                                                            quint32 userId,
@@ -150,10 +105,11 @@ namespace PMP::Server
                                                                       getHashHistoryStats(
                                                                 quint32 userId,
                                                                 QVector<quint32> hashIds);
-        QVector<HistoryRecord> getUserHistoryForScrobbling(quint32 userId,
-                                                           quint32 startId,
-                                                           QDateTime earliestDateTime,
-                                                           int limit);
+        QVector<DatabaseRecords::HistoryRecord> getUserHistoryForScrobbling(
+                                                            quint32 userId,
+                                                            quint32 startId,
+                                                            QDateTime earliestDateTime,
+                                                            int limit);
 
         ResultOrError<QVector<QPair<quint32, quint32>>, FailureType> getEquivalences();
         ResultOrError<SuccessType, FailureType> registerEquivalence(quint32 hashId1,

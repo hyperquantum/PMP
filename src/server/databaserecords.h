@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -79,6 +79,51 @@ namespace PMP::Server
 
             bool dynamicModeEnabled;
             qint32 trackRepetitionAvoidanceIntervalSeconds;
+        };
+
+        class LastFmScrobblingDataRecord
+        {
+        public:
+            LastFmScrobblingDataRecord()
+                : enableLastFmScrobbling(false), lastFmScrobbledUpTo(0)
+            {
+                //
+            }
+
+            bool enableLastFmScrobbling;
+            QString lastFmUser;
+            QString lastFmSessionKey;
+            quint32 lastFmScrobbledUpTo;
+        };
+
+        class UserScrobblingDataRecord : public LastFmScrobblingDataRecord
+        {
+        public:
+            UserScrobblingDataRecord()
+                : userId(0)
+            {
+                //
+            }
+
+            quint32 userId;
+        };
+
+        class HistoryRecord
+        {
+        public:
+            HistoryRecord()
+                : id(0), hashId(0), userId(0), permillage(-1), validForScoring(false)
+            {
+                //
+            }
+
+            quint32 id;
+            quint32 hashId;
+            quint32 userId;
+            QDateTime start;
+            QDateTime end;
+            qint16 permillage;
+            bool validForScoring;
         };
     }
 }
