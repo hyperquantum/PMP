@@ -43,14 +43,12 @@
 namespace PMP::Server
 {
     ServerInterface::ServerInterface(ServerSettings* serverSettings, TcpServer* server,
-                                     uint connectionReference,
                                      Player* player, Generator* generator,
                                      History* history,
                                      HashIdRegistrar* hashIdRegistrar,
                                      Users* users,
                                      DelayedStart* delayedStart, Scrobbling* scrobbling)
-     : _connectionReference(connectionReference),
-       _userLoggedIn(0),
+     : _userLoggedIn(0),
        _serverSettings(serverSettings),
        _server(server),
        _player(player),

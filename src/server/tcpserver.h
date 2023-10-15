@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -82,14 +82,10 @@ namespace PMP::Server
     private:
         static QString generateServerPassword();
 
-        uint generateConnectionReference();
-        void retireConnectionReference(uint connectionReference);
         ServerInterface* createServerInterface();
 
         void determineCaption();
 
-        uint _lastNewConnectionReference;
-        QSet<uint> _connectionReferencesInUse;
         QUuid _uuid;
         QString _caption;
         QString _serverPassword;

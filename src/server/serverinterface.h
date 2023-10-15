@@ -69,8 +69,7 @@ namespace PMP::Server
     {
         Q_OBJECT
     public:
-        ServerInterface(ServerSettings* serverSettings, TcpServer* server,
-                        uint connectionReference, Player* player,
+        ServerInterface(ServerSettings* serverSettings, TcpServer* server, Player* player,
                         Generator* generator, History* history,
                         HashIdRegistrar* hashIdRegistrar, Users* users,
                         DelayedStart* delayedStart, Scrobbling* scrobbling);
@@ -183,7 +182,6 @@ namespace PMP::Server
         void addUserHashDataNotification(quint32 userId, QVector<uint> hashIds);
         void sendUserHashDataNotifications(quint32 userId);
 
-        const uint _connectionReference;
         quint32 _userLoggedIn;
         QString _userLoggedInName;
         ServerSettings* _serverSettings;

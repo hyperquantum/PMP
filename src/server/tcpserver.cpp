@@ -41,7 +41,6 @@ namespace PMP::Server
     TcpServer::TcpServer(QObject* parent, ServerSettings* serverSettings,
                    const QUuid& serverInstanceIdentifier)
      : QObject(parent),
-       _lastNewConnectionReference(0),
        _uuid(serverInstanceIdentifier),
        _settings(serverSettings),
        _player(nullptr),
@@ -237,36 +236,13 @@ namespace PMP::Server
         }
     }
 
-    uint TcpServer::generateConnectionReference()
-    {
-        do
-        {
-            _lastNewConnectionReference++;
-        } while (_lastNewConnectionReference == 0
-                 || _connectionReferencesInUse.contains(_lastNewConnectionReference));
-
-        _connectionReferencesInUse << _lastNewConnectionReference;
-
-        qDebug() << "Generated connection reference:" << _lastNewConnectionReference;
-        return _lastNewConnectionReference;
-    }
-
-    void TcpServer::retireConnectionReference(uint connectionReference)
-    {
-        qDebug() << "Removing connection reference:" << connectionReference;
-        _connectionReferencesInUse.remove(connectionReference);
-    }
-
     ServerInterface* TcpServer::createServerInterface()
     {
-        uint connectionReference = generateConnectionReference();
-
-        qDebug() << "Creating client connection with reference" << connectionReference;
+        qDebug() << "Creating client connection";
 
         auto serverInterface =
                 new ServerInterface(_settings,
                                     this,
-                                    connectionReference,
                                     _player,
                                     _generator,
                                     _history,
@@ -278,9 +254,9 @@ namespace PMP::Server
         connect(
             serverInterface, &ServerInterface::destroyed,
             this,
-            [this, connectionReference]()
+            []()
             {
-                this->retireConnectionReference(connectionReference);
+                qDebug() << "Client connection was cleaned up";
             }
         );
 
