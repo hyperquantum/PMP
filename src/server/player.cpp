@@ -66,7 +66,8 @@ namespace PMP::Server
         return _availableForNewTrack;
     }
 
-    qint64 PlayerInstance::position() const {
+    qint64 PlayerInstance::position() const
+    {
         if (!_mediaSet) return 0;
         return _player->position();
     }
@@ -338,7 +339,8 @@ namespace PMP::Server
         _state = state;
         Q_EMIT stateChanged(state);
 
-        if (state == ServerPlayerState::Playing) {
+        if (state == ServerPlayerState::Playing)
+        {
             emitStartedPlaying(_nowPlaying);
         }
     }
