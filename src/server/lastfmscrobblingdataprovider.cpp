@@ -72,7 +72,7 @@ namespace PMP::Server
         //
     }
 
-    QVector<std::shared_ptr<TrackToScrobble>>
+    QVector<QSharedPointer<TrackToScrobble>>
         LastFmScrobblingDataProvider::getNextTracksToScrobble()
     {
         auto database = Database::getDatabaseForCurrentThread();
@@ -101,13 +101,13 @@ namespace PMP::Server
         qDebug() << "LastFmScrobblingDataProvider: fetched tracks to scrobble up to"
                  << _fetchedUpTo;
 
-        QVector<std::shared_ptr<TrackToScrobble>> result;
+        QVector<QSharedPointer<TrackToScrobble>> result;
         result.reserve(history.size());
 
         for (auto const& historyRecord : history)
         {
             auto track =
-                std::make_shared<LastFmTrackToScrobble>(
+                QSharedPointer<LastFmTrackToScrobble>::create(
                     this, historyRecord.id, historyRecord.start, historyRecord.hashId
                 );
 

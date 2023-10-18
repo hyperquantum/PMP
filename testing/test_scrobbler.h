@@ -27,8 +27,6 @@
 
 #include <QQueue>
 
-#include <memory>
-
 class BackendMock : public PMP::Server::ScrobblingBackend
 {
     Q_OBJECT
@@ -105,13 +103,13 @@ class DataProviderMock : public PMP::Server::ScrobblingDataProvider
 public:
     DataProviderMock();
 
-    void add(std::shared_ptr<PMP::Server::TrackToScrobble> track);
-    void add(QVector<std::shared_ptr<TrackToScrobbleMock>> tracks);
+    void add(QSharedPointer<PMP::Server::TrackToScrobble> track);
+    void add(QVector<QSharedPointer<TrackToScrobbleMock>> tracks);
 
-    QVector<std::shared_ptr<PMP::Server::TrackToScrobble>> getNextTracksToScrobble() override;
+    QVector<QSharedPointer<PMP::Server::TrackToScrobble>> getNextTracksToScrobble() override;
 
 private:
-    QQueue<std::shared_ptr<PMP::Server::TrackToScrobble>> _tracksToScrobble;
+    QQueue<QSharedPointer<PMP::Server::TrackToScrobble>> _tracksToScrobble;
 };
 
 class TrackInfoProviderMock : public PMP::Server::TrackInfoProvider
@@ -149,13 +147,11 @@ private Q_SLOTS:
 private:
     static PMP::Server::ScrobblingTrack createTrack();
     static QDateTime makeDateTime(int year, int month, int day, int hours, int minutes);
-    std::shared_ptr<TrackToScrobbleMock> addTrackToScrobble(
+    QSharedPointer<TrackToScrobbleMock> addTrackToScrobble(
                                                           DataProviderMock& dataProvider);
-    std::shared_ptr<TrackToScrobbleMock> addTrackToScrobble(
-                                                           DataProviderMock& dataProvider,
+    QSharedPointer<TrackToScrobbleMock> addTrackToScrobble(DataProviderMock& dataProvider,
                                                            QDateTime time);
-    std::shared_ptr<TrackToScrobbleMock> addTrackToScrobble(
-                                                           DataProviderMock& dataProvider,
+    QSharedPointer<TrackToScrobbleMock> addTrackToScrobble(DataProviderMock& dataProvider,
                                                 TrackInfoProviderMock& trackInfoProvider,
                                                            QDateTime time, uint hashId,
                                                            QString title, QString artist);

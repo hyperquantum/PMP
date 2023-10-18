@@ -26,8 +26,6 @@
 #include <QtTest/QTest>
 #include <QVector>
 
-#include <memory>
-
 using namespace PMP;
 using namespace PMP::Server;
 
@@ -179,12 +177,12 @@ DataProviderMock::DataProviderMock()
     //
 }
 
-void DataProviderMock::add(std::shared_ptr<TrackToScrobble> track)
+void DataProviderMock::add(QSharedPointer<TrackToScrobble> track)
 {
     _tracksToScrobble.enqueue(track);
 }
 
-void DataProviderMock::add(QVector<std::shared_ptr<TrackToScrobbleMock>> tracks)
+void DataProviderMock::add(QVector<QSharedPointer<TrackToScrobbleMock>> tracks)
 {
     /* cannot use append because of different types, so we use foreach instead */
     for (auto& track : qAsConst(tracks))
@@ -193,7 +191,7 @@ void DataProviderMock::add(QVector<std::shared_ptr<TrackToScrobbleMock>> tracks)
     }
 }
 
-QVector<std::shared_ptr<TrackToScrobble>> DataProviderMock::getNextTracksToScrobble()
+QVector<QSharedPointer<TrackToScrobble>> DataProviderMock::getNextTracksToScrobble()
 {
     auto result = _tracksToScrobble.toVector();
     _tracksToScrobble.clear();
@@ -366,7 +364,7 @@ void TestScrobbler::multipleSimpleScrobbles()
     TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
 
-    QVector<std::shared_ptr<TrackToScrobbleMock>> tracks;
+    QVector<QSharedPointer<TrackToScrobbleMock>> tracks;
     auto time = makeDateTime(2018, 4, 9, 23, 30);
 
     tracks << addTrackToScrobble(dataProvider, trackInfoProvider, time, 2,
@@ -476,7 +474,7 @@ void TestScrobbler::mustSkipScrobblesThatAreTooOld()
     TrackInfoProviderMock trackInfoProvider;
     DataProviderMock dataProvider;
 
-    QVector<std::shared_ptr<TrackToScrobbleMock>> tracks;
+    QVector<QSharedPointer<TrackToScrobbleMock>> tracks;
     auto time = makeDateTime(2017, 12, 31, 23, 30);
 
     for (int i = 0; i < 3; ++i)
@@ -551,7 +549,7 @@ QDateTime TestScrobbler::makeDateTime(int year, int month, int day,
     return QDateTime(QDate(year, month, day), QTime(hours, minutes));
 }
 
-std::shared_ptr<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
+QSharedPointer<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
                                                            DataProviderMock& dataProvider)
 {
     auto timestamp = makeDateTime(2018, 10, 10, 17, 33);
@@ -559,18 +557,18 @@ std::shared_ptr<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
     return addTrackToScrobble(dataProvider, timestamp);
 }
 
-std::shared_ptr<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
+QSharedPointer<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
                                                         DataProviderMock& dataProvider,
                                                         QDateTime time)
 {
     auto hashId = 1;
 
-    auto track = std::make_shared<TrackToScrobbleMock>(time, hashId);
+    auto track = QSharedPointer<TrackToScrobbleMock>::create(time, hashId);
     dataProvider.add(track);
     return track;
 }
 
-std::shared_ptr<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
+QSharedPointer<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
                                                            DataProviderMock& dataProvider,
                                                 TrackInfoProviderMock& trackInfoProvider,
                                                            QDateTime time, uint hashId,
@@ -578,7 +576,7 @@ std::shared_ptr<TrackToScrobbleMock> TestScrobbler::addTrackToScrobble(
 {
     trackInfoProvider.registerTrack(hashId, title, artist);
 
-    auto track = std::make_shared<TrackToScrobbleMock>(time, hashId);
+    auto track = QSharedPointer<TrackToScrobbleMock>::create(time, hashId);
     dataProvider.add(track);
     return track;
 }

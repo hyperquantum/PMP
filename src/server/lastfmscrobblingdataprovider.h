@@ -31,7 +31,7 @@ namespace PMP::Server
     public:
         LastFmScrobblingDataProvider(quint32 user);
 
-        QVector<std::shared_ptr<TrackToScrobble>> getNextTracksToScrobble() override;
+        QVector<QSharedPointer<TrackToScrobble>> getNextTracksToScrobble() override;
 
     private:
         class LastFmTrackToScrobble;

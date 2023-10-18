@@ -22,9 +22,8 @@
 
 #include "tracktoscrobble.h"
 
+#include <QSharedPointer>
 #include <QVector>
-
-#include <memory>
 
 namespace PMP::Server
 {
@@ -35,7 +34,7 @@ namespace PMP::Server
     public:
         virtual ~ScrobblingDataProvider() {}
 
-        virtual QVector<std::shared_ptr<TrackToScrobble>> getNextTracksToScrobble() = 0;
+        virtual QVector<QSharedPointer<TrackToScrobble>> getNextTracksToScrobble() = 0;
 
     protected:
         ScrobblingDataProvider() {}

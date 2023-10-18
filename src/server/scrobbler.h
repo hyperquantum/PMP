@@ -30,8 +30,7 @@
 
 #include <QObject>
 #include <QQueue>
-
-#include <memory>
+#include <QSharedPointer>
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
@@ -82,8 +81,8 @@ namespace PMP::Server
         ScrobblingBackend* _backend;
         TrackInfoProvider* _trackInfoProvider;
         ScrobblerStatus _status;
-        QQueue<std::shared_ptr<TrackToScrobble>> _tracksToScrobble;
-        std::shared_ptr<TrackToScrobble> _pendingScrobble;
+        QQueue<QSharedPointer<TrackToScrobble>> _tracksToScrobble;
+        QSharedPointer<TrackToScrobble> _pendingScrobble;
         QTimer* _timeoutTimer;
         QTimer* _backoffTimer;
         ScrobblingTrack _nowPlayingTrack;
