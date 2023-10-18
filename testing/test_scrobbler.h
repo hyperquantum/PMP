@@ -27,15 +27,17 @@
 
 #include <QQueue>
 
-class BackendMock : public PMP::Server::ScrobblingBackend
+using namespace PMP;
+using namespace PMP::Server;
+
+class BackendMock : public ScrobblingBackend
 {
     Q_OBJECT
 public:
     BackendMock(bool requireAuthentication);
 
-    PMP::SimpleFuture<PMP::Server::Result> authenticateWithCredentials(
-                                                               QString usernameOrEmail,
-                                                               QString password) override;
+    SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
+                                                     QString password) override;
 
     void setTemporaryUnavailabilitiesToStageForScrobbles(int count);
 
@@ -49,10 +51,9 @@ public:
 public Q_SLOTS:
     void initialize() override;
 
-    void updateNowPlaying(PMP::Server::ScrobblingTrack track) override;
+    void updateNowPlaying(ScrobblingTrack track) override;
 
-    void scrobbleTrack(QDateTime timestamp,
-                       PMP::Server::ScrobblingTrack track) override;
+    void scrobbleTrack(QDateTime timestamp, ScrobblingTrack track) override;
 
 protected:
     bool needsSsl() const override { return false; }
@@ -76,7 +77,7 @@ private:
     bool _apiTokenWillBeAcceptedByApi;
 };
 
-class TrackToScrobbleMock : public PMP::Server::TrackToScrobble
+class TrackToScrobbleMock : public TrackToScrobble
 {
 public:
     TrackToScrobbleMock(QDateTime timestamp, uint hashId);
@@ -98,34 +99,33 @@ private:
     bool _cannotBeScrobbled;
 };
 
-class DataProviderMock : public PMP::Server::ScrobblingDataProvider
+class DataProviderMock : public ScrobblingDataProvider
 {
 public:
     DataProviderMock();
 
-    void add(QSharedPointer<PMP::Server::TrackToScrobble> track);
+    void add(QSharedPointer<TrackToScrobble> track);
     void add(QVector<QSharedPointer<TrackToScrobbleMock>> tracks);
 
-    QVector<QSharedPointer<PMP::Server::TrackToScrobble>> getNextTracksToScrobble() override;
+    QVector<QSharedPointer<TrackToScrobble>> getNextTracksToScrobble() override;
 
 private:
-    QQueue<QSharedPointer<PMP::Server::TrackToScrobble>> _tracksToScrobble;
+    QQueue<QSharedPointer<TrackToScrobble>> _tracksToScrobble;
 };
 
-class TrackInfoProviderMock : public PMP::Server::TrackInfoProvider
+class TrackInfoProviderMock : public TrackInfoProvider
 {
 public:
     TrackInfoProviderMock();
 
-    PMP::Future<PMP::Server::CollectionTrackInfo, PMP::FailureType> getTrackInfoAsync(
-                                                                    uint hashId) override;
+    Future<CollectionTrackInfo, FailureType> getTrackInfoAsync(uint hashId) override;
 
     void registerTrack(uint hashId, QString title, QString artist);
     void registerTrack(uint hashId, QString title, QString artist, QString album,
                        QString albumArtist);
 
 private:
-    QHash<uint, PMP::Server::CollectionTrackInfo> _tracks;
+    QHash<uint, CollectionTrackInfo> _tracks;
 };
 
 class TestScrobbler : public QObject
@@ -145,7 +145,7 @@ private Q_SLOTS:
     void retriesAfterTemporaryUnavailability();
 
 private:
-    static PMP::Server::ScrobblingTrack createTrack();
+    static ScrobblingTrack createTrack();
     static QDateTime makeDateTime(int year, int month, int day, int hours, int minutes);
     QSharedPointer<TrackToScrobbleMock> addTrackToScrobble(
                                                           DataProviderMock& dataProvider);

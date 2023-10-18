@@ -26,9 +26,6 @@
 #include <QtTest/QTest>
 #include <QVector>
 
-using namespace PMP;
-using namespace PMP::Server;
-
 // ================================= BackendMock ================================= //
 
 BackendMock::BackendMock(bool requireAuthentication)
