@@ -148,12 +148,14 @@ private:
     static ScrobblingTrack createTrack();
     static QDateTime makeDateTime(int year, int month, int day, int hours, int minutes);
     QSharedPointer<TrackToScrobbleMock> addTrackToScrobble(
-                                                          DataProviderMock& dataProvider);
-    QSharedPointer<TrackToScrobbleMock> addTrackToScrobble(DataProviderMock& dataProvider,
-                                                           QDateTime time);
-    QSharedPointer<TrackToScrobbleMock> addTrackToScrobble(DataProviderMock& dataProvider,
-                                                TrackInfoProviderMock& trackInfoProvider,
-                                                           QDateTime time, uint hashId,
-                                                           QString title, QString artist);
+                                          QSharedPointer<DataProviderMock> dataProvider);
+    QSharedPointer<TrackToScrobbleMock> addTrackToScrobble(
+                                          QSharedPointer<DataProviderMock> dataProvider,
+                                          QDateTime time);
+    QSharedPointer<TrackToScrobbleMock> addTrackToScrobble(
+                                          QSharedPointer<DataProviderMock> dataProvider,
+                                          TrackInfoProviderMock& trackInfoProvider,
+                                          QDateTime time, uint hashId, QString title,
+                                          QString artist);
 };
 #endif

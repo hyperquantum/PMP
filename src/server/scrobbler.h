@@ -42,7 +42,7 @@ namespace PMP::Server
     {
         Q_OBJECT
     public:
-        Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,
+        Scrobbler(QObject* parent, QSharedPointer<ScrobblingDataProvider> dataProvider,
                   ScrobblingBackend* backend, TrackInfoProvider* trackInfoProvider);
 
         ScrobblerStatus status() const { return _status; }
@@ -77,7 +77,7 @@ namespace PMP::Server
         void startBackoffTimer(int initialBackoffMilliseconds);
         void reinsertPendingScrobbleAtFrontOfQueue();
 
-        ScrobblingDataProvider* _dataProvider;
+        QSharedPointer<ScrobblingDataProvider> _dataProvider;
         ScrobblingBackend* _backend;
         TrackInfoProvider* _trackInfoProvider;
         ScrobblerStatus _status;

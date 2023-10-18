@@ -27,7 +27,8 @@
 
 namespace PMP::Server
 {
-    Scrobbler::Scrobbler(QObject* parent, ScrobblingDataProvider* dataProvider,
+    Scrobbler::Scrobbler(QObject* parent,
+                         QSharedPointer<ScrobblingDataProvider> dataProvider,
                          ScrobblingBackend* backend, TrackInfoProvider* trackInfoProvider)
      : QObject(parent),
         _dataProvider(dataProvider),
@@ -40,7 +41,6 @@ namespace PMP::Server
         _nowPlayingPresent(false),
         _nowPlayingSent(false), _nowPlayingDone(false)
     {
-        // TODO: make sure the data provider is cleaned up
         _backend->setParent(this);
 
         connect(

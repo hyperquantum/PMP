@@ -310,7 +310,7 @@ namespace PMP::Server
         qDebug() << "ScrobblingHost: creating Last.FM scrobbler for user with ID"
                  << userId;
 
-        auto dataProvider = new LastFmScrobblingDataProvider(userId);
+        auto dataProvider = QSharedPointer<LastFmScrobblingDataProvider>::create(userId);
         auto lastFmBackend = new LastFmScrobblingBackend();
 
         connect(
