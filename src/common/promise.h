@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,10 +47,7 @@ namespace PMP
 
         void setOutcome(ResultOrError<ResultType, ErrorType> const& r)
         {
-            if (r.succeeded())
-                setResult(r.result());
-            else
-                setError(r.error());
+            _storage->setOutcome(r);
         }
 
         void setResult(ResultType result)
@@ -90,6 +87,13 @@ namespace PMP
         void setResult(T result)
         {
             _storage->setResult(result);
+        }
+
+        void connectToResultFrom(SimpleFuture<T> const& future)
+        {
+            future._storage->addResultListener(
+                [storage = _storage](T result) { storage->setResult(result); }
+            );
         }
 
     private:

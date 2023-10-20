@@ -22,6 +22,9 @@
 
 #include "common/filehash.h"
 #include "common/networkprotocol.h"
+#include "common/networkprotocolextensions.h"
+#include "common/scrobblerstatus.h"
+#include "common/scrobblingprovider.h"
 #include "common/startstopeventstatus.h"
 
 #include "collectiontrackinfo.h"
@@ -45,6 +48,7 @@ namespace PMP::Server
     class Player;
     class QueueEntry;
     class Resolver;
+    class Scrobbling;
     class ServerInterface;
     class ServerHealthMonitor;
     class Users;
@@ -56,7 +60,7 @@ namespace PMP::Server
         ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                         Player* player, Users* users,
                         CollectionMonitor* collectionMonitor,
-                        ServerHealthMonitor* serverHealthMonitor);
+                        ServerHealthMonitor* serverHealthMonitor, Scrobbling* scrobbling);
 
         ~ConnectedClient();
 
@@ -66,7 +70,7 @@ namespace PMP::Server
         void dataArrived();
         void socketError(QAbstractSocket::SocketError error);
 
-        void serverHealthChanged(bool databaseUnavailable);
+        void serverHealthChanged(bool databaseUnavailable, bool sslLibrariesMissing);
 
         void serverSettingsReloadResultEvent(uint clientReference,
                                              ResultMessageErrorCode errorCode);
@@ -104,6 +108,13 @@ namespace PMP::Server
                                        QVector<PMP::FileHash> unavailable);
         void onHashInfoChanged(QVector<CollectionTrackInfo> changes);
 
+        void onScrobblingProviderInfo(ScrobblingProvider provider, ScrobblerStatus status,
+                                      bool enabled);
+        void onScrobblerStatusChanged(ScrobblingProvider provider,
+                                      ScrobblerStatus status);
+        void onScrobblingProviderEnabledChanged(ScrobblingProvider provider,
+                                                bool enabled);
+
     private:
         enum class GeneralOrSpecific { General, Specific };
 
@@ -111,6 +122,7 @@ namespace PMP::Server
         void enableHealthEvents(GeneralOrSpecific howEnabled);
 
         bool isLoggedIn() const;
+        void connectSlotsAfterSuccessfulUserLogin(quint32 userLoggedIn);
 
         void readTextCommands();
         void readBinaryCommands();
@@ -121,6 +133,8 @@ namespace PMP::Server
                                         QString const& arg2);
         void sendTextCommand(QString const& command);
         void handleBinaryModeSwitchRequest();
+        void appendScrobblingMessageStart(QByteArray& buffer,
+                                          ScrobblingServerMessageType messageType);
         void sendBinaryMessage(QByteArray const& message);
         void sendKeepAliveReply(quint8 blob);
         void sendProtocolExtensionsMessage();
@@ -149,6 +163,8 @@ namespace PMP::Server
         void sendSuccessMessage(quint32 clientReference, quint32 intData);
         void sendSuccessMessage(quint32 clientReference, quint32 intData,
                                 QByteArray const& blobData);
+        void sendScrobblingResultMessage(ScrobblingResultMessageCode code,
+                                         quint32 clientReference);
         void sendResultMessage(Result const& result, quint32 clientReference);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
@@ -157,6 +173,9 @@ namespace PMP::Server
                                quint32 intData, QByteArray const& blobData);
         void sendExtensionResultMessage(quint8 extensionId, quint8 resultCode,
                                         quint32 clientReference);
+        void sendExtensionResultMessageAsRegularResultMessage(quint8 extensionId,
+                                                              quint8 resultCode,
+                                                              quint32 clientReference);
         void sendNonFatalInternalErrorResultMessage(quint32 clientReference);
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
@@ -173,13 +192,21 @@ namespace PMP::Server
         void sendServerClockMessage();
         void sendDelayedStartInfoMessage();
 
+        void sendScrobblingProviderInfoMessage(quint32 userId,
+                                               ScrobblingProvider provider,
+                                               ScrobblerStatus status, bool enabled);
+        void sendScrobblerStatusChangedMessage(quint32 userId,
+                                               ScrobblingProvider provider,
+                                               ScrobblerStatus newStatus);
+        void sendScrobblingProviderEnabledChangeMessage(quint32 userId,
+                                                        ScrobblingProvider provider,
+                                                        bool enabled);
+
         void handleBinaryMessage(QByteArray const& message);
         void handleStandardBinaryMessage(ClientMessageType messageType,
                                          QByteArray const& message);
         void handleExtensionMessage(quint8 extensionId, quint8 messageType,
                                     QByteArray const& message);
-        void registerClientProtocolExtensions(
-                           const QVector<NetworkProtocol::ProtocolExtension>& extensions);
         void handleSingleByteAction(quint8 action);
         void handleParameterlessAction(ParameterlessActionCode code,
                                        quint32 clientReference);
@@ -209,6 +236,10 @@ namespace PMP::Server
         void parseQueueEntryMoveRequestMessage(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
+        void parseCurrentUserScrobblingProviderInfoRequestMessage(
+                                                               QByteArray const& message);
+        void parseUserScrobblingEnableDisableRequest(QByteArray const& message);
+        void parseScrobblingAuthenticationRequestMessage(QByteArray const& message);
         void parseGeneratorNonRepetitionChangeMessage(QByteArray const& message);
         void parseCollectionFetchRequestMessage(QByteArray const& message);
 
@@ -222,9 +253,11 @@ namespace PMP::Server
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;
+        Scrobbling* _scrobbling;
         QByteArray _textReadBuffer;
         int _clientProtocolNo;
-        QHash<quint8, QString> _clientExtensionNames;
+        NetworkProtocolExtensionSupportMap _extensionsThis;
+        NetworkProtocolExtensionSupportMap _extensionsOther;
         quint32 _lastSentNowPlayingID;
         QString _userAccountRegistering;
         QByteArray _saltForUserAccountRegistering;

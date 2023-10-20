@@ -363,21 +363,21 @@ QDateTime PlayerControllerMock::delayedStartServerDeadline()
     NOT_IMPLEMENTED
 }
 
-SimpleFuture<ResultMessageErrorCode> PlayerControllerMock::activateDelayedStart(
+SimpleFuture<AnyResultMessageCode> PlayerControllerMock::activateDelayedStart(
     qint64 delayMilliseconds)
 {
     Q_UNUSED(delayMilliseconds)
     NOT_IMPLEMENTED
 }
 
-SimpleFuture<ResultMessageErrorCode> PlayerControllerMock::activateDelayedStart(
+SimpleFuture<AnyResultMessageCode> PlayerControllerMock::activateDelayedStart(
     QDateTime startTime)
 {
     Q_UNUSED(startTime)
     NOT_IMPLEMENTED
 }
 
-SimpleFuture<ResultMessageErrorCode> PlayerControllerMock::deactivateDelayedStart()
+SimpleFuture<AnyResultMessageCode> PlayerControllerMock::deactivateDelayedStart()
 {
     NOT_IMPLEMENTED
 }
@@ -653,6 +653,11 @@ UserDataFetcher& ServerInterfaceMock::userDataFetcher()
     if (_userDataFetcher) return *_userDataFetcher;
 
     Q_UNREACHABLE();
+}
+
+ScrobblingController& ServerInterfaceMock::scrobblingController()
+{
+    NOT_IMPLEMENTED
 }
 
 bool ServerInterfaceMock::isLoggedIn() const

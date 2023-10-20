@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,6 +30,7 @@
 #include <QRandomGenerator>
 #include <QTcpServer>
 #include <QTcpSocket>
+#include <QtDebug>
 #include <QTimer>
 #include <QUdpSocket>
 
@@ -48,6 +49,7 @@ namespace PMP::Server
        _users(nullptr),
        _collectionMonitor(nullptr),
        _serverHealthMonitor(nullptr),
+       _scrobbling(nullptr),
        _delayedStart(nullptr),
        _server(new QTcpServer(this)),
        _udpSocket(new QUdpSocket(this)),
@@ -125,6 +127,7 @@ namespace PMP::Server
                         Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor,
+                        Scrobbling* scrobbling,
                         DelayedStart* delayedStart,
                         const QHostAddress& address, quint16 port)
     {
@@ -135,6 +138,7 @@ namespace PMP::Server
         _users = users;
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
+        _scrobbling = scrobbling;
         _delayedStart = delayedStart;
 
         if (!_server->listen(address, port))
@@ -180,7 +184,7 @@ namespace PMP::Server
         auto connectedClient =
             new ConnectedClient(
                 connection, serverInterface, _player, _users,
-                _collectionMonitor, _serverHealthMonitor
+                _collectionMonitor, _serverHealthMonitor, _scrobbling
             );
 
         _connectionCount++;
@@ -234,14 +238,29 @@ namespace PMP::Server
 
     ServerInterface* TcpServer::createServerInterface()
     {
-        return new ServerInterface(_settings,
-                                   this,
-                                   _player,
-                                   _generator,
-                                   _history,
-                                   _hashIdRegistrar,
-                                   _users,
-                                   _delayedStart);
+        qDebug() << "Creating client connection";
+
+        auto serverInterface =
+                new ServerInterface(_settings,
+                                    this,
+                                    _player,
+                                    _generator,
+                                    _history,
+                                    _hashIdRegistrar,
+                                    _users,
+                                    _delayedStart,
+                                    _scrobbling);
+
+        connect(
+            serverInterface, &ServerInterface::destroyed,
+            this,
+            []()
+            {
+                qDebug() << "Client connection was cleaned up";
+            }
+        );
+
+        return serverInterface;
     }
 
     void TcpServer::determineCaption()

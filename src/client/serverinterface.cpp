@@ -30,6 +30,7 @@
 #include "queueentryinfofetcher.h"
 #include "queueentryinfostorageimpl.h"
 #include "queuemonitor.h"
+#include "scrobblingcontrollerimpl.h"
 #include "serverconnection.h"
 #include "userdatafetcher.h"
 
@@ -176,6 +177,14 @@ namespace PMP::Client
         }
 
         return *_userDataFetcher;
+    }
+
+    ScrobblingController& ServerInterfaceImpl::scrobblingController()
+    {
+        if (!_scrobblingController)
+            _scrobblingController = new ScrobblingControllerImpl(_connection);
+
+        return *_scrobblingController;
     }
 
     bool ServerInterfaceImpl::isLoggedIn() const

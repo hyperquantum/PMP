@@ -264,6 +264,15 @@ namespace PMP::Server
             return false;
         }
 
+        /* extra columns for Last.Fm scrobbling */
+        if (!addColumnIfNotExists(q, tableName, "EnableLastFmScrobbling", "BIT")
+            || !addColumnIfNotExists(q, tableName, "LastFmUser", "VARCHAR(255)")
+            || !addColumnIfNotExists(q, tableName, "LastFmSessionKey", "VARCHAR(255)")
+            || !addColumnIfNotExists(q, tableName, "LastFmScrobbledUpTo", "INT UNSIGNED"))
+        {
+            return false;
+        }
+
         return true;
     }
 
@@ -679,6 +688,79 @@ namespace PMP::Server
         return userId;
     }
 
+    QVector<UserScrobblingDataRecord> Database::getUsersScrobblingData()
+    {
+        auto preparer =
+            prepareSimple(
+                "SELECT `UserID`,`EnableLastFmScrobbling`,`LastFmUser`,"
+                "  `LastFmSessionKey`,`LastFmScrobbledUpTo` "
+                "FROM pmp_user"
+            );
+
+        QVector<UserScrobblingDataRecord> result;
+
+        auto resultGetter =
+            [&result] (QSqlQuery& q)
+            {
+                while (q.next())
+                {
+                    UserScrobblingDataRecord record;
+                    record.userId = q.value(0).toUInt();
+                    record.enableLastFmScrobbling = getBool(q.value(1), false);
+                    record.lastFmUser = getString(q.value(2), "");
+                    record.lastFmSessionKey = getString(q.value(3), "");
+                    record.lastFmScrobbledUpTo = getUInt(q.value(4), 0);
+
+                    result << record;
+                }
+            };
+
+        if (!executeQuery(preparer, true, resultGetter)) /* error */
+        {
+            qWarning() << "Database::getUsersScrobblingData : could not execute";
+            return {};
+        }
+
+        return result;
+    }
+
+    LastFmScrobblingDataRecord Database::getUserLastFmScrobblingData(quint32 userId)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT `EnableLastFmScrobbling`,`LastFmUser`,"
+                    "  `LastFmSessionKey`,`LastFmScrobbledUpTo` "
+                    "FROM pmp_user "
+                    "WHERE UserId=?"
+                );
+                q.addBindValue(userId);
+            };
+
+        LastFmScrobblingDataRecord result;
+
+        auto resultGetter =
+            [&result] (QSqlQuery& q)
+            {
+                if (q.next())
+                {
+                    result.enableLastFmScrobbling = getBool(q.value(0), false);
+                    result.lastFmUser = getString(q.value(1), "");
+                    result.lastFmSessionKey = getString(q.value(2), "");
+                    result.lastFmScrobbledUpTo = getUInt(q.value(3), 0);
+                }
+            };
+
+        if (!executeQuery(preparer, true, resultGetter)) /* error */
+        {
+            qWarning() << "Database::getUserLastFmScrobblingData : could not execute";
+            return {};
+        }
+
+        return result;
+    }
+
     UserDynamicModePreferences Database::getUserDynamicModePreferences(quint32 userId,
                                                                        bool* ok)
     {
@@ -912,6 +994,159 @@ namespace PMP::Server
         }
 
         return success;
+    }
+
+    QVector<HistoryRecord> Database::getUserHistoryForScrobbling(quint32 userId,
+                                                                 quint32 startId,
+                                                               QDateTime earliestDateTime,
+                                                                 int limit)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT"
+                    " HistoryID, HashID, UserID, `Start`, `End`,"
+                    " Permillage, ValidForScoring "
+                    "FROM pmp_history "
+                    "WHERE UserId=? AND HistoryID >= ? AND `Start` >= ?"
+                    " AND Permillage >= 500 AND ValidForScoring != 0 "
+                    "ORDER BY HistoryID "
+                    "LIMIT ?"
+                );
+                q.addBindValue(userId);
+                q.addBindValue(startId);
+                q.addBindValue(earliestDateTime.toUTC());
+                q.addBindValue(limit);
+            };
+
+        QVector<HistoryRecord> result;
+        result.reserve(limit);
+
+        auto resultGetter =
+            [&result] (QSqlQuery& q)
+            {
+                while (q.next())
+                {
+                    HistoryRecord record;
+                    record.id = q.value(0).toUInt();
+                    record.hashId = q.value(1).toUInt();
+                    record.userId = q.value(2).toUInt();
+                    record.start = getUtcDateTime(q.value(3));
+                    record.end = getUtcDateTime(q.value(4));
+                    record.permillage = qint16(q.value(5).toInt());
+                    record.validForScoring = q.value(6).toBool();
+
+                    result << record;
+                }
+            };
+
+        if (!executeQuery(preparer, true, resultGetter)) /* error */
+        {
+            qWarning() << "Database::getUserHistoryForScrobbling : could not execute";
+            return {};
+        }
+
+        return result;
+    }
+
+    bool Database::setLastFmScrobblingEnabled(quint32 userId, bool enabled)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "UPDATE pmp_user SET EnableLastFmScrobbling=? "
+                    "WHERE UserId=?"
+                );
+                q.addBindValue(enabled);
+                q.addBindValue(userId);
+            };
+
+        if (!executeVoid(preparer))
+        {
+            qWarning() << "Database::setLastFmScrobblingEnabled : could not execute";
+            return false;
+        }
+
+        return true;
+    }
+
+    quint32 Database::getLastFmScrobbledUpTo(quint32 userId, bool* ok)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT LastFmScrobbledUpTo FROM pmp_user "
+                    "WHERE UserId=?"
+                );
+                q.addBindValue(userId);
+            };
+
+        uint result;
+        bool success = executeScalar(preparer, result, 0);
+
+        if (ok)
+            *ok = success;
+
+        if (success)
+            return quint32(result);
+
+        return 0;
+    }
+
+    bool Database::updateLastFmScrobbledUpTo(quint32 userId, quint32 newValue)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "UPDATE pmp_user "
+                    "SET LastFmScrobbledUpTo=? "
+                    "WHERE UserId=?"
+                );
+                q.addBindValue(newValue);
+                q.addBindValue(userId);
+            };
+
+        return executeVoid(preparer);
+    }
+
+    bool Database::updateLastFmAuthentication(quint32 userId, QString lastFmUsername,
+                                              QString lastFmSessionKey)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+        {
+            q.prepare(
+                "UPDATE pmp_user "
+                "SET LastFmUser=?, LastFmSessionKey=? "
+                "WHERE UserId=?"
+                );
+            q.addBindValue(lastFmUsername);
+            q.addBindValue(lastFmSessionKey);
+            q.addBindValue(userId);
+        };
+
+        return executeVoid(preparer);
+    }
+
+    bool Database::updateUserScrobblingSessionKeys(const UserScrobblingDataRecord& record)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "UPDATE pmp_user "
+                    "SET LastFmSessionKey=? "
+                    "WHERE UserId=?"
+                );
+                q.addBindValue(record.lastFmSessionKey);
+                q.addBindValue(record.userId);
+            };
+
+        return executeVoid(preparer);
     }
 
     QString Database::buildParamsList(unsigned paramsCount)
@@ -1186,5 +1421,11 @@ namespace PMP::Server
         auto dateTime = v.toDateTime();
         dateTime.setTimeSpec(Qt::UTC);
         return dateTime;
+    }
+
+    QString Database::getString(QVariant v, const char* nullValue)
+    {
+        if (v.isNull()) return nullValue;
+        return v.toString();
     }
 }

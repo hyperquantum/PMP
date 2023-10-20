@@ -32,6 +32,7 @@ Contents of this file:
    * Creation of user accounts on the server
    * Authentication with username and password when connecting to the server
    * Each user has their own playback history, track scores, and preferences
+   * Scrobbling to Last.fm for each user independently
  * **Advanced file tracking**
    * Tracks are identified by file contents, ignoring irrelevant bits like metadata
    * Known tracks are still recognized after moving or renaming files
@@ -69,12 +70,15 @@ Building on Windows is done using [vcpkg](https://github.com/microsoft/vcpkg).
 
  * MySQL/MariaDB client library (libmysql/libmariadb)
  * Codecs
+ * OpenSSL
 
 PMP currently uses MySQL for storing its data. MariaDB is probably a valid replacement, but this has not been tested yet. The MySQL server should be configured as a developer installation (it uses less memory that way) and should be set to use Unicode (UTF-8) by default. Default storage engine should be InnoDB.
 
 Windows users will need to install the [Xiph codecs](https://xiph.org/dshow/downloads/) or some other more generic codec pack if they need support for FLAC audio.
 
 Linux users may need to install a GStreamer plugin to get support for MP3 files.
+
+OpenSSL is required for Last.fm scrobbling.
 
 
 ## 3. Running PMP
@@ -200,7 +204,6 @@ Effort is a rough estimate. Priorities can still change.
 | Feature                                                   | Priority | Effort       |
 | --------------------------------------------------------- | -------- | ------------ |
 | Artist-based track repetition avoidance                   | High     | Medium       |
-| Scrobbling to Last.fm                                     | High     | Large        |
 | Server to server database synchronization                 | High     | Large        |
 | Group song duplicates together and treat them as one      | High     | Large        |
 | Identify song duplicates which have different hash values | High     | Large        |

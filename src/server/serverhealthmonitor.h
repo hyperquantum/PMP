@@ -33,15 +33,18 @@ namespace PMP::Server
 
         bool anyProblem() const;
         bool databaseUnavailable() const;
+        bool sslLibrariesMissing() const;
 
     public Q_SLOTS:
         void setDatabaseUnavailable();
+        void setSslLibrariesMissing();
 
     Q_SIGNALS:
-        void serverHealthChanged(bool databaseUnavailable);
+        void serverHealthChanged(bool databaseUnavailable, bool sslLibrariesMissing);
 
     private:
         bool _databaseUnavailable;
+        bool _sslLibrariesMissing;
     };
 }
 #endif

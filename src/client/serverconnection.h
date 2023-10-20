@@ -23,10 +23,12 @@
 #include "common/disconnectreason.h"
 #include "common/future.h"
 #include "common/networkprotocol.h"
+#include "common/networkprotocolextensions.h"
 #include "common/playerhistorytrackinfo.h"
 #include "common/playerstate.h"
 #include "common/queueindextype.h"
 #include "common/requestid.h"
+#include "common/scrobblingprovider.h"
 #include "common/serverhealthstatus.h"
 #include "common/specialqueueitemtype.h"
 #include "common/tribool.h"
@@ -78,9 +80,11 @@ namespace PMP::Client
         };
 
         class ResultMessageData;
+        class ExtensionResultMessageData;
         class ResultHandler;
         class PromiseResultHandler;
         class ParameterlessActionResultHandler;
+        class ScrobblingAuthenticationResultHandler;
         class CollectionFetchResultHandler;
         class TrackInsertionResultHandler;
         class QueueEntryInsertionResultHandler;
@@ -111,14 +115,18 @@ namespace PMP::Client
 
         void fetchCollection(CollectionFetcher* fetcher);
 
-        SimpleFuture<ResultMessageErrorCode> reloadServerSettings();
-        SimpleFuture<ResultMessageErrorCode> activateDelayedStart(
-                                                                qint64 delayMilliseconds);
-        SimpleFuture<ResultMessageErrorCode> deactivateDelayedStart();
+        SimpleFuture<AnyResultMessageCode> reloadServerSettings();
+        SimpleFuture<AnyResultMessageCode> activateDelayedStart(qint64 delayMilliseconds);
+        SimpleFuture<AnyResultMessageCode> deactivateDelayedStart();
         RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index);
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
+
+        SimpleFuture<AnyResultMessageCode> authenticateScrobbling(
+                                                            ScrobblingProvider provider,
+                                                            QString username,
+                                                            QString password);
 
     public Q_SLOTS:
         void shutdownServer();
@@ -174,6 +182,10 @@ namespace PMP::Client
         void switchToPublicMode();
         void switchToPersonalMode();
         void requestUserPlayingForMode();
+
+        void requestScrobblingProviderInfoForCurrentUser();
+        void enableScrobblingForCurrentUser(ScrobblingProvider provider);
+        void disableScrobblingForCurrentUser(ScrobblingProvider provider);
 
         void startFullIndexation();
         void requestFullIndexationRunningStatus();
@@ -239,6 +251,11 @@ namespace PMP::Client
                                            QVector<PMP::Client::LocalHashId> unavailable);
         void collectionTracksChanged(QVector<PMP::Client::CollectionTrackInfo> changes);
 
+        void scrobblingProviderInfoReceived(ScrobblingProvider provider,
+                                            ScrobblerStatus status, bool enabled);
+        void scrobblerStatusChanged(ScrobblingProvider provider, ScrobblerStatus status);
+        void scrobblingProviderEnabledChanged(ScrobblingProvider provider, bool enabled);
+
     private Q_SLOTS:
         void onConnected();
         void onDisconnected();
@@ -257,14 +274,16 @@ namespace PMP::Client
         RequestID signalServerTooOldError(
                              void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
                                                                    RequestID));
-        FutureResult<ResultMessageErrorCode> serverTooOldFutureResult();
+        FutureResult<AnyResultMessageCode> serverTooOldFutureResult();
 
         void sendTextCommand(QString const& command);
+        void appendScrobblingMessageStart(QByteArray& buffer,
+                                          ScrobblingClientMessageType messageType);
         void sendBinaryMessage(QByteArray const& message);
         void sendKeepAliveMessage();
         void sendProtocolExtensionsMessage();
         void sendSingleByteAction(quint8 action);
-        SimpleFuture<ResultMessageErrorCode> sendParameterlessActionRequest(
+        SimpleFuture<AnyResultMessageCode> sendParameterlessActionRequest(
                                                             ParameterlessActionCode code);
 
         void readTextCommands();
@@ -279,8 +298,6 @@ namespace PMP::Client
                                           quint32 clientReference);
         void handleResultMessage(quint16 errorCode, quint32 clientReference,
                                  quint32 intData, QByteArray const& blobData);
-        void registerServerProtocolExtensions(
-                           const QVector<NetworkProtocol::ProtocolExtension>& extensions);
         void handleServerEvent(ServerEventCode eventCode);
 
         void sendInitiateNewUserAccountMessage(QString login, quint32 clientReference);
@@ -299,6 +316,14 @@ namespace PMP::Client
         void handleLoginSalt(QString login, QByteArray userSalt, QByteArray sessionSalt);
         void handleUserLoginResult(ResultMessageErrorCode errorCode, quint32 intData,
                                    QByteArray const& blobData);
+
+        void sendScrobblingProviderInfoRequest();
+        void sendUserScrobblingEnableDisableRequest(ScrobblingProvider provider,
+                                                    bool enable);
+        SimpleFuture<AnyResultMessageCode> sendScrobblingAuthenticationMessage(
+                                                            ScrobblingProvider provider,
+                                                            QString username,
+                                                            QString password);
 
         void onFullIndexationRunningStatusReceived(bool running);
 
@@ -346,6 +371,10 @@ namespace PMP::Client
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);
 
+        void parseScrobblingProviderInfoMessage(QByteArray const& message);
+        void parseScrobblerStatusChangeMessage(QByteArray const& message);
+        void parseScrobblingProviderEnabledChangeMessage(QByteArray const& message);
+
         void sendCollectionFetchRequestMessage(uint clientReference);
 
         void invalidMessageReceived(QByteArray const& message, QString messageType = "",
@@ -368,7 +397,8 @@ namespace PMP::Client
         QByteArray _readBuffer;
         bool _binarySendingMode;
         int _serverProtocolNo;
-        QHash<quint8, QString> _serverExtensionNames;
+        NetworkProtocolExtensionSupportMap _extensionsThis;
+        NetworkProtocolExtensionSupportMap _extensionsOther;
         uint _nextRef;
         uint _userAccountRegistrationRef;
         QString _userAccountRegistrationLogin;

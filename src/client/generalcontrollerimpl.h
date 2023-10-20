@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -38,7 +38,7 @@ namespace PMP::Client
 
         qint64 clientClockTimeOffsetMs() const override;
 
-        SimpleFuture<ResultMessageErrorCode> reloadServerSettings() override;
+        SimpleFuture<AnyResultMessageCode> reloadServerSettings() override;
 
         Future<VersionInfo, ResultMessageErrorCode> getServerVersionInfo() override;
 

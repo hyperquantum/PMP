@@ -36,6 +36,7 @@ namespace PMP::Client
     class QueueController;
     class QueueEntryInfoFetcher;
     class QueueEntryInfoStorage;
+    class ScrobblingController;
     class ServerConnection;
     class UserDataFetcher;
 
@@ -67,6 +68,8 @@ namespace PMP::Client
 
         virtual CollectionWatcher& collectionWatcher() = 0;
         virtual UserDataFetcher& userDataFetcher() = 0;
+
+        virtual ScrobblingController& scrobblingController() = 0;
 
         virtual bool isLoggedIn() const = 0;
         virtual quint32 userLoggedInId() const = 0;
@@ -105,6 +108,8 @@ namespace PMP::Client
         CollectionWatcher& collectionWatcher() override;
         UserDataFetcher& userDataFetcher() override;
 
+        ScrobblingController& scrobblingController() override;
+
         bool isLoggedIn() const override;
         quint32 userLoggedInId() const override;
         QString userLoggedInName() const override;
@@ -125,6 +130,7 @@ namespace PMP::Client
         HistoryController* _historyController { nullptr };
         CollectionWatcher* _collectionWatcher { nullptr };
         UserDataFetcher* _userDataFetcher { nullptr };
+        ScrobblingController* _scrobblingController { nullptr };
         bool _connected;
     };
 }

@@ -7,7 +7,6 @@ Disclaimer:
 
 WORK IN PROGRESS (LONG RUNNING - on different branches in git)
 
- * Last.fm scrobbling support: mostly working, needs some polishing (branch "feature-scrobbling")
  * Compatibility UI (branch "compatibility-ui")
 
 
@@ -36,6 +35,8 @@ KNOWN PROBLEMS
  * doing a "skip" often creates a burst of noise; need to wait until the old track has stopped before starting the next one
  * GUI remote: if connection breaks during playback, "position" keeps increasing
  * server does not always take an updated title/artist/album into account when a track is changed on disk
+ * scrobbling: "now playing" is triggered by the backoff mechanism after the track is already finished
+ * scrobbling: race condition after track finished playing, between history insert and check for something to scrobble
 
 
 PERFORMANCE ISSUES

@@ -23,6 +23,8 @@
 #include "nullable.h"
 #include "queueentrytype.h"
 #include "resultmessageerrorcode.h"
+#include "scrobblerstatus.h"
+#include "scrobblingprovider.h"
 #include "specialqueueitemtype.h"
 
 #include <QByteArray>
@@ -64,6 +66,8 @@ namespace PMP
 {
     class FileHash;
 
+    enum class ClientOrServer { Client, Server };
+
     enum class ServerMessageType
     {
         None = 0,
@@ -104,6 +108,13 @@ namespace PMP
         ExtensionResultMessage = 35,
     };
 
+    enum class ScrobblingServerMessageType : quint8
+    {
+        ProviderInfoMessage = 1,
+        StatusChangeMessage = 2,
+        ProviderEnabledChangeMessage = 3,
+    };
+
     enum class ClientMessageType
     {
         None = 0,
@@ -135,6 +146,13 @@ namespace PMP
         ActivateDelayedStartRequest = 26,
     };
 
+    enum class ScrobblingClientMessageType : quint8
+    {
+        ProviderInfoRequestMessage = 1,
+        EnableDisableRequestMessage = 2,
+        AuthenticationRequestMessage = 3,
+    };
+
     enum class ServerEventCode
     {
         Reserved = 0,
@@ -153,52 +171,30 @@ namespace PMP
         DeactivateDelayedStart = 40,
     };
 
+    struct UsernameAndPassword
+    {
+        QString username;
+        QString password;
+    };
+
+    struct ObfuscatedScrobblingUsernameAndPassword
+    {
+        quint8 keyId;
+        QByteArray bytes;
+    };
+
     class NetworkProtocol
     {
     public:
-        struct ProtocolExtensionSupport
-        {
-            quint8 id;
-            quint8 version;
-
-            ProtocolExtensionSupport()
-             : id(0), version(0)
-            {
-                //
-            }
-
-            explicit ProtocolExtensionSupport(quint8 id, quint8 version = 1)
-             : id(id), version(version)
-            {
-                //
-            }
-        };
-
-        struct ProtocolExtension : ProtocolExtensionSupport
-        {
-            QString name;
-
-            ProtocolExtension()
-             : ProtocolExtensionSupport()
-            {
-                //
-            }
-
-            ProtocolExtension(quint8 id, QString name, quint8 version = 1)
-             : ProtocolExtensionSupport(id, version), name(name)
-            {
-                //
-            }
-        };
-
         static void append2Bytes(QByteArray& buffer, ServerMessageType messageType);
         static void append2Bytes(QByteArray& buffer, ClientMessageType messageType);
         static void append2Bytes(QByteArray& buffer, ResultMessageErrorCode errorCode);
 
-        static quint16 encodeMessageTypeForExtension(quint8 extensionId,
-                                                     quint8 messageType);
-        static void appendExtensionMessageStart(QByteArray& buffer, quint8 extensionId,
-                                                quint8 messageType);
+        static quint8 encode(ScrobblingProvider provider);
+        static ScrobblingProvider decodeScrobblingProvider(quint8 provider);
+
+        static quint8 encode(ScrobblerStatus status);
+        static ScrobblerStatus decodeScrobblerStatus(quint8 status);
 
         static int ratePassword(QString password);
 
@@ -224,7 +220,14 @@ namespace PMP
 
         static qint16 getHashUserDataFieldsMaskForProtocolVersion(int version);
 
+        static ObfuscatedScrobblingUsernameAndPassword obfuscateScrobblingCredentials(
+                                                         UsernameAndPassword credentials);
+        static Nullable<UsernameAndPassword> deobfuscateScrobblingCredentials(
+                           ObfuscatedScrobblingUsernameAndPassword obfuscatedCredentials);
+
     private:
+        static quint64 getScrobblingAuthenticationObfuscationKey(quint8 keyId);
+
         static const QByteArray _fileHashAllZeroes;
     };
 }

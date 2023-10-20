@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,9 +36,12 @@
 #include "preloader.h"
 #include "queueentry.h"
 #include "resolver.h"
+#include "scrobbling.h"
+#include "selftest.h"
 #include "serverhealthmonitor.h"
 #include "serversettings.h"
 #include "tcpserver.h"
+#include "trackinfoproviderimpl.h"
 #include "users.h"
 
 #include <QCoreApplication>
@@ -231,6 +234,8 @@ static int runServer(QCoreApplication& app, bool doIndexation)
         serverHealthMonitor.setDatabaseUnavailable();
     }
 
+    SelfTest::runSelfTest(serverHealthMonitor);
+
     HashIdRegistrar hashIdRegistrar;
     HashRelations hashRelations;
     HistoryStatistics historyStatistics(nullptr, &hashRelations);
@@ -268,6 +273,33 @@ static int runServer(QCoreApplication& app, bool doIndexation)
         &generator, &Generator::setUserGeneratingFor
     );
 
+    TrackInfoProviderImpl trackInfoProvider(&resolver);
+
+    Scrobbling scrobbling(nullptr, &trackInfoProvider);
+    auto scrobblingController = scrobbling.getController();
+    QObject::connect(
+        &player, &Player::startedPlaying,
+        scrobblingController,
+        [scrobblingController](uint userPlayingFor, QDateTime startTime, QString title,
+                               QString artist, QString album, QString albumArtist,
+                               int trackDurationSeconds)
+        {
+            ScrobblingTrack track(title, artist, album, albumArtist);
+            track.durationInSeconds = trackDurationSeconds;
+
+            scrobblingController->updateNowPlaying(userPlayingFor, startTime, track);
+        }
+    );
+    QObject::connect(
+        &player, &Player::newHistoryEntry,
+        scrobblingController,
+        [scrobblingController](QSharedPointer<PlayerHistoryEntry> entry)
+        {
+            scrobblingController->wakeUp(entry->user());
+        }
+    );
+    scrobblingController->enableScrobbling();
+
     resolver.setMusicPaths(serverSettings.musicPaths());
     QObject::connect(
         &serverSettings, &ServerSettings::musicPathsChanged,
@@ -284,7 +316,8 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     TcpServer server(nullptr, &serverSettings, serverInstanceIdentifier);
     bool listening =
         server.listen(&player, &generator, &history, &hashIdRegistrar, &users,
-                      &collectionMonitor, &serverHealthMonitor, &delayedStart,
+                      &collectionMonitor, &serverHealthMonitor, &scrobbling,
+                      &delayedStart,
                       QHostAddress::Any, 23432);
 
     if (!listening)
@@ -313,6 +346,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     auto exitCode = app.exec();
 
     out << "\n"
-        << "Server exiting." << Qt::endl;
+        << "Server exiting with code " << exitCode << "." << Qt::endl;
+
     return exitCode;
 }

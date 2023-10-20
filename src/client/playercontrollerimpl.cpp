@@ -145,13 +145,13 @@ namespace PMP::Client
         return _delayedStartServerDeadline;
     }
 
-    SimpleFuture<ResultMessageErrorCode> PlayerControllerImpl::activateDelayedStart(
+    SimpleFuture<AnyResultMessageCode> PlayerControllerImpl::activateDelayedStart(
                                                                  qint64 delayMilliseconds)
     {
         return _connection->activateDelayedStart(delayMilliseconds);
     }
 
-    SimpleFuture<ResultMessageErrorCode> PlayerControllerImpl::activateDelayedStart(
+    SimpleFuture<AnyResultMessageCode> PlayerControllerImpl::activateDelayedStart(
                                                                       QDateTime startTime)
     {
         auto delayMilliseconds =
@@ -160,7 +160,7 @@ namespace PMP::Client
         return activateDelayedStart(delayMilliseconds);
     }
 
-    SimpleFuture<ResultMessageErrorCode> PlayerControllerImpl::deactivateDelayedStart()
+    SimpleFuture<AnyResultMessageCode> PlayerControllerImpl::deactivateDelayedStart()
     {
         return _connection->deactivateDelayedStart();
     }

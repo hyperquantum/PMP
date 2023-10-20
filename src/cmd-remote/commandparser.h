@@ -21,6 +21,8 @@
 #define PMP_COMMANDPARSER_H
 
 #include "common/filehash.h"
+#include "common/nullable.h"
+#include "common/scrobblingprovider.h"
 
 #include <QDate>
 #include <QString>
@@ -91,6 +93,14 @@ namespace PMP
 
             bool currentIsOneOf(QVector<QString> options) const;
 
+            QString previous() const
+            {
+                if (_currentIndex <= 0)
+                    return {};
+
+                return _arguments[_currentIndex - 1];
+            }
+
             bool tryParseInt(int& number) const;
             bool tryParseTime(QTime& time) const;
             bool tryParseDate(QDate& date) const;
@@ -117,6 +127,13 @@ namespace PMP
         void parseDelayedStartAt(CommandArguments& arguments);
         void parseDelayedStartWait(CommandArguments& arguments);
         void parseTrackStatsCommand(CommandArguments arguments);
+        void parseScrobblingCommand(CommandArguments arguments);
+        void parseScrobblingEnableOrDisableCommand(CommandArguments& arguments,
+                                                   bool enable);
+        void parseScrobblingStatusCommand(CommandArguments& arguments);
+        void parseScrobblingAuthenticateCommand(CommandArguments& arguments);
+        Nullable<ScrobblingProvider> parseScrobblingProviderName(
+                                                             CommandArguments& arguments);
         void parseDynamicModeCommand(CommandArguments arguments);
         void parseDynamicModeOnOrOff(CommandArguments& arguments, bool isOn);
 

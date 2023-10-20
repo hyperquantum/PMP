@@ -24,6 +24,7 @@
 #include "common/future.h"
 #include "common/queueindextype.h"
 #include "common/resultmessageerrorcode.h"
+#include "common/scrobblingprovider.h"
 #include "common/specialqueueitemtype.h"
 #include "common/startstopeventstatus.h"
 #include "common/versioninfo.h"
@@ -49,6 +50,7 @@ namespace PMP::Server
     class Player;
     class PlayerQueue;
     class QueueEntry;
+    class Scrobbling;
     class ServerSettings;
     class TcpServer;
     class Users;
@@ -70,7 +72,7 @@ namespace PMP::Server
         ServerInterface(ServerSettings* serverSettings, TcpServer* server, Player* player,
                         Generator* generator, History* history,
                         HashIdRegistrar* hashIdRegistrar, Users* users,
-                        DelayedStart* delayedStart);
+                        DelayedStart* delayedStart, Scrobbling* scrobbling);
 
         ~ServerInterface();
 
@@ -81,12 +83,19 @@ namespace PMP::Server
         ResultOrError<QUuid, Result> getDatabaseUuid() const;
 
         bool isLoggedIn() const { return _userLoggedIn > 0; }
+        quint32 userLoggedIn() const { return _userLoggedIn; }
         void setLoggedIn(quint32 userId, QString userLogin);
 
         SimpleFuture<ResultMessageErrorCode> reloadServerSettings();
 
         void switchToPersonalMode();
         void switchToPublicMode();
+
+        void requestScrobblingInfo();
+        void setScrobblingProviderEnabled(ScrobblingProvider provider, bool enabled);
+        SimpleFuture<Result> authenticateScrobblingProvider(ScrobblingProvider provider,
+                                                            QString user,
+                                                            QString password);
 
         Result activateDelayedStart(qint64 delayMilliseconds);
         Result deactivateDelayedStart();
@@ -164,8 +173,7 @@ namespace PMP::Server
         void onHashStatisticsChanged(quint32 userId, QVector<uint> hashIds);
 
     private:
-        int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType,
-                                int index);
+        int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType, int index);
         std::function<void (uint)> createQueueInsertionIdNotifier(
                                                                  quint32 clientReference);
         Result insertAtIndex(qint32 index,
@@ -184,10 +192,10 @@ namespace PMP::Server
         HashIdRegistrar* _hashIdRegistrar;
         Users* _users;
         DelayedStart* _delayedStart;
+        Scrobbling* _scrobbling;
         QHash<quint32, quint32> _queueEntryInsertionsPending;
         QHash<quint32, QSet<uint>> _userHashDataNotificationsPending;
         QHash<quint32, bool> _userHashDataNotificationTimerRunning;
     };
 }
-
 #endif

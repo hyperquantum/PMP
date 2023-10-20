@@ -113,6 +113,7 @@ namespace PMP::Server
         bool fullIndexationRunning();
 
         Future<QString, FailureType> findPathForHashAsync(FileHash hash);
+        Future<QString, FailureType> findPathForHashAsync(uint hashId);
 
         bool haveFileForHash(const FileHash& hash);
         bool pathStillValid(const FileHash& hash, QString path);
@@ -123,6 +124,7 @@ namespace PMP::Server
 
         QVector<FileHash> getAllHashes();
         QVector<CollectionTrackInfo> getHashesTrackInfo(QVector<FileHash> hashes);
+        CollectionTrackInfo getHashTrackInfo(uint hashId);
 
         FileHash getHashByID(uint id);
         uint getID(const FileHash& hash);

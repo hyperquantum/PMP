@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -50,11 +50,11 @@ namespace PMP::Client
         int volume() const override;
 
         QDateTime delayedStartServerDeadline() override;
-        SimpleFuture<ResultMessageErrorCode> activateDelayedStart(
+        SimpleFuture<AnyResultMessageCode> activateDelayedStart(
                                                        qint64 delayMilliseconds) override;
-        SimpleFuture<ResultMessageErrorCode> activateDelayedStart(
+        SimpleFuture<AnyResultMessageCode> activateDelayedStart(
                                                             QDateTime startTime) override;
-        SimpleFuture<ResultMessageErrorCode> deactivateDelayedStart() override;
+        SimpleFuture<AnyResultMessageCode> deactivateDelayedStart() override;
 
     public Q_SLOTS:
         void play() override;

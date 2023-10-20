@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2022, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,7 +22,9 @@
 #include "common/version.h"
 
 #include "server/database.h"
+#include "server/lastfmscrobblingbackend.h"
 #include "server/serversettings.h"
+#include "server/tokenencoder.h"
 
 #include <QCoreApplication>
 #include <QDateTime>
@@ -35,6 +37,7 @@
 #include <QThread>
 
 using namespace PMP;
+using namespace PMP::Server;
 
 int main(int argc, char* argv[])
 {
@@ -52,6 +55,15 @@ int main(int argc, char* argv[])
     QTextStream out(stdout);
     qDebug() << "Qt version:" << qVersion();
 
+    for (int i = 0; i < 10; ++i)
+    {
+        auto encoded = TokenEncoder::encodeToken("Flub");
+        qDebug() << "encoded:" << encoded;
+
+        auto decoded = TokenEncoder::decodeToken(encoded);
+        qDebug() << "decoded:" << decoded;
+    }
+
     /*
     qDebug() << "Local hostname:" << QHostInfo::localHostName();
 
@@ -64,6 +76,31 @@ int main(int argc, char* argv[])
     qDebug() << "SSL version:" << QSslSocket::sslLibraryVersionNumber();
     qDebug() << "SSL version string:" << QSslSocket::sslLibraryVersionString();
     */
+
+    //return 0;
+
+    //auto lastFm = new PMP::LastFmScrobblingBackend();
+
+    /*
+    QObject::connect(
+        lastFm, &PMP::LastFmScrobblingBackend::receivedAuthenticationReply,
+        &app, &QCoreApplication::quit
+    );*/
+
+    //lastFm->authenticateWithCredentials("xxxxxxxxxxxx", "xxxxxxxxxxxxxxx");
+
+    //lastFm->setSessionKey("xxxxxxxxxxxxx");
+
+    /*
+    lastFm->doScrobbleCall(
+        QDateTime(QDate(2018, 03, 05), QTime(15, 57), Qt::LocalTime),
+        "Title",
+        QString("Artist"),
+        "Album",
+        3 * 60 + 39
+    );*/
+
+    //return app.exec();
 
     /*
     DatabaseConnectionSettings databaseConnectionSettings;
@@ -97,6 +134,7 @@ int main(int argc, char* argv[])
              << preferences.trackRepetitionAvoidanceIntervalSeconds << "seconds";
     */
 
+    /*
     auto d1 = QDateTime::currentDateTimeUtc();
     QThread::msleep(200);
     auto d2 = QDateTime::currentDateTimeUtc();
@@ -113,6 +151,7 @@ int main(int argc, char* argv[])
     auto d1R = QDateTime::fromMSecsSinceEpoch(msSinceEpoch, Qt::UTC);
 
     qDebug() << d1R.toString(Qt::ISODateWithMs);
+    */
 
     return 0;
 }

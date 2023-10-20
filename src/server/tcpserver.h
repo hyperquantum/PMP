@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,6 +35,7 @@ namespace PMP::Server
     class HashIdRegistrar;
     class History;
     class Player;
+    class Scrobbling;
     class ServerHealthMonitor;
     class ServerInterface;
     class ServerSettings;
@@ -52,6 +53,7 @@ namespace PMP::Server
                     Users* users,
                     CollectionMonitor* collectionMonitor,
                     ServerHealthMonitor* serverHealthMonitor,
+                    Scrobbling* scrobbling,
                     DelayedStart* delayedStart,
                     const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
 
@@ -93,6 +95,7 @@ namespace PMP::Server
         Users* _users;
         CollectionMonitor* _collectionMonitor;
         ServerHealthMonitor* _serverHealthMonitor;
+        Scrobbling* _scrobbling;
         DelayedStart* _delayedStart;
         QTcpServer* _server;
         QUdpSocket* _udpSocket;

@@ -98,6 +98,34 @@ target_link_libraries(test_util Qt5::Core Qt5::Test)
 add_test(test_util test_util)
 
 
+# TestScrobbler
+qt5_wrap_cpp(PMP_TestScrobbler_MOCS test_scrobbler.h
+    ${CMAKE_SOURCE_DIR}/src/server/scrobbler.h
+    ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.h
+    ${CMAKE_SOURCE_DIR}/src/server/serverhealthmonitor.h
+)
+add_executable(test_scrobbler test_scrobbler.cpp
+    ${PMP_TestScrobbler_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/server/scrobbler.cpp
+    ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.cpp
+    ${CMAKE_SOURCE_DIR}/src/server/selftest.cpp
+    ${CMAKE_SOURCE_DIR}/src/server/serverhealthmonitor.cpp
+)
+target_link_libraries(test_scrobbler Qt5::Core Qt5::Network Qt5::Test)
+add_test(test_scrobbler test_scrobbler)
+
+
+# TestTokenEncoder
+qt5_wrap_cpp(PMP_TestTokenEncoder_MOCS test_tokenencoder.h)
+add_executable(test_tokenencoder test_tokenencoder.cpp
+    ${PMP_TestTokenEncoder_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/server/tokenencoder.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/obfuscator.cpp
+)
+target_link_libraries(test_tokenencoder Qt5::Core Qt5::Test)
+add_test(test_tokenencoder test_tokenencoder)
+
+
 # TestNetworkUtil
 qt5_wrap_cpp(PMP_TestNetworkUtil_MOCS test_networkutil.h)
 add_executable(test_networkutil test_networkutil.cpp
@@ -117,6 +145,16 @@ target_link_libraries(test_networkprotocol $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(test_networkprotocol Qt5::Core Qt5::Test)
 target_link_libraries(test_networkprotocol ${TAGLIB_LIBRARIES})
 add_test(test_networkprotocol test_networkprotocol)
+
+
+# TestObfuscator
+qt5_wrap_cpp(PMP_TestObfuscator_MOCS test_obfuscator.h)
+add_executable(test_obfuscator test_obfuscator.cpp
+    ${PMP_TestObfuscator_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/obfuscator.cpp
+)
+target_link_libraries(test_obfuscator Qt5::Core Qt5::Test)
+add_test(test_obfuscator test_obfuscator)
 
 
 # TestHashRelations

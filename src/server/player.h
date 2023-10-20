@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -46,6 +46,8 @@ namespace PMP::Server
         bool trackSetSuccessfully() const { return _mediaSet; }
         bool endOfTrackComingUp() const { return _endOfTrackComingUp; }
         bool hadSeek() const { return _hadSeek; }
+
+        qint64 position() const;
 
     public Q_SLOTS:
         void setVolume(int volume);
@@ -130,6 +132,9 @@ namespace PMP::Server
         void positionChanged(qint64 position);
         void volumeChanged(int volume);
         void userPlayingForChanged(quint32 user);
+        void startedPlaying(uint userPlayingFor, QDateTime startTime,
+                            QString title, QString artist, QString album,
+                            QString albumArtist, int trackDurationSeconds);
         void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
 
     private Q_SLOTS:
@@ -160,6 +165,8 @@ namespace PMP::Server
         bool tryStartNextTrack(PlayerInstance* playerInstance,
                                QSharedPointer<QueueEntry> entry,
                                bool startPlaying);
+
+        void emitStartedPlaying(QSharedPointer<QueueEntry> queueEntry);
         void putInHistoryOrder(QSharedPointer<QueueEntry> entry);
         void addToHistory(QSharedPointer<QueueEntry> entry, int permillage, bool hadError,
                           bool hadSeek);
