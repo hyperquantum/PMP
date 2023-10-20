@@ -387,7 +387,7 @@ namespace PMP::Server
     const char* LastFmScrobblingBackend::apiKey = "fc44ba796d201052f53f92818834f907";
     const char* LastFmScrobblingBackend::apiSecret = "3e58b46e070c34718686e0dfbd02d22f";
     const char* LastFmScrobblingBackend::userAgent =
-                    PMP_PRODUCT_NAME " " PMP_VERSION_DISPLAY " (LFM scrobbler v0.0.3)";
+                    PMP_PRODUCT_NAME " " PMP_VERSION_DISPLAY " (LFM scrobbler v0.4)";
     const char* LastFmScrobblingBackend::contentTypeForPostRequest =
                                                       "application/x-www-form-urlencoded";
 
