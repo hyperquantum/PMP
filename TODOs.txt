@@ -137,7 +137,6 @@ TECHNICAL IDEAS
  * when running an indexation, analyze the most recently created/updated files first
  * large file support (?)
  * switch to signed integer types for things like queue indices
- * log network protocol version numbers when establishing a client/server connection
  * add logging for all server messages that are deemed corrupt or invalid by the client
  * use libgroove for playback (?)
 
