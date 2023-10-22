@@ -14,7 +14,6 @@ IMPORTANT
 
  * save track lengths to database
  * save track artist/title/album to database
- ** create Last.FM scrobbler
  * regular automatic cleanup of old log files while the server is running
 
 
