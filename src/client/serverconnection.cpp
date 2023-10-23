@@ -1916,113 +1916,116 @@ namespace PMP::Client
         {
         case ServerMessageType::KeepAliveMessage:
             parseKeepAliveMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerExtensionsMessage:
             parseServerProtocolExtensionsMessage(message);
-            break;
+            return;
         case PMP::ServerMessageType::ExtensionResultMessage:
             parseServerProtocolExtensionResultMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
-            break;
+            return;
         case ServerMessageType::PlayerStateMessage:
             parsePlayerStateMessage(message);
-            break;
+            return;
         case ServerMessageType::DelayedStartInfoMessage:
             parseDelayedStartInfoMessage(message);
-            break;
+            return;
         case ServerMessageType::VolumeChangedMessage:
             parseVolumeChangedMessage(message);
-            break;
+            return;
         case ServerMessageType::TrackInfoMessage:
             parseTrackInfoMessage(message);
-            break;
+            return;
         case ServerMessageType::BulkTrackInfoMessage:
             parseBulkTrackInfoMessage(message);
-            break;
+            return;
         case ServerMessageType::BulkQueueEntryHashMessage:
             parseBulkQueueEntryHashMessage(message);
-            break;
+            return;
         case ServerMessageType::QueueContentsMessage:
             parseQueueContentsMessage(message);
-            break;
+            return;
         case ServerMessageType::QueueEntryRemovedMessage:
             parseQueueEntryRemovedMessage(message);
-            break;
+            return;
         case ServerMessageType::QueueEntryAddedMessage:
             parseQueueEntryAddedMessage(message);
-            break;
+            return;
         case ServerMessageType::DynamicModeStatusMessage:
             parseDynamicModeStatusMessage(message);
-            break;
+            return;
         case ServerMessageType::PossibleFilenamesForQueueEntryMessage:
             parsePossibleFilenamesForQueueEntryMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerInstanceIdentifierMessage:
             parseServerInstanceIdentifierMessage(message);
-            break;
+            return;
         case ServerMessageType::QueueEntryMovedMessage:
             parseQueueEntryMovedMessage(message);
-            break;
+            return;
         case ServerMessageType::UsersListMessage:
             parseUsersListMessage(message);
-            break;
+            return;
         case ServerMessageType::NewUserAccountSaltMessage:
             parseNewUserAccountSaltMessage(message);
-            break;
+            return;
         case ServerMessageType::SimpleResultMessage:
             parseSimpleResultMessage(message);
-            break;
+            return;
         case ServerMessageType::UserLoginSaltMessage:
             parseUserLoginSaltMessage(message);
-            break;
+            return;
         case ServerMessageType::UserPlayingForModeMessage:
             parseUserPlayingForModeMessage(message);
-            break;
+            return;
         case ServerMessageType::CollectionFetchResponseMessage:
         case ServerMessageType::CollectionChangeNotificationMessage:
             parseTrackInfoBatchMessage(message, messageType);
-            break;
+            return;
         case ServerMessageType::ServerNameMessage:
             parseServerNameMessage(message);
-            break;
+            return;
         case ServerMessageType::HashUserDataMessage:
             parseHashUserDataMessage(message);
-            break;
+            return;
         case ServerMessageType::NewHistoryEntryMessage:
             parseNewHistoryEntryMessage(message);
-            break;
+            return;
         case ServerMessageType::PlayerHistoryMessage:
             parsePlayerHistoryMessage(message);
-            break;
+            return;
         case ServerMessageType::DatabaseIdentifierMessage:
             parseDatabaseIdentifierMessage(message);
-            break;
+            return;
         case ServerMessageType::DynamicModeWaveStatusMessage:
             parseDynamicModeWaveStatusMessage(message);
-            break;
+            return;
         case ServerMessageType::QueueEntryAdditionConfirmationMessage:
             parseQueueEntryAdditionConfirmationMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerHealthMessage:
             parseServerHealthMessage(message);
-            break;
+            return;
         case ServerMessageType::CollectionAvailabilityChangeNotificationMessage:
             parseTrackAvailabilityChangeBatchMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerClockMessage:
             parseServerClockMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerVersionInfoMessage:
             parseServerVersionInfoMessage(message);
-            break;
-        default:
-            qDebug() << "received unknown binary message type"
-                     << static_cast<int>(messageType)
-                     << "with length" << message.length();
-            break; /* unknown message type */
+            return;
+        case PMP::ServerMessageType::None:
+            qDebug() << "received a message with type 'none' and length"
+                     << message.length();
+            return;
         }
+
+        qDebug() << "received unknown binary message type"
+                 << static_cast<int>(messageType)
+                 << "with length" << message.length();
     }
 
     void ServerConnection::handleExtensionMessage(quint8 extensionId, quint8 messageType,

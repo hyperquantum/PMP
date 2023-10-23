@@ -2094,86 +2094,89 @@ namespace PMP::Server
         {
         case ClientMessageType::KeepAliveMessage:
             parseKeepAliveMessage(message);
-            break;
+            return;
         case ClientMessageType::ClientExtensionsMessage:
             parseClientProtocolExtensionsMessage(message);
-            break;
+            return;
         case ClientMessageType::SingleByteActionMessage:
             parseSingleByteActionMessage(message);
-            break;
+            return;
         case ClientMessageType::ParameterlessActionMessage:
             parseParameterlessActionMessage(message);
-            break;
+            return;
         case ClientMessageType::TrackInfoRequestMessage:
             parseTrackInfoRequestMessage(message);
-            break;
+            return;
         case ClientMessageType::BulkTrackInfoRequestMessage:
             parseBulkTrackInfoRequestMessage(message);
-            break;
+            return;
         case ClientMessageType::BulkQueueEntryHashRequestMessage:
             parseBulkQueueEntryHashRequestMessage(message);
-            break;
+            return;
         case ClientMessageType::QueueFetchRequestMessage:
             parseQueueFetchRequestMessage(message);
-            break;
+            return;
         case ClientMessageType::QueueEntryRemovalRequestMessage:
             parseQueueEntryRemovalRequest(message);
-            break;
+            return;
         case ClientMessageType::GeneratorNonRepetitionChangeMessage:
             parseGeneratorNonRepetitionChangeMessage(message);
-            break;
+            return;
         case ClientMessageType::PossibleFilenamesForQueueEntryRequestMessage:
             parsePossibleFilenamesForQueueEntryRequestMessage(message);
-            break;
+            return;
         case ClientMessageType::ActivateDelayedStartRequest:
             parseActivateDelayedStartRequest(message);
-            break;
+            return;
         case ClientMessageType::PlayerSeekRequestMessage:
             parsePlayerSeekRequestMessage(message);
-            break;
+            return;
         case ClientMessageType::QueueEntryMoveRequestMessage:
             parseQueueEntryMoveRequestMessage(message);
-            break;
+            return;
         case ClientMessageType::InitiateNewUserAccountMessage:
             parseInitiateNewUserAccountMessage(message);
-            break;
+            return;
         case ClientMessageType::FinishNewUserAccountMessage:
             parseFinishNewUserAccountMessage(message);
-            break;
+            return;
         case ClientMessageType::InitiateLoginMessage:
             parseInitiateLoginMessage(message);
-            break;
+            return;
         case ClientMessageType::FinishLoginMessage:
             parseFinishLoginMessage(message);
-            break;
+            return;
         case ClientMessageType::CollectionFetchRequestMessage:
             parseCollectionFetchRequestMessage(message);
-            break;
+            return;
         case ClientMessageType::AddHashToEndOfQueueRequestMessage:
         case ClientMessageType::AddHashToFrontOfQueueRequestMessage:
             parseAddHashToQueueRequest(message, messageType);
-            break;
+            return;
         case ClientMessageType::HashUserDataRequestMessage:
             parseHashUserDataRequest(message);
-            break;
+            return;
         case ClientMessageType::InsertSpecialQueueItemRequest:
             parseInsertSpecialQueueItemRequest(message);
-            break;
+            return;
         case ClientMessageType::InsertHashIntoQueueRequestMessage:
             parseInsertHashIntoQueueRequest(message);
-            break;
+            return;
         case ClientMessageType::PlayerHistoryRequestMessage:
             parsePlayerHistoryRequest(message);
-            break;
+            return;
         case ClientMessageType::QueueEntryDuplicationRequestMessage:
             parseQueueEntryDuplicationRequest(message);
-            break;
-        default:
-            qDebug() << "received unknown binary message type"
-                     << static_cast<int>(messageType)
-                     << "with length" << messageLength;
-            break; /* unknown message type */
+            return;
+        case PMP::ClientMessageType::None:
+            qDebug() << "received a message with type 'none' and length"
+                     << message.length();
+            return;
         }
+
+        qDebug() << "received unknown binary message type"
+                 << static_cast<int>(messageType)
+                 << "with length" << messageLength;
     }
 
     void ConnectedClient::handleExtensionMessage(quint8 extensionId, quint8 messageType,
