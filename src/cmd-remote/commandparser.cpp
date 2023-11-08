@@ -22,6 +22,7 @@
 #include "common/unicodechars.h"
 
 #include "administrativecommands.h"
+#include "historycommands.h"
 #include "miscellaneouscommands.h"
 #include "playercommands.h"
 #include "queuecommands.h"
@@ -324,6 +325,10 @@ namespace PMP
         else if (command == "queue")
         {
             handleCommandNotRequiringArguments<QueueCommand>(commandWithArgs);
+        }
+        else if (command == "history")
+        {
+            handleCommandNotRequiringArguments<HistoryCommand>(commandWithArgs);
         }
         else if (command == "personalmode")
         {
