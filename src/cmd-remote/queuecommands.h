@@ -50,7 +50,7 @@ namespace PMP
                               Client::QueueEntryInfoStorage* queueEntryInfoStorage);
         QString getSpecialEntryText(Client::QueueEntryInfo const* entry) const;
 
-        int _fetchLimit { 10 };
+        static const int _fetchLimit { 10 };
     };
 
     class BreakCommand : public CommandBase
