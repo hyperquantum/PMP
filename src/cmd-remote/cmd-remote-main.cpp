@@ -48,6 +48,7 @@ usage:
     volume <number>: set volume percentage (0-100)
     nowplaying: get info about the track currently playing
     queue: print queue length and the first tracks waiting in the queue
+    history: print recent playback history
     personalmode: switch to personal mode
     publicmode: switch to public mode
     dynamicmode on|off: enable/disable dynamic mode (auto queue fill)
