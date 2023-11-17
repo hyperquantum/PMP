@@ -33,6 +33,8 @@ namespace PMP::Client
     public:
         virtual ~CollectionWatcher() {}
 
+        virtual bool isAlbumArtistSupported() const = 0;
+
         virtual void enableCollectionDownloading() = 0;
         virtual bool downloadingInProgress() const = 0;
 
@@ -46,7 +48,7 @@ namespace PMP::Client
         void trackDataChanged(CollectionTrackInfo track);
 
     protected:
-        explicit CollectionWatcher(QObject* parent) : QObject(parent) {}
+        explicit CollectionWatcher(QObject* parent = nullptr) : QObject(parent) {}
     };
 }
 #endif

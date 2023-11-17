@@ -41,18 +41,33 @@ namespace PMP
         virtual void execute(Client::ServerInterface* serverInterface) final;
 
     protected:
+        struct CredentialsPrompt
+        {
+            QString providerName;
+        };
+
+        struct CredentialsEntered
+        {
+            QString username;
+            QString password;
+        };
+
         class StepResult;
         enum class StepResultType { StepIncomplete, StepCompleted, CommandFinished };
 
         CommandBase();
 
+        void enableInteractiveCredentialsPrompt(CredentialsPrompt prompt);
+        CredentialsEntered getCredentialsEntered();
+
         void addStep(std::function<StepResult ()> step);
         void setStepDelay(int milliseconds);
         void setCommandExecutionSuccessful(QString output = "");
         void setCommandExecutionFailed(int resultCode, QString errorOutput);
+        void setCommandExecutionResult(AnyResultMessageCode code);
         void setCommandExecutionResult(ResultMessageErrorCode errorCode);
-        void addCommandExecutionFutureListener(
-                                             SimpleFuture<ResultMessageErrorCode> future);
+        void setCommandExecutionResult(ScrobblingResultMessageCode code);
+        void addCommandExecutionFutureListener(SimpleFuture<AnyResultMessageCode> future);
 
         virtual void run(Client::ServerInterface* serverInterface) = 0;
 
@@ -60,11 +75,14 @@ namespace PMP
         void listenerSlot();
 
     private:
+        void promptForCredentials(CredentialsPrompt const& prompt);
         void reportInternalError();
         void applyFinishedCommandFromStepResult(StepResult const& stepResult);
 
         int _currentStep;
         int _stepDelayMilliseconds;
+        Nullable<CredentialsPrompt> _credentialsToAsk;
+        Nullable<CredentialsEntered> _credentialsEntered;
         QVector<std::function<StepResult ()>> _steps;
         bool _finishedOrFailed;
         bool _stepsCompleted;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,11 @@
 
 #ifndef PMP_RESULTMESSAGEERRORCODE_H
 #define PMP_RESULTMESSAGEERRORCODE_H
+
+#include <QString>
+#include <QtGlobal>
+
+#include <variant>
 
 namespace PMP
 {
@@ -55,14 +60,93 @@ namespace PMP
         /// This error code will probably only ever be used client-side.
         ServerTooOld = 240,
 
+        /// The server does not support the requested action because the protocol
+        /// extension the action is a part of is not supported by the server.
+        /// This error code will probably only ever be used client-side.
+        ExtensionNotSupported = 241,
+
+        /// The action could not be completed because the connection to the server was
+        /// broken before the action could be completed.
+        /// This error code will probably only ever be used client-side.
+        ConnectionToServerBroken = 242,
+
         NonFatalInternalServerError = 254,
         UnknownError = 255
     };
 
-    inline bool succeeded(ResultMessageErrorCode errorCode)
+    inline constexpr bool succeeded(ResultMessageErrorCode errorCode)
     {
         return errorCode == ResultMessageErrorCode::NoError
-            || errorCode == ResultMessageErrorCode::AlreadyDone;
+               || errorCode == ResultMessageErrorCode::AlreadyDone;
+    }
+
+    inline QString errorCodeString(ResultMessageErrorCode errorCode)
+    {
+        return QString("GE%1").arg(static_cast<int>(errorCode));
+    }
+
+    enum class ScrobblingResultMessageCode : quint8
+    {
+        NoError = 0,
+        ScrobblingSystemDisabled = 1,
+        ScrobblingProviderInvalid = 2,
+        ScrobblingProviderNotEnabled = 3,
+        ScrobblingAuthenticationFailed = 4,
+        UnspecifiedScrobblingBackendError = 5,
+    };
+
+    inline constexpr bool succeeded(ScrobblingResultMessageCode code)
+    {
+        return code == ScrobblingResultMessageCode::NoError;
+    }
+
+    inline QString errorCodeString(ScrobblingResultMessageCode code)
+    {
+        return QString("SC%1").arg(static_cast<int>(code));
+    }
+
+    typedef std::variant<ResultMessageErrorCode,
+                         ScrobblingResultMessageCode> AnyResultMessageCode;
+
+    inline constexpr bool succeeded(AnyResultMessageCode code)
+    {
+        if (std::holds_alternative<ResultMessageErrorCode>(code))
+            return succeeded(std::get<ResultMessageErrorCode>(code));
+
+        if (std::holds_alternative<ScrobblingResultMessageCode>(code))
+            return succeeded(std::get<ScrobblingResultMessageCode>(code));
+
+        Q_UNREACHABLE();
+    }
+
+    inline QString errorCodeString(AnyResultMessageCode code)
+    {
+        if (std::holds_alternative<ResultMessageErrorCode>(code))
+            return errorCodeString(std::get<ResultMessageErrorCode>(code));
+
+        if (std::holds_alternative<ScrobblingResultMessageCode>(code))
+            return errorCodeString(std::get<ScrobblingResultMessageCode>(code));
+
+        Q_UNREACHABLE();
+    }
+
+    inline constexpr bool operator==(AnyResultMessageCode anyCode,
+                                     ResultMessageErrorCode errorCode)
+    {
+        if (errorCode == ResultMessageErrorCode::NoError)
+            return succeeded(anyCode);
+
+        if (std::holds_alternative<ResultMessageErrorCode>(anyCode))
+            return std::get<ResultMessageErrorCode>(anyCode) == errorCode;
+
+        return false;
+    }
+
+    inline constexpr bool operator==(AnyResultMessageCode anyCode,
+                                     ScrobblingResultMessageCode errorCode)
+    {
+        return std::holds_alternative<ScrobblingResultMessageCode>(anyCode)
+               && std::get<ScrobblingResultMessageCode>(anyCode) == errorCode;
     }
 }
 #endif

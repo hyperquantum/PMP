@@ -24,6 +24,8 @@
 #include "playerstate.h"
 #include "queueentrytype.h"
 #include "queueindextype.h"
+#include "scrobblerstatus.h"
+#include "scrobblingprovider.h"
 #include "serverhealthstatus.h"
 #include "specialqueueitemtype.h"
 #include "startstopeventstatus.h"
@@ -48,6 +50,8 @@ namespace PMP
             qRegisterMetaType<PMP::PlayerState>();
             qRegisterMetaType<PMP::QueueEntryType>();
             qRegisterMetaType<PMP::QueueIndexType>();
+            qRegisterMetaType<PMP::ScrobblerStatus>();
+            qRegisterMetaType<PMP::ScrobblingProvider>();
             qRegisterMetaType<PMP::ServerHealthStatus>();
             qRegisterMetaType<PMP::SpecialQueueItemType>();
             qRegisterMetaType<PMP::StartStopEventStatus>();

@@ -149,7 +149,7 @@
            <item>
             <widget class="QLabel" name="userPlayingForLabel">
              <property name="text">
-              <string>Timmy</string>
+              <string>Username</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
@@ -169,6 +169,44 @@
           <widget class="QPushButton" name="toPublicModeButton">
            <property name="text">
             <string>Public</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="displayStatisticsLayout">
+         <item>
+          <spacer name="horizontalSpacer_7">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QLabel" name="displayStatisticsLabel">
+           <property name="text">
+            <string>Display:</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="displayPersonalStatisticsRadioButton">
+           <property name="text">
+            <string>personal statistics</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QRadioButton" name="displayPublicStatisticsRadioButton">
+           <property name="text">
+            <string>public statistics</string>
            </property>
           </widget>
          </item>

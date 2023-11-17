@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,11 +30,16 @@ namespace PMP
     public:
         TagData();
         TagData(const QString& artist, const QString& title,
-                const QString& album, const QString& comment);
+                const QString& album, const QString& albumArtist,
+                const QString& comment);
 
         QString artist() const { return _artist; }
         QString title() const { return _title; }
         QString album() const { return _album; }
+
+        QString albumArtist() const { return _albumArtist; }
+        void setAlbumArtist(const QString& albumArtist) { _albumArtist = albumArtist; }
+
         QString comment() const { return _comment; }
 
         bool operator == (TagData const& other) const
@@ -42,6 +47,7 @@ namespace PMP
             return _artist == other._artist
                 && _title == other._title
                 && _album == other._album
+                && _albumArtist == other._albumArtist
                 && _comment == other._comment;
         }
 
@@ -54,6 +60,7 @@ namespace PMP
         QString _artist;
         QString _title;
         QString _album;
+        QString _albumArtist;
         QString _comment;
     };
 }

@@ -75,7 +75,7 @@ namespace PMP
 
         void onStartFullIndexationTriggered();
         void onReloadServerSettingsTriggered();
-        void reloadServerSettingsResultReceived(ResultMessageErrorCode errorCode);
+        void reloadServerSettingsResultReceived(AnyResultMessageCode errorCode);
         void onShutdownServerTriggered();
         void updatePowerManagement();
         void onAboutPmpAction();
@@ -94,6 +94,7 @@ namespace PMP
         void createMenus();
         void createStatusbar();
         void updateRightStatus();
+        void updateScrobblingUi();
         void setLeftStatus(int intervalMs, QString text);
         void showUserAccountPicker();
         void showLoginWidget(QString login);
@@ -102,6 +103,7 @@ namespace PMP
         NotificationBar* _notificationBar;
         QLabel* _leftStatus;
         QLabel* _rightStatus;
+        QLabel* _scrobblingStatusLabel;
         QTimer* _leftStatusTimer;
 
         ConnectionWidget* _connectionWidget;
@@ -118,12 +120,14 @@ namespace PMP
         QAction* _shutdownServerAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
+        QAction* _scrobblingAction;
         QAction* _activateDelayedStartAction;
         QAction* _keepDisplayActiveAction;
         QAction* _aboutPmpAction;
         QAction* _aboutQtAction;
 
         QMenu* _serverAdminMenu;
+        QMenu* _userMenu;
         QMenu* _actionsMenu;
         QMenu* _viewMenu;
 

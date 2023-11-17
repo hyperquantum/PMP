@@ -24,8 +24,12 @@ set(PMP_COMMON_SOURCES
     common/filehash.cpp
     common/logging.cpp
     common/networkprotocol.cpp
+    common/networkprotocolextensions.cpp
     common/networkutil.cpp
+    common/obfuscator.cpp
     common/powermanagement.cpp
+    common/scrobblerstatus.cpp
+    common/scrobblingprovider.cpp
     common/startstopeventstatus.cpp
     common/tagdata.cpp
     common/tribool.cpp
@@ -51,6 +55,7 @@ set(PMP_CLIENT_SOURCES
     client/queueentryinfostorageimpl.cpp
     client/queuehashesmonitor.cpp
     client/queuemonitor.cpp
+    client/scrobblingcontrollerimpl.cpp
     client/servercapabilitiesimpl.cpp
     client/serverconnection.cpp
     client/serverdiscoverer.cpp
@@ -81,6 +86,8 @@ set(PMP_CLIENT_HEADERS
     client/queueentryinfostorageimpl.h
     client/queuehashesmonitor.h
     client/queuemonitor.h
+    client/scrobblingcontroller.h
+    client/scrobblingcontrollerimpl.h
     client/serverconnection.h
     client/serverdiscoverer.h
     client/serverinterface.h
@@ -101,18 +108,27 @@ set(PMP_SERVER_SOURCES
     server/history.cpp
     server/historystatistics.cpp
     server/historystatisticsprefetcher.cpp
+    server/lastfmscrobblingbackend.cpp
+    server/lastfmscrobblingdataprovider.cpp
     server/player.cpp
     server/playerqueue.cpp
     server/preloader.cpp
     server/queueentry.cpp
     server/randomtrackssource.cpp
     server/resolver.cpp
+    server/scrobbler.cpp
+    server/scrobbling.cpp
+    server/scrobblingbackend.cpp
+    server/scrobblinghost.cpp
+    server/selftest.cpp
     server/serverhealthmonitor.cpp
     server/serverinterface.cpp
     server/servermetatypes.cpp
     server/serversettings.cpp
     server/tcpserver.cpp
+    server/tokenencoder.cpp
     server/trackgeneratorbase.cpp
+    server/trackinfoproviderimpl.cpp
     server/trackrepetitionchecker.cpp
     server/trackstats.cpp
     server/users.cpp
@@ -128,11 +144,16 @@ set(PMP_SERVER_HEADERS
     server/history.h
     server/historystatistics.h
     server/historystatisticsprefetcher.h
+    server/lastfmscrobblingbackend.h
     server/player.h
     server/playerqueue.h
     server/preloader.h
     server/randomtrackssource.h
     server/resolver.h
+    server/scrobbler.h
+    server/scrobbling.h
+    server/scrobblingbackend.h
+    server/scrobblinghost.h
     server/serverhealthmonitor.h
     server/serverinterface.h
     server/serversettings.h
@@ -144,17 +165,27 @@ set(PMP_SERVER_HEADERS
 )
 
 set(PMP_CMD_REMOTE_SOURCES
+    cmd-remote/administrativecommands.cpp
     cmd-remote/commandbase.cpp
     cmd-remote/commandlineclient.cpp
     cmd-remote/commandparser.cpp
-    cmd-remote/commands.cpp
     cmd-remote/console.cpp
+    cmd-remote/historycommands.cpp
+    cmd-remote/miscellaneouscommands.cpp
+    cmd-remote/playercommands.cpp
+    cmd-remote/queuecommands.cpp
+    cmd-remote/scrobblingcommands.cpp
 )
 set(PMP_CMD_REMOTE_HEADERS
+    cmd-remote/administrativecommands.h
     cmd-remote/command.h
     cmd-remote/commandbase.h
     cmd-remote/commandlineclient.h
-    cmd-remote/commands.h
+    cmd-remote/historycommands.h
+    cmd-remote/miscellaneouscommands.h
+    cmd-remote/playercommands.h
+    cmd-remote/queuecommands.h
+    cmd-remote/scrobblingcommands.h
 )
 
 set(PMP_GUI_REMOTE_SOURCES
@@ -178,11 +209,14 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/queuemediator.cpp
     gui-remote/queuemodel.cpp
     gui-remote/scoreformatdelegate.cpp
+    gui-remote/scrobblingauthenticationdialog.cpp
     gui-remote/trackinfodialog.cpp
     gui-remote/trackjudge.cpp
     gui-remote/trackprogresswidget.cpp
     gui-remote/useraccountcreationwidget.cpp
+    gui-remote/userforstatisticsdisplay.cpp
     gui-remote/userpickerwidget.cpp
+    gui-remote/userscrobblingdialog.cpp
     gui-remote/waitingspinnerwidget.cpp
 )
 set(PMP_GUI_REMOTE_HEADERS
@@ -204,10 +238,13 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/queuemediator.h
     gui-remote/queuemodel.h
     gui-remote/scoreformatdelegate.h
+    gui-remote/scrobblingauthenticationdialog.h
     gui-remote/trackinfodialog.h
     gui-remote/trackprogresswidget.h
     gui-remote/useraccountcreationwidget.h
+    gui-remote/userforstatisticsdisplay.h
     gui-remote/userpickerwidget.h
+    gui-remote/userscrobblingdialog.h
     gui-remote/waitingspinnerwidget.h
 )
 set(PMP_GUI_REMOTE_UIS
@@ -218,9 +255,11 @@ set(PMP_GUI_REMOTE_UIS
     gui-remote/loginwidget.ui
     gui-remote/mainwidget.ui
     gui-remote/notificationbar.ui
+    gui-remote/scrobblingauthenticationdialog.ui
     gui-remote/trackinfodialog.ui
     gui-remote/useraccountcreationwidget.ui
     gui-remote/userpickerwidget.ui
+    gui-remote/userscrobblingdialog.ui
 )
 set(PMP_GUI_REMOTE_RESOURCES
     gui-remote/mainwindow.qrc
@@ -249,6 +288,12 @@ target_link_libraries(PmpClient Qt5::Core Qt5::Network)
 
 add_library(PmpCmdRemote OBJECT ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS})
 target_link_libraries(PmpCmdRemote Qt5::Core Qt5::Network)
+
+add_library(PmpGuiRemote OBJECT
+    ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
+    ${PMP_GUI_REMOTE_UICS} ${PMP_GUI_REMOTE_QRCS}
+)
+target_link_libraries(PmpGuiRemote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
 
 add_library(PmpServer OBJECT ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS})
 target_link_libraries(PmpServer Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
@@ -289,11 +334,10 @@ target_link_libraries(PMP-Cmd-Remote
 add_executable(PMP-GUI-Remote
     ${PMP_WIN32_FLAG}
     gui-remote/gui-remote-main.cpp
-    ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
-    ${PMP_GUI_REMOTE_UICS}
-    ${PMP_GUI_REMOTE_QRCS}
+
 )
 target_link_libraries(PMP-GUI-Remote
+    $<TARGET_OBJECTS:PmpGuiRemote>
     $<TARGET_OBJECTS:PmpClient>
     $<TARGET_OBJECTS:PmpCommon>
 )

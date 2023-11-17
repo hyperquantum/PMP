@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -52,7 +52,7 @@ namespace PMP
 
     private Q_SLOTS:
         void updateEstimatedEndTime();
-        void activationResultReceived(ResultMessageErrorCode errorCode);
+        void activationResultReceived(AnyResultMessageCode errorCode);
 
     private:
         Ui::DelayedStartDialog* _ui;

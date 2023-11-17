@@ -28,6 +28,7 @@
 #include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/queuehashesmonitor.h"
+#include "client/scrobblingcontroller.h"
 #include "client/serverconnection.h"
 #include "client/serverinterface.h"
 
@@ -39,7 +40,9 @@
 #include "mainwidget.h"
 #include "notificationbar.h"
 #include "useraccountcreationwidget.h"
+#include "userforstatisticsdisplay.h"
 #include "userpickerwidget.h"
+#include "userscrobblingdialog.h"
 
 #include <QAction>
 #include <QApplication>
@@ -150,6 +153,18 @@ namespace PMP
         _closeAction = new QAction(tr("&Close remote"), this);
         connect(_closeAction, &QAction::triggered, this, &MainWindow::close);
 
+        _scrobblingAction = new QAction(tr("&Scrobbling..."));
+        connect(
+            _scrobblingAction, &QAction::triggered,
+            this,
+            [this]()
+            {
+                auto* dialog = new UserScrobblingDialog(this, _serverInterface);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->open();
+            }
+        );
+
         _activateDelayedStartAction = new QAction(tr("Activate &delayed start..."));
         connect(
             _activateDelayedStartAction, &QAction::triggered,
@@ -184,6 +199,7 @@ namespace PMP
     {
         /* Top-level menus */
         QMenu* pmpMenu = menuBar()->addMenu(tr("&PMP"));
+        _userMenu = menuBar()->addMenu(tr("&User"));
         _actionsMenu = menuBar()->addMenu(tr("&Actions"));
         _viewMenu = menuBar()->addMenu(tr("&View"));
         QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
@@ -199,6 +215,9 @@ namespace PMP
         _serverAdminMenu->addSeparator();
         _serverAdminMenu->addAction(_shutdownServerAction);
 
+        /* "User" menu members */
+        _userMenu->addAction(_scrobblingAction);
+
         /* "Actions" menu members */
         _actionsMenu->addAction(_activateDelayedStartAction);
 
@@ -213,6 +232,7 @@ namespace PMP
 
         /* Menu visibility */
         _serverAdminMenu->menuAction()->setVisible(false); /* needs active connection */
+        _userMenu->menuAction()->setVisible(false); /* will be made visible after login */
         _actionsMenu->menuAction()->setVisible(false);
         _viewMenu->menuAction()->setVisible(false); /* will be made visible after login */
     }
@@ -223,9 +243,13 @@ namespace PMP
         _leftStatus->setFrameStyle(QFrame::Panel | QFrame::Sunken);
         _rightStatus = new QLabel("", this);
         _rightStatus->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+        _scrobblingStatusLabel = new QLabel("", this);
+        _scrobblingStatusLabel->setFrameStyle(QFrame::Panel | QFrame::Sunken);
+        _scrobblingStatusLabel->setVisible(false);
 
         statusBar()->addPermanentWidget(_leftStatus, 1);
         statusBar()->addPermanentWidget(_rightStatus, 1);
+        statusBar()->addPermanentWidget(_scrobblingStatusLabel, 0);
 
         connect(
             _leftStatusTimer, &QTimer::timeout, this, &MainWindow::onLeftStatusTimeout
@@ -337,6 +361,48 @@ namespace PMP
         }
     }
 
+    void MainWindow::updateScrobblingUi()
+    {
+        auto& scrobblingController = _serverInterface->scrobblingController();
+
+        auto lastFmEnabled = scrobblingController.lastFmEnabled();
+
+        _scrobblingAction->setEnabled(lastFmEnabled != null);
+
+        if (lastFmEnabled == false)
+        {
+            _scrobblingStatusLabel->setVisible(false);
+            return;
+        }
+
+        auto lastFmStatus = scrobblingController.lastFmStatus();
+
+        switch (lastFmStatus)
+        {
+        case ScrobblerStatus::Unknown:
+            _scrobblingStatusLabel->setText(tr("Last.fm status: unknown"));
+            break;
+        case ScrobblerStatus::Green:
+            _scrobblingStatusLabel->setText(tr("Last.fm status: good"));
+            break;
+        case ScrobblerStatus::Yellow:
+            _scrobblingStatusLabel->setText(tr("Last.fm status: trying..."));
+            break;
+        case ScrobblerStatus::Red:
+            _scrobblingStatusLabel->setText(tr("Last.fm status: BROKEN"));
+            break;
+        case ScrobblerStatus::WaitingForUserCredentials:
+            _scrobblingStatusLabel->setText(tr("Last.fm status: NEED LOGIN"));
+            break;
+        default:
+            qWarning() << "Scrobbler status not recognized:" << lastFmStatus;
+            _scrobblingStatusLabel->setText(tr("Last.fm status: unknown"));
+            break;
+        }
+
+        _scrobblingStatusLabel->setVisible(true);
+    }
+
     void MainWindow::setLeftStatus(int intervalMs, QString text)
     {
         _leftStatus->setText(text);
@@ -395,14 +461,14 @@ namespace PMP
 
         future.addResultListener(
             this,
-            [this](ResultMessageErrorCode code)
+            [this](AnyResultMessageCode code)
             {
                 reloadServerSettingsResultReceived(code);
             }
         );
     }
 
-    void MainWindow::reloadServerSettingsResultReceived(ResultMessageErrorCode errorCode)
+    void MainWindow::reloadServerSettingsResultReceived(AnyResultMessageCode errorCode)
     {
         QMessageBox msgBox;
 
@@ -426,7 +492,7 @@ namespace PMP
         else
         {
             msgBox.setInformativeText(
-                tr("Error code: %1").arg(static_cast<int>(errorCode))
+                tr("Error code: %1").arg(errorCodeString(errorCode))
             );
         }
 
@@ -508,7 +574,7 @@ namespace PMP
     void MainWindow::onDoConnect(QString server, uint port)
     {
         _connection = new ServerConnection(this, _hashIdRepository);
-        _serverInterface = new ServerInterface(_connection);
+        _serverInterface = new ServerInterfaceImpl(_connection);
 
         auto* generalController = &_serverInterface->generalController();
 
@@ -638,6 +704,14 @@ namespace PMP
                 tr("The server reports that its database is not working!")
             );
         }
+        else if (serverHealth.sslLibrariesMissing())
+        {
+            QMessageBox::warning(
+                this, tr("Server problem"),
+                tr("The server reports that it does not have SSL libraries available! "
+                   "This means that scrobbling will not work.")
+            );
+        }
         else
         {
             QMessageBox::warning(
@@ -659,8 +733,11 @@ namespace PMP
         _notificationBar = new NotificationBar(mainCentralWidget);
         _notificationBar->addNotification(delayedStartNotification);
 
+        auto* userForStatisticsDisplay =
+            new UserForStatisticsDisplayImpl(this, _serverInterface);
+
         _mainWidget = new MainWidget(mainCentralWidget);
-        _mainWidget->setConnection(_serverInterface);
+        _mainWidget->setConnection(_serverInterface, userForStatisticsDisplay);
 
         auto centralVerticalLayout = new QVBoxLayout(mainCentralWidget);
         centralVerticalLayout->setContentsMargins(0, 0, 0, 0);
@@ -670,13 +747,13 @@ namespace PMP
         setCentralWidget(mainCentralWidget);
 
         auto queueHashesMonitor =
-                new QueueHashesMonitor(_serverInterface,
-                                       &_serverInterface->queueMonitor(),
-                                       &_serverInterface->queueEntryInfoStorage());
+                new QueueHashesMonitorImpl(_serverInterface,
+                                           &_serverInterface->queueMonitor(),
+                                           &_serverInterface->queueEntryInfoStorage());
 
         auto collectionWidget =
                 new CollectionWidget(_musicCollectionDock, _serverInterface,
-                                     queueHashesMonitor);
+                                     queueHashesMonitor, userForStatisticsDisplay);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 
@@ -762,6 +839,15 @@ namespace PMP
         _startFullIndexationAction->setEnabled(false);
         _startFullIndexationAction->setVisible(true);
         _serverAdminMenu->menuAction()->setVisible(true);
+        _userMenu->menuAction()->setVisible(true);
+
+        auto* scrobblingController = &_serverInterface->scrobblingController();
+        connect(
+            scrobblingController, &ScrobblingController::lastFmInfoChanged,
+            this, &MainWindow::updateScrobblingUi
+        );
+
+        updateScrobblingUi();
     }
 
     void MainWindow::onLoginCancel()

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,12 @@
 
 #include "common/unicodechars.h"
 
-#include "commands.h"
+#include "administrativecommands.h"
+#include "historycommands.h"
+#include "miscellaneouscommands.h"
+#include "playercommands.h"
+#include "queuecommands.h"
+#include "scrobblingcommands.h"
 
 #include <limits>
 
@@ -321,6 +326,10 @@ namespace PMP
         {
             handleCommandNotRequiringArguments<QueueCommand>(commandWithArgs);
         }
+        else if (command == "history")
+        {
+            handleCommandNotRequiringArguments<HistoryCommand>(commandWithArgs);
+        }
         else if (command == "personalmode")
         {
             handleCommandNotRequiringArguments<PersonalModeCommand>(commandWithArgs);
@@ -353,6 +362,10 @@ namespace PMP
         else if (command == "serverversion")
         {
             handleCommandNotRequiringArguments<ServerVersionCommand>(commandWithArgs);
+        }
+        else if (command == "scrobbling")
+        {
+            parseScrobblingCommand(args);
         }
         else if (command == "shutdown")
         {
@@ -701,6 +714,125 @@ namespace PMP
         }
 
         _command = new TrackStatsCommand(hash);
+    }
+
+    void CommandParser::parseScrobblingCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Command 'scrobbling' requires arguments!";
+            return;
+        }
+
+        if (arguments.current() == "enable")
+        {
+            parseScrobblingEnableOrDisableCommand(arguments, true);
+        }
+        else if (arguments.current() == "disable")
+        {
+            parseScrobblingEnableOrDisableCommand(arguments, false);
+        }
+        else if (arguments.current() == "status")
+        {
+            parseScrobblingStatusCommand(arguments);
+        }
+        else if (arguments.current() == "authenticate")
+        {
+            parseScrobblingAuthenticateCommand(arguments);
+        }
+        else
+        {
+            _errorMessage =
+                "Expected 'enable' or 'disable' or 'status' or 'authenticate' after 'scrobbling'!";
+        }
+    }
+
+    void CommandParser::parseScrobblingEnableOrDisableCommand(CommandArguments& arguments,
+                                                              bool enable)
+    {
+        // current is "enable" or "disable"
+        arguments.advance();
+
+        auto providerOrNull = parseScrobblingProviderName(arguments);
+        if (providerOrNull == null)
+            return;
+
+        auto provider = providerOrNull.value();
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new ScrobblingActivationCommand(provider, enable);
+    }
+
+    void CommandParser::parseScrobblingStatusCommand(CommandArguments& arguments)
+    {
+        // current is "status"
+        arguments.advance();
+
+        auto providerOrNull = parseScrobblingProviderName(arguments);
+        if (providerOrNull == null)
+            return;
+
+        auto provider = providerOrNull.value();
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new ScrobblingStatusCommand(provider);
+    }
+
+    void CommandParser::parseScrobblingAuthenticateCommand(CommandArguments& arguments)
+    {
+        // current is "authenticate"
+        arguments.advance();
+
+        auto providerOrNull = parseScrobblingProviderName(arguments);
+        if (providerOrNull == null)
+            return;
+
+        auto provider = providerOrNull.value();
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new ScrobblingAuthenticateCommand(provider);
+    }
+
+    Nullable<ScrobblingProvider> CommandParser::parseScrobblingProviderName(
+                                                              CommandArguments& arguments)
+    {
+        if (arguments.haveCurrent())
+        {
+            if (arguments.currentIsOneOf({"lastfm", "last.fm"}))
+            {
+                return ScrobblingProvider::LastFm;
+            }
+        }
+
+        if (arguments.noCurrent())
+        {
+            _errorMessage =
+                QString("Expected 'lastfm' or 'last.fm' after '%1'")
+                    .arg(arguments.previous());
+        }
+        else
+        {
+            _errorMessage =
+                QString("Expected 'lastfm' or 'last.fm' instead of '%1'")
+                    .arg(arguments.current());
+        }
+
+        return null;
     }
 
     void CommandParser::parseDynamicModeCommand(CommandArguments arguments)

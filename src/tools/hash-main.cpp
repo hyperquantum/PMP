@@ -18,6 +18,7 @@
 */
 
 #include "common/fileanalyzer.h"
+#include "common/logging.h"
 #include "common/version.h"
 
 #include <QCoreApplication>
@@ -36,6 +37,10 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationVersion(PMP_VERSION_DISPLAY);
     QCoreApplication::setOrganizationName(PMP_ORGANIZATION_NAME);
     QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
+
+    /* set up logging */
+    Logging::enableTextFileOnlyLogging();
+    Logging::setFilenameTag("HT");
 
     QTextStream out(stdout);
     QTextStream err(stderr);
@@ -76,10 +81,10 @@ int main(int argc, char *argv[])
     QCryptographicHash sha1_hasher(QCryptographicHash::Sha1);
     sha1_hasher.addData(fileContents);
 
-    out << "File name: " << fileName << Qt::endl;
-    out << "File size: " << fileContents.length() << Qt::endl;
-    out << "MD5 Hash:  " << md5_hasher.result().toHex() << Qt::endl;
-    out << "SHA1 Hash: " << sha1_hasher.result().toHex() << Qt::endl;
+    out << "   file name: " << fileName << Qt::endl;
+    out << "   file size: " << fileContents.length() << Qt::endl;
+    out << "    MD5 Hash: " << md5_hasher.result().toHex() << Qt::endl;
+    out << "   SHA1 Hash: " << sha1_hasher.result().toHex() << Qt::endl;
 
     if (isExperimentalFileFormat)
     {
@@ -99,15 +104,17 @@ int main(int argc, char *argv[])
     FileHash finalHash = analyzer.hash();
     FileHash legacyHash = analyzer.legacyHash();
 
-    out << "title:   " << analyzer.tagData().title() << Qt::endl;
-    out << "artist:  " << analyzer.tagData().artist() << Qt::endl;
-    out << "comment: " << analyzer.tagData().comment() << Qt::endl;
+    out << "       title: " << analyzer.tagData().title() << Qt::endl;
+    out << "      artist: " << analyzer.tagData().artist() << Qt::endl;
+    out << "       album: " << analyzer.tagData().album() << Qt::endl;
+    out << "album artist: " << analyzer.tagData().albumArtist() << Qt::endl;
+    out << "     comment: " << analyzer.tagData().comment() << Qt::endl;
 
-    out << "track hash: " << finalHash.toString() << Qt::endl;
+    out << "  track hash: " << finalHash.toString() << Qt::endl;
 
     if (!legacyHash.isNull())
     {
-        out << "legacy hash: " << legacyHash.toString() << Qt::endl;
+        out << " legacy hash: " << legacyHash.toString() << Qt::endl;
     }
 
     return 0;

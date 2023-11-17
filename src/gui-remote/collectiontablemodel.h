@@ -43,20 +43,7 @@ namespace PMP::Client
 
 namespace PMP
 {
-    class CollectionViewContext : public QObject
-    {
-        Q_OBJECT
-    public:
-        CollectionViewContext(QObject* parent, Client::ServerInterface* serverInterface);
-
-        quint32 userId() const { return _userId; }
-
-    Q_SIGNALS:
-        void userIdChanged();
-
-    private:
-        quint32 _userId;
-    };
+    class UserForStatisticsDisplay;
 
     class SortedCollectionTableModel : public QAbstractTableModel
     {
@@ -65,7 +52,7 @@ namespace PMP
         SortedCollectionTableModel(QObject* parent,
                                    Client::ServerInterface* serverInterface,
                                    Client::QueueHashesMonitor* queueHashesMonitor,
-                                   CollectionViewContext* collectionViewContext);
+                                   UserForStatisticsDisplay* userForStatisticsDisplay);
 
         void setHighlightCriterium(TrackCriterium criterium);
         int highlightColorIndex() const;
@@ -76,8 +63,9 @@ namespace PMP
         int sortColumn() const;
         Qt::SortOrder sortOrder() const;
 
-        Client::CollectionTrackInfo* trackAt(const QModelIndex& index) const;
-        Client::CollectionTrackInfo* trackAt(int rowIndex) const;
+        Client::CollectionTrackInfo const* trackAt(const QModelIndex& index) const;
+        Client::CollectionTrackInfo const* trackAt(int rowIndex) const;
+        int trackIndex(Client::LocalHashId hashId) const;
 
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
@@ -113,6 +101,7 @@ namespace PMP
         int findOuterIndexMapIndexForInsert(Client::CollectionTrackInfo const& track,
                                             int searchRangeBegin, int searchRangeEnd);
         int findOuterIndexForHash(Client::LocalHashId hashId);
+        void markRowAsChanged(int index);
         void markLeftColumnAsChanged();
         void markEverythingAsChanged();
 
@@ -165,13 +154,14 @@ namespace PMP
                                      SortedCollectionTableModel* source,
                                      Client::ServerInterface* serverInterface,
                                      Client::QueueHashesMonitor* queueHashesMonitor,
-                                     CollectionViewContext* collectionViewContext);
+                                     UserForStatisticsDisplay* userForStatisticsDisplay);
 
-        void setTrackFilters(TrackCriterium criterium1, TrackCriterium criterium2);
+        void setTrackFilters(TrackCriterium criterium1, TrackCriterium criterium2,
+                             TrackCriterium criterium3);
 
         virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 
-        Client::CollectionTrackInfo* trackAt(const QModelIndex& index) const;
+        Client::CollectionTrackInfo const* trackAt(const QModelIndex& index) const;
 
     public Q_SLOTS:
         void setSearchText(QString search);

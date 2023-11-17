@@ -59,12 +59,33 @@ namespace PMP::Client
         const QByteArray blobData;
     };
 
+    class ServerConnection::ExtensionResultMessageData
+    {
+    public:
+        ExtensionResultMessageData(NetworkProtocolExtension extension, quint8 resultCode,
+                                   quint32 clientReference)
+         : extension(extension),
+           resultCode(resultCode),
+           clientReference(clientReference)
+        {
+            //
+        }
+
+        bool isSuccess() const { return resultCode == 0; }
+        bool isFailure() const { return !isSuccess(); }
+
+        const NetworkProtocolExtension extension;
+        const quint8 resultCode;
+        const quint32 clientReference;
+    };
+
     class ServerConnection::ResultHandler
     {
     public:
         virtual ~ResultHandler();
 
         virtual void handleResult(ResultMessageData const& data) = 0;
+        virtual void handleExtensionResult(ExtensionResultMessageData const& data);
 
         virtual void handleQueueEntryAdditionConfirmation(quint32 clientReference,
                                                           qint32 index, quint32 queueID);
@@ -80,6 +101,21 @@ namespace PMP::Client
     ServerConnection::ResultHandler::~ResultHandler()
     {
         //
+    }
+
+    void ServerConnection::ResultHandler::handleExtensionResult(
+                                                ExtensionResultMessageData const& data)
+    {
+        qWarning() << "ResultHandler cannot deal with extension result message;"
+                   << "extension:" << data.extension
+                   << "; result code:" << uint(data.resultCode)
+                   << "; client-ref:" << uint(data.clientReference);
+
+        ResultMessageData data2(ResultMessageErrorCode::UnknownError,
+                                data.clientReference,
+                                0, {});
+
+        handleResult(data2);
     }
 
     ServerConnection::ResultHandler::ResultHandler(ServerConnection* parent)
@@ -127,7 +163,7 @@ namespace PMP::Client
                 break;
 
             default:
-                text += "error code " + QString::number(int(data.errorType));
+                text += "error code " + errorCodeString(data.errorType);
                 break;
         }
 
@@ -149,15 +185,18 @@ namespace PMP::Client
     public:
         PromiseResultHandler(ServerConnection* parent);
 
-        SimpleFuture<ResultMessageErrorCode> future() const;
+        SimpleFuture<AnyResultMessageCode> future() const;
 
         void handleResult(ResultMessageData const& data) override;
+        void handleExtensionResult(ExtensionResultMessageData const& data) override;
 
     protected:
         virtual QString getActionDetail() const;
+        virtual AnyResultMessageCode convertExtensionResultCode(
+                                                ExtensionResultMessageData const& data);
 
     private:
-        SimplePromise<ResultMessageErrorCode> _promise;
+        SimplePromise<AnyResultMessageCode> _promise;
     };
 
     ServerConnection::PromiseResultHandler::PromiseResultHandler(ServerConnection* parent)
@@ -166,7 +205,7 @@ namespace PMP::Client
         //
     }
 
-    SimpleFuture<ResultMessageErrorCode> ServerConnection::PromiseResultHandler::future(
+    SimpleFuture<AnyResultMessageCode> ServerConnection::PromiseResultHandler::future(
                                                                                    ) const
     {
         return _promise.future();
@@ -189,9 +228,29 @@ namespace PMP::Client
         _promise.setResult(data.errorType);
     }
 
+    void ServerConnection::PromiseResultHandler::handleExtensionResult(
+                                                   const ExtensionResultMessageData& data)
+    {
+        auto code = convertExtensionResultCode(data);
+
+        _promise.setResult(code);
+    }
+
     QString ServerConnection::PromiseResultHandler::getActionDetail() const
     {
         return {};
+    }
+
+    AnyResultMessageCode
+        ServerConnection::PromiseResultHandler::convertExtensionResultCode(
+                                                   const ExtensionResultMessageData& data)
+    {
+        qWarning() << "PromiseResultHandler cannot deal with extension result message;"
+                   << "extension ID:" << uint(data.resultCode)
+                   << "; result code:" << uint(data.resultCode)
+                   << "; client-ref:" << uint(data.clientReference);
+
+        return ResultMessageErrorCode::UnknownError;
     }
 
     /* ============================================================================ */
@@ -231,6 +290,57 @@ namespace PMP::Client
         }
 
         return "action with code " + QString::number(static_cast<int>(_code));
+    }
+
+    /* ============================================================================ */
+
+    class ServerConnection::ScrobblingAuthenticationResultHandler
+        : public PromiseResultHandler
+    {
+    public:
+        ScrobblingAuthenticationResultHandler(ServerConnection* parent,
+                                              ScrobblingProvider provider,
+                                              QString user);
+
+    protected:
+        QString getActionDetail() const override;
+        AnyResultMessageCode convertExtensionResultCode(
+                                         ExtensionResultMessageData const& data) override;
+
+    private:
+        ScrobblingProvider _provider;
+        QString _user;
+    };
+
+    ServerConnection::ScrobblingAuthenticationResultHandler::ScrobblingAuthenticationResultHandler(
+        ServerConnection* parent, ScrobblingProvider provider, QString user)
+     : PromiseResultHandler(parent),
+        _provider(provider),
+        _user(user)
+    {
+        //
+    }
+
+    QString ServerConnection::ScrobblingAuthenticationResultHandler::getActionDetail(
+                                                                                   ) const
+    {
+        return "scrobbling authentication for " + toString(_provider)
+               + " with user account " + _user;
+    }
+
+    AnyResultMessageCode
+      ServerConnection::ScrobblingAuthenticationResultHandler::convertExtensionResultCode(
+                                                   const ExtensionResultMessageData& data)
+    {
+        if (data.extension != NetworkProtocolExtension::Scrobbling)
+        {
+            qWarning() << "ScrobblingAuthenticationResultHandler cannot handle result"
+                       << "with extension" << data.extension;
+            return ResultMessageErrorCode::UnknownError;
+        }
+
+        auto code = ScrobblingResultMessageCode(data.resultCode);
+        return code;
     }
 
     /* ============================================================================ */
@@ -392,7 +502,7 @@ namespace PMP::Client
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 22;
+    const quint16 ServerConnection::ClientProtocolNo = 24;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -412,6 +522,9 @@ namespace PMP::Client
        _nextRef(1),
        _userAccountRegistrationRef(0), _userLoginRef(0), _userLoggedInId(0)
     {
+        _extensionsThis.registerExtensionSupport({NetworkProtocolExtension::Scrobbling,
+                                                  255, 2});
+
         connect(&_socket, &QTcpSocket::connected, this, &ServerConnection::onConnected);
         connect(
             &_socket, &QTcpSocket::disconnected,
@@ -762,6 +875,17 @@ namespace PMP::Client
         _socket.flush();
     }
 
+    void ServerConnection::appendScrobblingMessageStart(QByteArray& buffer,
+                                                ScrobblingClientMessageType messageType)
+    {
+        auto type = static_cast<quint8>(messageType);
+
+        buffer +=
+            NetworkProtocolExtensionMessages::generateExtensionMessageStart(
+                NetworkProtocolExtension::Scrobbling, _extensionsThis, type
+            );
+    }
+
     void ServerConnection::sendBinaryMessage(QByteArray const& message)
     {
         if (!_socket.isValid())
@@ -804,27 +928,10 @@ namespace PMP::Client
     {
         if (_serverProtocolNo < 12) return; /* server will not understand this message */
 
-        QVector<const NetworkProtocol::ProtocolExtension*> extensions;
-        //extensions << &_knownExtensionThis;
-
-        quint8 extensionCount = static_cast<quint8>(extensions.size());
-
-        QByteArray message;
-        message.reserve(4 + extensionCount * 16); /* estimate */
-        NetworkProtocol::append2Bytes(message,
-                                      ClientMessageType::ClientExtensionsMessage);
-        NetworkUtil::appendByte(message, 0); /* filler */
-        NetworkUtil::appendByte(message, extensionCount);
-
-        for(auto extension : extensions) {
-            QByteArray nameBytes = extension->name.toUtf8();
-            quint8 nameBytesCount = static_cast<quint8>(nameBytes.size());
-
-            NetworkUtil::appendByte(message, extension->id);
-            NetworkUtil::appendByte(message, extension->version);
-            NetworkUtil::appendByte(message, nameBytesCount);
-            message += nameBytes;
-        }
+        auto message =
+            NetworkProtocolExtensionMessages::generateExtensionSupportMessage(
+                ClientOrServer::Client, _extensionsThis
+            );
 
         sendBinaryMessage(message);
     }
@@ -842,7 +949,7 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    SimpleFuture<ResultMessageErrorCode> ServerConnection::sendParameterlessActionRequest(
+    SimpleFuture<AnyResultMessageCode> ServerConnection::sendParameterlessActionRequest(
                                                              ParameterlessActionCode code)
     {
         auto handler = new ParameterlessActionResultHandler(this, code);
@@ -980,12 +1087,12 @@ namespace PMP::Client
         return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
     }
 
-    FutureResult<ResultMessageErrorCode> ServerConnection::serverTooOldFutureResult()
+    FutureResult<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
     {
-        return FutureResult(ResultMessageErrorCode::ServerTooOld);
+        return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
     }
 
-    SimpleFuture<ResultMessageErrorCode> ServerConnection::reloadServerSettings()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::reloadServerSettings()
     {
         if (!serverCapabilities().supportsReloadingServerSettings())
             return serverTooOldFutureResult();
@@ -996,7 +1103,7 @@ namespace PMP::Client
                                            ParameterlessActionCode::ReloadServerSettings);
     }
 
-    SimpleFuture<ResultMessageErrorCode> ServerConnection::activateDelayedStart(
+    SimpleFuture<AnyResultMessageCode> ServerConnection::activateDelayedStart(
                                                                  qint64 delayMilliseconds)
     {
         if (!serverCapabilities().supportsDelayedStart())
@@ -1022,7 +1129,7 @@ namespace PMP::Client
         return handler->future();
     }
 
-    SimpleFuture<ResultMessageErrorCode> ServerConnection::deactivateDelayedStart()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::deactivateDelayedStart()
     {
         if (!serverCapabilities().supportsDelayedStart())
             return serverTooOldFutureResult();
@@ -1266,6 +1373,29 @@ namespace PMP::Client
         sendSingleByteAction(14);
     }
 
+    void ServerConnection::requestScrobblingProviderInfoForCurrentUser()
+    {
+        sendScrobblingProviderInfoRequest();
+    }
+
+    void ServerConnection::enableScrobblingForCurrentUser(ScrobblingProvider provider)
+    {
+        sendUserScrobblingEnableDisableRequest(provider, true);
+    }
+
+    void ServerConnection::disableScrobblingForCurrentUser(ScrobblingProvider provider)
+    {
+        sendUserScrobblingEnableDisableRequest(provider, false);
+    }
+
+    SimpleFuture<AnyResultMessageCode> ServerConnection::authenticateScrobbling(
+                                                            ScrobblingProvider provider,
+                                                            QString username,
+                                                            QString password)
+    {
+        return sendScrobblingAuthenticationMessage(provider, username, password);
+    }
+
     void ServerConnection::handleNewUserSalt(QString login, QByteArray salt)
     {
         if (login != _userAccountRegistrationLogin) return;
@@ -1370,6 +1500,73 @@ namespace PMP::Client
 
             Q_EMIT userLoginError(login, error);
         }
+    }
+
+    void ServerConnection::sendScrobblingProviderInfoRequest()
+    {
+        /* only send it if the server will understand it */
+        if (_extensionsOther.isNotSupported(NetworkProtocolExtension::Scrobbling, 1))
+            return;
+
+        QByteArray message;
+        message.reserve(2 + 2);
+        appendScrobblingMessageStart(message,
+                                 ScrobblingClientMessageType::ProviderInfoRequestMessage);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+
+        sendBinaryMessage(message);
+    }
+
+    void ServerConnection::sendUserScrobblingEnableDisableRequest(
+                                                              ScrobblingProvider provider,
+                                                              bool enable)
+    {
+        /* only send it if the server will understand it */
+        if (_extensionsOther.isNotSupported(NetworkProtocolExtension::Scrobbling, 1))
+            return;
+
+        QByteArray message;
+        message.reserve(2 + 2);
+        appendScrobblingMessageStart(message,
+                                ScrobblingClientMessageType::EnableDisableRequestMessage);
+        NetworkUtil::appendByte(message, NetworkProtocol::encode(provider));
+        NetworkUtil::appendByte(message, enable ? 1 : 0);
+
+        sendBinaryMessage(message);
+    }
+
+    SimpleFuture<AnyResultMessageCode>
+        ServerConnection::sendScrobblingAuthenticationMessage(ScrobblingProvider provider,
+                                                              QString username,
+                                                              QString password)
+    {
+        /* only send it if the server will understand it */
+        if (_extensionsOther.isNotSupported(NetworkProtocolExtension::Scrobbling, 2))
+            return serverTooOldFutureResult();
+
+        auto handler = new ScrobblingAuthenticationResultHandler(this, provider,username);
+        auto ref = getNewReference();
+        _resultHandlers[ref] = handler;
+
+        UsernameAndPassword credentials;
+        credentials.username = username;
+        credentials.password = password;
+
+        auto obfuscated = NetworkProtocol::obfuscateScrobblingCredentials(credentials);
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4 + obfuscated.bytes.size());
+        appendScrobblingMessageStart(message,
+                               ScrobblingClientMessageType::AuthenticationRequestMessage);
+        NetworkUtil::appendByte(message, NetworkProtocol::encode(provider));
+        NetworkUtil::appendByte(message, obfuscated.keyId);
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkUtil::append4BytesSigned(message, obfuscated.bytes.size());
+        message += obfuscated.bytes;
+
+        sendBinaryMessage(message);
+
+        return handler->future();
     }
 
     void ServerConnection::onFullIndexationRunningStatusReceived(bool running)
@@ -1723,6 +1920,9 @@ namespace PMP::Client
         case ServerMessageType::ServerExtensionsMessage:
             parseServerProtocolExtensionsMessage(message);
             break;
+        case PMP::ServerMessageType::ExtensionResultMessage:
+            parseServerProtocolExtensionResultMessage(message);
+            break;
         case ServerMessageType::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
             break;
@@ -1830,19 +2030,65 @@ namespace PMP::Client
     {
         /* parse extensions here */
 
-        //if (extensionId == _knownExtensionOther.id) {
-        //    switch (messageType) {
-        //    case 1: parseExtensionMessage1(message); break;
-        //    case 2: parseExtensionMessage2(message); break;
-        //    case 3: parseExtensionMessage3(message); break;
+        auto extension = _extensionsOther.getExtensionById(extensionId);
+
+        //if (extension == NetworkProtocolExtension::ExtensionName1)
+        //{
+        //    switch (messageType)
+        //    {
+        //    case 1: parseExtensionMessage1(message); return;
+        //    case 2: parseExtensionMessage2(message); return;
+        //    case 3: parseExtensionMessage3(message); return;
         //    }
         //}
 
-        qWarning() << "unhandled extension message" << messageType
-                   << "for extension" << extensionId
+        if (extension == NetworkProtocolExtension::Scrobbling)
+        {
+            switch (static_cast<ScrobblingServerMessageType>(messageType))
+            {
+            case ScrobblingServerMessageType::StatusChangeMessage:
+                parseScrobblerStatusChangeMessage(message);
+                return;
+            case ScrobblingServerMessageType::ProviderEnabledChangeMessage:
+                parseScrobblingProviderEnabledChangeMessage(message);
+                return;
+            case ScrobblingServerMessageType::ProviderInfoMessage:
+                parseScrobblingProviderInfoMessage(message);
+                return;
+            }
+        }
+
+        qWarning() << "unhandled extension message" << int(messageType)
+                   << "for extension" << int(extensionId)
                    << "with length" << message.length()
-                   << "; extension name: "
-                   << _serverExtensionNames.value(extensionId, "?");
+                   << "; extension: " << toString(extension);
+    }
+
+    void ServerConnection::handleExtensionResultMessage(quint8 extensionId,
+                                                        quint8 resultCode,
+                                                        quint32 clientReference)
+    {
+        auto resultHandler = _resultHandlers.take(clientReference);
+        if (resultHandler)
+        {
+            auto extension = _extensionsOther.getExtensionById(extensionId);
+            if (extension == NetworkProtocolExtension::NoneOrInvalid)
+            {
+                qDebug() << "extension result message not handled; extension with id"
+                         << int(extensionId) << "not supported";
+            }
+
+            ExtensionResultMessageData data(extension, resultCode, clientReference);
+
+            resultHandler->handleExtensionResult(data);
+            delete resultHandler;
+            return;
+        }
+
+        qWarning() << "extension result message cannot be handled, no handler found;"
+                   << "client-ref:" << clientReference
+                   << "; extension ID:" << uint(extensionId)
+                   << "; result code:" << uint(resultCode);
     }
 
     void ServerConnection::parseKeepAliveMessage(QByteArray const& message)
@@ -1860,9 +2106,8 @@ namespace PMP::Client
 
     void ServerConnection::parseSimpleResultMessage(QByteArray const& message)
     {
-        if (message.length() < 12) {
+        if (message.length() < 12)
             return; /* invalid message */
-        }
 
         quint16 errorCode = NetworkUtil::get2Bytes(message, 2);
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
@@ -1876,64 +2121,30 @@ namespace PMP::Client
         handleResultMessage(errorCode, clientReference, intData, blobData);
     }
 
+    void ServerConnection::parseServerProtocolExtensionResultMessage(
+                                                                const QByteArray& message)
+    {
+        if (message.length() != 8)
+            return; /* invalid message */
+
+        quint8 extensionId = NetworkUtil::getByte(message, 2);
+        quint8 resultCode = NetworkUtil::getByte(message, 3);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "received extension result/error message; extension ID:"
+                 << extensionId << "; result code:" << resultCode
+                 << "; client-ref:" << clientReference;
+
+        handleExtensionResultMessage(extensionId, resultCode, clientReference);
+    }
+
     void ServerConnection::parseServerProtocolExtensionsMessage(QByteArray const& message)
     {
-        if (message.length() < 4) {
-            return; /* invalid message */
-        }
+        auto supportMapOrNull =
+            NetworkProtocolExtensionMessages::parseExtensionSupportMessage(message);
 
-        /* be strict about reserved space */
-        int filler = NetworkUtil::getByteUnsignedToInt(message, 2);
-        if (filler != 0) {
-            return; /* invalid message */
-        }
-
-        int extensionCount = NetworkUtil::getByteUnsignedToInt(message, 3);
-        if (message.length() < 4 + extensionCount * 4) {
-            return; /* invalid message */
-        }
-
-        QVector<NetworkProtocol::ProtocolExtension> extensions;
-        QSet<quint8> ids;
-        QSet<QString> names;
-        extensions.reserve(extensionCount);
-        ids.reserve(extensionCount);
-        names.reserve(extensionCount);
-
-        int offset = 4;
-        for (int i = 0; i < extensionCount; ++i) {
-            if (offset > message.length() - 3) {
-                return; /* invalid message */
-            }
-
-            quint8 id = NetworkUtil::getByte(message, offset);
-            quint8 version = NetworkUtil::getByte(message, offset + 1);
-            quint8 byteCount = NetworkUtil::getByte(message, offset + 2);
-            offset += 3;
-
-            if (id == 0 || version == 0 || byteCount == 0
-                    || offset > message.length() - byteCount)
-            {
-                return; /* invalid message */
-            }
-
-            QString name = NetworkUtil::getUtf8String(message, offset, byteCount);
-            offset += byteCount;
-
-            if (ids.contains(id) || names.contains(name)) {
-                return; /* invalid message */
-            }
-
-            ids << id;
-            names << name;
-            extensions << NetworkProtocol::ProtocolExtension(id, name, version);
-        }
-
-        if (offset != message.length()) {
-            return; /* invalid message */
-        }
-
-        registerServerProtocolExtensions(extensions);
+        if (supportMapOrNull.hasValue())
+            _extensionsOther = supportMapOrNull.value();
     }
 
     void ServerConnection::parseServerEventNotificationMessage(QByteArray const& message)
@@ -2045,11 +2256,22 @@ namespace PMP::Client
 
         quint16 problems = NetworkUtil::get2Bytes(message, 2);
 
-        qDebug() << "received server health message; problems=" << problems;
+        if (problems)
+        {
+            qWarning() << "server reports health problems; details:"
+                       << QString::number(problems, 16) << "(hex)";
+        }
+        else
+        {
+            qDebug() << "received server health message; no problems reported";
+        }
 
         bool databaseUnavailable = problems & 1u;
+        bool sslLibrariesMissing = problems & 2u;
+        bool unspecifiedProblems = problems & ~3u;
 
-        ServerHealthStatus newServerHealthStatus(databaseUnavailable);
+        ServerHealthStatus newServerHealthStatus(databaseUnavailable, sslLibrariesMissing,
+                                                 unspecifiedProblems);
 
         /* server health messages cannot be re-requested by the client, so we need to
            store the information in the connection */
@@ -2078,9 +2300,8 @@ namespace PMP::Client
 
     void ServerConnection::parseUsersListMessage(QByteArray const& message)
     {
-        if (message.length() < 4) {
+        if (message.length() < 4)
             return; /* invalid message */
-        }
 
         QList<QPair<uint, QString> > users;
 
@@ -2090,19 +2311,18 @@ namespace PMP::Client
         qDebug() << " message length=" << message.length();
 
         int offset = 4;
-        for (int i = 0; i < userCount; ++i) {
-            if (message.length() - offset < 5) {
+        for (int i = 0; i < userCount; ++i)
+        {
+            if (message.length() - offset < 5)
                 return; /* invalid message */
-            }
 
             quint32 userId = NetworkUtil::get4Bytes(message, offset);
             offset += 4;
             int loginNameByteCount =
                     NetworkUtil::getByteUnsignedToInt(message, offset);
             offset += 1;
-            if (message.length() - offset < loginNameByteCount) {
+            if (message.length() - offset < loginNameByteCount)
                 return; /* invalid message */
-            }
 
             QString login =
                 NetworkUtil::getUtf8String(message, offset, loginNameByteCount);
@@ -2119,16 +2339,14 @@ namespace PMP::Client
 
     void ServerConnection::parseNewUserAccountSaltMessage(QByteArray const& message)
     {
-        if (message.length() < 4) {
+        if (message.length() < 4)
             return; /* invalid message */
-        }
 
         int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 2);
         int saltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 3);
 
-        if (message.length() != 4 + loginBytesSize + saltBytesSize) {
+        if (message.length() != 4 + loginBytesSize + saltBytesSize)
             return; /* invalid message */
-        }
 
         qDebug() << "received salt for new user account";
 
@@ -2140,9 +2358,8 @@ namespace PMP::Client
 
     void ServerConnection::parseUserLoginSaltMessage(QByteArray const& message)
     {
-        if (message.length() < 8) {
+        if (message.length() < 8)
             return; /* invalid message */
-        }
 
         int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 4);
         int userSaltBytesSize = NetworkUtil::getByteUnsignedToInt(message, 5);
@@ -2803,9 +3020,12 @@ namespace PMP::Client
         int offset = isNotification ? 4 : 8;
 
         bool withAlbumAndTrackLength = _serverProtocolNo >= 7;
+        bool withAlbumArtist = _serverProtocolNo >= 24;
+
         const int fixedInfoLengthPerTrack =
             NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2
-                + (withAlbumAndTrackLength ? 2 + 4 : 0);
+                + (withAlbumAndTrackLength ? 2 + 4 : 0)
+                + (withAlbumArtist ? 2 : 0);
 
         int trackCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         if (trackCount == 0 || messageLength < offset + fixedInfoLengthPerTrack)
@@ -2832,11 +3052,18 @@ namespace PMP::Client
             int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
             current += 2;
             int albumSize = 0;
+            int albumArtistSize = 0;
             //qint32 trackLength = 0;
             if (withAlbumAndTrackLength)
             {
                 albumSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
                 current += 2;
+                if (withAlbumArtist)
+                {
+                    albumArtistSize =
+                            NetworkUtil::get2BytesUnsignedToInt(message, current);
+                    current += 2;
+                }
                 //trackLength = (qint32)NetworkUtil::get4Bytes(message, current);
                 current += 4;
             }
@@ -2844,18 +3071,23 @@ namespace PMP::Client
             if (titleSize > messageLength - current
                 || artistSize > messageLength - current
                 || albumSize > messageLength - current
-                || (titleSize + artistSize + albumSize) > messageLength - current)
+                || albumArtistSize > messageLength - current
+                || (titleSize + artistSize + albumSize + albumArtistSize)
+                                                                > messageLength - current)
             {
                 return; /* invalid message */
             }
 
-            if (current + titleSize + artistSize + albumSize == messageLength)
+            if (current + titleSize + artistSize + albumSize + albumArtistSize
+                                                                        == messageLength)
+            {
                 break; /* end of message */
+            }
 
             /* at least one more track info follows */
 
             /* offset for next track */
-            offset = current + titleSize + artistSize + albumSize;
+            offset = current + titleSize + artistSize + albumSize + albumArtistSize;
 
             if (offset + fixedInfoLengthPerTrack > messageLength)
                 return;  /* invalid message */
@@ -2865,7 +3097,8 @@ namespace PMP::Client
 
         qDebug() << "received collection track info message;  track count:" << trackCount
                  << "; notification?" << (isNotification ? "Y" : "N")
-                 << "; with album & length?" << (withAlbumAndTrackLength ? "Y" : "N");
+                 << "; with album & length?" << (withAlbumAndTrackLength ? "Y" : "N")
+                 << "; with album artist?" << (withAlbumArtist ? "Y" : "N");
 
         if (trackCount != offsets.size())
         {
@@ -2895,22 +3128,35 @@ namespace PMP::Client
             int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 3);
             offset += 5;
             int albumSize = 0;
+            int albumArtistSize = 0;
             qint32 trackLengthInMs = -1;
             if (withAlbumAndTrackLength)
             {
                 albumSize = NetworkUtil::get2BytesUnsignedToInt(message, offset);
-                trackLengthInMs = NetworkUtil::get4BytesSigned(message, offset + 2);
-                offset += 6;
+                offset += 2;
+                if (withAlbumArtist)
+                {
+                    albumArtistSize= NetworkUtil::get2BytesUnsignedToInt(message, offset);
+                    offset += 2;
+                }
+                trackLengthInMs = NetworkUtil::get4BytesSigned(message, offset);
+                offset += 4;
             }
 
             QString title = NetworkUtil::getUtf8String(message, offset, titleSize);
             offset += titleSize;
             QString artist = NetworkUtil::getUtf8String(message, offset, artistSize);
             offset += artistSize;
-            QString album = "";
+            QString album, albumArtist;
             if (withAlbumAndTrackLength)
             {
                 album = NetworkUtil::getUtf8String(message, offset, albumSize);
+                offset += albumSize;
+                if (withAlbumArtist)
+                {
+                    albumArtist =
+                        NetworkUtil::getUtf8String(message, offset, albumArtistSize);
+                }
             }
 
             /* workaround for server bug; we shouldn't be receiving these */
@@ -2919,7 +3165,7 @@ namespace PMP::Client
             auto hashId = _hashIdRepository->getOrRegisterId(hash);
 
             CollectionTrackInfo info(hashId, availabilityByte & 1, title, artist, album,
-                                     trackLengthInMs);
+                                     albumArtist, trackLengthInMs);
             infos.append(info);
         }
 
@@ -2934,6 +3180,8 @@ namespace PMP::Client
                          << "; hash:" << _hashIdRepository->getHash(info.hashId())
                          << "; title:" << info.title()
                          << "; artist:" << info.artist()
+                         << "; album:" << info.album()
+                         << "; album artist:" << info.albumArtist()
                          << "; length:"
                          << Util::millisecondsToShortDisplayTimeText(length)
                          << "; available:" << info.isAvailable();
@@ -3089,6 +3337,77 @@ namespace PMP::Client
         Q_EMIT receivedPlayerHistory(entries);
     }
 
+    void ServerConnection::parseScrobblingProviderInfoMessage(QByteArray const& message)
+    {
+        if (message.length() != 12)
+        {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        auto provider =
+            NetworkProtocol::decodeScrobblingProvider(NetworkUtil::getByte(message, 4));
+        auto status =
+            NetworkProtocol::decodeScrobblerStatus(NetworkUtil::getByte(message, 5));
+        auto enabled = NetworkUtil::getByte(message, 6) != 0;
+        auto userId = NetworkUtil::get4Bytes(message, 8);
+
+        qDebug() << "received scrobbling provider info: provider" << provider
+                 << "- status" << status << "-" << (enabled ? "enabled" : "disabled")
+                 << "- user" << userId;
+
+        if (userId != _userLoggedInId)
+            return; /* not supposed to happen, and we're probably also not interested */
+
+        Q_EMIT scrobblingProviderInfoReceived(provider, status, enabled);
+    }
+
+    void ServerConnection::parseScrobblerStatusChangeMessage(QByteArray const& message)
+    {
+        if (message.length() != 8)
+        {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        auto provider =
+            NetworkProtocol::decodeScrobblingProvider(NetworkUtil::getByte(message, 2));
+        auto status =
+            NetworkProtocol::decodeScrobblerStatus(NetworkUtil::getByte(message, 3));
+        auto userId = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "scrobbler status is now" << status << "for" << provider << "and user"
+                 << userId;
+
+        if (userId != _userLoggedInId)
+            return; /* not supposed to happen, and we're probably also not interested */
+
+        Q_EMIT scrobblerStatusChanged(provider, status);
+    }
+
+    void ServerConnection::parseScrobblingProviderEnabledChangeMessage(
+                                                                QByteArray const& message)
+    {
+        if (message.length() != 8)
+        {
+            qWarning() << "invalid message; length incorrect";
+            return;
+        }
+
+        auto provider =
+            NetworkProtocol::decodeScrobblingProvider(NetworkUtil::getByte(message, 2));
+        auto enabled = NetworkUtil::getByte(message, 3) != 0;
+        auto userId = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "scrobbling provider" << provider << "is now"
+                 << (enabled ? "enabled" : "disabled") << "for user" << userId;
+
+        if (userId != _userLoggedInId)
+            return; /* not supposed to happen, and we're not interested anyway */
+
+        Q_EMIT scrobblingProviderEnabledChanged(provider, enabled);
+    }
+
     void ServerConnection::handleResultMessage(quint16 errorCode, quint32 clientReference,
                                                quint32 intData,
                                                QByteArray const& blobData)
@@ -3149,24 +3468,6 @@ namespace PMP::Client
         Q_EMIT receivedClientClockTimeOffset(clientClockTimeOffsetMs);
     }
 
-    void ServerConnection::registerServerProtocolExtensions(
-                            const QVector<NetworkProtocol::ProtocolExtension>& extensions)
-    {
-        /* handle extensions here */
-        for (auto const& extension : extensions)
-        {
-            qDebug() << "server will use ID" << extension.id
-                     << "and version" << extension.version
-                     << "for protocol extension" << extension.name;
-
-            _serverExtensionNames[extension.id] = extension.name;
-
-            //if (extension.name == "known_extension_name") {
-            //    _knownExtensionOther = extension;
-            //}
-        }
-    }
-
     void ServerConnection::handleServerEvent(ServerEventCode eventCode)
     {
         switch (eventCode)
@@ -3185,5 +3486,4 @@ namespace PMP::Client
 
         qDebug() << "received unknown server event:" << static_cast<int>(eventCode);
     }
-
 }

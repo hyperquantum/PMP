@@ -7,7 +7,6 @@ Disclaimer:
 
 WORK IN PROGRESS (LONG RUNNING - on different branches in git)
 
- * Last.fm scrobbling support: mostly working, still lacks UI for authentication (branch "feature-scrobbling")
  * Compatibility UI (branch "compatibility-ui")
 
 
@@ -15,11 +14,10 @@ IMPORTANT
 
  * save track lengths to database
  * save track artist/title/album to database
- ** create Last.FM scrobbler
  * regular automatic cleanup of old log files while the server is running
 
 
-KNOWN BUGS
+KNOWN PROBLEMS
 
  * for some tracks we get the wrong length (caused by length estimation in TagLib)
  * when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
@@ -35,6 +33,9 @@ KNOWN BUGS
  * track title/artist/length update in the music collection does not trigger an update of queue entries referencing that track
  * doing a "skip" often creates a burst of noise; need to wait until the old track has stopped before starting the next one
  * GUI remote: if connection breaks during playback, "position" keeps increasing
+ * server does not always take an updated title/artist/album into account when a track is changed on disk
+ * scrobbling: "now playing" is triggered by the backoff mechanism after the track is already finished
+ * scrobbling: race condition after track finished playing, between history insert and check for something to scrobble
 
 
 PERFORMANCE ISSUES
@@ -45,6 +46,7 @@ PERFORMANCE ISSUES
 IDEAS
 
  * UI: move server selection, user account creation and authentication to pop-up dialogs
+ * server selection: display servers recently used after verifying that they are still available
  * login: don't display user accounts that haven't been used in a long time
  ** player: option for single track mode (vs. continuous play)
  * player: 'load track' action that loads a track but does not start playing; this allows seek before playing
@@ -54,6 +56,7 @@ IDEAS
  * player: 'seek to start of track' action or button
  * player: make track position display less precise while playing, it is too fast for the human eye anyway
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
+ * queue: ability to put pauses of a specified length in the queue
  * queue: ability to insert a track at a random position in the queue
  * queue: show error marker for a track that has no known file
  * queue: show marker for tracks that occur more than once in the queue
@@ -61,10 +64,10 @@ IDEAS
  * queue: save the contents of the queue on server shutdown and restore it at the next server startup
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
- * music collection: add a clear button for the filter
- * music collection: provide fast partial indexation that only detects new files
- * music collection: show filtered count / total count
+ * music collection: add a clear button for each filter combobox
+ * music collection: add 'quick scan' for finding and analyzing new/changed files
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
+ * music collection: add quick search function, for searching while leaving the current filters unchanged
  *** dynamic mode: detect and prevent track repetition with different hash values
  *** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
@@ -89,11 +92,10 @@ IDEAS
  * track info dialog: show indication if file is in the queue
  * track info dialog: show indication if file is available or not
  * track info dialog: show indication if a file was manually added to the queue (and when) or added by dynamic mode
- * track info dialog: ability to pick the user whose personal stats are shown
  * track info dialog: display filename(s)
  * track info dialog: should become modeless
  * track info dialog: last heard: display "almost 3 months" ago instead of "2 months ago" when applicable
- *** track info dialog: show personal play history for that track
+ **** track info dialog: show personal play history for that track
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner
@@ -104,11 +106,12 @@ IDEAS
  * server database backup and restore
  * detect track BPM automatically
  * command-line remote: add a command for seeking (going to a specific time in the current track)
- * command-line remote: add a command for printing recent player history
  * command-line remote: extend the "nowplaying" command to also print album
  * command-line remote: extend the "trackstats" command to accept queue IDs
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
  * hash tool: by default only output the hash of the file, no other information
+ * rename "GUI Remote" to "Desktop Remote"
+ * detect different rips of the same track/album and treat them as one, with unified scores
 
 
 USER FRIENDLINESS
@@ -133,7 +136,6 @@ TECHNICAL IDEAS
  * when running an indexation, analyze the most recently created/updated files first
  * large file support (?)
  * switch to signed integer types for things like queue indices
- * log network protocol version numbers when establishing a client/server connection
  * add logging for all server messages that are deemed corrupt or invalid by the client
  * use libgroove for playback (?)
 

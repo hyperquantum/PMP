@@ -40,21 +40,31 @@ namespace PMP
         AllTracks = 0,
         NoTracks,
         NeverHeard,
-        LastHeardNotInLast1000Days,
-        LastHeardNotInLast365Days,
-        LastHeardNotInLast180Days,
-        LastHeardNotInLast90Days,
-        LastHeardNotInLast30Days,
-        LastHeardNotInLast10Days,
+        NotHeardInLast5Years,
+        NotHeardInLast3Years,
+        NotHeardInLast2Years,
+        NotHeardInLastYear,
+        NotHeardInLast180Days,
+        NotHeardInLast90Days,
+        NotHeardInLast30Days,
+        NotHeardInLast10Days,
+        HeardAtLeastOnce,
         WithoutScore,
-        ScoreMaximum30,
+        WithScore,
+        ScoreLessThan30,
+        ScoreLessThan50,
+        ScoreAtLeast80,
         ScoreAtLeast85,
         ScoreAtLeast90,
         ScoreAtLeast95,
-        LengthMaximumOneMinute,
+        LengthLessThanOneMinute,
         LengthAtLeastFiveMinutes,
         NotInTheQueue,
         InTheQueue,
+        WithoutTitle,
+        WithoutArtist,
+        WithoutAlbum,
+        NoLongerAvailable,
     };
 
     class TrackJudge
@@ -64,6 +74,7 @@ namespace PMP
                    Client::QueueHashesMonitor& queueHashesMonitor)
          : _criterium1(TrackCriterium::AllTracks),
            _criterium2(TrackCriterium::AllTracks),
+           _criterium3(TrackCriterium::AllTracks),
            _userId(0),
            _haveUserId(false),
            _userDataFetcher(userDataFetcher),
@@ -78,16 +89,19 @@ namespace PMP
             return _userId == userId && _haveUserId;
         }
 
-        bool setCriteria(TrackCriterium criterium1, TrackCriterium criterium2)
+        bool setCriteria(TrackCriterium criterium1, TrackCriterium criterium2,
+                         TrackCriterium criterium3)
         {
             if (criterium1 == _criterium1 &&
-                criterium2 == _criterium2)
+                criterium2 == _criterium2 &&
+                criterium3 == _criterium3)
             {
                 return false;
             }
 
             _criterium1 = criterium1;
             _criterium2 = criterium2;
+            _criterium3 = criterium3;
             return true;
         }
 
@@ -98,6 +112,7 @@ namespace PMP
 
     private:
         static bool usesUserData(TrackCriterium criterium);
+        static bool isTextFieldEmpty(QString contents);
 
         TriBool trackSatisfiesCriterium(Client::CollectionTrackInfo const& track,
                                         TrackCriterium criterium) const;
@@ -113,8 +128,13 @@ namespace PMP
                                                  Client::CollectionTrackInfo const& track,
                                                  int days) const;
 
+        TriBool trackSatisfiesNotHeardInTheLastXYearsCriterium(
+                                                 Client::CollectionTrackInfo const& track,
+                                                 int years) const;
+
         TrackCriterium _criterium1;
         TrackCriterium _criterium2;
+        TrackCriterium _criterium3;
         quint32 _userId;
         bool _haveUserId;
         Client::UserDataFetcher& _userDataFetcher;

@@ -26,10 +26,10 @@
 
 namespace PMP::Client
 {
-    QueueHashesMonitor::QueueHashesMonitor(QObject* parent,
-                                           AbstractQueueMonitor* queueMonitor,
-                                           QueueEntryInfoStorage* queueEntryInfoStorage)
-     : QObject(parent),
+    QueueHashesMonitorImpl::QueueHashesMonitorImpl(QObject* parent,
+                                                   AbstractQueueMonitor* queueMonitor,
+                                             QueueEntryInfoStorage* queueEntryInfoStorage)
+     : QueueHashesMonitor(parent),
        _queueMonitor(queueMonitor),
        _queueEntryInfoStorage(queueEntryInfoStorage)
     {
@@ -38,24 +38,24 @@ namespace PMP::Client
         _hashToQueueIds.reserve(queueCapacity);
 
         connect(queueMonitor, &AbstractQueueMonitor::queueResetted,
-                this, &QueueHashesMonitor::onQueueResetted);
+                this, &QueueHashesMonitorImpl::onQueueResetted);
 
         connect(queueMonitor, &AbstractQueueMonitor::entriesReceived,
-                this, &QueueHashesMonitor::onEntriesReceived);
+                this, &QueueHashesMonitorImpl::onEntriesReceived);
 
         connect(queueMonitor, &AbstractQueueMonitor::trackAdded,
-                this, &QueueHashesMonitor::onTrackAdded);
+                this, &QueueHashesMonitorImpl::onTrackAdded);
 
         connect(queueMonitor, &AbstractQueueMonitor::trackRemoved,
-                this, &QueueHashesMonitor::onTrackRemoved);
+                this, &QueueHashesMonitorImpl::onTrackRemoved);
 
         connect(queueEntryInfoStorage, &QueueEntryInfoStorage::tracksChanged,
-                this, &QueueHashesMonitor::onTracksChanged);
+                this, &QueueHashesMonitorImpl::onTracksChanged);
 
         onEntriesReceived(-1 /* index not used */, queueMonitor->knownQueuePart());
     }
 
-    bool QueueHashesMonitor::isPresentInQueue(LocalHashId hashId) const
+    bool QueueHashesMonitorImpl::isPresentInQueue(LocalHashId hashId) const
     {
         auto it = _hashToQueueIds.constFind(hashId);
         if (it == _hashToQueueIds.constEnd())
@@ -64,7 +64,7 @@ namespace PMP::Client
         return it.value().isEmpty() == false;
     }
 
-    void QueueHashesMonitor::onQueueResetted(int queueLength)
+    void QueueHashesMonitorImpl::onQueueResetted(int queueLength)
     {
         Q_UNUSED(queueLength)
         qDebug() << "QueueHashesMonitor::onQueueResetted; length:" << queueLength;
@@ -80,7 +80,7 @@ namespace PMP::Client
         _hashToQueueIds.reserve(queueCapacity);
     }
 
-    void QueueHashesMonitor::onEntriesReceived(int index, QList<quint32> entries)
+    void QueueHashesMonitorImpl::onEntriesReceived(int index, QList<quint32> entries)
     {
         Q_UNUSED(index)
         qDebug() << "QueueHashesMonitor::onEntriesReceived; index:" << index
@@ -92,7 +92,7 @@ namespace PMP::Client
         }
     }
 
-    void QueueHashesMonitor::onTrackAdded(int index, quint32 queueId)
+    void QueueHashesMonitorImpl::onTrackAdded(int index, quint32 queueId)
     {
         Q_UNUSED(index)
         qDebug() << "QueueHashesMonitor::onTrackAdded; index:" << index
@@ -107,7 +107,7 @@ namespace PMP::Client
         associateHashWithQueueId(hashId, queueId, true);
     }
 
-    void QueueHashesMonitor::onTrackRemoved(int index, quint32 queueId)
+    void QueueHashesMonitorImpl::onTrackRemoved(int index, quint32 queueId)
     {
         Q_UNUSED(index)
         qDebug() << "QueueHashesMonitor::onTrackRemoved; index:" << index
@@ -116,7 +116,7 @@ namespace PMP::Client
         disassociateHashFromQueueId(queueId, true);
     }
 
-    void QueueHashesMonitor::onTracksChanged(QList<quint32> queueIds)
+    void QueueHashesMonitorImpl::onTracksChanged(QList<quint32> queueIds)
     {
         qDebug() << "QueueHashesMonitor::onTracksChanged; queueIds:" << queueIds;
 
@@ -131,8 +131,8 @@ namespace PMP::Client
         }
     }
 
-    void QueueHashesMonitor::associateHashWithQueueId(LocalHashId hashId,
-                                                      quint32 queueId, bool canAdd)
+    void QueueHashesMonitorImpl::associateHashWithQueueId(LocalHashId hashId,
+                                                          quint32 queueId, bool canAdd)
     {
         LocalHashId previousHash;
         bool previousHashPresenceChanged = false;
@@ -172,7 +172,8 @@ namespace PMP::Client
             Q_EMIT hashInQueuePresenceChanged(hashId);
     }
 
-    void QueueHashesMonitor::disassociateHashFromQueueId(quint32 queueId, bool canRemove)
+    void QueueHashesMonitorImpl::disassociateHashFromQueueId(quint32 queueId,
+                                                             bool canRemove)
     {
         auto it = _queueIdToHash.constFind(queueId);
 

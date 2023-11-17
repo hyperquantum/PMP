@@ -41,21 +41,22 @@ using namespace PMP::Client;
 namespace PMP
 {
     CollectionWidget::CollectionWidget(QWidget* parent, ServerInterface* serverInterface,
-                                       QueueHashesMonitor* queueHashesMonitor)
+                                       QueueHashesMonitor* queueHashesMonitor,
+                                       UserForStatisticsDisplay* userForStatisticsDisplay)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
        _colorSwitcher(nullptr),
        _serverInterface(serverInterface),
-       _collectionViewContext(new CollectionViewContext(this, serverInterface)),
+       _userStatisticsDisplay(userForStatisticsDisplay),
        _collectionSourceModel(new SortedCollectionTableModel(this,
                                                              serverInterface,
                                                              queueHashesMonitor,
-                                                             _collectionViewContext)),
+                                                             userForStatisticsDisplay)),
        _collectionDisplayModel(new FilteredCollectionTableModel(this,
                                                                 _collectionSourceModel,
                                                                 serverInterface,
                                                                 queueHashesMonitor,
-                                                                _collectionViewContext)),
+                                                               userForStatisticsDisplay)),
        _collectionContextMenu(nullptr)
     {
         _ui->setupUi(this);
@@ -77,6 +78,16 @@ namespace PMP
             _ui->collectionTableView, &QTableView::customContextMenuRequested,
             this, &CollectionWidget::collectionContextMenuRequested
         );
+
+        connect(
+            _collectionDisplayModel, &FilteredCollectionTableModel::rowsInserted,
+            this, &CollectionWidget::rowCountChanged
+        );
+        connect(
+            _collectionDisplayModel, &FilteredCollectionTableModel::rowsRemoved,
+            this, &CollectionWidget::rowCountChanged
+        );
+        rowCountChanged();
 
         auto* collectionWatcher = &_serverInterface->collectionWatcher();
         connect(
@@ -129,15 +140,22 @@ namespace PMP
     {
         auto filter1 = getTrackCriteriumFromComboBox(_ui->filterTracksComboBox);
         auto filter2 = getTrackCriteriumFromComboBox(_ui->filterTracks2ComboBox);
+        auto filter3 = getTrackCriteriumFromComboBox(_ui->filterTracks3ComboBox);
 
-        bool shouldDisplayFilter2 =
-                filter1 != TrackCriterium::AllTracks
-                    || filter2 != TrackCriterium::AllTracks;
+        bool filter1Set = filter1 != TrackCriterium::AllTracks;
+        bool filter2Set = filter2 != TrackCriterium::AllTracks;
+        bool filter3Set = filter3 != TrackCriterium::AllTracks;
+
+        bool shouldDisplayFilter2 = filter1Set || filter2Set || filter3Set;
+        bool shouldDisplayFilter3 = filter2Set || filter3Set;
 
         _ui->filterTracks2Label->setVisible(shouldDisplayFilter2);
         _ui->filterTracks2ComboBox->setVisible(shouldDisplayFilter2);
 
-        _collectionDisplayModel->setTrackFilters(filter1, filter2);
+        _ui->filterTracks3Label->setVisible(shouldDisplayFilter3);
+        _ui->filterTracks3ComboBox->setVisible(shouldDisplayFilter3);
+
+        _collectionDisplayModel->setTrackFilters(filter1, filter2, filter3);
     }
 
     void CollectionWidget::highlightTracksIndexChanged(int index)
@@ -205,7 +223,8 @@ namespace PMP
             this,
             [this, track]() {
                 qDebug() << "collection context menu: track info triggered";
-                auto dialog = new TrackInfoDialog(this, _serverInterface, track);
+                auto dialog = new TrackInfoDialog(this, _serverInterface,
+                                                  _userStatisticsDisplay, track);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
                 dialog->open();
             }
@@ -213,6 +232,13 @@ namespace PMP
 
         auto popupPosition = _ui->collectionTableView->viewport()->mapToGlobal(position);
         _collectionContextMenu->popup(popupPosition);
+    }
+
+    void CollectionWidget::rowCountChanged()
+    {
+        auto rowCount = _collectionDisplayModel->rowCount();
+
+        _ui->trackCountLabel->setText(tr("%n track(s) shown", "", rowCount));
     }
 
     void CollectionWidget::updateSpinnerVisibility()
@@ -249,6 +275,7 @@ namespace PMP
 
         comboBoxInit(_ui->filterTracksComboBox);
         comboBoxInit(_ui->filterTracks2ComboBox);
+        comboBoxInit(_ui->filterTracks3ComboBox);
 
         filterTracksIndexChanged();
     }
@@ -280,30 +307,44 @@ namespace PMP
         addItem(tr("none"), criteriumForNone);
 
         addItem(tr("never heard"), TrackCriterium::NeverHeard);
-        addItem(tr("not heard in the last 1000 days"),
-                TrackCriterium::LastHeardNotInLast1000Days);
-        addItem(tr("not heard in the last 365 days"),
-                TrackCriterium::LastHeardNotInLast365Days);
+        addItem(tr("not heard in the last 5 years"),
+                TrackCriterium::NotHeardInLast5Years);
+        addItem(tr("not heard in the last 3 years"),
+                TrackCriterium::NotHeardInLast3Years);
+        addItem(tr("not heard in the last 2 years"),
+                TrackCriterium::NotHeardInLast2Years);
+        addItem(tr("not heard in the last year"),
+                TrackCriterium::NotHeardInLastYear);
         addItem(tr("not heard in the last 180 days"),
-                TrackCriterium::LastHeardNotInLast180Days);
+                TrackCriterium::NotHeardInLast180Days);
         addItem(tr("not heard in the last 90 days"),
-                TrackCriterium::LastHeardNotInLast90Days);
+                TrackCriterium::NotHeardInLast90Days);
         addItem(tr("not heard in the last 30 days"),
-                TrackCriterium::LastHeardNotInLast30Days);
+                TrackCriterium::NotHeardInLast30Days);
         addItem(tr("not heard in the last 10 days"),
-                TrackCriterium::LastHeardNotInLast10Days);
+                TrackCriterium::NotHeardInLast10Days);
+        addItem(tr("heard at least once"), TrackCriterium::HeardAtLeastOnce);
 
         addItem(tr("without score"), TrackCriterium::WithoutScore);
-        addItem(tr("score <= 30"), TrackCriterium::ScoreMaximum30);
+        addItem(tr("with score"), TrackCriterium::WithScore);
+        addItem(tr("score < 30"), TrackCriterium::ScoreLessThan30);
+        addItem(tr("score < 50"), TrackCriterium::ScoreLessThan50);
+        addItem(tr("score >= 80"), TrackCriterium::ScoreAtLeast80);
         addItem(tr("score >= 85"), TrackCriterium::ScoreAtLeast85);
         addItem(tr("score >= 90"), TrackCriterium::ScoreAtLeast90);
         addItem(tr("score >= 95"), TrackCriterium::ScoreAtLeast95);
 
-        addItem(tr("length <= 1 min."), TrackCriterium::LengthMaximumOneMinute);
+        addItem(tr("length < 1 min."), TrackCriterium::LengthLessThanOneMinute);
         addItem(tr("length >= 5 min."), TrackCriterium::LengthAtLeastFiveMinutes);
 
         addItem(tr("not in the queue"), TrackCriterium::NotInTheQueue);
         addItem(tr("in the queue"), TrackCriterium::InTheQueue);
+
+        addItem(tr("without title"), TrackCriterium::WithoutTitle);
+        addItem(tr("without artist"), TrackCriterium::WithoutArtist);
+        addItem(tr("without album"), TrackCriterium::WithoutAlbum);
+
+        addItem(tr("no longer available"), TrackCriterium::NoLongerAvailable);
 
         comboBox->setCurrentIndex(0);
     }

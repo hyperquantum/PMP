@@ -22,14 +22,14 @@
 namespace PMP::Server
 {
     ServerHealthMonitor::ServerHealthMonitor(QObject* parent)
-     : QObject(parent), _databaseUnavailable(false)
+     : QObject(parent), _databaseUnavailable(false), _sslLibrariesMissing(false)
     {
         //
     }
 
     bool ServerHealthMonitor::anyProblem() const
     {
-        return _databaseUnavailable;
+        return _databaseUnavailable || _sslLibrariesMissing;
     }
 
     bool ServerHealthMonitor::databaseUnavailable() const
@@ -37,11 +37,24 @@ namespace PMP::Server
         return _databaseUnavailable;
     }
 
+    bool ServerHealthMonitor::sslLibrariesMissing() const
+    {
+        return _sslLibrariesMissing;
+    }
+
     void ServerHealthMonitor::setDatabaseUnavailable()
     {
         if (_databaseUnavailable) return;
 
         _databaseUnavailable = true;
-        Q_EMIT serverHealthChanged(_databaseUnavailable);
+        Q_EMIT serverHealthChanged(_databaseUnavailable, _sslLibrariesMissing);
+    }
+
+    void ServerHealthMonitor::setSslLibrariesMissing()
+    {
+        if (_sslLibrariesMissing) return;
+
+        _sslLibrariesMissing = true;
+        Q_EMIT serverHealthChanged(_databaseUnavailable, _sslLibrariesMissing);
     }
 }

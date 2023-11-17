@@ -53,7 +53,7 @@ namespace PMP
                 new ServerConnection(this,
                                      _hashIdRepository,
                                      ServerEventSubscription::AllEvents);
-        _serverInterface = new ServerInterface(_serverConnection);
+        _serverInterface = new ServerInterfaceImpl(_serverConnection);
 
         connect(
             _serverConnection, &ServerConnection::connected,

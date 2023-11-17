@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -64,6 +64,12 @@ namespace PMP::Server
     bool PlayerInstance::availableForNewTrack() const
     {
         return _availableForNewTrack;
+    }
+
+    qint64 PlayerInstance::position() const
+    {
+        if (!_mediaSet) return 0;
+        return _player->position();
     }
 
     void PlayerInstance::setVolume(int volume)
@@ -332,6 +338,11 @@ namespace PMP::Server
         qDebug() << "Player: state changed from" << int(_state) << "to" << int(state);
         _state = state;
         Q_EMIT stateChanged(state);
+
+        if (state == ServerPlayerState::Playing)
+        {
+            emitStartedPlaying(_nowPlaying);
+        }
     }
 
     QSharedPointer<QueueEntry const> Player::nowPlaying() const
@@ -383,8 +394,13 @@ namespace PMP::Server
             case ServerPlayerState::Paused:
                 if (_currentInstance)
                 {
+                    bool atTheBeginning = _currentInstance->position() == 0;
+                    
                     _currentInstance->play(); /* resume paused track */
                     changeStateTo(ServerPlayerState::Playing);
+
+                    if (atTheBeginning)
+                        emitStartedPlaying(_nowPlaying);
                 }
                 break;
             case ServerPlayerState::Playing:
@@ -542,6 +558,9 @@ namespace PMP::Server
             Q_EMIT currentTrackChanged(nextTrack);
 
         changeStateTo(newState);
+
+        if (nextTrack && playNext)
+            emitStartedPlaying(_nowPlaying);
 
         return nextTrack;
     }
@@ -796,6 +815,19 @@ namespace PMP::Server
             playerInstance->play();
 
         return true;
+    }
+
+    void Player::emitStartedPlaying(QSharedPointer<QueueEntry> queueEntry)
+    {
+        if (!queueEntry) return;
+
+        auto startTime = queueEntry->started();
+        int lengthInSeconds =
+                static_cast<int>(queueEntry->lengthInMilliseconds() / 1000);
+
+        Q_EMIT startedPlaying(_userPlayingFor, startTime, queueEntry->title(),
+                              queueEntry->artist(), queueEntry->album(),
+                              queueEntry->albumArtist(), lengthInSeconds);
     }
 
     void Player::putInHistoryOrder(QSharedPointer<QueueEntry> entry)

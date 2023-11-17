@@ -26,6 +26,7 @@ enable_testing()
 set (CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 include(PMPVersion)
 
+# find Qt 5
 find_package(Qt5Core REQUIRED)
 find_package(Qt5Gui REQUIRED)
 find_package(Qt5Multimedia REQUIRED)
@@ -33,6 +34,9 @@ find_package(Qt5Network REQUIRED)
 find_package(Qt5Sql REQUIRED)
 find_package(Qt5Widgets REQUIRED)
 find_package(Qt5Xml REQUIRED)
+
+# disable Qt 5 API that is removed in Qt 6
+add_compile_definitions(QT_DISABLE_DEPRECATED_UP_TO=0x050F00)
 
 # minimum TagLib version is 1.12
 find_path(TAGLIB_INCLUDE_DIRS taglib/taglib.h)

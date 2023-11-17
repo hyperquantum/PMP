@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,10 +23,13 @@
 
 #include "filehash.h"
 #include "networkutil.h"
+#include "obfuscator.h"
+#include "scrobblingprovider.h"
 
 #include <limits>
 
 #include <QCryptographicHash>
+#include <QRandomGenerator>
 #include <QtDebug>
 
 namespace PMP
@@ -47,20 +50,66 @@ namespace PMP
         NetworkUtil::append2Bytes(buffer, static_cast<quint16>(errorCode));
     }
 
-    quint16 NetworkProtocol::encodeMessageTypeForExtension(quint8 extensionId,
-                                                           quint8 messageType)
+    quint8 NetworkProtocol::encode(ScrobblingProvider provider)
     {
-        return (1u << 15) + (extensionId << 7) + (messageType & 0x7Fu);
+        switch (provider)
+        {
+            case ScrobblingProvider::Unknown:
+                return 0;
+            case ScrobblingProvider::LastFm:
+                return 1;
+        }
+
+        return 0;
     }
 
-    void NetworkProtocol::appendExtensionMessageStart(QByteArray& buffer,
-                                                      quint8 extensionId,
-                                                      quint8 messageType)
+    ScrobblingProvider NetworkProtocol::decodeScrobblingProvider(quint8 provider)
     {
-        quint16 encodedMessageType =
-                encodeMessageTypeForExtension(extensionId, messageType);
+        switch (provider)
+        {
+            case 1:
+                return ScrobblingProvider::LastFm;
+            case 0:
+            default:
+                return ScrobblingProvider::Unknown;
+        }
+    }
 
-        NetworkUtil::append2Bytes(buffer, encodedMessageType);
+    quint8 NetworkProtocol::encode(ScrobblerStatus status)
+    {
+        switch (status)
+        {
+            case ScrobblerStatus::Green:
+                return 1;
+            case ScrobblerStatus::Yellow:
+                return 2;
+            case ScrobblerStatus::Red:
+                return 3;
+            case ScrobblerStatus::WaitingForUserCredentials:
+                return 4;
+            case ScrobblerStatus::Unknown:
+                return 0;
+        }
+
+        return 0;
+    }
+
+    ScrobblerStatus NetworkProtocol::decodeScrobblerStatus(quint8 status)
+    {
+        switch (status)
+        {
+            case 1:
+                return ScrobblerStatus::Green;
+            case 2:
+                return ScrobblerStatus::Yellow;
+            case 3:
+                return ScrobblerStatus::Red;
+            case 4:
+                return ScrobblerStatus::WaitingForUserCredentials;
+            case 0:
+            default:
+                return ScrobblerStatus::Unknown;
+        }
     }
 
     int NetworkProtocol::ratePassword(QString password)
@@ -284,5 +333,86 @@ namespace PMP
         if (version < 3) return 1; /* only previously heard */
 
         return 1 | 2; /* previously heard & score */
+    }
+
+    ObfuscatedScrobblingUsernameAndPassword
+    NetworkProtocol::obfuscateScrobblingCredentials(UsernameAndPassword credentials)
+    {
+        auto* randomGenerator = QRandomGenerator::global();
+
+        auto keyId = randomGenerator->bounded(14);
+        auto key = getScrobblingAuthenticationObfuscationKey(keyId);
+
+        auto usernameBytes = credentials.username.toUtf8();
+        auto passwordBytes = credentials.password.toUtf8();
+
+        qint32 usernameByteCount = usernameBytes.size();
+        qint32 passwordByteCount = passwordBytes.size();
+
+        QByteArray bytes = usernameBytes;
+        bytes += passwordBytes;
+        NetworkUtil::append4Bytes(bytes, randomGenerator->generate());
+        NetworkUtil::append4BytesSigned(bytes, usernameByteCount);
+        NetworkUtil::append4BytesSigned(bytes, passwordByteCount);
+
+        Obfuscator obfuscator(key);
+        auto obfuscated = obfuscator.encrypt(bytes);
+
+        ObfuscatedScrobblingUsernameAndPassword result;
+        result.keyId = keyId;
+        result.bytes = obfuscated;
+
+        return result;
+    }
+
+    Nullable<UsernameAndPassword> NetworkProtocol::deobfuscateScrobblingCredentials(
+                            ObfuscatedScrobblingUsernameAndPassword obfuscatedCredentials)
+    {
+        auto key = getScrobblingAuthenticationObfuscationKey(obfuscatedCredentials.keyId);
+        if (key == 0)
+            return null;
+
+        Obfuscator obfuscator(key);
+        auto deobfuscatedBytes = obfuscator.decrypt(obfuscatedCredentials.bytes);
+        if (deobfuscatedBytes.size() < 12)
+            return null;
+
+        qint32 usernameByteCount =
+            NetworkUtil::get4BytesSigned(deobfuscatedBytes, deobfuscatedBytes.size() - 8);
+        qint32 passwordByteCount =
+            NetworkUtil::get4BytesSigned(deobfuscatedBytes, deobfuscatedBytes.size() - 4);
+
+        auto usernameBytes = deobfuscatedBytes.mid(0, usernameByteCount);
+        auto passwordBytes = deobfuscatedBytes.mid(usernameByteCount, passwordByteCount);
+
+        UsernameAndPassword credentials;
+        credentials.username = QString::fromUtf8(usernameBytes);
+        credentials.password = QString::fromUtf8(passwordBytes);
+
+        return credentials;
+    }
+
+    quint64 NetworkProtocol::getScrobblingAuthenticationObfuscationKey(quint8 keyId)
+    {
+        switch (keyId)
+        {
+        case 0: return 0x4313523b3fe841adULL;
+        case 1: return 0xae7e6d9609a57bd1ULL;
+        case 2: return 0x412c721f46eb4bdbULL;
+        case 3: return 0x2e618d6e4c77ee06ULL;
+        case 4: return 0x2e9e0ab8ecc52b83ULL;
+        case 5: return 0xf54cbce59bdea005ULL;
+        case 6: return 0xb8425247aeb773c3ULL;
+        case 7: return 0xe5f480813d6dfa58ULL;
+        case 8: return 0xd33163532fd46022ULL;
+        case 9: return 0xbda9d7d719e84220ULL;
+        case 10: return 0xeb8b46d138fc19f9ULL;
+        case 11: return 0x6a7a0b00bc3d051cULL;
+        case 12: return 0x63c70b5efceb8b53ULL;
+        case 13: return 0xebf1effcacb3b7caULL;
+        }
+
+        qWarning() << "unknown scrobbling authentication key ID:" << keyId;
+        return 0;
     }
 }

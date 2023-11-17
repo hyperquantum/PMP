@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -75,6 +75,18 @@ namespace PMP::Server
         ResultOrError<bool, FailureType> checkUserExists(QString userName);
         ResultOrError<quint32, FailureType> registerNewUser(DatabaseRecords::User& user);
 
+        // TODO : use ResultOrError for all return types
+        QVector<DatabaseRecords::UserScrobblingDataRecord> getUsersScrobblingData();
+        DatabaseRecords::LastFmScrobblingDataRecord getUserLastFmScrobblingData(
+                                                                        quint32 userId);
+        bool setLastFmScrobblingEnabled(quint32 userId, bool enabled = true);
+        quint32 getLastFmScrobbledUpTo(quint32 userId, bool* ok);
+        bool updateLastFmScrobbledUpTo(quint32 userId, quint32 newValue);
+        bool updateLastFmAuthentication(quint32 userId, QString lastFmUsername,
+                                        QString lastFmSessionKey);
+        bool updateUserScrobblingSessionKeys(
+                                DatabaseRecords::UserScrobblingDataRecord const& record);
+
         DatabaseRecords::UserDynamicModePreferences getUserDynamicModePreferences(
                                                                            quint32 userId,
                                                                            bool* ok);
@@ -93,6 +105,11 @@ namespace PMP::Server
                                                                       getHashHistoryStats(
                                                                 quint32 userId,
                                                                 QVector<quint32> hashIds);
+        QVector<DatabaseRecords::HistoryRecord> getUserHistoryForScrobbling(
+                                                            quint32 userId,
+                                                            quint32 startId,
+                                                            QDateTime earliestDateTime,
+                                                            int limit);
 
         ResultOrError<QVector<QPair<quint32, quint32>>, FailureType> getEquivalences();
         ResultOrError<SuccessType, FailureType> registerEquivalence(quint32 hashId1,
@@ -137,6 +154,7 @@ namespace PMP::Server
         static int getInt(QVariant v, int nullValue);
         static uint getUInt(QVariant v, uint nullValue);
         static QDateTime getUtcDateTime(QVariant v);
+        static QString getString(QVariant v, const char* nullValue);
 
         static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
         static void printInitializationError(QTextStream& out, QSqlDatabase& db);

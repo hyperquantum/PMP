@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -42,6 +42,26 @@ namespace PMP::Client
             this, &AuthenticationControllerImpl::userAccountsReceived
         );
         connect(
+            _connection, &ServerConnection::userAccountsReceived,
+            this,
+            [this](QList<QPair<uint, QString>> userAccountsData)
+            {
+                if (_userAccountsPromise.isNull())
+                    return;
+
+                QList<UserAccount> accounts;
+                accounts.reserve(userAccountsData.size());
+                for (auto const& account : userAccountsData)
+                {
+                    accounts.append({account.first, account.second});
+                }
+
+                _userAccountsPromise->setResult(accounts);
+                _userAccountsPromise.clear();
+            }
+        );
+
+        connect(
             _connection, &ServerConnection::userAccountCreatedSuccessfully,
             this, &AuthenticationControllerImpl::userAccountCreatedSuccessfully
         );
@@ -57,7 +77,21 @@ namespace PMP::Client
         connect(
             _connection, &ServerConnection::userLoginError,
             this, &AuthenticationControllerImpl::userLoginFailed
-        );
+            );
+    }
+
+    Future<QList<UserAccount>, ResultMessageErrorCode>
+        AuthenticationControllerImpl::getUserAccounts()
+    {
+        if (_userAccountsPromise.isNull())
+        {
+            _userAccountsPromise =
+                QSharedPointer<Promise<QList<UserAccount>, ResultMessageErrorCode>>::create();
+
+            _connection->sendUserAccountsFetchRequest();
+        }
+
+        return _userAccountsPromise->future();
     }
 
     void AuthenticationControllerImpl::sendUserAccountsFetchRequest()
@@ -98,7 +132,12 @@ namespace PMP::Client
 
     void AuthenticationControllerImpl::connectionBroken()
     {
-        //
-    }
+        if (_userAccountsPromise.isNull() == false)
+        {
+            _userAccountsPromise->setError(
+                ResultMessageErrorCode::ConnectionToServerBroken);
+        }
 
+        _userAccountsPromise.clear();
+    }
 }

@@ -33,6 +33,7 @@
 #include "playerqueue.h"
 #include "queueentry.h"
 #include "resolver.h"
+#include "scrobbling.h"
 #include "serversettings.h"
 #include "tcpserver.h"
 #include "users.h"
@@ -46,7 +47,7 @@ namespace PMP::Server
                                      History* history,
                                      HashIdRegistrar* hashIdRegistrar,
                                      Users* users,
-                                     DelayedStart* delayedStart)
+                                     DelayedStart* delayedStart, Scrobbling* scrobbling)
      : _userLoggedIn(0),
        _serverSettings(serverSettings),
        _server(server),
@@ -55,7 +56,8 @@ namespace PMP::Server
        _history(history),
        _hashIdRegistrar(hashIdRegistrar),
        _users(users),
-       _delayedStart(delayedStart)
+       _delayedStart(delayedStart),
+       _scrobbling(scrobbling)
     {
         connect(
             _server, &TcpServer::captionChanged,
@@ -185,6 +187,43 @@ namespace PMP::Server
         qDebug() << "ServerInterface: switching to public mode";
 
         _player->setUserPlayingFor(0);
+    }
+
+    void ServerInterface::requestScrobblingInfo()
+    {
+        if (!isLoggedIn()) return;
+
+        auto controller = _scrobbling->getControllerForUser(_userLoggedIn);
+
+        controller->requestScrobblingProviderInfo();
+    }
+
+    void ServerInterface::setScrobblingProviderEnabled(ScrobblingProvider provider,
+                                                       bool enabled)
+    {
+        if (!isLoggedIn()) return;
+
+        if (provider == ScrobblingProvider::Unknown)
+            return; /* provider invalid or not recognized */
+
+        auto controller = _scrobbling->getControllerForUser(_userLoggedIn);
+
+        controller->setScrobblingProviderEnabled(provider, enabled);
+    }
+
+    SimpleFuture<Result> ServerInterface::authenticateScrobblingProvider(
+                                                            ScrobblingProvider provider,
+                                                            QString user,
+                                                            QString password)
+    {
+        if (!isLoggedIn())
+            return FutureResult(Error::notLoggedIn());
+
+        if (provider == ScrobblingProvider::Unknown)
+            return FutureResult(Error::scrobblingProviderInvalid());
+
+        return _scrobbling->authenticateForProvider(_userLoggedIn, provider, user,
+                                                    password);
     }
 
     Result ServerInterface::activateDelayedStart(qint64 delayMilliseconds)

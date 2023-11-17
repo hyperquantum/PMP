@@ -20,15 +20,18 @@
 #include "fileanalyzer.h"
 
 #include <QCryptographicHash>
+#include <QtDebug>
 #include <QVersionNumber>
 
 /* TagLib includes */
 #include "taglib/flacfile.h"
 #include "taglib/id3v2framefactory.h"
+#include "taglib/id3v2tag.h"
 #include "taglib/mpegfile.h"
 #include "taglib/taglib.h"
-//#include "taglib/tbytevector.h"
+#include "taglib/tbytevector.h"
 #include "taglib/tbytevectorstream.h"
+#include "taglib/tpropertymap.h"
 
 namespace PMP
 {
@@ -217,13 +220,21 @@ namespace PMP
     {
         if (!tag) { return; }
 
+        const auto properties = tag->properties();
+
         QString artist = TStringToQString(tag->artist());
         QString title = TStringToQString(tag->title());
         QString album = TStringToQString(tag->album());
-        //QString albumArtist = TStringToQString(tag->)
         QString comment = TStringToQString(tag->comment());
 
-        _tags = TagData(artist, title, album, comment);
+        QString albumArtist;
+        const auto albumArtistValues = properties["ALBUMARTIST"];
+        if (!albumArtistValues.isEmpty())
+        {
+            albumArtist = TStringToQString(albumArtistValues[0]);
+        }
+
+        _tags = TagData(artist, title, album, albumArtist, comment);
     }
 
     FileHash FileAnalyzer::getHashFrom(TagLib::ByteVector const& data)
@@ -319,6 +330,32 @@ namespace PMP
         return false;
     }
 
+    namespace
+    {
+        void getExtraDataFromId3v2Tag(TagData& tagData, TagLib::ID3v2::Tag* id3v2Tag)
+        {
+            if (!id3v2Tag)
+                return;
+
+            const auto& framesMap = id3v2Tag->frameListMap();
+
+            auto tpe2FrameIt = framesMap.find("TPE2");
+            if (tpe2FrameIt != framesMap.end())
+            {
+                auto frames = tpe2FrameIt->second;
+                if (!frames.isEmpty())
+                {
+                    auto albumArtist = TStringToQString(frames.front()->toString());
+
+                    if (!albumArtist.isEmpty())
+                    {
+                        tagData.setAlbumArtist(albumArtist);
+                    }
+                }
+            }
+        }
+    }
+
     void FileAnalyzer::analyzeMp3()
     {
         TagLib::ByteVector scratch = _fileContents;
@@ -334,6 +371,7 @@ namespace PMP
         _audio.setFormat(AudioData::MP3);
 
         getDataFromTag(tagFile.tag());
+        getExtraDataFromId3v2Tag(_tags, tagFile.ID3v2Tag());
 
         auto* audioProperties = tagFile.audioProperties();
         if (audioProperties)

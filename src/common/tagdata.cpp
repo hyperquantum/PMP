@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,9 +27,13 @@ namespace PMP
     }
 
     TagData::TagData(const QString& artist, const QString& title,
-                     const QString& album, const QString& comment)
-     : _artist(artist), _title(title),
-       _album(album), _comment(comment)
+                     const QString& album, const QString& albumArtist,
+                     const QString& comment)
+     : _artist(artist),
+       _title(title),
+       _album(album),
+       _albumArtist(albumArtist),
+       _comment(comment)
     {
         //
     }

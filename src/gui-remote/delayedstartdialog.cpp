@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -295,7 +295,7 @@ namespace PMP
 
             future.addResultListener(
                 this,
-                [this](ResultMessageErrorCode code) { activationResultReceived(code); }
+                [this](AnyResultMessageCode code) { activationResultReceived(code); }
             );
         }
         else
@@ -321,7 +321,7 @@ namespace PMP
                                                                        millisecondsTotal);
             future.addResultListener(
                 this,
-                [this](ResultMessageErrorCode code) { activationResultReceived(code); }
+                [this](AnyResultMessageCode code) { activationResultReceived(code); }
             );
         }
 
@@ -356,7 +356,7 @@ namespace PMP
                     end.toString(locale.dateTimeFormat(QLocale::LongFormat)));
     }
 
-    void DelayedStartDialog::activationResultReceived(ResultMessageErrorCode errorCode)
+    void DelayedStartDialog::activationResultReceived(AnyResultMessageCode errorCode)
     {
         if (succeeded(errorCode))
         {
@@ -371,7 +371,8 @@ namespace PMP
         }
         else
         {
-            failureDetail = tr("Unspecified error (code %1).").arg(int(errorCode));
+            failureDetail =
+                tr("Unspecified error (code %1).").arg(errorCodeString(errorCode));
         }
 
         QMessageBox msgBox;

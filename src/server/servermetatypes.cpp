@@ -19,6 +19,8 @@
 
 #include "analyzer.h"
 #include "collectiontrackinfo.h"
+#include "scrobblingbackend.h"
+#include "scrobblingtrack.h"
 
 #include <QMetaType>
 #include <QVector>
@@ -38,6 +40,9 @@ namespace PMP::Server
             qRegisterMetaType<PMP::Server::FileAnalysis>();
             qRegisterMetaType<PMP::Server::FileHashes>();
             qRegisterMetaType<PMP::Server::FileInfo>();
+            qRegisterMetaType<PMP::Server::ScrobbleResult>();
+            qRegisterMetaType<PMP::Server::ScrobblingBackendState>();
+            qRegisterMetaType<PMP::Server::ScrobblingTrack>();
         }
 
         static ServerMetatypesInit GlobalVariable;

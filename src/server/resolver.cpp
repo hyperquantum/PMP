@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -430,6 +430,7 @@ namespace PMP::Server
         QString _quickTitle;
         QString _quickArtist;
         QString _quickAlbum;
+        QString _quickAlbumArtist;
 
     public:
         HashKnowledge(Resolver* parent, FileHash hash, uint hashId)
@@ -454,6 +455,7 @@ namespace PMP::Server
         QString quickTitle() { return _quickTitle; }
         QString quickArtist() { return _quickArtist; }
         QString quickAlbum() { return _quickAlbum; }
+        QString quickAlbumArtist() { return _quickAlbumArtist; }
 
         void addPath(const QString& filename,
                      qint64 fileSize, QDateTime fileLastModified, uint indexationNumber);
@@ -511,7 +513,8 @@ namespace PMP::Server
         {
             if (existing->title() == t.title()
                     && existing->artist() == t.artist()
-                    && existing->album() == t.album())
+                    && existing->album() == t.album()
+                    && existing->albumArtist() == t.albumArtist())
             {
                 tagIsNew = false;
                 break;
@@ -526,25 +529,29 @@ namespace PMP::Server
             auto tags = findBestTag();
             if (tags)
             {
-                QString oldQuickTitle = _quickTitle;
-                QString oldQuickArtist = _quickArtist;
-                QString oldQuickAlbum = _quickAlbum;
+                auto oldQuickTitle = _quickTitle;
+                auto oldQuickArtist = _quickArtist;
+                auto oldQuickAlbum = _quickAlbum;
+                auto oldQuickAlbumArtist = _quickAlbumArtist;
 
                 _quickTitle = tags->title();
                 _quickArtist = tags->artist();
                 _quickAlbum = tags->album();
+                _quickAlbumArtist = tags->albumArtist();
 
                 quickTagsChanged =
                         oldQuickTitle != _quickTitle
                             || oldQuickArtist != _quickArtist
-                            || oldQuickAlbum != _quickAlbum;
+                            || oldQuickAlbum != _quickAlbum
+                            || oldQuickAlbumArtist != _quickAlbumArtist;
 
                 if (_tags.size() > 1 && !quickTagsChanged)
                 {
                     qDebug() << "extra tag added for track but not switching away from"
                              << " old tag info: title:" << oldQuickTitle
                              << "; artist:" << oldQuickArtist
-                             << "; album:" << oldQuickAlbum;
+                             << "; album:" << oldQuickAlbum
+                             << "; album artist:" << oldQuickAlbumArtist;
                 }
             }
         }
@@ -552,7 +559,7 @@ namespace PMP::Server
         if (lengthChanged || quickTagsChanged)
         {
             Q_EMIT _parent->hashTagInfoChanged(_hash, _quickTitle, _quickArtist,
-                                               _quickAlbum,
+                                               _quickAlbum, _quickAlbumArtist,
                                                _audio.trackLengthMilliseconds());
         }
     }
@@ -569,6 +576,7 @@ namespace PMP::Server
             int titleLength = tag->title().length();
             int artistLength = tag->artist().length();
             int albumLength = tag->album().length();
+            int albumArtistLength = tag->albumArtist().length();
 
             if (titleLength > 0)
             {
@@ -586,6 +594,11 @@ namespace PMP::Server
             {
                 score += 6000;
                 score += std::min(albumLength, 256);
+            }
+
+            if (albumArtistLength > 0)
+            {
+                score += 1000;
             }
 
             /* for equal scores we'll use the latest tag */
@@ -899,6 +912,12 @@ namespace PMP::Server
 
     Future<QString, FailureType> Resolver::findPathForHashAsync(FileHash hash)
     {
+        if (hash.isNull())
+        {
+            qWarning() << "Resolver: cannot find path for null hash";
+            return FutureError(failure);
+        }
+
         {
             QMutexLocker lock(&_lock);
 
@@ -924,6 +943,34 @@ namespace PMP::Server
             );
 
         return pathFuture;
+    }
+
+    Future<QString, FailureType> Resolver::findPathForHashAsync(uint hashId)
+    {
+        FileHash hash;
+
+        {
+            QMutexLocker lock(&_lock);
+
+            auto it = _idToHash.find(hashId);
+            if (it == _idToHash.end())
+            {
+                qWarning() << "Resolver: hash ID" << hashId << "is unknown";
+                return FutureError(failure);
+            }
+
+            hash = it.value()->hash();
+
+            auto path = it.value()->getFile();
+            if (!path.isEmpty())
+            {
+                return Future<QString, FailureType>::fromResult(path);
+            }
+        }
+
+        // TODO : check if we have it in the locations cache
+
+        return _fileFinder->findHashAsync(hashId, hash);
     }
 
     void Resolver::doFullIndexationFileSystemTraversal()
@@ -1111,24 +1158,31 @@ namespace PMP::Server
         (void)knowledge->isStillValid(file);
     }
 
-    const AudioData& Resolver::findAudioData(const FileHash& hash)
+    Nullable<AudioData> Resolver::findAudioData(const FileHash& hash)
     {
         QMutexLocker lock(&_lock);
 
         auto knowledge = _hashKnowledge.value(hash, nullptr);
         if (knowledge) return knowledge->audio();
 
-        return _emptyAudioData; /* we could not register the hash */
+        return null;
     }
 
-    const TagData* Resolver::findTagData(const FileHash& hash)
+    Nullable<TagData> Resolver::findTagData(const FileHash& hash)
     {
         QMutexLocker lock(&_lock);
 
         auto knowledge = _hashKnowledge.value(hash, nullptr);
-        if (knowledge) return knowledge->findBestTag();
 
-        return nullptr;
+        if (knowledge)
+        {
+            const auto* bestTag = knowledge->findBestTag();
+
+            if (bestTag)
+                return *bestTag;
+        }
+
+        return null;
     }
 
     QVector<FileHash> Resolver::getAllHashes()
@@ -1159,12 +1213,34 @@ namespace PMP::Server
             CollectionTrackInfo info(hash, knowledge->isAvailable(),
                                      knowledge->quickTitle(), knowledge->quickArtist(),
                                      knowledge->quickAlbum(),
+                                     knowledge->quickAlbumArtist(),
                                      (qint32)lengthInMilliseconds);
 
             result.append(info);
         }
 
         return result;
+    }
+
+    CollectionTrackInfo Resolver::getHashTrackInfo(uint hashId)
+    {
+        QMutexLocker lock(&_lock);
+
+        auto knowledge = _idToHash.value(hashId, nullptr);
+        if (!knowledge) return {};
+
+        auto lengthInMilliseconds = knowledge->audio().trackLengthMilliseconds();
+        if (lengthInMilliseconds > std::numeric_limits<qint32>::max())
+        {
+            lengthInMilliseconds = 0;
+        }
+
+        CollectionTrackInfo info(knowledge->hash(), knowledge->isAvailable(),
+                                 knowledge->quickTitle(), knowledge->quickArtist(),
+                                 knowledge->quickAlbum(), knowledge->quickAlbumArtist(),
+                                 qint32(lengthInMilliseconds));
+
+        return info;
     }
 
     FileHash Resolver::getHashByID(uint id)
