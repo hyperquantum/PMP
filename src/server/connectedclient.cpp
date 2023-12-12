@@ -1424,7 +1424,7 @@ namespace PMP::Server
     }
 
     void ConnectedClient::sendNewHistoryEntryMessage(
-                                                 QSharedPointer<PlayerHistoryEntry> entry)
+        QSharedPointer<RecentHistoryEntry> entry)
     {
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4 + 8 + 8 + 2 + 2);
@@ -1908,7 +1908,7 @@ namespace PMP::Server
         );
     }
 
-    void ConnectedClient::newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry)
+    void ConnectedClient::newHistoryEntry(QSharedPointer<RecentHistoryEntry> entry)
     {
         if (_binaryMode)
             sendNewHistoryEntryMessage(entry);

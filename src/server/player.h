@@ -135,7 +135,7 @@ namespace PMP::Server
         void startedPlaying(uint userPlayingFor, QDateTime startTime,
                             QString title, QString artist, QString album,
                             QString albumArtist, int trackDurationSeconds);
-        void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
+        void newHistoryEntry(QSharedPointer<RecentHistoryEntry> entry);
 
     private Q_SLOTS:
         void changeStateTo(ServerPlayerState state);
@@ -170,7 +170,7 @@ namespace PMP::Server
         void putInHistoryOrder(QSharedPointer<QueueEntry> entry);
         void addToHistory(QSharedPointer<QueueEntry> entry, int permillage, bool hadError,
                           bool hadSeek);
-        void performHistoryActions(QSharedPointer<PlayerHistoryEntry> historyEntry);
+        void performHistoryActions(QSharedPointer<RecentHistoryEntry> historyEntry);
         static int calcPermillagePlayed(QSharedPointer<QueueEntry> track,
                                         qint64 positionReached,
                                         bool seeked);
@@ -184,7 +184,7 @@ namespace PMP::Server
         Preloader _preloader;
         QSharedPointer<QueueEntry> _nowPlaying;
         QQueue<uint> _historyOrder;
-        QHash<uint, QSharedPointer<PlayerHistoryEntry>> _pendingHistory;
+        QHash<uint, QSharedPointer<RecentHistoryEntry>> _pendingHistory;
         int _instanceIdentifier;
         int _volume;
         qint64 _playPosition;

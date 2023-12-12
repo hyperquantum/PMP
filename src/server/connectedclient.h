@@ -29,7 +29,7 @@
 
 #include "collectiontrackinfo.h"
 #include "hashstats.h"
-#include "playerhistoryentry.h"
+#include "recenthistoryentry.h"
 #include "result.h"
 #include "serverplayerstate.h"
 
@@ -84,7 +84,7 @@ namespace PMP::Server
                                           int waveTotalCount);
         void playerStateChanged(ServerPlayerState state);
         void currentTrackChanged(QSharedPointer<QueueEntry const> entry);
-        void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
+        void newHistoryEntry(QSharedPointer<RecentHistoryEntry> entry);
         void trackPositionChanged(qint64 position);
         void onDelayedStartActiveChanged();
         void sendPlayerStateMessage();
@@ -183,7 +183,7 @@ namespace PMP::Server
                                                QVector<FileHash> unavailable);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
                                        QVector<CollectionTrackInfo> tracks);
-        void sendNewHistoryEntryMessage(QSharedPointer<PlayerHistoryEntry> entry);
+        void sendNewHistoryEntryMessage(QSharedPointer<RecentHistoryEntry> entry);
         void sendQueueHistoryMessage(int limit);
         void sendHashUserDataMessage(quint32 userId, QVector<HashStats> stats);
         void sendServerNameMessage();

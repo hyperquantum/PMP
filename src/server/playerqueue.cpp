@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -466,7 +466,7 @@ namespace PMP::Server
         return _queue.at(index);
     }
 
-    void PlayerQueue::addToHistory(QSharedPointer<PlayerHistoryEntry> entry)
+    void PlayerQueue::addToHistory(QSharedPointer<RecentHistoryEntry> entry)
     {
         if (!entry) return;
 
@@ -487,7 +487,7 @@ namespace PMP::Server
         qDebug() << " history size now:" << _history.size();
     }
 
-    QList<QSharedPointer<PlayerHistoryEntry> > PlayerQueue::recentHistory(int limit)
+    QList<QSharedPointer<RecentHistoryEntry>> PlayerQueue::recentHistory(int limit)
     {
         if (limit <= 0 || limit > _history.size())
             return _history;
