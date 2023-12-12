@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,11 @@
 #ifndef PMP_HISTORYCONTROLLER_H
 #define PMP_HISTORYCONTROLLER_H
 
+#include "common/future.h"
 #include "common/playerhistorytrackinfo.h"
+#include "common/resultmessageerrorcode.h"
+
+#include "historyentry.h"
 
 #include <QObject>
 #include <QVector>
@@ -34,6 +38,10 @@ namespace PMP::Client
         virtual ~HistoryController() {}
 
         virtual void sendPlayerHistoryRequest(int limit) = 0;
+
+        virtual Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
+            LocalHashId hashId, uint userId,
+            int limit, uint startId = 0) = 0;
 
     Q_SIGNALS:
         void receivedPlayerHistoryEntry(PMP::PlayerHistoryTrackInfo track);

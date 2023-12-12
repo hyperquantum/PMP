@@ -37,6 +37,7 @@
 #include "common/versioninfo.h"
 
 #include "collectiontrackinfo.h"
+#include "historyentry.h"
 #include "localhashid.h"
 
 #include <QByteArray>
@@ -90,6 +91,7 @@ namespace PMP::Client
         class TrackInsertionResultHandler;
         class QueueEntryInsertionResultHandler;
         class DuplicationResultHandler;
+        class HistoryFragmentResultHandler;
 
     public:
         explicit ServerConnection(QObject* parent,
@@ -123,6 +125,9 @@ namespace PMP::Client
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
+        Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
+                                                        LocalHashId hashId, uint userId,
+                                                        int limit, uint startId = 0);
 
         SimpleFuture<AnyResultMessageCode> authenticateScrobbling(
                                                             ScrobblingProvider provider,
@@ -171,6 +176,9 @@ namespace PMP::Client
         void sendQueueEntryHashRequest(QList<uint> const& queueIDs);
 
         void sendHashUserDataRequest(quint32 userId, QList<LocalHashId> const& hashes);
+        Future<HistoryFragment, AnyResultMessageCode> sendHashHistoryRequest(
+                                                        LocalHashId hashId, uint userId,
+                                                        int limit, uint startId);
 
         void sendPossibleFilenamesRequest(uint queueID);
 
@@ -371,6 +379,7 @@ namespace PMP::Client
                                         ServerMessageType messageType);
 
         void parseHashUserDataMessage(QByteArray const& message);
+        void parseHistoryFragmentMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);
 

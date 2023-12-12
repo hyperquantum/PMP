@@ -172,6 +172,10 @@ namespace PMP
             errorOutput = "invalid time span";
             break;
 
+        case ResultMessageErrorCode::InvalidUserId:
+            errorOutput = "invalid user ID";
+            break;
+
         case PMP::ResultMessageErrorCode::MaximumQueueSizeExceeded:
             errorOutput = "maximum queue size would be exceeded";
             break;
@@ -203,6 +207,8 @@ namespace PMP
         case ResultMessageErrorCode::InvalidMessageStructure:
         case ResultMessageErrorCode::UserAccountRegistrationMismatch:
         case ResultMessageErrorCode::UserAccountLoginMismatch:
+        case ResultMessageErrorCode::TooMuchDataToReturn:
+        case ResultMessageErrorCode::NumberTooBigToReturn:
             errorOutput =
                     QString("client-server communication error (code %1)")
                        .arg(static_cast<int>(errorCode));

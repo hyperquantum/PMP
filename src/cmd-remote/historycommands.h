@@ -20,9 +20,12 @@
 #ifndef PMP_HISTORYCOMMANDS_H
 #define PMP_HISTORYCOMMANDS_H
 
-#include "commandbase.h"
-
+#include "common/filehash.h"
 #include "common/playerhistorytrackinfo.h"
+
+#include "client/historyentry.h"
+
+#include "commandbase.h"
 
 #include <QVector>
 
@@ -49,6 +52,25 @@ namespace PMP
 
         QVector<PMP::PlayerHistoryTrackInfo> _tracks;
         bool _listReceived { false };
+    };
+
+    class TrackHistoryCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        TrackHistoryCommand(FileHash const& hash);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        void printResult(Client::HistoryFragment const& historyFragment);
+
+        static const int _fetchLimit { 10 };
+
+        FileHash _hash;
     };
 }
 #endif

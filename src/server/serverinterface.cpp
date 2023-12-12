@@ -189,6 +189,70 @@ namespace PMP::Server
         _player->setUserPlayingFor(0);
     }
 
+    Future<HistoryFragment, Result> ServerInterface::getPersonalTrackHistory(
+        FileHash hash, quint32 userId, uint startId, int limit)
+    {
+        if (!isLoggedIn())
+            return FutureError(Error::notLoggedIn());
+
+        if (hash.isNull())
+            return FutureError(Error::hashIsNull());
+
+        auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
+        if (maybeHashId == null)
+            return FutureError(Error::hashIsUnknown());
+
+        auto hashId = maybeHashId.value();
+
+        if (!_users->checkUserIdExists(userId))
+            return FutureError(Error::userIdNotFound());
+
+        limit = qBound(0, limit, 50);
+
+        auto future =
+            Concurrent::run<HistoryFragment, Result>(
+                [hashId, hash, userId, startId, limit]()
+                    -> ResultOrError<HistoryFragment, Result>
+                {
+                    auto db = Database::getDatabaseForCurrentThread();
+                    if (!db)
+                        return Error::databaseUnvailable();
+
+                    const auto recordsOrFailure =
+                        db->getTrackHistoryForUser(hashId, userId, startId, limit);
+
+                    if (recordsOrFailure.failed())
+                        return Error::internalError();
+
+                    const auto records = recordsOrFailure.result();
+
+                    QVector<HistoryEntry> entries;
+                    entries.reserve(records.size());
+
+                    for (auto& record : records)
+                    {
+                        entries.append(
+                            HistoryEntry { hash, userId, record.start, record.end,
+                                           record.permillage, record.validForScoring }
+                        );
+                    }
+
+                    auto lowestId = 0;
+                    auto highestId = 0;
+
+                    if (!records.isEmpty())
+                    {
+                        lowestId = qMin(records.first().id, records.last().id);
+                        highestId = qMax(records.first().id, records.last().id);
+                    }
+
+                    return HistoryFragment(entries, lowestId, highestId);
+                }
+            );
+
+        return future;
+    }
+
     void ServerInterface::requestScrobblingInfo()
     {
         if (!isLoggedIn()) return;

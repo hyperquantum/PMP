@@ -90,6 +90,9 @@ namespace PMP::Client
         virtual void handleQueueEntryAdditionConfirmation(quint32 clientReference,
                                                           qint32 index, quint32 queueID);
 
+        virtual void handleHistoryFragment(quint32 clientReference,
+                                           HistoryFragment fragment);
+
     protected:
         ResultHandler(ServerConnection* parent);
 
@@ -132,6 +135,14 @@ namespace PMP::Client
         qWarning() << "ResultHandler does not handle queue entry addition confirmation;"
                    << " ref:" << clientReference << " index:" << index
                    << " QID:" << queueID;
+    }
+
+    void ServerConnection::ResultHandler::handleHistoryFragment(quint32 clientReference,
+                                                                HistoryFragment fragment)
+    {
+        qWarning() << "ResultHandler does not handle history fragments;"
+                   << " ref:" << clientReference
+                   << " entries count:" << fragment.entries().size();
     }
 
     QString ServerConnection::ResultHandler::errorDescription(
@@ -502,7 +513,52 @@ namespace PMP::Client
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 24;
+    class ServerConnection::HistoryFragmentResultHandler : public ResultHandler
+    {
+    public:
+        HistoryFragmentResultHandler(ServerConnection* parent);
+
+        Future<HistoryFragment, AnyResultMessageCode> future() const;
+
+        void handleResult(ResultMessageData const& data) override;
+
+        void handleHistoryFragment(quint32 clientReference,
+                                   HistoryFragment fragment) override;
+
+    private:
+        Promise<HistoryFragment, AnyResultMessageCode> _promise;
+    };
+
+    ServerConnection::HistoryFragmentResultHandler::HistoryFragmentResultHandler(
+        ServerConnection* parent)
+     : ResultHandler(parent)
+    {
+        //
+    }
+
+    Future<HistoryFragment, AnyResultMessageCode>
+        ServerConnection::HistoryFragmentResultHandler::future() const
+    {
+        return _promise.future();
+    }
+
+    void ServerConnection::HistoryFragmentResultHandler::handleResult(
+                                                            const ResultMessageData& data)
+    {
+        _promise.setError(data.errorType);
+    }
+
+    void ServerConnection::HistoryFragmentResultHandler::handleHistoryFragment(
+        quint32 clientReference, HistoryFragment fragment)
+    {
+        Q_UNUSED(clientReference)
+
+        _promise.setResult(fragment);
+    }
+
+    /* ============================================================================ */
+
+    const quint16 ServerConnection::ClientProtocolNo = 25;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -1221,6 +1277,13 @@ namespace PMP::Client
         return RequestID(ref);
     }
 
+    Future<HistoryFragment, AnyResultMessageCode>
+        ServerConnection::getPersonalTrackHistory(LocalHashId hashId, uint userId,
+                                                  int limit, uint startId)
+    {
+        return sendHashHistoryRequest(hashId, userId, limit, startId);
+    }
+
     void ServerConnection::sendQueueEntryInfoRequest(uint queueID)
     {
         if (queueID == 0) return;
@@ -1320,6 +1383,40 @@ namespace PMP::Client
         }
 
         sendBinaryMessage(message);
+    }
+
+    Future<HistoryFragment, AnyResultMessageCode>
+        ServerConnection::sendHashHistoryRequest(LocalHashId hashId, uint userId,
+                                                 int limit, uint startId)
+    {
+        Q_ASSERT_X(!hashId.isZero(), "sendHashHistoryRequest", "hash ID is zero");
+        Q_ASSERT_X(userId < std::numeric_limits<quint32>::max(),
+                   "sendHashHistoryRequest",
+                   "userId is too large");
+        Q_ASSERT_X(limit > 0, "sendHashHistoryRequest", "limit must be positive");
+        Q_ASSERT_X(startId < std::numeric_limits<quint32>::max(),
+                   "sendHashHistoryRequest",
+                   "startId is too large");
+
+        auto hash = _hashIdRepository->getHash(hashId);
+        limit = qBound(0, limit, 255);
+
+        auto handler = QSharedPointer<HistoryFragmentResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
+
+        QByteArray message;
+        message.reserve(2 + 1 + 1 + 4 + 4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        NetworkProtocol::append2Bytes(message, ClientMessageType::PersonalHistoryRequest);
+        NetworkUtil::appendByte(message, 0); // filler
+        NetworkUtil::appendByteUnsigned(message, limit);
+        NetworkUtil::append4Bytes(message, static_cast<quint32>(userId));
+        NetworkUtil::append4Bytes(message, static_cast<quint32>(startId));
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkProtocol::appendHash(message, hash);
+
+        sendBinaryMessage(message);
+
+        return handler->future();
     }
 
     void ServerConnection::sendPossibleFilenamesRequest(uint queueID)
@@ -1986,6 +2083,9 @@ namespace PMP::Client
             return;
         case ServerMessageType::HashUserDataMessage:
             parseHashUserDataMessage(message);
+            return;
+        case ServerMessageType::HistoryFragmentMessage:
+            parseHistoryFragmentMessage(message);
             return;
         case ServerMessageType::NewHistoryEntryMessage:
             parseNewHistoryEntryMessage(message);
@@ -3266,6 +3366,62 @@ namespace PMP::Client
             // TODO: fixme: receiver cannot know which fields were not received now
             Q_EMIT receivedHashUserData(hashId, userId, previouslyHeard, score);
         }
+    }
+
+    void ServerConnection::parseHistoryFragmentMessage(const QByteArray& message)
+    {
+        if (message.length() < 8)
+            return; /* invalid message */
+
+        quint16 entryCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        uint nextStartId = NetworkUtil::get4Bytes(message, 8);
+
+        auto expectedMessageSize =
+            12 + entryCount * (24 + NetworkProtocol::FILEHASH_BYTECOUNT);
+
+        if (message.length() != expectedMessageSize)
+            return; /* invalid message */
+
+        qDebug() << "received history fragment message; client-ref:" << clientReference
+                 << " entry count:" << entryCount << " next start ID:" << nextStartId;
+
+        int offset = 12;
+
+        QVector<HistoryEntry> entries;
+        entries.reserve(entryCount);
+        for (int i = 0; i < entryCount; ++i)
+        {
+            quint32 userId = NetworkUtil::get4Bytes(message, offset);
+            QDateTime started =
+                NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 4);
+            QDateTime ended =
+                NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 12);
+            int permillage = NetworkUtil::get2BytesSigned(message, offset + 20);
+            quint16 status = NetworkUtil::get2Bytes(message, offset + 22);
+            offset += 24;
+
+            bool ok;
+            auto hash = NetworkProtocol::getHash(message, offset, &ok);
+            if (!ok)
+                return; /* invalid message */
+
+            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+
+            auto hashId = _hashIdRepository->getOrRegisterId(hash);
+            bool validForScoring = status & 1;
+
+            entries.append(
+                HistoryEntry { hashId, userId, started, ended, permillage,
+                               validForScoring }
+            );
+        }
+
+        HistoryFragment fragment { entries, nextStartId };
+
+        auto handler = _resultHandlers.take(clientReference);
+        if (handler)
+            handler->handleHistoryFragment(clientReference, fragment);
     }
 
     void ServerConnection::parseNewHistoryEntryMessage(const QByteArray& message)

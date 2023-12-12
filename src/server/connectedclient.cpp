@@ -38,11 +38,13 @@
 #include <QThreadPool>
 #include <QTimer>
 
+#include <limits>
+
 namespace PMP::Server
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 24;
+    const qint16 ConnectedClient::ServerProtocolNo = 25;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -913,6 +915,53 @@ namespace PMP::Server
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendHistoryFragmentMessage(uint clientReference,
+                                                     HistoryFragment fragment)
+    {
+        if (fragment.entries().size() > 0xFFFF)
+        {
+            qWarning() << "sendHistoryFragmentMessage: too many entries to send";
+            sendResultMessage(ResultMessageErrorCode::TooMuchDataToReturn,
+                              clientReference);
+            return;
+        }
+
+        auto lowestEntryId = fragment.lowestEntryId();
+        if (lowestEntryId >= std::numeric_limits<quint32>::max())
+        {
+            qWarning() << "sendHistoryFragmentMessage: next start ID too big for reply";
+            sendResultMessage(ResultMessageErrorCode::NumberTooBigToReturn,
+                              clientReference);
+            return;
+        }
+
+        quint32 nextStartId = lowestEntryId > 0 ? lowestEntryId : 0;
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4 + fragment.entries().size() *
+                            (4 + 8 + 8 + 2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT));
+        NetworkProtocol::append2Bytes(message, ServerMessageType::HistoryFragmentMessage);
+        NetworkUtil::append2BytesUnsigned(message, fragment.entries().size());
+        NetworkUtil::append4Bytes(message, clientReference);
+        NetworkUtil::append4Bytes(message, nextStartId);
+
+        for (auto& entry : fragment.entries())
+        {
+            quint16 status = (entry.validForScoring() ? 1 : 0);
+
+            qint16 permillage = static_cast<qint16>(entry.permillage());
+
+            NetworkUtil::append4Bytes(message, entry.userId());
+            NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry.started());
+            NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry.ended());
+            NetworkUtil::append2BytesSigned(message, permillage);
+            NetworkUtil::append2Bytes(message, status);
+            NetworkProtocol::appendHash(message, entry.hash());
+        }
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendHashUserDataMessage(quint32 userId,
                                                   QVector<HashStats> stats)
     {
@@ -1693,6 +1742,9 @@ namespace PMP::Server
         case ResultCode::DelayOutOfRange:
             sendResultMessage(ResultMessageErrorCode::InvalidTimeSpan, clientReference);
             return;
+        case ResultCode::UserIdNotFound:
+            sendResultMessage(ResultMessageErrorCode::InvalidUserId, clientReference);
+            return;
         case ResultCode::ScrobblingSystemDisabled:
             sendScrobblingResultMessage(
                 ScrobblingResultMessageCode::ScrobblingSystemDisabled, clientReference
@@ -1719,6 +1771,9 @@ namespace PMP::Server
                 ScrobblingResultMessageCode::UnspecifiedScrobblingBackendError,
                 clientReference
             );
+            return;
+        case ResultCode::DatabaseUnavailable:
+            sendResultMessage(ResultMessageErrorCode::DatabaseProblem, clientReference);
             return;
         case ResultCode::NotImplementedError:
         case ResultCode::InternalError:
@@ -2088,8 +2143,6 @@ namespace PMP::Server
     void ConnectedClient::handleStandardBinaryMessage(ClientMessageType messageType,
                                                       QByteArray const& message)
     {
-        qint32 messageLength = message.length();
-
         switch (messageType)
         {
         case ClientMessageType::KeepAliveMessage:
@@ -2156,6 +2209,9 @@ namespace PMP::Server
         case ClientMessageType::HashUserDataRequestMessage:
             parseHashUserDataRequest(message);
             return;
+        case ClientMessageType::PersonalHistoryRequest:
+            parsePersonalHistoryRequest(message);
+            return;
         case ClientMessageType::InsertSpecialQueueItemRequest:
             parseInsertSpecialQueueItemRequest(message);
             return;
@@ -2168,7 +2224,7 @@ namespace PMP::Server
         case ClientMessageType::QueueEntryDuplicationRequestMessage:
             parseQueueEntryDuplicationRequest(message);
             return;
-        case PMP::ClientMessageType::None:
+        case ClientMessageType::None:
             qDebug() << "received a message with type 'none' and length"
                      << message.length();
             return;
@@ -2176,7 +2232,7 @@ namespace PMP::Server
 
         qDebug() << "received unknown binary message type"
                  << static_cast<int>(messageType)
-                 << "with length" << messageLength;
+                 << "with length" << message.length();
     }
 
     void ConnectedClient::handleExtensionMessage(quint8 extensionId, quint8 messageType,
@@ -2811,6 +2867,43 @@ namespace PMP::Server
         }
 
         _serverInterface->requestHashUserData(userId, hashes);
+    }
+
+    void ConnectedClient::parsePersonalHistoryRequest(const QByteArray& message)
+    {
+        if (message.length() != 16 + NetworkProtocol::FILEHASH_BYTECOUNT)
+            return; /* invalid message */
+
+        auto limit = NetworkUtil::getByteUnsignedToInt(message, 3);
+        quint32 userId = NetworkUtil::get4Bytes(message, 4);
+        quint32 startId = NetworkUtil::get4Bytes(message, 8);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 12);
+
+        bool ok = false;
+        auto hash = NetworkProtocol::getHash(message, 16, &ok);
+        if (!ok)
+            return; /* invalid message */
+
+        qDebug() << "received request for personal track history; track:" << hash
+                 << " user:" << userId << "  start:" << startId << " limit:" << limit;
+
+        auto future =
+            _serverInterface->getPersonalTrackHistory(hash, userId, startId, limit);
+
+        future.addResultListener(
+            this,
+            [this, clientReference](HistoryFragment historyFragment)
+            {
+                sendHistoryFragmentMessage(clientReference, historyFragment);
+            }
+        );
+        future.addFailureListener(
+            this,
+            [this, clientReference](Result result)
+            {
+                sendResultMessage(result, clientReference);
+            }
+        );
     }
 
     void ConnectedClient::parsePlayerHistoryRequest(const QByteArray& message)

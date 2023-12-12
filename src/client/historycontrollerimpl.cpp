@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -51,6 +51,13 @@ namespace PMP::Client
     void HistoryControllerImpl::sendPlayerHistoryRequest(int limit)
     {
         _connection->sendPlayerHistoryRequest(limit);
+    }
+
+    Future<HistoryFragment, AnyResultMessageCode>
+        HistoryControllerImpl::getPersonalTrackHistory(LocalHashId hashId, uint userId,
+                                                       int limit, uint startId)
+    {
+        return _connection->getPersonalTrackHistory(hashId, userId, limit, startId);
     }
 
     void HistoryControllerImpl::connected()

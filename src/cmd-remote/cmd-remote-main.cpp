@@ -66,6 +66,7 @@ usage:
     delayedstart at [<date>] <time>: activate delayed start (see below)
     delayedstart abort|cancel: cancel delayed start (see below)
     trackstats <hash>: get track statistics
+    trackhistory <hash>: get personal listening history for a track
     serverversion: get server version information
 
   'login' command:
@@ -176,6 +177,14 @@ usage:
 
     Retrieves 'last heard' and 'score' for the current user and the track
     that was specified as an argument.
+    The hash of a track can be obtained with the 'track info' dialog in the
+    GUI Remote or with the command-line hash tool.
+
+  'trackhistory' command:
+    trackhistory <hash>: get personal listening history for the current user
+
+    Retrieves the recent listening history for the current user and the
+    track that was specified as an argument.
     The hash of a track can be obtained with the 'track info' dialog in the
     GUI Remote or with the command-line hash tool.
 

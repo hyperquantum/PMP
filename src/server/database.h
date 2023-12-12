@@ -111,6 +111,12 @@ namespace PMP::Server
                                                             quint32 startId,
                                                             QDateTime earliestDateTime,
                                                             int limit);
+        ResultOrError<QVector<DatabaseRecords::HistoryRecord>, FailureType>
+                                                                   getTrackHistoryForUser(
+                                                                quint32 hashId,
+                                                                quint32 userId,
+                                                                uint startId,
+                                                                int limit);
 
         ResultOrError<QVector<QPair<quint32, quint32>>, FailureType> getEquivalences();
         ResultOrError<SuccessType, FailureType> registerEquivalence(quint32 hashId1,
