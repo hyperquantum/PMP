@@ -284,6 +284,7 @@ namespace PMP::Client
                              void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
                                                                    RequestID));
         FutureResult<AnyResultMessageCode> serverTooOldFutureResult();
+        FutureError<AnyResultMessageCode> serverTooOldFutureError();
 
         void sendTextCommand(QString const& command);
         void appendScrobblingMessageStart(QByteArray& buffer,

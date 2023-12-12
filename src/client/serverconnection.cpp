@@ -1147,6 +1147,11 @@ namespace PMP::Client
         return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
     }
 
+    FutureError<AnyResultMessageCode> ServerConnection::serverTooOldFutureError()
+    {
+        return FutureError(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
+    }
+
     SimpleFuture<AnyResultMessageCode> ServerConnection::reloadServerSettings()
     {
         if (!serverCapabilities().supportsReloadingServerSettings())
@@ -1397,6 +1402,9 @@ namespace PMP::Client
         Q_ASSERT_X(startId < std::numeric_limits<quint32>::max(),
                    "sendHashHistoryRequest",
                    "startId is too large");
+
+        if (!_serverCapabilities->supportsRequestingPersonalTrackHistory())
+            return serverTooOldFutureError();
 
         auto hash = _hashIdRepository->getHash(hashId);
         limit = qBound(0, limit, 255);
