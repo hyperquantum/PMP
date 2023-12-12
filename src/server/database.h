@@ -105,7 +105,8 @@ namespace PMP::Server
                                                                       getHashHistoryStats(
                                                                 quint32 userId,
                                                                 QVector<quint32> hashIds);
-        QVector<DatabaseRecords::HistoryRecord> getUserHistoryForScrobbling(
+        ResultOrError<QVector<DatabaseRecords::HistoryRecord>, FailureType>
+                                                              getUserHistoryForScrobbling(
                                                             quint32 userId,
                                                             quint32 startId,
                                                             QDateTime earliestDateTime,

@@ -92,10 +92,17 @@ namespace PMP::Server
         auto earliestTime = QDateTime::currentDateTimeUtc().addDays(-daysInPast);
         auto fetchSize = 5;
 
-        const auto history =
-                database->getUserHistoryForScrobbling(_user, _fetchedUpTo + 1,
-                                                      earliestTime, fetchSize);
-        if (history.empty()) return {}; /* nothing more to scrobble */
+        auto historyOrError =
+            database->getUserHistoryForScrobbling(_user, _fetchedUpTo + 1, earliestTime,
+                                                  fetchSize);
+
+        if (historyOrError.failed())
+            return {}; /* cannot scrobble anything */
+
+        auto const history = historyOrError.result();
+
+        if (history.empty())
+            return {}; /* nothing more to scrobble */
 
         _fetchedUpTo = history.last().id;
         qDebug() << "LastFmScrobblingDataProvider: fetched tracks to scrobble up to"
