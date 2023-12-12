@@ -45,6 +45,7 @@
 #include <QHash>
 #include <QList>
 #include <QObject>
+#include <QSharedPointer>
 #include <QTcpSocket>
 #include <QUuid>
 #include <QVector>
@@ -266,7 +267,7 @@ namespace PMP::Client
     private:
         void breakConnection(DisconnectReason reason);
 
-        uint getNewReference();
+        uint getNewClientReference();
         RequestID getNewRequestId();
         RequestID signalRequestError(ResultMessageErrorCode errorCode,
                              void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
@@ -298,6 +299,8 @@ namespace PMP::Client
                                           quint32 clientReference);
         void handleResultMessage(quint16 errorCode, quint32 clientReference,
                                  quint32 intData, QByteArray const& blobData);
+        quint32 registerResultHandler(QSharedPointer<ResultHandler> handler);
+        void discardResultHandler(quint32 clientReference);
         void handleServerEvent(ServerEventCode eventCode);
 
         void sendInitiateNewUserAccountMessage(QString login, quint32 clientReference);
@@ -409,7 +412,7 @@ namespace PMP::Client
         quint32 _userLoggedInId;
         QString _userLoggedInName;
         TriBool _doingFullIndexation;
-        QHash<uint, ResultHandler*> _resultHandlers;
+        QHash<uint, QSharedPointer<ResultHandler>> _resultHandlers;
         QHash<uint, CollectionFetcher*> _collectionFetchers;
         ServerHealthStatus _serverHealthStatus;
     };

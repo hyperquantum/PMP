@@ -952,9 +952,8 @@ namespace PMP::Client
     SimpleFuture<AnyResultMessageCode> ServerConnection::sendParameterlessActionRequest(
                                                              ParameterlessActionCode code)
     {
-        auto handler = new ParameterlessActionResultHandler(this, code);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler = QSharedPointer<ParameterlessActionResultHandler>::create(this, code);
+        auto ref = registerResultHandler(handler);
 
         // TODO : generate error if server does not support this request
 
@@ -1041,7 +1040,7 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    uint ServerConnection::getNewReference()
+    uint ServerConnection::getNewClientReference()
     {
         auto ref = _nextRef;
         _nextRef++;
@@ -1059,7 +1058,7 @@ namespace PMP::Client
 
     RequestID ServerConnection::getNewRequestId()
     {
-        return RequestID(getNewReference());
+        return RequestID(getNewClientReference());
     }
 
     RequestID ServerConnection::signalRequestError(ResultMessageErrorCode errorCode,
@@ -1109,9 +1108,8 @@ namespace PMP::Client
         if (!serverCapabilities().supportsDelayedStart())
             return serverTooOldFutureResult();
 
-        auto handler = new PromiseResultHandler(this);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler = QSharedPointer<PromiseResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
 
         qDebug() << "sending request to activate delayed start; delay:"
                  << delayMilliseconds << "ms; ref:" << ref;
@@ -1149,9 +1147,8 @@ namespace PMP::Client
 
         auto hash = _hashIdRepository->getHash(hashId);
 
-        auto handler = new TrackInsertionResultHandler(this, index);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler = QSharedPointer<TrackInsertionResultHandler>::create(this, index);
+        auto ref = registerResultHandler(handler);
 
         qDebug() << "sending request to add a track at index" << index << "; ref=" << ref;
 
@@ -1181,9 +1178,8 @@ namespace PMP::Client
             return signalServerTooOldError(&ServerConnection::queueEntryInsertionFailed);
         }
 
-        auto handler = new QueueEntryInsertionResultHandler(this);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler = QSharedPointer<QueueEntryInsertionResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
 
         qDebug() << "sending request to insert" << itemType << "at index" << index
                  << "; ref=" << ref;
@@ -1207,9 +1203,8 @@ namespace PMP::Client
 
     RequestID ServerConnection::duplicateQueueEntry(quint32 queueID)
     {
-        auto handler = new DuplicationResultHandler(this);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler = QSharedPointer<DuplicationResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
 
         qDebug() << "sending request to duplicate QID" << queueID << "; ref=" << ref;
 
@@ -1342,7 +1337,7 @@ namespace PMP::Client
 
     void ServerConnection::createNewUserAccount(QString login, QString password)
     {
-        _userAccountRegistrationRef = getNewReference();
+        _userAccountRegistrationRef = getNewClientReference();
         _userAccountRegistrationLogin = login;
         _userAccountRegistrationPassword = password;
 
@@ -1351,7 +1346,7 @@ namespace PMP::Client
 
     void ServerConnection::login(QString login, QString password)
     {
-        _userLoginRef = getNewReference();
+        _userLoginRef = getNewClientReference();
         _userLoggingIn = login;
         _userLoggingInPassword = password;
 
@@ -1544,9 +1539,10 @@ namespace PMP::Client
         if (_extensionsOther.isNotSupported(NetworkProtocolExtension::Scrobbling, 2))
             return serverTooOldFutureResult();
 
-        auto handler = new ScrobblingAuthenticationResultHandler(this, provider,username);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler =
+            QSharedPointer<ScrobblingAuthenticationResultHandler>::create(this, provider,
+                                                                          username);
+        auto ref = registerResultHandler(handler);
 
         UsernameAndPassword credentials;
         credentials.username = username;
@@ -1757,10 +1753,11 @@ namespace PMP::Client
     {
         fetcher->setParent(this);
 
-        auto handler = new CollectionFetchResultHandler(this, fetcher);
-        auto fetcherReference = getNewReference();
-        _resultHandlers[fetcherReference] = handler;
+        auto handler =
+            QSharedPointer<CollectionFetchResultHandler>::create(this, fetcher);
+        auto fetcherReference = registerResultHandler(handler);
         _collectionFetchers[fetcherReference] = fetcher;
+
         sendCollectionFetchRequestMessage(fetcherReference);
     }
 
@@ -2084,7 +2081,6 @@ namespace PMP::Client
             ExtensionResultMessageData data(extension, resultCode, clientReference);
 
             resultHandler->handleExtensionResult(data);
-            delete resultHandler;
             return;
         }
 
@@ -2810,7 +2806,6 @@ namespace PMP::Client
         {
             resultHandler->handleQueueEntryAdditionConfirmation(
                                                          clientReference, index, queueID);
-            delete resultHandler;
         }
         else
         {
@@ -3439,12 +3434,23 @@ namespace PMP::Client
         {
             ResultMessageData data(errorCodeEnum, clientReference, intData, blobData);
             resultHandler->handleResult(data);
-            delete resultHandler;
             return;
         }
 
         qWarning() << "error/result message cannot be handled; ref:" << clientReference
                    << " intData:" << intData << "; blobdata-length:" << blobData.size();
+    }
+
+    quint32 ServerConnection::registerResultHandler(QSharedPointer<ResultHandler> handler)
+    {
+        auto ref = getNewClientReference();
+        _resultHandlers[ref] = handler;
+        return ref;
+    }
+
+    void ServerConnection::discardResultHandler(quint32 clientReference)
+    {
+        _resultHandlers.remove(clientReference);
     }
 
     void ServerConnection::invalidMessageReceived(QByteArray const& message,
