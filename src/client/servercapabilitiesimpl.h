@@ -39,6 +39,7 @@ namespace PMP::Client
         bool supportsInsertingBreaksAtAnyIndex() const override;
         bool supportsInsertingBarriers() const override;
         bool supportsAlbumArtist() const override;
+        bool supportsRequestingPersonalTrackHistory() const override;
 
     private:
         int _serverProtocolNumber;

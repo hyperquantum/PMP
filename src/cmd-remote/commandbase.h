@@ -69,6 +69,18 @@ namespace PMP
         void setCommandExecutionResult(ScrobblingResultMessageCode code);
         void addCommandExecutionFutureListener(SimpleFuture<AnyResultMessageCode> future);
 
+        template <class T>
+        void addFailureHandler(Future<T, AnyResultMessageCode>& future)
+        {
+            future.addFailureListener(
+                this,
+                [this](AnyResultMessageCode errorCode)
+                {
+                    setCommandExecutionResult(errorCode);
+                }
+            );
+        }
+
         virtual void run(Client::ServerInterface* serverInterface) = 0;
 
     protected Q_SLOTS:

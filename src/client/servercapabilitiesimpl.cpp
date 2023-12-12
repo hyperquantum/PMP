@@ -71,4 +71,9 @@ namespace PMP::Client
     {
         return _serverProtocolNumber >= 24;
     }
+
+    bool ServerCapabilitiesImpl::supportsRequestingPersonalTrackHistory() const
+    {
+        return _serverProtocolNumber >= 25;
+    }
 }

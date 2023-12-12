@@ -293,7 +293,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     QObject::connect(
         &player, &Player::newHistoryEntry,
         scrobblingController,
-        [scrobblingController](QSharedPointer<PlayerHistoryEntry> entry)
+        [scrobblingController](QSharedPointer<RecentHistoryEntry> entry)
         {
             scrobblingController->wakeUp(entry->user());
         }

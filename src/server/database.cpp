@@ -996,10 +996,9 @@ namespace PMP::Server
         return success;
     }
 
-    QVector<HistoryRecord> Database::getUserHistoryForScrobbling(quint32 userId,
-                                                                 quint32 startId,
-                                                               QDateTime earliestDateTime,
-                                                                 int limit)
+    ResultOrError<QVector<HistoryRecord>, FailureType>
+        Database::getUserHistoryForScrobbling(quint32 userId, quint32 startId,
+                                              QDateTime earliestDateTime, int limit)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -1020,34 +1019,71 @@ namespace PMP::Server
                 q.addBindValue(limit);
             };
 
-        QVector<HistoryRecord> result;
-        result.reserve(limit);
-
-        auto resultGetter =
-            [&result] (QSqlQuery& q)
+        auto extractRecord =
+            [](QSqlQuery& q)
             {
-                while (q.next())
-                {
-                    HistoryRecord record;
-                    record.id = q.value(0).toUInt();
-                    record.hashId = q.value(1).toUInt();
-                    record.userId = q.value(2).toUInt();
-                    record.start = getUtcDateTime(q.value(3));
-                    record.end = getUtcDateTime(q.value(4));
-                    record.permillage = qint16(q.value(5).toInt());
-                    record.validForScoring = q.value(6).toBool();
+                HistoryRecord record;
+                record.id = q.value(0).toUInt();
+                record.hashId = q.value(1).toUInt();
+                record.userId = q.value(2).toUInt();
+                record.start = getUtcDateTime(q.value(3));
+                record.end = getUtcDateTime(q.value(4));
+                record.permillage = qint16(q.value(5).toInt());
+                record.validForScoring = q.value(6).toBool();
 
-                    result << record;
-                }
+                return record;
             };
 
-        if (!executeQuery(preparer, true, resultGetter)) /* error */
-        {
-            qWarning() << "Database::getUserHistoryForScrobbling : could not execute";
-            return {};
-        }
+        return executeRecords<HistoryRecord>(preparer, extractRecord, limit);
+    }
 
-        return result;
+    ResultOrError<QVector<HistoryRecord>, FailureType> Database::getTrackHistoryForUser(
+                                quint32 hashId, quint32 userId, uint startId, int limit)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                auto sql =
+                    (startId > 0)
+                    ? "SELECT"
+                      " HistoryID, UserID, `Start`, `End`, Permillage, ValidForScoring "
+                      "FROM pmp_history "
+                      "WHERE HashID=? AND UserID=? AND HistoryID < ? "
+                      "ORDER BY HistoryID DESC "
+                      "LIMIT ?"
+                    : "SELECT"
+                      " HistoryID, UserID, `Start`, `End`, Permillage, ValidForScoring "
+                      "FROM pmp_history "
+                      "WHERE HashID=? AND UserID=? "
+                      "ORDER BY HistoryID DESC "
+                      "LIMIT ?";
+
+                q.prepare(sql);
+                q.addBindValue(hashId);
+                q.addBindValue(userId);
+
+                if (startId > 0)
+                    q.addBindValue(startId);
+
+                q.addBindValue(limit);
+            };
+
+        auto extractRecord =
+            [hashId](QSqlQuery& q)
+            {
+                HistoryRecord record;
+                record.id = q.value(0).toUInt();
+                record.hashId = hashId;
+                record.userId = q.value(1).toUInt();
+                record.start = getUtcDateTime(q.value(2));
+                record.end = getUtcDateTime(q.value(3));
+                record.permillage = qint16(q.value(4).toInt());
+                record.validForScoring = q.value(5).toBool();
+
+                return record;
+            };
+
+        return executeRecords<HistoryRecord>(preparer, extractRecord, limit);
     }
 
     bool Database::setLastFmScrobblingEnabled(quint32 userId, bool enabled)

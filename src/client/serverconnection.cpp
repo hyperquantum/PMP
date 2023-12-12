@@ -90,6 +90,9 @@ namespace PMP::Client
         virtual void handleQueueEntryAdditionConfirmation(quint32 clientReference,
                                                           qint32 index, quint32 queueID);
 
+        virtual void handleHistoryFragment(quint32 clientReference,
+                                           HistoryFragment fragment);
+
     protected:
         ResultHandler(ServerConnection* parent);
 
@@ -132,6 +135,14 @@ namespace PMP::Client
         qWarning() << "ResultHandler does not handle queue entry addition confirmation;"
                    << " ref:" << clientReference << " index:" << index
                    << " QID:" << queueID;
+    }
+
+    void ServerConnection::ResultHandler::handleHistoryFragment(quint32 clientReference,
+                                                                HistoryFragment fragment)
+    {
+        qWarning() << "ResultHandler does not handle history fragments;"
+                   << " ref:" << clientReference
+                   << " entries count:" << fragment.entries().size();
     }
 
     QString ServerConnection::ResultHandler::errorDescription(
@@ -502,7 +513,52 @@ namespace PMP::Client
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 24;
+    class ServerConnection::HistoryFragmentResultHandler : public ResultHandler
+    {
+    public:
+        HistoryFragmentResultHandler(ServerConnection* parent);
+
+        Future<HistoryFragment, AnyResultMessageCode> future() const;
+
+        void handleResult(ResultMessageData const& data) override;
+
+        void handleHistoryFragment(quint32 clientReference,
+                                   HistoryFragment fragment) override;
+
+    private:
+        Promise<HistoryFragment, AnyResultMessageCode> _promise;
+    };
+
+    ServerConnection::HistoryFragmentResultHandler::HistoryFragmentResultHandler(
+        ServerConnection* parent)
+     : ResultHandler(parent)
+    {
+        //
+    }
+
+    Future<HistoryFragment, AnyResultMessageCode>
+        ServerConnection::HistoryFragmentResultHandler::future() const
+    {
+        return _promise.future();
+    }
+
+    void ServerConnection::HistoryFragmentResultHandler::handleResult(
+                                                            const ResultMessageData& data)
+    {
+        _promise.setError(data.errorType);
+    }
+
+    void ServerConnection::HistoryFragmentResultHandler::handleHistoryFragment(
+        quint32 clientReference, HistoryFragment fragment)
+    {
+        Q_UNUSED(clientReference)
+
+        _promise.setResult(fragment);
+    }
+
+    /* ============================================================================ */
+
+    const quint16 ServerConnection::ClientProtocolNo = 25;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -952,9 +1008,8 @@ namespace PMP::Client
     SimpleFuture<AnyResultMessageCode> ServerConnection::sendParameterlessActionRequest(
                                                              ParameterlessActionCode code)
     {
-        auto handler = new ParameterlessActionResultHandler(this, code);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler = QSharedPointer<ParameterlessActionResultHandler>::create(this, code);
+        auto ref = registerResultHandler(handler);
 
         // TODO : generate error if server does not support this request
 
@@ -1041,7 +1096,7 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    uint ServerConnection::getNewReference()
+    uint ServerConnection::getNewClientReference()
     {
         auto ref = _nextRef;
         _nextRef++;
@@ -1059,7 +1114,7 @@ namespace PMP::Client
 
     RequestID ServerConnection::getNewRequestId()
     {
-        return RequestID(getNewReference());
+        return RequestID(getNewClientReference());
     }
 
     RequestID ServerConnection::signalRequestError(ResultMessageErrorCode errorCode,
@@ -1092,6 +1147,11 @@ namespace PMP::Client
         return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
     }
 
+    FutureError<AnyResultMessageCode> ServerConnection::serverTooOldFutureError()
+    {
+        return FutureError(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
+    }
+
     SimpleFuture<AnyResultMessageCode> ServerConnection::reloadServerSettings()
     {
         if (!serverCapabilities().supportsReloadingServerSettings())
@@ -1109,9 +1169,8 @@ namespace PMP::Client
         if (!serverCapabilities().supportsDelayedStart())
             return serverTooOldFutureResult();
 
-        auto handler = new PromiseResultHandler(this);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler = QSharedPointer<PromiseResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
 
         qDebug() << "sending request to activate delayed start; delay:"
                  << delayMilliseconds << "ms; ref:" << ref;
@@ -1149,9 +1208,8 @@ namespace PMP::Client
 
         auto hash = _hashIdRepository->getHash(hashId);
 
-        auto handler = new TrackInsertionResultHandler(this, index);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler = QSharedPointer<TrackInsertionResultHandler>::create(this, index);
+        auto ref = registerResultHandler(handler);
 
         qDebug() << "sending request to add a track at index" << index << "; ref=" << ref;
 
@@ -1181,9 +1239,8 @@ namespace PMP::Client
             return signalServerTooOldError(&ServerConnection::queueEntryInsertionFailed);
         }
 
-        auto handler = new QueueEntryInsertionResultHandler(this);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler = QSharedPointer<QueueEntryInsertionResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
 
         qDebug() << "sending request to insert" << itemType << "at index" << index
                  << "; ref=" << ref;
@@ -1207,9 +1264,8 @@ namespace PMP::Client
 
     RequestID ServerConnection::duplicateQueueEntry(quint32 queueID)
     {
-        auto handler = new DuplicationResultHandler(this);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler = QSharedPointer<DuplicationResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
 
         qDebug() << "sending request to duplicate QID" << queueID << "; ref=" << ref;
 
@@ -1224,6 +1280,13 @@ namespace PMP::Client
         sendBinaryMessage(message);
 
         return RequestID(ref);
+    }
+
+    Future<HistoryFragment, AnyResultMessageCode>
+        ServerConnection::getPersonalTrackHistory(LocalHashId hashId, uint userId,
+                                                  int limit, uint startId)
+    {
+        return sendHashHistoryRequest(hashId, userId, limit, startId);
     }
 
     void ServerConnection::sendQueueEntryInfoRequest(uint queueID)
@@ -1327,6 +1390,43 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
+    Future<HistoryFragment, AnyResultMessageCode>
+        ServerConnection::sendHashHistoryRequest(LocalHashId hashId, uint userId,
+                                                 int limit, uint startId)
+    {
+        Q_ASSERT_X(!hashId.isZero(), "sendHashHistoryRequest", "hash ID is zero");
+        Q_ASSERT_X(userId < std::numeric_limits<quint32>::max(),
+                   "sendHashHistoryRequest",
+                   "userId is too large");
+        Q_ASSERT_X(limit > 0, "sendHashHistoryRequest", "limit must be positive");
+        Q_ASSERT_X(startId < std::numeric_limits<quint32>::max(),
+                   "sendHashHistoryRequest",
+                   "startId is too large");
+
+        if (!_serverCapabilities->supportsRequestingPersonalTrackHistory())
+            return serverTooOldFutureError();
+
+        auto hash = _hashIdRepository->getHash(hashId);
+        limit = qBound(0, limit, 255);
+
+        auto handler = QSharedPointer<HistoryFragmentResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
+
+        QByteArray message;
+        message.reserve(2 + 1 + 1 + 4 + 4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        NetworkProtocol::append2Bytes(message, ClientMessageType::PersonalHistoryRequest);
+        NetworkUtil::appendByte(message, 0); // filler
+        NetworkUtil::appendByteUnsigned(message, limit);
+        NetworkUtil::append4Bytes(message, static_cast<quint32>(userId));
+        NetworkUtil::append4Bytes(message, static_cast<quint32>(startId));
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkProtocol::appendHash(message, hash);
+
+        sendBinaryMessage(message);
+
+        return handler->future();
+    }
+
     void ServerConnection::sendPossibleFilenamesRequest(uint queueID)
     {
         qDebug() << "sending request for possible filenames of QID" << queueID;
@@ -1342,7 +1442,7 @@ namespace PMP::Client
 
     void ServerConnection::createNewUserAccount(QString login, QString password)
     {
-        _userAccountRegistrationRef = getNewReference();
+        _userAccountRegistrationRef = getNewClientReference();
         _userAccountRegistrationLogin = login;
         _userAccountRegistrationPassword = password;
 
@@ -1351,7 +1451,7 @@ namespace PMP::Client
 
     void ServerConnection::login(QString login, QString password)
     {
-        _userLoginRef = getNewReference();
+        _userLoginRef = getNewClientReference();
         _userLoggingIn = login;
         _userLoggingInPassword = password;
 
@@ -1544,9 +1644,10 @@ namespace PMP::Client
         if (_extensionsOther.isNotSupported(NetworkProtocolExtension::Scrobbling, 2))
             return serverTooOldFutureResult();
 
-        auto handler = new ScrobblingAuthenticationResultHandler(this, provider,username);
-        auto ref = getNewReference();
-        _resultHandlers[ref] = handler;
+        auto handler =
+            QSharedPointer<ScrobblingAuthenticationResultHandler>::create(this, provider,
+                                                                          username);
+        auto ref = registerResultHandler(handler);
 
         UsernameAndPassword credentials;
         credentials.username = username;
@@ -1757,10 +1858,11 @@ namespace PMP::Client
     {
         fetcher->setParent(this);
 
-        auto handler = new CollectionFetchResultHandler(this, fetcher);
-        auto fetcherReference = getNewReference();
-        _resultHandlers[fetcherReference] = handler;
+        auto handler =
+            QSharedPointer<CollectionFetchResultHandler>::create(this, fetcher);
+        auto fetcherReference = registerResultHandler(handler);
         _collectionFetchers[fetcherReference] = fetcher;
+
         sendCollectionFetchRequestMessage(fetcherReference);
     }
 
@@ -1916,113 +2018,119 @@ namespace PMP::Client
         {
         case ServerMessageType::KeepAliveMessage:
             parseKeepAliveMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerExtensionsMessage:
             parseServerProtocolExtensionsMessage(message);
-            break;
+            return;
         case PMP::ServerMessageType::ExtensionResultMessage:
             parseServerProtocolExtensionResultMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
-            break;
+            return;
         case ServerMessageType::PlayerStateMessage:
             parsePlayerStateMessage(message);
-            break;
+            return;
         case ServerMessageType::DelayedStartInfoMessage:
             parseDelayedStartInfoMessage(message);
-            break;
+            return;
         case ServerMessageType::VolumeChangedMessage:
             parseVolumeChangedMessage(message);
-            break;
+            return;
         case ServerMessageType::TrackInfoMessage:
             parseTrackInfoMessage(message);
-            break;
+            return;
         case ServerMessageType::BulkTrackInfoMessage:
             parseBulkTrackInfoMessage(message);
-            break;
+            return;
         case ServerMessageType::BulkQueueEntryHashMessage:
             parseBulkQueueEntryHashMessage(message);
-            break;
+            return;
         case ServerMessageType::QueueContentsMessage:
             parseQueueContentsMessage(message);
-            break;
+            return;
         case ServerMessageType::QueueEntryRemovedMessage:
             parseQueueEntryRemovedMessage(message);
-            break;
+            return;
         case ServerMessageType::QueueEntryAddedMessage:
             parseQueueEntryAddedMessage(message);
-            break;
+            return;
         case ServerMessageType::DynamicModeStatusMessage:
             parseDynamicModeStatusMessage(message);
-            break;
+            return;
         case ServerMessageType::PossibleFilenamesForQueueEntryMessage:
             parsePossibleFilenamesForQueueEntryMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerInstanceIdentifierMessage:
             parseServerInstanceIdentifierMessage(message);
-            break;
+            return;
         case ServerMessageType::QueueEntryMovedMessage:
             parseQueueEntryMovedMessage(message);
-            break;
+            return;
         case ServerMessageType::UsersListMessage:
             parseUsersListMessage(message);
-            break;
+            return;
         case ServerMessageType::NewUserAccountSaltMessage:
             parseNewUserAccountSaltMessage(message);
-            break;
+            return;
         case ServerMessageType::SimpleResultMessage:
             parseSimpleResultMessage(message);
-            break;
+            return;
         case ServerMessageType::UserLoginSaltMessage:
             parseUserLoginSaltMessage(message);
-            break;
+            return;
         case ServerMessageType::UserPlayingForModeMessage:
             parseUserPlayingForModeMessage(message);
-            break;
+            return;
         case ServerMessageType::CollectionFetchResponseMessage:
         case ServerMessageType::CollectionChangeNotificationMessage:
             parseTrackInfoBatchMessage(message, messageType);
-            break;
+            return;
         case ServerMessageType::ServerNameMessage:
             parseServerNameMessage(message);
-            break;
+            return;
         case ServerMessageType::HashUserDataMessage:
             parseHashUserDataMessage(message);
-            break;
+            return;
+        case ServerMessageType::HistoryFragmentMessage:
+            parseHistoryFragmentMessage(message);
+            return;
         case ServerMessageType::NewHistoryEntryMessage:
             parseNewHistoryEntryMessage(message);
-            break;
+            return;
         case ServerMessageType::PlayerHistoryMessage:
             parsePlayerHistoryMessage(message);
-            break;
+            return;
         case ServerMessageType::DatabaseIdentifierMessage:
             parseDatabaseIdentifierMessage(message);
-            break;
+            return;
         case ServerMessageType::DynamicModeWaveStatusMessage:
             parseDynamicModeWaveStatusMessage(message);
-            break;
+            return;
         case ServerMessageType::QueueEntryAdditionConfirmationMessage:
             parseQueueEntryAdditionConfirmationMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerHealthMessage:
             parseServerHealthMessage(message);
-            break;
+            return;
         case ServerMessageType::CollectionAvailabilityChangeNotificationMessage:
             parseTrackAvailabilityChangeBatchMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerClockMessage:
             parseServerClockMessage(message);
-            break;
+            return;
         case ServerMessageType::ServerVersionInfoMessage:
             parseServerVersionInfoMessage(message);
-            break;
-        default:
-            qDebug() << "received unknown binary message type"
-                     << static_cast<int>(messageType)
-                     << "with length" << message.length();
-            break; /* unknown message type */
+            return;
+        case PMP::ServerMessageType::None:
+            qDebug() << "received a message with type 'none' and length"
+                     << message.length();
+            return;
         }
+
+        qDebug() << "received unknown binary message type"
+                 << static_cast<int>(messageType)
+                 << "with length" << message.length();
     }
 
     void ServerConnection::handleExtensionMessage(quint8 extensionId, quint8 messageType,
@@ -2081,7 +2189,6 @@ namespace PMP::Client
             ExtensionResultMessageData data(extension, resultCode, clientReference);
 
             resultHandler->handleExtensionResult(data);
-            delete resultHandler;
             return;
         }
 
@@ -2807,7 +2914,6 @@ namespace PMP::Client
         {
             resultHandler->handleQueueEntryAdditionConfirmation(
                                                          clientReference, index, queueID);
-            delete resultHandler;
         }
         else
         {
@@ -3270,6 +3376,62 @@ namespace PMP::Client
         }
     }
 
+    void ServerConnection::parseHistoryFragmentMessage(const QByteArray& message)
+    {
+        if (message.length() < 8)
+            return; /* invalid message */
+
+        quint16 entryCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        uint nextStartId = NetworkUtil::get4Bytes(message, 8);
+
+        auto expectedMessageSize =
+            12 + entryCount * (24 + NetworkProtocol::FILEHASH_BYTECOUNT);
+
+        if (message.length() != expectedMessageSize)
+            return; /* invalid message */
+
+        qDebug() << "received history fragment message; client-ref:" << clientReference
+                 << " entry count:" << entryCount << " next start ID:" << nextStartId;
+
+        int offset = 12;
+
+        QVector<HistoryEntry> entries;
+        entries.reserve(entryCount);
+        for (int i = 0; i < entryCount; ++i)
+        {
+            quint32 userId = NetworkUtil::get4Bytes(message, offset);
+            QDateTime started =
+                NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 4);
+            QDateTime ended =
+                NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 12);
+            int permillage = NetworkUtil::get2BytesSigned(message, offset + 20);
+            quint16 status = NetworkUtil::get2Bytes(message, offset + 22);
+            offset += 24;
+
+            bool ok;
+            auto hash = NetworkProtocol::getHash(message, offset, &ok);
+            if (!ok)
+                return; /* invalid message */
+
+            offset += NetworkProtocol::FILEHASH_BYTECOUNT;
+
+            auto hashId = _hashIdRepository->getOrRegisterId(hash);
+            bool validForScoring = status & 1;
+
+            entries.append(
+                HistoryEntry { hashId, userId, started, ended, permillage,
+                               validForScoring }
+            );
+        }
+
+        HistoryFragment fragment { entries, nextStartId };
+
+        auto handler = _resultHandlers.take(clientReference);
+        if (handler)
+            handler->handleHistoryFragment(clientReference, fragment);
+    }
+
     void ServerConnection::parseNewHistoryEntryMessage(const QByteArray& message)
     {
         qDebug() << "parsing player history entry message";
@@ -3436,12 +3598,23 @@ namespace PMP::Client
         {
             ResultMessageData data(errorCodeEnum, clientReference, intData, blobData);
             resultHandler->handleResult(data);
-            delete resultHandler;
             return;
         }
 
         qWarning() << "error/result message cannot be handled; ref:" << clientReference
                    << " intData:" << intData << "; blobdata-length:" << blobData.size();
+    }
+
+    quint32 ServerConnection::registerResultHandler(QSharedPointer<ResultHandler> handler)
+    {
+        auto ref = getNewClientReference();
+        _resultHandlers[ref] = handler;
+        return ref;
+    }
+
+    void ServerConnection::discardResultHandler(quint32 clientReference)
+    {
+        _resultHandlers.remove(clientReference);
     }
 
     void ServerConnection::invalidMessageReceived(QByteArray const& message,

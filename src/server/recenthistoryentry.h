@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_PLAYERHISTORYENTRY_H
-#define PMP_PLAYERHISTORYENTRY_H
+#ifndef PMP_RECENTHISTORYENTRY_H
+#define PMP_RECENTHISTORYENTRY_H
 
 #include "common/filehash.h"
 
@@ -27,10 +27,10 @@
 
 namespace PMP::Server
 {
-    class PlayerHistoryEntry
+    class RecentHistoryEntry
     {
     public:
-        PlayerHistoryEntry(uint queueId, FileHash hash, uint user,
+        RecentHistoryEntry(uint queueId, FileHash hash, uint user,
                            QDateTime started, QDateTime ended,
                            bool hadError, bool hadSeek, int permillage)
          : _queueId(queueId), _hash(hash), _user(user), _started(started), _ended(ended),

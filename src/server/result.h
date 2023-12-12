@@ -42,11 +42,15 @@ namespace PMP::Server
         QueueItemTypeInvalid,
         DelayOutOfRange,
 
+        UserIdNotFound,
+
         ScrobblingSystemDisabled,
         ScrobblingProviderInvalid,
         ScrobblingProviderNotEnabled,
         ScrobblingAuthenticationFailed,
         UnspecifiedScrobblingBackendError,
+
+        DatabaseUnavailable,
 
         NotImplementedError,
         InternalError,
@@ -139,6 +143,8 @@ namespace PMP::Server
 
         static Result delayOutOfRange() { return Error(ResultCode::DelayOutOfRange); }
 
+        static Result userIdNotFound() { return Error(ResultCode::UserIdNotFound); }
+
         static Result scrobblingSystemDisabled()
         {
             return Error(ResultCode::ScrobblingSystemDisabled);
@@ -162,6 +168,11 @@ namespace PMP::Server
         static Result unspecifiedScrobblingBackendError()
         {
             return Error(ResultCode::UnspecifiedScrobblingBackendError);
+        }
+
+        static Result databaseUnvailable()
+        {
+            return Error(ResultCode::DatabaseUnavailable);
         }
 
         static Result notImplemented() { return Error(ResultCode::NotImplementedError); }

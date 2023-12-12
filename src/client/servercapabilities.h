@@ -35,6 +35,7 @@ namespace PMP::Client
         virtual bool supportsInsertingBreaksAtAnyIndex() const = 0;
         virtual bool supportsInsertingBarriers() const = 0;
         virtual bool supportsAlbumArtist() const = 0;
+        virtual bool supportsRequestingPersonalTrackHistory() const = 0;
 
     protected:
         ServerCapabilities() {}

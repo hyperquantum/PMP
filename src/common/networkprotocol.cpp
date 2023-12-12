@@ -287,10 +287,16 @@ namespace PMP
             return;
         }
 
+        auto oldBufferLength = buffer.length();
+
         NetworkUtil::append8Bytes(buffer, hashValue.length());
         buffer += hashValue.SHA1();
         buffer += hashValue.MD5();
-        // TODO: check if the length of what we added matches FILEHASH_BYTECOUNT
+
+        auto newBufferLength = buffer.length();
+        Q_ASSERT_X(newBufferLength - oldBufferLength == FILEHASH_BYTECOUNT,
+                   "NetworkProtocol::appendHash",
+                   "wrong number of bytes for a file hash");
     }
 
     FileHash NetworkProtocol::getHash(const QByteArray& buffer, int position, bool* ok)

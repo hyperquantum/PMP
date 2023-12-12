@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,7 +24,7 @@
 #include "common/future.h"
 #include "common/nullable.h"
 
-#include "playerhistoryentry.h"
+#include "recenthistoryentry.h"
 #include "trackstats.h"
 
 #include <QDateTime>
@@ -62,7 +62,7 @@ namespace PMP::Server
 
     private Q_SLOTS:
         void currentTrackChanged(QSharedPointer<QueueEntry const> newTrack);
-        void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
+        void newHistoryEntry(QSharedPointer<RecentHistoryEntry> entry);
 
     private:
         Player* _player;

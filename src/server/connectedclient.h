@@ -29,7 +29,8 @@
 
 #include "collectiontrackinfo.h"
 #include "hashstats.h"
-#include "playerhistoryentry.h"
+#include "historyentry.h"
+#include "recenthistoryentry.h"
 #include "result.h"
 #include "serverplayerstate.h"
 
@@ -84,7 +85,7 @@ namespace PMP::Server
                                           int waveTotalCount);
         void playerStateChanged(ServerPlayerState state);
         void currentTrackChanged(QSharedPointer<QueueEntry const> entry);
-        void newHistoryEntry(QSharedPointer<PlayerHistoryEntry> entry);
+        void newHistoryEntry(QSharedPointer<RecentHistoryEntry> entry);
         void trackPositionChanged(qint64 position);
         void onDelayedStartActiveChanged();
         void sendPlayerStateMessage();
@@ -183,8 +184,9 @@ namespace PMP::Server
                                                QVector<FileHash> unavailable);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
                                        QVector<CollectionTrackInfo> tracks);
-        void sendNewHistoryEntryMessage(QSharedPointer<PlayerHistoryEntry> entry);
+        void sendNewHistoryEntryMessage(QSharedPointer<RecentHistoryEntry> entry);
         void sendQueueHistoryMessage(int limit);
+        void sendHistoryFragmentMessage(uint clientReference, HistoryFragment fragment);
         void sendHashUserDataMessage(quint32 userId, QVector<HashStats> stats);
         void sendServerNameMessage();
         void sendServerHealthMessageIfNotEverythingOkay();
@@ -235,6 +237,7 @@ namespace PMP::Server
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
         void parseQueueEntryMoveRequestMessage(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
+        void parsePersonalHistoryRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
         void parseCurrentUserScrobblingProviderInfoRequestMessage(
                                                                QByteArray const& message);

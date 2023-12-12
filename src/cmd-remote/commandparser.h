@@ -127,6 +127,7 @@ namespace PMP
         void parseDelayedStartAt(CommandArguments& arguments);
         void parseDelayedStartWait(CommandArguments& arguments);
         void parseTrackStatsCommand(CommandArguments arguments);
+        void parseTrackHistoryCommand(CommandArguments arguments);
         void parseScrobblingCommand(CommandArguments arguments);
         void parseScrobblingEnableOrDisableCommand(CommandArguments& arguments,
                                                    bool enable);

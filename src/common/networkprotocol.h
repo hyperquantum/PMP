@@ -60,6 +60,7 @@ Changes for each version:
   22: single byte request 60, server msg 34: requesting server version information
   23: server msg 35, error code 241: more features for protocol extensions
   24: server msgs 18 & 19: add album artist to track info
+  25: client msg 27, server msg 36, error codes 26 & 120 & 121: fetch personal track history
 */
 
 namespace PMP
@@ -106,6 +107,7 @@ namespace PMP
         DelayedStartInfoMessage = 33,
         ServerVersionInfoMessage = 34,
         ExtensionResultMessage = 35,
+        HistoryFragmentMessage = 36,
     };
 
     enum class ScrobblingServerMessageType : quint8
@@ -144,6 +146,7 @@ namespace PMP
         InsertSpecialQueueItemRequest = 24,
         KeepAliveMessage = 25,
         ActivateDelayedStartRequest = 26,
+        PersonalHistoryRequest = 27,
     };
 
     enum class ScrobblingClientMessageType : quint8

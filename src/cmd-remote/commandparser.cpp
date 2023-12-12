@@ -359,6 +359,10 @@ namespace PMP
         {
             parseTrackStatsCommand(args);
         }
+        else if (command == "trackhistory")
+        {
+            parseTrackHistoryCommand(args);
+        }
         else if (command == "serverversion")
         {
             handleCommandNotRequiringArguments<ServerVersionCommand>(commandWithArgs);
@@ -714,6 +718,24 @@ namespace PMP
         }
 
         _command = new TrackStatsCommand(hash);
+    }
+
+    void CommandParser::parseTrackHistoryCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent() || arguments.haveMore())
+        {
+            _errorMessage = "Command 'trackhistory' requires exactly one argument!";
+            return;
+        }
+
+        auto hash = arguments.tryParseTrackHash();
+        if (hash.isNull())
+        {
+            _errorMessage = QString("Not a track hash: %1").arg(arguments.current());
+            return;
+        }
+
+        _command = new TrackHistoryCommand(hash);
     }
 
     void CommandParser::parseScrobblingCommand(CommandArguments arguments)

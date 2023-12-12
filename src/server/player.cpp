@@ -875,7 +875,7 @@ namespace PMP::Server
         Nullable<FileHash> hash = entry->hash();
 
         auto historyEntry =
-            QSharedPointer<PlayerHistoryEntry>::create(
+            QSharedPointer<RecentHistoryEntry>::create(
                 queueID, hash.value(), userPlayedFor, started, ended,
                 hadError, hadSeek, permillage
             );
@@ -897,7 +897,7 @@ namespace PMP::Server
         }
     }
 
-    void Player::performHistoryActions(QSharedPointer<PlayerHistoryEntry> historyEntry)
+    void Player::performHistoryActions(QSharedPointer<RecentHistoryEntry> historyEntry)
     {
         _queue.addToHistory(historyEntry);
 

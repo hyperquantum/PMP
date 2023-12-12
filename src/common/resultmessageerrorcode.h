@@ -50,11 +50,15 @@ namespace PMP
         InvalidQueueIndex = 23,
         InvalidQueueItemType = 24,
         InvalidTimeSpan = 25,
+        InvalidUserId = 26,
 
         MaximumQueueSizeExceeded = 50,
         OperationAlreadyRunning = 51,
 
         DatabaseProblem = 90,
+
+        TooMuchDataToReturn = 120,
+        NumberTooBigToReturn = 121,
 
         /// The server does not support the requested action because it is too old.
         /// This error code will probably only ever be used client-side.
