@@ -6,9 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Unreleased
 ### Added
+- Scrobbling to Last.fm.
 - Waiting spinner shown while loading the music collection.
 - Queue presence indicator in the music collection.
-- Music collection: ability to have two filters at the same time.
+- Music collection: ability to have three filters at the same time.
 - Music collection: new filter criteria "in the queue" and "not in the queue".
 - Music collection: new filter criterium "no longer available".
 - Music collection: new filter criteria "heard at least once" and "with score".
@@ -19,8 +20,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Music collection: new filter criterium "not heard in the last 5 years".
 - Music collection: new filter criteria "without title", "without artist", and "without album".
 - Music collection: display count of tracks shown.
+- Support for album artist.
+- User statistics display switch.
+- Track info dialog: user for track statistics can now be chosen.
+- Dynamic mode parameters: add "12 weeks" to repetition avoidance setting.
 - Command-line remote: new commands "serverversion", "personalmode", "publicmode", "dynamicmode" and "status".
+- Command-line remote: new commands "history" and "trackhistory".
 - Command-line remote: the "insert" command can now insert a track into the queue.
+- Hash tool: print album and album artist.
 - License file is now part of the release archive.
 - Run unit tests in GitHub Actions.
 
@@ -28,6 +35,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Music collection: change criterium "score ≤ 30" to "score < 30".
 - Music collection: change criterium "length ≤ 1 min." to "length < 1 min."
 - Server will now refuse to insert a track into the queue if the hash is not familiar.
+- Hash tool: all fields printed are now aligned.
+- Hash tool: log to file instead of console.
+- Console logging: prints date and time instead of just time.
 - Release archive for Windows renamed from "PMP_win64.zip" to "PMP-win64.zip".
 - PMP now requires CMake 3.21 or later.
 
@@ -36,7 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Music collection: remove criterium "not heard in the last 365 days".
 
 ### Fixed
-- Calculated hash was wrong if an APEv2 tag was present.
+- Incorrect hash if APEv2 tag present.
+- Incorrect score and last heard for the public user.
+- Client crash when receiving updated track data.
 
 ## 0.2.0 - 2022-11-15
 ### Added
