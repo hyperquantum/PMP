@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -174,6 +174,12 @@ namespace PMP::Server
 
         switch (lastFmErrorCode)
         {
+            case 4: /* not an official (documented) error code; we'll just try again */
+                qWarning() << "LFM error code" << lastFmErrorCode
+                           << ": should try again later";
+                Q_EMIT shouldTryAgainLater();
+                break;
+
             case 9: /* invalid session key, need to re-authenticate */
                 qWarning() << "LFM reports session key not valid (or not anymore)";
                 Q_EMIT mustInvalidateSessionKey();
