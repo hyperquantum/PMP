@@ -93,7 +93,7 @@ namespace PMP
     {
         Q_UNUSED(parent)
 
-        return 2;
+        return 3;
     }
 
     QVariant HistoryModel::headerData(int section, Qt::Orientation orientation,
@@ -105,6 +105,7 @@ namespace PMP
             {
             case 0: return QString(tr("Started"));
             case 1: return QString(tr("Ended"));
+            case 2: return QString(tr("Affects score"));
             }
         }
 
@@ -134,6 +135,10 @@ namespace PMP
                     auto ended = entry.ended()/*.addMSecs(_clientClockTimeOffsetMs)*/;
                     return ended.toLocalTime();
                 }
+                case 2:
+                    return entry.validForScoring()
+                               ? QString(tr("Yes"))
+                               : QString(tr("No"));
             }
         }
 
