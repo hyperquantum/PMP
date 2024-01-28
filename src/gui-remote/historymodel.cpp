@@ -160,6 +160,10 @@ namespace PMP
             beginRemoveRows({}, 0, _entries.size() - 1);
             _entries.clear();
             endRemoveRows();
+
+            _countTotal = 0;
+            _countForScore = 0;
+            Q_EMIT countsChanged();
         }
 
         if (_serverInterface->connected())
@@ -225,6 +229,8 @@ namespace PMP
         _entries.append(entries);
         endInsertRows();
 
+        addCounts(entries);
+
         auto& historyController = _serverInterface->historyController();
 
         auto state = _stateAtLastRequest;
@@ -241,5 +247,19 @@ namespace PMP
             }
         );
         //future.addFailureListener(this, [this](AnyResultMessageCode code) {});
+    }
+
+    void HistoryModel::addCounts(const QVector<Client::HistoryEntry>& entries)
+    {
+        auto extraCountTotal = entries.size();
+        auto extraCountForScore =
+            std::count_if(
+                entries.begin(), entries.end(),
+                [](HistoryEntry const& entry) { return entry.validForScoring(); }
+            );
+
+        _countTotal += extraCountTotal;
+        _countForScore += extraCountForScore;
+        Q_EMIT countsChanged();
     }
 }

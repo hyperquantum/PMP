@@ -47,6 +47,9 @@ namespace PMP
         Client::LocalHashId track() const;
         void setTrack(Client::LocalHashId hashId);
 
+        int countTotal() const { return _countTotal; }
+        int countForScore() const { return _countForScore; }
+
         int rowCount(const QModelIndex& parent = QModelIndex()) const override;
         int columnCount(const QModelIndex& parent = QModelIndex()) const override;
         QVariant headerData(int section, Qt::Orientation orientation,
@@ -54,12 +57,16 @@ namespace PMP
         QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
         Qt::ItemFlags flags(const QModelIndex& index) const override;
 
+    Q_SIGNALS:
+        void countsChanged();
+
     private:
         void reload();
         void sendInitialRequest();
         void onConnectedChanged();
         void handleHistoryRequestResult(Client::HistoryFragment fragment,
                                         uint stateExpected);
+        void addCounts(QVector<Client::HistoryEntry> const& entries);
 
         static const int _fragmentSizeLimit = 20;
 
@@ -68,6 +75,8 @@ namespace PMP
         uint _userId;
         Client::LocalHashId _hashId;
         QVector<Client::HistoryEntry> _entries;
+        int _countTotal { 0 };
+        int _countForScore { 0 };
     };
 }
 #endif

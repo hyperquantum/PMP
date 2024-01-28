@@ -163,6 +163,19 @@ namespace PMP
         _ui->historyTableView->setModel(_historyModel);
 
         connect(
+            _historyModel, &HistoryModel::countsChanged,
+            this,
+            [this]()
+            {
+                auto countTotal = _historyModel->countTotal();
+                auto countForScore = _historyModel->countForScore();
+
+                _ui->countTotalValueLabel->setText(QString::number(countTotal));
+                _ui->countForScoreValueLabel->setText(QString::number(countForScore));
+            }
+        );
+
+        connect(
             _ui->userComboBox, qOverload<int>(&QComboBox::currentIndexChanged),
             this,
             [this]()
