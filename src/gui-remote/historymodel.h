@@ -20,11 +20,15 @@
 #ifndef PMP_HISTORYMODEL_H
 #define PMP_HISTORYMODEL_H
 
+#include "common/playerhistorytrackinfo.h"
+
 #include "client/historyentry.h"
 #include "client/localhashid.h"
 
 #include <QAbstractTableModel>
 #include <QVector>
+
+#include <deque>
 
 namespace PMP::Client
 {
@@ -64,9 +68,11 @@ namespace PMP
         void reload();
         void sendInitialRequest();
         void onConnectedChanged();
+        void handleNewPlayerHistoryEntry(PMP::PlayerHistoryTrackInfo track);
         void handleHistoryRequestResult(Client::HistoryFragment fragment,
                                         uint stateExpected);
-        void addCounts(QVector<Client::HistoryEntry> const& entries);
+        void addToCounts(Client::HistoryEntry const& entry);
+        void addToCounts(QVector<Client::HistoryEntry> const& entries);
 
         static const int _fragmentSizeLimit = 20;
 
@@ -74,7 +80,7 @@ namespace PMP
         uint _stateAtLastRequest { 0 };
         uint _userId;
         Client::LocalHashId _hashId;
-        QVector<Client::HistoryEntry> _entries;
+        std::deque<Client::HistoryEntry> _entries;
         int _countTotal { 0 };
         int _countForScore { 0 };
     };

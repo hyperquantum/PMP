@@ -20,6 +20,7 @@
 #include "historymodel.h"
 
 #include "client/historycontroller.h"
+#include "client/queueentryinfostorage.h"
 #include "client/serverinterface.h"
 
 #include <QtDebug>
@@ -42,6 +43,10 @@ namespace PMP
 
         connect(_serverInterface, &ServerInterface::connectedChanged,
                 this, &HistoryModel::onConnectedChanged);
+
+        auto* historyController = &_serverInterface->historyController();
+        connect(historyController, &HistoryController::receivedPlayerHistoryEntry,
+                this, &HistoryModel::handleNewPlayerHistoryEntry);
 
         onConnectedChanged();
     }
@@ -86,7 +91,7 @@ namespace PMP
     {
         Q_UNUSED(parent)
 
-        return _entries.size();
+        return static_cast<int>(_entries.size());
     }
 
     int HistoryModel::columnCount(const QModelIndex& parent) const
@@ -155,9 +160,9 @@ namespace PMP
 
     void HistoryModel::reload()
     {
-        if (!_entries.isEmpty())
+        if (!_entries.empty())
         {
-            beginRemoveRows({}, 0, _entries.size() - 1);
+            beginRemoveRows({}, 0, static_cast<int>(_entries.size() - 1));
             _entries.clear();
             endRemoveRows();
 
@@ -203,6 +208,30 @@ namespace PMP
         }
     }
 
+    void HistoryModel::handleNewPlayerHistoryEntry(PlayerHistoryTrackInfo track)
+    {
+        if (!_entries.empty() && _entries[0].ended() > track.started())
+            return;
+
+        if (track.user() != _userId)
+            return;
+
+        auto* queueEntryInfo =
+            _serverInterface->queueEntryInfoStorage().entryInfoByQueueId(track.queueID());
+
+        if (queueEntryInfo->hashId() != _hashId)
+            return;
+
+        HistoryEntry newEntry(_hashId, _userId, track.started(), track.ended(),
+                              track.permillage(), track.validForScoring());
+
+        beginInsertRows({}, 0, 0);
+        _entries.push_front(newEntry);
+        endInsertRows();
+
+        addToCounts(newEntry);
+    }
+
     void HistoryModel::handleHistoryRequestResult(Client::HistoryFragment fragment,
                                                   uint stateExpected)
     {
@@ -223,13 +252,15 @@ namespace PMP
             std::reverse(entries.begin(), entries.end());
         }
 
-        auto existingRowsCount = _entries.size();
+        auto existingRowsCount = static_cast<int>(_entries.size());
 
-        beginInsertRows({}, existingRowsCount, existingRowsCount + entries.size() - 1);
-        _entries.append(entries);
+        beginInsertRows({},
+                        existingRowsCount,
+                        existingRowsCount + static_cast<int>(entries.size() - 1));
+        _entries.insert(_entries.end(), entries.begin(), entries.end());
         endInsertRows();
 
-        addCounts(entries);
+        addToCounts(entries);
 
         auto& historyController = _serverInterface->historyController();
 
@@ -249,7 +280,17 @@ namespace PMP
         //future.addFailureListener(this, [this](AnyResultMessageCode code) {});
     }
 
-    void HistoryModel::addCounts(const QVector<Client::HistoryEntry>& entries)
+    void HistoryModel::addToCounts(const Client::HistoryEntry& entry)
+    {
+        _countTotal++;
+
+        if (entry.validForScoring())
+            _countForScore++;
+
+        Q_EMIT countsChanged();
+    }
+
+    void HistoryModel::addToCounts(const QVector<Client::HistoryEntry>& entries)
     {
         auto extraCountTotal = entries.size();
         auto extraCountForScore =
