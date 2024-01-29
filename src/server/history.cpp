@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -120,11 +120,10 @@ namespace PMP::Server
                 [statistics, entry](uint hashId)
                 {
                     uint userId = entry->user();
-                    bool validForScoring = !(entry->hadError() || entry->hadSeek());
 
                     return statistics->addToHistory(userId, hashId, entry->started(),
                                                     entry->ended(), entry->permillage(),
-                                                    validForScoring);
+                                                    entry->validForScoring());
                 },
                 failureIdentityFunction
             );
