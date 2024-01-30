@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -1405,6 +1405,10 @@ namespace PMP::Client
 
         if (!_serverCapabilities->supportsRequestingPersonalTrackHistory())
             return serverTooOldFutureError();
+
+        qDebug() << "ServerConnection: sending request for track history;"
+                 << "hash ID:" << hashId << " user ID:" << userId << " limit:" << limit
+                 << "start ID:" << startId;
 
         auto hash = _hashIdRepository->getHash(hashId);
         limit = qBound(0, limit, 255);

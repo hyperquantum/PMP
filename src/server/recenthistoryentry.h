@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,6 +47,8 @@ namespace PMP::Server
         bool hadError() const { return _error; }
         bool hadSeek() const { return _seek; }
         int permillage() const { return _permillage; }
+
+        bool validForScoring() const { return !hadError() && !hadSeek(); }
 
     private:
         uint _queueId;

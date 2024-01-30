@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -40,6 +40,7 @@ namespace PMP::Client
 
 namespace PMP
 {
+    class HistoryModel;
     class UserForStatisticsDisplay;
 
     class TrackInfoDialog : public QDialog
@@ -78,6 +79,7 @@ namespace PMP
         void clearUserData();
 
         Ui::TrackInfoDialog* _ui;
+        HistoryModel* _historyModel { nullptr };
         Client::ServerInterface* _serverInterface;
         UserForStatisticsDisplay* _userStatisticsDisplay;
         QTimer* _lastHeardUpdateTimer;

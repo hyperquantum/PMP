@@ -46,15 +46,16 @@ namespace PMP
 
         Client::LocalHashId trackHashAt(int rowIndex) const;
 
-        int rowCount(const QModelIndex& parent = QModelIndex()) const;
-        int columnCount(const QModelIndex& parent = QModelIndex()) const;
+        int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+        int columnCount(const QModelIndex& parent = QModelIndex()) const override;
         QVariant headerData(int section, Qt::Orientation orientation,
-                            int role = Qt::DisplayRole) const;
-        QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
-        Qt::ItemFlags flags(const QModelIndex& index) const;
-        Qt::DropActions supportedDragActions() const;
-        Qt::DropActions supportedDropActions() const;
-        QMimeData* mimeData(const QModelIndexList& indexes) const;
+                            int role = Qt::DisplayRole) const override;
+        QVariant data(const QModelIndex& index,
+                      int role = Qt::DisplayRole) const override;
+        Qt::ItemFlags flags(const QModelIndex& index) const override;
+        Qt::DropActions supportedDragActions() const override;
+        Qt::DropActions supportedDropActions() const override;
+        QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
     private Q_SLOTS:
         void onReceivedPlayerHistoryEntry(PMP::PlayerHistoryTrackInfo track);
