@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,6 +31,7 @@
 #include "client/serverinterface.h"
 #include "client/userdatafetcher.h"
 
+#include "historymodel.h"
 #include "userforstatisticsdisplay.h"
 
 #include <QApplication>
@@ -154,7 +155,25 @@ namespace PMP
 
     void TrackInfoDialog::init()
     {
+        _userId = _userStatisticsDisplay->userId().valueOr(0);
+
         _ui->setupUi(this);
+
+        _historyModel = new HistoryModel(this, _userId, _trackHashId, _serverInterface);
+        _ui->historyTableView->setModel(_historyModel);
+
+        connect(
+            _historyModel, &HistoryModel::countsChanged,
+            this,
+            [this]()
+            {
+                auto countTotal = _historyModel->countTotal();
+                auto countForScore = _historyModel->countForScore();
+
+                _ui->countTotalValueLabel->setText(QString::number(countTotal));
+                _ui->countForScoreValueLabel->setText(QString::number(countForScore));
+            }
+        );
 
         connect(
             _ui->userComboBox, qOverload<int>(&QComboBox::currentIndexChanged),
@@ -166,6 +185,9 @@ namespace PMP
 
                 auto userId = _ui->userComboBox->currentData().value<int>();
                 _userId = userId;
+                _ui->usernameValueLabel->setText(_ui->userComboBox->currentText());
+
+                _historyModel->setUserId(_userId);
 
                 fillUserData(_trackHashId, _userId);
             }
@@ -179,8 +201,6 @@ namespace PMP
             layout->removeWidget(_ui->albumArtistLabel);
             layout->removeWidget(_ui->albumArtistValueLabel);
         }
-
-        _userId = _userStatisticsDisplay->userId().valueOr(0);
 
         _serverInterface->authenticationController()
             .getUserAccounts()
@@ -268,23 +288,35 @@ namespace PMP
 
         auto* combo = _ui->userComboBox;
         combo->clear();
+        _ui->usernameValueLabel->clear();
 
         int indexToSelect = -1;
 
         combo->addItem(tr("Public"), QVariant::fromValue(int(0)));
-        if (_userId == 0) { indexToSelect = 0; }
+        if (_userId == 0)
+        {
+            indexToSelect = 0;
+            _ui->usernameValueLabel->setText(tr("Public"));
+        }
 
         auto myUserId = _serverInterface->authenticationController().userLoggedInId();
         auto myUsername = _serverInterface->authenticationController().userLoggedInName();
         combo->addItem(myUsername, QVariant::fromValue(myUserId));
-        if (_userId == myUserId) { indexToSelect = 1; }
+        if (_userId == myUserId)
+        {
+            indexToSelect = 1;
+            _ui->usernameValueLabel->setText(myUsername);
+        }
 
         for (auto const& account : accounts)
         {
             if (account.userId == myUserId) continue; /* already added before the loop */
 
             if (account.userId == _userId && indexToSelect < 0)
+            {
                 indexToSelect = combo->count();
+                _ui->usernameValueLabel->setText(account.username);
+            }
 
             combo->addItem(account.username, QVariant::fromValue(account.userId));
         }
@@ -318,6 +350,8 @@ namespace PMP
     {
         auto hash = _serverInterface->hashIdRepository()->getHash(_trackHashId);
         _ui->hashValueLabel->setText(hash.toFancyString());
+
+        _historyModel->setTrack(_trackHashId);
     }
 
     void TrackInfoDialog::fillTrackDetails(const CollectionTrackInfo& trackInfo)
@@ -390,6 +424,7 @@ namespace PMP
         }
 
         _ui->scoreValueLabel->setText(scoreText);
+        _ui->scoreValueLabel2->setText(scoreText);
     }
 
     void TrackInfoDialog::clearTrackDetails()

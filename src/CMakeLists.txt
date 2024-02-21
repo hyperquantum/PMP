@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2023, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2024, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -200,6 +200,7 @@ set(PMP_GUI_REMOTE_SOURCES
     gui-remote/delayedstartnotification.cpp
     gui-remote/dynamicmodeparametersdialog.cpp
     gui-remote/gui-remote-metatypes.cpp
+    gui-remote/historymodel.cpp
     gui-remote/loginwidget.cpp
     gui-remote/mainwidget.cpp
     gui-remote/mainwindow.cpp
@@ -229,6 +230,7 @@ set(PMP_GUI_REMOTE_HEADERS
     gui-remote/delayedstartdialog.h
     gui-remote/delayedstartnotification.h
     gui-remote/dynamicmodeparametersdialog.h
+    gui-remote/historymodel.h
     gui-remote/loginwidget.h
     gui-remote/mainwidget.h
     gui-remote/mainwindow.h

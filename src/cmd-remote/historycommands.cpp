@@ -22,6 +22,7 @@
 #include "common/util.h"
 
 #include "client/historycontroller.h"
+#include "client/localhashidrepository.h"
 #include "client/queueentryinfostorage.h"
 #include "client/serverinterface.h"
 
@@ -151,5 +152,61 @@ namespace PMP
         }
 
         return StepResult::commandSuccessful(output);
+    }
+
+    /* ===== TrackHistoryCommand ===== */
+
+    TrackHistoryCommand::TrackHistoryCommand(const FileHash& hash)
+        : _hash(hash)
+    {
+        //
+    }
+
+    bool TrackHistoryCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void TrackHistoryCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto userId = serverInterface->userLoggedInId();
+        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
+
+        auto future =
+            serverInterface->historyController().getPersonalTrackHistory(hashId, userId,
+                                                                         _fetchLimit);
+
+        addFailureHandler(future);
+
+        future.addResultListener(
+            this,
+            [this](HistoryFragment fragment)
+            {
+                printResult(fragment);
+            }
+        );
+    }
+
+    void TrackHistoryCommand::printResult(const HistoryFragment& historyFragment)
+    {
+        QString output;
+        output.reserve(80 + 80 + 80 * _fetchLimit);
+
+        output += "      Started       |        Ended       ";
+
+        for (auto& entry : historyFragment.entries())
+        {
+            output += "\n";
+
+            auto startedAt = entry.started().toLocalTime();
+            output += startedAt.toString("yyyy-MM-dd HH:mm:ss");
+            output += " | ";
+
+            auto endedAt = entry.ended().toLocalTime();
+            output += endedAt.toString("yyyy-MM-dd HH:mm:ss");
+            //output += "|";
+        }
+
+        setCommandExecutionSuccessful(output);
     }
 }

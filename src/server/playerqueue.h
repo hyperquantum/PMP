@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,7 +23,7 @@
 #include "common/filehash.h"
 #include "common/specialqueueitemtype.h"
 
-#include "playerhistoryentry.h"
+#include "recenthistoryentry.h"
 #include "result.h"
 
 #include <QHash>
@@ -43,7 +43,7 @@ namespace PMP
 
 namespace PMP::Server
 {
-    class PlayerHistoryEntry;
+    class RecentHistoryEntry;
     class QueueEntry;
     class Resolver;
 
@@ -114,7 +114,7 @@ namespace PMP::Server
                        std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
                        std::function<void (uint)> queueIdNotifier);
 
-        QList<QSharedPointer<PlayerHistoryEntry> > recentHistory(int limit);
+        QList<QSharedPointer<RecentHistoryEntry>> recentHistory(int limit);
 
     public Q_SLOTS:
         //void clear(bool doNotifications);
@@ -126,7 +126,7 @@ namespace PMP::Server
         bool moveById(quint32 queueID, qint16 indexDiff);
         bool moveByIndex(int index, qint16 indexDiff);
 
-        void addToHistory(QSharedPointer<PlayerHistoryEntry> entry);
+        void addToHistory(QSharedPointer<RecentHistoryEntry> entry);
 
     Q_SIGNALS:
         void entryAdded(qint32 offset, quint32 queueID);
@@ -149,7 +149,7 @@ namespace PMP::Server
         uint _firstTrackQueueId;
         QHash<quint32, QSharedPointer<QueueEntry>> _idLookup;
         QQueue<QSharedPointer<QueueEntry>> _queue;
-        QQueue<QSharedPointer<PlayerHistoryEntry>> _history;
+        QQueue<QSharedPointer<RecentHistoryEntry>> _history;
         Resolver* _resolver;
         QTimer* _queueFrontChecker;
     };

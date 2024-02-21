@@ -30,6 +30,7 @@
 #include "common/versioninfo.h"
 
 #include "hashstats.h"
+#include "historyentry.h"
 #include "result.h"
 #include "serverplayerstate.h"
 
@@ -90,6 +91,11 @@ namespace PMP::Server
 
         void switchToPersonalMode();
         void switchToPublicMode();
+
+        Future<HistoryFragment, Result> getPersonalTrackHistory(FileHash hash,
+                                                                quint32 userId,
+                                                                uint startId,
+                                                                int limit);
 
         void requestScrobblingInfo();
         void setScrobblingProviderEnabled(ScrobblingProvider provider, bool enabled);

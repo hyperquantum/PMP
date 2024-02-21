@@ -1,6 +1,6 @@
 ﻿# Party Music Player [![license][license-badge]][LICENSE]
 
-Copyright (C) 2011-2023  Kevin André
+Copyright (C) 2011-2024  Kevin André
 
 Party Music Player, abbreviated as PMP, is a multi-user client-server music system. The server is responsible for playing music, and a separate program, a 'remote', is used to connect to the server and instruct it what to do. PMP has an advanced file tracking mechanism; it can deal with moved/renamed and duplicate files without any problems.
 
@@ -184,15 +184,17 @@ Finally you can build PMP itself. Run the following commands in a CMD terminal. 
 
 ## 6. Caveats / Limitations
 
-Since this project is in a very early stage of development, you can expect a few things to be missing or not working correctly ;)
+Some features usually found in music player software are still missing.
+Existing features may be incomplete or have some limitations.
 
- * Only MP3 and FLAC files supported for now  
-   → because file tracking is currently only implemented for those formats
- * Database requires MySQL (maybe MariaDB), SQLite is not an option
- * No automatic detection yet of new/modified/deleted files while the server is running, a full indexation must be started manually
- * Queue manipulation in the clients is still limited: only move/delete/insert of one entry at a time.
- * No custom filters for dynamic mode yet
- * Etc.
+ * File formats supported: only MP3 and FLAC  
+   → each (new) file format requires its own implementation of file tracking
+ * MySQL database is required for the server, SQLite is not an option
+ * Playlists are not supported yet
+ * No auto-detection yet of new/modified/deleted files while the server is running
+ * Limited queue manipulation in the clients: only move/delete/insert of single items
+ * Dynamic mode does not support custom filters yet
+ * ...
 
 
 ## 7. Planned Features / To-Do's

@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -26,7 +26,7 @@ set(PMP_ORGANIZATION_NAME "Party Music Player")
 set(PMP_ORGANIZATION_DOMAIN "hyperquantum.be")
 set(PMP_WEBSITE "http://hyperquantum.be/pmp")
 set(PMP_BUGREPORT_LOCATION "https://github.com/hyperquantum/PMP/issues")
-set(PMP_COPYRIGHT_YEARS "2014-2023")
+set(PMP_COPYRIGHT_YEARS "2014-2024")
 
 # create derived variables
 

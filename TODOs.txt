@@ -45,6 +45,7 @@ PERFORMANCE ISSUES
 
 IDEAS
 
+ ** UI: provide dark theme or dark mode
  * UI: move server selection, user account creation and authentication to pop-up dialogs
  * server selection: display servers recently used after verifying that they are still available
  * login: don't display user accounts that haven't been used in a long time
@@ -54,6 +55,7 @@ IDEAS
  *** player: auto-stop timer to make playback stop at or near a specified clock time
  * player: avoid accidental multiple clicks on "skip" affecting track score unnecessarily
  * player: 'seek to start of track' action or button
+ * player: visualize mouse position with a vertical line on the progress/seek bar
  * player: make track position display less precise while playing, it is too fast for the human eye anyway
  * queue: ability to put playback volume adjustments in the queue (the same way as breakpoints)
  * queue: ability to put pauses of a specified length in the queue
@@ -86,7 +88,6 @@ IDEAS
  * ability to ban a track permanently or temporarily; this will also hide it in the music collection
  * ability to set track property "play this less often" or "play this again soon"
  *** 'play now' option in the context menus of the music collection, the history, and maybe the queue
- * dark theme for the client
  * require the server password when registering a new user account
  * track info dialog: show indication if file is now playing
  * track info dialog: show indication if file is in the queue
@@ -95,7 +96,6 @@ IDEAS
  * track info dialog: display filename(s)
  * track info dialog: should become modeless
  * track info dialog: last heard: display "almost 3 months" ago instead of "2 months ago" when applicable
- **** track info dialog: show personal play history for that track
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner

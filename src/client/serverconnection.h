@@ -37,6 +37,7 @@
 #include "common/versioninfo.h"
 
 #include "collectiontrackinfo.h"
+#include "historyentry.h"
 #include "localhashid.h"
 
 #include <QByteArray>
@@ -45,6 +46,7 @@
 #include <QHash>
 #include <QList>
 #include <QObject>
+#include <QSharedPointer>
 #include <QTcpSocket>
 #include <QUuid>
 #include <QVector>
@@ -89,6 +91,7 @@ namespace PMP::Client
         class TrackInsertionResultHandler;
         class QueueEntryInsertionResultHandler;
         class DuplicationResultHandler;
+        class HistoryFragmentResultHandler;
 
     public:
         explicit ServerConnection(QObject* parent,
@@ -122,6 +125,9 @@ namespace PMP::Client
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
+        Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
+                                                        LocalHashId hashId, uint userId,
+                                                        int limit, uint startId = 0);
 
         SimpleFuture<AnyResultMessageCode> authenticateScrobbling(
                                                             ScrobblingProvider provider,
@@ -170,6 +176,9 @@ namespace PMP::Client
         void sendQueueEntryHashRequest(QList<uint> const& queueIDs);
 
         void sendHashUserDataRequest(quint32 userId, QList<LocalHashId> const& hashes);
+        Future<HistoryFragment, AnyResultMessageCode> sendHashHistoryRequest(
+                                                        LocalHashId hashId, uint userId,
+                                                        int limit, uint startId);
 
         void sendPossibleFilenamesRequest(uint queueID);
 
@@ -266,7 +275,7 @@ namespace PMP::Client
     private:
         void breakConnection(DisconnectReason reason);
 
-        uint getNewReference();
+        uint getNewClientReference();
         RequestID getNewRequestId();
         RequestID signalRequestError(ResultMessageErrorCode errorCode,
                              void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
@@ -275,6 +284,7 @@ namespace PMP::Client
                              void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
                                                                    RequestID));
         FutureResult<AnyResultMessageCode> serverTooOldFutureResult();
+        FutureError<AnyResultMessageCode> serverTooOldFutureError();
 
         void sendTextCommand(QString const& command);
         void appendScrobblingMessageStart(QByteArray& buffer,
@@ -298,6 +308,8 @@ namespace PMP::Client
                                           quint32 clientReference);
         void handleResultMessage(quint16 errorCode, quint32 clientReference,
                                  quint32 intData, QByteArray const& blobData);
+        quint32 registerResultHandler(QSharedPointer<ResultHandler> handler);
+        void discardResultHandler(quint32 clientReference);
         void handleServerEvent(ServerEventCode eventCode);
 
         void sendInitiateNewUserAccountMessage(QString login, quint32 clientReference);
@@ -368,6 +380,7 @@ namespace PMP::Client
                                         ServerMessageType messageType);
 
         void parseHashUserDataMessage(QByteArray const& message);
+        void parseHistoryFragmentMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);
 
@@ -409,7 +422,7 @@ namespace PMP::Client
         quint32 _userLoggedInId;
         QString _userLoggedInName;
         TriBool _doingFullIndexation;
-        QHash<uint, ResultHandler*> _resultHandlers;
+        QHash<uint, QSharedPointer<ResultHandler>> _resultHandlers;
         QHash<uint, CollectionFetcher*> _collectionFetchers;
         ServerHealthStatus _serverHealthStatus;
     };
