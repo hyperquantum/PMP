@@ -133,7 +133,7 @@ CD "%bin_dir%"
 "%CMAKE_BIN_DIR%\cmake.exe" ^
     --build . ^
     --config Release ^
-    -j 2 || GOTO :EOF
+    -j 4 || GOTO :EOF
 ECHO(
 
 :: copy files to directory structure for creating the ZIP archive
