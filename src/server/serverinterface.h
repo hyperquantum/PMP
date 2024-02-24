@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -47,6 +47,7 @@ namespace PMP::Server
     class DelayedStart;
     class Generator;
     class HashIdRegistrar;
+    class HashRelations;
     class History;
     class Player;
     class PlayerQueue;
@@ -72,7 +73,9 @@ namespace PMP::Server
     public:
         ServerInterface(ServerSettings* serverSettings, TcpServer* server, Player* player,
                         Generator* generator, History* history,
-                        HashIdRegistrar* hashIdRegistrar, Users* users,
+                        HashIdRegistrar* hashIdRegistrar,
+                        HashRelations* hashRelations,
+                        Users* users,
                         DelayedStart* delayedStart, Scrobbling* scrobbling);
 
         ~ServerInterface();
@@ -196,6 +199,7 @@ namespace PMP::Server
         Generator* _generator;
         History* _history;
         HashIdRegistrar* _hashIdRegistrar;
+        HashRelations* _hashRelations;
         Users* _users;
         DelayedStart* _delayedStart;
         Scrobbling* _scrobbling;

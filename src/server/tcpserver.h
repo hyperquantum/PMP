@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,6 +33,7 @@ namespace PMP::Server
     class DelayedStart;
     class Generator;
     class HashIdRegistrar;
+    class HashRelations;
     class History;
     class Player;
     class Scrobbling;
@@ -50,12 +51,14 @@ namespace PMP::Server
 
         bool listen(Player* player, Generator* generator, History* history,
                     HashIdRegistrar* hashIdRegistrar,
+                    HashRelations* hashRelations,
                     Users* users,
                     CollectionMonitor* collectionMonitor,
                     ServerHealthMonitor* serverHealthMonitor,
                     Scrobbling* scrobbling,
                     DelayedStart* delayedStart,
-                    const QHostAddress& address = QHostAddress::Any, quint16 port = 0);
+                    const QHostAddress& address = QHostAddress::Any,
+                    quint16 port = 0);
 
         QString errorString() const;
 
@@ -88,15 +91,16 @@ namespace PMP::Server
         QString _caption;
         QString _serverPassword;
         ServerSettings* _settings;
-        Player* _player;
-        Generator* _generator;
-        History* _history;
+        Player* _player { nullptr };
+        Generator* _generator { nullptr };
+        History* _history { nullptr };
         HashIdRegistrar* _hashIdRegistrar { nullptr };
-        Users* _users;
-        CollectionMonitor* _collectionMonitor;
-        ServerHealthMonitor* _serverHealthMonitor;
-        Scrobbling* _scrobbling;
-        DelayedStart* _delayedStart;
+        HashRelations* _hashRelations { nullptr };
+        Users* _users { nullptr };
+        CollectionMonitor* _collectionMonitor { nullptr };
+        ServerHealthMonitor* _serverHealthMonitor { nullptr };
+        Scrobbling* _scrobbling { nullptr };
+        DelayedStart* _delayedStart { nullptr };
         QTcpServer* _server;
         QUdpSocket* _udpSocket;
         QTimer* _broadcastTimer;

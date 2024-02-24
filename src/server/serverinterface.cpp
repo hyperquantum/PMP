@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,6 +28,7 @@
 #include "delayedstart.h"
 #include "generator.h"
 #include "hashidregistrar.h"
+#include "hashrelations.h"
 #include "history.h"
 #include "player.h"
 #include "playerqueue.h"
@@ -46,6 +47,7 @@ namespace PMP::Server
                                      Player* player, Generator* generator,
                                      History* history,
                                      HashIdRegistrar* hashIdRegistrar,
+                                     HashRelations* hashRelations,
                                      Users* users,
                                      DelayedStart* delayedStart, Scrobbling* scrobbling)
      : _userLoggedIn(0),
@@ -55,6 +57,7 @@ namespace PMP::Server
        _generator(generator),
        _history(history),
        _hashIdRegistrar(hashIdRegistrar),
+       _hashRelations(hashRelations),
        _users(users),
        _delayedStart(delayedStart),
        _scrobbling(scrobbling)
@@ -202,7 +205,8 @@ namespace PMP::Server
         if (maybeHashId == null)
             return FutureError(Error::hashIsUnknown());
 
-        auto hashId = maybeHashId.value();
+        auto hashIds =
+            _hashRelations->getEquivalencyGroup(maybeHashId.value());
 
         if (!_users->checkUserIdExists(userId))
             return FutureError(Error::userIdNotFound());
@@ -211,7 +215,7 @@ namespace PMP::Server
 
         auto future =
             Concurrent::run<HistoryFragment, Result>(
-                [hashId, hash, userId, startId, limit]()
+                [hashIds, hash, userId, startId, limit]()
                     -> ResultOrError<HistoryFragment, Result>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
@@ -219,7 +223,7 @@ namespace PMP::Server
                         return Error::databaseUnvailable();
 
                     const auto recordsOrFailure =
-                        db->getTrackHistoryForUser(hashId, userId, startId, limit);
+                        db->getTrackHistoryForUser(userId, hashIds, startId, limit);
 
                     if (recordsOrFailure.failed())
                         return Error::internalError();
