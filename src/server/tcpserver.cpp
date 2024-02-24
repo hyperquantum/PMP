@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -43,14 +43,6 @@ namespace PMP::Server
      : QObject(parent),
        _uuid(serverInstanceIdentifier),
        _settings(serverSettings),
-       _player(nullptr),
-       _generator(nullptr),
-       _history(nullptr),
-       _users(nullptr),
-       _collectionMonitor(nullptr),
-       _serverHealthMonitor(nullptr),
-       _scrobbling(nullptr),
-       _delayedStart(nullptr),
        _server(new QTcpServer(this)),
        _udpSocket(new QUdpSocket(this)),
        _broadcastTimer(new QTimer(this)),
@@ -124,6 +116,7 @@ namespace PMP::Server
 
     bool TcpServer::listen(Player* player, Generator* generator, History* history,
                         HashIdRegistrar* hashIdRegistrar,
+                        HashRelations* hashRelations,
                         Users* users,
                         CollectionMonitor* collectionMonitor,
                         ServerHealthMonitor* serverHealthMonitor,
@@ -135,6 +128,7 @@ namespace PMP::Server
         _generator = generator;
         _history = history;
         _hashIdRegistrar = hashIdRegistrar;
+        _hashRelations = hashRelations;
         _users = users;
         _collectionMonitor = collectionMonitor;
         _serverHealthMonitor = serverHealthMonitor;
@@ -247,6 +241,7 @@ namespace PMP::Server
                                     _generator,
                                     _history,
                                     _hashIdRegistrar,
+                                    _hashRelations,
                                     _users,
                                     _delayedStart,
                                     _scrobbling);

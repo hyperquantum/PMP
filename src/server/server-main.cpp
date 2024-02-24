@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -315,7 +315,8 @@ static int runServer(QCoreApplication& app, bool doIndexation)
 
     TcpServer server(nullptr, &serverSettings, serverInstanceIdentifier);
     bool listening =
-        server.listen(&player, &generator, &history, &hashIdRegistrar, &users,
+        server.listen(&player, &generator, &history, &hashIdRegistrar, &hashRelations,
+                      &users,
                       &collectionMonitor, &serverHealthMonitor, &scrobbling,
                       &delayedStart,
                       QHostAddress::Any, 23432);

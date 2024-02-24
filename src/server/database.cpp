@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -1038,7 +1038,7 @@ namespace PMP::Server
     }
 
     ResultOrError<QVector<HistoryRecord>, FailureType> Database::getTrackHistoryForUser(
-                                quint32 hashId, quint32 userId, uint startId, int limit)
+                        quint32 userId, QVector<quint32> hashIds, uint startId, int limit)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -1046,20 +1046,25 @@ namespace PMP::Server
                 auto sql =
                     (startId > 0)
                     ? "SELECT"
-                      " HistoryID, UserID, `Start`, `End`, Permillage, ValidForScoring "
+                      " HistoryID,HashID,UserID,`Start`,`End`,Permillage,ValidForScoring "
                       "FROM pmp_history "
-                      "WHERE HashID=? AND UserID=? AND HistoryID < ? "
+                      "WHERE HashID IN " + buildParamsList(hashIds.size()) +
+                      " AND UserID=? AND HistoryID < ? "
                       "ORDER BY HistoryID DESC "
                       "LIMIT ?"
                     : "SELECT"
-                      " HistoryID, UserID, `Start`, `End`, Permillage, ValidForScoring "
+                      " HistoryID,HashID,UserID,`Start`,`End`,Permillage,ValidForScoring "
                       "FROM pmp_history "
-                      "WHERE HashID=? AND UserID=? "
+                      "WHERE HashID IN " + buildParamsList(hashIds.size()) +
+                      " AND UserID=? "
                       "ORDER BY HistoryID DESC "
                       "LIMIT ?";
 
                 q.prepare(sql);
-                q.addBindValue(hashId);
+                for (auto hashId : qAsConst(hashIds))
+                {
+                    q.addBindValue(hashId);
+                }
                 q.addBindValue(userId);
 
                 if (startId > 0)
@@ -1069,16 +1074,16 @@ namespace PMP::Server
             };
 
         auto extractRecord =
-            [hashId](QSqlQuery& q)
+            [](QSqlQuery& q)
             {
                 HistoryRecord record;
                 record.id = q.value(0).toUInt();
-                record.hashId = hashId;
-                record.userId = q.value(1).toUInt();
-                record.start = getUtcDateTime(q.value(2));
-                record.end = getUtcDateTime(q.value(3));
-                record.permillage = qint16(q.value(4).toInt());
-                record.validForScoring = q.value(5).toBool();
+                record.hashId = q.value(1).toUInt();
+                record.userId = q.value(2).toUInt();
+                record.start = getUtcDateTime(q.value(3));
+                record.end = getUtcDateTime(q.value(4));
+                record.permillage = qint16(q.value(5).toInt());
+                record.validForScoring = q.value(6).toBool();
 
                 return record;
             };

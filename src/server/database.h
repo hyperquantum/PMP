@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -113,8 +113,8 @@ namespace PMP::Server
                                                             int limit);
         ResultOrError<QVector<DatabaseRecords::HistoryRecord>, FailureType>
                                                                    getTrackHistoryForUser(
-                                                                quint32 hashId,
                                                                 quint32 userId,
+                                                                QVector<quint32> hashIds,
                                                                 uint startId,
                                                                 int limit);
 
