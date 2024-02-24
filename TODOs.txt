@@ -70,6 +70,8 @@ IDEAS
  * music collection: add 'quick scan' for finding and analyzing new/changed files
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  * music collection: add quick search function, for searching while leaving the current filters unchanged
+ * music collection: new action: add track before first interruption (break/barrier)
+ * music collection: search for tracks by hash
  *** dynamic mode: detect and prevent track repetition with different hash values
  *** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
@@ -96,13 +98,14 @@ IDEAS
  * track info dialog: display filename(s)
  * track info dialog: should become modeless
  * track info dialog: last heard: display "almost 3 months" ago instead of "2 months ago" when applicable
+ * track info dialog: put track title/artist in dialog title
  * provide list of all artists/albums in the collection
  * guest account for party guests; probably without personal mode
  * giant "now playing" screen banner
  * visualize sound wave
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
  * client: ability to reconnect to the server after the connection was broken
- * add button to copy title and artist of current track to clipboard
+ * add action (context menu?) to copy title and artist of current track to clipboard
  * server database backup and restore
  * detect track BPM automatically
  * command-line remote: add a command for seeking (going to a specific time in the current track)
