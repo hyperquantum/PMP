@@ -76,6 +76,7 @@ IDEAS
  *** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
  ** dynamic mode: try to enqueue "new" tracks and tracks without score regularly
+ * dynamic mode: new mode that plays "new" tracks exclusively
  * power management: close connections when the server machine enters sleep mode
  * power management: don't let the server machine go to sleep while music is playing
  *** thumbs up/down buttons for the song that is playing and for the history, to affect the score a little bit
