@@ -64,6 +64,19 @@ namespace PMP
         setCommandExecutionSuccessful(text);
     }
 
+    /* ===== StartFullIndexationCommand ===== */
+
+    bool StartFullIndexationCommand::requiresAuthentication() const
+    {
+        return true;
+    }
+
+    void StartFullIndexationCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto future = serverInterface->generalController().startFullIndexation();
+        addCommandExecutionFutureListener(future);
+    }
+
     /* ===== ReloadServerSettingsCommand ===== */
 
     void ReloadServerSettingsCommand::run(ServerInterface* serverInterface)

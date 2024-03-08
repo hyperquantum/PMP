@@ -300,7 +300,7 @@ namespace PMP::Client
             return "delayed start deactivation";
 
         case PMP::ParameterlessActionCode::StartFullIndexation:
-            return "full indexation start";
+            return "start of full indexation";
         }
 
         return "action with code " + QString::number(static_cast<int>(_code));

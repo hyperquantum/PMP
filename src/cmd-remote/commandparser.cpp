@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -351,6 +351,10 @@ namespace PMP
         {
             parseInsertCommand(args);
         }
+        else if (command == "start")
+        {
+            parseStartCommand(args);
+        }
         else if (command == "delayedstart")
         {
             parseDelayedStartCommand(args);
@@ -565,6 +569,43 @@ namespace PMP
         }
 
         _command = commandBuilder.buildCommand();
+    }
+
+    void CommandParser::parseStartCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Command 'start' requires arguments!";
+            return;
+        }
+
+        if (arguments.current() == "indexation")
+        {
+            arguments.advance();
+            parseStartIndexationCommand(arguments);
+        }
+        else
+        {
+            _errorMessage = "Expected 'indexation' after 'start'!";
+        }
+    }
+
+    void CommandParser::parseStartIndexationCommand(CommandArguments& arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _command = new StartFullIndexationCommand();
+            return;
+        }
+
+        if (arguments.current() == "full")
+        {
+            _command = new StartFullIndexationCommand();
+        }
+        else
+        {
+            _errorMessage = "Expected either 'full' or no arguments after 'indexation'!";
+        }
     }
 
     void CommandParser::parseDelayedStartCommand(CommandArguments arguments)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -66,6 +66,11 @@ namespace PMP::Client
     qint64 GeneralControllerImpl::clientClockTimeOffsetMs() const
     {
         return _clientClockTimeOffsetMs;
+    }
+
+    SimpleFuture<AnyResultMessageCode> GeneralControllerImpl::startFullIndexation()
+    {
+        return _connection->startFullIndexation();
     }
 
     SimpleFuture<AnyResultMessageCode> GeneralControllerImpl::reloadServerSettings()

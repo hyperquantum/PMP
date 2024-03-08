@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -123,6 +123,8 @@ namespace PMP
         void parseExplicitLoginAndSeparator(QVector<QString>& commandWithArgs);
         void parseCommand(QVector<QString> commandWithArgs);
         void parseInsertCommand(CommandArguments arguments);
+        void parseStartCommand(CommandArguments arguments);
+        void parseStartIndexationCommand(CommandArguments& arguments);
         void parseDelayedStartCommand(CommandArguments arguments);
         void parseDelayedStartAt(CommandArguments& arguments);
         void parseDelayedStartWait(CommandArguments& arguments);

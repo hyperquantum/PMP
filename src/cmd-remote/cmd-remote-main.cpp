@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -57,6 +57,7 @@ usage:
     qdel <QID>: delete an entry from the queue
     qmove <QID> <-diff>: move a track up in the queue (e.g. -3)
     qmove <QID> <+diff>: move a track down in the queue (eg. +2)
+    start indexation [full]: start a full indexation of music files
     scrobbling enable|disable <provider>: enable scrobbling for the current user
     scrobbling status <provider>: get scrobbling status
     scrobbling authenticate <provider>: enter credentials for scrobbling
