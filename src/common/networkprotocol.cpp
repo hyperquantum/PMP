@@ -423,6 +423,9 @@ namespace PMP
 
         case ParameterlessActionCode::DeactivateDelayedStart:
             return 20;
+
+        case ParameterlessActionCode::StartFullIndexation:
+            return 26;
         }
 
         return -1; /* invalid value, not supported */

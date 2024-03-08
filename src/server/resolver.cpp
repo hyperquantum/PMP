@@ -463,10 +463,10 @@ namespace PMP::Server
         return _fullIndexationStatus != FullIndexationStatus::NotRunning;
     }
 
-    bool Resolver::startFullIndexation()
+    Result Resolver::startFullIndexation()
     {
         if (fullIndexationRunning())
-            return false; /* already running */
+            return Error::operationAlreadyRunning();
 
         qDebug() << "full indexation starting";
         _fullIndexationNumber += 2; /* add 2 so it will never become zero */
@@ -474,7 +474,7 @@ namespace PMP::Server
         Q_EMIT fullIndexationRunStatusChanged(true);
         QtConcurrent::run(this, &Resolver::doFullIndexationFileSystemTraversal);
 
-        return true;
+        return Success();
     }
 
     void Resolver::onFullIndexationFinished()

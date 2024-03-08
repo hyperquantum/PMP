@@ -29,6 +29,7 @@
 #include "collectiontrackinfo.h"
 #include "fileanalysis.h"
 #include "filelocations.h"
+#include "result.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -58,7 +59,7 @@ namespace PMP::Server
         void setMusicPaths(QStringList paths);
         QStringList musicPaths();
 
-        bool startFullIndexation();
+        Result startFullIndexation();
         bool fullIndexationRunning();
 
         Future<QString, FailureType> findPathForHashAsync(FileHash hash);

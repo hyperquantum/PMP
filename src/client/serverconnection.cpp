@@ -298,6 +298,9 @@ namespace PMP::Client
 
         case ParameterlessActionCode::DeactivateDelayedStart:
             return "delayed start deactivation";
+
+        case PMP::ParameterlessActionCode::StartFullIndexation:
+            return "full indexation start";
         }
 
         return "action with code " + QString::number(static_cast<int>(_code));
@@ -558,7 +561,7 @@ namespace PMP::Client
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 25;
+    const quint16 ServerConnection::ClientProtocolNo = 26;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -1143,6 +1146,11 @@ namespace PMP::Client
         return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
     }
 
+    FutureResult<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
+    {
+        return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::NoError));
+    }
+
     FutureResult<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
     {
         return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
@@ -1162,6 +1170,20 @@ namespace PMP::Client
 
         return sendParameterlessActionRequest(
                                            ParameterlessActionCode::ReloadServerSettings);
+    }
+
+    SimpleFuture<AnyResultMessageCode> ServerConnection::startFullIndexation()
+    {
+        qDebug() << "sending request to start a full indexation";
+
+        if (_serverProtocolNo < 26)
+        {
+            sendSingleByteAction(40); /* 40 = start full indexation */
+            return noErrorFutureResult();
+        }
+
+        return sendParameterlessActionRequest(
+            ParameterlessActionCode::StartFullIndexation);
     }
 
     SimpleFuture<AnyResultMessageCode> ServerConnection::activateDelayedStart(
@@ -1847,11 +1869,6 @@ namespace PMP::Client
     void ServerConnection::terminateDynamicModeWave()
     {
         sendSingleByteAction(25); /* 25 = terminate dynamic mode wave */
-    }
-
-    void ServerConnection::startFullIndexation()
-    {
-        sendSingleByteAction(40); /* 40 = start full indexation */
     }
 
     void ServerConnection::requestFullIndexationRunningStatus()

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,7 +44,7 @@ namespace PMP::Server
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 25;
+    const qint16 ConnectedClient::ServerProtocolNo = 26;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -3197,6 +3197,12 @@ namespace PMP::Server
         case ParameterlessActionCode::DeactivateDelayedStart:
             {
                 auto result = _serverInterface->deactivateDelayedStart();
+                sendResultMessage(result, clientReference);
+                return;
+            }
+        case PMP::ParameterlessActionCode::StartFullIndexation:
+            {
+                auto result = _serverInterface->startFullIndexation();
                 sendResultMessage(result, clientReference);
                 return;
             }

@@ -61,6 +61,7 @@ Changes for each version:
   23: server msg 35, error code 241: more features for protocol extensions
   24: server msgs 18 & 19: add album artist to track info
   25: client msg 27, server msg 36, error codes 26 & 120 & 121: fetch personal track history
+  26: (WIP) parameterless action 60: full indexation as parameterless action
 */
 
 namespace PMP
@@ -172,6 +173,10 @@ namespace PMP
 
         /* 30 - 59 : player */
         DeactivateDelayedStart = 40,
+
+        /* 60 - 79 : music collection */
+        StartFullIndexation = 60,
+        //StartQuickScanForNewFiles = 61,
     };
 
     struct UsernameAndPassword

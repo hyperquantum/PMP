@@ -91,6 +91,7 @@ namespace PMP::Server
         void setLoggedIn(quint32 userId, QString userLogin);
 
         SimpleFuture<ResultMessageErrorCode> reloadServerSettings();
+        Result startFullIndexation();
 
         void switchToPersonalMode();
         void switchToPublicMode();
@@ -141,8 +142,6 @@ namespace PMP::Server
         void startDynamicModeWave();
         void terminateDynamicModeWave();
         void setTrackRepetitionAvoidanceSeconds(int seconds);
-
-        void startFullIndexation();
 
         void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
 

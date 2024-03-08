@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -119,6 +119,7 @@ namespace PMP::Client
         void fetchCollection(CollectionFetcher* fetcher);
 
         SimpleFuture<AnyResultMessageCode> reloadServerSettings();
+        SimpleFuture<AnyResultMessageCode> startFullIndexation();
         SimpleFuture<AnyResultMessageCode> activateDelayedStart(qint64 delayMilliseconds);
         SimpleFuture<AnyResultMessageCode> deactivateDelayedStart();
         RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index);
@@ -196,7 +197,6 @@ namespace PMP::Client
         void enableScrobblingForCurrentUser(ScrobblingProvider provider);
         void disableScrobblingForCurrentUser(ScrobblingProvider provider);
 
-        void startFullIndexation();
         void requestFullIndexationRunningStatus();
 
     Q_SIGNALS:
@@ -283,6 +283,7 @@ namespace PMP::Client
         RequestID signalServerTooOldError(
                              void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
                                                                    RequestID));
+        FutureResult<AnyResultMessageCode> noErrorFutureResult();
         FutureResult<AnyResultMessageCode> serverTooOldFutureResult();
         FutureError<AnyResultMessageCode> serverTooOldFutureError();
 

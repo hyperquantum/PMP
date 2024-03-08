@@ -173,6 +173,14 @@ namespace PMP::Server
         return promise.future();
     }
 
+    Result ServerInterface::startFullIndexation()
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _player->resolver().startFullIndexation();
+    }
+
     void ServerInterface::switchToPersonalMode()
     {
         if (!isLoggedIn()) return;
@@ -600,12 +608,6 @@ namespace PMP::Server
                  << seconds << "seconds";
 
         _generator->setNoRepetitionSpanSeconds(seconds);
-    }
-
-    void ServerInterface::startFullIndexation()
-    {
-        if (!isLoggedIn()) return;
-        _player->resolver().startFullIndexation();
     }
 
     void ServerInterface::requestHashUserData(quint32 userId, QVector<FileHash> hashes)
