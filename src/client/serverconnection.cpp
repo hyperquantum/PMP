@@ -1008,10 +1008,11 @@ namespace PMP::Client
     SimpleFuture<AnyResultMessageCode> ServerConnection::sendParameterlessActionRequest(
                                                              ParameterlessActionCode code)
     {
+        if (NetworkProtocol::isSupported(code, _serverProtocolNo) == false)
+            return serverTooOldFutureResult();
+
         auto handler = QSharedPointer<ParameterlessActionResultHandler>::create(this, code);
         auto ref = registerResultHandler(handler);
-
-        // TODO : generate error if server does not support this request
 
         quint16 numericActionCode = static_cast<quint16>(code);
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,6 +34,18 @@
 
 namespace PMP
 {
+    bool NetworkProtocol::isSupported(ParameterlessActionCode action, int protocolVersion)
+    {
+        auto minimumProtocolVersion = getMinimumProtocolVersionThatSupports(action);
+        if (minimumProtocolVersion < 0)
+        {
+            qWarning() << "ParameterlessActionCode" << int(action) << "is invalid";
+            return false;
+        }
+
+        return protocolVersion >= minimumProtocolVersion;
+    }
+
     void NetworkProtocol::append2Bytes(QByteArray& buffer, ServerMessageType messageType)
     {
         NetworkUtil::append2Bytes(buffer, static_cast<quint16>(messageType));
@@ -396,6 +408,24 @@ namespace PMP
         credentials.password = QString::fromUtf8(passwordBytes);
 
         return credentials;
+    }
+
+    int NetworkProtocol::getMinimumProtocolVersionThatSupports(
+                                                        ParameterlessActionCode action)
+    {
+        switch (action)
+        {
+        case ParameterlessActionCode::Reserved:
+            return -1; /* invalid value, not supported */
+
+        case ParameterlessActionCode::ReloadServerSettings:
+            return 15;
+
+        case ParameterlessActionCode::DeactivateDelayedStart:
+            return 20;
+        }
+
+        return -1; /* invalid value, not supported */
     }
 
     quint64 NetworkProtocol::getScrobblingAuthenticationObfuscationKey(quint8 keyId)

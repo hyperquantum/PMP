@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -189,6 +189,8 @@ namespace PMP
     class NetworkProtocol
     {
     public:
+        static bool isSupported(ParameterlessActionCode action, int protocolVersion);
+
         static void append2Bytes(QByteArray& buffer, ServerMessageType messageType);
         static void append2Bytes(QByteArray& buffer, ClientMessageType messageType);
         static void append2Bytes(QByteArray& buffer, ResultMessageErrorCode errorCode);
@@ -229,6 +231,7 @@ namespace PMP
                            ObfuscatedScrobblingUsernameAndPassword obfuscatedCredentials);
 
     private:
+        static int getMinimumProtocolVersionThatSupports(ParameterlessActionCode action);
         static quint64 getScrobblingAuthenticationObfuscationKey(quint8 keyId);
 
         static const QByteArray _fileHashAllZeroes;
