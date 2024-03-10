@@ -44,14 +44,8 @@ namespace PMP
     class StartFullIndexationCommand : public CommandBase
     {
         Q_OBJECT
-    public:
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
-
-    private:
-
     };
 
     class ReloadServerSettingsCommand : public CommandBase
