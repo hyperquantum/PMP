@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -38,11 +38,6 @@ namespace PMP
         //
     }
 
-    bool DelayedStartAtCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void DelayedStartAtCommand::run(ServerInterface* serverInterface)
     {
         auto future =
@@ -59,11 +54,6 @@ namespace PMP
         //
     }
 
-    bool DelayedStartWaitCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void DelayedStartWaitCommand::run(ServerInterface* serverInterface)
     {
         auto future =
@@ -74,11 +64,6 @@ namespace PMP
 
     /* ===== DeactivateDelayedCancelCommand ===== */
 
-    bool DelayedStartCancelCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void DelayedStartCancelCommand::run(ServerInterface* serverInterface)
     {
         auto future = serverInterface->playerController().deactivateDelayedStart();
@@ -86,11 +71,6 @@ namespace PMP
     }
 
     /* ===== PlayCommand ===== */
-
-    bool PlayCommand::requiresAuthentication() const
-    {
-        return true;
-    }
 
     void PlayCommand::run(ServerInterface* serverInterface)
     {
@@ -114,11 +94,6 @@ namespace PMP
 
     /* ===== PauseCommand ===== */
 
-    bool PauseCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void PauseCommand::run(ServerInterface* serverInterface)
     {
         auto* playerController = &serverInterface->playerController();
@@ -140,11 +115,6 @@ namespace PMP
     }
 
     /* ===== SkipCommand ===== */
-
-    bool SkipCommand::requiresAuthentication() const
-    {
-        return true;
-    }
 
     void SkipCommand::run(ServerInterface* serverInterface)
     {

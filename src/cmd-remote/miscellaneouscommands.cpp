@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -165,11 +165,6 @@ namespace PMP
 
     /* ===== PersonalModeCommand ===== */
 
-    bool PersonalModeCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void PersonalModeCommand::run(Client::ServerInterface* serverInterface)
     {
         auto myUserId = serverInterface->authenticationController().userLoggedInId();
@@ -198,11 +193,6 @@ namespace PMP
 
     /* ===== PublicModeCommand ===== */
 
-    bool PublicModeCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void PublicModeCommand::run(Client::ServerInterface* serverInterface)
     {
         auto* playerController = &serverInterface->playerController();
@@ -230,11 +220,6 @@ namespace PMP
      : _enable(enable)
     {
         //
-    }
-
-    bool DynamicModeActivationCommand::requiresAuthentication() const
-    {
-        return true;
     }
 
     void DynamicModeActivationCommand::run(Client::ServerInterface* serverInterface)
@@ -295,11 +280,6 @@ namespace PMP
         //
     }
 
-    bool SetVolumeCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void SetVolumeCommand::run(ServerInterface* serverInterface)
     {
         auto* playerController = &serverInterface->playerController();
@@ -326,11 +306,6 @@ namespace PMP
      : _hash(hash)
     {
         //
-    }
-
-    bool TrackStatsCommand::requiresAuthentication() const
-    {
-        return true;
     }
 
     void TrackStatsCommand::run(ServerInterface* serverInterface)

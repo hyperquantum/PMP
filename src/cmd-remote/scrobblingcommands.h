@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,8 +32,6 @@ namespace PMP
     public:
         ScrobblingActivationCommand(ScrobblingProvider provider, bool enable);
 
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
 
@@ -48,8 +46,6 @@ namespace PMP
     public:
         ScrobblingStatusCommand(ScrobblingProvider provider);
 
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
 
@@ -62,8 +58,6 @@ namespace PMP
         Q_OBJECT
     public:
         ScrobblingAuthenticateCommand(ScrobblingProvider provider);
-
-        bool requiresAuthentication() const override;
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;

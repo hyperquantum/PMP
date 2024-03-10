@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -66,11 +66,6 @@ namespace PMP
 
     /* ===== ReloadServerSettingsCommand ===== */
 
-    bool ReloadServerSettingsCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void ReloadServerSettingsCommand::run(ServerInterface* serverInterface)
     {
         auto future = serverInterface->generalController().reloadServerSettings();
@@ -78,11 +73,6 @@ namespace PMP
     }
 
     /* ===== ShutdownCommand ===== */
-
-    bool ShutdownCommand::requiresAuthentication() const
-    {
-        return true;
-    }
 
     bool ShutdownCommand::willCauseDisconnect() const
     {

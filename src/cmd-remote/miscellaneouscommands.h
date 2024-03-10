@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -53,9 +53,6 @@ namespace PMP
     class PersonalModeCommand : public CommandBase
     {
         Q_OBJECT
-    public:
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
     };
@@ -63,9 +60,6 @@ namespace PMP
     class PublicModeCommand : public CommandBase
     {
         Q_OBJECT
-    public:
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
     };
@@ -75,8 +69,6 @@ namespace PMP
         Q_OBJECT
     public:
         explicit DynamicModeActivationCommand(bool enable);
-
-        bool requiresAuthentication() const override;
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;
@@ -101,8 +93,6 @@ namespace PMP
     public:
         explicit SetVolumeCommand(int volume);
 
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
 
@@ -115,8 +105,6 @@ namespace PMP
         Q_OBJECT
     public:
         explicit TrackStatsCommand(FileHash const& hash);
-
-        bool requiresAuthentication() const override;
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;

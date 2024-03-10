@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,11 +32,6 @@ using namespace PMP::Client;
 namespace PMP
 {
     /* ===== QueueCommand ===== */
-
-    bool QueueCommand::requiresAuthentication() const
-    {
-        return true;
-    }
 
     void QueueCommand::run(ServerInterface* serverInterface)
     {
@@ -191,11 +186,6 @@ namespace PMP
 
     /* ===== BreakCommand =====*/
 
-    bool BreakCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void BreakCommand::run(ServerInterface* serverInterface)
     {
         auto* queueMonitor = &serverInterface->queueMonitor();
@@ -248,11 +238,6 @@ namespace PMP
         //
     }
 
-    bool QueueInsertSpecialItemCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void QueueInsertSpecialItemCommand::run(ServerInterface* serverInterface)
     {
         auto* queueController = &serverInterface->queueController();
@@ -292,11 +277,6 @@ namespace PMP
        _indexType(indexType)
     {
         //
-    }
-
-    bool QueueInsertTrackCommand::requiresAuthentication() const
-    {
-        return true;
     }
 
     void QueueInsertTrackCommand::run(Client::ServerInterface* serverInterface)
@@ -426,11 +406,6 @@ namespace PMP
         //
     }
 
-    bool QueueDeleteCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void QueueDeleteCommand::run(ServerInterface* serverInterface)
     {
         auto* queueController = &serverInterface->queueController();
@@ -471,11 +446,6 @@ namespace PMP
        _wasMoved(false)
     {
         //
-    }
-
-    bool QueueMoveCommand::requiresAuthentication() const
-    {
-        return true;
     }
 
     void QueueMoveCommand::run(ServerInterface* serverInterface)

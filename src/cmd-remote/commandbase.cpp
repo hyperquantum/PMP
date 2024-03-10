@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,6 +28,12 @@ using namespace PMP::Client;
 
 namespace PMP
 {
+    bool CommandBase::requiresAuthentication() const
+    {
+        // most commands will
+        return true;
+    }
+
     bool CommandBase::willCauseDisconnect() const
     {
         // most commands won't
