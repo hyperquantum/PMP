@@ -102,6 +102,8 @@ set(PMP_SERVER_SOURCES
     server/delayedstart.cpp
     server/dynamicmodecriteria.cpp
     server/dynamictrackgenerator.cpp
+    server/filefinder.cpp
+    server/filelocations.cpp
     server/generator.cpp
     server/hashidregistrar.cpp
     server/hashrelations.cpp
@@ -140,6 +142,7 @@ set(PMP_SERVER_HEADERS
     server/connectedclient.h
     server/delayedstart.h
     server/dynamictrackgenerator.h
+    server/filefinder.h
     server/generator.h
     server/history.h
     server/historystatistics.h

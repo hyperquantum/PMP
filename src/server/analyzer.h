@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,9 +21,9 @@
 #define PMP_ANALYZER_H
 
 #include "common/audiodata.h"
-#include "common/filehash.h"
 #include "common/future.h"
-#include "common/tagdata.h"
+
+#include "fileanalysis.h"
 
 #include <QDateTime>
 #include <QHash>
@@ -42,100 +42,6 @@ namespace PMP
 
 namespace PMP::Server
 {
-    class FileHashes
-    {
-    public:
-        FileHashes()
-         : _hashes { FileHash() }
-        {
-            //
-        }
-
-        FileHashes(FileHash mainHash)
-         : _hashes { mainHash }
-        {
-            //
-        }
-
-        FileHashes(FileHash mainHash, FileHash alternativeHash)
-         : _hashes {mainHash, alternativeHash}
-        {
-            //
-        }
-
-        FileHash main() const { return _hashes[0]; }
-        bool multipleHashes() const { return _hashes.size() > 1; }
-
-        bool contains(FileHash hash) { return _hashes.contains(hash); }
-
-        QVector<FileHash> const& allHashes() const { return _hashes; }
-
-    private:
-        QVector<FileHash> _hashes;
-    };
-
-    class FileInfo
-    {
-    public:
-        FileInfo() : _size(-1) {}
-
-        FileInfo(QString path, qint64 size, QDateTime lastModifiedUtc)
-         : _path(path), _size(size), _lastModifiedUtc(lastModifiedUtc)
-        {
-            //
-        }
-
-        QString path() const { return _path; }
-        qint64 size() const { return _size; }
-        QDateTime lastModifiedUtc() const { return _lastModifiedUtc; }
-
-        bool equals(FileInfo const& other) const
-        {
-            return path() == other.path()
-                && size() == other.size()
-                && lastModifiedUtc() == other.lastModifiedUtc();
-        }
-
-    private:
-        QString _path;
-        qint64 _size;
-        QDateTime _lastModifiedUtc;
-    };
-
-    inline bool operator == (FileInfo const& first, FileInfo const& second)
-    {
-        return first.equals(second);
-    }
-
-    inline bool operator != (FileInfo const& first, FileInfo const& second)
-    {
-        return !(first == second);
-    }
-
-    class FileAnalysis
-    {
-    public:
-        FileAnalysis() {}
-
-        FileAnalysis(FileHashes const& hashes, FileInfo const& fileInfo,
-                     AudioData const& audioData, TagData const& tagData)
-         : _hashes(hashes), _fileInfo(fileInfo), _audioData(audioData), _tagData(tagData)
-        {
-            //
-        }
-
-        FileHashes const& hashes() const { return _hashes; }
-        FileInfo const& fileInfo() const { return _fileInfo; }
-        AudioData const& audioData() const { return _audioData; }
-        TagData const& tagData() const { return _tagData; }
-
-    private:
-        FileHashes _hashes;
-        FileInfo _fileInfo;
-        AudioData _audioData;
-        TagData _tagData;
-    };
-
     class Analyzer : public QObject
     {
         Q_OBJECT
@@ -172,9 +78,4 @@ namespace PMP::Server
         QHash<QString, Future<FileAnalysis, FailureType>> _onDemandInProgress;
     };
 }
-
-Q_DECLARE_METATYPE(PMP::Server::FileHashes)
-Q_DECLARE_METATYPE(PMP::Server::FileInfo)
-Q_DECLARE_METATYPE(PMP::Server::FileAnalysis)
-
 #endif
