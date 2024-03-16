@@ -146,4 +146,4 @@ TECHNICAL IDEAS
 
 CODE IMPROVEMENTS
 
- *
+ * create default implementation of Command::requiresAuthentication in CommandBase that returns true

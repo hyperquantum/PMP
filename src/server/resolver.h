@@ -60,7 +60,9 @@ namespace PMP::Server
         QStringList musicPaths();
 
         Result startFullIndexation();
-        bool fullIndexationRunning();
+        Result startQuickScanForNewFiles();
+        bool isFullIndexationRunning();
+        bool isQuickScanForNewFilesRunning();
 
         Future<QString, FailureType> findPathForHashAsync(FileHash hash);
         Future<QString, FailureType> findPathForHashAsync(uint hashId);
@@ -82,13 +84,15 @@ namespace PMP::Server
         QVector<QPair<uint, FileHash>> getIDs(QVector<FileHash> hashes);
 
     private Q_SLOTS:
+        void onQuickScanForNewFilesFinished();
         void onFullIndexationFinished();
         void onFileAnalysisFailed(QString path);
         void onFileAnalysisCompleted(QString path, FileAnalysis analysis);
         void onAnalyzerFinished();
 
     Q_SIGNALS:
-        void fullIndexationRunStatusChanged(bool running);
+        void fullIndexationRunStatusChanged();
+        void quickScanForNewFilesRunStatusChanged();
 
         void hashBecameAvailable(PMP::FileHash hash);
         void hashBecameUnavailable(PMP::FileHash hash);
@@ -105,6 +109,13 @@ namespace PMP::Server
             CheckingForFileRemovals,
         };
 
+        enum class QuickScanForNewFilesStatus
+        {
+            NotRunning,
+            FileSystemTraversal,
+            WaitingForFileAnalysisCompletion,
+        };
+
         struct VerifiedFile;
         class HashKnowledge;
 
@@ -113,6 +124,7 @@ namespace PMP::Server
         QVector<QString> getPathsThatDontMatchCurrentFullIndexationNumber();
         void checkFileStillExistsAndIsValid(QString path);
 
+        void doQuickScanForNewFilesFileSystemTraversal();
         void doFullIndexationFileSystemTraversal();
         void doFullIndexationCheckForFileRemovals();
 
@@ -134,6 +146,7 @@ namespace PMP::Server
 
         uint _fullIndexationNumber;
         FullIndexationStatus _fullIndexationStatus;
+        QuickScanForNewFilesStatus _quickScanStatus;
     };
 }
 #endif

@@ -23,6 +23,7 @@
 #include "generalcontroller.h"
 
 #include "common/lazypromisedvalue.h"
+#include "common/tribool.h"
 
 namespace PMP::Client
 {
@@ -39,9 +40,13 @@ namespace PMP::Client
         qint64 clientClockTimeOffsetMs() const override;
 
         SimpleFuture<AnyResultMessageCode> startFullIndexation() override;
+        SimpleFuture<AnyResultMessageCode> startQuickScanForNewFiles() override;
         SimpleFuture<AnyResultMessageCode> reloadServerSettings() override;
 
         Future<VersionInfo, ResultMessageErrorCode> getServerVersionInfo() override;
+
+        TriBool isFullIndexationRunning() const override;
+        TriBool isQuickScanForNewFilesRunning() const override;
 
     public Q_SLOTS:
         void shutdownServer() override;
@@ -51,12 +56,16 @@ namespace PMP::Client
         void connectionBroken();
         void serverHealthReceived();
         void receivedClientClockTimeOffset(qint64 clientClockTimeOffsetMs);
+        void onFullIndexationStatusReceived(StartStopEventStatus status);
+        void onQuickScanForNewFilesStatusReceived(StartStopEventStatus status);
 
     private:
         ServerConnection* _connection;
         qint64 _clientClockTimeOffsetMs { 0 };
         ServerHealthStatus _serverHealthStatus;
         LazyPromisedValue<VersionInfo, ResultMessageErrorCode> _serverVersionInfo;
+        TriBool _fullIndexationRunning;
+        TriBool _quickScanForNewFilesRunning;
     };
 }
 #endif

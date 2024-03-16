@@ -91,7 +91,10 @@ namespace PMP::Server
         void setLoggedIn(quint32 userId, QString userLogin);
 
         SimpleFuture<ResultMessageErrorCode> reloadServerSettings();
+
         Result startFullIndexation();
+        Result startQuickScanForNewFiles();
+        void requestIndexationStatus();
 
         void switchToPersonalMode();
         void switchToPublicMode();
@@ -153,6 +156,9 @@ namespace PMP::Server
         void serverClockTimeSendingPulse();
         void serverShuttingDown();
 
+        void fullIndexationStatusEvent(StartStopEventStatus status);
+        void quickScanForNewFilesStatusEvent(StartStopEventStatus status);
+
         void delayedStartActiveChanged();
 
         void queueEntryAddedWithoutReference(qint32 offset, quint32 queueId);
@@ -170,6 +176,9 @@ namespace PMP::Server
         void hashUserDataChangedOrAvailable(quint32 userId, QVector<HashStats> tracks);
 
     private Q_SLOTS:
+        void onFullIndexationStatusChanged();
+        void onQuickScanForNewFilesStatusChanged();
+
         void onQueueEntryAdded(qint32 offset, quint32 queueId);
 
         void onDynamicModeStatusChanged();

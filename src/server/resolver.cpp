@@ -458,28 +458,59 @@ namespace PMP::Server
         return paths;
     }
 
-    bool Resolver::fullIndexationRunning()
+    bool Resolver::isFullIndexationRunning()
     {
         return _fullIndexationStatus != FullIndexationStatus::NotRunning;
     }
 
+    bool Resolver::isQuickScanForNewFilesRunning()
+    {
+        return _quickScanStatus != QuickScanForNewFilesStatus::NotRunning;
+    }
+
     Result Resolver::startFullIndexation()
     {
-        if (fullIndexationRunning())
+        if (isFullIndexationRunning() || isQuickScanForNewFilesRunning())
             return Error::operationAlreadyRunning();
 
-        qDebug() << "full indexation starting";
+        qDebug() << "starting full indexation";
+
         _fullIndexationNumber += 2; /* add 2 so it will never become zero */
         _fullIndexationStatus = FullIndexationStatus::FileSystemTraversal;
-        Q_EMIT fullIndexationRunStatusChanged(true);
+        Q_EMIT fullIndexationRunStatusChanged();
+
         QtConcurrent::run(this, &Resolver::doFullIndexationFileSystemTraversal);
 
         return Success();
     }
 
+    Result Resolver::startQuickScanForNewFiles()
+    {
+        if (isFullIndexationRunning() || isQuickScanForNewFilesRunning())
+            return Error::operationAlreadyRunning();
+
+        qDebug() << "starting quick scan for new files";
+
+        _quickScanStatus = QuickScanForNewFilesStatus::FileSystemTraversal;
+        Q_EMIT quickScanForNewFilesRunStatusChanged();
+
+        QtConcurrent::run(this, &Resolver::doQuickScanForNewFilesFileSystemTraversal);
+
+        return Success();
+    }
+
+    void Resolver::onQuickScanForNewFilesFinished()
+    {
+        qDebug() << "quick scan for new files finished";
+
+        Q_EMIT quickScanForNewFilesRunStatusChanged();
+    }
+
     void Resolver::onFullIndexationFinished()
     {
-        Q_EMIT fullIndexationRunStatusChanged(false);
+        qDebug() << "full indexation finished";
+
+        Q_EMIT fullIndexationRunStatusChanged();
     }
 
     void Resolver::onFileAnalysisFailed(QString path)
@@ -568,6 +599,13 @@ namespace PMP::Server
 
     void Resolver::onAnalyzerFinished()
     {
+        if (_quickScanStatus
+                          == QuickScanForNewFilesStatus::WaitingForFileAnalysisCompletion)
+        {
+            _quickScanStatus = QuickScanForNewFilesStatus::NotRunning;
+            QTimer::singleShot(0, this, [this]() { onQuickScanForNewFilesFinished(); });
+        }
+
         if (_fullIndexationStatus
                                 == FullIndexationStatus::WaitingForFileAnalysisCompletion)
         {
@@ -639,6 +677,48 @@ namespace PMP::Server
         return _fileFinder->findHashAsync(hashId, hash);
     }
 
+    void Resolver::doQuickScanForNewFilesFileSystemTraversal()
+    {
+        qDebug()
+            << "quick scan for new files: running file system traversal (music paths)";
+
+        auto musicPaths = this->musicPaths();
+
+        uint fileCount = 0;
+        for (QString const& musicPath : qAsConst(musicPaths))
+        {
+            QDirIterator it(musicPath, QDirIterator::Subdirectories); /* no symlinks */
+
+            while (it.hasNext())
+            {
+                QFileInfo entry(it.next());
+                if (!FileAnalyzer::isFileSupported(entry)) continue;
+
+                auto absoluteFilePath = entry.absoluteFilePath();
+
+                if (_fileLocations.pathHasAtLeastOneId(absoluteFilePath))
+                    continue; /* not a new file */
+
+                fileCount++;
+                _analyzer->enqueueFile(absoluteFilePath);
+            }
+        }
+
+        qDebug() << "quick scan for new files:"
+                 << fileCount << "files added to analysis queue";
+
+        if (_analyzer->isFinished())
+        {
+            _quickScanStatus = QuickScanForNewFilesStatus::NotRunning;
+            QTimer::singleShot(0, this, [this]() { onQuickScanForNewFilesFinished(); });
+        }
+        else
+        {
+            _quickScanStatus =
+                QuickScanForNewFilesStatus::WaitingForFileAnalysisCompletion;
+        }
+    }
+
     void Resolver::doFullIndexationFileSystemTraversal()
     {
         qDebug() << "full indexation: running file system traversal (music paths)";
@@ -688,7 +768,6 @@ namespace PMP::Server
         }
 
         _fullIndexationStatus = FullIndexationStatus::NotRunning;
-        qDebug() << "full indexation finished.";
         QTimer::singleShot(0, this, [this]() { onFullIndexationFinished(); });
     }
 

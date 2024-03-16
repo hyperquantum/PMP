@@ -75,6 +75,16 @@ namespace PMP::Server
             this, &ServerInterface::serverShuttingDown
         );
 
+        auto* resolver = &_player->resolver();
+        connect(
+            resolver, &Resolver::fullIndexationRunStatusChanged,
+            this, &ServerInterface::onFullIndexationStatusChanged
+        );
+        connect(
+            resolver, &Resolver::quickScanForNewFilesRunStatusChanged,
+            this, &ServerInterface::onQuickScanForNewFilesStatusChanged
+        );
+
         connect(
             _delayedStart, &DelayedStart::delayedStartActiveChanged,
             this, &ServerInterface::delayedStartActiveChanged
@@ -179,6 +189,30 @@ namespace PMP::Server
             return Error::notLoggedIn();
 
         return _player->resolver().startFullIndexation();
+    }
+
+    Result ServerInterface::startQuickScanForNewFiles()
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _player->resolver().startQuickScanForNewFiles();
+    }
+
+    void ServerInterface::requestIndexationStatus()
+    {
+        auto fullIndexationStatus =
+            Common::createUnchangedStartStopEventStatus(
+                _player->resolver().isFullIndexationRunning()
+            );
+
+        auto quickScanForNewFilesStatus =
+            Common::createUnchangedStartStopEventStatus(
+                _player->resolver().isQuickScanForNewFilesRunning()
+            );
+
+        Q_EMIT fullIndexationStatusEvent(fullIndexationStatus);
+        Q_EMIT quickScanForNewFilesStatusEvent(quickScanForNewFilesStatus);
     }
 
     void ServerInterface::switchToPersonalMode()
@@ -648,6 +682,26 @@ namespace PMP::Server
     {
         if (serverPassword != _server->serverPassword()) return;
         _server->shutdown();
+    }
+
+    void ServerInterface::onFullIndexationStatusChanged()
+    {
+        auto status =
+            Common::createChangedStartStopEventStatus(
+                _player->resolver().isFullIndexationRunning()
+            );
+
+        Q_EMIT fullIndexationStatusEvent(status);
+    }
+
+    void ServerInterface::onQuickScanForNewFilesStatusChanged()
+    {
+        auto status =
+            Common::createChangedStartStopEventStatus(
+                _player->resolver().isQuickScanForNewFilesRunning()
+            );
+
+        Q_EMIT quickScanForNewFilesStatusEvent(status);
     }
 
     void ServerInterface::onQueueEntryAdded(qint32 offset, quint32 queueId)

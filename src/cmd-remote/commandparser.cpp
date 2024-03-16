@@ -602,9 +602,13 @@ namespace PMP
         {
             _command = new StartFullIndexationCommand();
         }
+        else if (arguments.current() == "new")
+        {
+            _command = new StartQuickScanForNewFilesCommand();
+        }
         else
         {
-            _errorMessage = "Expected either 'full' or no arguments after 'indexation'!";
+            _errorMessage = "Expected 'full', 'new', or no arguments after 'indexation'!";
         }
     }
 

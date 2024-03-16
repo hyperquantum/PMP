@@ -72,6 +72,14 @@ namespace PMP
         addCommandExecutionFutureListener(future);
     }
 
+    /* ===== StartQuickScanForNewFilesCommand ===== */
+
+    void StartQuickScanForNewFilesCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto future = serverInterface->generalController().startQuickScanForNewFiles();
+        addCommandExecutionFutureListener(future);
+    }
+
     /* ===== ReloadServerSettingsCommand ===== */
 
     void ReloadServerSettingsCommand::run(ServerInterface* serverInterface)

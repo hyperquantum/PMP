@@ -31,6 +31,7 @@
 #include "common/scrobblingprovider.h"
 #include "common/serverhealthstatus.h"
 #include "common/specialqueueitemtype.h"
+#include "common/startstopeventstatus.h"
 #include "common/tribool.h"
 #include "common/userloginerror.h"
 #include "common/userregistrationerror.h"
@@ -115,11 +116,13 @@ namespace PMP::Client
         QString userLoggedInName() const;
 
         TriBool doingFullIndexation() const { return _doingFullIndexation; }
+        TriBool doingQuickScanForNewFiles() const { return _doingQuickScanForNewFiles; }
 
         void fetchCollection(CollectionFetcher* fetcher);
 
         SimpleFuture<AnyResultMessageCode> reloadServerSettings();
         SimpleFuture<AnyResultMessageCode> startFullIndexation();
+        SimpleFuture<AnyResultMessageCode> startQuickScanForNewFiles();
         SimpleFuture<AnyResultMessageCode> activateDelayedStart(qint64 delayMilliseconds);
         SimpleFuture<AnyResultMessageCode> deactivateDelayedStart();
         RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index);
@@ -251,9 +254,8 @@ namespace PMP::Client
 
         void receivedUserPlayingFor(quint32 userId, QString userLogin);
 
-        void fullIndexationStatusReceived(bool running);
-        void fullIndexationStarted();
-        void fullIndexationFinished();
+        void fullIndexationStatusReceived(StartStopEventStatus status);
+        void quickScanForNewFilesStatusReceived(StartStopEventStatus status);
 
         void collectionTracksAvailabilityChanged(
                                            QVector<PMP::Client::LocalHashId> available,
@@ -358,6 +360,8 @@ namespace PMP::Client
         void parseNewUserAccountSaltMessage(QByteArray const& message);
         void parseUserLoginSaltMessage(QByteArray const& message);
 
+        void parseIndexationStatusMessage(QByteArray const& message);
+
         void parsePlayerStateMessage(QByteArray const& message);
         void parseDelayedStartInfoMessage(QByteArray const& message);
         void parseVolumeChangedMessage(QByteArray const& message);
@@ -423,6 +427,7 @@ namespace PMP::Client
         quint32 _userLoggedInId;
         QString _userLoggedInName;
         TriBool _doingFullIndexation;
+        TriBool _doingQuickScanForNewFiles;
         QHash<uint, QSharedPointer<ResultHandler>> _resultHandlers;
         QHash<uint, CollectionFetcher*> _collectionFetchers;
         ServerHealthStatus _serverHealthStatus;

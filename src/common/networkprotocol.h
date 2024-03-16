@@ -26,6 +26,7 @@
 #include "scrobblerstatus.h"
 #include "scrobblingprovider.h"
 #include "specialqueueitemtype.h"
+#include "startstopeventstatus.h"
 
 #include <QByteArray>
 #include <QString>
@@ -61,7 +62,7 @@ Changes for each version:
   23: server msg 35, error code 241: more features for protocol extensions
   24: server msgs 18 & 19: add album artist to track info
   25: client msg 27, server msg 36, error codes 26 & 120 & 121: fetch personal track history
-  26: (WIP) parameterless action 60: full indexation as parameterless action
+  26: parameterless actions 60 & 61, server events 3 & 4, server msg 37: full indexation and quick scan for new files
 */
 
 namespace PMP
@@ -109,6 +110,7 @@ namespace PMP
         ServerVersionInfoMessage = 34,
         ExtensionResultMessage = 35,
         HistoryFragmentMessage = 36,
+        IndexationStatusMessage = 37,
     };
 
     enum class ScrobblingServerMessageType : quint8
@@ -176,7 +178,7 @@ namespace PMP
 
         /* 60 - 79 : music collection */
         StartFullIndexation = 60,
-        //StartQuickScanForNewFiles = 61,
+        StartQuickScanForNewFiles = 61,
     };
 
     struct UsernameAndPassword
@@ -195,10 +197,14 @@ namespace PMP
     {
     public:
         static bool isSupported(ParameterlessActionCode action, int protocolVersion);
+        static bool isSupported(ServerEventCode eventCode, int protocolVersion);
 
         static void append2Bytes(QByteArray& buffer, ServerMessageType messageType);
         static void append2Bytes(QByteArray& buffer, ClientMessageType messageType);
         static void append2Bytes(QByteArray& buffer, ResultMessageErrorCode errorCode);
+
+        static quint8 encode(StartStopEventStatus status);
+        static StartStopEventStatus decodeStartStopEventStatus(quint8 status);
 
         static quint8 encode(ScrobblingProvider provider);
         static ScrobblingProvider decodeScrobblingProvider(quint8 provider);
@@ -237,6 +243,7 @@ namespace PMP
 
     private:
         static int getMinimumProtocolVersionThatSupports(ParameterlessActionCode action);
+        static int getMinimumProtocolVersionThatSupports(ServerEventCode eventCode);
         static quint64 getScrobblingAuthenticationObfuscationKey(quint8 keyId);
 
         static const QByteArray _fileHashAllZeroes;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,7 @@
 #ifndef PMP_MAINWINDOW_H
 #define PMP_MAINWINDOW_H
 
+#include "common/future.h"
 #include "common/resultmessageerrorcode.h"
 
 #include <QAbstractSocket>
@@ -73,6 +74,7 @@ namespace PMP
         void onLoggedIn(QString login);
         void onLoginCancel();
 
+        void onScanForNewFilesActionTriggered();
         void onStartFullIndexationTriggered();
         void onReloadServerSettingsTriggered();
         void reloadServerSettingsResultReceived(AnyResultMessageCode errorCode);
@@ -93,12 +95,16 @@ namespace PMP
         void createActions();
         void createMenus();
         void createStatusbar();
+        void enableDisableIndexationActions();
         void updateRightStatus();
         void updateScrobblingUi();
         void setLeftStatus(int intervalMs, QString text);
         void showUserAccountPicker();
         void showLoginWidget(QString login);
         void showMainWidget();
+
+        void connectErrorPopupToActionResult(SimpleFuture<AnyResultMessageCode> future,
+                                             QString failureText);
 
         NotificationBar* _notificationBar;
         QLabel* _leftStatus;
@@ -108,8 +114,8 @@ namespace PMP
 
         ConnectionWidget* _connectionWidget;
         Client::LocalHashIdRepository* _hashIdRepository;
-        Client::ServerConnection* _connection;
-        Client::ServerInterface* _serverInterface;
+        Client::ServerConnection* _connection { nullptr };
+        Client::ServerInterface* _serverInterface { nullptr };
         UserPickerWidget* _userPickerWidget;
         UserAccountCreationWidget* _userAccountCreationWidget;
         LoginWidget* _loginWidget;
@@ -118,6 +124,7 @@ namespace PMP
 
         QAction* _reloadServerSettingsAction;
         QAction* _shutdownServerAction;
+        QAction* _scanForNewFilesAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
         QAction* _scrobblingAction;
@@ -126,6 +133,7 @@ namespace PMP
         QAction* _aboutPmpAction;
         QAction* _aboutQtAction;
 
+        QMenu* _indexationMenu { nullptr };
         QMenu* _serverAdminMenu;
         QMenu* _userMenu;
         QMenu* _actionsMenu;

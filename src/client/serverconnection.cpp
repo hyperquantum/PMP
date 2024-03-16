@@ -301,6 +301,9 @@ namespace PMP::Client
 
         case PMP::ParameterlessActionCode::StartFullIndexation:
             return "start of full indexation";
+
+        case PMP::ParameterlessActionCode::StartQuickScanForNewFiles:
+            return "start of quick scan for new files";
         }
 
         return "action with code " + QString::number(static_cast<int>(_code));
@@ -1186,6 +1189,14 @@ namespace PMP::Client
             ParameterlessActionCode::StartFullIndexation);
     }
 
+    SimpleFuture<AnyResultMessageCode> ServerConnection::startQuickScanForNewFiles()
+    {
+        qDebug() << "sending request to start a quick scan for new files";
+
+        return sendParameterlessActionRequest(
+            ParameterlessActionCode::StartQuickScanForNewFiles);
+    }
+
     SimpleFuture<AnyResultMessageCode> ServerConnection::activateDelayedStart(
                                                                  qint64 delayMilliseconds)
     {
@@ -1702,13 +1713,15 @@ namespace PMP::Client
         auto oldValue = _doingFullIndexation;
         _doingFullIndexation = running;
 
-        Q_EMIT fullIndexationStatusReceived(running);
-
-        if (oldValue.isKnown()) {
-            if (running)
-                Q_EMIT fullIndexationStarted();
-            else
-                Q_EMIT fullIndexationFinished();
+        if (oldValue.isKnown() && oldValue.toBool() != running)
+        {
+            auto status = Common::createChangedStartStopEventStatus(running);
+            Q_EMIT fullIndexationStatusReceived(status);
+        }
+        else
+        {
+            auto status = Common::createUnchangedStartStopEventStatus(running);
+            Q_EMIT fullIndexationStatusReceived(status);
         }
     }
 
@@ -2049,6 +2062,9 @@ namespace PMP::Client
             return;
         case ServerMessageType::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
+            return;
+        case PMP::ServerMessageType::IndexationStatusMessage:
+            parseIndexationStatusMessage(message);
             return;
         case ServerMessageType::PlayerStateMessage:
             parsePlayerStateMessage(message);
@@ -2506,6 +2522,31 @@ namespace PMP::Client
             message.mid(8 + loginBytesSize + userSaltBytesSize, sessionSaltBytesSize);
 
         handleLoginSalt(login, userSalt, sessionSalt);
+    }
+
+    void ServerConnection::parseIndexationStatusMessage(const QByteArray& message)
+    {
+        if (message.length() != 4)
+            return; /* invalid message */
+
+        auto fullIndexationStatusRaw = NetworkUtil::getByte(message, 2);
+        auto quickScanForNewFilesStatusRaw = NetworkUtil::getByte(message, 3);
+
+        auto fullIndexationStatus =
+            NetworkProtocol::decodeStartStopEventStatus(fullIndexationStatusRaw);
+
+        auto quickScanForNewFilesStatus =
+            NetworkProtocol::decodeStartStopEventStatus(quickScanForNewFilesStatusRaw);
+
+        qDebug() << "received indexation status message:"
+                 << "full indexation status:" << fullIndexationStatusRaw
+                 << "; quick scan for new files status:" << quickScanForNewFilesStatusRaw;
+
+        if (fullIndexationStatus != StartStopEventStatus::Undefined)
+            Q_EMIT fullIndexationStatusReceived(fullIndexationStatus);
+
+        if (quickScanForNewFilesStatus != StartStopEventStatus::Undefined)
+            Q_EMIT quickScanForNewFilesStatusReceived(quickScanForNewFilesStatus);
     }
 
     void ServerConnection::parsePlayerStateMessage(QByteArray const& message)
@@ -3027,7 +3068,7 @@ namespace PMP::Client
         /* we have no use for the user yet */
         //auto user = NetworkUtil::get4Bytes(message, 4);
 
-        auto status = StartStopEventStatus(statusByte);
+        auto status = NetworkProtocol::decodeStartStopEventStatus(statusByte);
         bool statusActive = Common::isActive(status);
         bool statusChanged = Common::isChange(status);
 

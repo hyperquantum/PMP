@@ -46,6 +46,18 @@ namespace PMP
         return protocolVersion >= minimumProtocolVersion;
     }
 
+    bool PMP::NetworkProtocol::isSupported(ServerEventCode eventCode, int protocolVersion)
+    {
+        auto minimumProtocolVersion = getMinimumProtocolVersionThatSupports(eventCode);
+        if (minimumProtocolVersion < 0)
+        {
+            qWarning() << "ServerEventCode" << int(eventCode) << "is invalid";
+            return false;
+        }
+
+        return protocolVersion >= minimumProtocolVersion;
+    }
+
     void NetworkProtocol::append2Bytes(QByteArray& buffer, ServerMessageType messageType)
     {
         NetworkUtil::append2Bytes(buffer, static_cast<quint16>(messageType));
@@ -60,6 +72,44 @@ namespace PMP
                                        ResultMessageErrorCode errorCode)
     {
         NetworkUtil::append2Bytes(buffer, static_cast<quint16>(errorCode));
+    }
+
+    quint8 NetworkProtocol::encode(StartStopEventStatus status)
+    {
+        switch (status)
+        {
+        case StartStopEventStatus::Undefined:
+            return 0;
+        case StartStopEventStatus::StatusUnchangedNotActive:
+            return 1;
+        case StartStopEventStatus::StatusUnchangedActive:
+            return 2;
+        case StartStopEventStatus::StatusChangedToActive:
+            return 3;
+        case StartStopEventStatus::StatusChangedToNotActive:
+            return 4;
+        }
+
+        return 0;
+    }
+
+    StartStopEventStatus NetworkProtocol::decodeStartStopEventStatus(quint8 status)
+    {
+        switch (status)
+        {
+        case 0:
+            return StartStopEventStatus::Undefined;
+        case 1:
+            return StartStopEventStatus::StatusUnchangedNotActive;
+        case 2:
+            return StartStopEventStatus::StatusUnchangedActive;
+        case 3:
+            return StartStopEventStatus::StatusChangedToActive;
+        case 4:
+            return StartStopEventStatus::StatusChangedToNotActive;
+        default:
+            return StartStopEventStatus::Undefined;
+        }
     }
 
     quint8 NetworkProtocol::encode(ScrobblingProvider provider)
@@ -425,7 +475,23 @@ namespace PMP
             return 20;
 
         case ParameterlessActionCode::StartFullIndexation:
+        case ParameterlessActionCode::StartQuickScanForNewFiles:
             return 26;
+        }
+
+        return -1; /* invalid value, not supported */
+    }
+
+    int NetworkProtocol::getMinimumProtocolVersionThatSupports(ServerEventCode eventCode)
+    {
+        switch (eventCode)
+        {
+        case ServerEventCode::Reserved:
+            return -1; /* invalid value, not supported */
+
+        case ServerEventCode::FullIndexationRunning:
+        case ServerEventCode::FullIndexationNotRunning:
+            return 1; /* was supported before we started incrementing protocol version */
         }
 
         return -1; /* invalid value, not supported */
@@ -454,4 +520,5 @@ namespace PMP
         qWarning() << "unknown scrobbling authentication key ID:" << keyId;
         return 0;
     }
+
 }

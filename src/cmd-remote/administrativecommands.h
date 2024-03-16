@@ -48,6 +48,13 @@ namespace PMP
         void run(Client::ServerInterface* serverInterface) override;
     };
 
+    class StartQuickScanForNewFilesCommand : public CommandBase
+    {
+        Q_OBJECT
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+    };
+
     class ReloadServerSettingsCommand : public CommandBase
     {
         Q_OBJECT
