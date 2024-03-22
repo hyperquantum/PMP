@@ -62,7 +62,7 @@ Changes for each version:
   23: server msg 35, error code 241: more features for protocol extensions
   24: server msgs 18 & 19: add album artist to track info
   25: client msg 27, server msg 36, error codes 26 & 120 & 121: fetch personal track history
-  26: parameterless actions 60 & 61, server events 3 & 4, server msg 37: full indexation and quick scan for new files
+  26: parameterless actions 60 & 61, server msg 37: full indexation and quick scan for new files
 */
 
 namespace PMP
