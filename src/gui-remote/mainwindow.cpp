@@ -350,13 +350,13 @@ namespace PMP
     void MainWindow::enableDisableIndexationActions()
     {
         auto& generalController = _serverInterface->generalController();
-        /*
-        bool anyIndexationRunning =
-            generalController.isFullIndexationRunning()
-                                    | generalController.isQuickScanForNewFilesRunning();
 
-        _scanForNewFilesAction->setEnabled(anyIndexationRunning);
-        */
+        bool anyIndexationRunning =
+            generalController.isFullIndexationRunning().toBool()
+                || generalController.isQuickScanForNewFilesRunning().toBool();
+
+        _scanForNewFilesAction->setEnabled(!anyIndexationRunning);
+        _startFullIndexationAction->setEnabled(!anyIndexationRunning);
     }
 
     void MainWindow::updateRightStatus()
@@ -638,7 +638,7 @@ namespace PMP
             this,
             [this](StartStopEventStatus status)
             {
-                _startFullIndexationAction->setEnabled(!Common::isActive(status));
+                enableDisableIndexationActions();
                 updateRightStatus();
 
                 if (Common::isChange(status))
@@ -659,7 +659,7 @@ namespace PMP
             this,
             [this](StartStopEventStatus status)
             {
-                _scanForNewFilesAction->setEnabled(!Common::isActive(status));
+                enableDisableIndexationActions();
                 updateRightStatus();
 
                 if (Common::isChange(status))
