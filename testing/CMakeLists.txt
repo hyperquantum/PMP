@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -86,6 +86,16 @@ target_link_libraries(test_filehash $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(test_filehash Qt5::Core Qt5::Test)
 target_link_libraries(test_filehash ${TAGLIB_LIBRARIES})
 add_test(test_filehash test_filehash)
+
+
+# TestTriBool
+qt5_wrap_cpp(PMP_TestTriBool_MOCS test_tribool.h)
+add_executable(test_tribool test_tribool.cpp
+    ${PMP_TestTriBool_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/tribool.cpp
+)
+target_link_libraries(test_tribool Qt5::Core Qt5::Test)
+add_test(test_tribool test_tribool)
 
 
 # TestUtil

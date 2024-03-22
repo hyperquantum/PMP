@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,13 +27,13 @@ namespace PMP
     public:
         static const TriBool unknown;
 
-        TriBool() : _value(0) { /* <-- default constructed value is 'unknown' */ }
-        TriBool(bool initialValue) : _value(1 + (initialValue ? 1 : 0)) { /* */ }
-        TriBool(TriBool const& other) = default;
+        constexpr TriBool() : _value(0) {} /* default constructed value is 'unknown' */
+        constexpr TriBool(bool initialValue) : _value(1 + (initialValue ? 1 : 0)) { }
+        constexpr TriBool(TriBool const& other) = default;
 
-        explicit TriBool(int number) : _value(1 + (number != 0 ? 1 : 0)) { /* */ }
+        constexpr explicit TriBool(int number) : _value(1 + (number != 0 ? 1 : 0)) { }
 
-        template<class T> explicit TriBool(T const* pointer)
+        template<class T> constexpr explicit TriBool(T const* pointer)
             : _value(1 + (pointer != nullptr ? 1 : 0))
         {
             //
@@ -44,21 +44,24 @@ namespace PMP
             _value = 0;
         }
 
-        bool isUnknown() const { return _value == 0; }
-        bool isKnown() const { return _value != 0; }
-        bool isTrue() const { return _value >= 2; }
-        bool isFalse() const { return _value == 1; }
+        constexpr bool isUnknown() const { return _value == 0; }
+        constexpr bool isKnown() const { return _value != 0; }
+        constexpr bool isTrue() const { return _value >= 2; }
+        constexpr bool isFalse() const { return _value == 1; }
 
-        bool toBool(bool resultIfUnknown = false) const
+        constexpr bool toBool(bool resultIfUnknown = false) const
         {
             return (_value == 0) ? resultIfUnknown : (_value - 1);
         }
 
-        bool isIdenticalTo(TriBool other) const { return _value == other._value; }
+        constexpr bool isIdenticalTo(TriBool other) const
+        {
+            return _value == other._value;
+        }
 
-        TriBool& operator=(TriBool const& other) = default;
+        constexpr TriBool& operator=(TriBool const& other) = default;
 
-        TriBool operator ! () const
+        constexpr TriBool operator ! () const
         {
             /*  0 -> 0
                 1 -> 2
@@ -66,25 +69,26 @@ namespace PMP
             return _value == 0 ? TriBool() : TriBool(_value == 1);
         }
 
-        friend TriBool operator == (TriBool a, TriBool b);
-        friend TriBool operator != (TriBool a, TriBool b);
-        friend TriBool operator & (TriBool a, TriBool b);
-        friend TriBool operator | (TriBool a, TriBool b);
+        friend constexpr TriBool operator == (TriBool a, TriBool b);
+        friend constexpr TriBool operator != (TriBool a, TriBool b);
+        friend constexpr TriBool operator & (TriBool a, TriBool b);
+        friend constexpr TriBool operator | (TriBool a, TriBool b);
 
     private:
         unsigned char _value; /* 0=unknown, 1=false, 2=true */
     };
 
-    inline TriBool operator == (TriBool a, TriBool b)
+    constexpr inline TriBool operator == (TriBool a, TriBool b)
     {
-        if ((a._value | b._value) == 0) return TriBool();
-        return a._value == b._value;
+        if (a.isUnknown() || b.isUnknown())
+            return TriBool();
+
+        return a.toBool() == b.toBool();
     }
 
-    inline TriBool operator != (TriBool a, TriBool b)
+    constexpr inline TriBool operator != (TriBool a, TriBool b)
     {
-        if ((a._value | b._value) == 0) return TriBool();
-        return a._value != b._value;
+        return !(a == b);
     }
 
     /*
@@ -122,13 +126,13 @@ namespace PMP
        ---+---+---+---'       ---+---+---+---'
     */
 
-    inline TriBool operator & (TriBool a, TriBool b)
+    constexpr inline TriBool operator & (TriBool a, TriBool b)
     {
         if ((a._value | b._value) & 1) return false;
         return (a._value & b._value) ? true : TriBool();
     }
 
-    inline TriBool operator | (TriBool a, TriBool b)
+    constexpr inline TriBool operator | (TriBool a, TriBool b)
     {
         if ((a._value | b._value) & 2) return true;
         return (a._value & b._value) ? false : TriBool();
