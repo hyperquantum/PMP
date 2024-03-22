@@ -30,7 +30,7 @@ namespace PMP
 {
     bool CommandBase::requiresAuthentication() const
     {
-        // most commands will
+        // most commands require authentication
         return true;
     }
 
