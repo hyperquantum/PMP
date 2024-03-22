@@ -67,7 +67,6 @@ IDEAS
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
  * music collection: add a clear button for each filter combobox
- * music collection: add 'quick scan' for finding and analyzing new/changed files
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  * music collection: add quick search function, for searching while leaving the current filters unchanged
  * music collection: new action: add track before first interruption (break/barrier)
@@ -146,4 +145,4 @@ TECHNICAL IDEAS
 
 CODE IMPROVEMENTS
 
- * create default implementation of Command::requiresAuthentication in CommandBase that returns true
+ *
