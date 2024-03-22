@@ -391,8 +391,7 @@ namespace PMP::Server
        _hashRelations(hashRelations),
        _historyStatistics(historyStatistics),
        _lock(QMutex::Recursive),
-       _fullIndexationNumber(1),
-       _fullIndexationStatus(FullIndexationStatus::NotRunning)
+       _fullIndexationNumber(1)
     {
         _analyzer = new Analyzer(this);
         _fileFinder = new FileFinder(this, _hashIdRegistrar, &_fileLocations, _analyzer);

@@ -145,8 +145,8 @@ namespace PMP::Server
         QHash<QString, VerifiedFile*> _paths;
 
         uint _fullIndexationNumber;
-        FullIndexationStatus _fullIndexationStatus;
-        QuickScanForNewFilesStatus _quickScanStatus;
+        FullIndexationStatus _fullIndexationStatus { FullIndexationStatus::NotRunning };
+        QuickScanForNewFilesStatus _quickScanStatus { QuickScanForNewFilesStatus::NotRunning };
     };
 }
 #endif
