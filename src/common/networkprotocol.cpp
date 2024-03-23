@@ -520,5 +520,4 @@ namespace PMP
         qWarning() << "unknown scrobbling authentication key ID:" << keyId;
         return 0;
     }
-
 }

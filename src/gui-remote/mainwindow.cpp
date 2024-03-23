@@ -145,7 +145,7 @@ namespace PMP
         connect(
             _scanForNewFilesAction, &QAction::triggered,
             this, &MainWindow::onScanForNewFilesActionTriggered
-            );
+        );
 
         _startFullIndexationAction = new QAction(tr("&Start full indexation"), this);
         connect(
