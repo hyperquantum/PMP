@@ -200,7 +200,7 @@ namespace PMP::Client
         void enableScrobblingForCurrentUser(ScrobblingProvider provider);
         void disableScrobblingForCurrentUser(ScrobblingProvider provider);
 
-        void requestFullIndexationRunningStatus();
+        void requestIndexationRunningStatus();
 
     Q_SIGNALS:
         void connected();

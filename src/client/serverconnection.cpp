@@ -1884,7 +1884,7 @@ namespace PMP::Client
         sendSingleByteAction(25); /* 25 = terminate dynamic mode wave */
     }
 
-    void ServerConnection::requestFullIndexationRunningStatus()
+    void ServerConnection::requestIndexationRunningStatus()
     {
         sendSingleByteAction(15); /* 15 = request for full indexation running status */
     }

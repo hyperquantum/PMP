@@ -117,7 +117,7 @@ namespace PMP::Client
 
     void GeneralControllerImpl::connected()
     {
-        _connection->requestFullIndexationRunningStatus();
+        _connection->requestIndexationRunningStatus();
     }
 
     void GeneralControllerImpl::connectionBroken()
