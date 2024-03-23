@@ -97,14 +97,14 @@ namespace
     bool initialIndexation = true;
 }
 
-static void setUpAndRunInitialIndexation(Resolver& resolver)
+static void setUpAndRunInitialIndexation(Resolver* resolver)
 {
     QObject::connect(
-        &resolver, &Resolver::fullIndexationRunStatusChanged,
-        &resolver,
-        [](bool running)
+        resolver, &Resolver::fullIndexationRunStatusChanged,
+        resolver,
+        [resolver]()
         {
-            if (running || !initialIndexation)
+            if (resolver->isFullIndexationRunning() || !initialIndexation)
                 return;
 
             initialIndexation = false;
@@ -116,7 +116,7 @@ static void setUpAndRunInitialIndexation(Resolver& resolver)
 
     QTextStream out(stdout);
     out << "Running initial full indexation..." << Qt::endl;
-    resolver.startFullIndexation();
+    resolver->startFullIndexation();
 }
 
 static void loadEquivalencesAndStartStatisticsPrefetchAsync(HashRelations* hashRelations,
@@ -342,7 +342,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
 
     /* start indexation of the media directories */
     if (databaseInitializationSucceeded && doIndexation)
-        setUpAndRunInitialIndexation(resolver);
+        setUpAndRunInitialIndexation(&resolver);
 
     auto exitCode = app.exec();
 

@@ -298,6 +298,12 @@ namespace PMP::Client
 
         case ParameterlessActionCode::DeactivateDelayedStart:
             return "delayed start deactivation";
+
+        case PMP::ParameterlessActionCode::StartFullIndexation:
+            return "start of full indexation";
+
+        case PMP::ParameterlessActionCode::StartQuickScanForNewFiles:
+            return "start of quick scan for new files";
         }
 
         return "action with code " + QString::number(static_cast<int>(_code));
@@ -558,7 +564,7 @@ namespace PMP::Client
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 25;
+    const quint16 ServerConnection::ClientProtocolNo = 26;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -1008,10 +1014,11 @@ namespace PMP::Client
     SimpleFuture<AnyResultMessageCode> ServerConnection::sendParameterlessActionRequest(
                                                              ParameterlessActionCode code)
     {
+        if (NetworkProtocol::isSupported(code, _serverProtocolNo) == false)
+            return serverTooOldFutureResult();
+
         auto handler = QSharedPointer<ParameterlessActionResultHandler>::create(this, code);
         auto ref = registerResultHandler(handler);
-
-        // TODO : generate error if server does not support this request
 
         quint16 numericActionCode = static_cast<quint16>(code);
 
@@ -1142,6 +1149,11 @@ namespace PMP::Client
         return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
     }
 
+    FutureResult<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
+    {
+        return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::NoError));
+    }
+
     FutureResult<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
     {
         return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
@@ -1161,6 +1173,29 @@ namespace PMP::Client
 
         return sendParameterlessActionRequest(
                                            ParameterlessActionCode::ReloadServerSettings);
+    }
+
+    SimpleFuture<AnyResultMessageCode> ServerConnection::startFullIndexation()
+    {
+        qDebug() << "sending request to start a full indexation";
+
+        if (NetworkProtocol::isSupported(ParameterlessActionCode::StartFullIndexation,
+                                         _serverProtocolNo))
+        {
+            return sendParameterlessActionRequest(
+                ParameterlessActionCode::StartFullIndexation);
+        }
+
+        sendSingleByteAction(40); /* 40 = start full indexation */
+        return noErrorFutureResult();
+    }
+
+    SimpleFuture<AnyResultMessageCode> ServerConnection::startQuickScanForNewFiles()
+    {
+        qDebug() << "sending request to start a quick scan for new files";
+
+        return sendParameterlessActionRequest(
+            ParameterlessActionCode::StartQuickScanForNewFiles);
     }
 
     SimpleFuture<AnyResultMessageCode> ServerConnection::activateDelayedStart(
@@ -1679,13 +1714,15 @@ namespace PMP::Client
         auto oldValue = _doingFullIndexation;
         _doingFullIndexation = running;
 
-        Q_EMIT fullIndexationStatusReceived(running);
-
-        if (oldValue.isKnown()) {
-            if (running)
-                Q_EMIT fullIndexationStarted();
-            else
-                Q_EMIT fullIndexationFinished();
+        if (oldValue.isKnown() && oldValue.toBool() != running)
+        {
+            auto status = Common::createChangedStartStopEventStatus(running);
+            Q_EMIT fullIndexationStatusReceived(status);
+        }
+        else
+        {
+            auto status = Common::createUnchangedStartStopEventStatus(running);
+            Q_EMIT fullIndexationStatusReceived(status);
         }
     }
 
@@ -1848,12 +1885,7 @@ namespace PMP::Client
         sendSingleByteAction(25); /* 25 = terminate dynamic mode wave */
     }
 
-    void ServerConnection::startFullIndexation()
-    {
-        sendSingleByteAction(40); /* 40 = start full indexation */
-    }
-
-    void ServerConnection::requestFullIndexationRunningStatus()
+    void ServerConnection::requestIndexationRunningStatus()
     {
         sendSingleByteAction(15); /* 15 = request for full indexation running status */
     }
@@ -2031,6 +2063,9 @@ namespace PMP::Client
             return;
         case ServerMessageType::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
+            return;
+        case PMP::ServerMessageType::IndexationStatusMessage:
+            parseIndexationStatusMessage(message);
             return;
         case ServerMessageType::PlayerStateMessage:
             parsePlayerStateMessage(message);
@@ -2488,6 +2523,31 @@ namespace PMP::Client
             message.mid(8 + loginBytesSize + userSaltBytesSize, sessionSaltBytesSize);
 
         handleLoginSalt(login, userSalt, sessionSalt);
+    }
+
+    void ServerConnection::parseIndexationStatusMessage(const QByteArray& message)
+    {
+        if (message.length() != 4)
+            return; /* invalid message */
+
+        auto fullIndexationStatusRaw = NetworkUtil::getByte(message, 2);
+        auto quickScanForNewFilesStatusRaw = NetworkUtil::getByte(message, 3);
+
+        auto fullIndexationStatus =
+            NetworkProtocol::decodeStartStopEventStatus(fullIndexationStatusRaw);
+
+        auto quickScanForNewFilesStatus =
+            NetworkProtocol::decodeStartStopEventStatus(quickScanForNewFilesStatusRaw);
+
+        qDebug() << "received indexation status message:"
+                 << "full indexation status:" << fullIndexationStatusRaw
+                 << "; quick scan for new files status:" << quickScanForNewFilesStatusRaw;
+
+        if (fullIndexationStatus != StartStopEventStatus::Undefined)
+            Q_EMIT fullIndexationStatusReceived(fullIndexationStatus);
+
+        if (quickScanForNewFilesStatus != StartStopEventStatus::Undefined)
+            Q_EMIT quickScanForNewFilesStatusReceived(quickScanForNewFilesStatus);
     }
 
     void ServerConnection::parsePlayerStateMessage(QByteArray const& message)
@@ -3009,7 +3069,7 @@ namespace PMP::Client
         /* we have no use for the user yet */
         //auto user = NetworkUtil::get4Bytes(message, 4);
 
-        auto status = StartStopEventStatus(statusByte);
+        auto status = NetworkProtocol::decodeStartStopEventStatus(statusByte);
         bool statusActive = Common::isActive(status);
         bool statusChanged = Common::isChange(status);
 
