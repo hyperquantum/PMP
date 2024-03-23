@@ -1699,8 +1699,9 @@ namespace PMP::Server
         message.reserve(2 + 2);
         NetworkProtocol::append2Bytes(message,
                                       ServerMessageType::IndexationStatusMessage);
-        NetworkUtil::appendByte(message, quint8(fullIndexationStatus));
-        NetworkUtil::appendByte(message, quint8(quickScanForNewFilesStatus));
+        NetworkUtil::appendByte(message, NetworkProtocol::encode(fullIndexationStatus));
+        NetworkUtil::appendByte(message,
+                                NetworkProtocol::encode(quickScanForNewFilesStatus));
 
         sendBinaryMessage(message);
     }
