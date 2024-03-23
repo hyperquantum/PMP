@@ -1179,14 +1179,15 @@ namespace PMP::Client
     {
         qDebug() << "sending request to start a full indexation";
 
-        if (_serverProtocolNo < 26)
+        if (NetworkProtocol::isSupported(ParameterlessActionCode::StartFullIndexation,
+                                         _serverProtocolNo))
         {
-            sendSingleByteAction(40); /* 40 = start full indexation */
-            return noErrorFutureResult();
+            return sendParameterlessActionRequest(
+                ParameterlessActionCode::StartFullIndexation);
         }
 
-        return sendParameterlessActionRequest(
-            ParameterlessActionCode::StartFullIndexation);
+        sendSingleByteAction(40); /* 40 = start full indexation */
+        return noErrorFutureResult();
     }
 
     SimpleFuture<AnyResultMessageCode> ServerConnection::startQuickScanForNewFiles()
