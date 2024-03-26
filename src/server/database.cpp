@@ -1029,7 +1029,7 @@ namespace PMP::Server
                 record.start = getUtcDateTime(q.value(3));
                 record.end = getUtcDateTime(q.value(4));
                 record.permillage = qint16(q.value(5).toInt());
-                record.validForScoring = q.value(6).toBool();
+                record.validForScoring = getBool(q.value(6), false);
 
                 return record;
             };
@@ -1083,7 +1083,7 @@ namespace PMP::Server
                 record.start = getUtcDateTime(q.value(3));
                 record.end = getUtcDateTime(q.value(4));
                 record.permillage = qint16(q.value(5).toInt());
-                record.validForScoring = q.value(6).toBool();
+                record.validForScoring = getBool(q.value(6), false);
 
                 return record;
             };
@@ -1217,7 +1217,7 @@ namespace PMP::Server
                 if (q.next())
                 {
                     QVariant v = q.value(0);
-                    b = (v.isNull()) ? defaultValue : v.toBool();
+                    b = getBool(v, defaultValue);
                 }
                 else
                 {
@@ -1423,7 +1423,7 @@ namespace PMP::Server
         bool exists = false;
         if (q.next())
         {
-            exists = q.value(0).toBool();
+            exists = getBool(q.value(0), false);
         }
         if (exists) return true;
 
