@@ -93,6 +93,7 @@ namespace PMP::Client
         class QueueEntryInsertionResultHandler;
         class DuplicationResultHandler;
         class HistoryFragmentResultHandler;
+        class HashInfoResultHandler;
 
     public:
         explicit ServerConnection(QObject* parent,
@@ -129,6 +130,8 @@ namespace PMP::Client
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                                    LocalHashId hashId);
         Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId = 0);
@@ -180,6 +183,8 @@ namespace PMP::Client
         void sendQueueEntryHashRequest(QList<uint> const& queueIDs);
 
         void sendHashUserDataRequest(quint32 userId, QList<LocalHashId> const& hashes);
+        Future<CollectionTrackInfo, AnyResultMessageCode> sendHashInfoRequest(
+                                                                    LocalHashId hashId);
         Future<HistoryFragment, AnyResultMessageCode> sendHashHistoryRequest(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId);
@@ -385,6 +390,7 @@ namespace PMP::Client
                                         ServerMessageType messageType);
 
         void parseHashUserDataMessage(QByteArray const& message);
+        void parseHashInfoReply(QByteArray const& message);
         void parseHistoryFragmentMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);

@@ -19,7 +19,10 @@
 
 #include "miscellaneouscommands.h"
 
+#include "common/util.h"
+
 #include "client/authenticationcontroller.h"
+#include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
 #include "client/dynamicmodecontroller.h"
 #include "client/localhashidrepository.h"
@@ -298,6 +301,70 @@ namespace PMP
         );
 
         playerController->setVolume(_volume);
+    }
+
+    /* ===== TrackInfoCommand ===== */
+
+    TrackInfoCommand::TrackInfoCommand(const FileHash& hash)
+     : _hash(hash)
+    {
+        //
+    }
+
+    bool TrackInfoCommand::requiresAuthentication() const
+    {
+        return false;
+    }
+
+    void TrackInfoCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
+
+        auto collectionWatcher = &serverInterface->collectionWatcher();
+
+        auto future = collectionWatcher->getTrackInfo(hashId);
+        addFailureHandler(future);
+
+        future.addResultListener(
+            this,
+            [this](CollectionTrackInfo trackInfo)
+            {
+                printTrackInfo(trackInfo);
+            }
+        );
+    }
+
+    void TrackInfoCommand::printTrackInfo(Client::CollectionTrackInfo& trackInfo)
+    {
+        QString output;
+        output.reserve(100);
+
+        output += QString("hash: %1\n").arg(_hash.toString());
+        output += QString("title: %1\n").arg(trackInfo.title());
+        output += QString("artist: %1\n").arg(trackInfo.artist());
+        output += QString("album: %1\n").arg(trackInfo.album());
+        output += QString("album artist: %1\n").arg(trackInfo.albumArtist());
+
+        if (trackInfo.lengthIsKnown())
+        {
+            auto lengthText =
+                Util::millisecondsToLongDisplayTimeText(trackInfo.lengthInMilliseconds());
+
+            output += QString("length: %1").arg(lengthText);
+        }
+        else
+        {
+            output += "length: (unknown)";
+        }
+
+        output += "\n";
+
+        if (trackInfo.isAvailable())
+            output += "available: yes";
+        else
+            output += "available: no";
+
+        setCommandExecutionSuccessful(output);
     }
 
     /* ===== TrackStatsCommand ===== */

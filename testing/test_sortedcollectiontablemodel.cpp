@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -294,6 +294,8 @@ void TestSortedCollectionTableModel::trackTitleUpdateCausesMoveToLastPosition()
     verifyInnerToOuterMapping(model);
 }
 
+/* =========== */
+
 #define NOT_IMPLEMENTED { Q_UNREACHABLE(); }
 
 /* =========== */
@@ -548,7 +550,14 @@ QHash<LocalHashId, CollectionTrackInfo> CollectionWatcherMock::getCollection()
     return _collection;
 }
 
-CollectionTrackInfo CollectionWatcherMock::getTrack(LocalHashId hashId)
+Nullable<CollectionTrackInfo> CollectionWatcherMock::getTrackFromCache(LocalHashId hashId)
+{
+    Q_UNUSED(hashId)
+    NOT_IMPLEMENTED
+}
+
+Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrackInfo(
+                                                                       LocalHashId hashId)
 {
     Q_UNUSED(hashId)
     NOT_IMPLEMENTED

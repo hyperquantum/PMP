@@ -189,6 +189,7 @@ namespace PMP::Server
         void sendQueueHistoryMessage(int limit);
         void sendHistoryFragmentMessage(uint clientReference, HistoryFragment fragment);
         void sendHashUserDataMessage(quint32 userId, QVector<HashStats> stats);
+        void sendHashInfoReply(uint clientReference, CollectionTrackInfo info);
         void sendServerNameMessage();
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
@@ -241,6 +242,7 @@ namespace PMP::Server
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
         void parseQueueEntryMoveRequestMessage(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
+        void parseHashInfoRequest(QByteArray const& message);
         void parsePersonalHistoryRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
         void parseCurrentUserScrobblingProviderInfoRequestMessage(

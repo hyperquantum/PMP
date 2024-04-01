@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -41,7 +41,9 @@ namespace PMP::Client
         bool downloadingInProgress() const override;
 
         QHash<LocalHashId, CollectionTrackInfo> getCollection() override;
-        CollectionTrackInfo getTrack(LocalHashId hashId) override;
+        Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) override;
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                            LocalHashId hashId) override;
 
     private Q_SLOTS:
         void onConnected();
@@ -54,6 +56,8 @@ namespace PMP::Client
         void onCollectionTracksChanged(QVector<PMP::Client::CollectionTrackInfo> changes);
 
     private:
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfoInternal(
+                                                                      LocalHashId hashId);
         void startDownload();
         void updateTrackAvailability(QVector<LocalHashId> hashes, bool available);
         void updateTrackData(CollectionTrackInfo const& track);
