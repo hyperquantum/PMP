@@ -155,6 +155,10 @@ namespace PMP::Client
                                                          QString albumArtist,
                                                          qint32 lengthInMilliseconds)
     {
+        Q_UNUSED(isAvailable)
+        Q_UNUSED(albumArtist)
+        Q_UNUSED(lengthInMilliseconds)
+
         qWarning() << "ResultHandler does not handle hash info;"
                    << " ref:" << clientReference
                    << " title:" << title << " artist:" << artist << " album:" << album;
