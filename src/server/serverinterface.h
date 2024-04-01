@@ -29,6 +29,7 @@
 #include "common/startstopeventstatus.h"
 #include "common/versioninfo.h"
 
+#include "collectiontrackinfo.h"
 #include "hashstats.h"
 #include "historyentry.h"
 #include "result.h"
@@ -147,6 +148,7 @@ namespace PMP::Server
         void setTrackRepetitionAvoidanceSeconds(int seconds);
 
         void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
+        Future<CollectionTrackInfo, Result> getHashInfo(FileHash hash);
 
         void shutDownServer();
         void shutDownServer(QString serverPassword);

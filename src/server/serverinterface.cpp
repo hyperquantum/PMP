@@ -672,6 +672,22 @@ namespace PMP::Server
             Q_EMIT hashUserDataChangedOrAvailable(userId, hashStatsAlreadyAvailable);
     }
 
+    Future<CollectionTrackInfo, Result> ServerInterface::getHashInfo(FileHash hash)
+    {
+        /* note: client does not need to be logged in for this */
+
+        if (hash.isNull())
+            return FutureError(Error::hashIsNull());
+
+        auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
+        if (maybeHashId == null)
+            return FutureError(Error::hashIsUnknown());
+
+        auto hashInfo = _player->resolver().getHashTrackInfo(maybeHashId.value());
+
+        return FutureResult(hashInfo);
+    }
+
     void ServerInterface::shutDownServer()
     {
         if (!isLoggedIn()) return;

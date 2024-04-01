@@ -63,6 +63,7 @@ Changes for each version:
   24: server msgs 18 & 19: add album artist to track info
   25: client msg 27, server msg 36, error codes 26 & 120 & 121: fetch personal track history
   26: parameterless actions 60 & 61, server msg 37: full indexation and quick scan for new files
+  27: client msg 28, server msg 38: requesting individual track info
 */
 
 namespace PMP
@@ -111,6 +112,7 @@ namespace PMP
         ExtensionResultMessage = 35,
         HistoryFragmentMessage = 36,
         IndexationStatusMessage = 37,
+        HashInfoReply = 38,
     };
 
     enum class ScrobblingServerMessageType : quint8
@@ -150,6 +152,7 @@ namespace PMP
         KeepAliveMessage = 25,
         ActivateDelayedStartRequest = 26,
         PersonalHistoryRequest = 27,
+        HashInfoRequest = 28,
     };
 
     enum class ScrobblingClientMessageType : quint8

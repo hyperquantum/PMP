@@ -67,6 +67,7 @@ usage:
     delayedstart wait <number> <time unit>: activate delayed start (see below)
     delayedstart at [<date>] <time>: activate delayed start (see below)
     delayedstart abort|cancel: cancel delayed start (see below)
+    trackinfo <hash>: get track information like artist, title, length, etc.
     trackstats <hash>: get track statistics
     trackhistory <hash>: get personal listening history for a track
     serverversion: get server version information
@@ -173,6 +174,14 @@ usage:
     reached yet can still be cancelled with 'cancel' or 'abort'. Delayed
     start is cancelled automatically when playback is started before the
     deadline.
+
+  'trackinfo' command:
+    trackinfo <hash>: get track information like artist, title, length, etc.
+
+    Retrieves title, artist, album, album artist, length and availability
+    for the track that was specified as an argument.
+    The hash of a track can be obtained with the 'track info' dialog in the
+    GUI Remote or with the command-line hash tool.
 
   'trackstats' command:
     trackstats <hash>: get track statistics for the current user

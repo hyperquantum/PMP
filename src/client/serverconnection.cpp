@@ -93,6 +93,10 @@ namespace PMP::Client
         virtual void handleHistoryFragment(quint32 clientReference,
                                            HistoryFragment fragment);
 
+        virtual void handleHashInfo(quint32 clientReference, bool isAvailable,
+                                    QString title, QString artist, QString album,
+                                    QString albumArtist, qint32 lengthInMilliseconds);
+
     protected:
         ResultHandler(ServerConnection* parent);
 
@@ -143,6 +147,17 @@ namespace PMP::Client
         qWarning() << "ResultHandler does not handle history fragments;"
                    << " ref:" << clientReference
                    << " entries count:" << fragment.entries().size();
+    }
+
+    void ServerConnection::ResultHandler::handleHashInfo(quint32 clientReference,
+                                                         bool isAvailable, QString title,
+                                                         QString artist, QString album,
+                                                         QString albumArtist,
+                                                         qint32 lengthInMilliseconds)
+    {
+        qWarning() << "ResultHandler does not handle hash info;"
+                   << " ref:" << clientReference
+                   << " title:" << title << " artist:" << artist << " album:" << album;
     }
 
     QString ServerConnection::ResultHandler::errorDescription(
@@ -564,7 +579,62 @@ namespace PMP::Client
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 26;
+    class ServerConnection::HashInfoResultHandler : public ResultHandler
+    {
+    public:
+        HashInfoResultHandler(ServerConnection* parent, LocalHashId hashId);
+
+        Future<CollectionTrackInfo, AnyResultMessageCode> future() const;
+
+        void handleResult(ResultMessageData const& data) override;
+
+        void handleHashInfo(quint32 clientReference, bool isAvailable, QString title,
+                            QString artist, QString album, QString albumArtist,
+                            qint32 lengthInMilliseconds) override;
+
+    private:
+        LocalHashId _hashId;
+        Promise<CollectionTrackInfo, AnyResultMessageCode> _promise;
+    };
+
+    ServerConnection::HashInfoResultHandler::HashInfoResultHandler(
+        ServerConnection* parent, LocalHashId hashId)
+     : ResultHandler(parent), _hashId(hashId)
+    {
+        //
+    }
+
+    Future<CollectionTrackInfo, AnyResultMessageCode>
+        ServerConnection::HashInfoResultHandler::future() const
+    {
+        return _promise.future();
+    }
+
+    void ServerConnection::HashInfoResultHandler::handleResult(
+                                                            const ResultMessageData& data)
+    {
+        _promise.setError(data.errorType);
+    }
+
+    void ServerConnection::HashInfoResultHandler::handleHashInfo(quint32 clientReference,
+                                                                 bool isAvailable,
+                                                                 QString title,
+                                                                 QString artist,
+                                                                 QString album,
+                                                                 QString albumArtist,
+                                                              qint32 lengthInMilliseconds)
+    {
+        Q_UNUSED(clientReference)
+
+        CollectionTrackInfo trackInfo(_hashId, isAvailable, title, artist, album,
+                                      albumArtist, lengthInMilliseconds);
+
+        _promise.setResult(trackInfo);
+    }
+
+    /* ============================================================================ */
+
+    const quint16 ServerConnection::ClientProtocolNo = 27;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -1317,6 +1387,12 @@ namespace PMP::Client
         return RequestID(ref);
     }
 
+    Future<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
+                                                                       LocalHashId hashId)
+    {
+        return sendHashInfoRequest(hashId);
+    }
+
     Future<HistoryFragment, AnyResultMessageCode>
         ServerConnection::getPersonalTrackHistory(LocalHashId hashId, uint userId,
                                                   int limit, uint startId)
@@ -1423,6 +1499,34 @@ namespace PMP::Client
         }
 
         sendBinaryMessage(message);
+    }
+
+    Future<CollectionTrackInfo, AnyResultMessageCode>
+        ServerConnection::sendHashInfoRequest(LocalHashId hashId)
+    {
+        Q_ASSERT_X(!hashId.isZero(), "sendHashInfoRequest", "hash ID is zero");
+
+        if (!_serverCapabilities->supportsRequestingIndividualTrackInfo())
+            return serverTooOldFutureError();
+
+        auto hash = _hashIdRepository->getHash(hashId);
+
+        qDebug() << "ServerConnection: sending request for hash info;"
+                 << "hash ID:" << hashId;
+
+        auto handler = QSharedPointer<HashInfoResultHandler>::create(this, hashId);
+        auto ref = registerResultHandler(handler);
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        NetworkProtocol::append2Bytes(message, ClientMessageType::HashInfoRequest);
+        NetworkUtil::append2Bytes(message, 0); // filler
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkProtocol::appendHash(message, hash);
+
+        sendBinaryMessage(message);
+
+        return handler->future();
     }
 
     Future<HistoryFragment, AnyResultMessageCode>
@@ -2130,6 +2234,9 @@ namespace PMP::Client
             return;
         case ServerMessageType::HashUserDataMessage:
             parseHashUserDataMessage(message);
+            return;
+        case ServerMessageType::HashInfoReply:
+            parseHashInfoReply(message);
             return;
         case ServerMessageType::HistoryFragmentMessage:
             parseHistoryFragmentMessage(message);
@@ -3440,6 +3547,56 @@ namespace PMP::Client
         }
     }
 
+    void ServerConnection::parseHashInfoReply(const QByteArray& message)
+    {
+        if (message.length() < 20)
+            return; /* invalid message */
+
+        quint8 availabilityByte = NetworkUtil::getByte(message, 3);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        int titleDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 8);
+        int artistDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 10);
+        int albumDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 12);
+        int albumArtistDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 14);
+        qint32 lengthInMilliseconds = NetworkUtil::get4BytesSigned(message, 16);
+
+        const int expectedMessageLength =
+            20 + titleDataSize + artistDataSize + albumDataSize + albumArtistDataSize;
+
+        if (message.length() != expectedMessageLength)
+            return;
+
+        int offset = 20;
+        QString title = NetworkUtil::getUtf8String(message, offset, titleDataSize);
+        offset += titleDataSize;
+        QString artist = NetworkUtil::getUtf8String(message, offset, artistDataSize);
+        offset += artistDataSize;
+        QString album = NetworkUtil::getUtf8String(message, offset, albumDataSize);
+        offset += albumDataSize;
+        QString albumArtist =
+            NetworkUtil::getUtf8String(message, offset, albumArtistDataSize);
+
+        bool isAvailable = availabilityByte & 1;
+
+        qDebug() << "received hash info reply: ref:" << clientReference
+                 << "; title:" << title
+                 << "; artist:" << artist
+                 << "; album:" << album
+                 << "; album artist:" << albumArtist
+                 << "; length:"
+                 << (lengthInMilliseconds >= 0
+                         ? Util::millisecondsToShortDisplayTimeText(lengthInMilliseconds)
+                         : "?")
+                 << "; available:" << isAvailable;
+
+        auto handler = _resultHandlers.take(clientReference);
+        if (handler)
+        {
+            handler->handleHashInfo(clientReference, isAvailable, title, artist,
+                                    album, albumArtist, lengthInMilliseconds);
+        }
+    }
+
     void ServerConnection::parseHistoryFragmentMessage(const QByteArray& message)
     {
         if (message.length() < 8)
@@ -3723,4 +3880,5 @@ namespace PMP::Client
 
         qDebug() << "received unknown server event:" << static_cast<int>(eventCode);
     }
+
 }

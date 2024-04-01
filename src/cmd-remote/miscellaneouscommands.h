@@ -28,6 +28,7 @@
 
 namespace PMP::Client
 {
+    class CollectionTrackInfo;
     class CurrentTrackMonitor;
     class DynamicModeController;
     class PlayerController;
@@ -98,6 +99,23 @@ namespace PMP
 
     private:
         int _volume;
+    };
+
+    class TrackInfoCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        explicit TrackInfoCommand(FileHash const& hash);
+
+        bool requiresAuthentication() const override;
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        void printTrackInfo(Client::CollectionTrackInfo& trackInfo);
+
+        FileHash _hash;
     };
 
     class TrackStatsCommand : public CommandBase

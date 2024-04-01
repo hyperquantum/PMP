@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -133,7 +133,9 @@ public:
     bool downloadingInProgress() const override;
 
     QHash<LocalHashId, CollectionTrackInfo> getCollection() override;
-    CollectionTrackInfo getTrack(LocalHashId hashId) override;
+    Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) override;
+    Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                             LocalHashId hashId) override;
 
 private:
     QHash<LocalHashId, CollectionTrackInfo> _collection;

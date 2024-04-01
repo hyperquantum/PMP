@@ -44,7 +44,7 @@ namespace PMP::Server
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 26;
+    const qint16 ConnectedClient::ServerProtocolNo = 27;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -52,9 +52,11 @@ namespace PMP::Server
                                      CollectionMonitor* collectionMonitor,
                                      ServerHealthMonitor* serverHealthMonitor,
                                      Scrobbling* scrobbling)
-     : _socket(socket), _serverInterface(serverInterface),
+     : _socket(socket),
+       _serverInterface(serverInterface),
        _player(player),
-       _users(users), _collectionMonitor(collectionMonitor),
+       _users(users),
+       _collectionMonitor(collectionMonitor),
        _serverHealthMonitor(serverHealthMonitor),
        _scrobbling(scrobbling),
        _clientProtocolNo(-1),
@@ -1021,6 +1023,47 @@ namespace PMP::Server
                 NetworkUtil::append2Bytes(message, (quint16)stat.stats().score());
             }
         }
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendHashInfoReply(uint clientReference,
+                                            CollectionTrackInfo info)
+    {
+        QString title = info.title();
+        QString artist = info.artist();
+        QString album = info.album();
+        QString albumArtist = info.albumArtist();
+
+        /* worst case: 4 bytes in UTF-8 for each char */
+        const int maxSize = (1 << 16) - 1;
+        title.truncate(maxSize / 4);
+        artist.truncate(maxSize / 4);
+        album.truncate(maxSize / 4);
+        albumArtist.truncate(maxSize / 4);
+
+        QByteArray titleData = title.toUtf8();
+        QByteArray artistData = artist.toUtf8();
+        QByteArray albumData = album.toUtf8();
+        QByteArray albumArtistData = albumArtist.toUtf8();
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4 * 2 + 4
+                        + titleData.size() + artistData.size() + albumData.size()
+                        + albumArtistData.size());
+        NetworkProtocol::append2Bytes(message, ServerMessageType::HashInfoReply);
+        NetworkUtil::appendByte(message, 0); // filler
+        NetworkUtil::appendByte(message, info.isAvailable() ? 1 : 0);
+        NetworkUtil::append4Bytes(message, clientReference);
+        NetworkUtil::append2BytesUnsigned(message, titleData.size());
+        NetworkUtil::append2BytesUnsigned(message, artistData.size());
+        NetworkUtil::append2BytesUnsigned(message, albumData.size());
+        NetworkUtil::append2BytesUnsigned(message, albumArtistData.size());
+        NetworkUtil::append4BytesSigned(message, info.lengthInMilliseconds());
+        message += titleData;
+        message += artistData;
+        message += albumData;
+        message += albumArtistData;
 
         sendBinaryMessage(message);
     }
@@ -2248,6 +2291,9 @@ namespace PMP::Server
         case ClientMessageType::HashUserDataRequestMessage:
             parseHashUserDataRequest(message);
             return;
+        case ClientMessageType::HashInfoRequest:
+            parseHashInfoRequest(message);
+            return;
         case ClientMessageType::PersonalHistoryRequest:
             parsePersonalHistoryRequest(message);
             return;
@@ -2906,6 +2952,39 @@ namespace PMP::Server
         }
 
         _serverInterface->requestHashUserData(userId, hashes);
+    }
+
+    void ConnectedClient::parseHashInfoRequest(const QByteArray& message)
+    {
+        if (message.length() != 8 + NetworkProtocol::FILEHASH_BYTECOUNT)
+            return; /* invalid message */
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        bool ok;
+        auto hash = NetworkProtocol::getHash(message, 8, &ok);
+        if (!ok || hash.isNull())
+        {
+            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
+            return;
+        }
+
+        auto future = _serverInterface->getHashInfo(hash);
+
+        future.addResultListener(
+            this,
+            [this, clientReference](CollectionTrackInfo info)
+            {
+                sendHashInfoReply(clientReference, info);
+            }
+        );
+        future.addFailureListener(
+            this,
+            [this, clientReference](Result result)
+            {
+                sendResultMessage(result, clientReference);
+            }
+        );
     }
 
     void ConnectedClient::parsePersonalHistoryRequest(const QByteArray& message)

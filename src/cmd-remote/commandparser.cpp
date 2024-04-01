@@ -359,6 +359,10 @@ namespace PMP
         {
             parseDelayedStartCommand(args);
         }
+        else if (command == "trackinfo")
+        {
+            parseTrackInfoCommand(args);
+        }
         else if (command == "trackstats")
         {
             parseTrackStatsCommand(args);
@@ -745,6 +749,24 @@ namespace PMP
         }
 
         _command = new DelayedStartWaitCommand(number * unitMilliseconds);
+    }
+
+    void CommandParser::parseTrackInfoCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent() || arguments.haveMore())
+        {
+            _errorMessage = "Command 'trackinfo' requires exactly one argument!";
+            return;
+        }
+
+        auto hash = arguments.tryParseTrackHash();
+        if (hash.isNull())
+        {
+            _errorMessage = QString("Not a track hash: %1").arg(arguments.current());
+            return;
+        }
+
+        _command = new TrackInfoCommand(hash);
     }
 
     void CommandParser::parseTrackStatsCommand(CommandArguments arguments)

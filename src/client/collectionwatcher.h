@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,10 @@
 #ifndef PMP_CLIENT_COLLECTIONWATCHER_H
 #define PMP_CLIENT_COLLECTIONWATCHER_H
 
+#include "common/future.h"
+#include "common/nullable.h"
+#include "common/resultmessageerrorcode.h"
+
 #include "collectiontrackinfo.h"
 
 #include <QHash>
@@ -39,7 +43,9 @@ namespace PMP::Client
         virtual bool downloadingInProgress() const = 0;
 
         virtual QHash<LocalHashId, CollectionTrackInfo> getCollection() = 0;
-        virtual CollectionTrackInfo getTrack(LocalHashId hashId) = 0;
+        virtual Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) = 0;
+        virtual Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                                LocalHashId hashId) = 0;
 
     Q_SIGNALS:
         void downloadingInProgressChanged();
