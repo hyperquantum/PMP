@@ -22,7 +22,6 @@
 #include "common/concurrent.h"
 #include "common/containerutil.h"
 #include "common/promise.h"
-#include "common/version.h"
 
 #include "database.h"
 #include "delayedstart.h"
@@ -140,13 +139,7 @@ namespace PMP::Server
 
     VersionInfo ServerInterface::getServerVersionInfo() const
     {
-        VersionInfo info;
-        info.programName = PMP_PRODUCT_NAME;
-        info.versionForDisplay = PMP_VERSION_DISPLAY;
-        info.vcsBuild = VCS_REVISION_LONG;
-        info.vcsBranch = VCS_BRANCH;
-
-        return info;
+        return VersionInfo::current();
     }
 
     ResultOrError<QUuid, Result> ServerInterface::getDatabaseUuid() const

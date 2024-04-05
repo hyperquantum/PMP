@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,25 +17,20 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_VERSIONINFO_H
-#define PMP_VERSIONINFO_H
+#include "versioninfo.h"
 
-#include <QMetaType>
-#include <QString>
+#include "common/version.h"
 
 namespace PMP
 {
-    struct VersionInfo
+    VersionInfo VersionInfo::current()
     {
-        QString programName;
-        QString versionForDisplay;
-        QString vcsBuild;
-        QString vcsBranch;
+        VersionInfo info;
+        info.programName = PMP_PRODUCT_NAME;
+        info.versionForDisplay = PMP_VERSION_DISPLAY;
+        info.vcsBuild = VCS_REVISION_LONG;
+        info.vcsBranch = VCS_BRANCH;
 
-        static VersionInfo current();
-    };
+        return info;
+    }
 }
-
-Q_DECLARE_METATYPE(PMP::VersionInfo)
-
-#endif

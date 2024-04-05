@@ -562,14 +562,39 @@ namespace PMP
 
     void MainWindow::onAboutPmpAction()
     {
-        const auto programNameVersionBuild =
-            QString(VCS_REVISION_LONG).isEmpty()
-                ? tr("Party Music Player <b>version %1</b>")
-                    .arg(PMP_VERSION_DISPLAY)
-                : tr("Party Music Player <b>version %1</b> build %2 (%3)")
-                    .arg(PMP_VERSION_DISPLAY,
-                         VCS_REVISION_LONG,
-                         VCS_BRANCH);
+        Nullable<VersionInfo> serverVersionInfo;
+        QString serverVersionProblem;
+
+        if (!_serverInterface || !_serverInterface->connected())
+        {
+            serverVersionProblem = tr("not connected to a server");
+        }
+        else
+        {
+            auto serverVersionFuture =
+                _serverInterface->generalController().getServerVersionInfo();
+
+            auto maybeServerVersionResultOrError =
+                serverVersionFuture.resultOrErrorIfFinished();
+
+            if (maybeServerVersionResultOrError == null
+                || maybeServerVersionResultOrError.value().failed())
+            {
+                serverVersionProblem = tr("version unknown");
+            }
+            else
+            {
+                serverVersionInfo = maybeServerVersionResultOrError.value().result();
+            }
+        }
+
+        const auto clientVersion = VersionInfo::current();
+        const auto clientVersionText = getVersionText(clientVersion);
+
+        const auto serverVersionText =
+            (serverVersionProblem.isEmpty())
+                ? getVersionText(serverVersionInfo.value())
+                : tr("<i>%1</i>").arg(serverVersionProblem);
 
         QString aboutText =
             tr(
@@ -584,15 +609,18 @@ namespace PMP
                 " License (GPLv3).</p>"
                 "<p>Website: <a href=\"%1\">%1</a></p>"
                 "<p>Report bugs at: <a href=\"%2\">%2</a></p>"
-                "<p>%3<br>" /* program name, version, and possibly build info */
+                "<hr>"
+                "<p><b>Client</b>: %3<br>" /* program name, version, and possibly build info */
                 "%4</p>" /* copyright line */
-                "<p>Using Qt version %5</p>"
+                "<p><b>Server</b>: %5</p>"
+                "<p>Using Qt version %6</p>"
                 "</html>"
             )
             .arg(PMP_WEBSITE,
                  PMP_BUGREPORT_LOCATION,
-                 programNameVersionBuild,
+                 clientVersionText,
                  Util::getCopyrightLine(false),
+                 serverVersionText,
                  QT_VERSION_STR);
 
         QMessageBox::about(this, tr("About PMP"), aboutText);
@@ -685,6 +713,9 @@ namespace PMP
         if (_serverInterface && _serverInterface->connected())
         {
             showUserAccountPicker();
+
+            /* fetch server version */
+            (void)_serverInterface->generalController().getServerVersionInfo();
         }
         else
         {
@@ -931,5 +962,23 @@ namespace PMP
                 msgBox.exec();
             }
         );
+    }
+
+    QString MainWindow::getVersionText(const VersionInfo& versionInfo)
+    {
+        if (versionInfo.vcsBuild.isEmpty())
+        {
+            return tr("%1 <b>version %2</b>")
+                .arg(versionInfo.programName,
+                     versionInfo.versionForDisplay);
+        }
+        else
+        {
+            return tr("%1 <b>version %2</b> build %3 (%4)")
+                .arg(versionInfo.programName,
+                     versionInfo.versionForDisplay,
+                     versionInfo.vcsBuild,
+                     versionInfo.vcsBranch);
+        }
     }
 }

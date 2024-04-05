@@ -34,6 +34,7 @@ set(PMP_COMMON_SOURCES
     common/tagdata.cpp
     common/tribool.cpp
     common/util.cpp
+    common/versioninfo.cpp
 )
 set(PMP_COMMON_HEADERS
     common/powermanagement.h
