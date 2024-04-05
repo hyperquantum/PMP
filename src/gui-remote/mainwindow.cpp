@@ -65,15 +65,9 @@ namespace PMP
 {
     MainWindow::MainWindow(QWidget* parent)
      : QMainWindow(parent),
-       _notificationBar(nullptr),
-       _leftStatus(nullptr),
-       _rightStatus(nullptr),
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
        _hashIdRepository(new LocalHashIdRepository()),
-       _userPickerWidget(nullptr),
-       _loginWidget(nullptr),
-       _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
        _powerManagement(new PowerManagement(this))
     {

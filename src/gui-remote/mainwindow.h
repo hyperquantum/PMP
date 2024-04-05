@@ -106,9 +106,9 @@ namespace PMP
         void connectErrorPopupToActionResult(SimpleFuture<AnyResultMessageCode> future,
                                              QString failureText);
 
-        NotificationBar* _notificationBar;
-        QLabel* _leftStatus;
-        QLabel* _rightStatus;
+        NotificationBar* _notificationBar { nullptr };
+        QLabel* _leftStatus { nullptr };
+        QLabel* _rightStatus { nullptr };
         QLabel* _scrobblingStatusLabel;
         QTimer* _leftStatusTimer;
 
@@ -116,10 +116,10 @@ namespace PMP
         Client::LocalHashIdRepository* _hashIdRepository;
         Client::ServerConnection* _connection { nullptr };
         Client::ServerInterface* _serverInterface { nullptr };
-        UserPickerWidget* _userPickerWidget;
-        UserAccountCreationWidget* _userAccountCreationWidget;
-        LoginWidget* _loginWidget;
-        MainWidget* _mainWidget;
+        UserPickerWidget* _userPickerWidget { nullptr };
+        UserAccountCreationWidget* _userAccountCreationWidget { nullptr };
+        LoginWidget* _loginWidget { nullptr };
+        MainWidget* _mainWidget { nullptr };
         QDockWidget* _musicCollectionDock;
 
         QAction* _reloadServerSettingsAction;
