@@ -4,6 +4,7 @@
 
 - make sure all important features are done
 - make sure no high priority bugs are left
+- fix all build warnings (including GitHub build)
 - create screenshot(s)
 - complete the changelog
 - rewrite and clean up things in the changelog
