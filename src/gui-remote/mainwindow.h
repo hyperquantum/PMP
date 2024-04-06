@@ -48,6 +48,7 @@ namespace PMP
     class PowerManagement;
     class UserAccountCreationWidget;
     class UserPickerWidget;
+    struct VersionInfo;
 
     class MainWindow : public QMainWindow
     {
@@ -105,6 +106,8 @@ namespace PMP
 
         void connectErrorPopupToActionResult(SimpleFuture<AnyResultMessageCode> future,
                                              QString failureText);
+
+        QString getVersionText(VersionInfo const& versionInfo);
 
         NotificationBar* _notificationBar { nullptr };
         QLabel* _leftStatus { nullptr };

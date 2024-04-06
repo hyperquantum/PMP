@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -81,6 +81,11 @@ namespace PMP
         void addFailureListener(QObject* receiver, std::function<void (ErrorType)> f)
         {
             _storage->addFailureListener(receiver, f);
+        }
+
+        Nullable<ResultOrError<ResultType, ErrorType>> resultOrErrorIfFinished()
+        {
+            return _storage->getResultOrErrorIfFinished();
         }
 
         ResultOrError<ResultType, ErrorType> resultOrError()
