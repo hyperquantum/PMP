@@ -215,8 +215,6 @@ namespace PMP
         static quint8 encode(ScrobblerStatus status);
         static ScrobblerStatus decodeScrobblerStatus(quint8 status);
 
-        static int ratePassword(QString password);
-
         static QByteArray hashPassword(QByteArray const& salt, QString password);
         static QByteArray hashPasswordForSession(QByteArray const& userSalt,
                                                  QByteArray const& sessionSalt,
