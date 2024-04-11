@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,10 +20,11 @@
 #include "useraccountcreationwidget.h"
 #include "ui_useraccountcreationwidget.h"
 
-#include "common/networkprotocol.h"
+#include "common/passwordstrengthevaluator.h"
 
 #include "client/authenticationcontroller.h"
 
+#include <QtDebug>
 #include <QMessageBox>
 
 using namespace PMP::Client;
@@ -85,9 +86,9 @@ namespace PMP
         }
         else
         {
-            int passwordRating = NetworkProtocol::ratePassword(password);
+            auto rating = PasswordStrengthEvaluator::getPasswordRating(password);
 
-            feedback = QString("Password score is %1.").arg(passwordRating);
+            feedback = QString("Password strength: %1").arg(ratingToString(rating));
         }
 
         _ui->passwordFeedbackLabel->setText(feedback);
@@ -147,14 +148,21 @@ namespace PMP
             return;
         }
 
-        int passwordRating = NetworkProtocol::ratePassword(password);
-        if (passwordRating <= 20)
+        auto rating = PasswordStrengthEvaluator::getPasswordRating(password);
+        if (rating == PasswordStrengthRating::TooWeak)
         {
-            QMessageBox::warning(
-                this, "Bad password",
-                QString("Password is too simple! (Score is %1, but should be at least 20)")
-                    .arg(QString::number(passwordRating))
-            );
+            QMessageBox messageBox;
+            messageBox.setIcon(QMessageBox::Warning);
+            messageBox.setText(
+                tr("The password is too weak. Make it longer or more complicated."));
+            messageBox.setInformativeText(
+                tr("Try using characters from multiple categories:\n"
+                   "1. lowercase letters\n"
+                   "2. uppercase letters\n"
+                   "3. digits\n"
+                   "4. special characters"));
+            messageBox.exec();
+
             return;
         }
 
@@ -205,5 +213,19 @@ namespace PMP
         _ui->newPasswordLineEdit->setEnabled(true);
         _ui->retypePasswordLineEdit->setEnabled(true);
         _ui->createAccountButton->setEnabled(true);
+    }
+
+    QString UserAccountCreationWidget::ratingToString(PasswordStrengthRating rating)
+    {
+        switch (rating)
+        {
+        case PasswordStrengthRating::TooWeak: return tr("too weak");
+        case PasswordStrengthRating::Acceptable: return tr("acceptable");
+        case PasswordStrengthRating::Good: return tr("good");
+        case PasswordStrengthRating::VeryGood: return tr("very good");
+        case PasswordStrengthRating::Excellent: return tr("excellent");
+        }
+
+        return QString::number(int(rating));
     }
 }

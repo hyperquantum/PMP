@@ -157,6 +157,16 @@ target_link_libraries(test_networkprotocol ${TAGLIB_LIBRARIES})
 add_test(test_networkprotocol test_networkprotocol)
 
 
+# TestPasswordStrengthEvaluator
+qt5_wrap_cpp(PMP_TestPasswordStrengthEvaluator_MOCS test_passwordstrengthevaluator.h)
+add_executable(test_passwordstrengthevaluator test_passwordstrengthevaluator.cpp
+    ${PMP_TestPasswordStrengthEvaluator_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/passwordstrengthevaluator.cpp
+)
+target_link_libraries(test_passwordstrengthevaluator Qt5::Core Qt5::Test)
+add_test(test_passwordstrengthevaluator test_passwordstrengthevaluator)
+
+
 # TestObfuscator
 qt5_wrap_cpp(PMP_TestObfuscator_MOCS test_obfuscator.h)
 add_executable(test_obfuscator test_obfuscator.cpp

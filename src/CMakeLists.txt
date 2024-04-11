@@ -27,6 +27,7 @@ set(PMP_COMMON_SOURCES
     common/networkprotocolextensions.cpp
     common/networkutil.cpp
     common/obfuscator.cpp
+    common/passwordstrengthevaluator.cpp
     common/powermanagement.cpp
     common/scrobblerstatus.cpp
     common/scrobblingprovider.cpp
