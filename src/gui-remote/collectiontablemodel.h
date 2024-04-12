@@ -175,7 +175,7 @@ namespace PMP
         void onNewTrackReceived(Client::CollectionTrackInfo track);
 
     private:
-        Client::LocalHashIdRepository* _hashIdRepository;
+        Client::ServerInterface* _serverInterface;
         SortedCollectionTableModel* _source;
         QStringList _searchParts;
         FileHash _searchFileHash;

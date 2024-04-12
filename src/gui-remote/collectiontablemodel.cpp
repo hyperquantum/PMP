@@ -916,7 +916,7 @@ namespace PMP
                                              ServerInterface* serverInterface,
                                              QueueHashesMonitor* queueHashesMonitor,
                                        UserForStatisticsDisplay* userForStatisticsDisplay)
-     : _hashIdRepository(serverInterface->hashIdRepository()),
+     : _serverInterface(serverInterface),
        _source(source),
        _filteringTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor)
     {
@@ -973,7 +973,14 @@ namespace PMP
         auto fileHash = FileHash::tryParse(trimmed);
         if (!fileHash.isNull())
         {
-            auto hashId = _hashIdRepository->getId(fileHash); // zero id when not found
+            // id will be zero when not found
+            auto hashId = _serverInterface->hashIdRepository()->getId(fileHash);
+
+            if (hashId.isZero())
+            {
+                // trigger server lookup of the hash
+                (void)_serverInterface->collectionWatcher().getTrackInfo(fileHash);
+            }
 
             _searchParts.clear();
             _searchFileHash = fileHash;
@@ -1028,7 +1035,9 @@ namespace PMP
         if (_searchHashId != null && _searchHashId.value().isZero()
             && !_searchFileHash.isNull())
         {
-            auto fileHashOfNewTrack = _hashIdRepository->getHash(track.hashId());
+            auto fileHashOfNewTrack =
+                _serverInterface->hashIdRepository()->getHash(track.hashId());
+
             if (fileHashOfNewTrack == _searchFileHash)
             {
                 _searchHashId = track.hashId();
