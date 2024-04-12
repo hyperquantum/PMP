@@ -70,7 +70,6 @@ IDEAS
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  * music collection: add quick search function, for searching while leaving the current filters unchanged
  * music collection: new action: add track before first interruption (break/barrier)
- * music collection: search for tracks by hash
  *** dynamic mode: detect and prevent track repetition with different hash values
  *** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)

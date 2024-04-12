@@ -318,11 +318,9 @@ namespace PMP
 
     void TrackInfoCommand::run(Client::ServerInterface* serverInterface)
     {
-        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
-
         auto collectionWatcher = &serverInterface->collectionWatcher();
 
-        auto future = collectionWatcher->getTrackInfo(hashId);
+        auto future = collectionWatcher->getTrackInfo(_hash);
         addFailureHandler(future);
 
         future.addResultListener(

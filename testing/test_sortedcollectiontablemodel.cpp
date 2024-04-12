@@ -563,6 +563,13 @@ Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrac
     NOT_IMPLEMENTED
 }
 
+Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrackInfo(
+                                                                    const FileHash& hash)
+{
+    Q_UNUSED(hash)
+    NOT_IMPLEMENTED
+}
+
 /* =========== */
 
 ServerInterfaceMock::ServerInterfaceMock()
