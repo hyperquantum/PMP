@@ -49,6 +49,8 @@ namespace PMP
         QString toFancyString() const;
         QString dumpToString() const;
 
+        static FileHash tryParse(QString const& text);
+
     private:
         uint _length;
         QByteArray _sha1;

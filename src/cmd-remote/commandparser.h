@@ -106,10 +106,6 @@ namespace PMP
             bool tryParseDate(QDate& date) const;
             FileHash tryParseTrackHash() const;
 
-            static QByteArray tryDecodeHexWithExpectedLength(QString const& text,
-                                                             int expectedLength);
-            static bool isHexEncoded(QByteArray const& bytes);
-
         private:
             QVector<QString> _arguments;
             int _currentIndex;
