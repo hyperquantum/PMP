@@ -44,6 +44,8 @@ namespace PMP::Client
         Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) override;
         Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                             LocalHashId hashId) override;
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                        FileHash const& hash) override;
 
     private Q_SLOTS:
         void onConnected();
@@ -58,6 +60,8 @@ namespace PMP::Client
     private:
         Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfoInternal(
                                                                       LocalHashId hashId);
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfoInternal(
+                                                                    FileHash const& hash);
         void startDownload();
         void updateTrackAvailability(QVector<LocalHashId> hashes, bool available);
         void updateTrackData(CollectionTrackInfo const& track);

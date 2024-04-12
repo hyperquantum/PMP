@@ -586,7 +586,7 @@ namespace PMP::Client
     class ServerConnection::HashInfoResultHandler : public ResultHandler
     {
     public:
-        HashInfoResultHandler(ServerConnection* parent, LocalHashId hashId);
+        HashInfoResultHandler(ServerConnection* parent, FileHash const& hash);
 
         Future<CollectionTrackInfo, AnyResultMessageCode> future() const;
 
@@ -597,13 +597,14 @@ namespace PMP::Client
                             qint32 lengthInMilliseconds) override;
 
     private:
-        LocalHashId _hashId;
+        FileHash _hash;
         Promise<CollectionTrackInfo, AnyResultMessageCode> _promise;
     };
 
     ServerConnection::HashInfoResultHandler::HashInfoResultHandler(
-        ServerConnection* parent, LocalHashId hashId)
-     : ResultHandler(parent), _hashId(hashId)
+                                                                ServerConnection* parent,
+                                                                const FileHash& hash)
+     : ResultHandler(parent), _hash(hash)
     {
         //
     }
@@ -630,7 +631,9 @@ namespace PMP::Client
     {
         Q_UNUSED(clientReference)
 
-        CollectionTrackInfo trackInfo(_hashId, isAvailable, title, artist, album,
+        auto hashId = _parent->_hashIdRepository->getOrRegisterId(_hash);
+
+        CollectionTrackInfo trackInfo(hashId, isAvailable, title, artist, album,
                                       albumArtist, lengthInMilliseconds);
 
         _promise.setResult(trackInfo);
@@ -1394,7 +1397,15 @@ namespace PMP::Client
     Future<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
                                                                        LocalHashId hashId)
     {
-        return sendHashInfoRequest(hashId);
+        auto hash = _hashIdRepository->getHash(hashId);
+
+        return sendHashInfoRequest(hash);
+    }
+
+    Future<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
+                                                                    const FileHash& hash)
+    {
+        return sendHashInfoRequest(hash);
     }
 
     Future<HistoryFragment, AnyResultMessageCode>
@@ -1506,19 +1517,17 @@ namespace PMP::Client
     }
 
     Future<CollectionTrackInfo, AnyResultMessageCode>
-        ServerConnection::sendHashInfoRequest(LocalHashId hashId)
+        ServerConnection::sendHashInfoRequest(FileHash const& hash)
     {
-        Q_ASSERT_X(!hashId.isZero(), "sendHashInfoRequest", "hash ID is zero");
+        Q_ASSERT_X(!hash.isNull(), "sendHashInfoRequest", "hash is null");
 
         if (!_serverCapabilities->supportsRequestingIndividualTrackInfo())
             return serverTooOldFutureError();
 
-        auto hash = _hashIdRepository->getHash(hashId);
+        qDebug() << "ServerConnection: sending request for hash info; hash:" << hash
+                 << " hash ID:" << _hashIdRepository->getId(hash); // (ID may be zero)
 
-        qDebug() << "ServerConnection: sending request for hash info;"
-                 << "hash ID:" << hashId;
-
-        auto handler = QSharedPointer<HashInfoResultHandler>::create(this, hashId);
+        auto handler = QSharedPointer<HashInfoResultHandler>::create(this, hash);
         auto ref = registerResultHandler(handler);
 
         QByteArray message;

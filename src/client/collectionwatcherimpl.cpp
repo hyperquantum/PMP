@@ -20,6 +20,7 @@
 #include "collectionwatcherimpl.h"
 
 #include "collectionfetcher.h"
+#include "localhashidrepository.h"
 #include "servercapabilities.h"
 #include "serverconnection.h"
 
@@ -100,6 +101,22 @@ namespace PMP::Client
         return getTrackInfoInternal(hashId);
     }
 
+    Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherImpl::getTrackInfo(
+                                                                    const FileHash& hash)
+    {
+        auto hashId = _connection->hashIdRepository()->getId(hash);
+
+        if (!hashId.isZero())
+        {
+            auto it = _collectionHash.find(hashId);
+
+            if (it != _collectionHash.end())
+                return FutureResult(it.value());
+        }
+
+        return getTrackInfoInternal(hash);
+    }
+
     void CollectionWatcherImpl::onConnected()
     {
         if (_autoDownload)
@@ -156,6 +173,22 @@ namespace PMP::Client
         CollectionWatcherImpl::getTrackInfoInternal(LocalHashId hashId)
     {
         auto future = _connection->getTrackInfo(hashId);
+
+        future.addResultListener(
+            this,
+            [this](CollectionTrackInfo trackInfo)
+            {
+                updateTrackData(trackInfo);
+            }
+        );
+
+        return future;
+    }
+
+    Future<CollectionTrackInfo, AnyResultMessageCode>
+        CollectionWatcherImpl::getTrackInfoInternal(const FileHash& hash)
+    {
+        auto future = _connection->getTrackInfo(hash);
 
         future.addResultListener(
             this,

@@ -136,6 +136,8 @@ public:
     Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) override;
     Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                              LocalHashId hashId) override;
+    Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                        FileHash const& hash) override;
 
 private:
     QHash<LocalHashId, CollectionTrackInfo> _collection;

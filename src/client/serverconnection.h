@@ -21,6 +21,7 @@
 #define PMP_CLIENT_SERVERCONNECTION_H
 
 #include "common/disconnectreason.h"
+#include "common/filehash.h"
 #include "common/future.h"
 #include "common/networkprotocol.h"
 #include "common/networkprotocolextensions.h"
@@ -132,6 +133,8 @@ namespace PMP::Client
         RequestID duplicateQueueEntry(uint queueID);
         Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                                     LocalHashId hashId);
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                                    FileHash const& hash);
         Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId = 0);
@@ -184,7 +187,7 @@ namespace PMP::Client
 
         void sendHashUserDataRequest(quint32 userId, QList<LocalHashId> const& hashes);
         Future<CollectionTrackInfo, AnyResultMessageCode> sendHashInfoRequest(
-                                                                    LocalHashId hashId);
+                                                                    const FileHash& hash);
         Future<HistoryFragment, AnyResultMessageCode> sendHashHistoryRequest(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId);
