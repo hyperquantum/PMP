@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,6 +25,19 @@
 
 namespace PMP
 {
+    namespace
+    {
+        QString fileHashToStringInternal(FileHash const& hash, QChar dash)
+        {
+            if (hash.isNull())
+                return "(null)";
+
+            return QString::number(hash.length())
+                   + dash + hash.SHA1().toHex()
+                   + dash + hash.MD5().toHex();
+        }
+    }
+
     FileHash::FileHash(uint length, const QByteArray& sha1,
         const QByteArray& md5)
      : _length(length), _sha1(sha1), _md5(md5)
@@ -50,12 +63,12 @@ namespace PMP
     QString FileHash::toString() const
     {
         auto dash = '-';
-        return toStringInternal(dash);
+        return fileHashToStringInternal(*this, dash);
     }
 
     QString FileHash::toFancyString() const
     {
-        return toStringInternal(UnicodeChars::figureDash);
+        return fileHashToStringInternal(*this, UnicodeChars::figureDash);
     }
 
     QString FileHash::dumpToString() const
@@ -66,13 +79,5 @@ namespace PMP
         return "(" + QString::number(_length) + "; "
             + _sha1.toHex() + "; "
             + _md5.toHex() + ")";
-    }
-
-    QString FileHash::toStringInternal(QChar dash) const
-    {
-        if (isNull())
-            return "(null)";
-
-        return QString::number(_length) + dash + _sha1.toHex() + dash + _md5.toHex();
     }
 }
