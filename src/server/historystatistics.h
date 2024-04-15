@@ -67,6 +67,12 @@ namespace PMP::Server
         Future<SuccessType, FailureType> scheduleFetch(quint32 userId, uint hashId,
                                                        bool onlyIfMissing);
 
+        enum class ForceRecalculation
+        {
+            No,
+            Yes,
+        };
+
         struct UserHashStatisticsEntry
         {
             TrackStats individualStats;
@@ -80,14 +86,16 @@ namespace PMP::Server
         };
 
         static ResultOrError<TrackStats, FailureType> fetchInternal(
-                                                            HistoryStatistics* calculator,
-                                                            quint32 userId,
-                                                            QVector<uint> hashIdsInGroup);
+                                                HistoryStatistics* calculator,
+                                                quint32 userId,
+                                                QVector<uint> hashIdsInGroup,
+                                                ForceRecalculation forceRecalculation);
 
         static ResultOrError<QHash<uint, TrackStats>, FailureType> fetchIndividualStats(
-                                                            UserHashStatsCache* cache,
-                                                            quint32 userId,
-                                                            QVector<uint> hashIdsInGroup);
+                                                UserHashStatsCache* cache,
+                                                quint32 userId,
+                                                QVector<uint> hashIdsInGroup,
+                                                ForceRecalculation forceRecalculation);
 
         /*
         static ResultOrError<SuccessType, FailureType> ensureCacheHasBeenLoadedForUser(

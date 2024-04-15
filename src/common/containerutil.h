@@ -94,6 +94,13 @@ namespace PMP
             for (T const& element : vector)
                 set.remove(element);
         }
+
+        template<typename K, typename V>
+        static void removeKeysFromSet(QHash<K, V> const& hash, QSet<K>& set)
+        {
+            for (auto it = hash.constBegin(); it != hash.constEnd(); ++it)
+                set.remove(it.key());
+        }
     };
 }
 #endif

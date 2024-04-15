@@ -87,7 +87,9 @@ namespace PMP::Server
                     const auto hashesInGroup =
                             _hashRelations->getEquivalencyGroup(hashId);
 
-                    auto result = fetchInternal(this, userId, hashesInGroup);
+                    auto result = fetchInternal(this, userId, hashesInGroup,
+                                                ForceRecalculation::Yes);
+
                     return result.toSuccessOrFailure();
                 }
             );
@@ -117,7 +119,7 @@ namespace PMP::Server
             _threadPool,
             [this, userId, hashesInGroup]()
             {
-                return fetchInternal(this, userId, hashesInGroup);
+                return fetchInternal(this, userId, hashesInGroup, ForceRecalculation::No);
             }
         );
 
@@ -203,7 +205,8 @@ namespace PMP::Server
                 _threadPool,
                 [this, userId, hashesInGroup]()
                 {
-                    return fetchInternal(this, userId, hashesInGroup);
+                    return fetchInternal(this, userId, hashesInGroup,
+                                         ForceRecalculation::No);
                 }
             );
 
@@ -211,9 +214,10 @@ namespace PMP::Server
     }
 
     ResultOrError<TrackStats, FailureType> HistoryStatistics::fetchInternal(
-                                                            HistoryStatistics* calculator,
-                                                            quint32 userId,
-                                                            QVector<uint> hashIdsInGroup)
+                                                    HistoryStatistics* calculator,
+                                                    quint32 userId,
+                                                    QVector<uint> hashIdsInGroup,
+                                                    ForceRecalculation forceRecalculation)
     {
         qDebug() << "HistoryStatistics: starting fetch for user" << userId
                  << "and hash IDs" << hashIdsInGroup;
@@ -221,7 +225,7 @@ namespace PMP::Server
         auto* cache = calculator->_userHashStatsCache;
 
         auto individualStatsOrFailure =
-            fetchIndividualStats(cache, userId, hashIdsInGroup);
+            fetchIndividualStats(cache, userId, hashIdsInGroup, forceRecalculation);
 
         if (individualStatsOrFailure.failed())
             return failure;
@@ -275,49 +279,58 @@ namespace PMP::Server
     }
 
     ResultOrError<QHash<uint, TrackStats>, FailureType>
-        HistoryStatistics::fetchIndividualStats(UserHashStatsCache* cache, quint32 userId,
-                                                QVector<uint> hashIdsInGroup)
+    HistoryStatistics::fetchIndividualStats(UserHashStatsCache* cache, quint32 userId,
+                                            QVector<uint> hashIdsInGroup,
+                                            ForceRecalculation forceRecalculation)
     {
-        //ensureCacheHasBeenLoadedForUser(cache, userId);
-        auto const statsFromCache = cache->getForUser(userId, hashIdsInGroup);
-
         QHash<uint, TrackStats> result;
         result.reserve(hashIdsInGroup.size());
 
-        for (auto& record : statsFromCache)
+        if (forceRecalculation == ForceRecalculation::No)
         {
-            result.insert(record.hashId, toTrackStats(record));
-        }
+            //ensureCacheHasBeenLoadedForUser(cache, userId);
+            auto const statsFromCache = cache->getForUser(userId, hashIdsInGroup);
 
-        if (result.size() == hashIdsInGroup.size())
-            return result;
+            for (auto& record : statsFromCache)
+            {
+                result.insert(record.hashId, toTrackStats(record));
+            }
+
+            if (result.size() == hashIdsInGroup.size())
+                return result;
+        }
+        else
+        {
+            qDebug() << "HistoryStatistics: recalculating for user" << userId
+                     << "and hashes" << hashIdsInGroup;
+        }
 
         QSet<uint> toFetch = ContainerUtil::toSet(hashIdsInGroup);
-        for (auto& record : statsFromCache)
-        {
-            toFetch.remove(record.hashId);
-        }
+        ContainerUtil::removeKeysFromSet(result, toFetch);
 
         auto database = Database::getDatabaseForCurrentThread();
         if (!database)
             return failure;
 
-        auto statsFromCacheTable =
-            database->getCachedHashStats(userId, ContainerUtil::toVector(toFetch));
-
-        if (statsFromCacheTable.failed())
-            return failure;
-
-        for (auto& record : statsFromCacheTable.result())
+        if (forceRecalculation == ForceRecalculation::No)
         {
-            cache->add(userId, record);
-            result.insert(record.hashId, toTrackStats(record));
+            auto statsFromCacheTable =
+                database->getCachedHashStats(userId, ContainerUtil::toVector(toFetch));
 
-            toFetch.remove(record.hashId);
+            if (statsFromCacheTable.failed())
+                return failure;
+
+            for (auto& record : statsFromCacheTable.result())
+            {
+                cache->add(userId, record);
+                result.insert(record.hashId, toTrackStats(record));
+
+                toFetch.remove(record.hashId);
+            }
+
+            if (toFetch.isEmpty())
+                return result;
         }
-
-        if (toFetch.isEmpty())
-            return result;
 
         auto statsFromHistoryTable =
             database->getHashHistoryStats(userId, ContainerUtil::toVector(toFetch));
