@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,9 +20,11 @@
 #include "historystatistics.h"
 
 #include "common/concurrent.h"
+#include "common/containerutil.h"
 
 #include "database.h"
 #include "hashrelations.h"
+#include "userhashstatscache.h"
 
 #include <QThreadPool>
 
@@ -44,10 +46,12 @@ namespace PMP::Server
         }
     }
 
-    HistoryStatistics::HistoryStatistics(QObject* parent, HashRelations* hashRelations)
+    HistoryStatistics::HistoryStatistics(QObject* parent, HashRelations* hashRelations,
+                                         UserHashStatsCache* userHashStatsCache)
      : QObject(parent),
        _threadPool(new QThreadPool(this)),
-       _hashRelations(hashRelations)
+       _hashRelations(hashRelations),
+       _userHashStatsCache(userHashStatsCache)
     {
         _threadPool->setMaxThreadCount(2);
     }
@@ -214,27 +218,29 @@ namespace PMP::Server
         qDebug() << "HistoryStatistics: starting fetch for user" << userId
                  << "and hash IDs" << hashIdsInGroup;
 
-        auto db = Database::getDatabaseForCurrentThread();
-        if (!db)
+        auto* cache = calculator->_userHashStatsCache;
+
+        auto individualStatsOrFailure =
+            fetchIndividualStats(cache, userId, hashIdsInGroup);
+
+        if (individualStatsOrFailure.failed())
             return failure;
 
-        auto historyStatsOrFailure = db->getHashHistoryStats(userId, hashIdsInGroup);
-        if (historyStatsOrFailure.failed())
-            return failure;
-
-        const auto multipleHistoryStats = historyStatsOrFailure.result();
-
-        QVector<TrackStats> allIndividual;
-        allIndividual.reserve(hashIdsInGroup.size());
+        auto individualStats = individualStatsOrFailure.result();
 
         QMutexLocker lock(&calculator->_mutex);
         auto& userData = calculator->_userData[userId];
 
-        for (auto& historyStats : multipleHistoryStats)
+        for (auto it = individualStats.constBegin();
+             it != individualStats.constEnd();
+             ++it)
         {
-            auto& hashData = userData.hashData[historyStats.hashId];
-            hashData.individualStats = toTrackStats(historyStats);
+            auto& hashData = userData.hashData[it.key()];
+            hashData.individualStats = it.value();
         }
+
+        QVector<TrackStats> allIndividual;
+        allIndividual.reserve(hashIdsInGroup.size());
 
         for (auto hashId : qAsConst(hashIdsInGroup))
         {
@@ -267,4 +273,96 @@ namespace PMP::Server
 
         return calculatedGroupStats;
     }
+
+    ResultOrError<QHash<uint, TrackStats>, FailureType>
+        HistoryStatistics::fetchIndividualStats(UserHashStatsCache* cache, quint32 userId,
+                                                QVector<uint> hashIdsInGroup)
+    {
+        //ensureCacheHasBeenLoadedForUser(cache, userId);
+        auto const statsFromCache = cache->getForUser(userId, hashIdsInGroup);
+
+        QHash<uint, TrackStats> result;
+        result.reserve(hashIdsInGroup.size());
+
+        for (auto& record : statsFromCache)
+        {
+            result.insert(record.hashId, toTrackStats(record));
+        }
+
+        if (result.size() == hashIdsInGroup.size())
+            return result;
+
+        QSet<uint> toFetch = ContainerUtil::toSet(hashIdsInGroup);
+        for (auto& record : statsFromCache)
+        {
+            toFetch.remove(record.hashId);
+        }
+
+        auto database = Database::getDatabaseForCurrentThread();
+        if (!database)
+            return failure;
+
+        auto statsFromCacheTable =
+            database->getCachedHashStats(userId, ContainerUtil::toVector(toFetch));
+
+        if (statsFromCacheTable.failed())
+            return failure;
+
+        for (auto& record : statsFromCacheTable.result())
+        {
+            cache->add(userId, record);
+            result.insert(record.hashId, toTrackStats(record));
+
+            toFetch.remove(record.hashId);
+        }
+
+        if (toFetch.isEmpty())
+            return result;
+
+        auto statsFromHistoryTable =
+            database->getHashHistoryStats(userId, ContainerUtil::toVector(toFetch));
+
+        if (statsFromHistoryTable.failed())
+            return failure;
+
+        for (auto& record : statsFromHistoryTable.result())
+        {
+            cache->add(userId, record);
+            result.insert(record.hashId, toTrackStats(record));
+
+            // TODO: should we ignore errors?
+            database->updateUserHashStatsCache(userId, record);
+        }
+
+        return result;
+    }
+
+    /*
+    ResultOrError<SuccessType, FailureType>
+        HistoryStatistics::ensureCacheHasBeenLoadedForUser(UserHashStatsCache* cache,
+                                                           quint32 userId)
+    {
+        if (cache->hasBeenLoadedForUser(userId))
+            return success;
+
+        QMutexLocker lock(&);
+
+        auto database = Database::getDatabaseForCurrentThread();
+        if (!database)
+            return failure;
+
+        qDebug() << "HistoryStatistics: loading cached stats for user" << userId;
+
+        auto recordsOrFailure = database->getAllCachedHashStatsForUser(userId);
+        if (recordsOrFailure.failed())
+            return failure;
+
+        cache->loadForUser(userId, recordsOrFailure.result());
+
+        qDebug() << "HistoryStatistics: cached stats for user" << userId
+                 << "successfully loaded";
+
+        return success;
+    }
+    */
 }

@@ -118,6 +118,16 @@ namespace PMP::Server
                                                                 uint startId,
                                                                 int limit);
 
+        ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
+                                                            getAllCachedHashStatsForUser(
+                                                                        quint32 userId);
+        ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
+                                                                    getCachedHashStats(
+                                                                quint32 userId,
+                                                                QVector<quint32> hashIds);
+        ResultOrError<SuccessType, FailureType> updateUserHashStatsCache(quint32 userId,
+                                        DatabaseRecords::HashHistoryStats const& stats);
+
         ResultOrError<QVector<QPair<quint32, quint32>>, FailureType> getEquivalences();
         ResultOrError<SuccessType, FailureType> registerEquivalence(quint32 hashId1,
                                                                     quint32 hashId2,
@@ -174,6 +184,7 @@ namespace PMP::Server
         static bool initUsersTable(QSqlQuery& q);
         static bool initHistoryTable(QSqlQuery& q);
         static bool initEquivalenceTable(QSqlQuery& q);
+        static bool initUserHashStatsCacheTable(QSqlQuery& q);
 
         static QString _hostname;
         static int _port;

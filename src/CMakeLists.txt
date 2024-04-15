@@ -135,6 +135,7 @@ set(PMP_SERVER_SOURCES
     server/trackinfoproviderimpl.cpp
     server/trackrepetitionchecker.cpp
     server/trackstats.cpp
+    server/userhashstatscache.cpp
     server/users.cpp
     server/wavetrackgenerator.cpp
 )

@@ -42,6 +42,7 @@
 #include "serversettings.h"
 #include "tcpserver.h"
 #include "trackinfoproviderimpl.h"
+#include "userhashstatscache.h"
 #include "users.h"
 
 #include <QCoreApplication>
@@ -119,8 +120,8 @@ static void setUpAndRunInitialIndexation(Resolver* resolver)
     resolver->startFullIndexation();
 }
 
-static void loadEquivalencesAndStartStatisticsPrefetchAsync(HashRelations* hashRelations,
-                                                  HistoryStatisticsPrefetcher* prefetcher)
+static void loadEquivalencesAndStartStatisticsPrefetchAsync(HashRelations* hashRelations/*,
+                                                  HistoryStatisticsPrefetcher* prefetcher*/)
 {
     auto equivalencesLoadingFuture =
         Concurrent::run<SuccessType, FailureType>(
@@ -142,22 +143,22 @@ static void loadEquivalencesAndStartStatisticsPrefetchAsync(HashRelations* hashR
         );
 
     equivalencesLoadingFuture.addListener(
-        prefetcher,
-        [prefetcher](ResultOrError<SuccessType, FailureType> result)
+        //prefetcher,
+        [/*prefetcher*/](ResultOrError<SuccessType, FailureType> result)
         {
             if (result.failed())
                 qDebug() << "failed to load equivalences from the database";
 
-            prefetcher->start();
+            //prefetcher->start();
         }
     );
 }
 
-static void startBackgroundTasks(HashRelations* hashRelations,
-                                 HistoryStatisticsPrefetcher* historyStatisticsPrefetcher)
+static void startBackgroundTasks(HashRelations* hashRelations/*,
+                            HistoryStatisticsPrefetcher* historyStatisticsPrefetcher*/)
 {
-    loadEquivalencesAndStartStatisticsPrefetchAsync(hashRelations,
-                                                    historyStatisticsPrefetcher);
+    loadEquivalencesAndStartStatisticsPrefetchAsync(hashRelations/*,
+                                                    historyStatisticsPrefetcher*/);
 }
 
 static int runServer(QCoreApplication& app, bool doIndexation);
@@ -238,7 +239,8 @@ static int runServer(QCoreApplication& app, bool doIndexation)
 
     HashIdRegistrar hashIdRegistrar;
     HashRelations hashRelations;
-    HistoryStatistics historyStatistics(nullptr, &hashRelations);
+    UserHashStatsCache userHashStatsCache;
+    HistoryStatistics historyStatistics(nullptr, &hashRelations, &userHashStatsCache);
     Resolver resolver(&hashIdRegistrar, &hashRelations, &historyStatistics);
 
     Users users;
@@ -246,8 +248,8 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     DelayedStart delayedStart(&player);
     PlayerQueue& queue = player.queue();
     History history(&player, &hashIdRegistrar, &historyStatistics);
-    HistoryStatisticsPrefetcher historyPrefetcher(nullptr, &hashIdRegistrar, &history,
-                                                  &users);
+    // HistoryStatisticsPrefetcher historyPrefetcher(nullptr, &hashIdRegistrar, &history,
+    //                                               &users);
 
     CollectionMonitor collectionMonitor;
     QObject::connect(
@@ -334,7 +336,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
 
     printStartupSummary(out, serverSettings, server, player);
 
-    startBackgroundTasks(&hashRelations, &historyPrefetcher);
+    startBackgroundTasks(&hashRelations/*, &historyPrefetcher*/);
 
     out << "\n"
         << "Server initialization complete." << Qt::endl

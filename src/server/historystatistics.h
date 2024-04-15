@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,6 +26,7 @@
 #include "trackstats.h"
 
 #include <QDateTime>
+#include <QHash>
 #include <QMutex>
 #include <QObject>
 #include <QSet>
@@ -35,13 +36,16 @@ QT_FORWARD_DECLARE_CLASS(QThreadPool)
 
 namespace PMP::Server
 {
+    class Database;
     class HashRelations;
+    class UserHashStatsCache;
 
     class HistoryStatistics : public QObject
     {
         Q_OBJECT
     public:
-        HistoryStatistics(QObject* parent, HashRelations* hashRelations);
+        HistoryStatistics(QObject* parent, HashRelations* hashRelations,
+                          UserHashStatsCache* userHashStatsCache);
         ~HistoryStatistics();
 
         Future<SuccessType, FailureType> addToHistory(quint32 userId,
@@ -80,10 +84,23 @@ namespace PMP::Server
                                                             quint32 userId,
                                                             QVector<uint> hashIdsInGroup);
 
-        QThreadPool* _threadPool;
-        HashRelations* _hashRelations;
+        static ResultOrError<QHash<uint, TrackStats>, FailureType> fetchIndividualStats(
+                                                            UserHashStatsCache* cache,
+                                                            quint32 userId,
+                                                            QVector<uint> hashIdsInGroup);
+
+        /*
+        static ResultOrError<SuccessType, FailureType> ensureCacheHasBeenLoadedForUser(
+                                                            UserHashStatsCache* cache,
+                                                            quint32 userId);
+        */
+
+        QThreadPool* const _threadPool;
+        HashRelations* const _hashRelations;
+        UserHashStatsCache* const _userHashStatsCache;
         QMutex _mutex;
         QHash<quint32, UserStatisticsEntry> _userData;
+        QMutex _mutexForCacheLoading;
     };
 }
 #endif

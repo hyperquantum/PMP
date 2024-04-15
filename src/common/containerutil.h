@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -65,6 +65,17 @@ namespace PMP
             return v;
         }
 
+        template<typename T> static QSet<T> toSet(QVector<T> const& vector)
+        {
+            QSet<T> set;
+            set.reserve(vector.size());
+
+            for (T const& element : vector)
+                set << element;
+
+            return set;
+        }
+
         template<typename T> static void addToSet(QList<T> const& list, QSet<T>& set)
         {
             for (T const& element : list)
@@ -75,6 +86,13 @@ namespace PMP
         {
             for (T const& element : vector)
                 set << element;
+        }
+
+        template<typename T>
+        static void removeFromSet(QVector<T> const& vector, QSet<T>& set)
+        {
+            for (T const& element : vector)
+                set.remove(element);
         }
     };
 }

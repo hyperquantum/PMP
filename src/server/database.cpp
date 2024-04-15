@@ -110,7 +110,8 @@ namespace PMP::Server
             && initFileSizeTable(q)      /* pmp_filesize */
             && initUsersTable(q)         /* pmp_user */
             && initHistoryTable(q)       /* pmp_history */
-            && initEquivalenceTable(q);  /* pmp_equivalence */
+            && initEquivalenceTable(q)   /* pmp_equivalence */
+            && initUserHashStatsCacheTable(q); /* pmp_userhashstatscache */
 
         if (!tablesInitialized)
         {
@@ -322,6 +323,32 @@ namespace PMP::Server
             "   REFERENCES pmp_hash (`HashID`)"
             "   ON DELETE CASCADE ON UPDATE CASCADE,"
             " UNIQUE INDEX `IDX_pmpequivalence` (`Hash1` ASC, `Hash2` ASC) "
+            ") ENGINE = InnoDB"
+        );
+
+        return q.exec();
+    }
+
+    bool Database::initUserHashStatsCacheTable(QSqlQuery& q)
+    {
+        q.prepare(
+            "CREATE TABLE IF NOT EXISTS pmp_userhashstatscache("
+            " `HashID` INT UNSIGNED NOT NULL,"
+            " `UserID` INT UNSIGNED,"
+            " `Timestamp` DATETIME NOT NULL,"
+            " `LastHistoryID` INT UNSIGNED,"
+            " `LastHeard` DATETIME,"
+            " `ScoreHeardCount` INT NOT NULL,"
+            " `AveragePermillage` INT,"
+            " CONSTRAINT `FK_pmpuserhashstatscache_hash`"
+            "  FOREIGN KEY (`HashID`)"
+            "   REFERENCES pmp_hash (`HashID`)"
+            "   ON DELETE CASCADE ON UPDATE CASCADE,"
+            " CONSTRAINT `FK_pmpuserhashstatscache_user`"
+            "  FOREIGN KEY (`UserID`)"
+            "  REFERENCES `pmp_user` (`UserID`)"
+            "   ON DELETE RESTRICT ON UPDATE CASCADE,"
+            " UNIQUE INDEX `IDX_pmpuserhashstatscache` (`UserID` ASC, `HashID` ASC)"
             ") ENGINE = InnoDB"
         );
 
@@ -1089,6 +1116,133 @@ namespace PMP::Server
             };
 
         return executeRecords<HistoryRecord>(preparer, extractRecord, limit);
+    }
+
+    ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
+        Database::getAllCachedHashStatsForUser(quint32 userId)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+        {
+            auto sql =
+                "SELECT HashID, LastHistoryId, LastHeard, ScoreHeardCount,"
+                " AveragePermillage "
+                "FROM pmp_userhashstatscache "
+                "WHERE COALESCE(UserID, 0)=?";
+
+            q.prepare(sql);
+
+            q.addBindValue(userId);
+        };
+
+        auto extractRecord =
+            [](QSqlQuery& q)
+            {
+                quint32 hashID = q.value(0).toUInt();
+                uint lastHistoryId = getUInt(q.value(1), 0);
+                QDateTime lastHeard = getUtcDateTime(q.value(2));
+                quint32 scoreHeardCount = (quint32)getUInt(q.value(3), 0);
+                qint32 averagePermillage = (qint32)getInt(q.value(4), -1);
+
+                HashHistoryStats stats;
+                stats.lastHistoryId = lastHistoryId;
+                stats.hashId = hashID;
+                stats.lastHeard = lastHeard;
+                stats.scoreHeardCount = scoreHeardCount;
+                stats.averagePermillage = averagePermillage;
+
+                return stats;
+            };
+
+        return executeRecords<HashHistoryStats>(preparer, extractRecord);
+    }
+
+    ResultOrError<QVector<HashHistoryStats>, FailureType> Database::getCachedHashStats(
+                                                                quint32 userId,
+                                                                QVector<quint32> hashIds)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+        {
+            auto sql =
+                "SELECT HashID, LastHistoryId, LastHeard, ScoreHeardCount,"
+                " AveragePermillage "
+                "FROM pmp_userhashstatscache "
+                "WHERE COALESCE(UserID, 0)=?"
+                "  AND HashID IN " + buildParamsList(hashIds.size());
+
+            q.prepare(sql);
+
+            q.addBindValue(userId);
+            for (auto hashId : qAsConst(hashIds))
+            {
+                q.addBindValue(hashId);
+            }
+        };
+
+        auto extractRecord =
+            [](QSqlQuery& q)
+            {
+                quint32 hashID = q.value(0).toUInt();
+                uint lastHistoryId = getUInt(q.value(1), 0);
+                QDateTime lastHeard = getUtcDateTime(q.value(2));
+                quint32 scoreHeardCount = (quint32)getUInt(q.value(3), 0);
+                qint32 averagePermillage = (qint32)getInt(q.value(4), -1);
+
+                HashHistoryStats stats;
+                stats.lastHistoryId = lastHistoryId;
+                stats.hashId = hashID;
+                stats.lastHeard = lastHeard;
+                stats.scoreHeardCount = scoreHeardCount;
+                stats.averagePermillage = averagePermillage;
+
+                return stats;
+            };
+
+        return executeRecords<HashHistoryStats>(preparer, extractRecord);
+    }
+
+    ResultOrError<SuccessType, FailureType> Database::updateUserHashStatsCache(
+                                                            quint32 userId,
+                                                            const HashHistoryStats& stats)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+        {
+            auto sql =
+                "INSERT INTO pmp_userhashstatscache("
+                " `HashID`,`UserID`,`Timestamp`,`LastHistoryID`,`LastHeard`,"
+                " `ScoreHeardCount`,`AveragePermillage`) "
+                "VALUES(?,?,UTC_TIMESTAMP(),?,?,?,?) "
+                "ON DUPLICATE KEY UPDATE"
+                " HashID=?, UserID=?, `Timestamp`=UTC_TIMESTAMP(),"
+                " LastHistoryID=?,LastHeard=?,ScoreHeardCount=?,AveragePermillage=?";
+
+            q.prepare(sql);
+
+            q.addBindValue(stats.hashId);
+            q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
+            q.addBindValue(stats.lastHistoryId);
+            q.addBindValue(stats.lastHeard.toUTC());
+            q.addBindValue(stats.scoreHeardCount);
+            q.addBindValue(stats.averagePermillage);
+
+            q.addBindValue(stats.hashId);
+            q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
+            q.addBindValue(stats.lastHistoryId);
+            q.addBindValue(stats.lastHeard.toUTC());
+            q.addBindValue(stats.scoreHeardCount);
+            q.addBindValue(stats.averagePermillage);
+        };
+
+        if (!executeVoid(preparer))
+        {
+            qDebug() << "Database::updateUserHashStatsCache : insert/update failed!"
+                     << Qt::endl;
+            return failure;
+        }
+
+        return success;
     }
 
     bool Database::setLastFmScrobblingEnabled(quint32 userId, bool enabled)
