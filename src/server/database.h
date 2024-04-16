@@ -56,6 +56,20 @@ namespace PMP::Server
 
         bool isConnectionOpen() const;
 
+        ResultOrError<Nullable<QString>, FailureType> getMiscDataValue(
+                                                                    QString const& key);
+        ResultOrError<SuccessType, FailureType> insertMiscData(QString const& key,
+                                                               QString const& value);
+        ResultOrError<SuccessType, FailureType> insertOrUpdateMiscData(QString const& key,
+                                                                    QString const& value);
+        ResultOrError<SuccessType, FailureType> insertMiscDataIfNotPresent(
+                                                                    QString const& key,
+                                                                    QString const& value);
+        ResultOrError<SuccessType, FailureType> updateMiscDataValueFromSpecific(
+                                                                QString const& key,
+                                                                QString const& oldValue,
+                                                                QString const& newValue);
+
         ResultOrError<SuccessType, FailureType> registerHash(const FileHash& hash);
         ResultOrError<uint, FailureType> getHashId(const FileHash& hash);
         ResultOrError<QVector<QPair<uint,FileHash>>, FailureType> getHashes(
@@ -170,15 +184,31 @@ namespace PMP::Server
                               bool processResult,
                               std::function<void (QSqlQuery&)> resultFetcher);
 
+            QSqlDatabase& qSqlDatabase() { return _db; }
+
         private:
             QSqlDatabase _db;
         };
 
+        class TableEditor
+        {
+        public:
+            TableEditor(Database* database, QString tableName);
+
+            bool addColumnIfNotExists(QString columnName, QString type);
+
+        private:
+            Database* _database;
+            QString _tableName;
+        };
+
         Database(DatabaseConnection&& databaseConnection);
 
-        QString buildParamsList(unsigned paramsCount);
+        DatabaseConnection& connection() { return _dbConnection; }
 
-        std::function<void (QSqlQuery&)> prepareSimple(QString sql);
+        static QString buildParamsList(unsigned paramsCount);
+
+        static std::function<void (QSqlQuery&)> prepareSimple(QString sql);
 
         static bool addColumnIfNotExists(QSqlQuery& q, QString tableName,
                                          QString columnName, QString type);
@@ -191,16 +221,19 @@ namespace PMP::Server
 
         static QSqlDatabase createQSqlDatabase(QString name, bool setSchema);
         static void printInitializationError(QTextStream& out, QSqlDatabase& db);
+        static void printInitializationError(QTextStream& out, Database& database);
 
-        static bool initMiscTable(QSqlQuery& q);
-        static ResultOrError<QUuid, FailureType> initDatabaseUuid(QSqlQuery& q);
-        static bool initHashTable(QSqlQuery& q);
-        static bool initFilenameTable(QSqlQuery& q);
-        static bool initFileSizeTable(QSqlQuery& q);
-        static bool initUsersTable(QSqlQuery& q);
-        static bool initHistoryTable(QSqlQuery& q);
-        static bool initEquivalenceTable(QSqlQuery& q);
-        static bool initUserHashStatsCacheTable(QSqlQuery& q);
+        static bool initTables(QTextStream& out, Database& database);
+        static bool initMiscTable(Database& database);
+        static ResultOrError<QUuid, FailureType> initDatabaseUuid(Database& database);
+        static bool initHashesTable(Database& database);
+        static bool initFilenameTable(Database& database);
+        static bool initFileSizeTable(Database& database);
+        static bool initUsersTable(Database& database);
+        static bool initHistoryTable(Database& database);
+        static bool initEquivalenceTable(Database& database);
+        static bool initUserHashStatsCacheTable(Database& database);
+        static bool initUserHashStatsCacheBookkeeping(Database& database);
 
         static QString _hostname;
         static int _port;

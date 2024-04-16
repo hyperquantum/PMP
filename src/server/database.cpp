@@ -271,6 +271,42 @@ namespace PMP::Server
         return true;
     }
 
+    /* ===== TableEditor ===== */
+
+    Database::TableEditor::TableEditor(Database* database, QString tableName)
+        : _database(database), _tableName(tableName)
+    {
+        //
+    }
+
+    bool Database::TableEditor::addColumnIfNotExists(QString columnName, QString type)
+    {
+        auto preparer =
+            [=](QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT EXISTS("
+                    " SELECT * FROM information_schema.COLUMNS"
+                    " WHERE TABLE_SCHEMA = 'pmp' AND TABLE_NAME = ? AND COLUMN_NAME = ?"
+                    ") AS column_exists"
+                    );
+                q.addBindValue(_tableName);
+                q.addBindValue(columnName);
+            };
+
+        bool exists = false;
+        if (!_database->connection().executeScalar(preparer, exists, false))
+            return false;
+
+        if (exists)
+            return true;
+
+        auto sqlForAddingColumn =
+            QString("ALTER TABLE %1 ADD `%2` %3 NULL").arg(_tableName, columnName, type);
+
+        return _database->connection().executeVoid(prepareSimple(sqlForAddingColumn));
+    }
+
     /* ===== Database ===== */
 
     QString Database::_hostname;
@@ -307,32 +343,60 @@ namespace PMP::Server
         _password = connectionSettings.password;
 
         /* open connection */
-        QSqlDatabase db = createQSqlDatabase("PMP_main_dbconn", false);
-        if (!db.isOpen())
+        QSqlDatabase qSqlDatabase = createQSqlDatabase("PMP_main_dbconn", false);
+        if (!qSqlDatabase.isOpen())
         {
-            out << " ERROR: could not connect to database: " << db.lastError().text()
-                << "\n" << Qt::endl;
+            out << " ERROR: could not connect to database: "
+                << qSqlDatabase.lastError().text() << "\n" << Qt::endl;
             return false;
         }
 
         /* create schema if needed */
-        QSqlQuery q(db);
+        QSqlQuery q(qSqlDatabase);
         q.prepare("CREATE DATABASE IF NOT EXISTS pmp; USE pmp;");
         if (!q.exec())
         {
-            printInitializationError(out, db);
+            printInitializationError(out, qSqlDatabase);
             return false;
         }
 
+        Database database { DatabaseConnection(qSqlDatabase) };
+
+        if (initTables(out, database))
+        {
+            _initDoneSuccessfully = true;
+            out << " database initialization completed successfully\n" << Qt::endl;
+            return true;
+        }
+        else
+        {
+            printInitializationError(out, database);
+            return false;
+        }
+    }
+
+    void Database::printInitializationError(QTextStream& out, QSqlDatabase& db)
+    {
+        out << " database initialization problem: " << db.lastError().text() << Qt::endl;
+        out << Qt::endl;
+    }
+
+    void Database::printInitializationError(QTextStream& out, Database& database)
+    {
+        printInitializationError(out, database._dbConnection.qSqlDatabase());
+    }
+
+    bool Database::initTables(QTextStream& out, Database& db)
+    {
         /* create table 'pmp_misc' if needed */
-        if (!initMiscTable(q))
+        if (!initMiscTable(db))
         {
             printInitializationError(out, db);
             return false;
         }
 
         /* get UUID, or generate one and store it if it does not exist yet */
-        auto maybeUuid = initDatabaseUuid(q);
+        auto maybeUuid = initDatabaseUuid(db);
         if (maybeUuid.succeeded())
         {
             _uuid = maybeUuid.result();
@@ -345,75 +409,63 @@ namespace PMP::Server
         }
 
         bool tablesInitialized =
-            initHashTable(q)             /* pmp_hash */
-            && initFilenameTable(q)      /* pmp_filename */
-            && initFileSizeTable(q)      /* pmp_filesize */
-            && initUsersTable(q)         /* pmp_user */
-            && initHistoryTable(q)       /* pmp_history */
-            && initEquivalenceTable(q)   /* pmp_equivalence */
-            && initUserHashStatsCacheTable(q); /* pmp_userhashstatscache */
+            initHashesTable(db)                  /* pmp_hash */
+            && initFilenameTable(db)             /* pmp_filename */
+            && initFileSizeTable(db)             /* pmp_filesize */
+            && initUsersTable(db)                /* pmp_user */
+            && initHistoryTable(db)              /* pmp_history */
+            && initEquivalenceTable(db)          /* pmp_equivalence */
+            && initUserHashStatsCacheTable(db);  /* pmp_userhashstatscache */
 
         if (!tablesInitialized)
-        {
-            printInitializationError(out, db);
             return false;
-        }
 
-        _initDoneSuccessfully = true;
+        bool dataInitialized =
+            initUserHashStatsCacheBookkeeping(db);
 
-        out << " database initialization completed successfully\n" << Qt::endl;
-        return true;
+        return dataInitialized;
     }
 
-    bool Database::initMiscTable(QSqlQuery& q)
+    bool Database::initMiscTable(Database& database)
     {
-        q.prepare(
+        auto sql =
             "CREATE TABLE IF NOT EXISTS pmp_misc("
             " `Key` VARCHAR(63) NOT NULL,"
             " `Value` VARCHAR(255),"
             " PRIMARY KEY(`Key`) "
             ") "
             "ENGINE = InnoDB "
-            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
-        );
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci";
 
-        return q.exec();
+        return database.connection().executeVoid(prepareSimple(sql));
     }
 
-    ResultOrError<QUuid, FailureType> Database::initDatabaseUuid(QSqlQuery& q)
+    ResultOrError<QUuid, FailureType> Database::initDatabaseUuid(Database& database)
     {
-        q.prepare("SELECT `Value` FROM pmp_misc WHERE `Key`=?");
-        q.addBindValue("UUID");
-        if (!q.exec())
-        {
-            qCritical() << "could not see if UUID already exists";
+        auto existingUuidValue = database.getMiscDataValue("UUID");
+        if (existingUuidValue.failed())
             return failure;
-        }
 
-        if (q.next())
+        if (existingUuidValue.result().hasValue())
         {
-            auto uuid = QUuid(q.value(0).toString());
+            auto uuid = QUuid(existingUuidValue.result().value());
+            qDebug() << "database UUID is:" << uuid;
             return uuid;
         }
 
         auto uuid { QUuid::createUuid() };
 
-        q.prepare("INSERT INTO pmp_misc(`Key`, `Value`) VALUES (?,?)");
-        q.addBindValue("UUID");
-        q.addBindValue(uuid.toString());
-        if (!q.exec())
-        {
-            qCritical() << "error inserting UUID into database";
+        auto insertResult = database.insertMiscData("UUID", uuid.toString());
+        if (insertResult.failed())
             return failure;
-        }
 
         qDebug() << "generated new UUID for the database:" << uuid;
         return uuid;
     }
 
-    bool Database::initHashTable(QSqlQuery& q)
+    bool Database::initHashesTable(Database& database)
     {
-        q.prepare(
+        auto sql =
             "CREATE TABLE IF NOT EXISTS pmp_hash("
             " `HashID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
             " `InputLength` INT UNSIGNED NOT NULL,"
@@ -421,15 +473,14 @@ namespace PMP::Server
             " `MD5` VARCHAR(32) NOT NULL,"
             " PRIMARY KEY (`HashID`),"
             " UNIQUE INDEX `IDX_pmphash` (`InputLength` ASC, `SHA1` ASC, `MD5` ASC) "
-            ") ENGINE = InnoDB"
-        );
+            ") ENGINE = InnoDB";
 
-        return q.exec();
+        return database.connection().executeVoid(prepareSimple(sql));
     }
 
-    bool Database::initFilenameTable(QSqlQuery& q)
+    bool Database::initFilenameTable(Database& database)
     {
-        q.prepare(
+        auto sql =
             "CREATE TABLE IF NOT EXISTS pmp_filename("
             " `HashID` INT UNSIGNED NOT NULL,"
             " `FilenameWithoutDir` VARCHAR(255) NOT NULL,"
@@ -439,23 +490,19 @@ namespace PMP::Server
             "   ON DELETE CASCADE ON UPDATE CASCADE"
             ") "
             "ENGINE = InnoDB "
-            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
-        );
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci";
 
-        if (!q.exec())
+        if (!database.connection().executeVoid(prepareSimple(sql)))
             return false;
 
-        const auto tableName = "pmp_filename";
+        TableEditor editor(&database, "pmp_filename");
 
-        if (!addColumnIfNotExists(q, tableName, "YearLastSeen", "INT"))
-            return false;
-
-        return true;
+        return editor.addColumnIfNotExists("YearLastSeen", "INT");
     }
 
-    bool Database::initFileSizeTable(QSqlQuery& q)
+    bool Database::initFileSizeTable(Database& database)
     {
-        q.prepare(
+        auto sql =
             "CREATE TABLE IF NOT EXISTS pmp_filesize("
             " `HashID` INT UNSIGNED NOT NULL,"
             " `FileSize` BIGINT NOT NULL," /* signed; Qt uses qint64 for file sizes */
@@ -464,23 +511,19 @@ namespace PMP::Server
             "   REFERENCES pmp_hash (`HashID`)"
             "   ON DELETE CASCADE ON UPDATE CASCADE,"
             " UNIQUE INDEX `IDX_pmpfilesize` (`FileSize` ASC, `HashID` ASC) "
-            ") ENGINE = InnoDB"
-        );
+            ") ENGINE = InnoDB";
 
-        if (!q.exec())
+        if (!database.connection().executeVoid(prepareSimple(sql)))
             return false;
 
-        const auto tableName = "pmp_filesize";
+        TableEditor editor(&database, "pmp_filesize");
 
-        if (!addColumnIfNotExists(q, tableName, "YearLastSeen", "INT"))
-            return false;
-
-        return true;
+        return editor.addColumnIfNotExists("YearLastSeen", "INT");
     }
 
-    bool Database::initUsersTable(QSqlQuery& q)
+    bool Database::initUsersTable(Database& database)
     {
-        q.prepare(
+        auto sql =
             "CREATE TABLE IF NOT EXISTS pmp_user("
             " `UserID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
             " `Login` VARCHAR(63) NOT NULL,"
@@ -490,26 +533,26 @@ namespace PMP::Server
             " UNIQUE INDEX `IDX_pmpuser_login` (`Login`)"
             ") "
             "ENGINE = InnoDB "
-            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
-        );
-        if (!q.exec())
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci";
+
+        if (!database.connection().executeVoid(prepareSimple(sql)))
             return false;
 
-        const auto tableName = "pmp_user";
+        TableEditor editor(&database, "pmp_user");
 
         /* add columns for dynamic mode preferences */
-        if (!addColumnIfNotExists(q, tableName, "DynamicModeEnabled", "BIT")
-            || !addColumnIfNotExists(q, tableName,
-                                     "TrackRepetitionAvoidanceIntervalSeconds", "INT"))
+        if (!editor.addColumnIfNotExists("DynamicModeEnabled", "BIT")
+            || !editor.addColumnIfNotExists("TrackRepetitionAvoidanceIntervalSeconds",
+                                            "INT"))
         {
             return false;
         }
 
         /* extra columns for Last.Fm scrobbling */
-        if (!addColumnIfNotExists(q, tableName, "EnableLastFmScrobbling", "BIT")
-            || !addColumnIfNotExists(q, tableName, "LastFmUser", "VARCHAR(255)")
-            || !addColumnIfNotExists(q, tableName, "LastFmSessionKey", "VARCHAR(255)")
-            || !addColumnIfNotExists(q, tableName, "LastFmScrobbledUpTo", "INT UNSIGNED"))
+        if (!editor.addColumnIfNotExists("EnableLastFmScrobbling", "BIT")
+            || !editor.addColumnIfNotExists("LastFmUser", "VARCHAR(255)")
+            || !editor.addColumnIfNotExists("LastFmSessionKey", "VARCHAR(255)")
+            || !editor.addColumnIfNotExists("LastFmScrobbledUpTo", "INT UNSIGNED"))
         {
             return false;
         }
@@ -517,9 +560,9 @@ namespace PMP::Server
         return true;
     }
 
-    bool Database::initHistoryTable(QSqlQuery& q)
+    bool Database::initHistoryTable(Database& database)
     {
-        q.prepare(
+        auto sql =
             "CREATE TABLE IF NOT EXISTS pmp_history ("
             " `HistoryID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
             " `HashID` INT UNSIGNED NOT NULL,"
@@ -541,15 +584,14 @@ namespace PMP::Server
             "   ON DELETE RESTRICT ON UPDATE CASCADE"
             ") "
             "ENGINE = InnoDB "
-            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci"
-        );
+            "DEFAULT CHARACTER SET = utf8 COLLATE = utf8_general_ci";
 
-        return q.exec();
+        return database.connection().executeVoid(prepareSimple(sql));
     }
 
-    bool Database::initEquivalenceTable(QSqlQuery& q)
+    bool Database::initEquivalenceTable(Database& database)
     {
-        q.prepare(
+        auto sql =
             "CREATE TABLE IF NOT EXISTS pmp_equivalence("
             " `Hash1` INT UNSIGNED NOT NULL,"
             " `Hash2` INT UNSIGNED NOT NULL,"
@@ -563,15 +605,14 @@ namespace PMP::Server
             "   REFERENCES pmp_hash (`HashID`)"
             "   ON DELETE CASCADE ON UPDATE CASCADE,"
             " UNIQUE INDEX `IDX_pmpequivalence` (`Hash1` ASC, `Hash2` ASC) "
-            ") ENGINE = InnoDB"
-        );
+            ") ENGINE = InnoDB";
 
-        return q.exec();
+        return database.connection().executeVoid(prepareSimple(sql));
     }
 
-    bool Database::initUserHashStatsCacheTable(QSqlQuery& q)
+    bool Database::initUserHashStatsCacheTable(Database& database)
     {
-        q.prepare(
+        auto sql =
             "CREATE TABLE IF NOT EXISTS pmp_userhashstatscache("
             " `HashID` INT UNSIGNED NOT NULL,"
             " `UserID` INT UNSIGNED,"
@@ -589,10 +630,37 @@ namespace PMP::Server
             "  REFERENCES `pmp_user` (`UserID`)"
             "   ON DELETE RESTRICT ON UPDATE CASCADE,"
             " UNIQUE INDEX `IDX_pmpuserhashstatscache` (`UserID` ASC, `HashID` ASC)"
-            ") ENGINE = InnoDB"
-        );
+            ") ENGINE = InnoDB";
 
-        return q.exec();
+        return database.connection().executeVoid(prepareSimple(sql));
+    }
+
+    bool Database::initUserHashStatsCacheBookkeeping(Database& database)
+    {
+        auto lookupResult = database.getMiscDataValue("UserHashStatsCacheHistoryId");
+        if (lookupResult.failed())
+            return false;
+
+        auto idAsString = lookupResult.result().valueOr("");
+
+        if (!idAsString.isEmpty())
+            return true; /* nothing to do */
+
+        uint maxHistoryId;
+        bool maxHistoryIdObtained =
+            database.connection().executeScalar(
+                prepareSimple("SELECT MAX(HistoryID) FROM pmp_history"),
+                maxHistoryId,
+                0
+            );
+        if (!maxHistoryIdObtained)
+            return false;
+
+        auto insertResult =
+            database.insertOrUpdateMiscData("UserHashStatsCacheHistoryId",
+                                            QString::number(maxHistoryId));
+
+        return insertResult.succeeded();
     }
 
     Database::Database(DatabaseConnection&& databaseConnection)
@@ -619,12 +687,6 @@ namespace PMP::Server
         }
 
         return db;
-    }
-
-    void Database::printInitializationError(QTextStream& out, QSqlDatabase& db)
-    {
-        out << " database initialization problem: " << db.lastError().text() << Qt::endl;
-        out << Qt::endl;
     }
 
     QSharedPointer<Database> Database::getDatabaseForCurrentThread()
@@ -659,6 +721,104 @@ namespace PMP::Server
     bool Database::isConnectionOpen() const
     {
         return _dbConnection.isOpen();
+    }
+
+    ResultOrError<Nullable<QString>, FailureType> Database::getMiscDataValue(
+        const QString& key)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare("SELECT `Value` FROM pmp_misc WHERE `Key`=?");
+                q.addBindValue(key);
+            };
+
+        Nullable<QString> value;
+        if (!_dbConnection.executeNullableScalar(preparer, value))
+            return failure;
+
+        return value;
+    }
+
+    ResultOrError<SuccessType, FailureType> Database::insertMiscData(const QString& key,
+                                                                     const QString& value)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare("INSERT INTO pmp_misc(`Key`, `Value`) "
+                          "VALUES(?,?)");
+                q.addBindValue(key);
+                q.addBindValue(value);
+            };
+
+        if (_dbConnection.executeVoid(preparer))
+            return success;
+        else
+            return failure;
+    }
+
+    ResultOrError<SuccessType, FailureType> Database::insertOrUpdateMiscData(
+                                                                    const QString& key,
+                                                                    const QString& value)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare("INSERT INTO pmp_misc(`Key`, `Value`) "
+                          "VALUES(?,?) "
+                          "ON DUPLICATE KEY UPDATE `Value`=?");
+                q.addBindValue(key);
+                q.addBindValue(value);
+                q.addBindValue(value);
+            };
+
+        if (_dbConnection.executeVoid(preparer))
+            return success;
+        else
+            return failure;
+    }
+
+    ResultOrError<SuccessType, FailureType> Database::insertMiscDataIfNotPresent(
+                                                                    const QString& key,
+                                                                    const QString& value)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare("INSERT INTO pmp_misc(`Key`, `Value`) "
+                          "VALUES(?,?) "
+                          "ON DUPLICATE KEY UPDATE `Value`=`Value`");
+                q.addBindValue(key);
+                q.addBindValue(value);
+            };
+
+        if (_dbConnection.executeVoid(preparer))
+            return success;
+        else
+            return failure;
+    }
+
+    ResultOrError<SuccessType, FailureType> Database::updateMiscDataValueFromSpecific(
+                                                                const QString& key,
+                                                                const QString& oldValue,
+                                                                const QString& newValue)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+        {
+            q.prepare("UPDATE pmp_misc "
+                      "SET `Value`=? "
+                      "WHERE `Key`=? AND `Value`=?");
+            q.addBindValue(newValue);
+            q.addBindValue(key);
+            q.addBindValue(oldValue);
+        };
+
+        if (_dbConnection.executeVoid(preparer))
+            return success;
+        else
+            return failure;
     }
 
     ResultOrError<SuccessType, FailureType> Database::registerHash(const FileHash& hash)
@@ -1610,31 +1770,6 @@ namespace PMP::Server
     std::function<void (QSqlQuery&)> Database::prepareSimple(QString sql)
     {
         return [=] (QSqlQuery& q) { q.prepare(sql); };
-    }
-
-    bool Database::addColumnIfNotExists(QSqlQuery& q, QString tableName,
-                                        QString columnName, QString type)
-    {
-        QString sql =
-            QString(
-                "SELECT EXISTS("
-                " SELECT * FROM information_schema.COLUMNS"
-                " WHERE TABLE_SCHEMA = 'pmp' AND TABLE_NAME = '%1' AND COLUMN_NAME = '%2'"
-                ") AS column_exists"
-            ).arg(tableName, columnName);
-
-        q.prepare(sql);
-        if (!q.exec()) return false;
-        bool exists = false;
-        if (q.next())
-        {
-            exists = getBool(q.value(0), false);
-        }
-        if (exists) return true;
-
-        sql = QString("ALTER TABLE %1 ADD `%2` %3 NULL").arg(tableName, columnName, type);
-        q.prepare(sql);
-        return q.exec();
     }
 
     bool Database::getBool(QVariant v, bool nullValue)
