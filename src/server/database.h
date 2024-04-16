@@ -137,32 +137,48 @@ namespace PMP::Server
         static QUuid getDatabaseUuid();
 
     private:
-        Database(QSqlDatabase db);
+        class DatabaseConnection
+        {
+        public:
+            explicit DatabaseConnection(QSqlDatabase database);
+            DatabaseConnection(DatabaseConnection const&) = delete;
+            DatabaseConnection(DatabaseConnection&&) = default;
+
+            bool isOpen() const;
+
+            bool executeVoid(std::function<void (QSqlQuery&)> preparer);
+
+            bool executeNullableScalar(std::function<void (QSqlQuery&)> preparer,
+                                       Nullable<QString>& s);
+
+            bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                               bool& b, bool defaultValue);
+            bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                               int& i, int defaultValue);
+            bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                               uint& i, uint defaultValue);
+            bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                               QDateTime& d);
+
+            template<class T>
+            ResultOrError<QVector<T>, FailureType> executeRecords(
+                std::function<void (QSqlQuery&)> preparer,
+                std::function<T (QSqlQuery&)> extractRecord,
+                int recordsToReserveCount = -1);
+
+            bool executeQuery(std::function<void (QSqlQuery&)> preparer,
+                              bool processResult,
+                              std::function<void (QSqlQuery&)> resultFetcher);
+
+        private:
+            QSqlDatabase _db;
+        };
+
+        Database(DatabaseConnection&& databaseConnection);
 
         QString buildParamsList(unsigned paramsCount);
 
         std::function<void (QSqlQuery&)> prepareSimple(QString sql);
-
-        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
-                           bool& b, bool defaultValue);
-        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
-                           int& i, int defaultValue);
-        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
-                           uint& i, uint defaultValue);
-        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
-                           QDateTime& d);
-
-        template<class T>
-        ResultOrError<QVector<T>, FailureType> executeRecords(
-                                            std::function<void (QSqlQuery&)> preparer,
-                                            std::function<T (QSqlQuery&)> extractRecord,
-                                            int recordsToReserveCount = -1);
-
-        bool executeVoid(std::function<void (QSqlQuery&)> preparer);
-
-        bool executeQuery(std::function<void (QSqlQuery&)> preparer,
-                          bool processResult,
-                          std::function<void (QSqlQuery&)> resultFetcher);
 
         static bool addColumnIfNotExists(QSqlQuery& q, QString tableName,
                                          QString columnName, QString type);
@@ -173,7 +189,7 @@ namespace PMP::Server
         static QDateTime getUtcDateTime(QVariant v);
         static QString getString(QVariant v, const char* nullValue);
 
-        static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
+        static QSqlDatabase createQSqlDatabase(QString name, bool setSchema);
         static void printInitializationError(QTextStream& out, QSqlDatabase& db);
 
         static bool initMiscTable(QSqlQuery& q);
@@ -195,7 +211,8 @@ namespace PMP::Server
         static QThreadStorage<QSharedPointer<Database>> _threadLocalDatabases;
         static QAtomicInt _nextDbNameNumber;
 
-        QSqlDatabase _db;
+        //QSqlDatabase _db;
+        DatabaseConnection _dbConnection;
     };
 }
 #endif
