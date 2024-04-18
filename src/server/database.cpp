@@ -1254,19 +1254,12 @@ namespace PMP::Server
         return success;
     }
 
-    ResultOrError<SuccessType, FailureType> Database::addToHistory(quint32 hashId,
-                                                                   quint32 userId,
-                                                                   QDateTime start,
-                                                                   QDateTime end,
-                                                                   int permillage,
-                                                                   bool validForScoring)
+    ResultOrError<uint, FailureType> Database::addToHistory(quint32 hashId,
+                                                            quint32 userId,
+                                                            QDateTime start,
+                                                            QDateTime end, int permillage,
+                                                            bool validForScoring)
     {
-//        qDebug() << "  Database::addToHistory called\n"
-//                 << "   hash" << hashId << " user" << userId << " perm" << permillage
-//                 << " forScoring" << validForScoring << "\n"
-//                 << "   start" << start << "\n"
-//                 << "   end" << end;
-
         auto preparer =
             [=] (QSqlQuery& q)
             {
@@ -1289,7 +1282,15 @@ namespace PMP::Server
             return failure;
         }
 
-        return success;
+        auto preparer2 = prepareSimple("SELECT LAST_INSERT_ID()");
+
+        uint historyId = 0;
+        if (!_dbConnection.executeScalar(preparer2, historyId, 0))
+            return failure;
+
+        qDebug() << "inserted new history entry with ID" << historyId
+                 << "for user" << userId << "and hash ID" << hashId;
+        return historyId;
     }
 
     ResultOrError<uint, FailureType> Database::getLastHistoryId()

@@ -90,24 +90,35 @@ namespace PMP::Server
             Concurrent::run<SuccessType, FailureType>(
                 /* do not specify a thread pool, it cannot wait */
                 [this, userId, hashId, start, end, permillage, validForScoring]()
-                    -> ResultOrError<SuccessType, FailureType>
+                    -> SuccessOrFailure
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)
                         return failure;
 
-                    auto added = db->addToHistory(hashId, userId, start, end, permillage,
-                                                  validForScoring);
-                    if (added.failed())
+                    auto historyIdOrFailure =
+                        db->addToHistory(hashId, userId, start, end, permillage,
+                                         validForScoring);
+                    if (historyIdOrFailure.failed())
                         return failure;
+
+                    uint historyId = historyIdOrFailure.result();
 
                     const auto hashesInGroup =
                             _hashRelations->getEquivalencyGroup(hashId);
 
-                    auto result = fetchInternal(this, userId, hashesInGroup,
-                                                UseCachedValues::No);
+                    auto tryFetch =
+                        fetchInternal(this, userId, hashesInGroup, UseCachedValues::No);
 
-                    return result.toSuccessOrFailure();
+                    if (tryFetch.failed())
+                        return failure;
+
+                    auto tryToUpdateMiscData =
+                        db->updateMiscDataValueFromSpecific("UserHashStatsCacheHistoryId",
+                                                        QString::number(historyId - 1),
+                                                        QString::number(historyId));
+
+                    return tryToUpdateMiscData;
                 }
             );
 

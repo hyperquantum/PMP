@@ -108,12 +108,10 @@ namespace PMP::Server
                         quint32 userId,
                         DatabaseRecords::UserDynamicModePreferences const& preferences);
 
-        ResultOrError<SuccessType, FailureType> addToHistory(quint32 hashId,
-                                                             quint32 userId,
-                                                             QDateTime start,
-                                                             QDateTime end,
-                                                             int permillage,
-                                                             bool validForScoring);
+        ResultOrError<uint, FailureType> addToHistory(quint32 hashId, quint32 userId,
+                                                      QDateTime start, QDateTime end,
+                                                      int permillage,
+                                                      bool validForScoring);
         ResultOrError<uint, FailureType> getLastHistoryId();
         ResultOrError<quint32, FailureType> getMostRecentRealUserHavingHistory();
         ResultOrError<QVector<DatabaseRecords::BriefHistoryRecord>, FailureType>
