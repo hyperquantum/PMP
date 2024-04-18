@@ -45,10 +45,14 @@ namespace PMP::Server
             return stats;
         }
 
-        QHash<uint, TrackStats> toTrackStats(QVector<HashHistoryStats> historyStats)
+        QHash<uint, TrackStats> toTrackStats(QVector<HashHistoryStats> historyStats,
+                                             int customReserveSize = -1)
         {
             QHash<uint, TrackStats> result;
-            result.reserve(historyStats.size());
+
+            result.reserve(customReserveSize >= 0
+                               ? customReserveSize
+                               : historyStats.size());
 
             for (auto const& stats : qAsConst(historyStats))
             {
@@ -363,18 +367,18 @@ namespace PMP::Server
         {
             //ensureCacheHasBeenLoadedForUser(cache, userId);
             auto const statsFromCache = cache->getForUser(userId, hashIdsInGroup);
-            result = toTrackStats(statsFromCache);
+            result = toTrackStats(statsFromCache, hashIdsInGroup.size());
 
             if (result.size() == hashIdsInGroup.size())
                 return result;
         }
         else
         {
+            result.reserve(hashIdsInGroup.size());
+
             qDebug() << "HistoryStatistics: recalculating for user" << userId
                      << "and hashes" << hashIdsInGroup;
         }
-
-        result.reserve(hashIdsInGroup.size());
 
         QSet<uint> toFetch = ContainerUtil::toSet(hashIdsInGroup);
         ContainerUtil::removeKeysFromSet(result, toFetch);
