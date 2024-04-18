@@ -120,8 +120,10 @@ static void setUpAndRunInitialIndexation(Resolver* resolver)
     resolver->startFullIndexation();
 }
 
-static void loadEquivalencesAndStartStatisticsPrefetchAsync(HashRelations* hashRelations/*,
-                                                  HistoryStatisticsPrefetcher* prefetcher*/)
+static void loadEquivalencesAndStartStatisticsPrefetchAsync(
+                                            HashRelations* hashRelations,
+                                            /*HistoryStatisticsPrefetcher* prefetcher*/
+                                            UserHashStatsCacheFixer* hashStatsCacheFixer)
 {
     auto equivalencesLoadingFuture =
         Concurrent::run<SuccessType, FailureType>(
@@ -143,22 +145,26 @@ static void loadEquivalencesAndStartStatisticsPrefetchAsync(HashRelations* hashR
         );
 
     equivalencesLoadingFuture.addListener(
-        //prefetcher,
-        [/*prefetcher*/](ResultOrError<SuccessType, FailureType> result)
+        /*prefetcher,*/
+        hashStatsCacheFixer,
+        [/*prefetcher*/hashStatsCacheFixer](ResultOrError<SuccessType, FailureType> result)
         {
             if (result.failed())
                 qDebug() << "failed to load equivalences from the database";
 
             //prefetcher->start();
+            hashStatsCacheFixer->start();
         }
     );
 }
 
-static void startBackgroundTasks(HashRelations* hashRelations/*,
-                            HistoryStatisticsPrefetcher* historyStatisticsPrefetcher*/)
+static void startBackgroundTasks(HashRelations* hashRelations,
+                            /*HistoryStatisticsPrefetcher* historyStatisticsPrefetcher*/
+                                UserHashStatsCacheFixer* hashStatsCacheFixer)
 {
-    loadEquivalencesAndStartStatisticsPrefetchAsync(hashRelations/*,
-                                                    historyStatisticsPrefetcher*/);
+    loadEquivalencesAndStartStatisticsPrefetchAsync(hashRelations,
+                                                    /*historyStatisticsPrefetcher*/
+                                                    hashStatsCacheFixer);
 }
 
 static int runServer(QCoreApplication& app, bool doIndexation);
@@ -250,6 +256,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     History history(&player, &hashIdRegistrar, &historyStatistics);
     // HistoryStatisticsPrefetcher historyPrefetcher(nullptr, &hashIdRegistrar, &history,
     //                                               &users);
+    UserHashStatsCacheFixer hashStatsCacheFixer(&historyStatistics);
 
     CollectionMonitor collectionMonitor;
     QObject::connect(
@@ -336,7 +343,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
 
     printStartupSummary(out, serverSettings, server, player);
 
-    startBackgroundTasks(&hashRelations/*, &historyPrefetcher*/);
+    startBackgroundTasks(&hashRelations/*, &historyPrefetcher*/, &hashStatsCacheFixer);
 
     out << "\n"
         << "Server initialization complete." << Qt::endl

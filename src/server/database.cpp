@@ -646,19 +646,15 @@ namespace PMP::Server
         if (!idAsString.isEmpty())
             return true; /* nothing to do */
 
-        uint maxHistoryId;
-        bool maxHistoryIdObtained =
-            database.connection().executeScalar(
-                prepareSimple("SELECT MAX(HistoryID) FROM pmp_history"),
-                maxHistoryId,
-                0
-            );
-        if (!maxHistoryIdObtained)
+        auto lastHistoryIdOrFailure = database.getLastHistoryId();
+        if (lastHistoryIdOrFailure.failed())
             return false;
+
+        uint lastHistoryId = lastHistoryIdOrFailure.result();
 
         auto insertResult =
             database.insertOrUpdateMiscData("UserHashStatsCacheHistoryId",
-                                            QString::number(maxHistoryId));
+                                            QString::number(lastHistoryId));
 
         return insertResult.succeeded();
     }
@@ -1296,6 +1292,22 @@ namespace PMP::Server
         return success;
     }
 
+    ResultOrError<uint, FailureType> Database::getLastHistoryId()
+    {
+        uint maxHistoryId;
+        bool maxHistoryIdObtained =
+            _dbConnection.executeScalar(
+                prepareSimple("SELECT MAX(HistoryID) FROM pmp_history"),
+                maxHistoryId,
+                0
+            );
+
+        if (!maxHistoryIdObtained)
+            return failure;
+
+        return maxHistoryId;
+    }
+
     ResultOrError<quint32, FailureType> Database::getMostRecentRealUserHavingHistory()
     {
         auto preparer =
@@ -1315,6 +1327,38 @@ namespace PMP::Server
         }
 
         return userId;
+    }
+
+    ResultOrError<QVector<BriefHistoryRecord>, FailureType>
+        Database::getBriefHistoryFragment(quint32 startId, int limit)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT HistoryID, HashID, UserID "
+                    "FROM pmp_history "
+                    "WHERE HistoryID >= ? "
+                    "ORDER BY HistoryID "
+                    "LIMIT ?"
+                );
+                q.addBindValue(startId);
+                q.addBindValue(limit);
+            };
+
+        auto extractRecord =
+            [](QSqlQuery& q)
+            {
+                BriefHistoryRecord record;
+                record.id = q.value(0).toUInt();
+                record.hashId = q.value(1).toUInt();
+                record.userId = q.value(2).toUInt();
+
+                return record;
+            };
+
+        return _dbConnection.executeRecords<BriefHistoryRecord>(preparer, extractRecord,
+                                                                limit);
     }
 
     ResultOrError<QVector<HashHistoryStats>, FailureType> Database::getHashHistoryStats(
@@ -1607,8 +1651,7 @@ namespace PMP::Server
         return _dbConnection.executeRecords<HashHistoryStats>(preparer, extractRecord);
     }
 
-    ResultOrError<SuccessType, FailureType> Database::updateUserHashStatsCache(
-                                                            quint32 userId,
+    SuccessOrFailure Database::updateUserHashStatsCacheEntry(quint32 userId,
                                                             const HashHistoryStats& stats)
     {
         auto preparer =
@@ -1646,6 +1689,26 @@ namespace PMP::Server
                      << Qt::endl;
             return failure;
         }
+
+        return success;
+    }
+
+    SuccessOrFailure Database::removeUserHashStatsCacheEntry(quint32 userId,
+                                                             quint32 hashId)
+    {
+        auto preparer =
+            [=] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "DELETE FROM pmp_userhashstatscache "
+                    "WHERE UserId=? AND HashID=?"
+                    );
+                q.addBindValue(userId);
+                q.addBindValue(hashId);
+            };
+
+        if (!_dbConnection.executeVoid(preparer))
+            return failure;
 
         return success;
     }

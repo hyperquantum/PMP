@@ -114,7 +114,10 @@ namespace PMP::Server
                                                              QDateTime end,
                                                              int permillage,
                                                              bool validForScoring);
+        ResultOrError<uint, FailureType> getLastHistoryId();
         ResultOrError<quint32, FailureType> getMostRecentRealUserHavingHistory();
+        ResultOrError<QVector<DatabaseRecords::BriefHistoryRecord>, FailureType>
+            getBriefHistoryFragment(quint32 startId, int limit);
         ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
                                                                       getHashHistoryStats(
                                                                 quint32 userId,
@@ -139,8 +142,9 @@ namespace PMP::Server
                                                                     getCachedHashStats(
                                                                 quint32 userId,
                                                                 QVector<quint32> hashIds);
-        ResultOrError<SuccessType, FailureType> updateUserHashStatsCache(quint32 userId,
+        SuccessOrFailure updateUserHashStatsCacheEntry(quint32 userId,
                                         DatabaseRecords::HashHistoryStats const& stats);
+        SuccessOrFailure removeUserHashStatsCacheEntry(quint32 userId, quint32 hashId);
 
         ResultOrError<QVector<QPair<quint32, quint32>>, FailureType> getEquivalences();
         ResultOrError<SuccessType, FailureType> registerEquivalence(quint32 hashId1,

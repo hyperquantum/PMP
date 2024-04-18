@@ -30,14 +30,26 @@ namespace PMP
     class ContainerUtil
     {
     public:
-        template<typename K, typename V> static QVector<K> keysToVector(
-                                                                   QHash<K,V> const& hash)
+        template<typename K, typename V>
+        static QVector<K> keysToVector(QHash<K, V> const& hash)
         {
             QVector<K> v;
             v.reserve(hash.size());
 
             for (auto it = hash.keyBegin(); it != hash.keyEnd(); ++it)
                 v.append(*it);
+
+            return v;
+        }
+
+        template<typename K, typename V>
+        static QVector<V> valuesToVector(QHash<K, V> const& hash)
+        {
+            QVector<V> v;
+            v.reserve(hash.size());
+
+            for (auto it = hash.constBegin(); it != hash.constEnd(); ++it)
+                v.append(it.value());
 
             return v;
         }

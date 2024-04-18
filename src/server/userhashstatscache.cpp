@@ -84,4 +84,13 @@ namespace PMP::Server
 
         userData.insert(stats.hashId, stats);
     }
+
+    void UserHashStatsCache::remove(quint32 userId, uint hashId)
+    {
+        QMutexLocker lock(&_mutex);
+
+        auto& userData = _stats[userId];
+
+        userData.remove(hashId);
+    }
 }

@@ -42,6 +42,7 @@ namespace PMP::Server
                                                               QVector<uint> hashIds);
 
         void add(quint32 userId, DatabaseRecords::HashHistoryStats const& stats);
+        void remove(quint32 userId, uint hashId);
 
     private:
         QHash<quint32, QHash<uint, DatabaseRecords::HashHistoryStats>> _stats;

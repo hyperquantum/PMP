@@ -58,24 +58,24 @@ namespace PMP::Server
         Nullable<TrackStats> getStatsIfAvailable(quint32 userId, uint hashId);
         Future<SuccessType, FailureType> scheduleFetchIfMissing(quint32 userId,
                                                                 uint hashId);
-        void invalidateStatisticsForHashes(QVector<uint> hashIds);
+        void invalidateAllGroupStatisticsForHash(uint hashId);
+        void invalidateIndividualHashStatistics(quint32 userId, uint hashId);
 
     Q_SIGNALS:
         void hashStatisticsChanged(quint32 userId, QVector<uint> hashIds);
 
     private:
+        bool recalculateGroupStats(quint32 userId,
+                                   QHash<uint, TrackStats> individualStats);
+        void scheduleStatisticsChangedSignal(quint32 userId, QVector<uint> hashIds);
+
         Future<SuccessType, FailureType> scheduleFetch(quint32 userId, uint hashId,
                                                        bool onlyIfMissing);
 
-        enum class ForceRecalculation
-        {
-            No,
-            Yes,
-        };
+        enum class UseCachedValues { Yes, No };
 
         struct UserHashStatisticsEntry
         {
-            TrackStats individualStats;
             TrackStats groupStats;
         };
 
@@ -85,17 +85,16 @@ namespace PMP::Server
             QSet<uint> hashesInProgress;
         };
 
-        static ResultOrError<TrackStats, FailureType> fetchInternal(
-                                                HistoryStatistics* calculator,
-                                                quint32 userId,
-                                                QVector<uint> hashIdsInGroup,
-                                                ForceRecalculation forceRecalculation);
+        static SuccessOrFailure fetchInternal(HistoryStatistics* calculator,
+                                              quint32 userId,
+                                              QVector<uint> hashIdsInGroup,
+                                            UseCachedValues cacheUseForIndividualHashes);
 
         static ResultOrError<QHash<uint, TrackStats>, FailureType> fetchIndividualStats(
                                                 UserHashStatsCache* cache,
                                                 quint32 userId,
                                                 QVector<uint> hashIdsInGroup,
-                                                ForceRecalculation forceRecalculation);
+                                            UseCachedValues cacheUseForIndividualHashes);
 
         /*
         static ResultOrError<SuccessType, FailureType> ensureCacheHasBeenLoadedForUser(
@@ -108,7 +107,6 @@ namespace PMP::Server
         UserHashStatsCache* const _userHashStatsCache;
         QMutex _mutex;
         QHash<quint32, UserStatisticsEntry> _userData;
-        QMutex _mutexForCacheLoading;
     };
 }
 #endif

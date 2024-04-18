@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,6 +22,7 @@
 
 #include "common/future.h"
 
+#include <QHash>
 #include <QMutex>
 #include <QObject>
 #include <QVector>
@@ -84,6 +85,43 @@ namespace PMP::Server
         int _hashIndex { -1 };
         int _userIndex { -1 };
         State _state { State::Initial };
+    };
+
+    class Database;
+    class HistoryStatistics;
+
+    class UserHashStatsCacheFixer : public QObject
+    {
+        Q_OBJECT
+    public:
+        UserHashStatsCacheFixer(HistoryStatistics* historyStatistics);
+
+        void start();
+
+    private:
+        enum class State
+        {
+            Initial,
+            WaitBeforeDeciding,
+            DecideWhatToDo,
+            ProcessingHistory,
+            Finished
+        };
+
+        void work();
+        void handleResultOfWork(SuccessOrFailure result);
+        void setStateToWaitBeforeDeciding(uint waitTimeMs);
+        SuccessOrFailure decideWhatToDo();
+        SuccessOrFailure fetchHistoryIdFromMiscData(Database& database);
+        SuccessOrFailure processHistory();
+
+        HistoryStatistics* _historyStatistics;
+        State _state { State::Initial };
+        uint _waitingTimeMs {0};
+        QString _oldHistoryIdString;
+        uint _oldHistoryId {0};
+        int _historyCountToProcess {0};
+        QHash<quint32, QSet<uint>> _usersWithHashesAlreadyInvalidated;
     };
 }
 #endif
