@@ -120,9 +120,8 @@ static void setUpAndRunInitialIndexation(Resolver* resolver)
     resolver->startFullIndexation();
 }
 
-static void loadEquivalencesAndStartStatisticsPrefetchAsync(
+static void loadEquivalencesAndStartHashStatsCacheFixerAsync(
                                             HashRelations* hashRelations,
-                                            /*HistoryStatisticsPrefetcher* prefetcher*/
                                             UserHashStatsCacheFixer* hashStatsCacheFixer)
 {
     auto equivalencesLoadingFuture =
@@ -145,26 +144,21 @@ static void loadEquivalencesAndStartStatisticsPrefetchAsync(
         );
 
     equivalencesLoadingFuture.addListener(
-        /*prefetcher,*/
         hashStatsCacheFixer,
-        [/*prefetcher*/hashStatsCacheFixer](ResultOrError<SuccessType, FailureType> result)
+        [hashStatsCacheFixer](ResultOrError<SuccessType, FailureType> result)
         {
             if (result.failed())
                 qDebug() << "failed to load equivalences from the database";
 
-            //prefetcher->start();
             hashStatsCacheFixer->start();
         }
     );
 }
 
 static void startBackgroundTasks(HashRelations* hashRelations,
-                            /*HistoryStatisticsPrefetcher* historyStatisticsPrefetcher*/
                                 UserHashStatsCacheFixer* hashStatsCacheFixer)
 {
-    loadEquivalencesAndStartStatisticsPrefetchAsync(hashRelations,
-                                                    /*historyStatisticsPrefetcher*/
-                                                    hashStatsCacheFixer);
+    loadEquivalencesAndStartHashStatsCacheFixerAsync(hashRelations, hashStatsCacheFixer);
 }
 
 static int runServer(QCoreApplication& app, bool doIndexation);
@@ -254,8 +248,6 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     DelayedStart delayedStart(&player);
     PlayerQueue& queue = player.queue();
     History history(&player, &hashIdRegistrar, &historyStatistics);
-    // HistoryStatisticsPrefetcher historyPrefetcher(nullptr, &hashIdRegistrar, &history,
-    //                                               &users);
     UserHashStatsCacheFixer hashStatsCacheFixer(&historyStatistics);
 
     CollectionMonitor collectionMonitor;

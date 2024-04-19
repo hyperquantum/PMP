@@ -20,73 +20,16 @@
 #ifndef PMP_HISTORYSTATISTICSPREFETCHER_H
 #define PMP_HISTORYSTATISTICSPREFETCHER_H
 
-#include "common/future.h"
+#include "common/resultorerror.h"
 
 #include <QHash>
-#include <QMutex>
 #include <QObject>
-#include <QVector>
+#include <QSet>
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP::Server
 {
-    class HashIdRegistrar;
-    class History;
-    class Users;
-
-    class WorkThrottle : public QObject
-    {
-        Q_OBJECT
-    public:
-        WorkThrottle(QObject* parent, int maxJobsCount);
-
-        void tryStartJob(std::function<Future<SuccessType, FailureType> ()> jobCreator);
-
-    Q_SIGNALS:
-        void readyForExtraJob();
-
-    private:
-        void onJobFinished();
-
-        QMutex _mutex;
-        int _maxCount;
-        int _currentCount;
-    };
-
-    class HistoryStatisticsPrefetcher : public QObject
-    {
-        Q_OBJECT
-    public:
-        HistoryStatisticsPrefetcher(QObject* parent, HashIdRegistrar* hashIdRegistrar,
-                                    History* history, Users* users);
-
-        void start();
-
-    private Q_SLOTS:
-        void doSomething();
-
-    private:
-        enum class State { Initial, UsersLoading, UsersLoaded, Working, AllDone };
-
-        Future<SuccessType, FailureType> startLoadingUsers();
-        void prepareHashesList();
-        Future<SuccessType, FailureType> fetchNextStatistics();
-
-        void doubleTimerInterval();
-
-        HashIdRegistrar* _hashIdRegistrar;
-        History* _history;
-        Users* _users;
-        QTimer* _timer;
-        WorkThrottle* _workThrottle;
-        QVector<uint> _hashIds;
-        QVector<uint> _userIds;
-        int _hashIndex { -1 };
-        int _userIndex { -1 };
-        State _state { State::Initial };
-    };
-
     class Database;
     class HistoryStatistics;
 
