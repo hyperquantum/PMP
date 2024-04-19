@@ -26,8 +26,6 @@
 #include <QObject>
 #include <QSet>
 
-QT_FORWARD_DECLARE_CLASS(QTimer)
-
 namespace PMP::Server
 {
     class Database;
