@@ -260,7 +260,9 @@ namespace PMP::Server
         {
             auto& hashData = userData.hashData[it.key()];
 
-            haveChanges |= hashData.groupStats != newGroupStats;
+            haveChanges |=
+                hashData.groupStats.isNull()
+                           || hashData.groupStats.value() != newGroupStats;
 
             hashData.groupStats = newGroupStats;
         }

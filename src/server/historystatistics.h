@@ -21,6 +21,7 @@
 #define PMP_HISTORYSTATISTICS_H
 
 #include "common/future.h"
+#include "common/nullable.h"
 #include "common/resultorerror.h"
 
 #include "trackstats.h"
@@ -76,7 +77,7 @@ namespace PMP::Server
 
         struct UserHashStatisticsEntry
         {
-            TrackStats groupStats;
+            Nullable<TrackStats> groupStats;
         };
 
         struct UserStatisticsEntry
