@@ -111,7 +111,6 @@ set(PMP_SERVER_SOURCES
     server/hashrelations.cpp
     server/history.cpp
     server/historystatistics.cpp
-    server/historystatisticsprefetcher.cpp
     server/lastfmscrobblingbackend.cpp
     server/lastfmscrobblingdataprovider.cpp
     server/player.cpp
@@ -136,6 +135,7 @@ set(PMP_SERVER_SOURCES
     server/trackrepetitionchecker.cpp
     server/trackstats.cpp
     server/userhashstatscache.cpp
+    server/userhashstatscachefixer.cpp
     server/users.cpp
     server/wavetrackgenerator.cpp
 )
@@ -149,7 +149,6 @@ set(PMP_SERVER_HEADERS
     server/generator.h
     server/history.h
     server/historystatistics.h
-    server/historystatisticsprefetcher.h
     server/lastfmscrobblingbackend.h
     server/player.h
     server/playerqueue.h
@@ -166,6 +165,7 @@ set(PMP_SERVER_HEADERS
     server/tcpserver.h
     server/trackgeneratorbase.h
     server/trackrepetitionchecker.h
+    server/userhashstatscachefixer.h
     server/users.h
     server/wavetrackgenerator.h
 )

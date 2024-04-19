@@ -30,7 +30,6 @@
 #include "hashrelations.h"
 #include "history.h"
 #include "historystatistics.h"
-#include "historystatisticsprefetcher.h"
 #include "player.h"
 #include "playerqueue.h"
 #include "preloader.h"
@@ -43,6 +42,7 @@
 #include "tcpserver.h"
 #include "trackinfoproviderimpl.h"
 #include "userhashstatscache.h"
+#include "userhashstatscachefixer.h"
 #include "users.h"
 
 #include <QCoreApplication>

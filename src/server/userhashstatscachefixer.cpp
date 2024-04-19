@@ -17,7 +17,7 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "historystatisticsprefetcher.h"
+#include "userhashstatscachefixer.h"
 
 #include "common/concurrent.h"
 

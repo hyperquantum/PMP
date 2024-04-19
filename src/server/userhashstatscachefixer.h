@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_HISTORYSTATISTICSPREFETCHER_H
-#define PMP_HISTORYSTATISTICSPREFETCHER_H
+#ifndef PMP_USERHASHSTATSCACHEFIXER_H
+#define PMP_USERHASHSTATSCACHEFIXER_H
 
 #include "common/resultorerror.h"
 
