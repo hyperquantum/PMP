@@ -142,4 +142,4 @@ TECHNICAL IDEAS
 
 CODE IMPROVEMENTS
 
- *
+ * split Database class into smaller parts
