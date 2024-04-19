@@ -97,12 +97,6 @@ namespace PMP::Server
                                                 QVector<uint> hashIdsInGroup,
                                             UseCachedValues cacheUseForIndividualHashes);
 
-        /*
-        static ResultOrError<SuccessType, FailureType> ensureCacheHasBeenLoadedForUser(
-                                                            UserHashStatsCache* cache,
-                                                            quint32 userId);
-        */
-
         QThreadPool* const _threadPool;
         HashRelations* const _hashRelations;
         UserHashStatsCache* const _userHashStatsCache;

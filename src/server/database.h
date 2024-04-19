@@ -134,9 +134,6 @@ namespace PMP::Server
                                                                 int limit);
 
         ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
-                                                            getAllCachedHashStatsForUser(
-                                                                        quint32 userId);
-        ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
                                                                     getCachedHashStats(
                                                                 quint32 userId,
                                                                 QVector<quint32> hashIds);

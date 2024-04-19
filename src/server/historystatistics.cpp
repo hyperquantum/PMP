@@ -437,33 +437,4 @@ namespace PMP::Server
 
         return result;
     }
-
-    /*
-    ResultOrError<SuccessType, FailureType>
-        HistoryStatistics::ensureCacheHasBeenLoadedForUser(UserHashStatsCache* cache,
-                                                           quint32 userId)
-    {
-        if (cache->hasBeenLoadedForUser(userId))
-            return success;
-
-        QMutexLocker lock(&);
-
-        auto database = Database::getDatabaseForCurrentThread();
-        if (!database)
-            return failure;
-
-        qDebug() << "HistoryStatistics: loading cached stats for user" << userId;
-
-        auto recordsOrFailure = database->getAllCachedHashStatsForUser(userId);
-        if (recordsOrFailure.failed())
-            return failure;
-
-        cache->loadForUser(userId, recordsOrFailure.result());
-
-        qDebug() << "HistoryStatistics: cached stats for user" << userId
-                 << "successfully loaded";
-
-        return success;
-    }
-    */
 }

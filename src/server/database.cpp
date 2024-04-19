@@ -1568,45 +1568,6 @@ namespace PMP::Server
                                                            limit);
     }
 
-    ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
-        Database::getAllCachedHashStatsForUser(quint32 userId)
-    {
-        auto preparer =
-            [=] (QSqlQuery& q)
-        {
-            auto sql =
-                "SELECT HashID, LastHistoryId, LastHeard, ScoreHeardCount,"
-                " AveragePermillage "
-                "FROM pmp_userhashstatscache "
-                "WHERE COALESCE(UserID, 0)=?";
-
-            q.prepare(sql);
-
-            q.addBindValue(userId);
-        };
-
-        auto extractRecord =
-            [](QSqlQuery& q)
-            {
-                quint32 hashID = q.value(0).toUInt();
-                uint lastHistoryId = getUInt(q.value(1), 0);
-                QDateTime lastHeard = getUtcDateTime(q.value(2));
-                quint32 scoreHeardCount = (quint32)getUInt(q.value(3), 0);
-                qint32 averagePermillage = (qint32)getInt(q.value(4), -1);
-
-                HashHistoryStats stats;
-                stats.lastHistoryId = lastHistoryId;
-                stats.hashId = hashID;
-                stats.lastHeard = lastHeard;
-                stats.scoreHeardCount = scoreHeardCount;
-                stats.averagePermillage = averagePermillage;
-
-                return stats;
-            };
-
-        return _dbConnection.executeRecords<HashHistoryStats>(preparer, extractRecord);
-    }
-
     ResultOrError<QVector<HashHistoryStats>, FailureType> Database::getCachedHashStats(
                                                                 quint32 userId,
                                                                 QVector<quint32> hashIds)
