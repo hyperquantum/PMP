@@ -204,7 +204,7 @@ namespace PMP::Server
 
         lock.unlock();
 
-        for (auto userId : usersNeedingRefetch)
+        for (auto userId : qAsConst(usersNeedingRefetch))
         {
             scheduleFetch(userId, hashId, false);
         }
