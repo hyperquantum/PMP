@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -96,6 +96,8 @@ namespace PMP
         Nullable<ResultType> _result;
         Nullable<ErrorType> _error;
     };
+
+    typedef ResultOrError<SuccessType, FailureType> SuccessOrFailure;
 
     /* not supported by MSVC unfortunately :-(
 #define TRY(expression)                          \

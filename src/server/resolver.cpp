@@ -812,7 +812,7 @@ namespace PMP::Server
             return;
 
         _hashRelations->markAsEquivalent(hashes);
-        _historyStatistics->invalidateStatisticsForHashes(hashes);
+        _historyStatistics->invalidateAllGroupStatisticsForHash(hashes[0]);
 
         Concurrent::run<SuccessType, FailureType>(
             [hashes]() -> ResultOrError<SuccessType, FailureType>

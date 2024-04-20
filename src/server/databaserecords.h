@@ -108,22 +108,19 @@ namespace PMP::Server
             quint32 userId;
         };
 
-        class HistoryRecord
+        struct BriefHistoryRecord
         {
-        public:
-            HistoryRecord()
-                : id(0), hashId(0), userId(0), permillage(-1), validForScoring(false)
-            {
-                //
-            }
+            quint32 id {0};
+            quint32 hashId {0};
+            quint32 userId {0};
+        };
 
-            quint32 id;
-            quint32 hashId;
-            quint32 userId;
+        struct HistoryRecord : BriefHistoryRecord
+        {
             QDateTime start;
             QDateTime end;
-            qint16 permillage;
-            bool validForScoring;
+            qint16 permillage {-1};
+            bool validForScoring {false};
         };
     }
 }

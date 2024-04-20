@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,14 +30,26 @@ namespace PMP
     class ContainerUtil
     {
     public:
-        template<typename K, typename V> static QVector<K> keysToVector(
-                                                                   QHash<K,V> const& hash)
+        template<typename K, typename V>
+        static QVector<K> keysToVector(QHash<K, V> const& hash)
         {
             QVector<K> v;
             v.reserve(hash.size());
 
             for (auto it = hash.keyBegin(); it != hash.keyEnd(); ++it)
                 v.append(*it);
+
+            return v;
+        }
+
+        template<typename K, typename V>
+        static QVector<V> valuesToVector(QHash<K, V> const& hash)
+        {
+            QVector<V> v;
+            v.reserve(hash.size());
+
+            for (auto it = hash.constBegin(); it != hash.constEnd(); ++it)
+                v.append(it.value());
 
             return v;
         }
@@ -65,6 +77,17 @@ namespace PMP
             return v;
         }
 
+        template<typename T> static QSet<T> toSet(QVector<T> const& vector)
+        {
+            QSet<T> set;
+            set.reserve(vector.size());
+
+            for (T const& element : vector)
+                set << element;
+
+            return set;
+        }
+
         template<typename T> static void addToSet(QList<T> const& list, QSet<T>& set)
         {
             for (T const& element : list)
@@ -75,6 +98,20 @@ namespace PMP
         {
             for (T const& element : vector)
                 set << element;
+        }
+
+        template<typename T>
+        static void removeFromSet(QVector<T> const& vector, QSet<T>& set)
+        {
+            for (T const& element : vector)
+                set.remove(element);
+        }
+
+        template<typename K, typename V>
+        static void removeKeysFromSet(QHash<K, V> const& hash, QSet<K>& set)
+        {
+            for (auto it = hash.constBegin(); it != hash.constEnd(); ++it)
+                set.remove(it.key());
         }
     };
 }
