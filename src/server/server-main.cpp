@@ -335,7 +335,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
 
     printStartupSummary(out, serverSettings, server, player);
 
-    startBackgroundTasks(&hashRelations/*, &historyPrefetcher*/, &hashStatsCacheFixer);
+    startBackgroundTasks(&hashRelations, &hashStatsCacheFixer);
 
     out << "\n"
         << "Server initialization complete." << Qt::endl

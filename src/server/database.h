@@ -243,7 +243,6 @@ namespace PMP::Server
         static QThreadStorage<QSharedPointer<Database>> _threadLocalDatabases;
         static QAtomicInt _nextDbNameNumber;
 
-        //QSqlDatabase _db;
         DatabaseConnection _dbConnection;
     };
 }
