@@ -183,7 +183,4 @@ namespace PMP
         TrackJudge _filteringTrackJudge;
     };
 }
-
-Q_DECLARE_METATYPE(PMP::TrackCriterium)
-
 #endif
