@@ -243,7 +243,7 @@ namespace PMP::Server
         auto hashIds =
             _hashRelations->getEquivalencyGroup(maybeHashId.value());
 
-        if (!_users->checkUserIdExists(userId))
+        if (userId != 0 && !_users->checkUserIdExists(userId))
             return FutureError(Error::userIdNotFound());
 
         limit = qBound(0, limit, 50);

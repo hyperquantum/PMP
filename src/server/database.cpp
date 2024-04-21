@@ -1525,14 +1525,14 @@ namespace PMP::Server
                       " HistoryID,HashID,UserID,`Start`,`End`,Permillage,ValidForScoring "
                       "FROM pmp_history "
                       "WHERE HashID IN " + buildParamsList(hashIds.size()) +
-                      " AND UserID=? AND HistoryID < ? "
+                      " AND COALESCE(UserID, 0)=? AND HistoryID < ? "
                       "ORDER BY HistoryID DESC "
                       "LIMIT ?"
                     : "SELECT"
                       " HistoryID,HashID,UserID,`Start`,`End`,Permillage,ValidForScoring "
                       "FROM pmp_history "
                       "WHERE HashID IN " + buildParamsList(hashIds.size()) +
-                      " AND UserID=? "
+                      " AND COALESCE(UserID, 0)=? "
                       "ORDER BY HistoryID DESC "
                       "LIMIT ?";
 
