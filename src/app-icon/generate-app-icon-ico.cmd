@@ -6,7 +6,7 @@
 ::  - Inkscape installed
 ::  - ImageMagick installed and added to PATH
 ::
-:: The installation paths of Inkscape is configured below.
+:: The installation path of Inkscape is configured below.
 ::
 :: ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
