@@ -16,3 +16,6 @@ testing/*_MODIFIED.data
 PMP-win64.zip
 x64-windows-archive-full/
 x64-windows-release-bin/
+
+# temp files of icon generation script
+src/app-icon/temp-output
