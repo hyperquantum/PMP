@@ -5,4 +5,7 @@
         <file>Skip.png</file>
         <file>queue.svg</file>
     </qresource>
+    <qresource prefix="/app">
+        <file alias="app-icon.svg">../app-icon/app-icon.svg</file>
+    </qresource>
 </RCC>
