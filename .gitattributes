@@ -2,6 +2,7 @@
 
 # Files that require Unix newlines
 *.sh text eol=lf
+*.svg text eol=lf
 
 # Files that require Windows newlines
 *.cmd text eol=crlf

@@ -338,8 +338,13 @@ target_link_libraries(PMP-Cmd-Remote
     $<TARGET_OBJECTS:PmpCommon>
 )
 
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    set (GUI_REMOTE_WIN32_RESOURCES gui-remote/winres.rc)
+endif()
+
 add_executable(PMP-GUI-Remote
     ${PMP_WIN32_FLAG}
+    ${GUI_REMOTE_WIN32_RESOURCES}
     gui-remote/gui-remote-main.cpp
 
 )

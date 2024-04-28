@@ -75,6 +75,8 @@ namespace PMP
             QString(tr("Party Music Player ")) + UnicodeChars::enDash + tr(" Remote")
         );
 
+        setWindowIcon(QIcon(":/app/app-icon.svg"));
+
         _musicCollectionDock->setObjectName("musicCollectionDockWidget");
         _musicCollectionDock->setAllowedAreas(
             (Qt::DockWidgetAreas)(Qt::LeftDockWidgetArea | Qt::RightDockWidgetArea)
