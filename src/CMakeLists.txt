@@ -194,7 +194,7 @@ set(PMP_CMD_REMOTE_HEADERS
     cmd-remote/scrobblingcommands.h
 )
 
-set(PMP_GUI_REMOTE_SOURCES
+set(PMP_DESKTOP_REMOTE_SOURCES
     desktop-remote/autopersonalmodeaction.cpp
     desktop-remote/clickablelabel.cpp
     desktop-remote/collectiontablemodel.cpp
@@ -226,7 +226,7 @@ set(PMP_GUI_REMOTE_SOURCES
     desktop-remote/userscrobblingdialog.cpp
     desktop-remote/waitingspinnerwidget.cpp
 )
-set(PMP_GUI_REMOTE_HEADERS
+set(PMP_DESKTOP_REMOTE_HEADERS
     desktop-remote/autopersonalmodeaction.h
     desktop-remote/clickablelabel.h
     desktop-remote/collectiontablemodel.h
@@ -255,7 +255,7 @@ set(PMP_GUI_REMOTE_HEADERS
     desktop-remote/userscrobblingdialog.h
     desktop-remote/waitingspinnerwidget.h
 )
-set(PMP_GUI_REMOTE_UIS
+set(PMP_DESKTOP_REMOTE_UIS
     desktop-remote/collectionwidget.ui
     desktop-remote/connectionwidget.ui
     desktop-remote/delayedstartdialog.ui
@@ -269,7 +269,7 @@ set(PMP_GUI_REMOTE_UIS
     desktop-remote/userpickerwidget.ui
     desktop-remote/userscrobblingdialog.ui
 )
-set(PMP_GUI_REMOTE_RESOURCES
+set(PMP_DESKTOP_REMOTE_RESOURCES
     desktop-remote/mainwindow.qrc
 )
 
@@ -277,9 +277,9 @@ qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
 qt5_wrap_cpp(PMP_CLIENT_MOCS ${PMP_CLIENT_HEADERS})
 qt5_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
 qt5_wrap_cpp(PMP_CMD_REMOTE_MOCS ${PMP_CMD_REMOTE_HEADERS})
-qt5_wrap_cpp(PMP_GUI_REMOTE_MOCS ${PMP_GUI_REMOTE_HEADERS})
-qt5_wrap_ui(PMP_GUI_REMOTE_UICS ${PMP_GUI_REMOTE_UIS})
-qt5_add_resources(PMP_GUI_REMOTE_QRCS ${PMP_GUI_REMOTE_RESOURCES})
+qt5_wrap_cpp(PMP_DESKTOP_REMOTE_MOCS ${PMP_DESKTOP_REMOTE_HEADERS})
+qt5_wrap_ui(PMP_DESKTOP_REMOTE_UICS ${PMP_DESKTOP_REMOTE_UIS})
+qt5_add_resources(PMP_DESKTOP_REMOTE_QRCS ${PMP_DESKTOP_REMOTE_RESOURCES})
 
 configure_file(common/version.h.in common/version.h)
 
@@ -297,8 +297,8 @@ add_library(PmpCmdRemote OBJECT ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS}
 target_link_libraries(PmpCmdRemote Qt5::Core Qt5::Network)
 
 add_library(PmpDesktopRemote OBJECT
-    ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
-    ${PMP_GUI_REMOTE_UICS} ${PMP_GUI_REMOTE_QRCS}
+    ${PMP_DESKTOP_REMOTE_SOURCES} ${PMP_DESKTOP_REMOTE_MOCS}
+    ${PMP_DESKTOP_REMOTE_UICS} ${PMP_DESKTOP_REMOTE_QRCS}
 )
 target_link_libraries(PmpDesktopRemote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
 
@@ -339,12 +339,12 @@ target_link_libraries(PMP-Cmd-Remote
 )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set (GUI_REMOTE_WIN32_RESOURCES desktop-remote/winres.rc)
+    set (PMP_DESKTOP_REMOTE_WIN32_RESOURCES desktop-remote/winres.rc)
 endif()
 
 add_executable(PMP-Desktop-Remote
     ${PMP_WIN32_FLAG}
-    ${GUI_REMOTE_WIN32_RESOURCES}
+    ${PMP_DESKTOP_REMOTE_WIN32_RESOURCES}
     desktop-remote/desktop-remote-main.cpp
 
 )
