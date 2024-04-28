@@ -127,7 +127,7 @@ After configuring the server you can run PMP for real:
 
 1. Make sure MySQL is running
 2. Make sure the PMP server is running (_PMP-Server_)
-3. Run the PMP desktop client (_PMP-GUI-Remote_)
+3. Run the PMP desktop client (_PMP-Desktop-Remote_)
 4. Log in; create a new user account first if necessary
 
 
