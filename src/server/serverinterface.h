@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,6 +29,7 @@
 #include "common/startstopeventstatus.h"
 #include "common/versioninfo.h"
 
+#include "collectiontrackinfo.h"
 #include "hashstats.h"
 #include "historyentry.h"
 #include "result.h"
@@ -47,6 +48,7 @@ namespace PMP::Server
     class DelayedStart;
     class Generator;
     class HashIdRegistrar;
+    class HashRelations;
     class History;
     class Player;
     class PlayerQueue;
@@ -72,7 +74,9 @@ namespace PMP::Server
     public:
         ServerInterface(ServerSettings* serverSettings, TcpServer* server, Player* player,
                         Generator* generator, History* history,
-                        HashIdRegistrar* hashIdRegistrar, Users* users,
+                        HashIdRegistrar* hashIdRegistrar,
+                        HashRelations* hashRelations,
+                        Users* users,
                         DelayedStart* delayedStart, Scrobbling* scrobbling);
 
         ~ServerInterface();
@@ -88,6 +92,10 @@ namespace PMP::Server
         void setLoggedIn(quint32 userId, QString userLogin);
 
         SimpleFuture<ResultMessageErrorCode> reloadServerSettings();
+
+        Result startFullIndexation();
+        Result startQuickScanForNewFiles();
+        void requestIndexationStatus();
 
         void switchToPersonalMode();
         void switchToPublicMode();
@@ -139,9 +147,8 @@ namespace PMP::Server
         void terminateDynamicModeWave();
         void setTrackRepetitionAvoidanceSeconds(int seconds);
 
-        void startFullIndexation();
-
         void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
+        Future<CollectionTrackInfo, Result> getHashInfo(FileHash hash);
 
         void shutDownServer();
         void shutDownServer(QString serverPassword);
@@ -150,6 +157,9 @@ namespace PMP::Server
         void serverCaptionChanged();
         void serverClockTimeSendingPulse();
         void serverShuttingDown();
+
+        void fullIndexationStatusEvent(StartStopEventStatus status);
+        void quickScanForNewFilesStatusEvent(StartStopEventStatus status);
 
         void delayedStartActiveChanged();
 
@@ -168,6 +178,9 @@ namespace PMP::Server
         void hashUserDataChangedOrAvailable(quint32 userId, QVector<HashStats> tracks);
 
     private Q_SLOTS:
+        void onFullIndexationStatusChanged();
+        void onQuickScanForNewFilesStatusChanged();
+
         void onQueueEntryAdded(qint32 offset, quint32 queueId);
 
         void onDynamicModeStatusChanged();
@@ -196,6 +209,7 @@ namespace PMP::Server
         Generator* _generator;
         History* _history;
         HashIdRegistrar* _hashIdRegistrar;
+        HashRelations* _hashRelations;
         Users* _users;
         DelayedStart* _delayedStart;
         Scrobbling* _scrobbling;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,7 @@
 #include "collectionwatcherimpl.h"
 
 #include "collectionfetcher.h"
+#include "localhashidrepository.h"
 #include "servercapabilities.h"
 #include "serverconnection.h"
 
@@ -72,14 +73,48 @@ namespace PMP::Client
         return _collectionHash;
     }
 
-    CollectionTrackInfo CollectionWatcherImpl::getTrack(LocalHashId hashId)
+    Nullable<CollectionTrackInfo> CollectionWatcherImpl::getTrackFromCache(
+                                                                       LocalHashId hashId)
     {
         auto it = _collectionHash.find(hashId);
 
         if (it == _collectionHash.end())
-            return CollectionTrackInfo();
+        {
+            /* download the data if possible */
+            if (_connection->serverCapabilities().supportsRequestingIndividualTrackInfo())
+                (void)getTrackInfoInternal(hashId);
+
+            return null;
+        }
 
         return it.value();
+    }
+
+    Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherImpl::getTrackInfo(
+                                                                       LocalHashId hashId)
+    {
+        auto it = _collectionHash.find(hashId);
+
+        if (it != _collectionHash.end())
+            return FutureResult(it.value());
+
+        return getTrackInfoInternal(hashId);
+    }
+
+    Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherImpl::getTrackInfo(
+                                                                    const FileHash& hash)
+    {
+        auto hashId = _connection->hashIdRepository()->getId(hash);
+
+        if (!hashId.isZero())
+        {
+            auto it = _collectionHash.find(hashId);
+
+            if (it != _collectionHash.end())
+                return FutureResult(it.value());
+        }
+
+        return getTrackInfoInternal(hash);
     }
 
     void CollectionWatcherImpl::onConnected()
@@ -132,6 +167,38 @@ namespace PMP::Client
         {
             updateTrackData(track);
         }
+    }
+
+    Future<CollectionTrackInfo, AnyResultMessageCode>
+        CollectionWatcherImpl::getTrackInfoInternal(LocalHashId hashId)
+    {
+        auto future = _connection->getTrackInfo(hashId);
+
+        future.addResultListener(
+            this,
+            [this](CollectionTrackInfo trackInfo)
+            {
+                updateTrackData(trackInfo);
+            }
+        );
+
+        return future;
+    }
+
+    Future<CollectionTrackInfo, AnyResultMessageCode>
+        CollectionWatcherImpl::getTrackInfoInternal(const FileHash& hash)
+    {
+        auto future = _connection->getTrackInfo(hash);
+
+        future.addResultListener(
+            this,
+            [this](CollectionTrackInfo trackInfo)
+            {
+                updateTrackData(trackInfo);
+            }
+        );
+
+        return future;
     }
 
     void CollectionWatcherImpl::startDownload()

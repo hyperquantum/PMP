@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -53,6 +53,14 @@ namespace PMP::Client
             this,
             [this](VersionInfo versionInfo) { _serverVersionInfo.setResult(versionInfo); }
         );
+        connect(
+            _connection, &ServerConnection::fullIndexationStatusReceived,
+            this, &GeneralControllerImpl::onFullIndexationStatusReceived
+        );
+        connect(
+            _connection, &ServerConnection::quickScanForNewFilesStatusReceived,
+            this, &GeneralControllerImpl::onQuickScanForNewFilesStatusReceived
+        );
 
         if (_connection->isConnected())
             connected();
@@ -66,6 +74,16 @@ namespace PMP::Client
     qint64 GeneralControllerImpl::clientClockTimeOffsetMs() const
     {
         return _clientClockTimeOffsetMs;
+    }
+
+    SimpleFuture<AnyResultMessageCode> GeneralControllerImpl::startFullIndexation()
+    {
+        return _connection->startFullIndexation();
+    }
+
+    SimpleFuture<AnyResultMessageCode> GeneralControllerImpl::startQuickScanForNewFiles()
+    {
+        return _connection->startQuickScanForNewFiles();
     }
 
     SimpleFuture<AnyResultMessageCode> GeneralControllerImpl::reloadServerSettings()
@@ -82,6 +100,16 @@ namespace PMP::Client
         return _serverVersionInfo.future();
     }
 
+    TriBool GeneralControllerImpl::isFullIndexationRunning() const
+    {
+        return _fullIndexationRunning;
+    }
+
+    TriBool GeneralControllerImpl::isQuickScanForNewFilesRunning() const
+    {
+        return _quickScanForNewFilesRunning;
+    }
+
     void GeneralControllerImpl::shutdownServer()
     {
         _connection->shutdownServer();
@@ -89,12 +117,14 @@ namespace PMP::Client
 
     void GeneralControllerImpl::connected()
     {
-        //
+        _connection->requestIndexationRunningStatus();
     }
 
     void GeneralControllerImpl::connectionBroken()
     {
         _serverVersionInfo.reset();
+        _fullIndexationRunning.reset();
+        _quickScanForNewFilesRunning.reset();
     }
 
     void GeneralControllerImpl::serverHealthReceived()
@@ -120,5 +150,29 @@ namespace PMP::Client
 
         _clientClockTimeOffsetMs = clientClockTimeOffsetMs;
         Q_EMIT clientClockTimeOffsetChanged();
+    }
+
+    void GeneralControllerImpl::onFullIndexationStatusReceived(
+                                                              StartStopEventStatus status)
+    {
+        auto oldValue = _fullIndexationRunning;
+        _fullIndexationRunning = Common::isActive(status);
+
+        if (oldValue.isIdenticalTo(_fullIndexationRunning))
+            return;
+
+        Q_EMIT fullIndexationStatusReceived(status);
+    }
+
+    void GeneralControllerImpl::onQuickScanForNewFilesStatusReceived(
+                                                              StartStopEventStatus status)
+    {
+        auto oldValue = _quickScanForNewFilesRunning;
+        _quickScanForNewFilesRunning = Common::isActive(status);
+
+        if (oldValue.isIdenticalTo(_quickScanForNewFilesRunning))
+            return;
+
+        Q_EMIT quickScanForNewFilesStatusReceived(status);
     }
 }

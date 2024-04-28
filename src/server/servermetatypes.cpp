@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "analyzer.h"
 #include "collectiontrackinfo.h"
+#include "fileanalysis.h"
 #include "scrobblingbackend.h"
 #include "scrobblingtrack.h"
 

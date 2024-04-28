@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -64,12 +64,23 @@ namespace PMP
         setCommandExecutionSuccessful(text);
     }
 
-    /* ===== ReloadServerSettingsCommand ===== */
+    /* ===== StartFullIndexationCommand ===== */
 
-    bool ReloadServerSettingsCommand::requiresAuthentication() const
+    void StartFullIndexationCommand::run(Client::ServerInterface* serverInterface)
     {
-        return true;
+        auto future = serverInterface->generalController().startFullIndexation();
+        addCommandExecutionFutureListener(future);
     }
+
+    /* ===== StartQuickScanForNewFilesCommand ===== */
+
+    void StartQuickScanForNewFilesCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto future = serverInterface->generalController().startQuickScanForNewFiles();
+        addCommandExecutionFutureListener(future);
+    }
+
+    /* ===== ReloadServerSettingsCommand ===== */
 
     void ReloadServerSettingsCommand::run(ServerInterface* serverInterface)
     {
@@ -78,11 +89,6 @@ namespace PMP
     }
 
     /* ===== ShutdownCommand ===== */
-
-    bool ShutdownCommand::requiresAuthentication() const
-    {
-        return true;
-    }
 
     bool ShutdownCommand::willCauseDisconnect() const
     {

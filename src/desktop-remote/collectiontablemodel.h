@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,8 @@
 #ifndef PMP_COLLECTIONTABLEMODEL_H
 #define PMP_COLLECTIONTABLEMODEL_H
 
+#include "common/filehash.h"
+#include "common/nullable.h"
 #include "common/playerstate.h"
 
 #include "client/collectiontrackinfo.h"
@@ -169,13 +171,16 @@ namespace PMP
     protected:
         bool filterAcceptsRow(int sourceRow, const QModelIndex &sourceParent) const;
 
+    private Q_SLOTS:
+        void onNewTrackReceived(Client::CollectionTrackInfo track);
+
     private:
+        Client::ServerInterface* _serverInterface;
         SortedCollectionTableModel* _source;
         QStringList _searchParts;
+        FileHash _searchFileHash;
+        Nullable<Client::LocalHashId> _searchHashId;
         TrackJudge _filteringTrackJudge;
     };
 }
-
-Q_DECLARE_METATYPE(PMP::TrackCriterium)
-
 #endif

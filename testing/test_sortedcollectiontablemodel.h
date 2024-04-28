@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,7 +27,7 @@
 #include "client/serverinterface.h"
 #include "client/userdatafetcher.h"
 
-#include "gui-remote/userforstatisticsdisplay.h"
+#include "desktop-remote/userforstatisticsdisplay.h"
 
 #include <QObject>
 
@@ -133,7 +133,11 @@ public:
     bool downloadingInProgress() const override;
 
     QHash<LocalHashId, CollectionTrackInfo> getCollection() override;
-    CollectionTrackInfo getTrack(LocalHashId hashId) override;
+    Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) override;
+    Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                             LocalHashId hashId) override;
+    Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                        FileHash const& hash) override;
 
 private:
     QHash<LocalHashId, CollectionTrackInfo> _collection;

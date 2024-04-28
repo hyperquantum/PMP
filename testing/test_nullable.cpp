@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -74,6 +74,18 @@ void TestNullable::defaultConstructedIsNull()
 
     QVERIFY(!i.hasValue());
     QVERIFY(!s.hasValue());
+}
+
+void TestNullable::nullOfFunctionReturnsNull()
+{
+    QVERIFY(nullOf<int>().isNull());
+    QVERIFY(nullOf<QString>().isNull());
+
+    QVERIFY(nullOf<int>() == null);
+    QVERIFY(nullOf<QString>() == null);
+
+    QVERIFY(!nullOf<int>().hasValue());
+    QVERIFY(!nullOf<QString>().hasValue());
 }
 
 void TestNullable::defaultConstructorWorksIfTypeNotDefaultConstructible()

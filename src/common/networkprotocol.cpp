@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,6 +34,30 @@
 
 namespace PMP
 {
+    bool NetworkProtocol::isSupported(ParameterlessActionCode action, int protocolVersion)
+    {
+        auto minimumProtocolVersion = getMinimumProtocolVersionThatSupports(action);
+        if (minimumProtocolVersion < 0)
+        {
+            qWarning() << "ParameterlessActionCode" << int(action) << "is invalid";
+            return false;
+        }
+
+        return protocolVersion >= minimumProtocolVersion;
+    }
+
+    bool PMP::NetworkProtocol::isSupported(ServerEventCode eventCode, int protocolVersion)
+    {
+        auto minimumProtocolVersion = getMinimumProtocolVersionThatSupports(eventCode);
+        if (minimumProtocolVersion < 0)
+        {
+            qWarning() << "ServerEventCode" << int(eventCode) << "is invalid";
+            return false;
+        }
+
+        return protocolVersion >= minimumProtocolVersion;
+    }
+
     void NetworkProtocol::append2Bytes(QByteArray& buffer, ServerMessageType messageType)
     {
         NetworkUtil::append2Bytes(buffer, static_cast<quint16>(messageType));
@@ -48,6 +72,44 @@ namespace PMP
                                        ResultMessageErrorCode errorCode)
     {
         NetworkUtil::append2Bytes(buffer, static_cast<quint16>(errorCode));
+    }
+
+    quint8 NetworkProtocol::encode(StartStopEventStatus status)
+    {
+        switch (status)
+        {
+        case StartStopEventStatus::Undefined:
+            return 0;
+        case StartStopEventStatus::StatusUnchangedNotActive:
+            return 1;
+        case StartStopEventStatus::StatusUnchangedActive:
+            return 2;
+        case StartStopEventStatus::StatusChangedToActive:
+            return 3;
+        case StartStopEventStatus::StatusChangedToNotActive:
+            return 4;
+        }
+
+        return 0;
+    }
+
+    StartStopEventStatus NetworkProtocol::decodeStartStopEventStatus(quint8 status)
+    {
+        switch (status)
+        {
+        case 0:
+            return StartStopEventStatus::Undefined;
+        case 1:
+            return StartStopEventStatus::StatusUnchangedNotActive;
+        case 2:
+            return StartStopEventStatus::StatusUnchangedActive;
+        case 3:
+            return StartStopEventStatus::StatusChangedToActive;
+        case 4:
+            return StartStopEventStatus::StatusChangedToNotActive;
+        default:
+            return StartStopEventStatus::Undefined;
+        }
     }
 
     quint8 NetworkProtocol::encode(ScrobblingProvider provider)
@@ -110,66 +172,6 @@ namespace PMP
             default:
                 return ScrobblerStatus::Unknown;
         }
-    }
-
-    int NetworkProtocol::ratePassword(QString password)
-    {
-        int rating = 0;
-        for (int i = 0; i < password.size(); ++i)
-        {
-            rating += 3;
-            QChar c = password[i];
-
-            if (c.isDigit())
-            {
-                rating += 1; /* digits are slightly better than lowercase letters */
-            }
-            else if (c.isLetter())
-            {
-                if (c.isLower())
-                {
-                    /* lowercase letters worth the least */
-                }
-                else
-                {
-                    rating += 2; /* uppercase letters are better than digits */
-                }
-            }
-            else
-            {
-                rating += 7;
-            }
-        }
-
-        int lastDiff = 0;
-        int diffConstantCount = 0;
-        for (int i = 1; i < password.size(); ++i)
-        {
-            QChar prevC = password[i - 1];
-            int prevN = prevC.unicode();
-            QChar curC = password[i];
-            int curN = curC.unicode();
-
-            /* punish patterns such as "eeeee", "123456", "98765", "ghijklm" etc... */
-            int diff = curN - prevN;
-            if (diff <= 1 && diff >= -1)
-            {
-                rating -= 1;
-            }
-            if (diff == lastDiff)
-            {
-                diffConstantCount += 1;
-                rating -= diffConstantCount;
-            }
-            else
-            {
-                diffConstantCount = 0;
-            }
-
-            lastDiff = diff;
-        }
-
-        return rating;
     }
 
     QByteArray NetworkProtocol::hashPassword(QByteArray const& salt, QString password)
@@ -396,6 +398,43 @@ namespace PMP
         credentials.password = QString::fromUtf8(passwordBytes);
 
         return credentials;
+    }
+
+    int NetworkProtocol::getMinimumProtocolVersionThatSupports(
+                                                        ParameterlessActionCode action)
+    {
+        switch (action)
+        {
+        case ParameterlessActionCode::Reserved:
+            return -1; /* invalid value, not supported */
+
+        case ParameterlessActionCode::ReloadServerSettings:
+            return 15;
+
+        case ParameterlessActionCode::DeactivateDelayedStart:
+            return 20;
+
+        case ParameterlessActionCode::StartFullIndexation:
+        case ParameterlessActionCode::StartQuickScanForNewFiles:
+            return 26;
+        }
+
+        return -1; /* invalid value, not supported */
+    }
+
+    int NetworkProtocol::getMinimumProtocolVersionThatSupports(ServerEventCode eventCode)
+    {
+        switch (eventCode)
+        {
+        case ServerEventCode::Reserved:
+            return -1; /* invalid value, not supported */
+
+        case ServerEventCode::FullIndexationRunning:
+        case ServerEventCode::FullIndexationNotRunning:
+            return 1; /* was supported before we started incrementing protocol version */
+        }
+
+        return -1; /* invalid value, not supported */
     }
 
     quint64 NetworkProtocol::getScrobblingAuthenticationObfuscationKey(quint8 keyId)

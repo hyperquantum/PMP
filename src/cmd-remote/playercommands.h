@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,8 +32,6 @@ namespace PMP
     public:
         explicit DelayedStartAtCommand(QDateTime startTime);
 
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
 
@@ -48,8 +46,6 @@ namespace PMP
     public:
         explicit DelayedStartWaitCommand(qint64 delayMilliseconds);
 
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
 
@@ -61,9 +57,6 @@ namespace PMP
     class DelayedStartCancelCommand : public CommandBase
     {
         Q_OBJECT
-    public:
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
 
@@ -74,9 +67,6 @@ namespace PMP
     class PlayCommand : public CommandBase
     {
         Q_OBJECT
-    public:
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
     };
@@ -84,9 +74,6 @@ namespace PMP
     class PauseCommand : public CommandBase
     {
         Q_OBJECT
-    public:
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
     };
@@ -94,9 +81,6 @@ namespace PMP
     class SkipCommand : public CommandBase
     {
         Q_OBJECT
-    public:
-        bool requiresAuthentication() const override;
-
     protected:
         void run(Client::ServerInterface* serverInterface) override;
 

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,12 +22,12 @@
 #include "common/concurrent.h"
 #include "common/containerutil.h"
 #include "common/promise.h"
-#include "common/version.h"
 
 #include "database.h"
 #include "delayedstart.h"
 #include "generator.h"
 #include "hashidregistrar.h"
+#include "hashrelations.h"
 #include "history.h"
 #include "player.h"
 #include "playerqueue.h"
@@ -46,6 +46,7 @@ namespace PMP::Server
                                      Player* player, Generator* generator,
                                      History* history,
                                      HashIdRegistrar* hashIdRegistrar,
+                                     HashRelations* hashRelations,
                                      Users* users,
                                      DelayedStart* delayedStart, Scrobbling* scrobbling)
      : _userLoggedIn(0),
@@ -55,6 +56,7 @@ namespace PMP::Server
        _generator(generator),
        _history(history),
        _hashIdRegistrar(hashIdRegistrar),
+       _hashRelations(hashRelations),
        _users(users),
        _delayedStart(delayedStart),
        _scrobbling(scrobbling)
@@ -70,6 +72,16 @@ namespace PMP::Server
         connect(
             _server, &TcpServer::shuttingDown,
             this, &ServerInterface::serverShuttingDown
+        );
+
+        auto* resolver = &_player->resolver();
+        connect(
+            resolver, &Resolver::fullIndexationRunStatusChanged,
+            this, &ServerInterface::onFullIndexationStatusChanged
+        );
+        connect(
+            resolver, &Resolver::quickScanForNewFilesRunStatusChanged,
+            this, &ServerInterface::onQuickScanForNewFilesStatusChanged
         );
 
         connect(
@@ -127,13 +139,7 @@ namespace PMP::Server
 
     VersionInfo ServerInterface::getServerVersionInfo() const
     {
-        VersionInfo info;
-        info.programName = PMP_PRODUCT_NAME;
-        info.versionForDisplay = PMP_VERSION_DISPLAY;
-        info.vcsBuild = VCS_REVISION_LONG;
-        info.vcsBranch = VCS_BRANCH;
-
-        return info;
+        return VersionInfo::current();
     }
 
     ResultOrError<QUuid, Result> ServerInterface::getDatabaseUuid() const
@@ -170,6 +176,38 @@ namespace PMP::Server
         return promise.future();
     }
 
+    Result ServerInterface::startFullIndexation()
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _player->resolver().startFullIndexation();
+    }
+
+    Result ServerInterface::startQuickScanForNewFiles()
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _player->resolver().startQuickScanForNewFiles();
+    }
+
+    void ServerInterface::requestIndexationStatus()
+    {
+        auto fullIndexationStatus =
+            Common::createUnchangedStartStopEventStatus(
+                _player->resolver().isFullIndexationRunning()
+            );
+
+        auto quickScanForNewFilesStatus =
+            Common::createUnchangedStartStopEventStatus(
+                _player->resolver().isQuickScanForNewFilesRunning()
+            );
+
+        Q_EMIT fullIndexationStatusEvent(fullIndexationStatus);
+        Q_EMIT quickScanForNewFilesStatusEvent(quickScanForNewFilesStatus);
+    }
+
     void ServerInterface::switchToPersonalMode()
     {
         if (!isLoggedIn()) return;
@@ -202,16 +240,17 @@ namespace PMP::Server
         if (maybeHashId == null)
             return FutureError(Error::hashIsUnknown());
 
-        auto hashId = maybeHashId.value();
+        auto hashIds =
+            _hashRelations->getEquivalencyGroup(maybeHashId.value());
 
-        if (!_users->checkUserIdExists(userId))
+        if (userId != 0 && !_users->checkUserIdExists(userId))
             return FutureError(Error::userIdNotFound());
 
         limit = qBound(0, limit, 50);
 
         auto future =
             Concurrent::run<HistoryFragment, Result>(
-                [hashId, hash, userId, startId, limit]()
+                [hashIds, hash, userId, startId, limit]()
                     -> ResultOrError<HistoryFragment, Result>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
@@ -219,7 +258,7 @@ namespace PMP::Server
                         return Error::databaseUnvailable();
 
                     const auto recordsOrFailure =
-                        db->getTrackHistoryForUser(hashId, userId, startId, limit);
+                        db->getTrackHistoryForUser(userId, hashIds, startId, limit);
 
                     if (recordsOrFailure.failed())
                         return Error::internalError();
@@ -598,12 +637,6 @@ namespace PMP::Server
         _generator->setNoRepetitionSpanSeconds(seconds);
     }
 
-    void ServerInterface::startFullIndexation()
-    {
-        if (!isLoggedIn()) return;
-        _player->resolver().startFullIndexation();
-    }
-
     void ServerInterface::requestHashUserData(quint32 userId, QVector<FileHash> hashes)
     {
         if (!isLoggedIn()) return;
@@ -632,6 +665,22 @@ namespace PMP::Server
             Q_EMIT hashUserDataChangedOrAvailable(userId, hashStatsAlreadyAvailable);
     }
 
+    Future<CollectionTrackInfo, Result> ServerInterface::getHashInfo(FileHash hash)
+    {
+        /* note: client does not need to be logged in for this */
+
+        if (hash.isNull())
+            return FutureError(Error::hashIsNull());
+
+        auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
+        if (maybeHashId == null)
+            return FutureError(Error::hashIsUnknown());
+
+        auto hashInfo = _player->resolver().getHashTrackInfo(maybeHashId.value());
+
+        return FutureResult(hashInfo);
+    }
+
     void ServerInterface::shutDownServer()
     {
         if (!isLoggedIn()) return;
@@ -642,6 +691,26 @@ namespace PMP::Server
     {
         if (serverPassword != _server->serverPassword()) return;
         _server->shutdown();
+    }
+
+    void ServerInterface::onFullIndexationStatusChanged()
+    {
+        auto status =
+            Common::createChangedStartStopEventStatus(
+                _player->resolver().isFullIndexationRunning()
+            );
+
+        Q_EMIT fullIndexationStatusEvent(status);
+    }
+
+    void ServerInterface::onQuickScanForNewFilesStatusChanged()
+    {
+        auto status =
+            Common::createChangedStartStopEventStatus(
+                _player->resolver().isQuickScanForNewFilesRunning()
+            );
+
+        Q_EMIT quickScanForNewFilesStatusEvent(status);
     }
 
     void ServerInterface::onQueueEntryAdded(qint32 offset, quint32 queueId)

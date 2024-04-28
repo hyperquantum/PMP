@@ -8,7 +8,7 @@ PMP is designed to be portable software and should be compatible with most popul
 
 *This is alpha quality software*. Existing features can still be incomplete. Certain 'essential' features that can be found in most music player software might (still) be missing. PMP might contain lots of bugs. Use at your own risk.
 
-![screenshot](screenshots/gui-remote-screenshot.png)
+![screenshot](screenshots/desktop-remote-v0.2-screenshot.png)
 
 ## Table of Contents
 Contents of this file:
@@ -127,7 +127,7 @@ After configuring the server you can run PMP for real:
 
 1. Make sure MySQL is running
 2. Make sure the PMP server is running (_PMP-Server_)
-3. Run the PMP desktop client (_PMP-GUI-Remote_)
+3. Run the PMP desktop client (_PMP-Desktop-Remote_)
 4. Log in; create a new user account first if necessary
 
 

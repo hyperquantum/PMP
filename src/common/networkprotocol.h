@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,6 +26,7 @@
 #include "scrobblerstatus.h"
 #include "scrobblingprovider.h"
 #include "specialqueueitemtype.h"
+#include "startstopeventstatus.h"
 
 #include <QByteArray>
 #include <QString>
@@ -61,6 +62,8 @@ Changes for each version:
   23: server msg 35, error code 241: more features for protocol extensions
   24: server msgs 18 & 19: add album artist to track info
   25: client msg 27, server msg 36, error codes 26 & 120 & 121: fetch personal track history
+  26: parameterless actions 60 & 61, server msg 37: full indexation and quick scan for new files
+  27: client msg 28, server msg 38: requesting individual track info
 */
 
 namespace PMP
@@ -108,6 +111,8 @@ namespace PMP
         ServerVersionInfoMessage = 34,
         ExtensionResultMessage = 35,
         HistoryFragmentMessage = 36,
+        IndexationStatusMessage = 37,
+        HashInfoReply = 38,
     };
 
     enum class ScrobblingServerMessageType : quint8
@@ -147,6 +152,7 @@ namespace PMP
         KeepAliveMessage = 25,
         ActivateDelayedStartRequest = 26,
         PersonalHistoryRequest = 27,
+        HashInfoRequest = 28,
     };
 
     enum class ScrobblingClientMessageType : quint8
@@ -172,6 +178,10 @@ namespace PMP
 
         /* 30 - 59 : player */
         DeactivateDelayedStart = 40,
+
+        /* 60 - 79 : music collection */
+        StartFullIndexation = 60,
+        StartQuickScanForNewFiles = 61,
     };
 
     struct UsernameAndPassword
@@ -189,17 +199,21 @@ namespace PMP
     class NetworkProtocol
     {
     public:
+        static bool isSupported(ParameterlessActionCode action, int protocolVersion);
+        static bool isSupported(ServerEventCode eventCode, int protocolVersion);
+
         static void append2Bytes(QByteArray& buffer, ServerMessageType messageType);
         static void append2Bytes(QByteArray& buffer, ClientMessageType messageType);
         static void append2Bytes(QByteArray& buffer, ResultMessageErrorCode errorCode);
+
+        static quint8 encode(StartStopEventStatus status);
+        static StartStopEventStatus decodeStartStopEventStatus(quint8 status);
 
         static quint8 encode(ScrobblingProvider provider);
         static ScrobblingProvider decodeScrobblingProvider(quint8 provider);
 
         static quint8 encode(ScrobblerStatus status);
         static ScrobblerStatus decodeScrobblerStatus(quint8 status);
-
-        static int ratePassword(QString password);
 
         static QByteArray hashPassword(QByteArray const& salt, QString password);
         static QByteArray hashPasswordForSession(QByteArray const& userSalt,
@@ -229,6 +243,8 @@ namespace PMP
                            ObfuscatedScrobblingUsernameAndPassword obfuscatedCredentials);
 
     private:
+        static int getMinimumProtocolVersionThatSupports(ParameterlessActionCode action);
+        static int getMinimumProtocolVersionThatSupports(ServerEventCode eventCode);
         static quint64 getScrobblingAuthenticationObfuscationKey(quint8 keyId);
 
         static const QByteArray _fileHashAllZeroes;

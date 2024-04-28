@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,7 +44,7 @@ namespace PMP::Server
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 25;
+    const qint16 ConnectedClient::ServerProtocolNo = 27;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -52,9 +52,11 @@ namespace PMP::Server
                                      CollectionMonitor* collectionMonitor,
                                      ServerHealthMonitor* serverHealthMonitor,
                                      Scrobbling* scrobbling)
-     : _socket(socket), _serverInterface(serverInterface),
+     : _socket(socket),
+       _serverInterface(serverInterface),
        _player(player),
-       _users(users), _collectionMonitor(collectionMonitor),
+       _users(users),
+       _collectionMonitor(collectionMonitor),
        _serverHealthMonitor(serverHealthMonitor),
        _scrobbling(scrobbling),
        _clientProtocolNo(-1),
@@ -133,7 +135,6 @@ namespace PMP::Server
         _eventsEnabled = true;
 
         auto queue = &_player->queue();
-        auto resolver = &_player->resolver();
 
         connect(_player, &Player::volumeChanged, this, &ConnectedClient::volumeChanged);
         connect(
@@ -155,6 +156,15 @@ namespace PMP::Server
         connect(
             _player, &Player::userPlayingForChanged,
             this, &ConnectedClient::onUserPlayingForChanged
+        );
+
+        connect(
+            _serverInterface, &ServerInterface::fullIndexationStatusEvent,
+            this, &ConnectedClient::onFullIndexationStatusEvent
+        );
+        connect(
+            _serverInterface, &ServerInterface::quickScanForNewFilesStatusEvent,
+            this, &ConnectedClient::onQuickScanForNewFilesStatusEvent
         );
 
         connect(
@@ -186,11 +196,6 @@ namespace PMP::Server
         connect(
             queue, &PlayerQueue::entryMoved,
             this, &ConnectedClient::queueEntryMoved
-        );
-
-        connect(
-            resolver, &Resolver::fullIndexationRunStatusChanged,
-            this, &ConnectedClient::onFullIndexationRunStatusChanged
         );
 
         connect(
@@ -730,7 +735,7 @@ namespace PMP::Server
         NetworkProtocol::append2Bytes(message,
                                       ServerMessageType::DynamicModeWaveStatusMessage);
         NetworkUtil::appendByte(message, 0); /* unused */
-        NetworkUtil::appendByte(message, quint8(status));
+        NetworkUtil::appendByte(message, NetworkProtocol::encode(status));
         NetworkUtil::append4Bytes(message, user);
         if (_clientProtocolNo >= 14)
         {
@@ -749,6 +754,9 @@ namespace PMP::Server
 
     void ConnectedClient::sendEventNotificationMessage(ServerEventCode eventCode)
     {
+        if (NetworkProtocol::isSupported(eventCode, _clientProtocolNo) == false)
+            return; /* client will not understand this event */
+
         qDebug() << "sending server event number" << static_cast<int>(eventCode);
 
         quint8 numericEventCode = static_cast<quint8>(eventCode);
@@ -1015,6 +1023,47 @@ namespace PMP::Server
                 NetworkUtil::append2Bytes(message, (quint16)stat.stats().score());
             }
         }
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendHashInfoReply(uint clientReference,
+                                            CollectionTrackInfo info)
+    {
+        QString title = info.title();
+        QString artist = info.artist();
+        QString album = info.album();
+        QString albumArtist = info.albumArtist();
+
+        /* worst case: 4 bytes in UTF-8 for each char */
+        const int maxSize = (1 << 16) - 1;
+        title.truncate(maxSize / 4);
+        artist.truncate(maxSize / 4);
+        album.truncate(maxSize / 4);
+        albumArtist.truncate(maxSize / 4);
+
+        QByteArray titleData = title.toUtf8();
+        QByteArray artistData = artist.toUtf8();
+        QByteArray albumData = album.toUtf8();
+        QByteArray albumArtistData = albumArtist.toUtf8();
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4 * 2 + 4
+                        + titleData.size() + artistData.size() + albumData.size()
+                        + albumArtistData.size());
+        NetworkProtocol::append2Bytes(message, ServerMessageType::HashInfoReply);
+        NetworkUtil::appendByte(message, 0); // filler
+        NetworkUtil::appendByte(message, info.isAvailable() ? 1 : 0);
+        NetworkUtil::append4Bytes(message, clientReference);
+        NetworkUtil::append2BytesUnsigned(message, titleData.size());
+        NetworkUtil::append2BytesUnsigned(message, artistData.size());
+        NetworkUtil::append2BytesUnsigned(message, albumData.size());
+        NetworkUtil::append2BytesUnsigned(message, albumArtistData.size());
+        NetworkUtil::append4BytesSigned(message, info.lengthInMilliseconds());
+        message += titleData;
+        message += artistData;
+        message += albumData;
+        message += albumArtistData;
 
         sendBinaryMessage(message);
     }
@@ -1682,6 +1731,24 @@ namespace PMP::Server
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendIndexationStatusMessage(
+        StartStopEventStatus fullIndexationStatus,
+        StartStopEventStatus quickScanForNewFilesStatus)
+    {
+        if (_clientProtocolNo < 26)
+            return; /* client will not understand this */
+
+        QByteArray message;
+        message.reserve(2 + 2);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::IndexationStatusMessage);
+        NetworkUtil::appendByte(message, NetworkProtocol::encode(fullIndexationStatus));
+        NetworkUtil::appendByte(message,
+                                NetworkProtocol::encode(quickScanForNewFilesStatus));
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
         sendResultMessage(ResultMessageErrorCode::NoError, clientReference, intData);
@@ -1873,6 +1940,31 @@ namespace PMP::Server
         sendResultMessage(errorCode, clientReference);
     }
 
+    void ConnectedClient::onFullIndexationStatusEvent(StartStopEventStatus status)
+    {
+        if (_clientProtocolNo >= 26)
+        {
+            sendIndexationStatusMessage(status, StartStopEventStatus::Undefined);
+        }
+        else
+        {
+            auto event =
+                Common::isActive(status)
+                    ? ServerEventCode::FullIndexationRunning
+                    : ServerEventCode::FullIndexationNotRunning;
+
+            sendEventNotificationMessage(event);
+        }
+    }
+
+    void ConnectedClient::onQuickScanForNewFilesStatusEvent(StartStopEventStatus status)
+    {
+        if (_clientProtocolNo < 26)
+            return; /* client will not understand this message */
+
+        sendIndexationStatusMessage(StartStopEventStatus::Undefined, status);
+    }
+
     void ConnectedClient::volumeChanged(int volume)
     {
         Q_UNUSED(volume)
@@ -1900,16 +1992,6 @@ namespace PMP::Server
         Q_UNUSED(user)
 
         sendUserPlayingForModeMessage();
-    }
-
-    void ConnectedClient::onFullIndexationRunStatusChanged(bool running)
-    {
-        auto event =
-            running
-                ? ServerEventCode::FullIndexationRunning
-                : ServerEventCode::FullIndexationNotRunning;
-
-        sendEventNotificationMessage(event);
     }
 
     void ConnectedClient::playerStateChanged(ServerPlayerState state)
@@ -2208,6 +2290,9 @@ namespace PMP::Server
             return;
         case ClientMessageType::HashUserDataRequestMessage:
             parseHashUserDataRequest(message);
+            return;
+        case ClientMessageType::HashInfoRequest:
+            parseHashInfoRequest(message);
             return;
         case ClientMessageType::PersonalHistoryRequest:
             parsePersonalHistoryRequest(message);
@@ -2869,6 +2954,39 @@ namespace PMP::Server
         _serverInterface->requestHashUserData(userId, hashes);
     }
 
+    void ConnectedClient::parseHashInfoRequest(const QByteArray& message)
+    {
+        if (message.length() != 8 + NetworkProtocol::FILEHASH_BYTECOUNT)
+            return; /* invalid message */
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        bool ok;
+        auto hash = NetworkProtocol::getHash(message, 8, &ok);
+        if (!ok || hash.isNull())
+        {
+            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
+            return;
+        }
+
+        auto future = _serverInterface->getHashInfo(hash);
+
+        future.addResultListener(
+            this,
+            [this, clientReference](CollectionTrackInfo info)
+            {
+                sendHashInfoReply(clientReference, info);
+            }
+        );
+        future.addFailureListener(
+            this,
+            [this, clientReference](Result result)
+            {
+                sendResultMessage(result, clientReference);
+            }
+        );
+    }
+
     void ConnectedClient::parsePersonalHistoryRequest(const QByteArray& message)
     {
         if (message.length() != 16 + NetworkProtocol::FILEHASH_BYTECOUNT)
@@ -3093,9 +3211,7 @@ namespace PMP::Server
             break;
         case 15:
             qDebug() << "received request for (full) indexation running status";
-            onFullIndexationRunStatusChanged(
-                _player->resolver().fullIndexationRunning()
-            );
+            _serverInterface->requestIndexationStatus();
             break;
         case 16:
             qDebug() << "received request for server name";
@@ -3197,6 +3313,18 @@ namespace PMP::Server
         case ParameterlessActionCode::DeactivateDelayedStart:
             {
                 auto result = _serverInterface->deactivateDelayedStart();
+                sendResultMessage(result, clientReference);
+                return;
+            }
+        case PMP::ParameterlessActionCode::StartFullIndexation:
+            {
+                auto result = _serverInterface->startFullIndexation();
+                sendResultMessage(result, clientReference);
+                return;
+            }
+        case PMP::ParameterlessActionCode::StartQuickScanForNewFiles:
+            {
+                auto result = _serverInterface->startQuickScanForNewFiles();
                 sendResultMessage(result, clientReference);
                 return;
             }

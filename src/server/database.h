@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -56,6 +56,20 @@ namespace PMP::Server
 
         bool isConnectionOpen() const;
 
+        ResultOrError<Nullable<QString>, FailureType> getMiscDataValue(
+                                                                    QString const& key);
+        ResultOrError<SuccessType, FailureType> insertMiscData(QString const& key,
+                                                               QString const& value);
+        ResultOrError<SuccessType, FailureType> insertOrUpdateMiscData(QString const& key,
+                                                                    QString const& value);
+        ResultOrError<SuccessType, FailureType> insertMiscDataIfNotPresent(
+                                                                    QString const& key,
+                                                                    QString const& value);
+        ResultOrError<SuccessType, FailureType> updateMiscDataValueFromSpecific(
+                                                                QString const& key,
+                                                                QString const& oldValue,
+                                                                QString const& newValue);
+
         ResultOrError<SuccessType, FailureType> registerHash(const FileHash& hash);
         ResultOrError<uint, FailureType> getHashId(const FileHash& hash);
         ResultOrError<QVector<QPair<uint,FileHash>>, FailureType> getHashes(
@@ -94,13 +108,14 @@ namespace PMP::Server
                         quint32 userId,
                         DatabaseRecords::UserDynamicModePreferences const& preferences);
 
-        ResultOrError<SuccessType, FailureType> addToHistory(quint32 hashId,
-                                                             quint32 userId,
-                                                             QDateTime start,
-                                                             QDateTime end,
-                                                             int permillage,
-                                                             bool validForScoring);
+        ResultOrError<uint, FailureType> addToHistory(quint32 hashId, quint32 userId,
+                                                      QDateTime start, QDateTime end,
+                                                      int permillage,
+                                                      bool validForScoring);
+        ResultOrError<uint, FailureType> getLastHistoryId();
         ResultOrError<quint32, FailureType> getMostRecentRealUserHavingHistory();
+        ResultOrError<QVector<DatabaseRecords::BriefHistoryRecord>, FailureType>
+            getBriefHistoryFragment(quint32 startId, int limit);
         ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
                                                                       getHashHistoryStats(
                                                                 quint32 userId,
@@ -113,10 +128,18 @@ namespace PMP::Server
                                                             int limit);
         ResultOrError<QVector<DatabaseRecords::HistoryRecord>, FailureType>
                                                                    getTrackHistoryForUser(
-                                                                quint32 hashId,
                                                                 quint32 userId,
+                                                                QVector<quint32> hashIds,
                                                                 uint startId,
                                                                 int limit);
+
+        ResultOrError<QVector<DatabaseRecords::HashHistoryStats>, FailureType>
+                                                                    getCachedHashStats(
+                                                                quint32 userId,
+                                                                QVector<quint32> hashIds);
+        SuccessOrFailure updateUserHashStatsCacheEntry(quint32 userId,
+                                        DatabaseRecords::HashHistoryStats const& stats);
+        SuccessOrFailure removeUserHashStatsCacheEntry(quint32 userId, quint32 hashId);
 
         ResultOrError<QVector<QPair<quint32, quint32>>, FailureType> getEquivalences();
         ResultOrError<SuccessType, FailureType> registerEquivalence(quint32 hashId1,
@@ -127,32 +150,64 @@ namespace PMP::Server
         static QUuid getDatabaseUuid();
 
     private:
-        Database(QSqlDatabase db);
+        class DatabaseConnection
+        {
+        public:
+            explicit DatabaseConnection(QSqlDatabase database);
+            DatabaseConnection(DatabaseConnection const&) = delete;
+            DatabaseConnection(DatabaseConnection&&) = default;
 
-        QString buildParamsList(unsigned paramsCount);
+            bool isOpen() const;
 
-        std::function<void (QSqlQuery&)> prepareSimple(QString sql);
+            bool executeVoid(std::function<void (QSqlQuery&)> preparer);
 
-        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
-                           bool& b, bool defaultValue);
-        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
-                           int& i, int defaultValue);
-        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
-                           uint& i, uint defaultValue);
-        bool executeScalar(std::function<void (QSqlQuery&)> preparer,
-                           QDateTime& d);
+            bool executeNullableScalar(std::function<void (QSqlQuery&)> preparer,
+                                       Nullable<QString>& s);
 
-        template<class T>
-        ResultOrError<QVector<T>, FailureType> executeRecords(
-                                            std::function<void (QSqlQuery&)> preparer,
-                                            std::function<T (QSqlQuery&)> extractRecord,
-                                            int recordsToReserveCount = -1);
+            bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                               bool& b, bool defaultValue);
+            bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                               int& i, int defaultValue);
+            bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                               uint& i, uint defaultValue);
+            bool executeScalar(std::function<void (QSqlQuery&)> preparer,
+                               QDateTime& d);
 
-        bool executeVoid(std::function<void (QSqlQuery&)> preparer);
+            template<class T>
+            ResultOrError<QVector<T>, FailureType> executeRecords(
+                std::function<void (QSqlQuery&)> preparer,
+                std::function<T (QSqlQuery&)> extractRecord,
+                int recordsToReserveCount = -1);
 
-        bool executeQuery(std::function<void (QSqlQuery&)> preparer,
-                          bool processResult,
-                          std::function<void (QSqlQuery&)> resultFetcher);
+            bool executeQuery(std::function<void (QSqlQuery&)> preparer,
+                              bool processResult,
+                              std::function<void (QSqlQuery&)> resultFetcher);
+
+            QSqlDatabase& qSqlDatabase() { return _db; }
+
+        private:
+            QSqlDatabase _db;
+        };
+
+        class TableEditor
+        {
+        public:
+            TableEditor(Database* database, QString tableName);
+
+            bool addColumnIfNotExists(QString columnName, QString type);
+
+        private:
+            Database* _database;
+            QString _tableName;
+        };
+
+        Database(DatabaseConnection&& databaseConnection);
+
+        DatabaseConnection& connection() { return _dbConnection; }
+
+        static QString buildParamsList(unsigned paramsCount);
+
+        static std::function<void (QSqlQuery&)> prepareSimple(QString sql);
 
         static bool addColumnIfNotExists(QSqlQuery& q, QString tableName,
                                          QString columnName, QString type);
@@ -163,17 +218,21 @@ namespace PMP::Server
         static QDateTime getUtcDateTime(QVariant v);
         static QString getString(QVariant v, const char* nullValue);
 
-        static QSqlDatabase createDatabaseConnection(QString name, bool setSchema);
+        static QSqlDatabase createQSqlDatabase(QString name, bool setSchema);
         static void printInitializationError(QTextStream& out, QSqlDatabase& db);
+        static void printInitializationError(QTextStream& out, Database& database);
 
-        static bool initMiscTable(QSqlQuery& q);
-        static ResultOrError<QUuid, FailureType> initDatabaseUuid(QSqlQuery& q);
-        static bool initHashTable(QSqlQuery& q);
-        static bool initFilenameTable(QSqlQuery& q);
-        static bool initFileSizeTable(QSqlQuery& q);
-        static bool initUsersTable(QSqlQuery& q);
-        static bool initHistoryTable(QSqlQuery& q);
-        static bool initEquivalenceTable(QSqlQuery& q);
+        static bool initTables(QTextStream& out, Database& database);
+        static bool initMiscTable(Database& database);
+        static ResultOrError<QUuid, FailureType> initDatabaseUuid(Database& database);
+        static bool initHashesTable(Database& database);
+        static bool initFilenameTable(Database& database);
+        static bool initFileSizeTable(Database& database);
+        static bool initUsersTable(Database& database);
+        static bool initHistoryTable(Database& database);
+        static bool initEquivalenceTable(Database& database);
+        static bool initUserHashStatsCacheTable(Database& database);
+        static bool initUserHashStatsCacheBookkeeping(Database& database);
 
         static QString _hostname;
         static int _port;
@@ -184,7 +243,7 @@ namespace PMP::Server
         static QThreadStorage<QSharedPointer<Database>> _threadLocalDatabases;
         static QAtomicInt _nextDbNameNumber;
 
-        QSqlDatabase _db;
+        DatabaseConnection _dbConnection;
     };
 }
 #endif

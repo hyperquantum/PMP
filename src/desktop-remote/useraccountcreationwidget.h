@@ -20,6 +20,7 @@
 #ifndef PMP_USERACCOUNTCREATIONWIDGET_H
 #define PMP_USERACCOUNTCREATIONWIDGET_H
 
+#include "common/passwordstrengthevaluator.h"
 #include "common/userregistrationerror.h"
 
 #include <QString>
@@ -57,6 +58,8 @@ namespace PMP
         void userAccountCreationError(QString login, UserRegistrationError errorType);
 
     private:
+        QString ratingToString(PasswordStrengthRating rating);
+
         Ui::UserAccountCreationWidget* _ui;
         Client::AuthenticationController* _authenticationController;
     };

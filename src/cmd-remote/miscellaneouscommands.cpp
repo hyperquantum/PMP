@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,7 +19,10 @@
 
 #include "miscellaneouscommands.h"
 
+#include "common/util.h"
+
 #include "client/authenticationcontroller.h"
+#include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
 #include "client/dynamicmodecontroller.h"
 #include "client/localhashidrepository.h"
@@ -165,11 +168,6 @@ namespace PMP
 
     /* ===== PersonalModeCommand ===== */
 
-    bool PersonalModeCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void PersonalModeCommand::run(Client::ServerInterface* serverInterface)
     {
         auto myUserId = serverInterface->authenticationController().userLoggedInId();
@@ -198,11 +196,6 @@ namespace PMP
 
     /* ===== PublicModeCommand ===== */
 
-    bool PublicModeCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void PublicModeCommand::run(Client::ServerInterface* serverInterface)
     {
         auto* playerController = &serverInterface->playerController();
@@ -230,11 +223,6 @@ namespace PMP
      : _enable(enable)
     {
         //
-    }
-
-    bool DynamicModeActivationCommand::requiresAuthentication() const
-    {
-        return true;
     }
 
     void DynamicModeActivationCommand::run(Client::ServerInterface* serverInterface)
@@ -295,11 +283,6 @@ namespace PMP
         //
     }
 
-    bool SetVolumeCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void SetVolumeCommand::run(ServerInterface* serverInterface)
     {
         auto* playerController = &serverInterface->playerController();
@@ -320,17 +303,74 @@ namespace PMP
         playerController->setVolume(_volume);
     }
 
+    /* ===== TrackInfoCommand ===== */
+
+    TrackInfoCommand::TrackInfoCommand(const FileHash& hash)
+     : _hash(hash)
+    {
+        //
+    }
+
+    bool TrackInfoCommand::requiresAuthentication() const
+    {
+        return false;
+    }
+
+    void TrackInfoCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto collectionWatcher = &serverInterface->collectionWatcher();
+
+        auto future = collectionWatcher->getTrackInfo(_hash);
+        addFailureHandler(future);
+
+        future.addResultListener(
+            this,
+            [this](CollectionTrackInfo trackInfo)
+            {
+                printTrackInfo(trackInfo);
+            }
+        );
+    }
+
+    void TrackInfoCommand::printTrackInfo(Client::CollectionTrackInfo& trackInfo)
+    {
+        QString output;
+        output.reserve(100);
+
+        output += QString("hash: %1\n").arg(_hash.toString());
+        output += QString("title: %1\n").arg(trackInfo.title());
+        output += QString("artist: %1\n").arg(trackInfo.artist());
+        output += QString("album: %1\n").arg(trackInfo.album());
+        output += QString("album artist: %1\n").arg(trackInfo.albumArtist());
+
+        if (trackInfo.lengthIsKnown())
+        {
+            auto lengthText =
+                Util::millisecondsToLongDisplayTimeText(trackInfo.lengthInMilliseconds());
+
+            output += QString("length: %1").arg(lengthText);
+        }
+        else
+        {
+            output += "length: (unknown)";
+        }
+
+        output += "\n";
+
+        if (trackInfo.isAvailable())
+            output += "available: yes";
+        else
+            output += "available: no";
+
+        setCommandExecutionSuccessful(output);
+    }
+
     /* ===== TrackStatsCommand ===== */
 
     TrackStatsCommand::TrackStatsCommand(const FileHash& hash)
      : _hash(hash)
     {
         //
-    }
-
-    bool TrackStatsCommand::requiresAuthentication() const
-    {
-        return true;
     }
 
     void TrackStatsCommand::run(ServerInterface* serverInterface)

@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -88,6 +88,16 @@ target_link_libraries(test_filehash ${TAGLIB_LIBRARIES})
 add_test(test_filehash test_filehash)
 
 
+# TestTriBool
+qt5_wrap_cpp(PMP_TestTriBool_MOCS test_tribool.h)
+add_executable(test_tribool test_tribool.cpp
+    ${PMP_TestTriBool_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/tribool.cpp
+)
+target_link_libraries(test_tribool Qt5::Core Qt5::Test)
+add_test(test_tribool test_tribool)
+
+
 # TestUtil
 qt5_wrap_cpp(PMP_TestUtil_MOCS test_util.h)
 add_executable(test_util test_util.cpp
@@ -147,6 +157,16 @@ target_link_libraries(test_networkprotocol ${TAGLIB_LIBRARIES})
 add_test(test_networkprotocol test_networkprotocol)
 
 
+# TestPasswordStrengthEvaluator
+qt5_wrap_cpp(PMP_TestPasswordStrengthEvaluator_MOCS test_passwordstrengthevaluator.h)
+add_executable(test_passwordstrengthevaluator test_passwordstrengthevaluator.cpp
+    ${PMP_TestPasswordStrengthEvaluator_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/passwordstrengthevaluator.cpp
+)
+target_link_libraries(test_passwordstrengthevaluator Qt5::Core Qt5::Test)
+add_test(test_passwordstrengthevaluator test_passwordstrengthevaluator)
+
+
 # TestObfuscator
 qt5_wrap_cpp(PMP_TestObfuscator_MOCS test_obfuscator.h)
 add_executable(test_obfuscator test_obfuscator.cpp
@@ -172,7 +192,7 @@ qt5_wrap_cpp(PMP_TestSortedCollectionTableModel_MOCS test_sortedcollectiontablem
 add_executable(test_sortedcollectiontablemodel test_sortedcollectiontablemodel.cpp
     ${PMP_TestSortedCollectionTableModel_MOCS}
 )
-target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpGuiRemote>)
+target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpDesktopRemote>)
 target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpClient>)
 target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(test_sortedcollectiontablemodel Qt5::Gui Qt5::Widgets)

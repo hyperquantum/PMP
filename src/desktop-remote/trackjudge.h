@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,7 @@
 #include "common/tribool.h"
 
 #include <QDateTime>
+#include <QMetaType>
 
 #include <functional>
 
@@ -141,4 +142,7 @@ namespace PMP
         Client::QueueHashesMonitor& _queueHashesMonitor;
     };
 }
+
+Q_DECLARE_METATYPE(PMP::TrackCriterium)
+
 #endif

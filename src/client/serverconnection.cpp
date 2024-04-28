@@ -93,6 +93,10 @@ namespace PMP::Client
         virtual void handleHistoryFragment(quint32 clientReference,
                                            HistoryFragment fragment);
 
+        virtual void handleHashInfo(quint32 clientReference, bool isAvailable,
+                                    QString title, QString artist, QString album,
+                                    QString albumArtist, qint32 lengthInMilliseconds);
+
     protected:
         ResultHandler(ServerConnection* parent);
 
@@ -143,6 +147,21 @@ namespace PMP::Client
         qWarning() << "ResultHandler does not handle history fragments;"
                    << " ref:" << clientReference
                    << " entries count:" << fragment.entries().size();
+    }
+
+    void ServerConnection::ResultHandler::handleHashInfo(quint32 clientReference,
+                                                         bool isAvailable, QString title,
+                                                         QString artist, QString album,
+                                                         QString albumArtist,
+                                                         qint32 lengthInMilliseconds)
+    {
+        Q_UNUSED(isAvailable)
+        Q_UNUSED(albumArtist)
+        Q_UNUSED(lengthInMilliseconds)
+
+        qWarning() << "ResultHandler does not handle hash info;"
+                   << " ref:" << clientReference
+                   << " title:" << title << " artist:" << artist << " album:" << album;
     }
 
     QString ServerConnection::ResultHandler::errorDescription(
@@ -298,6 +317,12 @@ namespace PMP::Client
 
         case ParameterlessActionCode::DeactivateDelayedStart:
             return "delayed start deactivation";
+
+        case PMP::ParameterlessActionCode::StartFullIndexation:
+            return "start of full indexation";
+
+        case PMP::ParameterlessActionCode::StartQuickScanForNewFiles:
+            return "start of quick scan for new files";
         }
 
         return "action with code " + QString::number(static_cast<int>(_code));
@@ -558,7 +583,65 @@ namespace PMP::Client
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 25;
+    class ServerConnection::HashInfoResultHandler : public ResultHandler
+    {
+    public:
+        HashInfoResultHandler(ServerConnection* parent, FileHash const& hash);
+
+        Future<CollectionTrackInfo, AnyResultMessageCode> future() const;
+
+        void handleResult(ResultMessageData const& data) override;
+
+        void handleHashInfo(quint32 clientReference, bool isAvailable, QString title,
+                            QString artist, QString album, QString albumArtist,
+                            qint32 lengthInMilliseconds) override;
+
+    private:
+        FileHash _hash;
+        Promise<CollectionTrackInfo, AnyResultMessageCode> _promise;
+    };
+
+    ServerConnection::HashInfoResultHandler::HashInfoResultHandler(
+                                                                ServerConnection* parent,
+                                                                const FileHash& hash)
+     : ResultHandler(parent), _hash(hash)
+    {
+        //
+    }
+
+    Future<CollectionTrackInfo, AnyResultMessageCode>
+        ServerConnection::HashInfoResultHandler::future() const
+    {
+        return _promise.future();
+    }
+
+    void ServerConnection::HashInfoResultHandler::handleResult(
+                                                            const ResultMessageData& data)
+    {
+        _promise.setError(data.errorType);
+    }
+
+    void ServerConnection::HashInfoResultHandler::handleHashInfo(quint32 clientReference,
+                                                                 bool isAvailable,
+                                                                 QString title,
+                                                                 QString artist,
+                                                                 QString album,
+                                                                 QString albumArtist,
+                                                              qint32 lengthInMilliseconds)
+    {
+        Q_UNUSED(clientReference)
+
+        auto hashId = _parent->_hashIdRepository->getOrRegisterId(_hash);
+
+        CollectionTrackInfo trackInfo(hashId, isAvailable, title, artist, album,
+                                      albumArtist, lengthInMilliseconds);
+
+        _promise.setResult(trackInfo);
+    }
+
+    /* ============================================================================ */
+
+    const quint16 ServerConnection::ClientProtocolNo = 27;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -1008,10 +1091,11 @@ namespace PMP::Client
     SimpleFuture<AnyResultMessageCode> ServerConnection::sendParameterlessActionRequest(
                                                              ParameterlessActionCode code)
     {
+        if (NetworkProtocol::isSupported(code, _serverProtocolNo) == false)
+            return serverTooOldFutureResult();
+
         auto handler = QSharedPointer<ParameterlessActionResultHandler>::create(this, code);
         auto ref = registerResultHandler(handler);
-
-        // TODO : generate error if server does not support this request
 
         quint16 numericActionCode = static_cast<quint16>(code);
 
@@ -1142,6 +1226,11 @@ namespace PMP::Client
         return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
     }
 
+    FutureResult<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
+    {
+        return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::NoError));
+    }
+
     FutureResult<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
     {
         return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
@@ -1161,6 +1250,29 @@ namespace PMP::Client
 
         return sendParameterlessActionRequest(
                                            ParameterlessActionCode::ReloadServerSettings);
+    }
+
+    SimpleFuture<AnyResultMessageCode> ServerConnection::startFullIndexation()
+    {
+        qDebug() << "sending request to start a full indexation";
+
+        if (NetworkProtocol::isSupported(ParameterlessActionCode::StartFullIndexation,
+                                         _serverProtocolNo))
+        {
+            return sendParameterlessActionRequest(
+                ParameterlessActionCode::StartFullIndexation);
+        }
+
+        sendSingleByteAction(40); /* 40 = start full indexation */
+        return noErrorFutureResult();
+    }
+
+    SimpleFuture<AnyResultMessageCode> ServerConnection::startQuickScanForNewFiles()
+    {
+        qDebug() << "sending request to start a quick scan for new files";
+
+        return sendParameterlessActionRequest(
+            ParameterlessActionCode::StartQuickScanForNewFiles);
     }
 
     SimpleFuture<AnyResultMessageCode> ServerConnection::activateDelayedStart(
@@ -1282,6 +1394,20 @@ namespace PMP::Client
         return RequestID(ref);
     }
 
+    Future<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
+                                                                       LocalHashId hashId)
+    {
+        auto hash = _hashIdRepository->getHash(hashId);
+
+        return sendHashInfoRequest(hash);
+    }
+
+    Future<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
+                                                                    const FileHash& hash)
+    {
+        return sendHashInfoRequest(hash);
+    }
+
     Future<HistoryFragment, AnyResultMessageCode>
         ServerConnection::getPersonalTrackHistory(LocalHashId hashId, uint userId,
                                                   int limit, uint startId)
@@ -1388,6 +1514,32 @@ namespace PMP::Client
         }
 
         sendBinaryMessage(message);
+    }
+
+    Future<CollectionTrackInfo, AnyResultMessageCode>
+        ServerConnection::sendHashInfoRequest(FileHash const& hash)
+    {
+        Q_ASSERT_X(!hash.isNull(), "sendHashInfoRequest", "hash is null");
+
+        if (!_serverCapabilities->supportsRequestingIndividualTrackInfo())
+            return serverTooOldFutureError();
+
+        qDebug() << "ServerConnection: sending request for hash info; hash:" << hash
+                 << " hash ID:" << _hashIdRepository->getId(hash); // (ID may be zero)
+
+        auto handler = QSharedPointer<HashInfoResultHandler>::create(this, hash);
+        auto ref = registerResultHandler(handler);
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        NetworkProtocol::append2Bytes(message, ClientMessageType::HashInfoRequest);
+        NetworkUtil::append2Bytes(message, 0); // filler
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkProtocol::appendHash(message, hash);
+
+        sendBinaryMessage(message);
+
+        return handler->future();
     }
 
     Future<HistoryFragment, AnyResultMessageCode>
@@ -1679,13 +1831,15 @@ namespace PMP::Client
         auto oldValue = _doingFullIndexation;
         _doingFullIndexation = running;
 
-        Q_EMIT fullIndexationStatusReceived(running);
-
-        if (oldValue.isKnown()) {
-            if (running)
-                Q_EMIT fullIndexationStarted();
-            else
-                Q_EMIT fullIndexationFinished();
+        if (oldValue.isKnown() && oldValue.toBool() != running)
+        {
+            auto status = Common::createChangedStartStopEventStatus(running);
+            Q_EMIT fullIndexationStatusReceived(status);
+        }
+        else
+        {
+            auto status = Common::createUnchangedStartStopEventStatus(running);
+            Q_EMIT fullIndexationStatusReceived(status);
         }
     }
 
@@ -1848,12 +2002,7 @@ namespace PMP::Client
         sendSingleByteAction(25); /* 25 = terminate dynamic mode wave */
     }
 
-    void ServerConnection::startFullIndexation()
-    {
-        sendSingleByteAction(40); /* 40 = start full indexation */
-    }
-
-    void ServerConnection::requestFullIndexationRunningStatus()
+    void ServerConnection::requestIndexationRunningStatus()
     {
         sendSingleByteAction(15); /* 15 = request for full indexation running status */
     }
@@ -2032,6 +2181,9 @@ namespace PMP::Client
         case ServerMessageType::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
             return;
+        case PMP::ServerMessageType::IndexationStatusMessage:
+            parseIndexationStatusMessage(message);
+            return;
         case ServerMessageType::PlayerStateMessage:
             parsePlayerStateMessage(message);
             return;
@@ -2095,6 +2247,9 @@ namespace PMP::Client
             return;
         case ServerMessageType::HashUserDataMessage:
             parseHashUserDataMessage(message);
+            return;
+        case ServerMessageType::HashInfoReply:
+            parseHashInfoReply(message);
             return;
         case ServerMessageType::HistoryFragmentMessage:
             parseHistoryFragmentMessage(message);
@@ -2488,6 +2643,31 @@ namespace PMP::Client
             message.mid(8 + loginBytesSize + userSaltBytesSize, sessionSaltBytesSize);
 
         handleLoginSalt(login, userSalt, sessionSalt);
+    }
+
+    void ServerConnection::parseIndexationStatusMessage(const QByteArray& message)
+    {
+        if (message.length() != 4)
+            return; /* invalid message */
+
+        auto fullIndexationStatusRaw = NetworkUtil::getByte(message, 2);
+        auto quickScanForNewFilesStatusRaw = NetworkUtil::getByte(message, 3);
+
+        auto fullIndexationStatus =
+            NetworkProtocol::decodeStartStopEventStatus(fullIndexationStatusRaw);
+
+        auto quickScanForNewFilesStatus =
+            NetworkProtocol::decodeStartStopEventStatus(quickScanForNewFilesStatusRaw);
+
+        qDebug() << "received indexation status message:"
+                 << "full indexation status:" << fullIndexationStatusRaw
+                 << "; quick scan for new files status:" << quickScanForNewFilesStatusRaw;
+
+        if (fullIndexationStatus != StartStopEventStatus::Undefined)
+            Q_EMIT fullIndexationStatusReceived(fullIndexationStatus);
+
+        if (quickScanForNewFilesStatus != StartStopEventStatus::Undefined)
+            Q_EMIT quickScanForNewFilesStatusReceived(quickScanForNewFilesStatus);
     }
 
     void ServerConnection::parsePlayerStateMessage(QByteArray const& message)
@@ -3009,7 +3189,7 @@ namespace PMP::Client
         /* we have no use for the user yet */
         //auto user = NetworkUtil::get4Bytes(message, 4);
 
-        auto status = StartStopEventStatus(statusByte);
+        auto status = NetworkProtocol::decodeStartStopEventStatus(statusByte);
         bool statusActive = Common::isActive(status);
         bool statusChanged = Common::isChange(status);
 
@@ -3380,6 +3560,56 @@ namespace PMP::Client
         }
     }
 
+    void ServerConnection::parseHashInfoReply(const QByteArray& message)
+    {
+        if (message.length() < 20)
+            return; /* invalid message */
+
+        quint8 availabilityByte = NetworkUtil::getByte(message, 3);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+        int titleDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 8);
+        int artistDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 10);
+        int albumDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 12);
+        int albumArtistDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 14);
+        qint32 lengthInMilliseconds = NetworkUtil::get4BytesSigned(message, 16);
+
+        const int expectedMessageLength =
+            20 + titleDataSize + artistDataSize + albumDataSize + albumArtistDataSize;
+
+        if (message.length() != expectedMessageLength)
+            return;
+
+        int offset = 20;
+        QString title = NetworkUtil::getUtf8String(message, offset, titleDataSize);
+        offset += titleDataSize;
+        QString artist = NetworkUtil::getUtf8String(message, offset, artistDataSize);
+        offset += artistDataSize;
+        QString album = NetworkUtil::getUtf8String(message, offset, albumDataSize);
+        offset += albumDataSize;
+        QString albumArtist =
+            NetworkUtil::getUtf8String(message, offset, albumArtistDataSize);
+
+        bool isAvailable = availabilityByte & 1;
+
+        qDebug() << "received hash info reply: ref:" << clientReference
+                 << "; title:" << title
+                 << "; artist:" << artist
+                 << "; album:" << album
+                 << "; album artist:" << albumArtist
+                 << "; length:"
+                 << (lengthInMilliseconds >= 0
+                         ? Util::millisecondsToShortDisplayTimeText(lengthInMilliseconds)
+                         : "?")
+                 << "; available:" << isAvailable;
+
+        auto handler = _resultHandlers.take(clientReference);
+        if (handler)
+        {
+            handler->handleHashInfo(clientReference, isAvailable, title, artist,
+                                    album, albumArtist, lengthInMilliseconds);
+        }
+    }
+
     void ServerConnection::parseHistoryFragmentMessage(const QByteArray& message)
     {
         if (message.length() < 8)
@@ -3663,4 +3893,5 @@ namespace PMP::Client
 
         qDebug() << "received unknown server event:" << static_cast<int>(eventCode);
     }
+
 }

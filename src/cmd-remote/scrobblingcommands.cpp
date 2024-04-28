@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,11 +36,6 @@ namespace PMP
         //
     }
 
-    bool ScrobblingActivationCommand::requiresAuthentication() const
-    {
-        return true;
-    }
-
     void ScrobblingActivationCommand::run(Client::ServerInterface* serverInterface)
     {
         auto* scrobblingController = &serverInterface->scrobblingController();
@@ -67,11 +62,6 @@ namespace PMP
      : _provider(provider)
     {
         //
-    }
-
-    bool ScrobblingStatusCommand::requiresAuthentication() const
-    {
-        return true;
     }
 
     void ScrobblingStatusCommand::run(Client::ServerInterface* serverInterface)
@@ -123,11 +113,6 @@ namespace PMP
         prompt.providerName = toString(provider);
 
         enableInteractiveCredentialsPrompt(prompt);
-    }
-
-    bool ScrobblingAuthenticateCommand::requiresAuthentication() const
-    {
-        return true;
     }
 
     void ScrobblingAuthenticateCommand::run(Client::ServerInterface* serverInterface)

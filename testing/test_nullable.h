@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -27,6 +27,7 @@ class TestNullable : public QObject
     Q_OBJECT
 private Q_SLOTS:
     void defaultConstructedIsNull();
+    void nullOfFunctionReturnsNull();
     void defaultConstructorWorksIfTypeNotDefaultConstructible();
     void nullConstructedIsNull();
     void valueConstructedIsNotNull();

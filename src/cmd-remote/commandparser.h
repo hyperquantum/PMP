@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -106,10 +106,6 @@ namespace PMP
             bool tryParseDate(QDate& date) const;
             FileHash tryParseTrackHash() const;
 
-            static QByteArray tryDecodeHexWithExpectedLength(QString const& text,
-                                                             int expectedLength);
-            static bool isHexEncoded(QByteArray const& bytes);
-
         private:
             QVector<QString> _arguments;
             int _currentIndex;
@@ -123,9 +119,12 @@ namespace PMP
         void parseExplicitLoginAndSeparator(QVector<QString>& commandWithArgs);
         void parseCommand(QVector<QString> commandWithArgs);
         void parseInsertCommand(CommandArguments arguments);
+        void parseStartCommand(CommandArguments arguments);
+        void parseStartIndexationCommand(CommandArguments& arguments);
         void parseDelayedStartCommand(CommandArguments arguments);
         void parseDelayedStartAt(CommandArguments& arguments);
         void parseDelayedStartWait(CommandArguments& arguments);
+        void parseTrackInfoCommand(CommandArguments arguments);
         void parseTrackStatsCommand(CommandArguments arguments);
         void parseTrackHistoryCommand(CommandArguments arguments);
         void parseScrobblingCommand(CommandArguments arguments);

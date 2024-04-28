@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,6 +20,7 @@
 #ifndef PMP_MAINWINDOW_H
 #define PMP_MAINWINDOW_H
 
+#include "common/future.h"
 #include "common/resultmessageerrorcode.h"
 
 #include <QAbstractSocket>
@@ -47,6 +48,7 @@ namespace PMP
     class PowerManagement;
     class UserAccountCreationWidget;
     class UserPickerWidget;
+    struct VersionInfo;
 
     class MainWindow : public QMainWindow
     {
@@ -73,6 +75,7 @@ namespace PMP
         void onLoggedIn(QString login);
         void onLoginCancel();
 
+        void onScanForNewFilesActionTriggered();
         void onStartFullIndexationTriggered();
         void onReloadServerSettingsTriggered();
         void reloadServerSettingsResultReceived(AnyResultMessageCode errorCode);
@@ -93,6 +96,7 @@ namespace PMP
         void createActions();
         void createMenus();
         void createStatusbar();
+        void enableDisableIndexationActions();
         void updateRightStatus();
         void updateScrobblingUi();
         void setLeftStatus(int intervalMs, QString text);
@@ -100,24 +104,30 @@ namespace PMP
         void showLoginWidget(QString login);
         void showMainWidget();
 
-        NotificationBar* _notificationBar;
-        QLabel* _leftStatus;
-        QLabel* _rightStatus;
+        void connectErrorPopupToActionResult(SimpleFuture<AnyResultMessageCode> future,
+                                             QString failureText);
+
+        QString getVersionText(VersionInfo const& versionInfo);
+
+        NotificationBar* _notificationBar { nullptr };
+        QLabel* _leftStatus { nullptr };
+        QLabel* _rightStatus { nullptr };
         QLabel* _scrobblingStatusLabel;
         QTimer* _leftStatusTimer;
 
         ConnectionWidget* _connectionWidget;
         Client::LocalHashIdRepository* _hashIdRepository;
-        Client::ServerConnection* _connection;
-        Client::ServerInterface* _serverInterface;
-        UserPickerWidget* _userPickerWidget;
-        UserAccountCreationWidget* _userAccountCreationWidget;
-        LoginWidget* _loginWidget;
-        MainWidget* _mainWidget;
+        Client::ServerConnection* _connection { nullptr };
+        Client::ServerInterface* _serverInterface { nullptr };
+        UserPickerWidget* _userPickerWidget { nullptr };
+        UserAccountCreationWidget* _userAccountCreationWidget { nullptr };
+        LoginWidget* _loginWidget { nullptr };
+        MainWidget* _mainWidget { nullptr };
         QDockWidget* _musicCollectionDock;
 
         QAction* _reloadServerSettingsAction;
         QAction* _shutdownServerAction;
+        QAction* _scanForNewFilesAction;
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
         QAction* _scrobblingAction;
@@ -126,6 +136,7 @@ namespace PMP
         QAction* _aboutPmpAction;
         QAction* _aboutQtAction;
 
+        QMenu* _indexationMenu { nullptr };
         QMenu* _serverAdminMenu;
         QMenu* _userMenu;
         QMenu* _actionsMenu;

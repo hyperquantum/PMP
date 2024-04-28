@@ -66,7 +66,6 @@ namespace PMP::Server
         ~ConnectedClient();
 
     private Q_SLOTS:
-
         void terminateConnection();
         void dataArrived();
         void socketError(QAbstractSocket::SocketError error);
@@ -75,6 +74,9 @@ namespace PMP::Server
 
         void serverSettingsReloadResultEvent(uint clientReference,
                                              ResultMessageErrorCode errorCode);
+
+        void onFullIndexationStatusEvent(StartStopEventStatus status);
+        void onQuickScanForNewFilesStatusEvent(StartStopEventStatus status);
 
         void volumeChanged(int volume);
         void onDynamicModeStatusEvent(StartStopEventStatus dynamicModeStatus,
@@ -101,7 +103,6 @@ namespace PMP::Server
                                           quint32 clientReference);
         void queueEntryMoved(quint32 fromOffset, quint32 toOffset, quint32 queueID);
         void onUserPlayingForChanged(quint32 user);
-        void onFullIndexationRunStatusChanged(bool running);
         void onCollectionTrackInfoBatchToSend(uint clientReference,
                                               QVector<CollectionTrackInfo> tracks);
         void onCollectionTrackInfoCompleted(uint clientReference);
@@ -188,6 +189,7 @@ namespace PMP::Server
         void sendQueueHistoryMessage(int limit);
         void sendHistoryFragmentMessage(uint clientReference, HistoryFragment fragment);
         void sendHashUserDataMessage(quint32 userId, QVector<HashStats> stats);
+        void sendHashInfoReply(uint clientReference, CollectionTrackInfo info);
         void sendServerNameMessage();
         void sendServerHealthMessageIfNotEverythingOkay();
         void sendServerHealthMessage();
@@ -203,6 +205,9 @@ namespace PMP::Server
         void sendScrobblingProviderEnabledChangeMessage(quint32 userId,
                                                         ScrobblingProvider provider,
                                                         bool enabled);
+
+        void sendIndexationStatusMessage(StartStopEventStatus fullIndexationStatus,
+                                         StartStopEventStatus quickScanForNewFilesStatus);
 
         void handleBinaryMessage(QByteArray const& message);
         void handleStandardBinaryMessage(ClientMessageType messageType,
@@ -237,6 +242,7 @@ namespace PMP::Server
         void parseQueueEntryDuplicationRequest(QByteArray const& message);
         void parseQueueEntryMoveRequestMessage(QByteArray const& message);
         void parseHashUserDataRequest(QByteArray const& message);
+        void parseHashInfoRequest(QByteArray const& message);
         void parsePersonalHistoryRequest(QByteArray const& message);
         void parsePlayerHistoryRequest(QByteArray const& message);
         void parseCurrentUserScrobblingProviderInfoRequestMessage(

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,8 @@
 #include "common/future.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/serverhealthstatus.h"
+#include "common/startstopeventstatus.h"
+#include "common/tribool.h"
 #include "common/versioninfo.h"
 
 #include <QObject>
@@ -39,9 +41,14 @@ namespace PMP::Client
 
         virtual qint64 clientClockTimeOffsetMs() const = 0;
 
+        virtual SimpleFuture<AnyResultMessageCode> startFullIndexation() = 0;
+        virtual SimpleFuture<AnyResultMessageCode> startQuickScanForNewFiles() = 0;
         virtual SimpleFuture<AnyResultMessageCode> reloadServerSettings() = 0;
 
         virtual Future<VersionInfo, ResultMessageErrorCode> getServerVersionInfo() = 0;
+
+        virtual TriBool isFullIndexationRunning() const = 0;
+        virtual TriBool isQuickScanForNewFilesRunning() const = 0;
 
     public Q_SLOTS:
         virtual void shutdownServer() = 0;
@@ -49,6 +56,8 @@ namespace PMP::Client
     Q_SIGNALS:
         void serverHealthChanged();
         void clientClockTimeOffsetChanged();
+        void fullIndexationStatusReceived(StartStopEventStatus status);
+        void quickScanForNewFilesStatusReceived(StartStopEventStatus status);
 
     protected:
         explicit GeneralController(QObject* parent) : QObject(parent) {}

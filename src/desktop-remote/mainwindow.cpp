@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -65,23 +65,17 @@ namespace PMP
 {
     MainWindow::MainWindow(QWidget* parent)
      : QMainWindow(parent),
-       _notificationBar(nullptr),
-       _leftStatus(nullptr),
-       _rightStatus(nullptr),
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
        _hashIdRepository(new LocalHashIdRepository()),
-       _connection(nullptr),
-       _serverInterface(nullptr),
-       _userPickerWidget(nullptr),
-       _loginWidget(nullptr),
-       _mainWidget(nullptr),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
        _powerManagement(new PowerManagement(this))
     {
         setWindowTitle(
             QString(tr("Party Music Player ")) + UnicodeChars::enDash + tr(" Remote")
         );
+
+        setWindowIcon(QIcon(":/app/app-icon.svg"));
 
         _musicCollectionDock->setObjectName("musicCollectionDockWidget");
         _musicCollectionDock->setAllowedAreas(
@@ -143,8 +137,13 @@ namespace PMP
             this, &MainWindow::onShutdownServerTriggered
         );
 
+        _scanForNewFilesAction = new QAction(tr("Scan for new files"), this);
+        connect(
+            _scanForNewFilesAction, &QAction::triggered,
+            this, &MainWindow::onScanForNewFilesActionTriggered
+        );
+
         _startFullIndexationAction = new QAction(tr("&Start full indexation"), this);
-        _startFullIndexationAction->setVisible(false); /* needs active connection */
         connect(
             _startFullIndexationAction, &QAction::triggered,
             this, &MainWindow::onStartFullIndexationTriggered
@@ -205,10 +204,14 @@ namespace PMP
         QMenu* helpMenu = menuBar()->addMenu(tr("&Help"));
 
         /* "PMP" menu members */
-        pmpMenu->addAction(_startFullIndexationAction);
+        _indexationMenu = pmpMenu->addMenu(tr("&Indexation"));
         _serverAdminMenu = pmpMenu->addMenu(tr("Server &administration"));
         pmpMenu->addSeparator();
         pmpMenu->addAction(_closeAction);
+
+        /* "PMP">"Indexation" menu members */
+        _indexationMenu->addAction(_scanForNewFilesAction);
+        _indexationMenu->addAction(_startFullIndexationAction);
 
         /* "PMP">"Server administration" menu members */
         _serverAdminMenu->addAction(_reloadServerSettingsAction);
@@ -231,6 +234,7 @@ namespace PMP
         helpMenu->addAction(_aboutQtAction);
 
         /* Menu visibility */
+        _indexationMenu->menuAction()->setVisible(false);
         _serverAdminMenu->menuAction()->setVisible(false); /* needs active connection */
         _userMenu->menuAction()->setVisible(false); /* will be made visible after login */
         _actionsMenu->menuAction()->setVisible(false);
@@ -339,17 +343,37 @@ namespace PMP
         return false;
     }
 
+    void MainWindow::enableDisableIndexationActions()
+    {
+        auto& generalController = _serverInterface->generalController();
+
+        bool anyIndexationRunning =
+            generalController.isFullIndexationRunning().toBool()
+                || generalController.isQuickScanForNewFilesRunning().toBool();
+
+        _scanForNewFilesAction->setEnabled(!anyIndexationRunning);
+        _startFullIndexationAction->setEnabled(!anyIndexationRunning);
+    }
+
     void MainWindow::updateRightStatus()
     {
         if (!_serverInterface || !_serverInterface->connected())
         {
             _rightStatus->setText(tr("Not connected."));
+            return;
         }
-        else if (!_serverInterface->isLoggedIn())
+
+        auto& generalController = _serverInterface->generalController();
+
+        if (!_serverInterface->isLoggedIn())
         {
             _rightStatus->setText(tr("Connected."));
         }
-        else if (_connection->doingFullIndexation().toBool())
+        else if (generalController.isQuickScanForNewFilesRunning().toBool())
+        {
+            _rightStatus->setText(tr("Scanning for new files..."));
+        }
+        else if (generalController.isFullIndexationRunning().toBool())
         {
             _rightStatus->setText(tr("Full indexation running..."));
         }
@@ -450,14 +474,24 @@ namespace PMP
         }
     }
 
+    void MainWindow::onScanForNewFilesActionTriggered()
+    {
+        auto future = _serverInterface->generalController().startQuickScanForNewFiles();
+
+        connectErrorPopupToActionResult(future,
+                                        tr("Could not start a scan for new files."));
+    }
+
     void MainWindow::onStartFullIndexationTriggered()
     {
-        if (_connection) { _connection->startFullIndexation(); }
+        auto future = _serverInterface->generalController().startFullIndexation();
+
+        connectErrorPopupToActionResult(future, tr("Could not start a full indexation."));
     }
 
     void MainWindow::onReloadServerSettingsTriggered()
     {
-        auto future =  _serverInterface->generalController().reloadServerSettings();
+        auto future = _serverInterface->generalController().reloadServerSettings();
 
         future.addResultListener(
             this,
@@ -530,14 +564,39 @@ namespace PMP
 
     void MainWindow::onAboutPmpAction()
     {
-        const auto programNameVersionBuild =
-            QString(VCS_REVISION_LONG).isEmpty()
-                ? tr("Party Music Player <b>version %1</b>")
-                    .arg(PMP_VERSION_DISPLAY)
-                : tr("Party Music Player <b>version %1</b> build %2 (%3)")
-                    .arg(PMP_VERSION_DISPLAY,
-                         VCS_REVISION_LONG,
-                         VCS_BRANCH);
+        Nullable<VersionInfo> serverVersionInfo;
+        QString serverVersionProblem;
+
+        if (!_serverInterface || !_serverInterface->connected())
+        {
+            serverVersionProblem = tr("not connected to a server");
+        }
+        else
+        {
+            auto serverVersionFuture =
+                _serverInterface->generalController().getServerVersionInfo();
+
+            auto maybeServerVersionResultOrError =
+                serverVersionFuture.resultOrErrorIfFinished();
+
+            if (maybeServerVersionResultOrError == null
+                || maybeServerVersionResultOrError.value().failed())
+            {
+                serverVersionProblem = tr("version unknown");
+            }
+            else
+            {
+                serverVersionInfo = maybeServerVersionResultOrError.value().result();
+            }
+        }
+
+        const auto clientVersion = VersionInfo::current();
+        const auto clientVersionText = getVersionText(clientVersion);
+
+        const auto serverVersionText =
+            (serverVersionProblem.isEmpty())
+                ? getVersionText(serverVersionInfo.value())
+                : tr("<i>%1</i>").arg(serverVersionProblem);
 
         QString aboutText =
             tr(
@@ -552,15 +611,18 @@ namespace PMP
                 " License (GPLv3).</p>"
                 "<p>Website: <a href=\"%1\">%1</a></p>"
                 "<p>Report bugs at: <a href=\"%2\">%2</a></p>"
-                "<p>%3<br>" /* program name, version, and possibly build info */
+                "<hr>"
+                "<p><b>Client</b>: %3<br>" /* program name, version, and possibly build info */
                 "%4</p>" /* copyright line */
-                "<p>Using Qt version %5</p>"
+                "<p><b>Server</b>: %5</p>"
+                "<p>Using Qt version %6</p>"
                 "</html>"
             )
             .arg(PMP_WEBSITE,
                  PMP_BUGREPORT_LOCATION,
-                 programNameVersionBuild,
+                 clientVersionText,
                  Util::getCopyrightLine(false),
+                 serverVersionText,
                  QT_VERSION_STR);
 
         QMessageBox::about(this, tr("About PMP"), aboutText);
@@ -596,31 +658,45 @@ namespace PMP
             this, &MainWindow::onServerHealthChanged
         );
         connect(
-            _connection, &ServerConnection::fullIndexationStatusReceived,
+            generalController, &GeneralController::fullIndexationStatusReceived,
             this,
-            [this](bool running)
+            [this](StartStopEventStatus status)
             {
-                _startFullIndexationAction->setEnabled(
-                    !running && _serverInterface->isLoggedIn()
-                );
+                enableDisableIndexationActions();
                 updateRightStatus();
+
+                if (Common::isChange(status))
+                {
+                    if (Common::isActive(status))
+                    {
+                        setLeftStatus(3000, tr("Full indexation started"));
+                    }
+                    else
+                    {
+                        setLeftStatus(5000, tr("Full indexation finished"));
+                    }
+                }
             }
         );
         connect(
-            _connection, &ServerConnection::fullIndexationStarted,
+            generalController, &GeneralController::quickScanForNewFilesStatusReceived,
             this,
-            [this]
+            [this](StartStopEventStatus status)
             {
-                setLeftStatus(3000, tr("Full indexation started"));
-            }
-        );
-        connect(
-            _connection, &ServerConnection::fullIndexationFinished,
-            this,
-            [this]
-            {
-                qDebug() << "fullIndexationFinished triggered";
-                setLeftStatus(5000, tr("Full indexation finished"));
+                enableDisableIndexationActions();
+                updateRightStatus();
+
+                if (Common::isChange(status))
+                {
+                    if (Common::isActive(status))
+                    {
+                        setLeftStatus(3000, tr("Scan for new files started"));
+                    }
+                    else
+                    {
+                        setLeftStatus(5000, tr("Scan for new files finished"));
+                    }
+                }
             }
         );
         connect(
@@ -639,6 +715,9 @@ namespace PMP
         if (_serverInterface && _serverInterface->connected())
         {
             showUserAccountPicker();
+
+            /* fetch server version */
+            (void)_serverInterface->generalController().getServerVersionInfo();
         }
         else
         {
@@ -831,13 +910,11 @@ namespace PMP
         Q_UNUSED(login)
 
         updateRightStatus();
-        _connection->requestFullIndexationRunningStatus();
 
         _loginWidget = nullptr;
         showMainWidget();
 
-        _startFullIndexationAction->setEnabled(false);
-        _startFullIndexationAction->setVisible(true);
+        _indexationMenu->menuAction()->setVisible(true);
         _serverAdminMenu->menuAction()->setVisible(true);
         _userMenu->menuAction()->setVisible(true);
 
@@ -854,5 +931,56 @@ namespace PMP
     {
         _loginWidget = nullptr;
         showUserAccountPicker();
+    }
+
+    void MainWindow::connectErrorPopupToActionResult(
+                                                SimpleFuture<AnyResultMessageCode> future,
+                                                QString failureText)
+    {
+        future.addResultListener(
+            this,
+            [failureText](AnyResultMessageCode code)
+            {
+                if (succeeded(code))
+                    return; /* no need to display a message */
+
+                QMessageBox msgBox;
+                msgBox.setIcon(QMessageBox::Warning);
+                msgBox.setText(failureText);
+
+                if (code == ResultMessageErrorCode::ServerTooOld)
+                {
+                    msgBox.setInformativeText(
+                        tr("The server is too old and does not support this action.")
+                    );
+                }
+                else
+                {
+                    msgBox.setInformativeText(
+                        tr("Error code: %1").arg(errorCodeString(code))
+                    );
+                }
+
+                msgBox.exec();
+            }
+        );
+    }
+
+    QString MainWindow::getVersionText(const VersionInfo& versionInfo)
+    {
+        if (versionInfo.vcsBuild.isEmpty())
+        {
+            return tr("%1 <b>version %2</b>")
+                .arg(versionInfo.programName,
+                     versionInfo.versionForDisplay);
+        }
+        else
+        {
+            return tr("%1 <b>version %2</b> build %3 (%4)")
+                .arg(versionInfo.programName,
+                     versionInfo.versionForDisplay,
+                     versionInfo.vcsBuild,
+                     versionInfo.vcsBranch);
+        }
     }
 }

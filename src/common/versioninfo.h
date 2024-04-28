@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,6 +31,8 @@ namespace PMP
         QString versionForDisplay;
         QString vcsBuild;
         QString vcsBranch;
+
+        static VersionInfo current();
     };
 }
 

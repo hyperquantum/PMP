@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,22 +17,33 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "collectiontablemodel.h"
+#ifndef PMP_PASSWORDSTRENGTHEVALUATOR_H
+#define PMP_PASSWORDSTRENGTHEVALUATOR_H
 
-namespace PMP {
+#include <QString>
 
-    /** Utility object to automatically do the qRegisterMetaType calls at program
-     *  startup */
-    class GuiRemoteMetatypesInit {
-    protected:
-        GuiRemoteMetatypesInit()
-        {
-            qRegisterMetaType<PMP::TrackCriterium>();
-        }
-
-    private:
-        static GuiRemoteMetatypesInit GlobalVariable;
+namespace PMP
+{
+    enum class PasswordStrengthRating
+    {
+        TooWeak,
+        Acceptable,
+        Good,
+        VeryGood,
+        Excellent,
     };
 
-    GuiRemoteMetatypesInit GuiRemoteMetatypesInit::GlobalVariable;
+    class PasswordStrengthEvaluator
+    {
+    public:
+        static PasswordStrengthRating getPasswordRating(QString const& password);
+
+    private:
+        PasswordStrengthEvaluator();
+
+        static int getPasswordScore(QString const& password);
+        static PasswordStrengthRating convertScoreToRating(int score);
+        static int pointsToSubtractForPatterns(QString const& password);
+    };
 }
+#endif

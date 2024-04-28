@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,6 +36,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
+        virtual bool requiresAuthentication() const override;
         virtual bool willCauseDisconnect() const override;
 
         virtual void execute(Client::ServerInterface* serverInterface) final;

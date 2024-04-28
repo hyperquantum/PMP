@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,11 +31,6 @@ using namespace PMP::Client;
 namespace PMP
 {
     /* ===== HistoryCommand ===== */
-
-    bool HistoryCommand::requiresAuthentication() const
-    {
-        return true;
-    }
 
     void HistoryCommand::run(Client::ServerInterface* serverInterface)
     {
@@ -160,11 +155,6 @@ namespace PMP
         : _hash(hash)
     {
         //
-    }
-
-    bool TrackHistoryCommand::requiresAuthentication() const
-    {
-        return true;
     }
 
     void TrackHistoryCommand::run(Client::ServerInterface* serverInterface)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -57,6 +57,8 @@ usage:
     qdel <QID>: delete an entry from the queue
     qmove <QID> <-diff>: move a track up in the queue (e.g. -3)
     qmove <QID> <+diff>: move a track down in the queue (eg. +2)
+    start indexation [full]: start a full indexation of music files
+    start indexation new: start a quick scan for new music files
     scrobbling enable|disable <provider>: enable scrobbling for the current user
     scrobbling status <provider>: get scrobbling status
     scrobbling authenticate <provider>: enter credentials for scrobbling
@@ -65,6 +67,7 @@ usage:
     delayedstart wait <number> <time unit>: activate delayed start (see below)
     delayedstart at [<date>] <time>: activate delayed start (see below)
     delayedstart abort|cancel: cancel delayed start (see below)
+    trackinfo <hash>: get track information like artist, title, length, etc.
     trackstats <hash>: get track statistics
     trackhistory <hash>: get personal listening history for a track
     serverversion: get server version information
@@ -111,7 +114,7 @@ usage:
     barrier. The barrier will remain in the queue until it is deleted by
     the user.
     The hash of a track can be obtained with the 'track info' dialog in the
-    GUI Remote or with the command-line hash tool.
+    Desktop Remote or with the command-line hash tool.
 
   'scrobbling' command:
     scrobbling enable <provider>: enable scrobbling for the current user
@@ -172,13 +175,21 @@ usage:
     start is cancelled automatically when playback is started before the
     deadline.
 
+  'trackinfo' command:
+    trackinfo <hash>: get track information like artist, title, length, etc.
+
+    Retrieves title, artist, album, album artist, length and availability
+    for the track that was specified as an argument.
+    The hash of a track can be obtained with the 'track info' dialog in the
+    Desktop Remote or with the command-line hash tool.
+
   'trackstats' command:
     trackstats <hash>: get track statistics for the current user
 
     Retrieves 'last heard' and 'score' for the current user and the track
     that was specified as an argument.
     The hash of a track can be obtained with the 'track info' dialog in the
-    GUI Remote or with the command-line hash tool.
+    Desktop Remote or with the command-line hash tool.
 
   'trackhistory' command:
     trackhistory <hash>: get personal listening history for the current user
@@ -186,7 +197,7 @@ usage:
     Retrieves the recent listening history for the current user and the
     track that was specified as an argument.
     The hash of a track can be obtained with the 'track info' dialog in the
-    GUI Remote or with the command-line hash tool.
+    Desktop Remote or with the command-line hash tool.
 
   NOTICE:
     Some commands require a fairly recent version of the PMP server in order

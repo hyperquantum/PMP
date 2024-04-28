@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -916,7 +916,8 @@ namespace PMP
                                              ServerInterface* serverInterface,
                                              QueueHashesMonitor* queueHashesMonitor,
                                        UserForStatisticsDisplay* userForStatisticsDisplay)
-     : _source(source),
+     : _serverInterface(serverInterface),
+       _source(source),
        _filteringTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor)
     {
         Q_UNUSED(parent)
@@ -932,6 +933,12 @@ namespace PMP
                                            userForStatisticsDisplay->userId().valueOr(0));
                 invalidateFilter();
             }
+        );
+
+        auto& collectionWatcher = serverInterface->collectionWatcher();
+        connect(
+            &collectionWatcher, &CollectionWatcher::newTrackReceived,
+            this, &FilteredCollectionTableModel::onNewTrackReceived
         );
 
         setSourceModel(source);
@@ -961,7 +968,31 @@ namespace PMP
 
     void FilteredCollectionTableModel::setSearchText(QString search)
     {
-        _searchParts = search.split(QRegExp("\\s+"), Qt::SkipEmptyParts);
+        auto trimmed = search.trimmed();
+
+        auto fileHash = FileHash::tryParse(trimmed);
+        if (!fileHash.isNull())
+        {
+            // id will be zero when not found
+            auto hashId = _serverInterface->hashIdRepository()->getId(fileHash);
+
+            if (hashId.isZero())
+            {
+                // trigger server lookup of the hash
+                (void)_serverInterface->collectionWatcher().getTrackInfo(fileHash);
+            }
+
+            _searchParts.clear();
+            _searchFileHash = fileHash;
+            _searchHashId = hashId;
+        }
+        else
+        {
+            _searchParts = trimmed.split(QRegExp("\\s+"), Qt::SkipEmptyParts);
+            _searchFileHash = FileHash();
+            _searchHashId = null;
+        }
+
         invalidateFilter();
     }
 
@@ -970,7 +1001,8 @@ namespace PMP
     {
         Q_UNUSED(sourceParent)
 
-        if (_searchParts.empty() && _filteringTrackJudge.criteriumResultsInAllTracks())
+        if (_searchParts.empty() && _searchHashId == null
+            && _filteringTrackJudge.criteriumResultsInAllTracks())
         {
             return true; /* not filtered */
         }
@@ -987,8 +1019,30 @@ namespace PMP
                     return false;
             }
         }
+        else if (_searchHashId != null)
+        {
+            if (track->hashId() != _searchHashId.value())
+                return false;
+        }
 
         return _filteringTrackJudge.trackSatisfiesCriteria(*track).isTrue();
     }
 
+    void FilteredCollectionTableModel::onNewTrackReceived(CollectionTrackInfo track)
+    {
+        /* See if we can finally get the LocalHashId of the FileHash that is used as the
+           search query */
+        if (_searchHashId != null && _searchHashId.value().isZero()
+            && !_searchFileHash.isNull())
+        {
+            auto fileHashOfNewTrack =
+                _serverInterface->hashIdRepository()->getHash(track.hashId());
+
+            if (fileHashOfNewTrack == _searchFileHash)
+            {
+                _searchHashId = track.hashId();
+                invalidateFilter();
+            }
+        }
+    }
 }

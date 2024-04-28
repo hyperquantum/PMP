@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 #define PMP_CLIENT_SERVERCONNECTION_H
 
 #include "common/disconnectreason.h"
+#include "common/filehash.h"
 #include "common/future.h"
 #include "common/networkprotocol.h"
 #include "common/networkprotocolextensions.h"
@@ -31,6 +32,7 @@
 #include "common/scrobblingprovider.h"
 #include "common/serverhealthstatus.h"
 #include "common/specialqueueitemtype.h"
+#include "common/startstopeventstatus.h"
 #include "common/tribool.h"
 #include "common/userloginerror.h"
 #include "common/userregistrationerror.h"
@@ -92,6 +94,7 @@ namespace PMP::Client
         class QueueEntryInsertionResultHandler;
         class DuplicationResultHandler;
         class HistoryFragmentResultHandler;
+        class HashInfoResultHandler;
 
     public:
         explicit ServerConnection(QObject* parent,
@@ -115,16 +118,23 @@ namespace PMP::Client
         QString userLoggedInName() const;
 
         TriBool doingFullIndexation() const { return _doingFullIndexation; }
+        TriBool doingQuickScanForNewFiles() const { return _doingQuickScanForNewFiles; }
 
         void fetchCollection(CollectionFetcher* fetcher);
 
         SimpleFuture<AnyResultMessageCode> reloadServerSettings();
+        SimpleFuture<AnyResultMessageCode> startFullIndexation();
+        SimpleFuture<AnyResultMessageCode> startQuickScanForNewFiles();
         SimpleFuture<AnyResultMessageCode> activateDelayedStart(qint64 delayMilliseconds);
         SimpleFuture<AnyResultMessageCode> deactivateDelayedStart();
         RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index);
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                                    LocalHashId hashId);
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+                                                                    FileHash const& hash);
         Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId = 0);
@@ -176,6 +186,8 @@ namespace PMP::Client
         void sendQueueEntryHashRequest(QList<uint> const& queueIDs);
 
         void sendHashUserDataRequest(quint32 userId, QList<LocalHashId> const& hashes);
+        Future<CollectionTrackInfo, AnyResultMessageCode> sendHashInfoRequest(
+                                                                    const FileHash& hash);
         Future<HistoryFragment, AnyResultMessageCode> sendHashHistoryRequest(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId);
@@ -196,8 +208,7 @@ namespace PMP::Client
         void enableScrobblingForCurrentUser(ScrobblingProvider provider);
         void disableScrobblingForCurrentUser(ScrobblingProvider provider);
 
-        void startFullIndexation();
-        void requestFullIndexationRunningStatus();
+        void requestIndexationRunningStatus();
 
     Q_SIGNALS:
         void connected();
@@ -251,9 +262,8 @@ namespace PMP::Client
 
         void receivedUserPlayingFor(quint32 userId, QString userLogin);
 
-        void fullIndexationStatusReceived(bool running);
-        void fullIndexationStarted();
-        void fullIndexationFinished();
+        void fullIndexationStatusReceived(StartStopEventStatus status);
+        void quickScanForNewFilesStatusReceived(StartStopEventStatus status);
 
         void collectionTracksAvailabilityChanged(
                                            QVector<PMP::Client::LocalHashId> available,
@@ -283,6 +293,7 @@ namespace PMP::Client
         RequestID signalServerTooOldError(
                              void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
                                                                    RequestID));
+        FutureResult<AnyResultMessageCode> noErrorFutureResult();
         FutureResult<AnyResultMessageCode> serverTooOldFutureResult();
         FutureError<AnyResultMessageCode> serverTooOldFutureError();
 
@@ -357,6 +368,8 @@ namespace PMP::Client
         void parseNewUserAccountSaltMessage(QByteArray const& message);
         void parseUserLoginSaltMessage(QByteArray const& message);
 
+        void parseIndexationStatusMessage(QByteArray const& message);
+
         void parsePlayerStateMessage(QByteArray const& message);
         void parseDelayedStartInfoMessage(QByteArray const& message);
         void parseVolumeChangedMessage(QByteArray const& message);
@@ -380,6 +393,7 @@ namespace PMP::Client
                                         ServerMessageType messageType);
 
         void parseHashUserDataMessage(QByteArray const& message);
+        void parseHashInfoReply(QByteArray const& message);
         void parseHistoryFragmentMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);
@@ -422,6 +436,7 @@ namespace PMP::Client
         quint32 _userLoggedInId;
         QString _userLoggedInName;
         TriBool _doingFullIndexation;
+        TriBool _doingQuickScanForNewFiles;
         QHash<uint, QSharedPointer<ResultHandler>> _resultHandlers;
         QHash<uint, CollectionFetcher*> _collectionFetchers;
         ServerHealthStatus _serverHealthStatus;

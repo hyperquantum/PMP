@@ -61,15 +61,16 @@ namespace PMP
         fillQueueId();
         fillHash();
 
-        auto trackInfo = serverInterface->collectionWatcher().getTrack(hashId);
+        auto trackInfoOrNull =
+            serverInterface->collectionWatcher().getTrackFromCache(hashId);
 
-        if (trackInfo.hashId().isZero())
-        { /* not found? */
+        if (trackInfoOrNull == null) /* not found? */
+        {
             clearTrackDetails();
         }
         else
         {
-            fillTrackDetails(trackInfo);
+            fillTrackDetails(trackInfoOrNull.value());
         }
 
         fillUserData(_trackHashId, _userId);

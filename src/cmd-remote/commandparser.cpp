@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,8 +18,6 @@
 */
 
 #include "commandparser.h"
-
-#include "common/unicodechars.h"
 
 #include "administrativecommands.h"
 #include "historycommands.h"
@@ -64,72 +62,7 @@ namespace PMP
 
     FileHash CommandParser::CommandArguments::tryParseTrackHash() const
     {
-        QString text = current().replace(UnicodeChars::figureDash, '-');
-
-        const auto parts = text.split(QChar('-'), Qt::KeepEmptyParts);
-        if (parts.size() != 3)
-            return {};
-
-        bool ok;
-        uint length = parts[0].toUInt(&ok);
-        if (!ok || length == 0)
-            return {};
-
-        QByteArray sha1 = tryDecodeHexWithExpectedLength(parts[1], 40);
-        if (sha1.isEmpty())
-            return {};
-
-        QByteArray md5 = tryDecodeHexWithExpectedLength(parts[2], 32);
-        if (md5.isEmpty())
-            return {};
-
-        return FileHash(length, sha1, md5);
-    }
-
-    QByteArray CommandParser::CommandArguments::tryDecodeHexWithExpectedLength(
-                                                                      const QString& text,
-                                                                      int expectedLength)
-    {
-        if (text.length() != expectedLength)
-            return {};
-
-        QByteArray hex = text.toLatin1();
-
-         /* check again (non-latin1 chars may have been removed) */
-        if (hex.length() != expectedLength)
-            return {};
-
-        if (!isHexEncoded(hex))
-            return {};
-
-        QByteArray decoded = QByteArray::fromHex(hex);
-        if (decoded.length() * 2 != expectedLength)
-            return {};
-
-        return decoded;
-    }
-
-    bool CommandParser::CommandArguments::isHexEncoded(const QByteArray& bytes)
-    {
-        if (bytes.length() % 2 != 0)
-            return false;
-
-        for (int i = 0; i < bytes.length(); ++i)
-        {
-            switch (bytes.at(i))
-            {
-            case 'a': case 'b': case 'c': case 'd': case 'e': case 'f':
-            case 'A': case 'B': case 'C': case 'D': case 'E': case 'F':
-            case '0': case '1': case '2': case '3': case '4':
-            case '5': case '6': case '7': case '8': case '9':
-                continue; /* valid character */
-
-            default:
-                return false; /* invalid character */
-            }
-        }
-
-        return true;
+        return FileHash::tryParse(current());
     }
 
     /* ===== CommandParser ===== */
@@ -351,9 +284,17 @@ namespace PMP
         {
             parseInsertCommand(args);
         }
+        else if (command == "start")
+        {
+            parseStartCommand(args);
+        }
         else if (command == "delayedstart")
         {
             parseDelayedStartCommand(args);
+        }
+        else if (command == "trackinfo")
+        {
+            parseTrackInfoCommand(args);
         }
         else if (command == "trackstats")
         {
@@ -567,6 +508,47 @@ namespace PMP
         _command = commandBuilder.buildCommand();
     }
 
+    void CommandParser::parseStartCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Command 'start' requires arguments!";
+            return;
+        }
+
+        if (arguments.current() == "indexation")
+        {
+            arguments.advance();
+            parseStartIndexationCommand(arguments);
+        }
+        else
+        {
+            _errorMessage = "Expected 'indexation' after 'start'!";
+        }
+    }
+
+    void CommandParser::parseStartIndexationCommand(CommandArguments& arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _command = new StartFullIndexationCommand();
+            return;
+        }
+
+        if (arguments.current() == "full")
+        {
+            _command = new StartFullIndexationCommand();
+        }
+        else if (arguments.current() == "new")
+        {
+            _command = new StartQuickScanForNewFilesCommand();
+        }
+        else
+        {
+            _errorMessage = "Expected 'full', 'new', or no arguments after 'indexation'!";
+        }
+    }
+
     void CommandParser::parseDelayedStartCommand(CommandArguments arguments)
     {
         if (arguments.noCurrent())
@@ -700,6 +682,24 @@ namespace PMP
         }
 
         _command = new DelayedStartWaitCommand(number * unitMilliseconds);
+    }
+
+    void CommandParser::parseTrackInfoCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent() || arguments.haveMore())
+        {
+            _errorMessage = "Command 'trackinfo' requires exactly one argument!";
+            return;
+        }
+
+        auto hash = arguments.tryParseTrackHash();
+        if (hash.isNull())
+        {
+            _errorMessage = QString("Not a track hash: %1").arg(arguments.current());
+            return;
+        }
+
+        _command = new TrackInfoCommand(hash);
     }
 
     void CommandParser::parseTrackStatsCommand(CommandArguments arguments)
