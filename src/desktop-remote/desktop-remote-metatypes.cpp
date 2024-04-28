@@ -19,11 +19,12 @@
 
 #include "trackjudge.h"
 
-namespace PMP {
-
+namespace PMP
+{
     /** Utility object to automatically do the qRegisterMetaType calls at program
      *  startup */
-    class GuiRemoteMetatypesInit {
+    class GuiRemoteMetatypesInit
+    {
     protected:
         GuiRemoteMetatypesInit()
         {
