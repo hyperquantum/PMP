@@ -27,7 +27,7 @@
 #include "client/serverinterface.h"
 #include "client/userdatafetcher.h"
 
-#include "gui-remote/userforstatisticsdisplay.h"
+#include "desktop-remote/userforstatisticsdisplay.h"
 
 #include <QObject>
 

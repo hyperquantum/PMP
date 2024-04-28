@@ -460,7 +460,7 @@
   <customwidget>
    <class>PMP::TrackProgressWidget</class>
    <extends>QWidget</extends>
-   <header>gui-remote/trackprogresswidget.h</header>
+   <header>desktop-remote/trackprogresswidget.h</header>
   </customwidget>
  </customwidgets>
  <resources>

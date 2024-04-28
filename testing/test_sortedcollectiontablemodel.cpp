@@ -21,7 +21,7 @@
 
 #include "client/localhashidrepository.h"
 
-#include "gui-remote/collectiontablemodel.h"
+#include "desktop-remote/collectiontablemodel.h"
 
 #include <QtTest/QTest>
 
