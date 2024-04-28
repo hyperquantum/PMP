@@ -194,92 +194,92 @@ set(PMP_CMD_REMOTE_HEADERS
     cmd-remote/scrobblingcommands.h
 )
 
-set(PMP_GUI_REMOTE_SOURCES
-    gui-remote/autopersonalmodeaction.cpp
-    gui-remote/clickablelabel.cpp
-    gui-remote/collectiontablemodel.cpp
-    gui-remote/collectionwidget.cpp
-    gui-remote/colors.cpp
-    gui-remote/colorswitcher.cpp
-    gui-remote/connectionwidget.cpp
-    gui-remote/delayedstartdialog.cpp
-    gui-remote/delayedstartnotification.cpp
-    gui-remote/dynamicmodeparametersdialog.cpp
-    gui-remote/gui-remote-metatypes.cpp
-    gui-remote/historymodel.cpp
-    gui-remote/loginwidget.cpp
-    gui-remote/mainwidget.cpp
-    gui-remote/mainwindow.cpp
-    gui-remote/notificationbar.cpp
-    gui-remote/playerhistorymodel.cpp
-    gui-remote/precisetrackprogressmonitor.cpp
-    gui-remote/queuemediator.cpp
-    gui-remote/queuemodel.cpp
-    gui-remote/scoreformatdelegate.cpp
-    gui-remote/scrobblingauthenticationdialog.cpp
-    gui-remote/trackinfodialog.cpp
-    gui-remote/trackjudge.cpp
-    gui-remote/trackprogresswidget.cpp
-    gui-remote/useraccountcreationwidget.cpp
-    gui-remote/userforstatisticsdisplay.cpp
-    gui-remote/userpickerwidget.cpp
-    gui-remote/userscrobblingdialog.cpp
-    gui-remote/waitingspinnerwidget.cpp
+set(PMP_DESKTOP_REMOTE_SOURCES
+    desktop-remote/autopersonalmodeaction.cpp
+    desktop-remote/clickablelabel.cpp
+    desktop-remote/collectiontablemodel.cpp
+    desktop-remote/collectionwidget.cpp
+    desktop-remote/colors.cpp
+    desktop-remote/colorswitcher.cpp
+    desktop-remote/connectionwidget.cpp
+    desktop-remote/delayedstartdialog.cpp
+    desktop-remote/delayedstartnotification.cpp
+    desktop-remote/desktop-remote-metatypes.cpp
+    desktop-remote/dynamicmodeparametersdialog.cpp
+    desktop-remote/historymodel.cpp
+    desktop-remote/loginwidget.cpp
+    desktop-remote/mainwidget.cpp
+    desktop-remote/mainwindow.cpp
+    desktop-remote/notificationbar.cpp
+    desktop-remote/playerhistorymodel.cpp
+    desktop-remote/precisetrackprogressmonitor.cpp
+    desktop-remote/queuemediator.cpp
+    desktop-remote/queuemodel.cpp
+    desktop-remote/scoreformatdelegate.cpp
+    desktop-remote/scrobblingauthenticationdialog.cpp
+    desktop-remote/trackinfodialog.cpp
+    desktop-remote/trackjudge.cpp
+    desktop-remote/trackprogresswidget.cpp
+    desktop-remote/useraccountcreationwidget.cpp
+    desktop-remote/userforstatisticsdisplay.cpp
+    desktop-remote/userpickerwidget.cpp
+    desktop-remote/userscrobblingdialog.cpp
+    desktop-remote/waitingspinnerwidget.cpp
 )
-set(PMP_GUI_REMOTE_HEADERS
-    gui-remote/autopersonalmodeaction.h
-    gui-remote/clickablelabel.h
-    gui-remote/collectiontablemodel.h
-    gui-remote/collectionwidget.h
-    gui-remote/colorswitcher.h
-    gui-remote/connectionwidget.h
-    gui-remote/delayedstartdialog.h
-    gui-remote/delayedstartnotification.h
-    gui-remote/dynamicmodeparametersdialog.h
-    gui-remote/historymodel.h
-    gui-remote/loginwidget.h
-    gui-remote/mainwidget.h
-    gui-remote/mainwindow.h
-    gui-remote/notificationbar.h
-    gui-remote/playerhistorymodel.h
-    gui-remote/precisetrackprogressmonitor.h
-    gui-remote/queuemediator.h
-    gui-remote/queuemodel.h
-    gui-remote/scoreformatdelegate.h
-    gui-remote/scrobblingauthenticationdialog.h
-    gui-remote/trackinfodialog.h
-    gui-remote/trackprogresswidget.h
-    gui-remote/useraccountcreationwidget.h
-    gui-remote/userforstatisticsdisplay.h
-    gui-remote/userpickerwidget.h
-    gui-remote/userscrobblingdialog.h
-    gui-remote/waitingspinnerwidget.h
+set(PMP_DESKTOP_REMOTE_HEADERS
+    desktop-remote/autopersonalmodeaction.h
+    desktop-remote/clickablelabel.h
+    desktop-remote/collectiontablemodel.h
+    desktop-remote/collectionwidget.h
+    desktop-remote/colorswitcher.h
+    desktop-remote/connectionwidget.h
+    desktop-remote/delayedstartdialog.h
+    desktop-remote/delayedstartnotification.h
+    desktop-remote/dynamicmodeparametersdialog.h
+    desktop-remote/historymodel.h
+    desktop-remote/loginwidget.h
+    desktop-remote/mainwidget.h
+    desktop-remote/mainwindow.h
+    desktop-remote/notificationbar.h
+    desktop-remote/playerhistorymodel.h
+    desktop-remote/precisetrackprogressmonitor.h
+    desktop-remote/queuemediator.h
+    desktop-remote/queuemodel.h
+    desktop-remote/scoreformatdelegate.h
+    desktop-remote/scrobblingauthenticationdialog.h
+    desktop-remote/trackinfodialog.h
+    desktop-remote/trackprogresswidget.h
+    desktop-remote/useraccountcreationwidget.h
+    desktop-remote/userforstatisticsdisplay.h
+    desktop-remote/userpickerwidget.h
+    desktop-remote/userscrobblingdialog.h
+    desktop-remote/waitingspinnerwidget.h
 )
-set(PMP_GUI_REMOTE_UIS
-    gui-remote/collectionwidget.ui
-    gui-remote/connectionwidget.ui
-    gui-remote/delayedstartdialog.ui
-    gui-remote/dynamicmodeparametersdialog.ui
-    gui-remote/loginwidget.ui
-    gui-remote/mainwidget.ui
-    gui-remote/notificationbar.ui
-    gui-remote/scrobblingauthenticationdialog.ui
-    gui-remote/trackinfodialog.ui
-    gui-remote/useraccountcreationwidget.ui
-    gui-remote/userpickerwidget.ui
-    gui-remote/userscrobblingdialog.ui
+set(PMP_DESKTOP_REMOTE_UIS
+    desktop-remote/collectionwidget.ui
+    desktop-remote/connectionwidget.ui
+    desktop-remote/delayedstartdialog.ui
+    desktop-remote/dynamicmodeparametersdialog.ui
+    desktop-remote/loginwidget.ui
+    desktop-remote/mainwidget.ui
+    desktop-remote/notificationbar.ui
+    desktop-remote/scrobblingauthenticationdialog.ui
+    desktop-remote/trackinfodialog.ui
+    desktop-remote/useraccountcreationwidget.ui
+    desktop-remote/userpickerwidget.ui
+    desktop-remote/userscrobblingdialog.ui
 )
-set(PMP_GUI_REMOTE_RESOURCES
-    gui-remote/mainwindow.qrc
+set(PMP_DESKTOP_REMOTE_RESOURCES
+    desktop-remote/mainwindow.qrc
 )
 
 qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
 qt5_wrap_cpp(PMP_CLIENT_MOCS ${PMP_CLIENT_HEADERS})
 qt5_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
 qt5_wrap_cpp(PMP_CMD_REMOTE_MOCS ${PMP_CMD_REMOTE_HEADERS})
-qt5_wrap_cpp(PMP_GUI_REMOTE_MOCS ${PMP_GUI_REMOTE_HEADERS})
-qt5_wrap_ui(PMP_GUI_REMOTE_UICS ${PMP_GUI_REMOTE_UIS})
-qt5_add_resources(PMP_GUI_REMOTE_QRCS ${PMP_GUI_REMOTE_RESOURCES})
+qt5_wrap_cpp(PMP_DESKTOP_REMOTE_MOCS ${PMP_DESKTOP_REMOTE_HEADERS})
+qt5_wrap_ui(PMP_DESKTOP_REMOTE_UICS ${PMP_DESKTOP_REMOTE_UIS})
+qt5_add_resources(PMP_DESKTOP_REMOTE_QRCS ${PMP_DESKTOP_REMOTE_RESOURCES})
 
 configure_file(common/version.h.in common/version.h)
 
@@ -296,11 +296,11 @@ target_link_libraries(PmpClient Qt5::Core Qt5::Network)
 add_library(PmpCmdRemote OBJECT ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS})
 target_link_libraries(PmpCmdRemote Qt5::Core Qt5::Network)
 
-add_library(PmpGuiRemote OBJECT
-    ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
-    ${PMP_GUI_REMOTE_UICS} ${PMP_GUI_REMOTE_QRCS}
+add_library(PmpDesktopRemote OBJECT
+    ${PMP_DESKTOP_REMOTE_SOURCES} ${PMP_DESKTOP_REMOTE_MOCS}
+    ${PMP_DESKTOP_REMOTE_UICS} ${PMP_DESKTOP_REMOTE_QRCS}
 )
-target_link_libraries(PmpGuiRemote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
+target_link_libraries(PmpDesktopRemote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
 
 add_library(PmpServer OBJECT ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS})
 target_link_libraries(PmpServer Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
@@ -339,17 +339,17 @@ target_link_libraries(PMP-Cmd-Remote
 )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set (GUI_REMOTE_WIN32_RESOURCES gui-remote/winres.rc)
+    set (PMP_DESKTOP_REMOTE_WIN32_RESOURCES desktop-remote/winres.rc)
 endif()
 
-add_executable(PMP-GUI-Remote
+add_executable(PMP-Desktop-Remote
     ${PMP_WIN32_FLAG}
-    ${GUI_REMOTE_WIN32_RESOURCES}
-    gui-remote/gui-remote-main.cpp
+    ${PMP_DESKTOP_REMOTE_WIN32_RESOURCES}
+    desktop-remote/desktop-remote-main.cpp
 
 )
-target_link_libraries(PMP-GUI-Remote
-    $<TARGET_OBJECTS:PmpGuiRemote>
+target_link_libraries(PMP-Desktop-Remote
+    $<TARGET_OBJECTS:PmpDesktopRemote>
     $<TARGET_OBJECTS:PmpClient>
     $<TARGET_OBJECTS:PmpCommon>
 )
@@ -359,11 +359,11 @@ target_link_libraries(PMP-HashTool Qt5::Core)
 target_link_libraries(quicktest Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
 target_link_libraries(PMP-Server Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
 target_link_libraries(PMP-Cmd-Remote Qt5::Core Qt5::Network)
-target_link_libraries(PMP-GUI-Remote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
+target_link_libraries(PMP-Desktop-Remote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
 
 # Link executables to TagLib
 target_link_libraries(PMP-HashTool ${TAGLIB_LIBRARIES})
 target_link_libraries(quicktest ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-Server ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-Cmd-Remote ${TAGLIB_LIBRARIES})
-target_link_libraries(PMP-GUI-Remote ${TAGLIB_LIBRARIES})
+target_link_libraries(PMP-Desktop-Remote ${TAGLIB_LIBRARIES})

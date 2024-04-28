@@ -21,18 +21,18 @@ KNOWN PROBLEMS
 
  * for some tracks we get the wrong length (caused by length estimation in TagLib)
  * when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
- * GUI remote: tracks can be dragged using the right mouse button (not just the left button)
- * GUI remote: tracks without title/artist info are listed as a blank line in the music collection table
+ * desktop remote: tracks can be dragged using the right mouse button (not just the left button)
+ * desktop remote: tracks without title/artist info are listed as a blank line in the music collection table
  * hash calculation does not skip padding bytes
  * preloaded tracks are sometimes deleted before they are used because they are old
  * player fails to play preloaded entries of which the file has been deleted already
- * GUI remote: searching the music collection for "e" does not return results having "ë"
+ * desktop remote: searching the music collection for "e" does not return results having "ë"
  * a "skip" operation should not affect the current track's score if performed by another user
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
- * GUI remote: multimedia keys don't work when a popup dialog is open (like track info)
+ * desktop remote: multimedia keys don't work when a popup dialog is open (like track info)
  * track title/artist/length update in the music collection does not trigger an update of queue entries referencing that track
  * doing a "skip" often creates a burst of noise; need to wait until the old track has stopped before starting the next one
- * GUI remote: if connection breaks during playback, "position" keeps increasing
+ * desktop remote: if connection breaks during playback, "position" keeps increasing
  * server does not always take an updated title/artist/album into account when a track is changed on disk
  * scrobbling: "now playing" is triggered by the backoff mechanism after the track is already finished
  * scrobbling: race condition after track finished playing, between history insert and check for something to scrobble
@@ -40,7 +40,7 @@ KNOWN PROBLEMS
 
 PERFORMANCE ISSUES
 
- * GUI remote: searching/filtering in the music collection can be slow
+ * desktop remote: searching/filtering in the music collection can be slow
 
 
 IDEAS
@@ -111,7 +111,6 @@ IDEAS
  * command-line remote: extend the "trackstats" command to accept queue IDs
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
  * hash tool: by default only output the hash of the file, no other information
- * rename "GUI Remote" to "Desktop Remote"
  * detect different rips of the same track/album and treat them as one, with unified scores
 
 
@@ -119,7 +118,7 @@ USER FRIENDLINESS
 
  * provide 'forgot password' functionality to enable a user to reset their password
  ** work around the need for a full indexation at server startup
- * GUI remote: after login it should show what server it is connected to somehow
+ * desktop remote: after login it should show what server it is connected to somehow
  * display the title/artist of the track currently playing in the window title of the remote
 
 
@@ -127,7 +126,7 @@ POLISHING
 
  * when skipping the current track after a long-time pause (say, more than 10 min), do not let the skip affect scoring of the paused track
  * be more strict in determining the 'end time' for the history of a track that was played; time when paused should not count
- * GUI remote: history/queue/collection: hide selection when losing focus
+ * desktop remote: history/queue/collection: hide selection when losing focus
 
 
 TECHNICAL IDEAS

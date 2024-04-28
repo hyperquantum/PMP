@@ -114,7 +114,7 @@ usage:
     barrier. The barrier will remain in the queue until it is deleted by
     the user.
     The hash of a track can be obtained with the 'track info' dialog in the
-    GUI Remote or with the command-line hash tool.
+    Desktop Remote or with the command-line hash tool.
 
   'scrobbling' command:
     scrobbling enable <provider>: enable scrobbling for the current user
@@ -181,7 +181,7 @@ usage:
     Retrieves title, artist, album, album artist, length and availability
     for the track that was specified as an argument.
     The hash of a track can be obtained with the 'track info' dialog in the
-    GUI Remote or with the command-line hash tool.
+    Desktop Remote or with the command-line hash tool.
 
   'trackstats' command:
     trackstats <hash>: get track statistics for the current user
@@ -189,7 +189,7 @@ usage:
     Retrieves 'last heard' and 'score' for the current user and the track
     that was specified as an argument.
     The hash of a track can be obtained with the 'track info' dialog in the
-    GUI Remote or with the command-line hash tool.
+    Desktop Remote or with the command-line hash tool.
 
   'trackhistory' command:
     trackhistory <hash>: get personal listening history for the current user
@@ -197,7 +197,7 @@ usage:
     Retrieves the recent listening history for the current user and the
     track that was specified as an argument.
     The hash of a track can be obtained with the 'track info' dialog in the
-    GUI Remote or with the command-line hash tool.
+    Desktop Remote or with the command-line hash tool.
 
   NOTICE:
     Some commands require a fairly recent version of the PMP server in order

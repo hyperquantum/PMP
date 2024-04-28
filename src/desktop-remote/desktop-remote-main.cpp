@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationDomain(PMP_ORGANIZATION_DOMAIN);
 
     Logging::enableTextFileOnlyLogging();
-    Logging::setFilenameTag("GR"); /* GR = GUI-Remote */
+    Logging::setFilenameTag("DR"); /* DR = Desktop-Remote */
     Logging::cleanupOldLogfiles();
     /* TODO: do a log cleanup regularly, because the user might keep the client running
      *       for several days without closing it. */

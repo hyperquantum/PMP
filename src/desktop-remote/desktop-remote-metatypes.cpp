@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,22 +17,23 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "collectiontablemodel.h"
+#include "trackjudge.h"
 
-namespace PMP {
-
+namespace PMP
+{
     /** Utility object to automatically do the qRegisterMetaType calls at program
      *  startup */
-    class GuiRemoteMetatypesInit {
+    class DesktopRemoteMetatypesInit
+    {
     protected:
-        GuiRemoteMetatypesInit()
+        DesktopRemoteMetatypesInit()
         {
             qRegisterMetaType<PMP::TrackCriterium>();
         }
 
     private:
-        static GuiRemoteMetatypesInit GlobalVariable;
+        static DesktopRemoteMetatypesInit GlobalVariable;
     };
 
-    GuiRemoteMetatypesInit GuiRemoteMetatypesInit::GlobalVariable;
+    DesktopRemoteMetatypesInit DesktopRemoteMetatypesInit::GlobalVariable;
 }
