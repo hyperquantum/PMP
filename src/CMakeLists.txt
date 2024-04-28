@@ -296,11 +296,11 @@ target_link_libraries(PmpClient Qt5::Core Qt5::Network)
 add_library(PmpCmdRemote OBJECT ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS})
 target_link_libraries(PmpCmdRemote Qt5::Core Qt5::Network)
 
-add_library(PmpGuiRemote OBJECT
+add_library(PmpDesktopRemote OBJECT
     ${PMP_GUI_REMOTE_SOURCES} ${PMP_GUI_REMOTE_MOCS}
     ${PMP_GUI_REMOTE_UICS} ${PMP_GUI_REMOTE_QRCS}
 )
-target_link_libraries(PmpGuiRemote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
+target_link_libraries(PmpDesktopRemote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
 
 add_library(PmpServer OBJECT ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS})
 target_link_libraries(PmpServer Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
@@ -349,7 +349,7 @@ add_executable(PMP-Desktop-Remote
 
 )
 target_link_libraries(PMP-Desktop-Remote
-    $<TARGET_OBJECTS:PmpGuiRemote>
+    $<TARGET_OBJECTS:PmpDesktopRemote>
     $<TARGET_OBJECTS:PmpClient>
     $<TARGET_OBJECTS:PmpCommon>
 )

@@ -192,7 +192,7 @@ qt5_wrap_cpp(PMP_TestSortedCollectionTableModel_MOCS test_sortedcollectiontablem
 add_executable(test_sortedcollectiontablemodel test_sortedcollectiontablemodel.cpp
     ${PMP_TestSortedCollectionTableModel_MOCS}
 )
-target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpGuiRemote>)
+target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpDesktopRemote>)
 target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpClient>)
 target_link_libraries(test_sortedcollectiontablemodel $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(test_sortedcollectiontablemodel Qt5::Gui Qt5::Widgets)
