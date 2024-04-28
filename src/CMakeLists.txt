@@ -342,13 +342,13 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
     set (GUI_REMOTE_WIN32_RESOURCES desktop-remote/winres.rc)
 endif()
 
-add_executable(PMP-GUI-Remote
+add_executable(PMP-Desktop-Remote
     ${PMP_WIN32_FLAG}
     ${GUI_REMOTE_WIN32_RESOURCES}
     desktop-remote/desktop-remote-main.cpp
 
 )
-target_link_libraries(PMP-GUI-Remote
+target_link_libraries(PMP-Desktop-Remote
     $<TARGET_OBJECTS:PmpGuiRemote>
     $<TARGET_OBJECTS:PmpClient>
     $<TARGET_OBJECTS:PmpCommon>
@@ -359,11 +359,11 @@ target_link_libraries(PMP-HashTool Qt5::Core)
 target_link_libraries(quicktest Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
 target_link_libraries(PMP-Server Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
 target_link_libraries(PMP-Cmd-Remote Qt5::Core Qt5::Network)
-target_link_libraries(PMP-GUI-Remote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
+target_link_libraries(PMP-Desktop-Remote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
 
 # Link executables to TagLib
 target_link_libraries(PMP-HashTool ${TAGLIB_LIBRARIES})
 target_link_libraries(quicktest ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-Server ${TAGLIB_LIBRARIES})
 target_link_libraries(PMP-Cmd-Remote ${TAGLIB_LIBRARIES})
-target_link_libraries(PMP-GUI-Remote ${TAGLIB_LIBRARIES})
+target_link_libraries(PMP-Desktop-Remote ${TAGLIB_LIBRARIES})
