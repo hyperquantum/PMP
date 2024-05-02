@@ -218,7 +218,7 @@
           <widget class="QPushButton" name="playButton">
            <property name="icon">
             <iconset resource="mainwindow.qrc">
-             <normaloff>:/mediabuttons/Play.png</normaloff>:/mediabuttons/Play.png</iconset>
+             <normaloff>:/mediabuttons/play.svg</normaloff>:/mediabuttons/play.svg</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -232,7 +232,7 @@
           <widget class="QPushButton" name="pauseButton">
            <property name="icon">
             <iconset resource="mainwindow.qrc">
-             <normaloff>:/mediabuttons/Pause.png</normaloff>:/mediabuttons/Pause.png</iconset>
+             <normaloff>:/mediabuttons/pause.svg</normaloff>:/mediabuttons/pause.svg</iconset>
            </property>
            <property name="iconSize">
             <size>
@@ -246,7 +246,7 @@
           <widget class="QPushButton" name="skipButton">
            <property name="icon">
             <iconset resource="mainwindow.qrc">
-             <normaloff>:/mediabuttons/Skip.png</normaloff>:/mediabuttons/Skip.png</iconset>
+             <normaloff>:/mediabuttons/skip.svg</normaloff>:/mediabuttons/skip.svg</iconset>
            </property>
            <property name="iconSize">
             <size>

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -40,7 +40,7 @@
 #include "trackinfodialog.h"
 #include "userforstatisticsdisplay.h"
 
-#include <algorithm>
+#include <cmath>
 
 #include <QtDebug>
 #include <QKeyEvent>
@@ -72,6 +72,13 @@ namespace PMP
 
         auto trackTimeLabel = ClickableLabel::replace(_ui->positionLabel);
         auto trackTimeValueLabel = ClickableLabel::replace(_ui->positionValueLabel);
+
+        QFontMetricsF metrics { font() };
+        int h = std::round(metrics.height() * 2);
+        QSize buttonSize(h, h);
+        _ui->playButton->setIconSize(buttonSize);
+        _ui->pauseButton->setIconSize(buttonSize);
+        _ui->skipButton->setIconSize(buttonSize);
 
         connect(trackTimeLabel, &ClickableLabel::clicked,
                 this, &MainWidget::switchTrackTimeDisplayMode);

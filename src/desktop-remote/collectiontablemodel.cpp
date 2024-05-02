@@ -787,10 +787,10 @@ namespace PMP
                     {
                         switch (_playerState) {
                             case PlayerState::Playing:
-                                return QIcon(":/mediabuttons/Play.png");
+                                return QIcon(":/mediabuttons/play.svg");
 
                             case PlayerState::Paused:
-                                return QIcon(":/mediabuttons/Pause.png");
+                                return QIcon(":/mediabuttons/pause.svg");
 
                             default:
                                 break;
