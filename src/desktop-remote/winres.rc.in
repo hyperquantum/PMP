@@ -1,0 +1,25 @@
+#include "windows.h"
+
+IDI_ICON1    ICON    "${CMAKE_CURRENT_SOURCE_DIR}/app-icon/app-icon.ico"
+
+VS_VERSION_INFO   VERSIONINFO
+FILEVERSION       ${PMP_VERSION_MAJOR},${PMP_VERSION_MINOR},${PMP_VERSION_PATCH}
+PRODUCTVERSION    ${PMP_VERSION_MAJOR},${PMP_VERSION_MINOR},${PMP_VERSION_PATCH}
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904B0"
+        {
+            VALUE "CompanyName",        "${PMP_ORGANIZATION_NAME}"
+            VALUE "FileDescription",    "${PMP_PRODUCT_NAME} - Desktop Remote"
+            VALUE "FileVersion",        "${PMP_VERSION_DISPLAY}"
+            VALUE "OriginalFilename",   "PMP-Desktop-Remote.exe"
+            VALUE "ProductName",        "${PMP_PRODUCT_NAME} - Desktop Remote"
+            VALUE "ProductVersion",     "${PMP_VERSION_DISPLAY}"
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x0409, 1200
+    }
+}

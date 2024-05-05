@@ -339,14 +339,14 @@ target_link_libraries(PMP-Cmd-Remote
 )
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set (PMP_DESKTOP_REMOTE_WIN32_RESOURCES desktop-remote/winres.rc)
+    configure_file(desktop-remote/winres.rc.in desktop-remote/winres.rc)
+    set(PMP_DESKTOP_REMOTE_WIN32_RESOURCES desktop-remote/winres.rc)
 endif()
 
 add_executable(PMP-Desktop-Remote
     ${PMP_WIN32_FLAG}
     ${PMP_DESKTOP_REMOTE_WIN32_RESOURCES}
     desktop-remote/desktop-remote-main.cpp
-
 )
 target_link_libraries(PMP-Desktop-Remote
     $<TARGET_OBJECTS:PmpDesktopRemote>
