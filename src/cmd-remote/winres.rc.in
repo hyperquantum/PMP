@@ -1,7 +1,5 @@
 #include "windows.h"
 
-IDI_ICON1    ICON    "${CMAKE_CURRENT_SOURCE_DIR}/app-icon/app-icon.ico"
-
 VS_VERSION_INFO   VERSIONINFO
 FILEVERSION       ${PMP_VERSION_MAJOR},${PMP_VERSION_MINOR},${PMP_VERSION_PATCH}
 PRODUCTVERSION    ${PMP_VERSION_MAJOR},${PMP_VERSION_MINOR},${PMP_VERSION_PATCH}
@@ -11,10 +9,10 @@ PRODUCTVERSION    ${PMP_VERSION_MAJOR},${PMP_VERSION_MINOR},${PMP_VERSION_PATCH}
         BLOCK "040904B0"
         {
             VALUE "CompanyName",        "${PMP_ORGANIZATION_NAME}"
-            VALUE "FileDescription",    "${PMP_PRODUCT_NAME} - Desktop Remote"
+            VALUE "FileDescription",    "${PMP_PRODUCT_NAME} - Command-line Remote"
             VALUE "FileVersion",        "${PMP_VERSION_DISPLAY}"
-            VALUE "OriginalFilename",   "${PMP_DESKTOP_REMOTE_TARGETNAME}.exe"
-            VALUE "ProductName",        "${PMP_PRODUCT_NAME} - Desktop Remote"
+            VALUE "OriginalFilename",   "${PMP_CMD_REMOTE_TARGETNAME}.exe"
+            VALUE "ProductName",        "${PMP_PRODUCT_NAME} - Command-line Remote"
             VALUE "ProductVersion",     "${PMP_VERSION_DISPLAY}"
         }
     }
