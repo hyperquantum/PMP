@@ -1,0 +1,23 @@
+#include "windows.h"
+
+VS_VERSION_INFO   VERSIONINFO
+FILEVERSION       ${PMP_VERSION_MAJOR},${PMP_VERSION_MINOR},${PMP_VERSION_PATCH}
+PRODUCTVERSION    ${PMP_VERSION_MAJOR},${PMP_VERSION_MINOR},${PMP_VERSION_PATCH}
+{
+    BLOCK "StringFileInfo"
+    {
+        BLOCK "040904B0"
+        {
+            VALUE "CompanyName",        "${PMP_ORGANIZATION_NAME}"
+            VALUE "FileDescription",    "${PMP_PRODUCT_NAME} - Server"
+            VALUE "FileVersion",        "${PMP_VERSION_DISPLAY}"
+            VALUE "OriginalFilename",   "${PMP_SERVER_TARGETNAME}.exe"
+            VALUE "ProductName",        "${PMP_PRODUCT_NAME} - Server"
+            VALUE "ProductVersion",     "${PMP_VERSION_DISPLAY}"
+        }
+    }
+    BLOCK "VarFileInfo"
+    {
+        VALUE "Translation", 0x0409, 1200
+    }
+}

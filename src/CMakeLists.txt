@@ -305,65 +305,102 @@ target_link_libraries(PmpDesktopRemote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widg
 add_library(PmpServer OBJECT ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS})
 target_link_libraries(PmpServer Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
 
-add_executable(PMP-HashTool
+set(PMP_HASHTOOL_TARGETNAME PMP-HashTool)
+set(PMP_QUICKTEST_TARGETNAME quicktest)
+set(PMP_SERVER_TARGETNAME PMP-Server)
+set(PMP_CMD_REMOTE_TARGETNAME PMP-Cmd-Remote)
+set(PMP_DESKTOP_REMOTE_TARGETNAME PMP-Desktop-Remote)
+
+if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
+    configure_file(tools/hashtool-winres.rc.in tools/hashtool-winres.rc)
+    set(PMP_HASHTOOL_WIN32_RESOURCES tools/hashtool-winres.rc)
+
+    configure_file(server/winres.rc.in server/winres.rc)
+    set(PMP_SERVER_WIN32_RESOURCES server/winres.rc)
+
+    configure_file(cmd-remote/winres.rc.in cmd-remote/winres.rc)
+    set(PMP_CMD_REMOTE_WIN32_RESOURCES cmd-remote/winres.rc)
+
+    configure_file(desktop-remote/winres.rc.in desktop-remote/winres.rc)
+    set(PMP_DESKTOP_REMOTE_WIN32_RESOURCES desktop-remote/winres.rc)
+endif()
+
+add_executable(${PMP_HASHTOOL_TARGETNAME}
+    ${PMP_HASHTOOL_WIN32_RESOURCES}
     tools/hash-main.cpp
 )
-target_link_libraries(PMP-HashTool
-    $<TARGET_OBJECTS:PmpCommon>
-)
-
-add_executable(quicktest
+add_executable(${PMP_QUICKTEST_TARGETNAME}
     tools/quicktest.cpp
 )
-target_link_libraries(quicktest
+add_executable(${PMP_SERVER_TARGETNAME}
+    ${PMP_SERVER_WIN32_RESOURCES}
+    server/server-main.cpp
+)
+add_executable(${PMP_CMD_REMOTE_TARGETNAME}
+    ${PMP_CMD_REMOTE_WIN32_RESOURCES}
+    cmd-remote/cmd-remote-main.cpp
+)
+add_executable(${PMP_DESKTOP_REMOTE_TARGETNAME}
+    ${PMP_WIN32_FLAG}
+    ${PMP_DESKTOP_REMOTE_WIN32_RESOURCES}
+    desktop-remote/desktop-remote-main.cpp
+)
+
+target_link_libraries(${PMP_HASHTOOL_TARGETNAME}
+    $<TARGET_OBJECTS:PmpCommon>
+)
+target_link_libraries(${PMP_QUICKTEST_TARGETNAME}
     $<TARGET_OBJECTS:PmpServer>
     $<TARGET_OBJECTS:PmpClient>
     $<TARGET_OBJECTS:PmpCommon>
 )
-
-add_executable(PMP-Server
-    server/server-main.cpp
-)
-target_link_libraries(PMP-Server
+target_link_libraries(${PMP_SERVER_TARGETNAME}
     $<TARGET_OBJECTS:PmpServer>
     $<TARGET_OBJECTS:PmpCommon>
 )
-
-add_executable(PMP-Cmd-Remote
-    cmd-remote/cmd-remote-main.cpp
-)
-target_link_libraries(PMP-Cmd-Remote
+target_link_libraries(${PMP_CMD_REMOTE_TARGETNAME}
     $<TARGET_OBJECTS:PmpCmdRemote>
     $<TARGET_OBJECTS:PmpClient>
     $<TARGET_OBJECTS:PmpCommon>
 )
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Windows")
-    set (PMP_DESKTOP_REMOTE_WIN32_RESOURCES desktop-remote/winres.rc)
-endif()
-
-add_executable(PMP-Desktop-Remote
-    ${PMP_WIN32_FLAG}
-    ${PMP_DESKTOP_REMOTE_WIN32_RESOURCES}
-    desktop-remote/desktop-remote-main.cpp
-
-)
-target_link_libraries(PMP-Desktop-Remote
+target_link_libraries(${PMP_DESKTOP_REMOTE_TARGETNAME}
     $<TARGET_OBJECTS:PmpDesktopRemote>
     $<TARGET_OBJECTS:PmpClient>
     $<TARGET_OBJECTS:PmpCommon>
 )
 
 # Qt dependencies for each executable
-target_link_libraries(PMP-HashTool Qt5::Core)
-target_link_libraries(quicktest Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
-target_link_libraries(PMP-Server Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
-target_link_libraries(PMP-Cmd-Remote Qt5::Core Qt5::Network)
-target_link_libraries(PMP-Desktop-Remote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
+target_link_libraries(${PMP_HASHTOOL_TARGETNAME}
+    Qt5::Core
+)
+target_link_libraries(${PMP_QUICKTEST_TARGETNAME}
+    Qt5::Core
+    Qt5::Multimedia
+    Qt5::Network
+    Qt5::Sql
+    Qt5::Xml
+)
+target_link_libraries(${PMP_SERVER_TARGETNAME}
+    Qt5::Core
+    Qt5::Multimedia
+    Qt5::Network
+    Qt5::Sql
+    Qt5::Xml
+)
+target_link_libraries(${PMP_CMD_REMOTE_TARGETNAME}
+    Qt5::Core
+    Qt5::Network
+)
+target_link_libraries(${PMP_DESKTOP_REMOTE_TARGETNAME}
+    Qt5::Core
+    Qt5::Gui
+    Qt5::Network
+    Qt5::Widgets
+)
 
 # Link executables to TagLib
-target_link_libraries(PMP-HashTool ${TAGLIB_LIBRARIES})
-target_link_libraries(quicktest ${TAGLIB_LIBRARIES})
-target_link_libraries(PMP-Server ${TAGLIB_LIBRARIES})
-target_link_libraries(PMP-Cmd-Remote ${TAGLIB_LIBRARIES})
-target_link_libraries(PMP-Desktop-Remote ${TAGLIB_LIBRARIES})
+target_link_libraries(${PMP_HASHTOOL_TARGETNAME} ${TAGLIB_LIBRARIES})
+target_link_libraries(${PMP_QUICKTEST_TARGETNAME} ${TAGLIB_LIBRARIES})
+target_link_libraries(${PMP_SERVER_TARGETNAME} ${TAGLIB_LIBRARIES})
+target_link_libraries(${PMP_CMD_REMOTE_TARGETNAME} ${TAGLIB_LIBRARIES})
+target_link_libraries(${PMP_DESKTOP_REMOTE_TARGETNAME} ${TAGLIB_LIBRARIES})
