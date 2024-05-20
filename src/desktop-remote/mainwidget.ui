@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>616</width>
+    <width>670</width>
     <height>637</height>
    </rect>
   </property>
@@ -20,18 +20,6 @@
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_3">
-   <property name="leftMargin">
-    <number>6</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>6</number>
-   </property>
-   <property name="bottomMargin">
-    <number>0</number>
-   </property>
    <item>
     <widget class="QSplitter" name="splitter">
      <property name="orientation">
@@ -78,142 +66,73 @@
         </layout>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="currentPositionAndPersonalModeLayout">
+        <layout class="QHBoxLayout" name="playbackControlsAndCurrentTrackInfoLayout">
          <item>
-          <widget class="QPushButton" name="trackInfoButton">
-           <property name="text">
-            <string>Track info</string>
-           </property>
+          <widget class="QFrame" name="frame_4">
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <layout class="QFormLayout" name="formLayout">
+              <property name="fieldGrowthPolicy">
+               <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
+              </property>
+              <item row="0" column="0">
+               <widget class="QLabel" name="lengthLabel">
+                <property name="text">
+                 <string>Length:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QLabel" name="lengthValueLabel">
+                <property name="text">
+                 <string>unknown</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="positionLabel">
+                <property name="text">
+                 <string>Position:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QLabel" name="positionValueLabel">
+                <property name="text">
+                 <string>unknown</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_6">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
           </widget>
          </item>
-         <item>
-          <layout class="QFormLayout" name="formLayout">
-           <property name="fieldGrowthPolicy">
-            <enum>QFormLayout::AllNonFixedFieldsGrow</enum>
-           </property>
-           <item row="0" column="0">
-            <widget class="QLabel" name="lengthLabel">
-             <property name="text">
-              <string>Length:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QLabel" name="lengthValueLabel">
-             <property name="text">
-              <string>unknown</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="positionLabel">
-             <property name="text">
-              <string>Position:</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLabel" name="positionValueLabel">
-             <property name="text">
-              <string>unknown</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer_6">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <layout class="QVBoxLayout" name="verticalLayout">
-           <item>
-            <widget class="QLabel" name="playingModeLabel">
-             <property name="text">
-              <string>unknown mode</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="userPlayingForLabel">
-             <property name="text">
-              <string>Username</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <widget class="QPushButton" name="toPersonalModeButton">
-           <property name="text">
-            <string>Kevin</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="toPublicModeButton">
-           <property name="text">
-            <string>Public</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="displayStatisticsLayout">
-         <item>
-          <spacer name="horizontalSpacer_7">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-         <item>
-          <widget class="QLabel" name="displayStatisticsLabel">
-           <property name="text">
-            <string>Display:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="displayPersonalStatisticsRadioButton">
-           <property name="text">
-            <string>personal statistics</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="displayPublicStatisticsRadioButton">
-           <property name="text">
-            <string>public statistics</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="playbackAndVolumeControlsLayout">
          <item>
           <widget class="QPushButton" name="playButton">
            <property name="icon">
@@ -257,14 +176,101 @@
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="playStateLabel">
+          <widget class="QFrame" name="frame_3">
+           <layout class="QHBoxLayout" name="horizontalLayout_3">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="playStateLabel">
+              <property name="text">
+               <string>playing/paused</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_8">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="trackInfoButton">
+              <property name="text">
+               <string>Track info</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="personalPublicModeControlsLayout">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <widget class="QLabel" name="playingModeLabel">
+             <property name="text">
+              <string>unknown mode</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="userPlayingForLabel">
+             <property name="text">
+              <string>Username</string>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QPushButton" name="toPersonalModeButton">
            <property name="text">
-            <string>playing/paused</string>
+            <string>Kevin</string>
            </property>
           </widget>
          </item>
          <item>
-          <spacer name="horizontalSpacer_3">
+          <widget class="QPushButton" name="toPublicModeButton">
+           <property name="text">
+            <string>Public</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_7">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
@@ -277,46 +283,52 @@
           </spacer>
          </item>
          <item>
-          <widget class="QLabel" name="volumeLabel">
+          <widget class="QLabel" name="displayStatisticsLabel">
            <property name="text">
-            <string>Volume:</string>
+            <string>Display:</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QLabel" name="volumeValueLabel">
+          <widget class="QRadioButton" name="displayPersonalStatisticsRadioButton">
            <property name="text">
-            <string>100</string>
+            <string>personal statistics</string>
            </property>
           </widget>
          </item>
          <item>
-          <widget class="QToolButton" name="volumeDecreaseButton">
-           <property name="maximumSize">
-            <size>
-             <width>75</width>
-             <height>16777215</height>
-            </size>
-           </property>
+          <widget class="QRadioButton" name="displayPublicStatisticsRadioButton">
            <property name="text">
-            <string>-5</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QToolButton" name="volumeIncreaseButton">
-           <property name="text">
-            <string>+5</string>
+            <string>public statistics</string>
            </property>
           </widget>
          </item>
         </layout>
        </item>
        <item>
+        <widget class="Line" name="line_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
         <layout class="QHBoxLayout" name="queueTopControlsLayout">
          <item>
           <widget class="QFrame" name="horizontalFrame">
            <layout class="QHBoxLayout" name="horizontalLayout_5">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
             <item>
              <widget class="QPushButton" name="insertBreakButton">
               <property name="text">
@@ -331,8 +343,8 @@
               </property>
               <property name="sizeHint" stdset="0">
                <size>
-                <width>40</width>
-                <height>20</height>
+                <width>0</width>
+                <height>0</height>
                </size>
               </property>
              </spacer>
@@ -355,17 +367,63 @@
           </widget>
          </item>
          <item>
-          <spacer name="horizontalSpacer_2">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
+          <widget class="QFrame" name="frame">
+           <layout class="QHBoxLayout" name="horizontalLayout">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <spacer name="horizontalSpacer_2">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>108</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="volumeLabel">
+              <property name="text">
+               <string>Volume:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="volumeValueLabel">
+              <property name="text">
+               <string>100</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QToolButton" name="volumeDecreaseButton">
+              <property name="text">
+               <string>-5</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QToolButton" name="volumeIncreaseButton">
+              <property name="text">
+               <string>+5</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
          </item>
         </layout>
        </item>
@@ -388,31 +446,55 @@
        <item>
         <layout class="QHBoxLayout" name="dynamicModeControlsLayout">
          <item>
-          <widget class="QCheckBox" name="dynamicModeCheckBox">
-           <property name="text">
-            <string>dynamic mode</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="dynamicModeParametersButton">
-           <property name="text">
-            <string>Parameters</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <spacer name="horizontalSpacer_4">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
+          <widget class="QFrame" name="frame_2">
+           <property name="minimumSize">
             <size>
-             <width>40</width>
-             <height>20</height>
+             <width>50</width>
+             <height>0</height>
             </size>
            </property>
-          </spacer>
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <property name="leftMargin">
+             <number>0</number>
+            </property>
+            <property name="topMargin">
+             <number>0</number>
+            </property>
+            <property name="rightMargin">
+             <number>0</number>
+            </property>
+            <property name="bottomMargin">
+             <number>0</number>
+            </property>
+            <item>
+             <widget class="QCheckBox" name="dynamicModeCheckBox">
+              <property name="text">
+               <string>dynamic mode</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="dynamicModeParametersButton">
+              <property name="text">
+               <string>Parameters</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="horizontalSpacer_4">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
          </item>
          <item>
           <widget class="QLabel" name="queueLabel">
