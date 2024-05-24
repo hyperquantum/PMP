@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -116,6 +116,16 @@ namespace PMP
                 + ":" + QString::number(min).rightJustified(2, '0')
                 + ":" + QString::number(sec).rightJustified(2, '0')
                 + "." + QString::number(partialSeconds).rightJustified(3, '0');
+    }
+
+    QString Util::undeterminedLongDisplayTimeText()
+    {
+        QString text = "--:--:--.---";
+
+        /* make sure the string is just as wide as a string with actual digits */
+        text.replace("-", UnicodeChars::figureDash);
+
+        return text;
     }
 
     QString Util::getCountdownTimeText(qint64 millisecondsRemaining)

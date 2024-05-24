@@ -44,28 +44,28 @@
      inkscape:groupmode="layer"
      id="layer1">
     <rect
-       style="fill:#000000;stroke-width:1.02105"
+       style="fill:#0ab5ff;stroke-width:1.02105"
        id="rect129"
        width="48"
        height="4"
        x="8"
        y="52" />
     <rect
-       style="fill:#000000;stroke-width:1.03223"
+       style="fill:#0ab5ff;stroke-width:1.03223"
        id="rect131"
        width="48"
        height="4"
        x="8"
        y="38" />
     <rect
-       style="fill:#000000;stroke-width:1.02576"
+       style="fill:#0ab5ff;stroke-width:1.02576"
        id="rect133"
        width="48"
        height="4"
        x="8"
        y="24" />
     <rect
-       style="fill:#000000;stroke-width:0.857029"
+       style="fill:#0ab5ff;stroke-width:0.857029"
        id="rect243"
        width="36"
        height="4"
@@ -73,7 +73,7 @@
        y="10" />
     <path
        sodipodi:type="star"
-       style="fill:#000000"
+       style="fill:#0ab5ff"
        id="path350"
        inkscape:flatsided="false"
        sodipodi:sides="3"

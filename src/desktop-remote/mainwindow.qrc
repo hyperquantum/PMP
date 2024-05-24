@@ -1,9 +1,9 @@
 <RCC>
     <qresource prefix="/mediabuttons">
-        <file>Pause.png</file>
-        <file>Play.png</file>
-        <file>Skip.png</file>
-        <file>queue.svg</file>
+        <file alias="play.svg">icons/play.svg</file>
+        <file alias="pause.svg">icons/pause.svg</file>
+        <file alias="skip.svg">icons/skip.svg</file>
+        <file alias="queue.svg">icons/queue.svg</file>
     </qresource>
     <qresource prefix="/app">
         <file alias="app-icon.svg">../app-icon/app-icon.svg</file>

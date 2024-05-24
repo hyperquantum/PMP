@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -63,19 +63,21 @@ namespace PMP
         Colors(
             /* widgetBorder */ QColor::fromRgb(0x7A, 0x7A, 0x7A),
             /* inactiveItemForeground */ Qt::gray,
-            /* itemBackgroundHighlightColors */ {
-                Qt::yellow,
-                QColor(0xAF, 0xEE, 0xEE), // paleturquoise
-                QColor(0xFF, 0x69, 0xB4)  // hotpink
+            /* itemBackgroundHighlightColors */
+            {
+                QRgb(0xFFFF00),
+                QRgb(0x2EC0FF),
+                QRgb(0xFF8FC7),
+                QRgb(0x00FF67),
             },
-            /* specialQueueItemBackground */ QColor::fromRgb(0xFF, 0xC4, 0x73),
+            /* specialQueueItemBackground */ QRgb(0xFFB866),
             /* specialQueueItemForeground */ Qt::black,
             /* historyErrorItemBackground */ Qt::white,
             /* historyErrorItemForeground */ Qt::red,
-            /* trackProgressWidgetEmpty */ QColor::fromHsl(207, 255, 230),
-            /* trackProgressWidgetBackground */ QColor::fromHsl(207, 255, 230),
-            /* trackProgressWidgetBorder */ QColor::fromHsl(207, 255, 180),
-            /* trackProgressWidgetProgress */ QColor::fromHsl(207, 255, 180),
+            /* trackProgressWidgetEmpty */ QRgb(0xCCF0FF),
+            /* trackProgressWidgetBackground */ QRgb(0xCCF0FF),
+            /* trackProgressWidgetBorder */ QRgb(0x0AB5FF),
+            /* trackProgressWidgetProgress */ QRgb(0x0AB5FF),
             /* linkText */ Qt::darkGreen, // TODO : find a real color
             /* spinnerBackground */ Qt::white,
             /* spinnerLines */ Qt::black
