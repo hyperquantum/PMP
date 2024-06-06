@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,6 +39,7 @@ namespace PMP::Client
     class QueueMonitor;
     class ServerInterface;
     class UserDataFetcher;
+    class VolumeMediator;
 }
 
 namespace PMP
@@ -77,6 +78,7 @@ namespace PMP
         void trackInfoButtonClicked();
         void dynamicModeParametersButtonClicked();
 
+        void volumeSliderValueChanged();
         void volumeChanged();
         void decreaseVolume();
         void increaseVolume();
@@ -103,6 +105,7 @@ namespace PMP
         Client::ServerInterface* _serverInterface;
         PreciseTrackProgressMonitor* _trackProgressMonitor;
         UserForStatisticsDisplay* _userStatisticsDisplay;
+        Client::VolumeMediator* _volumeMediator { nullptr };
         QueueMediator* _queueMediator;
         QueueModel* _queueModel;
         QMenu* _queueContextMenu;

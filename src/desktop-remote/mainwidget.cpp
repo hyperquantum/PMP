@@ -28,6 +28,7 @@
 #include "client/playercontroller.h"
 #include "client/queuecontroller.h"
 #include "client/serverinterface.h"
+#include "client/volumemediator.h"
 
 #include "autopersonalmodeaction.h"
 #include "clickablelabel.h"
@@ -80,10 +81,15 @@ namespace PMP
         _ui->pauseButton->setIconSize(buttonSize);
         _ui->skipButton->setIconSize(buttonSize);
 
+        _ui->volumeSlider->setMinimumSize(QSize(100, 0));
+
         connect(trackTimeLabel, &ClickableLabel::clicked,
                 this, &MainWidget::switchTrackTimeDisplayMode);
         connect(trackTimeValueLabel, &ClickableLabel::clicked,
                 this, &MainWidget::switchTrackTimeDisplayMode);
+
+        connect(_ui->volumeSlider, &QSlider::valueChanged,
+                this, &MainWidget::volumeSliderValueChanged);
     }
 
     MainWidget::~MainWidget()
@@ -116,6 +122,8 @@ namespace PMP
         _serverInterface = serverInterface;
         new AutoPersonalModeAction(serverInterface);
         _userStatisticsDisplay = userForStatisticsDisplay;
+        _volumeMediator = new VolumeMediator(serverInterface,
+                                             &serverInterface->playerController());
         _queueMediator = new QueueMediator(serverInterface,
                                            &serverInterface->queueMonitor(),
                                            serverInterface);
@@ -253,7 +261,7 @@ namespace PMP
         );
 
         connect(
-            playerController, &PlayerController::volumeChanged,
+            _volumeMediator, &VolumeMediator::volumeChanged,
             this, &MainWidget::volumeChanged
         );
         connect(
@@ -850,37 +858,62 @@ namespace PMP
         dialog->open();
     }
 
+    void MainWidget::volumeSliderValueChanged()
+    {
+        int newValue = _ui->volumeSlider->value();
+
+        _volumeMediator->setVolume(newValue);
+    }
+
     void MainWidget::volumeChanged()
     {
-        auto volume = _serverInterface->playerController().volume();
-        _ui->volumeValueLabel->setText(QString::number(volume));
+        auto volumeOrNull = _volumeMediator->volume();
 
-        _ui->volumeDecreaseButton->setEnabled(volume > 0);
-        _ui->volumeIncreaseButton->setEnabled(volume >= 0 && volume < 100);
+        if (volumeOrNull == null)
+        {
+            _ui->volumeValueLabel->setText(tr("??"));
+
+            _ui->volumeSlider->setEnabled(false);
+
+            _ui->volumeDecreaseButton->setEnabled(false);
+            _ui->volumeIncreaseButton->setEnabled(false);
+        }
+        else
+        {
+            auto volume = volumeOrNull.value();
+
+            _ui->volumeValueLabel->setText(QString::number(volume));
+
+            _ui->volumeSlider->setValue(volume);
+            _ui->volumeSlider->setEnabled(true);
+
+            _ui->volumeDecreaseButton->setEnabled(volume > 0);
+            _ui->volumeIncreaseButton->setEnabled(volume < 100);
+        }
     }
 
     void MainWidget::decreaseVolume()
     {
-        auto volume = _serverInterface->playerController().volume();
+        auto volumeOrNull = _volumeMediator->volume();
+        if (volumeOrNull == null)
+            return;
 
-        if (volume > 0)
-        {
-            auto newVolume = volume > 5 ? volume - 5 : 0;
+        auto volume = volumeOrNull.value();
+        auto newVolume = volume > 5 ? volume - 5 : 0;
 
-            _serverInterface->playerController().setVolume(newVolume);
-        }
+        _volumeMediator->setVolume(newVolume);
     }
 
     void MainWidget::increaseVolume()
     {
-        auto volume = _serverInterface->playerController().volume();
+        auto volumeOrNull = _volumeMediator->volume();
+        if (volumeOrNull == null)
+            return;
 
-        if (volume >= 0)
-        {
-            auto newVolume = volume < 95 ? volume + 5 : 100;
+        auto volume = volumeOrNull.value();
+        auto newVolume = volume < 95 ? volume + 5 : 100;
 
-            _serverInterface->playerController().setVolume(newVolume);
-        }
+        _volumeMediator->setVolume(newVolume);
     }
 
     void MainWidget::changeDynamicMode(int checkState)
