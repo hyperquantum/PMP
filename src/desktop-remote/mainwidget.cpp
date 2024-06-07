@@ -264,14 +264,6 @@ namespace PMP
             _volumeMediator, &VolumeMediator::volumeChanged,
             this, &MainWidget::volumeChanged
         );
-        connect(
-            _ui->volumeIncreaseButton, &QToolButton::clicked,
-            this, &MainWidget::increaseVolume
-        );
-        connect(
-            _ui->volumeDecreaseButton, &QToolButton::clicked,
-            this, &MainWidget::decreaseVolume
-        );
 
         connect(
             currentTrackMonitor, &CurrentTrackMonitor::currentTrackChanged,
@@ -874,9 +866,6 @@ namespace PMP
             _ui->volumeValueLabel->setText(tr("??"));
 
             _ui->volumeSlider->setEnabled(false);
-
-            _ui->volumeDecreaseButton->setEnabled(false);
-            _ui->volumeIncreaseButton->setEnabled(false);
         }
         else
         {
@@ -886,34 +875,7 @@ namespace PMP
 
             _ui->volumeSlider->setValue(volume);
             _ui->volumeSlider->setEnabled(true);
-
-            _ui->volumeDecreaseButton->setEnabled(volume > 0);
-            _ui->volumeIncreaseButton->setEnabled(volume < 100);
         }
-    }
-
-    void MainWidget::decreaseVolume()
-    {
-        auto volumeOrNull = _volumeMediator->volume();
-        if (volumeOrNull == null)
-            return;
-
-        auto volume = volumeOrNull.value();
-        auto newVolume = volume > 5 ? volume - 5 : 0;
-
-        _volumeMediator->setVolume(newVolume);
-    }
-
-    void MainWidget::increaseVolume()
-    {
-        auto volumeOrNull = _volumeMediator->volume();
-        if (volumeOrNull == null)
-            return;
-
-        auto volume = volumeOrNull.value();
-        auto newVolume = volume < 95 ? volume + 5 : 100;
-
-        _volumeMediator->setVolume(newVolume);
     }
 
     void MainWidget::changeDynamicMode(int checkState)

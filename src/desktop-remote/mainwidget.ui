@@ -415,20 +415,6 @@
               </property>
              </widget>
             </item>
-            <item>
-             <widget class="QToolButton" name="volumeDecreaseButton">
-              <property name="text">
-               <string>-5</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QToolButton" name="volumeIncreaseButton">
-              <property name="text">
-               <string>+5</string>
-              </property>
-             </widget>
-            </item>
            </layout>
           </widget>
          </item>

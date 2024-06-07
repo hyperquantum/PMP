@@ -80,8 +80,6 @@ namespace PMP
 
         void volumeSliderValueChanged();
         void volumeChanged();
-        void decreaseVolume();
-        void increaseVolume();
 
         void historyContextMenuRequested(const QPoint& position);
         void queueContextMenuRequested(const QPoint& position);
