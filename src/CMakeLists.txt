@@ -63,6 +63,7 @@ set(PMP_CLIENT_SOURCES
     client/serverdiscoverer.cpp
     client/serverinterface.cpp
     client/userdatafetcher.cpp
+    client/volumemediator.cpp
 )
 set(PMP_CLIENT_HEADERS
     client/abstractqueuemonitor.h
@@ -94,6 +95,7 @@ set(PMP_CLIENT_HEADERS
     client/serverdiscoverer.h
     client/serverinterface.h
     client/userdatafetcher.h
+    client/volumemediator.h
 )
 
 set(PMP_SERVER_SOURCES
