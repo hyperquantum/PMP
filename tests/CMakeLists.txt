@@ -28,7 +28,7 @@ target_link_libraries(PMP_hash_test $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(PMP_hash_test Qt5::Core)
 target_link_libraries(PMP_hash_test ${TAGLIB_LIBRARIES})
 
-set(HASHTEST_PATH ${CMAKE_SOURCE_DIR}/testing)
+set(HASHTEST_PATH ${CMAKE_SOURCE_DIR}/tests)
 
 macro(add_hashtest SHORTFILENAME EXPECTEDRESULTARG)
     add_test(
