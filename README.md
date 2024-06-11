@@ -168,9 +168,9 @@ Then install the dependencies of PMP. Open a CMD terminal and run the following 
  (these may take a long time):
 ```cmd
 > cd C:\src\vcpkg
-> vcpkg install taglib --triplet x64-windows
-> vcpkg install qt5-base[mysqlplugin] --triplet x64-windows
-> vcpkg install qt5[essentials] --triplet x64-windows
+> .\vcpkg install taglib --triplet x64-windows
+> .\vcpkg install qt5-base[mysqlplugin] --triplet x64-windows
+> .\vcpkg install qt5[essentials] --triplet x64-windows
 ```
 
 Finally you can build PMP itself. Run the following commands in a CMD terminal. Adjust paths and VS version as needed; change _Debug_ to _Release_ (in both lines) if you prefer:
