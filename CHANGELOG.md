@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 - Scrobbling to Last.fm.
+- Application icon for the desktop remote.
+- Slider for adjusting volume.
 - Waiting spinner shown while loading the music collection.
+- Quick scan for new files.
 - Queue presence indicator in the music collection.
 - Music collection: ability to have three filters at the same time.
+- Music collection: searching for a track by its hash.
 - Music collection: new filter criteria "in the queue" and "not in the queue".
 - Music collection: new filter criterium "no longer available".
 - Music collection: new filter criteria "heard at least once" and "with score".
@@ -19,22 +23,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Music collection: new filter criterium "not heard in the last 3 years".
 - Music collection: new filter criterium "not heard in the last 5 years".
 - Music collection: new filter criteria "without title", "without artist", and "without album".
+- Music collection: fourth highlighting color.
 - Music collection: display count of tracks shown.
 - Support for album artist.
 - User statistics display switch.
+- Track info dialog: can now display track info before downloading the list of all tracks from the server.
+- Track info dialog: overview of personal history of the track.
 - Track info dialog: user for track statistics can now be chosen.
+- Cache table for track scores to avoid the costly calculation of all scores at server startup.
 - Dynamic mode parameters: add "12 weeks" to repetition avoidance setting.
+- 'About PMP' dialog now also displays version information of the server.
+- Executables on Windows now have version information viewable by Windows Explorer.
 - Command-line remote: new commands "serverversion", "personalmode", "publicmode", "dynamicmode" and "status".
-- Command-line remote: new commands "history" and "trackhistory".
+- Command-line remote: new commands "history", "trackhistory", "trackinfo" and "start indexation".
 - Command-line remote: the "insert" command can now insert a track into the queue.
 - Hash tool: print album and album artist.
 - License file is now part of the release archive.
 - Run unit tests in GitHub Actions.
 
 ### Changed
+- GUI remote was renamed to desktop remote.
+- Play/pause/skip icons have been redesigned based on the new application icon.
+- Queue icon color was changed to match the color of the new application icon.
+- Colors were slightly adjusted to match the color of the new application icon.
+- Unknown track length/position is now displayed as "--:--:--.---".
+- Player UI layout has been rearranged.
 - Music collection: change criterium "score ≤ 30" to "score < 30".
 - Music collection: change criterium "length ≤ 1 min." to "length < 1 min."
 - Server will now refuse to insert a track into the queue if the hash is not familiar.
+- User account creation: password score was replaced with password rating.
 - Hash tool: all fields printed are now aligned.
 - Hash tool: log to file instead of console.
 - Console logging: prints date and time instead of just time.
@@ -42,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PMP now requires CMake 3.21 or later.
 
 ### Removed
+- Buttons "-5" and "+5" for adjusting volume.
 - Music collection: remove criterium "not heard in the last 1000 days".
 - Music collection: remove criterium "not heard in the last 365 days".
 
@@ -49,6 +67,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Incorrect hash if APEv2 tag present.
 - Incorrect score and last heard for the public user.
 - Client crash when receiving updated track data.
+- Database queries failing because of broken connection (MySQL error 2013).
 
 ## 0.2.0 - 2022-11-15
 ### Added
