@@ -23,6 +23,7 @@
 
 #include "serversettings.h"
 
+#include <QElapsedTimer>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
@@ -207,68 +208,130 @@ namespace PMP::Server
                                         bool processResult,
                                         std::function<void (QSqlQuery&)> resultFetcher)
     {
-        QSqlQuery q(_db);
-        preparer(q);
-        if (q.exec())
-        {
-            if (processResult) resultFetcher(q);
-            return true;
-        }
-
-        /* something went wrong */
-
-        QSqlError error = q.lastError();
-        qDebug() << "Database: query failed:" << error.text();
-        qDebug() << " error type:" << error.type();
-        qDebug() << " native error code:" << error.nativeErrorCode();
-        qDebug() << " db error:" << error.databaseText();
-        qDebug() << " driver error:" << error.driverText();
-        qDebug() << " sql:" << q.lastQuery();
-
         if (!_db.isOpen())
         {
-            qDebug() << " connection not open!";
+            qWarning() << "DatabaseConnection: connection not open!";
+            return false;
         }
 
         if (!_db.isValid())
         {
-            qDebug() << " connection not valid!";
+            qWarning() << "DatabaseConnection: connection not valid!";
+            return false;
         }
 
-        if (error.nativeErrorCode() != "2006") return false;
+        QSqlQuery q(_db);
 
-        /* An extended sleep period followed by a resume will result in the error "MySQL
-           server has gone away", error code 2006. In that case we try to reopen the
-           connection and re-execute the query. */
+        QElapsedTimer timer;
+        timer.start();
 
-        qDebug() << " will try to re-establish a connection and re-execute the query";
+        if (executeQueryInternal(q, preparer, processResult, resultFetcher))
+            return true;
+
+        /* something went wrong */
+
+        auto elapsedTimeMs = timer.elapsed();
+        logLastSqlError(q);
+        auto error = q.lastError();
+
+        if (!shouldReconnectAndRetryQueryAfter(error, elapsedTimeMs))
+        {
+            qWarning() << "SQL query failed:" << error.text();
+            return false;
+        }
+
+        qDebug() << "DatabaseConnection: will try to reconnect and re-execute the query";
+
+        if (!closeAndReopenConnection())
+        {
+            qWarning() << "Could not retry failed SQL query with error:" << error.text();
+            return false;
+        }
+
+        if (executeQueryInternal(q, preparer, processResult, resultFetcher))
+        {
+            qDebug() << "DatabaseConnection: reconnect and re-execute succeeded!";
+            return true;
+        }
+
+        logLastSqlError(q);
+        qWarning() << "SQL query failed a second time:" << q.lastError().text();
+        return false;
+    }
+
+    bool Database::DatabaseConnection::executeQueryInternal(
+        QSqlQuery& query,
+        std::function<void (QSqlQuery&)> preparer,
+        bool processResult,
+        std::function<void (QSqlQuery&)> resultFetcher)
+    {
+        preparer(query);
+
+        if (!query.exec())
+            return false;
+
+        if (processResult)
+            resultFetcher(query);
+
+        return true;
+    }
+
+    void Database::DatabaseConnection::logLastSqlError(QSqlQuery const& query)
+    {
+        auto sql = query.lastQuery();
+        logSqlError(query.lastError(), sql);
+    }
+
+    void Database::DatabaseConnection::logSqlError(QSqlError const& error,
+                                                   QString const& sql)
+    {
+        qDebug() << "SQL ERROR: error type:" << error.type();
+        qDebug() << "SQL ERROR: native error code:" << error.nativeErrorCode();
+        qDebug() << "SQL ERROR: db error text:" << error.databaseText();
+        qDebug() << "SQL ERROR: driver error text:" << error.driverText();
+        qDebug() << "SQL ERROR: query:" << sql;
+    }
+
+    bool Database::DatabaseConnection::shouldReconnectAndRetryQueryAfter(
+                                                                const QSqlError& error,
+                                                                qint64 elapsedTimeMs)
+    {
+        auto errorCode = error.nativeErrorCode();
+
+        /* If the network connection to the database has been lost due to a period of
+           inactivity, the host going to sleep and waking up, or the mysql server having
+           restarted, executing a query will result in error code 2006 (MySQL server has
+           gone away). In that case we try to reopen the connection to the database and
+           re-execute the query. */
+
+        if (errorCode == "2006") /* "MySQL server has gone away" */
+            return true;
+
+        qDebug() << "DatabaseConnection: elapsed time:" << elapsedTimeMs;
+
+        if (errorCode == "2013" /* "Lost connection to MySQL server during query" */
+            && elapsedTimeMs < 100 /* not because of a timeout */)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    bool Database::DatabaseConnection::closeAndReopenConnection()
+    {
+        qDebug() << "DatabaseConnection: closing and reopening connection";
         _db.close();
         _db.setDatabaseName("pmp");
-        if (!_db.open())
+
+        if (_db.open())
         {
-            qDebug() << "  FAILED.  Connection not reopened.";
-            return false;
+            qDebug() << "DatabaseConnection: reopening successful";
+            return true;
         }
 
-        preparer(q);
-
-        if (!q.exec())
-        {
-            QSqlError error2 = q.lastError();
-            qDebug() << "  FAILED to re-execute query:" << error2.text();
-            qDebug() << "  error type:" << error2.type();
-            qDebug() << "  native error code:" << error2.nativeErrorCode();
-            qDebug() << "  db error:" << error2.databaseText();
-            qDebug() << "  driver error:" << error2.driverText();
-            qDebug() << "  sql:" << q.lastQuery();
-            qDebug() << "  BAILING OUT.";
-            return false;
-        }
-
-        qDebug() << "  SUCCESS!";
-
-        if (processResult) resultFetcher(q);
-        return true;
+        qWarning() << "DatabaseConnection: could not reopen connection after closing";
+        return false;
     }
 
     /* ===== TableEditor ===== */
