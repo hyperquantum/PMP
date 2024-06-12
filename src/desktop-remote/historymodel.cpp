@@ -119,8 +119,11 @@ namespace PMP
 
     QVariant HistoryModel::data(const QModelIndex& index, int role) const
     {
-        if (!index.isValid() || index.row() < 0 || index.row() >= _entries.size())
+        if (!index.isValid() || index.row() < 0
+            || index.row() >= static_cast<int>(_entries.size()))
+        {
             return {};
+        }
 
         auto& entry = _entries[index.row()];
 
