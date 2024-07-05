@@ -21,6 +21,9 @@
 #include "common/version.h"
 #include "common/util.h"
 
+// for testing
+#include "common/newfuture.h"
+
 #include "command.h"
 #include "commandlineclient.h"
 #include "commandparser.h"
@@ -254,6 +257,9 @@ warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
 void printVersion(QTextStream& out)
 {
+    // temporary call for testing - to be removed
+    testFutures();
+
     const auto programNameVersionBuild =
         QString(VCS_REVISION_LONG).isEmpty()
             ? QString("Party Music Player %1")
