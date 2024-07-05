@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -243,6 +243,11 @@ namespace PMP::Server
                         track.album = info.album();
                         track.albumArtist = info.albumArtist();
                         track.durationInSeconds = info.lengthInSeconds();
+                    }
+                    else
+                    {
+                        qDebug() << "Scrobbler: failed to obtain track info for hash ID"
+                                 << hashId;
                     }
 
                     if (track.title.isEmpty() || track.artist.isEmpty())
