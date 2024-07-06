@@ -23,7 +23,7 @@
 #include "nullable.h"
 #include "resultorerror.h"
 
-// ObjectRunner
+// EventLoopRunner
 #include <QObject>
 #include <QTimer>
 
