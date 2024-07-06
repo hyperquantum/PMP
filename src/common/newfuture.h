@@ -118,7 +118,7 @@ namespace PMP
                      std::function<void (ResultOrError<TResult, TError>)> work);
 
         void continueFrom(QSharedPointer<Runner> previousRunner,
-                          ResultOrError<TResult, TError> previousOutcome);
+                          ResultOrError<TResult, TError> const& previousOutcome);
 
     private:
         friend class QSharedPointer<Continuation<TResult, TError>>;
@@ -137,8 +137,8 @@ namespace PMP
 
     template<class TResult, class TError>
     void Continuation<TResult, TError>::continueFrom(
-                                        QSharedPointer<Runner> previousRunner,
-                                        ResultOrError<TResult, TError> previousOutcome)
+                                    QSharedPointer<Runner> previousRunner,
+                                    ResultOrError<TResult, TError> const& previousOutcome)
     {
         // TODO: continuation in same runner if possible
         Q_UNUSED(previousRunner)
@@ -170,7 +170,7 @@ namespace PMP
 
         void setContinuation(QSharedPointer<Continuation<TResult, TError>> continuation);
 
-        void storeAndContinueFrom(ResultOrError<TResult, TError> outcome,
+        void storeAndContinueFrom(ResultOrError<TResult, TError> const& outcome,
                                   QSharedPointer<Runner> runner);
 
         friend class QSharedPointer<NewFutureStorage<TResult, TError>>;
@@ -237,7 +237,7 @@ namespace PMP
 
     template<class TResult, class TError>
     void NewFutureStorage<TResult, TError>::storeAndContinueFrom(
-        ResultOrError<TResult, TError> outcome, QSharedPointer<Runner> runner)
+        ResultOrError<TResult, TError> const& outcome, QSharedPointer<Runner> runner)
     {
         QMutexLocker lock(&_mutex);
 
