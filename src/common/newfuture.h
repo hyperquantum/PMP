@@ -152,6 +152,10 @@ namespace PMP
     template<class TResult, class TError>
     class NewFutureStorage
     {
+    public:
+        NewFutureStorage(NewFutureStorage<TResult, TError> const&) = delete;
+        NewFutureStorage<TResult, TError>& operator=(NewFutureStorage<TResult, TError> const&) = delete;
+
     private:
         NewFutureStorage();
 
