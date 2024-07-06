@@ -104,6 +104,7 @@ namespace PMP
 
     // =================================================================== //
 
+    template<class TResult, class TError> class NewPromise;
     template<class TResult, class TError> class NewFuture;
     template<class TResult, class TError> class NewFutureStorage;
     template<class TResult, class TError> class Continuation;
@@ -174,6 +175,7 @@ namespace PMP
                                   QSharedPointer<Runner> runner);
 
         friend class QSharedPointer<NewFutureStorage<TResult, TError>>;
+        friend class NewPromise<TResult, TError>;
         template<class, class> friend class NewFuture;
         friend class NewConcurrent;
 
@@ -281,6 +283,7 @@ namespace PMP
             std::function<ResultOrError<TResult, TError>()> f);
 
         template<class, class> friend class NewFuture;
+        friend class NewPromise<TResult, TError>;
         friend class NewAsync;
         friend class NewConcurrent;
 
@@ -344,6 +347,44 @@ namespace PMP
 
     // =================================================================== //
 
+    template<class TResult, class TError>
+    class NewPromise
+    {
+    public:
+        NewFuture<TResult, TError> future() const;
+
+        void setOutcome(ResultOrError<TResult, TError> const& outcome);
+
+    private:
+        NewPromise();
+
+        friend class NewAsync;
+
+        QSharedPointer<NewFutureStorage<TResult, TError>> _storage;
+    };
+
+    template<class TResult, class TError>
+    NewFuture<TResult, TError> NewPromise<TResult, TError>::future() const
+    {
+        return NewFuture<TResult, TError>(_storage);
+    }
+
+    template<class TResult, class TError>
+    void NewPromise<TResult, TError>::setOutcome(
+        ResultOrError<TResult, TError> const& outcome)
+    {
+        _storage->storeAndContinueFrom(outcome, nullptr);
+    }
+
+    template<class TResult, class TError>
+    NewPromise<TResult, TError>::NewPromise()
+        : _storage(QSharedPointer<NewFutureStorage<TResult, TError>>::create())
+    {
+        //
+    }
+
+    // =================================================================== //
+
     class NewConcurrent
     {
     public:
@@ -369,10 +410,19 @@ namespace PMP
     {
     public:
         template<class TResult, class TError>
+        static NewPromise<TResult, TError> createPromise();
+
+        template<class TResult, class TError>
         static NewFuture<TResult, TError> runOnEventLoop(
                                     QObject* receiver,
                                     std::function<ResultOrError<TResult, TError>()> f);
     };
+
+    template<class TResult, class TError>
+    NewPromise<TResult, TError> NewAsync::createPromise()
+    {
+        return NewPromise<TResult, TError>();
+    }
 
     template<class TResult, class TError>
     NewFuture<TResult, TError> NewAsync::runOnEventLoop(
@@ -412,9 +462,12 @@ namespace PMP
 
         auto future2 = future.thenOnThreadPool<QString, FailureType>(threadPool, work2);
 
-        //
+        // ====
 
-        //
+        auto promise = NewAsync::createPromise<QString, FailureType>();
+        auto future3 = promise.future();
+
+        promise.setOutcome(failure);
     }
 
 }
