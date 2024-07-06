@@ -140,11 +140,16 @@ namespace PMP
                                         QSharedPointer<Runner> previousRunner,
                                         ResultOrError<TResult, TError> previousOutcome)
     {
-        // TODO
-        //
-        //
-        //
-        //
+        // TODO: continuation in same runner if possible
+        Q_UNUSED(previousRunner)
+
+        auto wrapper =
+            [work = _work, previousOutcome]()
+            {
+                work(previousOutcome);
+            };
+
+        _runner->run(wrapper);
     }
 
     // =================================================================== //
@@ -202,8 +207,14 @@ namespace PMP
         Q_ASSERT_X(!_continuation, "NewFutureStorage::setContinuation()",
                    "attempt to set result on finished future");
 
-        // FIXME: when already finished, continue immediately instead of storing
-        _continuation = continuation;
+        if (_finished)
+        {
+            // TODO: when already finished, continue immediately
+        }
+        else
+        {
+            _continuation = continuation;
+        }
     }
 
     template<class TResult, class TError>
@@ -224,9 +235,14 @@ namespace PMP
 
         // TODO: notify listeners
 
-        // continue
+        auto continuation = _continuation;
 
-        //
+        lock.unlock(); /* unlock before continuing */
+
+        if (continuation)
+        {
+            continuation->continueFrom(runner, outcome);
+        }
     }
 
     // =================================================================== //
