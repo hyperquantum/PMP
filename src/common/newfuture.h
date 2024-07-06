@@ -166,6 +166,8 @@ namespace PMP
 
         static QSharedPointer<NewFutureStorage<TResult, TError>> create();
 
+        ResultOrError<TResult, TError> getResultInternal() const;
+
         void setContinuation(QSharedPointer<Continuation<TResult, TError>> continuation);
 
         void storeAndContinueFrom(ResultOrError<TResult, TError> outcome,
@@ -196,6 +198,19 @@ namespace PMP
     }
 
     template<class TResult, class TError>
+    ResultOrError<TResult, TError>
+        NewFutureStorage<TResult, TError>::getResultInternal() const
+    {
+        Q_ASSERT_X(_finished, "NewFutureStorage::getResultInternal()",
+                   "attempt to get result of unfinished future");
+
+        if (_result.hasValue())
+            return _result.value();
+        else
+            return _error.value();
+    }
+
+    template<class TResult, class TError>
     void NewFutureStorage<TResult, TError>::setContinuation(
         QSharedPointer<Continuation<TResult, TError>> continuation)
     {
@@ -209,7 +224,10 @@ namespace PMP
 
         if (_finished)
         {
-            // TODO: when already finished, continue immediately
+            // when already finished, continue immediately
+            auto outcome = getResultInternal();
+            lock.unlock();
+            continuation->continueFrom(nullptr, outcome);
         }
         else
         {
