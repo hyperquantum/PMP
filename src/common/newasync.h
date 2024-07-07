@@ -36,6 +36,9 @@ namespace PMP
         static NewFuture<TResult, TError> runOnEventLoop(
             QObject* receiver,
             std::function<ResultOrError<TResult, TError>()> f);
+
+    private:
+        NewAsync();
     };
 
     template<class TResult, class TError>

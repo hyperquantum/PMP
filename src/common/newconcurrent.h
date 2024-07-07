@@ -32,6 +32,9 @@ namespace PMP
         static NewFuture<TResult, TError> runOnThreadPool(
             QThreadPool* threadPool,
             std::function<ResultOrError<TResult, TError>()> f);
+
+    private:
+        NewConcurrent();
     };
 
     template<class TResult, class TError>
