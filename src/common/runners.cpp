@@ -17,47 +17,33 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COMMON_RUNNERS_H
-#define PMP_COMMON_RUNNERS_H
+#include "runners.h"
 
-#include <QObject>
-#include <QThreadPool>
-
-#include <functional>
+#include <QTimer>
 
 namespace PMP
 {
-    class Runner
+    EventLoopRunner::EventLoopRunner(QObject* receiver)
+        : _receiver(receiver)
     {
-    public:
-        virtual ~Runner() {}
+        //
+    }
 
-        virtual void run(std::function<void()> f) = 0;
-
-    protected:
-        Runner() {}
-    };
-
-    class EventLoopRunner : public Runner
+    void EventLoopRunner::run(std::function<void()> f)
     {
-    public:
-        EventLoopRunner(QObject* receiver);
+        QTimer::singleShot(0, _receiver, f);
+    }
 
-        void run(std::function<void()> f) override;
+    // =================================================================== //
 
-    private:
-        QObject* _receiver;
-    };
-
-    class ThreadPoolRunner : public Runner
+    ThreadPoolRunner::ThreadPoolRunner(QThreadPool* threadPool)
+        : _threadPool(threadPool)
     {
-    public:
-        ThreadPoolRunner(QThreadPool* threadPool);
+        //
+    }
 
-        void run(std::function<void()> f) override;
-
-    private:
-        QThreadPool* _threadPool;
-    };
+    void ThreadPoolRunner::run(std::function<void()> f)
+    {
+        _threadPool->start(f);
+    }
 }
-#endif
