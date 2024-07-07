@@ -32,7 +32,7 @@ namespace PMP
     public:
         virtual ~Runner() {}
 
-        virtual void run(std::function<void()> f) = 0;
+        virtual void run(std::function<void()> work) = 0;
 
     protected:
         Runner() {}
@@ -43,7 +43,7 @@ namespace PMP
     public:
         EventLoopRunner(QObject* receiver);
 
-        void run(std::function<void()> f) override;
+        void run(std::function<void()> work) override;
 
     private:
         QObject* _receiver;
@@ -54,7 +54,7 @@ namespace PMP
     public:
         ThreadPoolRunner(QThreadPool* threadPool);
 
-        void run(std::function<void()> f) override;
+        void run(std::function<void()> work) override;
 
     private:
         QThreadPool* _threadPool;

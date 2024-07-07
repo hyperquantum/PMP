@@ -29,9 +29,9 @@ namespace PMP
         //
     }
 
-    void EventLoopRunner::run(std::function<void()> f)
+    void EventLoopRunner::run(std::function<void()> work)
     {
-        QTimer::singleShot(0, _receiver, f);
+        QTimer::singleShot(0, _receiver, work);
     }
 
     // =================================================================== //
@@ -42,8 +42,8 @@ namespace PMP
         //
     }
 
-    void ThreadPoolRunner::run(std::function<void()> f)
+    void ThreadPoolRunner::run(std::function<void()> work)
     {
-        _threadPool->start(f);
+        _threadPool->start(work);
     }
 }
