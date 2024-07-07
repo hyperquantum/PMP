@@ -23,6 +23,8 @@
 
 // for testing
 #include "common/newfuture.h"
+#include "common/newasync.h"
+#include "common/newconcurrent.h"
 
 #include "command.h"
 #include "commandlineclient.h"
@@ -254,6 +256,40 @@ static const char * const versionTextTemplate = R""""(
 This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 )"""";
+
+inline void testFutures()
+{
+    auto work = []() { return ResultOrError<int, FailureType>::fromResult(42); };
+
+    // ====
+
+    QObject* object = new QObject();
+
+    auto eventLoopFuture = NewAsync::runOnEventLoop<int, FailureType>(object, work);
+
+    // ====
+
+    auto* threadPool = QThreadPool::globalInstance();
+    auto future = NewConcurrent::runOnThreadPool<int, FailureType>(threadPool, work);
+
+    auto work2 =
+        [](ResultOrError<int, FailureType> input) -> ResultOrError<QString, FailureType>
+    {
+        if (input.failed())
+            return failure;
+
+        return QString::number(input.result()) + "!";
+    };
+
+    auto future2 = future.thenOnThreadPool<QString, FailureType>(threadPool, work2);
+
+    // ====
+
+    auto promise = NewAsync::createPromise<QString, FailureType>();
+    auto future3 = promise.future();
+
+    promise.setOutcome(failure);
+}
 
 void printVersion(QTextStream& out)
 {

@@ -22,13 +22,7 @@
 
 #include "nullable.h"
 #include "resultorerror.h"
-
-// EventLoopRunner
-#include <QObject>
-#include <QTimer>
-
-// ThreadPoolRunner
-#include <QThreadPool>
+#include "runners.h"
 
 // NewFutureStorage
 #include <QMutex>
@@ -37,72 +31,9 @@
 // debug
 #include <QtDebug>
 
-#include <functional>
-
 namespace PMP
 {
     /* ---------- THIS FILE IS AN EXPERIMENTAL WORK IN PROGRESS ---------- */
-
-    class Runner
-    {
-    public:
-        virtual ~Runner() {}
-
-        virtual void run(std::function<void()> f) = 0;
-
-    protected:
-        Runner() {}
-    };
-
-    // =================================================================== //
-
-    class EventLoopRunner : public Runner
-    {
-    public:
-        EventLoopRunner(QObject* receiver);
-
-        void run(std::function<void()> f) override;
-
-    private:
-        QObject* _receiver;
-    };
-
-    inline EventLoopRunner::EventLoopRunner(QObject* receiver)
-        : _receiver(receiver)
-    {
-        //
-    }
-
-    void EventLoopRunner::run(std::function<void()> f)
-    {
-        QTimer::singleShot(0, _receiver, f);
-    }
-
-    // =================================================================== //
-
-    class ThreadPoolRunner : public Runner
-    {
-    public:
-        ThreadPoolRunner(QThreadPool* threadPool);
-
-        void run(std::function<void()> f) override;
-
-    private:
-        QThreadPool* _threadPool;
-    };
-
-    inline ThreadPoolRunner::ThreadPoolRunner(QThreadPool* threadPool)
-        : _threadPool(threadPool)
-    {
-        //
-    }
-
-    inline void ThreadPoolRunner::run(std::function<void()> f)
-    {
-        _threadPool->start(f);
-    }
-
-    // =================================================================== //
 
     template<class TResult, class TError> class NewPromise;
     template<class TResult, class TError> class NewFuture;
@@ -344,131 +275,5 @@ namespace PMP
 
         return NewFuture<TResult, TError>(storage);
     }
-
-    // =================================================================== //
-
-    template<class TResult, class TError>
-    class NewPromise
-    {
-    public:
-        NewFuture<TResult, TError> future() const;
-
-        void setOutcome(ResultOrError<TResult, TError> const& outcome);
-
-    private:
-        NewPromise();
-
-        friend class NewAsync;
-
-        QSharedPointer<NewFutureStorage<TResult, TError>> _storage;
-    };
-
-    template<class TResult, class TError>
-    NewFuture<TResult, TError> NewPromise<TResult, TError>::future() const
-    {
-        return NewFuture<TResult, TError>(_storage);
-    }
-
-    template<class TResult, class TError>
-    void NewPromise<TResult, TError>::setOutcome(
-        ResultOrError<TResult, TError> const& outcome)
-    {
-        _storage->storeAndContinueFrom(outcome, nullptr);
-    }
-
-    template<class TResult, class TError>
-    NewPromise<TResult, TError>::NewPromise()
-        : _storage(QSharedPointer<NewFutureStorage<TResult, TError>>::create())
-    {
-        //
-    }
-
-    // =================================================================== //
-
-    class NewConcurrent
-    {
-    public:
-        template<class TResult, class TError>
-        static NewFuture<TResult, TError> runOnThreadPool(
-                                    QThreadPool* threadPool,
-                                    std::function<ResultOrError<TResult, TError>()> f);
-    };
-
-    template<class TResult, class TError>
-    inline NewFuture<TResult, TError> NewConcurrent::runOnThreadPool(
-        QThreadPool* threadPool,
-        std::function<ResultOrError<TResult, TError> ()> f)
-    {
-        auto runner = QSharedPointer<ThreadPoolRunner>::create(threadPool);
-
-        return NewFuture<TResult, TError>::createForRunner(runner, f);
-    }
-
-    // =================================================================== //
-
-    class NewAsync
-    {
-    public:
-        template<class TResult, class TError>
-        static NewPromise<TResult, TError> createPromise();
-
-        template<class TResult, class TError>
-        static NewFuture<TResult, TError> runOnEventLoop(
-                                    QObject* receiver,
-                                    std::function<ResultOrError<TResult, TError>()> f);
-    };
-
-    template<class TResult, class TError>
-    NewPromise<TResult, TError> NewAsync::createPromise()
-    {
-        return NewPromise<TResult, TError>();
-    }
-
-    template<class TResult, class TError>
-    NewFuture<TResult, TError> NewAsync::runOnEventLoop(
-        QObject* receiver,
-        std::function<ResultOrError<TResult, TError> ()> f)
-    {
-        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
-
-        return NewFuture<TResult, TError>::createForRunner(runner, f);
-    }
-
-    // =================================================================== //
-
-    inline void testFutures()
-    {
-        auto work = []() { return ResultOrError<int, FailureType>::fromResult(42); };
-
-        // ====
-
-        QObject* object = new QObject();
-
-        auto eventLoopFuture = NewAsync::runOnEventLoop<int, FailureType>(object, work);
-
-        // ====
-
-        auto* threadPool = QThreadPool::globalInstance();
-        auto future = NewConcurrent::runOnThreadPool<int, FailureType>(threadPool, work);
-
-        auto work2 =
-            [](ResultOrError<int, FailureType> input) -> ResultOrError<QString, FailureType>
-            {
-                if (input.failed())
-                    return failure;
-
-                return QString::number(input.result()) + "!";
-            };
-
-        auto future2 = future.thenOnThreadPool<QString, FailureType>(threadPool, work2);
-
-        // ====
-
-        auto promise = NewAsync::createPromise<QString, FailureType>();
-        auto future3 = promise.future();
-
-        promise.setOutcome(failure);
-    }
-
 }
 #endif
