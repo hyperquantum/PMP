@@ -205,8 +205,15 @@ namespace PMP
 
         _serverInterface->authenticationController()
             .getUserAccounts()
-            .addResultListener(
-                this, [this](QList<UserAccount> accounts) { fillUserComboBox(accounts); }
+            .handleOnEventLoop(
+                this,
+                [this](ResultOrError<QList<UserAccount>, ResultMessageErrorCode> outcome)
+                {
+                    if (outcome.failed())
+                        return; // TODO: handle error
+
+                    fillUserComboBox(outcome.result());
+                }
             );
 
         if (_queueId == 0)

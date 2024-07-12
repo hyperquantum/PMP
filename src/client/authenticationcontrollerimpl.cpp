@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,6 +18,8 @@
 */
 
 #include "authenticationcontrollerimpl.h"
+
+#include "common/newasync.h"
 
 #include "serverconnection.h"
 
@@ -56,8 +58,8 @@ namespace PMP::Client
                     accounts.append({account.first, account.second});
                 }
 
-                _userAccountsPromise->setResult(accounts);
-                _userAccountsPromise.clear();
+                _userAccountsPromise.value().setResult(accounts);
+                _userAccountsPromise.setToNull();
             }
         );
 
@@ -80,18 +82,18 @@ namespace PMP::Client
             );
     }
 
-    Future<QList<UserAccount>, ResultMessageErrorCode>
+    NewFuture<QList<UserAccount>, ResultMessageErrorCode>
         AuthenticationControllerImpl::getUserAccounts()
     {
         if (_userAccountsPromise.isNull())
         {
             _userAccountsPromise =
-                QSharedPointer<Promise<QList<UserAccount>, ResultMessageErrorCode>>::create();
+                NewAsync::createPromise<QList<UserAccount>, ResultMessageErrorCode>();
 
             _connection->sendUserAccountsFetchRequest();
         }
 
-        return _userAccountsPromise->future();
+        return _userAccountsPromise.value().future();
     }
 
     void AuthenticationControllerImpl::sendUserAccountsFetchRequest()
@@ -134,10 +136,10 @@ namespace PMP::Client
     {
         if (_userAccountsPromise.isNull() == false)
         {
-            _userAccountsPromise->setError(
+            _userAccountsPromise.value().setError(
                 ResultMessageErrorCode::ConnectionToServerBroken);
         }
 
-        _userAccountsPromise.clear();
+        _userAccountsPromise.setToNull();
     }
 }

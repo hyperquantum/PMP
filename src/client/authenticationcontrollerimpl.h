@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,7 +22,9 @@
 
 #include "authenticationcontroller.h"
 
-#include "common/promise.h"
+#include "common/newpromise.h"
+#include "common/nullable.h"
+//#include "common/promise.h"
 
 #include <QSharedPointer>
 
@@ -36,7 +38,7 @@ namespace PMP::Client
     public:
         explicit AuthenticationControllerImpl(ServerConnection* connection);
 
-        Future<QList<UserAccount>, ResultMessageErrorCode> getUserAccounts() override;
+        NewFuture<QList<UserAccount>, ResultMessageErrorCode> getUserAccounts() override;
         void sendUserAccountsFetchRequest() override;
 
         void createNewUserAccount(QString login, QString password) override;
@@ -52,7 +54,7 @@ namespace PMP::Client
 
     private:
         ServerConnection* _connection;
-        QSharedPointer<Promise<QList<UserAccount>, ResultMessageErrorCode>> _userAccountsPromise;
+        Nullable<NewPromise<QList<UserAccount>, ResultMessageErrorCode>> _userAccountsPromise;
     };
 }
 #endif

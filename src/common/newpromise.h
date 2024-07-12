@@ -31,6 +31,8 @@ namespace PMP
         NewFuture<TResult, TError> future() const;
 
         void setOutcome(ResultOrError<TResult, TError> const& outcome);
+        void setResult(TResult const& result);
+        void setError(TError const& error);
 
     private:
         NewPromise();
@@ -51,6 +53,18 @@ namespace PMP
         ResultOrError<TResult, TError> const& outcome)
     {
         _storage->storeAndContinueFrom(outcome, nullptr);
+    }
+
+    template<class TResult, class TError>
+    inline void NewPromise<TResult, TError>::setResult(const TResult& result)
+    {
+        setOutcome(ResultOrError<TResult, TError>::fromResult(result));
+    }
+
+    template<class TResult, class TError>
+    inline void NewPromise<TResult, TError>::setError(const TError& error)
+    {
+        setOutcome(ResultOrError<TResult, TError>::fromError(error));
     }
 
     template<class TResult, class TError>

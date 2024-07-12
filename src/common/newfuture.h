@@ -200,6 +200,11 @@ namespace PMP
         NewFuture<TResult2, TError2> thenOnThreadPool(QThreadPool* threadPool,
             std::function<ResultOrError<TResult2, TError2>(ResultOrError<TResult, TError>)> f);
 
+        void handleOnEventLoop(QObject* receiver,
+                               std::function<void(ResultOrError<TResult, TError>)> f);
+
+        // TODO: adding listeners
+
     private:
         NewFuture(QSharedPointer<NewFutureStorage<TResult, TError>> storage);
 
@@ -240,6 +245,18 @@ namespace PMP
         _storage->setContinuation(continuation);
 
         return NewFuture<TResult2, TError2>(storage);
+    }
+
+    template<class TResult, class TError>
+    void NewFuture<TResult, TError>::handleOnEventLoop(QObject* receiver,
+                                std::function<void (ResultOrError<TResult, TError>)> f)
+    {
+        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
+
+        auto continuation =
+            QSharedPointer<Continuation<TResult, TError>>::create(runner, f);
+
+        _storage->setContinuation(continuation);
     }
 
     template<class TResult, class TError>
