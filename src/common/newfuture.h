@@ -94,7 +94,7 @@ namespace PMP
         NewFutureStorage<TResult, TError>& operator=(NewFutureStorage<TResult, TError> const&) = delete;
 
     private:
-        NewFutureStorage();
+        NewFutureStorage() {}
 
         static QSharedPointer<NewFutureStorage<TResult, TError>> create();
 
@@ -114,14 +114,8 @@ namespace PMP
         QSharedPointer<Continuation<TResult, TError>> _continuation;
         Nullable<TResult> _result;
         Nullable<TError> _error;
-        bool _finished;
+        bool _finished { false };
     };
-
-    template<class TResult, class TError>
-    NewFutureStorage<TResult, TError>::NewFutureStorage()
-    {
-        //
-    }
 
     template<class TResult, class TError>
     QSharedPointer<NewFutureStorage<TResult, TError>>
