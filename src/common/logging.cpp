@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -339,7 +339,10 @@ namespace PMP {
     {
         globalTextFileLogger.logMessage(type, context, msg);
 
-        if (type == QtFatalMsg) { abort(); }
+        if (type == QtFatalMsg)
+        {
+            abort();
+        }
     }
 
     void logToTextFileAndConsole(QtMsgType type, const QMessageLogContext& context,
@@ -348,7 +351,10 @@ namespace PMP {
         globalConsoleLogger.logMessage(type, context, msg);
         globalTextFileLogger.logMessage(type, context, msg);
 
-        if (type == QtFatalMsg) { abort(); }
+        if (type == QtFatalMsg)
+        {
+            abort();
+        }
     }
 
     void logToTextFileAndReducedConsole(QtMsgType type, const QMessageLogContext& context,
@@ -359,7 +365,10 @@ namespace PMP {
 
         globalTextFileLogger.logMessage(type, context, msg);
 
-        if (type == QtFatalMsg) { abort(); }
+        if (type == QtFatalMsg)
+        {
+            abort();
+        }
     }
 
     void logToConsole(QtMsgType type, const QMessageLogContext& context,
@@ -367,7 +376,10 @@ namespace PMP {
     {
         globalConsoleLogger.logMessage(type, context, msg);
 
-        if (type == QtFatalMsg) { abort(); }
+        if (type == QtFatalMsg)
+        {
+            abort();
+        }
     }
 
     void Logging::enableTextFileOnlyLogging()
