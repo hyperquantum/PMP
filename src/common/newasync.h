@@ -32,6 +32,9 @@ namespace PMP
         template<class TResult, class TError>
         static NewPromise<TResult, TError> createPromise();
 
+        template<class TOutcome>
+        static NewSimplePromise<TOutcome> createSimplePromise();
+
         template<class TResult, class TError>
         static NewFuture<TResult, TError> runOnEventLoop(
             QObject* receiver,
@@ -45,6 +48,12 @@ namespace PMP
     NewPromise<TResult, TError> NewAsync::createPromise()
     {
         return NewPromise<TResult, TError>();
+    }
+
+    template<class TOutcome>
+    NewSimplePromise<TOutcome> NewAsync::createSimplePromise()
+    {
+        return NewSimplePromise<TOutcome>();
     }
 
     template<class TResult, class TError>

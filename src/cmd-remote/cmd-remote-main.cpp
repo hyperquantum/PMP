@@ -289,6 +289,13 @@ inline void testFutures()
     auto future3 = promise.future();
 
     promise.setOutcome(failure);
+
+    // ====
+
+    auto simplePromise = NewAsync::createSimplePromise<QString>();
+    auto simpleFuture = simplePromise.future();
+
+    simplePromise.setOutcome("Finished");
 }
 
 void printVersion(QTextStream& out)

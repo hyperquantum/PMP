@@ -75,5 +75,47 @@ namespace PMP
     {
         //
     }
+
+    // =================================================================== //
+
+    template<class TOutcome>
+    class NewSimplePromise
+    {
+    public:
+        using OutcomeType = TOutcome;
+        using FutureType = NewSimpleFuture<TOutcome>;
+
+        FutureType future() const;
+
+        void setOutcome(OutcomeType const& outcome);
+
+    private:
+        NewSimplePromise();
+
+        friend class NewAsync;
+
+        QSharedPointer<NewFutureStorage<TOutcome, FailureType>> _storage;
+    };
+
+    template<class TOutcome>
+    NewSimpleFuture<TOutcome> NewSimplePromise<TOutcome>::future() const
+    {
+        return NewSimpleFuture<TOutcome>(_storage);
+    }
+
+    template<class TOutcome>
+    void NewSimplePromise<TOutcome>::setOutcome(const OutcomeType& outcome)
+    {
+        auto resultOrError = ResultOrError<TOutcome, FailureType>::fromResult(outcome);
+
+        _storage->storeAndContinueFrom(resultOrError, nullptr);
+    }
+
+    template<class TOutcome>
+    NewSimplePromise<TOutcome>::NewSimplePromise()
+        : _storage(QSharedPointer<NewFutureStorage<TOutcome, FailureType>>::create())
+    {
+        //
+    }
 }
 #endif
