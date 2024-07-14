@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -98,34 +98,6 @@ namespace PMP
 
     private:
         QSharedPointer<FutureStorage<T, FailureType>> _storage;
-    };
-
-    class VoidPromise
-    {
-    public:
-        VoidPromise()
-         : _storage(FutureStorage<SuccessType, FailureType>::create())
-        {
-            //
-        }
-
-        VoidPromise(VoidPromise&&) = default;
-
-        VoidPromise(VoidPromise const&) = delete;
-        VoidPromise& operator=(VoidPromise const&) = delete;
-
-        VoidFuture future() const
-        {
-            return VoidFuture(_storage);
-        }
-
-        void setFinished()
-        {
-            _storage->setResult(success);
-        }
-
-    private:
-        QSharedPointer<FutureStorage<SuccessType, FailureType>> _storage;
     };
 }
 #endif

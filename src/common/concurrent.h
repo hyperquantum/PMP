@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,7 +22,6 @@
 
 #include "concurrentinternals.h"
 #include "future.h"
-#include "nullable.h"
 #include "promise.h"
 
 #include <QtConcurrent/QtConcurrent>
@@ -75,21 +74,6 @@ namespace PMP
             return future;
         }
 
-        static VoidFuture run(VoidPromise&& promise, std::function<void ()> f)
-        {
-            auto future = promise.future();
-            QtConcurrent::run(makeWork(std::move(promise), f));
-            return future;
-        }
-
-        static VoidFuture run(QThreadPool* threadPool, VoidPromise&& promise,
-                              std::function<void ()> f)
-        {
-            auto future = promise.future();
-            QtConcurrent::run(threadPool, makeWork(std::move(promise), f));
-            return future;
-        }
-
     private:
         template<class T>
         static std::function<void ()> makeWork(SimplePromise<T>&& promise,
@@ -102,21 +86,6 @@ namespace PMP
                     {
                         auto result = f();
                         sharedPromise->setResult(result);
-                    };
-
-            return work;
-        }
-
-        static std::function<void ()> makeWork(VoidPromise&& promise,
-                                               std::function<void ()> f)
-        {
-            auto sharedPromise = std::make_shared<VoidPromise>(std::move(promise));
-
-            auto work =
-                    [sharedPromise, f]()
-                    {
-                        f();
-                        sharedPromise->setFinished();
                     };
 
             return work;

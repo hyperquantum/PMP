@@ -366,32 +366,5 @@ namespace PMP
 
         QSharedPointer<FutureStorage<T, FailureType>> _storage;
     };
-
-    class VoidFuture
-    {
-    public:
-        void addFinishedListener(QObject* receiver, std::function<void ()> f)
-        {
-            _storage->addResultListener(receiver, [f](SuccessType) { f(); });
-        }
-
-        static VoidFuture fromFinished()
-        {
-            auto storage { FutureStorage<SuccessType, FailureType>::create() };
-            storage->setResult(success);
-            return VoidFuture(storage);
-        }
-
-    private:
-        VoidFuture(QSharedPointer<FutureStorage<SuccessType, FailureType>> storage)
-         : _storage(storage)
-        {
-            //
-        }
-
-        friend class VoidPromise;
-
-        QSharedPointer<FutureStorage<SuccessType, FailureType>> _storage;
-    };
 }
 #endif

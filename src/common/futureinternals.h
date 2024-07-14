@@ -41,15 +41,11 @@ namespace PMP
     template<class T>
     class SimpleFuture;
 
-    class VoidFuture;
-
     template<class ResultType, class ErrorType>
     class Promise;
 
     template<class T>
     class SimplePromise;
-
-    class VoidPromise;
 
     template<class ResultType, class ErrorType>
     class FutureStorage
@@ -245,11 +241,9 @@ namespace PMP
 
         friend class Promise<ResultType, ErrorType>;
         friend class SimplePromise<ResultType>;
-        friend class VoidPromise;
 
         template<class T1, class T2> friend class Future;
         friend class SimpleFuture<ResultType>;
-        friend class VoidFuture;
 
         friend class QSharedPointer<FutureStorage<ResultType, ErrorType>>;
 
