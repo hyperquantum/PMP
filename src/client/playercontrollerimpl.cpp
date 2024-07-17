@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -145,13 +145,13 @@ namespace PMP::Client
         return _delayedStartServerDeadline;
     }
 
-    SimpleFuture<AnyResultMessageCode> PlayerControllerImpl::activateDelayedStart(
+    NewSimpleFuture<AnyResultMessageCode> PlayerControllerImpl::activateDelayedStart(
                                                                  qint64 delayMilliseconds)
     {
         return _connection->activateDelayedStart(delayMilliseconds);
     }
 
-    SimpleFuture<AnyResultMessageCode> PlayerControllerImpl::activateDelayedStart(
+    NewSimpleFuture<AnyResultMessageCode> PlayerControllerImpl::activateDelayedStart(
                                                                       QDateTime startTime)
     {
         auto delayMilliseconds =
@@ -160,7 +160,7 @@ namespace PMP::Client
         return activateDelayedStart(delayMilliseconds);
     }
 
-    SimpleFuture<AnyResultMessageCode> PlayerControllerImpl::deactivateDelayedStart()
+    NewSimpleFuture<AnyResultMessageCode> PlayerControllerImpl::deactivateDelayedStart()
     {
         return _connection->deactivateDelayedStart();
     }

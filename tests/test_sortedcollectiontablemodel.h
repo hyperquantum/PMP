@@ -54,11 +54,11 @@ public:
     int volume() const override;
 
     QDateTime delayedStartServerDeadline() override;
-    SimpleFuture<AnyResultMessageCode> activateDelayedStart(
+    NewSimpleFuture<AnyResultMessageCode> activateDelayedStart(
         qint64 delayMilliseconds) override;
-    SimpleFuture<AnyResultMessageCode> activateDelayedStart(
+    NewSimpleFuture<AnyResultMessageCode> activateDelayedStart(
         QDateTime startTime) override;
-    SimpleFuture<AnyResultMessageCode> deactivateDelayedStart() override;
+    NewSimpleFuture<AnyResultMessageCode> deactivateDelayedStart() override;
 
 public Q_SLOTS:
     void play() override;

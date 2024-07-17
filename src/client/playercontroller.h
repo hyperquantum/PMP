@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,7 @@
 #define PMP_PLAYERCONTROLLER_H
 
 #include "common/tribool.h"
-#include "common/future.h"
+#include "common/newfuture.h"
 #include "common/playermode.h"
 #include "common/playerstate.h"
 #include "common/resultmessageerrorcode.h"
@@ -54,11 +54,11 @@ namespace PMP::Client
         virtual int volume() const = 0;
 
         virtual QDateTime delayedStartServerDeadline() = 0;
-        virtual SimpleFuture<AnyResultMessageCode> activateDelayedStart(
+        virtual NewSimpleFuture<AnyResultMessageCode> activateDelayedStart(
                                                             qint64 delayMilliseconds) = 0;
-        virtual SimpleFuture<AnyResultMessageCode> activateDelayedStart(
+        virtual NewSimpleFuture<AnyResultMessageCode> activateDelayedStart(
                                                                  QDateTime startTime) = 0;
-        virtual SimpleFuture<AnyResultMessageCode> deactivateDelayedStart() = 0;
+        virtual NewSimpleFuture<AnyResultMessageCode> deactivateDelayedStart() = 0;
 
     public Q_SLOTS:
         virtual void play() = 0;

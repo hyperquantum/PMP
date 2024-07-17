@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_SCROBBLINGCONTROLLER_H
 #define PMP_SCROBBLINGCONTROLLER_H
 
-#include "common/future.h"
+#include "common/newfuture.h"
 #include "common/nullable.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/scrobblerstatus.h"
@@ -38,7 +38,7 @@ namespace PMP::Client
         virtual Nullable<bool> lastFmEnabled() const = 0;
         virtual ScrobblerStatus lastFmStatus() const = 0;
 
-        virtual SimpleFuture<AnyResultMessageCode> authenticateLastFm(
+        virtual NewSimpleFuture<AnyResultMessageCode> authenticateLastFm(
                                                                 QString usernameOrEmail,
                                                                 QString password) = 0;
 

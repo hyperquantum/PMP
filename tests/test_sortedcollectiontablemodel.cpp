@@ -365,21 +365,21 @@ QDateTime PlayerControllerMock::delayedStartServerDeadline()
     NOT_IMPLEMENTED
 }
 
-SimpleFuture<AnyResultMessageCode> PlayerControllerMock::activateDelayedStart(
+NewSimpleFuture<AnyResultMessageCode> PlayerControllerMock::activateDelayedStart(
     qint64 delayMilliseconds)
 {
     Q_UNUSED(delayMilliseconds)
     NOT_IMPLEMENTED
 }
 
-SimpleFuture<AnyResultMessageCode> PlayerControllerMock::activateDelayedStart(
+NewSimpleFuture<AnyResultMessageCode> PlayerControllerMock::activateDelayedStart(
     QDateTime startTime)
 {
     Q_UNUSED(startTime)
     NOT_IMPLEMENTED
 }
 
-SimpleFuture<AnyResultMessageCode> PlayerControllerMock::deactivateDelayedStart()
+NewSimpleFuture<AnyResultMessageCode> PlayerControllerMock::deactivateDelayedStart()
 {
     NOT_IMPLEMENTED
 }

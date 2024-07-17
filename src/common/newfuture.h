@@ -101,6 +101,8 @@ namespace PMP
         NewFutureStorage() {}
 
         static QSharedPointer<NewFutureStorage<TResult, TError>> create();
+        static QSharedPointer<NewFutureStorage<TResult, TError>> createWithResult(
+            TResult const& result);
 
         ResultOrError<TResult, TError> getOutcomeInternal() const;
 
@@ -113,6 +115,7 @@ namespace PMP
         friend class NewPromise<TResult, TError>;
         friend class NewSimplePromise<TResult>;
         template<class, class> friend class NewFuture;
+        friend class NewSimpleFuture<TResult>;
         friend class NewConcurrent;
 
         QMutex _mutex;
@@ -127,6 +130,18 @@ namespace PMP
         NewFutureStorage<TResult, TError>::create()
     {
         return QSharedPointer<NewFutureStorage<TResult, TError>>::create();
+    }
+
+    template<class TResult, class TError>
+    QSharedPointer<NewFutureStorage<TResult, TError>>
+        NewFutureStorage<TResult, TError>::createWithResult(const TResult& result)
+    {
+        auto storage = QSharedPointer<NewFutureStorage<TResult, TError>>::create();
+
+        storage->_finished = true;
+        storage->_result = result;
+
+        return storage;
     }
 
     template<class TResult, class TError>
@@ -303,9 +318,12 @@ namespace PMP
     public:
         using OutcomeType = TOutcome;
 
+        static NewSimpleFuture<TOutcome> fromOutcome(TOutcome const& result);
+
         void handleOnEventLoop(QObject* receiver, std::function<void(OutcomeType)> f);
 
     private:
+        using StorageType = NewFutureStorage<TOutcome, FailureType>;
         using StoragePtr = QSharedPointer<NewFutureStorage<TOutcome, FailureType>>;
         using ContinuationPtr = QSharedPointer<Continuation<TOutcome, FailureType>>;
 
@@ -321,13 +339,28 @@ namespace PMP
     };
 
     template<class TOutcome>
+    NewSimpleFuture<TOutcome> NewSimpleFuture<TOutcome>::fromOutcome(
+        const TOutcome& result)
+    {
+        auto storage = StorageType::createWithResult(result);
+
+        return NewSimpleFuture<TOutcome>(storage);
+    }
+
+    template<class TOutcome>
     inline void NewSimpleFuture<TOutcome>::handleOnEventLoop(
         QObject* receiver,
         std::function<void (OutcomeType)> f)
     {
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
-        auto continuation = ContinuationPtr::create(runner, f);
+        auto wrapper =
+            [f](ResultOrError<TOutcome, FailureType> outcome)
+            {
+                f(outcome.result());
+            };
+
+        auto continuation = ContinuationPtr::create(runner, wrapper);
 
         _storage->setContinuation(continuation);
     }

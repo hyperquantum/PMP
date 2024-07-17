@@ -493,7 +493,7 @@ namespace PMP
     {
         auto future = _serverInterface->generalController().reloadServerSettings();
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
             [this](AnyResultMessageCode code)
             {
@@ -934,10 +934,10 @@ namespace PMP
     }
 
     void MainWindow::connectErrorPopupToActionResult(
-                                                SimpleFuture<AnyResultMessageCode> future,
-                                                QString failureText)
+        NewSimpleFuture<AnyResultMessageCode> future,
+        QString failureText)
     {
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
             [failureText](AnyResultMessageCode code)
             {

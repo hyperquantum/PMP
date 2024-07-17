@@ -76,17 +76,18 @@ namespace PMP::Client
         return _clientClockTimeOffsetMs;
     }
 
-    SimpleFuture<AnyResultMessageCode> GeneralControllerImpl::startFullIndexation()
+    NewSimpleFuture<AnyResultMessageCode> GeneralControllerImpl::startFullIndexation()
     {
         return _connection->startFullIndexation();
     }
 
-    SimpleFuture<AnyResultMessageCode> GeneralControllerImpl::startQuickScanForNewFiles()
+    NewSimpleFuture<AnyResultMessageCode>
+        GeneralControllerImpl::startQuickScanForNewFiles()
     {
         return _connection->startQuickScanForNewFiles();
     }
 
-    SimpleFuture<AnyResultMessageCode> GeneralControllerImpl::reloadServerSettings()
+    NewSimpleFuture<AnyResultMessageCode> GeneralControllerImpl::reloadServerSettings()
     {
         return _connection->reloadServerSettings();
     }

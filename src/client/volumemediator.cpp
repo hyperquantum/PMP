@@ -22,6 +22,7 @@
 #include "playercontroller.h"
 
 #include <QtDebug>
+#include <QTimer>
 
 namespace PMP::Client
 {

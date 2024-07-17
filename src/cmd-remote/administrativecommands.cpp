@@ -69,7 +69,7 @@ namespace PMP
     void StartFullIndexationCommand::run(Client::ServerInterface* serverInterface)
     {
         auto future = serverInterface->generalController().startFullIndexation();
-        addCommandExecutionFutureListener(future);
+        setCommandExecutionResultFuture(future);
     }
 
     /* ===== StartQuickScanForNewFilesCommand ===== */
@@ -77,7 +77,7 @@ namespace PMP
     void StartQuickScanForNewFilesCommand::run(Client::ServerInterface* serverInterface)
     {
         auto future = serverInterface->generalController().startQuickScanForNewFiles();
-        addCommandExecutionFutureListener(future);
+        setCommandExecutionResultFuture(future);
     }
 
     /* ===== ReloadServerSettingsCommand ===== */
@@ -85,7 +85,7 @@ namespace PMP
     void ReloadServerSettingsCommand::run(ServerInterface* serverInterface)
     {
         auto future = serverInterface->generalController().reloadServerSettings();
-        addCommandExecutionFutureListener(future);
+        setCommandExecutionResultFuture(future);
     }
 
     /* ===== ShutdownCommand ===== */

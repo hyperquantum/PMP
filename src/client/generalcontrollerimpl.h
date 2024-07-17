@@ -38,9 +38,9 @@ namespace PMP::Client
 
         qint64 clientClockTimeOffsetMs() const override;
 
-        SimpleFuture<AnyResultMessageCode> startFullIndexation() override;
-        SimpleFuture<AnyResultMessageCode> startQuickScanForNewFiles() override;
-        SimpleFuture<AnyResultMessageCode> reloadServerSettings() override;
+        NewSimpleFuture<AnyResultMessageCode> startFullIndexation() override;
+        NewSimpleFuture<AnyResultMessageCode> startQuickScanForNewFiles() override;
+        NewSimpleFuture<AnyResultMessageCode> reloadServerSettings() override;
 
         Future<VersionInfo, ResultMessageErrorCode> getServerVersionInfo() override;
 

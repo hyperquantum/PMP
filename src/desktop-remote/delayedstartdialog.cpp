@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -293,7 +293,7 @@ namespace PMP
             auto future =
                 _serverInterface->playerController().activateDelayedStart(deadline);
 
-            future.addResultListener(
+            future.handleOnEventLoop(
                 this,
                 [this](AnyResultMessageCode code) { activationResultReceived(code); }
             );
@@ -319,7 +319,7 @@ namespace PMP
             auto future =
                 _serverInterface->playerController().activateDelayedStart(
                                                                        millisecondsTotal);
-            future.addResultListener(
+            future.handleOnEventLoop(
                 this,
                 [this](AnyResultMessageCode code) { activationResultReceived(code); }
             );

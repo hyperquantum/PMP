@@ -21,6 +21,7 @@
 #define PMP_MAINWINDOW_H
 
 #include "common/future.h"
+#include "common/newfuture.h"
 #include "common/resultmessageerrorcode.h"
 
 #include <QAbstractSocket>
@@ -104,7 +105,7 @@ namespace PMP
         void showLoginWidget(QString login);
         void showMainWidget();
 
-        void connectErrorPopupToActionResult(SimpleFuture<AnyResultMessageCode> future,
+        void connectErrorPopupToActionResult(NewSimpleFuture<AnyResultMessageCode> future,
                                              QString failureText);
 
         QString getVersionText(VersionInfo const& versionInfo);

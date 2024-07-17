@@ -21,6 +21,7 @@
 
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
+#include "common/newasync.h"
 #include "common/promise.h"
 #include "common/startstopeventstatus.h"
 #include "common/util.h"
@@ -215,7 +216,7 @@ namespace PMP::Client
     public:
         PromiseResultHandler(ServerConnection* parent);
 
-        SimpleFuture<AnyResultMessageCode> future() const;
+        NewSimpleFuture<AnyResultMessageCode> future() const;
 
         void handleResult(ResultMessageData const& data) override;
         void handleExtensionResult(ExtensionResultMessageData const& data) override;
@@ -226,16 +227,17 @@ namespace PMP::Client
                                                 ExtensionResultMessageData const& data);
 
     private:
-        SimplePromise<AnyResultMessageCode> _promise;
+        NewSimplePromise<AnyResultMessageCode> _promise;
     };
 
     ServerConnection::PromiseResultHandler::PromiseResultHandler(ServerConnection* parent)
-     : ResultHandler(parent)
+     : ResultHandler(parent),
+        _promise(NewAsync::createSimplePromise<AnyResultMessageCode>())
     {
         //
     }
 
-    SimpleFuture<AnyResultMessageCode> ServerConnection::PromiseResultHandler::future(
+    NewSimpleFuture<AnyResultMessageCode> ServerConnection::PromiseResultHandler::future(
                                                                                    ) const
     {
         return _promise.future();
@@ -255,7 +257,7 @@ namespace PMP::Client
                            << errorDescription(data);
         }
 
-        _promise.setResult(data.errorType);
+        _promise.setOutcome(data.errorType);
     }
 
     void ServerConnection::PromiseResultHandler::handleExtensionResult(
@@ -263,7 +265,7 @@ namespace PMP::Client
     {
         auto code = convertExtensionResultCode(data);
 
-        _promise.setResult(code);
+        _promise.setOutcome(code);
     }
 
     QString ServerConnection::PromiseResultHandler::getActionDetail() const
@@ -1088,8 +1090,8 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    SimpleFuture<AnyResultMessageCode> ServerConnection::sendParameterlessActionRequest(
-                                                             ParameterlessActionCode code)
+    NewSimpleFuture<AnyResultMessageCode>
+        ServerConnection::sendParameterlessActionRequest(ParameterlessActionCode code)
     {
         if (NetworkProtocol::isSupported(code, _serverProtocolNo) == false)
             return serverTooOldFutureResult();
@@ -1226,14 +1228,16 @@ namespace PMP::Client
         return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
     }
 
-    FutureResult<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
+    NewSimpleFuture<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
     {
-        return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::NoError));
+        return NewSimpleFuture<AnyResultMessageCode>::fromOutcome(
+                                                        ResultMessageErrorCode::NoError);
     }
 
-    FutureResult<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
+    NewSimpleFuture<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
     {
-        return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
+        return NewSimpleFuture<AnyResultMessageCode>::fromOutcome(
+                                                    ResultMessageErrorCode::ServerTooOld);
     }
 
     FutureError<AnyResultMessageCode> ServerConnection::serverTooOldFutureError()
@@ -1241,7 +1245,7 @@ namespace PMP::Client
         return FutureError(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
     }
 
-    SimpleFuture<AnyResultMessageCode> ServerConnection::reloadServerSettings()
+    NewSimpleFuture<AnyResultMessageCode> ServerConnection::reloadServerSettings()
     {
         if (!serverCapabilities().supportsReloadingServerSettings())
             return serverTooOldFutureResult();
@@ -1252,7 +1256,7 @@ namespace PMP::Client
                                            ParameterlessActionCode::ReloadServerSettings);
     }
 
-    SimpleFuture<AnyResultMessageCode> ServerConnection::startFullIndexation()
+    NewSimpleFuture<AnyResultMessageCode> ServerConnection::startFullIndexation()
     {
         qDebug() << "sending request to start a full indexation";
 
@@ -1267,7 +1271,7 @@ namespace PMP::Client
         return noErrorFutureResult();
     }
 
-    SimpleFuture<AnyResultMessageCode> ServerConnection::startQuickScanForNewFiles()
+    NewSimpleFuture<AnyResultMessageCode> ServerConnection::startQuickScanForNewFiles()
     {
         qDebug() << "sending request to start a quick scan for new files";
 
@@ -1275,7 +1279,7 @@ namespace PMP::Client
             ParameterlessActionCode::StartQuickScanForNewFiles);
     }
 
-    SimpleFuture<AnyResultMessageCode> ServerConnection::activateDelayedStart(
+    NewSimpleFuture<AnyResultMessageCode> ServerConnection::activateDelayedStart(
                                                                  qint64 delayMilliseconds)
     {
         if (!serverCapabilities().supportsDelayedStart())
@@ -1300,7 +1304,7 @@ namespace PMP::Client
         return handler->future();
     }
 
-    SimpleFuture<AnyResultMessageCode> ServerConnection::deactivateDelayedStart()
+    NewSimpleFuture<AnyResultMessageCode> ServerConnection::deactivateDelayedStart()
     {
         if (!serverCapabilities().supportsDelayedStart())
             return serverTooOldFutureResult();
@@ -1644,7 +1648,7 @@ namespace PMP::Client
         sendUserScrobblingEnableDisableRequest(provider, false);
     }
 
-    SimpleFuture<AnyResultMessageCode> ServerConnection::authenticateScrobbling(
+    NewSimpleFuture<AnyResultMessageCode> ServerConnection::authenticateScrobbling(
                                                             ScrobblingProvider provider,
                                                             QString username,
                                                             QString password)
@@ -1791,7 +1795,7 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    SimpleFuture<AnyResultMessageCode>
+    NewSimpleFuture<AnyResultMessageCode>
         ServerConnection::sendScrobblingAuthenticationMessage(ScrobblingProvider provider,
                                                               QString username,
                                                               QString password)
