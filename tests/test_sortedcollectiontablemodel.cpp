@@ -556,14 +556,14 @@ Nullable<CollectionTrackInfo> CollectionWatcherMock::getTrackFromCache(LocalHash
     NOT_IMPLEMENTED
 }
 
-Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrackInfo(
+NewFuture<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrackInfo(
                                                                        LocalHashId hashId)
 {
     Q_UNUSED(hashId)
     NOT_IMPLEMENTED
 }
 
-Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrackInfo(
+NewFuture<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrackInfo(
                                                                     const FileHash& hash)
 {
     Q_UNUSED(hash)

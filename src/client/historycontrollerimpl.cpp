@@ -53,7 +53,7 @@ namespace PMP::Client
         _connection->sendPlayerHistoryRequest(limit);
     }
 
-    Future<HistoryFragment, AnyResultMessageCode>
+    NewFuture<HistoryFragment, AnyResultMessageCode>
         HistoryControllerImpl::getPersonalTrackHistory(LocalHashId hashId, uint userId,
                                                        int limit, uint startId)
     {

@@ -22,7 +22,6 @@
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
 #include "common/newasync.h"
-#include "common/promise.h"
 #include "common/startstopeventstatus.h"
 #include "common/util.h"
 
@@ -545,7 +544,7 @@ namespace PMP::Client
     public:
         HistoryFragmentResultHandler(ServerConnection* parent);
 
-        Future<HistoryFragment, AnyResultMessageCode> future() const;
+        NewFuture<HistoryFragment, AnyResultMessageCode> future() const;
 
         void handleResult(ResultMessageData const& data) override;
 
@@ -553,17 +552,18 @@ namespace PMP::Client
                                    HistoryFragment fragment) override;
 
     private:
-        Promise<HistoryFragment, AnyResultMessageCode> _promise;
+        NewPromise<HistoryFragment, AnyResultMessageCode> _promise;
     };
 
     ServerConnection::HistoryFragmentResultHandler::HistoryFragmentResultHandler(
         ServerConnection* parent)
-     : ResultHandler(parent)
+     : ResultHandler(parent),
+        _promise(NewAsync::createPromise<HistoryFragment, AnyResultMessageCode>())
     {
         //
     }
 
-    Future<HistoryFragment, AnyResultMessageCode>
+    NewFuture<HistoryFragment, AnyResultMessageCode>
         ServerConnection::HistoryFragmentResultHandler::future() const
     {
         return _promise.future();
@@ -590,7 +590,7 @@ namespace PMP::Client
     public:
         HashInfoResultHandler(ServerConnection* parent, FileHash const& hash);
 
-        Future<CollectionTrackInfo, AnyResultMessageCode> future() const;
+        NewFuture<CollectionTrackInfo, AnyResultMessageCode> future() const;
 
         void handleResult(ResultMessageData const& data) override;
 
@@ -600,18 +600,20 @@ namespace PMP::Client
 
     private:
         FileHash _hash;
-        Promise<CollectionTrackInfo, AnyResultMessageCode> _promise;
+        NewPromise<CollectionTrackInfo, AnyResultMessageCode> _promise;
     };
 
     ServerConnection::HashInfoResultHandler::HashInfoResultHandler(
                                                                 ServerConnection* parent,
                                                                 const FileHash& hash)
-     : ResultHandler(parent), _hash(hash)
+     : ResultHandler(parent),
+        _hash(hash),
+        _promise(NewAsync::createPromise<CollectionTrackInfo, AnyResultMessageCode>())
     {
         //
     }
 
-    Future<CollectionTrackInfo, AnyResultMessageCode>
+    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
         ServerConnection::HashInfoResultHandler::future() const
     {
         return _promise.future();
@@ -1240,9 +1242,9 @@ namespace PMP::Client
                                                     ResultMessageErrorCode::ServerTooOld);
     }
 
-    FutureError<AnyResultMessageCode> ServerConnection::serverTooOldFutureError()
+    NewFutureError<AnyResultMessageCode> ServerConnection::serverTooOldFutureError()
     {
-        return FutureError(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
+        return NewFutureError(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
     }
 
     NewSimpleFuture<AnyResultMessageCode> ServerConnection::reloadServerSettings()
@@ -1398,7 +1400,7 @@ namespace PMP::Client
         return RequestID(ref);
     }
 
-    Future<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
+    NewFuture<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
                                                                        LocalHashId hashId)
     {
         auto hash = _hashIdRepository->getHash(hashId);
@@ -1406,13 +1408,13 @@ namespace PMP::Client
         return sendHashInfoRequest(hash);
     }
 
-    Future<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
+    NewFuture<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
                                                                     const FileHash& hash)
     {
         return sendHashInfoRequest(hash);
     }
 
-    Future<HistoryFragment, AnyResultMessageCode>
+    NewFuture<HistoryFragment, AnyResultMessageCode>
         ServerConnection::getPersonalTrackHistory(LocalHashId hashId, uint userId,
                                                   int limit, uint startId)
     {
@@ -1520,7 +1522,7 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    Future<CollectionTrackInfo, AnyResultMessageCode>
+    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
         ServerConnection::sendHashInfoRequest(FileHash const& hash)
     {
         Q_ASSERT_X(!hash.isNull(), "sendHashInfoRequest", "hash is null");
@@ -1546,7 +1548,7 @@ namespace PMP::Client
         return handler->future();
     }
 
-    Future<HistoryFragment, AnyResultMessageCode>
+    NewFuture<HistoryFragment, AnyResultMessageCode>
         ServerConnection::sendHashHistoryRequest(LocalHashId hashId, uint userId,
                                                  int limit, uint startId)
     {

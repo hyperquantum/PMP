@@ -133,11 +133,11 @@ namespace PMP::Client
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
-        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+        NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                                     LocalHashId hashId);
-        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+        NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                                     FileHash const& hash);
-        Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
+        NewFuture<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId = 0);
 
@@ -188,9 +188,9 @@ namespace PMP::Client
         void sendQueueEntryHashRequest(QList<uint> const& queueIDs);
 
         void sendHashUserDataRequest(quint32 userId, QList<LocalHashId> const& hashes);
-        Future<CollectionTrackInfo, AnyResultMessageCode> sendHashInfoRequest(
+        NewFuture<CollectionTrackInfo, AnyResultMessageCode> sendHashInfoRequest(
                                                                     const FileHash& hash);
-        Future<HistoryFragment, AnyResultMessageCode> sendHashHistoryRequest(
+        NewFuture<HistoryFragment, AnyResultMessageCode> sendHashHistoryRequest(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId);
 
@@ -297,7 +297,7 @@ namespace PMP::Client
                                                                    RequestID));
         NewSimpleFuture<AnyResultMessageCode> noErrorFutureResult();
         NewSimpleFuture<AnyResultMessageCode> serverTooOldFutureResult();
-        FutureError<AnyResultMessageCode> serverTooOldFutureError();
+        NewFutureError<AnyResultMessageCode> serverTooOldFutureError();
 
         void sendTextCommand(QString const& command);
         void appendScrobblingMessageStart(QByteArray& buffer,

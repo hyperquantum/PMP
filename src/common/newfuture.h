@@ -103,6 +103,8 @@ namespace PMP
         static QSharedPointer<NewFutureStorage<TResult, TError>> create();
         static QSharedPointer<NewFutureStorage<TResult, TError>> createWithResult(
             TResult const& result);
+        static QSharedPointer<NewFutureStorage<TResult, TError>> createWithError(
+            TError const& error);
 
         ResultOrError<TResult, TError> getOutcomeInternal() const;
 
@@ -140,6 +142,18 @@ namespace PMP
 
         storage->_finished = true;
         storage->_result = result;
+
+        return storage;
+    }
+
+    template<class TResult, class TError>
+    QSharedPointer<NewFutureStorage<TResult, TError>>
+        NewFutureStorage<TResult, TError>::createWithError(TError const& error)
+    {
+        auto storage = QSharedPointer<NewFutureStorage<TResult, TError>>::create();
+
+        storage->_finished = true;
+        storage->_error = error;
 
         return storage;
     }
@@ -211,11 +225,43 @@ namespace PMP
 
     // =================================================================== //
 
+    template<class TResult>
+    class NewFutureResult
+    {
+    public:
+        NewFutureResult(TResult const& result) : _result(result) {}
+        NewFutureResult(TResult&& result) : _result(result) {}
+
+    private:
+        template<class T1, class T2> friend class NewFuture;
+        friend class NewSimpleFuture<TResult>;
+
+        TResult _result;
+    };
+
+    template<class TError>
+    class NewFutureError
+    {
+    public:
+        NewFutureError(TError const& error) : _error(error) {}
+        NewFutureError(TError&& error) : _error(error) {}
+
+    private:
+        template<class T1, class T2> friend class NewFuture;
+
+        TError _error;
+    };
+
+    // =================================================================== //
+
     template<class TResult, class TError>
     class NewFuture
     {
     public:
         using OutcomeType = ResultOrError<TResult, TError>;
+
+        NewFuture(NewFutureResult<TResult> const& result);
+        NewFuture(NewFutureError<TError> const& error);
 
         template<class TResult2, class TError2>
         NewFuture<TResult2, TError2> thenOnThreadPool(QThreadPool* threadPool,
@@ -226,6 +272,7 @@ namespace PMP
         // TODO: adding listeners
 
     private:
+        using StorageType = NewFutureStorage<TResult, TError>;
         using StoragePtr = QSharedPointer<NewFutureStorage<TResult, TError>>;
         using ContinuationPtr = QSharedPointer<Continuation<TResult, TError>>;
 
@@ -242,6 +289,20 @@ namespace PMP
 
         StoragePtr _storage;
     };
+
+    template<class TResult, class TError>
+    NewFuture<TResult, TError>::NewFuture(const NewFutureResult<TResult>& result)
+        : _storage(StorageType::createWithResult(result._result))
+    {
+        //
+    }
+
+    template<class TResult, class TError>
+    NewFuture<TResult, TError>::NewFuture(const NewFutureError<TError>& error)
+        : _storage(StorageType::createWithError(error._error))
+    {
+        //
+    }
 
     template<class TResult, class TError>
     template<class TResult2, class TError2>

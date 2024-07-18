@@ -84,6 +84,22 @@ namespace PMP
             );
         }
 
+        template <class T>
+        void handleFailureAndResult(NewFuture<T, AnyResultMessageCode>& future,
+                                    std::function<void(T const& result)> f)
+        {
+            future.handleOnEventLoop(
+                this,
+                [this, f](ResultOrError<T, AnyResultMessageCode> outcome)
+                {
+                    if (outcome.succeeded())
+                        f(outcome.result());
+                    else
+                        setCommandExecutionResult(outcome.error());
+                }
+            );
+        }
+
         virtual void run(Client::ServerInterface* serverInterface) = 0;
 
     protected Q_SLOTS:

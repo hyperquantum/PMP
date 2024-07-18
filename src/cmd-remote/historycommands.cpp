@@ -166,11 +166,9 @@ namespace PMP
             serverInterface->historyController().getPersonalTrackHistory(hashId, userId,
                                                                          _fetchLimit);
 
-        addFailureHandler(future);
-
-        future.addResultListener(
-            this,
-            [this](HistoryFragment fragment)
+        handleFailureAndResult<HistoryFragment>(
+            future,
+            [this](HistoryFragment const& fragment)
             {
                 printResult(fragment);
             }

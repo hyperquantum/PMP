@@ -134,9 +134,9 @@ public:
 
     QHash<LocalHashId, CollectionTrackInfo> getCollection() override;
     Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) override;
-    Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+    NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                              LocalHashId hashId) override;
-    Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+    NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                         FileHash const& hash) override;
 
 private:

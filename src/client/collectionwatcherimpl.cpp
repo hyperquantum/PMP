@@ -90,19 +90,19 @@ namespace PMP::Client
         return it.value();
     }
 
-    Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherImpl::getTrackInfo(
-                                                                       LocalHashId hashId)
+    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
+        CollectionWatcherImpl::getTrackInfo(LocalHashId hashId)
     {
         auto it = _collectionHash.find(hashId);
 
         if (it != _collectionHash.end())
-            return FutureResult(it.value());
+            return NewFutureResult(it.value());
 
         return getTrackInfoInternal(hashId);
     }
 
-    Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherImpl::getTrackInfo(
-                                                                    const FileHash& hash)
+    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
+        CollectionWatcherImpl::getTrackInfo(const FileHash& hash)
     {
         auto hashId = _connection->hashIdRepository()->getId(hash);
 
@@ -111,7 +111,7 @@ namespace PMP::Client
             auto it = _collectionHash.find(hashId);
 
             if (it != _collectionHash.end())
-                return FutureResult(it.value());
+                return NewFutureResult(it.value());
         }
 
         return getTrackInfoInternal(hash);
@@ -169,32 +169,34 @@ namespace PMP::Client
         }
     }
 
-    Future<CollectionTrackInfo, AnyResultMessageCode>
+    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
         CollectionWatcherImpl::getTrackInfoInternal(LocalHashId hashId)
     {
         auto future = _connection->getTrackInfo(hashId);
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this](CollectionTrackInfo trackInfo)
+            [this](ResultOrError<CollectionTrackInfo, AnyResultMessageCode> outcome)
             {
-                updateTrackData(trackInfo);
+                if (outcome.succeeded())
+                    updateTrackData(outcome.result());
             }
         );
 
         return future;
     }
 
-    Future<CollectionTrackInfo, AnyResultMessageCode>
+    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
         CollectionWatcherImpl::getTrackInfoInternal(const FileHash& hash)
     {
         auto future = _connection->getTrackInfo(hash);
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this](CollectionTrackInfo trackInfo)
+            [this](ResultOrError<CollectionTrackInfo, AnyResultMessageCode> outcome)
             {
-                updateTrackData(trackInfo);
+                if (outcome.succeeded())
+                    updateTrackData(outcome.result());
             }
         );
 
