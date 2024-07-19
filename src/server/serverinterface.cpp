@@ -21,7 +21,7 @@
 
 #include "common/concurrent.h"
 #include "common/containerutil.h"
-#include "common/promise.h"
+#include "common/newasync.h"
 
 #include "database.h"
 #include "delayedstart.h"
@@ -158,19 +158,19 @@ namespace PMP::Server
         _userLoggedInName = userLogin;
     }
 
-    SimpleFuture<ResultMessageErrorCode> ServerInterface::reloadServerSettings()
+    NewSimpleFuture<ResultMessageErrorCode> ServerInterface::reloadServerSettings()
     {
-        SimplePromise<ResultMessageErrorCode> promise;
+        auto promise = NewAsync::createSimplePromise<ResultMessageErrorCode>();
 
         // TODO : in the future allow reloading if the database is not connected yet
         if (!isLoggedIn())
         {
-            promise.setResult(ResultMessageErrorCode::NotLoggedIn);
+            promise.setOutcome(ResultMessageErrorCode::NotLoggedIn);
         }
         else
         {
             _serverSettings->load();
-            promise.setResult(ResultMessageErrorCode::NoError);
+            promise.setOutcome(ResultMessageErrorCode::NoError);
         }
 
         return promise.future();

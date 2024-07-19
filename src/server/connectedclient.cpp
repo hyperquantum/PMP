@@ -3300,7 +3300,7 @@ namespace PMP::Server
         case ParameterlessActionCode::ReloadServerSettings:
         {
             auto future = _serverInterface->reloadServerSettings();
-            future.addResultListener(
+            future.handleOnEventLoop(
                 this,
                 [this, clientReference](ResultMessageErrorCode error)
                 {

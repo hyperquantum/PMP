@@ -22,6 +22,7 @@
 
 #include "common/filehash.h"
 #include "common/future.h"
+#include "common/newfuture.h"
 #include "common/queueindextype.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/scrobblingprovider.h"
@@ -91,7 +92,7 @@ namespace PMP::Server
         quint32 userLoggedIn() const { return _userLoggedIn; }
         void setLoggedIn(quint32 userId, QString userLogin);
 
-        SimpleFuture<ResultMessageErrorCode> reloadServerSettings();
+        NewSimpleFuture<ResultMessageErrorCode> reloadServerSettings();
 
         Result startFullIndexation();
         Result startQuickScanForNewFiles();
