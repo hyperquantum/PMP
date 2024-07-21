@@ -21,6 +21,7 @@
 
 #include "common/concurrent.h"
 #include "common/containerutil.h"
+#include "common/newconcurrent.h"
 
 #include "database.h"
 #include "hashrelations.h"
@@ -143,7 +144,7 @@ namespace PMP::Server
         for (auto hashId : hashesInGroup)
             userData.hashesInProgress << hashId;
 
-        Concurrent::run<SuccessType, FailureType>(
+        NewConcurrent::runOnThreadPool<SuccessType, FailureType>(
             _threadPool,
             [this, userId, hashesInGroup]()
             {
@@ -215,7 +216,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_mutex);
 
-        Concurrent::run<SuccessType, FailureType>(
+        NewConcurrent::runOnThreadPool<SuccessType, FailureType>(
             _threadPool,
             [this, userId, hashId]() -> SuccessOrFailure
             {
