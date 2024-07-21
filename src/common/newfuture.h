@@ -105,6 +105,10 @@ namespace PMP
             TResult const& result);
         static QSharedPointer<NewFutureStorage<TResult, TError>> createWithError(
             TError const& error);
+        static QSharedPointer<NewFutureStorage<TResult, TError>> createWithOutcome(
+            ResultOrError<TResult, TError> const& outcome);
+
+        Nullable<ResultOrError<TResult, TError>> getOutcomeIfFinished();
 
         ResultOrError<TResult, TError> getOutcomeInternal() const;
 
@@ -156,6 +160,35 @@ namespace PMP
         storage->_error = error;
 
         return storage;
+    }
+
+    template<class TResult, class TError>
+    QSharedPointer<NewFutureStorage<TResult, TError>>
+        NewFutureStorage<TResult, TError>::createWithOutcome(
+            ResultOrError<TResult, TError> const& outcome)
+    {
+        auto storage = QSharedPointer<NewFutureStorage<TResult, TError>>::create();
+
+        storage->_finished = true;
+
+        if (outcome.succeeded())
+            storage->_result = outcome.result();
+        else
+            storage->_error = outcome.error();
+
+        return storage;
+    }
+
+    template<class TResult, class TError>
+    Nullable<ResultOrError<TResult, TError>>
+        NewFutureStorage<TResult, TError>::getOutcomeIfFinished()
+    {
+        QMutexLocker lock(&_mutex);
+
+        if (!_finished)
+            return null;
+
+        return getOutcomeInternal();
     }
 
     template<class TResult, class TError>
@@ -263,6 +296,10 @@ namespace PMP
         NewFuture(NewFutureResult<TResult> const& result);
         NewFuture(NewFutureError<TError> const& error);
 
+        static NewFuture<TResult, TError> fromOutcome(OutcomeType outcome);
+
+        Nullable<OutcomeType> outcomeIfFinished();
+
         template<class TResult2, class TError2>
         NewFuture<TResult2, TError2> thenOnThreadPool(QThreadPool* threadPool,
             std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
@@ -302,6 +339,20 @@ namespace PMP
         : _storage(StorageType::createWithError(error._error))
     {
         //
+    }
+
+    template<class TResult, class TError>
+    inline NewFuture<TResult, TError> NewFuture<TResult, TError>::fromOutcome(
+                                                                    OutcomeType outcome)
+    {
+        return NewFuture(StorageType::createWithOutcome(outcome));
+    }
+
+    template<class TResult, class TError>
+    Nullable<ResultOrError<TResult, TError>>
+        NewFuture<TResult, TError>::outcomeIfFinished()
+    {
+        return _storage->getOutcomeIfFinished();
     }
 
     template<class TResult, class TError>

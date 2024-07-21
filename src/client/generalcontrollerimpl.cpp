@@ -92,7 +92,7 @@ namespace PMP::Client
         return _connection->reloadServerSettings();
     }
 
-    Future<VersionInfo, ResultMessageErrorCode>
+    NewFuture<VersionInfo, ResultMessageErrorCode>
         GeneralControllerImpl::getServerVersionInfo()
     {
         if (!_connection->serverCapabilities().supportsSendingVersionInfo())

@@ -20,7 +20,6 @@
 #ifndef PMP_GENERALCONTROLLER_H
 #define PMP_GENERALCONTROLLER_H
 
-#include "common/future.h"
 #include "common/newfuture.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/serverhealthstatus.h"
@@ -46,7 +45,7 @@ namespace PMP::Client
         virtual NewSimpleFuture<AnyResultMessageCode> startQuickScanForNewFiles() = 0;
         virtual NewSimpleFuture<AnyResultMessageCode> reloadServerSettings() = 0;
 
-        virtual Future<VersionInfo, ResultMessageErrorCode> getServerVersionInfo() = 0;
+        virtual NewFuture<VersionInfo, ResultMessageErrorCode> getServerVersionInfo() = 0;
 
         virtual TriBool isFullIndexationRunning() const = 0;
         virtual TriBool isQuickScanForNewFilesRunning() const = 0;

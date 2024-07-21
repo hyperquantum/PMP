@@ -577,7 +577,7 @@ namespace PMP
                 _serverInterface->generalController().getServerVersionInfo();
 
             auto maybeServerVersionResultOrError =
-                serverVersionFuture.resultOrErrorIfFinished();
+                serverVersionFuture.outcomeIfFinished();
 
             if (maybeServerVersionResultOrError == null
                 || maybeServerVersionResultOrError.value().failed())

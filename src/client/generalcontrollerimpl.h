@@ -42,7 +42,7 @@ namespace PMP::Client
         NewSimpleFuture<AnyResultMessageCode> startQuickScanForNewFiles() override;
         NewSimpleFuture<AnyResultMessageCode> reloadServerSettings() override;
 
-        Future<VersionInfo, ResultMessageErrorCode> getServerVersionInfo() override;
+        NewFuture<VersionInfo, ResultMessageErrorCode> getServerVersionInfo() override;
 
         TriBool isFullIndexationRunning() const override;
         TriBool isQuickScanForNewFilesRunning() const override;

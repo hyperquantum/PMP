@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,12 +20,10 @@
 #ifndef PMP_LAZYPROMISEDVALUE_H
 #define PMP_LAZYPROMISEDVALUE_H
 
+#include "newasync.h"
 #include "nullable.h"
-#include "promise.h"
 
 #include <functional>
-
-#include <QSharedPointer>
 
 namespace PMP
 {
@@ -39,18 +37,18 @@ namespace PMP
             //
         }
 
-        Future<ResultType, ErrorType> future()
+        NewFuture<ResultType, ErrorType> future()
         {
             if (_cached.hasValue())
-                return Future<ResultType, ErrorType>::fromResultOrError(_cached.value());
+                return NewFuture<ResultType, ErrorType>::fromOutcome(_cached.value());
 
             if (_promise.isNull())
             {
-                _promise = QSharedPointer<Promise<ResultType, ErrorType>>::create();
+                _promise = NewAsync::createPromise<ResultType, ErrorType>();
                 _requester();
             }
 
-            return _promise->future();
+            return _promise.value().future();
         }
 
         void setResult(ResultType result)
@@ -60,8 +58,8 @@ namespace PMP
             if (_promise.isNull())
                 return;
 
-            _promise->setResult(result);
-            _promise.clear();
+            _promise.value().setResult(result);
+            _promise.setToNull();
         }
 
         void setError(ErrorType error)
@@ -71,20 +69,20 @@ namespace PMP
             if (_promise.isNull())
                 return;
 
-            _promise->setError(error);
-            _promise.clear();
+            _promise.value().setError(error);
+            _promise.setToNull();
         }
 
         void reset()
         {
             _cached = null;
-            _promise.clear();
+            _promise.setToNull();
         }
 
     private:
         std::function<void ()> _requester;
         Nullable<ResultOrError<ResultType, ErrorType>> _cached;
-        QSharedPointer<Promise<ResultType, ErrorType>> _promise;
+        Nullable<NewPromise<ResultType, ErrorType>> _promise;
     };
 }
 #endif

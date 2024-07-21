@@ -37,19 +37,14 @@ namespace PMP
     {
         auto future = serverInterface->generalController().getServerVersionInfo();
 
-        future.addFailureListener(
+        future.handleOnEventLoop(
             this,
-            [this](ResultMessageErrorCode errorCode)
+            [this](ResultOrError<VersionInfo, ResultMessageErrorCode> outcome)
             {
-                setCommandExecutionResult(errorCode);
-            }
-        );
-
-        future.addResultListener(
-            this,
-            [this](VersionInfo versionInfo)
-            {
-                printVersion(versionInfo);
+                if (outcome.succeeded())
+                    printVersion(outcome.result());
+                else
+                    setCommandExecutionResult(outcome.error());
             }
         );
     }
