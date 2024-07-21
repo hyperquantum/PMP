@@ -422,7 +422,7 @@ namespace PMP::Server
 
         auto future =
             Concurrent::run<QVector<QString>, FailureType>(
-                [hashId]() -> ResultOrError<QVector<QString>, FailureType>
+                [hashId]() -> FailureOr<QVector<QString>>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)
