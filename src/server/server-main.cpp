@@ -17,8 +17,9 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "common/concurrent.h"
+//#include "common/concurrent.h"
 #include "common/logging.h"
+#include "common/newconcurrent.h"
 #include "common/util.h"
 #include "common/version.h"
 
@@ -125,8 +126,9 @@ static void loadEquivalencesAndStartHashStatsCacheFixerAsync(
                                             UserHashStatsCacheFixer* hashStatsCacheFixer)
 {
     auto equivalencesLoadingFuture =
-        Concurrent::run<SuccessType, FailureType>(
-            [hashRelations]() -> ResultOrError<SuccessType, FailureType>
+        NewConcurrent::runOnThreadPool<SuccessType, FailureType>(
+            globalThreadPool,
+            [hashRelations]() -> SuccessOrFailure
             {
                 auto db = Database::getDatabaseForCurrentThread();
                 if (!db) return failure; /* database not available */
@@ -143,11 +145,11 @@ static void loadEquivalencesAndStartHashStatsCacheFixerAsync(
             }
         );
 
-    equivalencesLoadingFuture.addListener(
+    equivalencesLoadingFuture.handleOnEventLoop(
         hashStatsCacheFixer,
-        [hashStatsCacheFixer](ResultOrError<SuccessType, FailureType> result)
+        [hashStatsCacheFixer](SuccessOrFailure outcome)
         {
-            if (result.failed())
+            if (outcome.failed())
                 qDebug() << "failed to load equivalences from the database";
 
             hashStatsCacheFixer->start();
