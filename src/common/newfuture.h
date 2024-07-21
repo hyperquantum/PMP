@@ -301,7 +301,7 @@ namespace PMP
         Nullable<OutcomeType> outcomeIfFinished();
 
         template<class TResult2, class TError2>
-        NewFuture<TResult2, TError2> thenOnThreadPool(QThreadPool* threadPool,
+        NewFuture<TResult2, TError2> thenOnThreadPool(ThreadPoolSpecifier threadPool,
             std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
 
         void handleOnEventLoop(QObject* receiver, std::function<void(OutcomeType)> f);
@@ -359,7 +359,7 @@ namespace PMP
     template<class TResult2, class TError2>
     NewFuture<TResult2, TError2>
     NewFuture<TResult, TError>::thenOnThreadPool(
-        QThreadPool* threadPool,
+        ThreadPoolSpecifier threadPool,
         std::function<ResultOrError<TResult2, TError2> (OutcomeType)> f)
     {
         auto runner = QSharedPointer<ThreadPoolRunner>::create(threadPool);

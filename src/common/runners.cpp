@@ -25,6 +25,16 @@
 
 namespace PMP
 {
+    QThreadPool* ThreadPoolSpecifier::threadPool() const
+    {
+        if (_threadPool)
+            return _threadPool;
+
+        return QThreadPool::globalInstance();
+    }
+
+    // =================================================================== //
+
     EventLoopRunner::EventLoopRunner(QObject* receiver)
         : _receiver(receiver)
     {
@@ -38,14 +48,14 @@ namespace PMP
 
     // =================================================================== //
 
-    ThreadPoolRunner::ThreadPoolRunner(QThreadPool* threadPool)
-        : _threadPool(threadPool)
+    ThreadPoolRunner::ThreadPoolRunner(ThreadPoolSpecifier threadPoolSpecifier)
+        : _threadPoolSpecifier(threadPoolSpecifier)
     {
         //
     }
 
     void ThreadPoolRunner::run(std::function<void()> work)
     {
-        _threadPool->start(work);
+        _threadPoolSpecifier.threadPool()->start(work);
     }
 }

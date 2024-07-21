@@ -29,6 +29,38 @@ QT_FORWARD_DECLARE_CLASS(QThreadPool)
 
 namespace PMP
 {
+    class GlobalThreadPoolType
+    {
+    public:
+        constexpr GlobalThreadPoolType() {}
+
+        constexpr bool operator==(GlobalThreadPoolType) { return true; }
+        constexpr bool operator!=(GlobalThreadPoolType) { return false; }
+    };
+
+    constexpr GlobalThreadPoolType globalThreadPool = {};
+
+    class ThreadPoolSpecifier
+    {
+    public:
+        constexpr ThreadPoolSpecifier(QThreadPool* threadPool)
+            : _threadPool(threadPool)
+        {
+            //
+        }
+
+        constexpr ThreadPoolSpecifier(GlobalThreadPoolType)
+            : _threadPool(nullptr)
+        {
+            //
+        }
+
+        QThreadPool* threadPool() const;
+
+    private:
+        QThreadPool* _threadPool;
+    };
+
     class Runner
     {
     public:
@@ -54,12 +86,12 @@ namespace PMP
     class ThreadPoolRunner : public Runner
     {
     public:
-        ThreadPoolRunner(QThreadPool* threadPool);
+        ThreadPoolRunner(ThreadPoolSpecifier threadPoolSpecifier);
 
         void run(std::function<void()> work) override;
 
     private:
-        QThreadPool* _threadPool;
+        ThreadPoolSpecifier _threadPoolSpecifier;
     };
 }
 #endif

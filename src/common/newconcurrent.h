@@ -30,7 +30,7 @@ namespace PMP
     public:
         template<class TResult, class TError>
         static NewFuture<TResult, TError> runOnThreadPool(
-            QThreadPool* threadPool,
+            ThreadPoolSpecifier threadPool,
             std::function<ResultOrError<TResult, TError>()> f);
 
     private:
@@ -39,7 +39,7 @@ namespace PMP
 
     template<class TResult, class TError>
     inline NewFuture<TResult, TError> NewConcurrent::runOnThreadPool(
-        QThreadPool* threadPool,
+        ThreadPoolSpecifier threadPool,
         std::function<ResultOrError<TResult, TError> ()> f)
     {
         auto runner = QSharedPointer<ThreadPoolRunner>::create(threadPool);
