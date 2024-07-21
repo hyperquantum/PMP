@@ -19,6 +19,8 @@
 
 #include "runners.h"
 
+#include <QObject>
+#include <QThreadPool>
 #include <QTimer>
 
 namespace PMP

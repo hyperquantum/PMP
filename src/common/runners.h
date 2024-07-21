@@ -20,10 +20,12 @@
 #ifndef PMP_COMMON_RUNNERS_H
 #define PMP_COMMON_RUNNERS_H
 
-#include <QObject>
-#include <QThreadPool>
+#include <QtGlobal>
 
 #include <functional>
+
+QT_FORWARD_DECLARE_CLASS(QObject)
+QT_FORWARD_DECLARE_CLASS(QThreadPool)
 
 namespace PMP
 {
