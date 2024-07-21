@@ -3008,18 +3008,14 @@ namespace PMP::Server
         auto future =
             _serverInterface->getPersonalTrackHistory(hash, userId, startId, limit);
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this, clientReference](HistoryFragment historyFragment)
+            [this, clientReference](ResultOrError<HistoryFragment, Result> outcome)
             {
-                sendHistoryFragmentMessage(clientReference, historyFragment);
-            }
-        );
-        future.addFailureListener(
-            this,
-            [this, clientReference](Result result)
-            {
-                sendResultMessage(result, clientReference);
+                if (outcome.succeeded())
+                    sendHistoryFragmentMessage(clientReference, outcome.result());
+                else
+                    sendResultMessage(outcome.error(), clientReference);
             }
         );
     }

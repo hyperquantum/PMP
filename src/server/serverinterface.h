@@ -101,7 +101,7 @@ namespace PMP::Server
         void switchToPersonalMode();
         void switchToPublicMode();
 
-        Future<HistoryFragment, Result> getPersonalTrackHistory(FileHash hash,
+        NewFuture<HistoryFragment, Result> getPersonalTrackHistory(FileHash hash,
                                                                 quint32 userId,
                                                                 uint startId,
                                                                 int limit);

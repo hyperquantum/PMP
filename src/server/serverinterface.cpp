@@ -22,6 +22,7 @@
 #include "common/concurrent.h"
 #include "common/containerutil.h"
 #include "common/newasync.h"
+#include "common/newconcurrent.h"
 
 #include "database.h"
 #include "delayedstart.h"
@@ -227,29 +228,30 @@ namespace PMP::Server
         _player->setUserPlayingFor(0);
     }
 
-    Future<HistoryFragment, Result> ServerInterface::getPersonalTrackHistory(
+    NewFuture<HistoryFragment, Result> ServerInterface::getPersonalTrackHistory(
         FileHash hash, quint32 userId, uint startId, int limit)
     {
         if (!isLoggedIn())
-            return FutureError(Error::notLoggedIn());
+            return NewFutureError(Error::notLoggedIn());
 
         if (hash.isNull())
-            return FutureError(Error::hashIsNull());
+            return NewFutureError(Error::hashIsNull());
 
         auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
         if (maybeHashId == null)
-            return FutureError(Error::hashIsUnknown());
+            return NewFutureError(Error::hashIsUnknown());
 
         auto hashIds =
             _hashRelations->getEquivalencyGroup(maybeHashId.value());
 
         if (userId != 0 && !_users->checkUserIdExists(userId))
-            return FutureError(Error::userIdNotFound());
+            return NewFutureError(Error::userIdNotFound());
 
         limit = qBound(0, limit, 50);
 
         auto future =
-            Concurrent::run<HistoryFragment, Result>(
+            NewConcurrent::runOnThreadPool<HistoryFragment, Result>(
+                globalThreadPool,
                 [hashIds, hash, userId, startId, limit]()
                     -> ResultOrError<HistoryFragment, Result>
                 {
