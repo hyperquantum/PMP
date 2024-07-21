@@ -22,7 +22,7 @@
 
 #include "common/disconnectreason.h"
 #include "common/filehash.h"
-#include "common/future.h"
+//#include "common/future.h"
 #include "common/networkprotocol.h"
 #include "common/networkprotocolextensions.h"
 #include "common/newfuture.h"
