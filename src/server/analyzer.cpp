@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 
 #include "common/concurrent.h"
 #include "common/fileanalyzer.h"
+#include "common/newconcurrent.h"
 
 #include <QtDebug>
 #include <QThreadPool>
@@ -56,7 +57,7 @@ namespace PMP::Server
         _pathsInProgress << path;
 
         auto future =
-            Concurrent::run<FileAnalysis, FailureType>(
+            NewConcurrent::runOnThreadPool<FileAnalysis, FailureType>(
                 _queueThreadPool,
                 [this, path]()
                 {
@@ -64,17 +65,15 @@ namespace PMP::Server
                 }
             );
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this, path](FileAnalysis analysis)
+            [this, path](ResultOrError<FileAnalysis, FailureType> outcome)
             {
-                onFileAnalysisCompleted(path, analysis);
+                if (outcome.succeeded())
+                    onFileAnalysisCompleted(path, outcome.result());
+                else
+                    onFileAnalysisFailed(path);
             }
-        );
-
-        future.addFailureListener(
-            this,
-            [this, path](FailureType) { onFileAnalysisFailed(path); }
         );
     }
 
