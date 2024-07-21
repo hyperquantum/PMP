@@ -406,34 +406,39 @@ namespace PMP::Server
         return overview;
     }
 
-    Future<QVector<QString>, Result> ServerInterface::getPossibleFilenamesForQueueEntry(
-                                                                                  uint id)
+    NewFuture<QVector<QString>, Result>
+        ServerInterface::getPossibleFilenamesForQueueEntry(uint id)
     {
         if (id <= 0) /* invalid queue ID */
-            return FutureError(Error::queueEntryIdNotFound(0));
+            return NewFutureError(Error::queueEntryIdNotFound(0));
 
         auto entry = _player->queue().lookup(id);
         if (entry == nullptr) /* ID not found */
-            return FutureError(Error::queueEntryIdNotFound(id));
+            return NewFutureError(Error::queueEntryIdNotFound(id));
 
         if (!entry->isTrack())
-            return FutureError(Error::queueItemTypeInvalid());
+            return NewFutureError(Error::queueItemTypeInvalid());
 
         auto hash = entry->hash().value();
         uint hashId = _player->resolver().getID(hash);
 
         auto future =
-            Concurrent::run<QVector<QString>, FailureType>(
-                [hashId]() -> FailureOr<QVector<QString>>
+            NewConcurrent::runOnThreadPool<QVector<QString>, Result>(
+                globalThreadPool,
+                [hashId]() -> ResultOrError<QVector<QString>, Result>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)
-                        return failure; /* database unusable */
+                        return Error::databaseUnvailable();
 
-                    return db->getFilenames(hashId);
+                    auto filenamesOrFailure = db->getFilenames(hashId);
+
+                    if (filenamesOrFailure.failed())
+                        return Error::internalError();
+
+                    return filenamesOrFailure.result();
                 }
-            )
-            .convertError<Result>([](FailureType) { return Error::internalError(); });
+            );
 
         return future;
     }

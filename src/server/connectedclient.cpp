@@ -2743,15 +2743,16 @@ namespace PMP::Server
         quint32 queueId = NetworkUtil::get4Bytes(message, 2);
         qDebug() << "received request for possible filenames of QID" << queueId;
 
-        auto future = _serverInterface->getPossibleFilenamesForQueueEntry(queueId);
-
-        future.addResultListener(
-            this,
-            [this, queueId](QVector<QString> result)
-            {
-                sendPossibleTrackFilenames(queueId, result);
-            }
-        );
+        _serverInterface->getPossibleFilenamesForQueueEntry(queueId)
+            .handleOnEventLoop(
+                this,
+                [this, queueId](ResultOrError<QVector<QString>, Result> outcome)
+                {
+                    if (outcome.succeeded())
+                        sendPossibleTrackFilenames(queueId, outcome.result());
+                    // TODO: report failure somehow
+                }
+            );
     }
 
     void ConnectedClient::parseQueueFetchRequestMessage(const QByteArray& message)

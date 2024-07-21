@@ -126,7 +126,7 @@ namespace PMP::Server
 
         PlayerStateOverview getPlayerStateOverview();
 
-        Future<QVector<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
+        NewFuture<QVector<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
 
         Result insertTrackAtEnd(FileHash hash);
         Result insertTrackAtFront(FileHash hash);
