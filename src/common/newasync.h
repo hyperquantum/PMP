@@ -40,6 +40,16 @@ namespace PMP
             QObject* receiver,
             std::function<ResultOrError<TResult, TError>()> f);
 
+        template<class TResult, class TError>
+        static NewFuture<TResult, TError> runOnEventLoop(
+            QObject* receiver,
+            std::function<NewFuture<TResult, TError>()> f);
+
+        template<class TOutcome>
+        static NewSimpleFuture<TOutcome> runOnEventLoop(
+            QObject* receiver,
+            std::function<NewSimpleFuture<TOutcome>()> f);
+
     private:
         NewAsync();
     };
@@ -64,6 +74,26 @@ namespace PMP
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
         return NewFuture<TResult, TError>::createForRunner(runner, f);
+    }
+
+    template<class TResult, class TError>
+    NewFuture<TResult, TError> NewAsync::runOnEventLoop(
+        QObject* receiver,
+        std::function<NewFuture<TResult, TError>()> f)
+    {
+        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
+
+        return NewFuture<TResult, TError>::createForRunner(runner, f);
+    }
+
+    template<class TOutcome>
+    NewSimpleFuture<TOutcome> NewAsync::runOnEventLoop(
+        QObject* receiver,
+        std::function<NewSimpleFuture<TOutcome> ()> f)
+    {
+        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
+
+        return NewSimpleFuture<TOutcome>::createForRunner(runner, f);
     }
 }
 #endif

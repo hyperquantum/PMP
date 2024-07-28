@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,7 +19,7 @@
 
 #include "scrobbling.h"
 
-#include "common/async.h"
+#include "common/newasync.h"
 
 #include "scrobblinghost.h"
 
@@ -195,13 +195,13 @@ namespace PMP::Server
         return controller;
     }
 
-    SimpleFuture<Result> Scrobbling::authenticateForProvider(uint userId,
+    NewSimpleFuture<Result> Scrobbling::authenticateForProvider(uint userId,
                                                              ScrobblingProvider provider,
                                                              QString user,
                                                              QString password)
     {
         return
-            Async::invokeSimpleFuture<Result>(
+            NewAsync::runOnEventLoop<Result>(
                 _host,
                 [host = _host, userId, provider, user, password]()
                 {

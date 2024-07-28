@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_SCROBBLER_H
 #define PMP_SCROBBLER_H
 
-#include "common/future.h"
+#include "common/newfuture.h"
 #include "common/scrobblerstatus.h"
 
 #include "result.h"
@@ -47,7 +47,7 @@ namespace PMP::Server
 
         ScrobblerStatus status() const { return _status; }
 
-        SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
+        NewSimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
                                                          QString password);
 
     public Q_SLOTS:

@@ -3108,7 +3108,7 @@ namespace PMP::Server
                 credentialsOrNull.value().password
             );
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
             [this, clientReference](Result result)
             {

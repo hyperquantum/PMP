@@ -41,6 +41,14 @@ namespace PMP
         //
     }
 
+    bool EventLoopRunner::canContinueInThreadFrom(Runner const* otherRunner) const
+    {
+        Q_UNUSED(otherRunner)
+
+        // TODO: return true when appropriate
+        return false;
+    }
+
     void EventLoopRunner::run(std::function<void()> work)
     {
         QTimer::singleShot(0, _receiver, work);
@@ -54,8 +62,35 @@ namespace PMP
         //
     }
 
+    bool ThreadPoolRunner::canContinueInThreadFrom(Runner const* otherRunner) const
+    {
+        Q_UNUSED(otherRunner)
+
+        // TODO: return true when appropriate
+        return false;
+    }
+
     void ThreadPoolRunner::run(std::function<void()> work)
     {
         _threadPoolSpecifier.threadPool()->start(work);
+    }
+
+    // =================================================================== //
+
+    bool AnyThreadContinuationRunner::canContinueInThreadFrom(
+        Runner const* otherRunner) const
+    {
+        Q_UNUSED(otherRunner)
+
+        /* continuing in the thread of the previous runner is the whole point of
+           this class */
+        return true;
+    }
+
+    void AnyThreadContinuationRunner::run(std::function<void ()> work)
+    {
+        /* not supposed to be run independently, but hey, just use the global thread pool
+           instance in this case */
+        QThreadPool::globalInstance()->start(work);
     }
 }

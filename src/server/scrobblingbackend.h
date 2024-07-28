@@ -20,7 +20,7 @@
 #ifndef PMP_SCROBBLINGBACKEND_H
 #define PMP_SCROBBLINGBACKEND_H
 
-#include "common/future.h"
+#include "common/newfuture.h"
 
 #include "result.h"
 #include "scrobblingtrack.h"
@@ -63,7 +63,8 @@ namespace PMP::Server
         virtual void updateNowPlaying(ScrobblingTrack track) = 0;
         virtual void scrobbleTrack(QDateTime timestamp, ScrobblingTrack track) = 0;
 
-        virtual SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
+        virtual NewSimpleFuture<Result> authenticateWithCredentials(
+                                                                 QString usernameOrEmail,
                                                                  QString password) = 0;
 
         int getDelayInMillisecondsBetweenSubsequentScrobbles() const

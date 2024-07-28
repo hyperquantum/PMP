@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_SCROBBLINGHOST_H
 #define PMP_SCROBBLINGHOST_H
 
-#include "common/future.h"
+#include "common/newfuture.h"
 #include "common/scrobblerstatus.h"
 #include "common/scrobblingprovider.h"
 
@@ -58,7 +58,7 @@ namespace PMP::Server
     public:
         ScrobblingHost(TrackInfoProvider* trackInfoProvider);
 
-        SimpleFuture<Result> authenticateForProvider(uint userId,
+        NewSimpleFuture<Result> authenticateForProvider(uint userId,
                                                      ScrobblingProvider provider,
                                                      QString user,
                                                      QString password);

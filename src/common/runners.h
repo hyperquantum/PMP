@@ -66,6 +66,8 @@ namespace PMP
     public:
         virtual ~Runner() {}
 
+        virtual bool canContinueInThreadFrom(Runner const* otherRunner) const = 0;
+
         virtual void run(std::function<void()> work) = 0;
 
     protected:
@@ -76,6 +78,8 @@ namespace PMP
     {
     public:
         EventLoopRunner(QObject* receiver);
+
+        bool canContinueInThreadFrom(Runner const* otherRunner) const override;
 
         void run(std::function<void()> work) override;
 
@@ -88,10 +92,20 @@ namespace PMP
     public:
         ThreadPoolRunner(ThreadPoolSpecifier threadPoolSpecifier);
 
+        bool canContinueInThreadFrom(Runner const* otherRunner) const override;
+
         void run(std::function<void()> work) override;
 
     private:
         ThreadPoolSpecifier _threadPoolSpecifier;
+    };
+
+    class AnyThreadContinuationRunner : public Runner
+    {
+    public:
+        bool canContinueInThreadFrom(Runner const* otherRunner) const override;
+
+        void run(std::function<void()> work) override;
     };
 }
 #endif

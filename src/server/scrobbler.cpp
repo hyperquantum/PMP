@@ -73,7 +73,8 @@ namespace PMP::Server
         /* now wait for someone to call the wakeUp slot before doing anything */
     }
 
-    SimpleFuture<Result> Scrobbler::authenticateWithCredentials(QString usernameOrEmail,
+    NewSimpleFuture<Result> Scrobbler::authenticateWithCredentials(
+                                                                QString usernameOrEmail,
                                                                 QString password)
     {
         return _backend->authenticateWithCredentials(usernameOrEmail, password);

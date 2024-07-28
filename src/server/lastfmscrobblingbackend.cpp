@@ -19,6 +19,7 @@
 
 #include "lastfmscrobblingbackend.h"
 
+#include "common/newasync.h"
 #include "common/version.h"
 
 #include <algorithm>
@@ -223,12 +224,13 @@ namespace PMP::Server
     LastFmAuthenticationRequestHandler::LastFmAuthenticationRequestHandler(
                                                           LastFmScrobblingBackend* parent,
                                                               QNetworkReply* pendingReply)
-     : LastFmRequestHandler(parent, pendingReply, "session")
+     : LastFmRequestHandler(parent, pendingReply, "session"),
+        _promise(NewAsync::createPromise<LastFmAuthenticationResult, Result>())
     {
         //
     }
 
-    Future<LastFmAuthenticationResult, Result>
+    NewFuture<LastFmAuthenticationResult, Result>
         LastFmAuthenticationRequestHandler::future() const
     {
         return _promise.future();
@@ -409,7 +411,7 @@ namespace PMP::Server
         leaveState(ScrobblingBackendState::NotInitialized);
     }
 
-    SimpleFuture<Result> LastFmScrobblingBackend::authenticateWithCredentials(
+    NewSimpleFuture<Result> LastFmScrobblingBackend::authenticateWithCredentials(
                                                                 QString usernameOrEmail,
                                                                 QString password)
     {
@@ -420,24 +422,32 @@ namespace PMP::Server
 
         auto handler = doGetMobileTokenCall(usernameOrEmail, password);
 
-        auto future = handler->future();
-
-        future.addResultListener(
-            this,
-            [this, usernameOrEmail](LastFmAuthenticationResult result)
-            {
-                _username = result.username;
-                _sessionKey = result.sessionKey;
-                updateState();
-                Q_EMIT authenticatedSuccessfully(result.username, result.sessionKey);
-            }
-        );
-
         return
-            future.toSimpleFuture<Result>(
-                [](LastFmAuthenticationResult) { return Success(); },
-                [](Result result) { return result; }
-            );
+            handler->future()
+                .thenOnEventLoop<SuccessType, Result>(
+                    this,
+                    [this, usernameOrEmail](
+                        ResultOrError<LastFmAuthenticationResult, Result> outcome)
+                            -> ResultOrError<SuccessType, Result>
+                    {
+                        if (outcome.failed())
+                        {
+                            return outcome.error();
+                        }
+
+                        auto username = outcome.result().username;
+                        auto sessionKey = outcome.result().sessionKey;
+                        _username = username;
+                        _sessionKey = sessionKey;
+                        updateState();
+                        Q_EMIT authenticatedSuccessfully(username, sessionKey);
+                        return success;
+                    }
+                )
+                .convertToSimpleFuture<Result>(
+                    [](SuccessType const&) -> Result { return Success(); },
+                    [](Result const& result) { return result; }
+                );
     }
 
     void LastFmScrobblingBackend::setUsername(const QString& username)

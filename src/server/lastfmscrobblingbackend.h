@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,7 +22,7 @@
 
 #include "scrobblingbackend.h"
 
-#include "common/promise.h"
+#include "common/newpromise.h"
 
 #include "result.h"
 
@@ -87,7 +87,7 @@ namespace PMP::Server
         LastFmAuthenticationRequestHandler(LastFmScrobblingBackend* parent,
                                            QNetworkReply* pendingReply);
 
-        Future<LastFmAuthenticationResult, Result> future() const;
+        NewFuture<LastFmAuthenticationResult, Result> future() const;
 
     protected:
         void handleOkReply(const QDomElement& childElement) override;
@@ -95,7 +95,7 @@ namespace PMP::Server
         void onGenericError() override;
 
     private:
-        Promise<LastFmAuthenticationResult, Result> _promise;
+        NewPromise<LastFmAuthenticationResult, Result> _promise;
     };
 
     class LastFmNowPlayingRequestHandler : public LastFmRequestHandler
@@ -146,7 +146,7 @@ namespace PMP::Server
         void updateNowPlaying(ScrobblingTrack track) override;
         void scrobbleTrack(QDateTime timestamp, ScrobblingTrack track) override;
 
-        SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
+        NewSimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
                                                          QString password) override;
 
     public slots:

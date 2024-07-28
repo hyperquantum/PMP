@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -41,13 +41,13 @@ BackendMock::BackendMock(bool requireAuthentication)
     setInitialBackoffMillisecondsForErrorReply(30);
 }
 
-SimpleFuture<Result> BackendMock::authenticateWithCredentials(QString usernameOrEmail,
+NewSimpleFuture<Result> BackendMock::authenticateWithCredentials(QString usernameOrEmail,
                                                               QString password)
 {
     Q_UNUSED(usernameOrEmail);
     Q_UNUSED(password);
 
-    return FutureResult(Error::notImplemented());
+    return NewFutureResult(Error::notImplemented());
 }
 
 void BackendMock::initialize()

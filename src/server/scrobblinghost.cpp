@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -48,25 +48,25 @@ namespace PMP::Server
         //
     }
 
-    SimpleFuture<Result> ScrobblingHost::authenticateForProvider(uint userId,
+    NewSimpleFuture<Result> ScrobblingHost::authenticateForProvider(uint userId,
                                                             ScrobblingProvider provider,
                                                             QString user,
                                                             QString password)
     {
         if (!_hostEnabled)
-            return FutureResult(Error::scrobblingSystemDisabled());
+            return NewFutureResult(Error::scrobblingSystemDisabled());
 
         auto& data = _scrobblersData[userId][provider];
 
         if (data.enabled == false)
         {
-            return FutureResult(Error::scrobblingProviderNotEnabled());
+            return NewFutureResult(Error::scrobblingProviderNotEnabled());
         }
 
         if (data.scrobbler == nullptr)
         {
             qWarning() << "ScrobblingHost: authenticate: scrobbler not created yet??";
-            return FutureResult(Error::internalError());
+            return NewFutureResult(Error::internalError());
         }
 
         return data.scrobbler->authenticateWithCredentials(user, password);

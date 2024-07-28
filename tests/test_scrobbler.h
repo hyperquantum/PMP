@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -36,7 +36,7 @@ class BackendMock : public ScrobblingBackend
 public:
     BackendMock(bool requireAuthentication);
 
-    SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
+    NewSimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
                                                      QString password) override;
 
     void setTemporaryUnavailabilitiesToStageForScrobbles(int count);

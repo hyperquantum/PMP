@@ -19,7 +19,6 @@
 
 #include "serverinterface.h"
 
-#include "common/concurrent.h"
 #include "common/containerutil.h"
 #include "common/newasync.h"
 #include "common/newconcurrent.h"
@@ -316,16 +315,16 @@ namespace PMP::Server
         controller->setScrobblingProviderEnabled(provider, enabled);
     }
 
-    SimpleFuture<Result> ServerInterface::authenticateScrobblingProvider(
+    NewSimpleFuture<Result> ServerInterface::authenticateScrobblingProvider(
                                                             ScrobblingProvider provider,
                                                             QString user,
                                                             QString password)
     {
         if (!isLoggedIn())
-            return FutureResult(Error::notLoggedIn());
+            return NewFutureResult(Error::notLoggedIn());
 
         if (provider == ScrobblingProvider::Unknown)
-            return FutureResult(Error::scrobblingProviderInvalid());
+            return NewFutureResult(Error::scrobblingProviderInvalid());
 
         return _scrobbling->authenticateForProvider(_userLoggedIn, provider, user,
                                                     password);
