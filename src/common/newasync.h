@@ -73,7 +73,7 @@ namespace PMP
     {
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
-        return NewFuture<TResult, TError>::createForRunner(runner, f);
+        return NewFuture<TResult, TError>::createForRunnerDirect(runner, f);
     }
 
     template<class TResult, class TError>
@@ -83,7 +83,7 @@ namespace PMP
     {
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
-        return NewFuture<TResult, TError>::createForRunner(runner, f);
+        return NewFuture<TResult, TError>::createForRunnerIndirect(runner, f);
     }
 
     template<class TOutcome>
@@ -93,7 +93,7 @@ namespace PMP
     {
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
-        return NewSimpleFuture<TOutcome>::createForRunner(runner, f);
+        return NewSimpleFuture<TOutcome>::createForRunnerIndirect(runner, f);
     }
 }
 #endif

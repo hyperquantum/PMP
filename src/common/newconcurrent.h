@@ -44,7 +44,7 @@ namespace PMP
     {
         auto runner = QSharedPointer<ThreadPoolRunner>::create(threadPool);
 
-        return NewFuture<TResult, TError>::createForRunner(runner, f);
+        return NewFuture<TResult, TError>::createForRunnerDirect(runner, f);
     }
 }
 #endif

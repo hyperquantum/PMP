@@ -328,11 +328,11 @@ namespace PMP
 
         NewFuture(StoragePtr storage);
 
-        static NewFuture<TResult, TError> createForRunner(
+        static NewFuture<TResult, TError> createForRunnerDirect(
             QSharedPointer<Runner> runner,
             std::function<OutcomeType()> f);
 
-        static NewFuture<TResult, TError> createForRunner(
+        static NewFuture<TResult, TError> createForRunnerIndirect(
             QSharedPointer<Runner> runner,
             std::function<NewFuture<TResult, TError>()> f);
 
@@ -446,7 +446,7 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError> NewFuture<TResult, TError>::createForRunner(
+    NewFuture<TResult, TError> NewFuture<TResult, TError>::createForRunnerDirect(
         QSharedPointer<Runner> runner,
         std::function<OutcomeType ()> f)
     {
@@ -467,7 +467,7 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    inline NewFuture<TResult, TError> NewFuture<TResult, TError>::createForRunner(
+    inline NewFuture<TResult, TError> NewFuture<TResult, TError>::createForRunnerIndirect(
         QSharedPointer<Runner> runner,
         std::function<NewFuture<TResult, TError> ()> f)
     {
@@ -570,11 +570,11 @@ namespace PMP
 
         NewSimpleFuture(StoragePtr storage);
 
-        static NewSimpleFuture<TOutcome> createForRunner(
+        static NewSimpleFuture<TOutcome> createForRunnerDirect(
             QSharedPointer<Runner> runner,
             std::function<OutcomeType()> f);
 
-        static NewSimpleFuture<TOutcome> createForRunner(
+        static NewSimpleFuture<TOutcome> createForRunnerIndirect(
             QSharedPointer<Runner> runner,
             std::function<NewSimpleFuture<TOutcome>()> f);
 
@@ -627,7 +627,7 @@ namespace PMP
     }
 
     template<class TOutcome>
-    NewSimpleFuture<TOutcome> NewSimpleFuture<TOutcome>::createForRunner(
+    NewSimpleFuture<TOutcome> NewSimpleFuture<TOutcome>::createForRunnerDirect(
         QSharedPointer<Runner> runner,
         std::function<OutcomeType ()> f)
     {
@@ -651,7 +651,7 @@ namespace PMP
     }
 
     template<class TOutcome>
-    NewSimpleFuture<TOutcome> NewSimpleFuture<TOutcome>::createForRunner(
+    NewSimpleFuture<TOutcome> NewSimpleFuture<TOutcome>::createForRunnerIndirect(
         QSharedPointer<Runner> runner,
         std::function<NewSimpleFuture<TOutcome> ()> f)
     {
