@@ -49,7 +49,8 @@ namespace PMP
     {
     public:
         Continuation(QSharedPointer<Runner> runner,
-                     std::function<void (ResultOrError<TResult, TError>)> work);
+                     std::function<void (QSharedPointer<Runner> actualRunner,
+                                ResultOrError<TResult, TError> previousOutcome)> work);
 
         void continueFrom(QSharedPointer<Runner> previousRunner,
                           ResultOrError<TResult, TError> const& previousOutcome);
@@ -58,12 +59,13 @@ namespace PMP
         friend class QSharedPointer<Continuation<TResult, TError>>;
 
         QSharedPointer<Runner> _runner;
-        std::function<void (ResultOrError<TResult, TError>)> _work;
+        std::function<void (QSharedPointer<Runner> actualRunner,
+                            ResultOrError<TResult, TError> previousOutcome)> _work;
     };
 
     template<class TResult, class TError>
     Continuation<TResult, TError>::Continuation(QSharedPointer<Runner> runner,
-                                std::function<void (ResultOrError<TResult, TError>)> work)
+        std::function<void (QSharedPointer<Runner>, ResultOrError<TResult, TError>)> work)
         : _runner(runner), _work(work)
     {
         //
@@ -76,15 +78,14 @@ namespace PMP
     {
         if (_runner->canContinueInThreadFrom(previousRunner.data()))
         {
-            // TODO: pass runner that the thread is running on as an argument
-            _work(previousOutcome);
+            _work(previousRunner, previousOutcome);
             return;
         }
 
         auto wrapper =
-            [work = _work, previousOutcome]()
+            [work = _work, actualRunner = _runner, previousOutcome]()
             {
-                work(previousOutcome);
+                work(actualRunner, previousOutcome);
             };
 
         _runner->run(wrapper);
@@ -413,7 +414,15 @@ namespace PMP
     {
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
-        auto continuation = ContinuationPtr::create(runner, f);
+        auto wrapper =
+            [f](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
+            {
+                Q_UNUSED(actualRunner)
+
+                f(previousOutcome);
+            };
+
+        auto continuation = ContinuationPtr::create(runner, wrapper);
 
         _storage->setContinuation(continuation);
     }
@@ -476,9 +485,9 @@ namespace PMP
         auto secondRunner = QSharedPointer<AnyThreadContinuationRunner>::create();
 
         auto secondWrapper =
-            [storage, secondRunner](OutcomeType input)
+            [storage](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
             {
-                storage->storeAndContinueFrom(input, secondRunner);
+                storage->storeAndContinueFrom(previousOutcome, actualRunner);
             };
 
         auto continuation = ContinuationPtr::create(secondRunner, secondWrapper);
@@ -506,12 +515,12 @@ namespace PMP
         auto storage = QSharedPointer<NewFutureStorage<TResult2, TError2>>::create();
 
         auto wrapper =
-            [f, storage, runner](OutcomeType input)
+            [f, storage](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
             {
-                auto resultOrError = f(input);
+                auto resultOrError = f(previousOutcome);
 
                 // store result, notify listeners, and run continuation
-                storage->storeAndContinueFrom(resultOrError, runner);
+                storage->storeAndContinueFrom(resultOrError, actualRunner);
             };
 
         auto continuation = ContinuationPtr::create(runner, wrapper);
@@ -531,15 +540,15 @@ namespace PMP
         auto storage = QSharedPointer<NewFutureStorage<TOutcome2, FailureType>>::create();
 
         auto wrapper =
-            [f, storage, runner](OutcomeType input)
+            [f, storage](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
             {
-                auto outcome = f(input);
+                auto outcome = f(previousOutcome);
 
                 auto resultOrError =
                     ResultOrError<TOutcome2, FailureType>::fromResult(outcome);
 
                 // store result, notify listeners, and run continuation
-                storage->storeAndContinueFrom(resultOrError, runner);
+                storage->storeAndContinueFrom(resultOrError, actualRunner);
             };
 
         auto continuation = ContinuationPtr::create(runner, wrapper);
@@ -609,9 +618,12 @@ namespace PMP
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
         auto wrapper =
-            [f](ResultOrError<TOutcome, FailureType> outcome)
+            [f](QSharedPointer<Runner> actualRunner,
+                ResultOrError<TOutcome, FailureType> previousOutcome)
             {
-                f(outcome.result());
+                Q_UNUSED(actualRunner)
+
+                f(previousOutcome.result());
             };
 
         auto continuation = ContinuationPtr::create(runner, wrapper);
@@ -660,9 +672,10 @@ namespace PMP
         auto secondRunner = QSharedPointer<AnyThreadContinuationRunner>::create();
 
         auto secondWrapper =
-            [storage, secondRunner](ResultOrError<TOutcome, FailureType> input)
+            [storage, secondRunner](QSharedPointer<Runner> actualRunner,
+                                    ResultOrError<TOutcome, FailureType> previousOutcome)
         {
-            storage->storeAndContinueFrom(input, secondRunner);
+            storage->storeAndContinueFrom(previousOutcome, actualRunner);
         };
 
         auto continuation = ContinuationPtr::create(secondRunner, secondWrapper);
