@@ -76,7 +76,7 @@ namespace PMP
                                     QSharedPointer<Runner> previousRunner,
                                     ResultOrError<TResult, TError> const& previousOutcome)
     {
-        if (_runner->canContinueInThreadFrom(previousRunner.data()))
+        if (previousRunner && _runner->canContinueInThreadFrom(previousRunner.data()))
         {
             _work(previousRunner, previousOutcome);
             return;
