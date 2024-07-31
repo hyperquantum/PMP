@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,7 @@
 #define PMP_HISTORY_H
 
 #include "common/filehash.h"
-#include "common/future.h"
+#include "common/newfuture.h"
 #include "common/nullable.h"
 
 #include "recenthistoryentry.h"
@@ -53,8 +53,9 @@ namespace PMP::Server
         /** Get last played time since server startup (non-user-specific) */
         QDateTime lastPlayedGloballySinceStartup(FileHash const& hash) const;
 
-        Future<SuccessType, FailureType> scheduleUserStatsFetchingIfMissing(uint hashId,
-                                                                         quint32 userId);
+        NewFuture<SuccessType, FailureType> scheduleUserStatsFetchingIfMissing(
+                                                                        uint hashId,
+                                                                        quint32 userId);
         Nullable<TrackStats> getUserStats(uint hashId, quint32 userId);
 
     Q_SIGNALS:

@@ -155,7 +155,7 @@ namespace PMP::Server
         return null;
     }
 
-    Future<SuccessType, FailureType> HistoryStatistics::scheduleFetchIfMissing(
+    NewFuture<SuccessType, FailureType> HistoryStatistics::scheduleFetchIfMissing(
                                                                            quint32 userId,
                                                                            uint hashId)
     {
@@ -291,7 +291,7 @@ namespace PMP::Server
         );
     }
 
-    Future<SuccessType, FailureType> HistoryStatistics::scheduleFetch(quint32 userId,
+    NewFuture<SuccessType, FailureType> HistoryStatistics::scheduleFetch(quint32 userId,
                                                                       uint hashId,
                                                                       bool onlyIfMissing)
     {
@@ -299,7 +299,7 @@ namespace PMP::Server
 
         auto& userData = _userData[userId];
         if (userData.hashesInProgress.contains(hashId))
-            return FutureError(failure);
+            return NewFutureError(failure);
 
         const auto hashesInGroup = _hashRelations->getEquivalencyGroup(hashId);
 
@@ -316,14 +316,14 @@ namespace PMP::Server
             }
 
             if (!anyMissing)
-                return FutureResult(success); /* nothing to do */
+                return NewFutureResult(success); /* nothing to do */
         }
 
         for (auto hashId : hashesInGroup)
             userData.hashesInProgress << hashId;
 
         auto future =
-            Concurrent::run<SuccessType, FailureType>(
+            NewConcurrent::runOnThreadPool<SuccessType, FailureType>(
                 _threadPool,
                 [this, userId, hashesInGroup]()
                 {
