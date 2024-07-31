@@ -405,10 +405,16 @@ namespace PMP::Server
                 this, &Resolver::onAnalyzerFinished);
 
         auto dbLoadingFuture = _hashIdRegistrar->loadAllFromDatabase();
-        dbLoadingFuture.addResultListener(
+        dbLoadingFuture.handleOnEventLoop(
             this,
-            [this](SuccessType)
+            [this](SuccessOrFailure outcome)
             {
+                if (outcome.failed())
+                {
+                    qWarning() << "Resolver: could not load hashes from the database";
+                    return;
+                }
+
                 qDebug() << "Resolver: successfully loaded hashes from the database";
 
                 auto allHashes = _hashIdRegistrar->getAllLoaded();
@@ -429,13 +435,6 @@ namespace PMP::Server
 
                 qDebug() << "Resolver: hashes processed; got"
                          << newHashesCount << "new hashes";
-            }
-        );
-        dbLoadingFuture.addFailureListener(
-            this,
-            [](FailureType)
-            {
-                qDebug() << "Resolver: could not load hashes from the database";
             }
         );
     }

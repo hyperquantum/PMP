@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,12 +21,13 @@
 
 #include "common/concurrent.h"
 #include "common/containerutil.h"
+#include "common/newconcurrent.h"
 
 #include "database.h"
 
 namespace PMP::Server
 {
-    Future<SuccessType, FailureType> HashIdRegistrar::loadAllFromDatabase()
+    NewFuture<SuccessType, FailureType> HashIdRegistrar::loadAllFromDatabase()
     {
         auto work =
             [this]() -> ResultOrError<SuccessType, FailureType>
@@ -52,7 +53,8 @@ namespace PMP::Server
                 return success;
             };
 
-        return Concurrent::run<SuccessType, FailureType>(work);
+        return NewConcurrent::runOnThreadPool<SuccessType, FailureType>(globalThreadPool,
+                                                                        work);
     }
 
     Future<uint, FailureType> HashIdRegistrar::getOrCreateId(FileHash hash)

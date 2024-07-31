@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,6 +22,7 @@
 
 #include "common/filehash.h"
 #include "common/future.h"
+#include "common/newfuture.h"
 
 #include <QHash>
 #include <QMutex>
@@ -35,7 +36,7 @@ namespace PMP::Server
     class HashIdRegistrar
     {
     public:
-        Future<SuccessType, FailureType> loadAllFromDatabase();
+        NewFuture<SuccessType, FailureType> loadAllFromDatabase();
         Future<uint, FailureType> getOrCreateId(FileHash hash);
         Future<QVector<uint>, FailureType> getOrCreateIds(QVector<FileHash> hashes);
 
