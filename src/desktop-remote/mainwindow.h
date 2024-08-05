@@ -20,7 +20,6 @@
 #ifndef PMP_MAINWINDOW_H
 #define PMP_MAINWINDOW_H
 
-#include "common/future.h"
 #include "common/newfuture.h"
 #include "common/resultmessageerrorcode.h"
 
