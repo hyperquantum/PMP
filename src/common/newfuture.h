@@ -610,6 +610,8 @@ namespace PMP
             [f, secondContinuation](QSharedPointer<Runner> actualRunner,
                                     OutcomeType previousOutcome)
             {
+                Q_UNUSED(actualRunner)
+
                 auto otherFuture = f(previousOutcome);
 
                 otherFuture._storage->setContinuation(secondContinuation);
