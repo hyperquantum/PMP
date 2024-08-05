@@ -476,7 +476,7 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    inline NewFuture<TResult, TError> NewFuture<TResult, TError>::createForRunnerIndirect(
+    NewFuture<TResult, TError> NewFuture<TResult, TError>::createForRunnerIndirect(
         QSharedPointer<Runner> runner,
         std::function<NewFuture<TResult, TError> ()> f)
     {
@@ -507,7 +507,7 @@ namespace PMP
 
     template<class TResult, class TError>
     template<class TResult2, class TError2>
-    inline NewFuture<TResult2, TError2>
+    NewFuture<TResult2, TError2>
         NewFuture<TResult, TError>::setUpContinuationToRunner(
             QSharedPointer<Runner> runner,
             std::function<ResultOrError<TResult2, TError2> (OutcomeType)> f)
@@ -611,7 +611,7 @@ namespace PMP
     }
 
     template<class TOutcome>
-    inline void NewSimpleFuture<TOutcome>::handleOnEventLoop(
+    void NewSimpleFuture<TOutcome>::handleOnEventLoop(
         QObject* receiver,
         std::function<void (OutcomeType)> f)
     {
