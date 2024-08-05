@@ -118,7 +118,7 @@ class TrackInfoProviderMock : public TrackInfoProvider
 public:
     TrackInfoProviderMock();
 
-    Future<CollectionTrackInfo, FailureType> getTrackInfoAsync(uint hashId) override;
+    NewFuture<CollectionTrackInfo, FailureType> getTrackInfoAsync(uint hashId) override;
 
     void registerTrack(uint hashId, QString title, QString artist);
     void registerTrack(uint hashId, QString title, QString artist, QString album,

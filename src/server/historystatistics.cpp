@@ -19,7 +19,7 @@
 
 #include "historystatistics.h"
 
-#include "common/concurrent.h"
+//#include "common/concurrent.h"
 #include "common/containerutil.h"
 #include "common/newconcurrent.h"
 
@@ -28,6 +28,7 @@
 #include "userhashstatscache.h"
 
 #include <QThreadPool>
+#include <QTimer>
 
 using PMP::Server::DatabaseRecords::HashHistoryStats;
 
@@ -80,7 +81,7 @@ namespace PMP::Server
         _threadPool->waitForDone();
     }
 
-    Future<SuccessType, FailureType> HistoryStatistics::addToHistory(quint32 userId,
+    NewFuture<SuccessType, FailureType> HistoryStatistics::addToHistory(quint32 userId,
                                                                      quint32 hashId,
                                                                      QDateTime start,
                                                                      QDateTime end,
@@ -88,8 +89,9 @@ namespace PMP::Server
                                                                      bool validForScoring)
     {
         auto future =
-            Concurrent::run<SuccessType, FailureType>(
-                /* do not specify a thread pool, it cannot wait */
+            NewConcurrent::runOnThreadPool<SuccessType, FailureType>(
+                /* do not specify our own (limited) thread pool, it cannot wait */
+                globalThreadPool,
                 [this, userId, hashId, start, end, permillage, validForScoring]()
                     -> SuccessOrFailure
                 {

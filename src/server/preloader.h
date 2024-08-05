@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,7 +22,7 @@
 
 #include "common/abstracthandle.h"
 #include "common/filehash.h"
-#include "common/future.h"
+#include "common/newfuture.h"
 #include "common/qobjectresourcekeeper.h"
 
 #include <QHash>
@@ -96,7 +96,7 @@ namespace PMP::Server
 
         void checkToPreloadTrack(QSharedPointer<QueueEntry> entry);
 
-        Future<QString, FailureType> preloadAsync(uint queueId, FileHash hash,
+        NewFuture<QString, FailureType> preloadAsync(uint queueId, FileHash hash,
                                                   QString originalFilename);
         static ResultOrError<QString, FailureType> runPreload(uint queueId,
                                                               QString originalFilename);

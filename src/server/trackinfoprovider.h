@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_TRACKINFOPROVIDER_H
 #define PMP_TRACKINFOPROVIDER_H
 
-#include "common/future.h"
+#include "common/newfuture.h"
 
 #include "collectiontrackinfo.h"
 
@@ -33,7 +33,7 @@ namespace PMP::Server
     public:
         virtual ~TrackInfoProvider() {}
 
-        virtual Future<CollectionTrackInfo, FailureType> getTrackInfoAsync(
+        virtual NewFuture<CollectionTrackInfo, FailureType> getTrackInfoAsync(
                                                                          uint hashId) = 0;
     };
 }

@@ -20,7 +20,6 @@
 #ifndef PMP_HISTORYSTATISTICS_H
 #define PMP_HISTORYSTATISTICS_H
 
-#include "common/future.h"
 #include "common/newfuture.h"
 #include "common/nullable.h"
 #include "common/resultorerror.h"
@@ -50,7 +49,7 @@ namespace PMP::Server
                           UserHashStatsCache* userHashStatsCache);
         ~HistoryStatistics();
 
-        Future<SuccessType, FailureType> addToHistory(quint32 userId,
+        NewFuture<SuccessType, FailureType> addToHistory(quint32 userId,
                                                       quint32 hashId,
                                                       QDateTime start,
                                                       QDateTime end,

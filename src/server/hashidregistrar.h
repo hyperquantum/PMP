@@ -21,7 +21,6 @@
 #define PMP_HASHIDREGISTRAR_H
 
 #include "common/filehash.h"
-#include "common/future.h"
 #include "common/newfuture.h"
 
 #include <QHash>
@@ -37,8 +36,8 @@ namespace PMP::Server
     {
     public:
         NewFuture<SuccessType, FailureType> loadAllFromDatabase();
-        Future<uint, FailureType> getOrCreateId(FileHash hash);
-        Future<QVector<uint>, FailureType> getOrCreateIds(QVector<FileHash> hashes);
+        NewFuture<uint, FailureType> getOrCreateId(FileHash hash);
+        NewFuture<QVector<uint>, FailureType> getOrCreateIds(QVector<FileHash> hashes);
 
         QVector<QPair<uint, FileHash>> getAllLoaded();
         QVector<uint> getAllIdsLoaded();

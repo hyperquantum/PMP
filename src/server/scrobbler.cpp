@@ -229,7 +229,7 @@ namespace PMP::Server
         _timeoutTimer->start(7000);
 
         _trackInfoProvider->getTrackInfoAsync(hashId)
-            .addListener(
+            .handleOnEventLoop(
                 this,
                 [this, hashId, timestamp](
                         ResultOrError<CollectionTrackInfo, FailureType> outcome)

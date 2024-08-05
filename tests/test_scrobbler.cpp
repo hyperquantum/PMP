@@ -207,13 +207,13 @@ TrackInfoProviderMock::TrackInfoProviderMock()
     _tracks.insert(1, track);
 }
 
-Future<CollectionTrackInfo, FailureType> TrackInfoProviderMock::getTrackInfoAsync(
+NewFuture<CollectionTrackInfo, FailureType> TrackInfoProviderMock::getTrackInfoAsync(
                                                                               uint hashId)
 {
     Q_ASSERT(hashId > 0);
     Q_ASSERT(_tracks.contains(hashId));
 
-    return FutureResult(_tracks[hashId]);
+    return NewFutureResult(_tracks[hashId]);
 }
 
 void TrackInfoProviderMock::registerTrack(uint hashId, QString title, QString artist)

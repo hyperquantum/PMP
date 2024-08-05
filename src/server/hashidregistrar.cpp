@@ -19,7 +19,7 @@
 
 #include "hashidregistrar.h"
 
-#include "common/concurrent.h"
+//#include "common/concurrent.h"
 #include "common/containerutil.h"
 #include "common/newconcurrent.h"
 
@@ -57,13 +57,13 @@ namespace PMP::Server
                                                                         work);
     }
 
-    Future<uint, FailureType> HashIdRegistrar::getOrCreateId(FileHash hash)
+    NewFuture<uint, FailureType> HashIdRegistrar::getOrCreateId(FileHash hash)
     {
         {
             QMutexLocker lock(&_mutex);
             auto id = _hashes.value(hash, 0);
             if (id > 0)
-                return Future<uint, FailureType>::fromResult(id);
+                return NewFutureResult(id);
         }
 
         auto work =
@@ -75,10 +75,10 @@ namespace PMP::Server
                 return registerHash(*db, hash);
             };
 
-        return Concurrent::run<uint, FailureType>(work);
+        return NewConcurrent::runOnThreadPool<uint, FailureType>(globalThreadPool, work);
     }
 
-    Future<QVector<uint>, FailureType> HashIdRegistrar::getOrCreateIds(
+    NewFuture<QVector<uint>, FailureType> HashIdRegistrar::getOrCreateIds(
                                                                  QVector<FileHash> hashes)
     {
         QVector<uint> ids;
@@ -98,7 +98,7 @@ namespace PMP::Server
             }
 
             if (!incomplete)
-                return Future<QVector<uint>, FailureType>::fromResult(ids);
+                return NewFutureResult(ids);
         }
 
         auto work =
@@ -124,7 +124,8 @@ namespace PMP::Server
                 return result;
             };
 
-        return Concurrent::run<QVector<uint>, FailureType>(work);
+        return NewConcurrent::runOnThreadPool<QVector<uint>, FailureType>(
+            globalThreadPool, work);
     }
 
     QVector<QPair<uint, FileHash>> HashIdRegistrar::getAllLoaded()

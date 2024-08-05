@@ -19,9 +19,10 @@
 
 #include "filefinder.h"
 
-#include "common/concurrent.h"
+//#include "common/concurrent.h"
 #include "common/containerutil.h"
 #include "common/fileanalyzer.h"
+#include "common/newconcurrent.h"
 
 #include "analyzer.h"
 #include "database.h"
@@ -59,7 +60,7 @@ namespace PMP::Server
         _musicPaths.detach();
     }
 
-    Future<QString, FailureType> FileFinder::findHashAsync(uint id, FileHash hash)
+    NewFuture<QString, FailureType> FileFinder::findHashAsync(uint id, FileHash hash)
     {
         QMutexLocker lock(&_mutex);
 
@@ -75,7 +76,7 @@ namespace PMP::Server
         qDebug() << "FileFinder: starting background job to find file for ID" << id;
 
         auto future =
-            Concurrent::run<QString, FailureType>(
+            NewConcurrent::runOnThreadPool<QString, FailureType>(
                 _threadPool,
                 [this, id, hash]()
                 {
@@ -104,10 +105,14 @@ namespace PMP::Server
         {
             auto future = _hashIdRegistrar->getOrCreateId(hash);
 
-            future.addResultListener(
+            future.handleOnEventLoop(
                 this,
-                [this, path](uint id)
+                [this, path](FailureOr<uint> outcome)
                 {
+                    if (outcome.failed())
+                        return;
+
+                    auto id = outcome.result();
                     _fileLocations->insert(id, path);
                 }
             );

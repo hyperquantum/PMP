@@ -21,7 +21,7 @@
 #define PMP_SERVER_FILEFINDER_H
 
 #include "common/filehash.h"
-#include "common/future.h"
+#include "common/newfuture.h"
 
 #include "fileanalysis.h"
 
@@ -46,7 +46,7 @@ namespace PMP::Server
 
         void setMusicPaths(QStringList paths);
 
-        Future<QString, FailureType> findHashAsync(uint id, FileHash hash);
+        NewFuture<QString, FailureType> findHashAsync(uint id, FileHash hash);
 
     private Q_SLOTS:
         void fileAnalysisCompleted(QString path, PMP::Server::FileAnalysis analysis);
@@ -71,7 +71,7 @@ namespace PMP::Server
         Analyzer* _analyzer;
         QThreadPool* _threadPool;
         QStringList _musicPaths;
-        QHash<uint, Future<QString, FailureType>> _inProgress;
+        QHash<uint, NewFuture<QString, FailureType>> _inProgress;
     };
 }
 #endif

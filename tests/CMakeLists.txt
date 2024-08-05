@@ -116,6 +116,7 @@ qt5_wrap_cpp(PMP_TestScrobbler_MOCS test_scrobbler.h
 )
 add_executable(test_scrobbler test_scrobbler.cpp
     ${PMP_TestScrobbler_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/runners.cpp
     ${CMAKE_SOURCE_DIR}/src/server/scrobbler.cpp
     ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.cpp
     ${CMAKE_SOURCE_DIR}/src/server/selftest.cpp

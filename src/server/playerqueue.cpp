@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -86,25 +86,27 @@ namespace PMP::Server
 
             backoff = 10;
             auto future = _resolver->findPathForHashAsync(hash);
-            future.addResultListener(
+            future.handleOnEventLoop(
                 this,
-                [entry](QString path)
+                [entry, index](FailureOr<QString> outcome)
                 {
-                    qDebug() << "PlayerQueue: found file" << path
-                             << "for queue ID" << entry->queueID();
+                    if (outcome.succeeded())
+                    {
+                        auto path = outcome.result();
 
-                    entry->fileFinderBackoff() = 0;
-                    entry->fileFinderFailedCount() /= 2;
-                    entry->setFilename(path);
-                }
-            );
-            future.addFailureListener(
-                this,
-                [entry, index](FailureType)
-                {
-                    int& failedCount = entry->fileFinderFailedCount();
-                    failedCount = qMin(failedCount + 1, 100);
-                    entry->fileFinderBackoff() = failedCount + (index * 2);
+                        qDebug() << "PlayerQueue: found file" << path
+                                 << "for queue ID" << entry->queueID();
+
+                        entry->fileFinderBackoff() = 0;
+                        entry->fileFinderFailedCount() /= 2;
+                        entry->setFilename(path);
+                    }
+                    else
+                    {
+                        int& failedCount = entry->fileFinderFailedCount();
+                        failedCount = qMin(failedCount + 1, 100);
+                        entry->fileFinderBackoff() = failedCount + (index * 2);
+                    }
                 }
             );
         }

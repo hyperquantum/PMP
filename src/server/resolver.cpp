@@ -524,7 +524,7 @@ namespace PMP::Server
         const auto allHashes = hashes.allHashes();
 
         _hashIdRegistrar->getOrCreateIds(allHashes)
-            .addListener(
+            .handleOnEventLoop(
                 this,
                 [this, path, analysis, hashes, allHashes](
                                    ResultOrError<QVector<uint>, FailureType> maybeHashIds)
@@ -613,12 +613,12 @@ namespace PMP::Server
         }
     }
 
-    Future<QString, FailureType> Resolver::findPathForHashAsync(FileHash hash)
+    NewFuture<QString, FailureType> Resolver::findPathForHashAsync(FileHash hash)
     {
         if (hash.isNull())
         {
             qWarning() << "Resolver: cannot find path for null hash";
-            return FutureError(failure);
+            return NewFutureError(failure);
         }
 
         {
@@ -630,7 +630,7 @@ namespace PMP::Server
                 auto path = it.value()->getFile();
                 if (!path.isEmpty())
                 {
-                    return Future<QString, FailureType>::fromResult(path);
+                    return NewFutureResult(path);
                 }
             }
         }
@@ -640,15 +640,21 @@ namespace PMP::Server
         // TODO : check if we have it in the locations cache
 
         auto pathFuture =
-            idFuture.thenFuture<QString, FailureType>(
-                [this, hash](uint id) { return _fileFinder->findHashAsync(id, hash); },
-                failureIdentityFunction
+            idFuture.thenOnAnyThreadIndirect<QString, FailureType>(
+            [this, hash](FailureOr<uint> outcome) -> NewFuture<QString, FailureType>
+                {
+                    if (outcome.failed())
+                        return NewFutureError(failure);
+
+                    auto id = outcome.result();
+                    return _fileFinder->findHashAsync(id, hash);
+                }
             );
 
         return pathFuture;
     }
 
-    Future<QString, FailureType> Resolver::findPathForHashAsync(uint hashId)
+    NewFuture<QString, FailureType> Resolver::findPathForHashAsync(uint hashId)
     {
         FileHash hash;
 
@@ -659,7 +665,7 @@ namespace PMP::Server
             if (it == _idToHash.end())
             {
                 qWarning() << "Resolver: hash ID" << hashId << "is unknown";
-                return FutureError(failure);
+                return NewFutureError(failure);
             }
 
             hash = it.value()->hash();
@@ -667,7 +673,7 @@ namespace PMP::Server
             auto path = it.value()->getFile();
             if (!path.isEmpty())
             {
-                return Future<QString, FailureType>::fromResult(path);
+                return NewFutureResult(path);
             }
         }
 
