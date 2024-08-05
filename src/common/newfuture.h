@@ -533,9 +533,9 @@ namespace PMP
     template<class TResult, class TError>
     template<class TOutcome2>
     NewSimpleFuture<TOutcome2>
-    NewFuture<TResult, TError>::setUpContinuationToRunnerForSimpleFuture(
-        QSharedPointer<Runner> runner,
-        std::function<TOutcome2 (OutcomeType)> f)
+        NewFuture<TResult, TError>::setUpContinuationToRunnerForSimpleFuture(
+            QSharedPointer<Runner> runner,
+            std::function<TOutcome2 (OutcomeType)> f)
     {
         auto storage = QSharedPointer<NewFutureStorage<TOutcome2, FailureType>>::create();
 
@@ -682,11 +682,11 @@ namespace PMP
 
         auto wrapper =
             [f, runner, continuation]()
-        {
-            auto future = f();
+            {
+                auto future = f();
 
-            future._storage->setContinuation(continuation);
-        };
+                future._storage->setContinuation(continuation);
+            };
 
         runner->run(wrapper);
 
