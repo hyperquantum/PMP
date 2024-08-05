@@ -21,7 +21,6 @@
 #define PMP_SERVERINTERFACE_H
 
 #include "common/filehash.h"
-#include "common/future.h"
 #include "common/newfuture.h"
 #include "common/queueindextype.h"
 #include "common/resultmessageerrorcode.h"
@@ -150,7 +149,7 @@ namespace PMP::Server
         void setTrackRepetitionAvoidanceSeconds(int seconds);
 
         void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
-        Future<CollectionTrackInfo, Result> getHashInfo(FileHash hash);
+        NewFuture<CollectionTrackInfo, Result> getHashInfo(FileHash hash);
 
         void shutDownServer();
         void shutDownServer(QString serverPassword);

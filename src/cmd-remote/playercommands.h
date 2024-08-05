@@ -24,6 +24,8 @@
 
 #include "commandbase.h"
 
+#include <QDateTime>
+
 namespace PMP
 {
     class DelayedStartAtCommand : public CommandBase

@@ -20,7 +20,6 @@
 #ifndef PMP_COMMANDBASE_H
 #define PMP_COMMANDBASE_H
 
-#include "common/future.h"
 #include "common/newfuture.h"
 #include "common/nullable.h"
 #include "common/resultmessageerrorcode.h"
@@ -72,6 +71,7 @@ namespace PMP
         void setCommandExecutionResultFuture(
             NewSimpleFuture<AnyResultMessageCode> future);
 
+        /*
         template <class T>
         void addFailureHandler(Future<T, AnyResultMessageCode>& future)
         {
@@ -83,6 +83,7 @@ namespace PMP
                 }
             );
         }
+        */
 
         template <class T>
         void handleFailureAndResult(NewFuture<T, AnyResultMessageCode>& future,

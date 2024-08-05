@@ -22,6 +22,8 @@
 #include "client/generalcontroller.h"
 #include "client/serverinterface.h"
 
+#include <QStringBuilder>
+
 using namespace PMP::Client;
 
 namespace PMP

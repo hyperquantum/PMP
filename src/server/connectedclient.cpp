@@ -2971,19 +2971,14 @@ namespace PMP::Server
         }
 
         auto future = _serverInterface->getHashInfo(hash);
-
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this, clientReference](CollectionTrackInfo info)
+            [this, clientReference](ResultOrError<CollectionTrackInfo, Result> outcome)
             {
-                sendHashInfoReply(clientReference, info);
-            }
-        );
-        future.addFailureListener(
-            this,
-            [this, clientReference](Result result)
-            {
-                sendResultMessage(result, clientReference);
+                if (outcome.succeeded())
+                    sendHashInfoReply(clientReference, outcome.result());
+                else
+                    sendResultMessage(outcome.error(), clientReference);
             }
         );
     }

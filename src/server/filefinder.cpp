@@ -31,6 +31,7 @@
 
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QThreadPool>
 #include <QSet>
 #include <QtDebug>
 #include <QVector>

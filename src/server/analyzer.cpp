@@ -19,7 +19,7 @@
 
 #include "analyzer.h"
 
-#include "common/concurrent.h"
+//#include "common/concurrent.h"
 #include "common/fileanalyzer.h"
 #include "common/newconcurrent.h"
 
@@ -83,7 +83,7 @@ namespace PMP::Server
         return _pathsInProgress.empty();
     }
 
-    Future<FileAnalysis, FailureType> Analyzer::analyzeFileAsync(QString path)
+    NewFuture<FileAnalysis, FailureType> Analyzer::analyzeFileAsync(QString path)
     {
         QMutexLocker lock(&_lock);
 
@@ -93,7 +93,7 @@ namespace PMP::Server
 
         qDebug() << "Analyzer: starting background job for:" << path;
         auto future =
-            Concurrent::run<FileAnalysis, FailureType>(
+            NewConcurrent::runOnThreadPool<FileAnalysis, FailureType>(
                 _onDemandThreadPool,
                 [this, path]()
                 {
