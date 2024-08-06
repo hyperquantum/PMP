@@ -52,8 +52,12 @@ namespace PMP
                      std::function<void (QSharedPointer<Runner> actualRunner,
                                 ResultOrError<TResult, TError> previousOutcome)> work);
 
+        Continuation(Continuation const&) = delete;
+
         void continueFrom(QSharedPointer<Runner> previousRunner,
                           ResultOrError<TResult, TError> const& previousOutcome);
+
+        Continuation& operator=(Continuation const&) = delete;
 
     private:
         friend class QSharedPointer<Continuation<TResult, TError>>;
