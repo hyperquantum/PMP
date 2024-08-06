@@ -58,9 +58,9 @@ namespace PMP
     private:
         friend class QSharedPointer<Continuation<TResult, TError>>;
 
-        QSharedPointer<Runner> _runner;
+        QSharedPointer<Runner> const _runner;
         std::function<void (QSharedPointer<Runner> actualRunner,
-                            ResultOrError<TResult, TError> previousOutcome)> _work;
+                            ResultOrError<TResult, TError> previousOutcome)> const _work;
     };
 
     template<class TResult, class TError>
