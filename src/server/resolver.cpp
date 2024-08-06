@@ -641,7 +641,7 @@ namespace PMP::Server
 
         auto pathFuture =
             idFuture.thenOnAnyThreadIndirect<QString, FailureType>(
-            [this, hash](FailureOr<uint> outcome) -> NewFuture<QString, FailureType>
+                [this, hash](FailureOr<uint> outcome) -> NewFuture<QString, FailureType>
                 {
                     if (outcome.failed())
                         return NewFutureError(failure);
