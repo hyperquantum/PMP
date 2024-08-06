@@ -99,8 +99,8 @@ namespace PMP
     public:
         using OutcomeType = ResultOrError<TResult, TError>;
 
-        NewFutureStorage(NewFutureStorage<TResult, TError> const&) = delete;
-        NewFutureStorage<TResult, TError>& operator=(NewFutureStorage<TResult, TError> const&) = delete;
+        NewFutureStorage(NewFutureStorage const&) = delete;
+        NewFutureStorage& operator=(NewFutureStorage const&) = delete;
 
     private:
         using ContinuationPtr = QSharedPointer<Continuation<TResult, TError>>;
