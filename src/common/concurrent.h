@@ -17,15 +17,15 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COMMON_NEWCONCURRENT_H
-#define PMP_COMMON_NEWCONCURRENT_H
+#ifndef PMP_COMMON_CONCURRENT_H
+#define PMP_COMMON_CONCURRENT_H
 
 #include "newfuture.h"
 #include "runners.h"
 
 namespace PMP
 {
-    class NewConcurrent
+    class Concurrent
     {
     public:
         template<class TResult, class TError>
@@ -34,11 +34,11 @@ namespace PMP
             std::function<ResultOrError<TResult, TError>()> f);
 
     private:
-        NewConcurrent();
+        Concurrent();
     };
 
     template<class TResult, class TError>
-    inline NewFuture<TResult, TError> NewConcurrent::runOnThreadPool(
+    inline NewFuture<TResult, TError> Concurrent::runOnThreadPool(
         ThreadPoolSpecifier threadPool,
         std::function<ResultOrError<TResult, TError> ()> f)
     {

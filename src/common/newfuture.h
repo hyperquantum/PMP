@@ -133,7 +133,7 @@ namespace PMP
         friend class NewSimplePromise<TResult>;
         template<class, class> friend class NewFuture;
         friend class NewSimpleFuture<TResult>;
-        friend class NewConcurrent;
+        friend class Concurrent;
 
         QMutex _mutex;
         ContinuationPtr _continuation;
@@ -389,7 +389,7 @@ namespace PMP
         template<class, class> friend class NewFuture;
         friend class NewPromise<TResult, TError>;
         friend class Async;
-        friend class NewConcurrent;
+        friend class Concurrent;
 
         StoragePtr _storage;
     };

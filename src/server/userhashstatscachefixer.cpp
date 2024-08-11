@@ -19,7 +19,7 @@
 
 #include "userhashstatscachefixer.h"
 
-#include "common/newconcurrent.h"
+#include "common/concurrent.h"
 
 #include "database.h"
 #include "historystatistics.h"
@@ -84,7 +84,7 @@ namespace PMP::Server
             Q_UNREACHABLE();
         }
 
-        NewConcurrent::runOnThreadPool(globalThreadPool, workToDo)
+        Concurrent::runOnThreadPool(globalThreadPool, workToDo)
             .handleOnEventLoop(
                 this, [this](SuccessOrFailure result) { handleResultOfWork(result); }
             );

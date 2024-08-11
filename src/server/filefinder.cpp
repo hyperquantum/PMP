@@ -19,10 +19,9 @@
 
 #include "filefinder.h"
 
-//#include "common/concurrent.h"
+#include "common/concurrent.h"
 #include "common/containerutil.h"
 #include "common/fileanalyzer.h"
-#include "common/newconcurrent.h"
 
 #include "analyzer.h"
 #include "database.h"
@@ -77,7 +76,7 @@ namespace PMP::Server
         qDebug() << "FileFinder: starting background job to find file for ID" << id;
 
         auto future =
-            NewConcurrent::runOnThreadPool<QString, FailureType>(
+            Concurrent::runOnThreadPool<QString, FailureType>(
                 _threadPool,
                 [this, id, hash]()
                 {

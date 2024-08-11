@@ -19,9 +19,8 @@
 
 #include "resolver.h"
 
-//#include "common/concurrent.h"
+#include "common/concurrent.h"
 #include "common/fileanalyzer.h"
-#include "common/newconcurrent.h"
 
 #include "analyzer.h"
 #include "database.h"
@@ -820,7 +819,7 @@ namespace PMP::Server
         _hashRelations->markAsEquivalent(hashes);
         _historyStatistics->invalidateAllGroupStatisticsForHash(hashes[0]);
 
-        NewConcurrent::runOnThreadPool<SuccessType, FailureType>(
+        Concurrent::runOnThreadPool<SuccessType, FailureType>(
             globalThreadPool,
             [hashes]() -> ResultOrError<SuccessType, FailureType>
             {

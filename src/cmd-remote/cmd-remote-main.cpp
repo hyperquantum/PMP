@@ -23,8 +23,8 @@
 
 // for testing
 #include "common/async.h"
+#include "common/concurrent.h"
 #include "common/newfuture.h"
-#include "common/newconcurrent.h"
 
 #include "command.h"
 #include "commandlineclient.h"
@@ -270,7 +270,7 @@ inline void testFutures()
     // ====
 
     auto* threadPool = QThreadPool::globalInstance();
-    auto future = NewConcurrent::runOnThreadPool<int, FailureType>(threadPool, work);
+    auto future = Concurrent::runOnThreadPool<int, FailureType>(threadPool, work);
 
     auto work2 =
         [](ResultOrError<int, FailureType> input) -> ResultOrError<QString, FailureType>

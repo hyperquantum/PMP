@@ -19,9 +19,8 @@
 
 #include "hashidregistrar.h"
 
-//#include "common/concurrent.h"
+#include "common/concurrent.h"
 #include "common/containerutil.h"
-#include "common/newconcurrent.h"
 
 #include "database.h"
 
@@ -53,7 +52,7 @@ namespace PMP::Server
                 return success;
             };
 
-        return NewConcurrent::runOnThreadPool<SuccessType, FailureType>(globalThreadPool,
+        return Concurrent::runOnThreadPool<SuccessType, FailureType>(globalThreadPool,
                                                                         work);
     }
 
@@ -75,7 +74,7 @@ namespace PMP::Server
                 return registerHash(*db, hash);
             };
 
-        return NewConcurrent::runOnThreadPool<uint, FailureType>(globalThreadPool, work);
+        return Concurrent::runOnThreadPool<uint, FailureType>(globalThreadPool, work);
     }
 
     NewFuture<QVector<uint>, FailureType> HashIdRegistrar::getOrCreateIds(
@@ -124,7 +123,7 @@ namespace PMP::Server
                 return result;
             };
 
-        return NewConcurrent::runOnThreadPool<QVector<uint>, FailureType>(
+        return Concurrent::runOnThreadPool<QVector<uint>, FailureType>(
             globalThreadPool, work);
     }
 

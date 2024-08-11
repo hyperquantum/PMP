@@ -17,9 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-//#include "common/concurrent.h"
+#include "common/concurrent.h"
 #include "common/logging.h"
-#include "common/newconcurrent.h"
 #include "common/util.h"
 #include "common/version.h"
 
@@ -126,7 +125,7 @@ static void loadEquivalencesAndStartHashStatsCacheFixerAsync(
                                             UserHashStatsCacheFixer* hashStatsCacheFixer)
 {
     auto equivalencesLoadingFuture =
-        NewConcurrent::runOnThreadPool<SuccessType, FailureType>(
+        Concurrent::runOnThreadPool<SuccessType, FailureType>(
             globalThreadPool,
             [hashRelations]() -> SuccessOrFailure
             {

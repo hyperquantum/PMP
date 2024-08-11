@@ -20,8 +20,8 @@
 #include "serverinterface.h"
 
 #include "common/async.h"
+#include "common/concurrent.h"
 #include "common/containerutil.h"
-#include "common/newconcurrent.h"
 
 #include "database.h"
 #include "delayedstart.h"
@@ -249,7 +249,7 @@ namespace PMP::Server
         limit = qBound(0, limit, 50);
 
         auto future =
-            NewConcurrent::runOnThreadPool<HistoryFragment, Result>(
+            Concurrent::runOnThreadPool<HistoryFragment, Result>(
                 globalThreadPool,
                 [hashIds, hash, userId, startId, limit]()
                     -> ResultOrError<HistoryFragment, Result>
@@ -422,7 +422,7 @@ namespace PMP::Server
         uint hashId = _player->resolver().getID(hash);
 
         auto future =
-            NewConcurrent::runOnThreadPool<QVector<QString>, Result>(
+            Concurrent::runOnThreadPool<QVector<QString>, Result>(
                 globalThreadPool,
                 [hashId]() -> ResultOrError<QVector<QString>, Result>
                 {

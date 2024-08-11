@@ -19,9 +19,8 @@
 
 #include "analyzer.h"
 
-//#include "common/concurrent.h"
+#include "common/concurrent.h"
 #include "common/fileanalyzer.h"
-#include "common/newconcurrent.h"
 
 #include <QtDebug>
 #include <QThreadPool>
@@ -57,7 +56,7 @@ namespace PMP::Server
         _pathsInProgress << path;
 
         auto future =
-            NewConcurrent::runOnThreadPool<FileAnalysis, FailureType>(
+            Concurrent::runOnThreadPool<FileAnalysis, FailureType>(
                 _queueThreadPool,
                 [this, path]()
                 {
@@ -93,7 +92,7 @@ namespace PMP::Server
 
         qDebug() << "Analyzer: starting background job for:" << path;
         auto future =
-            NewConcurrent::runOnThreadPool<FileAnalysis, FailureType>(
+            Concurrent::runOnThreadPool<FileAnalysis, FailureType>(
                 _onDemandThreadPool,
                 [this, path]()
                 {

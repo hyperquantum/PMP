@@ -19,9 +19,8 @@
 
 #include "historystatistics.h"
 
-//#include "common/concurrent.h"
+#include "common/concurrent.h"
 #include "common/containerutil.h"
-#include "common/newconcurrent.h"
 
 #include "database.h"
 #include "hashrelations.h"
@@ -89,7 +88,7 @@ namespace PMP::Server
                                                                      bool validForScoring)
     {
         auto future =
-            NewConcurrent::runOnThreadPool<SuccessType, FailureType>(
+            Concurrent::runOnThreadPool<SuccessType, FailureType>(
                 /* do not specify our own (limited) thread pool, it cannot wait */
                 globalThreadPool,
                 [this, userId, hashId, start, end, permillage, validForScoring]()
@@ -146,7 +145,7 @@ namespace PMP::Server
         for (auto hashId : hashesInGroup)
             userData.hashesInProgress << hashId;
 
-        NewConcurrent::runOnThreadPool<SuccessType, FailureType>(
+        Concurrent::runOnThreadPool<SuccessType, FailureType>(
             _threadPool,
             [this, userId, hashesInGroup]()
             {
@@ -218,7 +217,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_mutex);
 
-        NewConcurrent::runOnThreadPool<SuccessType, FailureType>(
+        Concurrent::runOnThreadPool<SuccessType, FailureType>(
             _threadPool,
             [this, userId, hashId]() -> SuccessOrFailure
             {
@@ -325,7 +324,7 @@ namespace PMP::Server
             userData.hashesInProgress << hashId;
 
         auto future =
-            NewConcurrent::runOnThreadPool<SuccessType, FailureType>(
+            Concurrent::runOnThreadPool<SuccessType, FailureType>(
                 _threadPool,
                 [this, userId, hashesInGroup]()
                 {

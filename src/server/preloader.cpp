@@ -19,9 +19,8 @@
 
 #include "preloader.h"
 
-//#include "common/concurrent.h"
+#include "common/concurrent.h"
 #include "common/fileanalyzer.h"
-#include "common/newconcurrent.h"
 
 #include "playerqueue.h"
 #include "queueentry.h"
@@ -343,7 +342,7 @@ namespace PMP::Server
         if (!originalFilename.isEmpty()
                 && _resolver->pathStillValid(hash, originalFilename))
         {
-            return NewConcurrent::runOnThreadPool<QString, FailureType>(
+            return Concurrent::runOnThreadPool<QString, FailureType>(
                 globalThreadPool,
                 [queueId, originalFilename]()
                 {
