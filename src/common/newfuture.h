@@ -117,7 +117,7 @@ namespace PMP
         static StoragePtr createWithError(TError const& error);
         static StoragePtr createWithOutcome(OutcomeType const& outcome);
 
-        ContinuationPtr createContinuationThatStoresTheResultHere();
+        static ContinuationPtr createContinuationThatStoresResultAt(StoragePtr storage);
 
         Nullable<ResultOrError<TResult, TError>> getOutcomeIfFinished();
 
@@ -191,12 +191,13 @@ namespace PMP
 
     template<class TResult, class TError>
     QSharedPointer<Continuation<TResult, TError>>
-        NewFutureStorage<TResult, TError>::createContinuationThatStoresTheResultHere()
+        NewFutureStorage<TResult, TError>::createContinuationThatStoresResultAt(
+            StoragePtr storage)
     {
         auto wrapper =
-            [this](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
+            [storage](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
             {
-                storeAndContinueFrom(previousOutcome, actualRunner);
+                storage->storeAndContinueFrom(previousOutcome, actualRunner);
             };
 
         auto runner = QSharedPointer<AnyThreadContinuationRunner>::create();
@@ -555,7 +556,7 @@ namespace PMP
         std::function<NewFuture<TResult, TError> ()> f)
     {
         auto storage = StoragePtr::create();
-        auto continuation = storage->createContinuationThatStoresTheResultHere();
+        auto continuation = StorageType::createContinuationThatStoresResultAt(storage);
 
         auto wrapper =
             [f, continuation]()
@@ -601,9 +602,10 @@ namespace PMP
             QSharedPointer<Runner> runner,
             std::function<NewFuture<TResult2, TError2> (OutcomeType)> f)
     {
-        auto secondStorage = NewFuture<TResult2, TError2>::StoragePtr::create();
+        using Storage2Type = NewFutureStorage<TResult2, TError2>;
+        auto secondStorage = QSharedPointer<Storage2Type>::create();
         auto secondContinuation =
-            secondStorage->createContinuationThatStoresTheResultHere();
+            Storage2Type::createContinuationThatStoresResultAt(secondStorage);
 
         auto wrapper =
             [f, secondContinuation](QSharedPointer<Runner> actualRunner,
@@ -758,7 +760,7 @@ namespace PMP
         std::function<NewSimpleFuture<TOutcome> ()> f)
     {
         auto storage = StoragePtr::create();
-        auto continuation = storage->createContinuationThatStoresTheResultHere();
+        auto continuation = StorageType::createContinuationThatStoresResultAt(storage);
 
         auto wrapper =
             [f, runner, continuation]()
