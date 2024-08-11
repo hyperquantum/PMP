@@ -69,7 +69,7 @@ namespace PMP::Server
         {
             qWarning() << "History: invalid parameter(s): hashId" << hashId
                        << "user" << userId;
-            return NewFutureError(failure);
+            return FutureError(failure);
         }
 
         return _statistics->scheduleFetchIfMissing(userId, hashId);
@@ -121,7 +121,7 @@ namespace PMP::Server
                     -> NewFuture<SuccessType, FailureType>
                 {
                     if (outcome.failed())
-                        return NewFutureError(failure);
+                        return FutureError(failure);
 
                     auto hashId = outcome.result();
                     uint userId = entry->user();

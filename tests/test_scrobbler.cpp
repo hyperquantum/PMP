@@ -47,7 +47,7 @@ NewSimpleFuture<Result> BackendMock::authenticateWithCredentials(QString usernam
     Q_UNUSED(usernameOrEmail);
     Q_UNUSED(password);
 
-    return NewFutureResult(Error::notImplemented());
+    return FutureResult(Error::notImplemented());
 }
 
 void BackendMock::initialize()
@@ -213,7 +213,7 @@ NewFuture<CollectionTrackInfo, FailureType> TrackInfoProviderMock::getTrackInfoA
     Q_ASSERT(hashId > 0);
     Q_ASSERT(_tracks.contains(hashId));
 
-    return NewFutureResult(_tracks[hashId]);
+    return FutureResult(_tracks[hashId]);
 }
 
 void TrackInfoProviderMock::registerTrack(uint hashId, QString title, QString artist)

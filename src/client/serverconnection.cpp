@@ -1242,9 +1242,9 @@ namespace PMP::Client
                                                     ResultMessageErrorCode::ServerTooOld);
     }
 
-    NewFutureError<AnyResultMessageCode> ServerConnection::serverTooOldFutureError()
+    FutureError<AnyResultMessageCode> ServerConnection::serverTooOldFutureError()
     {
-        return NewFutureError(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
+        return FutureError(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
     }
 
     NewSimpleFuture<AnyResultMessageCode> ServerConnection::reloadServerSettings()

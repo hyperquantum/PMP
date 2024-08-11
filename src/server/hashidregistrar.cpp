@@ -62,7 +62,7 @@ namespace PMP::Server
             QMutexLocker lock(&_mutex);
             auto id = _hashes.value(hash, 0);
             if (id > 0)
-                return NewFutureResult(id);
+                return FutureResult(id);
         }
 
         auto work =
@@ -97,7 +97,7 @@ namespace PMP::Server
             }
 
             if (!incomplete)
-                return NewFutureResult(ids);
+                return FutureResult(ids);
         }
 
         auto work =

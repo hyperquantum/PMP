@@ -617,7 +617,7 @@ namespace PMP::Server
         if (hash.isNull())
         {
             qWarning() << "Resolver: cannot find path for null hash";
-            return NewFutureError(failure);
+            return FutureError(failure);
         }
 
         {
@@ -629,7 +629,7 @@ namespace PMP::Server
                 auto path = it.value()->getFile();
                 if (!path.isEmpty())
                 {
-                    return NewFutureResult(path);
+                    return FutureResult(path);
                 }
             }
         }
@@ -643,7 +643,7 @@ namespace PMP::Server
                 [this, hash](FailureOr<uint> outcome) -> NewFuture<QString, FailureType>
                 {
                     if (outcome.failed())
-                        return NewFutureError(failure);
+                        return FutureError(failure);
 
                     auto id = outcome.result();
                     return _fileFinder->findHashAsync(id, hash);
@@ -664,7 +664,7 @@ namespace PMP::Server
             if (it == _idToHash.end())
             {
                 qWarning() << "Resolver: hash ID" << hashId << "is unknown";
-                return NewFutureError(failure);
+                return FutureError(failure);
             }
 
             hash = it.value()->hash();
@@ -672,7 +672,7 @@ namespace PMP::Server
             auto path = it.value()->getFile();
             if (!path.isEmpty())
             {
-                return NewFutureResult(path);
+                return FutureResult(path);
             }
         }
 

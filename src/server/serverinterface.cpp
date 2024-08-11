@@ -231,20 +231,20 @@ namespace PMP::Server
         FileHash hash, quint32 userId, uint startId, int limit)
     {
         if (!isLoggedIn())
-            return NewFutureError(Error::notLoggedIn());
+            return FutureError(Error::notLoggedIn());
 
         if (hash.isNull())
-            return NewFutureError(Error::hashIsNull());
+            return FutureError(Error::hashIsNull());
 
         auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
         if (maybeHashId == null)
-            return NewFutureError(Error::hashIsUnknown());
+            return FutureError(Error::hashIsUnknown());
 
         auto hashIds =
             _hashRelations->getEquivalencyGroup(maybeHashId.value());
 
         if (userId != 0 && !_users->checkUserIdExists(userId))
-            return NewFutureError(Error::userIdNotFound());
+            return FutureError(Error::userIdNotFound());
 
         limit = qBound(0, limit, 50);
 
@@ -321,10 +321,10 @@ namespace PMP::Server
                                                             QString password)
     {
         if (!isLoggedIn())
-            return NewFutureResult(Error::notLoggedIn());
+            return FutureResult(Error::notLoggedIn());
 
         if (provider == ScrobblingProvider::Unknown)
-            return NewFutureResult(Error::scrobblingProviderInvalid());
+            return FutureResult(Error::scrobblingProviderInvalid());
 
         return _scrobbling->authenticateForProvider(_userLoggedIn, provider, user,
                                                     password);
@@ -409,14 +409,14 @@ namespace PMP::Server
         ServerInterface::getPossibleFilenamesForQueueEntry(uint id)
     {
         if (id <= 0) /* invalid queue ID */
-            return NewFutureError(Error::queueEntryIdNotFound(0));
+            return FutureError(Error::queueEntryIdNotFound(0));
 
         auto entry = _player->queue().lookup(id);
         if (entry == nullptr) /* ID not found */
-            return NewFutureError(Error::queueEntryIdNotFound(id));
+            return FutureError(Error::queueEntryIdNotFound(id));
 
         if (!entry->isTrack())
-            return NewFutureError(Error::queueItemTypeInvalid());
+            return FutureError(Error::queueItemTypeInvalid());
 
         auto hash = entry->hash().value();
         uint hashId = _player->resolver().getID(hash);
@@ -676,15 +676,15 @@ namespace PMP::Server
         /* note: client does not need to be logged in for this */
 
         if (hash.isNull())
-            return NewFutureError(Error::hashIsNull());
+            return FutureError(Error::hashIsNull());
 
         auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
         if (maybeHashId == null)
-            return NewFutureError(Error::hashIsUnknown());
+            return FutureError(Error::hashIsUnknown());
 
         auto hashInfo = _player->resolver().getHashTrackInfo(maybeHashId.value());
 
-        return NewFutureResult(hashInfo);
+        return FutureResult(hashInfo);
     }
 
     void ServerInterface::shutDownServer()

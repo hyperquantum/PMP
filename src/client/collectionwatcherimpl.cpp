@@ -96,7 +96,7 @@ namespace PMP::Client
         auto it = _collectionHash.find(hashId);
 
         if (it != _collectionHash.end())
-            return NewFutureResult(it.value());
+            return FutureResult(it.value());
 
         return getTrackInfoInternal(hashId);
     }
@@ -111,7 +111,7 @@ namespace PMP::Client
             auto it = _collectionHash.find(hashId);
 
             if (it != _collectionHash.end())
-                return NewFutureResult(it.value());
+                return FutureResult(it.value());
         }
 
         return getTrackInfoInternal(hash);

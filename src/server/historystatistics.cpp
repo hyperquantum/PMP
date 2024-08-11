@@ -300,7 +300,7 @@ namespace PMP::Server
 
         auto& userData = _userData[userId];
         if (userData.hashesInProgress.contains(hashId))
-            return NewFutureError(failure);
+            return FutureError(failure);
 
         const auto hashesInGroup = _hashRelations->getEquivalencyGroup(hashId);
 
@@ -317,7 +317,7 @@ namespace PMP::Server
             }
 
             if (!anyMissing)
-                return NewFutureResult(success); /* nothing to do */
+                return FutureResult(success); /* nothing to do */
         }
 
         for (auto hashId : hashesInGroup)

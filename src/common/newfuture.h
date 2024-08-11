@@ -286,11 +286,11 @@ namespace PMP
     // =================================================================== //
 
     template<class TResult>
-    class NewFutureResult
+    class FutureResult
     {
     public:
-        NewFutureResult(TResult const& result) : _result(result) {}
-        NewFutureResult(TResult&& result) : _result(result) {}
+        FutureResult(TResult const& result) : _result(result) {}
+        FutureResult(TResult&& result) : _result(result) {}
 
     private:
         template<class T1, class T2> friend class NewFuture;
@@ -300,11 +300,11 @@ namespace PMP
     };
 
     template<class TError>
-    class NewFutureError
+    class FutureError
     {
     public:
-        NewFutureError(TError const& error) : _error(error) {}
-        NewFutureError(TError&& error) : _error(error) {}
+        FutureError(TError const& error) : _error(error) {}
+        FutureError(TError&& error) : _error(error) {}
 
     private:
         template<class T1, class T2> friend class NewFuture;
@@ -320,8 +320,8 @@ namespace PMP
     public:
         using OutcomeType = ResultOrError<TResult, TError>;
 
-        NewFuture(NewFutureResult<TResult> const& result);
-        NewFuture(NewFutureError<TError> const& error);
+        NewFuture(FutureResult<TResult> const& result);
+        NewFuture(FutureError<TError> const& error);
 
         static NewFuture<TResult, TError> fromOutcome(OutcomeType outcome);
 
@@ -395,14 +395,14 @@ namespace PMP
     };
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError>::NewFuture(const NewFutureResult<TResult>& result)
+    NewFuture<TResult, TError>::NewFuture(const FutureResult<TResult>& result)
         : _storage(StorageType::createWithResult(result._result))
     {
         //
     }
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError>::NewFuture(const NewFutureError<TError>& error)
+    NewFuture<TResult, TError>::NewFuture(const FutureError<TError>& error)
         : _storage(StorageType::createWithError(error._error))
     {
         //
@@ -659,7 +659,7 @@ namespace PMP
     public:
         using OutcomeType = TOutcome;
 
-        NewSimpleFuture(NewFutureResult<TOutcome> const& outcome);
+        NewSimpleFuture(FutureResult<TOutcome> const& outcome);
 
         static NewSimpleFuture<TOutcome> fromOutcome(TOutcome const& outcome);
 
@@ -688,7 +688,7 @@ namespace PMP
     };
 
     template<class TOutcome>
-    NewSimpleFuture<TOutcome>::NewSimpleFuture(const NewFutureResult<TOutcome>& outcome)
+    NewSimpleFuture<TOutcome>::NewSimpleFuture(const FutureResult<TOutcome>& outcome)
         : _storage(StorageType::createWithResult(outcome._result))
     {
         //

@@ -36,7 +36,7 @@ namespace PMP::Server
             auto trackInfo = _resolver->getHashTrackInfo(hashId);
 
             if (!trackInfo.titleAndArtistUnknown())
-                return NewFutureResult(trackInfo);
+                return FutureResult(trackInfo);
         }
 
         qDebug() << "TrackInfoProviderImpl: will try to locate the file for hash ID"

@@ -54,19 +54,19 @@ namespace PMP::Server
                                                             QString password)
     {
         if (!_hostEnabled)
-            return NewFutureResult(Error::scrobblingSystemDisabled());
+            return FutureResult(Error::scrobblingSystemDisabled());
 
         auto& data = _scrobblersData[userId][provider];
 
         if (data.enabled == false)
         {
-            return NewFutureResult(Error::scrobblingProviderNotEnabled());
+            return FutureResult(Error::scrobblingProviderNotEnabled());
         }
 
         if (data.scrobbler == nullptr)
         {
             qWarning() << "ScrobblingHost: authenticate: scrobbler not created yet??";
-            return NewFutureResult(Error::internalError());
+            return FutureResult(Error::internalError());
         }
 
         return data.scrobbler->authenticateWithCredentials(user, password);
