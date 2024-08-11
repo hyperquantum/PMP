@@ -355,8 +355,6 @@ namespace PMP
             std::function<TOutcome2 (TResult const& result)> resultConverter,
             std::function<TOutcome2 (TError const& error)> errorConverter);
 
-        // TODO: adding listeners
-
     private:
         using StorageType = NewFutureStorage<TResult, TError>;
         using StoragePtr = QSharedPointer<NewFutureStorage<TResult, TError>>;
