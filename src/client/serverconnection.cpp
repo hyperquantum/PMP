@@ -226,7 +226,7 @@ namespace PMP::Client
                                                 ExtensionResultMessageData const& data);
 
     private:
-        NewSimplePromise<AnyResultMessageCode> _promise;
+        SimplePromise<AnyResultMessageCode> _promise;
     };
 
     ServerConnection::PromiseResultHandler::PromiseResultHandler(ServerConnection* parent)
@@ -552,7 +552,7 @@ namespace PMP::Client
                                    HistoryFragment fragment) override;
 
     private:
-        NewPromise<HistoryFragment, AnyResultMessageCode> _promise;
+        Promise<HistoryFragment, AnyResultMessageCode> _promise;
     };
 
     ServerConnection::HistoryFragmentResultHandler::HistoryFragmentResultHandler(
@@ -600,7 +600,7 @@ namespace PMP::Client
 
     private:
         FileHash _hash;
-        NewPromise<CollectionTrackInfo, AnyResultMessageCode> _promise;
+        Promise<CollectionTrackInfo, AnyResultMessageCode> _promise;
     };
 
     ServerConnection::HashInfoResultHandler::HashInfoResultHandler(

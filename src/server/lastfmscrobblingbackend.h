@@ -22,7 +22,7 @@
 
 #include "scrobblingbackend.h"
 
-#include "common/newpromise.h"
+#include "common/promise.h"
 
 #include "result.h"
 
@@ -95,7 +95,7 @@ namespace PMP::Server
         void onGenericError() override;
 
     private:
-        NewPromise<LastFmAuthenticationResult, Result> _promise;
+        Promise<LastFmAuthenticationResult, Result> _promise;
     };
 
     class LastFmNowPlayingRequestHandler : public LastFmRequestHandler

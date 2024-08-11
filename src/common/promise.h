@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2024, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,87 +17,105 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_PROMISE_H
-#define PMP_PROMISE_H
+#ifndef PMP_COMMON_PROMISE_H
+#define PMP_COMMON_PROMISE_H
 
-#include "future.h"
-#include "resultorerror.h"
+#include "newfuture.h"
 
 namespace PMP
 {
-    template<class ResultType, class ErrorType>
+    template<class TResult, class TError>
     class Promise
     {
     public:
-        Promise()
-         : _storage(FutureStorage<ResultType, ErrorType>::create())
-        {
-            //
-        }
+        using OutcomeType = ResultOrError<TResult, TError>;
+        using FutureType = NewFuture<TResult, TError>;
 
-        Promise(Promise&&) = default;
+        FutureType future() const;
 
-        Promise(Promise const&) = delete;
-        Promise& operator=(Promise const&) = delete;
-
-        Future<ResultType, ErrorType> future() const
-        {
-            return Future<ResultType, ErrorType>(_storage);
-        }
-
-        void setOutcome(ResultOrError<ResultType, ErrorType> const& r)
-        {
-            _storage->setOutcome(r);
-        }
-
-        void setResult(ResultType result)
-        {
-            _storage->setResult(result);
-        }
-
-        void setError(ErrorType error)
-        {
-            _storage->setError(error);
-        }
+        void setOutcome(OutcomeType const& outcome);
+        void setResult(TResult const& result);
+        void setError(TError const& error);
 
     private:
-        QSharedPointer<FutureStorage<ResultType, ErrorType>> _storage;
+        Promise();
+
+        friend class Async;
+
+        QSharedPointer<NewFutureStorage<TResult, TError>> _storage;
     };
 
-    template<class T>
+    template<class TResult, class TError>
+    NewFuture<TResult, TError> Promise<TResult, TError>::future() const
+    {
+        return NewFuture<TResult, TError>(_storage);
+    }
+
+    template<class TResult, class TError>
+    void Promise<TResult, TError>::setOutcome(const OutcomeType& outcome)
+    {
+        _storage->storeAndContinueFrom(outcome, nullptr);
+    }
+
+    template<class TResult, class TError>
+    inline void Promise<TResult, TError>::setResult(const TResult& result)
+    {
+        setOutcome(OutcomeType::fromResult(result));
+    }
+
+    template<class TResult, class TError>
+    inline void Promise<TResult, TError>::setError(const TError& error)
+    {
+        setOutcome(OutcomeType::fromError(error));
+    }
+
+    template<class TResult, class TError>
+    Promise<TResult, TError>::Promise()
+        : _storage(QSharedPointer<NewFutureStorage<TResult, TError>>::create())
+    {
+        //
+    }
+
+    // =================================================================== //
+
+    template<class TOutcome>
     class SimplePromise
     {
     public:
-        SimplePromise()
-         : _storage(FutureStorage<T, FailureType>::create())
-        {
-            //
-        }
+        using OutcomeType = TOutcome;
+        using FutureType = NewSimpleFuture<TOutcome>;
 
-        SimplePromise(SimplePromise&&) = default;
+        FutureType future() const;
 
-        SimplePromise(SimplePromise const&) = delete;
-        SimplePromise& operator=(SimplePromise const&) = delete;
-
-        SimpleFuture<T> future() const
-        {
-            return SimpleFuture<T>(_storage);
-        }
-
-        void setResult(T result)
-        {
-            _storage->setResult(result);
-        }
-
-        void connectToResultFrom(SimpleFuture<T> const& future)
-        {
-            future._storage->addResultListener(
-                [storage = _storage](T result) { storage->setResult(result); }
-            );
-        }
+        void setOutcome(OutcomeType const& outcome);
 
     private:
-        QSharedPointer<FutureStorage<T, FailureType>> _storage;
+        SimplePromise();
+
+        friend class Async;
+
+        QSharedPointer<NewFutureStorage<TOutcome, FailureType>> _storage;
     };
+
+    template<class TOutcome>
+    NewSimpleFuture<TOutcome> SimplePromise<TOutcome>::future() const
+    {
+        return NewSimpleFuture<TOutcome>(_storage);
+    }
+
+    template<class TOutcome>
+    void SimplePromise<TOutcome>::setOutcome(const OutcomeType& outcome)
+    {
+        auto resultOrError = ResultOrError<TOutcome, FailureType>::fromResult(outcome);
+
+        _storage->storeAndContinueFrom(resultOrError, nullptr);
+    }
+
+    template<class TOutcome>
+    SimplePromise<TOutcome>::SimplePromise()
+        : _storage(QSharedPointer<NewFutureStorage<TOutcome, FailureType>>::create())
+    {
+        //
+    }
 }
 #endif

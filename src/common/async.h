@@ -21,7 +21,7 @@
 #define PMP_COMMON_ASYNC_H
 
 #include "newfuture.h"
-#include "newpromise.h"
+#include "promise.h"
 #include "runners.h"
 
 namespace PMP
@@ -30,10 +30,10 @@ namespace PMP
     {
     public:
         template<class TResult, class TError>
-        static NewPromise<TResult, TError> createPromise();
+        static Promise<TResult, TError> createPromise();
 
         template<class TOutcome>
-        static NewSimplePromise<TOutcome> createSimplePromise();
+        static SimplePromise<TOutcome> createSimplePromise();
 
         template<class TResult, class TError>
         static NewFuture<TResult, TError> runOnEventLoop(
@@ -55,15 +55,15 @@ namespace PMP
     };
 
     template<class TResult, class TError>
-    NewPromise<TResult, TError> Async::createPromise()
+    Promise<TResult, TError> Async::createPromise()
     {
-        return NewPromise<TResult, TError>();
+        return Promise<TResult, TError>();
     }
 
     template<class TOutcome>
-    NewSimplePromise<TOutcome> Async::createSimplePromise()
+    SimplePromise<TOutcome> Async::createSimplePromise()
     {
-        return NewSimplePromise<TOutcome>();
+        return SimplePromise<TOutcome>();
     }
 
     template<class TResult, class TError>

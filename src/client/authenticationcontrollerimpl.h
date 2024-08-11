@@ -22,9 +22,8 @@
 
 #include "authenticationcontroller.h"
 
-#include "common/newpromise.h"
 #include "common/nullable.h"
-//#include "common/promise.h"
+#include "common/promise.h"
 
 #include <QSharedPointer>
 
@@ -54,7 +53,7 @@ namespace PMP::Client
 
     private:
         ServerConnection* _connection;
-        Nullable<NewPromise<QList<UserAccount>, ResultMessageErrorCode>> _userAccountsPromise;
+        Nullable<Promise<QList<UserAccount>, ResultMessageErrorCode>> _userAccountsPromise;
     };
 }
 #endif

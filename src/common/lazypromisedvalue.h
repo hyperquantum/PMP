@@ -82,7 +82,7 @@ namespace PMP
     private:
         std::function<void ()> _requester;
         Nullable<ResultOrError<ResultType, ErrorType>> _cached;
-        Nullable<NewPromise<ResultType, ErrorType>> _promise;
+        Nullable<Promise<ResultType, ErrorType>> _promise;
     };
 }
 #endif

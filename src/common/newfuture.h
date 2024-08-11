@@ -35,9 +35,9 @@ namespace PMP
 {
     /* ---------- THIS FILE IS AN EXPERIMENTAL WORK IN PROGRESS ---------- */
 
-    template<class TResult, class TError> class NewPromise;
+    template<class TResult, class TError> class Promise;
     template<class TResult, class TError> class NewFuture;
-    template<class TOutcome> class NewSimplePromise;
+    template<class TOutcome> class SimplePromise;
     template<class TOutcome> class NewSimpleFuture;
     template<class TResult, class TError> class NewFutureStorage;
     template<class TResult, class TError> class Continuation;
@@ -129,8 +129,8 @@ namespace PMP
                                   QSharedPointer<Runner> runner);
 
         friend class QSharedPointer<NewFutureStorage<TResult, TError>>;
-        friend class NewPromise<TResult, TError>;
-        friend class NewSimplePromise<TResult>;
+        friend class Promise<TResult, TError>;
+        friend class SimplePromise<TResult>;
         template<class, class> friend class NewFuture;
         friend class NewSimpleFuture<TResult>;
         friend class Concurrent;
@@ -387,7 +387,7 @@ namespace PMP
             std::function<TOutcome2(OutcomeType)> f);
 
         template<class, class> friend class NewFuture;
-        friend class NewPromise<TResult, TError>;
+        friend class Promise<TResult, TError>;
         friend class Async;
         friend class Concurrent;
 
@@ -681,7 +681,7 @@ namespace PMP
             std::function<NewSimpleFuture<TOutcome>()> f);
 
         template<class T1, class T2> friend class NewFuture;
-        friend class NewSimplePromise<TOutcome>;
+        friend class SimplePromise<TOutcome>;
         friend class Async;
 
         StoragePtr _storage;
