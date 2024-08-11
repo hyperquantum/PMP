@@ -40,7 +40,7 @@ namespace PMP
     private:
         NewPromise();
 
-        friend class NewAsync;
+        friend class Async;
 
         QSharedPointer<NewFutureStorage<TResult, TError>> _storage;
     };
@@ -92,7 +92,7 @@ namespace PMP
     private:
         NewSimplePromise();
 
-        friend class NewAsync;
+        friend class Async;
 
         QSharedPointer<NewFutureStorage<TOutcome, FailureType>> _storage;
     };

@@ -19,7 +19,7 @@
 
 #include "authenticationcontrollerimpl.h"
 
-#include "common/newasync.h"
+#include "common/async.h"
 
 #include "serverconnection.h"
 
@@ -88,7 +88,7 @@ namespace PMP::Client
         if (_userAccountsPromise.isNull())
         {
             _userAccountsPromise =
-                NewAsync::createPromise<QList<UserAccount>, ResultMessageErrorCode>();
+                Async::createPromise<QList<UserAccount>, ResultMessageErrorCode>();
 
             _connection->sendUserAccountsFetchRequest();
         }

@@ -20,7 +20,7 @@
 #ifndef PMP_LAZYPROMISEDVALUE_H
 #define PMP_LAZYPROMISEDVALUE_H
 
-#include "newasync.h"
+#include "async.h"
 #include "nullable.h"
 
 #include <functional>
@@ -44,7 +44,7 @@ namespace PMP
 
             if (_promise.isNull())
             {
-                _promise = NewAsync::createPromise<ResultType, ErrorType>();
+                _promise = Async::createPromise<ResultType, ErrorType>();
                 _requester();
             }
 

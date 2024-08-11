@@ -19,7 +19,7 @@
 
 #include "lastfmscrobblingbackend.h"
 
-#include "common/newasync.h"
+#include "common/async.h"
 #include "common/version.h"
 
 #include <algorithm>
@@ -225,7 +225,7 @@ namespace PMP::Server
                                                           LastFmScrobblingBackend* parent,
                                                               QNetworkReply* pendingReply)
      : LastFmRequestHandler(parent, pendingReply, "session"),
-        _promise(NewAsync::createPromise<LastFmAuthenticationResult, Result>())
+        _promise(Async::createPromise<LastFmAuthenticationResult, Result>())
     {
         //
     }

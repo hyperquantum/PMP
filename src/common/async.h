@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_COMMON_NEWASYNC_H
-#define PMP_COMMON_NEWASYNC_H
+#ifndef PMP_COMMON_ASYNC_H
+#define PMP_COMMON_ASYNC_H
 
 #include "newfuture.h"
 #include "newpromise.h"
@@ -26,7 +26,7 @@
 
 namespace PMP
 {
-    class NewAsync
+    class Async
     {
     public:
         template<class TResult, class TError>
@@ -51,23 +51,23 @@ namespace PMP
             std::function<NewSimpleFuture<TOutcome>()> f);
 
     private:
-        NewAsync();
+        Async();
     };
 
     template<class TResult, class TError>
-    NewPromise<TResult, TError> NewAsync::createPromise()
+    NewPromise<TResult, TError> Async::createPromise()
     {
         return NewPromise<TResult, TError>();
     }
 
     template<class TOutcome>
-    NewSimplePromise<TOutcome> NewAsync::createSimplePromise()
+    NewSimplePromise<TOutcome> Async::createSimplePromise()
     {
         return NewSimplePromise<TOutcome>();
     }
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError> NewAsync::runOnEventLoop(
+    NewFuture<TResult, TError> Async::runOnEventLoop(
         QObject* receiver,
         std::function<ResultOrError<TResult, TError> ()> f)
     {
@@ -77,7 +77,7 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError> NewAsync::runOnEventLoop(
+    NewFuture<TResult, TError> Async::runOnEventLoop(
         QObject* receiver,
         std::function<NewFuture<TResult, TError>()> f)
     {
@@ -87,7 +87,7 @@ namespace PMP
     }
 
     template<class TOutcome>
-    NewSimpleFuture<TOutcome> NewAsync::runOnEventLoop(
+    NewSimpleFuture<TOutcome> Async::runOnEventLoop(
         QObject* receiver,
         std::function<NewSimpleFuture<TOutcome> ()> f)
     {

@@ -19,8 +19,8 @@
 
 #include "serverinterface.h"
 
+#include "common/async.h"
 #include "common/containerutil.h"
-#include "common/newasync.h"
 #include "common/newconcurrent.h"
 
 #include "database.h"
@@ -160,7 +160,7 @@ namespace PMP::Server
 
     NewSimpleFuture<ResultMessageErrorCode> ServerInterface::reloadServerSettings()
     {
-        auto promise = NewAsync::createSimplePromise<ResultMessageErrorCode>();
+        auto promise = Async::createSimplePromise<ResultMessageErrorCode>();
 
         // TODO : in the future allow reloading if the database is not connected yet
         if (!isLoggedIn())

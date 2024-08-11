@@ -19,9 +19,9 @@
 
 #include "serverconnection.h"
 
+#include "common/async.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
-#include "common/newasync.h"
 #include "common/startstopeventstatus.h"
 #include "common/util.h"
 
@@ -231,7 +231,7 @@ namespace PMP::Client
 
     ServerConnection::PromiseResultHandler::PromiseResultHandler(ServerConnection* parent)
      : ResultHandler(parent),
-        _promise(NewAsync::createSimplePromise<AnyResultMessageCode>())
+        _promise(Async::createSimplePromise<AnyResultMessageCode>())
     {
         //
     }
@@ -558,7 +558,7 @@ namespace PMP::Client
     ServerConnection::HistoryFragmentResultHandler::HistoryFragmentResultHandler(
         ServerConnection* parent)
      : ResultHandler(parent),
-        _promise(NewAsync::createPromise<HistoryFragment, AnyResultMessageCode>())
+        _promise(Async::createPromise<HistoryFragment, AnyResultMessageCode>())
     {
         //
     }
@@ -608,7 +608,7 @@ namespace PMP::Client
                                                                 const FileHash& hash)
      : ResultHandler(parent),
         _hash(hash),
-        _promise(NewAsync::createPromise<CollectionTrackInfo, AnyResultMessageCode>())
+        _promise(Async::createPromise<CollectionTrackInfo, AnyResultMessageCode>())
     {
         //
     }

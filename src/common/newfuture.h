@@ -388,7 +388,7 @@ namespace PMP
 
         template<class, class> friend class NewFuture;
         friend class NewPromise<TResult, TError>;
-        friend class NewAsync;
+        friend class Async;
         friend class NewConcurrent;
 
         StoragePtr _storage;
@@ -682,7 +682,7 @@ namespace PMP
 
         template<class T1, class T2> friend class NewFuture;
         friend class NewSimplePromise<TOutcome>;
-        friend class NewAsync;
+        friend class Async;
 
         StoragePtr _storage;
     };

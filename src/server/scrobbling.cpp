@@ -19,7 +19,7 @@
 
 #include "scrobbling.h"
 
-#include "common/newasync.h"
+#include "common/async.h"
 
 #include "scrobblinghost.h"
 
@@ -201,7 +201,7 @@ namespace PMP::Server
                                                              QString password)
     {
         return
-            NewAsync::runOnEventLoop<Result>(
+            Async::runOnEventLoop<Result>(
                 _host,
                 [host = _host, userId, provider, user, password]()
                 {

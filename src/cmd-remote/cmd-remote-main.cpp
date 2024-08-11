@@ -22,8 +22,8 @@
 #include "common/util.h"
 
 // for testing
+#include "common/async.h"
 #include "common/newfuture.h"
-#include "common/newasync.h"
 #include "common/newconcurrent.h"
 
 #include "command.h"
@@ -265,7 +265,7 @@ inline void testFutures()
 
     QObject* object = new QObject();
 
-    auto eventLoopFuture = NewAsync::runOnEventLoop<int, FailureType>(object, work);
+    auto eventLoopFuture = Async::runOnEventLoop<int, FailureType>(object, work);
 
     // ====
 
@@ -285,14 +285,14 @@ inline void testFutures()
 
     // ====
 
-    auto promise = NewAsync::createPromise<QString, FailureType>();
+    auto promise = Async::createPromise<QString, FailureType>();
     auto future3 = promise.future();
 
     promise.setOutcome(failure);
 
     // ====
 
-    auto simplePromise = NewAsync::createSimplePromise<QString>();
+    auto simplePromise = Async::createSimplePromise<QString>();
     auto simpleFuture = simplePromise.future();
 
     simplePromise.setOutcome("Finished");
