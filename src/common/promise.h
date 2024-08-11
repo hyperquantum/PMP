@@ -42,7 +42,7 @@ namespace PMP
 
         friend class Async;
 
-        QSharedPointer<NewFutureStorage<TResult, TError>> _storage;
+        QSharedPointer<FutureStorage<TResult, TError>> _storage;
     };
 
     template<class TResult, class TError>
@@ -71,7 +71,7 @@ namespace PMP
 
     template<class TResult, class TError>
     Promise<TResult, TError>::Promise()
-        : _storage(QSharedPointer<NewFutureStorage<TResult, TError>>::create())
+        : _storage(QSharedPointer<FutureStorage<TResult, TError>>::create())
     {
         //
     }
@@ -94,7 +94,7 @@ namespace PMP
 
         friend class Async;
 
-        QSharedPointer<NewFutureStorage<TOutcome, FailureType>> _storage;
+        QSharedPointer<FutureStorage<TOutcome, FailureType>> _storage;
     };
 
     template<class TOutcome>
@@ -113,7 +113,7 @@ namespace PMP
 
     template<class TOutcome>
     SimplePromise<TOutcome>::SimplePromise()
-        : _storage(QSharedPointer<NewFutureStorage<TOutcome, FailureType>>::create())
+        : _storage(QSharedPointer<FutureStorage<TOutcome, FailureType>>::create())
     {
         //
     }

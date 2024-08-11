@@ -39,7 +39,7 @@ namespace PMP
     template<class TResult, class TError> class NewFuture;
     template<class TOutcome> class SimplePromise;
     template<class TOutcome> class NewSimpleFuture;
-    template<class TResult, class TError> class NewFutureStorage;
+    template<class TResult, class TError> class FutureStorage;
     template<class TResult, class TError> class Continuation;
 
     // =================================================================== //
@@ -98,19 +98,19 @@ namespace PMP
     // =================================================================== //
 
     template<class TResult, class TError>
-    class NewFutureStorage
+    class FutureStorage
     {
     public:
-        using StoragePtr = QSharedPointer<NewFutureStorage<TResult, TError>>;
+        using StoragePtr = QSharedPointer<FutureStorage<TResult, TError>>;
         using OutcomeType = ResultOrError<TResult, TError>;
 
-        NewFutureStorage(NewFutureStorage const&) = delete;
-        NewFutureStorage& operator=(NewFutureStorage const&) = delete;
+        FutureStorage(FutureStorage const&) = delete;
+        FutureStorage& operator=(FutureStorage const&) = delete;
 
     private:
         using ContinuationPtr = QSharedPointer<Continuation<TResult, TError>>;
 
-        NewFutureStorage() {}
+        FutureStorage() {}
 
         static StoragePtr create();
         static StoragePtr createWithResult(TResult const& result);
@@ -128,7 +128,7 @@ namespace PMP
         void storeAndContinueFrom(ResultOrError<TResult, TError> const& outcome,
                                   QSharedPointer<Runner> runner);
 
-        friend class QSharedPointer<NewFutureStorage<TResult, TError>>;
+        friend class QSharedPointer<FutureStorage<TResult, TError>>;
         friend class Promise<TResult, TError>;
         friend class SimplePromise<TResult>;
         template<class, class> friend class NewFuture;
@@ -143,15 +143,15 @@ namespace PMP
     };
 
     template<class TResult, class TError>
-    QSharedPointer<NewFutureStorage<TResult, TError>>
-        NewFutureStorage<TResult, TError>::create()
+    QSharedPointer<FutureStorage<TResult, TError>>
+        FutureStorage<TResult, TError>::create()
     {
-        return QSharedPointer<NewFutureStorage<TResult, TError>>::create();
+        return QSharedPointer<FutureStorage<TResult, TError>>::create();
     }
 
     template<class TResult, class TError>
-    QSharedPointer<NewFutureStorage<TResult, TError>>
-        NewFutureStorage<TResult, TError>::createWithResult(const TResult& result)
+    QSharedPointer<FutureStorage<TResult, TError>>
+        FutureStorage<TResult, TError>::createWithResult(const TResult& result)
     {
         auto storage = StoragePtr::create();
 
@@ -162,8 +162,8 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    QSharedPointer<NewFutureStorage<TResult, TError>>
-        NewFutureStorage<TResult, TError>::createWithError(TError const& error)
+    QSharedPointer<FutureStorage<TResult, TError>>
+        FutureStorage<TResult, TError>::createWithError(TError const& error)
     {
         auto storage = StoragePtr::create();
 
@@ -174,8 +174,8 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    QSharedPointer<NewFutureStorage<TResult, TError>>
-        NewFutureStorage<TResult, TError>::createWithOutcome(OutcomeType const& outcome)
+    QSharedPointer<FutureStorage<TResult, TError>>
+        FutureStorage<TResult, TError>::createWithOutcome(OutcomeType const& outcome)
     {
         auto storage = StoragePtr::create();
 
@@ -191,7 +191,7 @@ namespace PMP
 
     template<class TResult, class TError>
     QSharedPointer<Continuation<TResult, TError>>
-        NewFutureStorage<TResult, TError>::createContinuationThatStoresResultAt(
+        FutureStorage<TResult, TError>::createContinuationThatStoresResultAt(
             StoragePtr storage)
     {
         auto wrapper =
@@ -208,7 +208,7 @@ namespace PMP
 
     template<class TResult, class TError>
     Nullable<ResultOrError<TResult, TError>>
-        NewFutureStorage<TResult, TError>::getOutcomeIfFinished()
+        FutureStorage<TResult, TError>::getOutcomeIfFinished()
     {
         QMutexLocker lock(&_mutex);
 
@@ -220,7 +220,7 @@ namespace PMP
 
     template<class TResult, class TError>
     ResultOrError<TResult, TError>
-        NewFutureStorage<TResult, TError>::getOutcomeInternal() const
+        FutureStorage<TResult, TError>::getOutcomeInternal() const
     {
         Q_ASSERT_X(_finished, "NewFutureStorage::getResultInternal()",
                    "attempt to get result of unfinished future");
@@ -232,7 +232,7 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    void NewFutureStorage<TResult, TError>::setContinuation(ContinuationPtr continuation)
+    void FutureStorage<TResult, TError>::setContinuation(ContinuationPtr continuation)
     {
         QMutexLocker lock(&_mutex);
 
@@ -256,7 +256,7 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    void NewFutureStorage<TResult, TError>::storeAndContinueFrom(
+    void FutureStorage<TResult, TError>::storeAndContinueFrom(
         ResultOrError<TResult, TError> const& outcome, QSharedPointer<Runner> runner)
     {
         QMutexLocker lock(&_mutex);
@@ -357,8 +357,8 @@ namespace PMP
             std::function<TOutcome2 (TError const& error)> errorConverter);
 
     private:
-        using StorageType = NewFutureStorage<TResult, TError>;
-        using StoragePtr = QSharedPointer<NewFutureStorage<TResult, TError>>;
+        using StorageType = FutureStorage<TResult, TError>;
+        using StoragePtr = QSharedPointer<FutureStorage<TResult, TError>>;
         using ContinuationPtr = QSharedPointer<Continuation<TResult, TError>>;
 
         NewFuture(StoragePtr storage);
@@ -578,7 +578,7 @@ namespace PMP
             QSharedPointer<Runner> runner,
             std::function<ResultOrError<TResult2, TError2> (OutcomeType)> f)
     {
-        auto storage = QSharedPointer<NewFutureStorage<TResult2, TError2>>::create();
+        auto storage = QSharedPointer<FutureStorage<TResult2, TError2>>::create();
 
         auto wrapper =
             [f, storage](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
@@ -602,7 +602,7 @@ namespace PMP
             QSharedPointer<Runner> runner,
             std::function<NewFuture<TResult2, TError2> (OutcomeType)> f)
     {
-        using Storage2Type = NewFutureStorage<TResult2, TError2>;
+        using Storage2Type = FutureStorage<TResult2, TError2>;
         auto secondStorage = QSharedPointer<Storage2Type>::create();
         auto secondContinuation =
             Storage2Type::createContinuationThatStoresResultAt(secondStorage);
@@ -631,7 +631,7 @@ namespace PMP
             QSharedPointer<Runner> runner,
             std::function<TOutcome2 (OutcomeType)> f)
     {
-        auto storage = QSharedPointer<NewFutureStorage<TOutcome2, FailureType>>::create();
+        auto storage = QSharedPointer<FutureStorage<TOutcome2, FailureType>>::create();
 
         auto wrapper =
             [f, storage](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
@@ -666,8 +666,8 @@ namespace PMP
         void handleOnEventLoop(QObject* receiver, std::function<void(OutcomeType)> f);
 
     private:
-        using StorageType = NewFutureStorage<TOutcome, FailureType>;
-        using StoragePtr = QSharedPointer<NewFutureStorage<TOutcome, FailureType>>;
+        using StorageType = FutureStorage<TOutcome, FailureType>;
+        using StoragePtr = QSharedPointer<FutureStorage<TOutcome, FailureType>>;
         using ContinuationPtr = QSharedPointer<Continuation<TOutcome, FailureType>>;
 
         NewSimpleFuture(StoragePtr storage);
