@@ -20,7 +20,7 @@
 #ifndef PMP_TRACKINFOPROVIDER_H
 #define PMP_TRACKINFOPROVIDER_H
 
-#include "common/newfuture.h"
+#include "common/future.h"
 
 #include "collectiontrackinfo.h"
 
@@ -33,7 +33,7 @@ namespace PMP::Server
     public:
         virtual ~TrackInfoProvider() {}
 
-        virtual NewFuture<CollectionTrackInfo, FailureType> getTrackInfoAsync(
+        virtual Future<CollectionTrackInfo, FailureType> getTrackInfoAsync(
                                                                          uint hashId) = 0;
     };
 }

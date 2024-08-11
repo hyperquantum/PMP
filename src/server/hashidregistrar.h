@@ -21,7 +21,7 @@
 #define PMP_HASHIDREGISTRAR_H
 
 #include "common/filehash.h"
-#include "common/newfuture.h"
+#include "common/future.h"
 
 #include <QHash>
 #include <QMutex>
@@ -35,9 +35,9 @@ namespace PMP::Server
     class HashIdRegistrar
     {
     public:
-        NewFuture<SuccessType, FailureType> loadAllFromDatabase();
-        NewFuture<uint, FailureType> getOrCreateId(FileHash hash);
-        NewFuture<QVector<uint>, FailureType> getOrCreateIds(QVector<FileHash> hashes);
+        Future<SuccessType, FailureType> loadAllFromDatabase();
+        Future<uint, FailureType> getOrCreateId(FileHash hash);
+        Future<QVector<uint>, FailureType> getOrCreateIds(QVector<FileHash> hashes);
 
         QVector<QPair<uint, FileHash>> getAllLoaded();
         QVector<uint> getAllIdsLoaded();

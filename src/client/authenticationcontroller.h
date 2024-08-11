@@ -20,8 +20,7 @@
 #ifndef PMP_AUTHENTICATIONCONTROLLER_H
 #define PMP_AUTHENTICATIONCONTROLLER_H
 
-//#include "common/future.h"
-#include "common/newfuture.h"
+#include "common/future.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/userloginerror.h"
 #include "common/userregistrationerror.h"
@@ -47,7 +46,7 @@ namespace PMP::Client
     public:
         virtual ~AuthenticationController() {}
 
-        virtual NewFuture<QList<UserAccount>, ResultMessageErrorCode> getUserAccounts() = 0;
+        virtual Future<QList<UserAccount>, ResultMessageErrorCode> getUserAccounts() = 0;
         virtual void sendUserAccountsFetchRequest() = 0;
 
         virtual void createNewUserAccount(QString login, QString password) = 0;

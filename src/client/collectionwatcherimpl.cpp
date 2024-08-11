@@ -90,7 +90,7 @@ namespace PMP::Client
         return it.value();
     }
 
-    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
+    Future<CollectionTrackInfo, AnyResultMessageCode>
         CollectionWatcherImpl::getTrackInfo(LocalHashId hashId)
     {
         auto it = _collectionHash.find(hashId);
@@ -101,7 +101,7 @@ namespace PMP::Client
         return getTrackInfoInternal(hashId);
     }
 
-    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
+    Future<CollectionTrackInfo, AnyResultMessageCode>
         CollectionWatcherImpl::getTrackInfo(const FileHash& hash)
     {
         auto hashId = _connection->hashIdRepository()->getId(hash);
@@ -169,7 +169,7 @@ namespace PMP::Client
         }
     }
 
-    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
+    Future<CollectionTrackInfo, AnyResultMessageCode>
         CollectionWatcherImpl::getTrackInfoInternal(LocalHashId hashId)
     {
         auto future = _connection->getTrackInfo(hashId);
@@ -186,7 +186,7 @@ namespace PMP::Client
         return future;
     }
 
-    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
+    Future<CollectionTrackInfo, AnyResultMessageCode>
         CollectionWatcherImpl::getTrackInfoInternal(const FileHash& hash)
     {
         auto future = _connection->getTrackInfo(hash);

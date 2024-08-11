@@ -158,7 +158,7 @@ namespace PMP::Server
         _userLoggedInName = userLogin;
     }
 
-    NewSimpleFuture<ResultMessageErrorCode> ServerInterface::reloadServerSettings()
+    SimpleFuture<ResultMessageErrorCode> ServerInterface::reloadServerSettings()
     {
         auto promise = Async::createSimplePromise<ResultMessageErrorCode>();
 
@@ -227,7 +227,7 @@ namespace PMP::Server
         _player->setUserPlayingFor(0);
     }
 
-    NewFuture<HistoryFragment, Result> ServerInterface::getPersonalTrackHistory(
+    Future<HistoryFragment, Result> ServerInterface::getPersonalTrackHistory(
         FileHash hash, quint32 userId, uint startId, int limit)
     {
         if (!isLoggedIn())
@@ -315,7 +315,7 @@ namespace PMP::Server
         controller->setScrobblingProviderEnabled(provider, enabled);
     }
 
-    NewSimpleFuture<Result> ServerInterface::authenticateScrobblingProvider(
+    SimpleFuture<Result> ServerInterface::authenticateScrobblingProvider(
                                                             ScrobblingProvider provider,
                                                             QString user,
                                                             QString password)
@@ -405,7 +405,7 @@ namespace PMP::Server
         return overview;
     }
 
-    NewFuture<QVector<QString>, Result>
+    Future<QVector<QString>, Result>
         ServerInterface::getPossibleFilenamesForQueueEntry(uint id)
     {
         if (id <= 0) /* invalid queue ID */
@@ -671,7 +671,7 @@ namespace PMP::Server
             Q_EMIT hashUserDataChangedOrAvailable(userId, hashStatsAlreadyAvailable);
     }
 
-    NewFuture<CollectionTrackInfo, Result> ServerInterface::getHashInfo(FileHash hash)
+    Future<CollectionTrackInfo, Result> ServerInterface::getHashInfo(FileHash hash)
     {
         /* note: client does not need to be logged in for this */
 

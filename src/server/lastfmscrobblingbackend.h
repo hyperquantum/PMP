@@ -87,7 +87,7 @@ namespace PMP::Server
         LastFmAuthenticationRequestHandler(LastFmScrobblingBackend* parent,
                                            QNetworkReply* pendingReply);
 
-        NewFuture<LastFmAuthenticationResult, Result> future() const;
+        Future<LastFmAuthenticationResult, Result> future() const;
 
     protected:
         void handleOkReply(const QDomElement& childElement) override;
@@ -146,7 +146,7 @@ namespace PMP::Server
         void updateNowPlaying(ScrobblingTrack track) override;
         void scrobbleTrack(QDateTime timestamp, ScrobblingTrack track) override;
 
-        NewSimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
+        SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
                                                          QString password) override;
 
     public slots:

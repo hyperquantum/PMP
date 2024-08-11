@@ -268,7 +268,7 @@ namespace PMP
     }
 
     void CommandBase::setCommandExecutionResultFuture(
-        NewSimpleFuture<AnyResultMessageCode> future)
+        SimpleFuture<AnyResultMessageCode> future)
     {
         future.handleOnEventLoop(
             this,

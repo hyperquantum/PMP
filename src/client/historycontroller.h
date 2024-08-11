@@ -20,7 +20,7 @@
 #ifndef PMP_HISTORYCONTROLLER_H
 #define PMP_HISTORYCONTROLLER_H
 
-#include "common/newfuture.h"
+#include "common/future.h"
 #include "common/playerhistorytrackinfo.h"
 #include "common/resultmessageerrorcode.h"
 
@@ -39,7 +39,7 @@ namespace PMP::Client
 
         virtual void sendPlayerHistoryRequest(int limit) = 0;
 
-        virtual NewFuture<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
+        virtual Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
             LocalHashId hashId, uint userId,
             int limit, uint startId = 0) = 0;
 

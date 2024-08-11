@@ -41,7 +41,7 @@ BackendMock::BackendMock(bool requireAuthentication)
     setInitialBackoffMillisecondsForErrorReply(30);
 }
 
-NewSimpleFuture<Result> BackendMock::authenticateWithCredentials(QString usernameOrEmail,
+SimpleFuture<Result> BackendMock::authenticateWithCredentials(QString usernameOrEmail,
                                                               QString password)
 {
     Q_UNUSED(usernameOrEmail);
@@ -207,7 +207,7 @@ TrackInfoProviderMock::TrackInfoProviderMock()
     _tracks.insert(1, track);
 }
 
-NewFuture<CollectionTrackInfo, FailureType> TrackInfoProviderMock::getTrackInfoAsync(
+Future<CollectionTrackInfo, FailureType> TrackInfoProviderMock::getTrackInfoAsync(
                                                                               uint hashId)
 {
     Q_ASSERT(hashId > 0);

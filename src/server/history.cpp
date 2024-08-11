@@ -61,7 +61,7 @@ namespace PMP::Server
         return _lastPlayHash[hash];
     }
 
-    NewFuture<SuccessType, FailureType> History::scheduleUserStatsFetchingIfMissing(
+    Future<SuccessType, FailureType> History::scheduleUserStatsFetchingIfMissing(
                                                                            uint hashId,
                                                                            quint32 userId)
     {
@@ -118,7 +118,7 @@ namespace PMP::Server
         _hashIdRegistrar->getOrCreateId(hash)
             .thenOnAnyThreadIndirect<SuccessType, FailureType>(
                 [statistics, entry](FailureOr<uint> outcome)
-                    -> NewFuture<SuccessType, FailureType>
+                    -> Future<SuccessType, FailureType>
                 {
                     if (outcome.failed())
                         return FutureError(failure);

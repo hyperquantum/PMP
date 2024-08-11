@@ -21,7 +21,7 @@
 #define PMP_CLIENT_COLLECTIONWATCHER_H
 
 #include "common/filehash.h"
-#include "common/newfuture.h"
+#include "common/future.h"
 #include "common/nullable.h"
 #include "common/resultmessageerrorcode.h"
 
@@ -45,9 +45,9 @@ namespace PMP::Client
 
         virtual QHash<LocalHashId, CollectionTrackInfo> getCollection() = 0;
         virtual Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) = 0;
-        virtual NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+        virtual Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                                 LocalHashId hashId) = 0;
-        virtual NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+        virtual Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                                 FileHash const& hash) = 0;
 
     Q_SIGNALS:

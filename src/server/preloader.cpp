@@ -336,7 +336,7 @@ namespace PMP::Server
         _tracksToPreload.append(id);
     }
 
-    NewFuture<QString, FailureType> Preloader::preloadAsync(uint queueId, FileHash hash,
+    Future<QString, FailureType> Preloader::preloadAsync(uint queueId, FileHash hash,
                                                          QString originalFilename)
     {
         if (!originalFilename.isEmpty()

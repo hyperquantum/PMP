@@ -612,7 +612,7 @@ namespace PMP::Server
         }
     }
 
-    NewFuture<QString, FailureType> Resolver::findPathForHashAsync(FileHash hash)
+    Future<QString, FailureType> Resolver::findPathForHashAsync(FileHash hash)
     {
         if (hash.isNull())
         {
@@ -640,7 +640,7 @@ namespace PMP::Server
 
         auto pathFuture =
             idFuture.thenOnAnyThreadIndirect<QString, FailureType>(
-                [this, hash](FailureOr<uint> outcome) -> NewFuture<QString, FailureType>
+                [this, hash](FailureOr<uint> outcome) -> Future<QString, FailureType>
                 {
                     if (outcome.failed())
                         return FutureError(failure);
@@ -653,7 +653,7 @@ namespace PMP::Server
         return pathFuture;
     }
 
-    NewFuture<QString, FailureType> Resolver::findPathForHashAsync(uint hashId)
+    Future<QString, FailureType> Resolver::findPathForHashAsync(uint hashId)
     {
         FileHash hash;
 

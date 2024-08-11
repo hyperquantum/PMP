@@ -31,7 +31,7 @@ namespace PMP::Server
     public:
         TrackInfoProviderImpl(Resolver* resolver);
 
-        NewFuture<CollectionTrackInfo, FailureType> getTrackInfoAsync(uint hashId) override;
+        Future<CollectionTrackInfo, FailureType> getTrackInfoAsync(uint hashId) override;
 
     private:
         Resolver* _resolver;

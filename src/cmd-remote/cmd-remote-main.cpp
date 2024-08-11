@@ -24,7 +24,7 @@
 // for testing
 #include "common/async.h"
 #include "common/concurrent.h"
-#include "common/newfuture.h"
+#include "common/future.h"
 
 #include "command.h"
 #include "commandlineclient.h"

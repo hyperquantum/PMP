@@ -91,7 +91,7 @@ namespace PMP::Client
         return _lastFmStatus;
     }
 
-    NewSimpleFuture<AnyResultMessageCode> ScrobblingControllerImpl::authenticateLastFm(
+    SimpleFuture<AnyResultMessageCode> ScrobblingControllerImpl::authenticateLastFm(
                                                                 QString usernameOrEmail,
                                                                 QString password)
     {

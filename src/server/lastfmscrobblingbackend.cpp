@@ -230,7 +230,7 @@ namespace PMP::Server
         //
     }
 
-    NewFuture<LastFmAuthenticationResult, Result>
+    Future<LastFmAuthenticationResult, Result>
         LastFmAuthenticationRequestHandler::future() const
     {
         return _promise.future();
@@ -411,7 +411,7 @@ namespace PMP::Server
         leaveState(ScrobblingBackendState::NotInitialized);
     }
 
-    NewSimpleFuture<Result> LastFmScrobblingBackend::authenticateWithCredentials(
+    SimpleFuture<Result> LastFmScrobblingBackend::authenticateWithCredentials(
                                                                 QString usernameOrEmail,
                                                                 QString password)
     {

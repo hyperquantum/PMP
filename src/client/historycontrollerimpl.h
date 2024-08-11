@@ -34,7 +34,7 @@ namespace PMP::Client
 
         void sendPlayerHistoryRequest(int limit) override;
 
-        NewFuture<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
+        Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
             LocalHashId hashId, uint userId,
             int limit, uint startId = 0) override;
 

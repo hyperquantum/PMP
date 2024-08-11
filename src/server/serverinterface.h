@@ -21,7 +21,7 @@
 #define PMP_SERVERINTERFACE_H
 
 #include "common/filehash.h"
-#include "common/newfuture.h"
+#include "common/future.h"
 #include "common/queueindextype.h"
 #include "common/resultmessageerrorcode.h"
 #include "common/scrobblingprovider.h"
@@ -91,7 +91,7 @@ namespace PMP::Server
         quint32 userLoggedIn() const { return _userLoggedIn; }
         void setLoggedIn(quint32 userId, QString userLogin);
 
-        NewSimpleFuture<ResultMessageErrorCode> reloadServerSettings();
+        SimpleFuture<ResultMessageErrorCode> reloadServerSettings();
 
         Result startFullIndexation();
         Result startQuickScanForNewFiles();
@@ -100,14 +100,14 @@ namespace PMP::Server
         void switchToPersonalMode();
         void switchToPublicMode();
 
-        NewFuture<HistoryFragment, Result> getPersonalTrackHistory(FileHash hash,
+        Future<HistoryFragment, Result> getPersonalTrackHistory(FileHash hash,
                                                                 quint32 userId,
                                                                 uint startId,
                                                                 int limit);
 
         void requestScrobblingInfo();
         void setScrobblingProviderEnabled(ScrobblingProvider provider, bool enabled);
-        NewSimpleFuture<Result> authenticateScrobblingProvider(
+        SimpleFuture<Result> authenticateScrobblingProvider(
                                                             ScrobblingProvider provider,
                                                             QString user,
                                                             QString password);
@@ -126,7 +126,7 @@ namespace PMP::Server
 
         PlayerStateOverview getPlayerStateOverview();
 
-        NewFuture<QVector<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
+        Future<QVector<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
 
         Result insertTrackAtEnd(FileHash hash);
         Result insertTrackAtFront(FileHash hash);
@@ -149,7 +149,7 @@ namespace PMP::Server
         void setTrackRepetitionAvoidanceSeconds(int seconds);
 
         void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
-        NewFuture<CollectionTrackInfo, Result> getHashInfo(FileHash hash);
+        Future<CollectionTrackInfo, Result> getHashInfo(FileHash hash);
 
         void shutDownServer();
         void shutDownServer(QString serverPassword);

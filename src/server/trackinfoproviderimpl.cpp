@@ -29,7 +29,7 @@ namespace PMP::Server
         //
     }
 
-    NewFuture<CollectionTrackInfo, FailureType> TrackInfoProviderImpl::getTrackInfoAsync(
+    Future<CollectionTrackInfo, FailureType> TrackInfoProviderImpl::getTrackInfoAsync(
                                                                               uint hashId)
     {
         {

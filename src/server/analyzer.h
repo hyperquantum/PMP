@@ -21,7 +21,7 @@
 #define PMP_ANALYZER_H
 
 #include "common/audiodata.h"
-#include "common/newfuture.h"
+#include "common/future.h"
 
 #include "fileanalysis.h"
 
@@ -52,7 +52,7 @@ namespace PMP::Server
         void enqueueFile(QString path);
         bool isFinished();
 
-        NewFuture<FileAnalysis, FailureType> analyzeFileAsync(QString path);
+        Future<FileAnalysis, FailureType> analyzeFileAsync(QString path);
         ResultOrError<FileAnalysis, FailureType> analyzeFile(QString path);
 
     Q_SIGNALS:
@@ -75,7 +75,7 @@ namespace PMP::Server
         QThreadPool* _onDemandThreadPool;
         QMutex _lock;
         QSet<QString> _pathsInProgress;
-        QHash<QString, NewFuture<FileAnalysis, FailureType>> _onDemandInProgress;
+        QHash<QString, Future<FileAnalysis, FailureType>> _onDemandInProgress;
     };
 }
 #endif

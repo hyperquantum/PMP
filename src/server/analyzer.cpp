@@ -82,7 +82,7 @@ namespace PMP::Server
         return _pathsInProgress.empty();
     }
 
-    NewFuture<FileAnalysis, FailureType> Analyzer::analyzeFileAsync(QString path)
+    Future<FileAnalysis, FailureType> Analyzer::analyzeFileAsync(QString path)
     {
         QMutexLocker lock(&_lock);
 

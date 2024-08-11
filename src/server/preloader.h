@@ -22,7 +22,7 @@
 
 #include "common/abstracthandle.h"
 #include "common/filehash.h"
-#include "common/newfuture.h"
+#include "common/future.h"
 #include "common/qobjectresourcekeeper.h"
 
 #include <QHash>
@@ -96,7 +96,7 @@ namespace PMP::Server
 
         void checkToPreloadTrack(QSharedPointer<QueueEntry> entry);
 
-        NewFuture<QString, FailureType> preloadAsync(uint queueId, FileHash hash,
+        Future<QString, FailureType> preloadAsync(uint queueId, FileHash hash,
                                                   QString originalFilename);
         static ResultOrError<QString, FailureType> runPreload(uint queueId,
                                                               QString originalFilename);

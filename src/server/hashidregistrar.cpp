@@ -26,7 +26,7 @@
 
 namespace PMP::Server
 {
-    NewFuture<SuccessType, FailureType> HashIdRegistrar::loadAllFromDatabase()
+    Future<SuccessType, FailureType> HashIdRegistrar::loadAllFromDatabase()
     {
         auto work =
             [this]() -> ResultOrError<SuccessType, FailureType>
@@ -56,7 +56,7 @@ namespace PMP::Server
                                                                         work);
     }
 
-    NewFuture<uint, FailureType> HashIdRegistrar::getOrCreateId(FileHash hash)
+    Future<uint, FailureType> HashIdRegistrar::getOrCreateId(FileHash hash)
     {
         {
             QMutexLocker lock(&_mutex);
@@ -77,7 +77,7 @@ namespace PMP::Server
         return Concurrent::runOnThreadPool<uint, FailureType>(globalThreadPool, work);
     }
 
-    NewFuture<QVector<uint>, FailureType> HashIdRegistrar::getOrCreateIds(
+    Future<QVector<uint>, FailureType> HashIdRegistrar::getOrCreateIds(
                                                                  QVector<FileHash> hashes)
     {
         QVector<uint> ids;

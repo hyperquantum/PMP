@@ -20,7 +20,7 @@
 #ifndef PMP_HISTORYSTATISTICS_H
 #define PMP_HISTORYSTATISTICS_H
 
-#include "common/newfuture.h"
+#include "common/future.h"
 #include "common/nullable.h"
 #include "common/resultorerror.h"
 
@@ -49,7 +49,7 @@ namespace PMP::Server
                           UserHashStatsCache* userHashStatsCache);
         ~HistoryStatistics();
 
-        NewFuture<SuccessType, FailureType> addToHistory(quint32 userId,
+        Future<SuccessType, FailureType> addToHistory(quint32 userId,
                                                       quint32 hashId,
                                                       QDateTime start,
                                                       QDateTime end,
@@ -57,7 +57,7 @@ namespace PMP::Server
                                                       bool validForScoring);
 
         Nullable<TrackStats> getStatsIfAvailable(quint32 userId, uint hashId);
-        NewFuture<SuccessType, FailureType> scheduleFetchIfMissing(quint32 userId,
+        Future<SuccessType, FailureType> scheduleFetchIfMissing(quint32 userId,
                                                                 uint hashId);
         void invalidateAllGroupStatisticsForHash(uint hashId);
         void invalidateIndividualHashStatistics(quint32 userId, uint hashId);
@@ -70,7 +70,7 @@ namespace PMP::Server
                                    QHash<uint, TrackStats> individualStats);
         void scheduleStatisticsChangedSignal(quint32 userId, QVector<uint> hashIds);
 
-        NewFuture<SuccessType, FailureType> scheduleFetch(quint32 userId, uint hashId,
+        Future<SuccessType, FailureType> scheduleFetch(quint32 userId, uint hashId,
                                                        bool onlyIfMissing);
 
         enum class UseCachedValues { Yes, No };

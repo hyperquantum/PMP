@@ -37,7 +37,7 @@ namespace PMP::Client
     public:
         explicit AuthenticationControllerImpl(ServerConnection* connection);
 
-        NewFuture<QList<UserAccount>, ResultMessageErrorCode> getUserAccounts() override;
+        Future<QList<UserAccount>, ResultMessageErrorCode> getUserAccounts() override;
         void sendUserAccountsFetchRequest() override;
 
         void createNewUserAccount(QString login, QString password) override;

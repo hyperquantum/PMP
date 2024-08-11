@@ -21,7 +21,7 @@
 #define PMP_HISTORY_H
 
 #include "common/filehash.h"
-#include "common/newfuture.h"
+#include "common/future.h"
 #include "common/nullable.h"
 
 #include "recenthistoryentry.h"
@@ -53,7 +53,7 @@ namespace PMP::Server
         /** Get last played time since server startup (non-user-specific) */
         QDateTime lastPlayedGloballySinceStartup(FileHash const& hash) const;
 
-        NewFuture<SuccessType, FailureType> scheduleUserStatsFetchingIfMissing(
+        Future<SuccessType, FailureType> scheduleUserStatsFetchingIfMissing(
                                                                         uint hashId,
                                                                         quint32 userId);
         Nullable<TrackStats> getUserStats(uint hashId, quint32 userId);

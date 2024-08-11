@@ -76,23 +76,23 @@ namespace PMP::Client
         return _clientClockTimeOffsetMs;
     }
 
-    NewSimpleFuture<AnyResultMessageCode> GeneralControllerImpl::startFullIndexation()
+    SimpleFuture<AnyResultMessageCode> GeneralControllerImpl::startFullIndexation()
     {
         return _connection->startFullIndexation();
     }
 
-    NewSimpleFuture<AnyResultMessageCode>
+    SimpleFuture<AnyResultMessageCode>
         GeneralControllerImpl::startQuickScanForNewFiles()
     {
         return _connection->startQuickScanForNewFiles();
     }
 
-    NewSimpleFuture<AnyResultMessageCode> GeneralControllerImpl::reloadServerSettings()
+    SimpleFuture<AnyResultMessageCode> GeneralControllerImpl::reloadServerSettings()
     {
         return _connection->reloadServerSettings();
     }
 
-    NewFuture<VersionInfo, ResultMessageErrorCode>
+    Future<VersionInfo, ResultMessageErrorCode>
         GeneralControllerImpl::getServerVersionInfo()
     {
         if (!_connection->serverCapabilities().supportsSendingVersionInfo())

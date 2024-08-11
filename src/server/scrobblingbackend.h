@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,7 @@
 #ifndef PMP_SCROBBLINGBACKEND_H
 #define PMP_SCROBBLINGBACKEND_H
 
-#include "common/newfuture.h"
+#include "common/future.h"
 
 #include "result.h"
 #include "scrobblingtrack.h"
@@ -63,7 +63,7 @@ namespace PMP::Server
         virtual void updateNowPlaying(ScrobblingTrack track) = 0;
         virtual void scrobbleTrack(QDateTime timestamp, ScrobblingTrack track) = 0;
 
-        virtual NewSimpleFuture<Result> authenticateWithCredentials(
+        virtual SimpleFuture<Result> authenticateWithCredentials(
                                                                  QString usernameOrEmail,
                                                                  QString password) = 0;
 

@@ -35,7 +35,7 @@ namespace PMP::Client
         Nullable<bool> lastFmEnabled() const override;
         ScrobblerStatus lastFmStatus() const override;
 
-        NewSimpleFuture<AnyResultMessageCode> authenticateLastFm(QString usernameOrEmail,
+        SimpleFuture<AnyResultMessageCode> authenticateLastFm(QString usernameOrEmail,
                                                               QString password) override;
 
     public Q_SLOTS:

@@ -20,7 +20,7 @@
 #ifndef PMP_COMMANDBASE_H
 #define PMP_COMMANDBASE_H
 
-#include "common/newfuture.h"
+#include "common/future.h"
 #include "common/nullable.h"
 #include "common/resultmessageerrorcode.h"
 
@@ -69,7 +69,7 @@ namespace PMP
         void setCommandExecutionResult(ResultMessageErrorCode errorCode);
         void setCommandExecutionResult(ScrobblingResultMessageCode code);
         void setCommandExecutionResultFuture(
-            NewSimpleFuture<AnyResultMessageCode> future);
+            SimpleFuture<AnyResultMessageCode> future);
 
         /*
         template <class T>
@@ -86,7 +86,7 @@ namespace PMP
         */
 
         template <class T>
-        void handleFailureAndResult(NewFuture<T, AnyResultMessageCode>& future,
+        void handleFailureAndResult(Future<T, AnyResultMessageCode>& future,
                                     std::function<void(T const& result)> f)
         {
             future.handleOnEventLoop(

@@ -215,7 +215,7 @@ namespace PMP::Client
     public:
         PromiseResultHandler(ServerConnection* parent);
 
-        NewSimpleFuture<AnyResultMessageCode> future() const;
+        SimpleFuture<AnyResultMessageCode> future() const;
 
         void handleResult(ResultMessageData const& data) override;
         void handleExtensionResult(ExtensionResultMessageData const& data) override;
@@ -236,7 +236,7 @@ namespace PMP::Client
         //
     }
 
-    NewSimpleFuture<AnyResultMessageCode> ServerConnection::PromiseResultHandler::future(
+    SimpleFuture<AnyResultMessageCode> ServerConnection::PromiseResultHandler::future(
                                                                                    ) const
     {
         return _promise.future();
@@ -544,7 +544,7 @@ namespace PMP::Client
     public:
         HistoryFragmentResultHandler(ServerConnection* parent);
 
-        NewFuture<HistoryFragment, AnyResultMessageCode> future() const;
+        Future<HistoryFragment, AnyResultMessageCode> future() const;
 
         void handleResult(ResultMessageData const& data) override;
 
@@ -563,7 +563,7 @@ namespace PMP::Client
         //
     }
 
-    NewFuture<HistoryFragment, AnyResultMessageCode>
+    Future<HistoryFragment, AnyResultMessageCode>
         ServerConnection::HistoryFragmentResultHandler::future() const
     {
         return _promise.future();
@@ -590,7 +590,7 @@ namespace PMP::Client
     public:
         HashInfoResultHandler(ServerConnection* parent, FileHash const& hash);
 
-        NewFuture<CollectionTrackInfo, AnyResultMessageCode> future() const;
+        Future<CollectionTrackInfo, AnyResultMessageCode> future() const;
 
         void handleResult(ResultMessageData const& data) override;
 
@@ -613,7 +613,7 @@ namespace PMP::Client
         //
     }
 
-    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
+    Future<CollectionTrackInfo, AnyResultMessageCode>
         ServerConnection::HashInfoResultHandler::future() const
     {
         return _promise.future();
@@ -1092,7 +1092,7 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    NewSimpleFuture<AnyResultMessageCode>
+    SimpleFuture<AnyResultMessageCode>
         ServerConnection::sendParameterlessActionRequest(ParameterlessActionCode code)
     {
         if (NetworkProtocol::isSupported(code, _serverProtocolNo) == false)
@@ -1230,15 +1230,15 @@ namespace PMP::Client
         return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
     }
 
-    NewSimpleFuture<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
     {
-        return NewSimpleFuture<AnyResultMessageCode>::fromOutcome(
+        return SimpleFuture<AnyResultMessageCode>::fromOutcome(
                                                         ResultMessageErrorCode::NoError);
     }
 
-    NewSimpleFuture<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
     {
-        return NewSimpleFuture<AnyResultMessageCode>::fromOutcome(
+        return SimpleFuture<AnyResultMessageCode>::fromOutcome(
                                                     ResultMessageErrorCode::ServerTooOld);
     }
 
@@ -1247,7 +1247,7 @@ namespace PMP::Client
         return FutureError(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
     }
 
-    NewSimpleFuture<AnyResultMessageCode> ServerConnection::reloadServerSettings()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::reloadServerSettings()
     {
         if (!serverCapabilities().supportsReloadingServerSettings())
             return serverTooOldFutureResult();
@@ -1258,7 +1258,7 @@ namespace PMP::Client
                                            ParameterlessActionCode::ReloadServerSettings);
     }
 
-    NewSimpleFuture<AnyResultMessageCode> ServerConnection::startFullIndexation()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::startFullIndexation()
     {
         qDebug() << "sending request to start a full indexation";
 
@@ -1273,7 +1273,7 @@ namespace PMP::Client
         return noErrorFutureResult();
     }
 
-    NewSimpleFuture<AnyResultMessageCode> ServerConnection::startQuickScanForNewFiles()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::startQuickScanForNewFiles()
     {
         qDebug() << "sending request to start a quick scan for new files";
 
@@ -1281,7 +1281,7 @@ namespace PMP::Client
             ParameterlessActionCode::StartQuickScanForNewFiles);
     }
 
-    NewSimpleFuture<AnyResultMessageCode> ServerConnection::activateDelayedStart(
+    SimpleFuture<AnyResultMessageCode> ServerConnection::activateDelayedStart(
                                                                  qint64 delayMilliseconds)
     {
         if (!serverCapabilities().supportsDelayedStart())
@@ -1306,7 +1306,7 @@ namespace PMP::Client
         return handler->future();
     }
 
-    NewSimpleFuture<AnyResultMessageCode> ServerConnection::deactivateDelayedStart()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::deactivateDelayedStart()
     {
         if (!serverCapabilities().supportsDelayedStart())
             return serverTooOldFutureResult();
@@ -1400,7 +1400,7 @@ namespace PMP::Client
         return RequestID(ref);
     }
 
-    NewFuture<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
+    Future<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
                                                                        LocalHashId hashId)
     {
         auto hash = _hashIdRepository->getHash(hashId);
@@ -1408,13 +1408,13 @@ namespace PMP::Client
         return sendHashInfoRequest(hash);
     }
 
-    NewFuture<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
+    Future<CollectionTrackInfo, AnyResultMessageCode> ServerConnection::getTrackInfo(
                                                                     const FileHash& hash)
     {
         return sendHashInfoRequest(hash);
     }
 
-    NewFuture<HistoryFragment, AnyResultMessageCode>
+    Future<HistoryFragment, AnyResultMessageCode>
         ServerConnection::getPersonalTrackHistory(LocalHashId hashId, uint userId,
                                                   int limit, uint startId)
     {
@@ -1522,7 +1522,7 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    NewFuture<CollectionTrackInfo, AnyResultMessageCode>
+    Future<CollectionTrackInfo, AnyResultMessageCode>
         ServerConnection::sendHashInfoRequest(FileHash const& hash)
     {
         Q_ASSERT_X(!hash.isNull(), "sendHashInfoRequest", "hash is null");
@@ -1548,7 +1548,7 @@ namespace PMP::Client
         return handler->future();
     }
 
-    NewFuture<HistoryFragment, AnyResultMessageCode>
+    Future<HistoryFragment, AnyResultMessageCode>
         ServerConnection::sendHashHistoryRequest(LocalHashId hashId, uint userId,
                                                  int limit, uint startId)
     {
@@ -1650,7 +1650,7 @@ namespace PMP::Client
         sendUserScrobblingEnableDisableRequest(provider, false);
     }
 
-    NewSimpleFuture<AnyResultMessageCode> ServerConnection::authenticateScrobbling(
+    SimpleFuture<AnyResultMessageCode> ServerConnection::authenticateScrobbling(
                                                             ScrobblingProvider provider,
                                                             QString username,
                                                             QString password)
@@ -1797,7 +1797,7 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    NewSimpleFuture<AnyResultMessageCode>
+    SimpleFuture<AnyResultMessageCode>
         ServerConnection::sendScrobblingAuthenticationMessage(ScrobblingProvider provider,
                                                               QString username,
                                                               QString password)

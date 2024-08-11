@@ -20,7 +20,7 @@
 #ifndef PMP_SCROBBLINGHOST_H
 #define PMP_SCROBBLINGHOST_H
 
-#include "common/newfuture.h"
+#include "common/future.h"
 #include "common/scrobblerstatus.h"
 #include "common/scrobblingprovider.h"
 
@@ -58,7 +58,7 @@ namespace PMP::Server
     public:
         ScrobblingHost(TrackInfoProvider* trackInfoProvider);
 
-        NewSimpleFuture<Result> authenticateForProvider(uint userId,
+        SimpleFuture<Result> authenticateForProvider(uint userId,
                                                      ScrobblingProvider provider,
                                                      QString user,
                                                      QString password);

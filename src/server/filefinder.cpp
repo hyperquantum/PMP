@@ -60,7 +60,7 @@ namespace PMP::Server
         _musicPaths.detach();
     }
 
-    NewFuture<QString, FailureType> FileFinder::findHashAsync(uint id, FileHash hash)
+    Future<QString, FailureType> FileFinder::findHashAsync(uint id, FileHash hash)
     {
         QMutexLocker lock(&_mutex);
 

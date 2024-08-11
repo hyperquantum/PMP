@@ -82,7 +82,7 @@ namespace PMP::Client
             );
     }
 
-    NewFuture<QList<UserAccount>, ResultMessageErrorCode>
+    Future<QList<UserAccount>, ResultMessageErrorCode>
         AuthenticationControllerImpl::getUserAccounts()
     {
         if (_userAccountsPromise.isNull())

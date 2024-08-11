@@ -934,7 +934,7 @@ namespace PMP
     }
 
     void MainWindow::connectErrorPopupToActionResult(
-        NewSimpleFuture<AnyResultMessageCode> future,
+        SimpleFuture<AnyResultMessageCode> future,
         QString failureText)
     {
         future.handleOnEventLoop(

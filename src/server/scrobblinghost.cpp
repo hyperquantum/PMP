@@ -48,7 +48,7 @@ namespace PMP::Server
         //
     }
 
-    NewSimpleFuture<Result> ScrobblingHost::authenticateForProvider(uint userId,
+    SimpleFuture<Result> ScrobblingHost::authenticateForProvider(uint userId,
                                                             ScrobblingProvider provider,
                                                             QString user,
                                                             QString password)

@@ -365,21 +365,21 @@ QDateTime PlayerControllerMock::delayedStartServerDeadline()
     NOT_IMPLEMENTED
 }
 
-NewSimpleFuture<AnyResultMessageCode> PlayerControllerMock::activateDelayedStart(
+SimpleFuture<AnyResultMessageCode> PlayerControllerMock::activateDelayedStart(
     qint64 delayMilliseconds)
 {
     Q_UNUSED(delayMilliseconds)
     NOT_IMPLEMENTED
 }
 
-NewSimpleFuture<AnyResultMessageCode> PlayerControllerMock::activateDelayedStart(
+SimpleFuture<AnyResultMessageCode> PlayerControllerMock::activateDelayedStart(
     QDateTime startTime)
 {
     Q_UNUSED(startTime)
     NOT_IMPLEMENTED
 }
 
-NewSimpleFuture<AnyResultMessageCode> PlayerControllerMock::deactivateDelayedStart()
+SimpleFuture<AnyResultMessageCode> PlayerControllerMock::deactivateDelayedStart()
 {
     NOT_IMPLEMENTED
 }
@@ -556,14 +556,14 @@ Nullable<CollectionTrackInfo> CollectionWatcherMock::getTrackFromCache(LocalHash
     NOT_IMPLEMENTED
 }
 
-NewFuture<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrackInfo(
+Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrackInfo(
                                                                        LocalHashId hashId)
 {
     Q_UNUSED(hashId)
     NOT_IMPLEMENTED
 }
 
-NewFuture<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrackInfo(
+Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherMock::getTrackInfo(
                                                                     const FileHash& hash)
 {
     Q_UNUSED(hash)

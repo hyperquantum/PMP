@@ -20,7 +20,7 @@
 #ifndef PMP_COMMON_CONCURRENT_H
 #define PMP_COMMON_CONCURRENT_H
 
-#include "newfuture.h"
+#include "future.h"
 #include "runners.h"
 
 namespace PMP
@@ -29,7 +29,7 @@ namespace PMP
     {
     public:
         template<class TResult, class TError>
-        static NewFuture<TResult, TError> runOnThreadPool(
+        static Future<TResult, TError> runOnThreadPool(
             ThreadPoolSpecifier threadPool,
             std::function<ResultOrError<TResult, TError>()> f);
 
@@ -38,13 +38,13 @@ namespace PMP
     };
 
     template<class TResult, class TError>
-    inline NewFuture<TResult, TError> Concurrent::runOnThreadPool(
+    inline Future<TResult, TError> Concurrent::runOnThreadPool(
         ThreadPoolSpecifier threadPool,
         std::function<ResultOrError<TResult, TError> ()> f)
     {
         auto runner = QSharedPointer<ThreadPoolRunner>::create(threadPool);
 
-        return NewFuture<TResult, TError>::createForRunnerDirect(runner, f);
+        return Future<TResult, TError>::createForRunnerDirect(runner, f);
     }
 }
 #endif

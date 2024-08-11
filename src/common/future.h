@@ -36,9 +36,9 @@ namespace PMP
     /* ---------- THIS FILE IS AN EXPERIMENTAL WORK IN PROGRESS ---------- */
 
     template<class TResult, class TError> class Promise;
-    template<class TResult, class TError> class NewFuture;
+    template<class TResult, class TError> class Future;
     template<class TOutcome> class SimplePromise;
-    template<class TOutcome> class NewSimpleFuture;
+    template<class TOutcome> class SimpleFuture;
     template<class TResult, class TError> class FutureStorage;
     template<class TResult, class TError> class Continuation;
 
@@ -131,8 +131,8 @@ namespace PMP
         friend class QSharedPointer<FutureStorage<TResult, TError>>;
         friend class Promise<TResult, TError>;
         friend class SimplePromise<TResult>;
-        template<class, class> friend class NewFuture;
-        friend class NewSimpleFuture<TResult>;
+        template<class, class> friend class Future;
+        friend class SimpleFuture<TResult>;
         friend class Concurrent;
 
         QMutex _mutex;
@@ -293,8 +293,8 @@ namespace PMP
         FutureResult(TResult&& result) : _result(result) {}
 
     private:
-        template<class T1, class T2> friend class NewFuture;
-        friend class NewSimpleFuture<TResult>;
+        template<class T1, class T2> friend class Future;
+        friend class SimpleFuture<TResult>;
 
         TResult _result;
     };
@@ -307,7 +307,7 @@ namespace PMP
         FutureError(TError&& error) : _error(error) {}
 
     private:
-        template<class T1, class T2> friend class NewFuture;
+        template<class T1, class T2> friend class Future;
 
         TError _error;
     };
@@ -315,44 +315,44 @@ namespace PMP
     // =================================================================== //
 
     template<class TResult, class TError>
-    class NewFuture
+    class Future
     {
     public:
         using OutcomeType = ResultOrError<TResult, TError>;
 
-        NewFuture(FutureResult<TResult> const& result);
-        NewFuture(FutureError<TError> const& error);
+        Future(FutureResult<TResult> const& result);
+        Future(FutureError<TError> const& error);
 
-        static NewFuture<TResult, TError> fromOutcome(OutcomeType outcome);
+        static Future<TResult, TError> fromOutcome(OutcomeType outcome);
 
         Nullable<OutcomeType> outcomeIfFinished();
 
         template<class TResult2, class TError2>
-        NewFuture<TResult2, TError2> thenOnThreadPool(ThreadPoolSpecifier threadPool,
+        Future<TResult2, TError2> thenOnThreadPool(ThreadPoolSpecifier threadPool,
             std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
 
         template<class TResult2, class TError2>
-        NewFuture<TResult2, TError2> thenOnEventLoop(QObject* receiver,
+        Future<TResult2, TError2> thenOnEventLoop(QObject* receiver,
             std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
 
         /*
         template<class TResult2, class TError2>
-        NewFuture<TResult2, TError2> thenOnEventLoopIndirect(QObject* receiver,
-            std::function<NewFuture<TResult2, TError2>(OutcomeType)> f);
+        Future<TResult2, TError2> thenOnEventLoopIndirect(QObject* receiver,
+            std::function<Future<TResult2, TError2>(OutcomeType)> f);
         */
 
         template<class TResult2, class TError2>
-        NewFuture<TResult2, TError2> thenOnAnyThread(
+        Future<TResult2, TError2> thenOnAnyThread(
             std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
 
         template<class TResult2, class TError2>
-        NewFuture<TResult2, TError2> thenOnAnyThreadIndirect(
-            std::function<NewFuture<TResult2, TError2>(OutcomeType)> f);
+        Future<TResult2, TError2> thenOnAnyThreadIndirect(
+            std::function<Future<TResult2, TError2>(OutcomeType)> f);
 
         void handleOnEventLoop(QObject* receiver, std::function<void(OutcomeType)> f);
 
         template<class TOutcome2>
-        NewSimpleFuture<TOutcome2> convertToSimpleFuture(
+        SimpleFuture<TOutcome2> convertToSimpleFuture(
             std::function<TOutcome2 (TResult const& result)> resultConverter,
             std::function<TOutcome2 (TError const& error)> errorConverter);
 
@@ -361,32 +361,32 @@ namespace PMP
         using StoragePtr = QSharedPointer<FutureStorage<TResult, TError>>;
         using ContinuationPtr = QSharedPointer<Continuation<TResult, TError>>;
 
-        NewFuture(StoragePtr storage);
+        Future(StoragePtr storage);
 
-        static NewFuture<TResult, TError> createForRunnerDirect(
+        static Future<TResult, TError> createForRunnerDirect(
             QSharedPointer<Runner> runner,
             std::function<OutcomeType()> f);
 
-        static NewFuture<TResult, TError> createForRunnerIndirect(
+        static Future<TResult, TError> createForRunnerIndirect(
             QSharedPointer<Runner> runner,
-            std::function<NewFuture<TResult, TError>()> f);
+            std::function<Future<TResult, TError>()> f);
 
         template<class TResult2, class TError2>
-        NewFuture<TResult2, TError2> setUpContinuationToRunner(
+        Future<TResult2, TError2> setUpContinuationToRunner(
             QSharedPointer<Runner> runner,
             std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
 
         template<class TResult2, class TError2>
-        NewFuture<TResult2, TError2> setUpContinuationToRunnerIndirect(
+        Future<TResult2, TError2> setUpContinuationToRunnerIndirect(
             QSharedPointer<Runner> runner,
-            std::function<NewFuture<TResult2, TError2>(OutcomeType)> f);
+            std::function<Future<TResult2, TError2>(OutcomeType)> f);
 
         template<class TOutcome2>
-        NewSimpleFuture<TOutcome2> setUpContinuationToRunnerForSimpleFuture(
+        SimpleFuture<TOutcome2> setUpContinuationToRunnerForSimpleFuture(
             QSharedPointer<Runner> runner,
             std::function<TOutcome2(OutcomeType)> f);
 
-        template<class, class> friend class NewFuture;
+        template<class, class> friend class Future;
         friend class Promise<TResult, TError>;
         friend class Async;
         friend class Concurrent;
@@ -395,37 +395,37 @@ namespace PMP
     };
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError>::NewFuture(const FutureResult<TResult>& result)
+    Future<TResult, TError>::Future(const FutureResult<TResult>& result)
         : _storage(StorageType::createWithResult(result._result))
     {
         //
     }
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError>::NewFuture(const FutureError<TError>& error)
+    Future<TResult, TError>::Future(const FutureError<TError>& error)
         : _storage(StorageType::createWithError(error._error))
     {
         //
     }
 
     template<class TResult, class TError>
-    inline NewFuture<TResult, TError> NewFuture<TResult, TError>::fromOutcome(
+    inline Future<TResult, TError> Future<TResult, TError>::fromOutcome(
                                                                     OutcomeType outcome)
     {
-        return NewFuture(StorageType::createWithOutcome(outcome));
+        return Future(StorageType::createWithOutcome(outcome));
     }
 
     template<class TResult, class TError>
     Nullable<ResultOrError<TResult, TError>>
-        NewFuture<TResult, TError>::outcomeIfFinished()
+        Future<TResult, TError>::outcomeIfFinished()
     {
         return _storage->getOutcomeIfFinished();
     }
 
     template<class TResult, class TError>
     template<class TResult2, class TError2>
-    NewFuture<TResult2, TError2>
-    NewFuture<TResult, TError>::thenOnThreadPool(
+    Future<TResult2, TError2>
+    Future<TResult, TError>::thenOnThreadPool(
         ThreadPoolSpecifier threadPool,
         std::function<ResultOrError<TResult2, TError2> (OutcomeType)> f)
     {
@@ -436,8 +436,8 @@ namespace PMP
 
     template<class TResult, class TError>
     template<class TResult2, class TError2>
-    NewFuture<TResult2, TError2>
-        NewFuture<TResult, TError>::thenOnEventLoop(
+    Future<TResult2, TError2>
+        Future<TResult, TError>::thenOnEventLoop(
             QObject* receiver,
             std::function<ResultOrError<TResult2, TError2> (OutcomeType)> f)
     {
@@ -449,8 +449,8 @@ namespace PMP
     /*
     template<class TResult, class TError>
     template<class TResult2, class TError2>
-    NewFuture<TResult2, TError2>
-        NewFuture<TResult, TError>::thenOnEventLoopIndirect(
+    Future<TResult2, TError2>
+        Future<TResult, TError>::thenOnEventLoopIndirect(
             QObject* receiver,
             std::function<NewFuture<TResult2, TError2> (OutcomeType)> f)
     {
@@ -462,8 +462,8 @@ namespace PMP
 
     template<class TResult, class TError>
     template<class TResult2, class TError2>
-    NewFuture<TResult2, TError2>
-        NewFuture<TResult, TError>::thenOnAnyThread(
+    Future<TResult2, TError2>
+        Future<TResult, TError>::thenOnAnyThread(
             std::function<ResultOrError<TResult2, TError2> (OutcomeType)> f)
     {
         auto runner = QSharedPointer<AnyThreadContinuationRunner>::create();
@@ -473,9 +473,9 @@ namespace PMP
 
     template<class TResult, class TError>
     template<class TResult2, class TError2>
-    NewFuture<TResult2, TError2>
-        NewFuture<TResult, TError>::thenOnAnyThreadIndirect(
-            std::function<NewFuture<TResult2, TError2> (OutcomeType)> f)
+    Future<TResult2, TError2>
+        Future<TResult, TError>::thenOnAnyThreadIndirect(
+            std::function<Future<TResult2, TError2> (OutcomeType)> f)
     {
         auto runner = QSharedPointer<AnyThreadContinuationRunner>::create();
 
@@ -483,7 +483,7 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    void NewFuture<TResult, TError>::handleOnEventLoop(
+    void Future<TResult, TError>::handleOnEventLoop(
         QObject* receiver,
         std::function<void (OutcomeType)> f)
     {
@@ -504,7 +504,7 @@ namespace PMP
 
     template<class TResult, class TError>
     template<class TOutcome2>
-    NewSimpleFuture<TOutcome2> NewFuture<TResult, TError>::convertToSimpleFuture(
+    SimpleFuture<TOutcome2> Future<TResult, TError>::convertToSimpleFuture(
         std::function<TOutcome2 (const TResult&)> resultConverter,
         std::function<TOutcome2 (const TError&)> errorConverter)
     {
@@ -523,14 +523,14 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError>::NewFuture(StoragePtr storage)
+    Future<TResult, TError>::Future(StoragePtr storage)
         : _storage(storage)
     {
         //
     }
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError> NewFuture<TResult, TError>::createForRunnerDirect(
+    Future<TResult, TError> Future<TResult, TError>::createForRunnerDirect(
         QSharedPointer<Runner> runner,
         std::function<OutcomeType ()> f)
     {
@@ -547,13 +547,13 @@ namespace PMP
 
         runner->run(wrapper);
 
-        return NewFuture<TResult, TError>(storage);
+        return Future<TResult, TError>(storage);
     }
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError> NewFuture<TResult, TError>::createForRunnerIndirect(
+    Future<TResult, TError> Future<TResult, TError>::createForRunnerIndirect(
         QSharedPointer<Runner> runner,
-        std::function<NewFuture<TResult, TError> ()> f)
+        std::function<Future<TResult, TError> ()> f)
     {
         auto storage = StoragePtr::create();
         auto continuation = StorageType::createContinuationThatStoresResultAt(storage);
@@ -568,13 +568,13 @@ namespace PMP
 
         runner->run(wrapper);
 
-        return NewFuture<TResult, TError>(storage);
+        return Future<TResult, TError>(storage);
     }
 
     template<class TResult, class TError>
     template<class TResult2, class TError2>
-    NewFuture<TResult2, TError2>
-        NewFuture<TResult, TError>::setUpContinuationToRunner(
+    Future<TResult2, TError2>
+        Future<TResult, TError>::setUpContinuationToRunner(
             QSharedPointer<Runner> runner,
             std::function<ResultOrError<TResult2, TError2> (OutcomeType)> f)
     {
@@ -592,15 +592,15 @@ namespace PMP
         auto continuation = ContinuationPtr::create(runner, wrapper);
         _storage->setContinuation(continuation);
 
-        return NewFuture<TResult2, TError2>(storage);
+        return Future<TResult2, TError2>(storage);
     }
 
     template<class TResult, class TError>
     template<class TResult2, class TError2>
-    NewFuture<TResult2, TError2>
-        NewFuture<TResult, TError>::setUpContinuationToRunnerIndirect(
+    Future<TResult2, TError2>
+        Future<TResult, TError>::setUpContinuationToRunnerIndirect(
             QSharedPointer<Runner> runner,
-            std::function<NewFuture<TResult2, TError2> (OutcomeType)> f)
+            std::function<Future<TResult2, TError2> (OutcomeType)> f)
     {
         using Storage2Type = FutureStorage<TResult2, TError2>;
         auto secondStorage = QSharedPointer<Storage2Type>::create();
@@ -621,13 +621,13 @@ namespace PMP
         auto continuation = ContinuationPtr::create(runner, wrapper);
         _storage->setContinuation(continuation);
 
-        return NewFuture<TResult2, TError2>(secondStorage);
+        return Future<TResult2, TError2>(secondStorage);
     }
 
     template<class TResult, class TError>
     template<class TOutcome2>
-    NewSimpleFuture<TOutcome2>
-        NewFuture<TResult, TError>::setUpContinuationToRunnerForSimpleFuture(
+    SimpleFuture<TOutcome2>
+        Future<TResult, TError>::setUpContinuationToRunnerForSimpleFuture(
             QSharedPointer<Runner> runner,
             std::function<TOutcome2 (OutcomeType)> f)
     {
@@ -648,20 +648,20 @@ namespace PMP
         auto continuation = ContinuationPtr::create(runner, wrapper);
         _storage->setContinuation(continuation);
 
-        return NewSimpleFuture<TOutcome2>(storage);
+        return SimpleFuture<TOutcome2>(storage);
     }
 
     // =================================================================== //
 
     template<class TOutcome>
-    class NewSimpleFuture
+    class SimpleFuture
     {
     public:
         using OutcomeType = TOutcome;
 
-        NewSimpleFuture(FutureResult<TOutcome> const& outcome);
+        SimpleFuture(FutureResult<TOutcome> const& outcome);
 
-        static NewSimpleFuture<TOutcome> fromOutcome(TOutcome const& outcome);
+        static SimpleFuture<TOutcome> fromOutcome(TOutcome const& outcome);
 
         void handleOnEventLoop(QObject* receiver, std::function<void(OutcomeType)> f);
 
@@ -670,17 +670,17 @@ namespace PMP
         using StoragePtr = QSharedPointer<FutureStorage<TOutcome, FailureType>>;
         using ContinuationPtr = QSharedPointer<Continuation<TOutcome, FailureType>>;
 
-        NewSimpleFuture(StoragePtr storage);
+        SimpleFuture(StoragePtr storage);
 
-        static NewSimpleFuture<TOutcome> createForRunnerDirect(
+        static SimpleFuture<TOutcome> createForRunnerDirect(
             QSharedPointer<Runner> runner,
             std::function<OutcomeType()> f);
 
-        static NewSimpleFuture<TOutcome> createForRunnerIndirect(
+        static SimpleFuture<TOutcome> createForRunnerIndirect(
             QSharedPointer<Runner> runner,
-            std::function<NewSimpleFuture<TOutcome>()> f);
+            std::function<SimpleFuture<TOutcome>()> f);
 
-        template<class T1, class T2> friend class NewFuture;
+        template<class T1, class T2> friend class Future;
         friend class SimplePromise<TOutcome>;
         friend class Async;
 
@@ -688,23 +688,23 @@ namespace PMP
     };
 
     template<class TOutcome>
-    NewSimpleFuture<TOutcome>::NewSimpleFuture(const FutureResult<TOutcome>& outcome)
+    SimpleFuture<TOutcome>::SimpleFuture(const FutureResult<TOutcome>& outcome)
         : _storage(StorageType::createWithResult(outcome._result))
     {
         //
     }
 
     template<class TOutcome>
-    NewSimpleFuture<TOutcome> NewSimpleFuture<TOutcome>::fromOutcome(
+    SimpleFuture<TOutcome> SimpleFuture<TOutcome>::fromOutcome(
         const TOutcome& outcome)
     {
         auto storage = StorageType::createWithResult(outcome);
 
-        return NewSimpleFuture(storage);
+        return SimpleFuture(storage);
     }
 
     template<class TOutcome>
-    void NewSimpleFuture<TOutcome>::handleOnEventLoop(
+    void SimpleFuture<TOutcome>::handleOnEventLoop(
         QObject* receiver,
         std::function<void (OutcomeType)> f)
     {
@@ -724,14 +724,14 @@ namespace PMP
     }
 
     template<class TOutcome>
-    NewSimpleFuture<TOutcome>::NewSimpleFuture(StoragePtr storage)
+    SimpleFuture<TOutcome>::SimpleFuture(StoragePtr storage)
         : _storage(storage)
     {
         //
     }
 
     template<class TOutcome>
-    NewSimpleFuture<TOutcome> NewSimpleFuture<TOutcome>::createForRunnerDirect(
+    SimpleFuture<TOutcome> SimpleFuture<TOutcome>::createForRunnerDirect(
         QSharedPointer<Runner> runner,
         std::function<OutcomeType ()> f)
     {
@@ -751,13 +751,13 @@ namespace PMP
 
         runner->run(wrapper);
 
-        return NewSimpleFuture<TOutcome>(storage);
+        return SimpleFuture<TOutcome>(storage);
     }
 
     template<class TOutcome>
-    NewSimpleFuture<TOutcome> NewSimpleFuture<TOutcome>::createForRunnerIndirect(
+    SimpleFuture<TOutcome> SimpleFuture<TOutcome>::createForRunnerIndirect(
         QSharedPointer<Runner> runner,
-        std::function<NewSimpleFuture<TOutcome> ()> f)
+        std::function<SimpleFuture<TOutcome> ()> f)
     {
         auto storage = StoragePtr::create();
         auto continuation = StorageType::createContinuationThatStoresResultAt(storage);
@@ -772,7 +772,7 @@ namespace PMP
 
         runner->run(wrapper);
 
-        return NewSimpleFuture<TOutcome>(storage);
+        return SimpleFuture<TOutcome>(storage);
     }
 }
 #endif

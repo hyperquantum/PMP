@@ -36,7 +36,7 @@ class BackendMock : public ScrobblingBackend
 public:
     BackendMock(bool requireAuthentication);
 
-    NewSimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
+    SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
                                                      QString password) override;
 
     void setTemporaryUnavailabilitiesToStageForScrobbles(int count);
@@ -118,7 +118,7 @@ class TrackInfoProviderMock : public TrackInfoProvider
 public:
     TrackInfoProviderMock();
 
-    NewFuture<CollectionTrackInfo, FailureType> getTrackInfoAsync(uint hashId) override;
+    Future<CollectionTrackInfo, FailureType> getTrackInfoAsync(uint hashId) override;
 
     void registerTrack(uint hashId, QString title, QString artist);
     void registerTrack(uint hashId, QString title, QString artist, QString album,

@@ -22,10 +22,9 @@
 
 #include "common/disconnectreason.h"
 #include "common/filehash.h"
-//#include "common/future.h"
+#include "common/future.h"
 #include "common/networkprotocol.h"
 #include "common/networkprotocolextensions.h"
-#include "common/newfuture.h"
 #include "common/playerhistorytrackinfo.h"
 #include "common/playerstate.h"
 #include "common/queueindextype.h"
@@ -123,25 +122,25 @@ namespace PMP::Client
 
         void fetchCollection(CollectionFetcher* fetcher);
 
-        NewSimpleFuture<AnyResultMessageCode> reloadServerSettings();
-        NewSimpleFuture<AnyResultMessageCode> startFullIndexation();
-        NewSimpleFuture<AnyResultMessageCode> startQuickScanForNewFiles();
-        NewSimpleFuture<AnyResultMessageCode> activateDelayedStart(
+        SimpleFuture<AnyResultMessageCode> reloadServerSettings();
+        SimpleFuture<AnyResultMessageCode> startFullIndexation();
+        SimpleFuture<AnyResultMessageCode> startQuickScanForNewFiles();
+        SimpleFuture<AnyResultMessageCode> activateDelayedStart(
                                                                 qint64 delayMilliseconds);
-        NewSimpleFuture<AnyResultMessageCode> deactivateDelayedStart();
+        SimpleFuture<AnyResultMessageCode> deactivateDelayedStart();
         RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index);
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
-        NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                                     LocalHashId hashId);
-        NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                                     FileHash const& hash);
-        NewFuture<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
+        Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId = 0);
 
-        NewSimpleFuture<AnyResultMessageCode> authenticateScrobbling(
+        SimpleFuture<AnyResultMessageCode> authenticateScrobbling(
                                                             ScrobblingProvider provider,
                                                             QString username,
                                                             QString password);
@@ -188,9 +187,9 @@ namespace PMP::Client
         void sendQueueEntryHashRequest(QList<uint> const& queueIDs);
 
         void sendHashUserDataRequest(quint32 userId, QList<LocalHashId> const& hashes);
-        NewFuture<CollectionTrackInfo, AnyResultMessageCode> sendHashInfoRequest(
+        Future<CollectionTrackInfo, AnyResultMessageCode> sendHashInfoRequest(
                                                                     const FileHash& hash);
-        NewFuture<HistoryFragment, AnyResultMessageCode> sendHashHistoryRequest(
+        Future<HistoryFragment, AnyResultMessageCode> sendHashHistoryRequest(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId);
 
@@ -295,8 +294,8 @@ namespace PMP::Client
         RequestID signalServerTooOldError(
                              void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
                                                                    RequestID));
-        NewSimpleFuture<AnyResultMessageCode> noErrorFutureResult();
-        NewSimpleFuture<AnyResultMessageCode> serverTooOldFutureResult();
+        SimpleFuture<AnyResultMessageCode> noErrorFutureResult();
+        SimpleFuture<AnyResultMessageCode> serverTooOldFutureResult();
         FutureError<AnyResultMessageCode> serverTooOldFutureError();
 
         void sendTextCommand(QString const& command);
@@ -306,7 +305,7 @@ namespace PMP::Client
         void sendKeepAliveMessage();
         void sendProtocolExtensionsMessage();
         void sendSingleByteAction(quint8 action);
-        NewSimpleFuture<AnyResultMessageCode> sendParameterlessActionRequest(
+        SimpleFuture<AnyResultMessageCode> sendParameterlessActionRequest(
                                                             ParameterlessActionCode code);
 
         void readTextCommands();
@@ -345,7 +344,7 @@ namespace PMP::Client
         void sendScrobblingProviderInfoRequest();
         void sendUserScrobblingEnableDisableRequest(ScrobblingProvider provider,
                                                     bool enable);
-        NewSimpleFuture<AnyResultMessageCode> sendScrobblingAuthenticationMessage(
+        SimpleFuture<AnyResultMessageCode> sendScrobblingAuthenticationMessage(
                                                             ScrobblingProvider provider,
                                                             QString username,
                                                             QString password);

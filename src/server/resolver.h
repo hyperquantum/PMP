@@ -22,7 +22,7 @@
 
 #include "common/audiodata.h"
 #include "common/filehash.h"
-#include "common/newfuture.h"
+#include "common/future.h"
 #include "common/nullable.h"
 #include "common/tagdata.h"
 
@@ -64,8 +64,8 @@ namespace PMP::Server
         bool isFullIndexationRunning();
         bool isQuickScanForNewFilesRunning();
 
-        NewFuture<QString, FailureType> findPathForHashAsync(FileHash hash);
-        NewFuture<QString, FailureType> findPathForHashAsync(uint hashId);
+        Future<QString, FailureType> findPathForHashAsync(FileHash hash);
+        Future<QString, FailureType> findPathForHashAsync(uint hashId);
 
         bool haveFileForHash(const FileHash& hash);
         bool pathStillValid(const FileHash& hash, QString path);

@@ -42,9 +42,9 @@ namespace PMP::Client
 
         QHash<LocalHashId, CollectionTrackInfo> getCollection() override;
         Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) override;
-        NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                             LocalHashId hashId) override;
-        NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                         FileHash const& hash) override;
 
     private Q_SLOTS:
@@ -58,9 +58,9 @@ namespace PMP::Client
         void onCollectionTracksChanged(QVector<PMP::Client::CollectionTrackInfo> changes);
 
     private:
-        NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfoInternal(
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfoInternal(
                                                                       LocalHashId hashId);
-        NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfoInternal(
+        Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfoInternal(
                                                                     FileHash const& hash);
         void startDownload();
         void updateTrackAvailability(QVector<LocalHashId> hashes, bool available);

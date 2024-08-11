@@ -20,7 +20,7 @@
 #ifndef PMP_COMMON_ASYNC_H
 #define PMP_COMMON_ASYNC_H
 
-#include "newfuture.h"
+#include "future.h"
 #include "promise.h"
 #include "runners.h"
 
@@ -36,19 +36,19 @@ namespace PMP
         static SimplePromise<TOutcome> createSimplePromise();
 
         template<class TResult, class TError>
-        static NewFuture<TResult, TError> runOnEventLoop(
+        static Future<TResult, TError> runOnEventLoop(
             QObject* receiver,
             std::function<ResultOrError<TResult, TError>()> f);
 
         template<class TResult, class TError>
-        static NewFuture<TResult, TError> runOnEventLoop(
+        static Future<TResult, TError> runOnEventLoop(
             QObject* receiver,
-            std::function<NewFuture<TResult, TError>()> f);
+            std::function<Future<TResult, TError>()> f);
 
         template<class TOutcome>
-        static NewSimpleFuture<TOutcome> runOnEventLoop(
+        static SimpleFuture<TOutcome> runOnEventLoop(
             QObject* receiver,
-            std::function<NewSimpleFuture<TOutcome>()> f);
+            std::function<SimpleFuture<TOutcome>()> f);
 
     private:
         Async();
@@ -67,33 +67,33 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError> Async::runOnEventLoop(
+    Future<TResult, TError> Async::runOnEventLoop(
         QObject* receiver,
         std::function<ResultOrError<TResult, TError> ()> f)
     {
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
-        return NewFuture<TResult, TError>::createForRunnerDirect(runner, f);
+        return Future<TResult, TError>::createForRunnerDirect(runner, f);
     }
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError> Async::runOnEventLoop(
+    Future<TResult, TError> Async::runOnEventLoop(
         QObject* receiver,
-        std::function<NewFuture<TResult, TError>()> f)
+        std::function<Future<TResult, TError>()> f)
     {
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
-        return NewFuture<TResult, TError>::createForRunnerIndirect(runner, f);
+        return Future<TResult, TError>::createForRunnerIndirect(runner, f);
     }
 
     template<class TOutcome>
-    NewSimpleFuture<TOutcome> Async::runOnEventLoop(
+    SimpleFuture<TOutcome> Async::runOnEventLoop(
         QObject* receiver,
-        std::function<NewSimpleFuture<TOutcome> ()> f)
+        std::function<SimpleFuture<TOutcome> ()> f)
     {
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
-        return NewSimpleFuture<TOutcome>::createForRunnerIndirect(runner, f);
+        return SimpleFuture<TOutcome>::createForRunnerIndirect(runner, f);
     }
 }
 #endif

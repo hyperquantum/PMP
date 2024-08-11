@@ -20,7 +20,7 @@
 #ifndef PMP_SCROBBLER_H
 #define PMP_SCROBBLER_H
 
-#include "common/newfuture.h"
+#include "common/future.h"
 #include "common/scrobblerstatus.h"
 
 #include "result.h"
@@ -47,7 +47,7 @@ namespace PMP::Server
 
         ScrobblerStatus status() const { return _status; }
 
-        NewSimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
+        SimpleFuture<Result> authenticateWithCredentials(QString usernameOrEmail,
                                                          QString password);
 
     public Q_SLOTS:

@@ -37,10 +37,10 @@ namespace PMP
             //
         }
 
-        NewFuture<ResultType, ErrorType> future()
+        Future<ResultType, ErrorType> future()
         {
             if (_cached.hasValue())
-                return NewFuture<ResultType, ErrorType>::fromOutcome(_cached.value());
+                return Future<ResultType, ErrorType>::fromOutcome(_cached.value());
 
             if (_promise.isNull())
             {

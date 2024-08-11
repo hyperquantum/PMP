@@ -80,7 +80,7 @@ namespace PMP::Server
         _threadPool->waitForDone();
     }
 
-    NewFuture<SuccessType, FailureType> HistoryStatistics::addToHistory(quint32 userId,
+    Future<SuccessType, FailureType> HistoryStatistics::addToHistory(quint32 userId,
                                                                      quint32 hashId,
                                                                      QDateTime start,
                                                                      QDateTime end,
@@ -156,7 +156,7 @@ namespace PMP::Server
         return null;
     }
 
-    NewFuture<SuccessType, FailureType> HistoryStatistics::scheduleFetchIfMissing(
+    Future<SuccessType, FailureType> HistoryStatistics::scheduleFetchIfMissing(
                                                                            quint32 userId,
                                                                            uint hashId)
     {
@@ -292,7 +292,7 @@ namespace PMP::Server
         );
     }
 
-    NewFuture<SuccessType, FailureType> HistoryStatistics::scheduleFetch(quint32 userId,
+    Future<SuccessType, FailureType> HistoryStatistics::scheduleFetch(quint32 userId,
                                                                       uint hashId,
                                                                       bool onlyIfMissing)
     {

@@ -54,11 +54,11 @@ public:
     int volume() const override;
 
     QDateTime delayedStartServerDeadline() override;
-    NewSimpleFuture<AnyResultMessageCode> activateDelayedStart(
+    SimpleFuture<AnyResultMessageCode> activateDelayedStart(
         qint64 delayMilliseconds) override;
-    NewSimpleFuture<AnyResultMessageCode> activateDelayedStart(
+    SimpleFuture<AnyResultMessageCode> activateDelayedStart(
         QDateTime startTime) override;
-    NewSimpleFuture<AnyResultMessageCode> deactivateDelayedStart() override;
+    SimpleFuture<AnyResultMessageCode> deactivateDelayedStart() override;
 
 public Q_SLOTS:
     void play() override;
@@ -134,9 +134,9 @@ public:
 
     QHash<LocalHashId, CollectionTrackInfo> getCollection() override;
     Nullable<CollectionTrackInfo> getTrackFromCache(LocalHashId hashId) override;
-    NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+    Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                              LocalHashId hashId) override;
-    NewFuture<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
+    Future<CollectionTrackInfo, AnyResultMessageCode> getTrackInfo(
                                                         FileHash const& hash) override;
 
 private:

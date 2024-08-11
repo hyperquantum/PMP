@@ -20,7 +20,7 @@
 #ifndef PMP_COMMON_PROMISE_H
 #define PMP_COMMON_PROMISE_H
 
-#include "newfuture.h"
+#include "future.h"
 
 namespace PMP
 {
@@ -29,7 +29,7 @@ namespace PMP
     {
     public:
         using OutcomeType = ResultOrError<TResult, TError>;
-        using FutureType = NewFuture<TResult, TError>;
+        using FutureType = Future<TResult, TError>;
 
         FutureType future() const;
 
@@ -46,9 +46,9 @@ namespace PMP
     };
 
     template<class TResult, class TError>
-    NewFuture<TResult, TError> Promise<TResult, TError>::future() const
+    Future<TResult, TError> Promise<TResult, TError>::future() const
     {
-        return NewFuture<TResult, TError>(_storage);
+        return Future<TResult, TError>(_storage);
     }
 
     template<class TResult, class TError>
@@ -83,7 +83,7 @@ namespace PMP
     {
     public:
         using OutcomeType = TOutcome;
-        using FutureType = NewSimpleFuture<TOutcome>;
+        using FutureType = SimpleFuture<TOutcome>;
 
         FutureType future() const;
 
@@ -98,9 +98,9 @@ namespace PMP
     };
 
     template<class TOutcome>
-    NewSimpleFuture<TOutcome> SimplePromise<TOutcome>::future() const
+    SimpleFuture<TOutcome> SimplePromise<TOutcome>::future() const
     {
-        return NewSimpleFuture<TOutcome>(_storage);
+        return SimpleFuture<TOutcome>(_storage);
     }
 
     template<class TOutcome>
