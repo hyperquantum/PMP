@@ -21,11 +21,6 @@
 #include "common/version.h"
 #include "common/util.h"
 
-// for testing
-#include "common/async.h"
-#include "common/concurrent.h"
-#include "common/future.h"
-
 #include "command.h"
 #include "commandlineclient.h"
 #include "commandparser.h"
@@ -257,52 +252,8 @@ This is free software; see the source for copying conditions.  There is NO
 warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 )"""";
 
-inline void testFutures()
-{
-    auto work = []() { return ResultOrError<int, FailureType>::fromResult(42); };
-
-    // ====
-
-    QObject* object = new QObject();
-
-    auto eventLoopFuture = Async::runOnEventLoop<int, FailureType>(object, work);
-
-    // ====
-
-    auto* threadPool = QThreadPool::globalInstance();
-    auto future = Concurrent::runOnThreadPool<int, FailureType>(threadPool, work);
-
-    auto work2 =
-        [](ResultOrError<int, FailureType> input) -> ResultOrError<QString, FailureType>
-    {
-        if (input.failed())
-            return failure;
-
-        return QString::number(input.result()) + "!";
-    };
-
-    auto future2 = future.thenOnThreadPool<QString, FailureType>(threadPool, work2);
-
-    // ====
-
-    auto promise = Async::createPromise<QString, FailureType>();
-    auto future3 = promise.future();
-
-    promise.setOutcome(failure);
-
-    // ====
-
-    auto simplePromise = Async::createSimplePromise<QString>();
-    auto simpleFuture = simplePromise.future();
-
-    simplePromise.setOutcome("Finished");
-}
-
 void printVersion(QTextStream& out)
 {
-    // temporary call for testing - to be removed
-    testFutures();
-
     const auto programNameVersionBuild =
         QString(VCS_REVISION_LONG).isEmpty()
             ? QString("Party Music Player %1")
