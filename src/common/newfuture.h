@@ -101,6 +101,7 @@ namespace PMP
     class NewFutureStorage
     {
     public:
+        using StoragePtr = QSharedPointer<NewFutureStorage<TResult, TError>>;
         using OutcomeType = ResultOrError<TResult, TError>;
 
         NewFutureStorage(NewFutureStorage const&) = delete;
@@ -111,13 +112,10 @@ namespace PMP
 
         NewFutureStorage() {}
 
-        static QSharedPointer<NewFutureStorage<TResult, TError>> create();
-        static QSharedPointer<NewFutureStorage<TResult, TError>> createWithResult(
-            TResult const& result);
-        static QSharedPointer<NewFutureStorage<TResult, TError>> createWithError(
-            TError const& error);
-        static QSharedPointer<NewFutureStorage<TResult, TError>> createWithOutcome(
-            ResultOrError<TResult, TError> const& outcome);
+        static StoragePtr create();
+        static StoragePtr createWithResult(TResult const& result);
+        static StoragePtr createWithError(TError const& error);
+        static StoragePtr createWithOutcome(OutcomeType const& outcome);
 
         ContinuationPtr createContinuationThatStoresTheResultHere();
 
@@ -155,7 +153,7 @@ namespace PMP
     QSharedPointer<NewFutureStorage<TResult, TError>>
         NewFutureStorage<TResult, TError>::createWithResult(const TResult& result)
     {
-        auto storage = QSharedPointer<NewFutureStorage<TResult, TError>>::create();
+        auto storage = StoragePtr::create();
 
         storage->_finished = true;
         storage->_result = result;
@@ -167,7 +165,7 @@ namespace PMP
     QSharedPointer<NewFutureStorage<TResult, TError>>
         NewFutureStorage<TResult, TError>::createWithError(TError const& error)
     {
-        auto storage = QSharedPointer<NewFutureStorage<TResult, TError>>::create();
+        auto storage = StoragePtr::create();
 
         storage->_finished = true;
         storage->_error = error;
@@ -177,10 +175,9 @@ namespace PMP
 
     template<class TResult, class TError>
     QSharedPointer<NewFutureStorage<TResult, TError>>
-        NewFutureStorage<TResult, TError>::createWithOutcome(
-            ResultOrError<TResult, TError> const& outcome)
+        NewFutureStorage<TResult, TError>::createWithOutcome(OutcomeType const& outcome)
     {
-        auto storage = QSharedPointer<NewFutureStorage<TResult, TError>>::create();
+        auto storage = StoragePtr::create();
 
         storage->_finished = true;
 
@@ -777,6 +774,5 @@ namespace PMP
 
         return NewSimpleFuture<TOutcome>(storage);
     }
-
 }
 #endif
