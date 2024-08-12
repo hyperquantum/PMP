@@ -28,13 +28,8 @@
 #include <QMutex>
 #include <QSharedPointer>
 
-// debug
-#include <QtDebug>
-
 namespace PMP
 {
-    /* ---------- THIS FILE IS AN EXPERIMENTAL WORK IN PROGRESS ---------- */
-
     template<class TResult, class TError> class Promise;
     template<class TResult, class TError> class Future;
     template<class TOutcome> class SimplePromise;
@@ -246,7 +241,7 @@ namespace PMP
         {
             // when already finished, continue immediately
             auto outcome = getOutcomeInternal();
-            lock.unlock();
+            lock.unlock(); /* unlock before continuing */
             continuation->continueFrom(nullptr, outcome);
         }
         else
@@ -270,8 +265,6 @@ namespace PMP
             _result = outcome.result();
         else
             _error = outcome.error();
-
-        // TODO: notify listeners
 
         auto continuation = _continuation;
 
@@ -541,7 +534,7 @@ namespace PMP
             {
                 auto outcome = f();
 
-                // store result, notify listeners, and run continuation
+                // store result and run continuation
                 storage->storeAndContinueFrom(outcome, runner);
             };
 
@@ -585,7 +578,7 @@ namespace PMP
             {
                 auto resultOrError = f(previousOutcome);
 
-                // store result, notify listeners, and run continuation
+                // store result and run continuation
                 storage->storeAndContinueFrom(resultOrError, actualRunner);
             };
 
@@ -641,7 +634,7 @@ namespace PMP
                 auto resultOrError =
                     ResultOrError<TOutcome2, FailureType>::fromResult(outcome);
 
-                // store result, notify listeners, and run continuation
+                // store result and run continuation
                 storage->storeAndContinueFrom(resultOrError, actualRunner);
             };
 
@@ -745,7 +738,7 @@ namespace PMP
             auto resultOrError =
                 ResultOrError<TOutcome, FailureType>::fromResult(outcome);
 
-            // store result, notify listeners, and run continuation
+            // store result and run continuation
             storage->storeAndContinueFrom(resultOrError, runner);
         };
 
