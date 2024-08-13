@@ -125,8 +125,9 @@ static void loadEquivalencesAndStartHashStatsCacheFixerAsync(
                                             UserHashStatsCacheFixer* hashStatsCacheFixer)
 {
     auto equivalencesLoadingFuture =
-        Concurrent::run<SuccessType, FailureType>(
-            [hashRelations]() -> ResultOrError<SuccessType, FailureType>
+        Concurrent::runOnThreadPool<SuccessType, FailureType>(
+            globalThreadPool,
+            [hashRelations]() -> SuccessOrFailure
             {
                 auto db = Database::getDatabaseForCurrentThread();
                 if (!db) return failure; /* database not available */
@@ -143,11 +144,11 @@ static void loadEquivalencesAndStartHashStatsCacheFixerAsync(
             }
         );
 
-    equivalencesLoadingFuture.addListener(
+    equivalencesLoadingFuture.handleOnEventLoop(
         hashStatsCacheFixer,
-        [hashStatsCacheFixer](ResultOrError<SuccessType, FailureType> result)
+        [hashStatsCacheFixer](SuccessOrFailure outcome)
         {
-            if (result.failed())
+            if (outcome.failed())
                 qDebug() << "failed to load equivalences from the database";
 
             hashStatsCacheFixer->start();

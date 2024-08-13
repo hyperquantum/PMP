@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,6 +22,7 @@
 
 #include "authenticationcontroller.h"
 
+#include "common/nullable.h"
 #include "common/promise.h"
 
 #include <QSharedPointer>
@@ -52,7 +53,7 @@ namespace PMP::Client
 
     private:
         ServerConnection* _connection;
-        QSharedPointer<Promise<QList<UserAccount>, ResultMessageErrorCode>> _userAccountsPromise;
+        Nullable<Promise<QList<UserAccount>, ResultMessageErrorCode>> _userAccountsPromise;
     };
 }
 #endif

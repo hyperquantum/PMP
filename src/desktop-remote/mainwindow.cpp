@@ -493,7 +493,7 @@ namespace PMP
     {
         auto future = _serverInterface->generalController().reloadServerSettings();
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
             [this](AnyResultMessageCode code)
             {
@@ -577,7 +577,7 @@ namespace PMP
                 _serverInterface->generalController().getServerVersionInfo();
 
             auto maybeServerVersionResultOrError =
-                serverVersionFuture.resultOrErrorIfFinished();
+                serverVersionFuture.outcomeIfFinished();
 
             if (maybeServerVersionResultOrError == null
                 || maybeServerVersionResultOrError.value().failed())
@@ -934,10 +934,10 @@ namespace PMP
     }
 
     void MainWindow::connectErrorPopupToActionResult(
-                                                SimpleFuture<AnyResultMessageCode> future,
-                                                QString failureText)
+        SimpleFuture<AnyResultMessageCode> future,
+        QString failureText)
     {
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
             [failureText](AnyResultMessageCode code)
             {

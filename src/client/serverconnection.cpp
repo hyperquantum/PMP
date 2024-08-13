@@ -19,9 +19,9 @@
 
 #include "serverconnection.h"
 
+#include "common/async.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
-#include "common/promise.h"
 #include "common/startstopeventstatus.h"
 #include "common/util.h"
 
@@ -230,7 +230,8 @@ namespace PMP::Client
     };
 
     ServerConnection::PromiseResultHandler::PromiseResultHandler(ServerConnection* parent)
-     : ResultHandler(parent)
+     : ResultHandler(parent),
+        _promise(Async::createSimplePromise<AnyResultMessageCode>())
     {
         //
     }
@@ -255,7 +256,7 @@ namespace PMP::Client
                            << errorDescription(data);
         }
 
-        _promise.setResult(data.errorType);
+        _promise.setOutcome(data.errorType);
     }
 
     void ServerConnection::PromiseResultHandler::handleExtensionResult(
@@ -263,7 +264,7 @@ namespace PMP::Client
     {
         auto code = convertExtensionResultCode(data);
 
-        _promise.setResult(code);
+        _promise.setOutcome(code);
     }
 
     QString ServerConnection::PromiseResultHandler::getActionDetail() const
@@ -556,7 +557,8 @@ namespace PMP::Client
 
     ServerConnection::HistoryFragmentResultHandler::HistoryFragmentResultHandler(
         ServerConnection* parent)
-     : ResultHandler(parent)
+     : ResultHandler(parent),
+        _promise(Async::createPromise<HistoryFragment, AnyResultMessageCode>())
     {
         //
     }
@@ -604,7 +606,9 @@ namespace PMP::Client
     ServerConnection::HashInfoResultHandler::HashInfoResultHandler(
                                                                 ServerConnection* parent,
                                                                 const FileHash& hash)
-     : ResultHandler(parent), _hash(hash)
+     : ResultHandler(parent),
+        _hash(hash),
+        _promise(Async::createPromise<CollectionTrackInfo, AnyResultMessageCode>())
     {
         //
     }
@@ -1088,8 +1092,8 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    SimpleFuture<AnyResultMessageCode> ServerConnection::sendParameterlessActionRequest(
-                                                             ParameterlessActionCode code)
+    SimpleFuture<AnyResultMessageCode>
+        ServerConnection::sendParameterlessActionRequest(ParameterlessActionCode code)
     {
         if (NetworkProtocol::isSupported(code, _serverProtocolNo) == false)
             return serverTooOldFutureResult();
@@ -1226,14 +1230,16 @@ namespace PMP::Client
         return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
     }
 
-    FutureResult<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
     {
-        return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::NoError));
+        return SimpleFuture<AnyResultMessageCode>::fromOutcome(
+                                                        ResultMessageErrorCode::NoError);
     }
 
-    FutureResult<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
     {
-        return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
+        return SimpleFuture<AnyResultMessageCode>::fromOutcome(
+                                                    ResultMessageErrorCode::ServerTooOld);
     }
 
     FutureError<AnyResultMessageCode> ServerConnection::serverTooOldFutureError()

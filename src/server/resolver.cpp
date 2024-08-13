@@ -404,10 +404,16 @@ namespace PMP::Server
                 this, &Resolver::onAnalyzerFinished);
 
         auto dbLoadingFuture = _hashIdRegistrar->loadAllFromDatabase();
-        dbLoadingFuture.addResultListener(
+        dbLoadingFuture.handleOnEventLoop(
             this,
-            [this](SuccessType)
+            [this](SuccessOrFailure outcome)
             {
+                if (outcome.failed())
+                {
+                    qWarning() << "Resolver: could not load hashes from the database";
+                    return;
+                }
+
                 qDebug() << "Resolver: successfully loaded hashes from the database";
 
                 auto allHashes = _hashIdRegistrar->getAllLoaded();
@@ -428,13 +434,6 @@ namespace PMP::Server
 
                 qDebug() << "Resolver: hashes processed; got"
                          << newHashesCount << "new hashes";
-            }
-        );
-        dbLoadingFuture.addFailureListener(
-            this,
-            [](FailureType)
-            {
-                qDebug() << "Resolver: could not load hashes from the database";
             }
         );
     }
@@ -524,7 +523,7 @@ namespace PMP::Server
         const auto allHashes = hashes.allHashes();
 
         _hashIdRegistrar->getOrCreateIds(allHashes)
-            .addListener(
+            .handleOnEventLoop(
                 this,
                 [this, path, analysis, hashes, allHashes](
                                    ResultOrError<QVector<uint>, FailureType> maybeHashIds)
@@ -630,7 +629,7 @@ namespace PMP::Server
                 auto path = it.value()->getFile();
                 if (!path.isEmpty())
                 {
-                    return Future<QString, FailureType>::fromResult(path);
+                    return FutureResult(path);
                 }
             }
         }
@@ -640,9 +639,15 @@ namespace PMP::Server
         // TODO : check if we have it in the locations cache
 
         auto pathFuture =
-            idFuture.thenFuture<QString, FailureType>(
-                [this, hash](uint id) { return _fileFinder->findHashAsync(id, hash); },
-                failureIdentityFunction
+            idFuture.thenOnAnyThreadIndirect<QString, FailureType>(
+                [this, hash](FailureOr<uint> outcome) -> Future<QString, FailureType>
+                {
+                    if (outcome.failed())
+                        return FutureError(failure);
+
+                    auto id = outcome.result();
+                    return _fileFinder->findHashAsync(id, hash);
+                }
             );
 
         return pathFuture;
@@ -667,7 +672,7 @@ namespace PMP::Server
             auto path = it.value()->getFile();
             if (!path.isEmpty())
             {
-                return Future<QString, FailureType>::fromResult(path);
+                return FutureResult(path);
             }
         }
 
@@ -814,7 +819,8 @@ namespace PMP::Server
         _hashRelations->markAsEquivalent(hashes);
         _historyStatistics->invalidateAllGroupStatisticsForHash(hashes[0]);
 
-        Concurrent::run<SuccessType, FailureType>(
+        Concurrent::runOnThreadPool<SuccessType, FailureType>(
+            globalThreadPool,
             [hashes]() -> ResultOrError<SuccessType, FailureType>
             {
                 auto db = Database::getDatabaseForCurrentThread();

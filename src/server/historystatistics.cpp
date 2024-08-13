@@ -27,6 +27,7 @@
 #include "userhashstatscache.h"
 
 #include <QThreadPool>
+#include <QTimer>
 
 using PMP::Server::DatabaseRecords::HashHistoryStats;
 
@@ -87,8 +88,9 @@ namespace PMP::Server
                                                                      bool validForScoring)
     {
         auto future =
-            Concurrent::run<SuccessType, FailureType>(
-                /* do not specify a thread pool, it cannot wait */
+            Concurrent::runOnThreadPool<SuccessType, FailureType>(
+                /* do not specify our own (limited) thread pool, it cannot wait */
+                globalThreadPool,
                 [this, userId, hashId, start, end, permillage, validForScoring]()
                     -> SuccessOrFailure
                 {
@@ -143,7 +145,7 @@ namespace PMP::Server
         for (auto hashId : hashesInGroup)
             userData.hashesInProgress << hashId;
 
-        Concurrent::run<SuccessType, FailureType>(
+        Concurrent::runOnThreadPool<SuccessType, FailureType>(
             _threadPool,
             [this, userId, hashesInGroup]()
             {
@@ -215,7 +217,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_mutex);
 
-        Concurrent::run<SuccessType, FailureType>(
+        Concurrent::runOnThreadPool<SuccessType, FailureType>(
             _threadPool,
             [this, userId, hashId]() -> SuccessOrFailure
             {
@@ -322,7 +324,7 @@ namespace PMP::Server
             userData.hashesInProgress << hashId;
 
         auto future =
-            Concurrent::run<SuccessType, FailureType>(
+            Concurrent::runOnThreadPool<SuccessType, FailureType>(
                 _threadPool,
                 [this, userId, hashesInGroup]()
                 {

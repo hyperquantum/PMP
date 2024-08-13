@@ -73,7 +73,8 @@ namespace PMP::Server
         /* now wait for someone to call the wakeUp slot before doing anything */
     }
 
-    SimpleFuture<Result> Scrobbler::authenticateWithCredentials(QString usernameOrEmail,
+    SimpleFuture<Result> Scrobbler::authenticateWithCredentials(
+                                                                QString usernameOrEmail,
                                                                 QString password)
     {
         return _backend->authenticateWithCredentials(usernameOrEmail, password);
@@ -228,7 +229,7 @@ namespace PMP::Server
         _timeoutTimer->start(7000);
 
         _trackInfoProvider->getTrackInfoAsync(hashId)
-            .addListener(
+            .handleOnEventLoop(
                 this,
                 [this, hashId, timestamp](
                         ResultOrError<CollectionTrackInfo, FailureType> outcome)

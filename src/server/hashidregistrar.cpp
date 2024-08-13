@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -52,7 +52,8 @@ namespace PMP::Server
                 return success;
             };
 
-        return Concurrent::run<SuccessType, FailureType>(work);
+        return Concurrent::runOnThreadPool<SuccessType, FailureType>(globalThreadPool,
+                                                                        work);
     }
 
     Future<uint, FailureType> HashIdRegistrar::getOrCreateId(FileHash hash)
@@ -61,7 +62,7 @@ namespace PMP::Server
             QMutexLocker lock(&_mutex);
             auto id = _hashes.value(hash, 0);
             if (id > 0)
-                return Future<uint, FailureType>::fromResult(id);
+                return FutureResult(id);
         }
 
         auto work =
@@ -73,7 +74,7 @@ namespace PMP::Server
                 return registerHash(*db, hash);
             };
 
-        return Concurrent::run<uint, FailureType>(work);
+        return Concurrent::runOnThreadPool<uint, FailureType>(globalThreadPool, work);
     }
 
     Future<QVector<uint>, FailureType> HashIdRegistrar::getOrCreateIds(
@@ -96,7 +97,7 @@ namespace PMP::Server
             }
 
             if (!incomplete)
-                return Future<QVector<uint>, FailureType>::fromResult(ids);
+                return FutureResult(ids);
         }
 
         auto work =
@@ -122,7 +123,8 @@ namespace PMP::Server
                 return result;
             };
 
-        return Concurrent::run<QVector<uint>, FailureType>(work);
+        return Concurrent::runOnThreadPool<QVector<uint>, FailureType>(
+            globalThreadPool, work);
     }
 
     QVector<QPair<uint, FileHash>> HashIdRegistrar::getAllLoaded()

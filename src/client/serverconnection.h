@@ -125,7 +125,8 @@ namespace PMP::Client
         SimpleFuture<AnyResultMessageCode> reloadServerSettings();
         SimpleFuture<AnyResultMessageCode> startFullIndexation();
         SimpleFuture<AnyResultMessageCode> startQuickScanForNewFiles();
-        SimpleFuture<AnyResultMessageCode> activateDelayedStart(qint64 delayMilliseconds);
+        SimpleFuture<AnyResultMessageCode> activateDelayedStart(
+                                                                qint64 delayMilliseconds);
         SimpleFuture<AnyResultMessageCode> deactivateDelayedStart();
         RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index);
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
@@ -293,8 +294,8 @@ namespace PMP::Client
         RequestID signalServerTooOldError(
                              void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
                                                                    RequestID));
-        FutureResult<AnyResultMessageCode> noErrorFutureResult();
-        FutureResult<AnyResultMessageCode> serverTooOldFutureResult();
+        SimpleFuture<AnyResultMessageCode> noErrorFutureResult();
+        SimpleFuture<AnyResultMessageCode> serverTooOldFutureResult();
         FutureError<AnyResultMessageCode> serverTooOldFutureError();
 
         void sendTextCommand(QString const& command);

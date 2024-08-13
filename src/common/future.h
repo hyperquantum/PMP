@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2024, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,381 +17,755 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_FUTURE_H
-#define PMP_FUTURE_H
+#ifndef PMP_COMMON_NEWFUTURE_H
+#define PMP_COMMON_NEWFUTURE_H
 
-#include "concurrentinternals.h"
-#include "futureinternals.h"
+#include "nullable.h"
 #include "resultorerror.h"
+#include "runners.h"
 
+// NewFutureStorage
+#include <QMutex>
 #include <QSharedPointer>
-#include <QtDebug>
-
-#include <functional>
 
 namespace PMP
 {
-    template<class T>
+    template<class TResult, class TError> class Promise;
+    template<class TResult, class TError> class Future;
+    template<class TOutcome> class SimplePromise;
+    template<class TOutcome> class SimpleFuture;
+    template<class TResult, class TError> class FutureStorage;
+    template<class TResult, class TError> class Continuation;
+
+    // =================================================================== //
+
+    template<class TResult, class TError>
+    class Continuation
+    {
+    public:
+        Continuation(QSharedPointer<Runner> runner,
+                     std::function<void (QSharedPointer<Runner> actualRunner,
+                                ResultOrError<TResult, TError> previousOutcome)> work);
+
+        Continuation(Continuation const&) = delete;
+
+        void continueFrom(QSharedPointer<Runner> previousRunner,
+                          ResultOrError<TResult, TError> const& previousOutcome);
+
+        Continuation& operator=(Continuation const&) = delete;
+
+    private:
+        friend class QSharedPointer<Continuation<TResult, TError>>;
+
+        QSharedPointer<Runner> const _runner;
+        std::function<void (QSharedPointer<Runner> actualRunner,
+                            ResultOrError<TResult, TError> previousOutcome)> const _work;
+    };
+
+    template<class TResult, class TError>
+    Continuation<TResult, TError>::Continuation(QSharedPointer<Runner> runner,
+        std::function<void (QSharedPointer<Runner>, ResultOrError<TResult, TError>)> work)
+        : _runner(runner), _work(work)
+    {
+        //
+    }
+
+    template<class TResult, class TError>
+    void Continuation<TResult, TError>::continueFrom(
+                                    QSharedPointer<Runner> previousRunner,
+                                    ResultOrError<TResult, TError> const& previousOutcome)
+    {
+        if (previousRunner && _runner->canContinueInThreadFrom(previousRunner.data()))
+        {
+            _work(previousRunner, previousOutcome);
+            return;
+        }
+
+        auto wrapper =
+            [work = _work, actualRunner = _runner, previousOutcome]()
+            {
+                work(actualRunner, previousOutcome);
+            };
+
+        _runner->run(wrapper);
+    }
+
+    // =================================================================== //
+
+    template<class TResult, class TError>
+    class FutureStorage
+    {
+    public:
+        using StoragePtr = QSharedPointer<FutureStorage<TResult, TError>>;
+        using OutcomeType = ResultOrError<TResult, TError>;
+
+        FutureStorage(FutureStorage const&) = delete;
+        FutureStorage& operator=(FutureStorage const&) = delete;
+
+    private:
+        using ContinuationPtr = QSharedPointer<Continuation<TResult, TError>>;
+
+        FutureStorage() {}
+
+        static StoragePtr create();
+        static StoragePtr createWithResult(TResult const& result);
+        static StoragePtr createWithError(TError const& error);
+        static StoragePtr createWithOutcome(OutcomeType const& outcome);
+
+        static ContinuationPtr createContinuationThatStoresResultAt(StoragePtr storage);
+
+        Nullable<ResultOrError<TResult, TError>> getOutcomeIfFinished();
+
+        ResultOrError<TResult, TError> getOutcomeInternal() const;
+
+        void setContinuation(ContinuationPtr continuation);
+
+        void storeAndContinueFrom(ResultOrError<TResult, TError> const& outcome,
+                                  QSharedPointer<Runner> runner);
+
+        friend class QSharedPointer<FutureStorage<TResult, TError>>;
+        friend class Promise<TResult, TError>;
+        friend class SimplePromise<TResult>;
+        template<class, class> friend class Future;
+        friend class SimpleFuture<TResult>;
+        friend class Concurrent;
+
+        QMutex _mutex;
+        ContinuationPtr _continuation;
+        Nullable<TResult> _result;
+        Nullable<TError> _error;
+        bool _finished { false };
+    };
+
+    template<class TResult, class TError>
+    QSharedPointer<FutureStorage<TResult, TError>>
+        FutureStorage<TResult, TError>::create()
+    {
+        return QSharedPointer<FutureStorage<TResult, TError>>::create();
+    }
+
+    template<class TResult, class TError>
+    QSharedPointer<FutureStorage<TResult, TError>>
+        FutureStorage<TResult, TError>::createWithResult(const TResult& result)
+    {
+        auto storage = StoragePtr::create();
+
+        storage->_finished = true;
+        storage->_result = result;
+
+        return storage;
+    }
+
+    template<class TResult, class TError>
+    QSharedPointer<FutureStorage<TResult, TError>>
+        FutureStorage<TResult, TError>::createWithError(TError const& error)
+    {
+        auto storage = StoragePtr::create();
+
+        storage->_finished = true;
+        storage->_error = error;
+
+        return storage;
+    }
+
+    template<class TResult, class TError>
+    QSharedPointer<FutureStorage<TResult, TError>>
+        FutureStorage<TResult, TError>::createWithOutcome(OutcomeType const& outcome)
+    {
+        auto storage = StoragePtr::create();
+
+        storage->_finished = true;
+
+        if (outcome.succeeded())
+            storage->_result = outcome.result();
+        else
+            storage->_error = outcome.error();
+
+        return storage;
+    }
+
+    template<class TResult, class TError>
+    QSharedPointer<Continuation<TResult, TError>>
+        FutureStorage<TResult, TError>::createContinuationThatStoresResultAt(
+            StoragePtr storage)
+    {
+        auto wrapper =
+            [storage](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
+            {
+                storage->storeAndContinueFrom(previousOutcome, actualRunner);
+            };
+
+        auto runner = QSharedPointer<AnyThreadContinuationRunner>::create();
+        auto continuation = ContinuationPtr::create(runner, wrapper);
+
+        return continuation;
+    }
+
+    template<class TResult, class TError>
+    Nullable<ResultOrError<TResult, TError>>
+        FutureStorage<TResult, TError>::getOutcomeIfFinished()
+    {
+        QMutexLocker lock(&_mutex);
+
+        if (!_finished)
+            return null;
+
+        return getOutcomeInternal();
+    }
+
+    template<class TResult, class TError>
+    ResultOrError<TResult, TError>
+        FutureStorage<TResult, TError>::getOutcomeInternal() const
+    {
+        Q_ASSERT_X(_finished, "NewFutureStorage::getResultInternal()",
+                   "attempt to get result of unfinished future");
+
+        if (_result.hasValue())
+            return _result.value();
+        else
+            return _error.value();
+    }
+
+    template<class TResult, class TError>
+    void FutureStorage<TResult, TError>::setContinuation(ContinuationPtr continuation)
+    {
+        QMutexLocker lock(&_mutex);
+
+        Q_ASSERT_X(continuation, "NewFutureStorage::setContinuation()",
+                   "continuation is nullptr");
+
+        Q_ASSERT_X(!_continuation, "NewFutureStorage::setContinuation()",
+                   "attempt to set result on finished future");
+
+        if (_finished)
+        {
+            // when already finished, continue immediately
+            auto outcome = getOutcomeInternal();
+            lock.unlock(); /* unlock before continuing */
+            continuation->continueFrom(nullptr, outcome);
+        }
+        else
+        {
+            _continuation = continuation;
+        }
+    }
+
+    template<class TResult, class TError>
+    void FutureStorage<TResult, TError>::storeAndContinueFrom(
+        ResultOrError<TResult, TError> const& outcome, QSharedPointer<Runner> runner)
+    {
+        QMutexLocker lock(&_mutex);
+
+        Q_ASSERT_X(!_finished, "NewFutureStorage::storeAndContinueFrom()",
+                   "attempt to set result on finished future");
+
+        _finished = true;
+
+        if (outcome.succeeded())
+            _result = outcome.result();
+        else
+            _error = outcome.error();
+
+        auto continuation = _continuation;
+
+        lock.unlock(); /* unlock before continuing */
+
+        if (continuation)
+        {
+            continuation->continueFrom(runner, outcome);
+        }
+    }
+
+    // =================================================================== //
+
+    template<class TResult>
     class FutureResult
     {
     public:
-        FutureResult(T const& result) : _result(result) {}
-        FutureResult(T&& result) : _result(result) {}
+        FutureResult(TResult const& result) : _result(result) {}
+        FutureResult(TResult&& result) : _result(result) {}
 
     private:
         template<class T1, class T2> friend class Future;
-        friend class SimpleFuture<T>;
+        friend class SimpleFuture<TResult>;
 
-        T _result;
+        TResult _result;
     };
 
-    template<class T>
+    template<class TError>
     class FutureError
     {
     public:
-        FutureError(T const& error) : _error(error) {}
-        FutureError(T&& error) : _error(error) {}
+        FutureError(TError const& error) : _error(error) {}
+        FutureError(TError&& error) : _error(error) {}
 
     private:
         template<class T1, class T2> friend class Future;
 
-        T _error;
+        TError _error;
     };
 
-    template<class ResultType, class ErrorType>
+    // =================================================================== //
+
+    template<class TResult, class TError>
     class Future
     {
     public:
-        void addListener(std::function<void (ResultOrError<ResultType, ErrorType>)> f)
-        {
-            _storage->addListener(f);
-        }
+        using OutcomeType = ResultOrError<TResult, TError>;
 
-        void addListener(QObject* receiver,
-                         std::function<void (ResultOrError<ResultType, ErrorType>)> f)
-        {
-            _storage->addListener(receiver, f);
-        }
+        Future(FutureResult<TResult> const& result);
+        Future(FutureError<TError> const& error);
 
-        void addResultListener(QObject* receiver, std::function<void (ResultType)> f)
-        {
-            _storage->addResultListener(receiver, f);
-        }
+        static Future<TResult, TError> fromOutcome(OutcomeType outcome);
 
-        void addFailureListener(QObject* receiver, std::function<void (ErrorType)> f)
-        {
-            _storage->addFailureListener(receiver, f);
-        }
+        Nullable<OutcomeType> outcomeIfFinished();
 
-        Nullable<ResultOrError<ResultType, ErrorType>> resultOrErrorIfFinished()
-        {
-            return _storage->getResultOrErrorIfFinished();
-        }
+        template<class TResult2, class TError2>
+        Future<TResult2, TError2> thenOnThreadPool(ThreadPoolSpecifier threadPool,
+            std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
 
-        ResultOrError<ResultType, ErrorType> resultOrError()
-        {
-            return _storage->getResultOrError();
-        }
+        template<class TResult2, class TError2>
+        Future<TResult2, TError2> thenOnEventLoop(QObject* receiver,
+            std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
 
-        Future<SuccessType, FailureType> toTypelessFuture()
-        {
-            auto newStorage = FutureStorage<SuccessType, FailureType>::create();
+        /*
+        template<class TResult2, class TError2>
+        Future<TResult2, TError2> thenOnEventLoopIndirect(QObject* receiver,
+            std::function<Future<TResult2, TError2>(OutcomeType)> f);
+        */
 
-            _storage->addListener(
-                [newStorage](ResultOrError<ResultType, ErrorType> originalOutcome)
-                {
-                    if (originalOutcome.succeeded())
-                        newStorage->setOutcome(success);
-                    else
-                        newStorage->setOutcome(failure);
-                }
-            );
+        template<class TResult2, class TError2>
+        Future<TResult2, TError2> thenOnAnyThread(
+            std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
 
-            return Future<SuccessType, FailureType>(newStorage);
-        }
+        template<class TResult2, class TError2>
+        Future<TResult2, TError2> thenOnAnyThreadIndirect(
+            std::function<Future<TResult2, TError2>(OutcomeType)> f);
 
-        template<class T>
-        SimpleFuture<T> toSimpleFuture(
-            std::function<T (ResultType)> resultConversion,
-            std::function<T (ErrorType)> errorConversion)
-        {
-            auto newStorage = FutureStorage<T, FailureType>::create();
+        void handleOnEventLoop(QObject* receiver, std::function<void(OutcomeType)> f);
 
-            _storage->addListener(
-                [newStorage, resultConversion, errorConversion](
-                    ResultOrError<ResultType, ErrorType> originalOutcome)
-                {
-                    if (originalOutcome.succeeded())
-                        newStorage->setOutcome(resultConversion(originalOutcome.result()));
-                    else
-                        newStorage->setOutcome(errorConversion(originalOutcome.error()));
-                }
-            );
-
-            return SimpleFuture<T>(newStorage);
-        }
-
-        template<class ResultType2, class ErrorType2>
-        Future<ResultType2, ErrorType2> thenFuture(
-                std::function<Future<ResultType2, ErrorType2> (
-                                                 ResultOrError<ResultType, ErrorType>)> f)
-        {
-            auto newStorage = FutureStorage<ResultType2, ErrorType2>::create();
-
-            _storage->addListener(
-                [newStorage, f](ResultOrError<ResultType, ErrorType> originalOutcome)
-                {
-                    auto innerFuture = f(originalOutcome);
-                    innerFuture.addListener(
-                        [newStorage](ResultOrError<ResultType2, ErrorType2> secondResult)
-                        {
-                            newStorage->setOutcome(secondResult);
-                        }
-                    );
-                }
-            );
-
-            return Future<ResultType2, ErrorType2>(newStorage);
-        }
-
-        template<class ResultType2, class ErrorType2>
-        Future<ResultType2, ErrorType2> thenFuture(
-                std::function<Future<ResultType2, ErrorType2> (ResultType)> continuation,
-                std::function<ErrorType2 (ErrorType)> errorTranslation)
-        {
-            auto newStorage = FutureStorage<ResultType2, ErrorType2>::create();
-
-            _storage->addFailureListener(
-                [newStorage, errorTranslation](ErrorType error)
-                {
-                    newStorage->setError(errorTranslation(error));
-                }
-            );
-
-            _storage->addResultListener(
-                [newStorage, continuation](ResultType originalResult)
-                {
-                    auto innerFuture = continuation(originalResult);
-                    innerFuture.addListener(
-                        [newStorage](ResultOrError<ResultType2, ErrorType2> secondResult)
-                        {
-                            newStorage->setOutcome(secondResult);
-                        }
-                    );
-                }
-            );
-
-            return Future<ResultType2, ErrorType2>(newStorage);
-        }
-
-        template<class ResultType2, class ErrorType2>
-        Future<ResultType2, ErrorType2> thenAsync(
-                std::function<ResultOrError<ResultType2, ErrorType2> (
-                                      ResultOrError<ResultType, ErrorType>)> continuation)
-        {
-            auto newStorage = FutureStorage<ResultType2, ErrorType2>::create();
-
-            _storage->addListener(
-                [newStorage, continuation](
-                                     ResultOrError<ResultType, ErrorType> originalOutcome)
-                {
-                    ConcurrentInternals::run(newStorage, continuation, originalOutcome);
-                }
-            );
-
-            return Future<ResultType2, ErrorType2>(newStorage);
-        }
-
-        template<class ResultType2, class ErrorType2>
-        Future<ResultType2, ErrorType2> thenAsync(
-                std::function<ResultOrError<ResultType2, ErrorType2> (
-                                                                ResultType)> continuation,
-                std::function<ErrorType2 (ErrorType)> errorTranslation)
-        {
-            auto newStorage = FutureStorage<ResultType2, ErrorType2>::create();
-
-            _storage->addFailureListener(
-                [newStorage, errorTranslation](ErrorType error)
-                {
-                    newStorage->setError(errorTranslation(error));
-                }
-            );
-
-            _storage->addResultListener(
-                [newStorage, continuation](ResultType originalResult)
-                {
-                    auto work =
-                        [continuation, originalResult]()
-                        {
-                            return continuation(originalResult);
-                        };
-
-                    ConcurrentInternals::run<ResultType2, ErrorType2>(newStorage, work);
-                }
-            );
-
-            return Future<ResultType2, ErrorType2>(newStorage);
-        }
-
-        template<class ResultType2>
-        Future<ResultType2, ErrorType> convertResult(
-                                 std::function<ResultType2 (ResultType)> resultConversion)
-        {
-            auto newStorage = FutureStorage<ResultType2, ErrorType>::create();
-
-            _storage->addResultListener(
-                [newStorage, resultConversion](ResultType result)
-                {
-                    newStorage->setResult(resultConversion(result));
-                }
-            );
-
-            _storage->addFailureListener(
-                [newStorage](ErrorType error)
-                {
-                    newStorage->setError(error);
-                }
-            );
-
-            return Future<ResultType2, ErrorType>(newStorage);
-        }
-
-        template<class ErrorType2>
-        Future<ResultType, ErrorType2> convertError(
-                                    std::function<ErrorType2 (ErrorType)> errorConversion)
-        {
-            auto newStorage = FutureStorage<ResultType, ErrorType2>::create();
-
-            _storage->addFailureListener(
-                [newStorage, errorConversion](ErrorType error)
-                {
-                    newStorage->setError(errorConversion(error));
-                }
-            );
-
-            _storage->addResultListener(
-                [newStorage](ResultType result)
-                {
-                    newStorage->setResult(result);
-                }
-            );
-
-            return Future<ResultType, ErrorType2>(newStorage);
-        }
-
-        Future(FutureResult<ResultType>&& result)
-         : _storage { FutureStorage<ResultType, ErrorType>::create() }
-        {
-            _storage->setResult(result._result);
-        }
-
-        static Future fromResult(ResultType result)
-        {
-            auto storage { FutureStorage<ResultType, ErrorType>::create() };
-            storage->setResult(result);
-            return Future(storage);
-        }
-
-        Future(FutureError<ErrorType>&& error)
-         : _storage { FutureStorage<ResultType, ErrorType>::create() }
-        {
-            _storage->setError(error._error);
-        }
-
-        static Future fromError(ErrorType error)
-        {
-            auto storage { FutureStorage<ResultType, ErrorType>::create() };
-            storage->setError(error);
-            return Future(storage);
-        }
-
-        static Future fromResultOrError(
-                ResultOrError<ResultType, ErrorType> resultOrError)
-        {
-            auto storage { FutureStorage<ResultType, ErrorType>::create() };
-
-            if (resultOrError.succeeded())
-                storage->setResult(resultOrError.result());
-            else
-                storage->setError(resultOrError.error());
-
-            return Future(storage);
-        }
+        template<class TOutcome2>
+        SimpleFuture<TOutcome2> convertToSimpleFuture(
+            std::function<TOutcome2 (TResult const& result)> resultConverter,
+            std::function<TOutcome2 (TError const& error)> errorConverter);
 
     private:
-        Future(QSharedPointer<FutureStorage<ResultType, ErrorType>> storage)
-         : _storage(storage)
-        {
-            //
-        }
+        using StorageType = FutureStorage<TResult, TError>;
+        using StoragePtr = QSharedPointer<FutureStorage<TResult, TError>>;
+        using ContinuationPtr = QSharedPointer<Continuation<TResult, TError>>;
 
-        template<class T1, class T2> friend class Future;
-        friend class Promise<ResultType, ErrorType>;
+        Future(StoragePtr storage);
+
+        static Future<TResult, TError> createForRunnerDirect(
+            QSharedPointer<Runner> runner,
+            std::function<OutcomeType()> f);
+
+        static Future<TResult, TError> createForRunnerIndirect(
+            QSharedPointer<Runner> runner,
+            std::function<Future<TResult, TError>()> f);
+
+        template<class TResult2, class TError2>
+        Future<TResult2, TError2> setUpContinuationToRunner(
+            QSharedPointer<Runner> runner,
+            std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
+
+        template<class TResult2, class TError2>
+        Future<TResult2, TError2> setUpContinuationToRunnerIndirect(
+            QSharedPointer<Runner> runner,
+            std::function<Future<TResult2, TError2>(OutcomeType)> f);
+
+        template<class TOutcome2>
+        SimpleFuture<TOutcome2> setUpContinuationToRunnerForSimpleFuture(
+            QSharedPointer<Runner> runner,
+            std::function<TOutcome2(OutcomeType)> f);
+
+        template<class, class> friend class Future;
+        friend class Promise<TResult, TError>;
+        friend class Async;
         friend class Concurrent;
 
-        QSharedPointer<FutureStorage<ResultType, ErrorType>> _storage;
+        StoragePtr _storage;
     };
 
-    template<class T>
+    template<class TResult, class TError>
+    Future<TResult, TError>::Future(const FutureResult<TResult>& result)
+        : _storage(StorageType::createWithResult(result._result))
+    {
+        //
+    }
+
+    template<class TResult, class TError>
+    Future<TResult, TError>::Future(const FutureError<TError>& error)
+        : _storage(StorageType::createWithError(error._error))
+    {
+        //
+    }
+
+    template<class TResult, class TError>
+    inline Future<TResult, TError> Future<TResult, TError>::fromOutcome(
+                                                                    OutcomeType outcome)
+    {
+        return Future(StorageType::createWithOutcome(outcome));
+    }
+
+    template<class TResult, class TError>
+    Nullable<ResultOrError<TResult, TError>>
+        Future<TResult, TError>::outcomeIfFinished()
+    {
+        return _storage->getOutcomeIfFinished();
+    }
+
+    template<class TResult, class TError>
+    template<class TResult2, class TError2>
+    Future<TResult2, TError2>
+    Future<TResult, TError>::thenOnThreadPool(
+        ThreadPoolSpecifier threadPool,
+        std::function<ResultOrError<TResult2, TError2> (OutcomeType)> f)
+    {
+        auto runner = QSharedPointer<ThreadPoolRunner>::create(threadPool);
+
+        return setUpContinuationToRunner<TResult2, TError2>(runner, f);
+    }
+
+    template<class TResult, class TError>
+    template<class TResult2, class TError2>
+    Future<TResult2, TError2>
+        Future<TResult, TError>::thenOnEventLoop(
+            QObject* receiver,
+            std::function<ResultOrError<TResult2, TError2> (OutcomeType)> f)
+    {
+        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
+
+        return setUpContinuationToRunner<TResult2, TError2>(runner, f);
+    }
+
+    /*
+    template<class TResult, class TError>
+    template<class TResult2, class TError2>
+    Future<TResult2, TError2>
+        Future<TResult, TError>::thenOnEventLoopIndirect(
+            QObject* receiver,
+            std::function<NewFuture<TResult2, TError2> (OutcomeType)> f)
+    {
+        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
+
+        return setUpContinuationToRunnerIndirect<TResult2, TError2>(runner, f);
+    }
+    */
+
+    template<class TResult, class TError>
+    template<class TResult2, class TError2>
+    Future<TResult2, TError2>
+        Future<TResult, TError>::thenOnAnyThread(
+            std::function<ResultOrError<TResult2, TError2> (OutcomeType)> f)
+    {
+        auto runner = QSharedPointer<AnyThreadContinuationRunner>::create();
+
+        return setUpContinuationToRunner(runner, f);
+    }
+
+    template<class TResult, class TError>
+    template<class TResult2, class TError2>
+    Future<TResult2, TError2>
+        Future<TResult, TError>::thenOnAnyThreadIndirect(
+            std::function<Future<TResult2, TError2> (OutcomeType)> f)
+    {
+        auto runner = QSharedPointer<AnyThreadContinuationRunner>::create();
+
+        return setUpContinuationToRunnerIndirect(runner, f);
+    }
+
+    template<class TResult, class TError>
+    void Future<TResult, TError>::handleOnEventLoop(
+        QObject* receiver,
+        std::function<void (OutcomeType)> f)
+    {
+        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
+
+        auto wrapper =
+            [f](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
+            {
+                Q_UNUSED(actualRunner)
+
+                f(previousOutcome);
+            };
+
+        auto continuation = ContinuationPtr::create(runner, wrapper);
+
+        _storage->setContinuation(continuation);
+    }
+
+    template<class TResult, class TError>
+    template<class TOutcome2>
+    SimpleFuture<TOutcome2> Future<TResult, TError>::convertToSimpleFuture(
+        std::function<TOutcome2 (const TResult&)> resultConverter,
+        std::function<TOutcome2 (const TError&)> errorConverter)
+    {
+        auto runner = QSharedPointer<AnyThreadContinuationRunner>::create();
+
+        auto conversion =
+            [resultConverter, errorConverter](OutcomeType input) -> TOutcome2
+            {
+                if (input.succeeded())
+                    return resultConverter(input.result());
+                else
+                    return errorConverter(input.error());
+            };
+
+        return setUpContinuationToRunnerForSimpleFuture<TOutcome2>(runner, conversion);
+    }
+
+    template<class TResult, class TError>
+    Future<TResult, TError>::Future(StoragePtr storage)
+        : _storage(storage)
+    {
+        //
+    }
+
+    template<class TResult, class TError>
+    Future<TResult, TError> Future<TResult, TError>::createForRunnerDirect(
+        QSharedPointer<Runner> runner,
+        std::function<OutcomeType ()> f)
+    {
+        auto storage = StoragePtr::create();
+
+        auto wrapper =
+            [f, storage, runner]()
+            {
+                auto outcome = f();
+
+                // store result and run continuation
+                storage->storeAndContinueFrom(outcome, runner);
+            };
+
+        runner->run(wrapper);
+
+        return Future<TResult, TError>(storage);
+    }
+
+    template<class TResult, class TError>
+    Future<TResult, TError> Future<TResult, TError>::createForRunnerIndirect(
+        QSharedPointer<Runner> runner,
+        std::function<Future<TResult, TError> ()> f)
+    {
+        auto storage = StoragePtr::create();
+        auto continuation = StorageType::createContinuationThatStoresResultAt(storage);
+
+        auto wrapper =
+            [f, continuation]()
+            {
+                auto future = f();
+
+                future._storage->setContinuation(continuation);
+            };
+
+        runner->run(wrapper);
+
+        return Future<TResult, TError>(storage);
+    }
+
+    template<class TResult, class TError>
+    template<class TResult2, class TError2>
+    Future<TResult2, TError2>
+        Future<TResult, TError>::setUpContinuationToRunner(
+            QSharedPointer<Runner> runner,
+            std::function<ResultOrError<TResult2, TError2> (OutcomeType)> f)
+    {
+        auto storage = QSharedPointer<FutureStorage<TResult2, TError2>>::create();
+
+        auto wrapper =
+            [f, storage](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
+            {
+                auto resultOrError = f(previousOutcome);
+
+                // store result and run continuation
+                storage->storeAndContinueFrom(resultOrError, actualRunner);
+            };
+
+        auto continuation = ContinuationPtr::create(runner, wrapper);
+        _storage->setContinuation(continuation);
+
+        return Future<TResult2, TError2>(storage);
+    }
+
+    template<class TResult, class TError>
+    template<class TResult2, class TError2>
+    Future<TResult2, TError2>
+        Future<TResult, TError>::setUpContinuationToRunnerIndirect(
+            QSharedPointer<Runner> runner,
+            std::function<Future<TResult2, TError2> (OutcomeType)> f)
+    {
+        using Storage2Type = FutureStorage<TResult2, TError2>;
+        auto secondStorage = QSharedPointer<Storage2Type>::create();
+        auto secondContinuation =
+            Storage2Type::createContinuationThatStoresResultAt(secondStorage);
+
+        auto wrapper =
+            [f, secondContinuation](QSharedPointer<Runner> actualRunner,
+                                    OutcomeType previousOutcome)
+            {
+                Q_UNUSED(actualRunner)
+
+                auto otherFuture = f(previousOutcome);
+
+                otherFuture._storage->setContinuation(secondContinuation);
+            };
+
+        auto continuation = ContinuationPtr::create(runner, wrapper);
+        _storage->setContinuation(continuation);
+
+        return Future<TResult2, TError2>(secondStorage);
+    }
+
+    template<class TResult, class TError>
+    template<class TOutcome2>
+    SimpleFuture<TOutcome2>
+        Future<TResult, TError>::setUpContinuationToRunnerForSimpleFuture(
+            QSharedPointer<Runner> runner,
+            std::function<TOutcome2 (OutcomeType)> f)
+    {
+        auto storage = QSharedPointer<FutureStorage<TOutcome2, FailureType>>::create();
+
+        auto wrapper =
+            [f, storage](QSharedPointer<Runner> actualRunner, OutcomeType previousOutcome)
+            {
+                auto outcome = f(previousOutcome);
+
+                auto resultOrError =
+                    ResultOrError<TOutcome2, FailureType>::fromResult(outcome);
+
+                // store result and run continuation
+                storage->storeAndContinueFrom(resultOrError, actualRunner);
+            };
+
+        auto continuation = ContinuationPtr::create(runner, wrapper);
+        _storage->setContinuation(continuation);
+
+        return SimpleFuture<TOutcome2>(storage);
+    }
+
+    // =================================================================== //
+
+    template<class TOutcome>
     class SimpleFuture
     {
     public:
-        void addResultListener(QObject* receiver, std::function<void (T)> f)
-        {
-            _storage->addResultListener(receiver, f);
-        }
+        using OutcomeType = TOutcome;
 
-        static SimpleFuture fromResult(T result)
-        {
-            auto storage { FutureStorage<T, FailureType>::create() };
-            storage->setResult(result);
-            return SimpleFuture(storage);
-        }
+        SimpleFuture(FutureResult<TOutcome> const& outcome);
 
-        SimpleFuture(FutureResult<T>&& result)
-         : _storage { FutureStorage<T, FailureType>::create() }
-        {
-            _storage->setResult(result._result);
-        }
+        static SimpleFuture<TOutcome> fromOutcome(TOutcome const& outcome);
+
+        void handleOnEventLoop(QObject* receiver, std::function<void(OutcomeType)> f);
 
     private:
-        SimpleFuture(QSharedPointer<FutureStorage<T, FailureType>> storage)
-         : _storage(storage)
-        {
-            //
-        }
+        using StorageType = FutureStorage<TOutcome, FailureType>;
+        using StoragePtr = QSharedPointer<FutureStorage<TOutcome, FailureType>>;
+        using ContinuationPtr = QSharedPointer<Continuation<TOutcome, FailureType>>;
+
+        SimpleFuture(StoragePtr storage);
+
+        static SimpleFuture<TOutcome> createForRunnerDirect(
+            QSharedPointer<Runner> runner,
+            std::function<OutcomeType()> f);
+
+        static SimpleFuture<TOutcome> createForRunnerIndirect(
+            QSharedPointer<Runner> runner,
+            std::function<SimpleFuture<TOutcome>()> f);
 
         template<class T1, class T2> friend class Future;
-        friend class SimplePromise<T>;
+        friend class SimplePromise<TOutcome>;
+        friend class Async;
 
-        QSharedPointer<FutureStorage<T, FailureType>> _storage;
+        StoragePtr _storage;
     };
 
-    class VoidFuture
+    template<class TOutcome>
+    SimpleFuture<TOutcome>::SimpleFuture(const FutureResult<TOutcome>& outcome)
+        : _storage(StorageType::createWithResult(outcome._result))
     {
-    public:
-        void addFinishedListener(QObject* receiver, std::function<void ()> f)
+        //
+    }
+
+    template<class TOutcome>
+    SimpleFuture<TOutcome> SimpleFuture<TOutcome>::fromOutcome(
+        const TOutcome& outcome)
+    {
+        auto storage = StorageType::createWithResult(outcome);
+
+        return SimpleFuture(storage);
+    }
+
+    template<class TOutcome>
+    void SimpleFuture<TOutcome>::handleOnEventLoop(
+        QObject* receiver,
+        std::function<void (OutcomeType)> f)
+    {
+        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
+
+        auto wrapper =
+            [f](QSharedPointer<Runner> actualRunner,
+                ResultOrError<TOutcome, FailureType> previousOutcome)
+            {
+                Q_UNUSED(actualRunner)
+
+                f(previousOutcome.result());
+            };
+
+        auto continuation = ContinuationPtr::create(runner, wrapper);
+        _storage->setContinuation(continuation);
+    }
+
+    template<class TOutcome>
+    SimpleFuture<TOutcome>::SimpleFuture(StoragePtr storage)
+        : _storage(storage)
+    {
+        //
+    }
+
+    template<class TOutcome>
+    SimpleFuture<TOutcome> SimpleFuture<TOutcome>::createForRunnerDirect(
+        QSharedPointer<Runner> runner,
+        std::function<OutcomeType ()> f)
+    {
+        auto storage = StoragePtr::create();
+
+        auto wrapper =
+            [f, storage, runner]()
         {
-            _storage->addResultListener(receiver, [f](SuccessType) { f(); });
-        }
+            auto outcome = f();
 
-        static VoidFuture fromFinished()
-        {
-            auto storage { FutureStorage<SuccessType, FailureType>::create() };
-            storage->setResult(success);
-            return VoidFuture(storage);
-        }
+            auto resultOrError =
+                ResultOrError<TOutcome, FailureType>::fromResult(outcome);
 
-    private:
-        VoidFuture(QSharedPointer<FutureStorage<SuccessType, FailureType>> storage)
-         : _storage(storage)
-        {
-            //
-        }
+            // store result and run continuation
+            storage->storeAndContinueFrom(resultOrError, runner);
+        };
 
-        friend class VoidPromise;
+        runner->run(wrapper);
 
-        QSharedPointer<FutureStorage<SuccessType, FailureType>> _storage;
-    };
+        return SimpleFuture<TOutcome>(storage);
+    }
+
+    template<class TOutcome>
+    SimpleFuture<TOutcome> SimpleFuture<TOutcome>::createForRunnerIndirect(
+        QSharedPointer<Runner> runner,
+        std::function<SimpleFuture<TOutcome> ()> f)
+    {
+        auto storage = StoragePtr::create();
+        auto continuation = StorageType::createContinuationThatStoresResultAt(storage);
+
+        auto wrapper =
+            [f, runner, continuation]()
+            {
+                auto future = f();
+
+                future._storage->setContinuation(continuation);
+            };
+
+        runner->run(wrapper);
+
+        return SimpleFuture<TOutcome>(storage);
+    }
 }
 #endif

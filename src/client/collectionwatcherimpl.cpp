@@ -90,8 +90,8 @@ namespace PMP::Client
         return it.value();
     }
 
-    Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherImpl::getTrackInfo(
-                                                                       LocalHashId hashId)
+    Future<CollectionTrackInfo, AnyResultMessageCode>
+        CollectionWatcherImpl::getTrackInfo(LocalHashId hashId)
     {
         auto it = _collectionHash.find(hashId);
 
@@ -101,8 +101,8 @@ namespace PMP::Client
         return getTrackInfoInternal(hashId);
     }
 
-    Future<CollectionTrackInfo, AnyResultMessageCode> CollectionWatcherImpl::getTrackInfo(
-                                                                    const FileHash& hash)
+    Future<CollectionTrackInfo, AnyResultMessageCode>
+        CollectionWatcherImpl::getTrackInfo(const FileHash& hash)
     {
         auto hashId = _connection->hashIdRepository()->getId(hash);
 
@@ -174,11 +174,12 @@ namespace PMP::Client
     {
         auto future = _connection->getTrackInfo(hashId);
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this](CollectionTrackInfo trackInfo)
+            [this](ResultOrError<CollectionTrackInfo, AnyResultMessageCode> outcome)
             {
-                updateTrackData(trackInfo);
+                if (outcome.succeeded())
+                    updateTrackData(outcome.result());
             }
         );
 
@@ -190,11 +191,12 @@ namespace PMP::Client
     {
         auto future = _connection->getTrackInfo(hash);
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this](CollectionTrackInfo trackInfo)
+            [this](ResultOrError<CollectionTrackInfo, AnyResultMessageCode> outcome)
             {
-                updateTrackData(trackInfo);
+                if (outcome.succeeded())
+                    updateTrackData(outcome.result());
             }
         );
 

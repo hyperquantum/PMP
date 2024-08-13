@@ -187,14 +187,16 @@ namespace PMP
             historyController.getPersonalTrackHistory(_hashId, _userId,
                                                       _fragmentSizeLimit);
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this, state](HistoryFragment fragment)
+            [this, state](ResultOrError<HistoryFragment, AnyResultMessageCode> outcome)
             {
-                handleHistoryRequestResult(fragment, state);
+                if (outcome.succeeded())
+                    handleHistoryRequestResult(outcome.result(), state);
+
+                // TODO: handle failure
             }
         );
-        //future.addFailureListener(this, [this](AnyResultMessageCode code) {});
     }
 
     void HistoryModel::onConnectedChanged()
@@ -273,14 +275,16 @@ namespace PMP
                                                       _fragmentSizeLimit,
                                                       fragment.nextStartId());
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this, state](HistoryFragment fragment)
+            [this, state](ResultOrError<HistoryFragment, AnyResultMessageCode> outcome)
             {
-                handleHistoryRequestResult(fragment, state);
+                if (outcome.succeeded())
+                    handleHistoryRequestResult(outcome.result(), state);
+
+                // TODO: handle failure
             }
         );
-        //future.addFailureListener(this, [this](AnyResultMessageCode code) {});
     }
 
     void HistoryModel::addToCounts(const Client::HistoryEntry& entry)

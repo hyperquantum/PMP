@@ -2743,15 +2743,16 @@ namespace PMP::Server
         quint32 queueId = NetworkUtil::get4Bytes(message, 2);
         qDebug() << "received request for possible filenames of QID" << queueId;
 
-        auto future = _serverInterface->getPossibleFilenamesForQueueEntry(queueId);
-
-        future.addResultListener(
-            this,
-            [this, queueId](QVector<QString> result)
-            {
-                sendPossibleTrackFilenames(queueId, result);
-            }
-        );
+        _serverInterface->getPossibleFilenamesForQueueEntry(queueId)
+            .handleOnEventLoop(
+                this,
+                [this, queueId](ResultOrError<QVector<QString>, Result> outcome)
+                {
+                    if (outcome.succeeded())
+                        sendPossibleTrackFilenames(queueId, outcome.result());
+                    // TODO: report failure somehow
+                }
+            );
     }
 
     void ConnectedClient::parseQueueFetchRequestMessage(const QByteArray& message)
@@ -2970,19 +2971,14 @@ namespace PMP::Server
         }
 
         auto future = _serverInterface->getHashInfo(hash);
-
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this, clientReference](CollectionTrackInfo info)
+            [this, clientReference](ResultOrError<CollectionTrackInfo, Result> outcome)
             {
-                sendHashInfoReply(clientReference, info);
-            }
-        );
-        future.addFailureListener(
-            this,
-            [this, clientReference](Result result)
-            {
-                sendResultMessage(result, clientReference);
+                if (outcome.succeeded())
+                    sendHashInfoReply(clientReference, outcome.result());
+                else
+                    sendResultMessage(outcome.error(), clientReference);
             }
         );
     }
@@ -3008,18 +3004,14 @@ namespace PMP::Server
         auto future =
             _serverInterface->getPersonalTrackHistory(hash, userId, startId, limit);
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this, clientReference](HistoryFragment historyFragment)
+            [this, clientReference](ResultOrError<HistoryFragment, Result> outcome)
             {
-                sendHistoryFragmentMessage(clientReference, historyFragment);
-            }
-        );
-        future.addFailureListener(
-            this,
-            [this, clientReference](Result result)
-            {
-                sendResultMessage(result, clientReference);
+                if (outcome.succeeded())
+                    sendHistoryFragmentMessage(clientReference, outcome.result());
+                else
+                    sendResultMessage(outcome.error(), clientReference);
             }
         );
     }
@@ -3111,7 +3103,7 @@ namespace PMP::Server
                 credentialsOrNull.value().password
             );
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
             [this, clientReference](Result result)
             {
@@ -3300,7 +3292,7 @@ namespace PMP::Server
         case ParameterlessActionCode::ReloadServerSettings:
         {
             auto future = _serverInterface->reloadServerSettings();
-            future.addResultListener(
+            future.handleOnEventLoop(
                 this,
                 [this, clientReference](ResultMessageErrorCode error)
                 {

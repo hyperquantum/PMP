@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2024, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,56 +17,83 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_ASYNC_H
-#define PMP_ASYNC_H
+#ifndef PMP_COMMON_ASYNC_H
+#define PMP_COMMON_ASYNC_H
 
+#include "future.h"
 #include "promise.h"
-#include "resultorerror.h"
+#include "runners.h"
 
-#include <QObject>
-#include <QSharedPointer>
-#include <QTimer>
-
-#include <functional>
-
-namespace PMP::Async
+namespace PMP
 {
-    template<class ResultType, class ErrorType>
-    static Future<ResultType, ErrorType> invokeResultOrError(
-        QObject* target,
-        std::function<ResultOrError<ResultType, ErrorType>()> function)
+    class Async
     {
-        auto promisePtr = QSharedPointer<Promise<ResultType, ErrorType>>::create();
-        auto future = promisePtr->future();
+    public:
+        template<class TResult, class TError>
+        static Promise<TResult, TError> createPromise();
 
-        auto f =
-            [promisePtr, function]()
-            {
-                promisePtr->setOutcome(function());
-            };
+        template<class TOutcome>
+        static SimplePromise<TOutcome> createSimplePromise();
 
-        QTimer::singleShot(0, target, f);
+        template<class TResult, class TError>
+        static Future<TResult, TError> runOnEventLoop(
+            QObject* receiver,
+            std::function<ResultOrError<TResult, TError>()> f);
 
-        return future;
+        template<class TResult, class TError>
+        static Future<TResult, TError> runOnEventLoop(
+            QObject* receiver,
+            std::function<Future<TResult, TError>()> f);
+
+        template<class TOutcome>
+        static SimpleFuture<TOutcome> runOnEventLoop(
+            QObject* receiver,
+            std::function<SimpleFuture<TOutcome>()> f);
+
+    private:
+        Async();
+    };
+
+    template<class TResult, class TError>
+    Promise<TResult, TError> Async::createPromise()
+    {
+        return Promise<TResult, TError>();
     }
 
-    template<class T>
-    static SimpleFuture<T> invokeSimpleFuture(
-        QObject* target,
-        std::function<SimpleFuture<T>()> function)
+    template<class TOutcome>
+    SimplePromise<TOutcome> Async::createSimplePromise()
     {
-        auto promisePtr = QSharedPointer<SimplePromise<T>>::create();
-        auto future = promisePtr->future();
+        return SimplePromise<TOutcome>();
+    }
 
-        auto f =
-            [promisePtr, function]()
-            {
-                promisePtr->connectToResultFrom(function());
-            };
+    template<class TResult, class TError>
+    Future<TResult, TError> Async::runOnEventLoop(
+        QObject* receiver,
+        std::function<ResultOrError<TResult, TError> ()> f)
+    {
+        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
-        QTimer::singleShot(0, target, f);
+        return Future<TResult, TError>::createForRunnerDirect(runner, f);
+    }
 
-        return future;
+    template<class TResult, class TError>
+    Future<TResult, TError> Async::runOnEventLoop(
+        QObject* receiver,
+        std::function<Future<TResult, TError>()> f)
+    {
+        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
+
+        return Future<TResult, TError>::createForRunnerIndirect(runner, f);
+    }
+
+    template<class TOutcome>
+    SimpleFuture<TOutcome> Async::runOnEventLoop(
+        QObject* receiver,
+        std::function<SimpleFuture<TOutcome> ()> f)
+    {
+        auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
+
+        return SimpleFuture<TOutcome>::createForRunnerIndirect(runner, f);
     }
 }
 #endif

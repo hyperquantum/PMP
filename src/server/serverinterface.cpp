@@ -19,9 +19,9 @@
 
 #include "serverinterface.h"
 
+#include "common/async.h"
 #include "common/concurrent.h"
 #include "common/containerutil.h"
-#include "common/promise.h"
 
 #include "database.h"
 #include "delayedstart.h"
@@ -160,17 +160,17 @@ namespace PMP::Server
 
     SimpleFuture<ResultMessageErrorCode> ServerInterface::reloadServerSettings()
     {
-        SimplePromise<ResultMessageErrorCode> promise;
+        auto promise = Async::createSimplePromise<ResultMessageErrorCode>();
 
         // TODO : in the future allow reloading if the database is not connected yet
         if (!isLoggedIn())
         {
-            promise.setResult(ResultMessageErrorCode::NotLoggedIn);
+            promise.setOutcome(ResultMessageErrorCode::NotLoggedIn);
         }
         else
         {
             _serverSettings->load();
-            promise.setResult(ResultMessageErrorCode::NoError);
+            promise.setOutcome(ResultMessageErrorCode::NoError);
         }
 
         return promise.future();
@@ -249,7 +249,8 @@ namespace PMP::Server
         limit = qBound(0, limit, 50);
 
         auto future =
-            Concurrent::run<HistoryFragment, Result>(
+            Concurrent::runOnThreadPool<HistoryFragment, Result>(
+                globalThreadPool,
                 [hashIds, hash, userId, startId, limit]()
                     -> ResultOrError<HistoryFragment, Result>
                 {
@@ -404,8 +405,8 @@ namespace PMP::Server
         return overview;
     }
 
-    Future<QVector<QString>, Result> ServerInterface::getPossibleFilenamesForQueueEntry(
-                                                                                  uint id)
+    Future<QVector<QString>, Result>
+        ServerInterface::getPossibleFilenamesForQueueEntry(uint id)
     {
         if (id <= 0) /* invalid queue ID */
             return FutureError(Error::queueEntryIdNotFound(0));
@@ -421,17 +422,22 @@ namespace PMP::Server
         uint hashId = _player->resolver().getID(hash);
 
         auto future =
-            Concurrent::run<QVector<QString>, FailureType>(
-                [hashId]() -> ResultOrError<QVector<QString>, FailureType>
+            Concurrent::runOnThreadPool<QVector<QString>, Result>(
+                globalThreadPool,
+                [hashId]() -> ResultOrError<QVector<QString>, Result>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)
-                        return failure; /* database unusable */
+                        return Error::databaseUnvailable();
 
-                    return db->getFilenames(hashId);
+                    auto filenamesOrFailure = db->getFilenames(hashId);
+
+                    if (filenamesOrFailure.failed())
+                        return Error::internalError();
+
+                    return filenamesOrFailure.result();
                 }
-            )
-            .convertError<Result>([](FailureType) { return Error::internalError(); });
+            );
 
         return future;
     }

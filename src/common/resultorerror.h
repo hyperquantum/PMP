@@ -97,7 +97,10 @@ namespace PMP
         Nullable<ErrorType> _error;
     };
 
-    typedef ResultOrError<SuccessType, FailureType> SuccessOrFailure;
+    using SuccessOrFailure = ResultOrError<SuccessType, FailureType>;
+
+    template<class T> using SuccessOr = ResultOrError<SuccessType, T>;
+    template<class T> using FailureOr = ResultOrError<T, FailureType>;
 
     /* not supported by MSVC unfortunately :-(
 #define TRY(expression)                          \

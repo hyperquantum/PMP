@@ -29,6 +29,7 @@ set(PMP_COMMON_SOURCES
     common/obfuscator.cpp
     common/passwordstrengthevaluator.cpp
     common/powermanagement.cpp
+    common/runners.cpp
     common/scrobblerstatus.cpp
     common/scrobblingprovider.cpp
     common/startstopeventstatus.cpp

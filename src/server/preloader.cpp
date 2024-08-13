@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -342,7 +342,8 @@ namespace PMP::Server
         if (!originalFilename.isEmpty()
                 && _resolver->pathStillValid(hash, originalFilename))
         {
-            return Concurrent::run<QString, FailureType>(
+            return Concurrent::runOnThreadPool<QString, FailureType>(
+                globalThreadPool,
                 [queueId, originalFilename]()
                 {
                     return runPreload(queueId, originalFilename);
@@ -355,15 +356,20 @@ namespace PMP::Server
 
         return
             _resolver->findPathForHashAsync(hash)
-                .thenAsync<QString, FailureType>(
-                    [queueId](QString path)
+                .thenOnThreadPool<QString, FailureType>(
+                    globalThreadPool,
+                    [queueId](FailureOr<QString> outcome) -> FailureOr<QString>
                     {
+                        if (outcome.failed())
+                            return failure;
+
+                        auto path = outcome.result();
+
                         qDebug() << "Preloader: found path" << path
                                  << "for queue ID" << queueId;
 
                         return runPreload(queueId, path);
-                    },
-                    [](FailureType) { return failure; }
+                    }
                 );
     }
 
@@ -465,12 +471,15 @@ namespace PMP::Server
             auto future = preloadAsync(queueId, track->hash(), track->originalFilename());
             _jobsRunning++;
 
-            future.addResultListener(
-                this, [this, queueId](QString path) { preloadFinished(queueId, path); }
-            );
-
-            future.addFailureListener(
-                this, [this, queueId](FailureType) { preloadFailed(queueId); }
+            future.handleOnEventLoop(
+                this,
+                [this, queueId](FailureOr<QString> outcome)
+                {
+                    if (outcome.succeeded())
+                        preloadFinished(queueId, outcome.result());
+                    else
+                        preloadFailed(queueId);
+                }
             );
         }
     }

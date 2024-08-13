@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2024, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,112 +17,34 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CONCURRENT_H
-#define PMP_CONCURRENT_H
+#ifndef PMP_COMMON_CONCURRENT_H
+#define PMP_COMMON_CONCURRENT_H
 
-#include "concurrentinternals.h"
 #include "future.h"
-#include "nullable.h"
-#include "promise.h"
-
-#include <QtConcurrent/QtConcurrent>
-
-#include <functional>
-#include <memory>
+#include "runners.h"
 
 namespace PMP
 {
     class Concurrent
     {
     public:
-        template<class ResultType, class ErrorType>
-        static Future<ResultType, ErrorType> run(
-                                std::function<ResultOrError<ResultType, ErrorType> ()> f)
-        {
-            auto storage =
-                ConcurrentInternals::createFutureStorage<ResultType, ErrorType>();
-
-            ConcurrentInternals::run(storage, f);
-            return Future<ResultType, ErrorType>(storage);
-        }
-
-        template<class ResultType, class ErrorType>
-        static Future<ResultType, ErrorType> run(
-                                QThreadPool* threadPool,
-                                std::function<ResultOrError<ResultType, ErrorType> ()> f)
-        {
-            auto storage =
-                ConcurrentInternals::createFutureStorage<ResultType, ErrorType>();
-
-            ConcurrentInternals::run(storage, threadPool, f);
-            return Future<ResultType, ErrorType>(storage);
-        }
-
-        template<class T>
-        static SimpleFuture<T> run(SimplePromise<T>&& promise, std::function<T ()> f)
-        {
-            auto future = promise.future();
-            QtConcurrent::run(makeWork(std::move(promise), f));
-            return future;
-        }
-
-        template<class T>
-        static SimpleFuture<T> run(QThreadPool* threadPool, SimplePromise<T>&& promise,
-                                   std::function<T ()> f)
-        {
-            auto future = promise.future();
-            QtConcurrent::run(threadPool, makeWork(std::move(promise), f));
-            return future;
-        }
-
-        static VoidFuture run(VoidPromise&& promise, std::function<void ()> f)
-        {
-            auto future = promise.future();
-            QtConcurrent::run(makeWork(std::move(promise), f));
-            return future;
-        }
-
-        static VoidFuture run(QThreadPool* threadPool, VoidPromise&& promise,
-                              std::function<void ()> f)
-        {
-            auto future = promise.future();
-            QtConcurrent::run(threadPool, makeWork(std::move(promise), f));
-            return future;
-        }
+        template<class TResult, class TError>
+        static Future<TResult, TError> runOnThreadPool(
+            ThreadPoolSpecifier threadPool,
+            std::function<ResultOrError<TResult, TError>()> f);
 
     private:
-        template<class T>
-        static std::function<void ()> makeWork(SimplePromise<T>&& promise,
-                                               std::function<T ()> f)
-        {
-            auto sharedPromise = std::make_shared<SimplePromise<T>>(std::move(promise));
-
-            auto work =
-                    [sharedPromise, f]()
-                    {
-                        auto result = f();
-                        sharedPromise->setResult(result);
-                    };
-
-            return work;
-        }
-
-        static std::function<void ()> makeWork(VoidPromise&& promise,
-                                               std::function<void ()> f)
-        {
-            auto sharedPromise = std::make_shared<VoidPromise>(std::move(promise));
-
-            auto work =
-                    [sharedPromise, f]()
-                    {
-                        f();
-                        sharedPromise->setFinished();
-                    };
-
-            return work;
-        }
-
-        Concurrent() {}
+        Concurrent();
     };
+
+    template<class TResult, class TError>
+    inline Future<TResult, TError> Concurrent::runOnThreadPool(
+        ThreadPoolSpecifier threadPool,
+        std::function<ResultOrError<TResult, TError> ()> f)
+    {
+        auto runner = QSharedPointer<ThreadPoolRunner>::create(threadPool);
+
+        return Future<TResult, TError>::createForRunnerDirect(runner, f);
+    }
 }
 #endif

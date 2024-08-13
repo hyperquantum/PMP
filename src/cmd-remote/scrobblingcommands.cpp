@@ -124,6 +124,6 @@ namespace PMP
                 credentials.username, credentials.password
             );
 
-        addCommandExecutionFutureListener(future);
+        setCommandExecutionResultFuture(future);
     }
 }
