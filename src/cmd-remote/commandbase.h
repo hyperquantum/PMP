@@ -71,20 +71,6 @@ namespace PMP
         void setCommandExecutionResultFuture(
             SimpleFuture<AnyResultMessageCode> future);
 
-        /*
-        template <class T>
-        void addFailureHandler(Future<T, AnyResultMessageCode>& future)
-        {
-            future.addFailureListener(
-                this,
-                [this](AnyResultMessageCode errorCode)
-                {
-                    setCommandExecutionResult(errorCode);
-                }
-            );
-        }
-        */
-
         template <class T>
         void handleFailureAndResult(Future<T, AnyResultMessageCode>& future,
                                     std::function<void(T const& result)> f)
