@@ -81,8 +81,7 @@ namespace PMP::Client
         return _connection->startFullIndexation();
     }
 
-    SimpleFuture<AnyResultMessageCode>
-        GeneralControllerImpl::startQuickScanForNewFiles()
+    SimpleFuture<AnyResultMessageCode> GeneralControllerImpl::startQuickScanForNewFiles()
     {
         return _connection->startQuickScanForNewFiles();
     }

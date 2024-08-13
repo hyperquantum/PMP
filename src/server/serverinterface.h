@@ -107,8 +107,7 @@ namespace PMP::Server
 
         void requestScrobblingInfo();
         void setScrobblingProviderEnabled(ScrobblingProvider provider, bool enabled);
-        SimpleFuture<Result> authenticateScrobblingProvider(
-                                                            ScrobblingProvider provider,
+        SimpleFuture<Result> authenticateScrobblingProvider(ScrobblingProvider provider,
                                                             QString user,
                                                             QString password);
 
