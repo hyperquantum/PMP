@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Slider for adjusting volume.
 - Waiting spinner shown while loading the music collection.
 - Quick scan for new files.
-- Queue presence indicator in the music collection.
-- Music collection: ability to have three filters at the same time.
+- Music collection: queue presence indicator icon.
+- Music collection: ability to have up to three filters at the same time.
 - Music collection: searching for a track by its hash.
 - Music collection: new filter criteria "in the queue" and "not in the queue".
 - Music collection: new filter criterium "no longer available".
@@ -26,14 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Music collection: fourth highlighting color.
 - Music collection: display count of tracks shown.
 - Support for album artist.
-- User statistics display switch.
+- Switch for displaying either personal user statistics or public statistics.
 - Track info dialog: can now display track info before downloading the list of all tracks from the server.
-- Track info dialog: overview of personal history of the track.
+- Track info dialog: overview of personal listening history of the track.
 - Track info dialog: user for track statistics can now be chosen.
 - Cache table for track scores to avoid the costly calculation of all scores at server startup.
 - Dynamic mode parameters: add "12 weeks" to repetition avoidance setting.
 - 'About PMP' dialog now also displays version information of the server.
-- Executables on Windows now have version information viewable by Windows Explorer.
+- PMP executable files on Windows now have version information viewable by Windows Explorer.
 - Command-line remote: new commands "serverversion", "personalmode", "publicmode", "dynamicmode" and "status".
 - Command-line remote: new commands "history", "trackhistory", "trackinfo" and "start indexation".
 - Command-line remote: the "insert" command can now insert a track into the queue.
@@ -42,26 +42,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Run unit tests in GitHub Actions.
 
 ### Changed
-- GUI remote was renamed to desktop remote.
+- GUI remote has been renamed to desktop remote.
 - Play/pause/skip icons have been redesigned based on the new application icon.
 - Queue icon color was changed to match the color of the new application icon.
 - Colors were slightly adjusted to match the color of the new application icon.
 - Unknown track length/position is now displayed as "--:--:--.---".
 - Player UI layout has been rearranged.
-- Music collection: change criterium "score ≤ 30" to "score < 30".
-- Music collection: change criterium "length ≤ 1 min." to "length < 1 min."
+- Music collection: criterium "score ≤ 30" has been changed "score < 30".
+- Music collection: criterium "length ≤ 1 min." has been changed to "length < 1 min."
 - Server will now refuse to insert a track into the queue if the hash is not familiar.
 - User account creation: password score was replaced with password rating.
 - Hash tool: all fields printed are now aligned.
-- Hash tool: log to file instead of console.
+- Hash tool: logs are now written to file instead of to the console.
 - Console logging: prints date and time instead of just time.
-- Release archive for Windows renamed from "PMP_win64.zip" to "PMP-win64.zip".
+- Release archive for Windows has been renamed from "PMP_win64.zip" to "PMP-win64.zip".
 - PMP now requires CMake 3.21 or later.
 
 ### Removed
 - Buttons "-5" and "+5" for adjusting volume.
-- Music collection: remove criterium "not heard in the last 1000 days".
-- Music collection: remove criterium "not heard in the last 365 days".
+- Music collection: criterium "not heard in the last 1000 days".
+- Music collection: criterium "not heard in the last 365 days".
 
 ### Fixed
 - Incorrect hash if APEv2 tag present.
