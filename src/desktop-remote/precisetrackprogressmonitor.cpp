@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -69,24 +69,30 @@ namespace PMP
         _playerState = state;
         _currentQueueId = queueId;
 
-        if (progressInMilliseconds < 0) {
+        if (progressInMilliseconds < 0)
+        {
             _progressTimer.invalidate();
             _progressAtTimerStart = 0;
         }
-        else {
+        else
+        {
             _progressTimer.start();
             _progressAtTimerStart = progressInMilliseconds;
         }
 
         _currentTrackLengthMilliseconds = trackLengthInMilliseconds;
 
-        if (state == PlayerState::Playing) {
-            if (!_refreshTimer->isActive()) {
+        if (state == PlayerState::Playing)
+        {
+            if (!_refreshTimer->isActive())
+            {
                 _refreshTimer->start();
             }
         }
-        else {
-            if (_refreshTimer->isActive()) {
+        else
+        {
+            if (_refreshTimer->isActive())
+            {
                 _refreshTimer->stop();
             }
         }
@@ -97,7 +103,8 @@ namespace PMP
 
     void PreciseTrackProgressMonitor::onTimeout()
     {
-        if (!_progressTimer.isValid()) {
+        if (!_progressTimer.isValid())
+        {
             _refreshTimer->stop();
             return;
         }
@@ -109,7 +116,8 @@ namespace PMP
     {
         auto length = _currentTrackLengthMilliseconds;
 
-        if (!_progressTimer.isValid()) {
+        if (!_progressTimer.isValid())
+        {
             Q_EMIT trackProgressChanged(_playerState, _currentQueueId, -1, length);
             return;
         }
@@ -120,5 +128,4 @@ namespace PMP
 
         Q_EMIT trackProgressChanged(_playerState, _currentQueueId, progress, length);
     }
-
 }

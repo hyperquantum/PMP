@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -34,7 +34,8 @@ namespace PMP::Client
 
 namespace PMP
 {
-    class PreciseTrackProgressMonitor : public QObject {
+    class PreciseTrackProgressMonitor : public QObject
+    {
         Q_OBJECT
     public:
         PreciseTrackProgressMonitor(Client::CurrentTrackMonitor* currentTrackMonitor);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -200,7 +200,8 @@ namespace PMP::Server
                                                               bool allOrNothing)
     {
         return takeFromSourceAndApplyFilter(trackCount, maxAttempts, allOrNothing,
-                                            [this](Candidate const& c) {
+                                            [this](Candidate const& c)
+                                            {
                                                 return satisfiesBasicFilter(c);
                                             });
     }
@@ -279,7 +280,8 @@ namespace PMP::Server
         std::sort(
             sorted.begin(),
             sorted.end(),
-            [&tracks, candidateComparison](int i1, int i2) {
+            [&tracks, candidateComparison](int i1, int i2)
+            {
                 return candidateComparison(*tracks[i1], *tracks[i2]) < 0;
             }
         );

@@ -33,8 +33,8 @@
 #include <QtGlobal>
 #include <QTime>
 
-namespace PMP {
-
+namespace PMP
+{
     /* ========================== LoggerBase ========================== */
 
     class LoggerBase

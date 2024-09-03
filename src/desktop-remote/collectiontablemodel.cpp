@@ -47,7 +47,8 @@ using namespace PMP::Client;
 
 namespace PMP
 {
-    namespace {
+    namespace
+    {
 
     class Comparisons
     {
@@ -117,7 +118,8 @@ namespace PMP
         connect(
             playerController, &PlayerController::playerStateChanged,
             this,
-            [this, playerController]() {
+            [this, playerController]()
+            {
                 _playerState = playerController->playerState();
 
                 if (!_currentTrackHash.isZero())
@@ -445,8 +447,10 @@ namespace PMP
     {
         if (searchRangeBegin > searchRangeEnd) return -1 /* problem */;
 
-        if (searchRangeEnd - searchRangeBegin <= 50) { /* do linear search */
-            for (int index = searchRangeBegin; index < searchRangeEnd; ++index) {
+        if (searchRangeEnd - searchRangeBegin <= 50) /* do linear search */
+        {
+            for (int index = searchRangeBegin; index < searchRangeEnd; ++index)
+            {
                 auto const& current = *_tracks.at(_outerToInnerIndexMap.at(index));
 
                 if (lessThan(track, current)) return index;
@@ -460,10 +464,12 @@ namespace PMP
         int middleIndex = searchRangeBegin / 2 + searchRangeEnd / 2;
         auto const& middleTrack = *_tracks.at(_outerToInnerIndexMap.at(middleIndex));
 
-        if (lessThan(track, middleTrack)) {
+        if (lessThan(track, middleTrack))
+        {
             return findOuterIndexMapIndexForInsert(track, searchRangeBegin, middleIndex);
         }
-        else {
+        else
+        {
             return findOuterIndexMapIndexForInsert(track, middleIndex, searchRangeEnd);
         }
     }
@@ -751,7 +757,8 @@ namespace PMP
 
     QVariant SortedCollectionTableModel::data(const QModelIndex& index, int role) const
     {
-        switch (role) {
+        switch (role)
+        {
             case Qt::TextAlignmentRole:
                 switch (index.column())
                 {
@@ -763,7 +770,8 @@ namespace PMP
                 {
                     auto track = trackAt(index);
 
-                    switch (index.column()) {
+                    switch (index.column())
+                    {
                         case 0: return track->title();
                         case 1: return track->artist();
                         case 2:
@@ -785,7 +793,8 @@ namespace PMP
 
                     if (track->hashId() == _currentTrackHash)
                     {
-                        switch (_playerState) {
+                        switch (_playerState)
+                        {
                             case PlayerState::Playing:
                                 return QIcon(":/mediabuttons/play.svg");
 
