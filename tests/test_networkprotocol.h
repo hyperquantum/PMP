@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,7 +22,8 @@
 
 #include <QObject>
 
-class TestNetworkProtocol : public QObject {
+class TestNetworkProtocol : public QObject
+{
     Q_OBJECT
 private Q_SLOTS:
     void fileHashByteCount();
