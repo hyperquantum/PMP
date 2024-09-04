@@ -28,6 +28,8 @@
 #include <QMutex>
 #include <QSharedPointer>
 
+#include <list>
+
 namespace PMP
 {
     template<class TResult, class TError> class Promise;
@@ -118,7 +120,7 @@ namespace PMP
 
         ResultOrError<TResult, TError> getOutcomeInternal() const;
 
-        void setContinuation(ContinuationPtr continuation);
+        void addContinuation(ContinuationPtr continuation);
 
         void storeAndContinueFrom(ResultOrError<TResult, TError> const& outcome,
                                   QSharedPointer<Runner> runner);
@@ -131,7 +133,7 @@ namespace PMP
         friend class Concurrent;
 
         QMutex _mutex;
-        ContinuationPtr _continuation;
+        std::list<ContinuationPtr> _continuations;
         Nullable<TResult> _result;
         Nullable<TError> _error;
         bool _finished { false };
@@ -227,27 +229,23 @@ namespace PMP
     }
 
     template<class TResult, class TError>
-    void FutureStorage<TResult, TError>::setContinuation(ContinuationPtr continuation)
+    void FutureStorage<TResult, TError>::addContinuation(ContinuationPtr continuation)
     {
         QMutexLocker lock(&_mutex);
 
         Q_ASSERT_X(continuation, "NewFutureStorage::setContinuation()",
                    "continuation is nullptr");
 
-        Q_ASSERT_X(!_continuation, "NewFutureStorage::setContinuation()",
-                   "attempt to set result on finished future");
-
+        // when already finished, continue immediately, do not add the continuation
         if (_finished)
         {
-            // when already finished, continue immediately
             auto outcome = getOutcomeInternal();
             lock.unlock(); /* unlock before continuing */
             continuation->continueFrom(nullptr, outcome);
+            return;
         }
-        else
-        {
-            _continuation = continuation;
-        }
+
+        _continuations.push_back(continuation);
     }
 
     template<class TResult, class TError>
@@ -266,13 +264,17 @@ namespace PMP
         else
             _error = outcome.error();
 
-        auto continuation = _continuation;
+        std::list<ContinuationPtr> continuations;
+        swap(_continuations, continuations);
 
         lock.unlock(); /* unlock before continuing */
 
-        if (continuation)
+        for (auto& continuation : continuations)
         {
-            continuation->continueFrom(runner, outcome);
+            if (continuation)
+            {
+                continuation->continueFrom(runner, outcome);
+            }
         }
     }
 
@@ -492,7 +494,7 @@ namespace PMP
 
         auto continuation = ContinuationPtr::create(runner, wrapper);
 
-        _storage->setContinuation(continuation);
+        _storage->addContinuation(continuation);
     }
 
     template<class TResult, class TError>
@@ -556,7 +558,7 @@ namespace PMP
             {
                 auto future = f();
 
-                future._storage->setContinuation(continuation);
+                future._storage->addContinuation(continuation);
             };
 
         runner->run(wrapper);
@@ -583,7 +585,7 @@ namespace PMP
             };
 
         auto continuation = ContinuationPtr::create(runner, wrapper);
-        _storage->setContinuation(continuation);
+        _storage->addContinuation(continuation);
 
         return Future<TResult2, TError2>(storage);
     }
@@ -608,11 +610,11 @@ namespace PMP
 
                 auto otherFuture = f(previousOutcome);
 
-                otherFuture._storage->setContinuation(secondContinuation);
+                otherFuture._storage->addContinuation(secondContinuation);
             };
 
         auto continuation = ContinuationPtr::create(runner, wrapper);
-        _storage->setContinuation(continuation);
+        _storage->addContinuation(continuation);
 
         return Future<TResult2, TError2>(secondStorage);
     }
@@ -639,7 +641,7 @@ namespace PMP
             };
 
         auto continuation = ContinuationPtr::create(runner, wrapper);
-        _storage->setContinuation(continuation);
+        _storage->addContinuation(continuation);
 
         return SimpleFuture<TOutcome2>(storage);
     }
@@ -713,7 +715,7 @@ namespace PMP
             };
 
         auto continuation = ContinuationPtr::create(runner, wrapper);
-        _storage->setContinuation(continuation);
+        _storage->addContinuation(continuation);
     }
 
     template<class TOutcome>
@@ -760,7 +762,7 @@ namespace PMP
             {
                 auto future = f();
 
-                future._storage->setContinuation(continuation);
+                future._storage->addContinuation(continuation);
             };
 
         runner->run(wrapper);
