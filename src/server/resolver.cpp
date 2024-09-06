@@ -19,6 +19,7 @@
 
 #include "resolver.h"
 
+#include "common/async.h"
 #include "common/concurrent.h"
 #include "common/fileanalyzer.h"
 
@@ -90,6 +91,7 @@ namespace PMP::Server
         Resolver* _parent;
         FileHash _hash;
         uint _hashId;
+        Promise<SuccessType, FailureType> _promiseForFirstFileAnalyzed;
         AudioData _audio;
         QList<const TagData*> _tags;
         QList<Resolver::VerifiedFile*> _files;
@@ -97,10 +99,12 @@ namespace PMP::Server
         QString _quickArtist;
         QString _quickAlbum;
         QString _quickAlbumArtist;
+        bool _firstFileAnalyzed { false };
 
     public:
         HashKnowledge(Resolver* parent, FileHash hash, uint hashId)
-         : _parent(parent), _hash(hash), _hashId(hashId)
+         : _parent(parent), _hash(hash), _hashId(hashId),
+            _promiseForFirstFileAnalyzed(Async::createPromise<SuccessType, FailureType>())
         {
             //
         }
@@ -109,6 +113,20 @@ namespace PMP::Server
 
         uint id() const { return _hashId; }
         void setId(uint id) { _hashId = id; }
+
+        Future<SuccessType, FailureType> getFutureForFirstFileAnalyzed() const
+        {
+            return _promiseForFirstFileAnalyzed.future();
+        }
+
+        void markFileAnalyzed()
+        {
+            if (_firstFileAnalyzed)
+                return;
+
+            _firstFileAnalyzed = true;
+            _promiseForFirstFileAnalyzed.setOutcome(success);
+        }
 
         const AudioData& audio() const { return _audio; }
         AudioData& audio() { return _audio; }
@@ -591,6 +609,8 @@ namespace PMP::Server
 
                     knowledge->addPath(fileInfo.path(), fileInfo.size(),
                                        fileInfo.lastModifiedUtc(), _fullIndexationNumber);
+
+                    knowledge->markFileAnalyzed();
                 }
             );
     }
@@ -679,6 +699,20 @@ namespace PMP::Server
         // TODO : check if we have it in the locations cache
 
         return _fileFinder->findHashAsync(hashId, hash);
+    }
+
+    Future<SuccessType, FailureType> Resolver::waitUntilAnyFileAnalyzed(uint hashId)
+    {
+        QMutexLocker lock(&_lock);
+
+        auto it = _idToKnowledge.constFind(hashId);
+        if (it == _idToKnowledge.constEnd())
+        {
+            qWarning() << "Resolver: hash ID" << hashId << "is unknown";
+            return FutureError(failure);
+        }
+
+        return it.value()->getFutureForFirstFileAnalyzed();
     }
 
     void Resolver::doQuickScanForNewFilesFileSystemTraversal()

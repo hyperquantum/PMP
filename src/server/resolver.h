@@ -66,6 +66,7 @@ namespace PMP::Server
 
         Future<QString, FailureType> findPathForHashAsync(FileHash hash);
         Future<QString, FailureType> findPathForHashAsync(uint hashId);
+        Future<SuccessType, FailureType> waitUntilAnyFileAnalyzed(uint hashId);
 
         bool haveFileForHash(const FileHash& hash);
         bool pathStillValid(const FileHash& hash, QString path);

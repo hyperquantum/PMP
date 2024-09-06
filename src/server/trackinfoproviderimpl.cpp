@@ -44,12 +44,25 @@ namespace PMP::Server
 
         auto future =
             _resolver->findPathForHashAsync(hashId)
-
-                // TODO: add delay
-
-                .thenOnAnyThread<CollectionTrackInfo, FailureType>(
-                    [this, hashId](FailureOr<QString>) -> FailureOr<CollectionTrackInfo>
+                .thenOnAnyThreadIndirect<SuccessType, FailureType>(
+                    [this, hashId](FailureOr<QString> outcome) -> Future<SuccessType, FailureType>
                     {
+                        if (outcome.failed())
+                            return FutureError<FailureType>(failure);
+
+                        qDebug() << "TrackInfoProviderImpl: have file for hash ID"
+                                 << hashId
+                                 << "and will now wait until Resolver has processed it";
+
+                        return _resolver->waitUntilAnyFileAnalyzed(hashId);
+                    }
+                )
+                .thenOnAnyThread<CollectionTrackInfo, FailureType>(
+                    [this, hashId](SuccessOrFailure) -> FailureOr<CollectionTrackInfo>
+                    {
+                        qDebug() << "TrackInfoProviderImpl: will now attempt to return"
+                                    " track info for hash ID" << hashId;
+
                         return _resolver->getHashTrackInfo(hashId);
                     }
                 );
