@@ -26,7 +26,6 @@ KNOWN PROBLEMS
  * hash calculation does not skip padding bytes
  * preloaded tracks are sometimes deleted before they are used because they are old
  * player fails to play preloaded entries of which the file has been deleted already
- * desktop remote: searching the music collection for "e" does not return results having "ë"
  * a "skip" operation should not affect the current track's score if performed by another user
  * server should pause playback and notify the client when its host goes to sleep (e.g. because battery is very low)
  * desktop remote: multimedia keys don't work when a popup dialog is open (like track info)

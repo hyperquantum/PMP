@@ -29,6 +29,7 @@
 #include "collectiontablemodel.h"
 #include "colors.h"
 #include "colorswitcher.h"
+#include "searching.h"
 #include "trackinfodialog.h"
 #include "waitingspinnerwidget.h"
 
@@ -55,6 +56,7 @@ namespace PMP
        _collectionDisplayModel(new FilteredCollectionTableModel(this,
                                                                 _collectionSourceModel,
                                                                 serverInterface,
+                              new SearchData(this, &serverInterface->collectionWatcher()),
                                                                 queueHashesMonitor,
                                                                userForStatisticsDisplay)),
        _collectionContextMenu(nullptr)

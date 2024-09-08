@@ -178,6 +178,16 @@ target_link_libraries(test_obfuscator Qt5::Core Qt5::Test)
 add_test(test_obfuscator test_obfuscator)
 
 
+# TestSearchUtil
+qt5_wrap_cpp(PMP_TestSearchUtil_MOCS test_searchutil.h)
+add_executable(test_searchutil test_searchutil.cpp
+    ${PMP_TestSearchUtil_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/searchutil.cpp
+)
+target_link_libraries(test_searchutil Qt5::Core Qt5::Test)
+add_test(test_searchutil test_searchutil)
+
+
 # TestHashRelations
 qt5_wrap_cpp(PMP_TestHashRelations_MOCS test_hashrelations.h)
 add_executable(test_hashrelations test_hashrelations.cpp

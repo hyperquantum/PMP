@@ -921,12 +921,14 @@ namespace PMP
     // ============================================================================ //
 
     FilteredCollectionTableModel::FilteredCollectionTableModel(QObject* parent,
-                                             SortedCollectionTableModel* source,
-                                             ServerInterface* serverInterface,
-                                             QueueHashesMonitor* queueHashesMonitor,
-                                       UserForStatisticsDisplay* userForStatisticsDisplay)
+                                    SortedCollectionTableModel* source,
+                                    ServerInterface* serverInterface,
+                                    SearchData* searchData,
+                                    QueueHashesMonitor* queueHashesMonitor,
+                                    UserForStatisticsDisplay* userForStatisticsDisplay)
      : _serverInterface(serverInterface),
        _source(source),
+       _searchData(searchData),
        _filteringTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor)
     {
         Q_UNUSED(parent)
@@ -977,9 +979,7 @@ namespace PMP
 
     void FilteredCollectionTableModel::setSearchText(QString search)
     {
-        auto trimmed = search.trimmed();
-
-        auto fileHash = FileHash::tryParse(trimmed);
+        auto fileHash = FileHash::tryParse(search.trimmed());
         if (!fileHash.isNull())
         {
             // id will be zero when not found
@@ -991,13 +991,13 @@ namespace PMP
                 (void)_serverInterface->collectionWatcher().getTrackInfo(fileHash);
             }
 
-            _searchParts.clear();
+            _searchQuery.clear();
             _searchFileHash = fileHash;
             _searchHashId = hashId;
         }
         else
         {
-            _searchParts = trimmed.split(QRegExp("\\s+"), Qt::SkipEmptyParts);
+            _searchQuery = SearchQuery(search);
             _searchFileHash = FileHash();
             _searchHashId = null;
         }
@@ -1010,7 +1010,7 @@ namespace PMP
     {
         Q_UNUSED(sourceParent)
 
-        if (_searchParts.empty() && _searchHashId == null
+        if (_searchQuery.isEmpty() && _searchHashId == null
             && _filteringTrackJudge.criteriumResultsInAllTracks())
         {
             return true; /* not filtered */
@@ -1018,15 +1018,10 @@ namespace PMP
 
         auto* track = _source->trackAt(sourceRow);
 
-        if (!_searchParts.empty())
+        if (!_searchQuery.isEmpty())
         {
-            for (QString const& searchPart : _searchParts)
-            {
-                if (!track->title().contains(searchPart, Qt::CaseInsensitive)
-                        && !track->artist().contains(searchPart, Qt::CaseInsensitive)
-                        && !track->album().contains(searchPart, Qt::CaseInsensitive))
-                    return false;
-            }
+            if (!_searchData->isFileMatchForQuery(track->hashId(), _searchQuery))
+                return false;
         }
         else if (_searchHashId != null)
         {
