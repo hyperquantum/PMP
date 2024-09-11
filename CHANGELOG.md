@@ -48,6 +48,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Colors were slightly adjusted to match the color of the new application icon.
 - Unknown track length/position is now displayed as "--:--:--.---".
 - Player UI layout has been rearranged.
+- Music collection: textual search now ignores accents and other markings.
 - Music collection: criterium "score ≤ 30" has been changed "score < 30".
 - Music collection: criterium "length ≤ 1 min." has been changed to "length < 1 min."
 - Server will now refuse to insert a track into the queue if the hash is not familiar.
