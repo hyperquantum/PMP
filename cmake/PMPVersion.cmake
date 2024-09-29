@@ -17,7 +17,7 @@
 
 # define version information
 set(PMP_VERSION_MAJOR 0)
-set(PMP_VERSION_MINOR 2)
+set(PMP_VERSION_MINOR 3)
 set(PMP_VERSION_PATCH 0)
 
 # define branding information
