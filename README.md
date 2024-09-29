@@ -8,7 +8,7 @@ PMP is designed to be portable software and should be compatible with most popul
 
 *This is alpha quality software*. Existing features can still be incomplete. Certain 'essential' features that can be found in most music player software might (still) be missing. PMP might contain lots of bugs. Use at your own risk.
 
-![screenshot](screenshots/desktop-remote-v0.2-screenshot.png)
+![screenshot](screenshots/desktop-remote-v0.3-screenshot.png)
 
 ## Table of Contents
 Contents of this file:
