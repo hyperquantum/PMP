@@ -17,10 +17,17 @@
 
 ## 3. Release
 
-1. create release commit
-2. add release tag to that commit
-3. run release script on that tagged commit
-4. create release in GitHub: add changelog and binaries
-5. create next-version commit
-6. update downloads section on the website
-7. announce the release
+### 1. Create release commit
+  * update README: point to new screenshot
+  * update CHANGELOG: replace "unreleased" with the version number and the date
+  * update PMPVersion.cmake: adjust version numbers
+### 2. Add release tag to that commit
+### 3. Run release script on that tagged commit
+### 4. Create release in GitHub: add changelog and binaries
+  * title: PMP x.y.z
+  * copy changelog information from CHANGELOG.md
+  * add binaries (zip file) created by the release script
+### 5. Create next-version commit
+  * add placeholders for unreleased changes
+### 6. Update downloads section on the website
+### 7. Announce the release
