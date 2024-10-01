@@ -7,7 +7,7 @@ Disclaimer:
 
 WORK IN PROGRESS (LONG RUNNING - on different branches in git)
 
- * Compatibility UI (branch "compatibility-ui")
+ (none)
 
 
 IMPORTANT
@@ -84,7 +84,7 @@ IDEAS
  * 'about the remote' window; with client version and protocol version
  * 'about the server' window; with server name, UUID and protocol version
  * provide play/pause buttons in Windows taskbar popup
- ** support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
+ *** support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
  * ability to view server uptime
  * ability to ban a track permanently or temporarily; this will also hide it in the music collection
  * ability to set track property "play this less often" or "play this again soon"
@@ -113,6 +113,8 @@ IDEAS
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
  * hash tool: by default only output the hash of the file, no other information
  * detect different rips of the same track/album and treat them as one, with unified scores
+ * quick indexation that only examines files that are new or appear to have changed
+ * server executable with (limited) user interface for easy usage on desktop platforms (like Minecraft)
 
 
 USER FRIENDLINESS
@@ -120,7 +122,7 @@ USER FRIENDLINESS
  * provide 'forgot password' functionality to enable a user to reset their password
  ** work around the need for a full indexation at server startup
  * desktop remote: after login it should show what server it is connected to somehow
- * display the title/artist of the track currently playing in the window title of the remote
+ ** display the title/artist of the track currently playing in the window title of the remote
 
 
 POLISHING
@@ -132,7 +134,6 @@ POLISHING
 
 TECHNICAL IDEAS
 
- * when running an indexation, analyze the most recently created/updated files first
  * large file support (?)
  * switch to signed integer types for things like queue indices
  * add logging for all server messages that are deemed corrupt or invalid by the client
