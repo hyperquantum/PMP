@@ -5,18 +5,6 @@ Disclaimer:
   Anything in here can change at any time, and nothing here is a promise for the future.
 
 
-WORK IN PROGRESS (LONG RUNNING - on different branches in git)
-
- (none)
-
-
-IMPORTANT
-
- * save track lengths to database
- * save track artist/title/album to database
- * regular automatic cleanup of old log files while the server is running
-
-
 KNOWN PROBLEMS
 
  * for some tracks we get the wrong length (caused by length estimation in TagLib)
@@ -35,19 +23,35 @@ KNOWN PROBLEMS
  * server does not always take an updated title/artist/album into account when a track is changed on disk
  * scrobbling: "now playing" is triggered by the backoff mechanism after the track is already finished
  * scrobbling: race condition after track finished playing, between history insert and check for something to scrobble
-
-
-PERFORMANCE ISSUES
-
- * desktop remote: searching/filtering in the music collection can be slow
+ * desktop remote: searching/filtering in the music collection can be slow (in debug builds)
 
 
 IDEAS
 
  ** UI: provide dark theme or dark mode
  * UI: move server selection, user account creation and authentication to pop-up dialogs
+ ** UI: display the title/artist of the track currently playing in the window title of the remote
+ * UI: in table views: hide selection when losing focus
+ * UI: extra window with scrolling banner of current track (title/artist) in giant font size
+ * UI: visualize sound wave (optional)
+ * UI: ability to view server uptime
+ * UI: 'about the remote' window; with client version and protocol version
+ * UI: 'about the server' window; with server name, UUID and protocol version
+ * UI: display play/pause buttons in Windows taskbar popup
+ * client: after login display which server we are connected to
+ * client: ability to reconnect to the server after the connection was broken
  * server selection: display servers recently used after verifying that they are still available
  * login: don't display user accounts that haven't been used in a long time
+ * login: password reset / 'forgot password'
+ * login: require server password when registering a new user account
+ * login: guest account for party guests; probably without personal mode
+ * user: ability to change one's own password
+ * user: add statistics view with things like "amount of tracks played in the last 7/30/... days"
+ * user: add statistics view with top tracks/artists (highest score and most plays)
+ * user: 'love' & 'hate' button for the song that is playing
+ * user: ability to ban a track permanently or temporarily; this will also hide it in the music collection
+ * user: ability to set track property "play this less often" or "play this again soon"
+ *** user: thumbs up/down buttons for the song that is playing and for the history, to affect the score a little bit
  ** player: option for single track mode (vs. continuous play)
  * player: 'load track' action that loads a track but does not start playing; this allows seek before playing
  ** player: 'play again next' action for the song that is currently playing
@@ -71,25 +75,22 @@ IDEAS
  * music collection: add quick search function, for searching while leaving the current filters unchanged
  * music collection: new action: add track before first interruption (break/barrier)
  * music collection: new filter criterium "without album artist"
+ * music collection: quick indexation action that only examines files that are new or appear to have changed
+ * music collection: add list of all artists/albums
+ * music collection: detect different rips of the same track/album and treat them as one, with unified scores
+ ** music collection: work around the need for a full indexation at server startup
+ *** tracks: 'play now' action
+ * tracks: quick action to copy title and artist to clipboard
+ * tracks: detect BPM automatically
+ *** tracks: add support for user-defined tags like "instrumental" for classifying tracks (like GMail has labels for e-mails)
  *** dynamic mode: detect and prevent track repetition with different hash values
  *** dynamic mode: artist repetition avoidance
  * dynamic mode: ability to force a track to be played regularly (e.g. at least daily)
  ** dynamic mode: try to enqueue "new" tracks and tracks without score regularly
  * dynamic mode: new mode that plays "new" tracks exclusively
+ * dynamic mode: add extra filters
  * power management: close connections when the server machine enters sleep mode
  * power management: don't let the server machine go to sleep while music is playing
- *** thumbs up/down buttons for the song that is playing and for the history, to affect the score a little bit
- * 'love' & 'hate' button for the song that is playing
- * statistics view for the user; with things like "amount of tracks played in the last 7/30/... days"
- * 'about the remote' window; with client version and protocol version
- * 'about the server' window; with server name, UUID and protocol version
- * provide play/pause buttons in Windows taskbar popup
- *** support tagging tracks for classification (like GMail uses labels for e-mail) and meta-info
- * ability to view server uptime
- * ability to ban a track permanently or temporarily; this will also hide it in the music collection
- * ability to set track property "play this less often" or "play this again soon"
- *** 'play now' option in the context menus of the music collection, the history, and maybe the queue
- * require the server password when registering a new user account
  * track info dialog: show indication if file is now playing
  * track info dialog: show indication if file is in the queue
  * track info dialog: show indication if file is available or not
@@ -98,48 +99,24 @@ IDEAS
  * track info dialog: should become modeless
  * track info dialog: last heard: display "almost 3 months" ago instead of "2 months ago" when applicable
  * track info dialog: put track title/artist in dialog title
- * provide list of all artists/albums in the collection
- * guest account for party guests; probably without personal mode
- * giant "now playing" screen banner
- * visualize sound wave
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
- * client: ability to reconnect to the server after the connection was broken
- * add action (context menu?) to copy title and artist of current track to clipboard
  * server database backup and restore
- * detect track BPM automatically
  * command-line remote: add a command for seeking (going to a specific time in the current track)
  * command-line remote: extend the "nowplaying" command to also print album
  * command-line remote: extend the "trackstats" command to accept queue IDs
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
  * hash tool: by default only output the hash of the file, no other information
- * detect different rips of the same track/album and treat them as one, with unified scores
- * quick indexation that only examines files that are new or appear to have changed
  * server executable with (limited) user interface for easy usage on desktop platforms (like Minecraft)
-
-
-USER FRIENDLINESS
-
- * provide 'forgot password' functionality to enable a user to reset their password
- ** work around the need for a full indexation at server startup
- * desktop remote: after login it should show what server it is connected to somehow
- ** display the title/artist of the track currently playing in the window title of the remote
-
-
-POLISHING
-
+ * save track length/title/artist/album to the database
  * when skipping the current track after a long-time pause (say, more than 10 min), do not let the skip affect scoring of the paused track
  * be more strict in determining the 'end time' for the history of a track that was played; time when paused should not count
- * desktop remote: history/queue/collection: hide selection when losing focus
 
 
-TECHNICAL IDEAS
+NON-FUNCTIONAL IMPROVEMENTS
 
- * large file support (?)
+ * migrate to Qt 6
  * switch to signed integer types for things like queue indices
+ * split Database class into smaller parts
+ * clean up old log files regularly, not just at startup
  * add logging for all server messages that are deemed corrupt or invalid by the client
  * use libgroove for playback (?)
-
-
-CODE IMPROVEMENTS
-
- * split Database class into smaller parts
