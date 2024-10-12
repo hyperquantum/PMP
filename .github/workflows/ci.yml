@@ -16,8 +16,8 @@ jobs:
           sudo apt-get install -y --fix-missing
           libtag1-dev
           default-libmysqlclient-dev
-          qtbase5-dev
-          qtmultimedia5-dev
+          qt6-base-dev
+          qt6-multimedia-dev
       - name: Run CMake
         working-directory: bin
         run: cmake -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
