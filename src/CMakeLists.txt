@@ -279,13 +279,13 @@ set(PMP_DESKTOP_REMOTE_RESOURCES
     desktop-remote/mainwindow.qrc
 )
 
-qt5_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
-qt5_wrap_cpp(PMP_CLIENT_MOCS ${PMP_CLIENT_HEADERS})
-qt5_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
-qt5_wrap_cpp(PMP_CMD_REMOTE_MOCS ${PMP_CMD_REMOTE_HEADERS})
-qt5_wrap_cpp(PMP_DESKTOP_REMOTE_MOCS ${PMP_DESKTOP_REMOTE_HEADERS})
-qt5_wrap_ui(PMP_DESKTOP_REMOTE_UICS ${PMP_DESKTOP_REMOTE_UIS})
-qt5_add_resources(PMP_DESKTOP_REMOTE_QRCS ${PMP_DESKTOP_REMOTE_RESOURCES})
+qt_wrap_cpp(PMP_COMMON_MOCS ${PMP_COMMON_HEADERS})
+qt_wrap_cpp(PMP_CLIENT_MOCS ${PMP_CLIENT_HEADERS})
+qt_wrap_cpp(PMP_SERVER_MOCS ${PMP_SERVER_HEADERS})
+qt_wrap_cpp(PMP_CMD_REMOTE_MOCS ${PMP_CMD_REMOTE_HEADERS})
+qt_wrap_cpp(PMP_DESKTOP_REMOTE_MOCS ${PMP_DESKTOP_REMOTE_HEADERS})
+qt_wrap_ui(PMP_DESKTOP_REMOTE_UICS ${PMP_DESKTOP_REMOTE_UIS})
+qt_add_resources(PMP_DESKTOP_REMOTE_QRCS ${PMP_DESKTOP_REMOTE_RESOURCES})
 
 configure_file(common/version.h.in common/version.h)
 
@@ -294,22 +294,22 @@ if (NOT ENABLE_WIN32_CONSOLE)
 endif (NOT ENABLE_WIN32_CONSOLE)
 
 add_library(PmpCommon OBJECT ${PMP_COMMON_SOURCES} ${PMP_COMMON_MOCS})
-target_link_libraries(PmpCommon Qt5::Core)
+target_link_libraries(PmpCommon Qt6::Core)
 
 add_library(PmpClient OBJECT ${PMP_CLIENT_SOURCES} ${PMP_CLIENT_MOCS})
-target_link_libraries(PmpClient Qt5::Core Qt5::Network)
+target_link_libraries(PmpClient Qt6::Core Qt6::Network)
 
 add_library(PmpCmdRemote OBJECT ${PMP_CMD_REMOTE_SOURCES} ${PMP_CMD_REMOTE_MOCS})
-target_link_libraries(PmpCmdRemote Qt5::Core Qt5::Network)
+target_link_libraries(PmpCmdRemote Qt6::Core Qt6::Network)
 
 add_library(PmpDesktopRemote OBJECT
     ${PMP_DESKTOP_REMOTE_SOURCES} ${PMP_DESKTOP_REMOTE_MOCS}
     ${PMP_DESKTOP_REMOTE_UICS} ${PMP_DESKTOP_REMOTE_QRCS}
 )
-target_link_libraries(PmpDesktopRemote Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets)
+target_link_libraries(PmpDesktopRemote Qt6::Core Qt6::Gui Qt6::Network Qt6::Widgets)
 
 add_library(PmpServer OBJECT ${PMP_SERVER_SOURCES} ${PMP_SERVER_MOCS})
-target_link_libraries(PmpServer Qt5::Core Qt5::Multimedia Qt5::Network Qt5::Sql Qt5::Xml)
+target_link_libraries(PmpServer Qt6::Core Qt6::Multimedia Qt6::Network Qt6::Sql Qt6::Xml)
 
 set(PMP_HASHTOOL_TARGETNAME PMP-HashTool)
 set(PMP_QUICKTEST_TARGETNAME quicktest)
@@ -377,31 +377,31 @@ target_link_libraries(${PMP_DESKTOP_REMOTE_TARGETNAME}
 
 # Qt dependencies for each executable
 target_link_libraries(${PMP_HASHTOOL_TARGETNAME}
-    Qt5::Core
+    Qt6::Core
 )
 target_link_libraries(${PMP_QUICKTEST_TARGETNAME}
-    Qt5::Core
-    Qt5::Multimedia
-    Qt5::Network
-    Qt5::Sql
-    Qt5::Xml
+    Qt6::Core
+    Qt6::Multimedia
+    Qt6::Network
+    Qt6::Sql
+    Qt6::Xml
 )
 target_link_libraries(${PMP_SERVER_TARGETNAME}
-    Qt5::Core
-    Qt5::Multimedia
-    Qt5::Network
-    Qt5::Sql
-    Qt5::Xml
+    Qt6::Core
+    Qt6::Multimedia
+    Qt6::Network
+    Qt6::Sql
+    Qt6::Xml
 )
 target_link_libraries(${PMP_CMD_REMOTE_TARGETNAME}
-    Qt5::Core
-    Qt5::Network
+    Qt6::Core
+    Qt6::Network
 )
 target_link_libraries(${PMP_DESKTOP_REMOTE_TARGETNAME}
-    Qt5::Core
-    Qt5::Gui
-    Qt5::Network
-    Qt5::Widgets
+    Qt6::Core
+    Qt6::Gui
+    Qt6::Network
+    Qt6::Widgets
 )
 
 # Link executables to TagLib

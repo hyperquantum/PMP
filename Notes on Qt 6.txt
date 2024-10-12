@@ -1,0 +1,14 @@
+.\vcpkg install qtbase[sql-mysql] --triplet x64-windows  (took 37 min)
+.\vcpkg install qtdoc --triplet x64-windows
+.\vcpkg install qttools --triplet x64-windows  (took 6 min)
+.\vcpkg install qtmultimedia --triplet x64-windows  (took 5 min)
+.\vcpkg install qtsvg --triplet x64-windows  (took 1 min)
+.\vcpkg install qtimageformats --triplet x64-windows  (took 1 min)
+
+--dry-run
+
+cd bin
+
+cmake -G "Visual Studio 17 2022" -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake" -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
+
+cmake --build . --config Debug -j 2
