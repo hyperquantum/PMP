@@ -16,6 +16,8 @@ jobs:
           sudo apt-get install -y --fix-missing
           libtag1-dev
           default-libmysqlclient-dev
+          libglx-dev
+          libgl1-mesa-dev
           qt6-base-dev
           qt6-multimedia-dev
       - name: Run CMake
