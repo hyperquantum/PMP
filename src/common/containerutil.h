@@ -94,12 +94,6 @@ namespace PMP
                 set << element;
         }
 
-        template<typename T> static void addToSet(QVector<T> const& vector, QSet<T>& set)
-        {
-            for (T const& element : vector)
-                set << element;
-        }
-
         template<typename T>
         static void removeFromSet(QVector<T> const& vector, QSet<T>& set)
         {

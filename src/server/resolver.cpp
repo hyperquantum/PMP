@@ -1066,22 +1066,4 @@ namespace PMP::Server
 
         return result;
     }
-
-    QVector<QPair<uint, FileHash>> Resolver::getIDs(QVector<FileHash> hashes)
-    {
-        QMutexLocker lock(&_lock);
-
-        QVector<QPair<uint, FileHash>> result;
-        result.reserve(hashes.size());
-
-        for (auto const& hash : qAsConst(hashes))
-        {
-            auto knowledge = _hashToKnowledge.value(hash, nullptr);
-            if (!knowledge) continue;
-
-            result.append(QPair<uint, FileHash>(knowledge->id(), hash));
-        }
-
-        return result;
-    }
 }
