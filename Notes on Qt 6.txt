@@ -18,3 +18,8 @@ TO DO:
  - fix (non-deprecation) warnings
  - replace usage of QVector with QList
  - update ContainerUtil to avoid the name 'QVector'
+
+Useful information:
+
+  https://ekkesapps.wordpress.com/qt-6-qmake/ekkes-checklist/
+  https://doc.qt.io/qt-6/qtmultimedia-changes-qt6.html
