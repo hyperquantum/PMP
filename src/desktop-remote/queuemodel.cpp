@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -355,6 +355,14 @@ namespace PMP
         return QVariant();
     }
 
+    namespace
+    {
+        inline QVariant toQVariant(QFlags<Qt::Alignment::enum_type> alignment)
+        {
+            return static_cast<Qt::Alignment::Int>(alignment);
+        }
+    }
+
     QVariant QueueModel::trackModelData(QueueEntryInfo* info, int col, int role) const
     {
         switch (role)
@@ -363,28 +371,28 @@ namespace PMP
                 switch (col)
                 {
                     case 2:
-                        return Qt::AlignRight + Qt::AlignVCenter;
+                        return toQVariant(Qt::AlignRight | Qt::AlignVCenter);
                     case 4: /* score */
                     {
                         auto hashId = info->hashId();
                         auto userId = _userForStats->userId();
 
                         if (hashId.isZero() || userId == null)
-                            return Qt::AlignLeft + Qt::AlignVCenter;
+                            return toQVariant(Qt::AlignLeft | Qt::AlignVCenter);
 
                         auto hashData =
                             _userDataFetcher->getHashDataForUser(userId.value(), hashId);
 
                         if (!hashData || !hashData->scoreReceived)
-                            return Qt::AlignLeft + Qt::AlignVCenter;
+                            return toQVariant(Qt::AlignLeft | Qt::AlignVCenter);
 
                         if (hashData->scorePermillage >= 0)
-                            return Qt::AlignRight + Qt::AlignVCenter;
+                            return toQVariant(Qt::AlignRight | Qt::AlignVCenter);
                         else
-                            return Qt::AlignLeft + Qt::AlignVCenter;
+                            return toQVariant(Qt::AlignLeft | Qt::AlignVCenter);
                     }
                     default:
-                        return Qt::AlignLeft + Qt::AlignVCenter;
+                        return toQVariant(Qt::AlignLeft | Qt::AlignVCenter);
                 }
             case Qt::ToolTipRole:
                 if (col == 3) /* prev. heard */
