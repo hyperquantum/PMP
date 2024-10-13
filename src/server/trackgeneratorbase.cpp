@@ -208,7 +208,7 @@ namespace PMP::Server
 
     void TrackGeneratorBase::applyFilterToQueue(QQueue<QSharedPointer<Candidate>>& queue,
                                             std::function<bool (const Candidate&)> filter,
-                                                int reserveSpaceForAtLeastXElements)
+                                            qsizetype reserveSpaceForAtLeastXElements)
     {
         if (queue.isEmpty())
             return;
@@ -226,8 +226,8 @@ namespace PMP::Server
     }
 
     void TrackGeneratorBase::applyBasicFilterToQueue(
-                                                 QQueue<QSharedPointer<Candidate>>& queue,
-                                                 int reserveSpaceForAtLeastXElements)
+                                                QQueue<QSharedPointer<Candidate>>& queue,
+                                                qsizetype reserveSpaceForAtLeastXElements)
     {
         applyFilterToQueue(queue,
                            [this](const Candidate& c) { return satisfiesBasicFilter(c); },

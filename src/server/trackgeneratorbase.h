@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -124,9 +124,9 @@ namespace PMP::Server
 
         static void applyFilterToQueue(QQueue<QSharedPointer<Candidate>>& queue,
                                 std::function<bool (const Candidate&)> filter,
-                                int reserveSpaceForAtLeastXElements = 0);
+                                qsizetype reserveSpaceForAtLeastXElements = 0);
         void applyBasicFilterToQueue(QQueue<QSharedPointer<Candidate>>& queue,
-                                     int reserveSpaceForAtLeastXElements = 0);
+                                     qsizetype reserveSpaceForAtLeastXElements = 0);
 
         virtual bool satisfiesBasicFilter(Candidate const& candidate) = 0;
         bool satisfiesNonRepetition(Candidate const& candidate,
