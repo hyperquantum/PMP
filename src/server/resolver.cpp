@@ -408,7 +408,6 @@ namespace PMP::Server
      : _hashIdRegistrar(hashIdRegistrar),
        _hashRelations(hashRelations),
        _historyStatistics(historyStatistics),
-       _lock(QMutex::Recursive),
        _fullIndexationNumber(1)
     {
         _analyzer = new Analyzer(this);

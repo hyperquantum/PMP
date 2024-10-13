@@ -25,8 +25,8 @@
 #include <QDate>
 #include <QDir>
 #include <QFile>
-#include <QMutex>
 #include <QMutexLocker>
+#include <QRecursiveMutex>
 #include <QRegularExpression>
 #include <QStringBuilder>
 #include <QTextStream>
@@ -73,7 +73,7 @@ namespace PMP
     class ConsoleLogger : LoggerBase
     {
     public:
-        ConsoleLogger() : _mutex(QMutex::Recursive), _out(stdout) {}
+        ConsoleLogger() : _out(stdout) {}
 
         void logMessage(QtMsgType type, const QMessageLogContext& context,
                         const QString& msg);
@@ -82,7 +82,7 @@ namespace PMP
         QString generateOutputText(QtMsgType type, const QMessageLogContext& context,
                                    const QString& msg);
 
-        QMutex _mutex;
+        QRecursiveMutex _mutex;
         QTextStream _out;
     };
 
@@ -131,7 +131,7 @@ namespace PMP
     class TextFileLogger : LoggerBase
     {
     public:
-        TextFileLogger() : _mutex(QMutex::Recursive), _initialized(false), _appPid(0) {}
+        TextFileLogger() : _initialized(false), _appPid(0) {}
 
         bool init();
         bool initialized();
@@ -151,7 +151,7 @@ namespace PMP
 
         void writeFileHeader(QFile& file);
 
-        QMutex _mutex;
+        QRecursiveMutex _mutex;
         bool _initialized;
         qint64 _appPid;
         QByteArray _byteOrderMark;

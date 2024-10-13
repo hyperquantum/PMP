@@ -33,9 +33,9 @@
 
 #include <QDateTime>
 #include <QHash>
-#include <QMutex>
 #include <QObject>
 #include <QPair>
+#include <QRecursiveMutex>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -135,7 +135,7 @@ namespace PMP::Server
         HashRelations* _hashRelations { nullptr };
         HistoryStatistics* _historyStatistics { nullptr };
 
-        QMutex _lock;
+        QRecursiveMutex _lock;
 
         QStringList _musicPaths;
 
