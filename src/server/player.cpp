@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,13 +23,14 @@
 #include "resolver.h"
 
 #include <QAudio>
+#include <QAudioOutput>
 #include <QtDebug>
 #include <QtGlobal>
 
 namespace PMP::Server
 {
     PlayerInstance::PlayerInstance(QObject* parent, int identifier, Preloader* preloader,
-                                   Resolver* resolver)
+                                   Resolver* resolver, QAudioOutput* audioOutput)
      : QObject(parent),
        _player(new QMediaPlayer(this)),
        _preloader(preloader),
@@ -43,13 +44,15 @@ namespace PMP::Server
        _hadSeek(false),
        _deleteAfterStopped(false)
     {
+        _player->setAudioOutput(audioOutput);
+
         connect(
             _player, &QMediaPlayer::mediaStatusChanged,
             this, &PlayerInstance::internalMediaStatusChanged
         );
         connect(
-            _player, &QMediaPlayer::stateChanged,
-            this, &PlayerInstance::internalStateChanged
+            _player, &QMediaPlayer::playbackStateChanged,
+            this, &PlayerInstance::internalPlaybackStateChanged
         );
         connect(
             _player, &QMediaPlayer::positionChanged,
@@ -70,19 +73,6 @@ namespace PMP::Server
     {
         if (!_mediaSet) return 0;
         return _player->position();
-    }
-
-    void PlayerInstance::setVolume(int volume)
-    {
-        qDebug() << "PlayerInstance" << _identifier
-                 << " setvolume(" << volume << ") called";
-
-        qreal linearVolume =
-                QAudio::convertVolume(volume / qreal(100.0),
-                                      QAudio::LogarithmicVolumeScale,
-                                      QAudio::LinearVolumeScale);
-
-        _player->setVolume(qRound(linearVolume * 100));
     }
 
     void PlayerInstance::setTrack(QSharedPointer<QueueEntry> queueEntry,
@@ -143,7 +133,7 @@ namespace PMP::Server
         {
             qDebug() << "PlayerInstance" << _identifier << "for queue ID" << queueId
                      << ": going to load media:" << filename;
-            _player->setMedia(QUrl::fromLocalFile(filename));
+            _player->setSource(QUrl::fromLocalFile(filename));
             _mediaSet = true;
         }
     }
@@ -191,15 +181,17 @@ namespace PMP::Server
     {
         _deleteAfterStopped = true;
 
-        if (_player->state() == QMediaPlayer::StoppedState)
+        if (_player->playbackState() == QMediaPlayer::StoppedState)
             this->deleteLater();
     }
 
-    void PlayerInstance::internalStateChanged(QMediaPlayer::State state)
+    void PlayerInstance::internalPlaybackStateChanged(
+        QMediaPlayer::PlaybackState playbackState)
     {
-        qDebug() << "PlayerInstance" << _identifier << ": state changed to" << state;
+        qDebug() << "PlayerInstance" << _identifier
+                 << ": playback state changed to" << playbackState;
 
-        switch (state)
+        switch (playbackState)
         {
             case QMediaPlayer::StoppedState:
                 switch (_player->mediaStatus())
@@ -285,6 +277,7 @@ namespace PMP::Server
 
     Player::Player(QObject* parent, Resolver* resolver, int defaultVolume)
      : QObject(parent),
+        _audioOutput(new QAudioOutput()),
        _oldInstance1(nullptr),
        _oldInstance2(nullptr),
        _currentInstance(nullptr),
@@ -298,6 +291,8 @@ namespace PMP::Server
        _state(ServerPlayerState::Stopped),
        _userPlayingFor(0)
     {
+        _audioOutput->setParent(this);
+
         auto volume = (defaultVolume >= 0 && defaultVolume <= 100) ? defaultVolume : 75;
         setVolume(volume);
 
@@ -462,8 +457,12 @@ namespace PMP::Server
 
         _volume = volume;
 
-        if (_currentInstance)
-            _currentInstance->setVolume(volume);
+        auto linearVolume =
+            QAudio::convertVolume(volume / float(100),
+                                  QAudio::LogarithmicVolumeScale,
+                                  QAudio::LinearVolumeScale);
+
+        _audioOutput->setVolume(linearVolume);
 
         Q_EMIT volumeChanged(volume);
     }
@@ -476,7 +475,7 @@ namespace PMP::Server
         Q_EMIT userPlayingForChanged(user);
     }
 
-    bool Player::startNext(bool stopCurrent, bool playNext)
+    void Player::startNext(bool stopCurrent, bool playNext)
     {
         qDebug() << "Player::startNext(" << stopCurrent << "," << playNext << ") called";
 
@@ -561,8 +560,6 @@ namespace PMP::Server
 
         if (nextTrack && playNext)
             emitStartedPlaying(_nowPlaying);
-
-        return nextTrack;
     }
 
     void Player::instancePlaying(PlayerInstance* instance)
@@ -709,7 +706,8 @@ namespace PMP::Server
     PlayerInstance* Player::createNewPlayerInstance()
     {
         auto* instance =
-                new PlayerInstance(this, ++_instanceIdentifier, &_preloader, _resolver);
+                new PlayerInstance(this, ++_instanceIdentifier, &_preloader, _resolver,
+                                   _audioOutput);
 
         connect(
             instance, &PlayerInstance::playing,
@@ -809,7 +807,6 @@ namespace PMP::Server
 
         _currentInstance = playerInstance;
         _playPosition = 0;
-        playerInstance->setVolume(_volume);
 
         if (startPlaying)
             playerInstance->play();
@@ -918,5 +915,4 @@ namespace PMP::Server
 
         return qBound(0, int(positionReached * 1000 / msLength), 1000);
     }
-
 }

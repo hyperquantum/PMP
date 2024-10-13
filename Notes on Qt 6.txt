@@ -18,6 +18,8 @@ TO DO:
  - fix (non-deprecation) warnings
  - replace usage of QVector with QList
  - update ContainerUtil to avoid the name 'QVector'
+ - can QAudioOutput be shared between multiple QMediaPlayer instances?
+ - test player volume
 
 Useful information:
 

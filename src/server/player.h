@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,6 +29,8 @@
 #include <QMediaPlayer>
 #include <QQueue>
 
+QT_FORWARD_DECLARE_CLASS(QAudioOutput);
+
 namespace PMP::Server
 {
     class Resolver;
@@ -38,7 +40,7 @@ namespace PMP::Server
         Q_OBJECT
     public:
         PlayerInstance(QObject* parent, int identifier, Preloader* preloader,
-                       Resolver* resolver);
+                       Resolver* resolver, QAudioOutput* audioOutput);
 
         QSharedPointer<QueueEntry> track() const { return _track; }
         bool availableForNewTrack() const;
@@ -50,7 +52,6 @@ namespace PMP::Server
         qint64 position() const;
 
     public Q_SLOTS:
-        void setVolume(int volume);
         void setTrack(QSharedPointer<QueueEntry> queueEntry, bool onlyIfPreloaded);
         void play();
         void pause();
@@ -69,7 +70,7 @@ namespace PMP::Server
         void stoppedEarly(qint64 position);
 
     private Q_SLOTS:
-        void internalStateChanged(QMediaPlayer::State state);
+        void internalPlaybackStateChanged(QMediaPlayer::PlaybackState playbackState);
         void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
         void internalPositionChanged(qint64 position);
         void internalDurationChanged(qint64 duration);
@@ -156,7 +157,7 @@ namespace PMP::Server
         void makeSureOneOldInstanceSlotIsFree();
         void moveCurrentInstanceToOldInstanceSlot();
         void moveToOldInstanceSlot(PlayerInstance* instance);
-        bool startNext(bool stopCurrent, bool playNext);
+        void startNext(bool stopCurrent, bool playNext);
         PlayerInstance* createNewPlayerInstance();
         void prepareForFirstTrackFromQueue();
         bool tryPrepareTrack(PlayerInstance* playerInstance,
@@ -175,6 +176,7 @@ namespace PMP::Server
                                         qint64 positionReached,
                                         bool seeked);
 
+        QAudioOutput* _audioOutput;
         PlayerInstance* _oldInstance1;
         PlayerInstance* _oldInstance2;
         PlayerInstance* _currentInstance;
