@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -38,8 +38,6 @@ namespace PMP::Server
         QSettings settings(QSettings::IniFormat, QSettings::UserScope,
                            QCoreApplication::organizationName(),
                            QCoreApplication::applicationName());
-
-        settings.setIniCodec("UTF-8");
 
         loadServerCaption(settings);
         loadDefaultVolume(settings);
