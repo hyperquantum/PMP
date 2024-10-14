@@ -33,9 +33,9 @@
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QSet>
-#include <QtConcurrent/QtConcurrent>
 #include <QtDebug>
 #include <QThreadPool>
+#include <QTimer>
 
 #include <algorithm>
 #include <limits>
@@ -494,7 +494,9 @@ namespace PMP::Server
         _fullIndexationStatus = FullIndexationStatus::FileSystemTraversal;
         Q_EMIT fullIndexationRunStatusChanged();
 
-        QtConcurrent::run(this, &Resolver::doFullIndexationFileSystemTraversal);
+        QThreadPool::globalInstance()->start(
+            [this]() { doFullIndexationFileSystemTraversal(); }
+        );
 
         return Success();
     }
@@ -509,7 +511,9 @@ namespace PMP::Server
         _quickScanStatus = QuickScanForNewFilesStatus::FileSystemTraversal;
         Q_EMIT quickScanForNewFilesRunStatusChanged();
 
-        QtConcurrent::run(this, &Resolver::doQuickScanForNewFilesFileSystemTraversal);
+        QThreadPool::globalInstance()->start(
+            [this]() { doQuickScanForNewFilesFileSystemTraversal(); }
+        );
 
         return Success();
     }
@@ -627,7 +631,10 @@ namespace PMP::Server
                                 == FullIndexationStatus::WaitingForFileAnalysisCompletion)
         {
             _fullIndexationStatus = FullIndexationStatus::CheckingForFileRemovals;
-            QtConcurrent::run(this, &Resolver::doFullIndexationCheckForFileRemovals);
+
+            QThreadPool::globalInstance()->start(
+                [this]() { doFullIndexationCheckForFileRemovals(); }
+            );
         }
     }
 
@@ -782,7 +789,10 @@ namespace PMP::Server
         if (_analyzer->isFinished())
         {
             _fullIndexationStatus = FullIndexationStatus::CheckingForFileRemovals;
-            QtConcurrent::run(this, &Resolver::doFullIndexationCheckForFileRemovals);
+
+            QThreadPool::globalInstance()->start(
+                [this]() { doFullIndexationCheckForFileRemovals(); }
+            );
         }
         else
         {
