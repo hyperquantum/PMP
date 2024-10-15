@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,7 +35,7 @@ namespace PMP
 
     QDebug operator<<(QDebug debug, ScrobblingProvider provider);
 
-    inline uint qHash(ScrobblingProvider provider, uint seed)
+    inline size_t qHash(ScrobblingProvider provider, uint seed)
     {
         return ::qHash(static_cast<int>(provider), seed);
     }

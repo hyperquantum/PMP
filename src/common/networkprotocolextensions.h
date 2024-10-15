@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -87,7 +87,7 @@ namespace PMP
         return debug;
     }
 
-    inline uint qHash(NetworkProtocolExtension extension, uint seed)
+    inline size_t qHash(NetworkProtocolExtension extension, size_t seed)
     {
         return ::qHash(static_cast<int>(extension), seed);
     }
