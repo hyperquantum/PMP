@@ -72,7 +72,7 @@ IDEAS
  * play history: add context: was there no user interaction for a long time?
  * music collection: add a clear button for each filter combobox
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
- * music collection: add quick search function, for searching while leaving the current filters unchanged
+ ** music collection: add quick search function, for searching while leaving the current filters unchanged
  * music collection: new action: add track before first interruption (break/barrier)
  * music collection: new filter criterium "without album artist"
  * music collection: quick indexation action that only examines files that are new or appear to have changed
