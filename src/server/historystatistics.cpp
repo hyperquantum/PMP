@@ -197,7 +197,7 @@ namespace PMP::Server
 
             for (auto hashIdFromGroup : hashesInGroup)
             {
-                if (userEntry.hashData.remove(hashIdFromGroup) > 0)
+                if (userEntry.hashData.remove(hashIdFromGroup))
                 {
                     usersNeedingRefetch << userId;
                 }
