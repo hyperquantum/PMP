@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,8 @@
 #include "client/dynamicmodecontroller.h"
 
 #include <QtDebug>
+
+#include <utility>
 
 using namespace PMP::Client;
 
@@ -264,7 +266,7 @@ namespace PMP
             }
         }
 
-        for (auto span : qAsConst(_noRepetitionList))
+        for (auto span : std::as_const(_noRepetitionList))
         {
             _ui->trackRepetitionComboBox->addItem(noRepetitionTimeString(span));
         }

@@ -30,6 +30,8 @@
 #include <QtDebug>
 #include <QTextStream>
 
+#include <utility>
+
 using namespace PMP::Server::DatabaseRecords;
 
 namespace PMP::Server
@@ -1456,7 +1458,7 @@ namespace PMP::Server
 
                 q.addBindValue(userId);
                 q.addBindValue(userId); /* twice */
-                for (auto hashId : qAsConst(hashIds))
+                for (auto hashId : std::as_const(hashIds))
                 {
                     q.addBindValue(hashId);
                 }
@@ -1600,7 +1602,7 @@ namespace PMP::Server
                       "LIMIT ?";
 
                 q.prepare(sql);
-                for (auto hashId : qAsConst(hashIds))
+                for (auto hashId : std::as_const(hashIds))
                 {
                     q.addBindValue(hashId);
                 }
@@ -1648,7 +1650,7 @@ namespace PMP::Server
             q.prepare(sql);
 
             q.addBindValue(userId);
-            for (auto hashId : qAsConst(hashIds))
+            for (auto hashId : std::as_const(hashIds))
             {
                 q.addBindValue(hashId);
             }

@@ -43,6 +43,8 @@
 #include <QtDebug>
 #include <QTimer>
 
+#include <utility>
+
 using namespace PMP::Client;
 using namespace PMP::UnicodeChars;
 
@@ -131,7 +133,7 @@ namespace PMP
     {
         auto& ids = _intervalsToIds[interval];
 
-        for (auto id : qAsConst(ids))
+        for (auto id : std::as_const(ids))
         {
             _idsToInterval.remove(id);
         }

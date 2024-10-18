@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -69,7 +69,7 @@ void TestTokenEncoder::encodeUsesObfuscation()
            << "r6xFSEWtFg" << "4CAuXc8t9b" << "sports car" << "GRs40tjegO"
            << "LmNoPqRsTuVwXyZ" << "unlikely" << "FwyI2bLTgaqMZ27a" << "SBKOhurrYQytfisU";
 
-    for (auto& token : qAsConst(tokens))
+    for (auto& token : std::as_const(tokens))
     {
         for (int i = 0; i < 100; ++i)
         {
@@ -101,7 +101,7 @@ void TestTokenEncoder::roundtrip()
            << "cdef0ab32"
            << "plain hot tomato soup";
 
-    for (auto& token : qAsConst(tokens))
+    for (auto& token : std::as_const(tokens))
     {
         auto encoded = TokenEncoder::encodeToken(token);
         auto decoded = TokenEncoder::decodeToken(encoded);

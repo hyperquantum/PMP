@@ -29,6 +29,8 @@
 #include <QThreadPool>
 #include <QTimer>
 
+#include <utility>
+
 using PMP::Server::DatabaseRecords::HashHistoryStats;
 
 namespace PMP::Server
@@ -55,7 +57,7 @@ namespace PMP::Server
                                ? customReserveSize
                                : historyStats.size());
 
-            for (auto const& stats : qAsConst(historyStats))
+            for (auto const& stats : std::as_const(historyStats))
             {
                 result.insert(stats.hashId, toTrackStats(stats));
             }
@@ -206,7 +208,7 @@ namespace PMP::Server
 
         lock.unlock();
 
-        for (auto userId : qAsConst(usersNeedingRefetch))
+        for (auto userId : std::as_const(usersNeedingRefetch))
         {
             scheduleFetch(userId, hashId, false);
         }

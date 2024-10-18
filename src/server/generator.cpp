@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -32,6 +32,7 @@
 #include <QTimer>
 
 #include <algorithm>
+#include <utility>
 
 namespace PMP::Server
 {
@@ -186,7 +187,7 @@ namespace PMP::Server
             auto tracks = _waveTrackGenerator->getTracks(expandCount);
             generatedCount += tracks.size();
 
-            for (auto const& track : qAsConst(tracks))
+            for (auto const& track : std::as_const(tracks))
             {
                 _queue->enqueue(track);
             }
@@ -200,7 +201,7 @@ namespace PMP::Server
             auto tracks = _trackGenerator->getTracks(expandCount - generatedCount);
             generatedCount += tracks.size();
 
-            for (auto const& track : qAsConst(tracks))
+            for (auto const& track : std::as_const(tracks))
             {
                 _queue->enqueue(track);
             }
@@ -313,7 +314,7 @@ namespace PMP::Server
                     ? _waveTrackGenerator->getTracks(tracksToGenerate)
                     : _trackGenerator->getTracks(tracksToGenerate);
 
-        for (auto const& track : qAsConst(tracks))
+        for (auto const& track : std::as_const(tracks))
         {
             _queue->enqueue(track);
         }

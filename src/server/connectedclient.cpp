@@ -39,6 +39,7 @@
 #include <QTimer>
 
 #include <limits>
+#include <utility>
 
 namespace PMP::Server
 {
@@ -1007,7 +1008,7 @@ namespace PMP::Server
         NetworkUtil::append2Bytes(message, fields);
         NetworkUtil::append4Bytes(message, userId);
 
-        for (auto& stat : qAsConst(stats))
+        for (auto& stat : std::as_const(stats))
         {
             NetworkProtocol::appendHash(message, stat.hash());
 

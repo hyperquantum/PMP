@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,6 +29,7 @@
 #include <QVector>
 
 #include <functional>
+#include <utility>
 
 /* TagLib includes */
 #include <taglib/apetag.h>
@@ -334,7 +335,7 @@ public:
         transformed << multiTransformed;
 
         unsigned correctHashCount = 0;
-        for (auto& modifiedData : qAsConst(transformed))
+        for (auto& modifiedData : std::as_const(transformed))
         {
             FileAnalyzer analyzer(modifiedData, extension());
             analyzer.analyze();

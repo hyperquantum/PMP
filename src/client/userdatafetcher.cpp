@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,6 +24,8 @@
 
 #include <QtDebug>
 #include <QTimer>
+
+#include <utility>
 
 namespace PMP::Client
 {
@@ -147,7 +149,7 @@ namespace PMP::Client
     {
         if (_pendingNotificationsUsers.isEmpty()) return;
 
-        for (quint32 userId : qAsConst(_pendingNotificationsUsers))
+        for (quint32 userId : std::as_const(_pendingNotificationsUsers))
         {
             Q_EMIT dataReceivedForUser(userId);
         }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,6 +35,8 @@
 #include <QDataStream>
 #include <QMimeData>
 #include <QVector>
+
+#include <utility>
 
 using namespace PMP::Client;
 
@@ -139,7 +141,7 @@ namespace PMP
             return;
 
         beginInsertRows({}, 0, tracks.size() - 1);
-        for (auto& track : qAsConst(tracks))
+        for (auto& track : std::as_const(tracks))
         {
             _list.append(QSharedPointer<PlayerHistoryTrackInfo>::create(track));
         }

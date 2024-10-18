@@ -28,6 +28,7 @@
 #include <QtDebug>
 
 #include <algorithm>
+#include <utility>
 
 namespace PMP::Server
 {
@@ -180,7 +181,7 @@ namespace PMP::Server
                      << "out of" << trackCount << "; giving them back to the source";
 
             // ran out of attempts, put everything back for the next attempt
-            for (auto const& track : qAsConst(tracks))
+            for (auto const& track : std::as_const(tracks))
                 track->setUnused();
 
             return {};

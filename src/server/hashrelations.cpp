@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -55,7 +55,7 @@ namespace PMP::Server
 
             newEntry->equivalentHashes.unite(QSet<uint>({ pair.first, pair.second }));
 
-            for (uint hash : qAsConst(newEntry->equivalentHashes))
+            for (uint hash : std::as_const(newEntry->equivalentHashes))
             {
                 _hashes[hash] = newEntry;
             }
@@ -81,7 +81,7 @@ namespace PMP::Server
 
         newEntry->equivalentHashes.unite(QSet<uint>(hashes.begin(), hashes.end()));
 
-        for (uint hash : qAsConst(newEntry->equivalentHashes))
+        for (uint hash : std::as_const(newEntry->equivalentHashes))
         {
             _hashes[hash] = newEntry;
         }

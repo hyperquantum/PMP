@@ -28,6 +28,8 @@
 #include <QDateTime>
 #include <QTimer>
 
+#include <utility>
+
 namespace PMP::Server
 {
     namespace
@@ -133,7 +135,7 @@ namespace PMP::Server
                                          {
                                              return selectionFilterCompare(a, b);
                                          });
-            for (auto const& track : qAsConst(tracks))
+            for (auto const& track : std::as_const(tracks))
             {
                 _upcoming.append(track);
                 added++;
