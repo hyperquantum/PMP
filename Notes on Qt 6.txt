@@ -19,6 +19,7 @@ TO DO:
  - update ContainerUtil to avoid the name 'QVector'
  - can QAudioOutput be shared between multiple QMediaPlayer instances?
  - test player volume
+ - future? no longer strip ID3v2 during preprocessing for playback
 
 Useful information:
 
