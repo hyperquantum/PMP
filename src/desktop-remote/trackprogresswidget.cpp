@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2021, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -113,9 +113,11 @@ namespace PMP
         {
             QRect rect = this->rect().adjusted(+1+2, +1+2, -1-2, -1-2);
 
-            if (rect.contains(event->pos()))
+            auto mousePosition = event->position().toPoint();
+
+            if (rect.contains(mousePosition))
             {
-                int x = event->x();
+                int x = mousePosition.x();
                 if (x < rect.left() || x > rect.x() + rect.width())
                 {
                     return;
