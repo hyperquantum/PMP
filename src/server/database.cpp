@@ -1334,7 +1334,7 @@ namespace PMP::Server
                     "VALUES(?,?,?,?,?,?)"
                 );
                 q.addBindValue(hashId);
-                q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
+                q.addBindValue(toVariantMayBeNull(userId, 0));
                 q.addBindValue(start.toUTC());
                 q.addBindValue(end.toUTC());
                 q.addBindValue(permillage);
@@ -1696,14 +1696,14 @@ namespace PMP::Server
             q.prepare(sql);
 
             q.addBindValue(stats.hashId);
-            q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
+            q.addBindValue(toVariantMayBeNull(userId, 0));
             q.addBindValue(stats.lastHistoryId);
             q.addBindValue(stats.lastHeard.toUTC());
             q.addBindValue(stats.scoreHeardCount);
             q.addBindValue(stats.averagePermillage);
 
             q.addBindValue(stats.hashId);
-            q.addBindValue(userId == 0 ? /*NULL*/QVariant(QVariant::UInt) : userId);
+            q.addBindValue(toVariantMayBeNull(userId, 0));
             q.addBindValue(stats.lastHistoryId);
             q.addBindValue(stats.lastHeard.toUTC());
             q.addBindValue(stats.scoreHeardCount);
@@ -1860,6 +1860,14 @@ namespace PMP::Server
     std::function<void (QSqlQuery&)> Database::prepareSimple(QString sql)
     {
         return [=] (QSqlQuery& q) { q.prepare(sql); };
+    }
+
+    QVariant Database::toVariantMayBeNull(quint32 value, quint32 nullValue)
+    {
+        if (value == nullValue)
+            return QVariant(QMetaType::fromType<quint32>());
+
+        return value;
     }
 
     bool Database::getBool(QVariant v, bool nullValue)
