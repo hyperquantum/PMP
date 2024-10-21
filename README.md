@@ -54,7 +54,7 @@ Contents of this file:
 
 ### Common Dependencies
 
- * Qt 5 (at least 5.14)
+ * Qt 6 (at least 6.2)
    * modules: Core, Gui, Multimedia, Network, Sql, Test, Widgets, Xml
    * database driver for MySQL/MariaDB
  * TagLib 1.12 or higher
@@ -136,7 +136,7 @@ After configuring the server you can run PMP for real:
 Building PMP on Linux and other Unix-like operating systems should be relatively simple:
 
 1. Make sure you have installed a C++ compiler and CMake
-2. Install development packages for MySQL, Qt 5 and TagLib using your package manager
+2. Install development packages for MySQL, Qt 6 and TagLib using your package manager
 3. Download and unpack the PMP sourcecode
 4. Open a terminal, change current directory into the 'bin' directory of the PMP sourcecode
 5. Run the following commands:  
@@ -165,12 +165,16 @@ If you do not have vcpkg installed yet, open a CMD terminal and run the followin
 ```
 
 Then install the dependencies of PMP. Open a CMD terminal and run the following commands
- (these may take a long time):
+ (some of these may take a while):
 ```cmd
 > cd C:\src\vcpkg
 > .\vcpkg install taglib --triplet x64-windows
-> .\vcpkg install qt5-base[mysqlplugin] --triplet x64-windows
-> .\vcpkg install qt5[essentials] --triplet x64-windows
+> .\vcpkg install qtbase[sql-mysql] --triplet x64-windows
+> .\vcpkg install qtdoc --triplet x64-windows
+> .\vcpkg install qttools --triplet x64-windows
+> .\vcpkg install qtmultimedia --triplet x64-windows
+> .\vcpkg install qtsvg --triplet x64-windows
+> .\vcpkg install qtimageformats --triplet x64-windows
 ```
 
 Finally you can build PMP itself. Run the following commands in a CMD terminal. Adjust paths and VS version as needed; change _Debug_ to _Release_ (in both lines) if you prefer:

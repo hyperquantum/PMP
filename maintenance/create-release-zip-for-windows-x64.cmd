@@ -102,8 +102,12 @@ IF NOT EXIST "%bin_dir%\ran_vcpkg_already" (
 
     CD "%TOOL_VCPKG_BIN_DIR%"
     vcpkg install taglib --triplet x64-windows || GOTO :EOF
-    vcpkg install qt5-base[mysqlplugin] --triplet x64-windows || GOTO :EOF
-    vcpkg install qt5[essentials] --triplet x64-windows || GOTO :EOF
+    vcpkg install qtbase[sql-mysql] --triplet x64-windows || GOTO :EOF
+    vcpkg install qtdoc --triplet x64-windows || GOTO :EOF
+    vcpkg install qttools --triplet x64-windows || GOTO :EOF
+    vcpkg install qtmultimedia --triplet x64-windows || GOTO :EOF
+    vcpkg install qtsvg --triplet x64-windows || GOTO :EOF
+    vcpkg install qtimageformats --triplet x64-windows || GOTO :EOF
 
     ECHO(
 
