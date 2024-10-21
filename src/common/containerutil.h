@@ -66,12 +66,12 @@ namespace PMP
             return v;
         }
 
-        template<typename T> static QSet<T> toSet(QVector<T> const& vector)
+        template<typename T> static QSet<T> toSet(QList<T> const& list)
         {
             QSet<T> set;
-            set.reserve(vector.size());
+            set.reserve(list.size());
 
-            for (T const& element : vector)
+            for (T const& element : list)
                 set << element;
 
             return set;
@@ -84,9 +84,9 @@ namespace PMP
         }
 
         template<typename T>
-        static void removeFromSet(QVector<T> const& vector, QSet<T>& set)
+        static void removeFromSet(QList<T> const& list, QSet<T>& set)
         {
-            for (T const& element : vector)
+            for (T const& element : list)
                 set.remove(element);
         }
 
