@@ -251,8 +251,7 @@ namespace PMP::Server
                    "HistoryStatistics::recalculateGroupStats",
                    "no individual stats");
 
-        auto newGroupStats =
-            TrackStats::combined(ContainerUtil::valuesToVector(individualStats));
+        auto newGroupStats = TrackStats::combined(individualStats.values());
 
         auto& userData = _userData[userId];
 
