@@ -406,7 +406,7 @@ namespace PMP::Server
         if (cacheUseForIndividualHashes == UseCachedValues::Yes)
         {
             auto statsFromCacheTable =
-                database->getCachedHashStats(userId, ContainerUtil::toVector(toFetch));
+                database->getCachedHashStats(userId, ContainerUtil::toList(toFetch));
 
             if (statsFromCacheTable.failed())
                 return failure;
@@ -424,7 +424,7 @@ namespace PMP::Server
         }
 
         auto statsFromHistoryTable =
-            database->getHashHistoryStats(userId, ContainerUtil::toVector(toFetch));
+            database->getHashHistoryStats(userId, ContainerUtil::toList(toFetch));
 
         if (statsFromHistoryTable.failed())
             return failure;

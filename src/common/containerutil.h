@@ -23,23 +23,22 @@
 #include <QHash>
 #include <QList>
 #include <QSet>
-#include <QVector>
 
 namespace PMP
 {
     class ContainerUtil
     {
     public:
-        template<typename T> static QVector<T> toVector(QSet<T> const& set,
-                                                        int customReserveSize = -1)
+        template<typename T> static QList<T> toList(QSet<T> const& set,
+                                                    int customReserveSize = -1)
         {
-            QVector<T> v;
-            v.reserve(customReserveSize >= 0 ? customReserveSize : set.size());
+            QList<T> list;
+            list.reserve(customReserveSize >= 0 ? customReserveSize : set.size());
 
             for (T const& element : set)
-                v.append(element);
+                list.append(element);
 
-            return v;
+            return list;
         }
 
         template<typename T> static QSet<T> toSet(QList<T> const& list)

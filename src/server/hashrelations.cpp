@@ -117,7 +117,7 @@ namespace PMP::Server
             return { hashId };
 
         const auto ids = entry->equivalentHashes;
-        return ContainerUtil::toVector(ids);
+        return ContainerUtil::toList(ids);
     }
 
     QSet<uint> HashRelations::getOtherHashesEquivalentTo(uint hashId)
