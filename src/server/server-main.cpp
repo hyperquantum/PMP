@@ -212,6 +212,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     Logging::enableConsoleAndTextFileLogging(true);
     Logging::setFilenameTag("S"); /* S = Server */
     qDebug() << "PMP server started"; // initial log message
+    qDebug() << "Qt version:" << QT_VERSION_STR;
     Logging::cleanupOldLogfiles();
     /* TODO: do a log cleanup regularly, because a server is likely to be run for days,
      *       weeks, or months before being restarted. */
