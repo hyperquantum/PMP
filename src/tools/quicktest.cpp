@@ -18,18 +18,22 @@
 */
 
 #include "common/logging.h"
-#include "common/util.h"
+//#include "common/util.h"
 #include "common/version.h"
 
-#include "server/database.h"
-#include "server/lastfmscrobblingbackend.h"
-#include "server/serversettings.h"
-#include "server/tokenencoder.h"
+//#include "server/database.h"
+//#include "server/lastfmscrobblingbackend.h"
+//#include "server/serversettings.h"
+//#include "server/tokenencoder.h"
 
+#include <QAudioDevice>
+#include <QAudioOutput>
 #include <QCoreApplication>
 #include <QDateTime>
 #include <QHostAddress>
 #include <QHostInfo>
+#include <QMediaDevices>
+#include <QMediaPlayer>
 #include <QNetworkInterface>
 #include <QSslSocket>
 #include <QtDebug>
@@ -37,7 +41,31 @@
 #include <QThread>
 
 using namespace PMP;
-using namespace PMP::Server;
+//using namespace PMP::Server;
+
+void printOutputDevices(QTextStream& out)
+{
+    const auto audioDevices = QMediaDevices::audioOutputs();
+    for (const QAudioDevice& device : audioDevices)
+    {
+        out << "Device ID: " << device.id() << Qt::endl;
+        out << " Description: " << device.description() << Qt::endl;
+        out << " Is default: " << (device.isDefault() ? "Yes" : "No") << Qt::endl;
+    }
+    out << Qt::endl;
+}
+
+QAudioDevice getDefaultAudioDevice()
+{
+    const auto audioDevices = QMediaDevices::audioOutputs();
+    for (const QAudioDevice& device : audioDevices)
+    {
+        if (device.isDefault())
+            return device;
+    }
+
+    return {};
+}
 
 int main(int argc, char* argv[])
 {
@@ -55,6 +83,7 @@ int main(int argc, char* argv[])
     QTextStream out(stdout);
     qDebug() << "Qt version:" << qVersion();
 
+    /*
     for (int i = 0; i < 10; ++i)
     {
         auto encoded = TokenEncoder::encodeToken("Flub");
@@ -63,6 +92,7 @@ int main(int argc, char* argv[])
         auto decoded = TokenEncoder::decodeToken(encoded);
         qDebug() << "decoded:" << decoded;
     }
+    */
 
     /*
     qDebug() << "Local hostname:" << QHostInfo::localHostName();
@@ -154,5 +184,71 @@ int main(int argc, char* argv[])
     qDebug() << d1R.toString(Qt::ISODateWithMs);
     */
 
-    return 0;
+    auto audioOutput1 = new QAudioOutput();
+    auto audioOutput2 = new QAudioOutput();
+
+    QObject::connect(
+        audioOutput1, &QAudioOutput::deviceChanged,
+        &app,
+        [&out, audioOutput1]()
+        {
+            out << "output 1 device has changed to: " << audioOutput1->device().id() << Qt::endl;
+        }
+    );
+    QObject::connect(
+        audioOutput2, &QAudioOutput::deviceChanged,
+        &app,
+        [&out, audioOutput2]()
+        {
+            out << "output 2 device has changed to: " << audioOutput2->device().id() << Qt::endl;
+        }
+        );
+
+    printOutputDevices(out);
+    auto defaultDevice = getDefaultAudioDevice();
+    out << "default device: " << defaultDevice.id() << Qt::endl << Qt::endl;
+
+    QMediaDevices mediaDevices;
+    QObject::connect(
+        &mediaDevices, &QMediaDevices::audioOutputsChanged,
+        &app,
+        [&out, &defaultDevice, &audioOutput1]()
+        {
+            out << "<<< AUDIO OUTPUT DEVICES CHANGED >>>" << Qt::endl << Qt::endl;
+            printOutputDevices(out);
+            auto newDefaultDevice = getDefaultAudioDevice();
+
+            if (newDefaultDevice.id() != defaultDevice.id())
+            {
+                out << "default device has changed to: " << newDefaultDevice.id() << Qt::endl;
+                out << Qt::endl;
+
+                defaultDevice = newDefaultDevice;
+                audioOutput1->setDevice(newDefaultDevice);
+            }
+        }
+    );
+
+    auto track1 = "track1.flac";
+    auto track2 = "track2.mp3";
+    auto track3 = "track3.mp3";
+    auto track4 = "track4.mp3";
+
+    audioOutput1->setVolume(85);
+    audioOutput2->setVolume(80);
+
+    auto player1 = new QMediaPlayer;
+    player1->setAudioOutput(audioOutput1);
+    player1->setSource(QUrl::fromLocalFile(track3));
+
+    auto player2 = new QMediaPlayer;
+    player2->setAudioOutput(audioOutput2);
+
+    out << "output 1 device: " << audioOutput1->device().id() << Qt::endl;
+    out << "output 2 device: " << audioOutput2->device().id() << Qt::endl;
+    out << Qt::endl;
+
+    player1->play();
+
+    return app.exec();
 }
