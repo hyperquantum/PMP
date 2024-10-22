@@ -114,7 +114,7 @@ IDEAS
 
 NON-FUNCTIONAL IMPROVEMENTS
 
- * migrate to Qt 6
+ * improve Player logic and make it more robust
  * switch to signed integer types for things like queue indices
  * split Database class into smaller parts
  * clean up old log files regularly, not just at startup

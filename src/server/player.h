@@ -26,10 +26,10 @@
 
 #include <QDateTime>
 #include <QHash>
-#include <QMediaPlayer>
 #include <QQueue>
 
 QT_FORWARD_DECLARE_CLASS(QAudioOutput);
+QT_FORWARD_DECLARE_CLASS(QMediaPlayer);
 
 namespace PMP::Server
 {
@@ -40,7 +40,7 @@ namespace PMP::Server
         Q_OBJECT
     public:
         PlayerInstance(QObject* parent, int identifier, Preloader* preloader,
-                       Resolver* resolver, QAudioOutput* audioOutput);
+                       Resolver* resolver);
 
         QSharedPointer<QueueEntry> track() const { return _track; }
         bool availableForNewTrack() const;
@@ -52,6 +52,7 @@ namespace PMP::Server
         qint64 position() const;
 
     public Q_SLOTS:
+        void setVolume(int volume);
         void setTrack(QSharedPointer<QueueEntry> queueEntry, bool onlyIfPreloaded);
         void play();
         void pause();
@@ -70,14 +71,16 @@ namespace PMP::Server
         void stoppedEarly(qint64 position);
 
     private Q_SLOTS:
-        void internalPlaybackStateChanged(QMediaPlayer::PlaybackState playbackState);
-        void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
+        void internalPlaybackStateChanged();
+        void internalMediaStatusChanged();
+        void internalErrorChanged();
         void internalPositionChanged(qint64 position);
         void internalDurationChanged(qint64 duration);
 
     private:
         void updateEndOfTrackComingUpFlag();
 
+        QAudioOutput* _audioOutput;
         QMediaPlayer* _player;
         Preloader* _preloader;
         Resolver* _resolver;
@@ -176,7 +179,6 @@ namespace PMP::Server
                                         qint64 positionReached,
                                         bool seeked);
 
-        QAudioOutput* _audioOutput;
         PlayerInstance* _oldInstance1;
         PlayerInstance* _oldInstance2;
         PlayerInstance* _currentInstance;

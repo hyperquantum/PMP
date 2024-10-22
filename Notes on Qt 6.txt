@@ -14,8 +14,7 @@ cmake -G "Visual Studio 17 2022" -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" -D
 cmake --build . --config Debug -j 2
 
 TO DO:
- - can QAudioOutput be shared between multiple QMediaPlayer instances?
- - test player volume
+ - fix audio output not switching to headphones when plugged in, or add output device selection
  - future: replace all usages of QVector with QList
  - future: no longer strip ID3v2 during preprocessing for playback
 
