@@ -19,6 +19,7 @@
 
 #include "player.h"
 
+#include "audiodevices.h"
 #include "queueentry.h"
 #include "resolver.h"
 
@@ -92,6 +93,17 @@ namespace PMP::Server
                                   QAudio::LinearVolumeScale);
 
         _audioOutput->setVolume(linearVolume);
+    }
+
+    void PlayerInstance::setAudioOutputDevice(QAudioDevice const& device)
+    {
+        bool isChange = _audioOutput->device() != device;
+
+        qDebug() << "PlayerInstance" << _identifier
+                 << ": setting audio output device to" << device.description()
+                 << "->" << (isChange ? "DIFFERENT DEVICE" : "still the same device");
+
+        _audioOutput->setDevice(device);
     }
 
     void PlayerInstance::setTrack(QSharedPointer<QueueEntry> queueEntry,
@@ -298,11 +310,11 @@ namespace PMP::Server
         }
     }
 
-
     /* ================================================================================ */
 
     Player::Player(QObject* parent, Resolver* resolver, int defaultVolume)
      : QObject(parent),
+       _audioDevices(new AudioDevices(this)),
        _oldInstance1(nullptr),
        _oldInstance2(nullptr),
        _currentInstance(nullptr),
@@ -319,6 +331,10 @@ namespace PMP::Server
         auto volume = (defaultVolume >= 0 && defaultVolume <= 100) ? defaultVolume : 75;
         setVolume(volume);
 
+        connect(
+            _audioDevices, &AudioDevices::defaultOutputDeviceChanged,
+            this, &Player::defaultAudioOutputDeviceChanged
+        );
         connect(
             &_queue, &PlayerQueue::firstTrackChanged,
             this, &Player::firstTrackInQueueChanged
@@ -492,6 +508,16 @@ namespace PMP::Server
 
         _userPlayingFor = user;
         Q_EMIT userPlayingForChanged(user);
+    }
+
+    void Player::defaultAudioOutputDeviceChanged()
+    {
+        auto defaultOutputDevice = _audioDevices->defaultOutputDevice();
+
+        if (_currentInstance)
+        {
+            _currentInstance->setAudioOutputDevice(defaultOutputDevice);
+        }
     }
 
     void Player::startNext(bool stopCurrent, bool playNext)
@@ -807,6 +833,7 @@ namespace PMP::Server
         if (playerInstance->track() == entry && playerInstance->trackSetSuccessfully())
             return true; /* already prepared */
 
+        playerInstance->setAudioOutputDevice(_audioDevices->defaultOutputDevice());
         playerInstance->setTrack(entry, onlyIfPreloaded);
         return playerInstance->trackSetSuccessfully();
     }
@@ -825,6 +852,7 @@ namespace PMP::Server
 
         _currentInstance = playerInstance;
         _playPosition = 0;
+        playerInstance->setAudioOutputDevice(_audioDevices->defaultOutputDevice());
         playerInstance->setVolume(_volume);
 
         if (startPlaying)

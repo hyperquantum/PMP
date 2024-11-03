@@ -28,11 +28,13 @@
 #include <QHash>
 #include <QQueue>
 
+QT_FORWARD_DECLARE_CLASS(QAudioDevice);
 QT_FORWARD_DECLARE_CLASS(QAudioOutput);
 QT_FORWARD_DECLARE_CLASS(QMediaPlayer);
 
 namespace PMP::Server
 {
+    class AudioDevices;
     class Resolver;
 
     class PlayerInstance : public QObject
@@ -51,9 +53,10 @@ namespace PMP::Server
 
         qint64 position() const;
 
-    public Q_SLOTS:
         void setVolume(int volume);
+        void setAudioOutputDevice(const QAudioDevice& device);
         void setTrack(QSharedPointer<QueueEntry> queueEntry, bool onlyIfPreloaded);
+
         void play();
         void pause();
         void stop();
@@ -142,6 +145,8 @@ namespace PMP::Server
         void newHistoryEntry(QSharedPointer<RecentHistoryEntry> entry);
 
     private Q_SLOTS:
+        void defaultAudioOutputDeviceChanged();
+
         void changeStateTo(ServerPlayerState state);
 
         void instancePlaying(PlayerInstance* instance);
@@ -179,6 +184,7 @@ namespace PMP::Server
                                         qint64 positionReached,
                                         bool seeked);
 
+        AudioDevices* _audioDevices;
         PlayerInstance* _oldInstance1;
         PlayerInstance* _oldInstance2;
         PlayerInstance* _currentInstance;
