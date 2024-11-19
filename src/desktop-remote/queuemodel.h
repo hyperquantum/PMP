@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,8 +19,6 @@
 
 #ifndef PMP_QUEUEMODEL_H
 #define PMP_QUEUEMODEL_H
-
-#include "common/playermode.h"
 
 #include "client/localhashid.h"
 
