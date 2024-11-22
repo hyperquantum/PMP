@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -60,7 +60,8 @@ namespace PMP::Server
 
     /* ========================== PreloadTrack ========================== */
 
-    class Preloader::PreloadTrack {
+    class Preloader::PreloadTrack
+    {
     public:
         PreloadTrack(FileHash hash, QString filename)
          : _status(Initial), _hash(hash), _filename(filename)
@@ -93,32 +94,39 @@ namespace PMP::Server
         QString _cacheFile;
     };
 
-    Preloader::PreloadTrack::Status Preloader::PreloadTrack::status() const {
+    Preloader::PreloadTrack::Status Preloader::PreloadTrack::status() const
+    {
         return _status;
     }
 
-    FileHash const& Preloader::PreloadTrack::hash() const {
+    FileHash const& Preloader::PreloadTrack::hash() const
+    {
         return _hash;
     }
 
-    QString Preloader::PreloadTrack::originalFilename() const {
+    QString Preloader::PreloadTrack::originalFilename() const
+    {
         return _filename;
     }
 
-    void Preloader::PreloadTrack::setToLoading() {
+    void Preloader::PreloadTrack::setToLoading()
+    {
         _status = Status::Processing;
     }
 
-    void Preloader::PreloadTrack::setToFailed() {
+    void Preloader::PreloadTrack::setToFailed()
+    {
         _status = Status::Failed;
     }
 
-    void Preloader::PreloadTrack::setToLoaded(QString cacheFile) {
+    void Preloader::PreloadTrack::setToLoaded(QString cacheFile)
+    {
         _cacheFile = cacheFile;
         _status = Status::Preloaded;
     }
 
-    bool Preloader::PreloadTrack::cleanup() {
+    bool Preloader::PreloadTrack::cleanup()
+    {
         if (_status == Status::Processing) return false; /* a file will appear */
         if (_status != Status::Preloaded || _cacheFile.isEmpty()) return true;
         if (!QFile::remove(_cacheFile)) return false;
@@ -128,10 +136,10 @@ namespace PMP::Server
         return true;
     }
 
-    QString Preloader::PreloadTrack::getCachedFile() const {
+    QString Preloader::PreloadTrack::getCachedFile() const
+    {
         return _cacheFile;
     }
-
 
     /* ========================== Preloader ========================== */
 
@@ -181,7 +189,8 @@ namespace PMP::Server
         auto filename = track->getCachedFile();
         if (filename.isEmpty()) return PreloadedFile();
 
-        if (!QFileInfo::exists(filename)) {
+        if (!QFileInfo::exists(filename))
+        {
             /* the file that was preloaded has disappeared */
             _tracksByQueueID.remove(queueID);
             delete track;
@@ -192,7 +201,8 @@ namespace PMP::Server
 
         return PreloadedFile(
             this,
-            [queueID](Preloader* preloader) {
+            [queueID](Preloader* preloader)
+            {
                 if (preloader) preloader->doUnlock(queueID);
             },
             filename
@@ -234,7 +244,8 @@ namespace PMP::Server
 
     void Preloader::queueEntryRemoved(qint32 offset, quint32 queueID)
     {
-        if (offset < PRELOAD_RANGE) {
+        if (offset < PRELOAD_RANGE)
+        {
             scheduleCheckForTracksToPreload();
         }
 
@@ -269,7 +280,8 @@ namespace PMP::Server
         QTimer::singleShot(25, this, &Preloader::checkFirstTrack);
     }
 
-    void Preloader::scheduleCheckForTracksToPreload() {
+    void Preloader::scheduleCheckForTracksToPreload()
+    {
         if (_preloadCheckTimerRunning) return;
 
         _preloadCheckTimerRunning = true;
@@ -342,7 +354,8 @@ namespace PMP::Server
         if (!originalFilename.isEmpty()
                 && _resolver->pathStillValid(hash, originalFilename))
         {
-            return Concurrent::run<QString, FailureType>(
+            return Concurrent::runOnThreadPool<QString, FailureType>(
+                globalThreadPool,
                 [queueId, originalFilename]()
                 {
                     return runPreload(queueId, originalFilename);
@@ -355,15 +368,20 @@ namespace PMP::Server
 
         return
             _resolver->findPathForHashAsync(hash)
-                .thenAsync<QString, FailureType>(
-                    [queueId](QString path)
+                .thenOnThreadPool<QString, FailureType>(
+                    globalThreadPool,
+                    [queueId](FailureOr<QString> outcome) -> FailureOr<QString>
                     {
+                        if (outcome.failed())
+                            return failure;
+
+                        auto path = outcome.result();
+
                         qDebug() << "Preloader: found path" << path
                                  << "for queue ID" << queueId;
 
                         return runPreload(queueId, path);
-                    },
-                    [](FailureType) { return failure; }
+                    }
                 );
     }
 
@@ -465,12 +483,15 @@ namespace PMP::Server
             auto future = preloadAsync(queueId, track->hash(), track->originalFilename());
             _jobsRunning++;
 
-            future.addResultListener(
-                this, [this, queueId](QString path) { preloadFinished(queueId, path); }
-            );
-
-            future.addFailureListener(
-                this, [this, queueId](FailureType) { preloadFailed(queueId); }
+            future.handleOnEventLoop(
+                this,
+                [this, queueId](FailureOr<QString> outcome)
+                {
+                    if (outcome.succeeded())
+                        preloadFinished(queueId, outcome.result());
+                    else
+                        preloadFailed(queueId);
+                }
             );
         }
     }
@@ -506,14 +527,17 @@ namespace PMP::Server
             _tracksRemoved.removeAt(i);
             i--;
 
-            if (!track) {
+            if (!track)
+            {
                 /* no object to delete */
             }
-            else if (track->cleanup()) {
+            else if (track->cleanup())
+            {
                 _tracksByQueueID.remove(id);
                 delete track;
             }
-            else {
+            else
+            {
                 /* we will try again later */
                 _tracksRemoved.append(id);
             }
@@ -540,16 +564,19 @@ namespace PMP::Server
     void Preloader::doUnlock(uint queueId)
     {
         auto lockIterator = _lockedQueueIds.find(queueId);
-        if (lockIterator == _lockedQueueIds.end()) {
+        if (lockIterator == _lockedQueueIds.end())
+        {
             qWarning() << "Preloader::doUnlock: no lock found for QID" << queueId << "!";
             return;
         }
 
         auto& lockCount = lockIterator.value();
-        if (lockCount > 0) {
+        if (lockCount > 0)
+        {
             lockCount--;
         }
-        else {
+        else
+        {
             qWarning() << "Preloader::doUnlock: lock count for QID" << queueId
                        << "already zero!";
         }
@@ -568,10 +595,12 @@ namespace PMP::Server
         _jobsRunning--;
 
         auto track = _tracksByQueueID.value(queueID, nullptr);
-        if (track) {
+        if (track)
+        {
             track->setToLoaded(cacheFile);
         }
-        else {
+        else
+        {
             qDebug() << "QID" << queueID
                      << "seems to be no longer needed, discarding cache file";
             QFile::remove(cacheFile);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -129,7 +129,8 @@ namespace PMP::Server
 
             tracks =
                     applySelectionFilter(tracks, selectionFilterKeepCount,
-                                         [this](auto& a, auto& b) {
+                                         [this](auto& a, auto& b)
+                                         {
                                              return selectionFilterCompare(a, b);
                                          });
             for (auto const& track : qAsConst(tracks))

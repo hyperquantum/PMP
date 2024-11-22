@@ -119,8 +119,11 @@ namespace PMP
 
     QVariant HistoryModel::data(const QModelIndex& index, int role) const
     {
-        if (!index.isValid() || index.row() < 0 || index.row() >= _entries.size())
+        if (!index.isValid() || index.row() < 0
+            || index.row() >= static_cast<int>(_entries.size()))
+        {
             return {};
+        }
 
         auto& entry = _entries[index.row()];
 
@@ -184,14 +187,16 @@ namespace PMP
             historyController.getPersonalTrackHistory(_hashId, _userId,
                                                       _fragmentSizeLimit);
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this, state](HistoryFragment fragment)
+            [this, state](ResultOrError<HistoryFragment, AnyResultMessageCode> outcome)
             {
-                handleHistoryRequestResult(fragment, state);
+                if (outcome.succeeded())
+                    handleHistoryRequestResult(outcome.result(), state);
+
+                // TODO: handle failure
             }
         );
-        //future.addFailureListener(this, [this](AnyResultMessageCode code) {});
     }
 
     void HistoryModel::onConnectedChanged()
@@ -270,14 +275,16 @@ namespace PMP
                                                       _fragmentSizeLimit,
                                                       fragment.nextStartId());
 
-        future.addResultListener(
+        future.handleOnEventLoop(
             this,
-            [this, state](HistoryFragment fragment)
+            [this, state](ResultOrError<HistoryFragment, AnyResultMessageCode> outcome)
             {
-                handleHistoryRequestResult(fragment, state);
+                if (outcome.succeeded())
+                    handleHistoryRequestResult(outcome.result(), state);
+
+                // TODO: handle failure
             }
         );
-        //future.addFailureListener(this, [this](AnyResultMessageCode code) {});
     }
 
     void HistoryModel::addToCounts(const Client::HistoryEntry& entry)

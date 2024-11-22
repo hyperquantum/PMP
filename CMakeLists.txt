@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2023, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2024, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -60,4 +60,4 @@ if(WIN32)
 endif(WIN32)
 
 add_subdirectory(src)
-add_subdirectory(testing)
+add_subdirectory(tests)

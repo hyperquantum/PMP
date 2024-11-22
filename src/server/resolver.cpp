@@ -19,6 +19,7 @@
 
 #include "resolver.h"
 
+#include "common/async.h"
 #include "common/concurrent.h"
 #include "common/fileanalyzer.h"
 
@@ -90,6 +91,7 @@ namespace PMP::Server
         Resolver* _parent;
         FileHash _hash;
         uint _hashId;
+        Promise<SuccessType, FailureType> _promiseForFirstFileAnalyzed;
         AudioData _audio;
         QList<const TagData*> _tags;
         QList<Resolver::VerifiedFile*> _files;
@@ -97,10 +99,12 @@ namespace PMP::Server
         QString _quickArtist;
         QString _quickAlbum;
         QString _quickAlbumArtist;
+        bool _firstFileAnalyzed { false };
 
     public:
         HashKnowledge(Resolver* parent, FileHash hash, uint hashId)
-         : _parent(parent), _hash(hash), _hashId(hashId)
+         : _parent(parent), _hash(hash), _hashId(hashId),
+            _promiseForFirstFileAnalyzed(Async::createPromise<SuccessType, FailureType>())
         {
             //
         }
@@ -109,6 +113,20 @@ namespace PMP::Server
 
         uint id() const { return _hashId; }
         void setId(uint id) { _hashId = id; }
+
+        Future<SuccessType, FailureType> getFutureForFirstFileAnalyzed() const
+        {
+            return _promiseForFirstFileAnalyzed.future();
+        }
+
+        void markFileAnalyzed()
+        {
+            if (_firstFileAnalyzed)
+                return;
+
+            _firstFileAnalyzed = true;
+            _promiseForFirstFileAnalyzed.setOutcome(success);
+        }
 
         const AudioData& audio() const { return _audio; }
         AudioData& audio() { return _audio; }
@@ -290,7 +308,7 @@ namespace PMP::Server
         }
 
         /* check if the file was already known */
-        VerifiedFile* file = _parent->_paths.value(filename, nullptr);
+        VerifiedFile* file = _parent->_pathToVerifiedFile.value(filename, nullptr);
         if (file)
         {
             if (file->_parent == this)
@@ -309,7 +327,7 @@ namespace PMP::Server
         file = new VerifiedFile(this, filename, fileSize, fileLastModified,
                                 indexationNumber);
         _files.append(file);
-        _parent->_paths[filename] = file;
+        _parent->_pathToVerifiedFile[filename] = file;
 
         // TODO: move this to another thread
         auto db = Database::getDatabaseForCurrentThread();
@@ -335,9 +353,9 @@ namespace PMP::Server
 
         _parent->_fileLocations.remove(_hashId, file->_path);
 
-        if (_parent->_paths.value(file->_path, nullptr) == file)
+        if (_parent->_pathToVerifiedFile.value(file->_path, nullptr) == file)
         {
-            _parent->_paths.remove(file->_path);
+            _parent->_pathToVerifiedFile.remove(file->_path);
         }
 
         _files.removeOne(file);
@@ -404,10 +422,16 @@ namespace PMP::Server
                 this, &Resolver::onAnalyzerFinished);
 
         auto dbLoadingFuture = _hashIdRegistrar->loadAllFromDatabase();
-        dbLoadingFuture.addResultListener(
+        dbLoadingFuture.handleOnEventLoop(
             this,
-            [this](SuccessType)
+            [this](SuccessOrFailure outcome)
             {
+                if (outcome.failed())
+                {
+                    qWarning() << "Resolver: could not load hashes from the database";
+                    return;
+                }
+
                 qDebug() << "Resolver: successfully loaded hashes from the database";
 
                 auto allHashes = _hashIdRegistrar->getAllLoaded();
@@ -416,25 +440,18 @@ namespace PMP::Server
                 QMutexLocker lock(&_lock);
                 for (auto& pair : allHashes)
                 {
-                    if (_idToHash.contains(pair.first))
+                    if (_idToKnowledge.contains(pair.first))
                         continue;
 
                     auto knowledge = new HashKnowledge(this, pair.second, pair.first);
-                    _hashKnowledge.insert(pair.second, knowledge);
-                    _idToHash.insert(pair.first, knowledge);
-                    _hashList.append(pair.second);
+                    _hashToKnowledge.insert(pair.second, knowledge);
+                    _idToKnowledge.insert(pair.first, knowledge);
+                    _hashesList.append(pair.second);
                     newHashesCount++;
                 }
 
                 qDebug() << "Resolver: hashes processed; got"
                          << newHashesCount << "new hashes";
-            }
-        );
-        dbLoadingFuture.addFailureListener(
-            this,
-            [](FailureType)
-            {
-                qDebug() << "Resolver: could not load hashes from the database";
             }
         );
     }
@@ -524,7 +541,7 @@ namespace PMP::Server
         const auto allHashes = hashes.allHashes();
 
         _hashIdRegistrar->getOrCreateIds(allHashes)
-            .addListener(
+            .handleOnEventLoop(
                 this,
                 [this, path, analysis, hashes, allHashes](
                                    ResultOrError<QVector<uint>, FailureType> maybeHashIds)
@@ -553,7 +570,7 @@ namespace PMP::Server
                         knowledge = nullptr;
                         for (auto const& hash : allHashes)
                         {
-                            auto k = _hashKnowledge.value(hash, nullptr);
+                            auto k = _hashToKnowledge.value(hash, nullptr);
                             if (!k)
                                 continue;
 
@@ -592,6 +609,8 @@ namespace PMP::Server
 
                     knowledge->addPath(fileInfo.path(), fileInfo.size(),
                                        fileInfo.lastModifiedUtc(), _fullIndexationNumber);
+
+                    knowledge->markFileAnalyzed();
                 }
             );
     }
@@ -624,13 +643,13 @@ namespace PMP::Server
         {
             QMutexLocker lock(&_lock);
 
-            auto it = _hashKnowledge.find(hash);
-            if (it != _hashKnowledge.end())
+            auto it = _hashToKnowledge.find(hash);
+            if (it != _hashToKnowledge.end())
             {
                 auto path = it.value()->getFile();
                 if (!path.isEmpty())
                 {
-                    return Future<QString, FailureType>::fromResult(path);
+                    return FutureResult(path);
                 }
             }
         }
@@ -640,9 +659,15 @@ namespace PMP::Server
         // TODO : check if we have it in the locations cache
 
         auto pathFuture =
-            idFuture.thenFuture<QString, FailureType>(
-                [this, hash](uint id) { return _fileFinder->findHashAsync(id, hash); },
-                failureIdentityFunction
+            idFuture.thenOnAnyThreadIndirect<QString, FailureType>(
+                [this, hash](FailureOr<uint> outcome) -> Future<QString, FailureType>
+                {
+                    if (outcome.failed())
+                        return FutureError(failure);
+
+                    auto id = outcome.result();
+                    return _fileFinder->findHashAsync(id, hash);
+                }
             );
 
         return pathFuture;
@@ -655,8 +680,8 @@ namespace PMP::Server
         {
             QMutexLocker lock(&_lock);
 
-            auto it = _idToHash.find(hashId);
-            if (it == _idToHash.end())
+            auto it = _idToKnowledge.find(hashId);
+            if (it == _idToKnowledge.end())
             {
                 qWarning() << "Resolver: hash ID" << hashId << "is unknown";
                 return FutureError(failure);
@@ -667,13 +692,27 @@ namespace PMP::Server
             auto path = it.value()->getFile();
             if (!path.isEmpty())
             {
-                return Future<QString, FailureType>::fromResult(path);
+                return FutureResult(path);
             }
         }
 
         // TODO : check if we have it in the locations cache
 
         return _fileFinder->findHashAsync(hashId, hash);
+    }
+
+    Future<SuccessType, FailureType> Resolver::waitUntilAnyFileAnalyzed(uint hashId)
+    {
+        QMutexLocker lock(&_lock);
+
+        auto it = _idToKnowledge.constFind(hashId);
+        if (it == _idToKnowledge.constEnd())
+        {
+            qWarning() << "Resolver: hash ID" << hashId << "is unknown";
+            return FutureError(failure);
+        }
+
+        return it.value()->getFutureForFirstFileAnalyzed();
     }
 
     void Resolver::doQuickScanForNewFilesFileSystemTraversal()
@@ -777,12 +816,12 @@ namespace PMP::Server
 
         QMutexLocker lock(&_lock);
 
-        auto knowledge = _hashKnowledge.value(hash, nullptr);
+        auto knowledge = _hashToKnowledge.value(hash, nullptr);
         if (!knowledge)
         {
             knowledge = new HashKnowledge(this, hash, 0);
-            _hashKnowledge[hash] = knowledge;
-            _hashList.append(hash);
+            _hashToKnowledge[hash] = knowledge;
+            _hashesList.append(hash);
         }
         else if (knowledge->id() > 0)
         {
@@ -799,7 +838,7 @@ namespace PMP::Server
 
         auto id = idOrError.result();
         knowledge->setId(id);
-        _idToHash[id] = knowledge;
+        _idToKnowledge[id] = knowledge;
 
         qDebug() << "got ID" << id << "for registered hash" << hash.dumpToString();
 
@@ -814,7 +853,8 @@ namespace PMP::Server
         _hashRelations->markAsEquivalent(hashes);
         _historyStatistics->invalidateAllGroupStatisticsForHash(hashes[0]);
 
-        Concurrent::run<SuccessType, FailureType>(
+        Concurrent::runOnThreadPool<SuccessType, FailureType>(
+            globalThreadPool,
             [hashes]() -> ResultOrError<SuccessType, FailureType>
             {
                 auto db = Database::getDatabaseForCurrentThread();
@@ -842,7 +882,7 @@ namespace PMP::Server
 
         QVector<QString> result;
 
-        for (auto file : qAsConst(_paths))
+        for (auto file : qAsConst(_pathToVerifiedFile))
         {
             if (!file->hasIndexationNumber(_fullIndexationNumber))
             {
@@ -857,7 +897,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_lock);
 
-        auto knowledge = _hashKnowledge.value(hash, nullptr);
+        auto knowledge = _hashToKnowledge.value(hash, nullptr);
         return knowledge && knowledge->isAvailable();
     }
 
@@ -865,7 +905,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_lock);
 
-        VerifiedFile* file = _paths.value(path, nullptr);
+        VerifiedFile* file = _pathToVerifiedFile.value(path, nullptr);
         if (!file) return false;
 
         auto knowledge = file->_parent;
@@ -878,7 +918,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_lock);
 
-        VerifiedFile* file = _paths.value(path, nullptr);
+        VerifiedFile* file = _pathToVerifiedFile.value(path, nullptr);
         if (file)
         {
             auto hash = file->_parent->hash();
@@ -895,7 +935,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_lock);
 
-        VerifiedFile* file = _paths.value(path, nullptr);
+        VerifiedFile* file = _pathToVerifiedFile.value(path, nullptr);
         if (!file) return;
 
         auto knowledge = file->_parent;
@@ -906,7 +946,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_lock);
 
-        auto knowledge = _hashKnowledge.value(hash, nullptr);
+        auto knowledge = _hashToKnowledge.value(hash, nullptr);
         if (knowledge) return knowledge->audio();
 
         return null;
@@ -916,7 +956,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_lock);
 
-        auto knowledge = _hashKnowledge.value(hash, nullptr);
+        auto knowledge = _hashToKnowledge.value(hash, nullptr);
 
         if (knowledge)
         {
@@ -932,7 +972,7 @@ namespace PMP::Server
     QVector<FileHash> Resolver::getAllHashes()
     {
         QMutexLocker lock(&_lock);
-        auto copy = _hashList.toVector();
+        auto copy = _hashesList.toVector();
         return copy;
     }
 
@@ -945,7 +985,7 @@ namespace PMP::Server
 
         for (auto& hash : qAsConst(hashes))
         {
-            auto knowledge = _hashKnowledge.value(hash, nullptr);
+            auto knowledge = _hashToKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
 
             auto lengthInMilliseconds = knowledge->audio().trackLengthMilliseconds();
@@ -970,7 +1010,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_lock);
 
-        auto knowledge = _idToHash.value(hashId, nullptr);
+        auto knowledge = _idToKnowledge.value(hashId, nullptr);
         if (!knowledge) return {};
 
         auto lengthInMilliseconds = knowledge->audio().trackLengthMilliseconds();
@@ -991,7 +1031,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_lock);
 
-        auto knowledge = _idToHash.value(id, nullptr);
+        auto knowledge = _idToKnowledge.value(id, nullptr);
         if (knowledge) return knowledge->hash();
 
         qWarning() << "Resolver::getHashByID: ID" << id << "not found";
@@ -1003,7 +1043,7 @@ namespace PMP::Server
     {
         QMutexLocker lock(&_lock);
 
-        auto knowledge = _hashKnowledge.value(hash, nullptr);
+        auto knowledge = _hashToKnowledge.value(hash, nullptr);
         if (knowledge) return knowledge->id();
 
         return 0;
@@ -1018,7 +1058,7 @@ namespace PMP::Server
 
         for (auto& hash : qAsConst(hashes))
         {
-            auto knowledge = _hashKnowledge.value(hash, nullptr);
+            auto knowledge = _hashToKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
 
             result.append(QPair<uint, FileHash>(knowledge->id(), hash));
@@ -1036,7 +1076,7 @@ namespace PMP::Server
 
         for (auto const& hash : qAsConst(hashes))
         {
-            auto knowledge = _hashKnowledge.value(hash, nullptr);
+            auto knowledge = _hashToKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
 
             result.append(QPair<uint, FileHash>(knowledge->id(), hash));

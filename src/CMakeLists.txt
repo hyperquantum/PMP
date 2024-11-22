@@ -29,8 +29,10 @@ set(PMP_COMMON_SOURCES
     common/obfuscator.cpp
     common/passwordstrengthevaluator.cpp
     common/powermanagement.cpp
+    common/runners.cpp
     common/scrobblerstatus.cpp
     common/scrobblingprovider.cpp
+    common/searchutil.cpp
     common/startstopeventstatus.cpp
     common/tagdata.cpp
     common/tribool.cpp
@@ -63,6 +65,7 @@ set(PMP_CLIENT_SOURCES
     client/serverdiscoverer.cpp
     client/serverinterface.cpp
     client/userdatafetcher.cpp
+    client/volumemediator.cpp
 )
 set(PMP_CLIENT_HEADERS
     client/abstractqueuemonitor.h
@@ -94,6 +97,7 @@ set(PMP_CLIENT_HEADERS
     client/serverdiscoverer.h
     client/serverinterface.h
     client/userdatafetcher.h
+    client/volumemediator.h
 )
 
 set(PMP_SERVER_SOURCES
@@ -217,6 +221,7 @@ set(PMP_DESKTOP_REMOTE_SOURCES
     desktop-remote/queuemodel.cpp
     desktop-remote/scoreformatdelegate.cpp
     desktop-remote/scrobblingauthenticationdialog.cpp
+    desktop-remote/searching.cpp
     desktop-remote/trackinfodialog.cpp
     desktop-remote/trackjudge.cpp
     desktop-remote/trackprogresswidget.cpp
@@ -247,6 +252,7 @@ set(PMP_DESKTOP_REMOTE_HEADERS
     desktop-remote/queuemodel.h
     desktop-remote/scoreformatdelegate.h
     desktop-remote/scrobblingauthenticationdialog.h
+    desktop-remote/searching.h
     desktop-remote/trackinfodialog.h
     desktop-remote/trackprogresswidget.h
     desktop-remote/useraccountcreationwidget.h

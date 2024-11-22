@@ -22,6 +22,8 @@
 #include "client/generalcontroller.h"
 #include "client/serverinterface.h"
 
+#include <QStringBuilder>
+
 using namespace PMP::Client;
 
 namespace PMP
@@ -37,19 +39,14 @@ namespace PMP
     {
         auto future = serverInterface->generalController().getServerVersionInfo();
 
-        future.addFailureListener(
+        future.handleOnEventLoop(
             this,
-            [this](ResultMessageErrorCode errorCode)
+            [this](ResultOrError<VersionInfo, ResultMessageErrorCode> outcome)
             {
-                setCommandExecutionResult(errorCode);
-            }
-        );
-
-        future.addResultListener(
-            this,
-            [this](VersionInfo versionInfo)
-            {
-                printVersion(versionInfo);
+                if (outcome.succeeded())
+                    printVersion(outcome.result());
+                else
+                    setCommandExecutionResult(outcome.error());
             }
         );
     }
@@ -69,7 +66,7 @@ namespace PMP
     void StartFullIndexationCommand::run(Client::ServerInterface* serverInterface)
     {
         auto future = serverInterface->generalController().startFullIndexation();
-        addCommandExecutionFutureListener(future);
+        setCommandExecutionResultFuture(future);
     }
 
     /* ===== StartQuickScanForNewFilesCommand ===== */
@@ -77,7 +74,7 @@ namespace PMP
     void StartQuickScanForNewFilesCommand::run(Client::ServerInterface* serverInterface)
     {
         auto future = serverInterface->generalController().startQuickScanForNewFiles();
-        addCommandExecutionFutureListener(future);
+        setCommandExecutionResultFuture(future);
     }
 
     /* ===== ReloadServerSettingsCommand ===== */
@@ -85,7 +82,7 @@ namespace PMP
     void ReloadServerSettingsCommand::run(ServerInterface* serverInterface)
     {
         auto future = serverInterface->generalController().reloadServerSettings();
-        addCommandExecutionFutureListener(future);
+        setCommandExecutionResultFuture(future);
     }
 
     /* ===== ShutdownCommand ===== */

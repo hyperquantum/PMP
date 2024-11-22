@@ -183,7 +183,8 @@ namespace PMP::Server
 
         auto tracks =
                 applySelectionFilter(_buffer, selectionFilterKeepCount,
-                                     [this](auto& a, auto& b) {
+                                     [this](auto& a, auto& b)
+                                     {
                                          return selectionFilterCompare(a, b);
                                      });
 

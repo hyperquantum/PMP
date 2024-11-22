@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -88,7 +88,7 @@ namespace PMP
 
         scrobblingController
             .authenticateLastFm(username, password)
-            .addResultListener(
+            .handleOnEventLoop(
                 this,
                 [this](AnyResultMessageCode resultCode)
                 {

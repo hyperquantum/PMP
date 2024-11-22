@@ -66,6 +66,7 @@ namespace PMP::Server
 
         Future<QString, FailureType> findPathForHashAsync(FileHash hash);
         Future<QString, FailureType> findPathForHashAsync(uint hashId);
+        Future<SuccessType, FailureType> waitUntilAnyFileAnalyzed(uint hashId);
 
         bool haveFileForHash(const FileHash& hash);
         bool pathStillValid(const FileHash& hash, QString path);
@@ -139,10 +140,10 @@ namespace PMP::Server
 
         QStringList _musicPaths;
 
-        QList<FileHash> _hashList;
-        QHash<FileHash, HashKnowledge*> _hashKnowledge;
-        QHash<uint, HashKnowledge*> _idToHash;
-        QHash<QString, VerifiedFile*> _paths;
+        QList<FileHash> _hashesList;
+        QHash<FileHash, HashKnowledge*> _hashToKnowledge;
+        QHash<uint, HashKnowledge*> _idToKnowledge;
+        QHash<QString, VerifiedFile*> _pathToVerifiedFile;
 
         uint _fullIndexationNumber;
         FullIndexationStatus _fullIndexationStatus { FullIndexationStatus::NotRunning };

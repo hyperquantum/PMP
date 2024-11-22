@@ -321,18 +321,17 @@ namespace PMP
         auto collectionWatcher = &serverInterface->collectionWatcher();
 
         auto future = collectionWatcher->getTrackInfo(_hash);
-        addFailureHandler(future);
 
-        future.addResultListener(
-            this,
-            [this](CollectionTrackInfo trackInfo)
+        handleFailureAndResult<CollectionTrackInfo>(
+            future,
+            [this](CollectionTrackInfo const& trackInfo)
             {
                 printTrackInfo(trackInfo);
             }
         );
     }
 
-    void TrackInfoCommand::printTrackInfo(Client::CollectionTrackInfo& trackInfo)
+    void TrackInfoCommand::printTrackInfo(CollectionTrackInfo const& trackInfo)
     {
         QString output;
         output.reserve(100);

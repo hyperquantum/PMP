@@ -26,6 +26,7 @@
 
 #include "client/collectiontrackinfo.h"
 
+#include "searching.h"
 #include "trackjudge.h"
 
 #include <QAbstractTableModel>
@@ -155,6 +156,7 @@ namespace PMP
         FilteredCollectionTableModel(QObject* parent,
                                      SortedCollectionTableModel* source,
                                      Client::ServerInterface* serverInterface,
+                                     SearchData* searchData,
                                      Client::QueueHashesMonitor* queueHashesMonitor,
                                      UserForStatisticsDisplay* userForStatisticsDisplay);
 
@@ -177,7 +179,8 @@ namespace PMP
     private:
         Client::ServerInterface* _serverInterface;
         SortedCollectionTableModel* _source;
-        QStringList _searchParts;
+        SearchData* _searchData;
+        SearchQuery _searchQuery;
         FileHash _searchFileHash;
         Nullable<Client::LocalHashId> _searchHashId;
         TrackJudge _filteringTrackJudge;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -201,7 +201,7 @@ namespace PMP::Server
                                                              QString password)
     {
         return
-            Async::invokeSimpleFuture<Result>(
+            Async::runOnEventLoop<Result>(
                 _host,
                 [host = _host, userId, provider, user, password]()
                 {

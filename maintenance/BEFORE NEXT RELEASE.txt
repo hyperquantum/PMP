@@ -1,0 +1,7 @@
+
+Next release will be: 0.4
+
+Wishlist:
+
+  - switch to Qt 6
+  - ...

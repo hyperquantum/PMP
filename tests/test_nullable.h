@@ -42,5 +42,7 @@ private Q_SLOTS:
     void assignmentOperatorCallsValueConstructor();
     void valueOrReturnsValueIfNotNull();
     void valueOrReturnsAlternativeIfNull();
+    void mixedEqualsComparisonWorks();
+    void mixedNotEqualComparisonWorks();
 };
 #endif

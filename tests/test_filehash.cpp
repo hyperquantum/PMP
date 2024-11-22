@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -54,7 +54,8 @@ void TestFileHash::hashOfEmptyDataHasKnownValues()
     QCOMPARE(toString(hash), "0;2jmj7l5rSw0yVb/vlWAYkK/YBwk;1B2M2Y8AsgTpgAmY7PhCfg");
 }
 
-void TestFileHash::knownHash1() {
+void TestFileHash::knownHash1()
+{
     auto hash = FileHash::create("PMP");
     QCOMPARE(hash.length(), 3);
     QCOMPARE(hash.SHA1().toBase64(), "1oIJAa0hZTqtJL8nQavFDTBU+iM=");
@@ -62,13 +63,15 @@ void TestFileHash::knownHash1() {
     QCOMPARE(toString(hash), "3;1oIJAa0hZTqtJL8nQavFDTBU+iM;qpyo6LBWx0e+mL2NI6S32Q");
 }
 
-void TestFileHash::knownHash2() {
+void TestFileHash::knownHash2()
+{
     auto hash = FileHash::create("6 stones");
     QCOMPARE(hash.length(), 8);
     QCOMPARE(toString(hash), "8;342OPoW+B/jnmCpic++f+L7pp8Q;ErGCCdD59y1QL4TKS8i8KQ");
 }
 
-void TestFileHash::knownHash3() {
+void TestFileHash::knownHash3()
+{
     const char* text =
             "q5oh3rbazmu20c53yfwpzfvqukqsc7by14gztn816lqus04moml3xlpmvhfrhl0imka246"
             "b100e3fmlwzgxraua7h194ywtk7q83l3tj8f1m4tr5j9l1u5tw2p4b9d3e539sgf44kvri"
@@ -79,7 +82,8 @@ void TestFileHash::knownHash3() {
     QCOMPARE(toString(hash), "280;uvngJFDZ1g+tc96UllnxCqUHsqE;YxYHHbUCsw+Z+HICFMw9Rw");
 }
 
-void TestFileHash::knownHash4() {
+void TestFileHash::knownHash4()
+{
     QByteArray bytes;
     bytes.append(char(22));
     bytes.append(char(1));
@@ -91,7 +95,8 @@ void TestFileHash::knownHash4() {
     QCOMPARE(toString(hash), "4;EjEkmxYqMjEqfhvetDQlr+DXrUs;qrCXRS1P2DtxFCLT/Yfo0A");
 }
 
-QString TestFileHash::toString(const PMP::FileHash& hash) {
+QString TestFileHash::toString(const PMP::FileHash& hash)
+{
     return QString::number(hash.length())
             + ";" + hash.SHA1().toBase64(QByteArray::OmitTrailingEquals)
             + ";" + hash.MD5().toBase64(QByteArray::OmitTrailingEquals);

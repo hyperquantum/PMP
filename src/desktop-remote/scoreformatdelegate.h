@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,15 +22,15 @@
 
 #include <QStyledItemDelegate>
 
-namespace PMP {
-
-    class ScoreFormatDelegate : public QStyledItemDelegate {
+namespace PMP
+{
+    class ScoreFormatDelegate : public QStyledItemDelegate
+    {
         Q_OBJECT
     public:
         explicit ScoreFormatDelegate(QObject* parent = 0);
 
         virtual QString displayText(const QVariant& value, const QLocale& locale) const;
-
     };
 }
 #endif

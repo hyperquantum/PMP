@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,7 +33,8 @@ namespace PMP::Server
         //
     }
 
-    void CollectionMonitor::hashBecameAvailable(FileHash hash) {
+    void CollectionMonitor::hashBecameAvailable(FileHash hash)
+    {
         HashInfo& info = _collection[hash];
         if (info.isAvailable) return; /* no change */
 
@@ -42,7 +43,8 @@ namespace PMP::Server
         checkNeedToSendNotifications();
     }
 
-    void CollectionMonitor::hashBecameUnavailable(FileHash hash) {
+    void CollectionMonitor::hashBecameUnavailable(FileHash hash)
+    {
         auto it = _collection.find(hash);
         if (it == _collection.end())
             return; /* nothing to announce */
@@ -78,41 +80,49 @@ namespace PMP::Server
         info.lengthInMilliseconds = lengthInMilliseconds;
 
         Changed& notification = _pendingNotifications[hash];
-        if (!notification.tags) {
+        if (!notification.tags)
+        {
             notification.tags = true; /* tag info changed */
             _pendingTagNotificationCount++;
             checkNeedToSendNotifications();
         }
     }
 
-    void CollectionMonitor::checkNeedToSendNotifications() {
+    void CollectionMonitor::checkNeedToSendNotifications()
+    {
         bool first = _pendingNotifications.size() == 1;
 
-        if (first) {
+        if (first)
+        {
             QTimer::singleShot(1500, this, &CollectionMonitor::emitNotifications);
         }
-        else if (_pendingNotifications.size() >= 50) {
+        else if (_pendingNotifications.size() >= 50)
+        {
             /* many notifications pending, don't wait */
             QTimer::singleShot(0, this, &CollectionMonitor::emitNotifications);
         }
     }
 
-    void CollectionMonitor::emitNotifications() {
+    void CollectionMonitor::emitNotifications()
+    {
         if (_pendingNotifications.isEmpty()) return;
 
-        if (_pendingTagNotificationCount >= _pendingNotifications.size()) {
+        if (_pendingTagNotificationCount >= _pendingNotifications.size())
+        {
             qDebug() << "CollectionMonitor: going to send" << _pendingNotifications.size()
                      << "full notifications";
 
             emitFullNotifications(ContainerUtil::keysToVector(_pendingNotifications));
         }
-        else if (_pendingTagNotificationCount == 0) {
+        else if (_pendingTagNotificationCount == 0)
+        {
             qDebug() << "CollectionMonitor: going to send" << _pendingNotifications.size()
                      << "availability notifications";
 
             emitAvailabilityNotifications(ContainerUtil::keysToVector(_pendingNotifications));
         }
-        else {
+        else
+        {
             /* we need to split the list */
 
             auto availabilityNotificationCount =
@@ -124,12 +134,15 @@ namespace PMP::Server
             availabilityNotifications.reserve(availabilityNotificationCount);
 
             QHashIterator<FileHash, Changed> i(_pendingNotifications);
-            while (i.hasNext()) {
+            while (i.hasNext())
+            {
                 i.next();
-                if (i.value().tags) {
+                if (i.value().tags)
+                {
                     fullNotifications.append(i.key());
                 }
-                else {
+                else
+                {
                     availabilityNotifications.append(i.key());
                 }
             }
@@ -146,7 +159,8 @@ namespace PMP::Server
         _pendingTagNotificationCount = 0;
     }
 
-    void CollectionMonitor::emitFullNotifications(QVector<FileHash> hashes) {
+    void CollectionMonitor::emitFullNotifications(QVector<FileHash> hashes)
+    {
         QVector<CollectionTrackInfo> notifications;
         notifications.reserve(hashes.size());
 
@@ -165,7 +179,8 @@ namespace PMP::Server
         Q_EMIT hashInfoChanged(notifications);
     }
 
-    void CollectionMonitor::emitAvailabilityNotifications(QVector<FileHash> hashes) {
+    void CollectionMonitor::emitAvailabilityNotifications(QVector<FileHash> hashes)
+    {
         QVector<FileHash> available, unavailable;
 
         for (FileHash const& h : hashes)

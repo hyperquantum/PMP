@@ -30,6 +30,7 @@
 
 #include <QDirIterator>
 #include <QFileInfo>
+#include <QThreadPool>
 #include <QSet>
 #include <QtDebug>
 #include <QVector>
@@ -75,7 +76,7 @@ namespace PMP::Server
         qDebug() << "FileFinder: starting background job to find file for ID" << id;
 
         auto future =
-            Concurrent::run<QString, FailureType>(
+            Concurrent::runOnThreadPool<QString, FailureType>(
                 _threadPool,
                 [this, id, hash]()
                 {
@@ -104,10 +105,14 @@ namespace PMP::Server
         {
             auto future = _hashIdRegistrar->getOrCreateId(hash);
 
-            future.addResultListener(
+            future.handleOnEventLoop(
                 this,
-                [this, path](uint id)
+                [this, path](FailureOr<uint> outcome)
                 {
+                    if (outcome.failed())
+                        return;
+
+                    auto id = outcome.result();
                     _fileLocations->insert(id, path);
                 }
             );

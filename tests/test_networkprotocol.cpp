@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -37,7 +37,8 @@ void TestNetworkProtocol::fileHashByteCount()
     QCOMPARE(fileHashByteCount, length + sha1 + md5);
 }
 
-void TestNetworkProtocol::appendHash() {
+void TestNetworkProtocol::appendHash()
+{
     QByteArray content("Hello");
     FileHash hash = FileHash::create(content);
 
@@ -73,7 +74,8 @@ void TestNetworkProtocol::appendEmptyHash()
     NetworkProtocol::appendHash(buffer, emptyHash);
 
     QCOMPARE(buffer.size(), 44);
-    for (int i = 0 ; i < buffer.size(); ++i) {
+    for (int i = 0 ; i < buffer.size(); ++i)
+    {
         QCOMPARE(buffer[i], char(0));
     }
 }

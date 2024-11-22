@@ -19,9 +19,9 @@
 
 #include "serverconnection.h"
 
+#include "common/async.h"
 #include "common/networkprotocol.h"
 #include "common/networkutil.h"
-#include "common/promise.h"
 #include "common/startstopeventstatus.h"
 #include "common/util.h"
 
@@ -230,7 +230,8 @@ namespace PMP::Client
     };
 
     ServerConnection::PromiseResultHandler::PromiseResultHandler(ServerConnection* parent)
-     : ResultHandler(parent)
+     : ResultHandler(parent),
+        _promise(Async::createSimplePromise<AnyResultMessageCode>())
     {
         //
     }
@@ -255,7 +256,7 @@ namespace PMP::Client
                            << errorDescription(data);
         }
 
-        _promise.setResult(data.errorType);
+        _promise.setOutcome(data.errorType);
     }
 
     void ServerConnection::PromiseResultHandler::handleExtensionResult(
@@ -263,7 +264,7 @@ namespace PMP::Client
     {
         auto code = convertExtensionResultCode(data);
 
-        _promise.setResult(code);
+        _promise.setOutcome(code);
     }
 
     QString ServerConnection::PromiseResultHandler::getActionDetail() const
@@ -556,7 +557,8 @@ namespace PMP::Client
 
     ServerConnection::HistoryFragmentResultHandler::HistoryFragmentResultHandler(
         ServerConnection* parent)
-     : ResultHandler(parent)
+     : ResultHandler(parent),
+        _promise(Async::createPromise<HistoryFragment, AnyResultMessageCode>())
     {
         //
     }
@@ -604,7 +606,9 @@ namespace PMP::Client
     ServerConnection::HashInfoResultHandler::HashInfoResultHandler(
                                                                 ServerConnection* parent,
                                                                 const FileHash& hash)
-     : ResultHandler(parent), _hash(hash)
+     : ResultHandler(parent),
+        _hash(hash),
+        _promise(Async::createPromise<CollectionTrackInfo, AnyResultMessageCode>())
     {
         //
     }
@@ -751,10 +755,12 @@ namespace PMP::Client
     void ServerConnection::onReadyRead()
     {
         State state;
-        do {
+        do
+        {
             state = _state;
 
-            switch (state) {
+            switch (state)
+            {
             case NotConnected:
                 break; /* problem */
             case Connecting: /* fall-through */
@@ -762,7 +768,8 @@ namespace PMP::Client
             {
                 char heading[3];
 
-                if (_socket.peek(heading, 3) < 3) {
+                if (_socket.peek(heading, 3) < 3)
+                {
                     /* not enough data */
                     break;
                 }
@@ -779,8 +786,10 @@ namespace PMP::Client
 
                 bool hadSemicolon = false;
                 char c;
-                while (_socket.getChar(&c)) {
-                    if (c == ';') {
+                while (_socket.getChar(&c))
+                {
+                    if (c == ';')
+                    {
                         hadSemicolon = true;
                         break;
                     }
@@ -824,7 +833,8 @@ namespace PMP::Client
                 break;
             case BinaryHandshake:
             {
-                if (_socket.bytesAvailable() < 5) {
+                if (_socket.bytesAvailable() < 5)
+                {
                     /* not enough data */
                     break;
                 }
@@ -848,7 +858,8 @@ namespace PMP::Client
                 _timeSinceLastMessageReceived.start();
                 _keepAliveTimer->start(KeepAliveIntervalMs);
 
-                if (_serverProtocolNo >= 12) {
+                if (_serverProtocolNo >= 12)
+                {
                     /* if interested in protocol extensions... */
                     sendSingleByteAction(18); /*18 = request list of protocol extensions*/
                     sendProtocolExtensionsMessage();
@@ -862,7 +873,8 @@ namespace PMP::Client
                 else if (_autoSubscribeToEventsAfterConnect
                             == ServerEventSubscription::ServerHealthMessages)
                 {
-                    if (_serverProtocolNo >= 10) {
+                    if (_serverProtocolNo >= 10)
+                    {
                          /* 51 = subscribe to server health events */
                         sendSingleByteAction(51);
                     }
@@ -970,11 +982,14 @@ namespace PMP::Client
 
     void ServerConnection::readTextCommands()
     {
-        do {
+        do
+        {
             bool hadSemicolon = false;
             char c;
-            while (_socket.getChar(&c)) {
-                if (c == ';') {
+            while (_socket.getChar(&c))
+            {
+                if (c == ';')
+                {
                     hadSemicolon = true;
                     break;
                 }
@@ -992,11 +1007,13 @@ namespace PMP::Client
 
     void ServerConnection::executeTextCommand(QString const& commandText)
     {
-        if (commandText == "binary") {
+        if (commandText == "binary")
+        {
             /* switch to binary communication mode */
             _state = BinaryHandshake;
         }
-        else {
+        else
+        {
             qDebug() << "ignoring text command:" << commandText;
         }
     }
@@ -1088,8 +1105,8 @@ namespace PMP::Client
         sendBinaryMessage(message);
     }
 
-    SimpleFuture<AnyResultMessageCode> ServerConnection::sendParameterlessActionRequest(
-                                                             ParameterlessActionCode code)
+    SimpleFuture<AnyResultMessageCode>
+        ServerConnection::sendParameterlessActionRequest(ParameterlessActionCode code)
     {
         if (NetworkProtocol::isSupported(code, _serverProtocolNo) == false)
             return serverTooOldFutureResult();
@@ -1226,14 +1243,16 @@ namespace PMP::Client
         return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
     }
 
-    FutureResult<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
     {
-        return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::NoError));
+        return SimpleFuture<AnyResultMessageCode>::fromOutcome(
+                                                        ResultMessageErrorCode::NoError);
     }
 
-    FutureResult<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
+    SimpleFuture<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
     {
-        return FutureResult(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
+        return SimpleFuture<AnyResultMessageCode>::fromOutcome(
+                                                    ResultMessageErrorCode::ServerTooOld);
     }
 
     FutureError<AnyResultMessageCode> ServerConnection::serverTooOldFutureError()
@@ -1434,10 +1453,12 @@ namespace PMP::Client
     {
         if (queueIDs.empty()) return;
 
-        if (queueIDs.size() == 1) {
+        if (queueIDs.size() == 1)
+        {
             qDebug() << "sending bulk request for track info of QID" << queueIDs[0];
         }
-        else {
+        else
+        {
             qDebug() << "sending bulk request for track info of"
                      << queueIDs.size() << "QIDs";
         }
@@ -1459,10 +1480,12 @@ namespace PMP::Client
     {
         if (queueIDs.empty()) return;
 
-        if (queueIDs.size() == 1) {
+        if (queueIDs.size() == 1)
+        {
             qDebug() << "sending bulk request for hash info of QID" << queueIDs[0];
         }
-        else {
+        else
+        {
             qDebug() << "sending bulk request for hash info of"
                      << queueIDs.size() << "QIDs";
         }
@@ -1744,7 +1767,8 @@ namespace PMP::Client
 
             UserLoginError error;
 
-            switch (errorCode) {
+            switch (errorCode)
+            {
             case ResultMessageErrorCode::InvalidUserAccountName:
             case ResultMessageErrorCode::UserLoginAuthenticationFailed:
                 error = UserLoginError::AuthenticationFailed;
@@ -1940,7 +1964,8 @@ namespace PMP::Client
 
     void ServerConnection::setVolume(int percentage)
     {
-        if (percentage < 0 || percentage > 100) {
+        if (percentage < 0 || percentage > 100)
+        {
             qWarning() << "Invalid percentage:" << percentage;
             return;
         }
@@ -2121,7 +2146,8 @@ namespace PMP::Client
         {
             quint32 messageLength = NetworkUtil::get4Bytes(lengthBytes);
 
-            if (_socket.bytesAvailable() - sizeof(lengthBytes) < messageLength) {
+            if (_socket.bytesAvailable() - sizeof(lengthBytes) < messageLength)
+            {
                 qDebug() << "waiting for incoming message with length" << messageLength
                          << " --- only partially received";
                 break; /* message not complete yet */
@@ -2501,7 +2527,8 @@ namespace PMP::Client
 
     void ServerConnection::parseDatabaseIdentifierMessage(QByteArray const& message)
     {
-        if (message.length() != (2 + 16)) {
+        if (message.length() != (2 + 16))
+        {
             qWarning() << "invalid message; length incorrect";
             return;
         }
@@ -2745,7 +2772,8 @@ namespace PMP::Client
 
     void ServerConnection::parseVolumeChangedMessage(QByteArray const& message)
     {
-        if (message.length() != 3) {
+        if (message.length() != 3)
+        {
             return; /* invalid message */
         }
 
@@ -2758,14 +2786,16 @@ namespace PMP::Client
 
     void ServerConnection::parseUserPlayingForModeMessage(QByteArray const& message)
     {
-        if (message.length() < 8) {
+        if (message.length() < 8)
+        {
             return; /* invalid message */
         }
 
         int loginBytesSize = NetworkUtil::getByteUnsignedToInt(message, 2);
         quint32 userId = NetworkUtil::get4Bytes(message, 4);
 
-        if (message.length() != 8 + loginBytesSize) {
+        if (message.length() != 8 + loginBytesSize)
+        {
             return; /* invalid message */
         }
 
@@ -2809,7 +2839,8 @@ namespace PMP::Client
     {
         bool preciseLength = _serverProtocolNo >= 13;
 
-        if (message.length() < 12 + (preciseLength ? 8 : 4)) {
+        if (message.length() < 12 + (preciseLength ? 8 : 4))
+        {
             return; /* invalid message */
         }
 
@@ -2818,11 +2849,13 @@ namespace PMP::Client
 
         qint64 lengthMilliseconds;
         int offset = 8;
-        if (preciseLength) {
+        if (preciseLength)
+        {
             lengthMilliseconds = NetworkUtil::get8BytesSigned(message, 8);
             offset += 8;
         }
-        else {
+        else
+        {
             lengthMilliseconds = NetworkUtil::get4BytesSigned(message, 8);
             if (lengthMilliseconds > 0) lengthMilliseconds *= 1000;
             offset += 4;
@@ -2868,7 +2901,8 @@ namespace PMP::Client
 
     void ServerConnection::parseBulkTrackInfoMessage(QByteArray const& message)
     {
-        if (message.length() < 4) {
+        if (message.length() < 4)
+        {
             return; /* invalid message */
         }
 
@@ -2888,16 +2922,19 @@ namespace PMP::Client
 
         int offset = 4;
         QList<quint16> statuses;
-        for (int i = 0; i < trackCount; ++i) {
+        for (int i = 0; i < trackCount; ++i)
+        {
             statuses.append(NetworkUtil::get2Bytes(message, offset));
             offset += 2;
         }
-        if (trackCount % 2 != 0) {
+        if (trackCount % 2 != 0)
+        {
             offset += 2; /* skip filler */
         }
 
         QList<int> offsets;
-        while (true) {
+        while (true)
+        {
             offsets.append(offset);
 
             quint32 queueID = NetworkUtil::get4Bytes(message, offset);
@@ -2908,7 +2945,8 @@ namespace PMP::Client
             offset += 4;
             int titleArtistOffset = offset;
 
-            if (queueID == 0) {
+            if (queueID == 0)
+            {
                 return; /* invalid message */
             }
 
@@ -2921,36 +2959,42 @@ namespace PMP::Client
 
             offset += titleSize + artistSize;
 
-            if (offset == message.length()) {
+            if (offset == message.length())
+            {
                 break; /* end of message */
             }
 
             /* at least one more track info follows */
 
-            if (offset + trackInfoBlockByteCount > message.length()) {
+            if (offset + trackInfoBlockByteCount > message.length())
+            {
                 return;  /* invalid message */
             }
         }
 
         qDebug() << "received bulk track info reply;  count:" << trackCount;
 
-        if (trackCount != offsets.size()) {
+        if (trackCount != offsets.size())
+        {
             return;  /* invalid message */
         }
 
         /* now read all track info's */
-        for (int i = 0; i < trackCount; ++i) {
+        for (int i = 0; i < trackCount; ++i)
+        {
             offset = offsets[i];
             quint32 queueID = NetworkUtil::get4Bytes(message, offset);
             offset += 4;
             quint16 status = statuses[i];
 
             qint64 lengthMilliseconds;
-            if (preciseLength) {
+            if (preciseLength)
+            {
                 lengthMilliseconds = NetworkUtil::get8BytesSigned(message, offset);
                 offset += 8;
             }
-            else {
+            else
+            {
                 lengthMilliseconds = NetworkUtil::get4BytesSigned(message, offset);
                 if (lengthMilliseconds > 0) lengthMilliseconds *= 1000;
                 offset += 4;
@@ -2963,12 +3007,14 @@ namespace PMP::Client
             auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
 
             QString title, artist;
-            if (NetworkProtocol::isTrackStatusFromRealTrack(status)) {
+            if (NetworkProtocol::isTrackStatusFromRealTrack(status))
+            {
                 title = NetworkUtil::getUtf8String(message, offset, titleSize);
                 artist =
                     NetworkUtil::getUtf8String(message, offset + titleSize, artistSize);
             }
-            else {
+            else
+            {
                 title = artist = NetworkProtocol::getPseudoTrackStatusText(status);
             }
 
@@ -2985,7 +3031,8 @@ namespace PMP::Client
 
         QList<QString> names;
         int offset = 6;
-        while (offset < message.length()) {
+        while (offset < message.length())
+        {
             if (offset > message.length() - 4) return; /* invalid message */
             int nameLength = NetworkUtil::get4BytesSigned(message, offset);
             if (nameLength <= 0) return; /* invalid message */
@@ -2999,7 +3046,8 @@ namespace PMP::Client
         qDebug() << "received a list of" << names.size()
                  << "possible filenames for QID" << queueID;
 
-        if (names.size() == 1) {
+        if (names.size() == 1)
+        {
             qDebug() << " received name" << names[0];
         }
 
@@ -3009,7 +3057,8 @@ namespace PMP::Client
     void ServerConnection::parseBulkQueueEntryHashMessage(const QByteArray& message)
     {
         qint32 messageLength = message.length();
-        if (messageLength < 4) {
+        if (messageLength < 4)
+        {
             invalidMessageReceived(message, "bulk-queue-entry-hashes");
             return; /* invalid message */
         }
@@ -3029,7 +3078,8 @@ namespace PMP::Client
         qDebug() << "received bulk queue entry hash message; count:" << trackCount;
 
         int offset = 4;
-        for (int i = 0; i < trackCount; ++i) {
+        for (int i = 0; i < trackCount; ++i)
+        {
             quint32 queueID = NetworkUtil::get4Bytes(message, offset);
             quint16 status = NetworkUtil::get2Bytes(message, offset + 4);
             offset += 8;
@@ -3037,7 +3087,8 @@ namespace PMP::Client
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
-            if (!ok) {
+            if (!ok)
+            {
                 qWarning() << "could not extract hash for QID" << queueID
                            << "; track status=" << status;
                 continue;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,8 +19,8 @@
 
 #include "scoreformatdelegate.h"
 
-namespace PMP {
-
+namespace PMP
+{
     ScoreFormatDelegate::ScoreFormatDelegate(QObject* parent)
      : QStyledItemDelegate(parent)
     {
@@ -36,5 +36,4 @@ namespace PMP {
 
         return locale.toString(scorePermillage / 10.0f, 'f', 1);
     }
-
 }

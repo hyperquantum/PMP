@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2019-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -63,7 +63,8 @@ void TestNetworkUtil::to2BytesSigned()
     }
 }
 
-void TestNetworkUtil::appendByte() {
+void TestNetworkUtil::appendByte()
+{
     QByteArray array;
     NetworkUtil::appendByte(array, '\0');
     NetworkUtil::appendByte(array, uchar(9));
@@ -82,7 +83,8 @@ void TestNetworkUtil::appendByte() {
     QCOMPARE(char(array[5]), char(255));
 }
 
-void TestNetworkUtil::getByte() {
+void TestNetworkUtil::getByte()
+{
     QByteArray array;
     array.append('\0');
     array.append(char(9));
@@ -101,7 +103,8 @@ void TestNetworkUtil::getByte() {
     QCOMPARE(NetworkUtil::getByte(array, 5), uchar(255));
 }
 
-void TestNetworkUtil::append2Bytes() {
+void TestNetworkUtil::append2Bytes()
+{
     QByteArray array;
     NetworkUtil::append2Bytes(array, 0u);
     NetworkUtil::append2Bytes(array, 30u);
@@ -139,7 +142,8 @@ void TestNetworkUtil::append2Bytes() {
     QCOMPARE(char(array[15]), '\xFF');
 }
 
-void TestNetworkUtil::get2Bytes() {
+void TestNetworkUtil::get2Bytes()
+{
     QByteArray array;
     array.append('\0');
     array.append('\0');
@@ -177,7 +181,8 @@ void TestNetworkUtil::get2Bytes() {
     QCOMPARE(NetworkUtil::get2Bytes(array, 14), quint16(65535u));
 }
 
-void TestNetworkUtil::append4Bytes() {
+void TestNetworkUtil::append4Bytes()
+{
     QByteArray array;
     NetworkUtil::append4Bytes(array, 0u);
     NetworkUtil::append4Bytes(array, 5544u);
@@ -213,7 +218,8 @@ void TestNetworkUtil::append4Bytes() {
     QCOMPARE(char(array[19]), '\x16');
 }
 
-void TestNetworkUtil::get4Bytes() {
+void TestNetworkUtil::get4Bytes()
+{
     QByteArray array;
     array.append('\0');
     array.append('\0');
@@ -249,7 +255,8 @@ void TestNetworkUtil::get4Bytes() {
     QCOMPARE(NetworkUtil::get4Bytes(array, 16), quint32(4222618390u));
 }
 
-void TestNetworkUtil::append8Bytes() {
+void TestNetworkUtil::append8Bytes()
+{
     QByteArray array;
     NetworkUtil::append8Bytes(array, 0u);
     NetworkUtil::append8Bytes(array, 56542215u);
@@ -305,7 +312,8 @@ void TestNetworkUtil::append8Bytes() {
     QCOMPARE(char(array[39]), '\x15');
 }
 
-void TestNetworkUtil::get8Bytes() {
+void TestNetworkUtil::get8Bytes()
+{
     QByteArray array;
     array.append('\0');
     array.append('\0');
@@ -361,7 +369,8 @@ void TestNetworkUtil::get8Bytes() {
     QCOMPARE(NetworkUtil::get8Bytes(array, 32), quint64(0xFE2A54BB12CF5415ull));
 }
 
-void TestNetworkUtil::get2BytesSigned() {
+void TestNetworkUtil::get2BytesSigned()
+{
     QByteArray array;
     array.append('\xFF');
     array.append('\xFF');
@@ -379,7 +388,8 @@ void TestNetworkUtil::get2BytesSigned() {
     QCOMPARE(NetworkUtil::get2BytesSigned(array, 4), qint16(5));
 }
 
-void TestNetworkUtil::get4BytesSigned() {
+void TestNetworkUtil::get4BytesSigned()
+{
     QByteArray array;
     array.append('\xFF');
     array.append('\xFF');
@@ -403,7 +413,8 @@ void TestNetworkUtil::get4BytesSigned() {
     QCOMPARE(NetworkUtil::get4BytesSigned(array, 8), qint32(5));
 }
 
-void TestNetworkUtil::get8BytesSigned() {
+void TestNetworkUtil::get8BytesSigned()
+{
     QByteArray array;
     array.append('\xFF');
     array.append('\xFF');
@@ -439,7 +450,8 @@ void TestNetworkUtil::get8BytesSigned() {
     QCOMPARE(NetworkUtil::get8BytesSigned(array, 16), qint64(5));
 }
 
-void TestNetworkUtil::getByteUnsignedToInt() {
+void TestNetworkUtil::getByteUnsignedToInt()
+{
     QByteArray array;
     array.append('\xFF');
     array.append('\0');
@@ -452,7 +464,8 @@ void TestNetworkUtil::getByteUnsignedToInt() {
     QCOMPARE(NetworkUtil::getByteUnsignedToInt(array, 2), 30);
 }
 
-void TestNetworkUtil::get2BytesUnsignedToInt() {
+void TestNetworkUtil::get2BytesUnsignedToInt()
+{
     QByteArray array;
     array.append('\xFF');
     array.append('\xFF');
@@ -466,7 +479,8 @@ void TestNetworkUtil::get2BytesUnsignedToInt() {
     QCOMPARE(NetworkUtil::get2BytesUnsignedToInt(array, 2), 30);
 }
 
-void TestNetworkUtil::appendByteUnsigned() {
+void TestNetworkUtil::appendByteUnsigned()
+{
     QByteArray array;
     NetworkUtil::appendByteUnsigned(array, 255);
     NetworkUtil::appendByteUnsigned(array, 128);
@@ -481,7 +495,8 @@ void TestNetworkUtil::appendByteUnsigned() {
     QCOMPARE(char(array[3]), char(0));
 }
 
-void TestNetworkUtil::append2BytesUnsigned() {
+void TestNetworkUtil::append2BytesUnsigned()
+{
     QByteArray array;
     NetworkUtil::append2BytesUnsigned(array, 0xFFFF);
     NetworkUtil::append2BytesUnsigned(array, 0xFF07);
@@ -500,7 +515,8 @@ void TestNetworkUtil::append2BytesUnsigned() {
     QCOMPARE(char(array[7]), char(0));
 }
 
-void TestNetworkUtil::append2BytesSigned() {
+void TestNetworkUtil::append2BytesSigned()
+{
     QByteArray array;
     NetworkUtil::append2BytesSigned(array, qint16(-1));
     NetworkUtil::append2BytesSigned(array, qint16(-1000));
@@ -514,7 +530,8 @@ void TestNetworkUtil::append2BytesSigned() {
     QCOMPARE(char(array[3]), '\x18');
 }
 
-void TestNetworkUtil::append4BytesSigned() {
+void TestNetworkUtil::append4BytesSigned()
+{
     QByteArray array;
     NetworkUtil::append4BytesSigned(array, qint32(-1));
     NetworkUtil::append4BytesSigned(array, qint32(-1000));
@@ -538,7 +555,8 @@ void TestNetworkUtil::append4BytesSigned() {
     QCOMPARE(char(array[11]), '\x00');
 }
 
-void TestNetworkUtil::append8BytesSigned() {
+void TestNetworkUtil::append8BytesSigned()
+{
     QByteArray array;
     NetworkUtil::append8BytesSigned(array, qint64(-1));
     NetworkUtil::append8BytesSigned(array, qint64(-1000));
@@ -604,7 +622,8 @@ void TestNetworkUtil::append8BytesSigned() {
     QCOMPARE(char(array[47]), '\x5E');
 }
 
-void TestNetworkUtil::getUtf8String() {
+void TestNetworkUtil::getUtf8String()
+{
     QByteArray array;
     array.append('p');
     array.append('i');

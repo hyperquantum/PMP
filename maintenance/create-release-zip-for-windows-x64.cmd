@@ -32,6 +32,11 @@ ECHO #                                    #
 ECHO(
 
 SET scriptdir=%~dp0
+CD %scriptdir%
+CD ..
+SET pmpsrcdir=%cd%
+
+:: relative paths and filenames
 SET bin_dir=x64-windows-release-bin
 SET bin_to_release_dir=src\Release
 SET zipsrcfull_dir=x64-windows-archive-full
@@ -39,11 +44,10 @@ SET ziproot_dir=PMP-win64
 SET full_zip=PMP-win64.zip
 
 ECHO ---------------------- Settings ----------------------
-ECHO Script directory: %scriptdir%
-ECHO CMake directory:  %CMAKE_BIN_DIR%
-ECHO 7-ZIP directory:  %TOOL_7Z_BIN_DIR%
-ECHO vcpkg directory:  %TOOL_VCPKG_BIN_DIR%
-:: ECHO ZIP preparation dir: %zipsrcfull_dir%
+ECHO PMP root directory: %pmpsrcdir%
+ECHO CMake directory:    %CMAKE_BIN_DIR%
+ECHO 7-ZIP directory:    %TOOL_7Z_BIN_DIR%
+ECHO vcpkg directory:    %TOOL_VCPKG_BIN_DIR%
 ECHO(
 ECHO CMake generator:  %CMAKE_GENERATOR%
 ECHO ------------------------------------------------------
@@ -76,7 +80,7 @@ IF NOT EXIST "%TOOL_VCPKG_BIN_DIR%\vcpkg.exe" (
     GOTO :EOF
 )
 
-CD "%scriptdir%"
+CD "%pmpsrcdir%"
 
 :: cleanup from previous runs (if necessary)
 IF EXIST "%full_zip%" (
@@ -103,12 +107,12 @@ IF NOT EXIST "%bin_dir%\ran_vcpkg_already" (
 
     ECHO(
 
-    CD "%scriptdir%"
+    CD "%pmpsrcdir%"
     CD "%bin_dir%"
     ECHO Hi there. Delete this file if you want to re-run vcpkg. >ran_vcpkg_already
 )
 
-CD "%scriptdir%"
+CD "%pmpsrcdir%"
 
 :: run CMake if it's the first time
 IF NOT EXIST "%bin_dir%\ran_cmake_already" (
@@ -128,7 +132,7 @@ IF NOT EXIST "%bin_dir%\ran_cmake_already" (
 
 :: run build
 ECHO Building...
-CD "%scriptdir%"
+CD "%pmpsrcdir%"
 CD "%bin_dir%"
 "%CMAKE_BIN_DIR%\cmake.exe" ^
     --build . ^
@@ -138,9 +142,9 @@ ECHO(
 
 :: copy files to directory structure for creating the ZIP archive
 ECHO Copying files...
-CD "%scriptdir%"
-SET dist_dir=%scriptdir%\%zipsrcfull_dir%\%ziproot_dir%
-robocopy "%scriptdir%\%bin_dir%\%bin_to_release_dir%" "%dist_dir%" /s >NUL
+CD "%pmpsrcdir%"
+SET dist_dir=%pmpsrcdir%\%zipsrcfull_dir%\%ziproot_dir%
+robocopy "%pmpsrcdir%\%bin_dir%\%bin_to_release_dir%" "%dist_dir%" /s >NUL
 DEL /q "%dist_dir%\quicktest.exe" || GOTO :EOF
 ECHO(
 
@@ -149,9 +153,9 @@ COPY *LICENSE* "%dist_dir%" >NUL
 
 :: create ZIP archive
 ECHO Creating ZIP file...
-CD "%scriptdir%\%zipsrcfull_dir%"
+CD "%pmpsrcdir%\%zipsrcfull_dir%"
 "%TOOL_7Z_BIN_DIR%\7z.exe" a -tzip "%full_zip%" %ziproot_dir%"
-CD "%scriptdir%"
+CD "%pmpsrcdir%"
 MOVE "%zipsrcfull_dir%\%full_zip%" . >NUL
 RD /q /s "%zipsrcfull_dir%"
 ECHO(

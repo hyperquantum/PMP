@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,6 +29,7 @@
 #include "collectiontablemodel.h"
 #include "colors.h"
 #include "colorswitcher.h"
+#include "searching.h"
 #include "trackinfodialog.h"
 #include "waitingspinnerwidget.h"
 
@@ -55,6 +56,7 @@ namespace PMP
        _collectionDisplayModel(new FilteredCollectionTableModel(this,
                                                                 _collectionSourceModel,
                                                                 serverInterface,
+                              new SearchData(this, &serverInterface->collectionWatcher()),
                                                                 queueHashesMonitor,
                                                                userForStatisticsDisplay)),
        _collectionContextMenu(nullptr)
@@ -221,7 +223,8 @@ namespace PMP
         connect(
             trackInfoAction, &QAction::triggered,
             this,
-            [this, track]() {
+            [this, track]()
+            {
                 qDebug() << "collection context menu: track info triggered";
                 auto dialog = new TrackInfoDialog(this, _serverInterface,
                                                   _userStatisticsDisplay, track);

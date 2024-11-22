@@ -47,7 +47,8 @@ using namespace PMP::Client;
 
 namespace PMP
 {
-    namespace {
+    namespace
+    {
 
     class Comparisons
     {
@@ -117,7 +118,8 @@ namespace PMP
         connect(
             playerController, &PlayerController::playerStateChanged,
             this,
-            [this, playerController]() {
+            [this, playerController]()
+            {
                 _playerState = playerController->playerState();
 
                 if (!_currentTrackHash.isZero())
@@ -445,8 +447,10 @@ namespace PMP
     {
         if (searchRangeBegin > searchRangeEnd) return -1 /* problem */;
 
-        if (searchRangeEnd - searchRangeBegin <= 50) { /* do linear search */
-            for (int index = searchRangeBegin; index < searchRangeEnd; ++index) {
+        if (searchRangeEnd - searchRangeBegin <= 50) /* do linear search */
+        {
+            for (int index = searchRangeBegin; index < searchRangeEnd; ++index)
+            {
                 auto const& current = *_tracks.at(_outerToInnerIndexMap.at(index));
 
                 if (lessThan(track, current)) return index;
@@ -460,10 +464,12 @@ namespace PMP
         int middleIndex = searchRangeBegin / 2 + searchRangeEnd / 2;
         auto const& middleTrack = *_tracks.at(_outerToInnerIndexMap.at(middleIndex));
 
-        if (lessThan(track, middleTrack)) {
+        if (lessThan(track, middleTrack))
+        {
             return findOuterIndexMapIndexForInsert(track, searchRangeBegin, middleIndex);
         }
-        else {
+        else
+        {
             return findOuterIndexMapIndexForInsert(track, middleIndex, searchRangeEnd);
         }
     }
@@ -751,7 +757,8 @@ namespace PMP
 
     QVariant SortedCollectionTableModel::data(const QModelIndex& index, int role) const
     {
-        switch (role) {
+        switch (role)
+        {
             case Qt::TextAlignmentRole:
                 switch (index.column())
                 {
@@ -763,7 +770,8 @@ namespace PMP
                 {
                     auto track = trackAt(index);
 
-                    switch (index.column()) {
+                    switch (index.column())
+                    {
                         case 0: return track->title();
                         case 1: return track->artist();
                         case 2:
@@ -785,7 +793,8 @@ namespace PMP
 
                     if (track->hashId() == _currentTrackHash)
                     {
-                        switch (_playerState) {
+                        switch (_playerState)
+                        {
                             case PlayerState::Playing:
                                 return QIcon(":/mediabuttons/play.svg");
 
@@ -912,12 +921,14 @@ namespace PMP
     // ============================================================================ //
 
     FilteredCollectionTableModel::FilteredCollectionTableModel(QObject* parent,
-                                             SortedCollectionTableModel* source,
-                                             ServerInterface* serverInterface,
-                                             QueueHashesMonitor* queueHashesMonitor,
-                                       UserForStatisticsDisplay* userForStatisticsDisplay)
+                                    SortedCollectionTableModel* source,
+                                    ServerInterface* serverInterface,
+                                    SearchData* searchData,
+                                    QueueHashesMonitor* queueHashesMonitor,
+                                    UserForStatisticsDisplay* userForStatisticsDisplay)
      : _serverInterface(serverInterface),
        _source(source),
+       _searchData(searchData),
        _filteringTrackJudge(serverInterface->userDataFetcher(), *queueHashesMonitor)
     {
         Q_UNUSED(parent)
@@ -968,9 +979,7 @@ namespace PMP
 
     void FilteredCollectionTableModel::setSearchText(QString search)
     {
-        auto trimmed = search.trimmed();
-
-        auto fileHash = FileHash::tryParse(trimmed);
+        auto fileHash = FileHash::tryParse(search.trimmed());
         if (!fileHash.isNull())
         {
             // id will be zero when not found
@@ -982,13 +991,13 @@ namespace PMP
                 (void)_serverInterface->collectionWatcher().getTrackInfo(fileHash);
             }
 
-            _searchParts.clear();
+            _searchQuery.clear();
             _searchFileHash = fileHash;
             _searchHashId = hashId;
         }
         else
         {
-            _searchParts = trimmed.split(QRegExp("\\s+"), Qt::SkipEmptyParts);
+            _searchQuery = SearchQuery(search);
             _searchFileHash = FileHash();
             _searchHashId = null;
         }
@@ -1001,7 +1010,7 @@ namespace PMP
     {
         Q_UNUSED(sourceParent)
 
-        if (_searchParts.empty() && _searchHashId == null
+        if (_searchQuery.isEmpty() && _searchHashId == null
             && _filteringTrackJudge.criteriumResultsInAllTracks())
         {
             return true; /* not filtered */
@@ -1009,15 +1018,10 @@ namespace PMP
 
         auto* track = _source->trackAt(sourceRow);
 
-        if (!_searchParts.empty())
+        if (!_searchQuery.isEmpty())
         {
-            for (QString const& searchPart : _searchParts)
-            {
-                if (!track->title().contains(searchPart, Qt::CaseInsensitive)
-                        && !track->artist().contains(searchPart, Qt::CaseInsensitive)
-                        && !track->album().contains(searchPart, Qt::CaseInsensitive))
-                    return false;
-            }
+            if (!_searchData->isFileMatchForQuery(track->hashId(), _searchQuery))
+                return false;
         }
         else if (_searchHashId != null)
         {

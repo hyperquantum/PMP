@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,9 +44,25 @@ namespace PMP::Server
 
         auto future =
             _resolver->findPathForHashAsync(hashId)
-                .convertResult<CollectionTrackInfo>(
-                    [this, hashId](QString) -> CollectionTrackInfo
+                .thenOnAnyThreadIndirect<SuccessType, FailureType>(
+                    [this, hashId](FailureOr<QString> outcome) -> Future<SuccessType, FailureType>
                     {
+                        if (outcome.failed())
+                            return FutureError<FailureType>(failure);
+
+                        qDebug() << "TrackInfoProviderImpl: have file for hash ID"
+                                 << hashId
+                                 << "and will now wait until Resolver has processed it";
+
+                        return _resolver->waitUntilAnyFileAnalyzed(hashId);
+                    }
+                )
+                .thenOnAnyThread<CollectionTrackInfo, FailureType>(
+                    [this, hashId](SuccessOrFailure) -> FailureOr<CollectionTrackInfo>
+                    {
+                        qDebug() << "TrackInfoProviderImpl: will now attempt to return"
+                                    " track info for hash ID" << hashId;
+
                         return _resolver->getHashTrackInfo(hashId);
                     }
                 );

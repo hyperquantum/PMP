@@ -68,16 +68,21 @@ namespace PMP
         void setCommandExecutionResult(AnyResultMessageCode code);
         void setCommandExecutionResult(ResultMessageErrorCode errorCode);
         void setCommandExecutionResult(ScrobblingResultMessageCode code);
-        void addCommandExecutionFutureListener(SimpleFuture<AnyResultMessageCode> future);
+        void setCommandExecutionResultFuture(
+            SimpleFuture<AnyResultMessageCode> future);
 
         template <class T>
-        void addFailureHandler(Future<T, AnyResultMessageCode>& future)
+        void handleFailureAndResult(Future<T, AnyResultMessageCode>& future,
+                                    std::function<void(T const& result)> f)
         {
-            future.addFailureListener(
+            future.handleOnEventLoop(
                 this,
-                [this](AnyResultMessageCode errorCode)
+                [this, f](ResultOrError<T, AnyResultMessageCode> outcome)
                 {
-                    setCommandExecutionResult(errorCode);
+                    if (outcome.succeeded())
+                        f(outcome.result());
+                    else
+                        setCommandExecutionResult(outcome.error());
                 }
             );
         }

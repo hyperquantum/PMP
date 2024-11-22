@@ -113,7 +113,7 @@ namespace PMP
         void run(Client::ServerInterface* serverInterface) override;
 
     private:
-        void printTrackInfo(Client::CollectionTrackInfo& trackInfo);
+        void printTrackInfo(Client::CollectionTrackInfo const& trackInfo);
 
         FileHash _hash;
     };

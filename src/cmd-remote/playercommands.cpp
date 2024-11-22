@@ -43,7 +43,7 @@ namespace PMP
         auto future =
             serverInterface->playerController().activateDelayedStart(_startTime);
 
-        addCommandExecutionFutureListener(future);
+        setCommandExecutionResultFuture(future);
     }
 
     /* ===== DelayedStartWaitCommand ===== */
@@ -57,9 +57,9 @@ namespace PMP
     void DelayedStartWaitCommand::run(ServerInterface* serverInterface)
     {
         auto future =
-            serverInterface->playerController().activateDelayedStart(
-                                                                      _delayMilliseconds);
-        addCommandExecutionFutureListener(future);
+            serverInterface->playerController().activateDelayedStart(_delayMilliseconds);
+
+        setCommandExecutionResultFuture(future);
     }
 
     /* ===== DeactivateDelayedCancelCommand ===== */
@@ -67,7 +67,7 @@ namespace PMP
     void DelayedStartCancelCommand::run(ServerInterface* serverInterface)
     {
         auto future = serverInterface->playerController().deactivateDelayedStart();
-        addCommandExecutionFutureListener(future);
+        setCommandExecutionResultFuture(future);
     }
 
     /* ===== PlayCommand ===== */

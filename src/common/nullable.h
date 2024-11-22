@@ -118,23 +118,49 @@ namespace PMP
             return *this;
         }
 
-        constexpr bool operator==(Nullable<T> const& other) const
-        {
-            if (!hasValue())
-                return !other.hasValue();
-
-            return other.hasValue() && value() == other.value();
-        }
-
-        constexpr bool operator!=(Nullable<T> const& other) const
-        {
-            return !(*this == other);
-        }
-
     private:
         alignas(T) quint8 _valueStorage[sizeof(T)] { 0 };
         bool _hasValue;
     };
+
+    template<class T>
+    constexpr bool operator==(Nullable<T> const& first, Nullable<T> const& second)
+    {
+        if (first.hasValue() != second.hasValue())
+            return false;
+
+        return first.hasValue() && first.value() == second.value();
+    }
+
+    template<class T>
+    constexpr bool operator!=(Nullable<T> const& first, Nullable<T> const& second)
+    {
+        return !(first == second);
+    }
+
+    template<class T>
+    constexpr bool operator==(Nullable<T> const& first, T const& second)
+    {
+        return first.hasValue() && first.value() == second;
+    }
+
+    template<class T>
+    constexpr bool operator!=(Nullable<T> const& first, T const& second)
+    {
+        return !(first == second);
+    }
+
+    template<class T>
+    constexpr bool operator==(T const& first, Nullable<T> const& second)
+    {
+        return second.hasValue() && second.value() == first;
+    }
+
+    template<class T>
+    constexpr bool operator!=(T const& first, Nullable<T> const& second)
+    {
+        return !(first == second);
+    }
 
     template<class T>
     constexpr bool operator==(Nullable<T> const& nullable, NullType)

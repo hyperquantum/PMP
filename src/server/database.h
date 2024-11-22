@@ -186,6 +186,16 @@ namespace PMP::Server
             QSqlDatabase& qSqlDatabase() { return _db; }
 
         private:
+            bool executeQueryInternal(QSqlQuery& query,
+                                      std::function<void (QSqlQuery&)> preparer,
+                                      bool processResult,
+                                      std::function<void (QSqlQuery&)> resultFetcher);
+            void logLastSqlError(QSqlQuery const& query);
+            void logSqlError(QSqlError const& error, QString const& sql);
+            bool shouldReconnectAndRetryQueryAfter(QSqlError const& error,
+                                                   qint64 elapsedTimeMs);
+            bool closeAndReopenConnection();
+
             QSqlDatabase _db;
         };
 

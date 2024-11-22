@@ -275,4 +275,16 @@ void TestNullable::valueOrReturnsAlternativeIfNull()
     QCOMPARE(s.valueOr("Hello"), QString("Hello"));
 }
 
+void TestNullable::mixedEqualsComparisonWorks()
+{
+    QVERIFY(Nullable<int>(55) == 55);
+    QVERIFY(55 == Nullable<int>(55));
+}
+
+void TestNullable::mixedNotEqualComparisonWorks()
+{
+    QVERIFY(Nullable<int>(55) != 707);
+    QVERIFY(707 != Nullable<int>(55));
+}
+
 QTEST_MAIN(TestNullable)

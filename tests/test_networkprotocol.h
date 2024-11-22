@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,29 +17,19 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_TESTFILEHASH_H
-#define PMP_TESTFILEHASH_H
+#ifndef PMP_TESTNETWORKPROTOCOL_H
+#define PMP_TESTNETWORKPROTOCOL_H
 
 #include <QObject>
-#include <QString>
 
-namespace PMP {
-    class FileHash;
-}
-
-class TestFileHash : public QObject {
+class TestNetworkProtocol : public QObject
+{
     Q_OBJECT
 private Q_SLOTS:
-    void defaultConstructorCreatesNullHash();
-    void realHashNotConsideredNull();
-    void hashOfEmptyDataNotConsideredNull();
-    void hashOfEmptyDataHasKnownValues();
-    void knownHash1();
-    void knownHash2();
-    void knownHash3();
-    void knownHash4();
-
-private:
-    static QString toString(PMP::FileHash const& hash);
+    void fileHashByteCount();
+    void appendHash();
+    void getHash();
+    void appendEmptyHash();
+    void getEmptyHash();
 };
 #endif

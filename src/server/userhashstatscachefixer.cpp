@@ -84,8 +84,8 @@ namespace PMP::Server
             Q_UNREACHABLE();
         }
 
-        Concurrent::run(workToDo)
-            .addListener(
+        Concurrent::runOnThreadPool(globalThreadPool, workToDo)
+            .handleOnEventLoop(
                 this, [this](SuccessOrFailure result) { handleResultOfWork(result); }
             );
     }

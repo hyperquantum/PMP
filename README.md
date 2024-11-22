@@ -8,7 +8,7 @@ PMP is designed to be portable software and should be compatible with most popul
 
 *This is alpha quality software*. Existing features can still be incomplete. Certain 'essential' features that can be found in most music player software might (still) be missing. PMP might contain lots of bugs. Use at your own risk.
 
-![screenshot](screenshots/desktop-remote-v0.2-screenshot.png)
+![screenshot](screenshots/desktop-remote-v0.3-screenshot.png)
 
 ## Table of Contents
 Contents of this file:
@@ -168,9 +168,9 @@ Then install the dependencies of PMP. Open a CMD terminal and run the following 
  (these may take a long time):
 ```cmd
 > cd C:\src\vcpkg
-> vcpkg install taglib --triplet x64-windows
-> vcpkg install qt5-base[mysqlplugin] --triplet x64-windows
-> vcpkg install qt5[essentials] --triplet x64-windows
+> .\vcpkg install taglib --triplet x64-windows
+> .\vcpkg install qt5-base[mysqlplugin] --triplet x64-windows
+> .\vcpkg install qt5[essentials] --triplet x64-windows
 ```
 
 Finally you can build PMP itself. Run the following commands in a CMD terminal. Adjust paths and VS version as needed; change _Debug_ to _Release_ (in both lines) if you prefer:

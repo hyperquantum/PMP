@@ -28,7 +28,7 @@ target_link_libraries(PMP_hash_test $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(PMP_hash_test Qt5::Core)
 target_link_libraries(PMP_hash_test ${TAGLIB_LIBRARIES})
 
-set(HASHTEST_PATH ${CMAKE_SOURCE_DIR}/testing)
+set(HASHTEST_PATH ${CMAKE_SOURCE_DIR}/tests)
 
 macro(add_hashtest SHORTFILENAME EXPECTEDRESULTARG)
     add_test(
@@ -116,6 +116,7 @@ qt5_wrap_cpp(PMP_TestScrobbler_MOCS test_scrobbler.h
 )
 add_executable(test_scrobbler test_scrobbler.cpp
     ${PMP_TestScrobbler_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/runners.cpp
     ${CMAKE_SOURCE_DIR}/src/server/scrobbler.cpp
     ${CMAKE_SOURCE_DIR}/src/server/scrobblingbackend.cpp
     ${CMAKE_SOURCE_DIR}/src/server/selftest.cpp
@@ -175,6 +176,16 @@ add_executable(test_obfuscator test_obfuscator.cpp
 )
 target_link_libraries(test_obfuscator Qt5::Core Qt5::Test)
 add_test(test_obfuscator test_obfuscator)
+
+
+# TestSearchUtil
+qt5_wrap_cpp(PMP_TestSearchUtil_MOCS test_searchutil.h)
+add_executable(test_searchutil test_searchutil.cpp
+    ${PMP_TestSearchUtil_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/searchutil.cpp
+)
+target_link_libraries(test_searchutil Qt5::Core Qt5::Test)
+add_test(test_searchutil test_searchutil)
 
 
 # TestHashRelations

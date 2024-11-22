@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2017-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2017-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,8 +20,8 @@
 #ifndef PMP_PLAYERCONTROLLER_H
 #define PMP_PLAYERCONTROLLER_H
 
-#include "common/tribool.h"
 #include "common/future.h"
+#include "common/tribool.h"
 #include "common/playermode.h"
 #include "common/playerstate.h"
 #include "common/resultmessageerrorcode.h"

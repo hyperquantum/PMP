@@ -116,16 +116,20 @@ namespace PMP::Server
         auto* statistics = _statistics;
 
         _hashIdRegistrar->getOrCreateId(hash)
-            .thenFuture<SuccessType, FailureType>(
-                [statistics, entry](uint hashId)
+            .thenOnAnyThreadIndirect<SuccessType, FailureType>(
+                [statistics, entry](FailureOr<uint> outcome)
+                    -> Future<SuccessType, FailureType>
                 {
+                    if (outcome.failed())
+                        return FutureError(failure);
+
+                    auto hashId = outcome.result();
                     uint userId = entry->user();
 
                     return statistics->addToHistory(userId, hashId, entry->started(),
                                                     entry->ended(), entry->permillage(),
                                                     entry->validForScoring());
-                },
-                failureIdentityFunction
+                }
             );
     }
 }
