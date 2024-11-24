@@ -829,12 +829,19 @@ namespace PMP
 
     void QueueModel::tracksChanged(QList<quint32> queueIDs)
     {
-        qDebug() << "QueueModel::tracksChanged; count=" << queueIDs.size();
+        if (queueIDs.size() <= 5)
+        {
+            qDebug() << "QueueModel::tracksChanged; IDs:" << queueIDs;
+        }
+        else
+        {
+            qDebug() << "QueueModel::tracksChanged; count=" << queueIDs.size();
+        }
 
         /* we don't know the indexes, so we say everything changed */
         Q_EMIT dataChanged(
             createIndex(0, 0),
-            createIndex(_modelRows, 4)
+            createIndex(_modelRows - 1, 4)
         );
     }
 
