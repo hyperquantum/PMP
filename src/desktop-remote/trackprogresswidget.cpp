@@ -75,35 +75,36 @@ namespace PMP
         Q_UNUSED(event)
 
         QPainter painter(this);
+        painter.setRenderHint(QPainter::Antialiasing);
 
-        //painter.setRenderHint(QPainter::Antialiasing);
+        auto& colors = Colors::instance();
 
-        QRect rect = this->rect().adjusted(+1, +1, -1, -1);
+        QRectF rect = this->rect();
+        rect.adjust(+1.5f, +1.5f, -1.5f, -1.5f);
 
         if (_trackLength <= 0)
         {
-            painter.fillRect(rect, QBrush(Colors::instance().trackProgressWidgetEmpty));
+            painter.fillRect(rect, QBrush(colors.trackProgressWidgetEmpty));
             return;
         }
 
-        painter.fillRect(rect, QBrush(Colors::instance().trackProgressWidgetBackground));
+        painter.fillRect(rect, QBrush(colors.trackProgressWidgetBackground));
 
         if (_trackPosition > 0)
         {
             auto position = qMin(_trackPosition, _trackLength);
 
-            QRect rect2(rect);
-            rect2.adjust(+2, +2, -2, -2);
+            QRectF rect2(rect);
+            rect2.adjust(+2.5f, +2.5f, -2.5f, -2.5f);
             int w = (position * rect2.width() + _trackLength / 2) / _trackLength;
             rect2.setWidth(w);
 
-            painter.fillRect(rect2,
-                             QBrush(Colors::instance().trackProgressWidgetProgress));
-            painter.setPen(QPen(Colors::instance().trackProgressWidgetProgress));
+            painter.fillRect(rect2, QBrush(colors.trackProgressWidgetProgress));
+            painter.setPen(QPen(colors.trackProgressWidgetProgress));
             painter.drawRect(rect2);
         }
 
-        painter.setPen(QPen(Colors::instance().trackProgressWidgetBorder));
+        painter.setPen(QPen(colors.trackProgressWidgetBorder, 1.5f));
         painter.drawRect(rect);
     }
 
@@ -111,7 +112,7 @@ namespace PMP
     {
         if (_trackLength > 0 && event->button() == Qt::LeftButton)
         {
-            QRect rect = this->rect().adjusted(+1+2, +1+2, -1-2, -1-2);
+            QRectF rect = this->rect().adjusted(+2+2, +2+2, -2-2, -2-2);
 
             auto mousePosition = event->position().toPoint();
 
@@ -126,11 +127,11 @@ namespace PMP
                 qDebug() << "TrackProgressWidget::mousePressEvent  with x=" << x
                          << " and rectangle width" << rect.width();
 
-                qint64 position =
+                auto position =
                     ((x - rect.x()) * _trackLength + rect.width() / 2) / rect.width();
                 qDebug() << " calculated position:" << position;
 
-                int x_r =
+                auto x_r =
                     (position * rect.width() + _trackLength / 2) / _trackLength + rect.x();
                 qDebug() << " calculated x from calculated position would be:" << x_r;
 
@@ -148,5 +149,4 @@ namespace PMP
 
         return metrics.height();
     }
-
 }
