@@ -1,6 +1,7 @@
 # binaries
 bin/*
 !bin/.empty
+build/
 
 # CMake output
 CMakeLists.txt.user
