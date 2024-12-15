@@ -135,7 +135,7 @@ ECHO(
 
 :: run windeployqt so we get all runtime dependencies
 ECHO Running windeployqt...
-"%TOOL_VCPKG_DIR%\%windeployqt_exe_from_vcpkg_dir%" --debug --no-translations ^
+"%TOOL_VCPKG_DIR%\%windeployqt_exe_from_vcpkg_dir%" --debug --pdb --no-translations ^
     "%pmpsrcdir%\%bin_dir_from_src%\%exe_dir_from_bin_dir%\PMP-HashTool.exe" ^
     "%pmpsrcdir%\%bin_dir_from_src%\%exe_dir_from_bin_dir%\PMP-Cmd-Remote.exe" ^
     "%pmpsrcdir%\%bin_dir_from_src%\%exe_dir_from_bin_dir%\PMP-Desktop-Remote.exe" ^
