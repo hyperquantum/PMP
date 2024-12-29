@@ -21,6 +21,7 @@
 
 #include <QGuiApplication>
 #include <QStyleHints>
+#include <QtGlobal>
 
 namespace PMP
 {
@@ -58,10 +59,14 @@ namespace PMP
 
     const Colors& Colors::instance()
     {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
         bool isDarkMode =
             QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
 
         return isDarkMode ? _darkScheme : _lightScheme;
+#else
+        return _lightScheme;
+#endif
     }
 
     const Colors Colors::_lightScheme =
