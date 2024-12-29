@@ -19,6 +19,9 @@
 
 #include "colors.h"
 
+#include <QGuiApplication>
+#include <QStyleHints>
+
 namespace PMP
 {
     Colors::Colors(const QColor& widgetBorder,
@@ -55,7 +58,10 @@ namespace PMP
 
     const Colors& Colors::instance()
     {
-        return _lightScheme;
+        bool isDarkMode =
+            QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+
+        return isDarkMode ? _darkScheme : _lightScheme;
     }
 
     const Colors Colors::_lightScheme =
@@ -80,6 +86,28 @@ namespace PMP
             /* linkText */ Qt::darkGreen, // TODO : find a real color
             /* spinnerBackground */ Qt::white,
             /* spinnerLines */ Qt::black
+        );
+
+    const Colors Colors::_darkScheme =
+        Colors(
+            /* widgetBorder */ QColor::fromRgb(50, 65, 75),
+            /* inactiveItemForeground */ Qt::gray,
+            /* itemBackgroundHighlightColors */ {
+                QColor::fromHsl(120, 255, 50),
+                QColor::fromHsl(0, 255, 50),
+                QColor::fromHsl(300, 255, 50),
+            },
+            /* specialQueueItemBackground */ QColor::fromRgb(50, 65, 75),
+            /* specialQueueItemForeground */ QColor::fromRgb(20, 140, 210),
+            /* historyErrorItemBackground */ Qt::darkRed,
+            /* historyErrorItemForeground */ Qt::lightGray,
+            /* trackProgressWidgetEmpty */ QColor::fromRgb(50, 65, 75),
+            /* trackProgressWidgetBackground */ QColor::fromRgb(25, 35, 45),
+            /* trackProgressWidgetBorder */ QColor::fromRgb(50, 65, 75),
+            /* trackProgressWidgetProgress */ QColor::fromRgb(80, 95, 105),
+            /* linkText */ QColor::fromRgb(20, 140, 210),
+            /* spinnerBackground */ QColor::fromRgb(25, 35, 45),
+            /* spinnerLines */ Qt::white
         );
 
 }

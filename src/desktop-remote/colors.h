@@ -62,6 +62,7 @@ namespace PMP
 
     private:
         static const Colors _lightScheme;
+        static const Colors _darkScheme;
     };
 }
 #endif
