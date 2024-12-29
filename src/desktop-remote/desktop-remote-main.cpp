@@ -23,12 +23,16 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QStyleHints>
 #include <QtDebug>
 
 using namespace PMP;
 
 int main(int argc, char *argv[])
 {
+    QApplication::setStyle("fusion");
+    //QApplication::styleHints()->setColorScheme(Qt::ColorScheme::Dark);
+
     QApplication app(argc, argv);
 
     QCoreApplication::setApplicationName("Party Music Player - Remote");
