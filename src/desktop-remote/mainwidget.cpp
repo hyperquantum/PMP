@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -53,6 +53,28 @@ using namespace PMP::UnicodeChars;
 
 namespace PMP
 {
+    namespace
+    {
+        void setRelativeFontSize(QLabel* label, double scaleFactor)
+        {
+            QFont font = label->font();
+            double currentPointSize = font.pointSize();
+
+            /* If the font size is not explicitly set (pointSize <= 0), calculate it
+               from QFontMetrics */
+            if (currentPointSize <= 0)
+            {
+                QFontMetrics metrics(font);
+
+                /* approximation to convert height to point size */
+                currentPointSize = metrics.height() / 1.2;
+            }
+
+            font.setPointSizeF(currentPointSize * scaleFactor);
+            label->setFont(font);
+        }
+    }
+
     MainWidget::MainWidget(QWidget* parent)
      : QWidget(parent),
         _ui(new Ui::MainWidget),
@@ -70,6 +92,8 @@ namespace PMP
 
         _ui->splitter->setStretchFactor(0, 4);
         _ui->splitter->setStretchFactor(1, 8);
+
+        setRelativeFontSize(_ui->artistTitleLabel, 1.3);
 
         auto trackTimeLabel = ClickableLabel::replace(_ui->positionLabel);
         auto trackTimeValueLabel = ClickableLabel::replace(_ui->positionValueLabel);
