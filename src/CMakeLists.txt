@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2024, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2025, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -232,6 +232,7 @@ set(PMP_DESKTOP_REMOTE_SOURCES
     desktop-remote/userpickerwidget.cpp
     desktop-remote/userscrobblingdialog.cpp
     desktop-remote/waitingspinnerwidget.cpp
+    desktop-remote/widgetutils.cpp
 )
 set(PMP_DESKTOP_REMOTE_HEADERS
     desktop-remote/autopersonalmodeaction.h

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,8 @@
 
 #include "client/serverdiscoverer.h"
 
+#include "widgetutils.h"
+
 #include <QCommandLinkButton>
 #include <QIntValidator>
 #include <QMessageBox>
@@ -35,6 +37,8 @@ namespace PMP
      : QWidget(parent), _ui(new Ui::ConnectionWidget())
     {
         _ui->setupUi(this);
+
+        WidgetUtils::setRelativeFontSize(_ui->titleLabel, 1.2);
 
         _ui->serverLineEdit->setText("localhost");
 
