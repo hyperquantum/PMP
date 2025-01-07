@@ -27,5 +27,6 @@ QT_FORWARD_DECLARE_CLASS(QLabel)
 namespace PMP::WidgetUtils
 {
     void setRelativeFontSize(QLabel* label, double scaleFactor);
+    void setFontBold(QLabel* label);
 }
 #endif

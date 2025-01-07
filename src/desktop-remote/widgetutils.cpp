@@ -43,4 +43,12 @@ namespace PMP::WidgetUtils
         font.setPointSizeF(currentPointSize * scaleFactor);
         label->setFont(font);
     }
+
+    void setFontBold(QLabel* label)
+    {
+        QFont font = label->font();
+
+        font.setBold(true);
+        label->setFont(font);
+    }
 }
