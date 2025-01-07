@@ -23,11 +23,12 @@ KNOWN PROBLEMS
  * server does not always take an updated title/artist/album into account when a track is changed on disk
  * scrobbling: "now playing" is triggered by the backoff mechanism after the track is already finished
  * scrobbling: race condition after track finished playing, between history insert and check for something to scrobble
- * desktop remote: searching/filtering in the music collection can be slow (in debug builds)
+ * connection screen: auto connections not disabled when trying to connect manually (and timing out)
 
 
 IDEAS
 
+ * server: server executable with (limited) user interface for easy usage on desktop platforms (like Minecraft)
  ** UI: provide dark theme or dark mode
  * UI: move server selection, user account creation and authentication to pop-up dialogs
  ** UI: display the title/artist of the track currently playing in the window title of the remote
@@ -39,7 +40,7 @@ IDEAS
  * UI: 'about the server' window; with server name, UUID and protocol version
  * UI: display play/pause buttons in Windows taskbar popup
  * client: after login display which server we are connected to
- * client: ability to reconnect to the server after the connection was broken
+ *** client: ability to reconnect to the server after the connection was broken
  * server selection: display servers recently used after verifying that they are still available
  * login: don't display user accounts that haven't been used in a long time
  * login: password reset / 'forgot password'
@@ -68,6 +69,7 @@ IDEAS
  * queue: show marker for tracks that occur more than once in the queue
  * queue: join title and artist columns when displaying filename
  * queue: save the contents of the queue on server shutdown and restore it at the next server startup
+ * queue: display total runtime until first break
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
  * music collection: add a clear button for each filter combobox
@@ -106,10 +108,10 @@ IDEAS
  * command-line remote: extend the "trackstats" command to accept queue IDs
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
  * hash tool: by default only output the hash of the file, no other information
- * server executable with (limited) user interface for easy usage on desktop platforms (like Minecraft)
  * save track length/title/artist/album to the database
  * when skipping the current track after a long-time pause (say, more than 10 min), do not let the skip affect scoring of the paused track
  * be more strict in determining the 'end time' for the history of a track that was played; time when paused should not count
+ * scrobbling: send 'now playing' on activation of scrobbling, don't wait until the next track
 
 
 NON-FUNCTIONAL IMPROVEMENTS
