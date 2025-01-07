@@ -156,7 +156,7 @@ Install [Visual Studio](https://visualstudio.microsoft.com/vs/community/) if you
 _x64-windows_ triplet like in the build instructions listed here. It may be possible to use MinGW
 instead, but this has not been tested.
 
-If you do not have vcpkg installed yet, open a CMD terminal and run the following commands:  
+**Installing vcpkg.** If you do not have vcpkg installed yet, open a terminal and run the following commands:  
 ```cmd
 > mkdir C:\src
 > cd C:\src
@@ -164,8 +164,15 @@ If you do not have vcpkg installed yet, open a CMD terminal and run the followin
 > .\vcpkg\bootstrap-vcpkg.bat
 ```
 
-Then install the dependencies of PMP. Open a CMD terminal and run the following commands
- (some of these may take a while):
+**Automatic building by a batch script.** For convenience, you can now run one of the following scripts:
+ * `create-debug-build-for-windows-x64.cmd` for a debug build; after a successful build the executables can be found in _x64-windows-debug-bin\src\Debug_
+ * `maintenance\create-release-zip-for-windows-x64.cmd` for creating a zip file containing a release build (requires 7-zip); this will create a file called _PMP-win64.zip_
+
+Before running them you may need to edit the scripts and adjust the installation paths for CMake, vcpkg, 7-zip, and the version of Visual Studio used for building.
+
+If you want to build things manually, the rest of the build steps are as follows:
+
+**Building dependencies.** We need to build the vcpkg packages that PMP depends on. Open a terminal and run the following commands:
 ```cmd
 > cd C:\src\vcpkg
 > .\vcpkg install taglib --triplet x64-windows
@@ -177,13 +184,15 @@ Then install the dependencies of PMP. Open a CMD terminal and run the following 
 > .\vcpkg install qtimageformats --triplet x64-windows
 ```
 
-Finally you can build PMP itself. Run the following commands in a CMD terminal. Adjust paths and VS version as needed; change _Debug_ to _Release_ (in both lines) if you prefer:
+**Building PMP.**  Run the following commands in a terminal. Adjust paths and Visual Studio version as needed. Change _Debug_ to _Release_ (in both lines) if you prefer.
 
 ```cmd
 > cd PMP\bin
 > "C:\Program Files\CMake\bin\cmake" -G "Visual Studio 17 2022" -D "VCPKG_TARGET_TRIPLET:STRING=x64-windows" -D "CMAKE_TOOLCHAIN_FILE:FILEPATH=C:\src\vcpkg\scripts\buildsystems\vcpkg.cmake" -D "CMAKE_BUILD_TYPE:STRING=Debug" ..
-> "C:\Program Files\CMake\bin\cmake" --build . --config Debug -j 2
+> "C:\Program Files\CMake\bin\cmake" --build . --config Debug -j 4
 ```
+
+As a final step, you probably need to run _windeployqt_ so the executables can find the necessary Qt plugins. See the batch scripts mentioned earlier for how to do this. This used to happen automatically for Qt 5, but vcpkg no longer does this since we upgraded to Qt 6.
 
 
 ## 6. Caveats / Limitations
