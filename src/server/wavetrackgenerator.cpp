@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,8 @@
 #include "randomtrackssource.h"
 
 #include <QTimer>
+
+#include <utility>
 
 namespace PMP::Server
 {
@@ -191,7 +193,7 @@ namespace PMP::Server
         qDebug() << "applied selection filter to buffer; reduced size from"
                  << oldBufferSize << "to" << tracks.size();
 
-        for (auto const& track : qAsConst(tracks))
+        for (auto const& track : std::as_const(tracks))
         {
             _upcoming.append(track);
             _trackGenerationProgress++;

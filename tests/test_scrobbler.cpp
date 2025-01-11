@@ -26,6 +26,8 @@
 #include <QtTest/QTest>
 #include <QVector>
 
+#include <utility>
+
 // ================================= BackendMock ================================= //
 
 BackendMock::BackendMock(bool requireAuthentication)
@@ -182,7 +184,7 @@ void DataProviderMock::add(QSharedPointer<TrackToScrobble> track)
 void DataProviderMock::add(QVector<QSharedPointer<TrackToScrobbleMock>> tracks)
 {
     /* cannot use append because of different types, so we use foreach instead */
-    for (auto& track : qAsConst(tracks))
+    for (auto& track : std::as_const(tracks))
     {
         add(track);
     }
@@ -383,7 +385,7 @@ void TestScrobbler::multipleSimpleScrobbles()
     tracks << addTrackToScrobble(dataProvider, trackInfoProvider, time, 6,
                                  "Title 5", "Artist 5");
 
-    for (auto& track : qAsConst(tracks))
+    for (auto& track : std::as_const(tracks))
     {
         QVERIFY(!track->scrobbled());
     }
@@ -392,7 +394,7 @@ void TestScrobbler::multipleSimpleScrobbles()
     Scrobbler scrobbler(nullptr, dataProvider, backend, &trackInfoProvider);
     scrobbler.wakeUp();
 
-    for (auto& track : qAsConst(tracks))
+    for (auto& track : std::as_const(tracks))
     {
         QTRY_VERIFY(track->scrobbled());
     }

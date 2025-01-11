@@ -19,8 +19,6 @@
 
 #include "collectionmonitor.h"
 
-#include "common/containerutil.h"
-
 #include <QtDebug>
 #include <QTimer>
 
@@ -112,14 +110,14 @@ namespace PMP::Server
             qDebug() << "CollectionMonitor: going to send" << _pendingNotifications.size()
                      << "full notifications";
 
-            emitFullNotifications(ContainerUtil::keysToVector(_pendingNotifications));
+            emitFullNotifications(_pendingNotifications.keys());
         }
         else if (_pendingTagNotificationCount == 0)
         {
             qDebug() << "CollectionMonitor: going to send" << _pendingNotifications.size()
                      << "availability notifications";
 
-            emitAvailabilityNotifications(ContainerUtil::keysToVector(_pendingNotifications));
+            emitAvailabilityNotifications(_pendingNotifications.keys());
         }
         else
         {

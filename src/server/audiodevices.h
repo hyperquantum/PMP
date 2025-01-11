@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2019-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2024, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,30 +17,27 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SCROBBLINGPROVIDER_H
-#define PMP_SCROBBLINGPROVIDER_H
+#ifndef PMP_AUDIODEVICES_H
+#define PMP_AUDIODEVICES_H
 
-#include <QDebug>
-#include <QHashFunctions>
+#include <QAudioDevice>
+#include <QObject>
 
-namespace PMP
+namespace PMP::Server
 {
-    enum class ScrobblingProvider
+    class AudioDevices : public QObject
     {
-        Unknown = 0,
-        LastFm,
+        Q_OBJECT
+    public:
+        explicit AudioDevices(QObject* parent = nullptr);
+
+        QAudioDevice defaultOutputDevice() const { return _defaultOutputDevice; }
+
+    Q_SIGNALS:
+        void defaultOutputDeviceChanged();
+
+    private:
+        QAudioDevice _defaultOutputDevice;
     };
-
-    QString toString(ScrobblingProvider provider);
-
-    QDebug operator<<(QDebug debug, ScrobblingProvider provider);
-
-    inline size_t qHash(ScrobblingProvider provider, uint seed)
-    {
-        return ::qHash(static_cast<int>(provider), seed);
-    }
 }
-
-Q_DECLARE_METATYPE(PMP::ScrobblingProvider)
-
 #endif

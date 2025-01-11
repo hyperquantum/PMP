@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,6 +25,8 @@
 
 #include <QRandomGenerator>
 #include <QtGlobal>
+
+#include <utility>
 
 namespace PMP::Server
 {
@@ -65,7 +67,7 @@ namespace PMP::Server
         QVector<UserIdAndLogin> result;
         result.reserve(_usersById.size());
 
-        for (auto& u : qAsConst(_usersById))
+        for (auto& u : std::as_const(_usersById))
         {
             result.append(UserIdAndLogin(u.id, u.login));
         }

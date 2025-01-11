@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,11 +26,15 @@
 
 #include <QDateTime>
 #include <QHash>
-#include <QMediaPlayer>
 #include <QQueue>
+
+QT_FORWARD_DECLARE_CLASS(QAudioDevice);
+QT_FORWARD_DECLARE_CLASS(QAudioOutput);
+QT_FORWARD_DECLARE_CLASS(QMediaPlayer);
 
 namespace PMP::Server
 {
+    class AudioDevices;
     class Resolver;
 
     class PlayerInstance : public QObject
@@ -49,9 +53,10 @@ namespace PMP::Server
 
         qint64 position() const;
 
-    public Q_SLOTS:
         void setVolume(int volume);
+        void setAudioOutputDevice(const QAudioDevice& device);
         void setTrack(QSharedPointer<QueueEntry> queueEntry, bool onlyIfPreloaded);
+
         void play();
         void pause();
         void stop();
@@ -69,14 +74,16 @@ namespace PMP::Server
         void stoppedEarly(qint64 position);
 
     private Q_SLOTS:
-        void internalStateChanged(QMediaPlayer::State state);
-        void internalMediaStatusChanged(QMediaPlayer::MediaStatus);
+        void internalPlaybackStateChanged();
+        void internalMediaStatusChanged();
+        void internalErrorChanged();
         void internalPositionChanged(qint64 position);
         void internalDurationChanged(qint64 duration);
 
     private:
         void updateEndOfTrackComingUpFlag();
 
+        QAudioOutput* _audioOutput;
         QMediaPlayer* _player;
         Preloader* _preloader;
         Resolver* _resolver;
@@ -138,6 +145,8 @@ namespace PMP::Server
         void newHistoryEntry(QSharedPointer<RecentHistoryEntry> entry);
 
     private Q_SLOTS:
+        void defaultAudioOutputDeviceChanged();
+
         void changeStateTo(ServerPlayerState state);
 
         void instancePlaying(PlayerInstance* instance);
@@ -156,7 +165,7 @@ namespace PMP::Server
         void makeSureOneOldInstanceSlotIsFree();
         void moveCurrentInstanceToOldInstanceSlot();
         void moveToOldInstanceSlot(PlayerInstance* instance);
-        bool startNext(bool stopCurrent, bool playNext);
+        void startNext(bool stopCurrent, bool playNext);
         PlayerInstance* createNewPlayerInstance();
         void prepareForFirstTrackFromQueue();
         bool tryPrepareTrack(PlayerInstance* playerInstance,
@@ -175,6 +184,7 @@ namespace PMP::Server
                                         qint64 positionReached,
                                         bool seeked);
 
+        AudioDevices* _audioDevices;
         PlayerInstance* _oldInstance1;
         PlayerInstance* _oldInstance2;
         PlayerInstance* _currentInstance;

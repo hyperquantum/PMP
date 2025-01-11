@@ -69,11 +69,9 @@ namespace PMP
         return !(me == other);
     }
 
-    inline uint qHash(const FileHash& hashID)
+    inline size_t qHash(const FileHash& hashID, size_t seed)
     {
-        return hashID.length()
-            ^ qHash(hashID.SHA1())
-            ^ qHash(hashID.MD5());
+        return qHashMulti(seed, hashID.length(), hashID.SHA1(), hashID.MD5());
     }
 
     inline int compare(const FileHash& me, const FileHash& other)

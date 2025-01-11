@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -18,6 +18,8 @@
 */
 
 #include "trackstats.h"
+
+#include <utility>
 
 namespace PMP::Server
 {
@@ -48,7 +50,7 @@ namespace PMP::Server
         double groupScoresSum = 0;
         QDateTime groupLastHeard;
 
-        for (auto& individualStats : qAsConst(individualStatsList))
+        for (auto& individualStats : std::as_const(individualStatsList))
         {
             if (individualStats._lastHistoryId <= 0)
                 continue;

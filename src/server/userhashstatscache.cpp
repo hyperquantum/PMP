@@ -19,6 +19,8 @@
 
 #include "userhashstatscache.h"
 
+#include <utility>
+
 namespace PMP::Server
 {
     UserHashStatsCache::UserHashStatsCache()
@@ -43,7 +45,7 @@ namespace PMP::Server
         if (stats.size() > userData.size())
             userData.reserve(stats.size());
 
-        for (auto const& record : qAsConst(stats))
+        for (auto const& record : std::as_const(stats))
         {
             userData.insert(record.hashId, record);
         }
@@ -62,7 +64,7 @@ namespace PMP::Server
         QVector<DatabaseRecords::HashHistoryStats> result;
         result.reserve(hashIds.size());
 
-        for (auto hashId : qAsConst(hashIds))
+        for (auto hashId : std::as_const(hashIds))
         {
             auto it = userData.constFind(hashId);
 

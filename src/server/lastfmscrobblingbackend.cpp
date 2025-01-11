@@ -33,6 +33,8 @@
 #include <QNetworkRequest>
 #include <QUrlQuery>
 
+#include <utility>
+
 namespace PMP::Server
 {
     LastFmRequestHandler::LastFmRequestHandler(LastFmScrobblingBackend* parent,
@@ -667,7 +669,7 @@ namespace PMP::Server
         std::sort(parameters.begin(), parameters.end());
 
         QByteArray signData;
-        for (auto const& parameter : qAsConst(parameters))
+        for (auto const& parameter : std::as_const(parameters))
         {
             signData += parameter.first.toUtf8();
             signData += parameter.second.toUtf8();

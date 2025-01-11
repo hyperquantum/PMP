@@ -23,66 +23,30 @@
 #include <QHash>
 #include <QList>
 #include <QSet>
-#include <QVector>
 
 namespace PMP
 {
     class ContainerUtil
     {
     public:
-        template<typename K, typename V>
-        static QVector<K> keysToVector(QHash<K, V> const& hash)
+        template<typename T> static QList<T> toList(QSet<T> const& set,
+                                                    int customReserveSize = -1)
         {
-            QVector<K> v;
-            v.reserve(hash.size());
-
-            for (auto it = hash.keyBegin(); it != hash.keyEnd(); ++it)
-                v.append(*it);
-
-            return v;
-        }
-
-        template<typename K, typename V>
-        static QVector<V> valuesToVector(QHash<K, V> const& hash)
-        {
-            QVector<V> v;
-            v.reserve(hash.size());
-
-            for (auto it = hash.constBegin(); it != hash.constEnd(); ++it)
-                v.append(it.value());
-
-            return v;
-        }
-
-        template<typename T> static QVector<T> toVector(QList<T> const& list)
-        {
-            QVector<T> v;
-            v.reserve(list.size());
-
-            for (T const& element : list)
-                v.append(element);
-
-            return v;
-        }
-
-        template<typename T> static QVector<T> toVector(QSet<T> const& set,
-                                                        int customReserveSize = -1)
-        {
-            QVector<T> v;
-            v.reserve(customReserveSize >= 0 ? customReserveSize : set.size());
+            QList<T> list;
+            list.reserve(customReserveSize >= 0 ? customReserveSize : set.size());
 
             for (T const& element : set)
-                v.append(element);
+                list.append(element);
 
-            return v;
+            return list;
         }
 
-        template<typename T> static QSet<T> toSet(QVector<T> const& vector)
+        template<typename T> static QSet<T> toSet(QList<T> const& list)
         {
             QSet<T> set;
-            set.reserve(vector.size());
+            set.reserve(list.size());
 
-            for (T const& element : vector)
+            for (T const& element : list)
                 set << element;
 
             return set;
@@ -94,16 +58,10 @@ namespace PMP
                 set << element;
         }
 
-        template<typename T> static void addToSet(QVector<T> const& vector, QSet<T>& set)
-        {
-            for (T const& element : vector)
-                set << element;
-        }
-
         template<typename T>
-        static void removeFromSet(QVector<T> const& vector, QSet<T>& set)
+        static void removeFromSet(QList<T> const& list, QSet<T>& set)
         {
-            for (T const& element : vector)
+            for (T const& element : list)
                 set.remove(element);
         }
 

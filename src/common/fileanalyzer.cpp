@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 
 #include <QCryptographicHash>
 #include <QtDebug>
+#include <QtGlobal> // for Qt version checks
 #include <QVersionNumber>
 
 /* TagLib includes */
@@ -242,10 +243,16 @@ namespace PMP
         uint size = data.size();
 
         QCryptographicHash md5Hasher(QCryptographicHash::Md5);
-        md5Hasher.addData(data.data(), int(size));
-
         QCryptographicHash sha1Hasher(QCryptographicHash::Sha1);
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)
+        QByteArrayView view { data.data(), int(size) };
+        md5Hasher.addData(view);
+        sha1Hasher.addData(view);
+#else
+        md5Hasher.addData(data.data(), int(size));
         sha1Hasher.addData(data.data(), int(size));
+#endif
 
         return FileHash(size, sha1Hasher.result(), md5Hasher.result());
     }

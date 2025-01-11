@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,6 +30,8 @@
 #include <QtDebug>
 #include <QTimer>
 #include <QUdpSocket>
+
+#include <utility>
 
 namespace PMP::Client
 {
@@ -206,7 +208,7 @@ namespace PMP::Client
         if (address == QHostAddress::LocalHost || address == QHostAddress::LocalHostIPv6)
             return true;
 
-        for (auto const& localAddress : qAsConst(_localHostNetworkAddresses))
+        for (auto const& localAddress : std::as_const(_localHostNetworkAddresses))
         {
             if (localAddress.isEqual(address, QHostAddress::TolerantConversion))
                return true;

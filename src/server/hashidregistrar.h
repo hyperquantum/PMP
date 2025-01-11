@@ -24,6 +24,7 @@
 #include "common/future.h"
 
 #include <QHash>
+#include <QList>
 #include <QMutex>
 #include <QPair>
 #include <QVector>
@@ -40,7 +41,7 @@ namespace PMP::Server
         Future<QVector<uint>, FailureType> getOrCreateIds(QVector<FileHash> hashes);
 
         QVector<QPair<uint, FileHash>> getAllLoaded();
-        QVector<uint> getAllIdsLoaded();
+        QList<uint> getAllIdsLoaded();
         QVector<QPair<uint, FileHash>> getExistingIdsOnly(QVector<FileHash> hashes);
         Nullable<uint> getIdForHash(FileHash hash);
         bool isRegistered(FileHash hash);

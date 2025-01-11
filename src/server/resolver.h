@@ -33,9 +33,9 @@
 
 #include <QDateTime>
 #include <QHash>
-#include <QMutex>
 #include <QObject>
 #include <QPair>
+#include <QRecursiveMutex>
 #include <QString>
 #include <QStringList>
 #include <QVector>
@@ -82,7 +82,6 @@ namespace PMP::Server
         FileHash getHashByID(uint id);
         uint getID(const FileHash& hash);
         QList<QPair<uint, FileHash>> getIDs(QList<FileHash> hashes);
-        QVector<QPair<uint, FileHash>> getIDs(QVector<FileHash> hashes);
 
     private Q_SLOTS:
         void onQuickScanForNewFilesFinished();
@@ -136,7 +135,7 @@ namespace PMP::Server
         HashRelations* _hashRelations { nullptr };
         HistoryStatistics* _historyStatistics { nullptr };
 
-        QMutex _lock;
+        QRecursiveMutex _lock;
 
         QStringList _musicPaths;
 

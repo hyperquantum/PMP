@@ -116,9 +116,12 @@ IDEAS
 
 NON-FUNCTIONAL IMPROVEMENTS
 
- * migrate to Qt 6
+ * improve Player logic and make it more robust
  * switch to signed integer types for things like queue indices
  * split Database class into smaller parts
  * clean up old log files regularly, not just at startup
  * add logging for all server messages that are deemed corrupt or invalid by the client
  * use libgroove for playback (?)
+ * use macro QT_ENABLE_STRICT_MODE_UP_TO
+ * replace all usages of QVector with QList
+ * no longer strip ID3v2 during preprocessing for playback

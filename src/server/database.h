@@ -222,6 +222,8 @@ namespace PMP::Server
         static bool addColumnIfNotExists(QSqlQuery& q, QString tableName,
                                          QString columnName, QString type);
 
+        static QVariant toVariantMayBeNull(quint32 value, quint32 nullValue);
+
         static bool getBool(QVariant v, bool nullValue);
         static int getInt(QVariant v, int nullValue);
         static uint getUInt(QVariant v, uint nullValue);

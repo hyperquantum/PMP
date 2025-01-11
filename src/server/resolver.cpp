@@ -33,12 +33,13 @@
 #include <QDirIterator>
 #include <QFileInfo>
 #include <QSet>
-#include <QtConcurrent/QtConcurrent>
 #include <QtDebug>
 #include <QThreadPool>
+#include <QTimer>
 
 #include <algorithm>
 #include <limits>
+#include <utility>
 
 namespace PMP::Server
 {
@@ -193,7 +194,7 @@ namespace PMP::Server
 
         /* check for duplicate tags */
         bool tagIsNew = true;
-        for (auto* existing : qAsConst(_tags))
+        for (auto* existing : std::as_const(_tags))
         {
             if (existing->title() == t.title()
                     && existing->artist() == t.artist()
@@ -253,7 +254,7 @@ namespace PMP::Server
         /* try to return a match with complete tags */
         const TagData* bestTag = nullptr;
         int bestScore = -1;
-        for (const TagData* tag : qAsConst(_tags))
+        for (const TagData* tag : std::as_const(_tags))
         {
             int score = 0;
 
@@ -379,7 +380,7 @@ namespace PMP::Server
 
     bool Resolver::HashKnowledge::isAvailable()
     {
-        for (auto file : qAsConst(_files))
+        for (auto file : std::as_const(_files))
         {
             if (file->stillValid()) return true;
 
@@ -391,7 +392,7 @@ namespace PMP::Server
 
     QString Resolver::HashKnowledge::getFile()
     {
-        for (auto file : qAsConst(_files))
+        for (auto file : std::as_const(_files))
         {
             if (file->stillValid()) return file->_path;
 
@@ -408,7 +409,6 @@ namespace PMP::Server
      : _hashIdRegistrar(hashIdRegistrar),
        _hashRelations(hashRelations),
        _historyStatistics(historyStatistics),
-       _lock(QMutex::Recursive),
        _fullIndexationNumber(1)
     {
         _analyzer = new Analyzer(this);
@@ -495,7 +495,9 @@ namespace PMP::Server
         _fullIndexationStatus = FullIndexationStatus::FileSystemTraversal;
         Q_EMIT fullIndexationRunStatusChanged();
 
-        QtConcurrent::run(this, &Resolver::doFullIndexationFileSystemTraversal);
+        QThreadPool::globalInstance()->start(
+            [this]() { doFullIndexationFileSystemTraversal(); }
+        );
 
         return Success();
     }
@@ -510,7 +512,9 @@ namespace PMP::Server
         _quickScanStatus = QuickScanForNewFilesStatus::FileSystemTraversal;
         Q_EMIT quickScanForNewFilesRunStatusChanged();
 
-        QtConcurrent::run(this, &Resolver::doQuickScanForNewFilesFileSystemTraversal);
+        QThreadPool::globalInstance()->start(
+            [this]() { doQuickScanForNewFilesFileSystemTraversal(); }
+        );
 
         return Success();
     }
@@ -628,7 +632,10 @@ namespace PMP::Server
                                 == FullIndexationStatus::WaitingForFileAnalysisCompletion)
         {
             _fullIndexationStatus = FullIndexationStatus::CheckingForFileRemovals;
-            QtConcurrent::run(this, &Resolver::doFullIndexationCheckForFileRemovals);
+
+            QThreadPool::globalInstance()->start(
+                [this]() { doFullIndexationCheckForFileRemovals(); }
+            );
         }
     }
 
@@ -723,7 +730,7 @@ namespace PMP::Server
         auto musicPaths = this->musicPaths();
 
         uint fileCount = 0;
-        for (QString const& musicPath : qAsConst(musicPaths))
+        for (QString const& musicPath : std::as_const(musicPaths))
         {
             QDirIterator it(musicPath, QDirIterator::Subdirectories); /* no symlinks */
 
@@ -764,7 +771,7 @@ namespace PMP::Server
         auto musicPaths = this->musicPaths();
 
         uint fileCount = 0;
-        for (QString const& musicPath : qAsConst(musicPaths))
+        for (QString const& musicPath : std::as_const(musicPaths))
         {
             QDirIterator it(musicPath, QDirIterator::Subdirectories); /* no symlinks */
 
@@ -783,7 +790,10 @@ namespace PMP::Server
         if (_analyzer->isFinished())
         {
             _fullIndexationStatus = FullIndexationStatus::CheckingForFileRemovals;
-            QtConcurrent::run(this, &Resolver::doFullIndexationCheckForFileRemovals);
+
+            QThreadPool::globalInstance()->start(
+                [this]() { doFullIndexationCheckForFileRemovals(); }
+            );
         }
         else
         {
@@ -800,7 +810,7 @@ namespace PMP::Server
         qDebug() << "full indexation:" << pathsToCheck.size()
                  << "files need checking for their possible disappearance";
 
-        for (QString const& path : qAsConst(pathsToCheck))
+        for (QString const& path : std::as_const(pathsToCheck))
         {
             checkFileStillExistsAndIsValid(path);
         }
@@ -882,7 +892,7 @@ namespace PMP::Server
 
         QVector<QString> result;
 
-        for (auto file : qAsConst(_pathToVerifiedFile))
+        for (auto file : std::as_const(_pathToVerifiedFile))
         {
             if (!file->hasIndexationNumber(_fullIndexationNumber))
             {
@@ -983,7 +993,7 @@ namespace PMP::Server
         QVector<CollectionTrackInfo> result;
         result.reserve(hashes.size());
 
-        for (auto& hash : qAsConst(hashes))
+        for (auto& hash : std::as_const(hashes))
         {
             auto knowledge = _hashToKnowledge.value(hash, nullptr);
             if (!knowledge) continue;
@@ -1056,25 +1066,7 @@ namespace PMP::Server
         QList<QPair<uint, FileHash>> result;
         result.reserve(hashes.size());
 
-        for (auto& hash : qAsConst(hashes))
-        {
-            auto knowledge = _hashToKnowledge.value(hash, nullptr);
-            if (!knowledge) continue;
-
-            result.append(QPair<uint, FileHash>(knowledge->id(), hash));
-        }
-
-        return result;
-    }
-
-    QVector<QPair<uint, FileHash>> Resolver::getIDs(QVector<FileHash> hashes)
-    {
-        QMutexLocker lock(&_lock);
-
-        QVector<QPair<uint, FileHash>> result;
-        result.reserve(hashes.size());
-
-        for (auto const& hash : qAsConst(hashes))
+        for (auto& hash : std::as_const(hashes))
         {
             auto knowledge = _hashToKnowledge.value(hash, nullptr);
             if (!knowledge) continue;

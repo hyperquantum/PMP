@@ -29,6 +29,8 @@
 #include <QThreadPool>
 #include <QTimer>
 
+#include <utility>
+
 using PMP::Server::DatabaseRecords::HashHistoryStats;
 
 namespace PMP::Server
@@ -55,7 +57,7 @@ namespace PMP::Server
                                ? customReserveSize
                                : historyStats.size());
 
-            for (auto const& stats : qAsConst(historyStats))
+            for (auto const& stats : std::as_const(historyStats))
             {
                 result.insert(stats.hashId, toTrackStats(stats));
             }
@@ -197,7 +199,7 @@ namespace PMP::Server
 
             for (auto hashIdFromGroup : hashesInGroup)
             {
-                if (userEntry.hashData.remove(hashIdFromGroup) > 0)
+                if (userEntry.hashData.remove(hashIdFromGroup))
                 {
                     usersNeedingRefetch << userId;
                 }
@@ -206,7 +208,7 @@ namespace PMP::Server
 
         lock.unlock();
 
-        for (auto userId : qAsConst(usersNeedingRefetch))
+        for (auto userId : std::as_const(usersNeedingRefetch))
         {
             scheduleFetch(userId, hashId, false);
         }
@@ -249,8 +251,7 @@ namespace PMP::Server
                    "HistoryStatistics::recalculateGroupStats",
                    "no individual stats");
 
-        auto newGroupStats =
-            TrackStats::combined(ContainerUtil::valuesToVector(individualStats));
+        auto newGroupStats = TrackStats::combined(individualStats.values());
 
         auto& userData = _userData[userId];
 
@@ -405,7 +406,7 @@ namespace PMP::Server
         if (cacheUseForIndividualHashes == UseCachedValues::Yes)
         {
             auto statsFromCacheTable =
-                database->getCachedHashStats(userId, ContainerUtil::toVector(toFetch));
+                database->getCachedHashStats(userId, ContainerUtil::toList(toFetch));
 
             if (statsFromCacheTable.failed())
                 return failure;
@@ -423,7 +424,7 @@ namespace PMP::Server
         }
 
         auto statsFromHistoryTable =
-            database->getHashHistoryStats(userId, ContainerUtil::toVector(toFetch));
+            database->getHashHistoryStats(userId, ContainerUtil::toList(toFetch));
 
         if (statsFromHistoryTable.failed())
             return failure;

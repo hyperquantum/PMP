@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,6 +26,7 @@
 #include <QTimer>
 
 #include <algorithm>
+#include <utility>
 
 namespace PMP::Server
 {
@@ -48,7 +49,7 @@ namespace PMP::Server
         std::shuffle(_unusedHashes.begin(), _unusedHashes.end(), _randomEngine);
 
         _hashesStatus.reserve(_unusedHashes.size());
-        for (auto const& hash : qAsConst(_unusedHashes))
+        for (auto const& hash : std::as_const(_unusedHashes))
         {
             _hashesStatus.insert(hash, TrackStatus::Unused);
         }
@@ -129,7 +130,7 @@ namespace PMP::Server
 
     void RandomTracksSource::putBackAllTracksTakenAsUnused()
     {
-        for (auto const& hash : qAsConst(_hashesTaken))
+        for (auto const& hash : std::as_const(_hashesTaken))
         {
             _notifiedCount++;
             _unusedHashes.append(hash);

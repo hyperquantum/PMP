@@ -755,6 +755,14 @@ namespace PMP
         return {};
     }
 
+    namespace
+    {
+        inline QVariant toQVariant(QFlags<Qt::Alignment::enum_type> alignment)
+        {
+            return static_cast<Qt::Alignment::Int>(alignment);
+        }
+    }
+
     QVariant SortedCollectionTableModel::data(const QModelIndex& index, int role) const
     {
         switch (role)
@@ -762,7 +770,7 @@ namespace PMP
             case Qt::TextAlignmentRole:
                 switch (index.column())
                 {
-                    case 2: return Qt::AlignRight + Qt::AlignVCenter;
+                    case 2: return toQVariant(Qt::AlignRight | Qt::AlignVCenter);
                 }
                 break;
             case Qt::DisplayRole:

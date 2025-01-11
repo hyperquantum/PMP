@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 ### Changed
+- PMP now requires Qt 6.2 or later.
 
 ### Fixed
 

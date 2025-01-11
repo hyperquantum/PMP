@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2024, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,9 +26,11 @@
 #include <QFileInfo>
 #include <QSaveFile>
 #include <QTextStream>
+#include <QtGlobal> // for Qt version checks
 #include <QVector>
 
 #include <functional>
+#include <utility>
 
 /* TagLib includes */
 #include <taglib/apetag.h>
@@ -47,7 +49,13 @@ using namespace PMP;
 QString checksum(TagLib::ByteVector const& data)
 {
     QCryptographicHash sha1Hasher(QCryptographicHash::Sha1);
+
+#if QT_VERSION >= QT_VERSION_CHECK(6, 3, 0)
+    QByteArrayView view { data.data(), data.size() };
+    sha1Hasher.addData(view);
+#else
     sha1Hasher.addData(data.data(), data.size());
+#endif
 
     return sha1Hasher.result().toHex();
 }
@@ -334,7 +342,7 @@ public:
         transformed << multiTransformed;
 
         unsigned correctHashCount = 0;
-        for (auto& modifiedData : qAsConst(transformed))
+        for (auto& modifiedData : std::as_const(transformed))
         {
             FileAnalyzer analyzer(modifiedData, extension());
             analyzer.analyze();
