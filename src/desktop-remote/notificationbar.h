@@ -69,7 +69,7 @@ namespace PMP
         void changeEvent(QEvent* event) override;
 
     private:
-        void updateBackgroundColor();
+        void updateColors();
 
         Notification* getVisibleNotification() const;
         void connectSlots(Notification* notification);

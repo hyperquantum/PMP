@@ -41,7 +41,9 @@ namespace PMP
                const QColor& trackProgressWidgetProgress,
                const QColor& spinnerBackground,
                const QColor& spinnerLines,
-               const QColor& notificationBarBackground);
+               const QColor& notificationBarBackground,
+               const QColor& notificationBarBorder,
+               const QColor& notificationBarText);
 
         static bool isDarkMode();
         static const Colors& instance();
@@ -60,6 +62,8 @@ namespace PMP
         const QColor spinnerBackground;
         const QColor spinnerLines;
         const QColor notificationBarBackground;
+        const QColor notificationBarBorder;
+        const QColor notificationBarText;
 
     private:
         static const Colors _lightScheme;

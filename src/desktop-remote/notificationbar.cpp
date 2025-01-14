@@ -46,7 +46,7 @@ namespace PMP
     {
         _ui->setupUi(this);
 
-        updateBackgroundColor();
+        updateColors();
 
         _ui->notificationTextLabel->setTextFormat(Qt::PlainText);
 
@@ -140,27 +140,35 @@ namespace PMP
         if (event->type() == QEvent::PaletteChange)
         {
             qDebug() << "NotificationBar: detected palette change event";
-            updateBackgroundColor();
+            updateColors();
         }
 
         QFrame::changeEvent(event);
     }
 
-    void NotificationBar::updateBackgroundColor()
+    void NotificationBar::updateColors()
     {
         if (_updatingPalette)
             return;
 
         _updatingPalette = true;
 
-        qDebug() << "NotificationBar: updating background color";
+        qDebug() << "NotificationBar: updating colors";
 
-        QColor bgColor = Colors::instance().notificationBarBackground;
+        auto& colors = Colors::instance();
+        QColor backgroundColor = colors.notificationBarBackground;
+        QColor foregroundColor = colors.notificationBarBorder;
+        QColor textColor = colors.notificationBarText;
 
-        QPalette palette = this->palette();
-        palette.setColor(QPalette::Window, bgColor);
+        QPalette framePalette = this->palette();
+        framePalette.setColor(QPalette::Window, backgroundColor);
+        framePalette.setColor(QPalette::WindowText, foregroundColor); // border and text
         setAutoFillBackground(true); // Ensure the background is filled
-        setPalette(palette);
+        setPalette(framePalette);
+
+        QPalette labelPalette = _ui->notificationTextLabel->palette();
+        labelPalette.setColor(QPalette::WindowText, textColor);
+        _ui->notificationTextLabel->setPalette(labelPalette);
 
         _updatingPalette = false;
     }
