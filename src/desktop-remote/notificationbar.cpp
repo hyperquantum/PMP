@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,11 @@
 
 #include "notificationbar.h"
 #include "ui_notificationbar.h"
+
+#include "colors.h"
+
+#include <QPalette>
+#include <QtDebug>
 
 namespace PMP
 {
@@ -40,6 +45,8 @@ namespace PMP
        _ui(new Ui::NotificationBar)
     {
         _ui->setupUi(this);
+
+        updateBackgroundColor();
 
         _ui->notificationTextLabel->setTextFormat(Qt::PlainText);
 
@@ -126,6 +133,36 @@ namespace PMP
             layoutMargins.bottom();
 
         return QSize(width, height);
+    }
+
+    void NotificationBar::changeEvent(QEvent* event)
+    {
+        if (event->type() == QEvent::PaletteChange)
+        {
+            qDebug() << "NotificationBar: detected palette change event";
+            updateBackgroundColor();
+        }
+
+        QFrame::changeEvent(event);
+    }
+
+    void NotificationBar::updateBackgroundColor()
+    {
+        if (_updatingPalette)
+            return;
+
+        _updatingPalette = true;
+
+        qDebug() << "NotificationBar: updating background color";
+
+        QColor bgColor = Colors::instance().notificationBarBackground;
+
+        QPalette palette = this->palette();
+        palette.setColor(QPalette::Window, bgColor);
+        setAutoFillBackground(true); // Ensure the background is filled
+        setPalette(palette);
+
+        _updatingPalette = false;
     }
 
     Notification* NotificationBar::getVisibleNotification() const

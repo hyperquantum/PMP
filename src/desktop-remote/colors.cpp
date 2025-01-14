@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -38,7 +38,8 @@ namespace PMP
                    const QColor& trackProgressWidgetProgress,
                    const QColor& linkText,
                    const QColor& spinnerBackground,
-                   const QColor& spinnerLines)
+                   const QColor& spinnerLines,
+                   const QColor& notificationBarBackground)
      : widgetBorder(widgetBorder),
        inactiveItemForeground(inactiveItemForeground),
        itemBackgroundHighlightColors(itemBackgroundHighlightColors),
@@ -52,21 +53,24 @@ namespace PMP
        trackProgressWidgetProgress(trackProgressWidgetProgress),
        linkText(linkText),
        spinnerBackground(spinnerBackground),
-       spinnerLines(spinnerLines)
+       spinnerLines(spinnerLines),
+       notificationBarBackground(notificationBarBackground)
     {
         //
     }
 
-    const Colors& Colors::instance()
+    bool Colors::isDarkMode()
     {
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
-        bool isDarkMode =
-            QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
-
-        return isDarkMode ? _darkScheme : _lightScheme;
+        return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
 #else
-        return _lightScheme;
+        return false;
 #endif
+    }
+
+    const Colors& Colors::instance()
+    {
+        return isDarkMode() ? _darkScheme : _lightScheme;
     }
 
     const Colors Colors::_lightScheme =
@@ -90,7 +94,8 @@ namespace PMP
             /* trackProgressWidgetProgress */ QRgb(0x0AB5FF),
             /* linkText */ Qt::darkGreen, // TODO : find a real color
             /* spinnerBackground */ Qt::white,
-            /* spinnerLines */ Qt::black
+            /* spinnerLines */ Qt::black,
+            /* notificationBarBackground */ QRgb(0xFFFFFF)
         );
 
     const Colors Colors::_darkScheme =
@@ -112,7 +117,8 @@ namespace PMP
             /* trackProgressWidgetProgress */ QColor::fromRgb(80, 95, 105),
             /* linkText */ QColor::fromRgb(20, 140, 210),
             /* spinnerBackground */ QColor::fromRgb(25, 35, 45),
-            /* spinnerLines */ Qt::white
+            /* spinnerLines */ Qt::white,
+            /* notificationBarBackground */ QRgb(0x2E2E2E)
         );
 
 }

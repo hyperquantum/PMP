@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -41,8 +41,10 @@ namespace PMP
                const QColor& trackProgressWidgetProgress,
                const QColor& linkText,
                const QColor& spinnerBackground,
-               const QColor& spinnerLines);
+               const QColor& spinnerLines,
+               const QColor& notificationBarBackground);
 
+        static bool isDarkMode();
         static const Colors& instance();
 
         const QColor widgetBorder;
@@ -59,6 +61,7 @@ namespace PMP
         const QColor linkText;
         const QColor spinnerBackground;
         const QColor spinnerLines;
+        const QColor notificationBarBackground;
 
     private:
         static const Colors _lightScheme;
