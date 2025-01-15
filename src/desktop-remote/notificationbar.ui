@@ -16,6 +16,9 @@
   <property name="frameShape">
    <enum>QFrame::Shape::Box</enum>
   </property>
+  <property name="lineWidth">
+   <number>2</number>
+  </property>
   <layout class="QHBoxLayout" name="horizontalLayout">
    <property name="leftMargin">
     <number>3</number>
