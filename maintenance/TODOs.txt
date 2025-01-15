@@ -81,6 +81,7 @@ IDEAS
  * music collection: add list of all artists/albums
  * music collection: detect different rips of the same track/album and treat them as one, with unified scores
  ** music collection: work around the need for a full indexation at server startup
+ * music collection: remember highlighting color selected (for light and dark mode separately)
  *** tracks: 'play now' action
  * tracks: quick action to copy title and artist to clipboard
  * tracks: detect BPM automatically

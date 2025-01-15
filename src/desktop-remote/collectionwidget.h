@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -55,6 +55,9 @@ namespace PMP
                          UserForStatisticsDisplay* userForStatisticsDisplay);
         ~CollectionWidget();
 
+    protected:
+        void changeEvent(QEvent* event) override;
+
     private Q_SLOTS:
         void filterTracksIndexChanged();
         void highlightTracksIndexChanged(int index);
@@ -69,6 +72,7 @@ namespace PMP
         void fillTrackCriteriaComboBox(QComboBox* comboBox,
                                        TrackCriterium criteriumForNone);
         void initTrackHighlightingColorSwitcher();
+        void updateColors(bool force);
 
         TrackCriterium getCurrentHighlightMode() const;
         TrackCriterium getTrackCriteriumFromComboBox(QComboBox* comboBox) const;
@@ -81,6 +85,7 @@ namespace PMP
         SortedCollectionTableModel* _collectionSourceModel;
         FilteredCollectionTableModel* _collectionDisplayModel;
         QMenu* _collectionContextMenu;
+        bool _usingColorsForDarkMode { false };
     };
 }
 #endif

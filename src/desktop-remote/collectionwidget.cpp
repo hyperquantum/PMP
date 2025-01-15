@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -46,7 +46,7 @@ namespace PMP
                                        UserForStatisticsDisplay* userForStatisticsDisplay)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
-       _colorSwitcher(nullptr),
+       _colorSwitcher(new ColorSwitcher()),
        _serverInterface(serverInterface),
        _userStatisticsDisplay(userForStatisticsDisplay),
        _collectionSourceModel(new SortedCollectionTableModel(this,
@@ -136,6 +136,17 @@ namespace PMP
         );
 
         delete _ui;
+    }
+
+    void CollectionWidget::changeEvent(QEvent* event)
+    {
+        if (event->type() == QEvent::PaletteChange)
+        {
+            qDebug() << "CollectionWidget: detected palette change event";
+            updateColors(/* force: */ false);
+        }
+
+        QWidget::changeEvent(event);
     }
 
     void CollectionWidget::filterTracksIndexChanged()
@@ -354,12 +365,6 @@ namespace PMP
 
     void CollectionWidget::initTrackHighlightingColorSwitcher()
     {
-        auto& colors = Colors::instance();
-
-        _colorSwitcher = new ColorSwitcher();
-        _colorSwitcher->setColors(colors.itemBackgroundHighlightColors);
-        _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackCriterium::NoTracks);
-
         connect(
             _colorSwitcher, &ColorSwitcher::colorIndexChanged,
             this, &CollectionWidget::highlightColorIndexChanged
@@ -371,6 +376,22 @@ namespace PMP
         delete layoutItem;
         delete _ui->highlightColorButton;
         _ui->highlightColorButton = nullptr;
+
+        updateColors(/* force: */ true);
+
+        _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackCriterium::NoTracks);
+    }
+
+    void CollectionWidget::updateColors(bool force)
+    {
+        auto& colors = Colors::instance();
+
+        bool darkMode = colors.isDarkMode();
+        if (!force && darkMode == _usingColorsForDarkMode)
+            return;
+
+        _colorSwitcher->setColors(colors.itemBackgroundHighlightColors);
+        _usingColorsForDarkMode = darkMode;
     }
 
     TrackCriterium CollectionWidget::getCurrentHighlightMode() const
