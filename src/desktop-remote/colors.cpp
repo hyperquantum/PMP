@@ -36,8 +36,6 @@ namespace PMP
                    const QColor& trackProgressWidgetBackground,
                    const QColor& trackProgressWidgetBorder,
                    const QColor& trackProgressWidgetProgress,
-                   const QColor& spinnerBackground,
-                   const QColor& spinnerLines,
                    const QColor& notificationBarBackground,
                    const QColor& notificationBarBorder,
                    const QColor& notificationBarText)
@@ -52,8 +50,6 @@ namespace PMP
        trackProgressWidgetBackground(trackProgressWidgetBackground),
        trackProgressWidgetBorder(trackProgressWidgetBorder),
        trackProgressWidgetProgress(trackProgressWidgetProgress),
-       spinnerBackground(spinnerBackground),
-       spinnerLines(spinnerLines),
        notificationBarBackground(notificationBarBackground),
        notificationBarBorder(notificationBarBorder),
        notificationBarText(notificationBarText)
@@ -94,8 +90,6 @@ namespace PMP
             /* trackProgressWidgetBackground */ QRgb(0xCCF0FF),
             /* trackProgressWidgetBorder */ QRgb(0x0AB5FF),
             /* trackProgressWidgetProgress */ QRgb(0x0AB5FF),
-            /* spinnerBackground */ Qt::white,
-            /* spinnerLines */ Qt::black,
             /* notificationBarBackground */ QRgb(0xFFFFFF),
             /* notificationBarBorder */ QRgb(0x0AB5FF),
             /* notificationBarText */ QRgb(0x000000)
@@ -118,8 +112,6 @@ namespace PMP
             /* trackProgressWidgetBackground */ QColor::fromRgb(25, 35, 45),
             /* trackProgressWidgetBorder */ QColor::fromRgb(50, 65, 75),
             /* trackProgressWidgetProgress */ QColor::fromRgb(80, 95, 105),
-            /* spinnerBackground */ QColor::fromRgb(25, 35, 45),
-            /* spinnerLines */ Qt::white,
             /* notificationBarBackground */ QRgb(0x2E2E2E),
             /* notificationBarBorder */ QRgb(0x0AB5FF),
             /* notificationBarText */ QRgb(0xFFFFFF)

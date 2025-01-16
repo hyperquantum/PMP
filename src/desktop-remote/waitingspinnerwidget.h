@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -95,7 +95,8 @@ namespace PMP
         void rotate();
 
     protected:
-        void paintEvent(QPaintEvent *paintEvent);
+        void paintEvent(QPaintEvent* paintEvent) override;
+        void changeEvent(QEvent* event) override;
 
     private:
         static int lineCountDistanceFromPrimary(int current, int primary,
@@ -128,6 +129,8 @@ namespace PMP
         bool    _disableParentWhenSpinning;
         int     _currentCounter;
         bool    _isSpinning;
+        QColor  _backgroundColor;
+        QColor  _foregroundColor;
     };
 }
 #endif

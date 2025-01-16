@@ -39,8 +39,6 @@ namespace PMP
                const QColor& trackProgressWidgetBackground,
                const QColor& trackProgressWidgetBorder,
                const QColor& trackProgressWidgetProgress,
-               const QColor& spinnerBackground,
-               const QColor& spinnerLines,
                const QColor& notificationBarBackground,
                const QColor& notificationBarBorder,
                const QColor& notificationBarText);
@@ -59,8 +57,6 @@ namespace PMP
         const QColor trackProgressWidgetBackground;
         const QColor trackProgressWidgetBorder;
         const QColor trackProgressWidgetProgress;
-        const QColor spinnerBackground;
-        const QColor spinnerLines;
         const QColor notificationBarBackground;
         const QColor notificationBarBorder;
         const QColor notificationBarText;
