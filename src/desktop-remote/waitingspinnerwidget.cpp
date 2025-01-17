@@ -45,6 +45,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 // Qt includes
 #include <QEvent>
 #include <QPainter>
+#include <QtDebug>
 #include <QTimer>
 
 namespace PMP
