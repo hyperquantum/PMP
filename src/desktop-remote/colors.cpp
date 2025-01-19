@@ -25,8 +25,7 @@
 
 namespace PMP
 {
-    Colors::Colors(const QColor& widgetBorder,
-                   const QColor& inactiveItemForeground,
+    Colors::Colors(const QColor& inactiveItemForeground,
                    QVector<QColor> itemBackgroundHighlightColors,
                    const QColor& specialQueueItemBackground,
                    const QColor& specialQueueItemForeground,
@@ -39,8 +38,7 @@ namespace PMP
                    const QColor& notificationBarBackground,
                    const QColor& notificationBarBorder,
                    const QColor& notificationBarText)
-     : widgetBorder(widgetBorder),
-       inactiveItemForeground(inactiveItemForeground),
+     : inactiveItemForeground(inactiveItemForeground),
        itemBackgroundHighlightColors(itemBackgroundHighlightColors),
        specialQueueItemBackground(specialQueueItemBackground),
        specialQueueItemForeground(specialQueueItemForeground),
@@ -73,7 +71,6 @@ namespace PMP
 
     const Colors Colors::_lightScheme =
         Colors(
-            /* widgetBorder */ QColor::fromRgb(0x7A, 0x7A, 0x7A),
             /* inactiveItemForeground */ Qt::gray,
             /* itemBackgroundHighlightColors */
             {
@@ -97,7 +94,6 @@ namespace PMP
 
     const Colors Colors::_darkScheme =
         Colors(
-            /* widgetBorder */ QColor::fromRgb(50, 65, 75),
             /* inactiveItemForeground */ Qt::gray,
             /* itemBackgroundHighlightColors */ {
                 QColor::fromHsl(120, 255, 50),
