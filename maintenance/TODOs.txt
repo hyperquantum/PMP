@@ -29,7 +29,6 @@ KNOWN PROBLEMS
 IDEAS
 
  * server: server executable with (limited) user interface for easy usage on desktop platforms (like Minecraft)
- ** UI: provide dark theme or dark mode
  * UI: move server selection, user account creation and authentication to pop-up dialogs
  ** UI: display the title/artist of the track currently playing in the window title of the remote
  * UI: in table views: hide selection when losing focus
