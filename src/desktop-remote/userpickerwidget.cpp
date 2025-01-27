@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2025, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,6 +23,8 @@
 #include "client/authenticationcontroller.h"
 #include "client/generalcontroller.h"
 
+#include "widgetutils.h"
+
 #include <algorithm>
 
 using namespace PMP::Client;
@@ -39,6 +41,8 @@ namespace PMP
        _serverProblemsPreventLogin(generalController->serverHealth().databaseUnavailable())
     {
         _ui->setupUi(this);
+
+        WidgetUtils::setRelativeFontSize(_ui->whichUserAreYouLabel, 1.2);
 
         _ui->noUserAccountsYetLabel->setVisible(false);
         _ui->createNewAccountButton->setEnabled(false);

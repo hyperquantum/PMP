@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,12 +23,20 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QStyleFactory>
+#include <QStyleHints>
 #include <QtDebug>
 
 using namespace PMP;
 
 int main(int argc, char *argv[])
 {
+    /* select the "fusion" style; try lowercase and with a single capital letter */
+    if (!QApplication::setStyle("fusion"))
+    {
+        QApplication::setStyle("Fusion");
+    }
+
     QApplication app(argc, argv);
 
     QCoreApplication::setApplicationName("Party Music Player - Remote");
@@ -41,6 +49,8 @@ int main(int argc, char *argv[])
     Logging::cleanupOldLogfiles();
     /* TODO: do a log cleanup regularly, because the user might keep the client running
      *       for several days without closing it. */
+
+    qDebug() << "Style keys:" << QStyleFactory::keys();
 
     MainWindow window;
     window.show();

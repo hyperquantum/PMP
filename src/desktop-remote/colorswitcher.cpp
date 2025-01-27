@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -94,11 +94,12 @@ namespace PMP
 
         QPainter painter(this);
 
-        QRect rect = this->rect().adjusted(+1, +1, -1, -1);
+        QRect rect = this->rect().adjusted(+2, +2, -2, -2);
 
-        painter.fillRect(rect, QBrush(_colors[_colorIndex]));
+        QColor currentColor = _colors[_colorIndex];
 
-        painter.setPen(QPen(Colors::instance().widgetBorder));
+        painter.fillRect(rect, currentColor);
+        painter.setPen(currentColor);
         painter.drawRect(rect);
     }
 

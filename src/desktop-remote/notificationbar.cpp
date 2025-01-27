@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,11 @@
 
 #include "notificationbar.h"
 #include "ui_notificationbar.h"
+
+#include "colors.h"
+
+#include <QPalette>
+#include <QtDebug>
 
 namespace PMP
 {
@@ -40,6 +45,8 @@ namespace PMP
        _ui(new Ui::NotificationBar)
     {
         _ui->setupUi(this);
+
+        updateColors();
 
         _ui->notificationTextLabel->setTextFormat(Qt::PlainText);
 
@@ -126,6 +133,44 @@ namespace PMP
             layoutMargins.bottom();
 
         return QSize(width, height);
+    }
+
+    void NotificationBar::changeEvent(QEvent* event)
+    {
+        if (event->type() == QEvent::PaletteChange)
+        {
+            qDebug() << "NotificationBar: detected palette change event";
+            updateColors();
+        }
+
+        QFrame::changeEvent(event);
+    }
+
+    void NotificationBar::updateColors()
+    {
+        if (_updatingPalette)
+            return;
+
+        _updatingPalette = true;
+
+        qDebug() << "NotificationBar: updating colors";
+
+        auto& colors = Colors::instance();
+        QColor backgroundColor = colors.notificationBarBackground;
+        QColor foregroundColor = colors.notificationBarBorder;
+        QColor textColor = colors.notificationBarText;
+
+        QPalette framePalette = this->palette();
+        framePalette.setColor(QPalette::Window, backgroundColor);
+        framePalette.setColor(QPalette::WindowText, foregroundColor); // border and text
+        setAutoFillBackground(true); // Ensure the background is filled
+        setPalette(framePalette);
+
+        QPalette labelPalette = _ui->notificationTextLabel->palette();
+        labelPalette.setColor(QPalette::WindowText, textColor);
+        _ui->notificationTextLabel->setPalette(labelPalette);
+
+        _updatingPalette = false;
     }
 
     Notification* NotificationBar::getVisibleNotification() const

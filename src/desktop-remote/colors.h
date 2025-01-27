@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,8 +28,7 @@ namespace PMP
     class Colors
     {
     public:
-        Colors(const QColor& widgetBorder,
-               const QColor& inactiveItemForeground,
+        Colors(const QColor& inactiveItemForeground,
                QVector<QColor> itemBackgroundHighlightColors,
                const QColor& specialQueueItemBackground,
                const QColor& specialQueueItemForeground,
@@ -39,13 +38,13 @@ namespace PMP
                const QColor& trackProgressWidgetBackground,
                const QColor& trackProgressWidgetBorder,
                const QColor& trackProgressWidgetProgress,
-               const QColor& linkText,
-               const QColor& spinnerBackground,
-               const QColor& spinnerLines);
+               const QColor& notificationBarBackground,
+               const QColor& notificationBarBorder,
+               const QColor& notificationBarText);
 
+        static bool isDarkMode();
         static const Colors& instance();
 
-        const QColor widgetBorder;
         const QColor inactiveItemForeground;
         const QVector<QColor> itemBackgroundHighlightColors;
         const QColor specialQueueItemBackground;
@@ -56,12 +55,13 @@ namespace PMP
         const QColor trackProgressWidgetBackground;
         const QColor trackProgressWidgetBorder;
         const QColor trackProgressWidgetProgress;
-        const QColor linkText;
-        const QColor spinnerBackground;
-        const QColor spinnerLines;
+        const QColor notificationBarBackground;
+        const QColor notificationBarBorder;
+        const QColor notificationBarText;
 
     private:
         static const Colors _lightScheme;
+        static const Colors _darkScheme;
     };
 }
 #endif

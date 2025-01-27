@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2025, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,6 +24,8 @@
 
 #include "client/authenticationcontroller.h"
 
+#include "widgetutils.h"
+
 #include <QtDebug>
 #include <QMessageBox>
 
@@ -38,6 +40,9 @@ namespace PMP
        _authenticationController(authenticationController)
     {
         _ui->setupUi(this);
+
+        WidgetUtils::setRelativeFontSize(_ui->createNewUserAccountLabel, 1.2);
+
         _ui->passwordFeedbackLabel->setText(""); /* remove placeholder text */
         _ui->usernameLineEdit->setFocus();
 

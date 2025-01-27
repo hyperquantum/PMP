@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -65,7 +65,12 @@ namespace PMP
         QSize minimumSizeHint() const override;
         QSize sizeHint() const override;
 
+    protected:
+        void changeEvent(QEvent* event) override;
+
     private:
+        void updateColors();
+
         Notification* getVisibleNotification() const;
         void connectSlots(Notification* notification);
         void onNotificationDestroyed(Notification* notification);
@@ -80,6 +85,7 @@ namespace PMP
         bool _scrollBarUpdating { false };
         QVector<Notification*> _notifications;
         QVector<Notification*> _visibleNotifications;
+        bool _updatingPalette { false };
     };
 
     /*

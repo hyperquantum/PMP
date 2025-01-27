@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,6 +33,7 @@
 
 #include "historymodel.h"
 #include "userforstatisticsdisplay.h"
+#include "widgetutils.h"
 
 #include <QApplication>
 #include <QClipboard>
@@ -159,6 +160,21 @@ namespace PMP
         _userId = _userStatisticsDisplay->userId().valueOr(0);
 
         _ui->setupUi(this);
+
+        WidgetUtils::setFontBold(_ui->titleLabel);
+        WidgetUtils::setFontBold(_ui->artistLabel);
+        WidgetUtils::setFontBold(_ui->albumLabel);
+        WidgetUtils::setFontBold(_ui->albumArtistLabel);
+        WidgetUtils::setFontBold(_ui->lengthLabel);
+        WidgetUtils::setFontBold(_ui->usernameLabel);
+        WidgetUtils::setFontBold(_ui->lastHeardLabel);
+        WidgetUtils::setFontBold(_ui->scoreLabel);
+        WidgetUtils::setFontBold(_ui->queueIdLabel);
+        WidgetUtils::setFontBold(_ui->hashLabel);
+        WidgetUtils::setFontBold(_ui->usernameLabel2);
+        WidgetUtils::setFontBold(_ui->scoreLabel2);
+        WidgetUtils::setFontBold(_ui->countTotalLabel);
+        WidgetUtils::setFontBold(_ui->countForScoreLabel);
 
         _historyModel = new HistoryModel(this, _userId, _trackHashId, _serverInterface);
         _ui->historyTableView->setModel(_historyModel);

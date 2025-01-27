@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,10 +19,13 @@
 
 #include "colors.h"
 
+#include <QGuiApplication>
+#include <QStyleHints>
+#include <QtGlobal>
+
 namespace PMP
 {
-    Colors::Colors(const QColor& widgetBorder,
-                   const QColor& inactiveItemForeground,
+    Colors::Colors(const QColor& inactiveItemForeground,
                    QVector<QColor> itemBackgroundHighlightColors,
                    const QColor& specialQueueItemBackground,
                    const QColor& specialQueueItemForeground,
@@ -32,11 +35,10 @@ namespace PMP
                    const QColor& trackProgressWidgetBackground,
                    const QColor& trackProgressWidgetBorder,
                    const QColor& trackProgressWidgetProgress,
-                   const QColor& linkText,
-                   const QColor& spinnerBackground,
-                   const QColor& spinnerLines)
-     : widgetBorder(widgetBorder),
-       inactiveItemForeground(inactiveItemForeground),
+                   const QColor& notificationBarBackground,
+                   const QColor& notificationBarBorder,
+                   const QColor& notificationBarText)
+     : inactiveItemForeground(inactiveItemForeground),
        itemBackgroundHighlightColors(itemBackgroundHighlightColors),
        specialQueueItemBackground(specialQueueItemBackground),
        specialQueueItemForeground(specialQueueItemForeground),
@@ -46,21 +48,29 @@ namespace PMP
        trackProgressWidgetBackground(trackProgressWidgetBackground),
        trackProgressWidgetBorder(trackProgressWidgetBorder),
        trackProgressWidgetProgress(trackProgressWidgetProgress),
-       linkText(linkText),
-       spinnerBackground(spinnerBackground),
-       spinnerLines(spinnerLines)
+       notificationBarBackground(notificationBarBackground),
+       notificationBarBorder(notificationBarBorder),
+       notificationBarText(notificationBarText)
     {
         //
     }
 
+    bool Colors::isDarkMode()
+    {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+        return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+#else
+        return false;
+#endif
+    }
+
     const Colors& Colors::instance()
     {
-        return _lightScheme;
+        return isDarkMode() ? _darkScheme : _lightScheme;
     }
 
     const Colors Colors::_lightScheme =
         Colors(
-            /* widgetBorder */ QColor::fromRgb(0x7A, 0x7A, 0x7A),
             /* inactiveItemForeground */ Qt::gray,
             /* itemBackgroundHighlightColors */
             {
@@ -77,9 +87,30 @@ namespace PMP
             /* trackProgressWidgetBackground */ QRgb(0xCCF0FF),
             /* trackProgressWidgetBorder */ QRgb(0x0AB5FF),
             /* trackProgressWidgetProgress */ QRgb(0x0AB5FF),
-            /* linkText */ Qt::darkGreen, // TODO : find a real color
-            /* spinnerBackground */ Qt::white,
-            /* spinnerLines */ Qt::black
+            /* notificationBarBackground */ QRgb(0xFFFFFF),
+            /* notificationBarBorder */ QRgb(0x0AB5FF),
+            /* notificationBarText */ QRgb(0x000000)
+        );
+
+    const Colors Colors::_darkScheme =
+        Colors(
+            /* inactiveItemForeground */ Qt::gray,
+            /* itemBackgroundHighlightColors */ {
+                QColor::fromHsl(120, 255, 50),
+                QColor::fromHsl(0, 255, 50),
+                QColor::fromHsl(300, 255, 50),
+            },
+            /* specialQueueItemBackground */ QRgb(0x005980),
+            /* specialQueueItemForeground */ QRgb(0xCCF0FF),
+            /* historyErrorItemBackground */ Qt::darkRed,
+            /* historyErrorItemForeground */ Qt::lightGray,
+            /* trackProgressWidgetEmpty */ QRgb(0x004766),
+            /* trackProgressWidgetBackground */ QRgb(0x002433),
+            /* trackProgressWidgetBorder */ QRgb(0x006B99),
+            /* trackProgressWidgetProgress */ QRgb(0x006B99),
+            /* notificationBarBackground */ QRgb(0x2E2E2E),
+            /* notificationBarBorder */ QRgb(0x0AB5FF),
+            /* notificationBarText */ QRgb(0xFFFFFF)
         );
 
 }

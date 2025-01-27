@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin Andre <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -40,6 +40,7 @@
 #include "scoreformatdelegate.h"
 #include "trackinfodialog.h"
 #include "userforstatisticsdisplay.h"
+#include "widgetutils.h"
 
 #include <cmath>
 
@@ -70,6 +71,8 @@ namespace PMP
 
         _ui->splitter->setStretchFactor(0, 4);
         _ui->splitter->setStretchFactor(1, 8);
+
+        WidgetUtils::setRelativeFontSize(_ui->artistTitleLabel, 1.3);
 
         auto trackTimeLabel = ClickableLabel::replace(_ui->positionLabel);
         auto trackTimeValueLabel = ClickableLabel::replace(_ui->positionValueLabel);

@@ -29,7 +29,6 @@ KNOWN PROBLEMS
 IDEAS
 
  * server: server executable with (limited) user interface for easy usage on desktop platforms (like Minecraft)
- ** UI: provide dark theme or dark mode
  * UI: move server selection, user account creation and authentication to pop-up dialogs
  ** UI: display the title/artist of the track currently playing in the window title of the remote
  * UI: in table views: hide selection when losing focus
@@ -81,6 +80,7 @@ IDEAS
  * music collection: add list of all artists/albums
  * music collection: detect different rips of the same track/album and treat them as one, with unified scores
  ** music collection: work around the need for a full indexation at server startup
+ * music collection: remember highlighting color selected (for light and dark mode separately)
  *** tracks: 'play now' action
  * tracks: quick action to copy title and artist to clipboard
  * tracks: detect BPM automatically
