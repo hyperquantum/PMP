@@ -223,6 +223,7 @@ set(PMP_DESKTOP_REMOTE_SOURCES
     desktop-remote/queuemodel.cpp
     desktop-remote/scoreformatdelegate.cpp
     desktop-remote/scrobblingauthenticationdialog.cpp
+    desktop-remote/searchdialog.cpp
     desktop-remote/searching.cpp
     desktop-remote/trackinfodialog.cpp
     desktop-remote/trackjudge.cpp
@@ -255,6 +256,7 @@ set(PMP_DESKTOP_REMOTE_HEADERS
     desktop-remote/queuemodel.h
     desktop-remote/scoreformatdelegate.h
     desktop-remote/scrobblingauthenticationdialog.h
+    desktop-remote/searchdialog.h
     desktop-remote/searching.h
     desktop-remote/trackinfodialog.h
     desktop-remote/trackprogresswidget.h
@@ -273,6 +275,7 @@ set(PMP_DESKTOP_REMOTE_UIS
     desktop-remote/mainwidget.ui
     desktop-remote/notificationbar.ui
     desktop-remote/scrobblingauthenticationdialog.ui
+    desktop-remote/searchdialog.ui
     desktop-remote/trackinfodialog.ui
     desktop-remote/useraccountcreationwidget.ui
     desktop-remote/userpickerwidget.ui

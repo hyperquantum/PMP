@@ -40,6 +40,7 @@ namespace PMP
 {
     class ColorSwitcher;
     class FilteredCollectionTableModel;
+    class SearchData;
     class SortedCollectionTableModel;
     enum class TrackCriterium;
     class UserForStatisticsDisplay;
@@ -52,7 +53,8 @@ namespace PMP
     public:
         CollectionWidget(QWidget* parent, Client::ServerInterface* serverInterface,
                          Client::QueueHashesMonitor* queueHashesMonitor,
-                         UserForStatisticsDisplay* userForStatisticsDisplay);
+                         UserForStatisticsDisplay* userForStatisticsDisplay,
+                         SearchData* searchData);
         ~CollectionWidget();
 
     protected:

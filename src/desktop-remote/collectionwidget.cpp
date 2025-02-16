@@ -29,7 +29,6 @@
 #include "collectiontablemodel.h"
 #include "colors.h"
 #include "colorswitcher.h"
-#include "searching.h"
 #include "trackinfodialog.h"
 #include "waitingspinnerwidget.h"
 
@@ -43,7 +42,8 @@ namespace PMP
 {
     CollectionWidget::CollectionWidget(QWidget* parent, ServerInterface* serverInterface,
                                        QueueHashesMonitor* queueHashesMonitor,
-                                       UserForStatisticsDisplay* userForStatisticsDisplay)
+                                       UserForStatisticsDisplay* userForStatisticsDisplay,
+                                       SearchData* searchData)
      : QWidget(parent),
        _ui(new Ui::CollectionWidget),
        _colorSwitcher(new ColorSwitcher()),
@@ -56,7 +56,7 @@ namespace PMP
        _collectionDisplayModel(new FilteredCollectionTableModel(this,
                                                                 _collectionSourceModel,
                                                                 serverInterface,
-                              new SearchData(this, &serverInterface->collectionWatcher()),
+                                                                searchData,
                                                                 queueHashesMonitor,
                                                                userForStatisticsDisplay)),
        _collectionContextMenu(nullptr)
