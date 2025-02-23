@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -935,12 +935,17 @@ namespace PMP
 
     void QueueModel::markLastHeardColumnAsChanged()
     {
-        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 3));
+        if (_modelRows == 0)
+            return;
+
+        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows - 1, 3));
     }
 
     void QueueModel::markUserDataColumnsAsChanged()
     {
-        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows, 4));
-    }
+        if (_modelRows == 0)
+            return;
 
+        Q_EMIT dataChanged(createIndex(0, 3), createIndex(_modelRows - 1, 4));
+    }
 }
