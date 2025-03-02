@@ -20,7 +20,11 @@
 #ifndef PMP_SEARCHDIALOG_H
 #define PMP_SEARCHDIALOG_H
 
+#include "client/localhashid.h"
+
+#include <QAbstractTableModel>
 #include <QDialog>
+#include <QList>
 
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
@@ -29,16 +33,45 @@ namespace Ui
     class SearchDialog;
 }
 
+namespace PMP::Client
+{
+    class CollectionWatcher;
+    class ServerInterface;
+}
+
 namespace PMP
 {
     class SearchData;
+
+    class SearchResultsTableModel : public QAbstractTableModel
+    {
+        Q_OBJECT
+    public:
+        SearchResultsTableModel(QObject* parent,
+                                Client::ServerInterface* serverInterface);
+
+        void setTracksList(QList<Client::LocalHashId> tracks);
+
+        int rowCount(const QModelIndex& parent = QModelIndex()) const;
+        int columnCount(const QModelIndex& parent = QModelIndex()) const;
+        QVariant headerData(int section, Qt::Orientation orientation,
+                            int role = Qt::DisplayRole) const;
+        QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
+
+    private:
+        QVariant trackData(Client::LocalHashId trackId, int column, int role) const;
+
+        Client::CollectionWatcher* _collectionWatcher;
+        QList<Client::LocalHashId> _tracks;
+    };
 
     class SearchDialog : public QDialog
     {
         Q_OBJECT
 
     public:
-        SearchDialog(QWidget* parent, SearchData* searchData);
+        SearchDialog(QWidget* parent, SearchData* searchData,
+                     Client::ServerInterface* serverInterface);
         ~SearchDialog();
 
     private:
@@ -49,6 +82,9 @@ namespace PMP
 
         Ui::SearchDialog* _ui;
         QTimer* _typingTimer;
+        SearchData* _searchData;
+        Client::CollectionWatcher* _collectionWatcher;
+        SearchResultsTableModel* _searchResultsModel;
         QString _searchText;
     };
 }

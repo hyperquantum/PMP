@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2024-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -81,22 +81,21 @@ namespace PMP
 
         auto const& trackData = it.value();
 
-        /* each part of the search query must be found in the track data */
-        for (QString const& searchPart : query._searchParts)
-        {
-            /* we can do case sensitive comparisons here, because all text has already
-               been changed to lowercase in advance */
+        return isTrackDataMatchForQuery(trackData, query);
+    }
 
-            if (!trackData.title.contains(searchPart, Qt::CaseSensitive)
-                && !trackData.artist.contains(searchPart, Qt::CaseSensitive)
-                && !trackData.album.contains(searchPart, Qt::CaseSensitive)
-                && !trackData.albumArtist.contains(searchPart, Qt::CaseSensitive))
-            {
-                return false; // no match
-            }
+    QList<LocalHashId> SearchData::getAllMatchesForQuery(const SearchQuery& query) const
+    {
+        QList<LocalHashId> result;
+        result.reserve(100); // prepare for a potentially large result list
+
+        for (auto it = _trackData.constBegin(); it != _trackData.constEnd(); ++it)
+        {
+            if (isTrackDataMatchForQuery(it.value(), query))
+                result.append(it.key());
         }
 
-        return true; // match
+        return result;
     }
 
     void SearchData::onNewTrackReceived(CollectionTrackInfo track)
@@ -117,5 +116,26 @@ namespace PMP
         trackData.artist = SearchUtil::toSearchString(track.artist());
         trackData.album = SearchUtil::toSearchString(track.album());
         trackData.albumArtist = SearchUtil::toSearchString(track.albumArtist());
+    }
+
+    bool SearchData::isTrackDataMatchForQuery(const TrackSearchStrings& trackData,
+                                              const SearchQuery& query) const
+    {
+        /* each part of the search query must be found in the track data */
+        for (QString const& searchPart : query._searchParts)
+        {
+            /* we can do case sensitive comparisons here, because all text has already
+               been changed to lowercase in advance */
+
+            if (!trackData.title.contains(searchPart, Qt::CaseSensitive)
+                && !trackData.artist.contains(searchPart, Qt::CaseSensitive)
+                && !trackData.album.contains(searchPart, Qt::CaseSensitive)
+                && !trackData.albumArtist.contains(searchPart, Qt::CaseSensitive))
+            {
+                return false; // no match
+            }
+        }
+
+        return true; // match
     }
 }

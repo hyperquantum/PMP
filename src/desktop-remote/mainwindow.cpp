@@ -173,7 +173,7 @@ namespace PMP
             this,
             [this]()
             {
-                auto* dialog = new SearchDialog(this, _searchData);
+                auto* dialog = new SearchDialog(this, _searchData, _serverInterface);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
                 dialog->open();
             }

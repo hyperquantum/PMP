@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2024-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,6 +24,7 @@
 #include "client/localhashid.h"
 
 #include <QHash>
+#include <QList>
 #include <QObject>
 #include <QStringList>
 
@@ -60,6 +61,8 @@ namespace PMP
         bool isFileMatchForQuery(Client::LocalHashId hashId,
                                  SearchQuery const& query) const;
 
+        QList<Client::LocalHashId> getAllMatchesForQuery(SearchQuery const& query) const;
+
     private Q_SLOTS:
         void onNewTrackReceived(Client::CollectionTrackInfo track);
         void onTrackDataChanged(Client::CollectionTrackInfo track);
@@ -74,6 +77,9 @@ namespace PMP
             QString album;
             QString albumArtist;
         };
+
+        bool isTrackDataMatchForQuery(TrackSearchStrings const& trackData,
+                                      SearchQuery const& query) const;
 
         QHash<Client::LocalHashId, TrackSearchStrings> _trackData;
     };
