@@ -27,6 +27,7 @@
 
 #include "searching.h"
 
+#include <QSettings>
 #include <QtDebug>
 #include <QTimer>
 
@@ -65,10 +66,30 @@ namespace PMP
 
         connect(_ui->closeButton, &QPushButton::clicked,
                 this, &SearchDialog::close);
+
+        {
+            QSettings settings(QCoreApplication::organizationName(),
+                               QCoreApplication::applicationName());
+
+            settings.beginGroup("searchdialog");
+
+            _ui->resultsTableView->horizontalHeader()->restoreState(
+                settings.value("columnsstate").toByteArray()
+            );
+        }
     }
 
     SearchDialog::~SearchDialog()
     {
+        QSettings settings(QCoreApplication::organizationName(),
+                           QCoreApplication::applicationName());
+
+        settings.beginGroup("searchdialog");
+
+        settings.setValue(
+            "columnsstate", _ui->resultsTableView->horizontalHeader()->saveState()
+        );
+
         delete _ui;
     }
 
