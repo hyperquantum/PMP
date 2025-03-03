@@ -55,6 +55,8 @@ namespace PMP
         //_ui->resultsTableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _ui->resultsTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
+        _ui->resultsCountLabel->setVisible(false);
+
         connect(_ui->searchTextLineEdit, &QLineEdit::textEdited,
                 this, &SearchDialog::onTextEdited);
 
@@ -126,12 +128,17 @@ namespace PMP
         if (query.isEmpty())
         {
             _searchResultsModel->setTracksList({});
+            _ui->resultsCountLabel->setVisible(false);
             return;
         }
 
         auto searchResults = _searchData->getAllMatchesForQuery(query);
+        auto resultsCount = searchResults.size();
 
-        qDebug() << "SearchDialog: got" << searchResults.size() << "results";
+        qDebug() << "SearchDialog: got" << resultsCount << "results";
+
+        _ui->resultsCountLabel->setText(tr("%n match(es) found", "", resultsCount));
+        _ui->resultsCountLabel->setVisible(true);
 
         _searchResultsModel->setTracksList(searchResults);
     }
