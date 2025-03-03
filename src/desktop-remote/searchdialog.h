@@ -52,6 +52,8 @@ namespace PMP
 
         void setTracksList(QList<Client::LocalHashId> tracks);
 
+        Client::LocalHashId trackAt(const QModelIndex& index) const;
+
         int rowCount(const QModelIndex& parent = QModelIndex()) const;
         int columnCount(const QModelIndex& parent = QModelIndex()) const;
         QVariant headerData(int section, Qt::Orientation orientation,
@@ -74,6 +76,9 @@ namespace PMP
                      Client::ServerInterface* serverInterface);
         ~SearchDialog();
 
+    private Q_SLOTS:
+        void resultsContextMenuRequested(const QPoint& position);
+
     private:
         void onTextEdited();
         void onEditingFinished();
@@ -83,8 +88,10 @@ namespace PMP
         Ui::SearchDialog* _ui;
         QTimer* _typingTimer;
         SearchData* _searchData;
+        Client::ServerInterface* _serverInterface;
         Client::CollectionWatcher* _collectionWatcher;
         SearchResultsTableModel* _searchResultsModel;
+        QMenu* _resultsContextMenu { nullptr };
         QString _searchText;
     };
 }

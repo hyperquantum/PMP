@@ -33,7 +33,11 @@
     </layout>
    </item>
    <item>
-    <widget class="QTableView" name="resultsTableView"/>
+    <widget class="QTableView" name="resultsTableView">
+     <property name="contextMenuPolicy">
+      <enum>Qt::ContextMenuPolicy::CustomContextMenu</enum>
+     </property>
+    </widget>
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_2">

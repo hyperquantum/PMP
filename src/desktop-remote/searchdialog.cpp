@@ -23,10 +23,12 @@
 #include "common/util.h"
 
 #include "client/collectionwatcher.h"
+#include "client/queuecontroller.h"
 #include "client/serverinterface.h"
 
 #include "searching.h"
 
+#include <QMenu>
 #include <QSettings>
 #include <QtDebug>
 #include <QTimer>
@@ -41,6 +43,7 @@ namespace PMP
         _ui(new Ui::SearchDialog),
         _typingTimer(new QTimer(this)),
         _searchData(searchData),
+        _serverInterface(serverInterface),
         _collectionWatcher(&serverInterface->collectionWatcher()),
         _searchResultsModel(new SearchResultsTableModel(this, serverInterface))
     {
@@ -65,6 +68,9 @@ namespace PMP
 
         connect(_typingTimer, &QTimer::timeout,
                 this, &SearchDialog::onTypingTimerTimeout);
+
+        connect(_ui->resultsTableView, &QTableView::customContextMenuRequested,
+                this, &SearchDialog::resultsContextMenuRequested);
 
         connect(_ui->closeButton, &QPushButton::clicked,
                 this, &SearchDialog::close);
@@ -93,6 +99,48 @@ namespace PMP
         );
 
         delete _ui;
+    }
+
+    void SearchDialog::resultsContextMenuRequested(const QPoint& position)
+    {
+        qDebug() << "SearchDialog: contextmenu requested";
+
+        auto index = _ui->resultsTableView->indexAt(position);
+        if (!index.isValid()) return;
+
+        auto trackId = _searchResultsModel->trackAt(index);
+        if (trackId.isZero()) return;
+
+        if (_resultsContextMenu)
+            delete _resultsContextMenu;
+        _resultsContextMenu = new QMenu(this);
+
+        auto enqueueFrontAction =
+            _resultsContextMenu->addAction(tr("Add to front of queue"));
+        connect(
+            enqueueFrontAction, &QAction::triggered,
+            this,
+            [this, trackId]()
+            {
+                qDebug() << "SearchDialog: context menu: enqueue (front) triggered";
+                _serverInterface->queueController().insertQueueEntryAtFront(trackId);
+            }
+        );
+
+        auto enqueueEndAction =
+            _resultsContextMenu->addAction(tr("Add to end of queue"));
+        connect(
+            enqueueEndAction, &QAction::triggered,
+            this,
+            [this, trackId]()
+            {
+                qDebug() << "SearchDialog: context menu: enqueue (end) triggered";
+                _serverInterface->queueController().insertQueueEntryAtEnd(trackId);
+            }
+        );
+
+        auto popupPosition = _ui->resultsTableView->viewport()->mapToGlobal(position);
+        _resultsContextMenu->popup(popupPosition);
     }
 
     void SearchDialog::onTextEdited()
@@ -151,6 +199,16 @@ namespace PMP
         _collectionWatcher(&serverInterface->collectionWatcher())
     {
         //
+    }
+
+    LocalHashId SearchResultsTableModel::trackAt(const QModelIndex& index) const
+    {
+        auto row = index.row();
+
+        if (row < 0 || row >= _tracks.size())
+            return {};
+
+        return _tracks[row];
     }
 
     void SearchResultsTableModel::setTracksList(QList<LocalHashId> tracks)
