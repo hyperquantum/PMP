@@ -26,6 +26,7 @@
 #include <QDialog>
 #include <QList>
 
+QT_FORWARD_DECLARE_CLASS(QMenu)
 QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace Ui
