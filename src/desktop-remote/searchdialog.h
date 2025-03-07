@@ -39,6 +39,7 @@ namespace Ui
 namespace PMP::Client
 {
     class CollectionWatcher;
+    class QueueHashesMonitor;
     class ServerInterface;
 }
 
@@ -52,7 +53,8 @@ namespace PMP
         Q_OBJECT
     public:
         SearchResultsTableModel(QObject* parent,
-                                Client::ServerInterface* serverInterface);
+                                Client::ServerInterface* serverInterface,
+                                Client::QueueHashesMonitor* queueHashesMonitor);
 
         void setTracksList(QList<Client::LocalHashId> tracks);
 
@@ -67,11 +69,13 @@ namespace PMP
     private Q_SLOTS:
         void onTrackAvailabilityChanged(Client::LocalHashId hashId, bool isAvailable);
         void onTrackDataChanged(Client::CollectionTrackInfo track);
+        void onHashInQueuePresenceChanged(Client::LocalHashId hashId);
 
     private:
         QVariant trackData(Client::LocalHashId trackId, int column, int role) const;
 
         Client::CollectionWatcher* _collectionWatcher;
+        Client::QueueHashesMonitor* _queueHashesMonitor;
         QList<Client::LocalHashId> _tracks;
         QHash<Client::LocalHashId, int> _hashIdToIndex;
     };
@@ -83,6 +87,7 @@ namespace PMP
     public:
         SearchDialog(QWidget* parent, SearchData* searchData,
                      Client::ServerInterface* serverInterface,
+                     Client::QueueHashesMonitor* queueHashesMonitor,
                      UserForStatisticsDisplay* userForStatisticsDisplay);
         ~SearchDialog();
 

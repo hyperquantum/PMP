@@ -24,6 +24,7 @@
 
 #include "client/collectionwatcher.h"
 #include "client/queuecontroller.h"
+#include "client/queuehashesmonitor.h"
 #include "client/serverinterface.h"
 
 #include "colors.h"
@@ -41,6 +42,7 @@ namespace PMP
 {
     SearchDialog::SearchDialog(QWidget* parent, SearchData* searchData,
                                ServerInterface* serverInterface,
+                               QueueHashesMonitor* queueHashesMonitor,
                                UserForStatisticsDisplay* userForStatisticsDisplay)
      : QDialog(parent),
         _ui(new Ui::SearchDialog),
@@ -49,7 +51,9 @@ namespace PMP
         _serverInterface(serverInterface),
         _userStatisticsDisplay(userForStatisticsDisplay),
         _collectionWatcher(&serverInterface->collectionWatcher()),
-        _searchResultsModel(new SearchResultsTableModel(this, serverInterface))
+        _searchResultsModel(new SearchResultsTableModel(this,
+                                                        serverInterface,
+                                                        queueHashesMonitor))
     {
         _ui->setupUi(this);
 
@@ -218,15 +222,20 @@ namespace PMP
     /* ============== SearchResultsTableModel ============== */
 
     SearchResultsTableModel::SearchResultsTableModel(QObject* parent,
-                                                     ServerInterface* serverInterface)
+                                                     ServerInterface* serverInterface,
+                                                QueueHashesMonitor* queueHashesMonitor)
      : QAbstractTableModel(parent),
-        _collectionWatcher(&serverInterface->collectionWatcher())
+        _collectionWatcher(&serverInterface->collectionWatcher()),
+        _queueHashesMonitor(queueHashesMonitor)
     {
         connect(_collectionWatcher, &CollectionWatcher::trackAvailabilityChanged,
                 this, &SearchResultsTableModel::onTrackAvailabilityChanged);
 
         connect(_collectionWatcher, &CollectionWatcher::trackDataChanged,
                 this, &SearchResultsTableModel::onTrackDataChanged);
+
+        connect(_queueHashesMonitor, &QueueHashesMonitor::hashInQueuePresenceChanged,
+                this, &SearchResultsTableModel::onHashInQueuePresenceChanged);
     }
 
     LocalHashId SearchResultsTableModel::trackAt(const QModelIndex& index) const
@@ -336,6 +345,17 @@ namespace PMP
         Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 4 - 1));
     }
 
+    void SearchResultsTableModel::onHashInQueuePresenceChanged(Client::LocalHashId hashId)
+    {
+        auto it = _hashIdToIndex.constFind(hashId);
+        if (it == _hashIdToIndex.constEnd())
+            return;
+
+        int index = it.value();
+
+        Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 0));
+    }
+
     QVariant SearchResultsTableModel::trackData(LocalHashId trackId, int column,
                                                 int role) const
     {
@@ -367,6 +387,15 @@ namespace PMP
                             lengthInMilliseconds);
                     }
                     case 3: return track.album();
+                    }
+                }
+                break;
+            case Qt::DecorationRole:
+                if (column == 0)
+                {
+                    if (_queueHashesMonitor->isPresentInQueue(trackId))
+                    {
+                        return QIcon(":/mediabuttons/queue.svg");
                     }
                 }
                 break;

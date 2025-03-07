@@ -174,6 +174,7 @@ namespace PMP
             [this]()
             {
                 auto* dialog = new SearchDialog(this, _searchData, _serverInterface,
+                                                _queueHashesMonitor,
                                                 _userForStatisticsDisplay);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
                 dialog->open();
@@ -843,7 +844,7 @@ namespace PMP
 
         setCentralWidget(mainCentralWidget);
 
-        auto queueHashesMonitor =
+        _queueHashesMonitor =
                 new QueueHashesMonitorImpl(_serverInterface,
                                            &_serverInterface->queueMonitor(),
                                            &_serverInterface->queueEntryInfoStorage());
@@ -852,7 +853,7 @@ namespace PMP
 
         auto collectionWidget =
                 new CollectionWidget(_musicCollectionDock, _serverInterface,
-                                     queueHashesMonitor, _userForStatisticsDisplay,
+                                     _queueHashesMonitor, _userForStatisticsDisplay,
                                      _searchData);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);

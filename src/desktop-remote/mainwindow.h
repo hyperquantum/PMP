@@ -35,6 +35,7 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 namespace PMP::Client
 {
     class LocalHashIdRepository;
+    class QueueHashesMonitor;
     class ServerConnection;
     class ServerInterface;
 }
@@ -121,6 +122,7 @@ namespace PMP
         Client::LocalHashIdRepository* _hashIdRepository;
         Client::ServerConnection* _connection { nullptr };
         Client::ServerInterface* _serverInterface { nullptr };
+        Client::QueueHashesMonitor* _queueHashesMonitor { nullptr };
         UserForStatisticsDisplay* _userForStatisticsDisplay { nullptr };
         UserPickerWidget* _userPickerWidget { nullptr };
         UserAccountCreationWidget* _userAccountCreationWidget { nullptr };
