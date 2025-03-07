@@ -84,6 +84,8 @@ namespace PMP
 
             settings.beginGroup("searchdialog");
 
+            restoreGeometry(settings.value("geometry").toByteArray());
+
             _ui->resultsTableView->horizontalHeader()->restoreState(
                 settings.value("columnsstate").toByteArray()
             );
@@ -96,6 +98,8 @@ namespace PMP
                            QCoreApplication::applicationName());
 
         settings.beginGroup("searchdialog");
+
+        settings.setValue("geometry", saveGeometry());
 
         settings.setValue(
             "columnsstate", _ui->resultsTableView->horizontalHeader()->saveState()
