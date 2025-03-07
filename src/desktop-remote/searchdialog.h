@@ -72,6 +72,7 @@ namespace PMP
         void onHashInQueuePresenceChanged(Client::LocalHashId hashId);
 
     private:
+        int getTrackIndex(Client::LocalHashId trackId) const;
         QVariant trackData(Client::LocalHashId trackId, int column, int role) const;
 
         Client::CollectionWatcher* _collectionWatcher;

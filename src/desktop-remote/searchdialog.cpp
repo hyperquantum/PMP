@@ -323,22 +323,18 @@ namespace PMP
     void SearchResultsTableModel::onTrackAvailabilityChanged(Client::LocalHashId hashId,
                                                              bool isAvailable)
     {
-        auto it = _hashIdToIndex.constFind(hashId);
-        if (it == _hashIdToIndex.constEnd())
+        int index = getTrackIndex(hashId);
+        if (index < 0)
             return;
-
-        int index = it.value();
 
         Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 4 - 1));
     }
 
     void SearchResultsTableModel::onTrackDataChanged(Client::CollectionTrackInfo track)
     {
-        auto it = _hashIdToIndex.constFind(track.hashId());
-        if (it == _hashIdToIndex.constEnd())
+        int index = getTrackIndex(track.hashId());
+        if (index < 0)
             return;
-
-        int index = it.value();
 
         // TODO : what if the new track data no longer satisfies the search query?
 
@@ -347,13 +343,20 @@ namespace PMP
 
     void SearchResultsTableModel::onHashInQueuePresenceChanged(Client::LocalHashId hashId)
     {
-        auto it = _hashIdToIndex.constFind(hashId);
-        if (it == _hashIdToIndex.constEnd())
+        int index = getTrackIndex(hashId);
+        if (index < 0)
             return;
 
-        int index = it.value();
-
         Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 0));
+    }
+
+    int SearchResultsTableModel::getTrackIndex(Client::LocalHashId trackId) const
+    {
+        auto it = _hashIdToIndex.constFind(trackId);
+        if (it != _hashIdToIndex.constEnd())
+            return it.value();
+
+        return -1;
     }
 
     QVariant SearchResultsTableModel::trackData(LocalHashId trackId, int column,
