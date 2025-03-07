@@ -48,6 +48,7 @@ namespace PMP
     class PowerManagement;
     class SearchData;
     class UserAccountCreationWidget;
+    class UserForStatisticsDisplay;
     class UserPickerWidget;
     struct VersionInfo;
 
@@ -120,6 +121,7 @@ namespace PMP
         Client::LocalHashIdRepository* _hashIdRepository;
         Client::ServerConnection* _connection { nullptr };
         Client::ServerInterface* _serverInterface { nullptr };
+        UserForStatisticsDisplay* _userForStatisticsDisplay { nullptr };
         UserPickerWidget* _userPickerWidget { nullptr };
         UserAccountCreationWidget* _userAccountCreationWidget { nullptr };
         LoginWidget* _loginWidget { nullptr };

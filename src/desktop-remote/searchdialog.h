@@ -43,6 +43,7 @@ namespace PMP::Client
 namespace PMP
 {
     class SearchData;
+    class UserForStatisticsDisplay;
 
     class SearchResultsTableModel : public QAbstractTableModel
     {
@@ -74,7 +75,8 @@ namespace PMP
 
     public:
         SearchDialog(QWidget* parent, SearchData* searchData,
-                     Client::ServerInterface* serverInterface);
+                     Client::ServerInterface* serverInterface,
+                     UserForStatisticsDisplay* userForStatisticsDisplay);
         ~SearchDialog();
 
     private Q_SLOTS:
@@ -90,6 +92,7 @@ namespace PMP
         QTimer* _typingTimer;
         SearchData* _searchData;
         Client::ServerInterface* _serverInterface;
+        UserForStatisticsDisplay* _userStatisticsDisplay;
         Client::CollectionWatcher* _collectionWatcher;
         SearchResultsTableModel* _searchResultsModel;
         QMenu* _resultsContextMenu { nullptr };

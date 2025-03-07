@@ -173,7 +173,8 @@ namespace PMP
             this,
             [this]()
             {
-                auto* dialog = new SearchDialog(this, _searchData, _serverInterface);
+                auto* dialog = new SearchDialog(this, _searchData, _serverInterface,
+                                                _userForStatisticsDisplay);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
                 dialog->open();
             }
@@ -829,11 +830,11 @@ namespace PMP
         _notificationBar = new NotificationBar(mainCentralWidget);
         _notificationBar->addNotification(delayedStartNotification);
 
-        auto* userForStatisticsDisplay =
+        _userForStatisticsDisplay =
             new UserForStatisticsDisplayImpl(this, _serverInterface);
 
         _mainWidget = new MainWidget(mainCentralWidget);
-        _mainWidget->setConnection(_serverInterface, userForStatisticsDisplay);
+        _mainWidget->setConnection(_serverInterface, _userForStatisticsDisplay);
 
         auto centralVerticalLayout = new QVBoxLayout(mainCentralWidget);
         centralVerticalLayout->setContentsMargins(0, 0, 0, 0);
@@ -851,7 +852,7 @@ namespace PMP
 
         auto collectionWidget =
                 new CollectionWidget(_musicCollectionDock, _serverInterface,
-                                     queueHashesMonitor, userForStatisticsDisplay,
+                                     queueHashesMonitor, _userForStatisticsDisplay,
                                      _searchData);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);

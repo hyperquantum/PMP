@@ -27,6 +27,7 @@
 #include "client/serverinterface.h"
 
 #include "searching.h"
+#include "trackinfodialog.h"
 
 #include <QMenu>
 #include <QSettings>
@@ -38,12 +39,14 @@ using namespace PMP::Client;
 namespace PMP
 {
     SearchDialog::SearchDialog(QWidget* parent, SearchData* searchData,
-                               ServerInterface* serverInterface)
+                               ServerInterface* serverInterface,
+                               UserForStatisticsDisplay* userForStatisticsDisplay)
      : QDialog(parent),
         _ui(new Ui::SearchDialog),
         _typingTimer(new QTimer(this)),
         _searchData(searchData),
         _serverInterface(serverInterface),
+        _userStatisticsDisplay(userForStatisticsDisplay),
         _collectionWatcher(&serverInterface->collectionWatcher()),
         _searchResultsModel(new SearchResultsTableModel(this, serverInterface))
     {
@@ -136,6 +139,22 @@ namespace PMP
             {
                 qDebug() << "SearchDialog: context menu: enqueue (end) triggered";
                 _serverInterface->queueController().insertQueueEntryAtEnd(trackId);
+            }
+        );
+
+        _resultsContextMenu->addSeparator();
+
+        auto trackInfoAction = _resultsContextMenu->addAction(tr("Track info"));
+        connect(
+            trackInfoAction, &QAction::triggered,
+            this,
+            [this, trackId]()
+            {
+                qDebug() << "SearchDialog: context menu: track info triggered";
+                auto dialog = new TrackInfoDialog(this, _serverInterface,
+                                                  _userStatisticsDisplay, trackId);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->open();
             }
         );
 
