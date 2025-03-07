@@ -222,14 +222,11 @@ namespace PMP
      : QAbstractTableModel(parent),
         _collectionWatcher(&serverInterface->collectionWatcher())
     {
-        connect(
-            _collectionWatcher, &CollectionWatcher::trackAvailabilityChanged,
-            this, &SearchResultsTableModel::onTrackAvailabilityChanged
-        );
-        connect(
-            _collectionWatcher, &CollectionWatcher::trackDataChanged,
-            this, &SearchResultsTableModel::onTrackDataChanged
-        );
+        connect(_collectionWatcher, &CollectionWatcher::trackAvailabilityChanged,
+                this, &SearchResultsTableModel::onTrackAvailabilityChanged);
+
+        connect(_collectionWatcher, &CollectionWatcher::trackDataChanged,
+                this, &SearchResultsTableModel::onTrackDataChanged);
     }
 
     LocalHashId SearchResultsTableModel::trackAt(const QModelIndex& index) const
