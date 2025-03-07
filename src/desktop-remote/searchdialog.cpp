@@ -327,7 +327,7 @@ namespace PMP
         if (index < 0)
             return;
 
-        Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 4 - 1));
+        markRowAsChanged(index);
     }
 
     void SearchResultsTableModel::onTrackDataChanged(Client::CollectionTrackInfo track)
@@ -338,7 +338,7 @@ namespace PMP
 
         // TODO : what if the new track data no longer satisfies the search query?
 
-        Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 4 - 1));
+        markRowAsChanged(index);
     }
 
     void SearchResultsTableModel::onHashInQueuePresenceChanged(Client::LocalHashId hashId)
@@ -347,7 +347,7 @@ namespace PMP
         if (index < 0)
             return;
 
-        Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 0));
+        markLeftColumnAsChanged(index);
     }
 
     int SearchResultsTableModel::getTrackIndex(Client::LocalHashId trackId) const
@@ -418,4 +418,13 @@ namespace PMP
         return {};
     }
 
+    void SearchResultsTableModel::markLeftColumnAsChanged(int index)
+    {
+        Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 0));
+    }
+
+    void SearchResultsTableModel::markRowAsChanged(int index)
+    {
+        Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 4 - 1));
+    }
 }

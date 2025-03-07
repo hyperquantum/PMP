@@ -74,6 +74,8 @@ namespace PMP
     private:
         int getTrackIndex(Client::LocalHashId trackId) const;
         QVariant trackData(Client::LocalHashId trackId, int column, int role) const;
+        void markLeftColumnAsChanged(int index);
+        void markRowAsChanged(int index);
 
         Client::CollectionWatcher* _collectionWatcher;
         Client::QueueHashesMonitor* _queueHashesMonitor;
