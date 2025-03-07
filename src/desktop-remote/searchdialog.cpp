@@ -26,6 +26,7 @@
 #include "client/queuecontroller.h"
 #include "client/serverinterface.h"
 
+#include "colors.h"
 #include "searching.h"
 #include "trackinfodialog.h"
 
@@ -221,7 +222,14 @@ namespace PMP
      : QAbstractTableModel(parent),
         _collectionWatcher(&serverInterface->collectionWatcher())
     {
-        //
+        connect(
+            _collectionWatcher, &CollectionWatcher::trackAvailabilityChanged,
+            this, &SearchResultsTableModel::onTrackAvailabilityChanged
+        );
+        connect(
+            _collectionWatcher, &CollectionWatcher::trackDataChanged,
+            this, &SearchResultsTableModel::onTrackDataChanged
+        );
     }
 
     LocalHashId SearchResultsTableModel::trackAt(const QModelIndex& index) const
@@ -240,13 +248,21 @@ namespace PMP
         {
             beginRemoveRows({}, 0, _tracks.size() - 1);
             _tracks.clear();
+            _hashIdToIndex.clear();
             endRemoveRows();
         }
 
         if (tracks.size() > 0)
         {
             beginInsertRows({}, 0, tracks.size() - 1);
+
             _tracks = tracks;
+
+            for (int i = 0; i < tracks.size(); ++i)
+            {
+                _hashIdToIndex[tracks[i]] = i;
+            }
+
             endInsertRows();
         }
     }
@@ -298,6 +314,31 @@ namespace PMP
         return {};
     }
 
+    void SearchResultsTableModel::onTrackAvailabilityChanged(Client::LocalHashId hashId,
+                                                             bool isAvailable)
+    {
+        auto it = _hashIdToIndex.constFind(hashId);
+        if (it == _hashIdToIndex.constEnd())
+            return;
+
+        int index = it.value();
+
+        Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 4 - 1));
+    }
+
+    void SearchResultsTableModel::onTrackDataChanged(Client::CollectionTrackInfo track)
+    {
+        auto it = _hashIdToIndex.constFind(track.hashId());
+        if (it == _hashIdToIndex.constEnd())
+            return;
+
+        int index = it.value();
+
+        // TODO : what if the new track data no longer satisfies the search query?
+
+        Q_EMIT dataChanged(createIndex(index, 0), createIndex(index, 4 - 1));
+    }
+
     QVariant SearchResultsTableModel::trackData(LocalHashId trackId, int column,
                                                 int role) const
     {
@@ -330,6 +371,17 @@ namespace PMP
                     }
                     case 3: return track.album();
                     }
+                }
+                break;
+            case Qt::ForegroundRole:
+                {
+                    auto trackOrNull = _collectionWatcher->getTrackFromCache(trackId);
+                    if (trackOrNull.isNull()) { return {}; }
+
+                    auto track = trackOrNull.value();
+
+                    if (!track.isAvailable())
+                        return QBrush(Colors::instance().inactiveItemForeground);
                 }
                 break;
         }
