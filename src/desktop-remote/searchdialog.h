@@ -20,6 +20,8 @@
 #ifndef PMP_SEARCHDIALOG_H
 #define PMP_SEARCHDIALOG_H
 
+#include "common/playerstate.h"
+
 #include "client/collectiontrackinfo.h"
 #include "client/localhashid.h"
 
@@ -67,6 +69,8 @@ namespace PMP
         QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
 
     private Q_SLOTS:
+        void onPlayerStateChanged(PlayerState playerState);
+        void onCurrentTrackInfoChanged();
         void onTrackAvailabilityChanged(Client::LocalHashId hashId, bool isAvailable);
         void onTrackDataChanged(Client::CollectionTrackInfo track);
         void onHashInQueuePresenceChanged(Client::LocalHashId hashId);
@@ -77,8 +81,11 @@ namespace PMP
         void markLeftColumnAsChanged(int index);
         void markRowAsChanged(int index);
 
+        Client::ServerInterface* _serverInterface;
         Client::CollectionWatcher* _collectionWatcher;
         Client::QueueHashesMonitor* _queueHashesMonitor;
+        Client::LocalHashId _nowPlayingTrackHash;
+        PlayerState _playerState { PlayerState::Unknown };
         QList<Client::LocalHashId> _tracks;
         QHash<Client::LocalHashId, int> _hashIdToIndex;
     };

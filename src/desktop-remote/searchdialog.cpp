@@ -23,6 +23,8 @@
 #include "common/util.h"
 
 #include "client/collectionwatcher.h"
+#include "client/currenttrackmonitor.h"
+#include "client/playercontroller.h"
 #include "client/queuecontroller.h"
 #include "client/queuehashesmonitor.h"
 #include "client/serverinterface.h"
@@ -225,14 +227,27 @@ namespace PMP
                                                      ServerInterface* serverInterface,
                                                 QueueHashesMonitor* queueHashesMonitor)
      : QAbstractTableModel(parent),
+        _serverInterface(serverInterface),
         _collectionWatcher(&serverInterface->collectionWatcher()),
         _queueHashesMonitor(queueHashesMonitor)
     {
+        auto* currentTrackMonitor = &serverInterface->currentTrackMonitor();
+        _nowPlayingTrackHash = currentTrackMonitor->currentTrackHash();
+
+        auto* playerController = &serverInterface->playerController();
+        _playerState = playerController->playerState();
+
         connect(_collectionWatcher, &CollectionWatcher::trackAvailabilityChanged,
                 this, &SearchResultsTableModel::onTrackAvailabilityChanged);
 
         connect(_collectionWatcher, &CollectionWatcher::trackDataChanged,
                 this, &SearchResultsTableModel::onTrackDataChanged);
+
+        connect(playerController, &PlayerController::playerStateChanged,
+                this, &SearchResultsTableModel::onPlayerStateChanged);
+
+        connect(currentTrackMonitor, &CurrentTrackMonitor::currentTrackInfoChanged,
+                this, &SearchResultsTableModel::onCurrentTrackInfoChanged);
 
         connect(_queueHashesMonitor, &QueueHashesMonitor::hashInQueuePresenceChanged,
                 this, &SearchResultsTableModel::onHashInQueuePresenceChanged);
@@ -320,9 +335,46 @@ namespace PMP
         return {};
     }
 
+    void SearchResultsTableModel::onPlayerStateChanged(PlayerState playerState)
+    {
+        if (_playerState == playerState)
+            return;
+
+        _playerState = playerState;
+
+        int index = getTrackIndex(_nowPlayingTrackHash);
+
+        if (index < 0)
+            return;
+
+        markLeftColumnAsChanged(index);
+    }
+
+    void SearchResultsTableModel::onCurrentTrackInfoChanged()
+    {
+        auto nowPlayingTrackHash =
+            _serverInterface->currentTrackMonitor().currentTrackHash();
+
+        if (_nowPlayingTrackHash == nowPlayingTrackHash)
+            return;
+
+        int oldIndex = getTrackIndex(_nowPlayingTrackHash);
+        int newIndex = getTrackIndex(nowPlayingTrackHash);
+
+        _nowPlayingTrackHash = nowPlayingTrackHash;
+
+        if (oldIndex >= 0)
+            markLeftColumnAsChanged(oldIndex);
+
+        if (newIndex >= 0)
+            markLeftColumnAsChanged(newIndex);
+    }
+
     void SearchResultsTableModel::onTrackAvailabilityChanged(Client::LocalHashId hashId,
                                                              bool isAvailable)
     {
+        Q_UNUSED(isAvailable)
+
         int index = getTrackIndex(hashId);
         if (index < 0)
             return;
@@ -396,7 +448,21 @@ namespace PMP
             case Qt::DecorationRole:
                 if (column == 0)
                 {
-                    if (_queueHashesMonitor->isPresentInQueue(trackId))
+                    if (trackId == _nowPlayingTrackHash)
+                    {
+                        switch (_playerState)
+                        {
+                        case PlayerState::Playing:
+                            return QIcon(":/mediabuttons/play.svg");
+
+                        case PlayerState::Paused:
+                            return QIcon(":/mediabuttons/pause.svg");
+
+                        default:
+                            break;
+                        }
+                    }
+                    else if (_queueHashesMonitor->isPresentInQueue(trackId))
                     {
                         return QIcon(":/mediabuttons/queue.svg");
                     }
