@@ -177,7 +177,7 @@ namespace PMP
                                                 _queueHashesMonitor,
                                                 _userForStatisticsDisplay);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
-                dialog->open();
+                dialog->show();
             }
         );
 

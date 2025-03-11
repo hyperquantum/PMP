@@ -24,12 +24,14 @@
 
 #include "client/collectionwatcher.h"
 #include "client/currenttrackmonitor.h"
+#include "client/localhashidrepository.h"
 #include "client/playercontroller.h"
 #include "client/queuecontroller.h"
 #include "client/queuehashesmonitor.h"
 #include "client/serverinterface.h"
 
 #include "colors.h"
+#include "dragdroputils.h"
 #include "searching.h"
 #include "trackinfodialog.h"
 
@@ -64,8 +66,8 @@ namespace PMP
         _collectionWatcher->enableCollectionDownloading();
 
         _ui->resultsTableView->setModel(_searchResultsModel);
-        //_ui->resultsTableView->setDragEnabled(true);
-        //_ui->resultsTableView->setSelectionMode(QAbstractItemView::SingleSelection);
+        _ui->resultsTableView->setDragEnabled(true);
+        _ui->resultsTableView->setSelectionMode(QAbstractItemView::SingleSelection);
         _ui->resultsTableView->setSelectionBehavior(QAbstractItemView::SelectRows);
 
         _ui->resultsCountLabel->setVisible(false);
@@ -101,6 +103,8 @@ namespace PMP
 
     SearchDialog::~SearchDialog()
     {
+        qDebug() << "SearchDialog: destructor running";
+
         QSettings settings(QCoreApplication::organizationName(),
                            QCoreApplication::applicationName());
 
@@ -228,6 +232,7 @@ namespace PMP
                                                 QueueHashesMonitor* queueHashesMonitor)
      : QAbstractTableModel(parent),
         _serverInterface(serverInterface),
+        _hashIdRepository(serverInterface->hashIdRepository()),
         _collectionWatcher(&serverInterface->collectionWatcher()),
         _queueHashesMonitor(queueHashesMonitor)
     {
@@ -333,6 +338,46 @@ namespace PMP
         }
 
         return {};
+    }
+
+    Qt::ItemFlags SearchResultsTableModel::flags(const QModelIndex& index) const
+    {
+        Q_UNUSED(index)
+
+        Qt::ItemFlags f(Qt::ItemIsSelectable
+                        | Qt::ItemIsEnabled
+                        | Qt::ItemIsDragEnabled
+                        | Qt::ItemIsDropEnabled);
+        return f;
+    }
+
+    Qt::DropActions SearchResultsTableModel::supportedDragActions() const
+    {
+        return Qt::CopyAction;
+    }
+
+    Qt::DropActions SearchResultsTableModel::supportedDropActions() const
+    {
+        return Qt::CopyAction;
+    }
+
+    QMimeData* SearchResultsTableModel::mimeData(const QModelIndexList& indexes) const
+    {
+        qDebug() << "Search results: mimeData() called; indexes count:" << indexes.size();
+
+        if (indexes.isEmpty()) return nullptr;
+
+        auto hashes =
+            DragDropUtils::getHashes(
+                indexes,
+                [this](QModelIndex index)
+                {
+                    auto hashId = trackAt(index);
+                    return _hashIdRepository->getHash(hashId);
+                }
+            );
+
+        return DragDropUtils::convertHashesToMimeData(hashes);
     }
 
     void SearchResultsTableModel::onPlayerStateChanged(PlayerState playerState)

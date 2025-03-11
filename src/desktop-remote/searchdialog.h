@@ -41,6 +41,7 @@ namespace Ui
 namespace PMP::Client
 {
     class CollectionWatcher;
+    class LocalHashIdRepository;
     class QueueHashesMonitor;
     class ServerInterface;
 }
@@ -62,11 +63,16 @@ namespace PMP
 
         Client::LocalHashId trackAt(const QModelIndex& index) const;
 
-        int rowCount(const QModelIndex& parent = QModelIndex()) const;
-        int columnCount(const QModelIndex& parent = QModelIndex()) const;
+        int rowCount(const QModelIndex& parent = QModelIndex()) const override;
+        int columnCount(const QModelIndex& parent = QModelIndex()) const override;
         QVariant headerData(int section, Qt::Orientation orientation,
-                            int role = Qt::DisplayRole) const;
-        QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const;
+                            int role = Qt::DisplayRole) const override;
+        QVariant data(const QModelIndex& index,
+                      int role = Qt::DisplayRole) const override;
+        Qt::ItemFlags flags(const QModelIndex& index) const override;
+        Qt::DropActions supportedDragActions() const override;
+        Qt::DropActions supportedDropActions() const override;
+        QMimeData* mimeData(const QModelIndexList& indexes) const override;
 
     private Q_SLOTS:
         void onPlayerStateChanged(PlayerState playerState);
@@ -82,6 +88,7 @@ namespace PMP
         void markRowAsChanged(int index);
 
         Client::ServerInterface* _serverInterface;
+        Client::LocalHashIdRepository* _hashIdRepository;
         Client::CollectionWatcher* _collectionWatcher;
         Client::QueueHashesMonitor* _queueHashesMonitor;
         Client::LocalHashId _nowPlayingTrackHash;

@@ -211,6 +211,7 @@ set(PMP_DESKTOP_REMOTE_SOURCES
     desktop-remote/delayedstartdialog.cpp
     desktop-remote/delayedstartnotification.cpp
     desktop-remote/desktop-remote-metatypes.cpp
+    desktop-remote/dragdroputils.cpp
     desktop-remote/dynamicmodeparametersdialog.cpp
     desktop-remote/historymodel.cpp
     desktop-remote/loginwidget.cpp
