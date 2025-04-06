@@ -22,37 +22,16 @@
 #include "common/searchutil.h"
 
 #include "client/collectionwatcher.h"
+#include "client/searchrank.h"
 
 #include <QtDebug>
+
+#include <algorithm>
 
 using namespace PMP::Client;
 
 namespace PMP
 {
-    SearchQuery::SearchQuery()
-    {
-        //
-    }
-
-    SearchQuery::SearchQuery(const QString& query)
-    {
-        auto simplifiedSearchString = SearchUtil::toSearchString(query);
-
-        _searchParts = simplifiedSearchString.split(QChar(' '), Qt::SkipEmptyParts);
-    }
-
-    void SearchQuery::clear()
-    {
-        _searchParts.clear();
-    }
-
-    bool SearchQuery::isEmpty() const
-    {
-        return _searchParts.isEmpty();
-    }
-
-    // =================================================================== //
-
     SearchData::SearchData(QObject* parent, CollectionWatcher* collectionWatcher)
         : QObject(parent)
     {
@@ -86,16 +65,48 @@ namespace PMP
 
     QList<LocalHashId> SearchData::getAllMatchesForQuery(const SearchQuery& query) const
     {
-        QList<LocalHashId> result;
-        result.reserve(100); // prepare for a potentially large result list
+        QList<LocalHashId> matches;
+        matches.reserve(100); // prepare for a potentially large result list
 
         for (auto it = _trackData.constBegin(); it != _trackData.constEnd(); ++it)
         {
             if (isTrackDataMatchForQuery(it.value(), query))
-                result.append(it.key());
+            {
+                matches.append(it.key());
+            }
         }
 
-        return result;
+        if (matches.size() <= 1)
+            return matches;
+
+        // calculate score for each match
+        QMap<LocalHashId, int> matchesWithScore;
+        for (auto const& match : std::as_const(matches))
+        {
+            auto const& trackData = _trackData[match];
+
+            int score =
+                SearchRank::getMatchScore(query, trackData.title)
+                + SearchRank::getMatchScore(query, trackData.artist)
+                + SearchRank::getMatchScore(query, trackData.album)
+                + SearchRank::getMatchScore(query, trackData.albumArtist);
+
+            matchesWithScore.insert(match, score);
+        }
+
+        std::sort(
+            matches.begin(),
+            matches.end(),
+            [matchesWithScore](LocalHashId const& first, LocalHashId const& second)
+            {
+                int firstScore = matchesWithScore[first];
+                int secondScore = matchesWithScore[second];
+
+                return firstScore > secondScore;
+            }
+        );
+
+        return matches;
     }
 
     void SearchData::onNewTrackReceived(CollectionTrackInfo track)

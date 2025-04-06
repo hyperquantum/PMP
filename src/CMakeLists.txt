@@ -60,6 +60,8 @@ set(PMP_CLIENT_SOURCES
     client/queuehashesmonitor.cpp
     client/queuemonitor.cpp
     client/scrobblingcontrollerimpl.cpp
+    client/searchquery.cpp
+    client/searchrank.cpp
     client/servercapabilitiesimpl.cpp
     client/serverconnection.cpp
     client/serverdiscoverer.cpp

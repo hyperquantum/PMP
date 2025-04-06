@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,6 +25,7 @@
 #include "common/playerstate.h"
 
 #include "client/collectiontrackinfo.h"
+#include "client/searchquery.h"
 
 #include "searching.h"
 #include "trackjudge.h"
@@ -180,7 +181,7 @@ namespace PMP
         Client::ServerInterface* _serverInterface;
         SortedCollectionTableModel* _source;
         SearchData* _searchData;
-        SearchQuery _searchQuery;
+        Client::SearchQuery _searchQuery;
         FileHash _searchFileHash;
         Nullable<Client::LocalHashId> _searchHashId;
         TrackJudge _filteringTrackJudge;

@@ -22,6 +22,7 @@
 
 #include "client/collectiontrackinfo.h"
 #include "client/localhashid.h"
+#include "client/searchquery.h"
 
 #include <QHash>
 #include <QList>
@@ -37,21 +38,6 @@ namespace PMP
 {
     class SearchData;
 
-    class SearchQuery
-    {
-    public:
-        SearchQuery();
-        SearchQuery(QString const& query);
-
-        void clear();
-        bool isEmpty() const;
-
-    private:
-        friend class SearchData;
-
-        QStringList _searchParts;
-    };
-
     class SearchData : public QObject
     {
         Q_OBJECT
@@ -59,9 +45,10 @@ namespace PMP
         SearchData(QObject* parent, Client::CollectionWatcher* collectionWatcher);
 
         bool isFileMatchForQuery(Client::LocalHashId hashId,
-                                 SearchQuery const& query) const;
+                                 Client::SearchQuery const& query) const;
 
-        QList<Client::LocalHashId> getAllMatchesForQuery(SearchQuery const& query) const;
+        QList<Client::LocalHashId> getAllMatchesForQuery(
+                                                Client::SearchQuery const& query) const;
 
     private Q_SLOTS:
         void onNewTrackReceived(Client::CollectionTrackInfo track);
@@ -79,7 +66,7 @@ namespace PMP
         };
 
         bool isTrackDataMatchForQuery(TrackSearchStrings const& trackData,
-                                      SearchQuery const& query) const;
+                                      Client::SearchQuery const& query) const;
 
         QHash<Client::LocalHashId, TrackSearchStrings> _trackData;
     };
