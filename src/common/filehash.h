@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,6 +25,8 @@
 #include <QMetaType>
 #include <QString>
 #include <QtDebug>
+
+#include <compare>
 
 namespace PMP
 {
@@ -57,16 +59,27 @@ namespace PMP
         QByteArray _md5;
     };
 
+    inline std::strong_ordering operator<=>(const FileHash& me, const FileHash& other)
+    {
+        auto lengthComparison = (me.length() <=> other.length());
+
+        if (lengthComparison != 0)
+            return lengthComparison;
+
+        auto sha1Comparison = (me.SHA1() <=> other.SHA1());
+
+        if (sha1Comparison != 0)
+            return sha1Comparison;
+
+        auto md5Comparison = (me.MD5() <=> other.MD5());
+        return md5Comparison;
+    }
+
     inline bool operator==(const FileHash& me, const FileHash& other)
     {
         return me.length() == other.length()
             && me.SHA1() == other.SHA1()
             && me.MD5() == other.MD5();
-    }
-
-    inline bool operator!=(const FileHash& me, const FileHash& other)
-    {
-        return !(me == other);
     }
 
     inline size_t qHash(const FileHash& hashID, size_t seed)
@@ -76,36 +89,10 @@ namespace PMP
 
     inline int compare(const FileHash& me, const FileHash& other)
     {
-        if (me.length() < other.length()) return -1;
-        if (other.length() < me.length()) return 1;
-
-        if (me.SHA1() < other.SHA1()) return -1;
-        if (other.SHA1() < me.SHA1()) return 1;
-
-        if (me.MD5() < other.MD5()) return -1;
-        if (other.MD5() < me.MD5()) return 1;
-
+        auto comparison = me <=> other;
+        if (comparison == std::strong_ordering::less) return -1;
+        if (comparison == std::strong_ordering::greater) return 1;
         return 0;
-    }
-
-    inline bool operator<(const FileHash& me, const FileHash& other)
-    {
-        return compare(me, other) < 0;
-    }
-
-    inline bool operator<=(const FileHash& me, const FileHash& other)
-    {
-        return compare(me, other) <= 0;
-    }
-
-    inline bool operator>(const FileHash& me, const FileHash& other)
-    {
-        return compare(me, other) > 0;
-    }
-
-    inline bool operator>=(const FileHash& me, const FileHash& other)
-    {
-        return compare(me, other) >= 0;
     }
 
     inline QDebug operator<<(QDebug debug, const FileHash& hash)
