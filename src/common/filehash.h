@@ -66,13 +66,13 @@ namespace PMP
         if (lengthComparison != 0)
             return lengthComparison;
 
-        auto sha1Comparison = (me.SHA1() <=> other.SHA1());
+        if (me.SHA1() < other.SHA1()) return std::strong_ordering::less;
+        if (other.SHA1() < me.SHA1()) return std::strong_ordering::greater;
 
-        if (sha1Comparison != 0)
-            return sha1Comparison;
+        if (me.MD5() < other.MD5()) return std::strong_ordering::less;
+        if (other.MD5() < me.MD5()) return std::strong_ordering::greater;
 
-        auto md5Comparison = (me.MD5() <=> other.MD5());
-        return md5Comparison;
+        return std::strong_ordering::equal;
     }
 
     inline bool operator==(const FileHash& me, const FileHash& other)
