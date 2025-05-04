@@ -5,7 +5,7 @@ Disclaimer:
   Anything in here can change at any time, and nothing here is a promise for the future.
 
 
-KNOWN PROBLEMS
+KNOWN PROBLEMS/BUGS
 
  * for some tracks we get the wrong length (caused by length estimation in TagLib)
  * when on GStreamer: InvalidMedia error "Your GStreamer installation is missing a plug-in" freezes playback
@@ -24,6 +24,7 @@ KNOWN PROBLEMS
  * scrobbling: "now playing" is triggered by the backoff mechanism after the track is already finished
  * scrobbling: race condition after track finished playing, between history insert and check for something to scrobble
  * connection screen: auto connections not disabled when trying to connect manually (and timing out)
+ * server log file size keeps increasing rapidly when no music files are available
 
 
 IDEAS
@@ -80,6 +81,7 @@ IDEAS
  * music collection: detect different rips of the same track/album and treat them as one, with unified scores
  ** music collection: work around the need for a full indexation at server startup
  * music collection: remember highlighting color selected (for light and dark mode separately)
+ * music collection: download the list from the server with the list already sorted server-side
  *** tracks: 'play now' action
  * tracks: quick action to copy title and artist to clipboard
  * tracks: detect BPM automatically

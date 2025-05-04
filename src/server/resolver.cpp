@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -461,9 +461,29 @@ namespace PMP::Server
         _fileFinder->setMusicPaths(paths);
 
         QMutexLocker lock(&_lock);
-        _musicPaths = paths;
 
+        _musicPaths = paths;
         qDebug() << "music paths set to:" << paths.join("; ");
+
+        lock.unlock();
+
+        for (auto const& path : paths)
+        {
+            QFileInfo info { path };
+
+            if (info.isFile())
+            {
+                qWarning() << "music path" << path << "is a file, not a directory!";
+            }
+            else if (info.isDir())
+            {
+                // OK
+            }
+            else
+            {
+                qWarning() << "music path" << path << "is not found!";
+            }
+        }
     }
 
     QStringList Resolver::musicPaths()
@@ -543,6 +563,8 @@ namespace PMP::Server
     {
         const auto hashes = analysis.hashes();
         const auto allHashes = hashes.allHashes();
+
+        qDebug() << "Resolver: file analyzed:" << path << "-" << hashes.main();
 
         _hashIdRegistrar->getOrCreateIds(allHashes)
             .handleOnEventLoop(

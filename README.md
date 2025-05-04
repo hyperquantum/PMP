@@ -148,6 +148,8 @@ These instructions might need some tweaks, as they haven't been tested (at least
 
 ## 5. Building On Windows
 
+Some tools that are used in the build procedure on Windows may have trouble with special characters in path names, like àéïñôü. So try to have only plain ascii characters in your source path and build path.
+
 Make sure [CMake](https://cmake.org/download/) and [Git](https://git-scm.com/downloads) are installed.
 
 These build instructions use [vcpkg](https://github.com/microsoft/vcpkg) to build PMP's dependencies.
