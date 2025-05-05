@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2024, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2025, Kevin André <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -17,7 +17,7 @@
 
 cmake_minimum_required(VERSION 3.21.0 FATAL_ERROR)
 set(CMAKE_LEGACY_CYGWIN_WIN32 0)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 project(PMP)
 

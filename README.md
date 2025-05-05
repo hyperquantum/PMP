@@ -61,7 +61,7 @@ Contents of this file:
 
 ### Build-time Dependencies
 
- * C++ compiler with support for C++ 2017
+ * C++ compiler with support for C++ 2020
  * CMake 3.21 or higher
 
 Building on Windows is done using [vcpkg](https://github.com/microsoft/vcpkg).
