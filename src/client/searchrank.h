@@ -30,6 +30,11 @@ namespace PMP::Client
         static bool isBetterMatchThan(SearchQuery const& query, QString s1, QString s2);
         static int compareMatches(SearchQuery const& query, QString s1, QString s2);
         static int getMatchScore(SearchQuery const& query, QString s);
+
+        static bool isMatch(SearchQuery const& query, QString s)
+        {
+            return getMatchScore(query, s) > 0;
+        };
     };
 }
 #endif
