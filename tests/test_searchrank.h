@@ -29,8 +29,11 @@ private Q_SLOTS:
     void exactMatchBetterThanNoMatch();
     void longerMatchIsBetter();
     void matchingSequentialPartsWithSpaceInBetweenTreatedAsLongerMatch();
+    void sequentialWordsRankHigherThanFurtherApart();
     void avoidCountingSameMatchMoreThanOnce();
     void twoWordsAreBetterMatchForDuplicateSearchWord();
+    void matchAtStartOfWordIsBetterThanInTheMiddle();
+    void matchOfFullWordIsBetterThanPartOfWord();
 };
 
 #endif

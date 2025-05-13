@@ -133,7 +133,7 @@ namespace PMP
                                               const SearchQuery& query) const
     {
         /* each part of the search query must be found in the track data */
-        for (QString const& searchPart : query._searchParts)
+        for (QString const& searchPart : query.words())
         {
             /* we can do case sensitive comparisons here, because all text has already
                been changed to lowercase in advance */

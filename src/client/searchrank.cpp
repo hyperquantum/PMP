@@ -24,39 +24,61 @@
 
 namespace
 {
-    // Function to find all occurrences of a search word in a field
-    QVector<int> findAllOccurrences(const QString& field, const QString& word)
+    struct Occurrence
     {
-        QVector<int> positions;
+        int position;
+        bool atStartOfWord;
+        bool isFullWord;
+    };
+
+    // Function to find all occurrences of a search word in a field
+    QVector<Occurrence> findAllOccurrences(const QString& field, const QString& word)
+    {
+        QVector<Occurrence> occurrences;
         int pos = field.indexOf(word, 0, Qt::CaseInsensitive);
-        while (pos != -1)
+        while (pos >= 0)
         {
-            positions.append(pos);
+            bool atStartOfWord = pos == 0 || field[pos - 1] == ' ';
+            bool atEndOfWord =
+                pos == field.size() - word.size() || field[pos + word.size()] == ' ';
+
+            Occurrence occurrence =
+                {
+                    .position = pos,
+                    .atStartOfWord = atStartOfWord,
+                    .isFullWord = atStartOfWord && atEndOfWord
+                };
+
+            occurrences.append(occurrence);
+
             pos = field.indexOf(word, pos + 1, Qt::CaseInsensitive);
         }
-        return positions;
+
+        return occurrences;
     }
 
     int computeBestMatch(int wordIndex, const QStringList& words,
-                         const QMap<int, QVector<int>>& allPositions, QVector<bool>& used,
-                         int lastCharPosOfPrevMatch)
+                         const QMap<int, QVector<Occurrence>>& allOccurrences,
+                         QVector<bool>& used, int lastCharPosOfPrevMatch)
     {
         QString word = words[wordIndex];
 
-        if (!allPositions.contains(wordIndex))
+        if (!allOccurrences.contains(wordIndex))
         {
             if (wordIndex >= words.size())
                 return 0;
 
-            return computeBestMatch(wordIndex + 1, words, allPositions, used,
+            return computeBestMatch(wordIndex + 1, words, allOccurrences, used,
                                     lastCharPosOfPrevMatch);
         }
 
-        int bestScore = 0; // Start from zero instead of a negative score
+        int bestScore = 0;
 
-        auto const& positions = allPositions[wordIndex];
-        for (int pos : positions)
+        auto const& occurrences = allOccurrences[wordIndex];
+        for (auto const& occurrence : occurrences)
         {
+            int pos = occurrence.position;
+
             // Check if any character in the range is already used
             bool isOverlapping =
                 wordIndex > 0 && std::any_of(used.begin() + pos,
@@ -71,7 +93,10 @@ namespace
                 proximityBonus = std::max(0, 11 - (pos - lastCharPosOfPrevMatch));
             }
 
-            int score = 3 + proximityBonus;
+            // full word bonus also includes start of word bonus
+            int startOfWordBonus = occurrence.atStartOfWord ? 2 : 0;
+            int fullWordBonus = occurrence.isFullWord ? 1 : 0;
+            int score = 3 + proximityBonus + startOfWordBonus + fullWordBonus;
 
             // recurse if there are more words
             if (wordIndex < words.size() - 1)
@@ -82,7 +107,7 @@ namespace
                     used[i] = true;
                 }
 
-                score += computeBestMatch(wordIndex + 1, words, allPositions, used,
+                score += computeBestMatch(wordIndex + 1, words, allOccurrences, used,
                                           pos + word.length() - 1);
 
                 // Reset usage (backtracking)
@@ -99,19 +124,21 @@ namespace
     }
 
     // Function to score matches in a field
-    int scoreFieldMatch(const QString& field, const QStringList& words)
+    int scoreFieldMatch(const QString& field, const PMP::Client::SearchQuery& query)
     {
-        if (words.isEmpty())
+        if (query.isEmpty())
             return 0;
 
-        QMap<int, QVector<int>> allPositions;
+        auto words = query.words();
+
+        QMap<int, QVector<Occurrence>> allOccurrences;
         for (int i = 0; i < words.size(); ++i)
         {
-            allPositions[i] = findAllOccurrences(field, words[i]);
+            allOccurrences[i] = findAllOccurrences(field, words[i]);
         }
 
         QVector<bool> used(field.length(), false);
-        return computeBestMatch(0, words, allPositions, used, -1);
+        return computeBestMatch(0, words, allOccurrences, used, -1);
     }
 }
 
@@ -137,6 +164,6 @@ namespace PMP::Client
 
     int SearchRank::getMatchScore(const SearchQuery& query, QString s)
     {
-        return scoreFieldMatch(s, query._searchParts);
+        return scoreFieldMatch(s, query);
     }
 }

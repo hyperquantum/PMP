@@ -50,11 +50,18 @@ void TestSearchRank::matchingSequentialPartsWithSpaceInBetweenTreatedAsLongerMat
     QVERIFY(SearchRank::isBetterMatchThan(query, "abc def", "defabc123"));
 }
 
+void TestSearchRank::sequentialWordsRankHigherThanFurtherApart()
+{
+    SearchQuery query { "can you" };
+
+    QVERIFY(SearchRank::isBetterMatchThan(query, "Can You", "Can Get You"));
+}
+
 void TestSearchRank::avoidCountingSameMatchMoreThanOnce()
 {
     SearchQuery query { "dada" };
 
-    QCOMPARE(SearchRank::compareMatches(query, "dada", "dadada"), 0);
+    QCOMPARE(SearchRank::compareMatches(query, "odadao", "odadadao"), 0);
 }
 
 void TestSearchRank::twoWordsAreBetterMatchForDuplicateSearchWord()
@@ -64,6 +71,25 @@ void TestSearchRank::twoWordsAreBetterMatchForDuplicateSearchWord()
     QVERIFY(SearchRank::isBetterMatchThan(query, "down down", "down"));
     QVERIFY(SearchRank::isBetterMatchThan(query, "down down", "upside down"));
     QVERIFY(SearchRank::isBetterMatchThan(query, "down down", "down under"));
+}
+
+void TestSearchRank::matchAtStartOfWordIsBetterThanInTheMiddle()
+{
+    SearchQuery query { "form" };
+
+    QVERIFY(SearchRank::isBetterMatchThan(query, "Former", "Informer"));
+}
+
+void TestSearchRank::matchOfFullWordIsBetterThanPartOfWord()
+{
+    SearchQuery stepQuery { "step" };
+
+    QVERIFY(SearchRank::isBetterMatchThan(stepQuery, "Step", "Steps"));
+    QVERIFY(SearchRank::isBetterMatchThan(stepQuery, "Step", "Stephen"));
+
+    SearchQuery stepsQuery { "steps" };
+
+    QVERIFY(SearchRank::isBetterMatchThan(stepsQuery, "Steps", "Footsteps"));
 }
 
 QTEST_MAIN(TestSearchRank)

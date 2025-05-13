@@ -23,15 +23,8 @@
 #include <QString>
 #include <QStringList>
 
-namespace PMP
-{
-    class SearchData;
-}
-
 namespace PMP::Client
 {
-    class SearchRank;
-
     class SearchQuery
     {
     public:
@@ -41,10 +34,9 @@ namespace PMP::Client
         void clear();
         bool isEmpty() const;
 
-    private:
-        friend class ::PMP::SearchData;
-        friend class SearchRank;
+        QStringList words() const { return _searchParts; }
 
+    private:
         QStringList _searchParts;
     };
 }
