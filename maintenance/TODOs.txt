@@ -30,6 +30,7 @@ KNOWN PROBLEMS/BUGS
 IDEAS
 
  * server: server executable with (limited) user interface for easy usage on desktop platforms (like Minecraft)
+ * server: add option that prevents the server machine from going into sleep mode while there are clients connected
  * UI: move server selection, user account creation and authentication to pop-up dialogs
  ** UI: display the title/artist of the track currently playing in the window title of the remote
  * UI: in table views: hide selection when losing focus
@@ -67,6 +68,7 @@ IDEAS
  * queue: ability to insert a track at a random position in the queue
  * queue: show error marker for a track that has no known file
  * queue: show marker for tracks that occur more than once in the queue
+ * queue: use different background color depending on how a track was added to the queue: manually, regular dynamic mode, high-scored tracks mode
  * queue: join title and artist columns when displaying filename
  * queue: save the contents of the queue on server shutdown and restore it at the next server startup
  * queue: display total runtime until first break
