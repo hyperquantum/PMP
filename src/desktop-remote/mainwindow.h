@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,6 +35,7 @@ QT_FORWARD_DECLARE_CLASS(QTimer)
 namespace PMP::Client
 {
     class LocalHashIdRepository;
+    class QueueHashesMonitor;
     class ServerConnection;
     class ServerInterface;
 }
@@ -46,7 +47,9 @@ namespace PMP
     class MainWidget;
     class NotificationBar;
     class PowerManagement;
+    class SearchData;
     class UserAccountCreationWidget;
+    class UserForStatisticsDisplay;
     class UserPickerWidget;
     struct VersionInfo;
 
@@ -119,6 +122,8 @@ namespace PMP
         Client::LocalHashIdRepository* _hashIdRepository;
         Client::ServerConnection* _connection { nullptr };
         Client::ServerInterface* _serverInterface { nullptr };
+        Client::QueueHashesMonitor* _queueHashesMonitor { nullptr };
+        UserForStatisticsDisplay* _userForStatisticsDisplay { nullptr };
         UserPickerWidget* _userPickerWidget { nullptr };
         UserAccountCreationWidget* _userAccountCreationWidget { nullptr };
         LoginWidget* _loginWidget { nullptr };
@@ -131,6 +136,7 @@ namespace PMP
         QAction* _startFullIndexationAction;
         QAction* _closeAction;
         QAction* _scrobblingAction;
+        QAction* _searchAction { nullptr };
         QAction* _activateDelayedStartAction;
         QAction* _keepDisplayActiveAction;
         QAction* _aboutPmpAction;
@@ -143,6 +149,7 @@ namespace PMP
         QMenu* _viewMenu;
 
         PowerManagement* _powerManagement;
+        SearchData* _searchData { nullptr };
     };
 }
 #endif

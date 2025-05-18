@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,13 +31,11 @@
 #include "client/userdatafetcher.h"
 
 #include "colors.h"
+#include "dragdroputils.h"
 #include "userforstatisticsdisplay.h"
 
 #include <QBrush>
-#include <QBuffer>
-#include <QDataStream>
 #include <QIcon>
-#include <QMimeData>
 #include <QtDebug>
 
 #include <algorithm>
@@ -872,47 +870,21 @@ namespace PMP
 
     QMimeData* SortedCollectionTableModel::mimeData(const QModelIndexList& indexes) const
     {
-        qDebug() << "mimeData called; indexes count =" << indexes.size();
+        qDebug() << "Collection: mimeData() called; indexes count:" << indexes.size();
 
         if (indexes.isEmpty()) return nullptr;
 
-        QBuffer buffer;
-        buffer.open(QIODevice::WriteOnly);
-        QDataStream stream(&buffer);
-        stream.setVersion(QDataStream::Qt_5_2);
+        auto hashes =
+            DragDropUtils::getHashes(
+                indexes,
+                [this](QModelIndex index)
+                {
+                    auto hashId = trackAt(index)->hashId();
+                    return _hashIdRepository->getHash(hashId);
+                }
+            );
 
-        QVector<FileHash> hashes;
-        int prevRow = -1;
-        for (auto& index : indexes)
-        {
-            int row = index.row();
-            if (row == prevRow) continue;
-            prevRow = row;
-
-            auto hashId = trackAt(row)->hashId();
-            auto hash = _hashIdRepository->getHash(hashId);
-
-            qDebug() << " row" << row << "; col" << index.column()
-                     << "; hash ID" << hashId << "; hash" << hash;
-            hashes.append(hash);
-        }
-
-        if (hashes.empty()) return nullptr;
-
-        stream << quint32(hashes.size());
-        for (int i = 0; i < hashes.size(); ++i)
-        {
-            stream << quint64(hashes[i].length());
-            stream << hashes[i].SHA1();
-            stream << hashes[i].MD5();
-        }
-
-        buffer.close();
-
-        QMimeData* data = new QMimeData();
-
-        data->setData("application/x-pmp-filehash", buffer.data());
-        return data;
+        return DragDropUtils::convertHashesToMimeData(hashes);
     }
 
     void SortedCollectionTableModel::setHighlightColorIndex(int colorIndex)

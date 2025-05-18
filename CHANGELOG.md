@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Unreleased
 ### Added
 - Support for dark mode (requires at least Qt 6.5)
+- Search dialog for quick track lookups.
 - Server will now print a warning to the log and the console if a music path is not found.
 
 ### Changed

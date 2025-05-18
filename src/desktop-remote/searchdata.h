@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2024-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,13 +17,15 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SEARCHING_H
-#define PMP_SEARCHING_H
+#ifndef PMP_SEARCHDATA_H
+#define PMP_SEARCHDATA_H
 
 #include "client/collectiontrackinfo.h"
 #include "client/localhashid.h"
+#include "client/searchquery.h"
 
 #include <QHash>
+#include <QList>
 #include <QObject>
 #include <QStringList>
 
@@ -34,23 +36,6 @@ namespace PMP::Client
 
 namespace PMP
 {
-    class SearchData;
-
-    class SearchQuery
-    {
-    public:
-        SearchQuery();
-        SearchQuery(QString const& query);
-
-        void clear();
-        bool isEmpty() const;
-
-    private:
-        friend class SearchData;
-
-        QStringList _searchParts;
-    };
-
     class SearchData : public QObject
     {
         Q_OBJECT
@@ -58,7 +43,10 @@ namespace PMP
         SearchData(QObject* parent, Client::CollectionWatcher* collectionWatcher);
 
         bool isFileMatchForQuery(Client::LocalHashId hashId,
-                                 SearchQuery const& query) const;
+                                 Client::SearchQuery const& query) const;
+
+        QList<Client::LocalHashId> getAllMatchesForQuery(
+                                                Client::SearchQuery const& query) const;
 
     private Q_SLOTS:
         void onNewTrackReceived(Client::CollectionTrackInfo track);
@@ -74,6 +62,9 @@ namespace PMP
             QString album;
             QString albumArtist;
         };
+
+        bool isTrackDataMatchForQuery(TrackSearchStrings const& trackData,
+                                      Client::SearchQuery const& query) const;
 
         QHash<Client::LocalHashId, TrackSearchStrings> _trackData;
     };

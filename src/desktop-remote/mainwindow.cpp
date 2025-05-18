@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,6 +39,8 @@
 #include "loginwidget.h"
 #include "mainwidget.h"
 #include "notificationbar.h"
+#include "searchdata.h"
+#include "searchdialog.h"
 #include "useraccountcreationwidget.h"
 #include "userforstatisticsdisplay.h"
 #include "userpickerwidget.h"
@@ -164,6 +166,21 @@ namespace PMP
             }
         );
 
+        _searchAction = new QAction(tr("&Search..."));
+        _searchAction->setShortcut(QKeySequence::Find);
+        connect(
+            _searchAction, &QAction::triggered,
+            this,
+            [this]()
+            {
+                auto* dialog = new SearchDialog(this, _searchData, _serverInterface,
+                                                _queueHashesMonitor,
+                                                _userForStatisticsDisplay);
+                connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
+                dialog->show();
+            }
+        );
+
         _activateDelayedStartAction = new QAction(tr("Activate &delayed start..."));
         connect(
             _activateDelayedStartAction, &QAction::triggered,
@@ -222,6 +239,8 @@ namespace PMP
         _userMenu->addAction(_scrobblingAction);
 
         /* "Actions" menu members */
+        _actionsMenu->addAction(_searchAction);
+        _actionsMenu->addSeparator();
         _actionsMenu->addAction(_activateDelayedStartAction);
 
         /* "View" menu members */
@@ -812,11 +831,11 @@ namespace PMP
         _notificationBar = new NotificationBar(mainCentralWidget);
         _notificationBar->addNotification(delayedStartNotification);
 
-        auto* userForStatisticsDisplay =
+        _userForStatisticsDisplay =
             new UserForStatisticsDisplayImpl(this, _serverInterface);
 
         _mainWidget = new MainWidget(mainCentralWidget);
-        _mainWidget->setConnection(_serverInterface, userForStatisticsDisplay);
+        _mainWidget->setConnection(_serverInterface, _userForStatisticsDisplay);
 
         auto centralVerticalLayout = new QVBoxLayout(mainCentralWidget);
         centralVerticalLayout->setContentsMargins(0, 0, 0, 0);
@@ -825,14 +844,17 @@ namespace PMP
 
         setCentralWidget(mainCentralWidget);
 
-        auto queueHashesMonitor =
+        _queueHashesMonitor =
                 new QueueHashesMonitorImpl(_serverInterface,
                                            &_serverInterface->queueMonitor(),
                                            &_serverInterface->queueEntryInfoStorage());
 
+        _searchData = new SearchData(this, &_serverInterface->collectionWatcher());
+
         auto collectionWidget =
                 new CollectionWidget(_musicCollectionDock, _serverInterface,
-                                     queueHashesMonitor, userForStatisticsDisplay);
+                                     _queueHashesMonitor, _userForStatisticsDisplay,
+                                     _searchData);
         _musicCollectionDock->setWidget(collectionWidget);
         addDockWidget(Qt::RightDockWidgetArea, _musicCollectionDock);
 

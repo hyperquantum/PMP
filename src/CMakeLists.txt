@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2025, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2025, Kevin André <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -60,6 +60,8 @@ set(PMP_CLIENT_SOURCES
     client/queuehashesmonitor.cpp
     client/queuemonitor.cpp
     client/scrobblingcontrollerimpl.cpp
+    client/searchquery.cpp
+    client/searchrank.cpp
     client/servercapabilitiesimpl.cpp
     client/serverconnection.cpp
     client/serverdiscoverer.cpp
@@ -211,6 +213,7 @@ set(PMP_DESKTOP_REMOTE_SOURCES
     desktop-remote/delayedstartdialog.cpp
     desktop-remote/delayedstartnotification.cpp
     desktop-remote/desktop-remote-metatypes.cpp
+    desktop-remote/dragdroputils.cpp
     desktop-remote/dynamicmodeparametersdialog.cpp
     desktop-remote/historymodel.cpp
     desktop-remote/loginwidget.cpp
@@ -223,7 +226,8 @@ set(PMP_DESKTOP_REMOTE_SOURCES
     desktop-remote/queuemodel.cpp
     desktop-remote/scoreformatdelegate.cpp
     desktop-remote/scrobblingauthenticationdialog.cpp
-    desktop-remote/searching.cpp
+    desktop-remote/searchdata.cpp
+    desktop-remote/searchdialog.cpp
     desktop-remote/trackinfodialog.cpp
     desktop-remote/trackjudge.cpp
     desktop-remote/trackprogresswidget.cpp
@@ -255,7 +259,8 @@ set(PMP_DESKTOP_REMOTE_HEADERS
     desktop-remote/queuemodel.h
     desktop-remote/scoreformatdelegate.h
     desktop-remote/scrobblingauthenticationdialog.h
-    desktop-remote/searching.h
+    desktop-remote/searchdata.h
+    desktop-remote/searchdialog.h
     desktop-remote/trackinfodialog.h
     desktop-remote/trackprogresswidget.h
     desktop-remote/useraccountcreationwidget.h
@@ -273,6 +278,7 @@ set(PMP_DESKTOP_REMOTE_UIS
     desktop-remote/mainwidget.ui
     desktop-remote/notificationbar.ui
     desktop-remote/scrobblingauthenticationdialog.ui
+    desktop-remote/searchdialog.ui
     desktop-remote/trackinfodialog.ui
     desktop-remote/useraccountcreationwidget.ui
     desktop-remote/userpickerwidget.ui

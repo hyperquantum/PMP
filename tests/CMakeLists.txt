@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2025, Kevin Andre <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -197,6 +197,18 @@ add_executable(test_hashrelations test_hashrelations.cpp
 )
 target_link_libraries(test_hashrelations Qt6::Core Qt6::Test)
 add_test(test_hashrelations test_hashrelations)
+
+
+# TestSearchRank
+qt_wrap_cpp(PMP_TestSearchRank_MOCS test_searchrank.h)
+add_executable(test_searchrank test_searchrank.cpp
+    ${PMP_TestSearchRank_MOCS}
+)
+target_link_libraries(test_searchrank $<TARGET_OBJECTS:PmpClient>)
+target_link_libraries(test_searchrank $<TARGET_OBJECTS:PmpCommon>)
+target_link_libraries(test_searchrank Qt6::Core Qt6::Network Qt6::Test)
+target_link_libraries(test_searchrank ${TAGLIB_LIBRARIES})
+add_test(test_searchrank test_searchrank)
 
 
 # TestSortedCollectionTableModel
