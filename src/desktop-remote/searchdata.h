@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SEARCHING_H
-#define PMP_SEARCHING_H
+#ifndef PMP_SEARCHDATA_H
+#define PMP_SEARCHDATA_H
 
 #include "client/collectiontrackinfo.h"
 #include "client/localhashid.h"
@@ -36,8 +36,6 @@ namespace PMP::Client
 
 namespace PMP
 {
-    class SearchData;
-
     class SearchData : public QObject
     {
         Q_OBJECT

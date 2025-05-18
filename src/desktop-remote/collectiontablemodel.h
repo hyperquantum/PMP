@@ -27,7 +27,7 @@
 #include "client/collectiontrackinfo.h"
 #include "client/searchquery.h"
 
-#include "searching.h"
+#include "searchdata.h"
 #include "trackjudge.h"
 
 #include <QAbstractTableModel>

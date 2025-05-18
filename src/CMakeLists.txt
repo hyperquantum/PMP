@@ -1,4 +1,4 @@
-# Copyright (C) 2011-2025, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2011-2025, Kevin André <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -226,8 +226,8 @@ set(PMP_DESKTOP_REMOTE_SOURCES
     desktop-remote/queuemodel.cpp
     desktop-remote/scoreformatdelegate.cpp
     desktop-remote/scrobblingauthenticationdialog.cpp
+    desktop-remote/searchdata.cpp
     desktop-remote/searchdialog.cpp
-    desktop-remote/searching.cpp
     desktop-remote/trackinfodialog.cpp
     desktop-remote/trackjudge.cpp
     desktop-remote/trackprogresswidget.cpp
@@ -259,8 +259,8 @@ set(PMP_DESKTOP_REMOTE_HEADERS
     desktop-remote/queuemodel.h
     desktop-remote/scoreformatdelegate.h
     desktop-remote/scrobblingauthenticationdialog.h
+    desktop-remote/searchdata.h
     desktop-remote/searchdialog.h
-    desktop-remote/searching.h
     desktop-remote/trackinfodialog.h
     desktop-remote/trackprogresswidget.h
     desktop-remote/useraccountcreationwidget.h

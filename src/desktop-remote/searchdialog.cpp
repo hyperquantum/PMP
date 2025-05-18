@@ -32,7 +32,7 @@
 
 #include "colors.h"
 #include "dragdroputils.h"
-#include "searching.h"
+#include "searchdata.h"
 #include "trackinfodialog.h"
 
 #include <QMenu>
