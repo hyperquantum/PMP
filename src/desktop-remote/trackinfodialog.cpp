@@ -380,6 +380,24 @@ namespace PMP
 
     void TrackInfoDialog::fillTrackDetails(const CollectionTrackInfo& trackInfo)
     {
+        QString trackTitleForWindowTitle = trackInfo.title().trimmed();
+        QString trackArtistForWindowTitle = trackInfo.artist().trimmed();
+
+        if (trackTitleForWindowTitle.isEmpty())
+        {
+            trackTitleForWindowTitle = tr("(no title)");
+        }
+        if (trackArtistForWindowTitle.isEmpty())
+        {
+            trackArtistForWindowTitle = tr("(no artist)");
+        }
+
+        setWindowTitle(tr("Track Info %1 %2 %3 %4")
+                           .arg(UnicodeChars::emDash)
+                           .arg(trackTitleForWindowTitle)
+                           .arg(UnicodeChars::enDash)
+                           .arg(trackArtistForWindowTitle));
+
         _ui->titleValueLabel->setText(trackInfo.title());
         _ui->artistValueLabel->setText(trackInfo.artist());
         _ui->albumValueLabel->setText(trackInfo.album());
@@ -453,6 +471,8 @@ namespace PMP
 
     void TrackInfoDialog::clearTrackDetails()
     {
+        setWindowTitle(tr("Track Info"));
+
         _ui->titleValueLabel->clear();
         _ui->artistValueLabel->clear();
         _ui->albumValueLabel->clear();

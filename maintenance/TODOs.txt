@@ -103,7 +103,6 @@ IDEAS
  * track info dialog: display filename(s)
  * track info dialog: should become modeless
  * track info dialog: last heard: display "almost 3 months" ago instead of "2 months ago" when applicable
- * track info dialog: put track title/artist in dialog title
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
  * server database backup and restore
  * command-line remote: add a command for seeking (going to a specific time in the current track)
