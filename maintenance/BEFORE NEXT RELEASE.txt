@@ -3,5 +3,6 @@ Next release will be: 0.4
 
 Wishlist:
 
-  - switch to Qt 6
+  - switch to Qt 6 (DONE)
+  - support for dark mode (DONE)
   - ...
