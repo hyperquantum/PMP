@@ -169,7 +169,7 @@ namespace PMP
                 auto dialog = new TrackInfoDialog(this, _serverInterface,
                                                   _userStatisticsDisplay, trackId);
                 connect(dialog, &QDialog::finished, dialog, &QDialog::deleteLater);
-                dialog->open();
+                dialog->show();
             }
         );
 

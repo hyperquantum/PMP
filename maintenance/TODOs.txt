@@ -101,7 +101,6 @@ IDEAS
  * track info dialog: show indication if file is available or not
  * track info dialog: show indication if a file was manually added to the queue (and when) or added by dynamic mode
  * track info dialog: display filename(s)
- * track info dialog: should become modeless
  * track info dialog: last heard: display "almost 3 months" ago instead of "2 months ago" when applicable
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
  * server database backup and restore
