@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -58,31 +58,25 @@ namespace PMP::Server
 
         ResultOrError<Nullable<QString>, FailureType> getMiscDataValue(
                                                                     QString const& key);
-        ResultOrError<SuccessType, FailureType> insertMiscData(QString const& key,
-                                                               QString const& value);
-        ResultOrError<SuccessType, FailureType> insertOrUpdateMiscData(QString const& key,
-                                                                    QString const& value);
-        ResultOrError<SuccessType, FailureType> insertMiscDataIfNotPresent(
-                                                                    QString const& key,
-                                                                    QString const& value);
-        ResultOrError<SuccessType, FailureType> updateMiscDataValueFromSpecific(
-                                                                QString const& key,
-                                                                QString const& oldValue,
-                                                                QString const& newValue);
+        SuccessOrFailure insertMiscData(QString const& key, QString const& value);
+        SuccessOrFailure insertOrUpdateMiscData(QString const& key, QString const& value);
+        SuccessOrFailure insertMiscDataIfNotPresent(QString const& key,
+                                                    QString const& value);
+        SuccessOrFailure updateMiscDataValueFromSpecific(QString const& key,
+                                                         QString const& oldValue,
+                                                         QString const& newValue);
 
-        ResultOrError<SuccessType, FailureType> registerHash(const FileHash& hash);
+        SuccessOrFailure registerHash(const FileHash& hash);
         ResultOrError<uint, FailureType> getHashId(const FileHash& hash);
         ResultOrError<QVector<QPair<uint,FileHash>>, FailureType> getHashes(
                                                                    uint largerThanID = 0);
 
-        ResultOrError<SuccessType, FailureType> registerFilenameSeen(uint hashId,
-                                                    const QString& filenameWithoutPath,
-                                                    int currentYear);
+        SuccessOrFailure registerFilenameSeen(uint hashId,
+                                              const QString& filenameWithoutPath,
+                                              int currentYear);
         ResultOrError<QVector<QString>, FailureType> getFilenames(uint hashID);
 
-        ResultOrError<SuccessType, FailureType> registerFileSizeSeen(uint hashId,
-                                                                     qint64 size,
-                                                                     int currentYear);
+        SuccessOrFailure registerFileSizeSeen(uint hashId, qint64 size, int currentYear);
         ResultOrError<QVector<qint64>, FailureType> getFileSizes(uint hashID);
 
         ResultOrError<QVector<DatabaseRecords::User>, FailureType> getUsers();
@@ -104,7 +98,7 @@ namespace PMP::Server
         DatabaseRecords::UserDynamicModePreferences getUserDynamicModePreferences(
                                                                            quint32 userId,
                                                                            bool* ok);
-        ResultOrError<SuccessType, FailureType> setUserDynamicModePreferences(
+        SuccessOrFailure setUserDynamicModePreferences(
                         quint32 userId,
                         DatabaseRecords::UserDynamicModePreferences const& preferences);
 
@@ -142,9 +136,8 @@ namespace PMP::Server
         SuccessOrFailure removeUserHashStatsCacheEntry(quint32 userId, quint32 hashId);
 
         ResultOrError<QVector<QPair<quint32, quint32>>, FailureType> getEquivalences();
-        ResultOrError<SuccessType, FailureType> registerEquivalence(quint32 hashId1,
-                                                                    quint32 hashId2,
-                                                                    int currentYear);
+        SuccessOrFailure registerEquivalence(quint32 hashId1, quint32 hashId2,
+                                             int currentYear);
 
         static QSharedPointer<Database> getDatabaseForCurrentThread();
         static QUuid getDatabaseUuid();

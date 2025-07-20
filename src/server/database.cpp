@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -801,8 +801,7 @@ namespace PMP::Server
         return value;
     }
 
-    ResultOrError<SuccessType, FailureType> Database::insertMiscData(const QString& key,
-                                                                     const QString& value)
+    SuccessOrFailure Database::insertMiscData(const QString& key, const QString& value)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -819,9 +818,8 @@ namespace PMP::Server
             return failure;
     }
 
-    ResultOrError<SuccessType, FailureType> Database::insertOrUpdateMiscData(
-                                                                    const QString& key,
-                                                                    const QString& value)
+    SuccessOrFailure Database::insertOrUpdateMiscData(const QString& key,
+                                                      const QString& value)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -840,9 +838,8 @@ namespace PMP::Server
             return failure;
     }
 
-    ResultOrError<SuccessType, FailureType> Database::insertMiscDataIfNotPresent(
-                                                                    const QString& key,
-                                                                    const QString& value)
+    SuccessOrFailure Database::insertMiscDataIfNotPresent(const QString& key,
+                                                          const QString& value)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -860,10 +857,9 @@ namespace PMP::Server
             return failure;
     }
 
-    ResultOrError<SuccessType, FailureType> Database::updateMiscDataValueFromSpecific(
-                                                                const QString& key,
-                                                                const QString& oldValue,
-                                                                const QString& newValue)
+    SuccessOrFailure Database::updateMiscDataValueFromSpecific(const QString& key,
+                                                               const QString& oldValue,
+                                                               const QString& newValue)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -882,7 +878,7 @@ namespace PMP::Server
             return failure;
     }
 
-    ResultOrError<SuccessType, FailureType> Database::registerHash(const FileHash& hash)
+    SuccessOrFailure Database::registerHash(const FileHash& hash)
     {
         QString sha1 = hash.SHA1().toHex();
         QString md5 = hash.MD5().toHex();
@@ -965,7 +961,7 @@ namespace PMP::Server
                                                                    extractRecord);
     }
 
-    ResultOrError<SuccessType, FailureType> Database::registerFilenameSeen(uint hashId,
+    SuccessOrFailure Database::registerFilenameSeen(uint hashId,
                                                     const QString& filenameWithoutPath,
                                                     int currentYear)
     {
@@ -1058,9 +1054,8 @@ namespace PMP::Server
         return _dbConnection.executeRecords<QString>(preparer, extractRecord);
     }
 
-    ResultOrError<SuccessType, FailureType> Database::registerFileSizeSeen(uint hashId,
-                                                                        qint64 size,
-                                                                        int currentYear)
+    SuccessOrFailure Database::registerFileSizeSeen(uint hashId, qint64 size,
+                                                    int currentYear)
     {
         auto preparer =
             [=] (QSqlQuery& q)
@@ -1293,7 +1288,7 @@ namespace PMP::Server
         return result;
     }
 
-    ResultOrError<SuccessType, FailureType> Database::setUserDynamicModePreferences(
+    SuccessOrFailure Database::setUserDynamicModePreferences(
                                             quint32 userId,
                                             UserDynamicModePreferences const& preferences)
     {
@@ -1505,9 +1500,8 @@ namespace PMP::Server
                                                                      extractRecord);
     }
 
-    ResultOrError<SuccessType, FailureType> Database::registerEquivalence(quint32 hashId1,
-                                                                          quint32 hashId2,
-                                                                          int currentYear)
+    SuccessOrFailure Database::registerEquivalence(quint32 hashId1, quint32 hashId2,
+                                                   int currentYear)
     {
         Q_ASSERT_X(hashId1 != hashId2,
                    "Database::registerEquivalence",
