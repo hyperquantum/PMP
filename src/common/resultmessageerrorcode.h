@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,36 +29,57 @@ namespace PMP
 {
     enum class ResultMessageErrorCode
     {
-        NoError = 0,
-        InvalidMessageStructure = 1,
+        NoError = 0, /**< The action was successful */
+        InvalidMessageStructure = 1, /**< The message could not be parsed correctly */
         AlreadyDone = 2 /**< The action was successful but had no effect */,
-        NotLoggedIn = 10,
+
+        /* ---------- errors regarding authentication ---------- */
+
+        NotLoggedIn = 10, /**< The request requires authentication first */
 
         /// This was historically used for authentication failure (when account not
         /// found), but should be used for account creation only.
         InvalidUserAccountName = 11,
 
-        UserAccountAlreadyExists = 12,
+        UserAccountAlreadyExists = 12, /**< The user account already exists */
+
+        /// Inconsistency between different parts of the user account registration
+        /// procedure.
         UserAccountRegistrationMismatch = 13,
+
+        /// Inconsistency between different parts of the login procedure
         UserAccountLoginMismatch = 14,
-        UserLoginAuthenticationFailed = 15,
-        AlreadyLoggedIn = 16,
 
-        QueueIdNotFound = 20,
-        UnknownAction = 21,
-        InvalidHash = 22,
-        InvalidQueueIndex = 23,
-        InvalidQueueItemType = 24,
-        InvalidTimeSpan = 25,
-        InvalidUserId = 26,
+        UserLoginAuthenticationFailed = 15, /**< Login/password combination not valid */
+        AlreadyLoggedIn = 16, /**< Cannot authenticate a second time */
 
-        MaximumQueueSizeExceeded = 50,
+        /* ---------- errors regarding an invalid argument ---------- */
+
+        QueueIdNotFound = 20, /**< The specified queue ID could not be found */
+        UnknownAction = 21, /**< An unknown action (number) was specified */
+        InvalidHash = 22, /**< The specified track hash was not valid */
+        InvalidQueueIndex = 23, /**< The specified queue index was not valid */
+        InvalidQueueItemType = 24, /**< The specified queue item type was not valid */
+        InvalidTimeSpan = 25, /**< The specified time span was not valid */
+        InvalidUserId = 26, /**< The specified user ID was not valid */
+
+        /* ---------- errors regarding state ---------- */
+
+        MaximumQueueSizeExceeded = 50, /**< Maximum queue size would be exceeded */
+
+        /// The operation is already running and cannot be started again.
         OperationAlreadyRunning = 51,
 
-        DatabaseProblem = 90,
+        /* ---------- database errors ---------- */
 
-        TooMuchDataToReturn = 120,
-        NumberTooBigToReturn = 121,
+        DatabaseProblem = 90, /**< A database error occurred */
+
+        /* ---------- errors regarding sending a reply ---------- */
+
+        TooMuchDataToReturn = 120, /**< The response to the request would be too large */
+        NumberTooBigToReturn = 121, /**< The number to return would be too large */
+
+        /* ---------- errors regarding client-server communication ---------- */
 
         /// The server does not support the requested action because it is too old.
         /// This error code will probably only ever be used client-side.
@@ -74,8 +95,10 @@ namespace PMP
         /// This error code will probably only ever be used client-side.
         ConnectionToServerBroken = 242,
 
-        NonFatalInternalServerError = 254,
-        UnknownError = 255
+        /* ---------- really generic errors ---------- */
+
+        NonFatalInternalServerError = 254, /**< Internal server error, non-fatal */
+        UnknownError = 255 /**< Unknown error */
     };
 
     inline constexpr bool succeeded(ResultMessageErrorCode errorCode)
