@@ -234,4 +234,5 @@ target_link_libraries(test_labels $<TARGET_OBJECTS:PmpCommon>)
 target_link_libraries(test_labels Qt6::Multimedia Qt6::Sql Qt6::Xml)
 target_link_libraries(test_labels Qt6::Core Qt6::Network Qt6::Test)
 target_link_libraries(test_labels ${TAGLIB_LIBRARIES})
-add_test(test_labels test_labels)
+add_test(NAME test_labels
+         COMMAND test_labels -platform offscreen)
