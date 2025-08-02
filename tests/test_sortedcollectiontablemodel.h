@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -176,6 +176,8 @@ public:
     PMP::Client::UserDataFetcher& userDataFetcher() override;
 
     ScrobblingController& scrobblingController() override;
+
+    LabelsController& labelsController() override;
 
     bool isLoggedIn() const override;
     quint32 userLoggedInId() const override;

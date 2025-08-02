@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -25,6 +25,7 @@
 #include "dynamicmodecontrollerimpl.h"
 #include "generalcontrollerimpl.h"
 #include "historycontrollerimpl.h"
+#include "labelscontrollerimpl.h"
 #include "playercontrollerimpl.h"
 #include "queuecontrollerimpl.h"
 #include "queueentryinfofetcher.h"
@@ -185,6 +186,14 @@ namespace PMP::Client
             _scrobblingController = new ScrobblingControllerImpl(_connection);
 
         return *_scrobblingController;
+    }
+
+    LabelsController &ServerInterfaceImpl::labelsController()
+    {
+        if (!_labelsController)
+            _labelsController = new LabelsControllerImpl(_connection);
+
+        return *_labelsController;
     }
 
     bool ServerInterfaceImpl::isLoggedIn() const

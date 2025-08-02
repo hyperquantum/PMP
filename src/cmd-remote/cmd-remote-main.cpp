@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -70,6 +70,7 @@ usage:
     trackinfo <hash>: get track information like artist, title, length, etc.
     trackstats <hash>: get track statistics
     trackhistory <hash>: get personal listening history for a track
+    label add <name> <hash>: add a label to a track (see below)
     serverversion: get server version information
 
   'login' command:
@@ -196,6 +197,16 @@ usage:
 
     Retrieves the recent listening history for the current user and the
     track that was specified as an argument.
+    The hash of a track can be obtained with the 'track info' dialog in the
+    Desktop Remote or with the command-line hash tool.
+
+  'label' command:
+    label add <name> <hash>: add a label to a track
+
+    Label names must be lowercase and can only contain letters, numbers, and
+    dashes ("-"). The name cannot start or end with a dash, and multiple
+    consecutive dashes are not permitted. Unicode letters (non-ascii) are
+    supported.
     The hash of a track can be obtained with the 'track info' dialog in the
     Desktop Remote or with the command-line hash tool.
 

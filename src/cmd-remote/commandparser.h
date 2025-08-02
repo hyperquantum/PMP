@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -136,6 +136,9 @@ namespace PMP
                                                              CommandArguments& arguments);
         void parseDynamicModeCommand(CommandArguments arguments);
         void parseDynamicModeOnOrOff(CommandArguments& arguments, bool isOn);
+        void parseLabelCommand(CommandArguments arguments);
+        void parseLabelAddCommand(CommandArguments& arguments);
+        Nullable<QString> parseLabelName(CommandArguments& arguments);
 
         template <class SomeCommand>
         void handleCommandNotRequiringArguments(QVector<QString> commandWithArgs);

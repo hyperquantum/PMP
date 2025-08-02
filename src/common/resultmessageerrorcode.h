@@ -62,6 +62,7 @@ namespace PMP
         InvalidQueueItemType = 24, /**< The specified queue item type was not valid */
         InvalidTimeSpan = 25, /**< The specified time span was not valid */
         InvalidUserId = 26, /**< The specified user ID was not valid */
+        InvalidLabelName = 27, /**< The specified label name was not valid */
 
         /* ---------- errors regarding state ---------- */
 

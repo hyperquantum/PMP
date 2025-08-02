@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2024-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -678,6 +678,7 @@ namespace PMP
         template<class T1, class T2> friend class Future;
         friend class SimplePromise<TOutcome>;
         friend class Async;
+        friend class Concurrent;
 
         StoragePtr _storage;
     };

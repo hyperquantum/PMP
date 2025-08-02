@@ -28,6 +28,7 @@
 #include <QAtomicInt>
 #include <QByteArray>
 #include <QDateTime>
+#include <QList>
 #include <QPair>
 #include <QSharedPointer>
 #include <QString>
@@ -139,6 +140,11 @@ namespace PMP::Server
         SuccessOrFailure registerEquivalence(quint32 hashId1, quint32 hashId2,
                                              int currentYear);
 
+        FailureOr<QList<DatabaseRecords::LabelRecord>> getLabels();
+        FailureOr<quint32> insertLabel(QString label);
+        FailureOr<QList<DatabaseRecords::HashLabelRecord>> getHashLabelAssociations();
+        SuccessOrFailure connectLabelToHash(quint32 labelId, quint32 hashId);
+
         static QSharedPointer<Database> getDatabaseForCurrentThread();
         static QUuid getDatabaseUuid();
 
@@ -238,6 +244,8 @@ namespace PMP::Server
         static bool initEquivalenceTable(Database& database);
         static bool initUserHashStatsCacheTable(Database& database);
         static bool initUserHashStatsCacheBookkeeping(Database& database);
+        static bool initLabelsTable(Database& database);
+        static bool initHashesLabelsTable(Database& database);
 
         static QString _hostname;
         static int _port;

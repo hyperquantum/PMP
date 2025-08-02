@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,6 +31,7 @@ namespace PMP::Client
     class DynamicModeController;
     class GeneralController;
     class HistoryController;
+    class LabelsController;
     class LocalHashIdRepository;
     class PlayerController;
     class QueueController;
@@ -43,8 +44,6 @@ namespace PMP::Client
     class ServerInterface : public QObject
     {
         Q_OBJECT
-    protected:
-        ServerInterface() {}
     public:
         ~ServerInterface() {}
 
@@ -71,6 +70,8 @@ namespace PMP::Client
 
         virtual ScrobblingController& scrobblingController() = 0;
 
+        virtual LabelsController& labelsController() = 0;
+
         virtual bool isLoggedIn() const = 0;
         virtual quint32 userLoggedInId() const = 0;
         virtual QString userLoggedInName() const = 0;
@@ -79,6 +80,9 @@ namespace PMP::Client
 
     Q_SIGNALS:
         void connectedChanged();
+
+    protected:
+        ServerInterface() {}
     };
 
     class ServerInterfaceImpl : public ServerInterface
@@ -110,6 +114,8 @@ namespace PMP::Client
 
         ScrobblingController& scrobblingController() override;
 
+        LabelsController& labelsController() override;
+
         bool isLoggedIn() const override;
         quint32 userLoggedInId() const override;
         QString userLoggedInName() const override;
@@ -131,6 +137,7 @@ namespace PMP::Client
         CollectionWatcher* _collectionWatcher { nullptr };
         UserDataFetcher* _userDataFetcher { nullptr };
         ScrobblingController* _scrobblingController { nullptr };
+        LabelsController* _labelsController { nullptr };
         bool _connected;
     };
 }

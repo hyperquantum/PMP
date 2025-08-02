@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -41,6 +41,7 @@ namespace PMP::Server
         QueueMaxSizeExceeded,
         QueueItemTypeInvalid,
         DelayOutOfRange,
+        LabelNameInvalid,
 
         UserIdNotFound,
 
@@ -142,7 +143,7 @@ namespace PMP::Server
         }
 
         static Result delayOutOfRange() { return Error(ResultCode::DelayOutOfRange); }
-
+        static Result labelNameInvalid() { return Error(ResultCode::LabelNameInvalid); }
         static Result userIdNotFound() { return Error(ResultCode::UserIdNotFound); }
 
         static Result scrobblingSystemDisabled()

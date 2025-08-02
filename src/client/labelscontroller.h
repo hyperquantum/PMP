@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,33 +17,33 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_HISTORYCONTROLLERIMPL_H
-#define PMP_HISTORYCONTROLLERIMPL_H
+#ifndef PMP_LABELSCONTROLLER_H
+#define PMP_LABELSCONTROLLER_H
 
-#include "historycontroller.h"
+#include "common/future.h"
+#include "common/resultmessageerrorcode.h"
+
+#include "client/localhashid.h"
+
+#include <QObject>
+#include <QString>
 
 namespace PMP::Client
 {
-    class ServerConnection;
-
-    class HistoryControllerImpl : public HistoryController
+    class LabelsController : public QObject
     {
         Q_OBJECT
     public:
-        explicit HistoryControllerImpl(ServerConnection* connection);
+        virtual ~LabelsController() {}
 
-        void sendPlayerHistoryRequest(int limit) override;
+        virtual SimpleFuture<AnyResultMessageCode> applyLabelToTrack(LocalHashId hashId,
+                                                                     QString label) = 0;
 
-        Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
-            LocalHashId hashId, uint userId,
-            int limit, uint startId = 0) override;
+    Q_SIGNALS:
+        //
 
-    private Q_SLOTS:
-        void connected();
-        void connectionBroken();
-
-    private:
-        ServerConnection* _connection;
+    protected:
+        explicit LabelsController(QObject* parent) : QObject(parent) {}
     };
 }
 #endif

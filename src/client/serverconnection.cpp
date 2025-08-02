@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -645,7 +645,7 @@ namespace PMP::Client
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 27;
+    const quint16 ServerConnection::ClientProtocolNo = 28;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -1243,16 +1243,20 @@ namespace PMP::Client
         return signalRequestError(ResultMessageErrorCode::ServerTooOld, errorSignal);
     }
 
+    SimpleFuture<AnyResultMessageCode> ServerConnection::futureResult(
+                                                            ResultMessageErrorCode code)
+    {
+        return SimpleFuture<AnyResultMessageCode>::fromOutcome(code);
+    }
+
     SimpleFuture<AnyResultMessageCode> ServerConnection::noErrorFutureResult()
     {
-        return SimpleFuture<AnyResultMessageCode>::fromOutcome(
-                                                        ResultMessageErrorCode::NoError);
+        return futureResult(ResultMessageErrorCode::NoError);
     }
 
     SimpleFuture<AnyResultMessageCode> ServerConnection::serverTooOldFutureResult()
     {
-        return SimpleFuture<AnyResultMessageCode>::fromOutcome(
-                                                    ResultMessageErrorCode::ServerTooOld);
+        return futureResult(ResultMessageErrorCode::ServerTooOld);
     }
 
     FutureError<AnyResultMessageCode> ServerConnection::serverTooOldFutureError()
@@ -1432,6 +1436,43 @@ namespace PMP::Client
                                                   int limit, uint startId)
     {
         return sendHashHistoryRequest(hashId, userId, limit, startId);
+    }
+
+    SimpleFuture<AnyResultMessageCode> ServerConnection::applyLabelToTrack(
+                                                                    LocalHashId hashId,
+                                                                    QString label)
+    {
+        if (!serverCapabilities().supportsLabels())
+            return serverTooOldFutureResult();
+
+        auto hash = _hashIdRepository->getHash(hashId);
+        QByteArray labelBytes = label.toUtf8();
+        if (labelBytes.size() > 255)
+        {
+            // label text too long
+            return futureResult(ResultMessageErrorCode::InvalidLabelName);
+        }
+
+        auto handler = QSharedPointer<PromiseResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
+
+        qDebug() << "sending request to add label to track; label:"
+                 << label << "; hash ID:" << hashId << "; ref=" << ref;
+
+        QByteArray message;
+        message.reserve(2 + 1 + 1 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT
+                        + labelBytes.size());
+        NetworkProtocol::append2Bytes(message,
+                                            ClientMessageType::ApplyLabelToTrackMessage);
+        NetworkUtil::appendByte(message, 0);
+        NetworkUtil::appendByteUnsigned(message, labelBytes.size());
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkProtocol::appendHash(message, hash);
+        message += labelBytes;
+
+        sendBinaryMessage(message);
+
+        return handler->future();
     }
 
     void ServerConnection::sendQueueEntryInfoRequest(uint queueID)

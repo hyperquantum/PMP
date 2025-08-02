@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2011-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2011-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,6 +30,7 @@
 #include "hashrelations.h"
 #include "history.h"
 #include "historystatistics.h"
+#include "labels.h"
 #include "player.h"
 #include "playerqueue.h"
 #include "preloader.h"
@@ -251,6 +252,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     PlayerQueue& queue = player.queue();
     History history(&player, &hashIdRegistrar, &historyStatistics);
     UserHashStatsCacheFixer hashStatsCacheFixer(&historyStatistics);
+    Labels labels;
 
     CollectionMonitor collectionMonitor;
     QObject::connect(
@@ -321,7 +323,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
         server.listen(&player, &generator, &history, &hashIdRegistrar, &hashRelations,
                       &users,
                       &collectionMonitor, &serverHealthMonitor, &scrobbling,
-                      &delayedStart,
+                      &delayedStart, &labels,
                       QHostAddress::Any, 23432);
 
     if (!listening)

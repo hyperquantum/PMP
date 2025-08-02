@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -180,6 +180,10 @@ namespace PMP
 
         case ResultMessageErrorCode::InvalidUserId:
             errorOutput = "invalid user ID";
+            break;
+
+        case ResultMessageErrorCode::InvalidLabelName:
+            errorOutput = "invalid label name";
             break;
 
         case PMP::ResultMessageErrorCode::MaximumQueueSizeExceeded:

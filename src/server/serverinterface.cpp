@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,6 +29,7 @@
 #include "hashidregistrar.h"
 #include "hashrelations.h"
 #include "history.h"
+#include "labels.h"
 #include "player.h"
 #include "playerqueue.h"
 #include "queueentry.h"
@@ -48,7 +49,9 @@ namespace PMP::Server
                                      HashIdRegistrar* hashIdRegistrar,
                                      HashRelations* hashRelations,
                                      Users* users,
-                                     DelayedStart* delayedStart, Scrobbling* scrobbling)
+                                     DelayedStart* delayedStart,
+                                     Labels* labels,
+                                     Scrobbling* scrobbling)
      : _userLoggedIn(0),
        _serverSettings(serverSettings),
        _server(server),
@@ -59,6 +62,7 @@ namespace PMP::Server
        _hashRelations(hashRelations),
        _users(users),
        _delayedStart(delayedStart),
+       _labels(labels),
        _scrobbling(scrobbling)
     {
         connect(
@@ -685,6 +689,19 @@ namespace PMP::Server
         auto hashInfo = _player->resolver().getHashTrackInfo(maybeHashId.value());
 
         return FutureResult(hashInfo);
+    }
+
+    SimpleFuture<Result> ServerInterface::applyLabelToTrack(FileHash hash,
+                                                            const QString& label)
+    {
+        if (!isLoggedIn())
+            return FutureResult(Error::notLoggedIn());
+
+        auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
+        if (maybeHashId == null)
+            return FutureResult(Error::hashIsUnknown());
+
+        return _labels->applyLabelToTrack(maybeHashId.value(), label);
     }
 
     void ServerInterface::shutDownServer()

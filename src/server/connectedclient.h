@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 #define PMP_SERVER_CONNECTEDCLIENT_H
 
 #include "common/filehash.h"
+#include "common/future.h"
 #include "common/networkprotocol.h"
 #include "common/networkprotocolextensions.h"
 #include "common/scrobblerstatus.h"
@@ -168,6 +169,8 @@ namespace PMP::Server
         void sendScrobblingResultMessage(ScrobblingResultMessageCode code,
                                          quint32 clientReference);
         void sendResultMessage(Result const& result, quint32 clientReference);
+        void sendFutureResultMessage(SimpleFuture<Result> futureResult,
+                                     quint32 clientReference);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference);
         void sendResultMessage(ResultMessageErrorCode errorType, quint32 clientReference,
                                quint32 intData);
@@ -251,6 +254,7 @@ namespace PMP::Server
         void parseScrobblingAuthenticationRequestMessage(QByteArray const& message);
         void parseGeneratorNonRepetitionChangeMessage(QByteArray const& message);
         void parseCollectionFetchRequestMessage(QByteArray const& message);
+        void parseApplyLabelToTrackMessage(QByteArray const& message);
 
         void schedulePlayerStateNotification();
 

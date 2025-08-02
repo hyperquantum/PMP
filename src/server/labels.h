@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,33 +17,40 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_HISTORYCONTROLLERIMPL_H
-#define PMP_HISTORYCONTROLLERIMPL_H
+#ifndef PMP_LABELS_H
+#define PMP_LABELS_H
 
-#include "historycontroller.h"
+#include "common/future.h"
 
-namespace PMP::Client
+#include "result.h"
+
+#include <QHash>
+#include <QMutex>
+#include <QSet>
+#include <QString>
+
+namespace PMP::Server
 {
-    class ServerConnection;
-
-    class HistoryControllerImpl : public HistoryController
+    class Labels
     {
-        Q_OBJECT
     public:
-        explicit HistoryControllerImpl(ServerConnection* connection);
+        Labels();
+        SimpleFuture<Result> applyLabelToTrack(uint trackHashId, QString const& label);
 
-        void sendPlayerHistoryRequest(int limit) override;
-
-        Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
-            LocalHashId hashId, uint userId,
-            int limit, uint startId = 0) override;
-
-    private Q_SLOTS:
-        void connected();
-        void connectionBroken();
+        static bool isValidPotentialName(QString const& name);
 
     private:
-        ServerConnection* _connection;
+        void loadFromDatabase();
+
+        struct LabelData
+        {
+            QString name;
+            QSet<uint> hashes;
+        };
+
+        QMutex _mutex;
+        QHash<quint32, LabelData> _labelDataByLabelId;
+        QHash<QString, quint32> _nameToId;
     };
 }
 #endif

@@ -51,6 +51,7 @@ set(PMP_CLIENT_SOURCES
     client/dynamicmodecontrollerimpl.cpp
     client/generalcontrollerimpl.cpp
     client/historycontrollerimpl.cpp
+    client/labelscontrollerimpl.cpp
     client/localhashidrepository.cpp
     client/playercontrollerimpl.cpp
     client/queuecontrollerimpl.cpp
@@ -84,6 +85,8 @@ set(PMP_CLIENT_HEADERS
     client/generalcontrollerimpl.h
     client/historycontroller.h
     client/historycontrollerimpl.h
+    client/labelscontroller.h
+    client/labelscontrollerimpl.h
     client/playercontroller.h
     client/playercontrollerimpl.h
     client/queuecontroller.h
@@ -118,6 +121,7 @@ set(PMP_SERVER_SOURCES
     server/hashrelations.cpp
     server/history.cpp
     server/historystatistics.cpp
+    server/labels.cpp
     server/lastfmscrobblingbackend.cpp
     server/lastfmscrobblingdataprovider.cpp
     server/player.cpp
@@ -185,6 +189,7 @@ set(PMP_CMD_REMOTE_SOURCES
     cmd-remote/commandparser.cpp
     cmd-remote/console.cpp
     cmd-remote/historycommands.cpp
+    cmd-remote/labelcommands.cpp
     cmd-remote/miscellaneouscommands.cpp
     cmd-remote/playercommands.cpp
     cmd-remote/queuecommands.cpp
@@ -196,6 +201,7 @@ set(PMP_CMD_REMOTE_HEADERS
     cmd-remote/commandbase.h
     cmd-remote/commandlineclient.h
     cmd-remote/historycommands.h
+    cmd-remote/labelcommands.h
     cmd-remote/miscellaneouscommands.h
     cmd-remote/playercommands.h
     cmd-remote/queuecommands.h

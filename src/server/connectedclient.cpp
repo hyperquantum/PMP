@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -45,7 +45,7 @@ namespace PMP::Server
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 27;
+    const qint16 ConnectedClient::ServerProtocolNo = 28;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -1810,6 +1810,9 @@ namespace PMP::Server
         case ResultCode::DelayOutOfRange:
             sendResultMessage(ResultMessageErrorCode::InvalidTimeSpan, clientReference);
             return;
+        case ResultCode::LabelNameInvalid:
+            sendResultMessage(ResultMessageErrorCode::InvalidLabelName, clientReference);
+            return;
         case ResultCode::UserIdNotFound:
             sendResultMessage(ResultMessageErrorCode::InvalidUserId, clientReference);
             return;
@@ -1853,6 +1856,18 @@ namespace PMP::Server
         qWarning() << "Unhandled ResultCode" << int(result.code())
                    << "for client-ref" << clientReference;
         sendResultMessage(ResultMessageErrorCode::UnknownError, clientReference);
+    }
+
+    void ConnectedClient::sendFutureResultMessage(SimpleFuture<Result> futureResult,
+                                                  quint32 clientReference)
+    {
+        futureResult.handleOnEventLoop(
+            this,
+            [this, clientReference](Result result)
+            {
+                sendResultMessage(result, clientReference);
+            }
+        );
     }
 
     void ConnectedClient::sendResultMessage(ResultMessageErrorCode errorType,
@@ -2309,6 +2324,9 @@ namespace PMP::Server
             return;
         case ClientMessageType::QueueEntryDuplicationRequestMessage:
             parseQueueEntryDuplicationRequest(message);
+            return;
+        case ClientMessageType::ApplyLabelToTrackMessage:
+            parseApplyLabelToTrackMessage(message);
             return;
         case ClientMessageType::None:
             qDebug() << "received a message with type 'none' and length"
@@ -3104,13 +3122,7 @@ namespace PMP::Server
                 credentialsOrNull.value().password
             );
 
-        future.handleOnEventLoop(
-            this,
-            [this, clientReference](Result result)
-            {
-                sendResultMessage(result, clientReference);
-            }
-        );
+        sendFutureResultMessage(future, clientReference);
     }
 
     void ConnectedClient::parseGeneratorNonRepetitionChangeMessage(
@@ -3148,6 +3160,45 @@ namespace PMP::Server
         }
 
         handleCollectionFetchRequest(clientReference);
+    }
+
+    void ConnectedClient::parseApplyLabelToTrackMessage(const QByteArray& message)
+    {
+        if (message.length() < 8)
+            return; /* invalid message */
+
+        int labelBytesCount = NetworkUtil::getByteUnsignedToInt(message, 3);
+
+        int expectedMessageLength =
+            2 + 1 + 1 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT + labelBytesCount;
+
+        if (message.length() != expectedMessageLength)
+        {
+            qDebug() << "Failed to parse appy-label-to-track message; expected length was"
+                     << expectedMessageLength << "but actual length was"
+                     << message.length();
+            return;
+        }
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        bool ok;
+        FileHash hash = NetworkProtocol::getHash(message, 4 + 4, &ok);
+        if (!ok || hash.isNull())
+        {
+            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
+            return;
+        }
+
+        QByteArray labelBytes = message.mid(4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        QString label = QString::fromUtf8(labelBytes);
+
+        qDebug() << "received request to apply label to track; track:" << hash
+                 << " label:" << label << "  ref:" << clientReference;
+
+        auto future = _serverInterface->applyLabelToTrack(hash, label);
+
+        sendFutureResultMessage(future, clientReference);
     }
 
     void ConnectedClient::handleSingleByteAction(quint8 action)

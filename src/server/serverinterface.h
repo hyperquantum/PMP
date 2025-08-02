@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVERINTERFACE_H
-#define PMP_SERVERINTERFACE_H
+#ifndef PMP_SERVER_SERVERINTERFACE_H
+#define PMP_SERVER_SERVERINTERFACE_H
 
 #include "common/filehash.h"
 #include "common/future.h"
@@ -50,6 +50,7 @@ namespace PMP::Server
     class HashIdRegistrar;
     class HashRelations;
     class History;
+    class Labels;
     class Player;
     class PlayerQueue;
     class QueueEntry;
@@ -77,7 +78,9 @@ namespace PMP::Server
                         HashIdRegistrar* hashIdRegistrar,
                         HashRelations* hashRelations,
                         Users* users,
-                        DelayedStart* delayedStart, Scrobbling* scrobbling);
+                        DelayedStart* delayedStart,
+                        Labels* labels,
+                        Scrobbling* scrobbling);
 
         ~ServerInterface();
 
@@ -150,6 +153,8 @@ namespace PMP::Server
         void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
         Future<CollectionTrackInfo, Result> getHashInfo(FileHash hash);
 
+        SimpleFuture<Result> applyLabelToTrack(FileHash hash, QString const& label);
+
         void shutDownServer();
         void shutDownServer(QString serverPassword);
 
@@ -212,6 +217,7 @@ namespace PMP::Server
         HashRelations* _hashRelations;
         Users* _users;
         DelayedStart* _delayedStart;
+        Labels* _labels;
         Scrobbling* _scrobbling;
         QHash<quint32, quint32> _queueEntryInsertionsPending;
         QHash<quint32, QSet<uint>> _userHashDataNotificationsPending;

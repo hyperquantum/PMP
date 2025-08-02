@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 
 #include "administrativecommands.h"
 #include "historycommands.h"
+#include "labelcommands.h"
 #include "miscellaneouscommands.h"
 #include "playercommands.h"
 #include "queuecommands.h"
@@ -311,6 +312,10 @@ namespace PMP
         else if (command == "scrobbling")
         {
             parseScrobblingCommand(args);
+        }
+        else if (command == "label")
+        {
+            parseLabelCommand(args);
         }
         else if (command == "shutdown")
         {
@@ -886,6 +891,65 @@ namespace PMP
         }
 
         _command = new DynamicModeActivationCommand(isOn);
+    }
+
+    void CommandParser::parseLabelCommand(CommandArguments arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage = "Command 'label' requires arguments!";
+            return;
+        }
+
+        if (arguments.current() == "add")
+        {
+            parseLabelAddCommand(arguments);
+        }
+        else
+        {
+            _errorMessage = "Expected 'add' after 'label'!";
+        }
+    }
+
+    void CommandParser::parseLabelAddCommand(CommandArguments& arguments)
+    {
+        arguments.advance(); // current is "add"
+
+        auto labelNameOrNull = parseLabelName(arguments);
+        if (labelNameOrNull == null)
+            return; // error
+
+        arguments.advance();
+
+        auto hash = arguments.tryParseTrackHash();
+        if (hash.isNull())
+        {
+            _errorMessage = "Expected a hash after '" + arguments.previous() + "'!";
+            return;
+        }
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new LabelAddCommand(labelNameOrNull.value(), hash);
+    }
+
+    Nullable<QString> CommandParser::parseLabelName(CommandArguments& arguments)
+    {
+        if (arguments.noCurrent())
+        {
+            _errorMessage =
+                QString("Expected name for a label after '%1'")
+                    .arg(arguments.previous());
+            return null;
+        }
+
+        // no validation of the contraints for a label name yet
+
+        return arguments.current();
     }
 
     bool CommandParser::isInFuture(QDateTime time)

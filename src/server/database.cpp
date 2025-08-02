@@ -480,7 +480,10 @@ namespace PMP::Server
             && initUsersTable(db)                /* pmp_user */
             && initHistoryTable(db)              /* pmp_history */
             && initEquivalenceTable(db)          /* pmp_equivalence */
-            && initUserHashStatsCacheTable(db);  /* pmp_userhashstatscache */
+            && initUserHashStatsCacheTable(db)   /* pmp_userhashstatscache */
+            && initLabelsTable(db)               /* pmp_label */
+            && initHashesLabelsTable(db)         /* pmp_hashlabel */
+            ;
 
         if (!tablesInitialized)
             return false;
@@ -722,6 +725,39 @@ namespace PMP::Server
                                             QString::number(lastHistoryId));
 
         return insertResult.succeeded();
+    }
+
+    bool Database::initLabelsTable(Database& database)
+    {
+        auto sql =
+            "CREATE TABLE IF NOT EXISTS pmp_label("
+            " `LabelID` INT UNSIGNED NOT NULL AUTO_INCREMENT,"
+            " `Name` VARCHAR(255) NOT NULL,"
+            " PRIMARY KEY (`LabelID`)"
+            ") ENGINE = InnoDB";
+
+        return database.connection().executeVoid(prepareSimple(sql));
+    }
+
+    bool Database::initHashesLabelsTable(Database& database)
+    {
+        // TODO : maybe also store when the label was applied and by whom?
+        auto sql =
+            "CREATE TABLE IF NOT EXISTS pmp_hashlabel("
+            " `HashID` INT UNSIGNED NOT NULL,"
+            " `LabelID` INT UNSIGNED NOT NULL,"
+            " CONSTRAINT `FK_pmphashlabel_hash`"
+            "  FOREIGN KEY (`HashID`)"
+            "   REFERENCES pmp_hash (`HashID`)"
+            "   ON DELETE CASCADE ON UPDATE CASCADE,"
+            " CONSTRAINT `FK_pmphashlabel_label`"
+            "  FOREIGN KEY (`LabelID`)"
+            "  REFERENCES `pmp_label` (`LabelID`)"
+            "   ON DELETE RESTRICT ON UPDATE CASCADE,"
+            " UNIQUE INDEX `IDX_pmp_hashlabel` (`HashID` ASC, `LabelID` ASC) "
+            ") ENGINE = InnoDB";
+
+        return database.connection().executeVoid(prepareSimple(sql));
     }
 
     Database::Database(DatabaseConnection&& databaseConnection)
@@ -1831,6 +1867,92 @@ namespace PMP::Server
             };
 
         return _dbConnection.executeVoid(preparer);
+    }
+
+    FailureOr<QList<LabelRecord>> Database::getLabels()
+    {
+        auto preparer = prepareSimple("SELECT `LabelID`,`Name` FROM pmp_label");
+
+        auto extractRecord =
+            [](QSqlQuery& q)
+            {
+                quint32 labelId = q.value(0).toUInt();
+                QString name = q.value(1).toString();
+
+                LabelRecord record { .id = labelId, .name = name };
+                return record;
+            };
+
+        return _dbConnection.executeRecords<LabelRecord>(preparer, extractRecord);
+    }
+
+    FailureOr<quint32> Database::insertLabel(QString label)
+    {
+        auto preparer1 =
+            [label] (QSqlQuery& q)
+            {
+                q.prepare("INSERT INTO pmp_label(`Name`) VALUES(?)");
+                q.addBindValue(label);
+            };
+
+        if (!_dbConnection.executeVoid(preparer1)) /* error */
+        {
+            qWarning() << "Database::insertLabel : insert failed!" << Qt::endl;
+            return failure;
+        }
+
+        auto preparer2 = prepareSimple("SELECT LAST_INSERT_ID()");
+
+        uint labelId = 0;
+        if (!_dbConnection.executeScalar(preparer2, labelId, 0))
+        {
+            qWarning() << "Database::insertLabel : select failed!" << Qt::endl;
+            return failure;
+        }
+
+        return labelId;
+    }
+
+    FailureOr<QList<HashLabelRecord>> Database::getHashLabelAssociations()
+    {
+        auto preparer = prepareSimple("SELECT `HashID`,`LabelID` FROM pmp_hashlabel");
+
+        auto extractRecord =
+            [](QSqlQuery& q)
+            {
+                quint32 hashId = q.value(0).toUInt();
+                quint32 labelId = q.value(1).toUInt();
+
+                HashLabelRecord record { .hashId = hashId, .labelId = labelId };
+                return record;
+            };
+
+        return _dbConnection.executeRecords<HashLabelRecord>(preparer, extractRecord);
+    }
+
+    SuccessOrFailure Database::connectLabelToHash(quint32 labelId, quint32 hashId)
+    {
+
+        auto preparer =
+            [labelId, hashId] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "INSERT INTO pmp_hashlabel(`HashID`,`LabelID`)"
+                    " VALUES(?,?)"
+                    " ON DUPLICATE KEY UPDATE `LabelID`=`LabelID`"
+                );
+                q.addBindValue(hashId);
+                q.addBindValue(labelId);
+            };
+
+        if (!_dbConnection.executeVoid(preparer))
+        {
+            qWarning() << "Database::connectLabelToHash : insert/update failed!"
+                       << Qt::endl;
+            return failure;
+        }
+
+        return success;
     }
 
     QString Database::buildParamsList(unsigned paramsCount)

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -672,6 +672,11 @@ UserDataFetcher& ServerInterfaceMock::userDataFetcher()
 }
 
 ScrobblingController& ServerInterfaceMock::scrobblingController()
+{
+    NOT_IMPLEMENTED
+}
+
+LabelsController& ServerInterfaceMock::labelsController()
 {
     NOT_IMPLEMENTED
 }

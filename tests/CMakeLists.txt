@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2025, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -224,3 +224,14 @@ target_link_libraries(test_sortedcollectiontablemodel Qt6::Core Qt6::Network Qt6
 target_link_libraries(test_sortedcollectiontablemodel ${TAGLIB_LIBRARIES})
 add_test(NAME test_sortedcollectiontablemodel
          COMMAND test_sortedcollectiontablemodel -platform offscreen)
+
+
+# TestLabels
+qt_wrap_cpp(PMP_TestLabels_MOCS test_labels.h)
+add_executable(test_labels test_labels.cpp ${PMP_TestLabels_MOCS})
+target_link_libraries(test_labels $<TARGET_OBJECTS:PmpServer>)
+target_link_libraries(test_labels $<TARGET_OBJECTS:PmpCommon>)
+target_link_libraries(test_labels Qt6::Multimedia Qt6::Sql Qt6::Xml)
+target_link_libraries(test_labels Qt6::Core Qt6::Network Qt6::Test)
+target_link_libraries(test_labels ${TAGLIB_LIBRARIES})
+add_test(test_labels test_labels)

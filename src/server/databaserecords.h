@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -121,6 +121,18 @@ namespace PMP::Server
             QDateTime end;
             qint16 permillage {-1};
             bool validForScoring {false};
+        };
+
+        struct LabelRecord
+        {
+            quint32 id {0};
+            QString name;
+        };
+
+        struct HashLabelRecord
+        {
+            quint32 hashId {0};
+            quint32 labelId {0};
         };
     }
 }

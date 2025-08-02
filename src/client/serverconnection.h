@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -139,6 +139,8 @@ namespace PMP::Client
         Future<HistoryFragment, AnyResultMessageCode> getPersonalTrackHistory(
                                                         LocalHashId hashId, uint userId,
                                                         int limit, uint startId = 0);
+        SimpleFuture<AnyResultMessageCode> applyLabelToTrack(LocalHashId hashId,
+                                                             QString label);
 
         SimpleFuture<AnyResultMessageCode> authenticateScrobbling(
                                                             ScrobblingProvider provider,
@@ -294,6 +296,7 @@ namespace PMP::Client
         RequestID signalServerTooOldError(
                              void (ServerConnection::*errorSignal)(ResultMessageErrorCode,
                                                                    RequestID));
+        SimpleFuture<AnyResultMessageCode> futureResult(ResultMessageErrorCode code);
         SimpleFuture<AnyResultMessageCode> noErrorFutureResult();
         SimpleFuture<AnyResultMessageCode> serverTooOldFutureResult();
         FutureError<AnyResultMessageCode> serverTooOldFutureError();

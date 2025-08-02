@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -115,14 +115,15 @@ namespace PMP::Server
     }
 
     bool TcpServer::listen(Player* player, Generator* generator, History* history,
-                        HashIdRegistrar* hashIdRegistrar,
-                        HashRelations* hashRelations,
-                        Users* users,
-                        CollectionMonitor* collectionMonitor,
-                        ServerHealthMonitor* serverHealthMonitor,
-                        Scrobbling* scrobbling,
-                        DelayedStart* delayedStart,
-                        const QHostAddress& address, quint16 port)
+                           HashIdRegistrar* hashIdRegistrar,
+                           HashRelations* hashRelations,
+                           Users* users,
+                           CollectionMonitor* collectionMonitor,
+                           ServerHealthMonitor* serverHealthMonitor,
+                           Scrobbling* scrobbling,
+                           DelayedStart* delayedStart,
+                           Labels *labels,
+                           const QHostAddress& address, quint16 port)
     {
         _player = player;
         _generator = generator;
@@ -134,6 +135,7 @@ namespace PMP::Server
         _serverHealthMonitor = serverHealthMonitor;
         _scrobbling = scrobbling;
         _delayedStart = delayedStart;
+        _labels = labels;
 
         if (!_server->listen(address, port))
             return false;
@@ -244,6 +246,7 @@ namespace PMP::Server
                                     _hashRelations,
                                     _users,
                                     _delayedStart,
+                                    _labels,
                                     _scrobbling);
 
         connect(

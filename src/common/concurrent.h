@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2024-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -33,6 +33,11 @@ namespace PMP
             ThreadPoolSpecifier threadPool,
             std::function<ResultOrError<TResult, TError>()> f);
 
+        template<class TOutcome>
+        static SimpleFuture<TOutcome> runOnThreadPool(
+            ThreadPoolSpecifier threadPool,
+            std::function<TOutcome ()> f);
+
     private:
         Concurrent();
     };
@@ -45,6 +50,16 @@ namespace PMP
         auto runner = QSharedPointer<ThreadPoolRunner>::create(threadPool);
 
         return Future<TResult, TError>::createForRunnerDirect(runner, f);
+    }
+
+    template<class TOutcome>
+    inline SimpleFuture<TOutcome> Concurrent::runOnThreadPool(
+        ThreadPoolSpecifier threadPool,
+        std::function<TOutcome ()> f)
+    {
+        auto runner = QSharedPointer<ThreadPoolRunner>::create(threadPool);
+
+        return SimpleFuture<TOutcome>::createForRunnerDirect(runner, f);
     }
 }
 #endif
