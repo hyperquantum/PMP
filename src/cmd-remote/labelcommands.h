@@ -41,5 +41,19 @@ namespace PMP
         QString _name;
         FileHash _hash;
     };
+
+    class LabelRemoveCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        LabelRemoveCommand(QString labelName, FileHash const& hash);
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        QString _name;
+        FileHash _hash;
+    };
 }
 #endif

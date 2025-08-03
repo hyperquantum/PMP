@@ -138,6 +138,7 @@ namespace PMP
         void parseDynamicModeOnOrOff(CommandArguments& arguments, bool isOn);
         void parseLabelCommand(CommandArguments arguments);
         void parseLabelAddCommand(CommandArguments& arguments);
+        void parseLabelRmCommand(CommandArguments& arguments);
         Nullable<QString> parseLabelName(CommandArguments& arguments);
 
         template <class SomeCommand>

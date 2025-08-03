@@ -42,4 +42,20 @@ namespace PMP
 
         setCommandExecutionResultFuture(future);
     }
+
+    LabelRemoveCommand::LabelRemoveCommand(QString labelName, const FileHash& hash)
+     : _name(labelName), _hash(hash)
+    {
+        //
+    }
+
+    void LabelRemoveCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
+
+        auto future =
+            serverInterface->labelsController().removeLabelFromTrack(hashId, _name);
+
+        setCommandExecutionResultFuture(future);
+    }
 }

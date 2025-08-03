@@ -1932,7 +1932,6 @@ namespace PMP::Server
 
     SuccessOrFailure Database::connectLabelToHash(quint32 labelId, quint32 hashId)
     {
-
         auto preparer =
             [labelId, hashId] (QSqlQuery& q)
             {
@@ -1948,6 +1947,29 @@ namespace PMP::Server
         if (!_dbConnection.executeVoid(preparer))
         {
             qWarning() << "Database::connectLabelToHash : insert/update failed!"
+                       << Qt::endl;
+            return failure;
+        }
+
+        return success;
+    }
+
+    SuccessOrFailure Database::disconnectLabelFromHash(quint32 labelId, quint32 hashId)
+    {
+        auto preparer =
+            [labelId, hashId] (QSqlQuery& q)
+            {
+                q.prepare(
+                    "DELETE FROM pmp_hashlabel"
+                    " WHERE HashID=? AND LabelID=?"
+                    );
+                q.addBindValue(hashId);
+                q.addBindValue(labelId);
+            };
+
+        if (!_dbConnection.executeVoid(preparer))
+        {
+            qWarning() << "Database::disconnectLabelFromHash : query failed!"
                        << Qt::endl;
             return failure;
         }

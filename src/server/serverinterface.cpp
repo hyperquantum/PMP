@@ -704,6 +704,19 @@ namespace PMP::Server
         return _labels->applyLabelToTrack(maybeHashId.value(), label);
     }
 
+    SimpleFuture<Result> ServerInterface::removeLabelFromTrack(FileHash hash,
+                                                               const QString& label)
+    {
+        if (!isLoggedIn())
+            return FutureResult(Error::notLoggedIn());
+
+        auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
+        if (maybeHashId == null)
+            return FutureResult(Error::hashIsUnknown());
+
+        return _labels->removeLabelFromTrack(maybeHashId.value(), label);
+    }
+
     void ServerInterface::shutDownServer()
     {
         if (!isLoggedIn()) return;

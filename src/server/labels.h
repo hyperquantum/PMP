@@ -36,6 +36,7 @@ namespace PMP::Server
     public:
         Labels();
         SimpleFuture<Result> applyLabelToTrack(uint trackHashId, QString const& label);
+        SimpleFuture<Result> removeLabelFromTrack(uint trackHashId, QString const& label);
 
         static bool isValidPotentialName(QString const& name);
 

@@ -71,6 +71,7 @@ usage:
     trackstats <hash>: get track statistics
     trackhistory <hash>: get personal listening history for a track
     label add <name> <hash>: add a label to a track (see below)
+    label rm <name> <hash>: remove a label from a track (see below)
     serverversion: get server version information
 
   'login' command:
@@ -202,6 +203,7 @@ usage:
 
   'label' command:
     label add <name> <hash>: add a label to a track
+    label rm <name> <hash>: remove a label from a track
 
     Label names must be lowercase and can only contain letters, numbers, and
     dashes ("-"). The name cannot start or end with a dash, and multiple

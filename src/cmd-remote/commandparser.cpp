@@ -905,9 +905,13 @@ namespace PMP
         {
             parseLabelAddCommand(arguments);
         }
+        else if (arguments.current() == "rm")
+        {
+            parseLabelRmCommand(arguments);
+        }
         else
         {
-            _errorMessage = "Expected 'add' after 'label'!";
+            _errorMessage = "Expected 'add' or 'rm' after 'label'!";
         }
     }
 
@@ -935,6 +939,32 @@ namespace PMP
         }
 
         _command = new LabelAddCommand(labelNameOrNull.value(), hash);
+    }
+
+    void CommandParser::parseLabelRmCommand(CommandArguments &arguments)
+    {
+        arguments.advance(); // current is "rm"
+
+        auto labelNameOrNull = parseLabelName(arguments);
+        if (labelNameOrNull == null)
+            return; // error
+
+        arguments.advance();
+
+        auto hash = arguments.tryParseTrackHash();
+        if (hash.isNull())
+        {
+            _errorMessage = "Expected a hash after '" + arguments.previous() + "'!";
+            return;
+        }
+
+        if (arguments.haveMore())
+        {
+            _errorMessage = "Command has too many arguments!";
+            return;
+        }
+
+        _command = new LabelRemoveCommand(labelNameOrNull.value(), hash);
     }
 
     Nullable<QString> CommandParser::parseLabelName(CommandArguments& arguments)

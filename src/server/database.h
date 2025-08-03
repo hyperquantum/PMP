@@ -144,6 +144,7 @@ namespace PMP::Server
         FailureOr<quint32> insertLabel(QString label);
         FailureOr<QList<DatabaseRecords::HashLabelRecord>> getHashLabelAssociations();
         SuccessOrFailure connectLabelToHash(quint32 labelId, quint32 hashId);
+        SuccessOrFailure disconnectLabelFromHash(quint32 labelId, quint32 hashId);
 
         static QSharedPointer<Database> getDatabaseForCurrentThread();
         static QUuid getDatabaseUuid();

@@ -141,6 +141,8 @@ namespace PMP::Client
                                                         int limit, uint startId = 0);
         SimpleFuture<AnyResultMessageCode> applyLabelToTrack(LocalHashId hashId,
                                                              QString label);
+        SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(LocalHashId hashId,
+                                                                QString label);
 
         SimpleFuture<AnyResultMessageCode> authenticateScrobbling(
                                                             ScrobblingProvider provider,

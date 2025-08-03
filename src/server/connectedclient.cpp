@@ -2328,6 +2328,9 @@ namespace PMP::Server
         case ClientMessageType::ApplyLabelToTrackMessage:
             parseApplyLabelToTrackMessage(message);
             return;
+        case ClientMessageType::RemoveLabelFromTrackMessage:
+            parseRemoveLabelFromTrackMessage(message);
+            return;
         case ClientMessageType::None:
             qDebug() << "received a message with type 'none' and length"
                      << message.length();
@@ -3197,6 +3200,46 @@ namespace PMP::Server
                  << " label:" << label << "  ref:" << clientReference;
 
         auto future = _serverInterface->applyLabelToTrack(hash, label);
+
+        sendFutureResultMessage(future, clientReference);
+    }
+
+    void ConnectedClient::parseRemoveLabelFromTrackMessage(const QByteArray& message)
+    {
+        if (message.length() < 8)
+            return; /* invalid message */
+
+        int labelBytesCount = NetworkUtil::getByteUnsignedToInt(message, 3);
+
+        int expectedMessageLength =
+            2 + 1 + 1 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT + labelBytesCount;
+
+        if (message.length() != expectedMessageLength)
+        {
+            qDebug() << "Failed to parse remove-label-from-track message; expected length"
+                        " was"
+                     << expectedMessageLength << "but actual length was"
+                     << message.length();
+            return;
+        }
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        bool ok;
+        FileHash hash = NetworkProtocol::getHash(message, 4 + 4, &ok);
+        if (!ok || hash.isNull())
+        {
+            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
+            return;
+        }
+
+        QByteArray labelBytes = message.mid(4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        QString label = QString::fromUtf8(labelBytes);
+
+        qDebug() << "received request to remove label from track; track:" << hash
+                 << " label:" << label << "  ref:" << clientReference;
+
+        auto future = _serverInterface->removeLabelFromTrack(hash, label);
 
         sendFutureResultMessage(future, clientReference);
     }

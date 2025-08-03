@@ -84,6 +84,55 @@ namespace PMP::Server
         return future;
     }
 
+    SimpleFuture<Result> Labels::removeLabelFromTrack(uint trackHashId,
+                                                      const QString& label)
+    {
+        if (!isValidPotentialName(label))
+            return FutureResult(Error::labelNameInvalid());
+
+        auto future =
+            Concurrent::runOnThreadPool<Result>(
+                globalThreadPool,
+                [this, trackHashId, label]() -> Result
+                {
+                    auto db = Database::getDatabaseForCurrentThread();
+                    if (!db) return Error::databaseUnvailable();
+
+                    QMutexLocker lock(&_mutex);
+
+                    auto labelId = _nameToId.value(label, 0);
+                    if (labelId == 0)
+                        return NoOp();
+
+                    auto it = _labelDataByLabelId.find(labelId);
+                    if (it == _labelDataByLabelId.end())
+                    {
+                        qWarning() << "Labels: no data found for label with ID"
+                                   << labelId;
+                        return Error::internalError();
+                    }
+
+                    LabelData* labelData = &it.value();
+
+                    if (!labelData->hashes.contains(trackHashId))
+                        return NoOp();
+
+                    auto disconnectResult =
+                        db->disconnectLabelFromHash(labelId, trackHashId);
+                    if (disconnectResult.failed())
+                        return Error::internalError(); // TODO : find a better error
+
+                    labelData->hashes.remove(trackHashId);
+
+                    // TODO : emit signal
+
+                    return Success();
+                }
+            );
+
+        return future;
+    }
+
     bool Labels::isValidPotentialName(const QString& name)
     {
         if (name.isEmpty())

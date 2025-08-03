@@ -255,6 +255,7 @@ namespace PMP::Server
         void parseGeneratorNonRepetitionChangeMessage(QByteArray const& message);
         void parseCollectionFetchRequestMessage(QByteArray const& message);
         void parseApplyLabelToTrackMessage(QByteArray const& message);
+        void parseRemoveLabelFromTrackMessage(QByteArray const& message);
 
         void schedulePlayerStateNotification();
 

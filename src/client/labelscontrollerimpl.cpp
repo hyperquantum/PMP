@@ -35,4 +35,10 @@ namespace PMP::Client
     {
         return _connection->applyLabelToTrack(hashId, label);
     }
+
+    SimpleFuture<AnyResultMessageCode> LabelsControllerImpl::removeLabelFromTrack(
+        LocalHashId hashId, QString label)
+    {
+        return _connection->removeLabelFromTrack(hashId, label);
+    }
 }

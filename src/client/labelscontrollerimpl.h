@@ -34,6 +34,8 @@ namespace PMP::Client
 
         SimpleFuture<AnyResultMessageCode> applyLabelToTrack(LocalHashId hashId,
                                                              QString label) override;
+        SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(LocalHashId hashId,
+                                                                QString label) override;
 
     private:
         ServerConnection* _connection;

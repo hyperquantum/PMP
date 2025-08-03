@@ -1475,6 +1475,42 @@ namespace PMP::Client
         return handler->future();
     }
 
+    SimpleFuture<AnyResultMessageCode> ServerConnection::removeLabelFromTrack(
+        LocalHashId hashId, QString label)
+    {
+        if (!serverCapabilities().supportsLabels())
+            return serverTooOldFutureResult();
+
+        auto hash = _hashIdRepository->getHash(hashId);
+        QByteArray labelBytes = label.toUtf8();
+        if (labelBytes.size() > 255)
+        {
+            // label text too long
+            return futureResult(ResultMessageErrorCode::InvalidLabelName);
+        }
+
+        auto handler = QSharedPointer<PromiseResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
+
+        qDebug() << "sending request to remove label from track; label:"
+                 << label << "; hash ID:" << hashId << "; ref=" << ref;
+
+        QByteArray message;
+        message.reserve(2 + 1 + 1 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT
+                        + labelBytes.size());
+        NetworkProtocol::append2Bytes(message,
+                                      ClientMessageType::RemoveLabelFromTrackMessage);
+        NetworkUtil::appendByte(message, 0);
+        NetworkUtil::appendByteUnsigned(message, labelBytes.size());
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkProtocol::appendHash(message, hash);
+        message += labelBytes;
+
+        sendBinaryMessage(message);
+
+        return handler->future();
+    }
+
     void ServerConnection::sendQueueEntryInfoRequest(uint queueID)
     {
         if (queueID == 0) return;
