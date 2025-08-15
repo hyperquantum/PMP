@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Server will now print a warning to the log and the console if a music path is not found.
 
 ### Changed
+- Command-line remote: will now only print a brief usage text upon an error. Only "--help" will now result in the detailed usage text.
 - PMP now requires a C++20 compiler.
 - PMP now requires Qt 6.2 or later.
 
