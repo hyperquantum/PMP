@@ -32,7 +32,17 @@
 
 using namespace PMP;
 
-static const char * const usageTextTemplate = R""""(
+static const char * const briefUsageTextTemplate = R""""(
+usage:
+  {{PROGRAMNAME}} help|--help|version|--version
+  {{PROGRAMNAME}} <server-name-or-ip> [<server-port>] <command>
+  {{PROGRAMNAME}} <server-name-or-ip> [<server-port>] <login-command> : <command>
+
+  Run {{PROGRAMNAME}} --help for a list of all available commands and an
+  explanation on how to use them.
+)"""";
+
+static const char * const detailedUsageTextTemplate = R""""(
 usage:
   {{PROGRAMNAME}} help|--help|version|--version
   {{PROGRAMNAME}} <server-name-or-ip> [<server-port>] <command>
@@ -286,15 +296,25 @@ void printVersion(QTextStream& out)
     out << versionText << Qt::endl;
 }
 
-void printUsage(QTextStream& out)
+void printUsage(QString templateText, QTextStream& out)
 {
     auto programName = QFileInfo(QCoreApplication::applicationFilePath()).fileName();
 
-    QString usageText = usageTextTemplate;
+    QString usageText = templateText;
     usageText = usageText.trimmed();
     usageText.replace("{{PROGRAMNAME}}", programName);
 
     out << usageText << Qt::endl;
+}
+
+void printBriefUsage(QTextStream& out)
+{
+    printUsage(briefUsageTextTemplate, out);
+}
+
+void printDetailedUsage(QTextStream& out)
+{
+    printUsage(detailedUsageTextTemplate, out);
 }
 
 bool looksLikePortNumber(QString const& string)
@@ -403,7 +423,7 @@ int main(int argc, char *argv[])
         }
         if (args[0] == "help" || args[0] == "--help")
         {
-            printUsage(out);
+            printDetailedUsage(out);
             return 0;
         }
     }
@@ -411,7 +431,7 @@ int main(int argc, char *argv[])
     if (args.size() < 2)
     {
         err << "Not enough arguments specified!" << Qt::endl;
-        printUsage(err);
+        printBriefUsage(err);
         return 1;
     }
 
@@ -444,7 +464,7 @@ int main(int argc, char *argv[])
     if (commandWithArgs.size() == 0)
     {
         err << "Not enough arguments specified!" << Qt::endl;
-        printUsage(err);
+        printBriefUsage(err);
         return 1;
     }
 

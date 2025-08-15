@@ -5,4 +5,5 @@ Wishlist:
 
   - switch to Qt 6 (DONE)
   - support for dark mode (DONE)
+  - support for labels
   - ...
