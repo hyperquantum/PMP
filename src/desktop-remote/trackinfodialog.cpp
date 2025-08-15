@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -29,6 +29,7 @@
 #include "client/localhashidrepository.h"
 #include "client/queuecontroller.h"
 #include "client/serverinterface.h"
+#include "client/tracklabelscontroller.h"
 #include "client/userdatafetcher.h"
 
 #include "historymodel.h"
@@ -189,6 +190,27 @@ namespace PMP
 
                 _ui->countTotalValueLabel->setText(QString::number(countTotal));
                 _ui->countForScoreValueLabel->setText(QString::number(countForScore));
+            }
+        );
+
+        _trackLabelsController =
+            new TrackLabelsController(this, _trackHashId,
+                                      &_serverInterface->labelsController());
+
+        for (auto const& labelName : _trackLabelsController->getLabelNames())
+        {
+            _ui->labelsListWidget->addItem(labelName);
+        }
+
+        connect(
+            _trackLabelsController, &TrackLabelsController::labelsAdded,
+            this,
+            [this](QList<QString> labelNames)
+            {
+                for (auto const& labelName : labelNames)
+                {
+                    _ui->labelsListWidget->addItem(labelName);
+                }
             }
         );
 

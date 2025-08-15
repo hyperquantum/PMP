@@ -311,6 +311,21 @@
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="labelsTab">
+      <attribute name="title">
+       <string>Labels</string>
+      </attribute>
+      <widget class="QListWidget" name="labelsListWidget">
+       <property name="geometry">
+        <rect>
+         <x>10</x>
+         <y>10</y>
+         <width>256</width>
+         <height>192</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
     </widget>
    </item>
    <item>

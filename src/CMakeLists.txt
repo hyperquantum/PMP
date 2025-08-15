@@ -67,6 +67,7 @@ set(PMP_CLIENT_SOURCES
     client/serverconnection.cpp
     client/serverdiscoverer.cpp
     client/serverinterface.cpp
+    client/tracklabelscontroller.cpp
     client/userdatafetcher.cpp
     client/volumemediator.cpp
 )
@@ -101,6 +102,7 @@ set(PMP_CLIENT_HEADERS
     client/serverconnection.h
     client/serverdiscoverer.h
     client/serverinterface.h
+    client/tracklabelscontroller.h
     client/userdatafetcher.h
     client/volumemediator.h
 )

@@ -14,12 +14,13 @@ this branch.
 
 ## Desktop Remote
 
-* server-to-client notifications regarding labels
+* track info dialog: list of labels the track has ✓
+* track info dialog: react to labels being/added removed elsewhere
+* track info dialog: adding a single label to a track
+* track info dialog: removing a single label from a track
 * fetching all labels that are in use
 * getting a list of all tracks that have a given label
 * adding a label to a list of tracks in one operation
 * removing a label from a list of tracks in one operation
-* track info dialog: display list of labels the track has
-* editing labels of a track
 * music collection view: new filter "has label XYZ"
 * music collection view: new filter "does not have label XYZ"
