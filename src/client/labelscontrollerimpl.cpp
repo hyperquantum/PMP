@@ -21,7 +21,8 @@
 
 #include "serverconnection.h"
 
-#include <QtAssert>
+//#include <QtAssert> -- requires Qt 6.5
+#include <QtGlobal> // instead of <QtAssert>
 
 namespace PMP::Client
 {
