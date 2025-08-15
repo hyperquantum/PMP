@@ -2278,13 +2278,13 @@ namespace PMP::Client
         case ServerMessageType::ServerExtensionsMessage:
             parseServerProtocolExtensionsMessage(message);
             return;
-        case PMP::ServerMessageType::ExtensionResultMessage:
+        case ServerMessageType::ExtensionResultMessage:
             parseServerProtocolExtensionResultMessage(message);
             return;
         case ServerMessageType::ServerEventNotificationMessage:
             parseServerEventNotificationMessage(message);
             return;
-        case PMP::ServerMessageType::IndexationStatusMessage:
+        case ServerMessageType::IndexationStatusMessage:
             parseIndexationStatusMessage(message);
             return;
         case ServerMessageType::PlayerStateMessage:
@@ -2384,7 +2384,7 @@ namespace PMP::Client
         case ServerMessageType::ServerVersionInfoMessage:
             parseServerVersionInfoMessage(message);
             return;
-        case PMP::ServerMessageType::None:
+        case ServerMessageType::None:
             qDebug() << "received a message with type 'none' and length"
                      << message.length();
             return;
