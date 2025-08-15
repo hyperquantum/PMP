@@ -155,6 +155,9 @@ namespace PMP::Server
 
         SimpleFuture<Result> applyLabelToTrack(FileHash hash, QString const& label);
         SimpleFuture<Result> removeLabelFromTrack(FileHash hash, QString const& label);
+        ResultOrError<QList<quint32>, Result> getLabelsOfTrack(FileHash hash);
+        ResultOrError<QHash<quint32, QString>, Result> getLabelNames(
+                                                                QList<quint32> labelIds);
 
         void shutDownServer();
         void shutDownServer(QString serverPassword);

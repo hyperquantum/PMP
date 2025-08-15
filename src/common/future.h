@@ -330,11 +330,9 @@ namespace PMP
         Future<TResult2, TError2> thenOnEventLoop(QObject* receiver,
             std::function<ResultOrError<TResult2, TError2>(OutcomeType)> f);
 
-        /*
         template<class TResult2, class TError2>
         Future<TResult2, TError2> thenOnEventLoopIndirect(QObject* receiver,
             std::function<Future<TResult2, TError2>(OutcomeType)> f);
-        */
 
         template<class TResult2, class TError2>
         Future<TResult2, TError2> thenOnAnyThread(
@@ -441,19 +439,17 @@ namespace PMP
         return setUpContinuationToRunner<TResult2, TError2>(runner, f);
     }
 
-    /*
     template<class TResult, class TError>
     template<class TResult2, class TError2>
     Future<TResult2, TError2>
         Future<TResult, TError>::thenOnEventLoopIndirect(
             QObject* receiver,
-            std::function<NewFuture<TResult2, TError2> (OutcomeType)> f)
+            std::function<Future<TResult2, TError2> (OutcomeType)> f)
     {
         auto runner = QSharedPointer<EventLoopRunner>::create(receiver);
 
         return setUpContinuationToRunnerIndirect<TResult2, TError2>(runner, f);
     }
-    */
 
     template<class TResult, class TError>
     template<class TResult2, class TError2>

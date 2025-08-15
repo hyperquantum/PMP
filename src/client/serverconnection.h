@@ -95,6 +95,8 @@ namespace PMP::Client
         class DuplicationResultHandler;
         class HistoryFragmentResultHandler;
         class HashInfoResultHandler;
+        class TrackLabelsResultHandler;
+        class LabelNamesResultHandler;
 
     public:
         explicit ServerConnection(QObject* parent,
@@ -143,6 +145,9 @@ namespace PMP::Client
                                                              QString label);
         SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(LocalHashId hashId,
                                                                 QString label);
+        Future<QList<quint32>, AnyResultMessageCode> getLabelsOfTrack(LocalHashId hashId);
+        Future<QHash<quint32, QString>, AnyResultMessageCode> getLabelNames(
+                                                                QList<quint32> labelIds);
 
         SimpleFuture<AnyResultMessageCode> authenticateScrobbling(
                                                             ScrobblingProvider provider,
@@ -301,6 +306,7 @@ namespace PMP::Client
         SimpleFuture<AnyResultMessageCode> futureResult(ResultMessageErrorCode code);
         SimpleFuture<AnyResultMessageCode> noErrorFutureResult();
         SimpleFuture<AnyResultMessageCode> serverTooOldFutureResult();
+        FutureError<AnyResultMessageCode> futureError(ResultMessageErrorCode code);
         FutureError<AnyResultMessageCode> serverTooOldFutureError();
 
         void sendTextCommand(QString const& command);
@@ -400,6 +406,8 @@ namespace PMP::Client
 
         void parseHashUserDataMessage(QByteArray const& message);
         void parseHashInfoReply(QByteArray const& message);
+        void parseTrackLabelsReply(QByteArray const& message);
+        void parseLabelNamesReply(QByteArray const& message);
         void parseHistoryFragmentMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);

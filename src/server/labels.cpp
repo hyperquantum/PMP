@@ -20,6 +20,7 @@
 #include "labels.h"
 
 #include "common/concurrent.h"
+#include "common/containerutil.h"
 
 #include "database.h"
 
@@ -74,6 +75,7 @@ namespace PMP::Server
                         return Error::internalError(); // TODO : find a better error
 
                     labelData->hashes << trackHashId;
+                    _labelsByHashId[trackHashId] << labelId;
 
                     // TODO : emit signal
 
@@ -123,6 +125,7 @@ namespace PMP::Server
                         return Error::internalError(); // TODO : find a better error
 
                     labelData->hashes.remove(trackHashId);
+                    _labelsByHashId[trackHashId].remove(labelId);
 
                     // TODO : emit signal
 
@@ -131,6 +134,33 @@ namespace PMP::Server
             );
 
         return future;
+    }
+
+    QList<quint32> Labels::getLabelsOfTrack(uint trackHashId)
+    {
+        QMutexLocker lock(&_mutex);
+
+        return ContainerUtil::toList(_labelsByHashId[trackHashId]);
+    }
+
+    ResultOrError<QHash<quint32, QString>, Result> Labels::getLabelNames(
+                                                                QList<quint32> labelIds)
+    {
+        QMutexLocker lock(&_mutex);
+
+        QHash<quint32, QString> result;
+        result.reserve(labelIds.size());
+
+        for (auto labelId : labelIds)
+        {
+            auto it = _labelDataByLabelId.constFind(labelId);
+            if (it == _labelDataByLabelId.constEnd())
+                return Error::labelIdNotFound(labelId);
+
+            result.insert(labelId, it.value().name);
+        }
+
+        return result;
     }
 
     bool Labels::isValidPotentialName(const QString& name)
@@ -205,6 +235,8 @@ namespace PMP::Server
             {
                 auto& labelData = _labelDataByLabelId[hashLabelRecord.labelId];
                 labelData.hashes << hashLabelRecord.hashId;
+
+                _labelsByHashId[hashLabelRecord.hashId] << hashLabelRecord.labelId;
             }
         }
     }

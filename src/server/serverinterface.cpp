@@ -717,6 +717,29 @@ namespace PMP::Server
         return _labels->removeLabelFromTrack(maybeHashId.value(), label);
     }
 
+    ResultOrError<QList<quint32>, Result> ServerInterface::getLabelsOfTrack(FileHash hash)
+    {
+        /* require authentication for now, maybe we'll change this in the future */
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
+        if (maybeHashId == null)
+            return Error::hashIsUnknown();
+
+        return _labels->getLabelsOfTrack(maybeHashId.value());
+    }
+
+    ResultOrError<QHash<quint32, QString>, Result> ServerInterface::getLabelNames(
+        QList<quint32> labelIds)
+    {
+        /* require authentication for now, maybe we'll change this in the future */
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _labels->getLabelNames(labelIds);
+    }
+
     void ServerInterface::shutDownServer()
     {
         if (!isLoggedIn()) return;

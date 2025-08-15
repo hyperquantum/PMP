@@ -186,6 +186,10 @@ namespace PMP
             errorOutput = "invalid label name";
             break;
 
+        case ResultMessageErrorCode::InvalidLabelId:
+            errorOutput = "invalid label ID";
+            break;
+
         case PMP::ResultMessageErrorCode::MaximumQueueSizeExceeded:
             errorOutput = "maximum queue size would be exceeded";
             break;
@@ -219,6 +223,8 @@ namespace PMP
         case ResultMessageErrorCode::UserAccountLoginMismatch:
         case ResultMessageErrorCode::TooMuchDataToReturn:
         case ResultMessageErrorCode::NumberTooBigToReturn:
+        case ResultMessageErrorCode::TextTooLongToReturn:
+        case ResultMessageErrorCode::TooMuchDataToRequestAtOnce:
             errorOutput =
                     QString("client-server communication error (code %1)")
                        .arg(static_cast<int>(errorCode));

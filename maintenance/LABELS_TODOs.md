@@ -10,7 +10,7 @@ this branch.
 
 * adding a label to a track ✓
 * removing a label from a track ✓
-* fetching all labels for a given track
+* listing all labels for a given track ✓
 
 ## Desktop Remote
 

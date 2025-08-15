@@ -139,6 +139,7 @@ namespace PMP
         void parseLabelCommand(CommandArguments arguments);
         void parseLabelAddCommand(CommandArguments& arguments);
         void parseLabelRmCommand(CommandArguments& arguments);
+        void parseLabelListCommand(CommandArguments& arguments);
         Nullable<QString> parseLabelName(CommandArguments& arguments);
 
         template <class SomeCommand>

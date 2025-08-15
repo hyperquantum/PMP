@@ -55,5 +55,20 @@ namespace PMP
         QString _name;
         FileHash _hash;
     };
+
+    class LabelListCommand : public CommandBase
+    {
+        Q_OBJECT
+    public:
+        LabelListCommand(FileHash const& hash);
+
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        void printLabelNames(QList<QString> labelNames);
+
+        FileHash _hash;
+    };
 }
 #endif

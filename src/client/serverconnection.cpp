@@ -97,6 +97,10 @@ namespace PMP::Client
                                     QString title, QString artist, QString album,
                                     QString albumArtist, qint32 lengthInMilliseconds);
 
+        virtual void handleTrackLabels(quint32 clientReference, QList<quint32> labelIds);
+        virtual void handleLabelNames(quint32 clientReference,
+                                      QHash<quint32, QString> idsToNames);
+
     protected:
         ResultHandler(ServerConnection* parent);
 
@@ -162,6 +166,22 @@ namespace PMP::Client
         qWarning() << "ResultHandler does not handle hash info;"
                    << " ref:" << clientReference
                    << " title:" << title << " artist:" << artist << " album:" << album;
+    }
+
+    void ServerConnection::ResultHandler::handleTrackLabels(quint32 clientReference,
+                                                            QList<quint32> labelIds)
+    {
+        qWarning() << "ResultHandler does not handle track label IDs;"
+                   << " ref:" << clientReference
+                   << " label count:" << labelIds.size();
+    }
+
+    void ServerConnection::ResultHandler::handleLabelNames(quint32 clientReference,
+                                                    QHash<quint32, QString> idsToNames)
+    {
+        qWarning() << "ResultHandler does not handle label names;"
+                   << " ref:" << clientReference
+                   << " label count:" << idsToNames.size();
     }
 
     QString ServerConnection::ResultHandler::errorDescription(
@@ -642,6 +662,98 @@ namespace PMP::Client
 
         _promise.setResult(trackInfo);
     }
+
+    /* ============================================================================ */
+
+    class ServerConnection::TrackLabelsResultHandler : public ResultHandler
+    {
+    public:
+        TrackLabelsResultHandler(ServerConnection* parent);
+
+        Future<QList<quint32>, AnyResultMessageCode> future() const;
+
+        void handleResult(ResultMessageData const& data) override;
+
+        void handleTrackLabels(quint32 clientReference, QList<quint32> labelIds) override;
+
+    private:
+        Promise<QList<quint32>, AnyResultMessageCode> _promise;
+    };
+
+    ServerConnection::TrackLabelsResultHandler::TrackLabelsResultHandler(
+                                                                ServerConnection *parent)
+     : ResultHandler(parent),
+        _promise(Async::createPromise<QList<quint32>, AnyResultMessageCode>())
+    {
+        //
+    }
+
+    Future<QList<quint32>, AnyResultMessageCode>
+        ServerConnection::TrackLabelsResultHandler::future() const
+    {
+        return _promise.future();
+    }
+
+    void ServerConnection::TrackLabelsResultHandler::handleResult(
+        const ResultMessageData& data)
+    {
+        _promise.setError(data.errorType);
+    }
+
+    void ServerConnection::TrackLabelsResultHandler::handleTrackLabels(
+        quint32 clientReference, QList<quint32> labelIds)
+    {
+        Q_UNUSED(clientReference)
+
+        _promise.setResult(labelIds);
+    }
+
+    /* ============================================================================ */
+
+    class ServerConnection::LabelNamesResultHandler : public ResultHandler
+    {
+    public:
+        LabelNamesResultHandler(ServerConnection* parent);
+
+        Future<QHash<quint32, QString>, AnyResultMessageCode> future() const;
+
+        void handleResult(ResultMessageData const& data) override;
+
+        void handleLabelNames(quint32 clientReference,
+                              QHash<quint32, QString> idsToNames) override;
+
+    private:
+        Promise<QHash<quint32, QString>, AnyResultMessageCode> _promise;
+    };
+
+    ServerConnection::LabelNamesResultHandler::LabelNamesResultHandler(
+        ServerConnection *parent)
+        : ResultHandler(parent),
+        _promise(Async::createPromise<QHash<quint32, QString>, AnyResultMessageCode>())
+    {
+        //
+    }
+
+    Future<QHash<quint32, QString>, AnyResultMessageCode>
+        ServerConnection::LabelNamesResultHandler::future() const
+    {
+        return _promise.future();
+    }
+
+    void ServerConnection::LabelNamesResultHandler::handleResult(
+        const ResultMessageData& data)
+    {
+        _promise.setError(data.errorType);
+    }
+
+    void ServerConnection::LabelNamesResultHandler::handleLabelNames(
+        quint32 clientReference, QHash<quint32, QString> idsToNames)
+    {
+        Q_UNUSED(clientReference)
+
+        _promise.setResult(idsToNames);
+    }
+
 
     /* ============================================================================ */
 
@@ -1259,6 +1371,12 @@ namespace PMP::Client
         return futureResult(ResultMessageErrorCode::ServerTooOld);
     }
 
+    FutureError<AnyResultMessageCode> ServerConnection::futureError(
+                                                            ResultMessageErrorCode code)
+    {
+        return FutureError(AnyResultMessageCode(code));
+    }
+
     FutureError<AnyResultMessageCode> ServerConnection::serverTooOldFutureError()
     {
         return FutureError(AnyResultMessageCode(ResultMessageErrorCode::ServerTooOld));
@@ -1505,6 +1623,74 @@ namespace PMP::Client
         NetworkUtil::append4Bytes(message, ref);
         NetworkProtocol::appendHash(message, hash);
         message += labelBytes;
+
+        sendBinaryMessage(message);
+
+        return handler->future();
+    }
+
+    Future<QList<quint32>, AnyResultMessageCode> ServerConnection::getLabelsOfTrack(
+        LocalHashId hashId)
+    {
+        if (!serverCapabilities().supportsLabels())
+            return serverTooOldFutureError();
+
+        auto hash = _hashIdRepository->getHash(hashId);
+
+        auto handler = QSharedPointer<TrackLabelsResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
+
+        qDebug() << "sending request to get labels of track; hash ID:" << hashId
+                 << "; ref=" << ref;
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        NetworkProtocol::append2Bytes(message, ClientMessageType::TrackLabelsListRequest);
+        NetworkUtil::append2Bytes(message, 0); // filler
+        NetworkUtil::append4Bytes(message, ref);
+        NetworkProtocol::appendHash(message, hash);
+
+        sendBinaryMessage(message);
+
+        return handler->future();
+    }
+
+    Future<QHash<quint32, QString>, AnyResultMessageCode> ServerConnection::getLabelNames(
+        QList<quint32> labelIds)
+    {
+        if (!serverCapabilities().supportsLabels())
+            return serverTooOldFutureError();
+
+        auto handler = QSharedPointer<LabelNamesResultHandler>::create(this);
+        auto ref = registerResultHandler(handler);
+
+        auto labelCount = labelIds.size();
+
+        if (labelCount == 0)
+        {
+            return FutureResult<QHash<quint32, QString>>({});
+        }
+
+        if (labelCount >= (2 << 16))
+        {
+            qWarning() << "label count is too large for requesting names; count:"
+                       << labelCount;
+            return futureError(ResultMessageErrorCode::TooMuchDataToRequestAtOnce);
+        }
+
+        qDebug() << "sending request to get label names; count:" << labelCount
+                 << "; first:" << labelIds.first() << "; last:" << labelIds.last();
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT);
+        NetworkProtocol::append2Bytes(message, ClientMessageType::LabelNamesRequest);
+        NetworkUtil::append2BytesUnsigned(message, labelCount);
+        NetworkUtil::append4Bytes(message, ref);
+
+        for (auto labelId : labelIds)
+        {
+            NetworkUtil::append4Bytes(message, labelId);
+        }
 
         sendBinaryMessage(message);
 
@@ -2353,6 +2539,12 @@ namespace PMP::Client
             return;
         case ServerMessageType::HashInfoReply:
             parseHashInfoReply(message);
+            return;
+        case ServerMessageType::TrackLabelsListReply:
+            parseTrackLabelsReply(message);
+            return;
+        case ServerMessageType::LabelNamesReply:
+            parseLabelNamesReply(message);
             return;
         case ServerMessageType::HistoryFragmentMessage:
             parseHistoryFragmentMessage(message);
@@ -3738,6 +3930,109 @@ namespace PMP::Client
         }
     }
 
+    void ServerConnection::parseTrackLabelsReply(const QByteArray& message)
+    {
+        if (message.length() < 8)
+            return; /* invalid message */
+
+        int labelCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        int expectedMessageSize = 8 + 4 * labelCount;
+
+        if (message.length() != expectedMessageSize)
+            return; /* invalid message */
+
+        QList<quint32> labelIds;
+        labelIds.reserve(labelCount);
+
+        for (int i = 0; i < labelCount; ++i)
+        {
+            auto labelId = NetworkUtil::get4Bytes(message, 8 + i * 4);
+            labelIds << labelId;
+        }
+
+        qDebug() << "received track labels reply; ref:" << clientReference
+                 << "label count:" << labelIds.size();
+
+        auto handler = _resultHandlers.take(clientReference);
+        if (handler)
+        {
+            handler->handleTrackLabels(clientReference, labelIds);
+        }
+        else
+        {
+            qWarning() << "result handler not found for reference:" << clientReference;
+        }
+    }
+
+    void ServerConnection::parseLabelNamesReply(const QByteArray &message)
+    {
+        if (message.length() < 8)
+            return; /* invalid message */
+
+        int labelCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        int offset = 8;
+        if (message.length() < offset + labelCount * (4 + 1))
+            return; /* invalid message */
+
+        QList<quint32> labelIds;
+        labelIds.reserve(labelCount);
+
+        for (int i = 0; i < labelCount; ++i)
+        {
+            auto labelId = NetworkUtil::get4Bytes(message, offset);
+            offset += 4;
+            labelIds << labelId;
+        }
+
+        QList<qint32> labelNameByteCounts;
+        labelNameByteCounts.reserve(labelCount);
+
+        for (int i = 0; i < labelCount; ++i)
+        {
+            auto labelNameByteCount = NetworkUtil::getByteUnsignedToInt(message, offset);
+            offset++;
+            labelNameByteCounts << labelNameByteCount;
+        }
+
+        QHash<quint32, QString> idsToNames;
+        idsToNames.reserve(labelCount);
+
+        for (int i = 0; i < labelCount; ++i)
+        {
+            auto labelNameByteCount = labelNameByteCounts[i];
+
+            if (message.length() < offset + labelNameByteCount)
+                return; /* invalid message */
+
+            QByteArray labelNameBytes = message.mid(offset, labelNameByteCount);
+            offset += labelNameByteCount;
+
+            QString labelName = QString::fromUtf8(labelNameBytes);
+            auto labelId = labelIds[i];
+            idsToNames.insert(labelId, labelName);
+        }
+
+        if (offset != message.length())
+            return; /* invalid message */
+
+        qDebug() << "received label names reply; ref:" << clientReference
+                 << "label count:" << labelIds.size();
+
+        auto handler = _resultHandlers.take(clientReference);
+        if (handler)
+        {
+            handler->handleLabelNames(clientReference, idsToNames);
+        }
+        else
+        {
+            qWarning() << "result handler not found for reference:" << clientReference;
+        }
+    }
+
     void ServerConnection::parseHistoryFragmentMessage(const QByteArray& message)
     {
         if (message.length() < 8)
@@ -4021,5 +4316,4 @@ namespace PMP::Client
 
         qDebug() << "received unknown server event:" << static_cast<int>(eventCode);
     }
-
 }

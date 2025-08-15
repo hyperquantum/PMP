@@ -21,6 +21,7 @@
 #define PMP_LABELS_H
 
 #include "common/future.h"
+#include "common/resultorerror.h"
 
 #include "result.h"
 
@@ -37,6 +38,9 @@ namespace PMP::Server
         Labels();
         SimpleFuture<Result> applyLabelToTrack(uint trackHashId, QString const& label);
         SimpleFuture<Result> removeLabelFromTrack(uint trackHashId, QString const& label);
+        QList<quint32> getLabelsOfTrack(uint trackHashId);
+        ResultOrError<QHash<quint32, QString>, Result> getLabelNames(
+                                                                QList<quint32> labelIds);
 
         static bool isValidPotentialName(QString const& name);
 
@@ -52,6 +56,7 @@ namespace PMP::Server
         QMutex _mutex;
         QHash<quint32, LabelData> _labelDataByLabelId;
         QHash<QString, quint32> _nameToId;
+        QHash<uint, QSet<quint32>> _labelsByHashId;
     };
 }
 #endif

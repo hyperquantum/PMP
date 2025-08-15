@@ -22,6 +22,11 @@
 
 #include "labelscontroller.h"
 
+#include <QHash>
+#include <QList>
+#include <QSet>
+#include <QString>
+
 namespace PMP::Client
 {
     class ServerConnection;
@@ -36,9 +41,22 @@ namespace PMP::Client
                                                              QString label) override;
         SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(LocalHashId hashId,
                                                                 QString label) override;
+        Future<QList<QString>, AnyResultMessageCode> getLabelNamesByTrack(
+            LocalHashId hashId) override;
 
     private:
+        Future<QHash<quint32, QString>, AnyResultMessageCode>
+            getLabelNamesFromIdsInternal(QList<quint32> labelIds);
+
+        Future<SuccessType, AnyResultMessageCode> fetchMissingLabelNames(
+                                                                QList<quint32> labelIds);
+        QHash<quint32, QString> getLabelIdsToNamesMappingAssumingFetched(
+                                                                QList<quint32> labelIds);
+
         ServerConnection* _connection;
+        QHash<quint32, QString> _labelIdToName;
+        QHash<QString, quint32> _labelNameToId;
+        QHash<LocalHashId, QSet<quint32>> _hashToLabelIds;
     };
 }
 #endif

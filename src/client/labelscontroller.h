@@ -41,6 +41,8 @@ namespace PMP::Client
         virtual SimpleFuture<AnyResultMessageCode> removeLabelFromTrack(
                                                                      LocalHashId hashId,
                                                                      QString label) = 0;
+        virtual Future<QList<QString>, AnyResultMessageCode> getLabelNamesByTrack(
+                                                                LocalHashId hashId) = 0;
 
     Q_SIGNALS:
         //

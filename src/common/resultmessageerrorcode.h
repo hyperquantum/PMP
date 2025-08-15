@@ -63,6 +63,7 @@ namespace PMP
         InvalidTimeSpan = 25, /**< The specified time span was not valid */
         InvalidUserId = 26, /**< The specified user ID was not valid */
         InvalidLabelName = 27, /**< The specified label name was not valid */
+        InvalidLabelId = 28, /**< The specified label ID was not valid */
 
         /* ---------- errors regarding state ---------- */
 
@@ -79,8 +80,9 @@ namespace PMP
 
         TooMuchDataToReturn = 120, /**< The response to the request would be too large */
         NumberTooBigToReturn = 121, /**< The number to return would be too large */
+        TextTooLongToReturn = 122, /**< The text to return is too long to send */
 
-        /* ---------- errors regarding client-server communication ---------- */
+        /* ---------- client-side errors ---------- */
 
         /// The server does not support the requested action because it is too old.
         /// This error code will probably only ever be used client-side.
@@ -95,6 +97,11 @@ namespace PMP
         /// broken before the action could be completed.
         /// This error code will probably only ever be used client-side.
         ConnectionToServerBroken = 242,
+
+        /// Could not send the request to the server because too much data is to be
+        /// requested at once.
+        /// This error code is only used client-side.
+        TooMuchDataToRequestAtOnce = 243,
 
         /* ---------- really generic errors ---------- */
 

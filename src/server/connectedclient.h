@@ -212,6 +212,9 @@ namespace PMP::Server
         void sendIndexationStatusMessage(StartStopEventStatus fullIndexationStatus,
                                          StartStopEventStatus quickScanForNewFilesStatus);
 
+        void sendTrackLabelsListReply(uint clientReference, QList<quint32> labelIds);
+        void sendLabelNamesReply(uint clientReference, QHash<quint32, QString> idToNames);
+
         void handleBinaryMessage(QByteArray const& message);
         void handleStandardBinaryMessage(ClientMessageType messageType,
                                          QByteArray const& message);
@@ -256,6 +259,8 @@ namespace PMP::Server
         void parseCollectionFetchRequestMessage(QByteArray const& message);
         void parseApplyLabelToTrackMessage(QByteArray const& message);
         void parseRemoveLabelFromTrackMessage(QByteArray const& message);
+        void parseTrackLabelsListRequest(QByteArray const& message);
+        void parseLabelNamesRequest(QByteArray const& message);
 
         void schedulePlayerStateNotification();
 

@@ -1750,6 +1750,85 @@ namespace PMP::Server
         sendBinaryMessage(message);
     }
 
+    void ConnectedClient::sendTrackLabelsListReply(uint clientReference,
+                                                   QList<quint32> labelIds)
+    {
+        auto labelsCount = labelIds.size();
+
+        if (labelsCount >= (2 << 16))
+        {
+            sendResultMessage(ResultMessageErrorCode::TooMuchDataToReturn,
+                              clientReference);
+            return;
+        }
+
+        QByteArray message;
+        message.reserve(2 + 2);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::TrackLabelsListReply);
+        NetworkUtil::append2BytesUnsigned(message, labelsCount);
+        NetworkUtil::append4Bytes(message, clientReference);
+
+        for (auto labelId : labelIds)
+        {
+            NetworkUtil::append4Bytes(message, labelId);
+        }
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendLabelNamesReply(uint clientReference,
+                                              QHash<quint32, QString> idToNames)
+    {
+        auto labelsCount = idToNames.size();
+
+        if (labelsCount >= (2 << 16))
+        {
+            sendResultMessage(ResultMessageErrorCode::TooMuchDataToReturn,
+                              clientReference);
+            return;
+        }
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + labelsCount * (4 + 1 + 200 /* estimate */));
+        NetworkProtocol::append2Bytes(message, ServerMessageType::LabelNamesReply);
+        NetworkUtil::append2BytesUnsigned(message, labelsCount);
+        NetworkUtil::append4Bytes(message, clientReference);
+
+        QList<QByteArray> labelNamesAsUtf8;
+        labelNamesAsUtf8.reserve(idToNames.size());
+
+        for (auto it = idToNames.constBegin(); it != idToNames.constEnd(); ++it)
+        {
+            auto labelId = it.key();
+            QByteArray labelNameAsUtf8 = it.value().toUtf8();
+
+            if (labelNameAsUtf8.size() > 255)
+            {
+                qWarning() << "Name of label with ID" << labelId
+                           << "is too long to fit in the message! Not sending it.";
+
+                sendResultMessage(ResultMessageErrorCode::TextTooLongToReturn,
+                                  clientReference);
+                return;
+            }
+
+            NetworkUtil::append4Bytes(message, labelId);
+            labelNamesAsUtf8 << labelNameAsUtf8;
+        }
+
+        for (auto const& labelNameAsUtf8 : labelNamesAsUtf8)
+        {
+            NetworkUtil::appendByteUnsigned(message, labelNameAsUtf8.size());
+        }
+
+        for (auto const& labelNameAsUtf8 : labelNamesAsUtf8)
+        {
+            message += labelNameAsUtf8;
+        }
+
+        sendBinaryMessage(message);
+    }
+
     void ConnectedClient::sendSuccessMessage(quint32 clientReference, quint32 intData)
     {
         sendResultMessage(ResultMessageErrorCode::NoError, clientReference, intData);
@@ -1812,6 +1891,9 @@ namespace PMP::Server
             return;
         case ResultCode::LabelNameInvalid:
             sendResultMessage(ResultMessageErrorCode::InvalidLabelName, clientReference);
+            return;
+        case ResultCode::LabelIdNotFound:
+            sendResultMessage(ResultMessageErrorCode::InvalidLabelId, clientReference);
             return;
         case ResultCode::UserIdNotFound:
             sendResultMessage(ResultMessageErrorCode::InvalidUserId, clientReference);
@@ -2330,6 +2412,12 @@ namespace PMP::Server
             return;
         case ClientMessageType::RemoveLabelFromTrackMessage:
             parseRemoveLabelFromTrackMessage(message);
+            return;
+        case ClientMessageType::TrackLabelsListRequest:
+            parseTrackLabelsListRequest(message);
+            return;
+        case ClientMessageType::LabelNamesRequest:
+            parseLabelNamesRequest(message);
             return;
         case ClientMessageType::None:
             qDebug() << "received a message with type 'none' and length"
@@ -3242,6 +3330,81 @@ namespace PMP::Server
         auto future = _serverInterface->removeLabelFromTrack(hash, label);
 
         sendFutureResultMessage(future, clientReference);
+    }
+
+    void ConnectedClient::parseTrackLabelsListRequest(const QByteArray& message)
+    {
+        if (message.length() != 2 + 2 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT)
+            return; /* invalid message */
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        bool ok;
+        FileHash hash = NetworkProtocol::getHash(message, 4 + 4, &ok);
+        if (!ok || hash.isNull())
+        {
+            sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
+            return;
+        }
+
+        qDebug() << "received request for labels of track; track:" << hash
+                 << "  ref:" << clientReference;
+
+        auto labelsOrError = _serverInterface->getLabelsOfTrack(hash);
+
+        if (labelsOrError.failed())
+        {
+            sendResultMessage(labelsOrError.error(), clientReference);
+            return;
+        }
+
+        sendTrackLabelsListReply(clientReference, labelsOrError.result());
+    }
+
+    void ConnectedClient::parseLabelNamesRequest(const QByteArray& message)
+    {
+        if (message.length() < 8)
+            return; /* invalid message */
+
+        int labelCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        if (labelCount <= 0)
+        {
+            // TODO: maybe return an error?
+            qDebug() << "zero label names requested in get-label-names message; ignoring";
+            return;
+        }
+
+        int expectedMessageLength = 8 + labelCount * 4;
+
+        if (message.length() != expectedMessageLength)
+        {
+            qDebug() << "failed to parse get-label-names message; expected length"
+                        " was"
+                     << expectedMessageLength << "but actual length was"
+                     << message.length();
+            return;
+        }
+
+        QList<quint32> labelIds;
+        labelIds.reserve(labelCount);
+
+        for (int i = 0; i < labelCount; ++i)
+        {
+            quint32 labelId = NetworkUtil::get4Bytes(message, 8 + i * 4);
+            labelIds << labelId;
+        }
+
+        auto labelIdsWithNamesOrError = _serverInterface->getLabelNames(labelIds);
+
+        if (labelIdsWithNamesOrError.failed())
+        {
+            sendResultMessage(labelIdsWithNamesOrError.error(), clientReference);
+            return;
+        }
+
+        sendLabelNamesReply(clientReference, labelIdsWithNamesOrError.result());
     }
 
     void ConnectedClient::handleSingleByteAction(quint8 action)

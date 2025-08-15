@@ -42,6 +42,7 @@ namespace PMP::Server
         QueueItemTypeInvalid,
         DelayOutOfRange,
         LabelNameInvalid,
+        LabelIdNotFound,
 
         UserIdNotFound,
 
@@ -144,6 +145,12 @@ namespace PMP::Server
 
         static Result delayOutOfRange() { return Error(ResultCode::DelayOutOfRange); }
         static Result labelNameInvalid() { return Error(ResultCode::LabelNameInvalid); }
+
+        static Result labelIdNotFound(uint id)
+        {
+            return Error(ResultCode::LabelIdNotFound, id);
+        }
+
         static Result userIdNotFound() { return Error(ResultCode::UserIdNotFound); }
 
         static Result scrobblingSystemDisabled()
