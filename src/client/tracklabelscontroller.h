@@ -20,6 +20,9 @@
 #ifndef PMP_CLIENT_TRACKLABELSCONTROLLER_H
 #define PMP_CLIENT_TRACKLABELSCONTROLLER_H
 
+#include "common/future.h"
+#include "common/resultmessageerrorcode.h"
+
 #include "localhashid.h"
 
 #include <QList>
@@ -38,6 +41,8 @@ namespace PMP::Client
                               LabelsController* labelsController);
 
         QList<QString> getLabelNames();
+
+        SimpleFuture<AnyResultMessageCode> addLabel(QString labelName);
 
     Q_SIGNALS:
         void labelsAdded(QList<QString> labelNames);

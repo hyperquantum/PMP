@@ -68,6 +68,7 @@ namespace PMP
 
     private:
         void init();
+        void initLabelsTab();
         void fillUserComboBox(QList<Client::UserAccount> accounts);
 
         void enableDisableButtons();
@@ -78,6 +79,9 @@ namespace PMP
         void fillUserData(Client::LocalHashId hashId, quint32 userId);
         void clearTrackDetails();
         void clearUserData();
+
+        void enableDisableLabelButtons();
+        void addLabelClicked();
 
         Ui::TrackInfoDialog* _ui;
         HistoryModel* _historyModel { nullptr };

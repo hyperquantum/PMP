@@ -58,6 +58,11 @@ namespace PMP::Client
         return _labelNames;
     }
 
+    SimpleFuture<AnyResultMessageCode> TrackLabelsController::addLabel(QString labelName)
+    {
+        return _labelsController->applyLabelToTrack(_hashId, labelName);
+    }
+
     void TrackLabelsController::onTrackLabelsChanged(LocalHashId hashId,
                                                      QList<quint32> labelsAddedIds,
                                                      QList<quint32> labelsRemovedIds)

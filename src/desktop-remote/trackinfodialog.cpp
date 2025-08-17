@@ -39,6 +39,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QLocale>
+#include <QMessageBox>
 #include <QtAlgorithms>
 #include <QtDebug>
 
@@ -194,47 +195,7 @@ namespace PMP
             }
         );
 
-        _ui->labelsListWidget->setSortingEnabled(true);
-
-        _trackLabelsController =
-            new TrackLabelsController(this, _trackHashId,
-                                      &_serverInterface->labelsController());
-
-        for (auto const& labelName : _trackLabelsController->getLabelNames())
-        {
-            _ui->labelsListWidget->addItem(labelName);
-        }
-
-        connect(
-            _trackLabelsController, &TrackLabelsController::labelsAdded,
-            this,
-            [this](QList<QString> labelNames)
-            {
-                for (auto const& labelName : labelNames)
-                {
-                    _ui->labelsListWidget->addItem(labelName);
-                }
-            }
-        );
-        connect(
-            _trackLabelsController, &TrackLabelsController::labelsRemoved,
-            this,
-            [this](QList<QString> labelNames)
-            {
-                for (auto const& labelName : labelNames)
-                {
-                    auto itemsToRemove =
-                        _ui->labelsListWidget->findItems(
-                            labelName, Qt::MatchFixedString | Qt::MatchCaseSensitive
-                        );
-
-                    qDebug() << "label to remove is" << labelName << "; found items:"
-                             << itemsToRemove.size();
-
-                    qDeleteAll(itemsToRemove);
-                }
-            }
-        );
+        initLabelsTab();
 
         connect(
             _ui->userComboBox, qOverload<int>(&QComboBox::currentIndexChanged),
@@ -348,6 +309,62 @@ namespace PMP
         enableDisableButtons();
 
         _ui->closeButton->setFocus();
+    }
+
+    void TrackInfoDialog::initLabelsTab()
+    {
+        _ui->labelsListWidget->setSortingEnabled(true);
+
+        _trackLabelsController =
+            new TrackLabelsController(this, _trackHashId,
+                                      &_serverInterface->labelsController());
+
+        for (auto const& labelName : _trackLabelsController->getLabelNames())
+        {
+            _ui->labelsListWidget->addItem(labelName);
+        }
+
+        connect(
+            _trackLabelsController, &TrackLabelsController::labelsAdded,
+            this,
+            [this](QList<QString> labelNames)
+            {
+                for (auto const& labelName : labelNames)
+                {
+                    _ui->labelsListWidget->addItem(labelName);
+                }
+            }
+        );
+        connect(
+            _trackLabelsController, &TrackLabelsController::labelsRemoved,
+            this,
+            [this](QList<QString> labelNames)
+            {
+                for (auto const& labelName : labelNames)
+                {
+                    auto itemsToRemove =
+                        _ui->labelsListWidget->findItems(
+                            labelName, Qt::MatchFixedString | Qt::MatchCaseSensitive
+                            );
+
+                    qDebug() << "label to remove is" << labelName << "; found items:"
+                             << itemsToRemove.size();
+
+                    qDeleteAll(itemsToRemove);
+                }
+            }
+        );
+
+        connect(
+            _ui->newLabelLineEdit, &QLineEdit::textChanged,
+            this, [this]() { enableDisableLabelButtons(); }
+        );
+        connect(
+            _ui->labelAddButton, &QPushButton::clicked,
+            this, [this]() { addLabelClicked(); }
+        );
+
+        enableDisableLabelButtons();
     }
 
     void TrackInfoDialog::fillUserComboBox(QList<UserAccount> accounts)
@@ -530,5 +547,59 @@ namespace PMP
 
         _ui->lastHeardValueLabel->clear();
         _ui->scoreValueLabel->clear();
+    }
+
+    void TrackInfoDialog::enableDisableLabelButtons()
+    {
+        auto newLabelName = _ui->newLabelLineEdit->text();
+
+        _ui->labelAddButton->setEnabled(!newLabelName.isEmpty());
+    }
+
+    void TrackInfoDialog::addLabelClicked()
+    {
+        auto newLabelName = _ui->newLabelLineEdit->text();
+
+        auto future = _trackLabelsController->addLabel(newLabelName);
+
+        future.handleOnEventLoop(
+            this,
+            [this, newLabelName](AnyResultMessageCode errorCode)
+            {
+                if (errorCode == ResultMessageErrorCode::NoError
+                    && errorCode != ResultMessageErrorCode::AlreadyDone)
+                {
+                    _ui->newLabelLineEdit->clear();
+                    return;
+                }
+
+                QString failureDetail;
+
+                if (errorCode == ResultMessageErrorCode::AlreadyDone)
+                {
+                    failureDetail = tr("This label has already been added.");
+                }
+                else if (errorCode == ResultMessageErrorCode::InvalidLabelName)
+                {
+                    failureDetail = tr("This is not a valid name for a label.");
+                }
+                else if (errorCode == ResultMessageErrorCode::ServerTooOld)
+                {
+                    failureDetail =
+                        tr("The server is too old and does not support labels yet.");
+                }
+                else
+                {
+                    failureDetail = tr("Unspecified error (code %1).")
+                                        .arg(errorCodeString(errorCode));
+                }
+
+                auto msgBox = new QMessageBox(this);
+                msgBox->setIcon(QMessageBox::Warning);
+                msgBox->setText(tr("Could not add the label \"%1\".").arg(newLabelName));
+                msgBox->setInformativeText(failureDetail);
+                msgBox->open();
+            }
+        );
     }
 }
