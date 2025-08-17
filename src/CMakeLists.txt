@@ -163,6 +163,7 @@ set(PMP_SERVER_HEADERS
     server/generator.h
     server/history.h
     server/historystatistics.h
+    server/labels.h
     server/lastfmscrobblingbackend.h
     server/player.h
     server/playerqueue.h

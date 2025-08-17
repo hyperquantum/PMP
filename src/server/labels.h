@@ -27,15 +27,17 @@
 
 #include <QHash>
 #include <QMutex>
+#include <QObject>
 #include <QSet>
 #include <QString>
 
 namespace PMP::Server
 {
-    class Labels
+    class Labels : public QObject
     {
+        Q_OBJECT
     public:
-        Labels();
+        explicit Labels(QObject* parent);
         SimpleFuture<Result> applyLabelToTrack(uint trackHashId, QString const& label);
         SimpleFuture<Result> removeLabelFromTrack(uint trackHashId, QString const& label);
         QList<quint32> getLabelsOfTrack(uint trackHashId);
@@ -43,6 +45,10 @@ namespace PMP::Server
                                                                 QList<quint32> labelIds);
 
         static bool isValidPotentialName(QString const& name);
+
+    Q_SIGNALS:
+        void trackLabelsAdded(uint trackHashId, QList<quint32> labelIds);
+        void trackLabelsRemoved(uint trackHashId, QList<quint32> labelIds);
 
     private:
         void loadFromDatabase();

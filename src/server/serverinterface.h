@@ -186,6 +186,9 @@ namespace PMP::Server
 
         void hashUserDataChangedOrAvailable(quint32 userId, QVector<HashStats> tracks);
 
+        void trackLabelsAdded(FileHash trackHash, QList<quint32> labelIds);
+        void trackLabelsRemoved(FileHash trackHash, QList<quint32> labelIds);
+
     private Q_SLOTS:
         void onFullIndexationStatusChanged();
         void onQuickScanForNewFilesStatusChanged();
@@ -199,6 +202,9 @@ namespace PMP::Server
         void onDynamicModeWaveEnded();
 
         void onHashStatisticsChanged(quint32 userId, QVector<uint> hashIds);
+
+        void onTrackLabelsAdded(uint trackHashId, QList<quint32> labelIds);
+        void onTrackLabelsRemoved(uint trackHashId, QList<quint32> labelIds);
 
     private:
         int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType, int index);

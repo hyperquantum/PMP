@@ -124,6 +124,15 @@ namespace PMP::Server
             _history, &History::hashStatisticsChanged,
             this, &ServerInterface::onHashStatisticsChanged
         );
+
+        connect(
+            _labels, &Labels::trackLabelsAdded,
+            this, &ServerInterface::onTrackLabelsAdded
+        );
+        connect(
+            _labels, &Labels::trackLabelsRemoved,
+            this, &ServerInterface::onTrackLabelsRemoved
+        );
     }
 
     ServerInterface::~ServerInterface()
@@ -849,6 +858,32 @@ namespace PMP::Server
     void ServerInterface::onHashStatisticsChanged(quint32 userId, QVector<uint> hashIds)
     {
         addUserHashDataNotification(userId, hashIds);
+    }
+
+    void ServerInterface::onTrackLabelsAdded(uint trackHashId, QList<quint32> labelIds)
+    {
+        auto hashOrNull = _hashIdRegistrar->getHashForId(trackHashId);
+        if (hashOrNull == null)
+        {
+            qWarning() << "ServerInterface: could not get hash for hash ID"
+                       << trackHashId;
+            return;
+        }
+
+        Q_EMIT trackLabelsAdded(hashOrNull.value(), labelIds);
+    }
+
+    void ServerInterface::onTrackLabelsRemoved(uint trackHashId, QList<quint32> labelIds)
+    {
+        auto hashOrNull = _hashIdRegistrar->getHashForId(trackHashId);
+        if (hashOrNull == null)
+        {
+            qWarning() << "ServerInterface: could not get hash for hash ID"
+                       << trackHashId;
+            return;
+        }
+
+        Q_EMIT trackLabelsRemoved(hashOrNull.value(), labelIds);
     }
 
     int ServerInterface::toNormalIndex(const PlayerQueue& queue,

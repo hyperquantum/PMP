@@ -43,6 +43,12 @@ namespace PMP::Client
                                                                 QString label) override;
         Future<QList<QString>, AnyResultMessageCode> getLabelNamesByTrack(
             LocalHashId hashId) override;
+        Future<QHash<quint32,QString>, AnyResultMessageCode> getLabelNamesByIds(
+            QList<quint32> labelIds) override;
+
+    private Q_SLOTS:
+        void onTrackLabelsChanged(LocalHashId hashId, QList<quint32> labelsAddedIds,
+                                  QList<quint32> labelsRemovedIds);
 
     private:
         Future<QHash<quint32, QString>, AnyResultMessageCode>

@@ -252,7 +252,7 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     PlayerQueue& queue = player.queue();
     History history(&player, &hashIdRegistrar, &historyStatistics);
     UserHashStatsCacheFixer hashStatsCacheFixer(&historyStatistics);
-    Labels labels;
+    Labels labels(nullptr);
 
     CollectionMonitor collectionMonitor;
     QObject::connect(

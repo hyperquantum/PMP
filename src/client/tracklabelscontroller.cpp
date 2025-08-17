@@ -29,6 +29,11 @@ namespace PMP::Client
         _hashId(hashId),
         _labelsController(labelsController)
     {
+        connect(
+            labelsController, &LabelsController::trackLabelsChanged,
+            this, &TrackLabelsController::onTrackLabelsChanged
+        );
+
         auto namesFuture = labelsController->getLabelNamesByTrack(hashId);
 
         namesFuture.handleOnEventLoop(
@@ -51,6 +56,57 @@ namespace PMP::Client
     QList<QString> TrackLabelsController::getLabelNames()
     {
         return _labelNames;
+    }
+
+    void TrackLabelsController::onTrackLabelsChanged(LocalHashId hashId,
+                                                     QList<quint32> labelsAddedIds,
+                                                     QList<quint32> labelsRemovedIds)
+    {
+        auto removedNamesFuture = _labelsController->getLabelNamesByIds(labelsRemovedIds);
+        auto addedNamesFuture = _labelsController->getLabelNamesByIds(labelsAddedIds);
+
+        addedNamesFuture.handleOnEventLoop(
+            this,
+            [this, labelsAddedIds](
+                ResultOrError<QHash<quint32,QString>, AnyResultMessageCode> outcome)
+            {
+                if (outcome.failed())
+                {
+                    qWarning() << "TrackLabelsController: failed to fetch label names of"
+                                  " IDs" << labelsAddedIds
+                               << "; error:" << errorCodeString(outcome.error());
+                    return;
+                }
+
+                auto namesToAdd = outcome.result().values();
+                _labelNames.append(namesToAdd);
+
+                Q_EMIT labelsAdded(namesToAdd);
+            }
+        );
+
+        removedNamesFuture.handleOnEventLoop(
+            this,
+            [this, labelsRemovedIds](
+                ResultOrError<QHash<quint32,QString>, AnyResultMessageCode> outcome)
+            {
+                if (outcome.failed())
+                {
+                    qWarning() << "TrackLabelsController: failed to fetch label names of"
+                                  " IDs" << labelsRemovedIds
+                               << "; error:" << errorCodeString(outcome.error());
+                    return;
+                }
+
+                auto namesToRemove = outcome.result().values();
+
+                _labelNames.removeIf(
+                    [namesToRemove](QString name) { return namesToRemove.contains(name); }
+                );
+
+                Q_EMIT labelsRemoved(namesToRemove);
+            }
+        );
     }
 
     void TrackLabelsController::receivedCompleteList(QList<QString> labelNames)

@@ -26,7 +26,8 @@
 
 namespace PMP::Server
 {
-    Labels::Labels()
+    Labels::Labels(QObject *parent)
+     : QObject(parent)
     {
         QMutexLocker lock(&_mutex);
 
@@ -77,7 +78,7 @@ namespace PMP::Server
                     labelData->hashes << trackHashId;
                     _labelsByHashId[trackHashId] << labelId;
 
-                    // TODO : emit signal
+                    Q_EMIT trackLabelsAdded(trackHashId, { labelId });
 
                     return Success();
                 }
@@ -127,7 +128,7 @@ namespace PMP::Server
                     labelData->hashes.remove(trackHashId);
                     _labelsByHashId[trackHashId].remove(labelId);
 
-                    // TODO : emit signal
+                    Q_EMIT trackLabelsRemoved(trackHashId, { labelId });
 
                     return Success();
                 }

@@ -39,6 +39,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QLocale>
+#include <QtAlgorithms>
 #include <QtDebug>
 
 using namespace PMP::Client;
@@ -193,6 +194,8 @@ namespace PMP
             }
         );
 
+        _ui->labelsListWidget->setSortingEnabled(true);
+
         _trackLabelsController =
             new TrackLabelsController(this, _trackHashId,
                                       &_serverInterface->labelsController());
@@ -210,6 +213,25 @@ namespace PMP
                 for (auto const& labelName : labelNames)
                 {
                     _ui->labelsListWidget->addItem(labelName);
+                }
+            }
+        );
+        connect(
+            _trackLabelsController, &TrackLabelsController::labelsRemoved,
+            this,
+            [this](QList<QString> labelNames)
+            {
+                for (auto const& labelName : labelNames)
+                {
+                    auto itemsToRemove =
+                        _ui->labelsListWidget->findItems(
+                            labelName, Qt::MatchFixedString | Qt::MatchCaseSensitive
+                        );
+
+                    qDebug() << "label to remove is" << labelName << "; found items:"
+                             << itemsToRemove.size();
+
+                    qDeleteAll(itemsToRemove);
                 }
             }
         );

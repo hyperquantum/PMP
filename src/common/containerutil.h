@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2021-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2021-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -70,6 +70,38 @@ namespace PMP
         {
             for (auto it = hash.constBegin(); it != hash.constEnd(); ++it)
                 set.remove(it.key());
+        }
+
+        template<typename T>
+        static QList<T> elementsOfListAlsoInSet(QList<T> const& list, QSet<T> const& set)
+        {
+            if (set.isEmpty())
+                return {}; // nothing is both in the list and the set
+
+            QList<T> result;
+            for (auto const& element : list)
+            {
+                if (set.contains(element))
+                    result << element;
+            }
+
+            return result;
+        }
+
+        template<typename T>
+        static QList<T> elementsOfListNotInSet(QList<T> const& list, QSet<T> const& set)
+        {
+            if (set.isEmpty())
+                return list; // everything in the list is not in the set
+
+            QList<T> result;
+            for (auto const& element : list)
+            {
+                if (!set.contains(element))
+                    result << element;
+            }
+
+            return result;
         }
     };
 }

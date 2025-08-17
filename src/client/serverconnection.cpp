@@ -2543,6 +2543,9 @@ namespace PMP::Client
         case ServerMessageType::TrackLabelsListReply:
             parseTrackLabelsReply(message);
             return;
+        case ServerMessageType::TrackLabelsChangeMessage:
+            parseTrackLabelsChangeMessage(message);
+            return;
         case ServerMessageType::LabelNamesReply:
             parseLabelNamesReply(message);
             return;
@@ -3966,7 +3969,57 @@ namespace PMP::Client
         }
     }
 
-    void ServerConnection::parseLabelNamesReply(const QByteArray &message)
+    void ServerConnection::parseTrackLabelsChangeMessage(const QByteArray& message)
+    {
+        if (message.length() < 4)
+            return; /* invalid message */
+
+        int addedCount = NetworkUtil::getByteUnsignedToInt(message, 2);
+        int removedCount = NetworkUtil::getByteUnsignedToInt(message, 3);
+
+        int expectedMessageSize =
+            4 + addedCount * 4 + removedCount * 4 + NetworkProtocol::FILEHASH_BYTECOUNT;
+
+        if (message.length() != expectedMessageSize)
+            return; /* invalid message */
+
+        int offset = 4;
+
+        QList<quint32> labelsAddedIds;
+        labelsAddedIds.reserve(addedCount);
+
+        for (int i = 0; i < addedCount; ++i)
+        {
+            auto labelId = NetworkUtil::get4Bytes(message, offset);
+            offset += 4;
+            labelsAddedIds << labelId;
+        }
+
+        QList<quint32> labelsRemovedIds;
+        labelsRemovedIds.reserve(removedCount);
+
+        for (int i = 0; i < removedCount; ++i)
+        {
+            auto labelId = NetworkUtil::get4Bytes(message, offset);
+            offset += 4;
+            labelsRemovedIds << labelId;
+        }
+
+        bool ok = false;
+        auto hash = NetworkProtocol::getHash(message, offset, &ok);
+        if (!ok || hash.isNull())
+            return; /* invalid message */
+
+        qDebug() << "received track labels changed notification; hash:"
+                 << hash << "; added count:" << labelsAddedIds.size()
+                 << "; removed count:" << labelsRemovedIds.size();
+
+        auto hashId = _hashIdRepository->getOrRegisterId(hash);
+
+        Q_EMIT trackLabelsChanged(hashId, labelsAddedIds, labelsRemovedIds);
+    }
+
+    void ServerConnection::parseLabelNamesReply(const QByteArray& message)
     {
         if (message.length() < 8)
             return; /* invalid message */

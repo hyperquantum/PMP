@@ -15,7 +15,7 @@ this branch.
 ## Desktop Remote
 
 * track info dialog: list of labels the track has ✓
-* track info dialog: react to labels being/added removed elsewhere
+* track info dialog: react to labels being/added removed elsewhere ✓
 * track info dialog: adding a single label to a track
 * track info dialog: removing a single label from a track
 * fetching all labels that are in use

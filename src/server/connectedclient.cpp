@@ -129,7 +129,7 @@ namespace PMP::Server
         if (_eventsEnabled)
             return;
 
-        qDebug() << "enabling event notifications";
+        qDebug() << "ConnectedClient: enabling event notifications";
 
         enableHealthEvents(GeneralOrSpecific::General);
 
@@ -214,6 +214,23 @@ namespace PMP::Server
             [this](quint32 userId, QVector<HashStats> stats)
             {
                 sendHashUserDataMessage(userId, stats);
+            }
+        );
+
+        connect(
+            _serverInterface, &ServerInterface::trackLabelsAdded,
+            this,
+            [this](FileHash trackHash, QList<quint32> labelIds)
+            {
+                sendTrackLabelsChangeMessage(trackHash, labelIds, {} /* removed none */);
+            }
+        );
+        connect(
+            _serverInterface, &ServerInterface::trackLabelsRemoved,
+            this,
+            [this](FileHash trackHash, QList<quint32> labelIds)
+            {
+                sendTrackLabelsChangeMessage(trackHash, {} /* added none */, labelIds);
             }
         );
 
@@ -1763,7 +1780,7 @@ namespace PMP::Server
         }
 
         QByteArray message;
-        message.reserve(2 + 2);
+        message.reserve(2 + 2 + 4 + labelsCount * 4);
         NetworkProtocol::append2Bytes(message, ServerMessageType::TrackLabelsListReply);
         NetworkUtil::append2BytesUnsigned(message, labelsCount);
         NetworkUtil::append4Bytes(message, clientReference);
@@ -1772,6 +1789,49 @@ namespace PMP::Server
         {
             NetworkUtil::append4Bytes(message, labelId);
         }
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendTrackLabelsChangeMessage(FileHash track,
+                                                       QList<quint32> labelsAddedIds,
+                                                       QList<quint32> labelsRemovedIds)
+    {
+        auto addedCount = labelsAddedIds.size();
+        auto removedCount = labelsRemovedIds.size();
+
+        if (addedCount > 255 || removedCount > 255)
+        {
+            sendTrackLabelsChangeMessage(track,
+                                         labelsAddedIds.mid(0, 255),
+                                         labelsRemovedIds.mid(0, 255));
+
+            sendTrackLabelsChangeMessage(track,
+                                         labelsAddedIds.mid(255),
+                                         labelsRemovedIds.mid(255));
+
+            return;
+        }
+
+        QByteArray message;
+        message.reserve(2 + 2 + addedCount * 4 + removedCount * 4
+                        + NetworkProtocol::FILEHASH_BYTECOUNT);
+        NetworkProtocol::append2Bytes(message,
+                                      ServerMessageType::TrackLabelsChangeMessage);
+        NetworkUtil::appendByteUnsigned(message, addedCount);
+        NetworkUtil::appendByteUnsigned(message, removedCount);
+
+        for (auto labelId : labelsAddedIds)
+        {
+            NetworkUtil::append4Bytes(message, labelId);
+        }
+
+        for (auto labelId : labelsRemovedIds)
+        {
+            NetworkUtil::append4Bytes(message, labelId);
+        }
+
+        NetworkProtocol::appendHash(message, track);
 
         sendBinaryMessage(message);
     }

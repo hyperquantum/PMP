@@ -19,6 +19,8 @@
 
 #include "labelscontrollerimpl.h"
 
+#include "common/containerutil.h"
+
 #include "serverconnection.h"
 
 //#include <QtAssert> -- requires Qt 6.5
@@ -30,7 +32,8 @@ namespace PMP::Client
      : LabelsController(connection),
        _connection{connection}
     {
-        //
+        connect(connection, &ServerConnection::trackLabelsChanged,
+                this, &LabelsControllerImpl::onTrackLabelsChanged);
     }
 
     SimpleFuture<AnyResultMessageCode> LabelsControllerImpl::applyLabelToTrack(
@@ -77,6 +80,30 @@ namespace PMP::Client
                 );
 
         return namesFuture;
+    }
+
+    Future<QHash<quint32, QString>, AnyResultMessageCode>
+        LabelsControllerImpl::getLabelNamesByIds(QList<quint32> labelIds)
+    {
+        return getLabelNamesFromIdsInternal(labelIds);
+    }
+
+    void LabelsControllerImpl::onTrackLabelsChanged(LocalHashId hashId,
+                                                    QList<quint32> labelsAddedIds,
+                                                    QList<quint32> labelsRemovedIds)
+    {
+        auto& currentLabelIds = _hashToLabelIds[hashId];
+
+        auto labelsReallyAdded =
+            ContainerUtil::elementsOfListNotInSet(labelsAddedIds, currentLabelIds);
+
+        auto labelsReallyRemoved =
+            ContainerUtil::elementsOfListAlsoInSet(labelsRemovedIds, currentLabelIds);
+
+        ContainerUtil::removeFromSet(labelsReallyRemoved, currentLabelIds);
+        ContainerUtil::addToSet(labelsReallyAdded, currentLabelIds);
+
+        Q_EMIT trackLabelsChanged(hashId, labelsReallyAdded, labelsReallyRemoved);
     }
 
     Future<QHash<quint32, QString>, AnyResultMessageCode>

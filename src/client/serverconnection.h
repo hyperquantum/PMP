@@ -285,6 +285,9 @@ namespace PMP::Client
         void scrobblerStatusChanged(ScrobblingProvider provider, ScrobblerStatus status);
         void scrobblingProviderEnabledChanged(ScrobblingProvider provider, bool enabled);
 
+        void trackLabelsChanged(LocalHashId hashId, QList<quint32> labelsAddedIds,
+                                QList<quint32> labelsRemovedIds);
+
     private Q_SLOTS:
         void onConnected();
         void onDisconnected();
@@ -407,6 +410,7 @@ namespace PMP::Client
         void parseHashUserDataMessage(QByteArray const& message);
         void parseHashInfoReply(QByteArray const& message);
         void parseTrackLabelsReply(QByteArray const& message);
+        void parseTrackLabelsChangeMessage(QByteArray const& message);
         void parseLabelNamesReply(QByteArray const& message);
         void parseHistoryFragmentMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);

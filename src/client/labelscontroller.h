@@ -43,9 +43,12 @@ namespace PMP::Client
                                                                      QString label) = 0;
         virtual Future<QList<QString>, AnyResultMessageCode> getLabelNamesByTrack(
                                                                 LocalHashId hashId) = 0;
+        virtual Future<QHash<quint32,QString>, AnyResultMessageCode> getLabelNamesByIds(
+                                                            QList<quint32> labelIds) = 0;
 
     Q_SIGNALS:
-        //
+        void trackLabelsChanged(LocalHashId hashId, QList<quint32> labelsAddedIds,
+                                QList<quint32> labelsRemovedIds);
 
     protected:
         explicit LabelsController(QObject* parent) : QObject(parent) {}

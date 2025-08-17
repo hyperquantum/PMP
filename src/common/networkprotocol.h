@@ -64,7 +64,7 @@ Changes for each version:
   25: client msg 27, server msg 36, error codes 26 & 120 & 121: fetch personal track history
   26: parameterless actions 60 & 61, server msg 37: full indexation and quick scan for new files
   27: client msg 28, server msg 38: requesting individual track info
-  28: client msgs 29 & 30, server msgs 39 & 40, error codes 27 & 28 & 122 & 243 .... : labels
+  28: client msgs 29 & 30, server msgs 39 & 40 & 41, error codes 27 & 28 & 122 & 243 .... : labels
 */
 
 namespace PMP
@@ -116,6 +116,7 @@ namespace PMP
         HashInfoReply = 38,
         TrackLabelsListReply = 39,
         LabelNamesReply = 40,
+        TrackLabelsChangeMessage = 41,
     };
 
     enum class ScrobblingServerMessageType : quint8

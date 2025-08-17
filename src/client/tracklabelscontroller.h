@@ -41,6 +41,11 @@ namespace PMP::Client
 
     Q_SIGNALS:
         void labelsAdded(QList<QString> labelNames);
+        void labelsRemoved(QList<QString> labelNames);
+
+    private Q_SLOTS:
+        void onTrackLabelsChanged(LocalHashId hashId, QList<quint32> labelsAddedIds,
+                                  QList<quint32> labelsRemovedIds);
 
     private:
         void receivedCompleteList(QList<QString> labelNames);
