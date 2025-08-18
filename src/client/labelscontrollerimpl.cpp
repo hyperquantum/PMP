@@ -51,19 +51,20 @@ namespace PMP::Client
     Future<QList<QString>, AnyResultMessageCode>
         LabelsControllerImpl::getLabelNamesByTrack(LocalHashId hashId)
     {
-        auto idsFuture = _connection->getLabelsOfTrack(hashId);
+        auto idsFuture = getLabelsByTrackInternal(hashId);
 
         auto namesFuture =
             idsFuture
-                .thenOnEventLoopIndirect<QHash<quint32,QString>, AnyResultMessageCode>(
+                .thenOnEventLoopIndirect<QHash<quint32,QString>,AnyResultMessageCode>(
                     this,
-                    [this](ResultOrError<QList<quint32>, AnyResultMessageCode> outcome)
+                    [this](ResultOrError<QSet<quint32>, AnyResultMessageCode> outcome)
                         -> Future<QHash<quint32, QString>, AnyResultMessageCode>
                     {
                         if (outcome.failed())
                             return FutureError(outcome.error());
 
                         auto labelIds = outcome.result();
+
                         return getLabelNamesFromIdsInternal(labelIds);
                     }
                 )
@@ -72,12 +73,12 @@ namespace PMP::Client
                     [](ResultOrError<QHash<quint32,QString>,AnyResultMessageCode> outcome)
                         -> ResultOrError<QList<QString>, AnyResultMessageCode>
                     {
-                       if (outcome.failed())
-                           return outcome.error();
+                        if (outcome.failed())
+                            return outcome.error();
 
-                       return outcome.result().values();
+                        return outcome.result().values();
                     }
-                );
+                 );
 
         return namesFuture;
     }
@@ -92,13 +93,27 @@ namespace PMP::Client
                                                     QList<quint32> labelsAddedIds,
                                                     QList<quint32> labelsRemovedIds)
     {
-        auto& currentLabelIds = _hashToLabelIds[hashId];
+        auto& currentLabelIds = _hashToLabelIds[hashId].labelIds;
 
         auto labelsReallyAdded =
             ContainerUtil::elementsOfListNotInSet(labelsAddedIds, currentLabelIds);
 
+        if (labelsAddedIds.size() != labelsReallyAdded.size())
+        {
+            qDebug() << "LabelsControllerImpl: difference between added and really added;"
+                        " added:" << labelsAddedIds
+                     << "; really added:" << labelsReallyAdded;
+        }
+
         auto labelsReallyRemoved =
             ContainerUtil::elementsOfListAlsoInSet(labelsRemovedIds, currentLabelIds);
+
+        if (labelsRemovedIds.size() != labelsReallyRemoved.size())
+        {
+            qDebug() << "LabelsControllerImpl: difference between removed and really"
+                        " removed; removed:" << labelsRemovedIds
+                     << "; really removed:" << labelsReallyRemoved;
+        }
 
         ContainerUtil::removeFromSet(labelsReallyRemoved, currentLabelIds);
         ContainerUtil::addToSet(labelsReallyAdded, currentLabelIds);
@@ -106,10 +121,52 @@ namespace PMP::Client
         Q_EMIT trackLabelsChanged(hashId, labelsReallyAdded, labelsReallyRemoved);
     }
 
-    Future<QHash<quint32, QString>, AnyResultMessageCode>
-        LabelsControllerImpl::getLabelNamesFromIdsInternal(QList<quint32> labelIds)
+    Future<QSet<quint32>, AnyResultMessageCode>
+        LabelsControllerImpl::getLabelsByTrackInternal(LocalHashId hashId)
     {
-        auto fetchFuture = fetchMissingLabelNames(labelIds);
+        auto& hashData = _hashToLabelIds[hashId];
+
+        if (hashData.fetched)
+        {
+            return FutureResult(hashData.labelIds);
+        }
+
+        if (hashData.futureForFetching.hasValue())
+            return hashData.futureForFetching.value();
+
+        auto future =
+            _connection->getLabelsOfTrack(hashId)
+                .thenOnEventLoop<QSet<quint32>, AnyResultMessageCode>(
+                    this,
+                    [this, hashId](
+                            ResultOrError<QList<quint32>, AnyResultMessageCode> outcome)
+                    -> ResultOrError<QSet<quint32>, AnyResultMessageCode>
+                    {
+                        if (outcome.failed())
+                            return outcome.error();
+
+                        auto labelIdsAsSet = ContainerUtil::toSet(outcome.result());
+
+                        auto& hashData = _hashToLabelIds[hashId];
+                        hashData.labelIds = labelIdsAsSet;
+                        hashData.futureForFetching = null;
+                        hashData.fetched = true;
+
+                        return labelIdsAsSet;
+                    }
+                );
+
+        hashData.futureForFetching = future;
+
+        return future;
+    }
+
+    template<typename TContainer>
+    Future<QHash<quint32, QString>, AnyResultMessageCode>
+        LabelsControllerImpl::getLabelNamesFromIdsInternal(TContainer labelIds)
+    {
+        Future<SuccessType, AnyResultMessageCode> fetchFuture =
+            fetchMissingLabelNames(labelIds);
 
         auto resultFuture =
             fetchFuture.thenOnEventLoop<QHash<quint32,QString>, AnyResultMessageCode>(
@@ -128,8 +185,9 @@ namespace PMP::Client
         return resultFuture;
     }
 
+    template<typename TContainer>
     Future<SuccessType, AnyResultMessageCode>
-        LabelsControllerImpl::fetchMissingLabelNames(QList<quint32> labelIds)
+        LabelsControllerImpl::fetchMissingLabelNames(TContainer labelIds)
     {
         QList<quint32> idsToFetch;
 
@@ -171,9 +229,10 @@ namespace PMP::Client
         return storeFuture;
     }
 
+    template<typename TContainer>
     QHash<quint32, QString>
         LabelsControllerImpl::getLabelIdsToNamesMappingAssumingFetched(
-                                                                QList<quint32> labelIds)
+                                                                    TContainer labelIds)
     {
         QHash<quint32, QString> result;
         result.reserve(labelIds.size());

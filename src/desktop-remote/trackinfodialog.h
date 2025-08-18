@@ -82,6 +82,7 @@ namespace PMP
 
         void enableDisableLabelButtons();
         void addLabelClicked();
+        void removeLabelClicked();
 
         Ui::TrackInfoDialog* _ui;
         HistoryModel* _historyModel { nullptr };

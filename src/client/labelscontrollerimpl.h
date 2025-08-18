@@ -22,6 +22,9 @@
 
 #include "labelscontroller.h"
 
+#include "common/future.h"
+#include "common/nullable.h"
+
 #include <QHash>
 #include <QList>
 #include <QSet>
@@ -51,18 +54,31 @@ namespace PMP::Client
                                   QList<quint32> labelsRemovedIds);
 
     private:
-        Future<QHash<quint32, QString>, AnyResultMessageCode>
-            getLabelNamesFromIdsInternal(QList<quint32> labelIds);
+        struct HashLabelsData
+        {
+            Nullable<Future<QSet<quint32>, AnyResultMessageCode>> futureForFetching;
+            QSet<quint32> labelIds;
+            bool fetched { false };
+        };
 
+        Future<QSet<quint32>, AnyResultMessageCode> getLabelsByTrackInternal(
+            LocalHashId hashId);
+
+        template<typename TContainer>
+        Future<QHash<quint32, QString>, AnyResultMessageCode>
+            getLabelNamesFromIdsInternal(TContainer labelIds);
+
+        template<typename TContainer>
         Future<SuccessType, AnyResultMessageCode> fetchMissingLabelNames(
-                                                                QList<quint32> labelIds);
+                                                                    TContainer labelIds);
+        template<typename TContainer>
         QHash<quint32, QString> getLabelIdsToNamesMappingAssumingFetched(
-                                                                QList<quint32> labelIds);
+                                                                    TContainer labelIds);
 
         ServerConnection* _connection;
         QHash<quint32, QString> _labelIdToName;
         QHash<QString, quint32> _labelNameToId;
-        QHash<LocalHashId, QSet<quint32>> _hashToLabelIds;
+        QHash<LocalHashId, HashLabelsData> _hashToLabelIds;
     };
 }
 #endif

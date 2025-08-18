@@ -43,6 +43,7 @@ namespace PMP::Client
         QList<QString> getLabelNames();
 
         SimpleFuture<AnyResultMessageCode> addLabel(QString labelName);
+        SimpleFuture<AnyResultMessageCode> removeLabel(QString labelName);
 
     Q_SIGNALS:
         void labelsAdded(QList<QString> labelNames);

@@ -356,12 +356,20 @@ namespace PMP
         );
 
         connect(
+            _ui->labelsListWidget, &QListWidget::currentRowChanged,
+            this, [this]() { enableDisableLabelButtons(); }
+        );
+        connect(
             _ui->newLabelLineEdit, &QLineEdit::textChanged,
             this, [this]() { enableDisableLabelButtons(); }
         );
         connect(
             _ui->labelAddButton, &QPushButton::clicked,
             this, [this]() { addLabelClicked(); }
+        );
+        connect(
+            _ui->labelRemoveButton, &QPushButton::clicked,
+            this, [this]() { removeLabelClicked(); }
         );
 
         enableDisableLabelButtons();
@@ -554,6 +562,9 @@ namespace PMP
         auto newLabelName = _ui->newLabelLineEdit->text();
 
         _ui->labelAddButton->setEnabled(!newLabelName.isEmpty());
+
+        _ui->labelRemoveButton->setEnabled(
+            _ui->labelsListWidget->currentItem() != nullptr);
     }
 
     void TrackInfoDialog::addLabelClicked()
@@ -597,6 +608,47 @@ namespace PMP
                 auto msgBox = new QMessageBox(this);
                 msgBox->setIcon(QMessageBox::Warning);
                 msgBox->setText(tr("Could not add the label \"%1\".").arg(newLabelName));
+                msgBox->setInformativeText(failureDetail);
+                msgBox->open();
+            }
+        );
+    }
+
+    void TrackInfoDialog::removeLabelClicked()
+    {
+        auto currentItem = _ui->labelsListWidget->currentItem();
+        if (currentItem == nullptr)
+            return;
+
+        auto labelName = currentItem->text();
+
+        auto future = _trackLabelsController->removeLabel(labelName);
+
+        future.handleOnEventLoop(
+            this,
+            [this, labelName](AnyResultMessageCode errorCode)
+            {
+                if (errorCode == ResultMessageErrorCode::NoError
+                    && errorCode != ResultMessageErrorCode::AlreadyDone)
+                {
+                    return;
+                }
+
+                QString failureDetail;
+
+                if (errorCode == ResultMessageErrorCode::AlreadyDone)
+                {
+                    failureDetail = tr("This label has already been removed.");
+                }
+                else
+                {
+                    failureDetail = tr("Unspecified error (code %1).")
+                    .arg(errorCodeString(errorCode));
+                }
+
+                auto msgBox = new QMessageBox(this);
+                msgBox->setIcon(QMessageBox::Warning);
+                msgBox->setText(tr("Could not remove the label \"%1\".").arg(labelName));
                 msgBox->setInformativeText(failureDetail);
                 msgBox->open();
             }
