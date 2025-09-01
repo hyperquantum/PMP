@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -1042,23 +1042,37 @@ namespace PMP::Client
             );
     }
 
+    namespace
+    {
+        QString getMessageTypeLogString(QByteArray const& message)
+        {
+            if (message.size() < 2)
+                return "(message too short)";
+
+            return QString::fromLatin1(message.sliced(0, 2).toHex());
+        }
+    }
+
     void ServerConnection::sendBinaryMessage(QByteArray const& message)
     {
         if (!_socket.isValid())
         {
-            qWarning() << "cannot send binary message when socket not in valid state";
+            qWarning() << "cannot send binary message when socket not in valid state;"
+                       << "message type:" << getMessageTypeLogString(message);
             return;
         }
         if (!_binarySendingMode)
         {
-            qWarning() << "cannot send binary message when not connected in binary mode";
+            qWarning() << "cannot send binary message when not connected in binary mode"
+                       << "message type:" << getMessageTypeLogString(message);
             return;
         }
 
         auto messageLength = message.length();
         if (messageLength > std::numeric_limits<qint32>::max() - 1)
         {
-            qWarning() << "Message too long for sending; length:" << messageLength;
+            qWarning() << "Message too long for sending; length:" << messageLength
+                       << "message type:" << getMessageTypeLogString(message);
             return;
         }
 
