@@ -34,6 +34,77 @@
 
 namespace PMP::Client
 {
+    InactivityTimer::InactivityTimer(QObject* parent)
+     : QObject(parent),
+        _timer(new QTimer(this))
+    {
+        _timer->setSingleShot(true);
+
+        connect(
+            _timer, &QTimer::timeout,
+            this, &InactivityTimer::onTimerTimeout
+        );
+    }
+
+    void InactivityTimer::start()
+    {
+        if (_started)
+        {
+            qDebug() << "InactivityTimer: restarting";
+
+            _timer->stop();
+        }
+
+        _started = true;
+        _waitingForSecondTimeout = false;
+        _timer->start(KeepAliveIntervalMs);
+    }
+
+    void InactivityTimer::stop()
+    {
+        if (!_started)
+            return;
+
+        _started = false;
+        _timer->stop();
+    }
+
+    void InactivityTimer::reportActivity()
+    {
+        if (!_started)
+            return;
+
+        _timer->stop();
+
+        _waitingForSecondTimeout = false;
+        _timer->start(KeepAliveIntervalMs);
+    }
+
+    void InactivityTimer::onTimerTimeout()
+    {
+        if (!_started)
+            return;
+
+        if (_waitingForSecondTimeout)
+        {
+            qDebug() << "InactivityTimer: timeout - second time - thing is inactive now";
+
+            _started = false;
+
+            Q_EMIT inactivityTimeout();
+            return;
+        }
+
+        qDebug() << "InactivityTimer: timeout - first time - need to send keep-alive";
+
+        _waitingForSecondTimeout = true;
+        _timer->start(KeepAliveReplyTimeoutMs);
+
+        Q_EMIT keepAliveTimeout();
+    }
+
+    /* ============================================================================ */
+
     class ServerConnection::ResultMessageData
     {
     public:
@@ -657,7 +728,7 @@ namespace PMP::Client
        _hashIdRepository(hashIdRepository),
        _serverCapabilities(new ServerCapabilitiesImpl()),
        _disconnectReason(DisconnectReason::Unknown),
-       _keepAliveTimer(new QTimer(this)),
+       _inactivityTimer(new InactivityTimer(this)),
        _autoSubscribeToEventsAfterConnect(eventSubscription),
        _state(ServerConnection::NotConnected),
        _binarySendingMode(false),
@@ -679,10 +750,13 @@ namespace PMP::Client
             this, &ServerConnection::onSocketError
         );
 
-        _keepAliveTimer->setSingleShot(true);
         connect(
-            _keepAliveTimer, &QTimer::timeout,
-            this, &ServerConnection::onKeepAliveTimerTimeout
+            _inactivityTimer, &InactivityTimer::keepAliveTimeout,
+            this, &ServerConnection::onKeepAliveTimeout
+        );
+        connect(
+            _inactivityTimer, &InactivityTimer::inactivityTimeout,
+            this, &ServerConnection::onServerInactive
         );
     }
 
@@ -855,8 +929,7 @@ namespace PMP::Client
 
                 _state = BinaryMode;
 
-                _timeSinceLastMessageReceived.start();
-                _keepAliveTimer->start(KeepAliveIntervalMs);
+                _inactivityTimer->start();
 
                 if (_serverProtocolNo >= 12)
                 {
@@ -923,24 +996,9 @@ namespace PMP::Client
         }
     }
 
-    void ServerConnection::onKeepAliveTimerTimeout()
+    void ServerConnection::onKeepAliveTimeout()
     {
-        if (!isConnected())
-            return;
-
-        QTimer::singleShot(
-            KeepAliveReplyTimeoutMs,
-            this,
-            [this]()
-            {
-                if (!_timeSinceLastMessageReceived.hasExpired(KeepAliveIntervalMs))
-                    return; /* received a reply in time */
-
-                qDebug() << "server is not responding, going to disconnect now";
-                breakConnection(DisconnectReason::KeepAliveTimeout);
-            }
-        );
-
+        /* send a message to the server so we can find out if it still replies */
         qDebug() << "received nothing from the server for a while, sending keep-alive";
 
         if (_serverProtocolNo < 19)
@@ -952,6 +1010,12 @@ namespace PMP::Client
         {
             sendKeepAliveMessage();
         }
+    }
+
+    void ServerConnection::onServerInactive()
+    {
+        qDebug() << "server is not responding, going to disconnect now";
+        breakConnection(DisconnectReason::KeepAliveTimeout);
     }
 
     void ServerConnection::breakConnection(DisconnectReason reason)
@@ -974,7 +1038,7 @@ namespace PMP::Client
 
         _socket.abort();
 
-        _keepAliveTimer->stop();
+        _inactivityTimer->stop();
         _readBuffer.clear();
         _binarySendingMode = false;
         _serverProtocolNo = -1;
@@ -2184,9 +2248,7 @@ namespace PMP::Client
             return; /* invalid message */
         }
 
-        _timeSinceLastMessageReceived.start();
-        _keepAliveTimer->stop();
-        _keepAliveTimer->start(KeepAliveIntervalMs);
+        _inactivityTimer->reportActivity();
 
         quint16 messageType = NetworkUtil::get2Bytes(message, 0);
         if (messageType & (1u << 15))
@@ -3958,5 +4020,4 @@ namespace PMP::Client
 
         qDebug() << "received unknown server event:" << static_cast<int>(eventCode);
     }
-
 }
