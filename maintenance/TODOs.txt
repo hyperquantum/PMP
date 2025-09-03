@@ -94,6 +94,7 @@ IDEAS
  ** dynamic mode: try to enqueue "new" tracks and tracks without score regularly
  * dynamic mode: new mode that plays "new" tracks exclusively
  * dynamic mode: add extra filters
+ * dynamic mode: visualize progress of the high-scored tracks mode
  * power management: close connections when the server machine enters sleep mode
  * power management: don't let the server machine go to sleep while music is playing
  * track info dialog: show indication if file is now playing
@@ -102,12 +103,14 @@ IDEAS
  * track info dialog: show indication if a file was manually added to the queue (and when) or added by dynamic mode
  * track info dialog: display filename(s)
  * track info dialog: last heard: display "almost 3 months" ago instead of "2 months ago" when applicable
+ * track info dialog: ability to add the track to the desired position in the queue by dragging it
  * compatibility UI: let older clients know what's going on (status message) and offer them some limited control (actions)
  * server database backup and restore
  * command-line remote: add a command for seeking (going to a specific time in the current track)
  * command-line remote: extend the "nowplaying" command to also print album
  * command-line remote: extend the "trackstats" command to accept queue IDs
  * command-line remote: extend the "qmove" command to accept "front" or "end" as destination
+ * command-line remote: stop requiring authentication for the "queue" command
  * hash tool: by default only output the hash of the file, no other information
  * save track length/title/artist/album to the database
  * when skipping the current track after a long-time pause (say, more than 10 min), do not let the skip affect scoring of the paused track
@@ -126,3 +129,6 @@ NON-FUNCTIONAL IMPROVEMENTS
  * use macro QT_ENABLE_STRICT_MODE_UP_TO
  * replace all usages of QVector with QList
  * no longer strip ID3v2 during preprocessing for playback
+ * use Ninja in the build scripts
+ * refactor result handlers in ServerConnection class
+ * add ClangFormat file

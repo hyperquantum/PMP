@@ -44,12 +44,12 @@
 
 #include <QByteArray>
 #include <QDateTime>
-#include <QElapsedTimer>
 #include <QHash>
 #include <QList>
 #include <QObject>
 #include <QSharedPointer>
 #include <QTcpSocket>
+#include <QTimer>
 #include <QUuid>
 #include <QVector>
 
@@ -61,6 +61,34 @@ namespace PMP::Client
     class LocalHashIdRepository;
     class ServerCapabilities;
     class ServerCapabilitiesImpl;
+
+    class InactivityTimer : public QObject
+    {
+        Q_OBJECT
+    public:
+        explicit InactivityTimer(QObject* parent);
+
+        void start();
+        void stop();
+
+    public Q_SLOTS:
+        void reportActivity();
+
+    Q_SIGNALS:
+        void keepAliveTimeout();
+        void inactivityTimeout();
+
+    private:
+        void onTimerTimeout();
+
+    private:
+        const int KeepAliveIntervalMs = 30 * 1000;
+        const int KeepAliveReplyTimeoutMs = 5 * 1000;
+
+        QTimer* _timer;
+        bool _started { false };
+        bool _waitingForSecondTimeout { false };
+    };
 
     enum class ServerEventSubscription
     {
@@ -293,7 +321,8 @@ namespace PMP::Client
         void onDisconnected();
         void onReadyRead();
         void onSocketError(QAbstractSocket::SocketError error);
-        void onKeepAliveTimerTimeout();
+        void onKeepAliveTimeout();
+        void onServerInactive();
 
     private:
         void breakConnection(DisconnectReason reason);
@@ -434,8 +463,7 @@ namespace PMP::Client
         LocalHashIdRepository* _hashIdRepository;
         ServerCapabilitiesImpl* _serverCapabilities;
         DisconnectReason _disconnectReason;
-        QElapsedTimer _timeSinceLastMessageReceived;
-        QTimer* _keepAliveTimer;
+        InactivityTimer* _inactivityTimer;
         ServerEventSubscription _autoSubscribeToEventsAfterConnect;
         State _state;
         QTcpSocket _socket;

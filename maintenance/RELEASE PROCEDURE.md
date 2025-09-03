@@ -18,7 +18,9 @@
 ## 3. Release
 
 ### 1. Create release commit
-  * update README: point to new screenshot
+  * update README
+    * point to new screenshot
+    * update features list
   * update CHANGELOG: replace "unreleased" with the version number and the date
   * update PMPVersion.cmake: adjust version numbers
 ### 2. Add release tag to that commit

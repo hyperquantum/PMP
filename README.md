@@ -45,9 +45,11 @@ Contents of this file:
    * Dynamic mode adds random tracks to the queue
    * Tracks with a higher score are more likely to be selected
    * Avoids adding tracks that were played recently
- * **Auto scoring** based on playback history of each track
+ * **Automatic scoring** based on playback history of each track
  * Distinction between *personal* and *public* mode
    * *Public* mode allows playing music for someone else without affecting your personal track scores
+ * Does not modify music files
+ * Light and dark mode (unreleased – available in dev builds)
 
 
 ## 2. Dependencies
