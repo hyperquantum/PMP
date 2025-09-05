@@ -1280,6 +1280,11 @@ namespace PMP::Client
         auto ref = _nextRef;
         _nextRef++;
 
+        if ((_nextRef % 1024) == 0)
+        {
+            qDebug() << "value for next client reference has reached" << _nextRef;
+        }
+
         if (_nextRef >= 0x80000000u)
         {
             qWarning() << "client references getting really big, going to disconnect";
