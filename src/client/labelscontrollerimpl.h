@@ -48,6 +48,7 @@ namespace PMP::Client
             LocalHashId hashId) override;
         Future<QHash<quint32,QString>, AnyResultMessageCode> getLabelNamesByIds(
             QList<quint32> labelIds) override;
+        Future<QList<QString>, AnyResultMessageCode> getActiveLabelNames() override;
 
     private Q_SLOTS:
         void onTrackLabelsChanged(LocalHashId hashId, QList<quint32> labelsAddedIds,
@@ -64,9 +65,14 @@ namespace PMP::Client
         Future<QSet<quint32>, AnyResultMessageCode> getLabelsByTrackInternal(
             LocalHashId hashId);
 
+        Future<QList<quint32>, AnyResultMessageCode> getActiveLabelsInternal();
+
         template<typename TContainer>
         Future<QHash<quint32, QString>, AnyResultMessageCode>
-            getLabelNamesFromIdsInternal(TContainer labelIds);
+            getLabelIdsToNamesMappingInternal(TContainer labelIds);
+        template<typename TContainer>
+        Future<QList<QString>, AnyResultMessageCode>
+            convertLabelIdsToLabelNamesInternal(TContainer labelIds);
 
         template<typename TContainer>
         Future<SuccessType, AnyResultMessageCode> fetchMissingLabelNames(
@@ -74,6 +80,8 @@ namespace PMP::Client
         template<typename TContainer>
         QHash<quint32, QString> getLabelIdsToNamesMappingAssumingFetched(
                                                                     TContainer labelIds);
+        template<typename TContainer>
+        QList<QString> convertLabelIdsToLabelNamesAssumingFetched(TContainer labelIds);
 
         ServerConnection* _connection;
         QHash<quint32, QString> _labelIdToName;

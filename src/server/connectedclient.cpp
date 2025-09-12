@@ -1772,7 +1772,7 @@ namespace PMP::Server
     {
         auto labelsCount = labelIds.size();
 
-        if (labelsCount >= (2 << 16))
+        if (labelsCount > std::numeric_limits<quint16>::max())
         {
             sendResultMessage(ResultMessageErrorCode::TooMuchDataToReturn,
                               clientReference);
@@ -1841,7 +1841,7 @@ namespace PMP::Server
     {
         auto labelsCount = idToNames.size();
 
-        if (labelsCount >= (2 << 16))
+        if (labelsCount > std::numeric_limits<quint16>::max())
         {
             sendResultMessage(ResultMessageErrorCode::TooMuchDataToReturn,
                               clientReference);
@@ -1884,6 +1884,33 @@ namespace PMP::Server
         for (auto const& labelNameAsUtf8 : labelNamesAsUtf8)
         {
             message += labelNameAsUtf8;
+        }
+
+        sendBinaryMessage(message);
+    }
+
+    void ConnectedClient::sendActiveLabelsReply(quint32 clientReference,
+                                                QList<quint32> labelIds)
+    {
+        auto labelsCount = labelIds.size();
+
+        if (labelsCount > std::numeric_limits<qint32>::max())
+        {
+            sendResultMessage(ResultMessageErrorCode::TooMuchDataToReturn,
+                              clientReference);
+            return;
+        }
+
+        QByteArray message;
+        message.reserve(2 + 2 + 4 + 4 + labelsCount * 4);
+        NetworkProtocol::append2Bytes(message, ServerMessageType::ActiveLabelsReply);
+        NetworkUtil::append2Bytes(message, 0); /* filler */
+        NetworkUtil::append4Bytes(message, clientReference);
+        NetworkUtil::append4BytesSigned(message, labelsCount);
+
+        for (auto labelId : labelIds)
+        {
+            NetworkUtil::append4Bytes(message, labelId);
         }
 
         sendBinaryMessage(message);
@@ -2478,6 +2505,9 @@ namespace PMP::Server
             return;
         case ClientMessageType::LabelNamesRequest:
             parseLabelNamesRequest(message);
+            return;
+        case ClientMessageType::ActiveLabelsRequest:
+            parseActiveLabelsRequest(message);
             return;
         case ClientMessageType::None:
             qDebug() << "received a message with type 'none' and length"
@@ -3429,13 +3459,6 @@ namespace PMP::Server
         int labelCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
 
-        if (labelCount <= 0)
-        {
-            // TODO: maybe return an error?
-            qDebug() << "zero label names requested in get-label-names message; ignoring";
-            return;
-        }
-
         int expectedMessageLength = 8 + labelCount * 4;
 
         if (message.length() != expectedMessageLength)
@@ -3444,6 +3467,13 @@ namespace PMP::Server
                         " was"
                      << expectedMessageLength << "but actual length was"
                      << message.length();
+            return;
+        }
+
+        if (labelCount <= 0)
+        {
+            // TODO: maybe return an error?
+            qDebug() << "zero label names requested in get-label-names message; ignoring";
             return;
         }
 
@@ -3465,6 +3495,25 @@ namespace PMP::Server
         }
 
         sendLabelNamesReply(clientReference, labelIdsWithNamesOrError.result());
+    }
+
+    void ConnectedClient::parseActiveLabelsRequest(const QByteArray& message)
+    {
+        if (message.length() != 8)
+            return; /* invalid message */
+
+        quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
+
+        qDebug() << "received request for active labels; ref:" << clientReference;
+
+        auto result = _serverInterface->getActiveLabels();
+        if (result.failed())
+        {
+            sendResultMessage(result.error(), clientReference);
+            return;
+        }
+
+        sendActiveLabelsReply(clientReference, result.result());
     }
 
     void ConnectedClient::handleSingleByteAction(quint8 action)

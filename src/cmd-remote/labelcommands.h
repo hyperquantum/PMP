@@ -56,11 +56,11 @@ namespace PMP
         FileHash _hash;
     };
 
-    class LabelListCommand : public CommandBase
+    class LabelListForHashCommand : public CommandBase
     {
         Q_OBJECT
     public:
-        LabelListCommand(FileHash const& hash);
+        LabelListForHashCommand(FileHash const& hash);
 
     protected:
         void run(Client::ServerInterface* serverInterface) override;
@@ -69,6 +69,16 @@ namespace PMP
         void printLabelNames(QList<QString> labelNames);
 
         FileHash _hash;
+    };
+
+    class LabelListUsedCommand : public CommandBase
+    {
+        Q_OBJECT
+    protected:
+        void run(Client::ServerInterface* serverInterface) override;
+
+    private:
+        void printLabelNames(QList<QString> labelNames);
     };
 }
 #endif

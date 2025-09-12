@@ -23,10 +23,14 @@
 #include "client/localhashidrepository.h"
 #include "client/serverinterface.h"
 
+#include <algorithm>
+
 using namespace PMP::Client;
 
 namespace PMP
 {
+    /* ===== LabelAddCommand ===== */
+
     LabelAddCommand::LabelAddCommand(QString labelName, const FileHash& hash)
      : _name(labelName), _hash(hash)
     {
@@ -42,6 +46,8 @@ namespace PMP
 
         setCommandExecutionResultFuture(future);
     }
+
+    /* ===== LabelRemoveCommand ===== */
 
     LabelRemoveCommand::LabelRemoveCommand(QString labelName, const FileHash& hash)
      : _name(labelName), _hash(hash)
@@ -59,13 +65,15 @@ namespace PMP
         setCommandExecutionResultFuture(future);
     }
 
-    LabelListCommand::LabelListCommand(const FileHash& hash)
+    /* ===== LabelListForHashCommand ===== */
+
+    LabelListForHashCommand::LabelListForHashCommand(const FileHash& hash)
         : _hash(hash)
     {
         //
     }
 
-    void LabelListCommand::run(Client::ServerInterface* serverInterface)
+    void LabelListForHashCommand::run(Client::ServerInterface* serverInterface)
     {
         auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
 
@@ -81,12 +89,14 @@ namespace PMP
         );
     }
 
-    void LabelListCommand::printLabelNames(QList<QString> labelNames)
+    void LabelListForHashCommand::printLabelNames(QList<QString> labelNames)
     {
         QString output;
         //output.reserve(...)
 
         output += QString("label count: %1\n").arg(labelNames.size());
+
+        std::sort(labelNames.begin(), labelNames.end());
 
         for (auto const& labelName : labelNames)
         {
@@ -99,4 +109,39 @@ namespace PMP
         setCommandExecutionSuccessful(output);
     }
 
+    /* ===== LabelListUsedCommand ===== */
+
+    void LabelListUsedCommand::run(Client::ServerInterface* serverInterface)
+    {
+        auto labelNamesFuture =
+            serverInterface->labelsController().getActiveLabelNames();
+
+        handleFailureAndResult<QList<QString>>(
+            labelNamesFuture,
+            [this](QList<QString> labelNames)
+            {
+                printLabelNames(labelNames);
+            }
+        );
+    }
+
+    void LabelListUsedCommand::printLabelNames(QList<QString> labelNames)
+    {
+        QString output;
+        //output.reserve(...)
+
+        output += QString("label count: %1\n").arg(labelNames.size());
+
+        std::sort(labelNames.begin(), labelNames.end());
+
+        for (auto const& labelName : labelNames)
+        {
+            // do newline here so we don't end up with a newline at the end of the output
+            output += "\n";
+
+            output += QString(" * %1").arg(labelName);
+        }
+
+        setCommandExecutionSuccessful(output);
+    }
 }

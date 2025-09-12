@@ -40,6 +40,7 @@ namespace PMP::Server
         explicit Labels(QObject* parent);
         SimpleFuture<Result> applyLabelToTrack(uint trackHashId, QString const& label);
         SimpleFuture<Result> removeLabelFromTrack(uint trackHashId, QString const& label);
+        QList<quint32> getLabelsInActiveUse();
         QList<quint32> getLabelsOfTrack(uint trackHashId);
         ResultOrError<QHash<quint32, QString>, Result> getLabelNames(
                                                                 QList<quint32> labelIds);
@@ -57,6 +58,7 @@ namespace PMP::Server
         {
             QString name;
             QSet<uint> hashes;
+            bool inActiveUse { false };
         };
 
         QMutex _mutex;

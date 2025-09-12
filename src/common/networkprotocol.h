@@ -117,6 +117,7 @@ namespace PMP
         TrackLabelsListReply = 39,
         LabelNamesReply = 40,
         TrackLabelsChangeMessage = 41,
+        ActiveLabelsReply = 42,
     };
 
     enum class ScrobblingServerMessageType : quint8
@@ -161,6 +162,7 @@ namespace PMP
         RemoveLabelFromTrackMessage = 30,
         TrackLabelsListRequest = 31,
         LabelNamesRequest = 32,
+        ActiveLabelsRequest = 33,
     };
 
     enum class ScrobblingClientMessageType : quint8

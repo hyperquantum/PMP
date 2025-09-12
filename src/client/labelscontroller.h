@@ -45,6 +45,7 @@ namespace PMP::Client
                                                                 LocalHashId hashId) = 0;
         virtual Future<QHash<quint32,QString>, AnyResultMessageCode> getLabelNamesByIds(
                                                             QList<quint32> labelIds) = 0;
+        virtual Future<QList<QString>, AnyResultMessageCode> getActiveLabelNames() = 0;
 
     Q_SIGNALS:
         void trackLabelsChanged(LocalHashId hashId, QList<quint32> labelsAddedIds,

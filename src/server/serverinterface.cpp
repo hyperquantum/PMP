@@ -749,6 +749,15 @@ namespace PMP::Server
         return _labels->getLabelNames(labelIds);
     }
 
+    ResultOrError<QList<quint32>, Result> ServerInterface::getActiveLabels()
+    {
+        /* require authentication for now, maybe we'll change this in the future */
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        return _labels->getLabelsInActiveUse();
+    }
+
     void ServerInterface::shutDownServer()
     {
         if (!isLoggedIn()) return;

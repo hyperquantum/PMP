@@ -55,30 +55,18 @@ namespace PMP::Client
 
         auto namesFuture =
             idsFuture
-                .thenOnEventLoopIndirect<QHash<quint32,QString>,AnyResultMessageCode>(
+                .thenOnEventLoopIndirect<QList<QString>,AnyResultMessageCode>(
                     this,
                     [this](ResultOrError<QSet<quint32>, AnyResultMessageCode> outcome)
-                        -> Future<QHash<quint32, QString>, AnyResultMessageCode>
+                        -> Future<QList<QString>, AnyResultMessageCode>
                     {
                         if (outcome.failed())
                             return FutureError(outcome.error());
 
                         auto labelIds = outcome.result();
-
-                        return getLabelNamesFromIdsInternal(labelIds);
+                        return convertLabelIdsToLabelNamesInternal(labelIds);
                     }
-                )
-                .thenOnEventLoop<QList<QString>, AnyResultMessageCode>(
-                    this,
-                    [](ResultOrError<QHash<quint32,QString>,AnyResultMessageCode> outcome)
-                        -> ResultOrError<QList<QString>, AnyResultMessageCode>
-                    {
-                        if (outcome.failed())
-                            return outcome.error();
-
-                        return outcome.result().values();
-                    }
-                 );
+                );
 
         return namesFuture;
     }
@@ -86,7 +74,30 @@ namespace PMP::Client
     Future<QHash<quint32, QString>, AnyResultMessageCode>
         LabelsControllerImpl::getLabelNamesByIds(QList<quint32> labelIds)
     {
-        return getLabelNamesFromIdsInternal(labelIds);
+        return getLabelIdsToNamesMappingInternal(labelIds);
+    }
+
+    Future<QList<QString>, AnyResultMessageCode>
+        LabelsControllerImpl::getActiveLabelNames()
+    {
+        auto idsFuture = getActiveLabelsInternal();
+
+        auto namesFuture =
+            idsFuture
+                .thenOnEventLoopIndirect<QList<QString>,AnyResultMessageCode>(
+                    this,
+                    [this](ResultOrError<QList<quint32>, AnyResultMessageCode> outcome)
+                        -> Future<QList<QString>, AnyResultMessageCode>
+                    {
+                        if (outcome.failed())
+                            return FutureError(outcome.error());
+
+                        auto labelIds = outcome.result();
+                        return convertLabelIdsToLabelNamesInternal(labelIds);
+                    }
+                );
+
+        return namesFuture;
     }
 
     void LabelsControllerImpl::onTrackLabelsChanged(LocalHashId hashId,
@@ -161,9 +172,16 @@ namespace PMP::Client
         return future;
     }
 
+    Future<QList<quint32>, AnyResultMessageCode>
+        LabelsControllerImpl::getActiveLabelsInternal()
+    {
+        // TODO: caching
+        return _connection->getActiveLabels();
+    }
+
     template<typename TContainer>
     Future<QHash<quint32, QString>, AnyResultMessageCode>
-        LabelsControllerImpl::getLabelNamesFromIdsInternal(TContainer labelIds)
+        LabelsControllerImpl::getLabelIdsToNamesMappingInternal(TContainer labelIds)
     {
         Future<SuccessType, AnyResultMessageCode> fetchFuture =
             fetchMissingLabelNames(labelIds);
@@ -179,6 +197,30 @@ namespace PMP::Client
                         return outcomeOfFetch.error();
 
                     return getLabelIdsToNamesMappingAssumingFetched(labelIds);
+                }
+            );
+
+        return resultFuture;
+    }
+
+    template<typename TContainer>
+    Future<QList<QString>, AnyResultMessageCode>
+        LabelsControllerImpl::convertLabelIdsToLabelNamesInternal(TContainer labelIds)
+    {
+        Future<SuccessType, AnyResultMessageCode> fetchFuture =
+            fetchMissingLabelNames(labelIds);
+
+        auto resultFuture =
+            fetchFuture.thenOnEventLoop<QList<QString>, AnyResultMessageCode>(
+                this,
+                [this, labelIds](
+                    ResultOrError<SuccessType, AnyResultMessageCode> outcomeOfFetch)
+                    -> ResultOrError<QList<QString>, AnyResultMessageCode>
+                {
+                    if (outcomeOfFetch.failed())
+                        return outcomeOfFetch.error();
+
+                    return convertLabelIdsToLabelNamesAssumingFetched(labelIds);
                 }
             );
 
@@ -246,6 +288,28 @@ namespace PMP::Client
                        "name of label is not known");
 
             result.insert(labelId, it.value());
+        }
+
+        return result;
+    }
+
+    template<typename TContainer>
+    QList<QString>
+        LabelsControllerImpl::convertLabelIdsToLabelNamesAssumingFetched(
+                                                                    TContainer labelIds)
+    {
+        QList<QString> result;
+        result.reserve(labelIds.size());
+
+        for (auto labelId : labelIds)
+        {
+            auto it = _labelIdToName.constFind(labelId);
+
+            Q_ASSERT_X(it != _labelIdToName.constEnd(),
+                       "LabelsControllerImpl::convertLabelIdsToLabelNamesAssumingFetched",
+                       "name of label is not known");
+
+            result.append(it.value());
         }
 
         return result;

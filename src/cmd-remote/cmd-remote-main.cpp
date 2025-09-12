@@ -216,6 +216,7 @@ usage:
     label add <name> <hash>: add a label to a track
     label rm <name> <hash>: remove a label from a track
     label list <hash>: list all labels of a track
+    label list used: list all labels that are considered in active use
 
     Label names must be lowercase and can only contain letters, numbers, and
     dashes ("-"). The name cannot start or end with a dash, and multiple

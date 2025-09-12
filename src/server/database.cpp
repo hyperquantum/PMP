@@ -180,27 +180,54 @@ namespace PMP::Server
     }
 
     template<class T>
-    ResultOrError<QVector<T>, FailureType> Database::DatabaseConnection::executeRecords(
+    ResultOrError<QList<T>, FailureType> Database::DatabaseConnection::executeRecords(
                                             std::function<void (QSqlQuery&)> preparer,
                                             std::function<T (QSqlQuery&)> extractRecord,
                                             int recordsToReserveCount)
     {
-        QVector<T> vector;
+        QList<T> list;
 
         auto resultGetter =
-            [&vector, extractRecord, recordsToReserveCount] (QSqlQuery& q)
+            [&list, extractRecord, recordsToReserveCount](QSqlQuery& q)
             {
                 if (recordsToReserveCount >= 0)
-                    vector.reserve(recordsToReserveCount);
+                    list.reserve(recordsToReserveCount);
 
                 while (q.next())
                 {
-                    vector.append(extractRecord(q));
+                    list.append(extractRecord(q));
                 }
             };
 
         if (executeQuery(preparer, true, resultGetter))
-            return vector;
+            return list;
+
+        return failure;
+    }
+
+    ResultOrError<QList<quint32>, FailureType>
+        Database::DatabaseConnection::executeListOfUint32(
+                                            std::function<void (QSqlQuery &)> preparer,
+                                            int recordsToReserveCount)
+    {
+        QList<quint32> list;
+
+        auto resultGetter =
+            [&list, recordsToReserveCount](QSqlQuery& q)
+            {
+                if (recordsToReserveCount >= 0)
+                    list.reserve(recordsToReserveCount);
+
+                while (q.next())
+                {
+                    auto number = static_cast<quint32>(q.value(0).toUInt());
+
+                    list.append(number);
+                }
+            };
+
+        if (executeQuery(preparer, true, resultGetter))
+            return list;
 
         return failure;
     }
@@ -1884,6 +1911,22 @@ namespace PMP::Server
             };
 
         return _dbConnection.executeRecords<LabelRecord>(preparer, extractRecord);
+    }
+
+    FailureOr<QList<quint32>> Database::getLabelsInActiveUse(int minimumYear)
+    {
+        auto preparer =
+            [minimumYear](QSqlQuery& q)
+            {
+                q.prepare(
+                    "SELECT DISTINCT hl.LabelID FROM pmp_hashlabel hl "
+                    "INNER JOIN pmp_filesize fs ON hl.HashID=fs.HashID "
+                    "WHERE fs.YearLastSeen >= ?"
+                );
+                q.addBindValue(minimumYear);
+            };
+
+        return _dbConnection.executeListOfUint32(preparer);
     }
 
     FailureOr<quint32> Database::insertLabel(QString label)

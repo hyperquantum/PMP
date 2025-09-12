@@ -975,11 +975,21 @@ namespace PMP
     {
         arguments.advance(); // current is "list"
 
-        auto hash = arguments.tryParseTrackHash();
-        if (hash.isNull())
+        FileHash hash;
+
+        if (arguments.current() == "used")
         {
-            _errorMessage = "Expected a hash after '" + arguments.previous() + "'!";
-            return;
+            // OK
+        }
+        else
+        {
+            hash = arguments.tryParseTrackHash();
+            if (hash.isNull())
+            {
+                _errorMessage =
+                    "Expected 'used' or a hash after '" + arguments.previous() + "'!";
+                return;
+            }
         }
 
         if (arguments.haveMore())
@@ -988,7 +998,14 @@ namespace PMP
             return;
         }
 
-        _command = new LabelListCommand(hash);
+        if (hash.isNull())
+        {
+            _command = new LabelListUsedCommand();
+        }
+        else
+        {
+            _command = new LabelListForHashCommand(hash);
+        }
     }
 
     Nullable<QString> CommandParser::parseLabelName(CommandArguments& arguments)

@@ -216,6 +216,7 @@ namespace PMP::Server
         void sendTrackLabelsChangeMessage(FileHash track, QList<quint32> labelsAddedIds,
                                           QList<quint32> labelsRemovedIds);
         void sendLabelNamesReply(uint clientReference, QHash<quint32, QString> idToNames);
+        void sendActiveLabelsReply(quint32 clientReference, QList<quint32> labelIds);
 
         void handleBinaryMessage(QByteArray const& message);
         void handleStandardBinaryMessage(ClientMessageType messageType,
@@ -263,6 +264,7 @@ namespace PMP::Server
         void parseRemoveLabelFromTrackMessage(QByteArray const& message);
         void parseTrackLabelsListRequest(QByteArray const& message);
         void parseLabelNamesRequest(QByteArray const& message);
+        void parseActiveLabelsRequest(QByteArray const& message);
 
         void schedulePlayerStateNotification();
 

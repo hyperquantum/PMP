@@ -141,6 +141,7 @@ namespace PMP::Server
                                              int currentYear);
 
         FailureOr<QList<DatabaseRecords::LabelRecord>> getLabels();
+        FailureOr<QList<quint32>> getLabelsInActiveUse(int minimumYear);
         FailureOr<quint32> insertLabel(QString label);
         FailureOr<QList<DatabaseRecords::HashLabelRecord>> getHashLabelAssociations();
         SuccessOrFailure connectLabelToHash(quint32 labelId, quint32 hashId);
@@ -174,9 +175,13 @@ namespace PMP::Server
                                QDateTime& d);
 
             template<class T>
-            ResultOrError<QVector<T>, FailureType> executeRecords(
+            ResultOrError<QList<T>, FailureType> executeRecords(
                 std::function<void (QSqlQuery&)> preparer,
                 std::function<T (QSqlQuery&)> extractRecord,
+                int recordsToReserveCount = -1);
+
+            ResultOrError<QList<quint32>, FailureType> executeListOfUint32(
+                std::function<void (QSqlQuery&)> preparer,
                 int recordsToReserveCount = -1);
 
             bool executeQuery(std::function<void (QSqlQuery&)> preparer,

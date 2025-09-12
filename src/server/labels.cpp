@@ -24,6 +24,8 @@
 
 #include "database.h"
 
+#include <QDateTime>
+
 namespace PMP::Server
 {
     Labels::Labels(QObject *parent)
@@ -75,6 +77,7 @@ namespace PMP::Server
                     if (connectResult.failed())
                         return Error::internalError(); // TODO : find a better error
 
+                    labelData->inActiveUse = true;
                     labelData->hashes << trackHashId;
                     _labelsByHashId[trackHashId] << labelId;
 
@@ -135,6 +138,24 @@ namespace PMP::Server
             );
 
         return future;
+    }
+
+    QList<quint32> Labels::getLabelsInActiveUse()
+    {
+        QMutexLocker lock(&_mutex);
+
+        QList<quint32> result;
+        result.reserve(_labelDataByLabelId.size()); // probably more than we really need
+
+        for (auto it = _labelDataByLabelId.constBegin();
+             it != _labelDataByLabelId.constEnd();
+             ++it)
+        {
+            if (it->inActiveUse)
+                result.append(it.key());
+        }
+
+        return result;
     }
 
     QList<quint32> Labels::getLabelsOfTrack(uint trackHashId)
@@ -238,6 +259,23 @@ namespace PMP::Server
                 labelData.hashes << hashLabelRecord.hashId;
 
                 _labelsByHashId[hashLabelRecord.hashId] << hashLabelRecord.labelId;
+            }
+        }
+
+        // determine which labels are in active use
+        {
+            int currentYear = QDateTime::currentDateTimeUtc().date().year();
+
+            auto activeLabelIdsOrFailure = db->getLabelsInActiveUse(currentYear - 1);
+            if (activeLabelIdsOrFailure.failed())
+            {
+                qWarning() << "failed to load list labels in active use!";
+                return;
+            }
+
+            for (auto labelId : activeLabelIdsOrFailure.result())
+            {
+                _labelDataByLabelId[labelId].inActiveUse = true;
             }
         }
     }

@@ -125,6 +125,7 @@ namespace PMP::Client
         class HashInfoResultHandler;
         class TrackLabelsResultHandler;
         class LabelNamesResultHandler;
+        class ActiveLabelsResultHandler;
 
     public:
         explicit ServerConnection(QObject* parent,
@@ -176,6 +177,7 @@ namespace PMP::Client
         Future<QList<quint32>, AnyResultMessageCode> getLabelsOfTrack(LocalHashId hashId);
         Future<QHash<quint32, QString>, AnyResultMessageCode> getLabelNames(
                                                                 QList<quint32> labelIds);
+        Future<QList<quint32>, AnyResultMessageCode> getActiveLabels();
 
         SimpleFuture<AnyResultMessageCode> authenticateScrobbling(
                                                             ScrobblingProvider provider,
@@ -441,6 +443,7 @@ namespace PMP::Client
         void parseTrackLabelsReply(QByteArray const& message);
         void parseTrackLabelsChangeMessage(QByteArray const& message);
         void parseLabelNamesReply(QByteArray const& message);
+        void parseActiveLabelsReply(QByteArray const& message);
         void parseHistoryFragmentMessage(QByteArray const& message);
         void parseNewHistoryEntryMessage(QByteArray const& message);
         void parsePlayerHistoryMessage(QByteArray const& message);
