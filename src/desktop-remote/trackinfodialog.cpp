@@ -26,6 +26,7 @@
 #include "client/authenticationcontroller.h"
 #include "client/collectionwatcher.h"
 #include "client/generalcontroller.h"
+#include "client/labelscontroller.h"
 #include "client/localhashidrepository.h"
 #include "client/queuecontroller.h"
 #include "client/serverinterface.h"
@@ -324,6 +325,24 @@ namespace PMP
             _ui->labelsListWidget->addItem(labelName);
         }
 
+        _serverInterface->labelsController().getActiveLabelNames()
+            .handleOnEventLoop(
+                this,
+                [this](ResultOrError<QList<QString>, AnyResultMessageCode> outcome)
+                {
+                    if (outcome.failed())
+                    {
+                        qWarning() << "failed to load list of active labels;"
+                                   << "error code:" << errorCodeString(outcome.error());
+                        return;
+                    }
+
+                    _ui->newLabelComboBox->insertItems(0, outcome.result());
+                    _ui->newLabelComboBox->model()->sort(0);
+                    _ui->newLabelComboBox->setCurrentIndex(-1);
+                }
+            );
+
         connect(
             _trackLabelsController, &TrackLabelsController::labelsAdded,
             this,
@@ -345,7 +364,7 @@ namespace PMP
                     auto itemsToRemove =
                         _ui->labelsListWidget->findItems(
                             labelName, Qt::MatchFixedString | Qt::MatchCaseSensitive
-                            );
+                        );
 
                     qDebug() << "label to remove is" << labelName << "; found items:"
                              << itemsToRemove.size();
@@ -360,7 +379,7 @@ namespace PMP
             this, [this]() { enableDisableLabelButtons(); }
         );
         connect(
-            _ui->newLabelLineEdit, &QLineEdit::textChanged,
+            _ui->newLabelComboBox, &QComboBox::currentTextChanged,
             this, [this]() { enableDisableLabelButtons(); }
         );
         connect(
@@ -559,7 +578,7 @@ namespace PMP
 
     void TrackInfoDialog::enableDisableLabelButtons()
     {
-        auto newLabelName = _ui->newLabelLineEdit->text();
+        auto newLabelName = _ui->newLabelComboBox->currentText();
 
         _ui->labelAddButton->setEnabled(!newLabelName.isEmpty());
 
@@ -569,7 +588,7 @@ namespace PMP
 
     void TrackInfoDialog::addLabelClicked()
     {
-        auto newLabelName = _ui->newLabelLineEdit->text();
+        auto newLabelName = _ui->newLabelComboBox->currentText();
 
         auto future = _trackLabelsController->addLabel(newLabelName);
 
@@ -580,7 +599,7 @@ namespace PMP
                 if (errorCode == ResultMessageErrorCode::NoError
                     && errorCode != ResultMessageErrorCode::AlreadyDone)
                 {
-                    _ui->newLabelLineEdit->clear();
+                    _ui->newLabelComboBox->clearEditText();
                     return;
                 }
 

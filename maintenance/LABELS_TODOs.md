@@ -18,7 +18,7 @@ this branch.
 * track info dialog: react to labels being/added removed elsewhere ✓
 * track info dialog: adding a single label to a track ✓
 * track info dialog: removing a single label from a track ✓
-* track info dialog: provide a list of existing labels to make adding a label easier
+* track info dialog: provide a list of existing labels to make adding a label easier ✓
 * music collection view: new filter "has label XYZ"
 * music collection view: new filter "does not have label XYZ"
 * music collection view: new filter "has any label(s)"
