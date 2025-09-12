@@ -39,6 +39,7 @@
 
 #include <QApplication>
 #include <QClipboard>
+#include <QLineEdit>
 #include <QLocale>
 #include <QMessageBox>
 #include <QtAlgorithms>
@@ -324,6 +325,8 @@ namespace PMP
         {
             _ui->labelsListWidget->addItem(labelName);
         }
+
+        _ui->newLabelComboBox->lineEdit()->setPlaceholderText(tr("New label to add"));
 
         _serverInterface->labelsController().getActiveLabelNames()
             .handleOnEventLoop(
