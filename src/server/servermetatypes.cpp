@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,7 @@
 
 #include "collectiontrackinfo.h"
 #include "fileanalysis.h"
+#include "filehashwithid.h"
 #include "scrobblingbackend.h"
 #include "scrobblingtrack.h"
 
@@ -39,6 +40,7 @@ namespace PMP::Server
             qRegisterMetaType<PMP::Server::CollectionTrackInfo>();
             qRegisterMetaType<PMP::Server::FileAnalysis>();
             qRegisterMetaType<PMP::Server::FileHashes>();
+            qRegisterMetaType<PMP::Server::FileHashWithId>();
             qRegisterMetaType<PMP::Server::FileInfo>();
             qRegisterMetaType<PMP::Server::ScrobbleResult>();
             qRegisterMetaType<PMP::Server::ScrobblingBackendState>();

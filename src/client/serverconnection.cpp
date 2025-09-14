@@ -716,7 +716,7 @@ namespace PMP::Client
 
     /* ============================================================================ */
 
-    const quint16 ServerConnection::ClientProtocolNo = 27;
+    const quint16 ServerConnection::ClientProtocolNo = 28;
 
     const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
     const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
@@ -3694,24 +3694,37 @@ namespace PMP::Client
 
     void ServerConnection::parseHashInfoReply(const QByteArray& message)
     {
-        if (message.length() < 20)
+        bool includesTrackId = _serverProtocolNo >= 28;
+
+        if (message.length() < (20 + (includesTrackId ? 8 : 0)))
             return; /* invalid message */
 
         quint8 availabilityByte = NetworkUtil::getByte(message, 3);
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
-        int titleDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 8);
-        int artistDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 10);
-        int albumDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 12);
-        int albumArtistDataSize = NetworkUtil::get2BytesUnsignedToInt(message, 14);
-        qint32 lengthInMilliseconds = NetworkUtil::get4BytesSigned(message, 16);
+
+        int offset = 8;
+
+        quint64 serverTrackId = 0;
+        if (includesTrackId)
+        {
+            serverTrackId = NetworkUtil::get8Bytes(message, offset);
+            offset += 8;
+        }
+
+        int titleDataSize = NetworkUtil::get2BytesUnsignedToInt(message, offset);
+        int artistDataSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 2);
+        int albumDataSize = NetworkUtil::get2BytesUnsignedToInt(message, offset + 4);
+        int albumArtistDataSize = NetworkUtil::get2BytesUnsignedToInt(message,offset + 6);
+        qint32 lengthInMilliseconds = NetworkUtil::get4BytesSigned(message, offset + 8);
+
+        offset += 4 * 2 + 4;
 
         const int expectedMessageLength =
-            20 + titleDataSize + artistDataSize + albumDataSize + albumArtistDataSize;
+            offset + titleDataSize + artistDataSize + albumDataSize + albumArtistDataSize;
 
         if (message.length() != expectedMessageLength)
             return;
 
-        int offset = 20;
         QString title = NetworkUtil::getUtf8String(message, offset, titleDataSize);
         offset += titleDataSize;
         QString artist = NetworkUtil::getUtf8String(message, offset, artistDataSize);
@@ -3724,6 +3737,7 @@ namespace PMP::Client
         bool isAvailable = availabilityByte & 1;
 
         qDebug() << "received hash info reply: ref:" << clientReference
+                 << "; server track id:" << serverTrackId
                  << "; title:" << title
                  << "; artist:" << artist
                  << "; album:" << album

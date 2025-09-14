@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -28,6 +28,7 @@
 #include "common/startstopeventstatus.h"
 
 #include "collectiontrackinfo.h"
+#include "filehashwithid.h"
 #include "hashstats.h"
 #include "historyentry.h"
 #include "recenthistoryentry.h"
@@ -106,8 +107,8 @@ namespace PMP::Server
         void onCollectionTrackInfoBatchToSend(uint clientReference,
                                               QVector<CollectionTrackInfo> tracks);
         void onCollectionTrackInfoCompleted(uint clientReference);
-        void onHashAvailabilityChanged(QVector<PMP::FileHash> available,
-                                       QVector<PMP::FileHash> unavailable);
+        void onHashAvailabilityChanged(QVector<PMP::Server::FileHashWithId> available,
+                                       QVector<PMP::Server::FileHashWithId> unavailable);
         void onHashInfoChanged(QVector<CollectionTrackInfo> changes);
 
         void onScrobblingProviderInfo(ScrobblingProvider provider, ScrobblerStatus status,
@@ -181,8 +182,8 @@ namespace PMP::Server
         void sendNonFatalInternalErrorResultMessage(quint32 clientReference);
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
-        void sendTrackAvailabilityBatchMessage(QVector<FileHash> available,
-                                               QVector<FileHash> unavailable);
+        void sendTrackAvailabilityBatchMessage(QVector<FileHashWithId> available,
+                                               QVector<FileHashWithId> unavailable);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
                                        QVector<CollectionTrackInfo> tracks);
         void sendNewHistoryEntryMessage(QSharedPointer<RecentHistoryEntry> entry);

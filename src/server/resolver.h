@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -96,7 +96,8 @@ namespace PMP::Server
 
         void hashBecameAvailable(PMP::FileHash hash);
         void hashBecameUnavailable(PMP::FileHash hash);
-        void hashTagInfoChanged(PMP::FileHash hash, QString title, QString artist,
+        void hashTagInfoChanged(uint hashId, PMP::FileHash hash,
+                                QString title, QString artist,
                                 QString album, QString albumArtist,
                                 qint32 lengthInMilliseconds);
 

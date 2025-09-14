@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -45,7 +45,7 @@ namespace PMP::Server
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 27;
+    const qint16 ConnectedClient::ServerProtocolNo = 28;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -1031,6 +1031,8 @@ namespace PMP::Server
     void ConnectedClient::sendHashInfoReply(uint clientReference,
                                             CollectionTrackInfo info)
     {
+        bool includeTrackId = _clientProtocolNo >= 28;
+
         QString title = info.title();
         QString artist = info.artist();
         QString album = info.album();
@@ -1049,13 +1051,19 @@ namespace PMP::Server
         QByteArray albumArtistData = albumArtist.toUtf8();
 
         QByteArray message;
-        message.reserve(2 + 2 + 4 + 4 * 2 + 4
+        message.reserve(2 + 2 + 4 + (includeTrackId ? 8 : 0) + 4 * 2 + 4
                         + titleData.size() + artistData.size() + albumData.size()
                         + albumArtistData.size());
         NetworkProtocol::append2Bytes(message, ServerMessageType::HashInfoReply);
         NetworkUtil::appendByte(message, 0); // filler
         NetworkUtil::appendByte(message, info.isAvailable() ? 1 : 0);
         NetworkUtil::append4Bytes(message, clientReference);
+
+        if (includeTrackId)
+        {
+            NetworkUtil::append8Bytes(message, info.hashId());
+        }
+
         NetworkUtil::append2BytesUnsigned(message, titleData.size());
         NetworkUtil::append2BytesUnsigned(message, artistData.size());
         NetworkUtil::append2BytesUnsigned(message, albumData.size());
@@ -1381,8 +1389,9 @@ namespace PMP::Server
         sendTrackInfoBatchMessage(clientReference, false, tracks);
     }
 
-    void ConnectedClient::sendTrackAvailabilityBatchMessage(QVector<FileHash> available,
-                                                            QVector<FileHash> unavailable)
+    void ConnectedClient::sendTrackAvailabilityBatchMessage(
+                                                    QVector<FileHashWithId> available,
+                                                    QVector<FileHashWithId> unavailable)
     {
         if (_clientProtocolNo < 11) /* only send this if the client will understand */
             return;
@@ -1422,12 +1431,12 @@ namespace PMP::Server
 
         for (int i = 0; i < available.size(); ++i)
         {
-            NetworkProtocol::appendHash(message, available[i]);
+            NetworkProtocol::appendHash(message, available[i].hash());
         }
 
         for (int i = 0; i < unavailable.size(); ++i)
         {
-            NetworkProtocol::appendHash(message, unavailable[i]);
+            NetworkProtocol::appendHash(message, unavailable[i].hash());
         }
 
         sendBinaryMessage(message);
@@ -1563,8 +1572,8 @@ namespace PMP::Server
         sendScrobblingProviderEnabledChangeMessage(userId, provider, enabled);
     }
 
-    void ConnectedClient::onHashAvailabilityChanged(QVector<FileHash> available,
-                                                    QVector<FileHash> unavailable)
+    void ConnectedClient::onHashAvailabilityChanged(QVector<FileHashWithId> available,
+                                                    QVector<FileHashWithId> unavailable)
     {
         sendTrackAvailabilityBatchMessage(available, unavailable);
     }

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -203,7 +203,8 @@ TrackInfoProviderMock::TrackInfoProviderMock()
 {
     /* create and register the default track to test with */
 
-    CollectionTrackInfo track(FileHash(), true, "Title", "Artist", "Album", "AlbumArtist",
+    CollectionTrackInfo track(1, FileHash(), true,
+                              "Title", "Artist", "Album", "AlbumArtist",
                               /* length (s):*/ 3 * 60 * 1000);
 
     _tracks.insert(1, track);
@@ -229,7 +230,7 @@ void TrackInfoProviderMock::registerTrack(uint hashId, QString title, QString ar
     Q_ASSERT(hashId > 0);
     Q_ASSERT(!_tracks.contains(hashId));
 
-    CollectionTrackInfo track(FileHash(), true, title, artist, album, albumArtist,
+    CollectionTrackInfo track(hashId, FileHash(), true, title, artist, album, albumArtist,
                               /* length (s):*/ 4 * 60 * 1000);
 
     _tracks.insert(hashId, track);

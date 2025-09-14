@@ -243,7 +243,7 @@ namespace PMP::Server
 
         if (lengthChanged || quickTagsChanged)
         {
-            Q_EMIT _parent->hashTagInfoChanged(_hash, _quickTitle, _quickArtist,
+            Q_EMIT _parent->hashTagInfoChanged(_hashId, _hash, _quickTitle, _quickArtist,
                                                _quickAlbum, _quickAlbumArtist,
                                                _audio.trackLengthMilliseconds());
         }
@@ -1026,7 +1026,7 @@ namespace PMP::Server
                 lengthInMilliseconds = 0;
             }
 
-            CollectionTrackInfo info(hash, knowledge->isAvailable(),
+            CollectionTrackInfo info(knowledge->id(), hash, knowledge->isAvailable(),
                                      knowledge->quickTitle(), knowledge->quickArtist(),
                                      knowledge->quickAlbum(),
                                      knowledge->quickAlbumArtist(),
@@ -1051,7 +1051,7 @@ namespace PMP::Server
             lengthInMilliseconds = 0;
         }
 
-        CollectionTrackInfo info(knowledge->hash(), knowledge->isAvailable(),
+        CollectionTrackInfo info(hashId, knowledge->hash(), knowledge->isAvailable(),
                                  knowledge->quickTitle(), knowledge->quickArtist(),
                                  knowledge->quickAlbum(), knowledge->quickAlbumArtist(),
                                  qint32(lengthInMilliseconds));
