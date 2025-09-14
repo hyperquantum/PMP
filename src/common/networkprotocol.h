@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -233,6 +233,7 @@ namespace PMP
 
         static const int FILEHASH_BYTECOUNT = 8 /*length*/ + 20 /*SHA-1*/ + 16 /*MD5*/;
         static void appendHash(QByteArray& buffer, Nullable<FileHash> hash);
+        static void appendHash(QByteArray& buffer, const FileHash& hash);
         static FileHash getHash(const QByteArray& buffer, int position, bool* ok);
 
         static qint16 getHashUserDataFieldsMaskForProtocolVersion(int version);

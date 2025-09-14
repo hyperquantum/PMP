@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -282,8 +282,12 @@ namespace PMP
             return;
         }
 
-        auto hashValue = hash.value();
-        if (hashValue.isNull())
+        appendHash(buffer, hash.value());
+    }
+
+    void NetworkProtocol::appendHash(QByteArray& buffer, const FileHash& hash)
+    {
+        if (hash.isNull())
         {
             buffer += _fileHashAllZeroes;
             return;
@@ -291,9 +295,9 @@ namespace PMP
 
         auto oldBufferLength = buffer.length();
 
-        NetworkUtil::append8Bytes(buffer, hashValue.length());
-        buffer += hashValue.SHA1();
-        buffer += hashValue.MD5();
+        NetworkUtil::append8Bytes(buffer, hash.length());
+        buffer += hash.SHA1();
+        buffer += hash.MD5();
 
         auto newBufferLength = buffer.length();
         Q_ASSERT_X(newBufferLength - oldBufferLength == FILEHASH_BYTECOUNT,
