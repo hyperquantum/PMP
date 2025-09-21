@@ -82,12 +82,14 @@ namespace PMP::Client
         void onTimerTimeout();
 
     private:
-        const int KeepAliveIntervalMs = 30 * 1000;
-        const int KeepAliveReplyTimeoutMs = 5 * 1000;
+        static constexpr int KeepAliveIntervalMs = 30 * 1000;
+        static constexpr int SecondTimeoutStepTimeMs = 1000;
+        static constexpr int SecondTimeoutMaximumTimeMs = 5 * SecondTimeoutStepTimeMs;
 
         QTimer* _timer;
         bool _started { false };
         bool _waitingForSecondTimeout { false };
+        int _secondTimeoutTimePassedMs { 0 };
     };
 
     enum class ServerEventSubscription
