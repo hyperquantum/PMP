@@ -85,22 +85,32 @@ namespace PMP::Client
         if (!_started)
             return;
 
-        if (_waitingForSecondTimeout)
+        if (!_waitingForSecondTimeout)
         {
-            qDebug() << "InactivityTimer: timeout - second time - thing is inactive now";
+            qDebug()
+                << "InactivityTimer: no activity for a while - need to send keep-alive";
 
-            _started = false;
+            _waitingForSecondTimeout = true;
+            _secondTimeoutTimePassedMs = 0;
+            _timer->start(SecondTimeoutStepTimeMs);
 
-            Q_EMIT inactivityTimeout();
+            Q_EMIT keepAliveTimeout();
             return;
         }
 
-        qDebug() << "InactivityTimer: timeout - first time - need to send keep-alive";
+        _secondTimeoutTimePassedMs += SecondTimeoutStepTimeMs;
 
-        _waitingForSecondTimeout = true;
-        _timer->start(KeepAliveReplyTimeoutMs);
+        if (_secondTimeoutTimePassedMs < SecondTimeoutMaximumTimeMs)
+        {
+            _timer->start(SecondTimeoutStepTimeMs);
+            return;
+        }
 
-        Q_EMIT keepAliveTimeout();
+        qDebug() << "InactivityTimer: still no activity - maximum waiting time reached";
+
+        _started = false;
+
+        Q_EMIT inactivityTimeout();
     }
 
     /* ============================================================================ */
