@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -227,32 +227,32 @@ namespace PMP::Server
         _player->setUserPlayingFor(0);
     }
 
-    Future<HistoryFragment, Result> ServerInterface::getPersonalTrackHistory(
+    Future<HistoryFragment, Error> ServerInterface::getPersonalTrackHistory(
         FileHash hash, quint32 userId, uint startId, int limit)
     {
         if (!isLoggedIn())
-            return FutureError(Error::notLoggedIn());
+            return Error::notLoggedIn();
 
         if (hash.isNull())
-            return FutureError(Error::hashIsNull());
+            return Error::hashIsNull();
 
         auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
         if (maybeHashId == null)
-            return FutureError(Error::hashIsUnknown());
+            return Error::hashIsUnknown();
 
         auto hashIds =
             _hashRelations->getEquivalencyGroup(maybeHashId.value());
 
         if (userId != 0 && !_users->checkUserIdExists(userId))
-            return FutureError(Error::userIdNotFound());
+            return Error::userIdNotFound();
 
         limit = qBound(0, limit, 50);
 
         auto future =
-            Concurrent::runOnThreadPool<HistoryFragment, Result>(
+            Concurrent::runOnThreadPool<HistoryFragment, Error>(
                 globalThreadPool,
                 [hashIds, hash, userId, startId, limit]()
-                    -> ResultOrError<HistoryFragment, Result>
+                    -> ResultOrError<HistoryFragment, Error>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)
@@ -321,10 +321,10 @@ namespace PMP::Server
                                                             QString password)
     {
         if (!isLoggedIn())
-            return FutureResult(Error::notLoggedIn());
+            return Error::notLoggedIn();
 
         if (provider == ScrobblingProvider::Unknown)
-            return FutureResult(Error::scrobblingProviderInvalid());
+            return Error::scrobblingProviderInvalid();
 
         return _scrobbling->authenticateForProvider(_userLoggedIn, provider, user,
                                                     password);
@@ -405,7 +405,7 @@ namespace PMP::Server
         return overview;
     }
 
-    Future<QVector<QString>, Result>
+    Future<QVector<QString>, Error>
         ServerInterface::getPossibleFilenamesForQueueEntry(uint id)
     {
         if (id <= 0) /* invalid queue ID */
@@ -422,9 +422,9 @@ namespace PMP::Server
         uint hashId = _player->resolver().getID(hash);
 
         auto future =
-            Concurrent::runOnThreadPool<QVector<QString>, Result>(
+            Concurrent::runOnThreadPool<QVector<QString>, Error>(
                 globalThreadPool,
-                [hashId]() -> ResultOrError<QVector<QString>, Result>
+                [hashId]() -> ResultOrError<QVector<QString>, Error>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)
@@ -671,16 +671,16 @@ namespace PMP::Server
             Q_EMIT hashUserDataChangedOrAvailable(userId, hashStatsAlreadyAvailable);
     }
 
-    Future<CollectionTrackInfo, Result> ServerInterface::getHashInfo(FileHash hash)
+    Future<CollectionTrackInfo, Error> ServerInterface::getHashInfo(FileHash hash)
     {
         /* note: client does not need to be logged in for this */
 
         if (hash.isNull())
-            return FutureError(Error::hashIsNull());
+            return Error::hashIsNull();
 
         auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
         if (maybeHashId == null)
-            return FutureError(Error::hashIsUnknown());
+            return Error::hashIsUnknown();
 
         auto hashInfo = _player->resolver().getHashTrackInfo(maybeHashId.value());
 

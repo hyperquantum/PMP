@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -227,12 +227,12 @@ namespace PMP::Server
                                                           LastFmScrobblingBackend* parent,
                                                               QNetworkReply* pendingReply)
      : LastFmRequestHandler(parent, pendingReply, "session"),
-        _promise(Async::createPromise<LastFmAuthenticationResult, Result>())
+        _promise(Async::createPromise<LastFmAuthenticationResult, Error>())
     {
         //
     }
 
-    Future<LastFmAuthenticationResult, Result>
+    Future<LastFmAuthenticationResult, Error>
         LastFmAuthenticationRequestHandler::future() const
     {
         return _promise.future();
@@ -426,11 +426,11 @@ namespace PMP::Server
 
         return
             handler->future()
-                .thenOnEventLoop<SuccessType, Result>(
+                .thenOnEventLoop<SuccessType, Error>(
                     this,
                     [this, usernameOrEmail](
-                        ResultOrError<LastFmAuthenticationResult, Result> outcome)
-                            -> ResultOrError<SuccessType, Result>
+                        ResultOrError<LastFmAuthenticationResult, Error> outcome)
+                            -> ResultOrError<SuccessType, Error>
                     {
                         if (outcome.failed())
                         {
@@ -448,7 +448,7 @@ namespace PMP::Server
                 )
                 .convertToSimpleFuture<Result>(
                     [](SuccessType const&) -> Result { return Success(); },
-                    [](Result const& result) { return result; }
+                    [](Error const& error) { return error; }
                 );
     }
 

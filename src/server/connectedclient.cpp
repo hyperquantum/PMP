@@ -2756,7 +2756,7 @@ namespace PMP::Server
         _serverInterface->getPossibleFilenamesForQueueEntry(queueId)
             .handleOnEventLoop(
                 this,
-                [this, queueId](ResultOrError<QVector<QString>, Result> outcome)
+                [this, queueId](ResultOrError<QVector<QString>, Error> outcome)
                 {
                     if (outcome.succeeded())
                         sendPossibleTrackFilenames(queueId, outcome.result());
@@ -2983,7 +2983,7 @@ namespace PMP::Server
         auto future = _serverInterface->getHashInfo(hash);
         future.handleOnEventLoop(
             this,
-            [this, clientReference](ResultOrError<CollectionTrackInfo, Result> outcome)
+            [this, clientReference](ResultOrError<CollectionTrackInfo, Error> outcome)
             {
                 if (outcome.succeeded())
                     sendHashInfoReply(clientReference, outcome.result());
@@ -3016,7 +3016,7 @@ namespace PMP::Server
 
         future.handleOnEventLoop(
             this,
-            [this, clientReference](ResultOrError<HistoryFragment, Result> outcome)
+            [this, clientReference](ResultOrError<HistoryFragment, Error> outcome)
             {
                 if (outcome.succeeded())
                     sendHistoryFragmentMessage(clientReference, outcome.result());

@@ -49,7 +49,7 @@ SimpleFuture<Result> BackendMock::authenticateWithCredentials(QString usernameOr
     Q_UNUSED(usernameOrEmail);
     Q_UNUSED(password);
 
-    return FutureResult(Error::notImplemented());
+    return Error::notImplemented();
 }
 
 void BackendMock::initialize()
