@@ -28,7 +28,7 @@ namespace PMP::Server
     {
     public:
         FileHashWithId() : _id(0) {}
-        FileHashWithId(FileHash hash, uint hashId) : _hash(hash), _id(hashId) {}
+        FileHashWithId(FileHash hash, uint trackId) : _hash(hash), _id(trackId) {}
 
         FileHash const& hash() const { return _hash; }
         uint id() const { return _id; }

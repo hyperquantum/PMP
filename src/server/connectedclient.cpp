@@ -1061,7 +1061,7 @@ namespace PMP::Server
 
         if (includeTrackId)
         {
-            NetworkUtil::append8Bytes(message, info.hashId());
+            NetworkUtil::append8Bytes(message, info.trackId());
         }
 
         NetworkUtil::append2BytesUnsigned(message, titleData.size());
@@ -1128,6 +1128,33 @@ namespace PMP::Server
         sendBinaryMessage(message);
     }
 
+    quint16 ConnectedClient::createTrackStatusFor(QueueEntryIdsAndHash const& entry)
+    {
+        bool isTrack = false;
+
+        switch (entry.kind)
+        {
+        case QueueEntryKind::Track:
+            isTrack = true;
+            break; /* handled below */
+
+        case QueueEntryKind::Break:
+            return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Break);
+
+        case QueueEntryKind::Barrier:
+            return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Barrier);
+        }
+
+        if (!isTrack)
+        {
+            qWarning() << "Unhandled QueueEntryKind" << int(entry.kind)
+                       << "at queue entry with ID" << entry.queueId;
+            return NetworkProtocol::createTrackStatusForUnknownThing();
+        }
+
+        return NetworkProtocol::createTrackStatusForTrack();
+    }
+
     quint16 ConnectedClient::createTrackStatusFor(QSharedPointer<QueueEntry> entry)
     {
         switch (entry->kind())
@@ -1144,7 +1171,8 @@ namespace PMP::Server
 
         if (!entry->isTrack()) /* unhandled non-track thing */
         {
-            qWarning() << "Unhandled QueueEntryKind" << int(entry->kind());
+            qWarning() << "Unhandled QueueEntryKind" << int(entry->kind())
+                       << "at queue entry with ID" << entry->queueID();
             return NetworkProtocol::createTrackStatusForUnknownThing();
         }
 
@@ -1279,46 +1307,81 @@ namespace PMP::Server
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueEntryHashMessage(const QList<quint32>& queueIDs)
+    void ConnectedClient::sendQueueEntryHashMessage(
+        QList<quint32> queueIds,
+        QList<ResultOrError<QueueEntryIdsAndHash, Error>> const& entries)
     {
-        if (queueIDs.empty())
+        Q_ASSERT_X(queueIds.size() == entries.size(),
+                   "ConnectedClient::sendQueueEntryHashMessage",
+                   "list of IDs and list of results must be the same size");
+
+        if (entries.empty())
             return;
 
         const int maxSize = (1 << 16) - 1;
 
         /* not too big? */
-        if (queueIDs.size() > maxSize)
+        if (entries.size() > maxSize)
         {
             /* TODO: maybe delay the second part? */
-            sendQueueEntryInfoMessage(queueIDs.mid(0, maxSize));
-            sendQueueEntryInfoMessage(queueIDs.mid(maxSize));
+            sendQueueEntryHashMessage(queueIds.mid(0, maxSize), entries.mid(0, maxSize));
+            sendQueueEntryHashMessage(queueIds.mid(maxSize), entries.mid(maxSize));
             return;
         }
 
+        bool includeTrackId = _clientProtocolNo >= 28;
+
         QByteArray message;
-        message.reserve(4 + queueIDs.size() * (8 + NetworkProtocol::FILEHASH_BYTECOUNT));
+        message.reserve(4 + entries.size() * (8
+                                             + (includeTrackId ? 8 : 0)
+                                             + NetworkProtocol::FILEHASH_BYTECOUNT));
 
         NetworkProtocol::append2Bytes(message,
                                       ServerMessageType::BulkQueueEntryHashMessage);
-        NetworkUtil::append2Bytes(message, (uint)queueIDs.size());
+        NetworkUtil::append2BytesUnsigned(message, entries.size());
 
-        PlayerQueue& queue = _player->queue();
-
-        /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
-
-        for (auto queueID : queueIDs)
+        for (int i = 0; i < queueIds.size(); ++i)
         {
-            auto track = queue.lookup(queueID);
-            auto trackStatus =
-                track ? createTrackStatusFor(track)
-                      : NetworkProtocol::createTrackStatusUnknownId();
+            auto queueId = queueIds[i];
+            auto& entryOrError = entries[i];
 
-            auto hash = track ? track->hash() : null;
+            quint16 trackStatus = NetworkProtocol::createTrackStatusUnknownId();
+            Nullable<FileHashWithId> hashAndId;
 
-            NetworkUtil::append4Bytes(message, queueID);
+            if (entryOrError.succeeded())
+            {
+                auto entry = entryOrError.result();
+
+                Q_ASSERT_X(queueId == entry.queueId,
+                           "ConnectedClient::sendQueueEntryHashMessage",
+                           "queue IDs do not match");
+
+                trackStatus = createTrackStatusFor(entry);
+                hashAndId = entry.hashAndId;
+            }
+
+            NetworkUtil::append4Bytes(message, queueId);
             NetworkUtil::append2Bytes(message, trackStatus);
             NetworkUtil::append2Bytes(message, 0); /* filler */
-            NetworkProtocol::appendHash(message, hash);
+
+            if (hashAndId.isNull())
+            {
+                if (includeTrackId)
+                {
+                    NetworkUtil::append8Bytes(message, 0); /* no ID */
+                }
+
+                NetworkProtocol::appendNullHash(message);
+            }
+            else
+            {
+                if (includeTrackId)
+                {
+                    NetworkUtil::append8Bytes(message, hashAndId.value().id());
+                }
+
+                NetworkProtocol::appendHash(message, hashAndId.value().hash());
+            }
         }
 
         sendBinaryMessage(message);
@@ -2041,7 +2104,7 @@ namespace PMP::Server
         }
 
         int seconds = static_cast<int>(entry->lengthInMilliseconds() / 1000);
-        auto hash = entry->hash().value();
+        auto hash = _serverInterface->getHashForTrackId(entry->trackId().value()).value();
 
         sendTextCommand(
             "nowplaying track\n QID: " + QString::number(entry->queueID())
@@ -2725,8 +2788,8 @@ namespace PMP::Server
         if (message.length() < 8 || (message.length() - 4) % 4 != 0)
             return; /* invalid message */
 
-        QList<quint32> QIDs;
-        QIDs.reserve((message.length() - 4) / 4);
+        QList<quint32> queueIds;
+        queueIds.reserve((message.length() - 4) / 4);
 
         int offset = 4;
         while (offset <= message.length() - 4)
@@ -2734,14 +2797,24 @@ namespace PMP::Server
             quint32 queueID = NetworkUtil::get4Bytes(message, offset);
 
             if (queueID > 0)
-                QIDs.append(queueID);
+                queueIds.append(queueID);
 
             offset += 4;
         }
 
-        qDebug() << "received bulk hash info request for" << QIDs.size() << "QIDs";
+        if (queueIds.size() == 1)
+        {
+            qDebug() << "received hash info request for queue ID" << queueIds[0];
+        }
+        else
+        {
+            qDebug() << "received hash info request for" << queueIds.size()
+                     << "queue IDs";
+        }
 
-        sendQueueEntryHashMessage(QIDs);
+        auto result = _serverInterface->getTrackIdAndHashForQueueIds(queueIds);
+
+        sendQueueEntryHashMessage(queueIds, result);
     }
 
     void ConnectedClient::parsePossibleFilenamesForQueueEntryRequestMessage(

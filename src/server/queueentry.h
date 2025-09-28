@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,9 +21,10 @@
 #define PMP_QUEUEENTRY_H
 
 #include "common/audiodata.h"
-#include "common/filehash.h"
 #include "common/nullable.h"
 #include "common/tagdata.h"
+
+#include "queueentrykind.h"
 
 #include <QDateTime>
 #include <QSharedPointer>
@@ -35,19 +36,12 @@ namespace PMP::Server
     class PlayerQueue;
     class Resolver;
 
-    enum class QueueEntryKind
-    {
-        Track = 0,
-        Break,
-        Barrier,
-    };
-
     class QueueEntry
     {
     public:
         static QSharedPointer<QueueEntry> createBreak(uint queueId);
         static QSharedPointer<QueueEntry> createBarrier(uint queueId);
-        static QSharedPointer<QueueEntry> createFromHash(uint queueId, FileHash hash);
+        static QSharedPointer<QueueEntry> createFromTrackId(uint queueId, uint trackId);
         static QSharedPointer<QueueEntry> createCopyOf(uint queueId,
                                                QSharedPointer<QueueEntry const> existing);
 
@@ -57,7 +51,10 @@ namespace PMP::Server
         QueueEntryKind kind() const { return _kind; }
         bool isTrack() const { return _kind == QueueEntryKind::Track; }
 
-        Nullable<FileHash> hash() const;
+        Nullable<uint> trackId() const
+        {
+            if (_trackId > 0) return _trackId; else return null;
+        }
 
         void setFilename(QString const& filename);
         Nullable<QString> filename() const;
@@ -83,7 +80,7 @@ namespace PMP::Server
         void setEndedNow();
 
     private:
-        QueueEntry(uint queueId, FileHash hash);
+        QueueEntry(uint queueId, uint trackId);
         QueueEntry(uint queueId, QSharedPointer<QueueEntry const> existing);
         QueueEntry(uint queueId, QueueEntryKind kind);
 
@@ -91,7 +88,7 @@ namespace PMP::Server
 
         uint const _queueID;
         QueueEntryKind _kind;
-        FileHash _hash;
+        uint _trackId;
         //bool _fetchedAudioInfo;
         AudioData _audioInfo;
         QString _filename;
@@ -112,12 +109,12 @@ namespace PMP::Server
             return QueueEntry::createBreak;
         }
 
-        static std::function<QSharedPointer<QueueEntry> (uint)> hash(FileHash hash)
+        static std::function<QSharedPointer<QueueEntry> (uint)> track(uint trackId)
         {
             return
-                [hash](uint queueId)
+                [trackId](uint queueId)
                 {
-                    return QueueEntry::createFromHash(queueId, hash);
+                    return QueueEntry::createFromTrackId(queueId, trackId);
                 };
         }
 

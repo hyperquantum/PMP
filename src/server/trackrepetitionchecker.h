@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,12 +17,11 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_TRACKREPETITIONCHECKER_H
-#define PMP_TRACKREPETITIONCHECKER_H
-
-#include "common/filehash.h"
+#ifndef PMP_SERVER_TRACKREPETITIONCHECKER_H
+#define PMP_SERVER_TRACKREPETITIONCHECKER_H
 
 #include <QObject>
+#include <QSharedPointer>
 
 namespace PMP::Server
 {
@@ -38,8 +37,7 @@ namespace PMP::Server
 
         int noRepetitionSpanSeconds() const;
 
-        bool isRepetitionWhenQueued(uint id, FileHash const& hash,
-                                    qint64 extraMarginMilliseconds = 0);
+        bool isRepetitionWhenQueued(uint trackId, qint64 extraMarginMilliseconds = 0);
 
     public Q_SLOTS:
         void setUserGeneratingFor(quint32 user);

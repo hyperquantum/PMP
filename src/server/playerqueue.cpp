@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,6 +19,7 @@
 
 #include "playerqueue.h"
 
+#include "hashidregistrar.h"
 #include "queueentry.h"
 #include "resolver.h"
 
@@ -33,9 +34,10 @@ namespace PMP::Server
         const int maximumQueueLength = 2'000'000;
     }
 
-    PlayerQueue::PlayerQueue(Resolver* resolver)
-     : _nextQueueID(1), _firstTrackIndex(-1), _firstTrackQueueId(0),
-       _resolver(resolver), _queueFrontChecker(new QTimer(this))
+    PlayerQueue::PlayerQueue(HashIdRegistrar* hashIdRegistrar, Resolver* resolver)
+     : _hashIdRegistrar(hashIdRegistrar), _resolver(resolver),
+        _queueFrontChecker(new QTimer(this)),
+        _nextQueueID(1), _firstTrackIndex(-1), _firstTrackQueueId(0)
     {
         connect(
             _queueFrontChecker, &QTimer::timeout,
@@ -56,9 +58,10 @@ namespace PMP::Server
             if (!entry->isTrack())
                 continue;
 
-            auto hash = entry->hash().value();
+            auto trackId = entry->trackId().value();
             auto filename = entry->filename();
-            if (filename.hasValue() && !_resolver->pathStillValid(hash, filename.value()))
+            if (filename.hasValue()
+                && !_resolver->pathStillValid(trackId, filename.value()))
             {
                 qDebug() << "PlayerQueue: filename no longer valid for queue index"
                          << (index + 1);
@@ -82,10 +85,10 @@ namespace PMP::Server
 
             qDebug() << "PlayerQueue: need to obtain a valid filename for queue index"
                      << (index + 1) << "which has queue ID" << entry->queueID()
-                     << "and hash" << hash;
+                     << "and track ID" << trackId;
 
             backoff = 10;
-            auto future = _resolver->findPathForHashAsync(hash);
+            auto future = _resolver->findPathForTrackAsync(trackId);
             future.handleOnEventLoop(
                 this,
                 [entry, index](FailureOr<QString> outcome)
@@ -180,12 +183,58 @@ namespace PMP::Server
         }
     }
 
+    QList<ResultOrError<QueueEntryIdsAndHash, class Error>>
+        PlayerQueue::getHashAndTrackIdForQueueIds(QList<uint> queueIds) const
+    {
+        QList<ResultOrError<QueueEntryIdsAndHash, class Error>> result;
+        result.reserve(queueIds.size());
+
+        for (auto queueId : queueIds)
+        {
+            auto it = _idLookup.find(queueId);
+            if (it == _idLookup.constEnd())
+            {
+                result.append(Error::queueEntryIdNotFound(queueId));
+                continue;
+            }
+
+            result.append(toQueueEntryIdsAndHash(it.value()));
+        }
+
+        return result;
+    }
+
+    QueueEntryIdsAndHash PlayerQueue::toQueueEntryIdsAndHash(
+        QSharedPointer<QueueEntry> entry) const
+    {
+        Nullable<FileHashWithId> hashAndId;
+
+        if (entry->isTrack())
+        {
+            auto trackId = entry->trackId().value();
+            auto hash = _hashIdRegistrar->getHashForId(trackId).value();
+
+            hashAndId = FileHashWithId(hash, trackId);
+        }
+
+        return
+            {
+                .queueId = entry->queueID(),
+                .kind = entry->kind(),
+                .hashAndId = hashAndId,
+            };
+    }
+
     Result PlayerQueue::enqueue(FileHash hash)
     {
         if (hash.isNull())
             return Error::hashIsNull();
 
-        return enqueue(QueueEntryCreators::hash(hash));
+        auto trackId = _hashIdRegistrar->getIdForHash(hash);
+        if (trackId == null)
+            return Error::hashIsUnknown();
+
+        return enqueue(QueueEntryCreators::track(trackId.value()));
     }
 
     Result PlayerQueue::enqueue(
@@ -199,7 +248,11 @@ namespace PMP::Server
         if (hash.isNull())
             return Error::hashIsNull();
 
-        return insertAtFront(QueueEntryCreators::hash(hash));
+        auto trackId = _hashIdRegistrar->getIdForHash(hash);
+        if (trackId == null)
+            return Error::hashIsUnknown();
+
+        return insertAtFront(QueueEntryCreators::track(trackId.value()));
     }
 
     Result PlayerQueue::insertBreakAtFront()
@@ -218,7 +271,11 @@ namespace PMP::Server
         if (hash.isNull())
             return Error::hashIsNull();
 
-        return insertAtIndex(index, QueueEntryCreators::hash(hash));
+        auto trackId = _hashIdRegistrar->getIdForHash(hash);
+        if (trackId == null)
+            return Error::hashIsUnknown();
+
+        return insertAtIndex(index, QueueEntryCreators::track(trackId.value()));
     }
 
     Result PlayerQueue::insertAtIndex(qint32 index,
@@ -512,7 +569,7 @@ namespace PMP::Server
         return -1; // not found
     }
 
-    TrackRepetitionInfo PlayerQueue::checkPotentialRepetitionByAdd(FileHash hash,
+    TrackRepetitionInfo PlayerQueue::checkPotentialRepetitionByAdd(uint trackId,
                                                      int repetitionAvoidanceSeconds,
                                                      qint64 extraMarginMilliseconds) const
     {
@@ -524,9 +581,9 @@ namespace PMP::Server
             if (!entry->isTrack())
                 continue;
 
-            auto entryHash = entry->hash().value();
+            auto entryTrackId = entry->trackId().value();
 
-            if (entryHash == hash)
+            if (entryTrackId == trackId)
                 return TrackRepetitionInfo(true, millisecondsCounted);
 
             entry->checkAudioData(*_resolver);
@@ -545,5 +602,4 @@ namespace PMP::Server
 
         return TrackRepetitionInfo(false, millisecondsCounted);
     }
-
 }

@@ -64,16 +64,16 @@ namespace PMP::Server
         bool isFullIndexationRunning();
         bool isQuickScanForNewFilesRunning();
 
-        Future<QString, FailureType> findPathForHashAsync(FileHash hash);
-        Future<QString, FailureType> findPathForHashAsync(uint hashId);
+        Future<QString, FailureType> findPathForTrackAsync(uint trackId);
         Future<SuccessType, FailureType> waitUntilAnyFileAnalyzed(uint hashId);
 
         bool haveFileForHash(const FileHash& hash);
-        bool pathStillValid(const FileHash& hash, QString path);
+        bool pathStillValid(uint trackId, QString path);
         Nullable<FileHash> getHashForFilePath(QString path);
 
+        Nullable<AudioData> findAudioData(uint trackId);
         Nullable<AudioData> findAudioData(const FileHash& hash);
-        Nullable<TagData> findTagData(const FileHash& hash);
+        Nullable<TagData> findTagData(uint trackId);
 
         QVector<FileHash> getAllHashes();
         QVector<CollectionTrackInfo> getHashesTrackInfo(QVector<FileHash> hashes);

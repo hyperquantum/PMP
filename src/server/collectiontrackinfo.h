@@ -31,30 +31,30 @@ namespace PMP::Server
     {
     public:
         CollectionTrackInfo()
-         : _hashId(0), _isAvailable(false), _lengthInMs(-1)
+         : _trackId(0), _isAvailable(false), _lengthInMs(-1)
         {
             //
         }
 
-        CollectionTrackInfo(uint hashId, FileHash const& hash, bool isAvailable)
-         : _hashId(hashId), _hash(hash), _isAvailable(isAvailable),
+        CollectionTrackInfo(uint trackId, FileHash const& hash, bool isAvailable)
+         : _trackId(trackId), _hash(hash), _isAvailable(isAvailable),
             _lengthInMs(-1)
         {
             //
         }
 
-        CollectionTrackInfo(uint hashId, FileHash const& hash, bool isAvailable,
+        CollectionTrackInfo(uint trackId, FileHash const& hash, bool isAvailable,
                             QString const& title, QString const& artist,
                             QString const& album, QString const& albumArtist,
                             qint32 lengthInMilliseconds)
-         : _hashId(hashId), _hash(hash), _isAvailable(isAvailable),
+         : _trackId(trackId), _hash(hash), _isAvailable(isAvailable),
             _lengthInMs(lengthInMilliseconds),
             _title(title), _artist(artist), _album(album), _albumArtist(albumArtist)
         {
             //
         }
 
-        uint hashId() const { return _hashId; }
+        uint trackId() const { return _trackId; }
         const FileHash& hash() const { return _hash; }
 
         void setAvailable(bool available) { _isAvailable = available; }
@@ -78,7 +78,7 @@ namespace PMP::Server
         }
 
     private:
-        uint _hashId;
+        uint _trackId;
         FileHash _hash;
         bool _isAvailable;
         qint32 _lengthInMs;

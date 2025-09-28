@@ -405,6 +405,12 @@ namespace PMP::Server
         return overview;
     }
 
+    QList<ResultOrError<QueueEntryIdsAndHash, Error>>
+        ServerInterface::getTrackIdAndHashForQueueIds(QList<uint> ids)
+    {
+        return _player->queue().getHashAndTrackIdForQueueIds(ids);
+    }
+
     Future<QVector<QString>, Error>
         ServerInterface::getPossibleFilenamesForQueueEntry(uint id)
     {
@@ -418,19 +424,18 @@ namespace PMP::Server
         if (!entry->isTrack())
             return FutureError(Error::queueItemTypeInvalid());
 
-        auto hash = entry->hash().value();
-        uint hashId = _player->resolver().getID(hash);
+        auto trackId = entry->trackId().value();
 
         auto future =
             Concurrent::runOnThreadPool<QVector<QString>, Error>(
                 globalThreadPool,
-                [hashId]() -> ResultOrError<QVector<QString>, Error>
+                [trackId]() -> ResultOrError<QVector<QString>, Error>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)
                         return Error::databaseUnvailable();
 
-                    auto filenamesOrFailure = db->getFilenames(hashId);
+                    auto filenamesOrFailure = db->getFilenames(trackId);
 
                     if (filenamesOrFailure.failed())
                         return Error::internalError();
@@ -486,10 +491,11 @@ namespace PMP::Server
         if (!isLoggedIn())
             return Error::notLoggedIn();
 
-        if (_hashIdRegistrar->isRegistered(hash) == false)
+        auto trackId = _hashIdRegistrar->getIdForHash(hash);
+        if (trackId == null)
             return Error::hashIsUnknown();
 
-        auto entryCreator = QueueEntryCreators::hash(hash);
+        auto entryCreator = QueueEntryCreators::track(trackId.value());
 
         return insertAtIndex(index, entryCreator, clientReference);
     }
@@ -685,6 +691,11 @@ namespace PMP::Server
         auto hashInfo = _player->resolver().getHashTrackInfo(maybeHashId.value());
 
         return FutureResult(hashInfo);
+    }
+
+    Nullable<FileHash> ServerInterface::getHashForTrackId(uint trackId) const
+    {
+        return _hashIdRegistrar->getHashForId(trackId);
     }
 
     void ServerInterface::shutDownServer()

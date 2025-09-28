@@ -274,11 +274,16 @@ namespace PMP
     const QByteArray NetworkProtocol::_fileHashAllZeroes =
             Util::generateZeroedMemory(FILEHASH_BYTECOUNT);
 
+    void NetworkProtocol::appendNullHash(QByteArray& buffer)
+    {
+        buffer += _fileHashAllZeroes;
+    }
+
     void NetworkProtocol::appendHash(QByteArray& buffer, Nullable<FileHash> hash)
     {
         if (hash.isNull())
         {
-            buffer += _fileHashAllZeroes;
+            appendNullHash(buffer);
             return;
         }
 
@@ -289,7 +294,7 @@ namespace PMP
     {
         if (hash.isNull())
         {
-            buffer += _fileHashAllZeroes;
+            appendNullHash(buffer);
             return;
         }
 

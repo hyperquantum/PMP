@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,40 +30,41 @@ namespace PMP::Server
     }
 
     Future<CollectionTrackInfo, FailureType> TrackInfoProviderImpl::getTrackInfoAsync(
-                                                                              uint hashId)
+                                                                            uint trackId)
     {
         {
-            auto trackInfo = _resolver->getHashTrackInfo(hashId);
+            auto trackInfo = _resolver->getHashTrackInfo(trackId);
 
             if (!trackInfo.titleAndArtistUnknown())
                 return FutureResult(trackInfo);
         }
 
-        qDebug() << "TrackInfoProviderImpl: will try to locate the file for hash ID"
-                 << hashId;
+        qDebug() << "TrackInfoProviderImpl: will try to locate the file for track ID"
+                 << trackId;
 
         auto future =
-            _resolver->findPathForHashAsync(hashId)
+            _resolver->findPathForTrackAsync(trackId)
                 .thenOnAnyThreadIndirect<SuccessType, FailureType>(
-                    [this, hashId](FailureOr<QString> outcome) -> Future<SuccessType, FailureType>
+                    [this, trackId](FailureOr<QString> outcome)
+                              -> Future<SuccessType, FailureType>
                     {
                         if (outcome.failed())
                             return FutureError<FailureType>(failure);
 
-                        qDebug() << "TrackInfoProviderImpl: have file for hash ID"
-                                 << hashId
+                        qDebug() << "TrackInfoProviderImpl: have file for track ID"
+                                 << trackId
                                  << "and will now wait until Resolver has processed it";
 
-                        return _resolver->waitUntilAnyFileAnalyzed(hashId);
+                        return _resolver->waitUntilAnyFileAnalyzed(trackId);
                     }
                 )
                 .thenOnAnyThread<CollectionTrackInfo, FailureType>(
-                    [this, hashId](SuccessOrFailure) -> FailureOr<CollectionTrackInfo>
+                    [this, trackId](SuccessOrFailure) -> FailureOr<CollectionTrackInfo>
                     {
                         qDebug() << "TrackInfoProviderImpl: will now attempt to return"
-                                    " track info for hash ID" << hashId;
+                                    " track info for hash ID" << trackId;
 
-                        return _resolver->getHashTrackInfo(hashId);
+                        return _resolver->getHashTrackInfo(trackId);
                     }
                 );
 

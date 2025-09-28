@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -26,10 +26,10 @@
 
 namespace PMP::Server
 {
-    QueueEntry::QueueEntry(uint queueId, FileHash hash)
+    QueueEntry::QueueEntry(uint queueId, uint trackId)
      : _queueID(queueId),
        _kind(QueueEntryKind::Track),
-       _hash(hash),
+       _trackId(trackId),
        _haveFilename(false),
        _fetchedTagData(false),
        _fileFinderBackoff(0),
@@ -41,7 +41,7 @@ namespace PMP::Server
     QueueEntry::QueueEntry(uint queueId, QSharedPointer<QueueEntry const> existing)
      : _queueID(queueId),
        _kind(existing->_kind),
-       _hash(existing->_hash),
+       _trackId(existing->_trackId),
        _audioInfo(existing->_audioInfo),
        _filename(existing->_filename),
        _haveFilename(existing->_haveFilename),
@@ -56,7 +56,7 @@ namespace PMP::Server
     QueueEntry::QueueEntry(uint queueId, QueueEntryKind kind)
      : _queueID(queueId),
        _kind(kind),
-       _hash{},
+       _trackId(0),
        _haveFilename(false),
        _fetchedTagData(false),
        _fileFinderBackoff(0),
@@ -75,9 +75,9 @@ namespace PMP::Server
         return QSharedPointer<QueueEntry>::create(queueId, QueueEntryKind::Barrier);
     }
 
-    QSharedPointer<QueueEntry> QueueEntry::createFromHash(uint queueId, FileHash hash)
+    QSharedPointer<QueueEntry> QueueEntry::createFromTrackId(uint queueId, uint trackId)
     {
-        return QSharedPointer<QueueEntry>::create(queueId, hash);
+        return QSharedPointer<QueueEntry>::create(queueId, trackId);
     }
 
     QSharedPointer<QueueEntry> QueueEntry::createCopyOf(uint queueId,
@@ -89,14 +89,6 @@ namespace PMP::Server
     QueueEntry::~QueueEntry()
     {
         //
-    }
-
-    Nullable<FileHash> QueueEntry::hash() const
-    {
-        if (_hash.isNull())
-            return null;
-
-        return _hash;
     }
 
     void QueueEntry::setFilename(QString const& filename)
@@ -121,11 +113,11 @@ namespace PMP::Server
 
     void QueueEntry::checkAudioData(Resolver& resolver)
     {
-        if (_hash.isNull()) return;
+        if (_trackId == 0) return;
 
         if (!_audioInfo.isComplete())
         {
-            auto audioDataFound = resolver.findAudioData(_hash);
+            auto audioDataFound = resolver.findAudioData(_trackId);
 
             if (audioDataFound.hasValue())
                 _audioInfo = audioDataFound.value();
@@ -134,13 +126,13 @@ namespace PMP::Server
 
     void QueueEntry::checkTrackData(Resolver& resolver)
     {
-        if (_hash.isNull()) return;
+        if (_trackId == 0) return;
 
         checkAudioData(resolver);
 
         if (_fetchedTagData) return;
 
-        auto tagDataFound = resolver.findTagData(_hash);
+        auto tagDataFound = resolver.findTagData(_trackId);
         if (tagDataFound.hasValue())
         {
             _tagData = tagDataFound.value();

@@ -3137,6 +3137,8 @@ namespace PMP::Client
 
     void ServerConnection::parseBulkQueueEntryHashMessage(const QByteArray& message)
     {
+        bool withTrackId = _serverProtocolNo >= 28;
+
         qint32 messageLength = message.length();
         if (messageLength < 4)
         {
@@ -3145,9 +3147,12 @@ namespace PMP::Client
         }
 
         int trackCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
-        if (trackCount == 0
-            || messageLength
-                != 4 + trackCount * (8 + NetworkProtocol::FILEHASH_BYTECOUNT))
+        int expectedMessageLength =
+            4 + trackCount * (8
+                                + (withTrackId ? 8 : 0)
+                                + NetworkProtocol::FILEHASH_BYTECOUNT);
+
+        if (trackCount == 0 || messageLength != expectedMessageLength)
         {
             invalidMessageReceived(
                 message, "bulk-queue-entry-hashes",
@@ -3161,18 +3166,36 @@ namespace PMP::Client
         int offset = 4;
         for (int i = 0; i < trackCount; ++i)
         {
-            quint32 queueID = NetworkUtil::get4Bytes(message, offset);
+            quint32 queueId = NetworkUtil::get4Bytes(message, offset);
             quint16 status = NetworkUtil::get2Bytes(message, offset + 4);
             offset += 8;
+
+            quint64 trackId = 0;
+            if (withTrackId)
+            {
+                trackId = NetworkUtil::get8Bytes(message, offset);
+                offset += 8;
+            }
 
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
             offset += NetworkProtocol::FILEHASH_BYTECOUNT;
             if (!ok)
             {
-                qWarning() << "could not extract hash for QID" << queueID
+                qWarning() << "could not extract hash for QID" << queueId
                            << "; track status=" << status;
                 continue;
+            }
+
+            if (withTrackId)
+            {
+                qDebug() << "queue entry" << queueId << "has status" << status
+                         << "and track ID" << trackId << "and hash" << hash;
+            }
+            else
+            {
+                qDebug() << "queue entry" << queueId << "has status" << status
+                         << "and hash" << hash;
             }
 
             auto type = NetworkProtocol::trackStatusToQueueEntryType(status);
@@ -3181,7 +3204,7 @@ namespace PMP::Client
             if (hash.isNull() == false)
                 hashId = _hashIdRepository->getOrRegisterId(hash);
 
-            Q_EMIT receivedQueueEntryHash(queueID, type, hashId);
+            Q_EMIT receivedQueueEntryHash(queueId, type, hashId);
         }
     }
 

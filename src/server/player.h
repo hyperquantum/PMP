@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -35,6 +35,7 @@ QT_FORWARD_DECLARE_CLASS(QMediaPlayer);
 namespace PMP::Server
 {
     class AudioDevices;
+    class HashIdRegistrar;
     class Resolver;
 
     class PlayerInstance : public QObject
@@ -102,7 +103,8 @@ namespace PMP::Server
     {
         Q_OBJECT
     public:
-        Player(QObject* parent, Resolver* resolver, int defaultVolume);
+        Player(QObject* parent, HashIdRegistrar* hashIdRegistrar, Resolver* resolver,
+               int defaultVolume);
 
         int volume() const;
 

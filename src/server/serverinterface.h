@@ -32,6 +32,7 @@
 #include "collectiontrackinfo.h"
 #include "hashstats.h"
 #include "historyentry.h"
+#include "queueentryidsandhash.h"
 #include "result.h"
 #include "serverplayerstate.h"
 
@@ -125,6 +126,8 @@ namespace PMP::Server
 
         PlayerStateOverview getPlayerStateOverview();
 
+        QList<ResultOrError<QueueEntryIdsAndHash, Error>> getTrackIdAndHashForQueueIds(
+                                                                        QList<uint> ids);
         Future<QVector<QString>, Error> getPossibleFilenamesForQueueEntry(uint id);
 
         Result insertTrackAtEnd(FileHash hash);
@@ -149,6 +152,7 @@ namespace PMP::Server
 
         void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
         Future<CollectionTrackInfo, Error> getHashInfo(FileHash hash);
+        Nullable<FileHash> getHashForTrackId(uint trackId) const;
 
         void shutDownServer();
         void shutDownServer(QString serverPassword);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,8 +21,10 @@
 #define PMP_PLAYERQUEUE_H
 
 #include "common/filehash.h"
+#include "common/resultorerror.h"
 #include "common/specialqueueitemtype.h"
 
+#include "queueentryidsandhash.h"
 #include "recenthistoryentry.h"
 #include "result.h"
 
@@ -43,6 +45,7 @@ namespace PMP
 
 namespace PMP::Server
 {
+    class HashIdRegistrar;
     class RecentHistoryEntry;
     class QueueEntry;
     class Resolver;
@@ -73,9 +76,9 @@ namespace PMP::Server
             Played, Skipped, Error
         };
 
-        PlayerQueue(Resolver* resolver);
+        PlayerQueue(HashIdRegistrar* hashIdRegistrar, Resolver* resolver);
 
-        TrackRepetitionInfo checkPotentialRepetitionByAdd(FileHash hash,
+        TrackRepetitionInfo checkPotentialRepetitionByAdd(uint trackId,
                                                           int repetitionAvoidanceSeconds,
                                                           qint64 extraMarginMilliseconds
                                                           ) const;
@@ -96,6 +99,9 @@ namespace PMP::Server
         int findIndex(quint32 queueID);
         QSharedPointer<QueueEntry> entryAtIndex(int index) const;
         QList<QSharedPointer<QueueEntry>> entries(int startoffset, int maxCount);
+
+        QList<ResultOrError<QueueEntryIdsAndHash, class Error>>
+            getHashAndTrackIdForQueueIds(QList<uint> queueIds) const;
 
         Result enqueue(FileHash hash);
         Result enqueue(std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
@@ -139,19 +145,21 @@ namespace PMP::Server
         void checkFrontOfQueue();
 
     private:
+        QueueEntryIdsAndHash toQueueEntryIdsAndHash(QSharedPointer<QueueEntry>) const;
         void resetFirstTrack();
         void setFirstTrackIndexAndId(int index, uint queueId);
         void findFirstTrackBetweenIndices(int start, int end, bool resetIfNoneFound);
         void emitFirstTrackChanged();
 
+        HashIdRegistrar* _hashIdRegistrar;
+        Resolver* _resolver;
+        QTimer* _queueFrontChecker;
         uint _nextQueueID;
         int _firstTrackIndex;
         uint _firstTrackQueueId;
         QHash<quint32, QSharedPointer<QueueEntry>> _idLookup;
         QQueue<QSharedPointer<QueueEntry>> _queue;
         QQueue<QSharedPointer<RecentHistoryEntry>> _history;
-        Resolver* _resolver;
-        QTimer* _queueFrontChecker;
     };
 }
 #endif
