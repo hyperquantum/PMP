@@ -1524,10 +1524,12 @@ namespace PMP::Server
 
         bool withAlbumAndTrackLength = _clientProtocolNo >= 7;
         bool withAlbumArtist = _clientProtocolNo >= 24;
+        bool withTrackId = _clientProtocolNo >= 28;
 
         /* estimate how much bytes we will need and reserve that memory in the buffer */
         const int bytesEstimatedPerTrack =
-            NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 + 20 + 15
+                (withTrackId ? 8 : 0)
+                + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 + 20 + 15
                 + (withAlbumAndTrackLength ? 2 + 15 + 4 : 0)
                 + (withAlbumArtist ? 2 + 15 : 0);
 
@@ -1564,6 +1566,11 @@ namespace PMP::Server
             QByteArray artistData = artist.toUtf8();
             QByteArray albumData = album.toUtf8();
             QByteArray albumArtistData = albumArtist.toUtf8();
+
+            if (withTrackId)
+            {
+                NetworkUtil::append8Bytes(message, track.trackId());
+            }
 
             NetworkProtocol::appendHash(message, track.hash());
             NetworkUtil::appendByte(message, track.isAvailable() ? 1 : 0);

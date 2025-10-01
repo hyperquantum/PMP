@@ -3466,9 +3466,11 @@ namespace PMP::Client
 
         bool withAlbumAndTrackLength = _serverProtocolNo >= 7;
         bool withAlbumArtist = _serverProtocolNo >= 24;
+        bool withTrackId = _serverProtocolNo >= 28;
 
         const int fixedInfoLengthPerTrack =
-            NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2
+                (withTrackId ? 8 : 0)
+                + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2
                 + (withAlbumAndTrackLength ? 2 + 4 : 0)
                 + (withAlbumArtist ? 2 : 0);
 
@@ -3490,8 +3492,9 @@ namespace PMP::Client
 
         while (true)
         {
-            /* set pointer past hash and availability */
-            int current = offset + NetworkProtocol::FILEHASH_BYTECOUNT + 1;
+            /* set pointer past track ID and hash and availability */
+            int current =
+                offset + (withTrackId ? 8 : 0) + NetworkProtocol::FILEHASH_BYTECOUNT + 1;
             int titleSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
             current += 2;
             int artistSize = NetworkUtil::get2BytesUnsignedToInt(message, current);
@@ -3557,6 +3560,13 @@ namespace PMP::Client
         for (int i = 0; i < trackCount; ++i)
         {
             offset = offsets[i];
+
+            quint64 trackId = 0;
+            if (withTrackId)
+            {
+                trackId = NetworkUtil::get8Bytes(message, offset);
+                offset += 8;
+            }
 
             bool ok;
             FileHash hash = NetworkProtocol::getHash(message, offset, &ok);
