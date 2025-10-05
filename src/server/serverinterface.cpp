@@ -236,12 +236,13 @@ namespace PMP::Server
         if (hash.isNull())
             return Error::hashIsNull();
 
-        auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
-        if (maybeHashId == null)
+        auto maybeTrackId = _hashIdRegistrar->getIdForHash(hash);
+        if (maybeTrackId == null)
             return Error::hashIsUnknown();
 
-        auto hashIds =
-            _hashRelations->getEquivalencyGroup(maybeHashId.value());
+        auto trackId = maybeTrackId.value();
+
+        auto trackIds = _hashRelations->getEquivalencyGroup(trackId);
 
         if (userId != 0 && !_users->checkUserIdExists(userId))
             return Error::userIdNotFound();
@@ -251,7 +252,7 @@ namespace PMP::Server
         auto future =
             Concurrent::runOnThreadPool<HistoryFragment, Error>(
                 globalThreadPool,
-                [hashIds, hash, userId, startId, limit]()
+                [trackIds, trackId, hash, userId, startId, limit]()
                     -> ResultOrError<HistoryFragment, Error>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
@@ -259,7 +260,7 @@ namespace PMP::Server
                         return Error::databaseUnvailable();
 
                     const auto recordsOrFailure =
-                        db->getTrackHistoryForUser(userId, hashIds, startId, limit);
+                        db->getTrackHistoryForUser(userId, trackIds, startId, limit);
 
                     if (recordsOrFailure.failed())
                         return Error::internalError();
@@ -272,7 +273,8 @@ namespace PMP::Server
                     for (auto& record : records)
                     {
                         entries.append(
-                            HistoryEntry { hash, userId, record.start, record.end,
+                            HistoryEntry { trackId, hash, userId,
+                                           record.start, record.end,
                                            record.permillage, record.validForScoring }
                         );
                     }

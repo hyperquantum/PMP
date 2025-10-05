@@ -3794,12 +3794,16 @@ namespace PMP::Client
         if (message.length() < 8)
             return; /* invalid message */
 
+        bool withTrackId = _serverProtocolNo >= 28;
+
         quint16 entryCount = NetworkUtil::get2BytesUnsignedToInt(message, 2);
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
         uint nextStartId = NetworkUtil::get4Bytes(message, 8);
 
         auto expectedMessageSize =
-            12 + entryCount * (24 + NetworkProtocol::FILEHASH_BYTECOUNT);
+            12 + entryCount * (24
+                                + (withTrackId ? 8 : 0)
+                                + NetworkProtocol::FILEHASH_BYTECOUNT);
 
         if (message.length() != expectedMessageSize)
             return; /* invalid message */
@@ -3814,13 +3818,22 @@ namespace PMP::Client
         for (int i = 0; i < entryCount; ++i)
         {
             quint32 userId = NetworkUtil::get4Bytes(message, offset);
+            offset += 4;
+
+            quint64 trackId = 0;
+            if (withTrackId)
+            {
+                trackId = NetworkUtil::get8Bytes(message, offset);
+                offset += 8;
+            }
+
             QDateTime started =
-                NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 4);
+                NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset);
             QDateTime ended =
-                NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 12);
-            int permillage = NetworkUtil::get2BytesSigned(message, offset + 20);
-            quint16 status = NetworkUtil::get2Bytes(message, offset + 22);
-            offset += 24;
+                NetworkUtil::getQDateTimeFrom8ByteMsSinceEpoch(message, offset + 8);
+            int permillage = NetworkUtil::get2BytesSigned(message, offset + 16);
+            quint16 status = NetworkUtil::get2Bytes(message, offset + 18);
+            offset += 20;
 
             bool ok;
             auto hash = NetworkProtocol::getHash(message, offset, &ok);
@@ -3831,6 +3844,9 @@ namespace PMP::Client
 
             auto hashId = _hashIdRepository->getOrRegisterId(hash);
             bool validForScoring = status & 1;
+
+            qDebug() << "history entry: user" << userId << " track ID" << trackId
+                     << " hash" << hash << " started" << started;
 
             entries.append(
                 HistoryEntry { hashId, userId, started, ended, permillage,

@@ -64,7 +64,7 @@ Changes for each version:
   25: client msg 27, server msg 36, error codes 26 & 120 & 121: fetch personal track history
   26: parameterless actions 60 & 61, server msg 37: full indexation and quick scan for new files
   27: client msg 28, server msg 38: requesting individual track info
-  28: changed server msg 21 & 38 ... : send track IDs to client
+  28: changed server msg 18 & 19 & 21 & 36 & 38 ... : include track IDs
 */
 
 namespace PMP

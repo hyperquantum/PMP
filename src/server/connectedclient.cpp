@@ -944,11 +944,15 @@ namespace PMP::Server
             return;
         }
 
+        bool includeTrackId = _clientProtocolNo >= 28;
+
         quint32 nextStartId = lowestEntryId > 0 ? lowestEntryId : 0;
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4 + fragment.entries().size() *
-                            (4 + 8 + 8 + 2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT));
+                            (4
+                                + (includeTrackId ? 8 : 0)
+                                + 8 + 8 + 2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT));
         NetworkProtocol::append2Bytes(message, ServerMessageType::HistoryFragmentMessage);
         NetworkUtil::append2BytesUnsigned(message, fragment.entries().size());
         NetworkUtil::append4Bytes(message, clientReference);
@@ -961,6 +965,12 @@ namespace PMP::Server
             qint16 permillage = static_cast<qint16>(entry.permillage());
 
             NetworkUtil::append4Bytes(message, entry.userId());
+
+            if (includeTrackId)
+            {
+                NetworkUtil::append8Bytes(message, entry.trackId());
+            }
+
             NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry.started());
             NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry.ended());
             NetworkUtil::append2BytesSigned(message, permillage);
