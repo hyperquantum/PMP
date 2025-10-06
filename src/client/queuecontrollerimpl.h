@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -39,8 +39,11 @@ namespace PMP::Client
     public Q_SLOTS:
         void insertBreakAtFrontIfNotExists() override;
         void insertQueueEntryAtFront(LocalHashId hashId) override;
+        void insertQueueEntryAtFront(TrackHashOrId track) override;
         void insertQueueEntryAtEnd(LocalHashId hashId) override;
+        void insertQueueEntryAtEnd(TrackHashOrId track) override;
         RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index) override;
+        RequestID insertQueueEntryAtIndex(TrackHashOrId track, quint32 index) override;
         RequestID insertSpecialItemAtIndex(SpecialQueueItemType itemType, int index,
                                            QueueIndexType indexType) override;
         void deleteQueueEntry(uint queueId) override;

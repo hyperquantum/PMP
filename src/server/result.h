@@ -37,6 +37,8 @@ namespace PMP::Server
 
         HashIsNull,
         HashIsUnknown,
+        TrackIdIsZero,
+        TrackIdIsUnknown,
 
         QueueEntryIdNotFound,
         QueueIndexOutOfRange,
@@ -122,6 +124,9 @@ namespace PMP::Server
 
         static Error hashIsNull() { return Error(ResultCode::HashIsNull); }
         static Error hashIsUnknown() { return Error(ResultCode::HashIsUnknown); }
+
+        static Error trackIdIsZero() { return Error(ResultCode::TrackIdIsZero); }
+        static Error trackIdIsUnknown() { return Error(ResultCode::TrackIdIsUnknown); }
 
         static Error queueEntryIdNotFound(uint id)
         {

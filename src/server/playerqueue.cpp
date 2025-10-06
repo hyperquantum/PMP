@@ -115,6 +115,14 @@ namespace PMP::Server
         }
     }
 
+    int PlayerQueue::toIndex(QueueInsertionPosition position)
+    {
+        if (position == QueueInsertionPosition::Front)
+            return 0;
+        else //if (position == QueueInsertionPosition::End)
+            return _queue.length();
+    }
+
     bool PlayerQueue::empty() const
     {
         return _queue.empty();
@@ -225,48 +233,32 @@ namespace PMP::Server
             };
     }
 
-    Result PlayerQueue::enqueue(FileHash hash)
+    Result PlayerQueue::enqueue(uint trackId)
     {
-        if (hash.isNull())
-            return Error::hashIsNull();
-
-        auto trackId = _hashIdRegistrar->getIdForHash(hash);
-        if (trackId == null)
-            return Error::hashIsUnknown();
-
-        return enqueue(QueueEntryCreators::track(trackId.value()));
+        return insertTrack(QueueInsertionPosition::End, trackId);
     }
 
-    Result PlayerQueue::enqueue(
-                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator)
+    Result PlayerQueue::enqueue(FileHash hash)
     {
-        return insertAtIndex(_queue.length(), queueEntryCreator);
+        return insertTrack(QueueInsertionPosition::End, hash);
+    }
+
+    Result PlayerQueue::insertAtFront(uint trackId)
+    {
+        return insertTrack(QueueInsertionPosition::Front, trackId);
     }
 
     Result PlayerQueue::insertAtFront(FileHash hash)
     {
-        if (hash.isNull())
-            return Error::hashIsNull();
-
-        auto trackId = _hashIdRegistrar->getIdForHash(hash);
-        if (trackId == null)
-            return Error::hashIsUnknown();
-
-        return insertAtFront(QueueEntryCreators::track(trackId.value()));
+        return insertTrack(QueueInsertionPosition::Front, hash);
     }
 
     Result PlayerQueue::insertBreakAtFront()
     {
-        return insertAtFront(QueueEntryCreators::breakpoint());
+        return insertAtIndex(0, QueueEntryCreators::breakpoint());
     }
 
-    Result PlayerQueue::insertAtFront(
-                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator)
-    {
-        return insertAtIndex(0, queueEntryCreator);
-    }
-
-    Result PlayerQueue::insertAtIndex(qint32 index, FileHash hash)
+    Result PlayerQueue::insertTrack(QueueInsertionPosition position, FileHash hash)
     {
         if (hash.isNull())
             return Error::hashIsNull();
@@ -275,7 +267,22 @@ namespace PMP::Server
         if (trackId == null)
             return Error::hashIsUnknown();
 
+        auto index = toIndex(position);
+
         return insertAtIndex(index, QueueEntryCreators::track(trackId.value()));
+    }
+
+    Result PlayerQueue::insertTrack(QueueInsertionPosition position, uint trackId)
+    {
+        if (trackId == 0)
+            return Error::trackIdIsZero();
+
+        if (_hashIdRegistrar->isRegisteredId(trackId) == false)
+            return Error::trackIdIsUnknown();
+
+        auto index = toIndex(position);
+
+        return insertAtIndex(index, QueueEntryCreators::track(trackId));
     }
 
     Result PlayerQueue::insertAtIndex(qint32 index,
@@ -304,6 +311,54 @@ namespace PMP::Server
         }
 
         return insertAtIndex(index, queueEntryCreator, queueIdNotifier);
+    }
+
+    Result PlayerQueue::insertAtIndex(qint32 index, uint trackId,
+                                      std::function<void (uint)> queueIdNotifier)
+    {
+        if (trackId == 0)
+            return Error::trackIdIsZero();
+
+        if (_hashIdRegistrar->isRegisteredId(trackId) == false)
+            return Error::trackIdIsUnknown();
+
+        auto entryCreator = QueueEntryCreators::track(trackId);
+
+        return insertAtIndex(index, entryCreator, queueIdNotifier);
+    }
+
+    Result PlayerQueue::insertAtIndex(qint32 index, FileHash hash,
+                                      std::function<void (uint)> queueIdNotifier)
+    {
+        if (hash.isNull())
+            return Error::hashIsNull();
+
+        auto trackId = _hashIdRegistrar->getIdForHash(hash);
+        if (trackId == null)
+            return Error::hashIsUnknown();
+
+        auto entryCreator = QueueEntryCreators::track(trackId.value());
+
+        return insertAtIndex(index, entryCreator, queueIdNotifier);
+    }
+
+    Result PlayerQueue::duplicateEntryWithId(uint queueId,
+                                             std::function<void (uint)> queueIdNotifier)
+    {
+        auto index = findIndex(queueId);
+        if (index < 0)
+            return Error::queueEntryIdNotFound(queueId);
+
+        auto existing = _queue.at(index);
+        if (existing->queueID() != queueId)
+        {
+            qWarning() << "queue inconsistency for QID" << queueId;
+            return Error::internalError();
+        }
+
+        auto entryCreator = QueueEntryCreators::copyOf(existing);
+
+        return insertAtIndex(index + 1, entryCreator, queueIdNotifier);
     }
 
     Result PlayerQueue::insertAtIndex(qint32 index,

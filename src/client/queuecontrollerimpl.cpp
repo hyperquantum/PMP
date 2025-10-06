@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -84,15 +84,31 @@ namespace PMP::Client
         _connection->insertQueueEntryAtFront(hashId);
     }
 
+    void QueueControllerImpl::insertQueueEntryAtFront(TrackHashOrId track)
+    {
+        _connection->insertQueueEntryAtFront(track);
+    }
+
     void QueueControllerImpl::insertQueueEntryAtEnd(LocalHashId hashId)
     {
         _connection->insertQueueEntryAtEnd(hashId);
+    }
+
+    void QueueControllerImpl::insertQueueEntryAtEnd(TrackHashOrId track)
+    {
+        _connection->insertQueueEntryAtEnd(track);
     }
 
     RequestID QueueControllerImpl::insertQueueEntryAtIndex(LocalHashId hashId,
                                                            quint32 index)
     {
         return _connection->insertQueueEntryAtIndex(hashId, index);
+    }
+
+    RequestID QueueControllerImpl::insertQueueEntryAtIndex(TrackHashOrId track,
+                                                           quint32 index)
+    {
+        return _connection->insertQueueEntryAtIndex(track, index);
     }
 
     RequestID QueueControllerImpl::insertSpecialItemAtIndex(SpecialQueueItemType itemType,

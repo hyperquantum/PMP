@@ -25,6 +25,7 @@
 #include "common/specialqueueitemtype.h"
 
 #include "queueentryidsandhash.h"
+#include "queueinsertionposition.h"
 #include "recenthistoryentry.h"
 #include "result.h"
 
@@ -103,22 +104,25 @@ namespace PMP::Server
         QList<ResultOrError<QueueEntryIdsAndHash, class Error>>
             getHashAndTrackIdForQueueIds(QList<uint> queueIds) const;
 
+        Result enqueue(uint trackId);
         Result enqueue(FileHash hash);
-        Result enqueue(std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
 
+        Result insertAtFront(uint trackId);
         Result insertAtFront(FileHash hash);
         Result insertBreakAtFront();
-        Result insertAtFront(
-                      std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
 
-        Result insertAtIndex(qint32 index, FileHash hash);
-        Result insertAtIndex(qint32 index,
-                      std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
+        Result insertTrack(QueueInsertionPosition position, FileHash hash);
+        Result insertTrack(QueueInsertionPosition position, uint trackId);
+
         Result insertAtIndex(qint32 index, SpecialQueueItemType itemType,
                              std::function<void (uint)> queueIdNotifier);
-        Result insertAtIndex(qint32 index,
-                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
-                       std::function<void (uint)> queueIdNotifier);
+        Result insertAtIndex(qint32 index, uint trackId,
+                             std::function<void (uint)> queueIdNotifier);
+        Result insertAtIndex(qint32 index, FileHash hash,
+                             std::function<void (uint)> queueIdNotifier);
+
+        Result duplicateEntryWithId(uint queueId,
+                                    std::function<void (uint)> queueIdNotifier);
 
         QList<QSharedPointer<RecentHistoryEntry>> recentHistory(int limit);
 
@@ -145,6 +149,12 @@ namespace PMP::Server
         void checkFrontOfQueue();
 
     private:
+        int toIndex(QueueInsertionPosition position);
+        Result insertAtIndex(qint32 index,
+                    std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
+        Result insertAtIndex(qint32 index,
+                    std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                    std::function<void (uint)> queueIdNotifier);
         QueueEntryIdsAndHash toQueueEntryIdsAndHash(QSharedPointer<QueueEntry>) const;
         void resetFirstTrack();
         void setFirstTrackIndexAndId(int index, uint queueId);

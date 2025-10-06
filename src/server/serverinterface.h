@@ -33,6 +33,7 @@
 #include "hashstats.h"
 #include "historyentry.h"
 #include "queueentryidsandhash.h"
+#include "queueinsertionposition.h"
 #include "result.h"
 #include "serverplayerstate.h"
 
@@ -130,9 +131,10 @@ namespace PMP::Server
                                                                         QList<uint> ids);
         Future<QVector<QString>, Error> getPossibleFilenamesForQueueEntry(uint id);
 
-        Result insertTrackAtEnd(FileHash hash);
-        Result insertTrackAtFront(FileHash hash);
         Result insertBreakAtFrontIfNotExists();
+        Result insertTrack(QueueInsertionPosition position, quint64 trackId);
+        Result insertTrack(QueueInsertionPosition position, FileHash hash);
+        Result insertTrack(quint64 trackId, int index, quint32 clientReference);
         Result insertTrack(FileHash hash, int index, quint32 clientReference);
         Result insertSpecialQueueItem(SpecialQueueItemType itemType,
                                       QueueIndexType indexType, int index,
@@ -199,9 +201,6 @@ namespace PMP::Server
         int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType, int index);
         std::function<void (uint)> createQueueInsertionIdNotifier(
                                                                  quint32 clientReference);
-        Result insertAtIndex(qint32 index,
-                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
-                       quint32 clientReference);
         void addUserHashDataNotification(quint32 userId, QVector<uint> hashIds);
         void sendUserHashDataNotifications(quint32 userId);
 

@@ -449,32 +449,6 @@ namespace PMP::Server
         return future;
     }
 
-    Result ServerInterface::insertTrackAtEnd(FileHash hash)
-    {
-        if (!isLoggedIn())
-            return Error::notLoggedIn();
-
-        if (_hashIdRegistrar->isRegistered(hash) == false)
-            return Error::hashIsUnknown();
-
-        auto& queue = _player->queue();
-
-        return queue.enqueue(hash);
-    }
-
-    Result ServerInterface::insertTrackAtFront(FileHash hash)
-    {
-        if (!isLoggedIn())
-            return Error::notLoggedIn();
-
-        if (_hashIdRegistrar->isRegistered(hash) == false)
-            return Error::hashIsUnknown();
-
-        auto& queue = _player->queue();
-
-        return queue.insertAtFront(hash);
-    }
-
     Result ServerInterface::insertBreakAtFrontIfNotExists()
     {
         if (!isLoggedIn())
@@ -488,18 +462,63 @@ namespace PMP::Server
         return queue.insertBreakAtFront();
     }
 
+    Result ServerInterface::insertTrack(QueueInsertionPosition position, quint64 trackId)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        auto possiblyTruncatedTrackId = static_cast<uint>(trackId);
+        if (possiblyTruncatedTrackId != trackId)
+            return Error::trackIdIsUnknown();
+
+        /* other checks of the track ID are done by Queue */
+
+        auto& queue = _player->queue();
+
+        return queue.insertTrack(position, possiblyTruncatedTrackId);
+    }
+
+    Result ServerInterface::insertTrack(QueueInsertionPosition position, FileHash hash)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        /* other checks of the track hash are done by Queue */
+
+        auto& queue = _player->queue();
+
+        return queue.insertTrack(position, hash);
+    }
+
+    Result ServerInterface::insertTrack(quint64 trackId, int index,
+                                        quint32 clientReference)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        auto possiblyTruncatedTrackId = static_cast<uint>(trackId);
+        if (possiblyTruncatedTrackId != trackId)
+            return Error::trackIdIsUnknown();
+
+        /* other checks of the track hash are done by Queue */
+
+        auto& queue = _player->queue();
+
+        return queue.insertAtIndex(index, trackId,
+                                   createQueueInsertionIdNotifier(clientReference));
+    }
+
     Result ServerInterface::insertTrack(FileHash hash, int index, quint32 clientReference)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();
 
-        auto trackId = _hashIdRegistrar->getIdForHash(hash);
-        if (trackId == null)
-            return Error::hashIsUnknown();
+        /* other checks of the track hash are done by Queue */
 
-        auto entryCreator = QueueEntryCreators::track(trackId.value());
+        auto& queue = _player->queue();
 
-        return insertAtIndex(index, entryCreator, clientReference);
+        return queue.insertAtIndex(index, hash,
+                                   createQueueInsertionIdNotifier(clientReference));
     }
 
     Result ServerInterface::insertSpecialQueueItem(SpecialQueueItemType itemType,
@@ -525,30 +544,8 @@ namespace PMP::Server
 
         auto& queue = _player->queue();
 
-        auto index = queue.findIndex(id);
-        if (index < 0)
-            return Error::queueEntryIdNotFound(id);
-
-        auto existing = queue.entryAtIndex(index);
-        if (!existing || existing->queueID() != id)
-        {
-            qWarning() << "queue inconsistency for QID" << id;
-            return Error::internalError();
-        }
-
-        auto entryCreator = QueueEntryCreators::copyOf(existing);
-
-        return insertAtIndex(index + 1, entryCreator, clientReference);
-    }
-
-    Result ServerInterface::insertAtIndex(qint32 index,
-                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
-                       quint32 clientReference)
-    {
-        auto& queue = _player->queue();
-
-        return queue.insertAtIndex(index, queueEntryCreator,
-                                   createQueueInsertionIdNotifier(clientReference));
+        return queue.duplicateEntryWithId(id,
+                                        createQueueInsertionIdNotifier(clientReference));
     }
 
     void ServerInterface::moveQueueEntry(uint id, int upDownOffset)
