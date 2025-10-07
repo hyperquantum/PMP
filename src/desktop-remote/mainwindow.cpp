@@ -581,6 +581,28 @@ namespace PMP
         _powerManagement->setKeepDisplayActive(isPlaying && keepDisplayActiveOption);
     }
 
+    namespace
+    {
+        QString getVersionTextLine1(VersionInfo const& versionInfo)
+        {
+            return
+                QObject::tr("%1 <b>version %2</b>")
+                .arg(versionInfo.programName,
+                     versionInfo.versionForDisplay);
+        }
+
+        QString getVersionTextLine2(VersionInfo const& versionInfo)
+        {
+            if (versionInfo.vcsBuild.isEmpty())
+                return QObject::tr("<i>build info unavailable</i>");
+
+            return
+                QObject::tr("build %1 (%2)")
+                .arg(versionInfo.vcsBuild,
+                     versionInfo.vcsBranch);
+        }
+    }
+
     void MainWindow::onAboutPmpAction()
     {
         Nullable<VersionInfo> serverVersionInfo;
@@ -610,12 +632,21 @@ namespace PMP
         }
 
         const auto clientVersion = VersionInfo::current();
-        const auto clientVersionText = getVersionText(clientVersion);
+        const auto clientVersionLine1 = getVersionTextLine1(clientVersion);
+        const auto clientVersionLine2 = getVersionTextLine2(clientVersion);
+        QString serverVersionLine1;
+        QString serverVersionLine2;
 
-        const auto serverVersionText =
-            (serverVersionProblem.isEmpty())
-                ? getVersionText(serverVersionInfo.value())
-                : tr("<i>%1</i>").arg(serverVersionProblem);
+        if (serverVersionInfo.hasValue())
+        {
+            serverVersionLine1 = getVersionTextLine1(serverVersionInfo.value());
+            serverVersionLine2 = getVersionTextLine2(serverVersionInfo.value());
+        }
+        else
+        {
+            serverVersionLine1 = tr("<i>%1</i>").arg(serverVersionProblem);
+            serverVersionLine2 = {};
+        }
 
         QString aboutText =
             tr(
@@ -628,21 +659,31 @@ namespace PMP
                 " connect to the same server, even at the same time.</p>"
                 "<p>PMP is free and open-source software, using the GNU General Public "
                 " License (GPLv3).</p>"
-                "<p>Website: <a href=\"%1\">%1</a></p>"
-                "<p>Report bugs at: <a href=\"%2\">%2</a></p>"
+                "<p>Website: <a href=\"{{WEBSITE}}\">{{WEBSITE}}</a></p>"
+                "<p>Report bugs at:"
+                " <a href=\"{{BUGREPORT_LOCATION}}\">{{BUGREPORT_LOCATION}}</a></p>"
                 "<hr>"
-                "<p><b>Client</b>: %3<br>" /* program name, version, and possibly build info */
-                "%4</p>" /* copyright line */
-                "<p><b>Server</b>: %5</p>"
-                "<p>Using Qt version %6</p>"
+                "<p><b>Client</b>:<br>"
+                " {{CLIENT_VERSION_LINE_1}}<br>"
+                " {{CLIENT_VERSION_LINE_2}}<br>"
+                " {{COPYRIGHT}}<br>"
+                " Using Qt version {{QT_VERSION}}</p>"
+                "<p><b>Server</b>:<br>"
+                " {{SERVER_VERSION_LINE_1}}<br>"
+                " {{SERVER_VERSION_LINE_2}}</p>"
                 "</html>"
-            )
-            .arg(PMP_WEBSITE,
-                 PMP_BUGREPORT_LOCATION,
-                 clientVersionText,
-                 Util::getCopyrightLine(false),
-                 serverVersionText,
-                 QT_VERSION_STR);
+            );
+
+        aboutText.replace("{{WEBSITE}}", PMP_WEBSITE);
+        aboutText.replace("{{BUGREPORT_LOCATION}}", PMP_BUGREPORT_LOCATION);
+
+        aboutText.replace("{{CLIENT_VERSION_LINE_1}}", clientVersionLine1);
+        aboutText.replace("{{CLIENT_VERSION_LINE_2}}", clientVersionLine2);
+        aboutText.replace("{{COPYRIGHT}}", Util::getCopyrightLine(false));
+        aboutText.replace("{{QT_VERSION}}", QT_VERSION_STR);
+
+        aboutText.replace("{{SERVER_VERSION_LINE_1}}", serverVersionLine1);
+        aboutText.replace("{{SERVER_VERSION_LINE_2}}", serverVersionLine2);
 
         QMessageBox::about(this, tr("About PMP"), aboutText);
     }
@@ -986,23 +1027,5 @@ namespace PMP
                 msgBox.exec();
             }
         );
-    }
-
-    QString MainWindow::getVersionText(const VersionInfo& versionInfo)
-    {
-        if (versionInfo.vcsBuild.isEmpty())
-        {
-            return tr("%1 <b>version %2</b>")
-                .arg(versionInfo.programName,
-                     versionInfo.versionForDisplay);
-        }
-        else
-        {
-            return tr("%1 <b>version %2</b> build %3 (%4)")
-                .arg(versionInfo.programName,
-                     versionInfo.versionForDisplay,
-                     versionInfo.vcsBuild,
-                     versionInfo.vcsBranch);
-        }
     }
 }
