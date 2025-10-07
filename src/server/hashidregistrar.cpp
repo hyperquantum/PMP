@@ -184,7 +184,10 @@ namespace PMP::Server
 
     bool HashIdRegistrar::isRegisteredHash(FileHash hash)
     {
-        return getIdForHash(hash).hasValue();
+        QMutexLocker lock(&_mutex);
+
+        auto it = _hashes.constFind(hash);
+        return it != _hashes.constEnd();
     }
 
     bool HashIdRegistrar::isRegisteredId(uint id)
