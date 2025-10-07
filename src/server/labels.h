@@ -42,7 +42,7 @@ namespace PMP::Server
         SimpleFuture<Result> removeLabelFromTrack(uint trackHashId, QString const& label);
         QList<quint32> getLabelsInActiveUse();
         QList<quint32> getLabelsOfTrack(uint trackHashId);
-        ResultOrError<QHash<quint32, QString>, Result> getLabelNames(
+        ResultOrError<QHash<quint32, QString>, Error> getLabelNames(
                                                                 QList<quint32> labelIds);
 
         static bool isValidPotentialName(QString const& name);

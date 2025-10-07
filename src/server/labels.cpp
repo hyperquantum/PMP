@@ -39,7 +39,7 @@ namespace PMP::Server
     SimpleFuture<Result> Labels::applyLabelToTrack(uint trackHashId, const QString& label)
     {
         if (!isValidPotentialName(label))
-            return FutureResult(Error::labelNameInvalid());
+            return Error::labelNameInvalid();
 
         auto future =
             Concurrent::runOnThreadPool<Result>(
@@ -94,7 +94,7 @@ namespace PMP::Server
                                                       const QString& label)
     {
         if (!isValidPotentialName(label))
-            return FutureResult(Error::labelNameInvalid());
+            return Error::labelNameInvalid();
 
         auto future =
             Concurrent::runOnThreadPool<Result>(
@@ -165,7 +165,7 @@ namespace PMP::Server
         return ContainerUtil::toList(_labelsByHashId[trackHashId]);
     }
 
-    ResultOrError<QHash<quint32, QString>, Result> Labels::getLabelNames(
+    ResultOrError<QHash<quint32, QString>, Error> Labels::getLabelNames(
                                                                 QList<quint32> labelIds)
     {
         QMutexLocker lock(&_mutex);

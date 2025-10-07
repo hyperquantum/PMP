@@ -64,7 +64,7 @@ Changes for each version:
   25: client msg 27, server msg 36, error codes 26 & 120 & 121: fetch personal track history
   26: parameterless actions 60 & 61, server msg 37: full indexation and quick scan for new files
   27: client msg 28, server msg 38: requesting individual track info
-  28:
+  28: client msgs 15 & 16 & 19, server msgs 18 & 19 & 21 & 36 & 38, error code 27 : server track IDs
   29: client msgs 29 & 30, server msgs 39 & 40 & 41, error codes 27 & 28 & 122 & 243 .... : labels
 */
 
@@ -243,7 +243,9 @@ namespace PMP
         static QueueEntryType trackStatusToQueueEntryType(quint16 status);
 
         static const int FILEHASH_BYTECOUNT = 8 /*length*/ + 20 /*SHA-1*/ + 16 /*MD5*/;
+        static void appendNullHash(QByteArray& buffer);
         static void appendHash(QByteArray& buffer, Nullable<FileHash> hash);
+        static void appendHash(QByteArray& buffer, const FileHash& hash);
         static FileHash getHash(const QByteArray& buffer, int position, bool* ok);
 
         static qint16 getHashUserDataFieldsMaskForProtocolVersion(int version);

@@ -24,13 +24,16 @@
 #include "common/future.h"
 #include "common/networkprotocol.h"
 #include "common/networkprotocolextensions.h"
+#include "common/resultorerror.h"
 #include "common/scrobblerstatus.h"
 #include "common/scrobblingprovider.h"
 #include "common/startstopeventstatus.h"
 
 #include "collectiontrackinfo.h"
+#include "filehashwithid.h"
 #include "hashstats.h"
 #include "historyentry.h"
+#include "queueentryidsandhash.h"
 #include "recenthistoryentry.h"
 #include "result.h"
 #include "serverplayerstate.h"
@@ -107,8 +110,8 @@ namespace PMP::Server
         void onCollectionTrackInfoBatchToSend(uint clientReference,
                                               QVector<CollectionTrackInfo> tracks);
         void onCollectionTrackInfoCompleted(uint clientReference);
-        void onHashAvailabilityChanged(QVector<PMP::FileHash> available,
-                                       QVector<PMP::FileHash> unavailable);
+        void onHashAvailabilityChanged(QVector<PMP::Server::FileHashWithId> available,
+                                       QVector<PMP::Server::FileHashWithId> unavailable);
         void onHashInfoChanged(QVector<CollectionTrackInfo> changes);
 
         void onScrobblingProviderInfo(ScrobblingProvider provider, ScrobblerStatus status,
@@ -159,7 +162,9 @@ namespace PMP::Server
                                         quint32 queueID);
         void sendQueueEntryInfoMessage(quint32 queueID);
         void sendQueueEntryInfoMessage(QList<quint32> const& queueIDs);
-        void sendQueueEntryHashMessage(QList<quint32> const& queueIDs);
+        void sendQueueEntryHashMessage(QList<quint32> queueIds,
+                        QList<ResultOrError<QueueEntryIdsAndHash, Error>> const& hashes);
+        quint16 createTrackStatusFor(QueueEntryIdsAndHash const& entry);
         quint16 createTrackStatusFor(QSharedPointer<QueueEntry> entry);
         void sendPossibleTrackFilenames(quint32 queueID, QVector<QString> const& names);
         void sendNewUserAccountSaltMessage(QString login, QByteArray const& salt);
@@ -184,8 +189,8 @@ namespace PMP::Server
         void sendNonFatalInternalErrorResultMessage(quint32 clientReference);
         void sendUserLoginSaltMessage(QString login, QByteArray const& userSalt,
                                       QByteArray const& sessionSalt);
-        void sendTrackAvailabilityBatchMessage(QVector<FileHash> available,
-                                               QVector<FileHash> unavailable);
+        void sendTrackAvailabilityBatchMessage(QVector<FileHashWithId> available,
+                                               QVector<FileHashWithId> unavailable);
         void sendTrackInfoBatchMessage(uint clientReference, bool isNotification,
                                        QVector<CollectionTrackInfo> tracks);
         void sendNewHistoryEntryMessage(QSharedPointer<RecentHistoryEntry> entry);

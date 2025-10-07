@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2022, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -42,7 +42,7 @@ namespace PMP::Server
         return _noRepetitionSpanSeconds;
     }
 
-    bool TrackRepetitionChecker::isRepetitionWhenQueued(uint id, const FileHash& hash,
+    bool TrackRepetitionChecker::isRepetitionWhenQueued(uint trackId,
                                                         qint64 extraMarginMilliseconds)
     {
         if (_noRepetitionSpanSeconds < 0)
@@ -51,7 +51,7 @@ namespace PMP::Server
         // check occurrence in queue
 
         auto repetition =
-                _queue->checkPotentialRepetitionByAdd(hash, _noRepetitionSpanSeconds,
+                _queue->checkPotentialRepetitionByAdd(trackId, _noRepetitionSpanSeconds,
                                                       extraMarginMilliseconds);
 
         if (repetition.isRepetition())
@@ -65,8 +65,8 @@ namespace PMP::Server
         auto trackNowPlaying = _currentTrack;
         if (trackNowPlaying)
         {
-            auto currentHash = trackNowPlaying->hash().value();
-            if (hash == currentHash)
+            auto currentTrackId = trackNowPlaying->trackId().value();
+            if (trackId == currentTrackId)
                 return true;
         }
 
@@ -76,11 +76,11 @@ namespace PMP::Server
                 QDateTime::currentDateTimeUtc().addMSecs(millisecondsCounted)
                                                .addSecs(-_noRepetitionSpanSeconds);
 
-        QDateTime lastPlay = _history->lastPlayedGloballySinceStartup(hash);
+        QDateTime lastPlay = _history->lastPlayedGloballySinceStartup(trackId);
         if (lastPlay.isValid() && lastPlay > maxLastPlay)
             return true;
 
-        auto maybeUserStats = _history->getUserStats(id, _userPlayingFor);
+        auto maybeUserStats = _history->getUserStats(trackId, _userPlayingFor);
         if (maybeUserStats.isNull())
             return true;
 

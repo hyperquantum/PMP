@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -146,7 +146,7 @@ namespace PMP::Server
 
             if (!filename.isEmpty())
             {
-                if (_resolver->pathStillValid(queueEntry->hash().value(), filename))
+                if (_resolver->pathStillValid(queueEntry->trackId().value(), filename))
                 {
                     qWarning() << "queue ID" << queueId << "was not preloaded; "
                                   "will try to use unpreprocessed file that may be slow "
@@ -312,7 +312,8 @@ namespace PMP::Server
 
     /* ================================================================================ */
 
-    Player::Player(QObject* parent, Resolver* resolver, int defaultVolume)
+    Player::Player(QObject* parent, HashIdRegistrar* hashIdRegistrar, Resolver* resolver,
+                   int defaultVolume)
      : QObject(parent),
        _audioDevices(new AudioDevices(this)),
        _oldInstance1(nullptr),
@@ -320,7 +321,7 @@ namespace PMP::Server
        _currentInstance(nullptr),
        _nextInstance(nullptr),
        _resolver(resolver),
-       _queue(resolver), _preloader(nullptr, &_queue, resolver),
+       _queue(hashIdRegistrar, resolver), _preloader(nullptr, &_queue, resolver),
        _nowPlaying(nullptr),
        _instanceIdentifier(0),
        _volume(-1),
@@ -887,6 +888,8 @@ namespace PMP::Server
         if (!entry->isTrack())
             return; /* don't put breakpoints in the history */
 
+        auto trackId = entry->trackId().value();
+
         if (_historyOrder.isEmpty())
         {
             qWarning()
@@ -916,11 +919,9 @@ namespace PMP::Server
                 ended = started;
         }
 
-        Nullable<FileHash> hash = entry->hash();
-
         auto historyEntry =
             QSharedPointer<RecentHistoryEntry>::create(
-                queueID, hash.value(), userPlayedFor, started, ended,
+                queueID, trackId, userPlayedFor, started, ended,
                 hadError, hadSeek, permillage
             );
 

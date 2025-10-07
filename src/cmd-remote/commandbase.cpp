@@ -182,6 +182,10 @@ namespace PMP
             errorOutput = "invalid user ID";
             break;
 
+        case ResultMessageErrorCode::InvalidTrackId:
+            errorOutput = "invalid track ID";
+            break;
+
         case ResultMessageErrorCode::InvalidLabelName:
             errorOutput = "invalid label name";
             break;

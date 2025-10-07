@@ -961,11 +961,15 @@ namespace PMP::Server
             return;
         }
 
+        bool includeTrackId = _clientProtocolNo >= 28;
+
         quint32 nextStartId = lowestEntryId > 0 ? lowestEntryId : 0;
 
         QByteArray message;
         message.reserve(2 + 2 + 4 + 4 + fragment.entries().size() *
-                            (4 + 8 + 8 + 2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT));
+                            (4
+                                + (includeTrackId ? 8 : 0)
+                                + 8 + 8 + 2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT));
         NetworkProtocol::append2Bytes(message, ServerMessageType::HistoryFragmentMessage);
         NetworkUtil::append2BytesUnsigned(message, fragment.entries().size());
         NetworkUtil::append4Bytes(message, clientReference);
@@ -978,6 +982,12 @@ namespace PMP::Server
             qint16 permillage = static_cast<qint16>(entry.permillage());
 
             NetworkUtil::append4Bytes(message, entry.userId());
+
+            if (includeTrackId)
+            {
+                NetworkUtil::append8Bytes(message, entry.trackId());
+            }
+
             NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry.started());
             NetworkUtil::append8ByteQDateTimeMsSinceEpoch(message, entry.ended());
             NetworkUtil::append2BytesSigned(message, permillage);
@@ -1048,6 +1058,8 @@ namespace PMP::Server
     void ConnectedClient::sendHashInfoReply(uint clientReference,
                                             CollectionTrackInfo info)
     {
+        bool includeTrackId = _clientProtocolNo >= 28;
+
         QString title = info.title();
         QString artist = info.artist();
         QString album = info.album();
@@ -1066,13 +1078,19 @@ namespace PMP::Server
         QByteArray albumArtistData = albumArtist.toUtf8();
 
         QByteArray message;
-        message.reserve(2 + 2 + 4 + 4 * 2 + 4
+        message.reserve(2 + 2 + 4 + (includeTrackId ? 8 : 0) + 4 * 2 + 4
                         + titleData.size() + artistData.size() + albumData.size()
                         + albumArtistData.size());
         NetworkProtocol::append2Bytes(message, ServerMessageType::HashInfoReply);
         NetworkUtil::appendByte(message, 0); // filler
         NetworkUtil::appendByte(message, info.isAvailable() ? 1 : 0);
         NetworkUtil::append4Bytes(message, clientReference);
+
+        if (includeTrackId)
+        {
+            NetworkUtil::append8Bytes(message, info.trackId());
+        }
+
         NetworkUtil::append2BytesUnsigned(message, titleData.size());
         NetworkUtil::append2BytesUnsigned(message, artistData.size());
         NetworkUtil::append2BytesUnsigned(message, albumData.size());
@@ -1137,6 +1155,33 @@ namespace PMP::Server
         sendBinaryMessage(message);
     }
 
+    quint16 ConnectedClient::createTrackStatusFor(QueueEntryIdsAndHash const& entry)
+    {
+        bool isTrack = false;
+
+        switch (entry.kind)
+        {
+        case QueueEntryKind::Track:
+            isTrack = true;
+            break; /* handled below */
+
+        case QueueEntryKind::Break:
+            return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Break);
+
+        case QueueEntryKind::Barrier:
+            return NetworkProtocol::createTrackStatusFor(SpecialQueueItemType::Barrier);
+        }
+
+        if (!isTrack)
+        {
+            qWarning() << "Unhandled QueueEntryKind" << int(entry.kind)
+                       << "at queue entry with ID" << entry.queueId;
+            return NetworkProtocol::createTrackStatusForUnknownThing();
+        }
+
+        return NetworkProtocol::createTrackStatusForTrack();
+    }
+
     quint16 ConnectedClient::createTrackStatusFor(QSharedPointer<QueueEntry> entry)
     {
         switch (entry->kind())
@@ -1153,7 +1198,8 @@ namespace PMP::Server
 
         if (!entry->isTrack()) /* unhandled non-track thing */
         {
-            qWarning() << "Unhandled QueueEntryKind" << int(entry->kind());
+            qWarning() << "Unhandled QueueEntryKind" << int(entry->kind())
+                       << "at queue entry with ID" << entry->queueID();
             return NetworkProtocol::createTrackStatusForUnknownThing();
         }
 
@@ -1288,46 +1334,81 @@ namespace PMP::Server
         sendBinaryMessage(message);
     }
 
-    void ConnectedClient::sendQueueEntryHashMessage(const QList<quint32>& queueIDs)
+    void ConnectedClient::sendQueueEntryHashMessage(
+        QList<quint32> queueIds,
+        QList<ResultOrError<QueueEntryIdsAndHash, Error>> const& entries)
     {
-        if (queueIDs.empty())
+        Q_ASSERT_X(queueIds.size() == entries.size(),
+                   "ConnectedClient::sendQueueEntryHashMessage",
+                   "list of IDs and list of results must be the same size");
+
+        if (entries.empty())
             return;
 
         const int maxSize = (1 << 16) - 1;
 
         /* not too big? */
-        if (queueIDs.size() > maxSize)
+        if (entries.size() > maxSize)
         {
             /* TODO: maybe delay the second part? */
-            sendQueueEntryInfoMessage(queueIDs.mid(0, maxSize));
-            sendQueueEntryInfoMessage(queueIDs.mid(maxSize));
+            sendQueueEntryHashMessage(queueIds.mid(0, maxSize), entries.mid(0, maxSize));
+            sendQueueEntryHashMessage(queueIds.mid(maxSize), entries.mid(maxSize));
             return;
         }
 
+        bool includeTrackId = _clientProtocolNo >= 28;
+
         QByteArray message;
-        message.reserve(4 + queueIDs.size() * (8 + NetworkProtocol::FILEHASH_BYTECOUNT));
+        message.reserve(4 + entries.size() * (8
+                                             + (includeTrackId ? 8 : 0)
+                                             + NetworkProtocol::FILEHASH_BYTECOUNT));
 
         NetworkProtocol::append2Bytes(message,
                                       ServerMessageType::BulkQueueEntryHashMessage);
-        NetworkUtil::append2Bytes(message, (uint)queueIDs.size());
+        NetworkUtil::append2BytesUnsigned(message, entries.size());
 
-        PlayerQueue& queue = _player->queue();
-
-        /* TODO: bug: concurrency issue here when a QueueEntry has just been deleted */
-
-        for (auto queueID : queueIDs)
+        for (int i = 0; i < queueIds.size(); ++i)
         {
-            auto track = queue.lookup(queueID);
-            auto trackStatus =
-                track ? createTrackStatusFor(track)
-                      : NetworkProtocol::createTrackStatusUnknownId();
+            auto queueId = queueIds[i];
+            auto& entryOrError = entries[i];
 
-            auto hash = track ? track->hash() : null;
+            quint16 trackStatus = NetworkProtocol::createTrackStatusUnknownId();
+            Nullable<FileHashWithId> hashAndId;
 
-            NetworkUtil::append4Bytes(message, queueID);
+            if (entryOrError.succeeded())
+            {
+                auto entry = entryOrError.result();
+
+                Q_ASSERT_X(queueId == entry.queueId,
+                           "ConnectedClient::sendQueueEntryHashMessage",
+                           "queue IDs do not match");
+
+                trackStatus = createTrackStatusFor(entry);
+                hashAndId = entry.hashAndId;
+            }
+
+            NetworkUtil::append4Bytes(message, queueId);
             NetworkUtil::append2Bytes(message, trackStatus);
             NetworkUtil::append2Bytes(message, 0); /* filler */
-            NetworkProtocol::appendHash(message, hash);
+
+            if (hashAndId.isNull())
+            {
+                if (includeTrackId)
+                {
+                    NetworkUtil::append8Bytes(message, 0); /* no ID */
+                }
+
+                NetworkProtocol::appendNullHash(message);
+            }
+            else
+            {
+                if (includeTrackId)
+                {
+                    NetworkUtil::append8Bytes(message, hashAndId.value().id());
+                }
+
+                NetworkProtocol::appendHash(message, hashAndId.value().hash());
+            }
         }
 
         sendBinaryMessage(message);
@@ -1398,8 +1479,9 @@ namespace PMP::Server
         sendTrackInfoBatchMessage(clientReference, false, tracks);
     }
 
-    void ConnectedClient::sendTrackAvailabilityBatchMessage(QVector<FileHash> available,
-                                                            QVector<FileHash> unavailable)
+    void ConnectedClient::sendTrackAvailabilityBatchMessage(
+                                                    QVector<FileHashWithId> available,
+                                                    QVector<FileHashWithId> unavailable)
     {
         if (_clientProtocolNo < 11) /* only send this if the client will understand */
             return;
@@ -1439,12 +1521,12 @@ namespace PMP::Server
 
         for (int i = 0; i < available.size(); ++i)
         {
-            NetworkProtocol::appendHash(message, available[i]);
+            NetworkProtocol::appendHash(message, available[i].hash());
         }
 
         for (int i = 0; i < unavailable.size(); ++i)
         {
-            NetworkProtocol::appendHash(message, unavailable[i]);
+            NetworkProtocol::appendHash(message, unavailable[i].hash());
         }
 
         sendBinaryMessage(message);
@@ -1469,10 +1551,12 @@ namespace PMP::Server
 
         bool withAlbumAndTrackLength = _clientProtocolNo >= 7;
         bool withAlbumArtist = _clientProtocolNo >= 24;
+        bool withTrackId = _clientProtocolNo >= 28;
 
         /* estimate how much bytes we will need and reserve that memory in the buffer */
         const int bytesEstimatedPerTrack =
-            NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 + 20 + 15
+                (withTrackId ? 8 : 0)
+                + NetworkProtocol::FILEHASH_BYTECOUNT + 1 + 2 + 2 + 20 + 15
                 + (withAlbumAndTrackLength ? 2 + 15 + 4 : 0)
                 + (withAlbumArtist ? 2 + 15 : 0);
 
@@ -1509,6 +1593,11 @@ namespace PMP::Server
             QByteArray artistData = artist.toUtf8();
             QByteArray albumData = album.toUtf8();
             QByteArray albumArtistData = albumArtist.toUtf8();
+
+            if (withTrackId)
+            {
+                NetworkUtil::append8Bytes(message, track.trackId());
+            }
 
             NetworkProtocol::appendHash(message, track.hash());
             NetworkUtil::appendByte(message, track.isAvailable() ? 1 : 0);
@@ -1580,8 +1669,8 @@ namespace PMP::Server
         sendScrobblingProviderEnabledChangeMessage(userId, provider, enabled);
     }
 
-    void ConnectedClient::onHashAvailabilityChanged(QVector<FileHash> available,
-                                                    QVector<FileHash> unavailable)
+    void ConnectedClient::onHashAvailabilityChanged(QVector<FileHashWithId> available,
+                                                    QVector<FileHashWithId> unavailable)
     {
         sendTrackAvailabilityBatchMessage(available, unavailable);
     }
@@ -1961,6 +2050,10 @@ namespace PMP::Server
         case ResultCode::HashIsUnknown:
             sendResultMessage(ResultMessageErrorCode::InvalidHash, clientReference);
             return;
+        case ResultCode::TrackIdIsZero:
+        case ResultCode::TrackIdIsUnknown:
+            sendResultMessage(ResultMessageErrorCode::InvalidTrackId, clientReference);
+            return;
         case ResultCode::QueueEntryIdNotFound:
             sendResultMessage(ResultMessageErrorCode::QueueIdNotFound, clientReference,
                               static_cast<quint32>(result.intArg()));
@@ -2219,7 +2312,7 @@ namespace PMP::Server
         }
 
         int seconds = static_cast<int>(entry->lengthInMilliseconds() / 1000);
-        auto hash = entry->hash().value();
+        auto hash = _serverInterface->getHashForTrackId(entry->trackId().value()).value();
 
         sendTextCommand(
             "nowplaying track\n QID: " + QString::number(entry->queueID())
@@ -2918,8 +3011,8 @@ namespace PMP::Server
         if (message.length() < 8 || (message.length() - 4) % 4 != 0)
             return; /* invalid message */
 
-        QList<quint32> QIDs;
-        QIDs.reserve((message.length() - 4) / 4);
+        QList<quint32> queueIds;
+        queueIds.reserve((message.length() - 4) / 4);
 
         int offset = 4;
         while (offset <= message.length() - 4)
@@ -2927,14 +3020,24 @@ namespace PMP::Server
             quint32 queueID = NetworkUtil::get4Bytes(message, offset);
 
             if (queueID > 0)
-                QIDs.append(queueID);
+                queueIds.append(queueID);
 
             offset += 4;
         }
 
-        qDebug() << "received bulk hash info request for" << QIDs.size() << "QIDs";
+        if (queueIds.size() == 1)
+        {
+            qDebug() << "received hash info request for queue ID" << queueIds[0];
+        }
+        else
+        {
+            qDebug() << "received hash info request for" << queueIds.size()
+                     << "queue IDs";
+        }
 
-        sendQueueEntryHashMessage(QIDs);
+        auto result = _serverInterface->getTrackIdAndHashForQueueIds(queueIds);
+
+        sendQueueEntryHashMessage(queueIds, result);
     }
 
     void ConnectedClient::parsePossibleFilenamesForQueueEntryRequestMessage(
@@ -2949,7 +3052,7 @@ namespace PMP::Server
         _serverInterface->getPossibleFilenamesForQueueEntry(queueId)
             .handleOnEventLoop(
                 this,
-                [this, queueId](ResultOrError<QVector<QString>, Result> outcome)
+                [this, queueId](ResultOrError<QVector<QString>, Error> outcome)
                 {
                     if (outcome.succeeded())
                         sendPossibleTrackFilenames(queueId, outcome.result());
@@ -2981,29 +3084,56 @@ namespace PMP::Server
     void ConnectedClient::parseAddHashToQueueRequest(const QByteArray& message,
                                                      ClientMessageType messageType)
     {
-        qDebug() << "received 'add filehash to queue' request";
+        bool canUseTrackId = _clientProtocolNo >= 28;
 
-        if (message.length() != 2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT)
-            return; /* invalid message */
-
-        bool ok;
-        FileHash hash = NetworkProtocol::getHash(message, 4, &ok);
-        if (!ok || hash.isNull())
-            return; /* invalid message */
-
-        qDebug() << " request contains hash:" << hash.dumpToString();
-
-        if (messageType == ClientMessageType::AddHashToEndOfQueueRequestMessage)
+        bool usesTrackId;
+        if (message.length() == 2 + 2 + 8 && canUseTrackId)
         {
-            _serverInterface->insertTrackAtEnd(hash);
+            usesTrackId = true;
         }
-        else if (messageType == ClientMessageType::AddHashToFrontOfQueueRequestMessage)
+        else if (message.length() == 2 + 2 + NetworkProtocol::FILEHASH_BYTECOUNT)
         {
-            _serverInterface->insertTrackAtFront(hash);
+            usesTrackId = false;
         }
         else
         {
             return; /* invalid message */
+        }
+
+        QueueInsertionPosition position;
+        if (messageType == ClientMessageType::AddHashToEndOfQueueRequestMessage)
+        {
+            position = QueueInsertionPosition::End;
+        }
+        else if (messageType == ClientMessageType::AddHashToFrontOfQueueRequestMessage)
+        {
+            position = QueueInsertionPosition::Front;
+        }
+        else
+        {
+            return; /* invalid message */
+        }
+
+        if (usesTrackId)
+        {
+            quint64 trackId = NetworkUtil::get8Bytes(message, 4);
+
+            qDebug() << "received request to add track with ID" << trackId
+                     << "to the queue at position" << position;
+
+            _serverInterface->insertTrack(position, trackId);
+        }
+        else
+        {
+            bool ok;
+            FileHash hash = NetworkProtocol::getHash(message, 4, &ok);
+            if (!ok || hash.isNull())
+                return; /* invalid message */
+
+            qDebug() << "received request to add track" << hash
+                     << "to the queue at position" << position;
+
+            _serverInterface->insertTrack(position, hash);
         }
     }
 
@@ -3043,30 +3173,56 @@ namespace PMP::Server
             sendResultMessage(result, clientReference);
     }
 
-    void ConnectedClient::parseInsertHashIntoQueueRequest(const QByteArray &message)
+    void ConnectedClient::parseInsertHashIntoQueueRequest(const QByteArray& message)
     {
-        qDebug() << "received 'insert filehash into queue at index' request";
+        bool canUseTrackId = _clientProtocolNo >= 28;
 
-        if (message.length() != 2 + 2 + 4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT)
+        bool usesTrackId;
+        if (message.length() == 2 + 2 + 4 + 4 + 8 && canUseTrackId)
+        {
+            usesTrackId = true;
+        }
+        else if (message.length() == 2 + 2 + 4 + 4 + NetworkProtocol::FILEHASH_BYTECOUNT)
+        {
+            usesTrackId = false;
+        }
+        else
+        {
             return; /* invalid message */
+        }
 
         quint32 clientReference = NetworkUtil::get4Bytes(message, 4);
         qint32 index = NetworkUtil::get4BytesSigned(message, 8);
 
-        qDebug() << " client ref:" << clientReference << "; " << "index:" << index;
+        if (usesTrackId)
+        {
+            quint64 trackId = NetworkUtil::get8Bytes(message, 12);
 
-        bool ok;
-        FileHash hash = NetworkProtocol::getHash(message, 12, &ok);
-        if (!ok || hash.isNull())
-            return; /* invalid message */
+            qDebug() << "received request to add track with ID" << trackId
+                     << "to the queue at index" << index << "; ref:" << clientReference;
 
-        qDebug() << " request contains hash:" << hash.dumpToString();
+            auto result = _serverInterface->insertTrack(trackId, index, clientReference);
 
-        auto result = _serverInterface->insertTrack(hash, index, clientReference);
+            /* success is handled by the queue insertion event, failure is handled here */
+            if (!result)
+                sendResultMessage(result, clientReference);
+        }
+        else
+        {
+            bool ok;
+            FileHash hash = NetworkProtocol::getHash(message, 12, &ok);
+            if (!ok || hash.isNull())
+                return; /* invalid message */
 
-        /* success is handled by the queue insertion event, failure is handled here */
-        if (!result)
-            sendResultMessage(result, clientReference);
+            qDebug() << "received request to add track" << hash
+                     << "to the queue at index" << index << "; ref:" << clientReference;
+
+            auto result = _serverInterface->insertTrack(hash, index, clientReference);
+
+            /* success is handled by the queue insertion event, failure is handled here */
+            if (!result)
+                sendResultMessage(result, clientReference);
+        }
     }
 
     void ConnectedClient::parseQueueEntryRemovalRequest(QByteArray const& message)
@@ -3176,7 +3332,7 @@ namespace PMP::Server
         auto future = _serverInterface->getHashInfo(hash);
         future.handleOnEventLoop(
             this,
-            [this, clientReference](ResultOrError<CollectionTrackInfo, Result> outcome)
+            [this, clientReference](ResultOrError<CollectionTrackInfo, Error> outcome)
             {
                 if (outcome.succeeded())
                     sendHashInfoReply(clientReference, outcome.result());
@@ -3209,7 +3365,7 @@ namespace PMP::Server
 
         future.handleOnEventLoop(
             this,
-            [this, clientReference](ResultOrError<HistoryFragment, Result> outcome)
+            [this, clientReference](ResultOrError<HistoryFragment, Error> outcome)
             {
                 if (outcome.succeeded())
                     sendHistoryFragmentMessage(clientReference, outcome.result());

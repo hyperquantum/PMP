@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -67,13 +67,13 @@ namespace PMP
         constexpr bool succeeded() const { return _result.hasValue(); }
         constexpr bool failed() const { return _result.isNull(); }
 
-        ResultType result() const
+        ResultType result() const // TODO: return reference instead
         {
             Q_ASSERT_X(succeeded(), "ResultOrError::result()", "no result available");
             return _result.value();
         }
 
-        ErrorType error() const
+        ErrorType error() const // TODO: return reference instead
         {
             Q_ASSERT_X(failed(), "ResultOrError::error()", "no error available");
             return _error.value();

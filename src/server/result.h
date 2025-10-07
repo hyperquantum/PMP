@@ -20,6 +20,8 @@
 #ifndef PMP_SERVER_RESULT_H
 #define PMP_SERVER_RESULT_H
 
+#include "common/future.h"
+
 #include <QtGlobal>
 
 namespace PMP::Server
@@ -35,6 +37,8 @@ namespace PMP::Server
 
         HashIsNull,
         HashIsUnknown,
+        TrackIdIsZero,
+        TrackIdIsUnknown,
 
         QueueEntryIdNotFound,
         QueueIndexOutOfRange,
@@ -113,78 +117,92 @@ namespace PMP::Server
     class Error : public Result
     {
     public:
-        static Result notLoggedIn() { return Error(ResultCode::NotLoggedIn); }
+        static Error notLoggedIn() { return Error(ResultCode::NotLoggedIn); }
 
-        static Result operationAlreadyRunning()
+        static Error operationAlreadyRunning()
         {
             return Error(ResultCode::OperationAlreadyRunning);
         }
 
-        static Result hashIsNull() { return Error(ResultCode::HashIsNull); }
-        static Result hashIsUnknown() { return Error(ResultCode::HashIsUnknown); }
+        static Error hashIsNull() { return Error(ResultCode::HashIsNull); }
+        static Error hashIsUnknown() { return Error(ResultCode::HashIsUnknown); }
 
-        static Result queueEntryIdNotFound(uint id)
+        static Error trackIdIsZero() { return Error(ResultCode::TrackIdIsZero); }
+        static Error trackIdIsUnknown() { return Error(ResultCode::TrackIdIsUnknown); }
+
+        static Error queueEntryIdNotFound(uint id)
         {
             return Error(ResultCode::QueueEntryIdNotFound, id);
         }
 
-        static Result queueIndexOutOfRange()
+        static Error queueIndexOutOfRange()
         {
             return Error(ResultCode::QueueIndexOutOfRange);
         }
 
-        static Result queueMaxSizeExceeded()
+        static Error queueMaxSizeExceeded()
         {
             return Error(ResultCode::QueueMaxSizeExceeded);
         }
 
-        static Result queueItemTypeInvalid()
+        static Error queueItemTypeInvalid()
         {
             return Error(ResultCode::QueueItemTypeInvalid);
         }
 
-        static Result delayOutOfRange() { return Error(ResultCode::DelayOutOfRange); }
-        static Result labelNameInvalid() { return Error(ResultCode::LabelNameInvalid); }
+        static Error delayOutOfRange() { return Error(ResultCode::DelayOutOfRange); }
+        static Error labelNameInvalid() { return Error(ResultCode::LabelNameInvalid); }
 
-        static Result labelIdNotFound(uint id)
+        static Error labelIdNotFound(uint id)
         {
             return Error(ResultCode::LabelIdNotFound, id);
         }
 
-        static Result userIdNotFound() { return Error(ResultCode::UserIdNotFound); }
+        static Error userIdNotFound() { return Error(ResultCode::UserIdNotFound); }
 
-        static Result scrobblingSystemDisabled()
+        static Error scrobblingSystemDisabled()
         {
             return Error(ResultCode::ScrobblingSystemDisabled);
         }
 
-        static Result scrobblingProviderInvalid()
+        static Error scrobblingProviderInvalid()
         {
             return Error(ResultCode::ScrobblingProviderInvalid);
         }
 
-        static Result scrobblingProviderNotEnabled()
+        static Error scrobblingProviderNotEnabled()
         {
             return Error(ResultCode::ScrobblingProviderNotEnabled);
         }
 
-        static Result scrobblingAuthenticationFailed()
+        static Error scrobblingAuthenticationFailed()
         {
             return Error(ResultCode::ScrobblingAuthenticationFailed);
         }
 
-        static Result unspecifiedScrobblingBackendError()
+        static Error unspecifiedScrobblingBackendError()
         {
             return Error(ResultCode::UnspecifiedScrobblingBackendError);
         }
 
-        static Result databaseUnvailable()
+        static Error databaseUnvailable()
         {
             return Error(ResultCode::DatabaseUnavailable);
         }
 
-        static Result notImplemented() { return Error(ResultCode::NotImplementedError); }
-        static Result internalError() { return Error(ResultCode::InternalError); }
+        static Error notImplemented() { return Error(ResultCode::NotImplementedError); }
+        static Error internalError() { return Error(ResultCode::InternalError); }
+
+        operator SimpleFuture<Result>() const
+        {
+            return FutureResult<Result>(*this);
+        }
+
+        template <class TResult>
+        operator Future<TResult, Error>() const
+        {
+            return FutureError(*this);
+        }
 
     private:
         Error(ResultCode code) : Result(code) {}

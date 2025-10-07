@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -31,14 +31,17 @@ namespace PMP::Server
     class HistoryEntry
     {
     public:
-        HistoryEntry(FileHash hash, uint user, QDateTime started, QDateTime ended,
+        HistoryEntry(uint trackId, FileHash hash, uint user,
+                     QDateTime started, QDateTime ended,
                      int permillage, bool validForScoring)
-         : _hash(hash), _user(user), _started(started), _ended(ended),
+         : _trackId(trackId), _hash(hash), _user(user),
+           _started(started), _ended(ended),
            _permillage(permillage), _validForScoring(validForScoring)
         {
             //
         }
 
+        uint trackId() const { return _trackId; }
         FileHash hash() const { return _hash; }
         uint userId() const { return _user; }
         QDateTime started() const { return _started; }
@@ -47,6 +50,7 @@ namespace PMP::Server
         int permillage() const { return _permillage; }
 
     private:
+        uint _trackId;
         FileHash _hash;
         uint _user;
         QDateTime _started;

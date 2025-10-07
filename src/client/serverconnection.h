@@ -41,6 +41,7 @@
 #include "collectiontrackinfo.h"
 #include "historyentry.h"
 #include "localhashid.h"
+#include "trackhashorid.h"
 
 #include <QByteArray>
 #include <QDateTime>
@@ -61,6 +62,7 @@ namespace PMP::Client
     class LocalHashIdRepository;
     class ServerCapabilities;
     class ServerCapabilitiesImpl;
+    class TrackServerIdRepository;
 
     class InactivityTimer : public QObject
     {
@@ -132,6 +134,7 @@ namespace PMP::Client
     public:
         explicit ServerConnection(QObject* parent,
                                   LocalHashIdRepository* hashIdRepository,
+                                  TrackServerIdRepository* trackServerIdRepository,
                                   ServerEventSubscription eventSubscription =
                                                       ServerEventSubscription::AllEvents);
         ~ServerConnection();
@@ -162,6 +165,7 @@ namespace PMP::Client
                                                                 qint64 delayMilliseconds);
         SimpleFuture<AnyResultMessageCode> deactivateDelayedStart();
         RequestID insertQueueEntryAtIndex(LocalHashId hashId, quint32 index);
+        RequestID insertQueueEntryAtIndex(TrackHashOrId track, quint32 index);
         RequestID insertSpecialQueueItemAtIndex(SpecialQueueItemType itemType, int index,
                                        QueueIndexType indexType = QueueIndexType::Normal);
         RequestID duplicateQueueEntry(uint queueID);
@@ -220,7 +224,9 @@ namespace PMP::Client
         void moveQueueEntry(uint queueID, qint16 offsetDiff);
 
         void insertQueueEntryAtFront(LocalHashId hashId);
+        void insertQueueEntryAtFront(TrackHashOrId track);
         void insertQueueEntryAtEnd(LocalHashId hashId);
+        void insertQueueEntryAtEnd(TrackHashOrId track);
 
         void sendQueueEntryInfoRequest(uint queueID);
         void sendQueueEntryInfoRequest(QList<uint> const& queueIDs);
@@ -461,11 +467,12 @@ namespace PMP::Client
 
         void receivedServerClockTime(QDateTime serverClockTime);
 
+        void replaceTrackHashWithServerIdIfPossible(TrackHashOrId& track);
+
         static const quint16 ClientProtocolNo;
-        static const int KeepAliveIntervalMs;
-        static const int KeepAliveReplyTimeoutMs;
 
         LocalHashIdRepository* _hashIdRepository;
+        TrackServerIdRepository* _trackServerIdRepository;
         ServerCapabilitiesImpl* _serverCapabilities;
         DisconnectReason _disconnectReason;
         InactivityTimer* _inactivityTimer;

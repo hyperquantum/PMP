@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,8 +21,11 @@
 #define PMP_PLAYERQUEUE_H
 
 #include "common/filehash.h"
+#include "common/resultorerror.h"
 #include "common/specialqueueitemtype.h"
 
+#include "queueentryidsandhash.h"
+#include "queueinsertionposition.h"
 #include "recenthistoryentry.h"
 #include "result.h"
 
@@ -43,6 +46,7 @@ namespace PMP
 
 namespace PMP::Server
 {
+    class HashIdRegistrar;
     class RecentHistoryEntry;
     class QueueEntry;
     class Resolver;
@@ -73,9 +77,9 @@ namespace PMP::Server
             Played, Skipped, Error
         };
 
-        PlayerQueue(Resolver* resolver);
+        PlayerQueue(HashIdRegistrar* hashIdRegistrar, Resolver* resolver);
 
-        TrackRepetitionInfo checkPotentialRepetitionByAdd(FileHash hash,
+        TrackRepetitionInfo checkPotentialRepetitionByAdd(uint trackId,
                                                           int repetitionAvoidanceSeconds,
                                                           qint64 extraMarginMilliseconds
                                                           ) const;
@@ -97,22 +101,28 @@ namespace PMP::Server
         QSharedPointer<QueueEntry> entryAtIndex(int index) const;
         QList<QSharedPointer<QueueEntry>> entries(int startoffset, int maxCount);
 
-        Result enqueue(FileHash hash);
-        Result enqueue(std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
+        QList<ResultOrError<QueueEntryIdsAndHash, class Error>>
+            getHashAndTrackIdForQueueIds(QList<uint> queueIds) const;
 
+        Result enqueue(uint trackId);
+        Result enqueue(FileHash hash);
+
+        Result insertAtFront(uint trackId);
         Result insertAtFront(FileHash hash);
         Result insertBreakAtFront();
-        Result insertAtFront(
-                      std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
 
-        Result insertAtIndex(qint32 index, FileHash hash);
-        Result insertAtIndex(qint32 index,
-                      std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
+        Result insertTrack(QueueInsertionPosition position, FileHash hash);
+        Result insertTrack(QueueInsertionPosition position, uint trackId);
+
         Result insertAtIndex(qint32 index, SpecialQueueItemType itemType,
                              std::function<void (uint)> queueIdNotifier);
-        Result insertAtIndex(qint32 index,
-                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
-                       std::function<void (uint)> queueIdNotifier);
+        Result insertAtIndex(qint32 index, uint trackId,
+                             std::function<void (uint)> queueIdNotifier);
+        Result insertAtIndex(qint32 index, FileHash hash,
+                             std::function<void (uint)> queueIdNotifier);
+
+        Result duplicateEntryWithId(uint queueId,
+                                    std::function<void (uint)> queueIdNotifier);
 
         QList<QSharedPointer<RecentHistoryEntry>> recentHistory(int limit);
 
@@ -139,19 +149,27 @@ namespace PMP::Server
         void checkFrontOfQueue();
 
     private:
+        int toIndex(QueueInsertionPosition position);
+        Result insertAtIndex(qint32 index,
+                    std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator);
+        Result insertAtIndex(qint32 index,
+                    std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
+                    std::function<void (uint)> queueIdNotifier);
+        QueueEntryIdsAndHash toQueueEntryIdsAndHash(QSharedPointer<QueueEntry>) const;
         void resetFirstTrack();
         void setFirstTrackIndexAndId(int index, uint queueId);
         void findFirstTrackBetweenIndices(int start, int end, bool resetIfNoneFound);
         void emitFirstTrackChanged();
 
+        HashIdRegistrar* _hashIdRegistrar;
+        Resolver* _resolver;
+        QTimer* _queueFrontChecker;
         uint _nextQueueID;
         int _firstTrackIndex;
         uint _firstTrackQueueId;
         QHash<quint32, QSharedPointer<QueueEntry>> _idLookup;
         QQueue<QSharedPointer<QueueEntry>> _queue;
         QQueue<QSharedPointer<RecentHistoryEntry>> _history;
-        Resolver* _resolver;
-        QTimer* _queueFrontChecker;
     };
 }
 #endif

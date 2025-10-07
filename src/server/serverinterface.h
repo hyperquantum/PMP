@@ -32,6 +32,8 @@
 #include "collectiontrackinfo.h"
 #include "hashstats.h"
 #include "historyentry.h"
+#include "queueentryidsandhash.h"
+#include "queueinsertionposition.h"
 #include "result.h"
 #include "serverplayerstate.h"
 
@@ -103,10 +105,10 @@ namespace PMP::Server
         void switchToPersonalMode();
         void switchToPublicMode();
 
-        Future<HistoryFragment, Result> getPersonalTrackHistory(FileHash hash,
-                                                                quint32 userId,
-                                                                uint startId,
-                                                                int limit);
+        Future<HistoryFragment, Error> getPersonalTrackHistory(FileHash hash,
+                                                               quint32 userId,
+                                                               uint startId,
+                                                               int limit);
 
         void requestScrobblingInfo();
         void setScrobblingProviderEnabled(ScrobblingProvider provider, bool enabled);
@@ -128,11 +130,14 @@ namespace PMP::Server
 
         PlayerStateOverview getPlayerStateOverview();
 
-        Future<QVector<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
+        QList<ResultOrError<QueueEntryIdsAndHash, Error>> getTrackIdAndHashForQueueIds(
+                                                                        QList<uint> ids);
+        Future<QVector<QString>, Error> getPossibleFilenamesForQueueEntry(uint id);
 
-        Result insertTrackAtEnd(FileHash hash);
-        Result insertTrackAtFront(FileHash hash);
         Result insertBreakAtFrontIfNotExists();
+        Result insertTrack(QueueInsertionPosition position, quint64 trackId);
+        Result insertTrack(QueueInsertionPosition position, FileHash hash);
+        Result insertTrack(quint64 trackId, int index, quint32 clientReference);
         Result insertTrack(FileHash hash, int index, quint32 clientReference);
         Result insertSpecialQueueItem(SpecialQueueItemType itemType,
                                       QueueIndexType indexType, int index,
@@ -151,14 +156,15 @@ namespace PMP::Server
         void setTrackRepetitionAvoidanceSeconds(int seconds);
 
         void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
-        Future<CollectionTrackInfo, Result> getHashInfo(FileHash hash);
+        Future<CollectionTrackInfo, Error> getHashInfo(FileHash hash);
+        Nullable<FileHash> getHashForTrackId(uint trackId) const;
 
         SimpleFuture<Result> applyLabelToTrack(FileHash hash, QString const& label);
         SimpleFuture<Result> removeLabelFromTrack(FileHash hash, QString const& label);
-        ResultOrError<QList<quint32>, Result> getLabelsOfTrack(FileHash hash);
-        ResultOrError<QHash<quint32, QString>, Result> getLabelNames(
+        ResultOrError<QList<quint32>, Error> getLabelsOfTrack(FileHash hash);
+        ResultOrError<QHash<quint32, QString>, Error> getLabelNames(
                                                                 QList<quint32> labelIds);
-        ResultOrError<QList<quint32>, Result> getActiveLabels();
+        ResultOrError<QList<quint32>, Error> getActiveLabels();
 
         void shutDownServer();
         void shutDownServer(QString serverPassword);
@@ -211,9 +217,6 @@ namespace PMP::Server
         int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType, int index);
         std::function<void (uint)> createQueueInsertionIdNotifier(
                                                                  quint32 clientReference);
-        Result insertAtIndex(qint32 index,
-                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
-                       quint32 clientReference);
         void addUserHashDataNotification(quint32 userId, QVector<uint> hashIds);
         void sendUserHashDataNotifications(quint32 userId);
 
