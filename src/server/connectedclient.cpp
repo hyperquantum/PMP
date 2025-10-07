@@ -45,7 +45,7 @@ namespace PMP::Server
 {
     /* ====================== ConnectedClient ====================== */
 
-    const qint16 ConnectedClient::ServerProtocolNo = 28;
+    const qint16 ConnectedClient::ServerProtocolNo = 29;
 
     ConnectedClient::ConnectedClient(QTcpSocket* socket, ServerInterface* serverInterface,
                                      Player* player,
@@ -1797,6 +1797,9 @@ namespace PMP::Server
                                                        QList<quint32> labelsAddedIds,
                                                        QList<quint32> labelsRemovedIds)
     {
+        if (_clientProtocolNo < 29)
+            return; /* client will not understand this */
+
         auto addedCount = labelsAddedIds.size();
         auto removedCount = labelsRemovedIds.size();
 

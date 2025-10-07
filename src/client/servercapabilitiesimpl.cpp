@@ -84,6 +84,6 @@ namespace PMP::Client
 
     bool ServerCapabilitiesImpl::supportsLabels() const
     {
-        return _serverProtocolNumber >= 28;
+        return _serverProtocolNumber >= 29;
     }
 }
