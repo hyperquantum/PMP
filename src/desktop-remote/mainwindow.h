@@ -111,8 +111,6 @@ namespace PMP
         void connectErrorPopupToActionResult(SimpleFuture<AnyResultMessageCode> future,
                                              QString failureText);
 
-        QString getVersionText(VersionInfo const& versionInfo);
-
         NotificationBar* _notificationBar { nullptr };
         QLabel* _leftStatus { nullptr };
         QLabel* _rightStatus { nullptr };
