@@ -442,8 +442,6 @@ namespace PMP::Client
         void receivedServerClockTime(QDateTime serverClockTime);
 
         static const quint16 ClientProtocolNo;
-        static const int KeepAliveIntervalMs;
-        static const int KeepAliveReplyTimeoutMs;
 
         LocalHashIdRepository* _hashIdRepository;
         ServerCapabilitiesImpl* _serverCapabilities;

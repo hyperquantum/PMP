@@ -728,9 +728,6 @@ namespace PMP::Client
 
     const quint16 ServerConnection::ClientProtocolNo = 27;
 
-    const int ServerConnection::KeepAliveIntervalMs = 30 * 1000;
-    const int ServerConnection::KeepAliveReplyTimeoutMs = 5 * 1000;
-
     ServerConnection::ServerConnection(QObject* parent,
                                        LocalHashIdRepository* hashIdRepository,
                                        ServerEventSubscription eventSubscription)
