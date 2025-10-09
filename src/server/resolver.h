@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -64,16 +64,16 @@ namespace PMP::Server
         bool isFullIndexationRunning();
         bool isQuickScanForNewFilesRunning();
 
-        Future<QString, FailureType> findPathForHashAsync(FileHash hash);
-        Future<QString, FailureType> findPathForHashAsync(uint hashId);
+        Future<QString, FailureType> findPathForTrackAsync(uint trackId);
         Future<SuccessType, FailureType> waitUntilAnyFileAnalyzed(uint hashId);
 
         bool haveFileForHash(const FileHash& hash);
-        bool pathStillValid(const FileHash& hash, QString path);
+        bool pathStillValid(uint trackId, QString path);
         Nullable<FileHash> getHashForFilePath(QString path);
 
+        Nullable<AudioData> findAudioData(uint trackId);
         Nullable<AudioData> findAudioData(const FileHash& hash);
-        Nullable<TagData> findTagData(const FileHash& hash);
+        Nullable<TagData> findTagData(uint trackId);
 
         QVector<FileHash> getAllHashes();
         QVector<CollectionTrackInfo> getHashesTrackInfo(QVector<FileHash> hashes);
@@ -96,7 +96,8 @@ namespace PMP::Server
 
         void hashBecameAvailable(PMP::FileHash hash);
         void hashBecameUnavailable(PMP::FileHash hash);
-        void hashTagInfoChanged(PMP::FileHash hash, QString title, QString artist,
+        void hashTagInfoChanged(uint hashId, PMP::FileHash hash,
+                                QString title, QString artist,
                                 QString album, QString albumArtist,
                                 qint32 lengthInMilliseconds);
 

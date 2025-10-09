@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,7 +20,6 @@
 #ifndef PMP_HISTORY_H
 #define PMP_HISTORY_H
 
-#include "common/filehash.h"
 #include "common/future.h"
 #include "common/nullable.h"
 
@@ -36,7 +35,6 @@ QT_FORWARD_DECLARE_CLASS(QThreadPool)
 
 namespace PMP::Server
 {
-    class HashIdRegistrar;
     class HistoryStatistics;
     class Player;
     class QueueEntry;
@@ -45,18 +43,17 @@ namespace PMP::Server
     {
         Q_OBJECT
     public:
-        History(Player* player, HashIdRegistrar* hashIdRegistrar,
-                HistoryStatistics* historyStatistics);
+        History(Player* player, HistoryStatistics* historyStatistics);
 
         ~History();
 
         /** Get last played time since server startup (non-user-specific) */
-        QDateTime lastPlayedGloballySinceStartup(FileHash const& hash) const;
+        QDateTime lastPlayedGloballySinceStartup(uint trackId) const;
 
         Future<SuccessType, FailureType> scheduleUserStatsFetchingIfMissing(
-                                                                        uint hashId,
+                                                                        uint trackId,
                                                                         quint32 userId);
-        Nullable<TrackStats> getUserStats(uint hashId, quint32 userId);
+        Nullable<TrackStats> getUserStats(uint trackId, quint32 userId);
 
     Q_SIGNALS:
         void hashStatisticsChanged(quint32 userId, QVector<uint> hashIds);
@@ -67,9 +64,8 @@ namespace PMP::Server
 
     private:
         Player* _player;
-        HashIdRegistrar* _hashIdRegistrar;
         HistoryStatistics* _statistics;
-        QHash<FileHash, QDateTime> _lastPlayHash;
+        QHash<uint, QDateTime> _lastPlayByTrack;
         QSharedPointer<QueueEntry const> _nowPlaying;
     };
 }

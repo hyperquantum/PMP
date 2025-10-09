@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,7 +21,6 @@
 
 #include "common/util.h"
 
-#include "client/localhashidrepository.h"
 #include "client/queuecontroller.h"
 #include "client/queueentryinfostorage.h"
 #include "client/queuemonitor.h"
@@ -270,9 +269,9 @@ namespace PMP
 
     /* ===== QueueInsertTrackCommand ===== */
 
-    QueueInsertTrackCommand::QueueInsertTrackCommand(const FileHash& hash, int index,
-                                                     QueueIndexType indexType)
-     : _hash(hash),
+    QueueInsertTrackCommand::QueueInsertTrackCommand(const TrackHashOrId& track,
+                                                     int index, QueueIndexType indexType)
+     : _track(track),
        _index(index),
        _indexType(indexType)
     {
@@ -317,16 +316,12 @@ namespace PMP
 
     void QueueInsertTrackCommand::insertNormal(Client::ServerInterface* serverInterface)
     {
-        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
-
         _requestId =
-            serverInterface->queueController().insertQueueEntryAtIndex(hashId, _index);
+            serverInterface->queueController().insertQueueEntryAtIndex(_track, _index);
     }
 
     void QueueInsertTrackCommand::insertReversed(Client::ServerInterface* serverInterface)
     {
-        auto hashId = serverInterface->hashIdRepository()->getOrRegisterId(_hash);
-
         auto* queueController = &serverInterface->queueController();
 
         auto* queueMonitor = &serverInterface->queueMonitor();
@@ -336,7 +331,7 @@ namespace PMP
                 this, &QueueInsertTrackCommand::listenerSlot);
 
         addStep(
-            [this, hashId, queueMonitor, queueController]() -> StepResult
+            [this, queueMonitor, queueController]() -> StepResult
             {
                 if (!queueMonitor->isQueueLengthKnown())
                     return StepResult::stepIncomplete();
@@ -349,7 +344,7 @@ namespace PMP
                 }
 
                 _requestId =
-                    queueController->insertQueueEntryAtIndex(hashId, insertionIndex);
+                    queueController->insertQueueEntryAtIndex(_track, insertionIndex);
 
                 return StepResult::stepCompleted();
             }

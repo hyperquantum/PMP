@@ -246,10 +246,10 @@ static int runServer(QCoreApplication& app, bool doIndexation)
     Resolver resolver(&hashIdRegistrar, &hashRelations, &historyStatistics);
 
     Users users;
-    Player player(nullptr, &resolver, serverSettings.defaultVolume());
+    Player player(nullptr, &hashIdRegistrar, &resolver, serverSettings.defaultVolume());
     DelayedStart delayedStart(&player);
     PlayerQueue& queue = player.queue();
-    History history(&player, &hashIdRegistrar, &historyStatistics);
+    History history(&player, &historyStatistics);
     UserHashStatsCacheFixer hashStatsCacheFixer(&historyStatistics);
 
     CollectionMonitor collectionMonitor;

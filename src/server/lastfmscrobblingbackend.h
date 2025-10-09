@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -87,7 +87,7 @@ namespace PMP::Server
         LastFmAuthenticationRequestHandler(LastFmScrobblingBackend* parent,
                                            QNetworkReply* pendingReply);
 
-        Future<LastFmAuthenticationResult, Result> future() const;
+        Future<LastFmAuthenticationResult, Error> future() const;
 
     protected:
         void handleOkReply(const QDomElement& childElement) override;
@@ -95,7 +95,7 @@ namespace PMP::Server
         void onGenericError() override;
 
     private:
-        Promise<LastFmAuthenticationResult, Result> _promise;
+        Promise<LastFmAuthenticationResult, Error> _promise;
     };
 
     class LastFmNowPlayingRequestHandler : public LastFmRequestHandler

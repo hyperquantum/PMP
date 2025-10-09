@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -24,6 +24,8 @@
 #include "common/queueindextype.h"
 #include "common/requestid.h"
 #include "common/specialqueueitemtype.h"
+
+#include "client/trackhashorid.h"
 
 #include "commandbase.h"
 
@@ -78,7 +80,7 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        QueueInsertTrackCommand(FileHash const& hash, int index,
+        QueueInsertTrackCommand(Client::TrackHashOrId const& track, int index,
                                 QueueIndexType indexType);
 
     protected:
@@ -88,7 +90,7 @@ namespace PMP
         void insertNormal(Client::ServerInterface* serverInterface);
         void insertReversed(Client::ServerInterface* serverInterface);
 
-        FileHash _hash;
+        Client::TrackHashOrId _track;
         int _index;
         QueueIndexType _indexType;
         RequestID _requestId;

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,24 +17,21 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVER_TRACKINFOPROVIDER_H
-#define PMP_SERVER_TRACKINFOPROVIDER_H
+#ifndef PMP_SERVER_QUEUEENTRYIDSANDHASH_H
+#define PMP_SERVER_QUEUEENTRYIDSANDHASH_H
 
-#include "common/future.h"
+#include "common/nullable.h"
 
-#include "collectiontrackinfo.h"
+#include "filehashwithid.h"
+#include "queueentrykind.h"
 
 namespace PMP::Server
 {
-    class TrackInfoProvider
+    struct QueueEntryIdsAndHash
     {
-    protected:
-        TrackInfoProvider() {}
-    public:
-        virtual ~TrackInfoProvider() {}
-
-        virtual Future<CollectionTrackInfo, FailureType> getTrackInfoAsync(
-                                                                        uint trackId) = 0;
+        uint queueId;
+        QueueEntryKind kind;
+        Nullable<FileHashWithId> hashAndId;
     };
 }
 #endif

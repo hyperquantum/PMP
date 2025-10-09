@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -227,39 +227,40 @@ namespace PMP::Server
         _player->setUserPlayingFor(0);
     }
 
-    Future<HistoryFragment, Result> ServerInterface::getPersonalTrackHistory(
+    Future<HistoryFragment, Error> ServerInterface::getPersonalTrackHistory(
         FileHash hash, quint32 userId, uint startId, int limit)
     {
         if (!isLoggedIn())
-            return FutureError(Error::notLoggedIn());
+            return Error::notLoggedIn();
 
         if (hash.isNull())
-            return FutureError(Error::hashIsNull());
+            return Error::hashIsNull();
 
-        auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
-        if (maybeHashId == null)
-            return FutureError(Error::hashIsUnknown());
+        auto maybeTrackId = _hashIdRegistrar->getIdForHash(hash);
+        if (maybeTrackId == null)
+            return Error::hashIsUnknown();
 
-        auto hashIds =
-            _hashRelations->getEquivalencyGroup(maybeHashId.value());
+        auto trackId = maybeTrackId.value();
+
+        auto trackIds = _hashRelations->getEquivalencyGroup(trackId);
 
         if (userId != 0 && !_users->checkUserIdExists(userId))
-            return FutureError(Error::userIdNotFound());
+            return Error::userIdNotFound();
 
         limit = qBound(0, limit, 50);
 
         auto future =
-            Concurrent::runOnThreadPool<HistoryFragment, Result>(
+            Concurrent::runOnThreadPool<HistoryFragment, Error>(
                 globalThreadPool,
-                [hashIds, hash, userId, startId, limit]()
-                    -> ResultOrError<HistoryFragment, Result>
+                [trackIds, trackId, hash, userId, startId, limit]()
+                    -> ResultOrError<HistoryFragment, Error>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)
                         return Error::databaseUnvailable();
 
                     const auto recordsOrFailure =
-                        db->getTrackHistoryForUser(userId, hashIds, startId, limit);
+                        db->getTrackHistoryForUser(userId, trackIds, startId, limit);
 
                     if (recordsOrFailure.failed())
                         return Error::internalError();
@@ -272,7 +273,8 @@ namespace PMP::Server
                     for (auto& record : records)
                     {
                         entries.append(
-                            HistoryEntry { hash, userId, record.start, record.end,
+                            HistoryEntry { trackId, hash, userId,
+                                           record.start, record.end,
                                            record.permillage, record.validForScoring }
                         );
                     }
@@ -321,10 +323,10 @@ namespace PMP::Server
                                                             QString password)
     {
         if (!isLoggedIn())
-            return FutureResult(Error::notLoggedIn());
+            return Error::notLoggedIn();
 
         if (provider == ScrobblingProvider::Unknown)
-            return FutureResult(Error::scrobblingProviderInvalid());
+            return Error::scrobblingProviderInvalid();
 
         return _scrobbling->authenticateForProvider(_userLoggedIn, provider, user,
                                                     password);
@@ -405,7 +407,13 @@ namespace PMP::Server
         return overview;
     }
 
-    Future<QVector<QString>, Result>
+    QList<ResultOrError<QueueEntryIdsAndHash, Error>>
+        ServerInterface::getTrackIdAndHashForQueueIds(QList<uint> ids)
+    {
+        return _player->queue().getHashAndTrackIdForQueueIds(ids);
+    }
+
+    Future<QVector<QString>, Error>
         ServerInterface::getPossibleFilenamesForQueueEntry(uint id)
     {
         if (id <= 0) /* invalid queue ID */
@@ -418,19 +426,18 @@ namespace PMP::Server
         if (!entry->isTrack())
             return FutureError(Error::queueItemTypeInvalid());
 
-        auto hash = entry->hash().value();
-        uint hashId = _player->resolver().getID(hash);
+        auto trackId = entry->trackId().value();
 
         auto future =
-            Concurrent::runOnThreadPool<QVector<QString>, Result>(
+            Concurrent::runOnThreadPool<QVector<QString>, Error>(
                 globalThreadPool,
-                [hashId]() -> ResultOrError<QVector<QString>, Result>
+                [trackId]() -> ResultOrError<QVector<QString>, Error>
                 {
                     auto db = Database::getDatabaseForCurrentThread();
                     if (!db)
                         return Error::databaseUnvailable();
 
-                    auto filenamesOrFailure = db->getFilenames(hashId);
+                    auto filenamesOrFailure = db->getFilenames(trackId);
 
                     if (filenamesOrFailure.failed())
                         return Error::internalError();
@@ -440,32 +447,6 @@ namespace PMP::Server
             );
 
         return future;
-    }
-
-    Result ServerInterface::insertTrackAtEnd(FileHash hash)
-    {
-        if (!isLoggedIn())
-            return Error::notLoggedIn();
-
-        if (_hashIdRegistrar->isRegistered(hash) == false)
-            return Error::hashIsUnknown();
-
-        auto& queue = _player->queue();
-
-        return queue.enqueue(hash);
-    }
-
-    Result ServerInterface::insertTrackAtFront(FileHash hash)
-    {
-        if (!isLoggedIn())
-            return Error::notLoggedIn();
-
-        if (_hashIdRegistrar->isRegistered(hash) == false)
-            return Error::hashIsUnknown();
-
-        auto& queue = _player->queue();
-
-        return queue.insertAtFront(hash);
     }
 
     Result ServerInterface::insertBreakAtFrontIfNotExists()
@@ -481,17 +462,63 @@ namespace PMP::Server
         return queue.insertBreakAtFront();
     }
 
+    Result ServerInterface::insertTrack(QueueInsertionPosition position, quint64 trackId)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        auto possiblyTruncatedTrackId = static_cast<uint>(trackId);
+        if (possiblyTruncatedTrackId != trackId)
+            return Error::trackIdIsUnknown();
+
+        /* other checks of the track ID are done by Queue */
+
+        auto& queue = _player->queue();
+
+        return queue.insertTrack(position, possiblyTruncatedTrackId);
+    }
+
+    Result ServerInterface::insertTrack(QueueInsertionPosition position, FileHash hash)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        /* other checks of the track hash are done by Queue */
+
+        auto& queue = _player->queue();
+
+        return queue.insertTrack(position, hash);
+    }
+
+    Result ServerInterface::insertTrack(quint64 trackId, int index,
+                                        quint32 clientReference)
+    {
+        if (!isLoggedIn())
+            return Error::notLoggedIn();
+
+        auto possiblyTruncatedTrackId = static_cast<uint>(trackId);
+        if (possiblyTruncatedTrackId != trackId)
+            return Error::trackIdIsUnknown();
+
+        /* other checks of the track hash are done by Queue */
+
+        auto& queue = _player->queue();
+
+        return queue.insertAtIndex(index, trackId,
+                                   createQueueInsertionIdNotifier(clientReference));
+    }
+
     Result ServerInterface::insertTrack(FileHash hash, int index, quint32 clientReference)
     {
         if (!isLoggedIn())
             return Error::notLoggedIn();
 
-        if (_hashIdRegistrar->isRegistered(hash) == false)
-            return Error::hashIsUnknown();
+        /* other checks of the track hash are done by Queue */
 
-        auto entryCreator = QueueEntryCreators::hash(hash);
+        auto& queue = _player->queue();
 
-        return insertAtIndex(index, entryCreator, clientReference);
+        return queue.insertAtIndex(index, hash,
+                                   createQueueInsertionIdNotifier(clientReference));
     }
 
     Result ServerInterface::insertSpecialQueueItem(SpecialQueueItemType itemType,
@@ -517,30 +544,8 @@ namespace PMP::Server
 
         auto& queue = _player->queue();
 
-        auto index = queue.findIndex(id);
-        if (index < 0)
-            return Error::queueEntryIdNotFound(id);
-
-        auto existing = queue.entryAtIndex(index);
-        if (!existing || existing->queueID() != id)
-        {
-            qWarning() << "queue inconsistency for QID" << id;
-            return Error::internalError();
-        }
-
-        auto entryCreator = QueueEntryCreators::copyOf(existing);
-
-        return insertAtIndex(index + 1, entryCreator, clientReference);
-    }
-
-    Result ServerInterface::insertAtIndex(qint32 index,
-                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
-                       quint32 clientReference)
-    {
-        auto& queue = _player->queue();
-
-        return queue.insertAtIndex(index, queueEntryCreator,
-                                   createQueueInsertionIdNotifier(clientReference));
+        return queue.duplicateEntryWithId(id,
+                                        createQueueInsertionIdNotifier(clientReference));
     }
 
     void ServerInterface::moveQueueEntry(uint id, int upDownOffset)
@@ -671,20 +676,25 @@ namespace PMP::Server
             Q_EMIT hashUserDataChangedOrAvailable(userId, hashStatsAlreadyAvailable);
     }
 
-    Future<CollectionTrackInfo, Result> ServerInterface::getHashInfo(FileHash hash)
+    Future<CollectionTrackInfo, Error> ServerInterface::getHashInfo(FileHash hash)
     {
         /* note: client does not need to be logged in for this */
 
         if (hash.isNull())
-            return FutureError(Error::hashIsNull());
+            return Error::hashIsNull();
 
         auto maybeHashId = _hashIdRegistrar->getIdForHash(hash);
         if (maybeHashId == null)
-            return FutureError(Error::hashIsUnknown());
+            return Error::hashIsUnknown();
 
         auto hashInfo = _player->resolver().getHashTrackInfo(maybeHashId.value());
 
         return FutureResult(hashInfo);
+    }
+
+    Nullable<FileHash> ServerInterface::getHashForTrackId(uint trackId) const
+    {
+        return _hashIdRegistrar->getHashForId(trackId);
     }
 
     void ServerInterface::shutDownServer()

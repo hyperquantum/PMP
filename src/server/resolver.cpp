@@ -243,7 +243,7 @@ namespace PMP::Server
 
         if (lengthChanged || quickTagsChanged)
         {
-            Q_EMIT _parent->hashTagInfoChanged(_hash, _quickTitle, _quickArtist,
+            Q_EMIT _parent->hashTagInfoChanged(_hashId, _hash, _quickTitle, _quickArtist,
                                                _quickAlbum, _quickAlbumArtist,
                                                _audio.trackLengthMilliseconds());
         }
@@ -661,58 +661,17 @@ namespace PMP::Server
         }
     }
 
-    Future<QString, FailureType> Resolver::findPathForHashAsync(FileHash hash)
-    {
-        if (hash.isNull())
-        {
-            qWarning() << "Resolver: cannot find path for null hash";
-            return FutureError(failure);
-        }
-
-        {
-            QMutexLocker lock(&_lock);
-
-            auto it = _hashToKnowledge.find(hash);
-            if (it != _hashToKnowledge.end())
-            {
-                auto path = it.value()->getFile();
-                if (!path.isEmpty())
-                {
-                    return FutureResult(path);
-                }
-            }
-        }
-
-        auto idFuture = _hashIdRegistrar->getOrCreateId(hash);
-
-        // TODO : check if we have it in the locations cache
-
-        auto pathFuture =
-            idFuture.thenOnAnyThreadIndirect<QString, FailureType>(
-                [this, hash](FailureOr<uint> outcome) -> Future<QString, FailureType>
-                {
-                    if (outcome.failed())
-                        return FutureError(failure);
-
-                    auto id = outcome.result();
-                    return _fileFinder->findHashAsync(id, hash);
-                }
-            );
-
-        return pathFuture;
-    }
-
-    Future<QString, FailureType> Resolver::findPathForHashAsync(uint hashId)
+    Future<QString, FailureType> Resolver::findPathForTrackAsync(uint trackId)
     {
         FileHash hash;
 
         {
             QMutexLocker lock(&_lock);
 
-            auto it = _idToKnowledge.find(hashId);
+            auto it = _idToKnowledge.find(trackId);
             if (it == _idToKnowledge.end())
             {
-                qWarning() << "Resolver: hash ID" << hashId << "is unknown";
+                qWarning() << "Resolver: track ID" << trackId << "is unknown";
                 return FutureError(failure);
             }
 
@@ -727,7 +686,7 @@ namespace PMP::Server
 
         // TODO : check if we have it in the locations cache
 
-        return _fileFinder->findHashAsync(hashId, hash);
+        return _fileFinder->findHashAsync(trackId, hash);
     }
 
     Future<SuccessType, FailureType> Resolver::waitUntilAnyFileAnalyzed(uint hashId)
@@ -933,7 +892,7 @@ namespace PMP::Server
         return knowledge && knowledge->isAvailable();
     }
 
-    bool Resolver::pathStillValid(const FileHash& hash, QString path)
+    bool Resolver::pathStillValid(uint trackId, QString path)
     {
         QMutexLocker lock(&_lock);
 
@@ -941,7 +900,7 @@ namespace PMP::Server
         if (!file) return false;
 
         auto knowledge = file->_parent;
-        if (knowledge->hash() != hash) return false;
+        if (knowledge->id() != trackId) return false;
 
         return knowledge->isStillValid(file);
     }
@@ -974,6 +933,16 @@ namespace PMP::Server
         (void)knowledge->isStillValid(file);
     }
 
+    Nullable<AudioData> Resolver::findAudioData(uint trackId)
+    {
+        QMutexLocker lock(&_lock);
+
+        auto knowledge = _idToKnowledge.value(trackId, nullptr);
+        if (knowledge) return knowledge->audio();
+
+        return null;
+    }
+
     Nullable<AudioData> Resolver::findAudioData(const FileHash& hash)
     {
         QMutexLocker lock(&_lock);
@@ -984,11 +953,11 @@ namespace PMP::Server
         return null;
     }
 
-    Nullable<TagData> Resolver::findTagData(const FileHash& hash)
+    Nullable<TagData> Resolver::findTagData(uint trackId)
     {
         QMutexLocker lock(&_lock);
 
-        auto knowledge = _hashToKnowledge.value(hash, nullptr);
+        auto knowledge = _idToKnowledge.value(trackId, nullptr);
 
         if (knowledge)
         {
@@ -1026,7 +995,7 @@ namespace PMP::Server
                 lengthInMilliseconds = 0;
             }
 
-            CollectionTrackInfo info(hash, knowledge->isAvailable(),
+            CollectionTrackInfo info(knowledge->id(), hash, knowledge->isAvailable(),
                                      knowledge->quickTitle(), knowledge->quickArtist(),
                                      knowledge->quickAlbum(),
                                      knowledge->quickAlbumArtist(),
@@ -1051,7 +1020,7 @@ namespace PMP::Server
             lengthInMilliseconds = 0;
         }
 
-        CollectionTrackInfo info(knowledge->hash(), knowledge->isAvailable(),
+        CollectionTrackInfo info(hashId, knowledge->hash(), knowledge->isAvailable(),
                                  knowledge->quickTitle(), knowledge->quickArtist(),
                                  knowledge->quickAlbum(), knowledge->quickAlbumArtist(),
                                  qint32(lengthInMilliseconds));

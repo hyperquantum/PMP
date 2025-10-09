@@ -31,6 +31,7 @@
 #include "client/scrobblingcontroller.h"
 #include "client/serverconnection.h"
 #include "client/serverinterface.h"
+#include "client/trackserveridrepository.h"
 
 #include "collectionwidget.h"
 #include "connectionwidget.h"
@@ -70,6 +71,7 @@ namespace PMP
        _leftStatusTimer(new QTimer(this)),
        _connectionWidget(new ConnectionWidget(this)),
        _hashIdRepository(new LocalHashIdRepository()),
+       _trackServerIdRepository(new TrackServerIdRepository()),
        _musicCollectionDock(new QDockWidget(tr("Music collection"), this)),
        _powerManagement(new PowerManagement(this))
     {
@@ -123,6 +125,7 @@ namespace PMP
     MainWindow::~MainWindow()
     {
         delete _hashIdRepository;
+        delete _trackServerIdRepository;
     }
 
     void MainWindow::createActions()
@@ -695,7 +698,9 @@ namespace PMP
 
     void MainWindow::onDoConnect(QString server, uint port)
     {
-        _connection = new ServerConnection(this, _hashIdRepository);
+        _connection = new ServerConnection(this,
+                                           _hashIdRepository,
+                                           _trackServerIdRepository);
         _serverInterface = new ServerInterfaceImpl(_connection);
 
         auto* generalController = &_serverInterface->generalController();

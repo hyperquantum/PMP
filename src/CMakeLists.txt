@@ -66,6 +66,7 @@ set(PMP_CLIENT_SOURCES
     client/serverconnection.cpp
     client/serverdiscoverer.cpp
     client/serverinterface.cpp
+    client/trackserveridrepository.cpp
     client/userdatafetcher.cpp
     client/volumemediator.cpp
 )

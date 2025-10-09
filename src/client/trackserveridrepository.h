@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,24 +17,31 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVER_TRACKINFOPROVIDER_H
-#define PMP_SERVER_TRACKINFOPROVIDER_H
+#ifndef PMP_CLIENT_TRACKSERVERIDREPOSITORY_H
+#define PMP_CLIENT_TRACKSERVERIDREPOSITORY_H
 
-#include "common/future.h"
+#include "common/filehash.h"
+#include "common/nullable.h"
 
-#include "collectiontrackinfo.h"
+#include <QHash>
+#include <QReadWriteLock>
 
-namespace PMP::Server
+namespace PMP::Client
 {
-    class TrackInfoProvider
+    class TrackServerIdRepository
     {
-    protected:
-        TrackInfoProvider() {}
     public:
-        virtual ~TrackInfoProvider() {}
+        TrackServerIdRepository();
 
-        virtual Future<CollectionTrackInfo, FailureType> getTrackInfoAsync(
-                                                                        uint trackId) = 0;
+        void registerHashWithId(FileHash const& hash, quint64 trackServerId);
+
+        Nullable<quint64> getServerIdForHash(FileHash const& hash) const;
+        Nullable<FileHash> getHashForServerId(quint64 trackServerId) const;
+
+    private:
+        mutable QReadWriteLock _lock;
+        QHash<FileHash, quint64> _hashToServerId;
+        QHash<quint64, FileHash> _serverIdToHash;
     };
 }
 #endif

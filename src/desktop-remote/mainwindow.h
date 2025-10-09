@@ -38,6 +38,7 @@ namespace PMP::Client
     class QueueHashesMonitor;
     class ServerConnection;
     class ServerInterface;
+    class TrackServerIdRepository;
 }
 
 namespace PMP
@@ -118,6 +119,7 @@ namespace PMP
 
         ConnectionWidget* _connectionWidget;
         Client::LocalHashIdRepository* _hashIdRepository;
+        Client::TrackServerIdRepository* _trackServerIdRepository;
         Client::ServerConnection* _connection { nullptr };
         Client::ServerInterface* _serverInterface { nullptr };
         Client::QueueHashesMonitor* _queueHashesMonitor { nullptr };

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -63,8 +63,8 @@ namespace PMP::Server
     class Preloader::PreloadTrack
     {
     public:
-        PreloadTrack(FileHash hash, QString filename)
-         : _status(Initial), _hash(hash), _filename(filename)
+        PreloadTrack(uint trackId, QString filename)
+         : _status(Initial), _trackId(trackId), _filename(filename)
         {
             //
         }
@@ -76,9 +76,9 @@ namespace PMP::Server
 
         enum Status { Initial = 0, Processing, Preloaded, Failed, CleanedUp };
 
-        Status status() const;
-        FileHash const& hash() const;
-        QString originalFilename() const;
+        Status status() const { return _status; }
+        uint trackId() const { return _trackId; }
+        QString originalFilename() const { return _filename; }
 
         void setToLoading();
         void setToFailed();
@@ -89,25 +89,10 @@ namespace PMP::Server
 
     private:
         Status _status;
-        FileHash _hash;
+        uint _trackId;
         QString _filename;
         QString _cacheFile;
     };
-
-    Preloader::PreloadTrack::Status Preloader::PreloadTrack::status() const
-    {
-        return _status;
-    }
-
-    FileHash const& Preloader::PreloadTrack::hash() const
-    {
-        return _hash;
-    }
-
-    QString Preloader::PreloadTrack::originalFilename() const
-    {
-        return _filename;
-    }
 
     void Preloader::PreloadTrack::setToLoading()
     {
@@ -320,7 +305,7 @@ namespace PMP::Server
         if (!entry->isTrack())
             return;
 
-        FileHash hash = entry->hash().value();
+        auto trackId = entry->trackId().value();
         Nullable<QString> filename = entry->filename();
 
         auto id = entry->queueID();
@@ -342,17 +327,17 @@ namespace PMP::Server
 
         qDebug() << "putting queue ID" << id << "on the list for preloading";
 
-        track = new PreloadTrack(hash, filename.valueOr({}));
+        track = new PreloadTrack(trackId, filename.valueOr({}));
 
         _tracksByQueueID.insert(id, track);
         _tracksToPreload.append(id);
     }
 
-    Future<QString, FailureType> Preloader::preloadAsync(uint queueId, FileHash hash,
+    Future<QString, FailureType> Preloader::preloadAsync(uint queueId, uint trackId,
                                                          QString originalFilename)
     {
         if (!originalFilename.isEmpty()
-                && _resolver->pathStillValid(hash, originalFilename))
+                && _resolver->pathStillValid(trackId, originalFilename))
         {
             return Concurrent::runOnThreadPool<QString, FailureType>(
                 globalThreadPool,
@@ -364,10 +349,10 @@ namespace PMP::Server
         }
 
         qDebug() << "Preloader: don't have a filename yet for queue ID" << queueId
-                 << "which has hash" << hash;
+                 << "which has track ID" << trackId;
 
         return
-            _resolver->findPathForHashAsync(hash)
+            _resolver->findPathForTrackAsync(trackId)
                 .thenOnThreadPool<QString, FailureType>(
                     globalThreadPool,
                     [queueId](FailureOr<QString> outcome) -> FailureOr<QString>
@@ -480,7 +465,9 @@ namespace PMP::Server
 
             track->setToLoading();
 
-            auto future = preloadAsync(queueId, track->hash(), track->originalFilename());
+            auto future = preloadAsync(queueId,
+                                       track->trackId(),
+                                       track->originalFilename());
             _jobsRunning++;
 
             future.handleOnEventLoop(

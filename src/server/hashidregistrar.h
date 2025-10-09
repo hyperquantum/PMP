@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -44,7 +44,8 @@ namespace PMP::Server
         QList<uint> getAllIdsLoaded();
         QVector<QPair<uint, FileHash>> getExistingIdsOnly(QVector<FileHash> hashes);
         Nullable<uint> getIdForHash(FileHash hash);
-        bool isRegistered(FileHash hash);
+        bool isRegisteredHash(FileHash hash);
+        bool isRegisteredId(uint id);
         Nullable<FileHash> getHashForId(uint id);
 
     private:

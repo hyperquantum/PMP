@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -55,7 +55,7 @@ namespace PMP::Server
         checkNeedToSendNotifications();
     }
 
-    void CollectionMonitor::hashTagInfoChanged(FileHash hash,
+    void CollectionMonitor::hashTagInfoChanged(uint hashId, FileHash hash,
                                                QString title, QString artist,
                                                QString album, QString albumArtist,
                                                qint32 lengthInMilliseconds)
@@ -71,6 +71,7 @@ namespace PMP::Server
 
         if (infoStillTheSame) return;
 
+        info.hashId = hashId;
         info.title = title;
         info.artist = artist;
         info.album = album;
@@ -162,13 +163,14 @@ namespace PMP::Server
         QVector<CollectionTrackInfo> notifications;
         notifications.reserve(hashes.size());
 
-        for (FileHash const& h : hashes)
+        for (FileHash const& hash : hashes)
         {
-            auto it = _collection.find(h);
+            auto it = _collection.find(hash);
             if (it == _collection.end()) continue; /* disappeared?? */
 
             const HashInfo& value = it.value();
-            CollectionTrackInfo info(h, value.isAvailable, value.title, value.artist,
+            CollectionTrackInfo info(value.hashId, hash, value.isAvailable,
+                                     value.title, value.artist,
                                      value.album, value.albumArtist,
                                      value.lengthInMilliseconds);
             notifications.append(info);
@@ -179,17 +181,27 @@ namespace PMP::Server
 
     void CollectionMonitor::emitAvailabilityNotifications(QVector<FileHash> hashes)
     {
-        QVector<FileHash> available, unavailable;
+        QVector<FileHashWithId> available, unavailable;
 
-        for (FileHash const& h : hashes)
+        for (FileHash const& hash : hashes)
         {
-            auto it = _collection.find(h);
+            auto it = _collection.find(hash);
             if (it == _collection.end()) continue; /* disappeared?? */
 
-            if (it.value().isAvailable)
-                available.append(h);
+            auto const& hashInfo = it.value();
+
+            auto id = hashInfo.hashId;
+            if (id == 0)
+            {
+                qWarning() << "CollectionMonitor: cannot emit availability notification"
+                           << "for hash" << hash << "because its ID is not known";
+                continue;
+            }
+
+            if (hashInfo.isAvailable)
+                available.append({ hash, id });
             else
-                unavailable.append(h);
+                unavailable.append({ hash, id });
         }
 
         Q_EMIT hashAvailabilityChanged(available, unavailable);

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -182,9 +182,20 @@ namespace PMP::Server
         return it.value();
     }
 
-    bool HashIdRegistrar::isRegistered(FileHash hash)
+    bool HashIdRegistrar::isRegisteredHash(FileHash hash)
     {
-        return getIdForHash(hash).hasValue();
+        QMutexLocker lock(&_mutex);
+
+        auto it = _hashes.constFind(hash);
+        return it != _hashes.constEnd();
+    }
+
+    bool HashIdRegistrar::isRegisteredId(uint id)
+    {
+        QMutexLocker lock(&_mutex);
+
+        auto it = _ids.constFind(id);
+        return it != _ids.constEnd();
     }
 
     Nullable<FileHash> HashIdRegistrar::getHashForId(uint id)

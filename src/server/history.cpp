@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -19,7 +19,6 @@
 
 #include "history.h"
 
-#include "hashidregistrar.h"
 #include "historystatistics.h"
 #include "player.h"
 #include "queueentry.h"
@@ -30,10 +29,8 @@
 
 namespace PMP::Server
 {
-    History::History(Player* player, HashIdRegistrar* hashIdRegistrar,
-                     HistoryStatistics* historyStatistics)
+    History::History(Player* player, HistoryStatistics* historyStatistics)
      : _player(player),
-       _hashIdRegistrar(hashIdRegistrar),
        _statistics(historyStatistics),
        _nowPlaying(nullptr)
     {
@@ -56,44 +53,44 @@ namespace PMP::Server
         //
     }
 
-    QDateTime History::lastPlayedGloballySinceStartup(FileHash const& hash) const
+    QDateTime History::lastPlayedGloballySinceStartup(uint trackId) const
     {
-        return _lastPlayHash[hash];
+        return _lastPlayByTrack[trackId];
     }
 
     Future<SuccessType, FailureType> History::scheduleUserStatsFetchingIfMissing(
-                                                                           uint hashId,
+                                                                           uint trackId,
                                                                            quint32 userId)
     {
-        if (hashId == 0)
+        if (trackId == 0)
         {
-            qWarning() << "History: invalid parameter(s): hashId" << hashId
-                       << "user" << userId;
+            qWarning() << "History: invalid parameter(s): track ID" << trackId
+                       << " user ID" << userId;
             return FutureError(failure);
         }
 
-        return _statistics->scheduleFetchIfMissing(userId, hashId);
+        return _statistics->scheduleFetchIfMissing(userId, trackId);
     }
 
-    Nullable<TrackStats> History::getUserStats(uint hashId, quint32 userId)
+    Nullable<TrackStats> History::getUserStats(uint trackId, quint32 userId)
     {
-        if (hashId == 0)
+        if (trackId == 0)
         {
-            qWarning() << "History: got request for user stats of hash ID zero";
+            qWarning() << "History: got request for user stats of track ID zero";
             return null;
         }
 
-        return _statistics->getStatsIfAvailable(userId, hashId);
+        return _statistics->getStatsIfAvailable(userId, trackId);
     }
 
     void History::currentTrackChanged(QSharedPointer<QueueEntry const> newTrack)
     {
         if (_nowPlaying != nullptr && newTrack != _nowPlaying)
         {
-            Nullable<FileHash> hash = _nowPlaying->hash();
-            if (hash.hasValue())
+            Nullable<uint> trackId = _nowPlaying->trackId();
+            if (trackId.hasValue())
             {
-                _lastPlayHash[hash.value()] = QDateTime::currentDateTimeUtc();
+                _lastPlayByTrack[trackId.value()] = QDateTime::currentDateTimeUtc();
             }
         }
 
@@ -105,31 +102,8 @@ namespace PMP::Server
         if (entry->permillage() <= 0 && entry->hadError())
             return;
 
-        FileHash hash = entry->hash();
-        if (hash.isNull())
-        {
-            qWarning() << "cannot save history for queue ID" << entry->queueID()
-                       << "because hash is unavailabe";
-            return;
-        }
-
-        auto* statistics = _statistics;
-
-        _hashIdRegistrar->getOrCreateId(hash)
-            .thenOnAnyThreadIndirect<SuccessType, FailureType>(
-                [statistics, entry](FailureOr<uint> outcome)
-                    -> Future<SuccessType, FailureType>
-                {
-                    if (outcome.failed())
-                        return FutureError(failure);
-
-                    auto hashId = outcome.result();
-                    uint userId = entry->user();
-
-                    return statistics->addToHistory(userId, hashId, entry->started(),
-                                                    entry->ended(), entry->permillage(),
-                                                    entry->validForScoring());
-                }
-            );
+        _statistics->addToHistory(entry->user(), entry->trackId(),
+                                  entry->started(), entry->ended(), entry->permillage(),
+                                  entry->validForScoring());
     }
 }

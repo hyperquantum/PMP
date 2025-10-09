@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,8 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_SERVERINTERFACE_H
-#define PMP_SERVERINTERFACE_H
+#ifndef PMP_SERVER_SERVERINTERFACE_H
+#define PMP_SERVER_SERVERINTERFACE_H
 
 #include "common/filehash.h"
 #include "common/future.h"
@@ -32,6 +32,8 @@
 #include "collectiontrackinfo.h"
 #include "hashstats.h"
 #include "historyentry.h"
+#include "queueentryidsandhash.h"
+#include "queueinsertionposition.h"
 #include "result.h"
 #include "serverplayerstate.h"
 
@@ -100,10 +102,10 @@ namespace PMP::Server
         void switchToPersonalMode();
         void switchToPublicMode();
 
-        Future<HistoryFragment, Result> getPersonalTrackHistory(FileHash hash,
-                                                                quint32 userId,
-                                                                uint startId,
-                                                                int limit);
+        Future<HistoryFragment, Error> getPersonalTrackHistory(FileHash hash,
+                                                               quint32 userId,
+                                                               uint startId,
+                                                               int limit);
 
         void requestScrobblingInfo();
         void setScrobblingProviderEnabled(ScrobblingProvider provider, bool enabled);
@@ -125,11 +127,14 @@ namespace PMP::Server
 
         PlayerStateOverview getPlayerStateOverview();
 
-        Future<QVector<QString>, Result> getPossibleFilenamesForQueueEntry(uint id);
+        QList<ResultOrError<QueueEntryIdsAndHash, Error>> getTrackIdAndHashForQueueIds(
+                                                                        QList<uint> ids);
+        Future<QVector<QString>, Error> getPossibleFilenamesForQueueEntry(uint id);
 
-        Result insertTrackAtEnd(FileHash hash);
-        Result insertTrackAtFront(FileHash hash);
         Result insertBreakAtFrontIfNotExists();
+        Result insertTrack(QueueInsertionPosition position, quint64 trackId);
+        Result insertTrack(QueueInsertionPosition position, FileHash hash);
+        Result insertTrack(quint64 trackId, int index, quint32 clientReference);
         Result insertTrack(FileHash hash, int index, quint32 clientReference);
         Result insertSpecialQueueItem(SpecialQueueItemType itemType,
                                       QueueIndexType indexType, int index,
@@ -148,7 +153,8 @@ namespace PMP::Server
         void setTrackRepetitionAvoidanceSeconds(int seconds);
 
         void requestHashUserData(quint32 userId, QVector<FileHash> hashes);
-        Future<CollectionTrackInfo, Result> getHashInfo(FileHash hash);
+        Future<CollectionTrackInfo, Error> getHashInfo(FileHash hash);
+        Nullable<FileHash> getHashForTrackId(uint trackId) const;
 
         void shutDownServer();
         void shutDownServer(QString serverPassword);
@@ -195,9 +201,6 @@ namespace PMP::Server
         int toNormalIndex(PlayerQueue const& queue, QueueIndexType indexType, int index);
         std::function<void (uint)> createQueueInsertionIdNotifier(
                                                                  quint32 clientReference);
-        Result insertAtIndex(qint32 index,
-                       std::function<QSharedPointer<QueueEntry> (uint)> queueEntryCreator,
-                       quint32 clientReference);
         void addUserHashDataNotification(quint32 userId, QVector<uint> hashIds);
         void sendUserHashDataNotifications(quint32 userId);
 

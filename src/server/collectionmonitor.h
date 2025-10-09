@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2015-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2015-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -21,6 +21,7 @@
 #define PMP_SERVER_COLLECTIONMONITOR_H
 
 #include "collectiontrackinfo.h"
+#include "filehashwithid.h"
 
 #include <QHash>
 #include <QMetaType>
@@ -40,13 +41,14 @@ namespace PMP::Server
     public Q_SLOTS:
         void hashBecameAvailable(PMP::FileHash hash);
         void hashBecameUnavailable(PMP::FileHash hash);
-        void hashTagInfoChanged(PMP::FileHash hash, QString title, QString artist,
+        void hashTagInfoChanged(uint hashId, PMP::FileHash hash,
+                                QString title, QString artist,
                                 QString album, QString albumArtist,
                                 qint32 lengthInMilliseconds);
 
     Q_SIGNALS:
-        void hashAvailabilityChanged(QVector<PMP::FileHash> available,
-                                     QVector<PMP::FileHash> unavailable);
+        void hashAvailabilityChanged(QVector<PMP::Server::FileHashWithId> available,
+                                     QVector<PMP::Server::FileHashWithId> unavailable);
         void hashInfoChanged(QVector<PMP::Server::CollectionTrackInfo> changes);
 
     private Q_SLOTS:
@@ -59,15 +61,10 @@ namespace PMP::Server
 
         struct HashInfo
         {
-            bool isAvailable;
+            uint hashId { 0 };
+            bool isAvailable { false };
             QString title, artist, album, albumArtist;
-            qint32 lengthInMilliseconds;
-
-            HashInfo()
-             : isAvailable(false), lengthInMilliseconds(-1)
-            {
-                //
-            }
+            qint32 lengthInMilliseconds { -1 };
         };
 
         struct Changed

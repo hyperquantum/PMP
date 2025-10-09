@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,10 +17,8 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_RECENTHISTORYENTRY_H
-#define PMP_RECENTHISTORYENTRY_H
-
-#include "common/filehash.h"
+#ifndef PMP_SERVER_RECENTHISTORYENTRY_H
+#define PMP_SERVER_RECENTHISTORYENTRY_H
 
 #include <QDateTime>
 #include <QtGlobal>
@@ -30,17 +28,18 @@ namespace PMP::Server
     class RecentHistoryEntry
     {
     public:
-        RecentHistoryEntry(uint queueId, FileHash hash, uint user,
+        RecentHistoryEntry(uint queueId, uint trackId, uint user,
                            QDateTime started, QDateTime ended,
                            bool hadError, bool hadSeek, int permillage)
-         : _queueId(queueId), _hash(hash), _user(user), _started(started), _ended(ended),
-           _permillage(permillage), _error(hadError), _seek(hadSeek)
+         : _queueId(queueId), _trackId(trackId), _user(user),
+            _started(started), _ended(ended), _permillage(permillage),
+            _error(hadError), _seek(hadSeek)
         {
             //
         }
 
         uint queueID() const { return _queueId; }
-        FileHash hash() const { return _hash; }
+        uint trackId() const { return _trackId; }
         uint user() const { return _user; }
         QDateTime started() const { return _started; }
         QDateTime ended() const { return _ended; }
@@ -52,7 +51,7 @@ namespace PMP::Server
 
     private:
         uint _queueId;
-        FileHash _hash;
+        uint _trackId;
         uint _user;
         QDateTime _started;
         QDateTime _ended;

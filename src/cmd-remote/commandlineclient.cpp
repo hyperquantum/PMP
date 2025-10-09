@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,6 +22,7 @@
 #include "client/localhashidrepository.h"
 #include "client/serverconnection.h"
 #include "client/serverinterface.h"
+#include "client/trackserveridrepository.h"
 
 #include "command.h"
 
@@ -43,6 +44,7 @@ namespace PMP
        _username(username),
        _password(password),
        _hashIdRepository(new LocalHashIdRepository()),
+       _trackServerIdRepository(new TrackServerIdRepository()),
        _serverConnection(nullptr),
        _serverInterface(nullptr),
        _command(command),
@@ -52,6 +54,7 @@ namespace PMP
         _serverConnection =
                 new ServerConnection(this,
                                      _hashIdRepository,
+                                     _trackServerIdRepository,
                                      ServerEventSubscription::AllEvents);
         _serverInterface = new ServerInterfaceImpl(_serverConnection);
 
@@ -137,6 +140,7 @@ namespace PMP
     CommandlineClient::~CommandlineClient()
     {
         delete _hashIdRepository;
+        delete _trackServerIdRepository;
     }
 
     void CommandlineClient::start()

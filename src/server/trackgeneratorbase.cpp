@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -239,7 +239,6 @@ namespace PMP::Server
                                                     qint64 extraMarginMilliseconds)
     {
         return !_repetitionChecker->isRepetitionWhenQueued(candidate.id(),
-                                                           candidate.hash(),
                                                            extraMarginMilliseconds);
     }
 
