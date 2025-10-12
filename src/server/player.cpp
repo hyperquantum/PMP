@@ -19,6 +19,8 @@
 
 #include "player.h"
 
+#include "common/util.h"
+
 #include "audiodevices.h"
 #include "queueentry.h"
 #include "resolver.h"
@@ -218,13 +220,20 @@ namespace PMP::Server
 
     void PlayerInstance::internalPlaybackStateChanged()
     {
-        qDebug() << "PlayerInstance" << _identifier
-                 << ": playback state changed to" << _player->playbackState();
+        auto playbackState = _player->playbackState();
+        auto mediaStatus = _player->mediaStatus();
+        auto position = _player->position();
 
-        switch (_player->playbackState())
+        qDebug() << "PlayerInstance" << _identifier
+                 << ": playback state changed to" << playbackState
+                 << "with media status being" << mediaStatus
+                 << "and position being" << position
+                 << "(" << Util::millisecondsToShortDisplayTimeText(position) << ")";
+
+        switch (playbackState)
         {
             case QMediaPlayer::StoppedState:
-                switch (_player->mediaStatus())
+                switch (mediaStatus)
                 {
                     case QMediaPlayer::EndOfMedia:
                         Q_EMIT trackFinished();
@@ -255,8 +264,15 @@ namespace PMP::Server
 
     void PlayerInstance::internalMediaStatusChanged()
     {
+        auto playbackState = _player->playbackState();
+        auto mediaStatus = _player->mediaStatus();
+        auto position = _player->position();
+
         qDebug() << "PlayerInstance" << _identifier
-                 << ": media status changed to" << _player->mediaStatus();
+                 << ": media status changed to" << mediaStatus
+                 << "with playback state being" << playbackState
+                 << "and position being" << position
+                 << "(" << Util::millisecondsToShortDisplayTimeText(position) << ")";
     }
 
     void PlayerInstance::internalErrorChanged()
@@ -276,6 +292,10 @@ namespace PMP::Server
     void PlayerInstance::internalDurationChanged(qint64 duration)
     {
         Q_UNUSED(duration)
+
+        qDebug() << "PlayerInstance" << _identifier
+                 << "duration changed to" << duration
+                 << "(" << Util::millisecondsToShortDisplayTimeText(duration) << ")";
 
         updateEndOfTrackComingUpFlag();
     }
@@ -569,6 +589,8 @@ namespace PMP::Server
                            << entry->queueID();
 
                 addToHistory(entry, 0, true, false); /* register track as not played */
+
+                // TODO : protect against many consecutive tracks failing to start
             }
         }
 
@@ -654,6 +676,9 @@ namespace PMP::Server
 
     void Player::instanceTrackFinished(PlayerInstance* instance)
     {
+        qDebug() << "Player: instance" << instance->identifier()
+                 << "reports track has finished";
+
         auto track = instance->track();
         bool hadSeek = instance->hadSeek();
         addToHistory(track, 1000, false, hadSeek);

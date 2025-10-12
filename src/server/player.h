@@ -45,6 +45,8 @@ namespace PMP::Server
         PlayerInstance(QObject* parent, int identifier, Preloader* preloader,
                        Resolver* resolver);
 
+        int identifier() const { return _identifier; }
+
         QSharedPointer<QueueEntry> track() const { return _track; }
         bool availableForNewTrack() const;
 
