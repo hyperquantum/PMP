@@ -756,36 +756,42 @@ namespace PMP::Server
 
         connect(
             instance, &PlayerInstance::playing,
-            this, [=]() { this->instancePlaying(instance); }
+            this, [this, instance]() { this->instancePlaying(instance); }
         );
         connect(
             instance, &PlayerInstance::paused,
-            this, [=]() { this->instancePaused(instance); }
+            this, [this, instance]() { this->instancePaused(instance); }
         );
         connect(
             instance, &PlayerInstance::positionChanged,
             this,
-            [=](qint64 position) { this->instancePositionChanged(instance, position); }
+            [this, instance](qint64 position)
+            {
+                this->instancePositionChanged(instance, position);
+            }
         );
         connect(
             instance, &PlayerInstance::endOfTrackComingUpChanged,
             this,
-            [=](bool endOfTrackComingUp)
+            [this, instance](bool endOfTrackComingUp)
             {
                 this->instanceEndOfTrackComingUpChanged(instance, endOfTrackComingUp);
             }
         );
         connect(
             instance, &PlayerInstance::playbackError,
-            this, [=]() { this->instancePlaybackError(instance); }
+            this, [this, instance]() { this->instancePlaybackError(instance); }
         );
         connect(
             instance, &PlayerInstance::trackFinished,
-            this, [=]() { this->instanceTrackFinished(instance); }
+            this, [this, instance]() { this->instanceTrackFinished(instance); }
         );
         connect(
             instance, &PlayerInstance::stoppedEarly,
-            this, [=](qint64 position) { this->instanceStoppedEarly(instance, position); }
+            this, [this, instance](qint64 position)
+            {
+                this->instanceStoppedEarly(instance, position);
+            }
         );
 
         return instance;
