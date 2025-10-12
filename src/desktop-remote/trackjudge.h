@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -59,6 +59,14 @@ namespace PMP
         ScoreAtLeast90,
         ScoreAtLeast95,
         LengthLessThanOneMinute,
+        LengthAtLeastOneMinute,
+        LengthLessThanTwoMinutes,
+        LengthAtLeastTwoMinutes,
+        LengthLessThanThreeMinutes,
+        LengthAtLeastThreeMinutes,
+        LengthLessThanFourMinutes,
+        LengthAtLeastFourMinutes,
+        LengthLessThanFiveMinutes,
         LengthAtLeastFiveMinutes,
         NotInTheQueue,
         InTheQueue,
@@ -132,6 +140,12 @@ namespace PMP
         TriBool trackSatisfiesNotHeardInTheLastXYearsCriterium(
                                                  Client::CollectionTrackInfo const& track,
                                                  int years) const;
+
+        TriBool trackLengthLessThanXMinutes(Client::CollectionTrackInfo const& track,
+                                            int minutes) const;
+
+        TriBool trackLengthAtLeastXMinutes(Client::CollectionTrackInfo const& track,
+                                           int minutes) const;
 
         TrackCriterium _criterium1;
         TrackCriterium _criterium2;

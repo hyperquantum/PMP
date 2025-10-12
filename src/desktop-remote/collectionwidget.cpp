@@ -349,6 +349,14 @@ namespace PMP
         addItem(tr("score >= 95"), TrackCriterium::ScoreAtLeast95);
 
         addItem(tr("length < 1 min."), TrackCriterium::LengthLessThanOneMinute);
+        addItem(tr("length >= 1 min."), TrackCriterium::LengthAtLeastOneMinute);
+        addItem(tr("length < 2 min."), TrackCriterium::LengthLessThanTwoMinutes);
+        addItem(tr("length >= 2 min."), TrackCriterium::LengthAtLeastTwoMinutes);
+        addItem(tr("length < 3 min."), TrackCriterium::LengthLessThanThreeMinutes);
+        addItem(tr("length >= 3 min."), TrackCriterium::LengthAtLeastThreeMinutes);
+        addItem(tr("length < 4 min."), TrackCriterium::LengthLessThanFourMinutes);
+        addItem(tr("length >= 4 min."), TrackCriterium::LengthAtLeastFourMinutes);
+        addItem(tr("length < 5 min."), TrackCriterium::LengthLessThanFiveMinutes);
         addItem(tr("length >= 5 min."), TrackCriterium::LengthAtLeastFiveMinutes);
 
         addItem(tr("not in the queue"), TrackCriterium::NotInTheQueue);

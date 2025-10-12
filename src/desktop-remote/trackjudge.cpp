@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -91,6 +91,14 @@ namespace PMP
             case TrackCriterium::AllTracks:
             case TrackCriterium::NoTracks:
             case TrackCriterium::LengthLessThanOneMinute:
+            case TrackCriterium::LengthAtLeastOneMinute:
+            case TrackCriterium::LengthLessThanTwoMinutes:
+            case TrackCriterium::LengthAtLeastTwoMinutes:
+            case TrackCriterium::LengthLessThanThreeMinutes:
+            case TrackCriterium::LengthAtLeastThreeMinutes:
+            case TrackCriterium::LengthLessThanFourMinutes:
+            case TrackCriterium::LengthAtLeastFourMinutes:
+            case TrackCriterium::LengthLessThanFiveMinutes:
             case TrackCriterium::LengthAtLeastFiveMinutes:
             case TrackCriterium::NotInTheQueue:
             case TrackCriterium::InTheQueue:
@@ -197,12 +205,34 @@ namespace PMP
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
             case TrackCriterium::LengthLessThanOneMinute:
-                if (!track.lengthIsKnown()) return TriBool::unknown;
-                return track.lengthInMilliseconds() < 60 * 1000;
+                return trackLengthLessThanXMinutes(track, 1);
+
+            case TrackCriterium::LengthAtLeastOneMinute:
+                return trackLengthAtLeastXMinutes(track, 1);
+
+            case TrackCriterium::LengthLessThanTwoMinutes:
+                return trackLengthLessThanXMinutes(track, 2);
+
+            case TrackCriterium::LengthAtLeastTwoMinutes:
+                return trackLengthAtLeastXMinutes(track, 2);
+
+            case TrackCriterium::LengthLessThanThreeMinutes:
+                return trackLengthLessThanXMinutes(track, 3);
+
+            case TrackCriterium::LengthAtLeastThreeMinutes:
+                return trackLengthAtLeastXMinutes(track, 3);
+
+            case TrackCriterium::LengthLessThanFourMinutes:
+                return trackLengthLessThanXMinutes(track, 4);
+
+            case TrackCriterium::LengthAtLeastFourMinutes:
+                return trackLengthAtLeastXMinutes(track, 4);
+
+            case TrackCriterium::LengthLessThanFiveMinutes:
+                return trackLengthLessThanXMinutes(track, 5);
 
             case TrackCriterium::LengthAtLeastFiveMinutes:
-                if (!track.lengthIsKnown()) return TriBool::unknown;
-                return track.lengthInMilliseconds() >= 5 * 60 * 1000;
+                return trackLengthAtLeastXMinutes(track, 5);
 
             case TrackCriterium::NotInTheQueue:
                 return !_queueHashesMonitor.isPresentInQueue(track.hashId());
@@ -282,5 +312,21 @@ namespace PMP
             };
 
         return trackSatisfiesLastHeardDateCriterium(track, evaluator);
+    }
+
+    TriBool TrackJudge::trackLengthLessThanXMinutes(
+        const Client::CollectionTrackInfo& track, int minutes) const
+    {
+        if (!track.lengthIsKnown()) return TriBool::unknown;
+
+        return track.lengthInMilliseconds() < minutes * 60 * 1000;
+    }
+
+    TriBool TrackJudge::trackLengthAtLeastXMinutes(
+        const Client::CollectionTrackInfo& track, int minutes) const
+    {
+        if (!track.lengthIsKnown()) return TriBool::unknown;
+
+        return track.lengthInMilliseconds() >= minutes * 60 * 1000;
     }
 }
