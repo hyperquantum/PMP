@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,6 +30,7 @@
 #include <QAudioOutput>
 #include <QCoreApplication>
 #include <QDateTime>
+#include <QFile>
 #include <QHostAddress>
 #include <QHostInfo>
 #include <QMediaDevices>
@@ -81,6 +82,7 @@ int main(int argc, char* argv[])
     Logging::setFilenameTag("T"); /* T = Test */
 
     QTextStream out(stdout);
+    QTextStream err(stderr);
     qDebug() << "Qt version:" << qVersion();
 
     /*
@@ -192,7 +194,8 @@ int main(int argc, char* argv[])
         &app,
         [&out, audioOutput1]()
         {
-            out << "output 1 device has changed to: " << audioOutput1->device().id() << Qt::endl;
+            out << "output 1 device has changed to:" << audioOutput1->device().id()
+                << "(" << audioOutput1->device().description() << ")" << Qt::endl;
         }
     );
     QObject::connect(
@@ -200,13 +203,17 @@ int main(int argc, char* argv[])
         &app,
         [&out, audioOutput2]()
         {
-            out << "output 2 device has changed to: " << audioOutput2->device().id() << Qt::endl;
+            out << "output 2 device has changed to:" << audioOutput2->device().id()
+                << "(" << audioOutput2->device().description() << ")" << Qt::endl;
         }
-        );
+    );
 
     printOutputDevices(out);
     auto defaultDevice = getDefaultAudioDevice();
-    out << "default device: " << defaultDevice.id() << Qt::endl << Qt::endl;
+    out << "default device: " << defaultDevice.id()
+        << "(" << defaultDevice.description() << ")" << Qt::endl;
+
+    out << Qt::endl;
 
     QMediaDevices mediaDevices;
     QObject::connect(
@@ -229,17 +236,19 @@ int main(int argc, char* argv[])
         }
     );
 
-    auto track1 = "track1.flac";
-    auto track2 = "track2.mp3";
-    auto track3 = "track3.mp3";
-    auto track4 = "track4.mp3";
+    auto track = "track3.mp3";
+    if (!QFile::exists(track))
+    {
+        err << "Error: file not found:" << track << Qt::endl;
+        return 1;
+    }
 
     audioOutput1->setVolume(85);
     audioOutput2->setVolume(80);
 
     auto player1 = new QMediaPlayer;
     player1->setAudioOutput(audioOutput1);
-    player1->setSource(QUrl::fromLocalFile(track3));
+    player1->setSource(QUrl::fromLocalFile(track));
 
     auto player2 = new QMediaPlayer;
     player2->setAudioOutput(audioOutput2);
