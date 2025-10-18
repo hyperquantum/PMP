@@ -45,8 +45,10 @@ namespace PMP::Server
         PlayerInstance(QObject* parent, int identifier, Preloader* preloader,
                        Resolver* resolver);
 
+        int identifier() const { return _identifier; }
+
         QSharedPointer<QueueEntry> track() const { return _track; }
-        bool availableForNewTrack() const;
+        bool availableForNewTrack() const { return _availableForNewTrack; }
 
         bool trackSetSuccessfully() const { return _mediaSet; }
         bool endOfTrackComingUp() const { return _endOfTrackComingUp; }
@@ -90,13 +92,14 @@ namespace PMP::Server
         Resolver* _resolver;
         QSharedPointer<QueueEntry> _track;
         PreloadedFile _preloadedFile;
-        qint64 _positionWhenStopped;
+        qint64 _positionWhenStopRequested { -1 };
         int _identifier;
-        bool _availableForNewTrack;
-        bool _mediaSet;
-        bool _endOfTrackComingUp;
-        bool _hadSeek;
-        bool _deleteAfterStopped;
+        bool _availableForNewTrack { true };
+        bool _mediaSet { false };
+        bool _endOfTrackComingUp { false };
+        bool _hadStopRequest { false };
+        bool _hadSeek { false };
+        bool _deleteAfterStopped { false };
     };
 
     class Player : public QObject

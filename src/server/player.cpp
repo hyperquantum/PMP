@@ -19,6 +19,8 @@
 
 #include "player.h"
 
+#include "common/util.h"
+
 #include "audiodevices.h"
 #include "queueentry.h"
 #include "resolver.h"
@@ -39,13 +41,7 @@ namespace PMP::Server
        _preloader(preloader),
        _resolver(resolver),
        _track(nullptr),
-       _positionWhenStopped(-1),
-       _identifier(identifier),
-       _availableForNewTrack(true),
-       _mediaSet(false),
-       _endOfTrackComingUp(false),
-       _hadSeek(false),
-       _deleteAfterStopped(false)
+       _identifier(identifier)
     {
         _player->setAudioOutput(_audioOutput);
 
@@ -69,11 +65,6 @@ namespace PMP::Server
             _player, &QMediaPlayer::durationChanged,
             this, &PlayerInstance::internalDurationChanged
         );
-    }
-
-    bool PlayerInstance::availableForNewTrack() const
-    {
-        return _availableForNewTrack;
     }
 
     qint64 PlayerInstance::position() const
@@ -123,9 +114,10 @@ namespace PMP::Server
 
         _mediaSet = false;
         _endOfTrackComingUp = false;
+        _hadStopRequest = false;
         _hadSeek = false;
         _track = queueEntry;
-        _positionWhenStopped = -1;
+        _positionWhenStopRequested = -1;
 
         if (!queueEntry || !queueEntry->isTrack())
             return;
@@ -171,7 +163,8 @@ namespace PMP::Server
 
     void PlayerInstance::play()
     {
-        qDebug() << "PlayerInstance" << _identifier << " play() called";
+        qDebug() << "PlayerInstance" << _identifier << ": play() called";
+
         _availableForNewTrack = false;
         _player->play();
 
@@ -186,20 +179,31 @@ namespace PMP::Server
 
     void PlayerInstance::pause()
     {
-        qDebug() << "PlayerInstance" << _identifier << " pause() called";
+        auto position = _player->position();
+
+        qDebug() << "PlayerInstance" << _identifier << ": pause() called when at position"
+                 << position
+                 << "(" << Util::millisecondsToShortDisplayTimeText(position) << ")";
+
         _player->pause();
     }
 
     void PlayerInstance::stop()
     {
-        qDebug() << "PlayerInstance" << _identifier << " stop() called";
-        _positionWhenStopped = _player->position();
+        auto position = _player->position();
+
+        qDebug() << "PlayerInstance" << _identifier << ": stop() called when at position"
+                 << position
+                 << "(" << Util::millisecondsToShortDisplayTimeText(position) << ")";
+
+        _hadStopRequest = true;
+        _positionWhenStopRequested = position;
         _player->stop();
     }
 
     void PlayerInstance::seekTo(qint64 position)
     {
-        qDebug() << "PlayerInstance" << _identifier << " seek(" << position << ") called";
+        qDebug() << "PlayerInstance" << _identifier << ": seek(" << position << ") called";
 
         _hadSeek = true;
         _player->setPosition(position);
@@ -218,24 +222,34 @@ namespace PMP::Server
 
     void PlayerInstance::internalPlaybackStateChanged()
     {
-        qDebug() << "PlayerInstance" << _identifier
-                 << ": playback state changed to" << _player->playbackState();
+        auto playbackState = _player->playbackState();
+        auto mediaStatus = _player->mediaStatus();
+        auto position = _player->position();
+        auto duration = _player->duration();
 
-        switch (_player->playbackState())
+        qDebug() << "PlayerInstance" << _identifier
+                 << ": playback state changed to" << playbackState
+                 << "with media status being" << mediaStatus
+                 << "and position being" << position
+                 << "(" << Util::millisecondsToShortDisplayTimeText(position) << ")"
+                 << "and duration being" << duration
+                 << "(" << Util::millisecondsToShortDisplayTimeText(duration) << ")";
+
+        switch (playbackState)
         {
             case QMediaPlayer::StoppedState:
-                switch (_player->mediaStatus())
+                if (_hadStopRequest)
                 {
-                    case QMediaPlayer::EndOfMedia:
-                        Q_EMIT trackFinished();
-                        break;
-                    case QMediaPlayer::InvalidMedia:
-                        qDebug() << "'stopped' state combined with 'invalid media'";
-                        Q_EMIT playbackError();
-                        break;
-                    default:
-                        Q_EMIT stoppedEarly(_positionWhenStopped);
-                        break;
+                    Q_EMIT stoppedEarly(_positionWhenStopRequested);
+                }
+                else if (position > (duration * 0.999)) /* track finished? */
+                {
+                    Q_EMIT trackFinished();
+                }
+                else
+                {
+                    qWarning() << "track stopped prematurely, assuming playback error";
+                    Q_EMIT playbackError();
                 }
 
                 _availableForNewTrack = true;
@@ -255,8 +269,15 @@ namespace PMP::Server
 
     void PlayerInstance::internalMediaStatusChanged()
     {
+        auto playbackState = _player->playbackState();
+        auto mediaStatus = _player->mediaStatus();
+        auto position = _player->position();
+
         qDebug() << "PlayerInstance" << _identifier
-                 << ": media status changed to" << _player->mediaStatus();
+                 << ": media status changed to" << mediaStatus
+                 << "with playback state being" << playbackState
+                 << "and position being" << position
+                 << "(" << Util::millisecondsToShortDisplayTimeText(position) << ")";
     }
 
     void PlayerInstance::internalErrorChanged()
@@ -276,6 +297,10 @@ namespace PMP::Server
     void PlayerInstance::internalDurationChanged(qint64 duration)
     {
         Q_UNUSED(duration)
+
+        qDebug() << "PlayerInstance" << _identifier
+                 << ": duration changed to" << duration
+                 << "(" << Util::millisecondsToShortDisplayTimeText(duration) << ")";
 
         updateEndOfTrackComingUpFlag();
     }
@@ -569,6 +594,8 @@ namespace PMP::Server
                            << entry->queueID();
 
                 addToHistory(entry, 0, true, false); /* register track as not played */
+
+                // TODO : protect against many consecutive tracks failing to start
             }
         }
 
@@ -648,12 +675,18 @@ namespace PMP::Server
 
     void Player::instancePlaybackError(PlayerInstance* instance)
     {
+        qDebug() << "Player: instance" << instance->identifier()
+                 << "reports track had a playback error";
+
         /* register track as not played */
         addToHistory(instance->track(), 0, true, false);
     }
 
     void Player::instanceTrackFinished(PlayerInstance* instance)
     {
+        qDebug() << "Player: instance" << instance->identifier()
+                 << "reports track has finished";
+
         auto track = instance->track();
         bool hadSeek = instance->hadSeek();
         addToHistory(track, 1000, false, hadSeek);
@@ -675,6 +708,9 @@ namespace PMP::Server
 
     void Player::instanceStoppedEarly(PlayerInstance* instance, qint64 position)
     {
+        qDebug() << "Player: instance" << instance->identifier()
+                 << "reports track was stopped early";
+
         auto track = instance->track();
         bool hadSeek = instance->hadSeek();
         auto permillage = calcPermillagePlayed(track, position, hadSeek);
@@ -756,36 +792,42 @@ namespace PMP::Server
 
         connect(
             instance, &PlayerInstance::playing,
-            this, [=]() { this->instancePlaying(instance); }
+            this, [this, instance]() { this->instancePlaying(instance); }
         );
         connect(
             instance, &PlayerInstance::paused,
-            this, [=]() { this->instancePaused(instance); }
+            this, [this, instance]() { this->instancePaused(instance); }
         );
         connect(
             instance, &PlayerInstance::positionChanged,
             this,
-            [=](qint64 position) { this->instancePositionChanged(instance, position); }
+            [this, instance](qint64 position)
+            {
+                this->instancePositionChanged(instance, position);
+            }
         );
         connect(
             instance, &PlayerInstance::endOfTrackComingUpChanged,
             this,
-            [=](bool endOfTrackComingUp)
+            [this, instance](bool endOfTrackComingUp)
             {
                 this->instanceEndOfTrackComingUpChanged(instance, endOfTrackComingUp);
             }
         );
         connect(
             instance, &PlayerInstance::playbackError,
-            this, [=]() { this->instancePlaybackError(instance); }
+            this, [this, instance]() { this->instancePlaybackError(instance); }
         );
         connect(
             instance, &PlayerInstance::trackFinished,
-            this, [=]() { this->instanceTrackFinished(instance); }
+            this, [this, instance]() { this->instanceTrackFinished(instance); }
         );
         connect(
             instance, &PlayerInstance::stoppedEarly,
-            this, [=](qint64 position) { this->instanceStoppedEarly(instance, position); }
+            this, [this, instance](qint64 position)
+            {
+                this->instanceStoppedEarly(instance, position);
+            }
         );
 
         return instance;

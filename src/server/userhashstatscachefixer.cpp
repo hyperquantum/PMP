@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2022-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2022-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -98,7 +98,7 @@ namespace PMP::Server
             return;
         }
 
-        qWarning() << "UserHashStatsCacheFixer: ancountered a problem in state"
+        qWarning() << "UserHashStatsCacheFixer: encountered a problem in state"
                    << int(_state) << "; will try again later";
 
         setStateToWaitBeforeDeciding(5 * 60 * 1000 /* 5 min */);
