@@ -354,8 +354,10 @@ namespace PMP
         _updatingUsersList = false;
     }
 
-    void TrackInfoDialog::closeEvent(QCloseEvent *event)
+    void TrackInfoDialog::closeEvent(QCloseEvent* event)
     {
+        Q_UNUSED(event)
+
         saveUiState();
     }
 
