@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2018-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2018-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -229,17 +229,14 @@ int main(int argc, char* argv[])
         }
     );
 
-    auto track1 = "track1.flac";
-    auto track2 = "track2.mp3";
-    auto track3 = "track3.mp3";
-    auto track4 = "track4.mp3";
+    auto track = "track.mp3";
 
     audioOutput1->setVolume(85);
     audioOutput2->setVolume(80);
 
     auto player1 = new QMediaPlayer;
     player1->setAudioOutput(audioOutput1);
-    player1->setSource(QUrl::fromLocalFile(track3));
+    player1->setSource(QUrl::fromLocalFile(track));
 
     auto player2 = new QMediaPlayer;
     player2->setAudioOutput(audioOutput2);
