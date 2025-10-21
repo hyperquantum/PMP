@@ -347,7 +347,7 @@ namespace PMP::Server
     bool Database::TableEditor::addColumnIfNotExists(QString columnName, QString type)
     {
         auto preparer =
-            [=](QSqlQuery& q)
+            [this, columnName](QSqlQuery& q)
             {
                 q.prepare(
                     "SELECT EXISTS("

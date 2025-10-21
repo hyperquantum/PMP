@@ -216,7 +216,7 @@ namespace PMP::Server
             return;
 
         auto action =
-            [=](ScrobblingProvider provider)
+            [this, userId, startTime, track](ScrobblingProvider provider)
             {
                 auto scrobbler = _scrobblersData[userId][provider].scrobbler;
                 if (!scrobbler) return;
