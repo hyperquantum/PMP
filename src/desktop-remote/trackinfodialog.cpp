@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2025, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -38,6 +38,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QLocale>
+#include <QSettings>
 #include <QtDebug>
 
 using namespace PMP::Client;
@@ -303,6 +304,8 @@ namespace PMP
 
         enableDisableButtons();
 
+        restoreUiState();
+
         _ui->closeButton->setFocus();
     }
 
@@ -349,6 +352,39 @@ namespace PMP
             combo->setCurrentIndex(indexToSelect);
 
         _updatingUsersList = false;
+    }
+
+    void TrackInfoDialog::closeEvent(QCloseEvent *event)
+    {
+        saveUiState();
+    }
+
+    void TrackInfoDialog::saveUiState()
+    {
+        QSettings settings(QCoreApplication::organizationName(),
+                           QCoreApplication::applicationName());
+
+        settings.beginGroup("trackinfodialog");
+
+        settings.setValue("geometry", saveGeometry());
+
+        settings.setValue(
+            "historycolumnsstate", _ui->historyTableView->horizontalHeader()->saveState()
+        );
+    }
+
+    void TrackInfoDialog::restoreUiState()
+    {
+        QSettings settings(QCoreApplication::organizationName(),
+                           QCoreApplication::applicationName());
+
+        settings.beginGroup("trackinfodialog");
+
+        restoreGeometry(settings.value("geometry").toByteArray());
+
+        _ui->historyTableView->horizontalHeader()->restoreState(
+            settings.value("historycolumnsstate").toByteArray()
+        );
     }
 
     void TrackInfoDialog::enableDisableButtons()
