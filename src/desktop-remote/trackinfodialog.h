@@ -71,6 +71,10 @@ namespace PMP
         void initLabelsTab();
         void fillUserComboBox(QList<Client::UserAccount> accounts);
 
+        void closeEvent(QCloseEvent* event) override;
+        void saveUiState();
+        void restoreUiState();
+
         void enableDisableButtons();
 
         void fillQueueId();

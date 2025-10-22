@@ -42,6 +42,7 @@
 #include <QLineEdit>
 #include <QLocale>
 #include <QMessageBox>
+#include <QSettings>
 #include <QtAlgorithms>
 #include <QtDebug>
 
@@ -310,6 +311,8 @@ namespace PMP
 
         enableDisableButtons();
 
+        restoreUiState();
+
         _ui->closeButton->setFocus();
     }
 
@@ -440,6 +443,41 @@ namespace PMP
             combo->setCurrentIndex(indexToSelect);
 
         _updatingUsersList = false;
+    }
+
+    void TrackInfoDialog::closeEvent(QCloseEvent* event)
+    {
+        Q_UNUSED(event)
+
+        saveUiState();
+    }
+
+    void TrackInfoDialog::saveUiState()
+    {
+        QSettings settings(QCoreApplication::organizationName(),
+                           QCoreApplication::applicationName());
+
+        settings.beginGroup("trackinfodialog");
+
+        settings.setValue("geometry", saveGeometry());
+
+        settings.setValue(
+            "historycolumnsstate", _ui->historyTableView->horizontalHeader()->saveState()
+        );
+    }
+
+    void TrackInfoDialog::restoreUiState()
+    {
+        QSettings settings(QCoreApplication::organizationName(),
+                           QCoreApplication::applicationName());
+
+        settings.beginGroup("trackinfodialog");
+
+        restoreGeometry(settings.value("geometry").toByteArray());
+
+        _ui->historyTableView->horizontalHeader()->restoreState(
+            settings.value("historycolumnsstate").toByteArray()
+        );
     }
 
     void TrackInfoDialog::enableDisableButtons()
