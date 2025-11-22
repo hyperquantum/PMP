@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -22,6 +22,7 @@
 
 #include <QDebug>
 #include <QMetaType>
+#include <QtTypes>
 
 namespace PMP::Client
 {
@@ -29,9 +30,9 @@ namespace PMP::Client
     {
     public:
         constexpr LocalHashId() : _id(0) {}
-        constexpr explicit LocalHashId(unsigned int id) : _id(id) {}
+        constexpr explicit LocalHashId(uint id) : _id(id) {}
 
-        constexpr unsigned int value() const { return _id; }
+        constexpr uint value() const { return _id; }
         constexpr bool isZero() const { return _id == 0; }
 
         LocalHashId& operator=(LocalHashId const&) = default;
@@ -41,13 +42,8 @@ namespace PMP::Client
             return _id == other._id;
         }
 
-        constexpr bool operator!=(LocalHashId const& other) const
-        {
-            return !(*this == other);
-        }
-
     private:
-        unsigned int _id;
+        uint _id;
     };
 
     inline constexpr bool operator<(LocalHashId hashId1, LocalHashId hashId2)
@@ -55,7 +51,7 @@ namespace PMP::Client
         return hashId1.value() < hashId2.value();
     }
 
-    inline QDebug operator<<(QDebug debug, const PMP::Client::LocalHashId id)
+    inline QDebug operator<<(QDebug debug, const LocalHashId id)
     {
         debug << id.value();
         return debug;
