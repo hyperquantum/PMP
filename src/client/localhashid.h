@@ -22,7 +22,8 @@
 
 #include <QDebug>
 #include <QMetaType>
-#include <QtTypes>
+#include <QtGlobal>
+//#include <QtTypes> <<-- for uint
 
 namespace PMP::Client
 {
