@@ -23,6 +23,8 @@
 #include "common/filehash.h"
 #include "common/nullable.h"
 
+#include "trackserverid.h"
+
 #include <QHash>
 #include <QReadWriteLock>
 
@@ -33,15 +35,15 @@ namespace PMP::Client
     public:
         TrackServerIdRepository();
 
-        void registerHashWithId(FileHash const& hash, quint64 trackServerId);
+        void registerHashWithId(FileHash const& hash, TrackServerId trackServerId);
 
-        Nullable<quint64> getServerIdForHash(FileHash const& hash) const;
-        Nullable<FileHash> getHashForServerId(quint64 trackServerId) const;
+        Nullable<TrackServerId> getServerIdForHash(FileHash const& hash) const;
+        Nullable<FileHash> getHashForServerId(TrackServerId trackServerId) const;
 
     private:
         mutable QReadWriteLock _lock;
-        QHash<FileHash, quint64> _hashToServerId;
-        QHash<quint64, FileHash> _serverIdToHash;
+        QHash<FileHash, TrackServerId> _hashToServerId;
+        QHash<TrackServerId, FileHash> _serverIdToHash;
     };
 }
 #endif

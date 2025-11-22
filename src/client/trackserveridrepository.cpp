@@ -27,13 +27,13 @@ namespace PMP::Client
     }
 
     void TrackServerIdRepository::registerHashWithId(const FileHash& hash,
-                                                     quint64 trackServerId)
+                                                     TrackServerId trackServerId)
     {
         Q_ASSERT_X(hash.isNull() == false,
                    "TrackServerIdRepository::registerHashWithId",
                    "hash is null");
 
-        Q_ASSERT_X(trackServerId > 0,
+        Q_ASSERT_X(trackServerId.hasValue(),
                    "TrackServerIdRepository::registerHashWithId",
                    "track server ID is zero");
 
@@ -66,7 +66,7 @@ namespace PMP::Client
         _serverIdToHash.insert(trackServerId, hash);
     }
 
-    Nullable<quint64> TrackServerIdRepository::getServerIdForHash(
+    Nullable<TrackServerId> TrackServerIdRepository::getServerIdForHash(
         const FileHash& hash) const
     {
         QReadLocker lock(&_lock);
@@ -80,7 +80,7 @@ namespace PMP::Client
     }
 
     Nullable<FileHash> TrackServerIdRepository::getHashForServerId(
-        quint64 trackServerId) const
+        TrackServerId trackServerId) const
     {
         QReadLocker lock(&_lock);
 
