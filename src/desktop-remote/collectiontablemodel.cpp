@@ -127,6 +127,7 @@ namespace PMP
 
         _highlightingTrackJudge.setCriteria(TrackCriterium::NoTracks,
                                             TrackCriterium::AllTracks,
+                                            TrackCriterium::AllTracks,
                                             TrackCriterium::AllTracks);
         _highlightingTrackJudge.setUserId(userForStatisticsDisplay->userId().valueOr(0));
         connect(
@@ -187,6 +188,7 @@ namespace PMP
     void SortedCollectionTableModel::setHighlightCriterium(TrackCriterium criterium)
     {
         _highlightingTrackJudge.setCriteria(criterium,
+                                            TrackCriterium::AllTracks,
                                             TrackCriterium::AllTracks,
                                             TrackCriterium::AllTracks);
 
@@ -937,10 +939,12 @@ namespace PMP
 
     void FilteredCollectionTableModel::setTrackFilters(TrackCriterium criterium1,
                                                        TrackCriterium criterium2,
-                                                       TrackCriterium criterium3)
+                                                       TrackCriterium criterium3,
+                                                       TrackCriterium criterium4)
     {
         bool changed =
-            _filteringTrackJudge.setCriteria(criterium1, criterium2, criterium3);
+            _filteringTrackJudge.setCriteria(
+                criterium1, criterium2, criterium3, criterium4);
 
         if (changed)
             invalidateFilter();

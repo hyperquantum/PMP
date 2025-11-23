@@ -154,13 +154,16 @@ namespace PMP
         auto filter1 = getTrackCriteriumFromComboBox(_ui->filterTracksComboBox);
         auto filter2 = getTrackCriteriumFromComboBox(_ui->filterTracks2ComboBox);
         auto filter3 = getTrackCriteriumFromComboBox(_ui->filterTracks3ComboBox);
+        auto filter4 = getTrackCriteriumFromComboBox(_ui->filterTracks4ComboBox);
 
         bool filter1Set = filter1 != TrackCriterium::AllTracks;
         bool filter2Set = filter2 != TrackCriterium::AllTracks;
         bool filter3Set = filter3 != TrackCriterium::AllTracks;
+        bool filter4Set = filter4 != TrackCriterium::AllTracks;
 
-        bool shouldDisplayFilter2 = filter1Set || filter2Set || filter3Set;
-        bool shouldDisplayFilter3 = filter2Set || filter3Set;
+        bool shouldDisplayFilter4 = filter3Set || filter4Set;
+        bool shouldDisplayFilter3 = filter2Set || filter3Set || filter4Set;
+        bool shouldDisplayFilter2 = filter1Set || filter2Set || filter3Set || filter4Set;
 
         _ui->filterTracks2Label->setVisible(shouldDisplayFilter2);
         _ui->filterTracks2ComboBox->setVisible(shouldDisplayFilter2);
@@ -168,7 +171,10 @@ namespace PMP
         _ui->filterTracks3Label->setVisible(shouldDisplayFilter3);
         _ui->filterTracks3ComboBox->setVisible(shouldDisplayFilter3);
 
-        _collectionDisplayModel->setTrackFilters(filter1, filter2, filter3);
+        _ui->filterTracks4Label->setVisible(shouldDisplayFilter4);
+        _ui->filterTracks4ComboBox->setVisible(shouldDisplayFilter4);
+
+        _collectionDisplayModel->setTrackFilters(filter1, filter2, filter3, filter4);
     }
 
     void CollectionWidget::highlightTracksIndexChanged(int index)
@@ -290,6 +296,7 @@ namespace PMP
         comboBoxInit(_ui->filterTracksComboBox);
         comboBoxInit(_ui->filterTracks2ComboBox);
         comboBoxInit(_ui->filterTracks3ComboBox);
+        comboBoxInit(_ui->filterTracks4ComboBox);
 
         filterTracksIndexChanged();
     }

@@ -81,10 +81,7 @@ namespace PMP
     public:
         TrackJudge(Client::UserDataFetcher& userDataFetcher,
                    Client::QueueHashesMonitor& queueHashesMonitor)
-         : _criterium1(TrackCriterium::AllTracks),
-           _criterium2(TrackCriterium::AllTracks),
-           _criterium3(TrackCriterium::AllTracks),
-           _userId(0),
+         : _userId(0),
            _haveUserId(false),
            _userDataFetcher(userDataFetcher),
            _queueHashesMonitor(queueHashesMonitor)
@@ -99,11 +96,12 @@ namespace PMP
         }
 
         bool setCriteria(TrackCriterium criterium1, TrackCriterium criterium2,
-                         TrackCriterium criterium3)
+                         TrackCriterium criterium3, TrackCriterium criterium4)
         {
             if (criterium1 == _criterium1 &&
                 criterium2 == _criterium2 &&
-                criterium3 == _criterium3)
+                criterium3 == _criterium3 &&
+                criterium4 == _criterium4)
             {
                 return false;
             }
@@ -111,6 +109,7 @@ namespace PMP
             _criterium1 = criterium1;
             _criterium2 = criterium2;
             _criterium3 = criterium3;
+            _criterium4 = criterium4;
             return true;
         }
 
@@ -147,9 +146,10 @@ namespace PMP
         TriBool trackLengthAtLeastXMinutes(Client::CollectionTrackInfo const& track,
                                            int minutes) const;
 
-        TrackCriterium _criterium1;
-        TrackCriterium _criterium2;
-        TrackCriterium _criterium3;
+        TrackCriterium _criterium1 { TrackCriterium::AllTracks };
+        TrackCriterium _criterium2 { TrackCriterium::AllTracks };
+        TrackCriterium _criterium3 { TrackCriterium::AllTracks };
+        TrackCriterium _criterium4 { TrackCriterium::AllTracks };
         quint32 _userId;
         bool _haveUserId;
         Client::UserDataFetcher& _userDataFetcher;
