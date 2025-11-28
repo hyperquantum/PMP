@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2024-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -38,5 +38,7 @@ private Q_SLOTS:
     void differsOperatorWorksCorrectly();
     void andOperatorWorksCorrectly();
     void orOperatorWorksCorrectly();
+    void andAssignmentOperatorWorksCorrectly();
+    void orAssignmentOperatorWorksCorrectly();
 };
 #endif
