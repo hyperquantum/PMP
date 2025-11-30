@@ -23,6 +23,7 @@
 #include "common/tribool.h"
 
 #include <QDateTime>
+#include <QList>
 #include <QMetaType>
 
 #include <functional>
@@ -95,23 +96,7 @@ namespace PMP
             return _userId == userId && _haveUserId;
         }
 
-        bool setCriteria(TrackCriterium criterium1, TrackCriterium criterium2,
-                         TrackCriterium criterium3, TrackCriterium criterium4)
-        {
-            if (criterium1 == _criterium1 &&
-                criterium2 == _criterium2 &&
-                criterium3 == _criterium3 &&
-                criterium4 == _criterium4)
-            {
-                return false;
-            }
-
-            _criterium1 = criterium1;
-            _criterium2 = criterium2;
-            _criterium3 = criterium3;
-            _criterium4 = criterium4;
-            return true;
-        }
+        bool setCriteria(QList<TrackCriterium> criteria);
 
         bool criteriumUsesUserData() const;
         bool criteriumResultsInAllTracks() const;
@@ -119,6 +104,7 @@ namespace PMP
         TriBool trackSatisfiesCriteria(Client::CollectionTrackInfo const& track) const;
 
     private:
+        static QList<TrackCriterium> simplifyCriteria(QList<TrackCriterium> criteria);
         static bool usesUserData(TrackCriterium criterium);
         static bool isTextFieldEmpty(QString contents);
 
@@ -146,10 +132,7 @@ namespace PMP
         TriBool trackLengthAtLeastXMinutes(Client::CollectionTrackInfo const& track,
                                            int minutes) const;
 
-        TrackCriterium _criterium1 { TrackCriterium::AllTracks };
-        TrackCriterium _criterium2 { TrackCriterium::AllTracks };
-        TrackCriterium _criterium3 { TrackCriterium::AllTracks };
-        TrackCriterium _criterium4 { TrackCriterium::AllTracks };
+        QList<TrackCriterium> _criteria;
         quint32 _userId;
         bool _haveUserId;
         Client::UserDataFetcher& _userDataFetcher;
