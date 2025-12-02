@@ -44,7 +44,7 @@
       </widget>
      </item>
      <item row="5" column="1">
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QHBoxLayout" name="horizontalLayout" stretch="1,0,0">
        <item>
         <widget class="QComboBox" name="highlightTracksComboBox">
          <property name="maxVisibleItems">
@@ -55,19 +55,15 @@
        <item>
         <widget class="QPushButton" name="highlightColorButton"/>
        </item>
+       <item>
+        <widget class="QPushButton" name="highlightTracksResetButton"/>
+       </item>
       </layout>
      </item>
      <item row="1" column="0">
       <widget class="QLabel" name="filterTracksLabel">
        <property name="text">
         <string>Filter:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
-      <widget class="QComboBox" name="filterTracksComboBox">
-       <property name="maxVisibleItems">
-        <number>15</number>
        </property>
       </widget>
      </item>
@@ -78,24 +74,10 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="1">
-      <widget class="QComboBox" name="filterTracks2ComboBox">
-       <property name="maxVisibleItems">
-        <number>15</number>
-       </property>
-      </widget>
-     </item>
      <item row="3" column="0">
       <widget class="QLabel" name="filterTracks3Label">
        <property name="text">
         <string>Filter 3:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QComboBox" name="filterTracks3ComboBox">
-       <property name="maxVisibleItems">
-        <number>15</number>
        </property>
       </widget>
      </item>
@@ -107,11 +89,60 @@
       </widget>
      </item>
      <item row="4" column="1">
-      <widget class="QComboBox" name="filterTracks4ComboBox">
-       <property name="maxVisibleItems">
-        <number>15</number>
-       </property>
-      </widget>
+      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="1,0">
+       <item>
+        <widget class="QComboBox" name="filterTracks4ComboBox">
+         <property name="maxVisibleItems">
+          <number>15</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="filterTracks4ResetButton"/>
+       </item>
+      </layout>
+     </item>
+     <item row="3" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="1,0">
+       <item>
+        <widget class="QComboBox" name="filterTracks3ComboBox">
+         <property name="maxVisibleItems">
+          <number>15</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="filterTracks3ResetButton"/>
+       </item>
+      </layout>
+     </item>
+     <item row="2" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_4" stretch="1,0">
+       <item>
+        <widget class="QComboBox" name="filterTracks2ComboBox">
+         <property name="maxVisibleItems">
+          <number>15</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="filterTracks2ResetButton"/>
+       </item>
+      </layout>
+     </item>
+     <item row="1" column="1">
+      <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="1,0">
+       <item>
+        <widget class="QComboBox" name="filterTracks1ComboBox">
+         <property name="maxVisibleItems">
+          <number>15</number>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QPushButton" name="filterTracks1ResetButton"/>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>

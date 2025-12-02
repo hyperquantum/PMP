@@ -74,7 +74,6 @@ IDEAS
  * queue: display total runtime until first break
  * play history: add other statistics relevant for scoring, e.g.: was the track manually added to the queue?
  * play history: add context: was there no user interaction for a long time?
- * music collection: add a clear button for each filter combobox
  * music collection: provide general statistics (e.g. total number of files present, number of hashes with a file...)
  * music collection: new action: add track before first interruption (break/barrier)
  * music collection: new filter criterium "without album artist"
