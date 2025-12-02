@@ -162,7 +162,7 @@ namespace PMP
                                      UserForStatisticsDisplay* userForStatisticsDisplay);
 
         void setTrackFilters(TrackCriterium criterium1, TrackCriterium criterium2,
-                             TrackCriterium criterium3);
+                             TrackCriterium criterium3, TrackCriterium criterium4);
 
         virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 

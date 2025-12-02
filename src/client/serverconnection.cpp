@@ -26,6 +26,7 @@
 #include "common/util.h"
 
 #include "collectionfetcher.h"
+#include "inactivitytimer.h"
 #include "localhashidrepository.h"
 #include "servercapabilitiesimpl.h"
 #include "trackserveridrepository.h"
@@ -35,87 +36,6 @@
 
 namespace PMP::Client
 {
-    InactivityTimer::InactivityTimer(QObject* parent)
-     : QObject(parent),
-        _timer(new QTimer(this))
-    {
-        _timer->setSingleShot(true);
-
-        connect(
-            _timer, &QTimer::timeout,
-            this, &InactivityTimer::onTimerTimeout
-        );
-    }
-
-    void InactivityTimer::start()
-    {
-        if (_started)
-        {
-            qDebug() << "InactivityTimer: restarting";
-
-            _timer->stop();
-        }
-
-        _started = true;
-        _waitingForSecondTimeout = false;
-        _timer->start(KeepAliveIntervalMs);
-    }
-
-    void InactivityTimer::stop()
-    {
-        if (!_started)
-            return;
-
-        _started = false;
-        _timer->stop();
-    }
-
-    void InactivityTimer::reportActivity()
-    {
-        if (!_started)
-            return;
-
-        _timer->stop();
-
-        _waitingForSecondTimeout = false;
-        _timer->start(KeepAliveIntervalMs);
-    }
-
-    void InactivityTimer::onTimerTimeout()
-    {
-        if (!_started)
-            return;
-
-        if (!_waitingForSecondTimeout)
-        {
-            qDebug()
-                << "InactivityTimer: no activity for a while - need to send keep-alive";
-
-            _waitingForSecondTimeout = true;
-            _secondTimeoutTimePassedMs = 0;
-            _timer->start(SecondTimeoutStepTimeMs);
-
-            Q_EMIT keepAliveTimeout();
-            return;
-        }
-
-        _secondTimeoutTimePassedMs += SecondTimeoutStepTimeMs;
-
-        if (_secondTimeoutTimePassedMs < SecondTimeoutMaximumTimeMs)
-        {
-            _timer->start(SecondTimeoutStepTimeMs);
-            return;
-        }
-
-        qDebug() << "InactivityTimer: still no activity - maximum waiting time reached";
-
-        _started = false;
-
-        Q_EMIT inactivityTimeout();
-    }
-
-    /* ============================================================================ */
-
     class ServerConnection::ResultMessageData
     {
     public:
@@ -175,7 +95,7 @@ namespace PMP::Client
         virtual void handleHistoryFragment(quint32 clientReference,
                                            HistoryFragment fragment);
 
-        virtual void handleHashInfo(quint32 clientReference, quint64 trackServerId,
+        virtual void handleHashInfo(quint32 clientReference, TrackServerId trackServerId,
                                     bool isAvailable, QString title, QString artist,
                                     QString album, QString albumArtist,
                                     qint32 lengthInMilliseconds);
@@ -239,7 +159,7 @@ namespace PMP::Client
     }
 
     void ServerConnection::ResultHandler::handleHashInfo(quint32 clientReference,
-                                                         quint64 trackServerId,
+                                                         TrackServerId trackServerId,
                                                          bool isAvailable, QString title,
                                                          QString artist, QString album,
                                                          QString albumArtist,
@@ -709,7 +629,7 @@ namespace PMP::Client
 
         void handleResult(ResultMessageData const& data) override;
 
-        void handleHashInfo(quint32 clientReference, quint64 trackServerId,
+        void handleHashInfo(quint32 clientReference, TrackServerId trackServerId,
                             bool isAvailable, QString title, QString artist,
                             QString album, QString albumArtist,
                             qint32 lengthInMilliseconds) override;
@@ -742,7 +662,7 @@ namespace PMP::Client
     }
 
     void ServerConnection::HashInfoResultHandler::handleHashInfo(quint32 clientReference,
-                                                                 quint64 trackServerId,
+                                                            TrackServerId trackServerId,
                                                                  bool isAvailable,
                                                                  QString title,
                                                                  QString artist,
@@ -754,7 +674,7 @@ namespace PMP::Client
 
         auto hashId = _parent->_hashIdRepository->getOrRegisterId(_hash);
 
-        if (trackServerId > 0)
+        if (trackServerId.hasValue())
             _parent->_trackServerIdRepository->registerHashWithId(_hash, trackServerId);
 
         CollectionTrackInfo trackInfo(hashId, isAvailable, title, artist, album,
@@ -1465,7 +1385,7 @@ namespace PMP::Client
         NetworkUtil::append2Bytes(message, 0); /* filler */
 
         if (withId)
-            NetworkUtil::append8Bytes(message, track.toId().value());
+            NetworkUtil::append8Bytes(message, track.toId().value().value());
         else
             NetworkProtocol::appendHash(message, track.toHash().value());
 
@@ -1505,7 +1425,7 @@ namespace PMP::Client
         NetworkUtil::append2Bytes(message, 0); /* filler */
 
         if (withId)
-            NetworkUtil::append8Bytes(message, track.toId().value());
+            NetworkUtil::append8Bytes(message, track.toId().value().value());
         else
             NetworkProtocol::appendHash(message, track.toHash().value());
 
@@ -1704,7 +1624,7 @@ namespace PMP::Client
         NetworkUtil::append4Bytes(message, index);
 
         if (withId)
-            NetworkUtil::append8Bytes(message, track.toId().value());
+            NetworkUtil::append8Bytes(message, track.toId().value().value());
         else
             NetworkProtocol::appendHash(message, track.toHash().value());
 
@@ -3652,7 +3572,8 @@ namespace PMP::Client
                 hashId = _hashIdRepository->getOrRegisterId(hash);
 
                 if (trackId > 0)
-                    _trackServerIdRepository->registerHashWithId(hash, trackId);
+                    _trackServerIdRepository->registerHashWithId(hash,
+                                                                 TrackServerId(trackId));
             }
 
             Q_EMIT receivedQueueEntryHash(queueId, type, hashId);
@@ -4071,7 +3992,8 @@ namespace PMP::Client
             auto hashId = _hashIdRepository->getOrRegisterId(hash);
 
             if (trackId > 0)
-                _trackServerIdRepository->registerHashWithId(hash, trackId);
+                _trackServerIdRepository->registerHashWithId(hash,
+                                                             TrackServerId(trackId));
 
             CollectionTrackInfo info(hashId, availabilityByte & 1, title, artist, album,
                                      albumArtist, trackLengthInMs);
@@ -4238,7 +4160,8 @@ namespace PMP::Client
         auto handler = _resultHandlers.take(clientReference);
         if (handler)
         {
-            handler->handleHashInfo(clientReference, serverTrackId, isAvailable,
+            handler->handleHashInfo(clientReference, TrackServerId(serverTrackId),
+                                    isAvailable,
                                     title, artist, album, albumArtist,
                                     lengthInMilliseconds);
         }
@@ -4490,7 +4413,8 @@ namespace PMP::Client
             bool validForScoring = status & 1;
 
             if (trackId > 0)
-                _trackServerIdRepository->registerHashWithId(hash, trackId);
+                _trackServerIdRepository->registerHashWithId(hash,
+                                                             TrackServerId(trackId));
 
             qDebug() << "history entry: user" << userId << " track ID" << trackId
                      << " hash" << hash << " started" << started;

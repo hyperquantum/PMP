@@ -50,49 +50,17 @@
 #include <QObject>
 #include <QSharedPointer>
 #include <QTcpSocket>
-#include <QTimer>
 #include <QUuid>
 #include <QVector>
-
-QT_FORWARD_DECLARE_CLASS(QTimer)
 
 namespace PMP::Client
 {
     class CollectionFetcher;
+    class InactivityTimer;
     class LocalHashIdRepository;
     class ServerCapabilities;
     class ServerCapabilitiesImpl;
     class TrackServerIdRepository;
-
-    class InactivityTimer : public QObject
-    {
-        Q_OBJECT
-    public:
-        explicit InactivityTimer(QObject* parent);
-
-        void start();
-        void stop();
-
-    public Q_SLOTS:
-        void reportActivity();
-
-    Q_SIGNALS:
-        void keepAliveTimeout();
-        void inactivityTimeout();
-
-    private:
-        void onTimerTimeout();
-
-    private:
-        static constexpr int KeepAliveIntervalMs = 30 * 1000;
-        static constexpr int SecondTimeoutStepTimeMs = 1000;
-        static constexpr int SecondTimeoutMaximumTimeMs = 5 * SecondTimeoutStepTimeMs;
-
-        QTimer* _timer;
-        bool _started { false };
-        bool _waitingForSecondTimeout { false };
-        int _secondTimeoutTimePassedMs { 0 };
-    };
 
     enum class ServerEventSubscription
     {

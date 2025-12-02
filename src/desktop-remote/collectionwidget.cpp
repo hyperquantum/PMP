@@ -63,9 +63,8 @@ namespace PMP
     {
         _ui->setupUi(this);
 
-        initTrackFilterComboBoxes();
-        initTrackHighlightingComboBox();
-        initTrackHighlightingColorSwitcher();
+        initTrackFilterWidgets();
+        initTrackHighlightingWidgets();
 
         _ui->collectionTableView->setModel(_collectionDisplayModel);
         _ui->collectionTableView->setDragEnabled(true);
@@ -151,24 +150,33 @@ namespace PMP
 
     void CollectionWidget::filterTracksIndexChanged()
     {
-        auto filter1 = getTrackCriteriumFromComboBox(_ui->filterTracksComboBox);
+        auto filter1 = getTrackCriteriumFromComboBox(_ui->filterTracks1ComboBox);
         auto filter2 = getTrackCriteriumFromComboBox(_ui->filterTracks2ComboBox);
         auto filter3 = getTrackCriteriumFromComboBox(_ui->filterTracks3ComboBox);
+        auto filter4 = getTrackCriteriumFromComboBox(_ui->filterTracks4ComboBox);
 
         bool filter1Set = filter1 != TrackCriterium::AllTracks;
         bool filter2Set = filter2 != TrackCriterium::AllTracks;
         bool filter3Set = filter3 != TrackCriterium::AllTracks;
+        bool filter4Set = filter4 != TrackCriterium::AllTracks;
 
-        bool shouldDisplayFilter2 = filter1Set || filter2Set || filter3Set;
-        bool shouldDisplayFilter3 = filter2Set || filter3Set;
+        bool shouldDisplayFilter4 = filter3Set || filter4Set;
+        bool shouldDisplayFilter3 = filter2Set || filter3Set || filter4Set;
+        bool shouldDisplayFilter2 = filter1Set || filter2Set || filter3Set || filter4Set;
 
         _ui->filterTracks2Label->setVisible(shouldDisplayFilter2);
         _ui->filterTracks2ComboBox->setVisible(shouldDisplayFilter2);
+        _ui->filterTracks2ResetButton->setVisible(shouldDisplayFilter2);
 
         _ui->filterTracks3Label->setVisible(shouldDisplayFilter3);
         _ui->filterTracks3ComboBox->setVisible(shouldDisplayFilter3);
+        _ui->filterTracks3ResetButton->setVisible(shouldDisplayFilter3);
 
-        _collectionDisplayModel->setTrackFilters(filter1, filter2, filter3);
+        _ui->filterTracks4Label->setVisible(shouldDisplayFilter4);
+        _ui->filterTracks4ComboBox->setVisible(shouldDisplayFilter4);
+        _ui->filterTracks4ResetButton->setVisible(shouldDisplayFilter4);
+
+        _collectionDisplayModel->setTrackFilters(filter1, filter2, filter3, filter4);
     }
 
     void CollectionWidget::highlightTracksIndexChanged(int index)
@@ -274,10 +282,10 @@ namespace PMP
         }
     }
 
-    void CollectionWidget::initTrackFilterComboBoxes()
+    void CollectionWidget::initTrackFilterWidgets()
     {
         auto comboBoxInit =
-            [this](QComboBox* comboBox)
+            [this](QComboBox* comboBox, QPushButton* resetButton)
             {
                 fillTrackCriteriaComboBox(comboBox, TrackCriterium::AllTracks);
 
@@ -285,16 +293,25 @@ namespace PMP
                     comboBox, qOverload<int>(&QComboBox::currentIndexChanged),
                     this, &CollectionWidget::filterTracksIndexChanged
                 );
+
+                resetButton->setIcon(
+                    style()->standardIcon(QStyle::SP_LineEditClearButton));
+
+                connect(
+                    resetButton, &QPushButton::clicked,
+                    this, [comboBox]() { comboBox->setCurrentIndex(0); }
+                );
             };
 
-        comboBoxInit(_ui->filterTracksComboBox);
-        comboBoxInit(_ui->filterTracks2ComboBox);
-        comboBoxInit(_ui->filterTracks3ComboBox);
+        comboBoxInit(_ui->filterTracks1ComboBox, _ui->filterTracks1ResetButton);
+        comboBoxInit(_ui->filterTracks2ComboBox, _ui->filterTracks2ResetButton);
+        comboBoxInit(_ui->filterTracks3ComboBox, _ui->filterTracks3ResetButton);
+        comboBoxInit(_ui->filterTracks4ComboBox, _ui->filterTracks4ResetButton);
 
         filterTracksIndexChanged();
     }
 
-    void CollectionWidget::initTrackHighlightingComboBox()
+    void CollectionWidget::initTrackHighlightingWidgets()
     {
         auto combo = _ui->highlightTracksComboBox;
 
@@ -304,6 +321,30 @@ namespace PMP
             combo, qOverload<int>(&QComboBox::currentIndexChanged),
             this, &CollectionWidget::highlightTracksIndexChanged
         );
+
+        connect(
+            _colorSwitcher, &ColorSwitcher::colorIndexChanged,
+            this, &CollectionWidget::highlightColorIndexChanged
+        );
+
+        auto layoutItem =
+            this->layout()->replaceWidget(_ui->highlightColorButton, _colorSwitcher);
+
+        delete layoutItem;
+        delete _ui->highlightColorButton;
+        _ui->highlightColorButton = nullptr;
+
+        _ui->highlightTracksResetButton->setIcon(
+            style()->standardIcon(QStyle::SP_LineEditClearButton));
+
+        connect(
+            _ui->highlightTracksResetButton, &QPushButton::clicked,
+            this, [this]() { _ui->highlightTracksComboBox->setCurrentIndex(0); }
+        );
+
+        updateColors(/* force: */ true);
+
+        _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackCriterium::NoTracks);
     }
 
     void CollectionWidget::fillTrackCriteriaComboBox(QComboBox* comboBox,
@@ -369,25 +410,6 @@ namespace PMP
         addItem(tr("no longer available"), TrackCriterium::NoLongerAvailable);
 
         comboBox->setCurrentIndex(0);
-    }
-
-    void CollectionWidget::initTrackHighlightingColorSwitcher()
-    {
-        connect(
-            _colorSwitcher, &ColorSwitcher::colorIndexChanged,
-            this, &CollectionWidget::highlightColorIndexChanged
-        );
-
-        auto layoutItem =
-            this->layout()->replaceWidget(_ui->highlightColorButton, _colorSwitcher);
-
-        delete layoutItem;
-        delete _ui->highlightColorButton;
-        _ui->highlightColorButton = nullptr;
-
-        updateColors(/* force: */ true);
-
-        _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackCriterium::NoTracks);
     }
 
     void CollectionWidget::updateColors(bool force)

@@ -23,6 +23,8 @@
 #include "common/filehash.h"
 #include "common/nullable.h"
 
+#include "trackserverid.h"
+
 #include <QDebug>
 
 #include <variant>
@@ -44,8 +46,8 @@ namespace PMP::Client
             //
         }
 
-        TrackHashOrId(quint64 id)
-         : _data(id == 0 ? datatype() : datatype(id))
+        TrackHashOrId(TrackServerId id)
+         : _data(id.isZero() ? datatype() : datatype(id))
         {
             //
         }
@@ -62,7 +64,7 @@ namespace PMP::Client
 
         constexpr bool isId() const
         {
-            return std::holds_alternative<quint64>(_data);
+            return std::holds_alternative<TrackServerId>(_data);
         }
 
         Nullable<FileHash> toHash() const
@@ -73,10 +75,10 @@ namespace PMP::Client
             return null;
         }
 
-        Nullable<quint64> toId() const
+        Nullable<TrackServerId> toId() const
         {
-            if (std::holds_alternative<quint64>(_data))
-                return std::get<quint64>(_data);
+            if (std::holds_alternative<TrackServerId>(_data))
+                return std::get<TrackServerId>(_data);
 
             return null;
         }
@@ -92,10 +94,11 @@ namespace PMP::Client
                        && std::get<FileHash>(_data) == std::get<FileHash>(other._data);
             }
 
-            //if (std::holds_alternative<quint64>(_data))
+            //if (std::holds_alternative<TrackServerId>(_data))
             {
-                return std::holds_alternative<quint64>(other._data)
-                       && std::get<quint64>(_data) == std::get<quint64>(other._data);
+                return std::holds_alternative<TrackServerId>(other._data)
+                        && std::get<TrackServerId>(_data)
+                              == std::get<TrackServerId>(other._data);
             }
         }
 
@@ -105,14 +108,14 @@ namespace PMP::Client
                    && std::get<FileHash>(_data) == other;
         }
 
-        bool operator==(quint64 const& otherId) const
+        bool operator==(TrackServerId const& otherId) const
         {
-            return std::holds_alternative<quint64>(_data)
-                   && std::get<quint64>(_data) == otherId;
+            return std::holds_alternative<TrackServerId>(_data)
+                   && std::get<TrackServerId>(_data) == otherId;
         }
 
     private:
-        typedef std::variant<std::monostate, FileHash, quint64> datatype;
+        typedef std::variant<std::monostate, FileHash, TrackServerId> datatype;
         datatype _data;
     };
 

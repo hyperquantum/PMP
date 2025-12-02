@@ -23,6 +23,7 @@
 #include "common/tribool.h"
 
 #include <QDateTime>
+#include <QList>
 #include <QMetaType>
 
 #include <functional>
@@ -81,10 +82,7 @@ namespace PMP
     public:
         TrackJudge(Client::UserDataFetcher& userDataFetcher,
                    Client::QueueHashesMonitor& queueHashesMonitor)
-         : _criterium1(TrackCriterium::AllTracks),
-           _criterium2(TrackCriterium::AllTracks),
-           _criterium3(TrackCriterium::AllTracks),
-           _userId(0),
+         : _userId(0),
            _haveUserId(false),
            _userDataFetcher(userDataFetcher),
            _queueHashesMonitor(queueHashesMonitor)
@@ -98,21 +96,7 @@ namespace PMP
             return _userId == userId && _haveUserId;
         }
 
-        bool setCriteria(TrackCriterium criterium1, TrackCriterium criterium2,
-                         TrackCriterium criterium3)
-        {
-            if (criterium1 == _criterium1 &&
-                criterium2 == _criterium2 &&
-                criterium3 == _criterium3)
-            {
-                return false;
-            }
-
-            _criterium1 = criterium1;
-            _criterium2 = criterium2;
-            _criterium3 = criterium3;
-            return true;
-        }
+        bool setCriteria(QList<TrackCriterium> criteria);
 
         bool criteriumUsesUserData() const;
         bool criteriumResultsInAllTracks() const;
@@ -120,6 +104,7 @@ namespace PMP
         TriBool trackSatisfiesCriteria(Client::CollectionTrackInfo const& track) const;
 
     private:
+        static QList<TrackCriterium> simplifyCriteria(QList<TrackCriterium> criteria);
         static bool usesUserData(TrackCriterium criterium);
         static bool isTextFieldEmpty(QString contents);
 
@@ -147,9 +132,7 @@ namespace PMP
         TriBool trackLengthAtLeastXMinutes(Client::CollectionTrackInfo const& track,
                                            int minutes) const;
 
-        TrackCriterium _criterium1;
-        TrackCriterium _criterium2;
-        TrackCriterium _criterium3;
+        QList<TrackCriterium> _criteria;
         quint32 _userId;
         bool _haveUserId;
         Client::UserDataFetcher& _userDataFetcher;

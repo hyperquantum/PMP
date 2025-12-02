@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,53 +17,54 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef PMP_CLIENT_LOCALHASHID_H
-#define PMP_CLIENT_LOCALHASHID_H
+#ifndef PMP_CLIENT_TRACKSERVERID_H
+#define PMP_CLIENT_TRACKSERVERID_H
 
 #include <QDebug>
 #include <QMetaType>
 #include <QtGlobal>
-//#include <QtTypes> <<-- for uint
+//#include <QtTypes> <<-- for quint64
 
 namespace PMP::Client
 {
-    class LocalHashId
+    class TrackServerId
     {
     public:
-        constexpr LocalHashId() : _id(0) {}
-        constexpr explicit LocalHashId(uint id) : _id(id) {}
+        constexpr TrackServerId() : _id(0) {}
+        constexpr explicit TrackServerId(quint64 id) : _id(id) {}
 
-        constexpr uint value() const { return _id; }
+        constexpr quint64 value() const { return _id; }
+        constexpr bool hasValue() const { return _id > 0; }
         constexpr bool isZero() const { return _id == 0; }
 
-        LocalHashId& operator=(LocalHashId const&) = default;
+        TrackServerId& operator=(TrackServerId const&) = default;
 
-        constexpr bool operator==(LocalHashId const& other) const
+        constexpr bool operator==(TrackServerId const& other) const
         {
             return _id == other._id;
         }
 
     private:
-        uint _id;
+        quint64 _id;
     };
 
-    inline constexpr bool operator<(LocalHashId hashId1, LocalHashId hashId2)
+    inline constexpr bool operator<(TrackServerId id1, TrackServerId id2)
     {
-        return hashId1.value() < hashId2.value();
+        return id1.value() < id2.value();
     }
 
-    inline QDebug operator<<(QDebug debug, const LocalHashId id)
+    inline QDebug operator<<(QDebug debug, const TrackServerId id)
     {
         debug << id.value();
         return debug;
     }
 
-    constexpr inline uint qHash(LocalHashId const& id)
+    constexpr inline size_t qHash(const TrackServerId& id)
     {
         return id.value();
     }
 }
 
-Q_DECLARE_METATYPE(PMP::Client::LocalHashId)
+Q_DECLARE_METATYPE(PMP::Client::TrackServerId)
 
 #endif
