@@ -931,14 +931,9 @@ namespace PMP
         setSourceModel(source);
     }
 
-    void FilteredCollectionTableModel::setTrackFilters(TrackCriterium criterium1,
-                                                       TrackCriterium criterium2,
-                                                       TrackCriterium criterium3,
-                                                       TrackCriterium criterium4)
+    void FilteredCollectionTableModel::setTrackFilters(QList<TrackCriterium> criteria)
     {
-        bool changed =
-            _filteringTrackJudge.setCriteria(
-                { criterium1, criterium2, criterium3, criterium4 });
+        bool changed = _filteringTrackJudge.setCriteria(criteria);
 
         if (changed)
             invalidateFilter();
