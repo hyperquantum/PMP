@@ -24,6 +24,8 @@
 
 QT_FORWARD_DECLARE_CLASS(QComboBox)
 QT_FORWARD_DECLARE_CLASS(QMenu)
+QT_FORWARD_DECLARE_CLASS(QPushButton)
+QT_FORWARD_DECLARE_CLASS(QVBoxLayout)
 
 namespace Ui
 {
@@ -40,6 +42,7 @@ namespace PMP
 {
     class ColorSwitcher;
     class FilteredCollectionTableModel;
+    class FiltersListWidget;
     class SearchData;
     class SortedCollectionTableModel;
     enum class TrackCriterium;
@@ -61,7 +64,7 @@ namespace PMP
         void changeEvent(QEvent* event) override;
 
     private Q_SLOTS:
-        void filterTracksIndexChanged();
+        void onFiltersChanged();
         void highlightTracksIndexChanged(int index);
         void highlightColorIndexChanged();
         void collectionContextMenuRequested(const QPoint& position);
@@ -71,15 +74,17 @@ namespace PMP
         void updateSpinnerVisibility();
         void initTrackFilterWidgets();
         void initTrackHighlightingWidgets();
+        void updateColors(bool force);
+
         void fillTrackCriteriaComboBox(QComboBox* comboBox,
                                        TrackCriterium criteriumForNone);
-        void updateColors(bool force);
 
         TrackCriterium getCurrentHighlightMode() const;
         TrackCriterium getTrackCriteriumFromComboBox(QComboBox* comboBox) const;
 
         Ui::CollectionWidget* _ui;
         WaitingSpinnerWidget* _spinner { nullptr };
+        FiltersListWidget* _filtersListWidget { nullptr };
         ColorSwitcher* _colorSwitcher;
         Client::ServerInterface* _serverInterface;
         UserForStatisticsDisplay* _userStatisticsDisplay;
@@ -87,6 +92,47 @@ namespace PMP
         FilteredCollectionTableModel* _collectionDisplayModel;
         QMenu* _collectionContextMenu;
         bool _usingColorsForDarkMode { false };
+    };
+
+    class FilterLineWidget : public QWidget
+    {
+        Q_OBJECT
+    public:
+        FilterLineWidget();
+
+        TrackCriterium criterium() const { return _criterium; }
+
+    Q_SIGNALS:
+        void criteriumChanged();
+        void deleteClicked();
+
+    private:
+        void fillTrackCriteriaComboBox(QComboBox* comboBox,
+                                       TrackCriterium criteriumForNone);
+
+        QComboBox* _comboBox;
+        QPushButton* _deleteButton;
+        QPushButton* _resetButton;
+        TrackCriterium _criterium;
+    };
+
+    class FiltersListWidget : public QWidget
+    {
+        Q_OBJECT
+    public:
+        FiltersListWidget();
+
+        QList<TrackCriterium> criteria() const;
+
+    Q_SIGNALS:
+        void criteriaChanged();
+
+    private:
+        void addFilterLine();
+
+        QPushButton* _addButton;
+        QVBoxLayout* _verticalLayout;
+        QList<FilterLineWidget*> _filters;
     };
 }
 #endif

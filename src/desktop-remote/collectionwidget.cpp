@@ -148,35 +148,11 @@ namespace PMP
         QWidget::changeEvent(event);
     }
 
-    void CollectionWidget::filterTracksIndexChanged()
+    void CollectionWidget::onFiltersChanged()
     {
-        auto filter1 = getTrackCriteriumFromComboBox(_ui->filterTracks1ComboBox);
-        auto filter2 = getTrackCriteriumFromComboBox(_ui->filterTracks2ComboBox);
-        auto filter3 = getTrackCriteriumFromComboBox(_ui->filterTracks3ComboBox);
-        auto filter4 = getTrackCriteriumFromComboBox(_ui->filterTracks4ComboBox);
+        auto criteria = _filtersListWidget->criteria();
 
-        bool filter1Set = filter1 != TrackCriterium::AllTracks;
-        bool filter2Set = filter2 != TrackCriterium::AllTracks;
-        bool filter3Set = filter3 != TrackCriterium::AllTracks;
-        bool filter4Set = filter4 != TrackCriterium::AllTracks;
-
-        bool shouldDisplayFilter4 = filter3Set || filter4Set;
-        bool shouldDisplayFilter3 = filter2Set || filter3Set || filter4Set;
-        bool shouldDisplayFilter2 = filter1Set || filter2Set || filter3Set || filter4Set;
-
-        _ui->filterTracks2Label->setVisible(shouldDisplayFilter2);
-        _ui->filterTracks2ComboBox->setVisible(shouldDisplayFilter2);
-        _ui->filterTracks2ResetButton->setVisible(shouldDisplayFilter2);
-
-        _ui->filterTracks3Label->setVisible(shouldDisplayFilter3);
-        _ui->filterTracks3ComboBox->setVisible(shouldDisplayFilter3);
-        _ui->filterTracks3ResetButton->setVisible(shouldDisplayFilter3);
-
-        _ui->filterTracks4Label->setVisible(shouldDisplayFilter4);
-        _ui->filterTracks4ComboBox->setVisible(shouldDisplayFilter4);
-        _ui->filterTracks4ResetButton->setVisible(shouldDisplayFilter4);
-
-        _collectionDisplayModel->setTrackFilters(filter1, filter2, filter3, filter4);
+        _collectionDisplayModel->setTrackFilters(criteria);
     }
 
     void CollectionWidget::highlightTracksIndexChanged(int index)
@@ -284,31 +260,21 @@ namespace PMP
 
     void CollectionWidget::initTrackFilterWidgets()
     {
-        auto comboBoxInit =
-            [this](QComboBox* comboBox, QPushButton* resetButton)
-            {
-                fillTrackCriteriaComboBox(comboBox, TrackCriterium::AllTracks);
+        _filtersListWidget = new FiltersListWidget();
 
-                connect(
-                    comboBox, qOverload<int>(&QComboBox::currentIndexChanged),
-                    this, &CollectionWidget::filterTracksIndexChanged
-                );
+        auto layoutItem =
+            this->layout()->replaceWidget(_ui->filterPlaceholder, _filtersListWidget);
 
-                resetButton->setIcon(
-                    style()->standardIcon(QStyle::SP_LineEditClearButton));
+        delete layoutItem;
+        /* we cannot delete the placeholder because of retranslateUi() so we hide it */
+        _ui->filterPlaceholder->setVisible(false);
 
-                connect(
-                    resetButton, &QPushButton::clicked,
-                    this, [comboBox]() { comboBox->setCurrentIndex(0); }
-                );
-            };
+        connect(
+            _filtersListWidget, &FiltersListWidget::criteriaChanged,
+            this, [this]() { onFiltersChanged(); }
+        );
 
-        comboBoxInit(_ui->filterTracks1ComboBox, _ui->filterTracks1ResetButton);
-        comboBoxInit(_ui->filterTracks2ComboBox, _ui->filterTracks2ResetButton);
-        comboBoxInit(_ui->filterTracks3ComboBox, _ui->filterTracks3ResetButton);
-        comboBoxInit(_ui->filterTracks4ComboBox, _ui->filterTracks4ResetButton);
-
-        filterTracksIndexChanged();
+        onFiltersChanged();
     }
 
     void CollectionWidget::initTrackHighlightingWidgets()
@@ -331,14 +297,15 @@ namespace PMP
             this->layout()->replaceWidget(_ui->highlightColorButton, _colorSwitcher);
 
         delete layoutItem;
-        delete _ui->highlightColorButton;
-        _ui->highlightColorButton = nullptr;
+        /* we cannot delete the placeholder because of retranslateUi() so we hide it */
+        _ui->highlightColorButton->setVisible(false);
 
-        _ui->highlightTracksResetButton->setIcon(
-            style()->standardIcon(QStyle::SP_LineEditClearButton));
+        auto* resetButton = _ui->highlightTracksResetButton;
+        resetButton->setIcon(style()->standardIcon(QStyle::SP_LineEditClearButton));
+        resetButton->setToolTip(tr("Reset highlighting"));
 
         connect(
-            _ui->highlightTracksResetButton, &QPushButton::clicked,
+            resetButton, &QPushButton::clicked,
             this, [this]() { _ui->highlightTracksComboBox->setCurrentIndex(0); }
         );
 
@@ -347,6 +314,19 @@ namespace PMP
         _colorSwitcher->setVisible(getCurrentHighlightMode() != TrackCriterium::NoTracks);
     }
 
+    void CollectionWidget::updateColors(bool force)
+    {
+        auto& colors = Colors::instance();
+
+        bool darkMode = colors.isDarkMode();
+        if (!force && darkMode == _usingColorsForDarkMode)
+            return;
+
+        _colorSwitcher->setColors(colors.itemBackgroundHighlightColors);
+        _usingColorsForDarkMode = darkMode;
+    }
+
+    // FIXME : duplicate code
     void CollectionWidget::fillTrackCriteriaComboBox(QComboBox* comboBox,
                                                      TrackCriterium criteriumForNone)
     {
@@ -412,18 +392,6 @@ namespace PMP
         comboBox->setCurrentIndex(0);
     }
 
-    void CollectionWidget::updateColors(bool force)
-    {
-        auto& colors = Colors::instance();
-
-        bool darkMode = colors.isDarkMode();
-        if (!force && darkMode == _usingColorsForDarkMode)
-            return;
-
-        _colorSwitcher->setColors(colors.itemBackgroundHighlightColors);
-        _usingColorsForDarkMode = darkMode;
-    }
-
     TrackCriterium CollectionWidget::getCurrentHighlightMode() const
     {
         return getTrackCriteriumFromComboBox(_ui->highlightTracksComboBox);
@@ -433,5 +401,201 @@ namespace PMP
                                                                 QComboBox* comboBox) const
     {
         return comboBox->currentData().value<TrackCriterium>();
+    }
+
+    // =============================================================== //
+
+    FilterLineWidget::FilterLineWidget()
+        : _criterium(TrackCriterium::AllTracks)
+    {
+        _comboBox = new QComboBox();
+        _deleteButton = new QPushButton();
+        _resetButton = new QPushButton();
+
+        QHBoxLayout* layout = new QHBoxLayout(this);
+        layout->setContentsMargins(0, 0, 0, 0);
+        layout->addWidget(_comboBox, 1);
+        layout->addWidget(_deleteButton, 0);
+        layout->addWidget(_resetButton, 0);
+
+        fillTrackCriteriaComboBox(_comboBox, TrackCriterium::AllTracks);
+
+        _deleteButton->setIcon(style()->standardIcon(QStyle::SP_DialogDiscardButton));
+        _deleteButton->setToolTip(tr("Remove filter"));
+
+        _resetButton->setIcon(style()->standardIcon(QStyle::SP_LineEditClearButton));
+        _resetButton->setToolTip(tr("Clear filter"));
+
+        connect(
+            _comboBox, qOverload<int>(&QComboBox::currentIndexChanged),
+            this,
+            [this]()
+            {
+                auto criterium = _comboBox->currentData().value<TrackCriterium>();
+                if (_criterium == criterium)
+                    return;
+
+                _criterium = criterium;
+                Q_EMIT criteriumChanged();
+            }
+        );
+
+        connect(
+            _deleteButton, &QPushButton::clicked,
+            this, [this]() { Q_EMIT deleteClicked(); }
+        );
+
+        connect(
+            _resetButton, &QPushButton::clicked,
+            this, [this]() { _comboBox->setCurrentIndex(0); }
+        );
+    }
+
+    // FIXME : duplicate code
+    void FilterLineWidget::fillTrackCriteriaComboBox(QComboBox* comboBox,
+                                                     TrackCriterium criteriumForNone)
+    {
+        auto addItem =
+            [comboBox](QString text, TrackCriterium mode)
+            {
+                text.replace(">=", UnicodeChars::greaterThanOrEqual)
+                    .replace("<=", UnicodeChars::lessThanOrEqual);
+
+                comboBox->addItem(text, QVariant::fromValue(mode));
+            };
+
+        addItem(tr("none"), criteriumForNone);
+
+        addItem(tr("never heard"), TrackCriterium::NeverHeard);
+        addItem(tr("not heard in the last 5 years"),
+                TrackCriterium::NotHeardInLast5Years);
+        addItem(tr("not heard in the last 3 years"),
+                TrackCriterium::NotHeardInLast3Years);
+        addItem(tr("not heard in the last 2 years"),
+                TrackCriterium::NotHeardInLast2Years);
+        addItem(tr("not heard in the last year"),
+                TrackCriterium::NotHeardInLastYear);
+        addItem(tr("not heard in the last 180 days"),
+                TrackCriterium::NotHeardInLast180Days);
+        addItem(tr("not heard in the last 90 days"),
+                TrackCriterium::NotHeardInLast90Days);
+        addItem(tr("not heard in the last 30 days"),
+                TrackCriterium::NotHeardInLast30Days);
+        addItem(tr("not heard in the last 10 days"),
+                TrackCriterium::NotHeardInLast10Days);
+        addItem(tr("heard at least once"), TrackCriterium::HeardAtLeastOnce);
+
+        addItem(tr("without score"), TrackCriterium::WithoutScore);
+        addItem(tr("with score"), TrackCriterium::WithScore);
+        addItem(tr("score < 30"), TrackCriterium::ScoreLessThan30);
+        addItem(tr("score < 50"), TrackCriterium::ScoreLessThan50);
+        addItem(tr("score >= 80"), TrackCriterium::ScoreAtLeast80);
+        addItem(tr("score >= 85"), TrackCriterium::ScoreAtLeast85);
+        addItem(tr("score >= 90"), TrackCriterium::ScoreAtLeast90);
+        addItem(tr("score >= 95"), TrackCriterium::ScoreAtLeast95);
+
+        addItem(tr("length < 1 min."), TrackCriterium::LengthLessThanOneMinute);
+        addItem(tr("length >= 1 min."), TrackCriterium::LengthAtLeastOneMinute);
+        addItem(tr("length < 2 min."), TrackCriterium::LengthLessThanTwoMinutes);
+        addItem(tr("length >= 2 min."), TrackCriterium::LengthAtLeastTwoMinutes);
+        addItem(tr("length < 3 min."), TrackCriterium::LengthLessThanThreeMinutes);
+        addItem(tr("length >= 3 min."), TrackCriterium::LengthAtLeastThreeMinutes);
+        addItem(tr("length < 4 min."), TrackCriterium::LengthLessThanFourMinutes);
+        addItem(tr("length >= 4 min."), TrackCriterium::LengthAtLeastFourMinutes);
+        addItem(tr("length < 5 min."), TrackCriterium::LengthLessThanFiveMinutes);
+        addItem(tr("length >= 5 min."), TrackCriterium::LengthAtLeastFiveMinutes);
+
+        addItem(tr("not in the queue"), TrackCriterium::NotInTheQueue);
+        addItem(tr("in the queue"), TrackCriterium::InTheQueue);
+
+        addItem(tr("without title"), TrackCriterium::WithoutTitle);
+        addItem(tr("without artist"), TrackCriterium::WithoutArtist);
+        addItem(tr("without album"), TrackCriterium::WithoutAlbum);
+
+        addItem(tr("no longer available"), TrackCriterium::NoLongerAvailable);
+
+        comboBox->setCurrentIndex(0);
+    }
+
+    // =============================================================== //
+
+    FiltersListWidget::FiltersListWidget()
+    {
+        _verticalLayout = new QVBoxLayout(this);
+        _verticalLayout->setContentsMargins(0, 0, 0, 0);
+
+        addFilterLine();
+
+        auto* buttonsLayout = new QHBoxLayout();
+        _verticalLayout->addLayout(buttonsLayout);
+
+        _addButton = new QPushButton(tr("Add"));
+        _addButton->setToolTip(tr("Add filter"));
+
+        buttonsLayout->addWidget(_addButton);
+        buttonsLayout->addStretch();
+
+        connect(
+            _addButton, &QPushButton::clicked,
+            this,
+            [this]()
+            {
+                addFilterLine();
+
+                // emit is not necessary because the new filter is "none"
+                //Q_EMIT criteriaChanged();
+            }
+        );
+    }
+
+    QList<TrackCriterium> FiltersListWidget::criteria() const
+    {
+        QList<TrackCriterium> result;
+        result.reserve(_filters.size());
+
+        for (auto const* filterLine : _filters)
+        {
+            result << filterLine->criterium();
+        }
+
+        return result;
+    }
+
+    void FiltersListWidget::addFilterLine()
+    {
+        auto* filter = new FilterLineWidget();
+
+        auto index = _filters.size();
+        _verticalLayout->insertWidget(index, filter);
+
+        _filters.append(filter);
+
+        connect(
+            filter, &FilterLineWidget::criteriumChanged,
+            this,
+            [this]()
+            {
+                Q_EMIT criteriaChanged();
+            }
+        );
+
+        connect(
+            filter, &FilterLineWidget::deleteClicked,
+            this,
+            [this, filter]()
+            {
+                auto index = _filters.indexOf(filter);
+                Q_ASSERT_X(
+                    index >= 0,
+                    "FiltersListWidget::addFilterLine",
+                    "filter to be deleted not found"
+                );
+
+                _filters.removeAt(index);
+                filter->deleteLater();
+
+                Q_EMIT criteriaChanged();
+            }
+        );
     }
 }
