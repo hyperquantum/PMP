@@ -42,6 +42,7 @@ namespace PMP
 {
     class ColorSwitcher;
     class FilteredCollectionTableModel;
+    class FilterPickerWidget;
     class FiltersListWidget;
     class SearchData;
     class SortedCollectionTableModel;
@@ -65,7 +66,7 @@ namespace PMP
 
     private Q_SLOTS:
         void onFiltersChanged();
-        void highlightTracksIndexChanged(int index);
+        void onHighlightCriteriumChanged();
         void highlightColorIndexChanged();
         void collectionContextMenuRequested(const QPoint& position);
         void rowCountChanged();
@@ -76,15 +77,10 @@ namespace PMP
         void initTrackHighlightingWidgets();
         void updateColors(bool force);
 
-        void fillTrackCriteriaComboBox(QComboBox* comboBox,
-                                       TrackCriterium criteriumForNone);
-
-        TrackCriterium getCurrentHighlightMode() const;
-        TrackCriterium getTrackCriteriumFromComboBox(QComboBox* comboBox) const;
-
         Ui::CollectionWidget* _ui;
         WaitingSpinnerWidget* _spinner { nullptr };
         FiltersListWidget* _filtersListWidget { nullptr };
+        FilterPickerWidget* _highlightingCriteriumPicker { nullptr };
         ColorSwitcher* _colorSwitcher;
         Client::ServerInterface* _serverInterface;
         UserForStatisticsDisplay* _userStatisticsDisplay;
@@ -92,6 +88,27 @@ namespace PMP
         FilteredCollectionTableModel* _collectionDisplayModel;
         QMenu* _collectionContextMenu;
         bool _usingColorsForDarkMode { false };
+    };
+
+    class FilterPickerWidget : public QWidget
+    {
+        Q_OBJECT
+    public:
+        FilterPickerWidget(TrackCriterium criteriumForEmpty, QString captionForEmpty);
+
+        void clearCriterium();
+        TrackCriterium criterium() const { return _criterium; }
+
+    Q_SIGNALS:
+        void criteriumChanged();
+
+    private:
+        void fillTrackCriteriaComboBox(QComboBox* comboBox,
+                                       TrackCriterium criteriumForEmpty,
+                                       QString captionForEmpty);
+
+        QComboBox* _comboBox;
+        TrackCriterium _criterium;
     };
 
     class FilterLineWidget : public QWidget
@@ -107,10 +124,7 @@ namespace PMP
         void deleteClicked();
 
     private:
-        void fillTrackCriteriaComboBox(QComboBox* comboBox,
-                                       TrackCriterium criteriumForNone);
-
-        QComboBox* _comboBox;
+        FilterPickerWidget* _filterPicker;
         QPushButton* _deleteButton;
         QPushButton* _resetButton;
         TrackCriterium _criterium;
