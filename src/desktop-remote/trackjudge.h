@@ -22,6 +22,8 @@
 
 #include "common/tribool.h"
 
+#include "trackcriteria.h"
+
 #include <QDateTime>
 #include <QList>
 #include <QMetaType>
@@ -37,46 +39,6 @@ namespace PMP::Client
 
 namespace PMP
 {
-    enum class TrackCriterium
-    {
-        AllTracks = 0,
-        NoTracks,
-        NeverHeard,
-        NotHeardInLast5Years,
-        NotHeardInLast3Years,
-        NotHeardInLast2Years,
-        NotHeardInLastYear,
-        NotHeardInLast180Days,
-        NotHeardInLast90Days,
-        NotHeardInLast30Days,
-        NotHeardInLast10Days,
-        HeardAtLeastOnce,
-        WithoutScore,
-        WithScore,
-        ScoreLessThan30,
-        ScoreLessThan50,
-        ScoreAtLeast80,
-        ScoreAtLeast85,
-        ScoreAtLeast90,
-        ScoreAtLeast95,
-        LengthLessThanOneMinute,
-        LengthAtLeastOneMinute,
-        LengthLessThanTwoMinutes,
-        LengthAtLeastTwoMinutes,
-        LengthLessThanThreeMinutes,
-        LengthAtLeastThreeMinutes,
-        LengthLessThanFourMinutes,
-        LengthAtLeastFourMinutes,
-        LengthLessThanFiveMinutes,
-        LengthAtLeastFiveMinutes,
-        NotInTheQueue,
-        InTheQueue,
-        WithoutTitle,
-        WithoutArtist,
-        WithoutAlbum,
-        NoLongerAvailable,
-    };
-
     class TrackJudge
     {
     public:
@@ -96,7 +58,7 @@ namespace PMP
             return _userId == userId && _haveUserId;
         }
 
-        bool setCriteria(QList<TrackCriterium> criteria);
+        bool setCriteria(QList<PredefinedTrackCriterium> criteria);
 
         bool criteriumUsesUserData() const;
         bool criteriumResultsInAllTracks() const;
@@ -104,12 +66,12 @@ namespace PMP
         TriBool trackSatisfiesCriteria(Client::CollectionTrackInfo const& track) const;
 
     private:
-        static QList<TrackCriterium> simplifyCriteria(QList<TrackCriterium> criteria);
-        static bool usesUserData(TrackCriterium criterium);
+        static QList<PredefinedTrackCriterium> simplifyCriteria(QList<PredefinedTrackCriterium> criteria);
+        static bool usesUserData(PredefinedTrackCriterium criterium);
         static bool isTextFieldEmpty(QString contents);
 
         TriBool trackSatisfiesCriterium(Client::CollectionTrackInfo const& track,
-                                        TrackCriterium criterium) const;
+                                        PredefinedTrackCriterium criterium) const;
 
         TriBool trackSatisfiesScoreCriterium(Client::CollectionTrackInfo const& track,
                               std::function<TriBool(int)> scorePermillageEvaluator) const;
@@ -132,7 +94,7 @@ namespace PMP
         TriBool trackLengthAtLeastXMinutes(Client::CollectionTrackInfo const& track,
                                            int minutes) const;
 
-        QList<TrackCriterium> _criteria;
+        QList<PredefinedTrackCriterium> _criteria;
         quint32 _userId;
         bool _haveUserId;
         Client::UserDataFetcher& _userDataFetcher;
@@ -140,6 +102,6 @@ namespace PMP
     };
 }
 
-Q_DECLARE_METATYPE(PMP::TrackCriterium)
+Q_DECLARE_METATYPE(PMP::PredefinedTrackCriterium)
 
 #endif

@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2020-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2020-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -17,7 +17,9 @@
     with PMP.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "trackjudge.h"
+#include "trackcriteria.h"
+
+#include <QMetaType>
 
 namespace PMP
 {
@@ -28,7 +30,7 @@ namespace PMP
     protected:
         DesktopRemoteMetatypesInit()
         {
-            qRegisterMetaType<PMP::TrackCriterium>();
+            qRegisterMetaType<PMP::PredefinedTrackCriterium>();
         }
 
     private:

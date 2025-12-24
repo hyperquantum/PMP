@@ -46,7 +46,7 @@ namespace PMP
     class FiltersListWidget;
     class SearchData;
     class SortedCollectionTableModel;
-    enum class TrackCriterium;
+    enum class PredefinedTrackCriterium;
     class UserForStatisticsDisplay;
     class WaitingSpinnerWidget;
 
@@ -94,21 +94,21 @@ namespace PMP
     {
         Q_OBJECT
     public:
-        FilterPickerWidget(TrackCriterium criteriumForEmpty, QString captionForEmpty);
+        FilterPickerWidget(PredefinedTrackCriterium criteriumForEmpty, QString captionForEmpty);
 
         void clearCriterium();
-        TrackCriterium criterium() const { return _criterium; }
+        PredefinedTrackCriterium criterium() const { return _criterium; }
 
     Q_SIGNALS:
         void criteriumChanged();
 
     private:
         void fillTrackCriteriaComboBox(QComboBox* comboBox,
-                                       TrackCriterium criteriumForEmpty,
+                                       PredefinedTrackCriterium criteriumForEmpty,
                                        QString captionForEmpty);
 
         QComboBox* _comboBox;
-        TrackCriterium _criterium;
+        PredefinedTrackCriterium _criterium;
     };
 
     class FilterLineWidget : public QWidget
@@ -117,7 +117,7 @@ namespace PMP
     public:
         FilterLineWidget();
 
-        TrackCriterium criterium() const { return _criterium; }
+        PredefinedTrackCriterium criterium() const { return _criterium; }
 
     Q_SIGNALS:
         void criteriumChanged();
@@ -127,7 +127,7 @@ namespace PMP
         FilterPickerWidget* _filterPicker;
         QPushButton* _deleteButton;
         QPushButton* _resetButton;
-        TrackCriterium _criterium;
+        PredefinedTrackCriterium _criterium;
     };
 
     class FiltersListWidget : public QWidget
@@ -136,7 +136,7 @@ namespace PMP
     public:
         FiltersListWidget();
 
-        QList<TrackCriterium> criteria() const;
+        QList<PredefinedTrackCriterium> criteria() const;
 
     Q_SIGNALS:
         void criteriaChanged();

@@ -159,7 +159,7 @@ namespace PMP
     {
         auto criterium = _highlightingCriteriumPicker->criterium();
 
-        _colorSwitcher->setVisible(criterium != TrackCriterium::NoTracks);
+        _colorSwitcher->setVisible(criterium != PredefinedTrackCriterium::NoTracks);
 
         _collectionSourceModel->setHighlightCriterium(criterium);
     }
@@ -278,7 +278,7 @@ namespace PMP
     void CollectionWidget::initTrackHighlightingWidgets()
     {
         _highlightingCriteriumPicker =
-            new FilterPickerWidget(TrackCriterium::NoTracks, tr("(none)"));
+            new FilterPickerWidget(PredefinedTrackCriterium::NoTracks, tr("(none)"));
 
         {
             auto layoutItem =
@@ -321,7 +321,7 @@ namespace PMP
         updateColors(/* force: */ true);
 
         auto highlistingCriterium = _highlightingCriteriumPicker->criterium();
-        _colorSwitcher->setVisible(highlistingCriterium != TrackCriterium::NoTracks);
+        _colorSwitcher->setVisible(highlistingCriterium != PredefinedTrackCriterium::NoTracks);
     }
 
     void CollectionWidget::updateColors(bool force)
@@ -338,7 +338,7 @@ namespace PMP
 
     // =============================================================== //
 
-    FilterPickerWidget::FilterPickerWidget(TrackCriterium criteriumForEmpty,
+    FilterPickerWidget::FilterPickerWidget(PredefinedTrackCriterium criteriumForEmpty,
                                            QString captionForEmpty)
         : _criterium(criteriumForEmpty)
     {
@@ -355,7 +355,7 @@ namespace PMP
             this,
             [this]()
             {
-                auto criterium = _comboBox->currentData().value<TrackCriterium>();
+                auto criterium = _comboBox->currentData().value<PredefinedTrackCriterium>();
                 if (_criterium == criterium)
                     return;
 
@@ -371,11 +371,11 @@ namespace PMP
     }
 
     void FilterPickerWidget::fillTrackCriteriaComboBox(QComboBox* comboBox,
-                                                       TrackCriterium criteriumForEmpty,
+                                                       PredefinedTrackCriterium criteriumForEmpty,
                                                        QString captionForEmpty)
     {
         auto addItem =
-            [comboBox](QString text, TrackCriterium mode)
+            [comboBox](QString text, PredefinedTrackCriterium mode)
             {
                 text.replace(">=", UnicodeChars::greaterThanOrEqual)
                     .replace("<=", UnicodeChars::lessThanOrEqual);
@@ -385,53 +385,53 @@ namespace PMP
 
         addItem(captionForEmpty, criteriumForEmpty);
 
-        addItem(tr("never heard"), TrackCriterium::NeverHeard);
+        addItem(tr("never heard"), PredefinedTrackCriterium::NeverHeard);
         addItem(tr("not heard in the last 5 years"),
-                TrackCriterium::NotHeardInLast5Years);
+                PredefinedTrackCriterium::NotHeardInLast5Years);
         addItem(tr("not heard in the last 3 years"),
-                TrackCriterium::NotHeardInLast3Years);
+                PredefinedTrackCriterium::NotHeardInLast3Years);
         addItem(tr("not heard in the last 2 years"),
-                TrackCriterium::NotHeardInLast2Years);
+                PredefinedTrackCriterium::NotHeardInLast2Years);
         addItem(tr("not heard in the last year"),
-                TrackCriterium::NotHeardInLastYear);
+                PredefinedTrackCriterium::NotHeardInLastYear);
         addItem(tr("not heard in the last 180 days"),
-                TrackCriterium::NotHeardInLast180Days);
+                PredefinedTrackCriterium::NotHeardInLast180Days);
         addItem(tr("not heard in the last 90 days"),
-                TrackCriterium::NotHeardInLast90Days);
+                PredefinedTrackCriterium::NotHeardInLast90Days);
         addItem(tr("not heard in the last 30 days"),
-                TrackCriterium::NotHeardInLast30Days);
+                PredefinedTrackCriterium::NotHeardInLast30Days);
         addItem(tr("not heard in the last 10 days"),
-                TrackCriterium::NotHeardInLast10Days);
-        addItem(tr("heard at least once"), TrackCriterium::HeardAtLeastOnce);
+                PredefinedTrackCriterium::NotHeardInLast10Days);
+        addItem(tr("heard at least once"), PredefinedTrackCriterium::HeardAtLeastOnce);
 
-        addItem(tr("without score"), TrackCriterium::WithoutScore);
-        addItem(tr("with score"), TrackCriterium::WithScore);
-        addItem(tr("score < 30"), TrackCriterium::ScoreLessThan30);
-        addItem(tr("score < 50"), TrackCriterium::ScoreLessThan50);
-        addItem(tr("score >= 80"), TrackCriterium::ScoreAtLeast80);
-        addItem(tr("score >= 85"), TrackCriterium::ScoreAtLeast85);
-        addItem(tr("score >= 90"), TrackCriterium::ScoreAtLeast90);
-        addItem(tr("score >= 95"), TrackCriterium::ScoreAtLeast95);
+        addItem(tr("without score"), PredefinedTrackCriterium::WithoutScore);
+        addItem(tr("with score"), PredefinedTrackCriterium::WithScore);
+        addItem(tr("score < 30"), PredefinedTrackCriterium::ScoreLessThan30);
+        addItem(tr("score < 50"), PredefinedTrackCriterium::ScoreLessThan50);
+        addItem(tr("score >= 80"), PredefinedTrackCriterium::ScoreAtLeast80);
+        addItem(tr("score >= 85"), PredefinedTrackCriterium::ScoreAtLeast85);
+        addItem(tr("score >= 90"), PredefinedTrackCriterium::ScoreAtLeast90);
+        addItem(tr("score >= 95"), PredefinedTrackCriterium::ScoreAtLeast95);
 
-        addItem(tr("length < 1 min."), TrackCriterium::LengthLessThanOneMinute);
-        addItem(tr("length >= 1 min."), TrackCriterium::LengthAtLeastOneMinute);
-        addItem(tr("length < 2 min."), TrackCriterium::LengthLessThanTwoMinutes);
-        addItem(tr("length >= 2 min."), TrackCriterium::LengthAtLeastTwoMinutes);
-        addItem(tr("length < 3 min."), TrackCriterium::LengthLessThanThreeMinutes);
-        addItem(tr("length >= 3 min."), TrackCriterium::LengthAtLeastThreeMinutes);
-        addItem(tr("length < 4 min."), TrackCriterium::LengthLessThanFourMinutes);
-        addItem(tr("length >= 4 min."), TrackCriterium::LengthAtLeastFourMinutes);
-        addItem(tr("length < 5 min."), TrackCriterium::LengthLessThanFiveMinutes);
-        addItem(tr("length >= 5 min."), TrackCriterium::LengthAtLeastFiveMinutes);
+        addItem(tr("length < 1 min."), PredefinedTrackCriterium::LengthLessThanOneMinute);
+        addItem(tr("length >= 1 min."), PredefinedTrackCriterium::LengthAtLeastOneMinute);
+        addItem(tr("length < 2 min."), PredefinedTrackCriterium::LengthLessThanTwoMinutes);
+        addItem(tr("length >= 2 min."), PredefinedTrackCriterium::LengthAtLeastTwoMinutes);
+        addItem(tr("length < 3 min."), PredefinedTrackCriterium::LengthLessThanThreeMinutes);
+        addItem(tr("length >= 3 min."), PredefinedTrackCriterium::LengthAtLeastThreeMinutes);
+        addItem(tr("length < 4 min."), PredefinedTrackCriterium::LengthLessThanFourMinutes);
+        addItem(tr("length >= 4 min."), PredefinedTrackCriterium::LengthAtLeastFourMinutes);
+        addItem(tr("length < 5 min."), PredefinedTrackCriterium::LengthLessThanFiveMinutes);
+        addItem(tr("length >= 5 min."), PredefinedTrackCriterium::LengthAtLeastFiveMinutes);
 
-        addItem(tr("not in the queue"), TrackCriterium::NotInTheQueue);
-        addItem(tr("in the queue"), TrackCriterium::InTheQueue);
+        addItem(tr("not in the queue"), PredefinedTrackCriterium::NotInTheQueue);
+        addItem(tr("in the queue"), PredefinedTrackCriterium::InTheQueue);
 
-        addItem(tr("without title"), TrackCriterium::WithoutTitle);
-        addItem(tr("without artist"), TrackCriterium::WithoutArtist);
-        addItem(tr("without album"), TrackCriterium::WithoutAlbum);
+        addItem(tr("without title"), PredefinedTrackCriterium::WithoutTitle);
+        addItem(tr("without artist"), PredefinedTrackCriterium::WithoutArtist);
+        addItem(tr("without album"), PredefinedTrackCriterium::WithoutAlbum);
 
-        addItem(tr("no longer available"), TrackCriterium::NoLongerAvailable);
+        addItem(tr("no longer available"), PredefinedTrackCriterium::NoLongerAvailable);
 
         comboBox->setCurrentIndex(0);
     }
@@ -439,9 +439,9 @@ namespace PMP
     // =============================================================== //
 
     FilterLineWidget::FilterLineWidget()
-        : _criterium(TrackCriterium::AllTracks)
+        : _criterium(PredefinedTrackCriterium::AllTracks)
     {
-        _filterPicker = new FilterPickerWidget(TrackCriterium::AllTracks, tr("(empty)"));
+        _filterPicker = new FilterPickerWidget(PredefinedTrackCriterium::AllTracks, tr("(empty)"));
         _deleteButton = new QPushButton();
         _resetButton = new QPushButton();
 
@@ -509,9 +509,9 @@ namespace PMP
         );
     }
 
-    QList<TrackCriterium> FiltersListWidget::criteria() const
+    QList<PredefinedTrackCriterium> FiltersListWidget::criteria() const
     {
-        QList<TrackCriterium> result;
+        QList<PredefinedTrackCriterium> result;
         result.reserve(_filters.size());
 
         for (auto const* filterLine : _filters)

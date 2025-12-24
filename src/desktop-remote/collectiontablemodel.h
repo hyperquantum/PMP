@@ -28,6 +28,7 @@
 #include "client/searchquery.h"
 
 #include "searchdata.h"
+#include "trackcriteria.h"
 #include "trackjudge.h"
 
 #include <QAbstractTableModel>
@@ -58,7 +59,7 @@ namespace PMP
                                    Client::QueueHashesMonitor* queueHashesMonitor,
                                    UserForStatisticsDisplay* userForStatisticsDisplay);
 
-        void setHighlightCriterium(TrackCriterium criterium);
+        void setHighlightCriterium(PredefinedTrackCriterium criterium);
         int highlightColorIndex() const;
 
         void sortByTitle();
@@ -161,7 +162,7 @@ namespace PMP
                                      Client::QueueHashesMonitor* queueHashesMonitor,
                                      UserForStatisticsDisplay* userForStatisticsDisplay);
 
-        void setTrackFilters(QList<TrackCriterium> criteria);
+        void setTrackFilters(QList<PredefinedTrackCriterium> criteria);
 
         virtual void sort(int column, Qt::SortOrder order = Qt::AscendingOrder);
 

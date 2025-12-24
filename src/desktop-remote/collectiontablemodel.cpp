@@ -125,7 +125,7 @@ namespace PMP
             }
         );
 
-        _highlightingTrackJudge.setCriteria({ TrackCriterium::NoTracks });
+        _highlightingTrackJudge.setCriteria({ PredefinedTrackCriterium::NoTracks });
         _highlightingTrackJudge.setUserId(userForStatisticsDisplay->userId().valueOr(0));
         connect(
             userForStatisticsDisplay, &UserForStatisticsDisplay::userChanged,
@@ -182,7 +182,7 @@ namespace PMP
         addWhenModelEmpty(collectionWatcher.getCollection().values());
     }
 
-    void SortedCollectionTableModel::setHighlightCriterium(TrackCriterium criterium)
+    void SortedCollectionTableModel::setHighlightCriterium(PredefinedTrackCriterium criterium)
     {
         _highlightingTrackJudge.setCriteria({ criterium });
 
@@ -931,7 +931,7 @@ namespace PMP
         setSourceModel(source);
     }
 
-    void FilteredCollectionTableModel::setTrackFilters(QList<TrackCriterium> criteria)
+    void FilteredCollectionTableModel::setTrackFilters(QList<PredefinedTrackCriterium> criteria)
     {
         bool changed = _filteringTrackJudge.setCriteria(criteria);
 

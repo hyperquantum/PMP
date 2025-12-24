@@ -37,7 +37,7 @@ namespace PMP
         _userDataFetcher.enableAutoFetchForUser(userId);
     }
 
-    bool TrackJudge::setCriteria(QList<TrackCriterium> criteria)
+    bool TrackJudge::setCriteria(QList<PredefinedTrackCriterium> criteria)
     {
         auto simplified = simplifyCriteria(criteria);
 
@@ -69,7 +69,7 @@ namespace PMP
         return
             std::all_of(
                 _criteria.constBegin(), _criteria.constEnd(),
-                [](auto const& c) { return c == TrackCriterium::AllTracks; }
+                [](auto const& c) { return c == PredefinedTrackCriterium::AllTracks; }
             );
     }
 
@@ -90,21 +90,21 @@ namespace PMP
         return result;
     }
 
-    QList<TrackCriterium> TrackJudge::simplifyCriteria(QList<TrackCriterium> criteria)
+    QList<PredefinedTrackCriterium> TrackJudge::simplifyCriteria(QList<PredefinedTrackCriterium> criteria)
     {
         // we do only the most basic simplification for now
 
-        QList<TrackCriterium> result;
+        QList<PredefinedTrackCriterium> result;
 
         for (auto const& criterium : criteria)
         {
-            if (criterium == TrackCriterium::AllTracks)
+            if (criterium == PredefinedTrackCriterium::AllTracks)
                 continue; // no need to add it
 
-            if (criterium == TrackCriterium::NoTracks)
+            if (criterium == PredefinedTrackCriterium::NoTracks)
             {
                 // no tracks can match
-                return { TrackCriterium::NoTracks };
+                return { PredefinedTrackCriterium::NoTracks };
             }
 
             result.append(criterium);
@@ -113,48 +113,48 @@ namespace PMP
         return result;
     }
 
-    bool TrackJudge::usesUserData(TrackCriterium criterium)
+    bool TrackJudge::usesUserData(PredefinedTrackCriterium criterium)
     {
         switch (criterium)
         {
-            case TrackCriterium::NeverHeard:
-            case TrackCriterium::NotHeardInLast5Years:
-            case TrackCriterium::NotHeardInLast3Years:
-            case TrackCriterium::NotHeardInLast2Years:
-            case TrackCriterium::NotHeardInLastYear:
-            case TrackCriterium::NotHeardInLast180Days:
-            case TrackCriterium::NotHeardInLast90Days:
-            case TrackCriterium::NotHeardInLast30Days:
-            case TrackCriterium::NotHeardInLast10Days:
-            case TrackCriterium::HeardAtLeastOnce:
-            case TrackCriterium::WithoutScore:
-            case TrackCriterium::WithScore:
-            case TrackCriterium::ScoreLessThan30:
-            case TrackCriterium::ScoreLessThan50:
-            case TrackCriterium::ScoreAtLeast80:
-            case TrackCriterium::ScoreAtLeast85:
-            case TrackCriterium::ScoreAtLeast90:
-            case TrackCriterium::ScoreAtLeast95:
+            case PredefinedTrackCriterium::NeverHeard:
+            case PredefinedTrackCriterium::NotHeardInLast5Years:
+            case PredefinedTrackCriterium::NotHeardInLast3Years:
+            case PredefinedTrackCriterium::NotHeardInLast2Years:
+            case PredefinedTrackCriterium::NotHeardInLastYear:
+            case PredefinedTrackCriterium::NotHeardInLast180Days:
+            case PredefinedTrackCriterium::NotHeardInLast90Days:
+            case PredefinedTrackCriterium::NotHeardInLast30Days:
+            case PredefinedTrackCriterium::NotHeardInLast10Days:
+            case PredefinedTrackCriterium::HeardAtLeastOnce:
+            case PredefinedTrackCriterium::WithoutScore:
+            case PredefinedTrackCriterium::WithScore:
+            case PredefinedTrackCriterium::ScoreLessThan30:
+            case PredefinedTrackCriterium::ScoreLessThan50:
+            case PredefinedTrackCriterium::ScoreAtLeast80:
+            case PredefinedTrackCriterium::ScoreAtLeast85:
+            case PredefinedTrackCriterium::ScoreAtLeast90:
+            case PredefinedTrackCriterium::ScoreAtLeast95:
                 return true;
 
-            case TrackCriterium::AllTracks:
-            case TrackCriterium::NoTracks:
-            case TrackCriterium::LengthLessThanOneMinute:
-            case TrackCriterium::LengthAtLeastOneMinute:
-            case TrackCriterium::LengthLessThanTwoMinutes:
-            case TrackCriterium::LengthAtLeastTwoMinutes:
-            case TrackCriterium::LengthLessThanThreeMinutes:
-            case TrackCriterium::LengthAtLeastThreeMinutes:
-            case TrackCriterium::LengthLessThanFourMinutes:
-            case TrackCriterium::LengthAtLeastFourMinutes:
-            case TrackCriterium::LengthLessThanFiveMinutes:
-            case TrackCriterium::LengthAtLeastFiveMinutes:
-            case TrackCriterium::NotInTheQueue:
-            case TrackCriterium::InTheQueue:
-            case TrackCriterium::WithoutTitle:
-            case TrackCriterium::WithoutArtist:
-            case TrackCriterium::WithoutAlbum:
-            case TrackCriterium::NoLongerAvailable:
+            case PredefinedTrackCriterium::AllTracks:
+            case PredefinedTrackCriterium::NoTracks:
+            case PredefinedTrackCriterium::LengthLessThanOneMinute:
+            case PredefinedTrackCriterium::LengthAtLeastOneMinute:
+            case PredefinedTrackCriterium::LengthLessThanTwoMinutes:
+            case PredefinedTrackCriterium::LengthAtLeastTwoMinutes:
+            case PredefinedTrackCriterium::LengthLessThanThreeMinutes:
+            case PredefinedTrackCriterium::LengthAtLeastThreeMinutes:
+            case PredefinedTrackCriterium::LengthLessThanFourMinutes:
+            case PredefinedTrackCriterium::LengthAtLeastFourMinutes:
+            case PredefinedTrackCriterium::LengthLessThanFiveMinutes:
+            case PredefinedTrackCriterium::LengthAtLeastFiveMinutes:
+            case PredefinedTrackCriterium::NotInTheQueue:
+            case PredefinedTrackCriterium::InTheQueue:
+            case PredefinedTrackCriterium::WithoutTitle:
+            case PredefinedTrackCriterium::WithoutArtist:
+            case PredefinedTrackCriterium::WithoutAlbum:
+            case PredefinedTrackCriterium::NoLongerAvailable:
                 break;
         }
 
@@ -167,138 +167,138 @@ namespace PMP
     }
 
     TriBool TrackJudge::trackSatisfiesCriterium(const CollectionTrackInfo& track,
-                                                TrackCriterium criterium) const
+                                                PredefinedTrackCriterium criterium) const
     {
         switch (criterium)
         {
-            case TrackCriterium::AllTracks:
+            case PredefinedTrackCriterium::AllTracks:
                 return true;
 
-            case TrackCriterium::NoTracks:
+            case PredefinedTrackCriterium::NoTracks:
                 return false;
 
-            case TrackCriterium::NeverHeard:
+            case PredefinedTrackCriterium::NeverHeard:
             {
                 auto evaluator = [](QDateTime prevHeard) { return !prevHeard.isValid(); };
                 return trackSatisfiesLastHeardDateCriterium(track, evaluator);
             }
-            case TrackCriterium::NotHeardInLast5Years:
+            case PredefinedTrackCriterium::NotHeardInLast5Years:
                 return trackSatisfiesNotHeardInTheLastXYearsCriterium(track, 5);
 
-            case TrackCriterium::NotHeardInLast3Years:
+            case PredefinedTrackCriterium::NotHeardInLast3Years:
                 return trackSatisfiesNotHeardInTheLastXYearsCriterium(track, 3);
 
-            case TrackCriterium::NotHeardInLast2Years:
+            case PredefinedTrackCriterium::NotHeardInLast2Years:
                 return trackSatisfiesNotHeardInTheLastXYearsCriterium(track, 2);
 
-            case TrackCriterium::NotHeardInLastYear:
+            case PredefinedTrackCriterium::NotHeardInLastYear:
                 return trackSatisfiesNotHeardInTheLastXYearsCriterium(track, 1);
 
-            case TrackCriterium::NotHeardInLast180Days:
+            case PredefinedTrackCriterium::NotHeardInLast180Days:
                 return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 180);
 
-            case TrackCriterium::NotHeardInLast90Days:
+            case PredefinedTrackCriterium::NotHeardInLast90Days:
                 return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 90);
 
-            case TrackCriterium::NotHeardInLast30Days:
+            case PredefinedTrackCriterium::NotHeardInLast30Days:
                 return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 30);
 
-            case TrackCriterium::NotHeardInLast10Days:
+            case PredefinedTrackCriterium::NotHeardInLast10Days:
                 return trackSatisfiesNotHeardInTheLastXDaysCriterium(track, 10);
 
-            case TrackCriterium::HeardAtLeastOnce:
+            case PredefinedTrackCriterium::HeardAtLeastOnce:
             {
                 auto evaluator = [](QDateTime prevHeard) { return prevHeard.isValid(); };
                 return trackSatisfiesLastHeardDateCriterium(track, evaluator);
             }
-            case TrackCriterium::WithoutScore:
+            case PredefinedTrackCriterium::WithoutScore:
             {
                 auto evaluator = [](int permillage) { return permillage < 0; };
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackCriterium::WithScore:
+            case PredefinedTrackCriterium::WithScore:
             {
                 auto evaluator = [](int permillage) { return permillage >= 0; };
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackCriterium::ScoreLessThan30:
+            case PredefinedTrackCriterium::ScoreLessThan30:
             {
                 auto evaluator =
                     [](int permillage) { return permillage >= 0 && permillage < 300; };
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackCriterium::ScoreLessThan50:
+            case PredefinedTrackCriterium::ScoreLessThan50:
             {
                 auto evaluator =
                     [](int permillage) { return permillage >= 0 && permillage < 500; };
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackCriterium::ScoreAtLeast80:
+            case PredefinedTrackCriterium::ScoreAtLeast80:
             {
                 auto evaluator = [](int permillage) { return permillage >= 800; };
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackCriterium::ScoreAtLeast85:
+            case PredefinedTrackCriterium::ScoreAtLeast85:
             {
                 auto evaluator = [](int permillage) { return permillage >= 850; };
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackCriterium::ScoreAtLeast90:
+            case PredefinedTrackCriterium::ScoreAtLeast90:
             {
                 auto evaluator = [](int permillage) { return permillage >= 900; };
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackCriterium::ScoreAtLeast95:
+            case PredefinedTrackCriterium::ScoreAtLeast95:
             {
                 auto evaluator = [](int permillage) { return permillage >= 950; };
                 return trackSatisfiesScoreCriterium(track, evaluator);
             }
-            case TrackCriterium::LengthLessThanOneMinute:
+            case PredefinedTrackCriterium::LengthLessThanOneMinute:
                 return trackLengthLessThanXMinutes(track, 1);
 
-            case TrackCriterium::LengthAtLeastOneMinute:
+            case PredefinedTrackCriterium::LengthAtLeastOneMinute:
                 return trackLengthAtLeastXMinutes(track, 1);
 
-            case TrackCriterium::LengthLessThanTwoMinutes:
+            case PredefinedTrackCriterium::LengthLessThanTwoMinutes:
                 return trackLengthLessThanXMinutes(track, 2);
 
-            case TrackCriterium::LengthAtLeastTwoMinutes:
+            case PredefinedTrackCriterium::LengthAtLeastTwoMinutes:
                 return trackLengthAtLeastXMinutes(track, 2);
 
-            case TrackCriterium::LengthLessThanThreeMinutes:
+            case PredefinedTrackCriterium::LengthLessThanThreeMinutes:
                 return trackLengthLessThanXMinutes(track, 3);
 
-            case TrackCriterium::LengthAtLeastThreeMinutes:
+            case PredefinedTrackCriterium::LengthAtLeastThreeMinutes:
                 return trackLengthAtLeastXMinutes(track, 3);
 
-            case TrackCriterium::LengthLessThanFourMinutes:
+            case PredefinedTrackCriterium::LengthLessThanFourMinutes:
                 return trackLengthLessThanXMinutes(track, 4);
 
-            case TrackCriterium::LengthAtLeastFourMinutes:
+            case PredefinedTrackCriterium::LengthAtLeastFourMinutes:
                 return trackLengthAtLeastXMinutes(track, 4);
 
-            case TrackCriterium::LengthLessThanFiveMinutes:
+            case PredefinedTrackCriterium::LengthLessThanFiveMinutes:
                 return trackLengthLessThanXMinutes(track, 5);
 
-            case TrackCriterium::LengthAtLeastFiveMinutes:
+            case PredefinedTrackCriterium::LengthAtLeastFiveMinutes:
                 return trackLengthAtLeastXMinutes(track, 5);
 
-            case TrackCriterium::NotInTheQueue:
+            case PredefinedTrackCriterium::NotInTheQueue:
                 return !_queueHashesMonitor.isPresentInQueue(track.hashId());
 
-            case TrackCriterium::InTheQueue:
+            case PredefinedTrackCriterium::InTheQueue:
                 return _queueHashesMonitor.isPresentInQueue(track.hashId());
 
-            case TrackCriterium::WithoutTitle:
+            case PredefinedTrackCriterium::WithoutTitle:
                 return isTextFieldEmpty(track.title());
 
-            case TrackCriterium::WithoutArtist:
+            case PredefinedTrackCriterium::WithoutArtist:
                 return isTextFieldEmpty(track.artist());
 
-            case TrackCriterium::WithoutAlbum:
+            case PredefinedTrackCriterium::WithoutAlbum:
                 return isTextFieldEmpty(track.album());
 
-            case TrackCriterium::NoLongerAvailable:
+            case PredefinedTrackCriterium::NoLongerAvailable:
                 return track.isAvailable() == false;
         }
 
