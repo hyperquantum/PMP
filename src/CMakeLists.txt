@@ -232,6 +232,7 @@ set(PMP_DESKTOP_REMOTE_SOURCES
     desktop-remote/searchdata.cpp
     desktop-remote/searchdialog.cpp
     desktop-remote/trackcriteria.cpp
+    desktop-remote/trackcriteriumevaluation.cpp
     desktop-remote/trackinfodialog.cpp
     desktop-remote/trackjudge.cpp
     desktop-remote/trackprogresswidget.cpp

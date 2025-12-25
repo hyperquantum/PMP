@@ -257,10 +257,12 @@ namespace PMP
     {
     public:
         TrackScoreComparisonCriterium();
-        TrackScoreComparisonCriterium(ComparisonOperator comparisonOperator, int score);
+        TrackScoreComparisonCriterium(ComparisonOperator comparisonOperator, short score);
 
-        void setScore(int score) { _score = score; }
-        int score() const { return _score; }
+        void setScore(short score) { _score = score; }
+        short score() const { return _score; }
+
+        short scorePermillage() const { return _score * 10; }
 
         void setComparisonOperator(ComparisonOperator comparisonOperator)
         {
@@ -278,7 +280,7 @@ namespace PMP
 
     private:
         ComparisonOperator _operator;
-        int _score;
+        short _score;
     };
 
     class TrackLastHeardPresenceCriterium final : public TrackCriterium
@@ -459,6 +461,11 @@ namespace PMP
         void add(Args&&... args)
         {
             _criteria.append(std::make_unique<T>(std::forward<Args>(args)...));
+        }
+
+        const QList<std::unique_ptr<TrackCriterium>>& criteria() const
+        {
+            return _criteria;
         }
 
         void accept(TrackCriteriumVisitor& visitor) const override

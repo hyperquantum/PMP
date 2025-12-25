@@ -39,13 +39,13 @@ namespace PMP
                 ComparisonOperator::GreaterThanOrEqual, minimumLengthMinutes);
         }
 
-        std::unique_ptr<TrackCriterium> createScoreLessThanCriterium(int scoreCeiling)
+        std::unique_ptr<TrackCriterium> createScoreLessThanCriterium(short scoreCeiling)
         {
             return std::make_unique<TrackScoreComparisonCriterium>(
                 ComparisonOperator::LessThan, scoreCeiling);
         }
 
-        std::unique_ptr<TrackCriterium> createScoreAtLeastCriterium(int minimumScore)
+        std::unique_ptr<TrackCriterium> createScoreAtLeastCriterium(short minimumScore)
         {
             return std::make_unique<TrackScoreComparisonCriterium>(
                 ComparisonOperator::GreaterThanOrEqual, minimumScore);
@@ -205,7 +205,7 @@ namespace PMP
     }
 
     TrackScoreComparisonCriterium::TrackScoreComparisonCriterium(
-        ComparisonOperator comparisonOperator, int score)
+        ComparisonOperator comparisonOperator, short score)
      : _operator(comparisonOperator),
         _score(score)
     {
