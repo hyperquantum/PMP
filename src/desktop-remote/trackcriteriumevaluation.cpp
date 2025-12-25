@@ -65,7 +65,7 @@ namespace PMP
     {
         auto lengthMs = _context.lengthInMilliseconds();
 
-        _result = lengthMs.hasValue();
+        _result = lengthMs.hasValue() == criterium.presence();
     }
 
     void TrackCriteriumEvaluator::visit(const TrackLengthComparisonCriterium& criterium)
@@ -93,7 +93,7 @@ namespace PMP
         else
         {
             auto permillage = _context.scorePermillage();
-            _result = permillage.hasValue();
+            _result = permillage.hasValue() == criterium.presence();
         }
     }
 
@@ -127,7 +127,7 @@ namespace PMP
         else
         {
             auto lastHeard = _context.lastHeard();
-            _result = lastHeard.hasValue();
+            _result = lastHeard.hasValue() == criterium.presence();
         }
     }
 
@@ -159,12 +159,12 @@ namespace PMP
 
     void TrackCriteriumEvaluator::visit(const TrackQueuePresenceCriterium& criterium)
     {
-        _result = _context.isPresentInQueue();
+        _result = _context.isPresentInQueue() == criterium.presence();
     }
 
     void TrackCriteriumEvaluator::visit(const TrackAvailabilityCriterium& criterium)
     {
-        _result = _context.isAvailable();
+        _result = _context.isAvailable() == criterium.availability();
     }
 
     void TrackCriteriumEvaluator::visit(const TrackMetaDataPresenceCriterium& criterium)
