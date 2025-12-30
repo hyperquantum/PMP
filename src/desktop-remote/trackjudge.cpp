@@ -23,12 +23,129 @@
 #include "client/queuehashesmonitor.h"
 #include "client/userdatafetcher.h"
 
+#include "trackcriteriumevaluation.h"
+
 #include <algorithm>
 
 using namespace PMP::Client;
 
 namespace PMP
 {
+    class TrackJudge::EvaluationContext final : public TrackCriteriumEvaluationContext
+    {
+    public:
+        EvaluationContext(CollectionTrackInfo const& track,
+                          UserDataFetcher& userDataFetcher,
+                          QueueHashesMonitor& queueHashesMonitor,
+                          quint32 userId, bool _haveUserId);
+
+        QDateTime currentDateTimeUtc() const override;
+
+        Nullable<int> lengthInMilliseconds() const override;
+        Nullable<QString> title() const override;
+        Nullable<QString> artist() const override;
+        Nullable<QString> album() const override;
+
+        bool isUserDataAvailable() const override;
+        Nullable<short> scorePermillage() const override;
+        Nullable<QDateTime> lastHeard() const override;
+
+        bool isAvailable() const override;
+        bool isPresentInQueue() const override;
+
+    private:
+        const CollectionTrackInfo& _track;
+        UserDataFetcher& _userDataFetcher;
+        QueueHashesMonitor& _queueHashesMonitor;
+        quint32 _userId;
+        bool _haveUserId;
+    };
+
+    TrackJudge::EvaluationContext::EvaluationContext(const CollectionTrackInfo& track,
+                                                     UserDataFetcher& userDataFetcher,
+                                                QueueHashesMonitor& queueHashesMonitor,
+                                                     quint32 userId, bool _haveUserId)
+     : _track(track),
+        _userDataFetcher(userDataFetcher),
+        _queueHashesMonitor(queueHashesMonitor),
+        _userId(userId),
+        _haveUserId(_haveUserId)
+    {
+        //
+    }
+
+    QDateTime TrackJudge::EvaluationContext::currentDateTimeUtc() const
+    {
+        return QDateTime::currentDateTimeUtc();
+    }
+
+    Nullable<int> TrackJudge::EvaluationContext::lengthInMilliseconds() const
+    {
+        if (!_track.lengthIsKnown())
+            return null;
+
+        return _track.lengthInMilliseconds();
+    }
+
+    Nullable<QString> TrackJudge::EvaluationContext::title() const
+    {
+        return _track.title();
+    }
+
+    Nullable<QString> TrackJudge::EvaluationContext::artist() const
+    {
+        return _track.artist();
+    }
+
+    Nullable<QString> TrackJudge::EvaluationContext::album() const
+    {
+        return _track.album();
+    }
+
+    bool TrackJudge::EvaluationContext::isUserDataAvailable() const
+    {
+        if (!_haveUserId)
+            return false;
+
+        return _userDataFetcher.checkHaveHashDataForUser(_userId, _track.hashId());
+    }
+
+    Nullable<short> TrackJudge::EvaluationContext::scorePermillage() const
+    {
+        auto userHashData = _userDataFetcher.getHashDataForUser(_userId, _track.hashId());
+        if (userHashData == nullptr || userHashData->scoreReceived == false)
+            return null; /* score unknown */
+
+        if (userHashData->scorePermillage < 0)
+            return null; /* track without score */
+
+        return userHashData->scorePermillage;
+    }
+
+    Nullable<QDateTime> TrackJudge::EvaluationContext::lastHeard() const
+    {
+        auto userHashData = _userDataFetcher.getHashDataForUser(_userId, _track.hashId());
+        if (userHashData == nullptr || userHashData->previouslyHeardReceived == false)
+            return null; /* score unknown */
+
+        if (userHashData->previouslyHeard.isValid() == false)
+            return null;
+
+        return userHashData->previouslyHeard;
+    }
+
+    bool TrackJudge::EvaluationContext::isAvailable() const
+    {
+        return _track.isAvailable();
+    }
+
+    bool TrackJudge::EvaluationContext::isPresentInQueue() const
+    {
+        return _queueHashesMonitor.isPresentInQueue(_track.hashId());
+    }
+
+    /* ============================================================================ */
+
     void TrackJudge::setUserId(quint32 userId)
     {
         _userId = userId;

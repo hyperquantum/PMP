@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2024, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -82,6 +82,18 @@ namespace PMP::Client
     //{
     //    //
     //}
+
+    bool UserDataFetcherImpl::checkHaveHashDataForUser(quint32 userId, LocalHashId hashId)
+    {
+        if (hashId.isZero())
+            return false;
+
+        if (_userData[userId].haveHash(hashId))
+            return true;
+
+        needToRequestData(userId, hashId);
+        return false;
+    }
 
     UserDataFetcher::HashData const* UserDataFetcherImpl::getHashDataForUser(
                                                                        quint32 userId,

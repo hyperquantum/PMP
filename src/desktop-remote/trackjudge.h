@@ -66,6 +66,8 @@ namespace PMP
         TriBool trackSatisfiesCriteria(Client::CollectionTrackInfo const& track) const;
 
     private:
+        class EvaluationContext;
+
         static QList<PredefinedTrackCriterium> simplifyCriteria(QList<PredefinedTrackCriterium> criteria);
         static bool usesUserData(PredefinedTrackCriterium criterium);
         static bool isTextFieldEmpty(QString contents);
