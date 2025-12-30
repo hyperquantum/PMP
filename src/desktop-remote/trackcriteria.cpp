@@ -178,6 +178,25 @@ namespace PMP
         Q_UNREACHABLE();
     }
 
+    std::unique_ptr<TrackCriterium> convertToTrackCriterium(
+        const QList<PredefinedTrackCriterium>& criteria)
+    {
+        if (criteria.isEmpty())
+            return ConstantTrackCriterium::allTracksMatch();
+
+        if (criteria.size() == 1)
+            return convertToTrackCriterium(criteria.front());
+
+        auto composite = std::make_unique<CompositeTrackCriterium>();
+
+        for (PredefinedTrackCriterium c : criteria)
+        {
+            composite->add(convertToTrackCriterium(c));
+        }
+
+        return composite;
+    }
+
     /* ============================================================================ */
 
     TrackLengthComparisonCriterium::TrackLengthComparisonCriterium()
@@ -238,12 +257,12 @@ namespace PMP
 
     bool CompositeTrackCriterium::usesUserData() const
     {
-        if (_criteria.isEmpty())
+        if (_criteria.empty())
             return false;
 
         return
             std::any_of(
-                _criteria.constBegin(), _criteria.constEnd(),
+                _criteria.begin(), _criteria.end(),
                 [](auto const& c) { return c->usesUserData(); }
             );
     }

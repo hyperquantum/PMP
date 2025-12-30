@@ -26,9 +26,6 @@
 
 #include <QDateTime>
 #include <QList>
-#include <QMetaType>
-
-#include <functional>
 
 namespace PMP::Client
 {
@@ -69,41 +66,13 @@ namespace PMP
         class EvaluationContext;
 
         static QList<PredefinedTrackCriterium> simplifyCriteria(QList<PredefinedTrackCriterium> criteria);
-        static bool usesUserData(PredefinedTrackCriterium criterium);
-        static bool isTextFieldEmpty(QString contents);
 
-        TriBool trackSatisfiesCriterium(Client::CollectionTrackInfo const& track,
-                                        PredefinedTrackCriterium criterium) const;
-
-        TriBool trackSatisfiesScoreCriterium(Client::CollectionTrackInfo const& track,
-                              std::function<TriBool(int)> scorePermillageEvaluator) const;
-
-        TriBool trackSatisfiesLastHeardDateCriterium(
-                                   Client::CollectionTrackInfo const& track,
-                                   std::function<TriBool(QDateTime)> dateEvaluator) const;
-
-        TriBool trackSatisfiesNotHeardInTheLastXDaysCriterium(
-                                                 Client::CollectionTrackInfo const& track,
-                                                 int days) const;
-
-        TriBool trackSatisfiesNotHeardInTheLastXYearsCriterium(
-                                                 Client::CollectionTrackInfo const& track,
-                                                 int years) const;
-
-        TriBool trackLengthLessThanXMinutes(Client::CollectionTrackInfo const& track,
-                                            int minutes) const;
-
-        TriBool trackLengthAtLeastXMinutes(Client::CollectionTrackInfo const& track,
-                                           int minutes) const;
-
-        QList<PredefinedTrackCriterium> _criteria;
+        QList<PredefinedTrackCriterium> _legacyCriteria;
+        std::unique_ptr<TrackCriterium> _criteriumTree;
         quint32 _userId;
         bool _haveUserId;
         Client::UserDataFetcher& _userDataFetcher;
         Client::QueueHashesMonitor& _queueHashesMonitor;
     };
 }
-
-Q_DECLARE_METATYPE(PMP::PredefinedTrackCriterium)
-
 #endif

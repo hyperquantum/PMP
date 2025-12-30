@@ -21,9 +21,11 @@
 #define PMP_TRACKCRITERIA_H
 
 #include <QList>
+#include <QMetaType>
 
 #include <memory>
 #include <utility>
+#include <vector>
 
 namespace PMP
 {
@@ -70,6 +72,8 @@ namespace PMP
     class TrackCriterium;
 
     std::unique_ptr<TrackCriterium> convertToTrackCriterium(PredefinedTrackCriterium);
+    std::unique_ptr<TrackCriterium> convertToTrackCriterium(
+                                                const QList<PredefinedTrackCriterium>&);
 
     class TrackCriteriumVisitor;
 
@@ -460,10 +464,15 @@ namespace PMP
         template<typename T, typename... Args>
         void add(Args&&... args)
         {
-            _criteria.append(std::make_unique<T>(std::forward<Args>(args)...));
+            _criteria.push_back(std::make_unique<T>(std::forward<Args>(args)...));
         }
 
-        const QList<std::unique_ptr<TrackCriterium>>& criteria() const
+        void add(std::unique_ptr<TrackCriterium> criterium)
+        {
+            _criteria.push_back(std::move(criterium));
+        }
+
+        const std::vector<std::unique_ptr<TrackCriterium>>& criteria() const
         {
             return _criteria;
         }
@@ -476,7 +485,10 @@ namespace PMP
         bool usesUserData() const override;
 
     private:
-        QList<std::unique_ptr<TrackCriterium>> _criteria;
+        std::vector<std::unique_ptr<TrackCriterium>> _criteria;
     };
 }
+
+Q_DECLARE_METATYPE(PMP::PredefinedTrackCriterium)
+
 #endif
