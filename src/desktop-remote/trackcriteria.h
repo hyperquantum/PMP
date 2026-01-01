@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2023-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2023-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -83,6 +83,7 @@ namespace PMP
         TrackCriterium() {}
         virtual ~TrackCriterium() {}
 
+        virtual std::unique_ptr<TrackCriterium> clone() const = 0;
         virtual void accept(TrackCriteriumVisitor& visitor) const = 0;
 
         virtual bool usesUserData() const = 0;
@@ -147,6 +148,11 @@ namespace PMP
 
         bool value() const { return _value; }
 
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            return std::make_unique<ConstantTrackCriterium>(*this);
+        }
+
         void accept(TrackCriteriumVisitor& visitor) const override
         {
             visitor.visit(*this);
@@ -178,6 +184,11 @@ namespace PMP
         }
 
         bool presence() const { return _present; }
+
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            return std::make_unique<TrackLengthPresenceCriterium>(*this);
+        }
 
         void accept(TrackCriteriumVisitor& visitor) const override
         {
@@ -213,6 +224,11 @@ namespace PMP
 
         ComparisonOperator comparisonOperator() const { return _operator; }
 
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            return std::make_unique<TrackLengthComparisonCriterium>(*this);
+        }
+
         void accept(TrackCriteriumVisitor& visitor) const override
         {
             visitor.visit(*this);
@@ -243,6 +259,11 @@ namespace PMP
         }
 
         bool presence() const { return _present; }
+
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            return std::make_unique<TrackScorePresenceCriterium>(*this);
+        }
 
         void accept(TrackCriteriumVisitor& visitor) const override
         {
@@ -275,6 +296,11 @@ namespace PMP
 
         ComparisonOperator comparisonOperator() const { return _operator; }
 
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            return std::make_unique<TrackScoreComparisonCriterium>(*this);
+        }
+
         void accept(TrackCriteriumVisitor& visitor) const override
         {
             visitor.visit(*this);
@@ -305,6 +331,11 @@ namespace PMP
         }
 
         bool presence() const { return _present; }
+
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            return std::make_unique<TrackLastHeardPresenceCriterium>(*this);
+        }
 
         void accept(TrackCriteriumVisitor& visitor) const override
         {
@@ -337,6 +368,11 @@ namespace PMP
         void setInverted(bool isInverted) { _inverted = isInverted; }
         bool isInverted() const { return _inverted; }
 
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            return std::make_unique<TrackLastHeardRecentlyCriterium>(*this);
+        }
+
         void accept(TrackCriteriumVisitor& visitor) const override
         {
             visitor.visit(*this);
@@ -367,6 +403,11 @@ namespace PMP
         }
 
         bool presence() const { return _present; }
+
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            return std::make_unique<TrackQueuePresenceCriterium>(*this);
+        }
 
         void accept(TrackCriteriumVisitor& visitor) const override
         {
@@ -399,6 +440,11 @@ namespace PMP
         }
 
         bool availability() const { return _available; }
+
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            return std::make_unique<TrackAvailabilityCriterium>(*this);
+        }
 
         void accept(TrackCriteriumVisitor& visitor) const override
         {
@@ -436,6 +482,11 @@ namespace PMP
 
         TrackMetaDataKind metaDataKind() const { return _metaDataKind; }
         bool presence() const { return _present; }
+
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            return std::make_unique<TrackMetaDataPresenceCriterium>(*this);
+        }
 
         void accept(TrackCriteriumVisitor& visitor) const override
         {
@@ -475,6 +526,16 @@ namespace PMP
         const std::vector<std::unique_ptr<TrackCriterium>>& criteria() const
         {
             return _criteria;
+        }
+
+        std::unique_ptr<TrackCriterium> clone() const override
+        {
+            auto result = std::make_unique<CompositeTrackCriterium>();
+
+            for (auto& c : _criteria)
+                result->add(c->clone());
+
+            return result;
         }
 
         void accept(TrackCriteriumVisitor& visitor) const override
