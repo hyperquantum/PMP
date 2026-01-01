@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2014-2023, Kevin Andre <hyperquantum@gmail.com>
+    Copyright (C) 2014-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -30,6 +30,7 @@
 #include "specialqueueitemtype.h"
 #include "startstopeventstatus.h"
 #include "tagdata.h"
+#include "trackcriteria.h"
 #include "userloginerror.h"
 #include "userregistrationerror.h"
 #include "versioninfo.h"
@@ -48,6 +49,7 @@ namespace PMP
             qRegisterMetaType<PMP::PlayerHistoryTrackInfo>();
             qRegisterMetaType<PMP::PlayerMode>();
             qRegisterMetaType<PMP::PlayerState>();
+            qRegisterMetaType<PMP::PredefinedTrackCriterium>();
             qRegisterMetaType<PMP::QueueEntryType>();
             qRegisterMetaType<PMP::QueueIndexType>();
             qRegisterMetaType<PMP::ScrobblerStatus>();

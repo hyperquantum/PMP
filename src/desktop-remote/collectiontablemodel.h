@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -23,12 +23,12 @@
 #include "common/filehash.h"
 #include "common/nullable.h"
 #include "common/playerstate.h"
+#include "common/trackcriteria.h"
 
 #include "client/collectiontrackinfo.h"
 #include "client/searchquery.h"
 
 #include "searchdata.h"
-#include "trackcriteria.h"
 #include "trackjudge.h"
 
 #include <QAbstractTableModel>

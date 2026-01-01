@@ -1,5 +1,5 @@
 /*
-    Copyright (C) 2016-2025, Kevin André <hyperquantum@gmail.com>
+    Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 
     This file is part of PMP (Party Music Player).
 
@@ -20,9 +20,8 @@
 #ifndef PMP_TRACKJUDGE_H
 #define PMP_TRACKJUDGE_H
 
+#include "common/trackcriteria.h"
 #include "common/tribool.h"
-
-#include "trackcriteria.h"
 
 #include <QDateTime>
 #include <QList>
