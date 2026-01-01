@@ -1,4 +1,4 @@
-# Copyright (C) 2016-2025, Kevin Andre <hyperquantum@gmail.com>
+# Copyright (C) 2016-2026, Kevin André <hyperquantum@gmail.com>
 #
 # This file is part of PMP (Party Music Player).
 #
@@ -187,6 +187,17 @@ add_executable(test_searchutil test_searchutil.cpp
 )
 target_link_libraries(test_searchutil Qt6::Core Qt6::Test)
 add_test(test_searchutil test_searchutil)
+
+
+# TestTrackCriteriaSimplification
+qt_wrap_cpp(PMP_TestTrackCriteriumSimplification_MOCS test_trackcriteriumsimplification.h)
+add_executable(test_trackcriteriumsimplification test_trackcriteriumsimplification.cpp
+    ${PMP_TestTrackCriteriumSimplification_MOCS}
+    ${CMAKE_SOURCE_DIR}/src/common/trackcriteria.cpp
+    ${CMAKE_SOURCE_DIR}/src/common/trackcriteriumsimplification.cpp
+)
+target_link_libraries(test_trackcriteriumsimplification Qt6::Core Qt6::Test)
+add_test(test_trackcriteriumsimplification test_trackcriteriumsimplification)
 
 
 # TestHashRelations

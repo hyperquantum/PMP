@@ -23,7 +23,6 @@
 #include "common/trackcriteria.h"
 #include "common/tribool.h"
 
-#include <QDateTime>
 #include <QList>
 
 namespace PMP::Client
@@ -40,10 +39,12 @@ namespace PMP
     public:
         TrackJudge(Client::UserDataFetcher& userDataFetcher,
                    Client::QueueHashesMonitor& queueHashesMonitor)
-         : _userId(0),
-           _haveUserId(false),
+         : _criteriumTree(ConstantTrackCriterium::allTracksMatch()),
            _userDataFetcher(userDataFetcher),
-           _queueHashesMonitor(queueHashesMonitor)
+           _queueHashesMonitor(queueHashesMonitor),
+           _userId(0),
+           _haveUserId(false),
+           _criteriumTreeMatchesAllTracks(true)
         {
             //
         }
@@ -64,14 +65,12 @@ namespace PMP
     private:
         class EvaluationContext;
 
-        static QList<PredefinedTrackCriterium> simplifyCriteria(QList<PredefinedTrackCriterium> criteria);
-
-        QList<PredefinedTrackCriterium> _legacyCriteria;
         std::unique_ptr<TrackCriterium> _criteriumTree;
-        quint32 _userId;
-        bool _haveUserId;
         Client::UserDataFetcher& _userDataFetcher;
         Client::QueueHashesMonitor& _queueHashesMonitor;
+        quint32 _userId;
+        bool _haveUserId;
+        bool _criteriumTreeMatchesAllTracks;
     };
 }
 #endif

@@ -20,6 +20,7 @@
 #include "trackjudge.h"
 
 #include "common/trackcriteriumevaluation.h"
+#include "common/trackcriteriumsimplification.h"
 
 #include "client/collectiontrackinfo.h"
 #include "client/queuehashesmonitor.h"
@@ -154,16 +155,18 @@ namespace PMP
 
     bool TrackJudge::setCriteria(QList<PredefinedTrackCriterium> criteria)
     {
-        auto simplified = simplifyCriteria(criteria);
+        auto criteriumTree = convertToTrackCriterium(criteria);
+        auto simplifiedTree = TrackCriteriumSimplifier::simplify(*criteriumTree);
 
         // a naive comparison is OK, this is mostly for eliminating redundant assignments
-        if (_legacyCriteria == simplified)
+        if (_criteriumTree->equals(*simplifiedTree))
             return false;
 
-        auto criteriumTree = convertToTrackCriterium(simplified);
+        _criteriumTree = std::move(simplifiedTree);
 
-        _legacyCriteria = simplified;
-        _criteriumTree = std::move(criteriumTree);
+        _criteriumTreeMatchesAllTracks =
+            _criteriumTree->equals(*ConstantTrackCriterium::allTracksMatch());
+
         return true;
     }
 
@@ -174,9 +177,7 @@ namespace PMP
 
     bool TrackJudge::criteriumResultsInAllTracks() const
     {
-        // TODO : switch to expression tree here
-
-        return _legacyCriteria.isEmpty();
+        return _criteriumTreeMatchesAllTracks;
     }
 
     TriBool TrackJudge::trackSatisfiesCriteria(CollectionTrackInfo const& track) const
@@ -185,29 +186,6 @@ namespace PMP
                                   _userId, _haveUserId);
 
         TriBool result = TrackCriteriumEvaluator::evaluate(*_criteriumTree, context);
-
-        return result;
-    }
-
-    QList<PredefinedTrackCriterium> TrackJudge::simplifyCriteria(QList<PredefinedTrackCriterium> criteria)
-    {
-        // we do only the most basic simplification for now
-
-        QList<PredefinedTrackCriterium> result;
-
-        for (auto const& criterium : criteria)
-        {
-            if (criterium == PredefinedTrackCriterium::AllTracks)
-                continue; // no need to add it
-
-            if (criterium == PredefinedTrackCriterium::NoTracks)
-            {
-                // no tracks can match
-                return { PredefinedTrackCriterium::NoTracks };
-            }
-
-            result.append(criterium);
-        }
 
         return result;
     }

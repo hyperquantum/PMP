@@ -37,6 +37,7 @@ set(PMP_COMMON_SOURCES
     common/tagdata.cpp
     common/trackcriteria.cpp
     common/trackcriteriumevaluation.cpp
+    common/trackcriteriumsimplification.cpp
     common/tribool.cpp
     common/util.cpp
     common/versioninfo.cpp
